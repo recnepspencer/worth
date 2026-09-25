@@ -11,7 +11,7 @@ impl super::super::WorthUiActiveApplicationSession {
     > {
         if let Some(scroll) = self.scroll.as_ref() {
             if scroll.has_unpresented_layout(owner.semantic_surface()) {
-                if let Some(incarnation) = self.scroll_region_incarnation(target, slot) {
+                if let Some(incarnation) = self.mounted.scroll_region_incarnation(target, slot) {
                     if let Ok(bounds) = scroll.accepted_owner_bounds(owner, incarnation) {
                         return Ok(bounds);
                     }
@@ -31,19 +31,5 @@ impl super::super::WorthUiActiveApplicationSession {
             );
         }
         self.application.scroll_bounds_for(owner, graph_node)
-    }
-
-    pub(super) fn scroll_region_incarnation(
-        &self,
-        target: worth_ui_host_contract::UiMountedInstanceIdentity,
-        slot: usize,
-    ) -> Option<crate::runtime::scroll::UiScrollOwnerIncarnation> {
-        let (owner, _, _) = self.mounted.scroll_region_geometry(target, slot)?;
-        let basis = self.mounted.current_mounted_identity_basis(owner)?;
-        Some(
-            crate::runtime::scroll::UiScrollOwnerIncarnation::from_mount_incarnation(
-                basis.mount_incarnation(),
-            ),
-        )
     }
 }

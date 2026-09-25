@@ -140,9 +140,53 @@ impl WorthUiMountedSessionState {
         {
             return Err(crate::mounting::UiPresentedFrameBasisDenial::PresentationTruthUnavailable);
         }
-        let mut basis = self.retention.interaction_hit_test_basis(presentation)?;
-        basis.apply_motion_samples(&self.motion_sampling);
-        Ok(basis)
+        self.retention
+            .interaction_hit_test_basis(presentation, Some(&self.motion_sampling))
+    }
+
+    /// The rows the two hit-test lanes of `presentation` put in different
+    /// places, as (instance, interaction row, indexed row). One lane is the
+    /// interaction basis: the retained frame's rows moved by the on-screen
+    /// Motion samples and then by the committed Scroll poses. The other is
+    /// the presented hit index. The lanes may prove a row differently; they
+    /// part only where they place it differently. A presentation whose
+    /// published entrance awaits its Motion commit is not compared: the index
+    /// holds the entrance before interaction can read its sample.
+    pub(crate) fn parted_hit_lanes(
+        &self,
+        presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
+    ) -> Vec<(
+        worth_ui_host_contract::UiMountedInstanceIdentity,
+        Option<crate::mounting::UiPresentedHitRect>,
+        Option<crate::mounting::UiPresentedHitRect>,
+    )> {
+        if self
+            .presentation
+            .awaits_entrance_commit(presentation.binding())
+        {
+            return Vec::new();
+        }
+        let (Ok(basis), Ok(indexed)) = (
+            self.interaction_hit_test_basis(presentation),
+            self.retention.indexed_hit_rows(presentation),
+        ) else {
+            return Vec::new();
+        };
+        let mut lanes = std::collections::BTreeMap::<_, (Option<_>, Option<_>)>::new();
+        for row in basis.rows() {
+            lanes.entry(row.mounted_instance()).or_default().0 = Some(row.bounds());
+        }
+        for row in indexed {
+            lanes.entry(row.mounted_instance()).or_default().1 = Some(row.bounds());
+        }
+        lanes
+            .into_iter()
+            .filter(|(_, lanes)| match lanes {
+                (Some(interaction), Some(index)) => !interaction.occupies_same_rect(*index),
+                _ => true,
+            })
+            .map(|(instance, (interaction, index))| (instance, interaction, index))
+            .collect()
     }
 
     pub(crate) fn semantic_focus_placement_basis(
@@ -152,7 +196,8 @@ impl WorthUiMountedSessionState {
         crate::mounting::UiPresentedHitTestBasis,
         crate::mounting::UiPresentedFrameBasisDenial,
     > {
-        self.retention.interaction_hit_test_basis(presentation)
+        self.retention
+            .interaction_hit_test_basis(presentation, None)
     }
 
     pub(crate) fn admit_current_hit_target(

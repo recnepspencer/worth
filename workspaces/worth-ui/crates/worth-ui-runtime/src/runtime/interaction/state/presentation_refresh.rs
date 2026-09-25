@@ -59,6 +59,21 @@ impl UiInteractionRuntimeState {
         });
     }
 
+    /// Each hovering pointer whose recorded target is not what its position
+    /// resolves to on its surface's current presentation, as (recorded,
+    /// resolved).
+    pub(crate) fn stale_pointer_targets(
+        &self,
+        mounted: &crate::mounting::WorthUiMountedSessionState,
+    ) -> Vec<(
+        Option<worth_ui_host_contract::UiMountedInstanceIdentity>,
+        Option<worth_ui_host_contract::UiMountedInstanceIdentity>,
+    )> {
+        self.pointer_presence
+            .as_ref()
+            .map_or_else(Vec::new, |owner| owner.stale_targets(mounted))
+    }
+
     #[cfg(test)]
     pub(crate) const fn presentation_refresh_snapshot(
         &self,

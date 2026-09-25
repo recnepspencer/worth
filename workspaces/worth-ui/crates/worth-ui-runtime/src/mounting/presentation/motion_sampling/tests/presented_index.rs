@@ -88,6 +88,51 @@ fn indexed_motion_preserves_baseline_clip_retained_versions_and_committed_only_u
 }
 
 #[test]
+fn a_pose_that_moves_a_hidden_row_still_moves_it_once_revealed() {
+    let world = World::new();
+    let base = crate::mounting::UiPresentedHitTestRow::from_mounted(
+        crate::mounting::UiMountedHitTestPresentation::for_test(
+            world.hit_test_row([20.0, 10.0, 24.0, 12.0]),
+        ),
+    );
+    let pose = |units| {
+        crate::runtime::scroll::UiScrollOffset::new(
+            0,
+            units * worth_ui_host_contract::UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
+        )
+        .unwrap()
+    };
+    let shift = crate::mounting::presentation::UiScrollPoseShift::between(pose(0), pose(5));
+    let binding = world.presentation.binding();
+    let mut hidden = UiPresentedHitIndex::default();
+    hidden.replace_base(base.mounted_instance(), Some(base));
+    let mut sampler = UiMountedMotionSampler::default();
+    sampler.install(world.exit_receipt(305)).unwrap();
+    commit_tick(&mut sampler, 1, world.presentation);
+    hidden.apply_motion(&sampler, world.displayed, &[world.target]);
+    assert!(at(&hidden, &world, [30.0, 16.0]).is_empty());
+    hidden.apply_scroll_translations(binding, &[(base.mounted_instance(), shift)]);
+    // The exit's track retires; the row is shown again at its settled pose.
+    hidden.apply_motion(
+        &UiMountedMotionSampler::default(),
+        world.displayed,
+        &[world.target],
+    );
+    let mut shown = UiPresentedHitIndex::default();
+    shown.replace_base(base.mounted_instance(), Some(base));
+    shown.apply_scroll_translations(binding, &[(base.mounted_instance(), shift)]);
+    let revealed = hidden.for_instance(binding, base.mounted_instance()).0;
+    assert_eq!(
+        revealed.map(|row| row.bounds().platform_box().y()),
+        Some(5.0)
+    );
+    assert_eq!(
+        revealed,
+        shown.for_instance(binding, base.mounted_instance()).0
+    );
+}
+
+#[test]
 fn transparent_motion_does_not_remove_an_otherwise_visible_hit_target() {
     let world = World::new();
     let mut sampler = UiMountedMotionSampler::default();

@@ -6,7 +6,30 @@ use crate::runtime::scroll::transition::{
 };
 use crate::runtime::scroll::UiScrollRuntimeState;
 
+/// Settle what a publication committed for Scroll, then assert in debug
+/// builds that displayed geometry stands on the latest witness. Every
+/// publication path calls this once its transition is finished.
 pub(in crate::facade::entry) fn settle_presented_scroll_extent(
+    mut scroll: Option<&mut UiScrollRuntimeState>,
+    motion: Option<&mut UiMotionRuntimeState>,
+    mounted: &mut WorthUiMountedSessionState,
+    interaction: &crate::runtime::interaction::UiInteractionRuntimeState,
+    settles: &super::scroll_settle_retry::UiOwedScrollSettles,
+    outcome: &UiMountedFrameOutcome,
+    now: u64,
+) {
+    retarget_presented_scroll_extent(scroll.as_deref_mut(), motion, mounted, outcome, now);
+    super::scroll_witness_invariant::debug_assert_scroll_geometry_witnessed(
+        super::UiScrollSettlementReading {
+            mounted,
+            scroll: scroll.as_deref(),
+        },
+        interaction,
+        settles,
+    );
+}
+
+fn retarget_presented_scroll_extent(
     scroll: Option<&mut UiScrollRuntimeState>,
     mut motion: Option<&mut UiMotionRuntimeState>,
     mounted: &mut WorthUiMountedSessionState,

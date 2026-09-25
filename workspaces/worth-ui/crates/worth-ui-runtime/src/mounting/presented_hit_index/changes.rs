@@ -9,6 +9,7 @@ pub(crate) struct UiPresentedHitChanges {
     previous: UiPresentedHitIndex,
     current: UiPresentedHitIndex,
     changed: BTreeMap<UiSurfaceBindingGeneration, BTreeSet<UiMountedInstanceIdentity>>,
+    shielding_changed: BTreeSet<UiSurfaceBindingGeneration>,
     comparison_steps: usize,
     comparison_key_probes: usize,
 }
@@ -37,9 +38,21 @@ impl UiPresentedHitChanges {
             previous,
             current,
             changed,
+            shielding_changed: BTreeSet::new(),
             comparison_steps: work.cursor_steps(),
             comparison_key_probes,
         }
+    }
+
+    /// These changes with a modal's input shielding changed on `bindings`.
+    /// Shielding decides what a point reaches without moving any row, so
+    /// every point on those bindings is affected.
+    pub(in crate::mounting) fn with_input_shielding_changed(
+        mut self,
+        bindings: BTreeSet<UiSurfaceBindingGeneration>,
+    ) -> Self {
+        self.shielding_changed = bindings;
+        self
     }
 
     pub(crate) const fn comparison_steps(&self) -> usize {
@@ -57,6 +70,9 @@ impl UiPresentedHitChanges {
         previous_target: Option<UiMountedInstanceIdentity>,
     ) -> Result<(bool, UiHitTestSpatialWork), UiPresentedHitQueryDenial> {
         let mut work = UiHitTestSpatialWork::default();
+        if self.shielding_changed.contains(&binding) {
+            return Ok((true, work));
+        }
         let Some(changed) = self.changed.get(&binding) else {
             return Ok((false, work));
         };

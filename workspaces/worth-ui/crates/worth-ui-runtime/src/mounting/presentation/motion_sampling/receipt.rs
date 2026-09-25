@@ -83,10 +83,11 @@ impl UiPresentationMotionPresentedSurface {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone)]
 pub(crate) struct UiPresentationMotionInstallationReceipt {
     sample: UiPresentationMotionSampleReceipt,
     terminal: Option<UiPresentationMotionTerminalRequest>,
+    hit_transition: Option<crate::mounting::UiCommittedPresentedHitTransition>,
 }
 
 impl UiPresentationMotionTerminalRequest {
@@ -341,13 +342,31 @@ impl UiPresentationMotionInstallationReceipt {
         sample: UiPresentationMotionSampleReceipt,
         terminal: Option<UiPresentationMotionTerminalRequest>,
     ) -> Self {
-        Self { sample, terminal }
+        Self {
+            sample,
+            terminal,
+            hit_transition: None,
+        }
     }
 
-    pub(crate) const fn sample(self) -> UiPresentationMotionSampleReceipt {
+    pub(crate) const fn sample(&self) -> UiPresentationMotionSampleReceipt {
         self.sample
     }
-    pub(crate) const fn terminal(self) -> Option<UiPresentationMotionTerminalRequest> {
+    pub(crate) const fn terminal(&self) -> Option<UiPresentationMotionTerminalRequest> {
         self.terminal
+    }
+
+    /// The hit rows the installed sample moved, for pointers to retest.
+    pub(crate) fn take_hit_transition(
+        &mut self,
+    ) -> Option<crate::mounting::UiCommittedPresentedHitTransition> {
+        self.hit_transition.take()
+    }
+
+    pub(in crate::mounting) fn record_hit_transition(
+        &mut self,
+        transition: Option<crate::mounting::UiCommittedPresentedHitTransition>,
+    ) {
+        self.hit_transition = transition;
     }
 }

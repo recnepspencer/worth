@@ -1,4 +1,5 @@
 mod appearance;
+pub(crate) use appearance::ancestor_clips_suppress;
 #[cfg(test)]
 pub(crate) use appearance::derive_unbound_ancestry;
 mod appearance_selection;

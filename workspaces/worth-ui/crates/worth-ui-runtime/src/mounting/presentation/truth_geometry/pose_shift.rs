@@ -38,11 +38,6 @@ impl UiScrollPoseShift {
     pub(crate) fn then(self, later: Self) -> Self {
         Self([self.0[0] + later.0[0], self.0[1] + later.0[1]])
     }
-
-    /// How much further this shift moved layout than `earlier` did.
-    pub(crate) fn beyond(self, earlier: Self) -> Self {
-        Self([self.0[0] - earlier.0[0], self.0[1] - earlier.0[1]])
-    }
 }
 
 impl UiPublishedRect {

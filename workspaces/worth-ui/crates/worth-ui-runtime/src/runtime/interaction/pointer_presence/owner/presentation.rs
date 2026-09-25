@@ -55,6 +55,39 @@ impl UiPointerPresenceOwner {
 }
 
 impl UiPointerPresenceOwner {
+    /// Each pointer whose recorded target is not what its position resolves
+    /// to on its surface's current presentation, as (recorded, resolved).
+    pub(crate) fn stale_targets(
+        &self,
+        mounted: &crate::mounting::WorthUiMountedSessionState,
+    ) -> Vec<(
+        Option<UiMountedInstanceIdentity>,
+        Option<UiMountedInstanceIdentity>,
+    )> {
+        let mut work = Default::default();
+        self.pointers
+            .values()
+            .filter_map(|record| {
+                let current = mounted
+                    .current_presentation_for_surface(record.surface)?
+                    .basis();
+                if current.binding() != record.binding {
+                    return None;
+                }
+                let resolved = UiPresentedPointerPosition::resolve(
+                    mounted,
+                    current,
+                    record.position,
+                    &mut work,
+                )
+                .ok()?
+                .target()
+                .map(|target| target.mounted_instance());
+                (resolved != record.target()).then_some((record.target(), resolved))
+            })
+            .collect()
+    }
+
     pub(crate) fn refresh_hit_transition(
         &mut self,
         changes: &crate::mounting::UiPresentedHitChanges,

@@ -50,6 +50,7 @@ fn current_offset(scroll: &ScrollWorld) -> UiScrollOffset {
     let incarnation = scroll
         .world
         .session
+        .mounted
         .scroll_region_incarnation(target, 0)
         .expect("the region occurrence has a current allocation");
     scroll

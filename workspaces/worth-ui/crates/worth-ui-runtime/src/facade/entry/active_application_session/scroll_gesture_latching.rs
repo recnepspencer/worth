@@ -213,9 +213,9 @@ impl WorthUiActiveApplicationSession {
         slot: usize,
     ) -> Option<crate::runtime::scroll::UiScrollOwnerIncarnation> {
         match owner {
-            crate::runtime::scroll::UiScrollOwnerIdentity::Region { .. } => {
-                self.scroll_region_incarnation(mounted_instance, slot)
-            }
+            crate::runtime::scroll::UiScrollOwnerIdentity::Region { .. } => self
+                .mounted
+                .scroll_region_incarnation(mounted_instance, slot),
             crate::runtime::scroll::UiScrollOwnerIdentity::Surface(_)
             | crate::runtime::scroll::UiScrollOwnerIdentity::Viewport(_) => {
                 Some(self.scroll_owner_incarnation())

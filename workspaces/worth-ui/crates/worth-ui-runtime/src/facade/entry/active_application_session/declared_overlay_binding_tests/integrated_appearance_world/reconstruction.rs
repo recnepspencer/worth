@@ -224,6 +224,11 @@ fn assert_original_text_ranges(
 
 // Shared physical recovery boundary; callers retain their own content/overlay oracle.
 pub(super) fn reconstruct_surface(world: &mut World) -> UiSurfaceBindingGeneration {
+    reconstruct_surface_at(world, 400)
+}
+
+/// The same recovery, presented at `now` for a caller that keeps its own clock.
+pub(super) fn reconstruct_surface_at(world: &mut World, now: u64) -> UiSurfaceBindingGeneration {
     let surface = world.surfaces[0];
     let presentation = world
         .session
@@ -288,7 +293,7 @@ pub(super) fn reconstruct_surface(world: &mut World) -> UiSurfaceBindingGenerati
             frame,
             &replacements,
             UiPresentationDeadline::at_tick(u64::MAX),
-            400,
+            now,
         )
         .unwrap();
     match outcome {

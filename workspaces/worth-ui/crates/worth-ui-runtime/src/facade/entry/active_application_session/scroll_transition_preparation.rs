@@ -97,8 +97,9 @@ impl super::super::WorthUiActiveApplicationSession {
     ///
     /// `receipt` is the zero-delta route this observation produced: it moved no
     /// offset, it only reconciled bounds and named the chain. The offset it
-    /// reports for the innermost owner is therefore still the accepted one, and
-    /// that is the basis this settle starts from.
+    /// reports for the innermost owner is therefore still the accepted one.
+    /// The settle starts from where the host shows the content, which is that
+    /// offset unless a settle is still owed; see [`Self::settle_basis`].
     ///
     /// `scroll` is the routed successor that receipt came from, not the
     /// session's installed state: the target stages into the candidate, and
@@ -153,7 +154,7 @@ impl super::super::WorthUiActiveApplicationSession {
             .map_err(UiScrollTransitionStagingDenial::Transition)?;
         let request = scroll_settle_motion_request(
             target,
-            accepted_offset,
+            self.settle_basis(owner, observation.mounted_instance, accepted_offset),
             observation.input_tick,
             UiScrollMotionBinding::new(
                 observation.mounted_instance,
@@ -172,6 +173,24 @@ impl super::super::WorthUiActiveApplicationSession {
             receipt.revision(),
         )
         .map_err(UiScrollTransitionStagingDenial::Publishable)
+    }
+
+    /// The offset a new settle departs from. A settle deferred behind a
+    /// publication in flight leaves the owner's accepted offset short of the
+    /// sample the host shows, and a settle that started from the accepted
+    /// offset would pull the content back to a pose the reader has already
+    /// seen it leave. While a displayed sample stands, it is the basis.
+    fn settle_basis(
+        &self,
+        owner: crate::runtime::scroll::UiScrollOwnerIdentity,
+        mounted_instance: worth_ui_host_contract::UiMountedInstanceIdentity,
+        accepted_offset: crate::runtime::scroll::UiScrollOffset,
+    ) -> crate::runtime::scroll::UiScrollOffset {
+        let target =
+            super::scroll_direct_control::scroll_content_motion_target(owner, mounted_instance);
+        self.scroll_settlement_reading()
+            .displayed_offset(target, owner.semantic_surface())
+            .map_or(accepted_offset, |displayed| displayed.settled())
     }
 
     /// The region's content box where an offset of zero places it. The owner

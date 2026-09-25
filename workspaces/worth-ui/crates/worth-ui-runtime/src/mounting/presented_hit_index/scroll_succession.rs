@@ -4,7 +4,41 @@ use super::*;
 #[cfg(test)]
 mod tests;
 
+impl Record {
+    /// This record with its row projected to `unscrolled` and moved by
+    /// `scroll_translation`, every Scroll pose committed since it was
+    /// published. The move is one step from the projection, as the
+    /// interaction basis takes it, so both lanes land the row on one rect.
+    pub(super) fn projected(
+        self,
+        unscrolled: Option<UiPresentedHitTestRow>,
+        scroll_translation: super::UiScrollPoseShift,
+    ) -> Self {
+        Self {
+            unscrolled,
+            effective: unscrolled.map(|row| row.scroll_translated(scroll_translation)),
+            scroll_translation,
+            ..self
+        }
+    }
+}
+
 impl UiPresentedHitIndex {
+    /// How far the Scroll poses committed since `instance`'s row was
+    /// published have moved it, in the binding the row belongs to. `None`
+    /// when the index holds no row for `instance` in that binding.
+    pub(in crate::mounting) fn committed_scroll_translation(
+        &self,
+        binding: UiSurfaceBindingGeneration,
+        instance: UiMountedInstanceIdentity,
+    ) -> (Option<super::UiScrollPoseShift>, usize) {
+        let (record, probes) = self.rows.get_with_probes(&instance);
+        let translation = record
+            .filter(|record| record.base.mounted().binding() == binding)
+            .map(|record| record.scroll_translation);
+        (translation, probes)
+    }
+
     pub(in crate::mounting) fn inherit_accepted_scroll(
         &mut self,
         previous: &Self,
@@ -28,21 +62,10 @@ impl UiPresentedHitIndex {
             {
                 continue;
             }
-            let delta = old.scroll_translation.beyond(new.scroll_translation);
-            let effective = new.effective.map(|row| row.scroll_translated(delta));
-            self.update_partition(new.base, new.effective, effective, 0, &mut work);
+            let next = new.projected(new.unscrolled, old.scroll_translation);
+            self.update_partition(new.base, new.effective, next.effective, 0, &mut work);
             work.scroll_rows_displaced += 1;
-            record_map(
-                &mut work,
-                self.rows.insert_with_work(
-                    instance,
-                    Record {
-                        effective,
-                        scroll_translation: old.scroll_translation,
-                        ..new
-                    },
-                ),
-            );
+            record_map(&mut work, self.rows.insert_with_work(instance, next));
         }
         work
     }

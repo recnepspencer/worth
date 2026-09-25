@@ -24,6 +24,11 @@ impl UiPortalStackOrdinal {
     pub(crate) const fn value(self) -> u64 {
         self.0
     }
+
+    #[cfg(test)]
+    pub(crate) const fn minted_for_test(value: u64) -> Self {
+        Self(value)
+    }
 }
 
 impl UiPortalStackOrdinalIssuer {

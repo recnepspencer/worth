@@ -38,13 +38,22 @@ impl super::WorthUiActiveApplicationSession {
                 .remove_displaced(displaced)
                 .expect("the physical-settlement gate admits only removable displaced exits");
         }
-        let installation = self
+        let mut installation = self
             .mounted
             .install_motion_commit(receipt)
             .expect("Motion capacity bounds sampling; a rebind carries every departed sample");
+        if let Some(transition) = installation.take_hit_transition() {
+            self.interaction
+                .observe_presented_hit_transition(&transition, &self.mounted);
+        }
         if let Some(terminal) = installation.terminal() {
             self.settle_motion_terminal_request(terminal);
         }
+        super::scroll_witness_invariant::debug_assert_scroll_geometry_witnessed(
+            self.scroll_settlement_reading(),
+            &self.interaction,
+            &self.owed_scroll_settles,
+        );
     }
 
     pub(in crate::facade::entry) fn release_rebound_portal_retention(
@@ -159,6 +168,11 @@ impl super::WorthUiActiveApplicationSession {
                 // pointer can derive a grab and retire the sample.
                 let settled = self.settle_accepted_scroll_sample(presented);
                 self.settle_owed_scroll_samples_beside(presented.semantic_surface());
+                super::scroll_witness_invariant::debug_assert_scroll_geometry_witnessed(
+                    self.scroll_settlement_reading(),
+                    &self.interaction,
+                    &self.owed_scroll_settles,
+                );
                 Some(settled)
             }
             crate::mounting::UiMountedMotionSampleSettlement::Discarded => {

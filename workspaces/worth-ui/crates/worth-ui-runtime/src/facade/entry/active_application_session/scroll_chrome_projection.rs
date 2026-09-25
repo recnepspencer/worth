@@ -203,7 +203,9 @@ impl super::super::WorthUiActiveApplicationSession {
         };
         let bounds =
             crate::runtime::scroll::UiScrollBounds::from_mounted_region(content, viewport)?;
-        let incarnation = self.scroll_region_incarnation(mounted_instance, slot)?;
+        let incarnation = self
+            .mounted
+            .scroll_region_incarnation(mounted_instance, slot)?;
         // The mounted pose, not the semantic offset: the thumb reports where
         // the content already is. Under the immediate policy the two coincide;
         // under a settling one the pose is the last displayed sample and the

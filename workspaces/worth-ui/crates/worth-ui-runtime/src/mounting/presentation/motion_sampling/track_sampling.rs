@@ -46,12 +46,19 @@ enum UiTrackScreen {
     Unpresented { showing: Option<UiTrackGeometry> },
     /// The host shows the current sample, drawn at `showing`.
     OnScreen { showing: Option<UiTrackGeometry> },
+    /// The host shows the sample this track departed from, drawn at
+    /// `showing`, and no tick has sampled the track since. A tick that was
+    /// in flight when the track departed may still land and show a later
+    /// sample to depart from instead.
+    Departed { showing: Option<UiTrackGeometry> },
 }
 
 impl UiTrackScreen {
     const fn showing(self) -> Option<UiTrackGeometry> {
         match self {
-            Self::Unpresented { showing } | Self::OnScreen { showing } => showing,
+            Self::Unpresented { showing }
+            | Self::OnScreen { showing }
+            | Self::Departed { showing } => showing,
         }
     }
 
@@ -64,7 +71,7 @@ impl UiPresentationTrackState {
     /// The current sample, only while the host shows it.
     pub(super) const fn on_screen(&self) -> Option<super::UiPresentationMotionSampleReceipt> {
         match self.screen {
-            UiTrackScreen::OnScreen { .. } => Some(self.current),
+            UiTrackScreen::OnScreen { .. } | UiTrackScreen::Departed { .. } => Some(self.current),
             UiTrackScreen::Unpresented { .. } => None,
         }
     }
@@ -87,12 +94,17 @@ impl UiPresentationTrackState {
 
     /// Whether this track is exactly as it was installed: no tick has sampled
     /// it and no frame has accepted its initial sample. A retarget's clock is
-    /// set at installation, so only presentation tells; a snapped track is
-    /// already terminal and never starts.
+    /// set at installation, so only presentation tells. A track that departed
+    /// from the sample on screen shows that sample, not one of its own, so it
+    /// is still unstarted. A snapped track is already terminal and never
+    /// starts.
     pub(super) const fn is_unstarted(&self) -> bool {
         matches!(
             (self.motion, self.screen),
-            (UiTrackMotion::Running(_), UiTrackScreen::Unpresented { .. })
+            (
+                UiTrackMotion::Running(_),
+                UiTrackScreen::Unpresented { .. } | UiTrackScreen::Departed { .. }
+            )
         )
     }
 

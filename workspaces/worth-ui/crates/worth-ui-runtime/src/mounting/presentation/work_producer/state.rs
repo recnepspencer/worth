@@ -58,6 +58,12 @@ impl UiMountedPresentationState {
         self.requirement.semantic_surface()
     }
 
+    /// This presentation published an entrance that its Motion commit has
+    /// not yet installed.
+    pub(in crate::mounting::presentation) const fn awaits_entrance_commit(&self) -> bool {
+        self.entrance_acceptance.is_some()
+    }
+
     #[cfg(any(test, feature = "certification-support"))]
     pub(crate) fn from_projection(
         projection: &UiMountedProjectionView,

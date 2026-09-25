@@ -110,6 +110,14 @@ impl UiRetainedPresentedFrame {
         self.visual_regions.presented_hits.clone()
     }
 
+    /// What a modal on `binding` admits, if one shields input there.
+    pub(super) fn modal_input_admission(
+        &self,
+        binding: UiSurfaceBindingGeneration,
+    ) -> Option<crate::mounting::visual_region_basis::UiModalInputAdmission> {
+        self.visual_regions.modal_input_admission(binding)
+    }
+
     pub(super) fn hit_presentations(
         &self,
     ) -> Vec<(

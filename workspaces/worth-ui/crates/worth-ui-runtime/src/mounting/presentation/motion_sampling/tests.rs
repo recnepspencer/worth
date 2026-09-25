@@ -201,10 +201,10 @@ fn active_track_capacity_denies_before_mutating_the_sampler() {
         10_000,
     );
 
-    assert_eq!(
+    assert!(matches!(
         sampler.install(world.receipt_for_target(10_000, overflow)),
         Err(UiPresentationMotionSamplingDenial::TrackCapacityExceeded)
-    );
+    ));
     let after = sampler.certification_observation();
     assert_eq!(after.0, before.0);
     assert_eq!(after.1, before.1);

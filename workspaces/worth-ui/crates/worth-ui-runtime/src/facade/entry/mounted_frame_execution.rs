@@ -260,6 +260,8 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
                     execution.scroll.as_deref_mut(),
                     execution.motion.as_deref_mut(),
                     execution.mounted,
+                    &*execution.interaction,
+                    execution.owed_scroll_settles,
                     &outcome,
                     now,
                 );

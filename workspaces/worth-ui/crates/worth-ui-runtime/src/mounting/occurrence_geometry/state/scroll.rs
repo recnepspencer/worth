@@ -108,11 +108,13 @@ impl UiMountedOccurrenceGeometryState {
         }
         let mut rows = Vec::with_capacity(translations.len());
         let mut moved = Vec::with_capacity(translations.len());
+        let mut changes_coverage = false;
         for (instance, shift) in &translations {
             let Some(row) = geometry.occurrences.get(instance) else {
                 continue;
             };
             moved.push((*instance, *shift));
+            let suppressed = suppresses(row);
             let mut row = row.clone();
             row.bounds = UiPublishedRect::box_following_pose(row.bounds, *shift);
             for (binding, clip) in row
@@ -140,6 +142,7 @@ impl UiMountedOccurrenceGeometryState {
                     }
                 }
             }
+            changes_coverage |= suppresses(&row) != suppressed;
             rows.push((*instance, row));
         }
         let mut regions = Vec::new();
@@ -160,6 +163,7 @@ impl UiMountedOccurrenceGeometryState {
             rows,
             regions,
             translations: moved,
+            changes_coverage,
             work,
         })
     }
@@ -276,6 +280,7 @@ pub(crate) struct UiPreparedMountedScrollPose {
         UiMountedCanonicalBox,
     )>,
     translations: Vec<(UiMountedInstanceIdentity, UiScrollPoseShift)>,
+    changes_coverage: bool,
     work: crate::mounting::UiHitTestSpatialWork,
 }
 
@@ -286,6 +291,14 @@ impl UiPreparedMountedScrollPose {
 
     pub(crate) fn changed_instances(&self) -> Box<[UiMountedInstanceIdentity]> {
         self.rows.iter().map(|row| row.0).collect()
+    }
+
+    /// Whether this pose moves any occurrence's ancestor clips across the
+    /// line between sharing coverage and sharing none. Content that crosses
+    /// it is paint the host was never given, or paint it must retire, and a
+    /// displayed sample can do neither.
+    pub(crate) const fn changes_coverage(&self) -> bool {
+        self.changes_coverage
     }
 
     pub(crate) const fn surface(&self) -> UiSemanticSurfaceIdentity {
@@ -301,6 +314,16 @@ impl UiPreparedMountedScrollPose {
     pub(crate) fn translations(&self) -> &[(UiMountedInstanceIdentity, UiScrollPoseShift)] {
         &self.translations
     }
+}
+
+/// Whether an occurrence's ancestor clips suppress it, read as clip
+/// derivation reads them. An unresolved Scroll clip suppresses nothing.
+fn suppresses(row: &UiMountedOccurrenceGeometryRow) -> bool {
+    row.scroll_clips.as_deref().is_ok_and(|scroll| {
+        crate::mounting::projection::ancestor_clips_suppress(
+            row.mosaic_clips.iter().chain(scroll).copied(),
+        )
+    })
 }
 
 /// One committed box moved onto the device grid at the allocation projection

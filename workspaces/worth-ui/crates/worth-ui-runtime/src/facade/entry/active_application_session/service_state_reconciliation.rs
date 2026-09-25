@@ -100,8 +100,9 @@ impl WorthUiActiveApplicationSession {
                 };
                 let incarnation = match owner {
                     crate::runtime::scroll::UiScrollOwnerIdentity::Region { .. } => {
-                        let Some(incarnation) =
-                            self.scroll_region_incarnation(mounted_instance, slot)
+                        let Some(incarnation) = self
+                            .mounted
+                            .scroll_region_incarnation(mounted_instance, slot)
                         else {
                             registrations.clear();
                             break;

@@ -74,6 +74,7 @@ impl ScrollWorld {
         );
         let incarnation = world
             .session
+            .mounted
             .scroll_region_incarnation(target, 0)
             .expect("the region occurrence has a current allocation");
         Self {
@@ -333,7 +334,8 @@ fn an_accepted_sample_settles_to_its_displacement_from_a_nonzero_rest() {
     let owner = scroll
         .world
         .session
-        .scroll_settlement_owner(motion_target, surface)
+        .scroll_settlement_reading()
+        .owner(motion_target, surface)
         .expect("this surface's Scroll content resolves")
         .expect("this surface's Scroll content is not foreign");
     assert_eq!(owner.owner_instance, target);
@@ -367,7 +369,7 @@ fn an_accepted_sample_settles_to_its_displacement_from_a_nonzero_rest() {
     );
     assert!(
         matches!(
-            scroll.world.session.scroll_settlement_owner(
+            scroll.world.session.scroll_settlement_reading().owner(
                 UiMotionTargetIdentity::from_mounted_owner(surface, target, key),
                 surface,
             ),

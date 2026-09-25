@@ -114,4 +114,16 @@ impl UiPresentedHitIndex {
             .collect();
         Ok(UiPresentedHitQuery { rows, work })
     }
+
+    /// Every row a point on `binding` can land on, found by a full scan
+    /// rather than the spatial index.
+    pub(in crate::mounting) fn rows_on(
+        &self,
+        binding: UiSurfaceBindingGeneration,
+    ) -> impl Iterator<Item = UiPresentedHitTestRow> + '_ {
+        self.rows
+            .iter()
+            .filter_map(|(_, record)| record.effective)
+            .filter(move |row| row.mounted().binding() == binding)
+    }
 }

@@ -64,6 +64,26 @@ impl UiMountedFrameRetentionCoordinator {
         Ok(row)
     }
 
+    /// Every row the presented hit index holds for `presentation`, whether
+    /// or not a modal shields it, attributed as interaction reads it.
+    pub(in crate::mounting) fn indexed_hit_rows(
+        &self,
+        presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
+    ) -> Result<Vec<crate::mounting::UiPresentedHitTestRow>, UiPresentedFrameBasisDenial> {
+        let authority = self.authority.borrow();
+        let surface = authority.surface_for_current_presentation(presentation)?;
+        let evidence = authority
+            .surface_evidence(surface)
+            .ok_or(UiPresentedFrameBasisDenial::Unknown)?;
+        evidence.classify(presentation, None, None)?;
+        let basis = evidence.visual_region_basis(presentation.binding());
+        Ok(basis
+            .presented_hits
+            .rows_on(presentation.binding())
+            .map(|row| row.reattributed(evidence.receipts()).0)
+            .collect())
+    }
+
     pub(in crate::mounting) fn current_presentation_for_surface(
         &self,
         surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,

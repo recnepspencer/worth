@@ -170,14 +170,27 @@ pub(in super::super) fn install_scrollable_primary_with_shorter_content(
     surfaces: [UiSemanticSurfaceIdentity; 2],
     instances: [UiMountedInstanceIdentity; 5],
 ) {
+    install_scrollable_primary_with_travel(session, surfaces, instances, 25, 5.0);
+}
+
+/// The nested World relaid out at `revision` with `travel` points of block
+/// travel: the first component is exactly that much taller than the region
+/// showing it, and the nested component keeps its place inside the region.
+pub(in super::super) fn install_scrollable_primary_with_travel(
+    session: &mut WorthUiActiveApplicationSession,
+    surfaces: [UiSemanticSurfaceIdentity; 2],
+    instances: [UiMountedInstanceIdentity; 5],
+    revision: u64,
+    travel: f32,
+) {
     let mut boxes = BOXES;
-    boxes[0][3] = SCROLLABLE_PRIMARY_REGION[3] + 5.0;
+    boxes[0][3] = SCROLLABLE_PRIMARY_REGION[3] + travel;
     boxes[2] = NESTED_CONTENT_BOX;
     install_with_child_region(
         session,
         surfaces,
         instances,
-        25,
+        revision,
         boxes,
         RegionOverrides {
             child: None,

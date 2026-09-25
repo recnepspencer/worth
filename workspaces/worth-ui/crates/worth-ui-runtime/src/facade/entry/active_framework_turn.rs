@@ -50,6 +50,7 @@ pub struct WorthUiActiveFrameworkTurnCompletion<'session> {
         Result<super::active_application_session::UiActiveOverlayAppearancePreparation, ()>,
     pub(super) motion: Option<&'session mut crate::runtime::motion::UiMotionRuntimeState>,
     pub(super) scroll: Option<&'session mut crate::runtime::scroll::UiScrollRuntimeState>,
+    pub(super) owed_scroll_settles: &'session super::active_application_session::UiOwedScrollSettles,
 }
 
 /// Executable framework-turn authority lent by one active application session.
@@ -90,6 +91,7 @@ pub struct WorthUiActiveFrameworkTurnExecution<'session> {
         Result<super::active_application_session::UiActiveOverlayAppearancePreparation, ()>,
     pub(super) motion: Option<&'session mut crate::runtime::motion::UiMotionRuntimeState>,
     pub(super) scroll: Option<&'session mut crate::runtime::scroll::UiScrollRuntimeState>,
+    pub(super) owed_scroll_settles: &'session super::active_application_session::UiOwedScrollSettles,
     pub(super) host_protocol: worth_ui_host_contract::UiHostProtocolAgreement,
     pub(super) host_capability_generation:
         worth_ui_host_contract::WorthUiHostCapabilityObservationGeneration,
@@ -138,6 +140,7 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
             overlay_appearance,
             motion,
             scroll,
+            owed_scroll_settles,
         } = self;
         let host_protocol = host_session.protocol();
         let capability_report = host_session.capability_report();
@@ -171,6 +174,7 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
                 overlay_appearance,
                 motion,
                 scroll,
+                owed_scroll_settles,
                 host_protocol,
                 host_capability_generation: capability_report.observation_generation(),
                 host_capability_profile_digest: capability_report.profile_identity_digest(),
@@ -205,6 +209,7 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
                 overlay_appearance,
                 motion,
                 scroll,
+                owed_scroll_settles,
             })),
         }
     }

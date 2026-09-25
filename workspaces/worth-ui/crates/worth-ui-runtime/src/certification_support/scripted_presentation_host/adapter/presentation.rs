@@ -135,6 +135,12 @@ impl ScriptedPresentationHost {
                             acknowledgement.acknowledge_foreign_view(request),
                         )
                     }
+                    ScriptedPresentationOutcome::PresentedNativeDisplayAsIssued => {
+                        UiHostSurfacePresentationOutcome::Presented(
+                            ScriptedPresentationAcknowledgement::native_display_as_issued(request)
+                                .acknowledge_view(request),
+                        )
+                    }
                     ScriptedPresentationOutcome::PresentationIndeterminate => {
                         UiHostSurfacePresentationOutcome::PresentationIndeterminate
                     }

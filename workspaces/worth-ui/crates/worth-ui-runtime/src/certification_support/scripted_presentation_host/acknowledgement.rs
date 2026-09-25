@@ -5,8 +5,8 @@
 use worth_ui_host_contract::{
     UiHostPresentationCompletionToken, UiHostPresentationCostReport, UiHostPresentationEpoch,
     UiHostSurfacePresentationDenial, UiHostSurfacePresentationMode, UiMountedCompletedEffects,
-    UiMountedFrameConsumptionInput, UiMountedFrameConsumptionView,
-    UiMountedSurfacePresentationCompletion,
+    UiMountedEffectFamily, UiMountedFrameConsumptionInput, UiMountedFrameConsumptionView,
+    UiMountedPresentationWorkView, UiMountedSurfacePresentationCompletion,
 };
 
 pub struct ScriptedPresentationAcknowledgement {
@@ -23,6 +23,10 @@ pub enum ScriptedPresentationOutcome {
     /// identity: the same attempt, requirement and frame, under a seal no
     /// runtime lease issued. Only the runtime's own issuance is admissible.
     PresentedFromForeignView(ScriptedPresentationAcknowledgement),
+    /// A native display host acknowledges the work it was issued as it did
+    /// it: it paints when that work paints, and settles without painting when
+    /// the work moves nothing it draws.
+    PresentedNativeDisplayAsIssued,
     PresentationIndeterminate,
 }
 
@@ -39,6 +43,36 @@ impl ScriptedPresentationAcknowledgement {
             effects,
             cost,
         }
+    }
+
+    /// What a native display host reports for `view`: paint exactly when the
+    /// issued work carries any, and otherwise a settle with nothing presented.
+    pub(super) fn native_display_as_issued(view: &UiMountedFrameConsumptionView<'_>) -> Self {
+        let paints = match view.presentation_work() {
+            UiMountedPresentationWorkView::Initial(_)
+            | UiMountedPresentationWorkView::Reconstruction(_) => true,
+            UiMountedPresentationWorkView::Delta(work) => {
+                !work.changes().is_empty() || !work.order().is_empty() || !work.damage().is_empty()
+            }
+            UiMountedPresentationWorkView::Sample(work) => {
+                !work.changes().is_empty() || !work.damage().is_empty()
+            }
+            UiMountedPresentationWorkView::Unchanged(_) => false,
+        };
+        let (effects, cost) = if paints {
+            (
+                vec![UiMountedEffectFamily::NativePaint],
+                super::scripted_presentation_cost(),
+            )
+        } else {
+            (Vec::new(), UiHostPresentationCostReport::default())
+        };
+        Self::new(
+            UiHostSurfacePresentationMode::NativeDisplay,
+            super::scripted_presentation_epoch(),
+            UiMountedCompletedEffects::new(effects),
+            cost,
+        )
     }
 
     #[expect(

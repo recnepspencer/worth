@@ -121,9 +121,14 @@ impl UiMountedFrameRetentionCoordinator {
         authority.frames.surface_frames.remove(&surface);
     }
 
+    /// The rows interaction reads, where the retained witness shows them:
+    /// committed geometry, moved by the on-screen Motion samples when
+    /// `motion` is given, then by every Scroll pose committed since the
+    /// frame published them.
     pub(crate) fn interaction_hit_test_basis(
         &self,
         presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
+        motion: Option<&crate::mounting::presentation::motion_sampling::UiMountedMotionSampler>,
     ) -> Result<UiPresentedHitTestBasis, UiPresentedFrameBasisDenial> {
         let authority = self.authority.borrow();
         let (evidence, relation) = match authority.frame(presentation.frame()) {
@@ -138,10 +143,13 @@ impl UiMountedFrameRetentionCoordinator {
             }
         };
         let displayed = evidence.classify(presentation, None, None)?;
-        let rows = evidence
-            .visual_region_basis(presentation.binding())
-            .hit_test();
-        Ok(UiPresentedHitTestBasis::new(displayed, relation, rows))
+        let regions = evidence.visual_region_basis(presentation.binding());
+        let mut basis = UiPresentedHitTestBasis::new(displayed, relation, regions.hit_test());
+        if let Some(sampler) = motion {
+            basis.apply_motion_samples(sampler);
+        }
+        basis.follow_committed_scroll_poses(&regions.presented_hits);
+        Ok(basis)
     }
 
     pub(crate) fn presented_portal_overlay(

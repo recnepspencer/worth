@@ -35,6 +35,8 @@ pub(in crate::mounting) struct UiPresentedHitIndex {
 #[derive(Clone, Copy, PartialEq)]
 struct Record {
     base: UiPresentedHitTestRow,
+    /// The row as Motion projects it, before the committed Scroll poses.
+    unscrolled: Option<UiPresentedHitTestRow>,
     effective: Option<UiPresentedHitTestRow>,
     scroll_translation: UiScrollPoseShift,
 }
@@ -106,6 +108,7 @@ impl UiPresentedHitIndex {
                     instance,
                     Record {
                         base,
+                        unscrolled: Some(base),
                         effective: Some(base),
                         scroll_translation: UiScrollPoseShift::none(),
                     },
@@ -156,23 +159,10 @@ impl UiPresentedHitIndex {
                 continue;
             }
             work.motion_rows_projected += 1;
-            let (effective, tracks) = record.base.with_current_motion_work(sampler, displayed);
-            let effective = effective.map(|row| row.scroll_translated(record.scroll_translation));
+            let (unscrolled, tracks) = record.base.with_current_motion_work(sampler, displayed);
+            let next = record.projected(unscrolled, record.scroll_translation);
             work.motion_tracks_considered += tracks;
-            if same_place(effective, record.effective) {
-                continue;
-            }
-            self.update_partition(record.base, record.effective, effective, 0, &mut work);
-            record_map(
-                &mut work,
-                self.rows.insert_with_work(
-                    instance,
-                    Record {
-                        effective,
-                        ..record
-                    },
-                ),
-            );
+            self.store(instance, record, next, &mut work);
         }
         work
     }
@@ -198,32 +188,20 @@ impl UiPresentedHitIndex {
             if record.base.mounted().binding() != binding {
                 continue;
             }
-            // A row accepted Motion has hidden is not somewhere a pointer can
-            // land, so a scroll pose has no hit row of its own to move.
-            let Some(current) = record.effective else {
-                continue;
-            };
-            let effective = Some(current.scroll_translated(*translation));
+            // Every pose accumulates, even one that leaves the row where it
+            // was or moves a row Motion hides: a later pose or Motion
+            // projection moves the row from the sum.
+            let next = record.projected(
+                record.unscrolled,
+                record.scroll_translation.then(*translation),
+            );
             // A pose that lands a row exactly where it already was displaced
             // nothing, and is not counted. The count answers how much of the
-            // index this pose actually moved, so it has to be taken after the
-            // question is settled rather than before it is asked.
-            if same_place(effective, record.effective) {
-                continue;
+            // index this pose actually moved.
+            if !same_place(next.effective, record.effective) {
+                work.scroll_rows_displaced += 1;
             }
-            work.scroll_rows_displaced += 1;
-            self.update_partition(record.base, record.effective, effective, 0, &mut work);
-            record_map(
-                &mut work,
-                self.rows.insert_with_work(
-                    *instance,
-                    Record {
-                        effective,
-                        scroll_translation: record.scroll_translation.then(*translation),
-                        ..record
-                    },
-                ),
-            );
+            self.store(*instance, record, next, &mut work);
         }
         work
     }
@@ -244,23 +222,32 @@ impl UiPresentedHitIndex {
             work.map_key_probes += probes;
             let record = *record.expect("Portal target members retain their hit rows");
             work.motion_rows_projected += 1;
-            let effective = Some(record.base.with_prepared_entrance(entrance));
-            if same_place(record.effective, effective) {
-                continue;
-            }
-            self.update_partition(record.base, record.effective, effective, 0, &mut work);
-            record_map(
-                &mut work,
-                self.rows.insert_with_work(
-                    *instance,
-                    Record {
-                        effective,
-                        ..record
-                    },
-                ),
+            let next = record.projected(
+                Some(record.base.with_prepared_entrance(entrance)),
+                record.scroll_translation,
             );
+            self.store(*instance, record, next, &mut work);
         }
         work
+    }
+
+    /// Replace `record` with `next`. The spatial partition changes only when
+    /// the indexed row moves; the record keeps what it is projected from
+    /// either way.
+    fn store(
+        &mut self,
+        instance: UiMountedInstanceIdentity,
+        record: Record,
+        next: Record,
+        work: &mut UiHitTestSpatialWork,
+    ) {
+        if next == record {
+            return;
+        }
+        if !same_place(record.effective, next.effective) {
+            self.update_partition(record.base, record.effective, next.effective, 0, work);
+        }
+        record_map(work, self.rows.insert_with_work(instance, next));
     }
 
     fn update_partition(

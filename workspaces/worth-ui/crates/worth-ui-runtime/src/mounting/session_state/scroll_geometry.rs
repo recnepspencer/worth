@@ -64,6 +64,22 @@ impl super::WorthUiMountedSessionState {
         )
     }
 
+    /// The incarnation of the region owner at `slot` of `target`'s chain:
+    /// the mount incarnation of the occurrence that owns the region.
+    pub(crate) fn scroll_region_incarnation(
+        &self,
+        target: worth_ui_host_contract::UiMountedInstanceIdentity,
+        slot: usize,
+    ) -> Option<crate::runtime::scroll::UiScrollOwnerIncarnation> {
+        let (owner, _, _) = self.scroll_region_geometry(target, slot)?;
+        let basis = self.current_mounted_identity_basis(owner)?;
+        Some(
+            crate::runtime::scroll::UiScrollOwnerIncarnation::from_mount_incarnation(
+                basis.mount_incarnation(),
+            ),
+        )
+    }
+
     /// The Scroll region owner that `instance` travels with, when it is
     /// scrolled content rather than a region owner in its own right.
     pub(crate) fn scrolled_content_owner(
@@ -101,7 +117,8 @@ impl super::WorthUiMountedSessionState {
 
     /// A witness has already displayed these samples, so retained paint is
     /// already where they put it. Settle mounted geometry and hit rows to
-    /// them without scheduling that same paint a second time.
+    /// them without scheduling that same paint a second time, unless the pose
+    /// changes which content its ancestor clips suppress.
     pub(crate) fn apply_presented_scroll_geometries(
         &mut self,
         poses: &[(
@@ -157,11 +174,16 @@ impl super::WorthUiMountedSessionState {
                     .prepare_scroll_pose(surface, &poses)
             })
             .collect::<Result<Vec<_>, _>>()?;
+        // A sample only moves paint the host already holds. A pose that
+        // brings content out from under disjoint clips, or hides it there,
+        // owes that paint, and it owes the whole pose as a direct edit does,
+        // so committed geometry never mixes two poses.
         let changed = prepared
             .iter()
+            .filter(|pose| owes_paint || pose.changes_coverage())
             .flat_map(|pose| pose.changed_instances().into_vec())
             .collect::<Vec<_>>();
-        if owes_paint && !changed.is_empty() {
+        if !changed.is_empty() {
             self.identity
                 .mark_occurrence_geometry_changed(&changed)
                 .map_err(|_| Denial::StateRevisionExhausted)?;

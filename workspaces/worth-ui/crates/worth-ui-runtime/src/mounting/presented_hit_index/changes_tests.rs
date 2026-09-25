@@ -127,3 +127,48 @@ fn hit_changes_distinguish_receipt_refresh_order_change_and_local_query_exhausti
         matches!(changes.affects(binding, point(25.0, 25.0), None), Err(UiPresentedHitQueryDenial::CandidateBudget { work }) if work.region_tests > 256)
     );
 }
+
+#[test]
+fn changed_input_shielding_affects_every_point_on_its_binding() {
+    let frame = UiMountedFrameIdentity::mint_unbound().unwrap();
+    let issuer = UiMountedNodeReceiptIssuer::mint_for(frame).unwrap();
+    let surface = UiSemanticSurfaceIdentity::mint_unbound().unwrap();
+    let shielded = UiSurfaceBindingGeneration::mint_unbound().unwrap();
+    let other = UiSurfaceBindingGeneration::mint_unbound().unwrap();
+    let background = UiMountedInstanceIdentity::mint_unbound().unwrap();
+    let mut index = UiPresentedHitIndex::default();
+    index.replace_base(
+        background,
+        Some(row(
+            issuer,
+            shielded,
+            surface,
+            background,
+            1,
+            [0.0, 0.0, 10.0, 10.0],
+        )),
+    );
+    let unmoved = UiPresentedHitChanges::between(index.clone(), index.clone());
+    assert!(
+        !unmoved
+            .affects(shielded, point(5.0, 5.0), Some(background))
+            .unwrap()
+            .0
+    );
+    // A modal shields the background without moving its row.
+    let changes = UiPresentedHitChanges::between(index.clone(), index)
+        .with_input_shielding_changed([shielded].into());
+    assert!(
+        changes
+            .affects(shielded, point(5.0, 5.0), Some(background))
+            .unwrap()
+            .0
+    );
+    assert!(
+        changes
+            .affects(shielded, point(50.0, 50.0), None)
+            .unwrap()
+            .0
+    );
+    assert!(!changes.affects(other, point(5.0, 5.0), None).unwrap().0);
+}

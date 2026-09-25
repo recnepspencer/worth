@@ -102,7 +102,7 @@ fn staged_target(scroll: &ScrollWorld) -> Option<UiScrollOffset> {
         .map(|target| target.target_offset())
 }
 
-fn notch(scroll: &mut ScrollWorld, tick: u64) {
+pub(super) fn notch(scroll: &mut ScrollWorld, tick: u64) {
     let outcome = scroll.wheel(ONE_NOTCH, one_notch_up(), tick);
     assert!(
         matches!(outcome, UiHostScrollObservationOutcome::Applied(_)),
@@ -113,7 +113,7 @@ fn notch(scroll: &mut ScrollWorld, tick: u64) {
 
 /// Run frames `first..=last` after `notch_tick`, each of which must apply its
 /// accepted sample and display exactly the offset Scroll holds.
-fn applied_frames(scroll: &mut ScrollWorld, notch_tick: u64, first: u64, last: u64) {
+pub(super) fn applied_frames(scroll: &mut ScrollWorld, notch_tick: u64, first: u64, last: u64) {
     for elapsed in first..=last {
         assert_eq!(
             settle_frame(scroll, notch_tick + elapsed),
@@ -210,61 +210,6 @@ fn a_settle_frame_refused_mid_presentation_is_owed_and_paid_by_the_next() {
     assert_eq!(
         scroll.accepted_offset(),
         block(i64::from(LINE_EXTENT_POINTS))
-    );
-    let _ = scroll.world.session.shutdown();
-}
-
-/// A settle owed to one surface generation is never paid on another. Once the
-/// host has rebound the surface, the geometry the witness proved is gone, so
-/// the owed settle is released rather than landed on the new generation.
-#[test]
-fn a_settle_owed_to_a_rebound_generation_is_released_not_paid() {
-    let mut scroll = smooth_world(true);
-    notch(&mut scroll, NOTCH_TICK);
-    applied_frames(&mut scroll, NOTCH_TICK, 1, 2);
-    let pending = scroll.hold_presentation_open(NOTCH_TICK + 3);
-    assert_eq!(
-        settle_frame(&mut scroll, NOTCH_TICK + 3),
-        UiScrollSettleDisposition::DeferredPresentationInFlight
-    );
-    scroll.complete(pending, NOTCH_TICK + 4);
-    let binding = scroll.presentation().binding();
-    scroll
-        .world
-        .session
-        .rebind_host_surface_with_interaction_receipt(
-            binding,
-            worth_ui_host_contract::UiHostSurfacePresentationMode::NativeDisplay,
-            crate::mounting::UiSurfaceBindingProfile::new(
-                1_000,
-                crate::mounting::UiSurfaceBindingCoordinatePosture::LogicalPoints,
-                2,
-            )
-            .expect("a second binding profile"),
-        )
-        .expect("a presented surface rebinds");
-    let accepted = scroll.accepted_offset();
-    let displayed = scroll.mounted_offset();
-
-    assert_eq!(
-        owed_frame(&mut scroll),
-        UiScrollSettleDisposition::Superseded
-    );
-    assert_eq!(
-        scroll.accepted_offset(),
-        accepted,
-        "a released settle moves nothing"
-    );
-    assert_eq!(scroll.mounted_offset(), displayed);
-    assert!(!scroll.world.session.awaits_scroll_settle_retry());
-    assert_eq!(
-        scroll.world.session.last_scroll_settle_disposition(),
-        UiScrollSettleDisposition::Superseded
-    );
-    assert_eq!(
-        owed_frame(&mut scroll),
-        UiScrollSettleDisposition::Idle,
-        "a released settle is not owed again"
     );
     let _ = scroll.world.session.shutdown();
 }

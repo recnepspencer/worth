@@ -1,4 +1,5 @@
 mod input_shielding;
+pub(in crate::mounting) use input_shielding::UiModalInputAdmission;
 mod text_paint;
 
 #[derive(Clone)]

@@ -82,6 +82,24 @@ impl UiPresentedHitTestBasis {
         &self.rows
     }
 
+    /// Move every row by the Scroll poses committed since its frame published
+    /// it, as the presented hit index moved the same row. Motion projects from
+    /// committed geometry, so this follows any Motion sample already applied.
+    pub(in crate::mounting) fn follow_committed_scroll_poses(
+        &mut self,
+        index: &crate::mounting::presented_hit_index::UiPresentedHitIndex,
+    ) {
+        let binding = self.displayed.binding();
+        for row in &mut self.rows {
+            let (translation, probes) =
+                index.committed_scroll_translation(binding, row.mounted_instance());
+            self.query_work.map_key_probes += probes;
+            if let Some(translation) = translation {
+                *row = row.scroll_translated(translation);
+            }
+        }
+    }
+
     pub(crate) fn apply_motion_samples(
         &mut self,
         sampler: &crate::mounting::presentation::motion_sampling::UiMountedMotionSampler,

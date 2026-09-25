@@ -120,6 +120,8 @@ impl WorthUiActiveApplicationSession {
             self.scroll.as_mut(),
             self.motion.as_mut(),
             &mut self.mounted,
+            &self.interaction,
+            &self.owed_scroll_settles,
             outcome,
             now,
         );

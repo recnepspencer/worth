@@ -96,35 +96,10 @@ pub(crate) fn derive_unbound_ancestry(
             ))
         }
     };
-    let mut clips = mosaic_clips
-        .iter()
-        .copied()
-        .chain(scroll_clips.iter().copied());
-    let mut clip = None;
-    for bounds in &mut clips {
-        let bounds = match super::geometry::allocation(bounds) {
-            Ok(bounds) => bounds,
-            Err(
-                super::UiMountedAppearanceGeometryDenial::AllocationHasNoArea
-                | super::UiMountedAppearanceGeometryDenial::EmptyAtCanonicalPrecision,
-            ) => return Ok((UiMountedAppearanceClip::Suppressed, entries)),
-            Err(denial) => {
-                return Ok((
-                    UiMountedAppearanceClip::Unresolved(Denial::Geometry(denial)),
-                    entries,
-                ))
-            }
-        };
-        let bounds = UiAppearanceClip::new(bounds.x(), bounds.y(), bounds.width(), bounds.height())
-            .expect("canonical ancestor geometry has area");
-        clip = match clip {
-            None => Some(bounds),
-            Some(current) => match intersect_clips(current, bounds) {
-                Some(intersection) => Some(intersection),
-                None => return Ok((UiMountedAppearanceClip::Suppressed, entries)),
-            },
-        };
-    }
+    let clip = match intersect_ancestor_clips(mosaic_clips.iter().chain(scroll_clips).copied()) {
+        Ok(clip) => clip,
+        Err(clip) => return Ok((clip, entries)),
+    };
     Ok((
         clip.map_or_else(
             || {
@@ -136,6 +111,50 @@ pub(crate) fn derive_unbound_ancestry(
         ),
         entries,
     ))
+}
+
+/// Whether ancestor clips hide everything they enclose: one has no area, or
+/// together they share no coverage. Scroll moves clips, so a new pose can
+/// change the answer; clip derivation and a Scroll pose read this one rule.
+pub(crate) fn ancestor_clips_suppress(
+    clips: impl IntoIterator<Item = worth_ui_host_contract::UiMountedCanonicalBox>,
+) -> bool {
+    matches!(
+        intersect_ancestor_clips(clips),
+        Err(UiMountedAppearanceClip::Suppressed)
+    )
+}
+
+/// The coverage ancestor clips share, in order, or `None` when there are
+/// none. A clip with no area or no shared coverage suppresses, and geometry
+/// that cannot be read leaves the clip unresolved.
+fn intersect_ancestor_clips(
+    clips: impl IntoIterator<Item = worth_ui_host_contract::UiMountedCanonicalBox>,
+) -> Result<Option<UiAppearanceClip>, UiMountedAppearanceClip> {
+    use super::UiMountedAppearanceGeometryDenial as Geometry;
+    let mut clip = None;
+    for bounds in clips {
+        let bounds = match super::geometry::allocation(bounds) {
+            Ok(bounds) => bounds,
+            Err(Geometry::AllocationHasNoArea | Geometry::EmptyAtCanonicalPrecision) => {
+                return Err(UiMountedAppearanceClip::Suppressed)
+            }
+            Err(denial) => {
+                return Err(UiMountedAppearanceClip::Unresolved(
+                    UiMountedAppearanceClipDenial::Geometry(denial),
+                ))
+            }
+        };
+        let bounds = UiAppearanceClip::new(bounds.x(), bounds.y(), bounds.width(), bounds.height())
+            .expect("canonical ancestor geometry has area");
+        clip = match clip {
+            None => Some(bounds),
+            Some(current) => {
+                Some(intersect_clips(current, bounds).ok_or(UiMountedAppearanceClip::Suppressed)?)
+            }
+        };
+    }
+    Ok(clip)
 }
 
 pub(super) fn intersect_clips(

@@ -46,6 +46,8 @@ impl<'session> WorthUiPreparedMountedPreview<'session> {
             ports.scroll.as_deref_mut(),
             ports.motion.as_deref_mut(),
             ports.mounted,
+            ports.interaction,
+            ports.owed_scroll_settles,
             &outcome,
             now,
         );
@@ -111,6 +113,8 @@ impl<'session> WorthUiMountedPreviewInFlight<'session> {
             ports.scroll.as_deref_mut(),
             ports.motion.as_deref_mut(),
             ports.mounted,
+            ports.interaction,
+            ports.owed_scroll_settles,
             &outcome,
             now,
         );

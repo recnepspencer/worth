@@ -32,6 +32,15 @@ impl UiMountedPresentationCoordinator {
         state.retained_scroll_chrome_geometry(target)
     }
 
+    pub(in crate::mounting) fn awaits_entrance_commit(
+        &self,
+        binding: UiSurfaceBindingGeneration,
+    ) -> bool {
+        self.presentation_states
+            .get(&binding)
+            .is_some_and(|state| state.awaits_entrance_commit())
+    }
+
     pub(in crate::mounting) fn accept_published_entrance(
         &mut self,
         sample: super::super::motion_sampling::UiPresentationMotionSampleReceipt,

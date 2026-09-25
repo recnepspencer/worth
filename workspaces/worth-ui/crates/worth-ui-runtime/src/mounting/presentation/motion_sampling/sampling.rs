@@ -161,7 +161,8 @@ impl UiMountedMotionSampler {
             }
         };
         let interruption_tick = self.last_tick.unwrap_or(0);
-        let current = self.tracks.get(&target).and_then(|state| {
+        let predecessor = self.tracks.get(&target).copied();
+        let current = predecessor.as_ref().and_then(|state| {
             state
                 .is_running()
                 .then(|| super::interruption::UiPresentationInterruptedSample {
@@ -201,8 +202,18 @@ impl UiMountedMotionSampler {
                     )),
                 ),
             };
+        // A successor that departs from the sample the host shows starts on
+        // screen there, as a landing tick's departure does; left unpresented,
+        // it hid that sample from the Scroll settle and from hit testing.
         let state = match built {
-            Ok(state) => state,
+            Ok(mut state) => {
+                if terminal.is_none() {
+                    if let Some(predecessor) = &predecessor {
+                        state.depart_on_screen(predecessor);
+                    }
+                }
+                state
+            }
             Err(denial) => {
                 return self.deny(UiPresentationMotionSamplingDenial::InvalidSampleGeometry(
                     denial,

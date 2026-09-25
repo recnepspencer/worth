@@ -29,7 +29,8 @@ mod text_geometry;
 pub(crate) use text_geometry::{UiMountedAppearanceTextGeometry, UiMountedAppearanceTextSpanInput};
 
 pub(crate) use clip::{
-    derive_unbound_ancestry, UiMountedAppearanceClip, UiMountedAppearanceClipDenial,
+    ancestor_clips_suppress, derive_unbound_ancestry, UiMountedAppearanceClip,
+    UiMountedAppearanceClipDenial,
 };
 pub(crate) use delta::UiMountedAppearanceDeltaSummary;
 pub(crate) use fact::{

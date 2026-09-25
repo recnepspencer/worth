@@ -1,14 +1,49 @@
+use crate::runtime::portal::UiPortalStackOrdinal;
 use worth_ui_host_contract::{
     UiMountedInstanceIdentity, UiMountedPortalInputShielding,
     UiMountedPortalOverlayLifecyclePosture, UiSurfaceBindingGeneration,
 };
 
+#[cfg(test)]
+mod tests;
+
+/// What a modal on one binding admits: its input floor, and every Visible
+/// Portal at or above it. Two frames that agree on it shield the same rows.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(in crate::mounting) struct UiModalInputAdmission {
+    floor: UiPortalStackOrdinal,
+    portals: std::collections::BTreeSet<u64>,
+}
+
 impl super::UiMountedVisualRegionBasis {
+    /// What the modal on `binding` admits, or `None` when no modal shields
+    /// input there and every row admits it.
+    pub(in crate::mounting) fn modal_input_admission(
+        &self,
+        binding: UiSurfaceBindingGeneration,
+    ) -> Option<UiModalInputAdmission> {
+        let floor = self.modal_input_floor(binding, &mut Default::default())?;
+        let portals = self
+            .portal_overlays
+            .iter()
+            .filter(|portal| {
+                portal.binding() == binding
+                    && portal.lifecycle() == UiMountedPortalOverlayLifecyclePosture::Visible
+                    && self
+                        .portal_input_order
+                        .get(&portal.portal_identity())
+                        .is_some_and(|ordinal| *ordinal >= floor)
+            })
+            .map(|portal| portal.portal_identity())
+            .collect();
+        Some(UiModalInputAdmission { floor, portals })
+    }
+
     pub(in crate::mounting) fn modal_input_floor(
         &self,
         binding: UiSurfaceBindingGeneration,
         work: &mut crate::mounting::UiHitTestSpatialWork,
-    ) -> Option<crate::runtime::portal::UiPortalStackOrdinal> {
+    ) -> Option<UiPortalStackOrdinal> {
         self.portal_overlays
             .iter()
             .filter_map(|portal| {
@@ -29,7 +64,7 @@ impl super::UiMountedVisualRegionBasis {
     pub(in crate::mounting) fn admits_modal_input(
         &self,
         instance: UiMountedInstanceIdentity,
-        floor: Option<crate::runtime::portal::UiPortalStackOrdinal>,
+        floor: Option<UiPortalStackOrdinal>,
     ) -> bool {
         let Some(floor) = floor else {
             return true;

@@ -66,14 +66,16 @@ impl super::UiPresentationTrackState {
         &mut self,
         on_screen: &Self,
     ) {
-        if let UiTrackScreen::OnScreen { showing } = on_screen.screen {
+        if let UiTrackScreen::OnScreen { showing } | UiTrackScreen::Departed { showing } =
+            on_screen.screen
+        {
             let departs_from_screen = match (self.current_geometry(), on_screen.current_geometry())
             {
                 (Some(departure), Some(shown)) => departure.occupies_same_rect(shown),
                 (departure, shown) => departure.is_none() && shown.is_none(),
             };
             if departs_from_screen {
-                self.screen = UiTrackScreen::OnScreen { showing };
+                self.screen = UiTrackScreen::Departed { showing };
             }
         }
     }

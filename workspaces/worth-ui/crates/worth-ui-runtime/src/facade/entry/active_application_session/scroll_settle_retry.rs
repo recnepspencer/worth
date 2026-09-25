@@ -8,23 +8,26 @@
 //! exactly as when a tick is discarded. The next committed tick settles the
 //! new generation against its own witness.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use super::UiScrollSettleDisposition;
 use crate::mounting::presentation::motion_sampling::UiPresentationMotionPresentedSurface;
 use worth_ui_host_contract::UiSemanticSurfaceIdentity;
 
 /// The accepted Scroll samples still owed to the displayed pose, keyed by the
-/// semantic surface whose witness committed them.
+/// semantic surface whose witness committed them, and the surfaces whose last
+/// settle was refused.
 #[derive(Debug)]
 pub(in crate::facade::entry) struct UiOwedScrollSettles {
     owed: BTreeMap<UiSemanticSurfaceIdentity, UiPresentationMotionPresentedSurface>,
+    refused: BTreeSet<UiSemanticSurfaceIdentity>,
 }
 
 impl UiOwedScrollSettles {
     pub(super) const fn none() -> Self {
         Self {
             owed: BTreeMap::new(),
+            refused: BTreeSet::new(),
         }
     }
 
@@ -35,6 +38,22 @@ impl UiOwedScrollSettles {
 
     pub(super) fn paid(&mut self, surface: UiSemanticSurfaceIdentity) {
         self.owed.remove(&surface);
+        self.refused.remove(&surface);
+    }
+
+    /// The settle `surface` was owed is closed without landing: its
+    /// disposition reports the refusal until a later settle is paid there.
+    pub(super) fn refused(&mut self, surface: UiSemanticSurfaceIdentity) {
+        self.owed.remove(&surface);
+        self.refused.insert(surface);
+    }
+
+    pub(super) fn owes(&self, surface: UiSemanticSurfaceIdentity) -> bool {
+        self.owed.contains_key(&surface)
+    }
+
+    pub(super) fn refuses(&self, surface: UiSemanticSurfaceIdentity) -> bool {
+        self.refused.contains(&surface)
     }
 }
 
@@ -61,6 +80,22 @@ impl super::super::WorthUiActiveApplicationSession {
         committed: UiSemanticSurfaceIdentity,
     ) {
         self.settle_owed_scroll_samples_where(|surface| surface != committed);
+    }
+
+    /// Pay what `surface` is owed while the generation its witness committed
+    /// is still the one displayed. A rebind calls this before it ends that
+    /// generation: the host shows the sample and the surface stays on screen,
+    /// so the content stops there. A debt left for later would be released
+    /// unpaid, leaving the pose short of what the reader last saw.
+    ///
+    /// Deregistering a surface, or recovering one whose presentation is
+    /// indeterminate, releases the debt unpaid instead: no successor shows
+    /// the surface, or no witness proves what the host shows.
+    pub(in crate::facade::entry) fn settle_owed_scroll_sample_before_ending(
+        &mut self,
+        surface: UiSemanticSurfaceIdentity,
+    ) {
+        self.settle_owed_scroll_samples_where(|owed| owed == surface);
     }
 
     fn settle_owed_scroll_samples_where(

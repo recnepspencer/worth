@@ -98,6 +98,9 @@ impl WorthUiActiveApplicationSession {
         mode: UiHostSurfacePresentationMode,
         profile: UiSurfaceBindingProfile,
     ) -> Result<UiSurfaceRebindInteractionReceipt, UiSurfaceRebindInteractionDenial> {
+        if let Some(surface) = self.mounted.current_surface_for_binding(binding) {
+            self.settle_owed_scroll_sample_before_ending(surface);
+        }
         let (semantic_surface, host_surface) = self
             .mounted
             .deregister_host_surface_for_rebind(&self.host_session, binding)

@@ -69,6 +69,7 @@ struct WorthUiMountedPreviewPorts<'session> {
     portal: Option<&'session mut crate::runtime::portal::UiPortalRuntimeState>,
     interaction: &'session mut crate::runtime::interaction::UiInteractionRuntimeState,
     host_exchange: &'session mut crate::host_exchange::WorthUiHostExchangeSessionState,
+    owed_scroll_settles: &'session super::active_application_session::UiOwedScrollSettles,
 }
 
 #[derive(Debug, PartialEq)]

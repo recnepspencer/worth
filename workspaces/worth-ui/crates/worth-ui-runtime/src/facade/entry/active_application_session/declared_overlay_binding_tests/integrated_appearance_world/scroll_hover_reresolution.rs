@@ -27,7 +27,7 @@ use worth_ui_host_contract::{
 /// Where the pointer rests: inside the first component and five points below
 /// the top edge its region shares with it, which is seven points above the
 /// nested component at rest.
-const RESTING_POINT: [i64; 2] = [
+pub(super) const RESTING_POINT: [i64; 2] = [
     150 * UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
     55 * UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
 ];
@@ -44,7 +44,7 @@ fn wheel_travel() -> i64 {
 
 /// Put one pointer at the resting point and leave it there. Every later
 /// assertion reads the same pointer without the host reporting it again.
-fn rest_pointer_on_the_component(scroll: &mut ScrollWorld, sequence: u64) {
+pub(super) fn rest_pointer_on_the_component(scroll: &mut ScrollWorld, sequence: u64) {
     let basis = scroll.presentation();
     let batch = super::stationary_motion::inputs::pointer_batch(
         scroll.world.session.host_session.identity().as_u64(),
@@ -64,7 +64,7 @@ fn rest_pointer_on_the_component(scroll: &mut ScrollWorld, sequence: u64) {
 }
 
 /// What the resting pointer is currently over.
-fn hovered(scroll: &ScrollWorld) -> Option<UiMountedInstanceIdentity> {
+pub(super) fn hovered(scroll: &ScrollWorld) -> Option<UiMountedInstanceIdentity> {
     scroll
         .world
         .session
@@ -182,6 +182,7 @@ fn a_settle_hands_the_pointer_over_only_once_the_content_has_arrived() {
     let incarnation = scroll
         .world
         .session
+        .mounted
         .scroll_region_incarnation(scroll.target(), 0)
         .unwrap();
     assert_eq!(

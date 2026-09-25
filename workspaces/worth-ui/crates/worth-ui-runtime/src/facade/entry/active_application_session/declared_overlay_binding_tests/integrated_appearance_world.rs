@@ -25,6 +25,8 @@ mod geometry;
 mod hostile_protocol;
 #[path = "integrated_appearance_world/input_completion_order.rs"]
 mod input_completion_order;
+#[path = "integrated_appearance_world/interleaving_model.rs"]
+mod interleaving_model;
 #[path = "integrated_appearance_world/locality.rs"]
 mod locality;
 #[path = "integrated_appearance_world/modal_pointer_shielding.rs"]
@@ -95,6 +97,8 @@ mod scroll_settle_commit;
 mod scroll_settle_frame;
 #[path = "integrated_appearance_world/scroll_settle_over_open_attempt.rs"]
 mod scroll_settle_over_open_attempt;
+#[path = "integrated_appearance_world/scroll_settle_rebind.rs"]
+mod scroll_settle_rebind;
 #[path = "integrated_appearance_world/scroll_settlement_lifecycle.rs"]
 mod scroll_settlement_lifecycle;
 #[path = "integrated_appearance_world/seam.rs"]

@@ -37,6 +37,7 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
             overlay_appearance,
             motion,
             scroll,
+            owed_scroll_settles,
         } = self;
         let preview_theme_observation = presentation.preview_theme_observation();
         match completion.into_pending_mounted_preview() {
@@ -65,6 +66,7 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
                     portal,
                     interaction,
                     host_exchange,
+                    owed_scroll_settles,
                 },
             }),
             Err(completion) => Err(Box::new(Self {
@@ -97,6 +99,7 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
                 overlay_appearance,
                 motion,
                 scroll,
+                owed_scroll_settles,
             })),
         }
     }

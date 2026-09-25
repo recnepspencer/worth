@@ -214,6 +214,12 @@ impl ScriptedPresentationHost {
         ));
     }
 
+    /// A native display acknowledgement that reports the paint the issued
+    /// work carries, whatever that turns out to be.
+    pub fn push_native_display_as_issued(&self) {
+        self.push_presentation(ScriptedPresentationOutcome::PresentedNativeDisplayAsIssued);
+    }
+
     pub fn push_native_display_settled_without_effects(&self) {
         self.push_presentation(ScriptedPresentationOutcome::Presented(
             ScriptedPresentationAcknowledgement::new(

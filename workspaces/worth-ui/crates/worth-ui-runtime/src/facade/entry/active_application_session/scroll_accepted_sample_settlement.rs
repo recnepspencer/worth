@@ -107,7 +107,8 @@ impl super::super::WorthUiActiveApplicationSession {
         let mut refusal = None;
         for (target, sample) in accepted {
             let settlement = self
-                .scroll_settlement_owner(target, surface)
+                .scroll_settlement_reading()
+                .owner(target, surface)
                 .and_then(|owner| {
                     owner
                         .map(|owner| {
@@ -126,10 +127,13 @@ impl super::super::WorthUiActiveApplicationSession {
             }
         }
         if settlements.is_empty() {
-            self.owed_scroll_settles.paid(presented.semantic_surface());
-            return refusal.map_or(UiScrollSettleDisposition::Idle, |refusal| {
-                UiScrollSettleDisposition::Refused(refusal)
-            });
+            let Some(refusal) = refusal else {
+                self.owed_scroll_settles.paid(presented.semantic_surface());
+                return UiScrollSettleDisposition::Idle;
+            };
+            self.owed_scroll_settles
+                .refused(presented.semantic_surface());
+            return UiScrollSettleDisposition::Refused(refusal);
         }
         let poses = settlements
             .iter()
@@ -147,13 +151,16 @@ impl super::super::WorthUiActiveApplicationSession {
                     self.interaction
                         .observe_presented_hit_transition(transition, &self.mounted);
                 }
-                self.owed_scroll_settles.paid(presented.semantic_surface());
                 if let Err(write_back) = self.write_back_accepted_scroll_offsets(&settlements) {
                     refusal.get_or_insert(UiScrollSettleRefusal::WriteBack(write_back));
                 }
-                refusal.map_or(UiScrollSettleDisposition::Applied, |refusal| {
-                    UiScrollSettleDisposition::Refused(refusal)
-                })
+                let Some(refusal) = refusal else {
+                    self.owed_scroll_settles.paid(presented.semantic_surface());
+                    return UiScrollSettleDisposition::Applied;
+                };
+                self.owed_scroll_settles
+                    .refused(presented.semantic_surface());
+                UiScrollSettleDisposition::Refused(refusal)
             }
             Err(crate::mounting::UiMountedOccurrenceGeometryDenial::PresentationInFlight) => {
                 // The accepted sample is still true, so the settle is owed, not
@@ -162,7 +169,8 @@ impl super::super::WorthUiActiveApplicationSession {
                 UiScrollSettleDisposition::DeferredPresentationInFlight
             }
             Err(denial) => {
-                self.owed_scroll_settles.paid(presented.semantic_surface());
+                self.owed_scroll_settles
+                    .refused(presented.semantic_surface());
                 UiScrollSettleDisposition::Refused(UiScrollSettleRefusal::Geometry(denial))
             }
         }
@@ -179,22 +187,63 @@ impl super::super::WorthUiActiveApplicationSession {
         mounted_offset: crate::runtime::scroll::UiScrollOffset,
         owner_offset: Option<crate::runtime::scroll::UiScrollOffset>,
     ) -> bool {
-        let Some(sample) = self.mounted.accepted_scroll_group_sample(target) else {
+        if self.mounted.accepted_scroll_group_sample(target).is_none() {
             return true;
-        };
-        let Some(sample) = self
-            .mounted
-            .current_presentation_for_surface(surface)
-            .and_then(|displayed| UiDisplayedRect::displayed(sample, displayed).ok())
-        else {
-            return false;
-        };
-        matches!(
-            self.scroll_settlement_owner(target, surface)
-                .and_then(|owner| owner.map(|owner| owner.settle(sample)).transpose()),
-            Ok(Some(settled)) if settled.offset.stands_at(mounted_offset)
-                && owner_offset.is_some_and(|offset| settled.offset.stands_at(offset))
-        )
+        }
+        self.scroll_settlement_reading()
+            .displayed_offset(target, surface)
+            .is_some_and(|displayed| {
+                displayed.stands_at(mounted_offset)
+                    && owner_offset.is_some_and(|offset| displayed.stands_at(offset))
+            })
+    }
+
+    /// What a settlement reads, lent from this session.
+    pub(in crate::facade::entry) fn scroll_settlement_reading(
+        &self,
+    ) -> UiScrollSettlementReading<'_> {
+        UiScrollSettlementReading {
+            mounted: &self.mounted,
+            scroll: self.scroll.as_ref(),
+        }
+    }
+}
+
+/// What a Scroll settlement reads: mounted geometry and Scroll, and nothing
+/// else. A publication path that lends the session out in parts can read it
+/// as well as the session can.
+#[derive(Clone, Copy)]
+pub(in crate::facade::entry) struct UiScrollSettlementReading<'a> {
+    pub(in crate::facade::entry) mounted: &'a crate::mounting::WorthUiMountedSessionState,
+    pub(in crate::facade::entry) scroll: Option<&'a crate::runtime::scroll::UiScrollRuntimeState>,
+}
+
+impl UiScrollSettlementReading<'_> {
+    /// The offset the host shows one region's content group at: its accepted
+    /// sample as the surface's current witness displays it, measured from the
+    /// owner's rest box. `None` when no sample stands, no witness displays
+    /// it, or it resolves to no owner on `surface`.
+    pub(in crate::facade::entry) fn displayed_offset(
+        self,
+        target: UiMotionTargetIdentity,
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+    ) -> Option<UiDisplayedScrollOffset> {
+        let sample = self.displayed_sample(target, surface)?;
+        let owner = self.owner(target, surface).ok()??;
+        owner.settle(sample).ok().map(|settled| settled.offset)
+    }
+
+    /// One region's accepted content-group sample as the surface's current
+    /// witness displays it. `None` when no sample stands or that witness
+    /// does not display it.
+    pub(in crate::facade::entry) fn displayed_sample(
+        self,
+        target: UiMotionTargetIdentity,
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+    ) -> Option<UiDisplayedRect> {
+        let sample = self.mounted.accepted_scroll_group_sample(target)?;
+        let displayed = self.mounted.current_presentation_for_surface(surface)?;
+        UiDisplayedRect::displayed(sample, displayed).ok()
     }
 
     /// The region owner one accepted sample settles, and the rest box its
@@ -202,8 +251,8 @@ impl super::super::WorthUiActiveApplicationSession {
     ///
     /// `Ok(None)` names a sample that is not this surface's Scroll content at
     /// all; every failure to resolve a sample that is comes back typed.
-    pub(super) fn scroll_settlement_owner(
-        &self,
+    pub(in crate::facade::entry) fn owner(
+        self,
         target: UiMotionTargetIdentity,
         surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
     ) -> Result<Option<UiScrollSettlementOwner>, UiAcceptedScrollSettlementDenial> {
@@ -215,7 +264,6 @@ impl super::super::WorthUiActiveApplicationSession {
         let mounted_instance = target.mounted_instance();
         let scroll = self
             .scroll
-            .as_ref()
             .ok_or(UiAcceptedScrollSettlementDenial::ScrollUnavailable)?;
         let chain = scroll
             .ownership_chain(mounted_instance)
@@ -231,6 +279,7 @@ impl super::super::WorthUiActiveApplicationSession {
             .scroll_region_geometry(mounted_instance, slot)
             .ok_or(UiAcceptedScrollSettlementDenial::GeometryUnavailable)?;
         let incarnation = self
+            .mounted
             .scroll_region_incarnation(mounted_instance, slot)
             .ok_or(UiAcceptedScrollSettlementDenial::IncarnationUnavailable)?;
         Ok(Some(UiScrollSettlementOwner {

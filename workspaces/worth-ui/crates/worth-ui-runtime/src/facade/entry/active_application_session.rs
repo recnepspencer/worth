@@ -92,7 +92,9 @@ mod scroll_chrome_tests;
 mod scroll_direct_control;
 #[path = "active_application_session/scroll_extent_retarget.rs"]
 mod scroll_extent_retarget;
+pub(in crate::facade::entry) use scroll_accepted_sample_settlement::UiScrollSettlementReading;
 pub(in crate::facade::entry) use scroll_extent_retarget::settle_presented_scroll_extent;
+pub(in crate::facade::entry) use scroll_settle_retry::UiOwedScrollSettles;
 #[path = "active_application_session/scroll_geometry.rs"]
 mod scroll_geometry;
 #[path = "active_application_session/scroll_gesture_latching.rs"]
@@ -111,6 +113,8 @@ mod scroll_settle_retry;
 mod scroll_settlement_lifecycle;
 #[path = "active_application_session/scroll_target_resolution.rs"]
 mod scroll_target_resolution;
+#[path = "active_application_session/scroll_witness_invariant.rs"]
+mod scroll_witness_invariant;
 pub use scroll_settle_disposition::{
     UiAcceptedScrollSettlementDenial, UiScrollSettleDisposition, UiScrollSettleRefusal,
     UiScrollWriteBackRefusal,
@@ -340,6 +344,7 @@ impl WorthUiActiveApplicationSession {
             overlay_appearance,
             motion,
             scroll: self.scroll.as_mut(),
+            owed_scroll_settles: &self.owed_scroll_settles,
         })
     }
 }

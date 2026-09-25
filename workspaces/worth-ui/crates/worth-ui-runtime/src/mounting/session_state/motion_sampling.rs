@@ -61,7 +61,7 @@ impl WorthUiMountedSessionState {
         crate::mounting::presentation::motion_sampling::UiPresentationMotionInstallationReceipt,
         crate::mounting::presentation::motion_sampling::UiPresentationMotionSamplingDenial,
     > {
-        let installation = self.motion_sampling.install(receipt)?;
+        let mut installation = self.motion_sampling.install(receipt)?;
         let sample = installation.sample();
         // An entrance becomes displayed evidence only against the witness
         // that displayed its surface; without one it stays published.
@@ -72,6 +72,22 @@ impl WorthUiMountedSessionState {
                 .accept_published_entrance(sample, displayed)?
             {
                 self.motion_sampling.accept_published_entrance(sample);
+            }
+            // A track that departs on screen is what interaction reads from
+            // now on, so the hit index projects it now rather than at the
+            // next tick. Settled poses, not samples, move Scroll content rows.
+            // The index work is one target's projection and is not a tick's
+            // cost, so, as at a publication's refresh, it is not recorded.
+            let target = sample.target();
+            if target.scope() != crate::runtime::motion::UiMotionTargetScope::ScrollContents {
+                let frame = displayed.basis().frame();
+                let predecessor = self.retention.hit_evidence(frame);
+                let _ = self
+                    .retention
+                    .refresh_presented_hit_motion(&self.motion_sampling, &[target]);
+                installation.record_hit_transition(
+                    self.retention.committed_hit_transition(predecessor, frame),
+                );
             }
         }
         Ok(installation)
@@ -294,7 +310,9 @@ impl WorthUiMountedSessionState {
             return Err(crate::mounting::UiPresentedFrameBasisDenial::PresentationTruthUnavailable);
         }
         self.current_semantic_surface_for_presentation(presentation)?;
-        let hit_test = self.retention.interaction_hit_test_basis(presentation)?;
+        let hit_test = self
+            .retention
+            .interaction_hit_test_basis(presentation, None)?;
         if !hit_test
             .rows()
             .iter()
