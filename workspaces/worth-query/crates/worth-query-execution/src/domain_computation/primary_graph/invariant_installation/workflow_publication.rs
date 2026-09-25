@@ -11,13 +11,11 @@ use super::{
 pub(super) fn registration(
     layout: &WorthQueryWorkflowLayout,
 ) -> Result<CustomInvariantRegistration, WorthQueryPrimaryGraphInstallationDenial> {
-    crate::domain_computation::primary_graph::workflow::schema::publication_immutability_registration(
-        layout,
-    )
-    .map_err(|detail| {
-        denial(
-            WorthQueryPrimaryGraphInstallationDenialKind::InvariantFactoryRejected,
-            detail,
-        )
-    })
+    crate::domain_computation::primary_graph::workflow::schema::fact_custody_registration(layout)
+        .map_err(|detail| {
+            denial(
+                WorthQueryPrimaryGraphInstallationDenialKind::InvariantFactoryRejected,
+                detail,
+            )
+        })
 }

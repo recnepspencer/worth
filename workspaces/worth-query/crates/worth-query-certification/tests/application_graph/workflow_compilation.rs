@@ -37,17 +37,17 @@ fn native_membership_mutation_is_denied_without_poisoning_warm_compilation() {
         .runtime()
         .attempt_workflow_definition_membership_cycle_for_test(definition.definition())
         .expect_err("published membership must be immutable through the native writer");
-    assert_publication_immutability_denial(mutation);
+    assert_fact_custody_denial(mutation);
     let field_mutation = application
         .runtime()
         .attempt_workflow_node_field_update_for_test(definition.definition())
         .expect_err("published node meaning must be immutable through the native writer");
-    assert_publication_immutability_denial(field_mutation);
+    assert_fact_custody_denial(field_mutation);
     let attachment = application
         .runtime()
         .attempt_workflow_existing_node_attachment_for_test(definition.definition())
         .expect_err("a new definition must not attach an existing published node");
-    assert_publication_immutability_denial(attachment);
+    assert_membership_cardinality_denial(attachment);
 
     assert!(matches!(
         start_instance(&application, definition.definition().clone(), 1_203)
@@ -59,7 +59,7 @@ fn native_membership_mutation_is_denied_without_poisoning_warm_compilation() {
     assert_eq!(after.cold_misses(), before.cold_misses());
 }
 
-fn assert_publication_immutability_denial(error: TransactionCommitError) {
+fn assert_fact_custody_denial(error: TransactionCommitError) {
     let TransactionCommitError::Conflict { error, .. } = error else {
         panic!("expected a native invariant conflict, got {error:?}");
     };
@@ -73,5 +73,28 @@ fn assert_publication_immutability_denial(error: TransactionCommitError) {
     assert_eq!(
         identity.rule_id.as_str(),
         "worth-query.workflow.publication-immutability"
+    );
+}
+
+fn assert_membership_cardinality_denial(error: TransactionCommitError) {
+    let TransactionCommitError::Conflict { error, .. } = error else {
+        panic!("expected a native invariant conflict, got {error:?}");
+    };
+    let ConflictClass::InvariantViolation {
+        fields:
+            InvariantViolationFields::RelationCardinalityEndpoint {
+                contract_id,
+                count: 2,
+                limit: 1,
+                ..
+            },
+        ..
+    } = error.class
+    else {
+        panic!("expected the membership cardinality denial, got {error:?}");
+    };
+    assert_eq!(
+        contract_id.as_str(),
+        "worth-query-workflow-definition-node:cardinality"
     );
 }

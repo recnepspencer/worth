@@ -35,6 +35,8 @@ use super::bounded_dimension_model::{
 mod authentication;
 #[path = "workflow_approval/commit_boundary.rs"]
 mod commit_boundary;
+#[path = "workflow_approval/custody.rs"]
+mod custody;
 #[path = "workflow_approval/effect_currentness.rs"]
 mod effect_currentness;
 #[path = "workflow_approval/journey.rs"]
