@@ -32,7 +32,10 @@ pub use assessment::{
     accept_assessment, accept_early_assessment, prepare_early_assessment_denial, settle_assessment,
     settle_assessment_for, settle_early_assessment_for, spoofed_assessment_denial,
 };
-pub use authentication::{install_certification_authentication, CertificationAuthenticationOwner};
+pub use authentication::{
+    install_certification_authentication, install_certification_authentication_with_clock,
+    CertificationAuthenticationClockSource, CertificationAuthenticationOwner,
+};
 pub use declaration::{
     seed_authoring, ReviewedGeometryWorkflow, WorkflowDefinitionAuthoringCapability,
     WorkflowDefinitionAuthoringInput, WorkflowDefinitionAuthoringOperation,

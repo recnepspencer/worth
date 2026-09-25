@@ -26,15 +26,36 @@ impl WorthQueryNamedClock for CertificationAuthenticationClock {
 
 pub struct CertificationAuthenticationClockSource {
     started: Instant,
-    sequence: AtomicU64,
+    sequence: Arc<AtomicU64>,
+    offset_nanoseconds: Arc<AtomicU64>,
+}
+
+impl Clone for CertificationAuthenticationClockSource {
+    fn clone(&self) -> Self {
+        Self {
+            started: self.started,
+            sequence: Arc::clone(&self.sequence),
+            offset_nanoseconds: Arc::clone(&self.offset_nanoseconds),
+        }
+    }
 }
 
 impl CertificationAuthenticationClockSource {
     fn new() -> Self {
         Self {
             started: Instant::now(),
-            sequence: AtomicU64::new(1),
+            sequence: Arc::new(AtomicU64::new(1)),
+            offset_nanoseconds: Arc::new(AtomicU64::new(0)),
         }
+    }
+
+    pub fn advance_for_test(&self, duration: Duration) {
+        let additional = u64::try_from(duration.as_nanos()).expect("finite test clock advance");
+        self.offset_nanoseconds
+            .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |previous| {
+                previous.checked_add(additional)
+            })
+            .expect("finite test clock offset");
     }
 }
 
@@ -59,7 +80,12 @@ impl WorthQueryNamedClockSource<CertificationAuthenticationClock>
     > {
         Ok(WorthQueryNamedClockReading::new(
             self.sequence.fetch_add(1, Ordering::SeqCst),
-            WorthQueryClockCoordinate::from_nanoseconds(self.started.elapsed().as_nanos() as u64),
+            WorthQueryClockCoordinate::from_nanoseconds(
+                u64::try_from(self.started.elapsed().as_nanos())
+                    .expect("finite test clock lifetime")
+                    .checked_add(self.offset_nanoseconds.load(Ordering::SeqCst))
+                    .expect("finite test clock coordinate"),
+            ),
         ))
     }
 }
@@ -102,7 +128,17 @@ pub type CertificationAuthenticationOwner = Arc<
 pub fn install_certification_authentication(
     schema: &WorthQueryInstalledApplicationSchema<BoundedDimensionSchema>,
 ) -> CertificationAuthenticationOwner {
-    Arc::new(
+    install_certification_authentication_with_clock(schema).0
+}
+
+pub fn install_certification_authentication_with_clock(
+    schema: &WorthQueryInstalledApplicationSchema<BoundedDimensionSchema>,
+) -> (
+    CertificationAuthenticationOwner,
+    CertificationAuthenticationClockSource,
+) {
+    let clock = CertificationAuthenticationClockSource::new();
+    let owner = Arc::new(
         install_authentication_event_owner::<
             BoundedDimensionSchema,
             CertificationAuthenticationClock,
@@ -110,7 +146,7 @@ pub fn install_certification_authentication(
             _,
         >(
             schema,
-            CertificationAuthenticationClockSource::new(),
+            clock.clone(),
             CertificationAuthenticationVerifier,
             WorthQueryAuthenticationEventPolicy::new(
                 Duration::from_secs(60),
@@ -120,5 +156,6 @@ pub fn install_certification_authentication(
             NonZeroUsize::new(128).unwrap(),
         )
         .unwrap(),
-    )
+    );
+    (owner, clock)
 }
