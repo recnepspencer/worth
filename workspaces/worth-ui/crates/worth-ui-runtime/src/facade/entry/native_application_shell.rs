@@ -40,6 +40,10 @@ mod service_inspection;
 pub use service_inspection::WorthUiNativeReducedMotionPosture;
 #[path = "native_application_shell/shutdown.rs"]
 mod shutdown;
+#[path = "native_application_shell/surface_reconciliation.rs"]
+mod surface_reconciliation;
+#[path = "native_application_shell/viewport_extent.rs"]
+mod viewport_extent;
 #[path = "native_application_shell/viewport_measurement.rs"]
 mod viewport_measurement;
 use mounted_row::NativeMountedRow;
@@ -56,9 +60,8 @@ pub struct WorthUiNativeApplicationShell {
     scale_factor_milli: u32,
     mounted_rows: Vec<NativeMountedRow>,
     mounted_row_indices: HashMap<Box<str>, usize>,
-    observed_viewport_basis: Option<viewport_measurement::UiNativeViewportBasis>,
-    pending_viewport_basis: Option<viewport_measurement::UiNativeViewportBasis>,
-    pending_surface_reconciliation: Option<crate::mounting::UiMountedSurfaceReconciliationBinding>,
+    viewport: viewport_extent::UiNativeViewportExtent,
+    surface_reconciliation: surface_reconciliation::UiNativeSurfaceReconciliation,
     runtime_derived_state_reconstruction:
         Option<worth_ui_host_native::UiNativeClientDerivedStateReconstructionObservation>,
     pub(super) pending_managed_rebind:
@@ -112,7 +115,7 @@ impl WorthUiNativeApplicationShell {
         scale_factor_milli: u32,
     ) -> Result<(), ()> {
         self.refresh_native_surface_reconciliation();
-        if self.pending_surface_reconciliation.is_some() {
+        if self.pending_native_surface_reconciliation().is_some() {
             return Err(());
         }
         if self.scale_factor_milli == scale_factor_milli {
@@ -122,12 +125,7 @@ impl WorthUiNativeApplicationShell {
     }
 
     fn replace_native_surface_binding(&mut self, scale_factor_milli: u32) -> Result<(), ()> {
-        // An unpublished replacement may itself need recovery. Reconcile its
-        // successor against the still-published binding, not the failed candidate.
-        let affected = self
-            .pending_surface_reconciliation
-            .map(|replacement| replacement.affected())
-            .unwrap_or(self.binding);
+        let published = self.binding;
         let scale_changed = self.scale_factor_milli != scale_factor_milli;
         let profile = UiSurfaceBindingProfile::new(
             scale_factor_milli,
@@ -161,12 +159,11 @@ impl WorthUiNativeApplicationShell {
             }
             Err(_) => return Err(()),
         };
+        // The shell moves to the replacement that `replace` records below.
         self.binding = rebound.binding_generation();
         self.scale_factor_milli = scale_factor_milli;
         self.observe_native_viewport_binding_successor(scale_changed);
-        self.pending_surface_reconciliation = Some(
-            crate::mounting::UiMountedSurfaceReconciliationBinding::new(affected, self.binding),
-        );
+        self.surface_reconciliation.replace(published, self.binding);
         Ok(())
     }
 
@@ -226,9 +223,9 @@ impl WorthUiNativeApplicationShell {
                     UiPresentationDeadline::at_tick(deadline_tick),
                     now_tick,
                 )?;
-            if surface_reconciliation_settled(&outcome) {
-                self.pending_surface_reconciliation = None;
-            }
+            // The stop borrows the session, so the landing borrows only its owner.
+            self.surface_reconciliation
+                .land_outcome(self.binding, &outcome);
             return Ok(outcome);
         }
         let outcome = self
@@ -373,10 +370,10 @@ impl WorthUiNativeApplicationShell {
         outcome
     }
 
+    /// Lands `outcome` on the replacement binding still owed a publication.
     pub(super) fn settle_surface_reconciliation(&mut self, outcome: &UiMountedFrameOutcome) {
-        if surface_reconciliation_settled(outcome) {
-            self.pending_surface_reconciliation = None;
-        }
+        self.surface_reconciliation
+            .land_outcome(self.binding, outcome);
     }
 
     pub fn generation_identity(
@@ -385,13 +382,4 @@ impl WorthUiNativeApplicationShell {
     {
         self.session.generation_identity()
     }
-}
-
-fn surface_reconciliation_settled(outcome: &UiMountedFrameOutcome) -> bool {
-    matches!(
-        outcome,
-        UiMountedFrameOutcome::Published(_)
-            | UiMountedFrameOutcome::Unchanged(_)
-            | UiMountedFrameOutcome::Reconciled(_)
-    )
 }

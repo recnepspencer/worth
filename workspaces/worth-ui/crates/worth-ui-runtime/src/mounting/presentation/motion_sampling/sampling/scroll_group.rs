@@ -10,12 +10,7 @@ impl UiMountedMotionSampler {
         tick: u64,
     ) -> Result<(), super::super::UiPresentationGeometrySamplingDenial> {
         assert_eq!(target.scope(), UiMotionTargetScope::ScrollContents);
-        self.note_owner_change(target);
-        let state = self
-            .tracks
-            .get_mut(&target)
-            .expect("extent retarget was installed");
-        state.rebase_presented_extent(tick)
+        self.tracks.rebase_extent(target, tick)
     }
 
     /// The accepted translation of one Scroll region's scrolled content, in the
@@ -40,8 +35,8 @@ impl UiMountedMotionSampler {
 impl UiMountedMotionSampler {
     /// Forget one Scroll content group's track outright, active or settled, so
     /// direct pointer control of that group meets no sample fighting it. The
-    /// retirement is remembered until the next commit, because a tick prepared
-    /// before it would otherwise reinstate the track.
+    /// table records the retirement, so a tick prepared before it cannot
+    /// reinstate the track.
     ///
     /// Only a Scroll-content target is retired this way; direct control has no
     /// claim on a component or Portal track sharing the mounted instance.
@@ -49,7 +44,6 @@ impl UiMountedMotionSampler {
         if target.scope() != UiMotionTargetScope::ScrollContents {
             return false;
         }
-        self.note_owner_change(target);
-        self.tracks.remove(&target).is_some()
+        self.tracks.retire(target).is_some()
     }
 }

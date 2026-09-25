@@ -11,7 +11,7 @@ impl UiMountedMotionSampler {
         usize,
     ) {
         let mut considered = 0;
-        let mut matches = self.tracks.values().filter_map(|state| {
+        let mut matches = self.tracks.states().filter_map(|state| {
             considered += 1;
             // A contents-group target names a group placed inside the
             // instance, not the instance itself, so it can never answer a

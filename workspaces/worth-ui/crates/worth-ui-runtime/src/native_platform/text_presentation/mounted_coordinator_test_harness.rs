@@ -61,6 +61,25 @@ pub(super) fn present<'work>(
     prepared: &'work UiNativeTextPresentationPrepared,
     layout: &'work worth_ui_text::UiQualifiedTextLayout,
 ) -> UiNativeMountedSurfaceTextObservation {
+    present_with(
+        coordinator,
+        work,
+        requirement,
+        prepared,
+        layout,
+        presented_outcome,
+    )
+}
+
+/// Presents `work` to a host that answers with `outcome`.
+pub(super) fn present_with<'work>(
+    coordinator: &mut UiNativeMountedTextCoordinator,
+    work: UiMountedPresentationWorkView<'work>,
+    requirement: UiMountedSurfaceBindingRequirement,
+    prepared: &'work UiNativeTextPresentationPrepared,
+    layout: &'work worth_ui_text::UiQualifiedTextLayout,
+    outcome: fn(&UiMountedFrameConsumptionView<'_>) -> UiHostSurfacePresentationOutcome,
+) -> UiNativeMountedSurfaceTextObservation {
     let attempt = UiMountedPresentationAttemptIdentity::mint_unbound().unwrap();
     let host_lineage = lineage(work, requirement);
     coordinator
@@ -83,11 +102,7 @@ pub(super) fn present<'work>(
                 if bases.len() == 1 && !bases[0].pin_additions().is_empty() {
                     admit_all_raster_misses(text_raster_work);
                 }
-                (
-                    presented_outcome(&view),
-                    bases,
-                    Vec::new().into_boxed_slice(),
-                )
+                (outcome(&view), bases, Vec::new().into_boxed_slice())
             },
         )
         .expect("mounted text transaction is prepared")
@@ -134,6 +149,18 @@ fn presented_outcome(view: &UiMountedFrameConsumptionView<'_>) -> UiHostSurfaceP
         UiMountedCompletedEffects::new(Vec::new()),
         UiHostPresentationCostReport::default(),
     ))
+}
+
+pub(super) fn physical_surface_in_flight(
+    view: &UiMountedFrameConsumptionView<'_>,
+) -> UiHostSurfacePresentationOutcome {
+    UiHostSurfacePresentationOutcome::InFlight(view.issue_completion_token())
+}
+
+pub(super) fn text_atlas_in_flight(
+    view: &UiMountedFrameConsumptionView<'_>,
+) -> UiHostSurfacePresentationOutcome {
+    UiHostSurfacePresentationOutcome::InFlight(view.issue_text_atlas_completion_token())
 }
 
 fn consumption_view<'work>(

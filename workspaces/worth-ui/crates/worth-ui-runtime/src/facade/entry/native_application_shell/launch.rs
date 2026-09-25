@@ -126,9 +126,9 @@ impl WorthUiApp {
             scale_factor_milli,
             mounted_rows: configured.mounted_rows,
             mounted_row_indices: configured.mounted_row_indices,
-            observed_viewport_basis: None,
-            pending_viewport_basis: None,
-            pending_surface_reconciliation: None,
+            viewport: super::viewport_extent::UiNativeViewportExtent::new(),
+            surface_reconciliation:
+                super::surface_reconciliation::UiNativeSurfaceReconciliation::new(),
             runtime_derived_state_reconstruction: None,
             pending_managed_rebind: None,
             retained_portal_dismissal: None,

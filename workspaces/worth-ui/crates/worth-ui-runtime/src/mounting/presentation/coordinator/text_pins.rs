@@ -30,8 +30,6 @@ pub(crate) struct UiMountedTextPinCandidate {
     next_binding: UiMountedBindingPins,
     #[cfg(test)]
     binding_changed: bool,
-    binding_additions: Box<[UiGlyphRasterPinRequest]>,
-    binding_releases: Box<[UiGlyphRasterPinRequest]>,
     additions: Box<[UiGlyphRasterPinRequest]>,
     releases: Box<[UiGlyphRasterPinRequest]>,
     binding_pins: Box<[UiGlyphRasterPinRequest]>,
@@ -89,20 +87,28 @@ impl UiMountedTextPinState {
             next_binding,
             #[cfg(test)]
             binding_changed,
-            binding_additions,
-            binding_releases,
             additions,
             releases,
             binding_pins,
         }
     }
 
+    /// Lands `candidate` over the binding's pins as they stand now. The owner
+    /// counts follow from that transition, not from the pins the candidate
+    /// was prepared against, so each binding counts its pins once whatever
+    /// landed in between.
     pub(crate) fn commit_presented(&mut self, candidate: UiMountedTextPinCandidate) {
-        remove_pin_owners(&mut self.global_pin_owners, &candidate.binding_releases);
-        add_pin_owners(&mut self.global_pin_owners, &candidate.binding_additions);
-        if candidate.next_binding.by_command.is_empty() {
-            self.committed.remove(&candidate.binding);
-        } else {
+        let previous = self
+            .committed
+            .remove(&candidate.binding)
+            .unwrap_or_default();
+        let (added, released) = transition_difference(
+            &all_pins(&previous).collect::<Vec<_>>(),
+            &all_pins(&candidate.next_binding).collect::<Vec<_>>(),
+        );
+        remove_pin_owners(&mut self.global_pin_owners, &released);
+        add_pin_owners(&mut self.global_pin_owners, &added);
+        if !candidate.next_binding.by_command.is_empty() {
             self.committed
                 .insert(candidate.binding, candidate.next_binding);
         }

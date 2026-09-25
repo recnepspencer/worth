@@ -1,14 +1,8 @@
+use super::viewport_extent::{UiNativeViewportBasis, UiNativeViewportSettlement};
 use super::WorthUiNativeApplicationShell;
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(super) struct UiNativeViewportBasis {
-    client_physical_extent: [u32; 2],
-    scale_factor_milli: u32,
-    binding: crate::mounting::UiSurfaceBindingGeneration,
-}
-
 struct UiPendingNativeViewportMeasurements {
-    basis: UiNativeViewportBasis,
+    settlement: UiNativeViewportSettlement,
     capability: crate::facade::WorthUiHostMeasurementCapability,
     inputs: Vec<crate::facade::WorthUiHostMeasurementSessionInput>,
 }
@@ -17,7 +11,7 @@ impl WorthUiNativeApplicationShell {
     /// Return the latest observed client viewport in logical host-surface
     /// coordinates for application-owned native layout.
     pub fn native_layout_viewport(&self) -> Option<worth_ui_host_contract::UiMountedCanonicalBox> {
-        let basis = self.observed_viewport_basis?;
+        let basis = self.viewport.observed()?;
         if basis.scale_factor_milli == 0 {
             return None;
         }
@@ -38,7 +32,7 @@ impl WorthUiNativeApplicationShell {
     /// presentation. The extent and measurement authority remain inside the
     /// runtime; applications use this only to avoid idle duplicate frames.
     pub fn native_viewport_presentation_pending(&self) -> bool {
-        self.pending_viewport_basis.is_some()
+        self.viewport.owed().is_some()
     }
 
     pub(crate) fn observe_native_viewport_readiness(
@@ -52,16 +46,13 @@ impl WorthUiNativeApplicationShell {
             scale_factor_milli,
             binding: self.binding,
         };
-        let changed = self.observed_viewport_basis != Some(basis);
-        self.observed_viewport_basis = Some(basis);
-        if changed && submit_successor && !self.session.viewport_measurement_witnesses().is_empty()
-        {
-            self.pending_viewport_basis = Some(basis);
-        }
+        self.viewport.observe(basis, || {
+            submit_successor && !self.session.viewport_measurement_witnesses().is_empty()
+        });
     }
 
     pub(super) fn observe_native_viewport_binding_successor(&mut self, submit_successor: bool) {
-        let Some(observed) = self.observed_viewport_basis else {
+        let Some(observed) = self.viewport.observed() else {
             return;
         };
         self.observe_native_viewport_readiness(
@@ -80,17 +71,14 @@ impl WorthUiNativeApplicationShell {
         let Some(pending) = self.pending_native_viewport_measurements() else {
             return Ok(());
         };
-        let basis = pending.basis;
         self.session
             .settle_mounted_host_measurements(Some((pending.capability, pending.inputs)))?;
-        if self.pending_viewport_basis == Some(basis) {
-            self.pending_viewport_basis = None;
-        }
+        self.viewport.land(pending.settlement);
         Ok(())
     }
 
     fn pending_native_viewport_measurements(&self) -> Option<UiPendingNativeViewportMeasurements> {
-        let basis = self.pending_viewport_basis?;
+        let settlement = self.viewport.prepare()?;
         let viewport_measurement_authority = self.session.viewport_measurement_witnesses();
         if viewport_measurement_authority.is_empty() {
             return None;
@@ -121,7 +109,7 @@ impl WorthUiNativeApplicationShell {
             })
             .collect::<Vec<_>>();
         Some(UiPendingNativeViewportMeasurements {
-            basis,
+            settlement,
             capability,
             inputs,
         })
@@ -147,12 +135,12 @@ mod tests {
             .expect("equal scale should already be ready");
 
         assert_eq!(shell.binding, initial_binding);
-        assert!(shell.pending_surface_reconciliation.is_none());
+        assert!(shell.pending_native_surface_reconciliation().is_none());
         shell
             .rebind_native_surface_scale(2_000)
             .expect("equal-scale readiness must leave a real scale successor available");
         assert_ne!(shell.binding, initial_binding);
-        assert!(shell.pending_surface_reconciliation.is_some());
+        assert!(shell.pending_native_surface_reconciliation().is_some());
     }
 
     #[test]
@@ -191,7 +179,7 @@ mod tests {
             }
             _ => panic!("prepared reconciliation did not settle"),
         }
-        assert!(shell.pending_surface_reconciliation.is_none());
+        assert!(shell.pending_native_surface_reconciliation().is_none());
     }
 
     #[test]
@@ -230,7 +218,8 @@ mod tests {
         );
         assert!(shell.native_viewport_presentation_pending());
         let pending = shell
-            .pending_viewport_basis
+            .viewport
+            .owed()
             .expect("complete basis change must schedule measurement");
         assert_eq!(pending.client_physical_extent, [800, 600]);
         assert_eq!(pending.scale_factor_milli, 2_000);
@@ -239,10 +228,10 @@ mod tests {
 
         assert!(shell.present_frame(2, 0).is_ok());
         assert_eq!(host.viewport_measurement_calls(), baseline_calls + 1);
-        assert_eq!(shell.pending_viewport_basis, None);
+        assert_eq!(shell.viewport.owed(), None);
         assert!(!shell.native_viewport_presentation_pending());
         assert_eq!(
-            shell.observed_viewport_basis,
+            shell.viewport.observed(),
             Some(UiNativeViewportBasis {
                 client_physical_extent: [800, 600],
                 scale_factor_milli: 2_000,
@@ -273,12 +262,13 @@ mod tests {
         shell.observe_native_viewport_readiness([960, 600], 1_000, true);
         assert!(shell.native_viewport_presentation_pending());
         let pending = shell
-            .pending_viewport_basis
+            .viewport
+            .owed()
             .expect("extent successor must schedule measurement");
 
         assert!(shell.present_frame(2, 1).is_err());
         assert_eq!(host.presentation_calls(), 1);
-        assert_eq!(shell.pending_viewport_basis, Some(pending));
+        assert_eq!(shell.viewport.owed(), Some(pending));
 
         let _ = shell.cancel_mounted_presentation(in_flight);
         host.set_viewport_extent([960.0, 600.0]);
@@ -286,7 +276,7 @@ mod tests {
         assert!(shell.present_frame(3, 2).is_ok());
         assert_eq!(host.presentation_calls(), 2);
         assert_eq!(host.viewport_measurement_calls(), baseline_calls + 1);
-        assert_eq!(shell.pending_viewport_basis, None);
+        assert_eq!(shell.viewport.owed(), None);
         assert!(!shell.native_viewport_presentation_pending());
     }
 }

@@ -37,6 +37,37 @@ fn prepared_initial(
     (mechanics, prepared)
 }
 
+/// Two candidates prepared from the same committed pins can both land. Each
+/// lands over the pins committed when it lands, so the binding counts its
+/// pins once and releasing them leaves no owner behind.
+#[test]
+fn a_candidate_lands_over_the_pins_committed_when_it_lands() {
+    let projection = semantic_text_projection_for_certification(
+        UiSemanticTextProjectionCertificationMutation::Exact,
+    );
+    let requirement = UiMountedSurfaceBindingRequirement::new(
+        projection.surface(),
+        UiHostSurfaceIdentity::mint_unbound().unwrap(),
+        projection.binding(),
+        WorthUiHostCapabilityObservationGeneration::new(7),
+        11,
+        UiHostSurfacePresentationMode::NativeDisplay,
+    );
+    let (_, prepared) = prepared_initial(&projection, requirement);
+    let binding = requirement.binding();
+    let mut owner = UiMountedTextPinState::default();
+
+    let first = owner.candidate(binding, &prepared);
+    let second = owner.candidate(binding, &prepared);
+    owner.commit_presented(first);
+    owner.commit_presented(second);
+
+    assert!(!owner.global_pin_owners.is_empty());
+    assert!(owner.global_pin_owners.values().all(|owners| *owners == 1));
+    owner.commit_presented(owner.deregistration_candidate(binding));
+    assert!(owner.global_pin_owners.is_empty());
+}
+
 #[test]
 fn real_prepared_demands_advance_pins_only_after_accepted_settlement() {
     let projection = semantic_text_projection_for_certification(

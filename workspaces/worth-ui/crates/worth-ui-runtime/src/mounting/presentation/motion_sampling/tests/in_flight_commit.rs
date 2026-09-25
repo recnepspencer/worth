@@ -1,5 +1,5 @@
-//! A tick is sampled from a successor cloned when it was prepared, and lands
-//! only when its presentation completes. Whatever the owner did to a target in
+//! A tick is sampled from the tracks as they stood when it was prepared, and
+//! lands only when its presentation completes. Whatever the owner did in
 //! between must survive that landing.
 
 use super::*;
@@ -36,6 +36,39 @@ fn a_track_installed_while_a_tick_is_in_flight_survives_its_commit() {
     assert!(receipt.samples().is_empty());
     assert!(!sampler.contains_track(displaced));
     assert!(sampler.has_active_tracks());
+}
+
+/// A newer tick is prepared and dropped before the one in flight lands. The
+/// install made before that preparation is still reconciled by the landing.
+#[test]
+fn an_edit_before_a_dropped_newer_preparation_survives_the_older_commit() {
+    let world = World::new();
+    let mut sampler = UiMountedMotionSampler::default();
+    let (prepared, displaced) = terminal_tick_in_flight(&world, &mut sampler);
+
+    sampler.install(world.receipt(2, 50.0, None)).unwrap();
+    drop(sampler.prepare_tick(10_001, world.presentation).unwrap());
+    let receipt = sampler.commit_prepared(prepared.presented_for_certification());
+
+    assert!(receipt.terminals().is_empty());
+    assert!(!sampler.contains_track(displaced));
+    assert!(sampler.has_active_tracks());
+}
+
+/// The owner's posture is not the tick's to land.
+#[test]
+fn reduced_motion_set_while_a_tick_is_in_flight_survives_its_commit() {
+    let world = World::new();
+    let mut sampler = UiMountedMotionSampler::default();
+    let (prepared, _) = terminal_tick_in_flight(&world, &mut sampler);
+
+    sampler.set_reduced_motion(UiPresentationReducedMotionPosture::Reduce);
+    sampler.commit_prepared(prepared.presented_for_certification());
+
+    assert_eq!(
+        sampler.reduced_motion(),
+        UiPresentationReducedMotionPosture::Reduce
+    );
 }
 
 #[test]
@@ -92,6 +125,29 @@ fn settle_target(
 
 fn sampled_y(receipt: &UiPresentationMotionSamplingReceipt) -> f32 {
     receipt.samples()[0].geometry().unwrap().components()[1]
+}
+
+/// A tick older than one already landed would move the tracks back to what
+/// the host showed before, so it lands nothing and claims nothing.
+#[test]
+fn a_tick_prepared_before_a_landed_one_lands_nothing() {
+    let world = World::new();
+    let mut sampler = UiMountedMotionSampler::default();
+    sampler
+        .install(settle(&world, 1, 0.0, -60.0, None))
+        .unwrap();
+    commit_tick(&mut sampler, 100, world.presentation);
+    let older = sampler.prepare_tick(120, world.presentation).unwrap();
+    let newer = sampler.prepare_tick(140, world.presentation).unwrap();
+    let presented = sampled_y(newer.receipt());
+    sampler.commit_prepared(newer.presented_for_certification());
+
+    let stale = sampler.commit_prepared(older.presented_for_certification());
+
+    assert!(stale.samples().is_empty());
+    assert!(stale.terminals().is_empty());
+    let current = sampler.certification_observation().3.unwrap();
+    assert_eq!(current.geometry().unwrap().components()[1], presented);
 }
 
 /// A wheel notch lands between a tick's preparation and its presentation. The
@@ -243,7 +299,6 @@ fn a_prepared_tick_lands_only_on_the_surface_generation_it_was_prepared_for() {
     let at = world.presentation;
     let mut sampler = UiMountedMotionSampler::default();
     sampler.install(world.receipt(1, 0.0, None)).unwrap();
-    let detached = || sampler.clone().prepare_tick(40, at).unwrap();
     for other in [
         Basis::new(
             UiHostSurfaceIdentity::mint_unbound().unwrap(),
@@ -264,8 +319,9 @@ fn a_prepared_tick_lands_only_on_the_surface_generation_it_was_prepared_for() {
             at.epoch(),
         ),
     ] {
+        let detached = sampler.prepare_tick(40, at).unwrap();
         assert!(
-            detached().into_presented(&witness(other)).is_none(),
+            detached.into_presented(&witness(other)).is_none(),
             "a witness for another surface generation cannot land this tick"
         );
     }

@@ -38,16 +38,13 @@ impl super::WorthUiNativeApplicationShell {
     pub(in crate::facade::entry) fn pending_native_surface_reconciliation(
         &self,
     ) -> Option<crate::mounting::UiMountedSurfaceReconciliationBinding> {
-        self.pending_surface_reconciliation
-            .filter(|replacement| !self.native_surface_reconciliation_is_current(*replacement))
+        self.surface_reconciliation
+            .owed(self.binding, self.session.mounted.current_publication())
     }
 
     pub(in crate::facade::entry) fn refresh_native_surface_reconciliation(&mut self) {
-        if self
-            .pending_surface_reconciliation
-            .is_some_and(|replacement| self.native_surface_reconciliation_is_current(replacement))
-        {
-            self.pending_surface_reconciliation = None;
+        if let Some(current) = self.session.mounted.current_publication() {
+            self.surface_reconciliation.land(self.binding, current);
         }
     }
 
@@ -58,7 +55,7 @@ impl super::WorthUiNativeApplicationShell {
         WorthUiNativePresentationRecoveryDenial,
     > {
         self.refresh_native_surface_reconciliation();
-        if self.pending_surface_reconciliation.is_none()
+        if self.pending_native_surface_reconciliation().is_none()
             || self
                 .session
                 .mounted
@@ -74,7 +71,7 @@ impl super::WorthUiNativeApplicationShell {
                 .map_err(|()| WorthUiNativePresentationRecoveryDenial::SurfaceRebindUnavailable)?;
         }
         Ok(self
-            .pending_surface_reconciliation
+            .pending_native_surface_reconciliation()
             .expect("native replacement retains its reconciliation binding"))
     }
 
@@ -92,31 +89,7 @@ impl super::WorthUiNativeApplicationShell {
         &mut self,
         mounted: &crate::mounting::UiMountedFramePublicationReceipt,
     ) {
-        if self
-            .pending_surface_reconciliation
-            .is_some_and(|replacement| {
-                mounted.bindings().contains(&replacement.replacement())
-                    && !mounted.bindings().contains(&replacement.affected())
-                    && self.binding == replacement.replacement()
-            })
-        {
-            self.pending_surface_reconciliation = None;
-        }
-    }
-
-    fn native_surface_reconciliation_is_current(
-        &self,
-        replacement: crate::mounting::UiMountedSurfaceReconciliationBinding,
-    ) -> bool {
-        self.binding == replacement.replacement()
-            && self
-                .session
-                .mounted
-                .current_publication()
-                .is_some_and(|mounted| {
-                    mounted.bindings().contains(&replacement.replacement())
-                        && !mounted.bindings().contains(&replacement.affected())
-                })
+        self.surface_reconciliation.land(self.binding, mounted);
     }
 
     /// Resume host-deferred text presentation or host-required reconstruction.

@@ -11,8 +11,49 @@ use worth_ui_host_contract::UiMountedPresentationWorkView;
 #[path = "mounted_coordinator_test_harness.rs"]
 mod harness;
 use harness::{
-    color_mechanic, glyph_geometry, initial_text, prepare, present, replacement_delta, text_command,
+    color_mechanic, glyph_geometry, initial_text, prepare, present, present_with,
+    replacement_delta, text_command,
 };
+
+/// The host commits a frame's text pins before it hands back a physical
+/// surface still in flight. A successor prepared while that surface is
+/// pending starts from those pins, so the host is not told to add them again.
+#[test]
+fn pins_the_host_committed_before_a_pending_surface_are_the_successors_basis() {
+    let projection = semantic_text_projection_for_certification(
+        UiSemanticTextProjectionCertificationMutation::Exact,
+    );
+    let requirement = harness::requirement(&projection);
+    let initial = initial_presentation_mechanics_for_certification(&projection, requirement);
+    let layout = crate::mounting::qualified_text_test_support::inert_qualified_layout("ONLINE");
+    for (outcome, atlas_pending) in [
+        (
+            harness::physical_surface_in_flight
+                as fn(
+                    &worth_ui_host_contract::UiMountedFrameConsumptionView<'_>,
+                ) -> worth_ui_host_contract::UiHostSurfacePresentationOutcome,
+            false,
+        ),
+        (harness::text_atlas_in_flight, true),
+    ] {
+        let mut coordinator = UiNativeMountedTextCoordinator::default();
+        let work = UiMountedPresentationWorkView::Initial(&initial);
+        let prepared = prepare(&coordinator, work, requirement, layout.as_ref());
+        let observation = present_with(
+            &mut coordinator,
+            work,
+            requirement,
+            &prepared,
+            layout.as_ref(),
+            outcome,
+        );
+        let (_, pending, _, _, _) = observation.into_parts();
+
+        assert_eq!(pending.is_some(), atlas_pending);
+        let successor = coordinator.pins.candidate(requirement.binding(), &prepared);
+        assert_eq!(successor.has_no_pin_churn(), !atlas_pending);
+    }
+}
 
 #[test]
 fn qualified_text_coordinator_reuses_paint_only_work_and_denies_layout_twin() {

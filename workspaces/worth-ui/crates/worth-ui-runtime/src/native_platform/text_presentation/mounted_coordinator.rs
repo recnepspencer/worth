@@ -9,7 +9,9 @@ use crate::mounting::{
     UiMountedTextForegroundPresentationBasis, UiMountedTextForegroundReuseReceipt,
 };
 use worth_ui_host_contract::{
-    UiMountedPaintCommandIdentity, UiMountedPresentationWorkView, UiSurfaceBindingGeneration,
+    UiHostPresentationProgressClass, UiHostSurfacePresentationDenial,
+    UiHostSurfacePresentationOutcome, UiMountedPaintCommandIdentity, UiMountedPresentationWorkView,
+    UiSurfaceBindingGeneration,
 };
 
 use super::{
@@ -21,7 +23,7 @@ use super::{
 #[derive(Default)]
 pub(crate) struct UiNativeMountedTextCoordinator {
     pins: UiMountedTextPinState,
-    retained_mechanics: std::collections::HashMap<
+    retained_mechanics: HashMap<
         worth_ui_host_contract::UiMountedPaintCommandIdentity,
         super::UiNativeTextPresentationMechanicObservation,
     >,
@@ -39,7 +41,7 @@ pub(crate) struct UiNativeMountedTextCoordinator {
 const TEXT_WORK_OBSERVATION_CAPACITY: usize = 64;
 
 pub(crate) struct UiNativeMountedSurfaceTextObservation {
-    outcome: worth_ui_host_contract::UiHostSurfacePresentationOutcome,
+    outcome: UiHostSurfacePresentationOutcome,
     pending_candidate: Option<UiMountedTextPinCandidate>,
     request_bases: Box<[worth_ui_query_binding::WorthUiPresentationRequestBasis]>,
     pending_receipts: Box<[worth_ui_query_binding::WorthUiPresentationRecoveryReceipt]>,
@@ -111,7 +113,7 @@ impl UiNativeMountedTextCoordinator {
         present: impl FnOnce(
             &worth_ui_host_contract::UiMountedTextRasterWork<'_>,
         ) -> (
-            worth_ui_host_contract::UiHostSurfacePresentationOutcome,
+            UiHostSurfacePresentationOutcome,
             Box<[worth_ui_query_binding::WorthUiPresentationRequestBasis]>,
             Box<[worth_ui_query_binding::WorthUiPresentationRecoveryReceipt]>,
         ),
@@ -176,24 +178,30 @@ impl UiNativeMountedTextCoordinator {
         if let Some(observation) = work_observation {
             self.record_work_observation(observation);
         }
-        let pending_candidate = match outcome {
-            worth_ui_host_contract::UiHostSurfacePresentationOutcome::Presented(_) => {
+        let pending_candidate = match &outcome {
+            UiHostSurfacePresentationOutcome::Presented(_) => {
                 self.pins.commit_presented(candidate);
                 None
             }
-            worth_ui_host_contract::UiHostSurfacePresentationOutcome::InFlight(_) => {
-                Some(candidate)
-            }
-            worth_ui_host_contract::UiHostSurfacePresentationOutcome::RejectedBeforeEffects(
-                worth_ui_host_contract::UiHostSurfacePresentationDenial::TextAtlasPresentationDeferred,
+            // The host commits a frame's text pins before it hands back a
+            // physical surface still in flight, and a successor prepared
+            // meanwhile must start from them. Only a pending atlas
+            // transaction still holds its pins back.
+            UiHostSurfacePresentationOutcome::InFlight(token) => match token.progress_class() {
+                UiHostPresentationProgressClass::PhysicalSurface => {
+                    self.pins.commit_presented(candidate);
+                    None
+                }
+                UiHostPresentationProgressClass::TextAtlas => Some(candidate),
+            },
+            UiHostSurfacePresentationOutcome::RejectedBeforeEffects(
+                UiHostSurfacePresentationDenial::TextAtlasPresentationDeferred,
             ) => {
                 self.pins.commit_presented(candidate);
                 None
             }
-            worth_ui_host_contract::UiHostSurfacePresentationOutcome::RejectedBeforeEffects(_)
-            | worth_ui_host_contract::UiHostSurfacePresentationOutcome::PresentationIndeterminate => {
-                None
-            }
+            UiHostSurfacePresentationOutcome::RejectedBeforeEffects(_)
+            | UiHostSurfacePresentationOutcome::PresentationIndeterminate => None,
         };
         Some(UiNativeMountedSurfaceTextObservation {
             outcome,
@@ -370,7 +378,7 @@ impl UiNativeMountedSurfaceTextObservation {
     pub(crate) fn into_parts(
         self,
     ) -> (
-        worth_ui_host_contract::UiHostSurfacePresentationOutcome,
+        UiHostSurfacePresentationOutcome,
         Option<UiMountedTextPinCandidate>,
         Box<[worth_ui_query_binding::WorthUiPresentationRequestBasis]>,
         Box<[worth_ui_query_binding::WorthUiPresentationRecoveryReceipt]>,

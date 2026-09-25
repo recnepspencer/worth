@@ -83,9 +83,13 @@ pub struct UiMountedSurfacePresentationSupersession {
     cost: super::presentation_cost::UiHostPresentationCostReport,
 }
 
+/// What a presentation still in flight is waiting on.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum UiHostPresentationProgressClass {
+    /// The physical surface. Any text atlas work of the frame, pins
+    /// included, committed before the token was issued.
     PhysicalSurface,
+    /// The frame's text atlas transaction, which has not committed its pins.
     TextAtlas,
 }
 
