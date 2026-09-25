@@ -6,7 +6,7 @@ use bank_external_rail::{test_control::FaultScript, LedgerStatus, RailProcessHan
 use bank_server::{BankApprovedPaymentApplyOutcome, BankAuthenticatedPrincipal};
 use worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope;
 use worth_query_host::facade::application_entry::{
-    PublishedWorkflowInstanceRef, RequiredWorkflowOperation,
+    PublishedWorkflowInstanceRef, RequiredWorkflowOperation, WorkflowProgressOutcome,
     WorthQueryWorkflowOperationAcceptanceDenial,
 };
 use worth_query_host::facade::primary_graph::{
@@ -132,6 +132,95 @@ fn pending_rail_dispatch_remains_under_the_committed_outbox_owner() {
         denied.denial::<WorthQueryWorkflowOperationAcceptanceDenial>(),
         Some(WorthQueryWorkflowOperationAcceptanceDenial::RecoveryRequired)
     ));
+}
+
+#[test]
+fn lost_dispatch_before_rail_admission_requires_recovery_before_workflow_completion() {
+    let ready = ReadyPaymentWorld::new(
+        "lost-dispatch-before-admission",
+        FaultScript::DisappearMidDispatch,
+    );
+    let performed = ready
+        .perform()
+        .into_performed()
+        .expect("the Bank payment commits before the rail response is lost");
+    assert!(performed.co_committed_dispatch_outbox());
+    assert_eq!(
+        performed.external_dispatch_posture(),
+        Some(WorthQueryExternalDispatchPostureKind::Unresolved)
+    );
+    assert_eq!(ready.rail.attempts().len(), 1);
+    assert_eq!(ready.rail.admission_count(), 0);
+    assert_eq!(ready.rail.completed_effect_count(), 0);
+
+    let workflow = ready
+        .fixture
+        .world
+        .runtime
+        .approved_business_payment(&ready.principal, &ready.scope);
+    let denied = workflow
+        .accept_applied(
+            ready.instance.clone(),
+            &ready.operation,
+            ready.authority.clone(),
+            &performed,
+            &key("approved-payment:operation:accept:lost-dispatch"),
+        )
+        .expect_err("an unresolved dispatch cannot complete the workflow operation");
+    assert!(matches!(
+        denied.denial::<WorthQueryWorkflowOperationAcceptanceDenial>(),
+        Some(WorthQueryWorkflowOperationAcceptanceDenial::RecoveryRequired)
+    ));
+    let required = match workflow
+        .advance(
+            ready.instance.clone(),
+            ready.authority.clone(),
+            &key("approved-payment:advance:lost-dispatch"),
+        )
+        .expect("the workflow retains the operation wait")
+    {
+        WorkflowProgressOutcome::AwaitingOperation(required) => required,
+        other => panic!("expected the retained operation wait, got {other:?}"),
+    };
+    assert_eq!(
+        required.transition_identity(),
+        ready.operation.transition_identity()
+    );
+
+    ready
+        .rail
+        .under(FaultScript::Succeed, Duration::from_millis(150));
+    let recovery = workflow
+        .prepare_apply_recovery(
+            &required,
+            ready.authority.clone(),
+            &performed,
+            &key("approved-payment:operation:perform"),
+        )
+        .expect("the exact operation opens recovery")
+        .safe_retry()
+        .expect("recovery re-dispatches the retained outbox request");
+    let accepted = workflow
+        .accept_recovered_applied(
+            ready.instance.clone(),
+            &required,
+            ready.authority.clone(),
+            &performed,
+            &recovery,
+            &key("approved-payment:operation:accept:lost-dispatch:recovered"),
+        )
+        .expect("completed recovery settles the waiting operation");
+    assert!(matches!(accepted, WorkflowProgressOutcome::Completed(_)));
+    assert_eq!(ready.rail.attempts().len(), 2);
+    assert_eq!(ready.rail.admission_count(), 1);
+    assert_eq!(ready.rail.completed_effect_count(), 1);
+    let dispatches = ready.rail.production_dispatches();
+    assert_eq!(dispatches[0].correlation, dispatches[1].correlation);
+    assert_eq!(dispatches[0].payload, dispatches[1].payload);
+    assert_eq!(
+        ready.rail.ledger_status(&dispatches[0].correlation),
+        LedgerStatus::Completed
+    );
 }
 
 #[test]
