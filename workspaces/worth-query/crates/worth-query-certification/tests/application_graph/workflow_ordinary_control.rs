@@ -3,8 +3,7 @@
 use worth_query_host::facade::application_entry::{
     PublishedWorkflowInstanceRef, RequiredWorkflowCondition, WorkflowDefinitionExpectedPredecessor,
     WorkflowDefinitionPublicationOutcome, WorkflowInstanceStartOutcome, WorkflowProgressOutcome,
-    WorkflowProposalOutcome, WorthQueryApplicationRequestExt,
-    WorthQueryOrdinaryWorkflowRunProgress, WorthQueryOrdinaryWorkflowRunStop,
+    WorkflowProposalOutcome, WorthQueryApplicationRequestExt, WorthQueryOrdinaryWorkflowRunStop,
 };
 use worth_query_host::facade::primary_graph::WorthQueryApplicationAttemptDenialKind;
 
@@ -18,31 +17,11 @@ use super::bounded_dimension_model::{
     settled_verdict::{settle, DimensionVerdict},
     workflow::{
         advance_instance, bounded_retry_definition, condition_terminal_definition,
-        condition_terminal_draft, propose_authoring_instance, publish_definition, start_instance,
-        WorkflowAdvanceInput, WorkflowAdvanceIntent, WorkflowDefinitionAuthoringInput,
-        WorkflowDefinitionAuthoringIntent,
+        condition_terminal_draft, propose_authoring_instance, publish_definition, run_instance,
+        start_instance, WorkflowAdvanceInput, WorkflowAdvanceIntent,
+        WorkflowDefinitionAuthoringInput, WorkflowDefinitionAuthoringIntent,
     },
 };
-
-fn run(
-    application: &BoundedDimensionWorkflowRuntime,
-    instance: PublishedWorkflowInstanceRef,
-    keys: &[u64],
-) -> WorthQueryOrdinaryWorkflowRunProgress {
-    let runtime = application.runtime();
-    let scope = request_scope();
-    let principal = authenticate_operator(runtime.installed_schema(), &scope);
-    runtime
-        .request(&principal, &scope)
-        .mutate(WorkflowAdvanceIntent {
-            input: WorkflowAdvanceInput {
-                part_identity: PART_IDENTITY.to_owned(),
-            },
-        })
-        .run_workflow(application, instance)
-        .idempotency_keys(keys)
-        .execute()
-}
 
 fn accept_condition(
     application: &BoundedDimensionWorkflowRuntime,
@@ -159,7 +138,7 @@ fn assert_condition_path_parity(expected_positive: bool) {
         WorkflowProgressOutcome::AwaitingCondition(required) => required,
         other => panic!("advanced condition wait differs: {other:?}"),
     };
-    let ordinary_wait = run(&ordinary, ordinary_instance.clone(), &[919_013]);
+    let ordinary_wait = run_instance(&ordinary, ordinary_instance.clone(), &[919_013]);
     assert_eq!(ordinary_wait.attempted_steps(), 1);
     assert!(ordinary_wait.transitions().is_empty());
     let ordinary_required = match ordinary_wait.stop() {
@@ -218,7 +197,7 @@ fn assert_condition_path_parity(expected_positive: bool) {
     else {
         panic!("advanced condition did not reach its terminal");
     };
-    let ordinary_terminal = run(&ordinary, ordinary_instance, &[919_015]);
+    let ordinary_terminal = run_instance(&ordinary, ordinary_instance, &[919_015]);
     assert!(matches!(
         ordinary_terminal.stop(),
         WorthQueryOrdinaryWorkflowRunStop::Terminal
@@ -282,7 +261,8 @@ fn ordinary_and_advanced_retry_share_typed_denials_and_exhaustion() {
         let advanced_outcome =
             advance_instance(&application, advanced.clone(), 919_120 + index as u64)
                 .expect("advanced retry advance prepares");
-        let ordinary_outcome = run(&application, ordinary.clone(), &[919_130 + index as u64]);
+        let ordinary_outcome =
+            run_instance(&application, ordinary.clone(), &[919_130 + index as u64]);
         assert_eq!(ordinary_outcome.attempted_steps(), 1);
         assert!(ordinary_outcome.transitions().is_empty());
         let WorkflowProgressOutcome::PreparationDenied(advanced_denial) = advanced_outcome else {
@@ -324,7 +304,7 @@ fn ordinary_and_advanced_retry_share_typed_denials_and_exhaustion() {
     else {
         panic!("advanced retry did not exhaust");
     };
-    let ordinary_terminal = run(&application, ordinary, &[919_161]);
+    let ordinary_terminal = run_instance(&application, ordinary, &[919_161]);
     assert!(matches!(
         ordinary_terminal.stop(),
         WorthQueryOrdinaryWorkflowRunStop::Terminal

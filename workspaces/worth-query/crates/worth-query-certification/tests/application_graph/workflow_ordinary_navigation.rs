@@ -8,34 +8,14 @@ use worth_query_host::facade::application_entry::{
 
 use super::bounded_dimension_model::{
     dimension_entry::PART_IDENTITY,
-    host::{publish_workflow_on_first_program, BoundedDimensionWorkflowRuntime},
+    host::publish_workflow_on_first_program,
     operator_identity::{authenticate_operator, request_scope},
     workflow::{
         accept_assessment, advance_instance, assessment_join_terminal_definition,
-        propose_authoring_instance, publish_definition, settle_assessment, start_instance,
-        WorkflowAdvanceInput, WorkflowAdvanceIntent,
+        propose_authoring_instance, publish_definition, run_instance, settle_assessment,
+        start_instance, WorkflowAdvanceInput, WorkflowAdvanceIntent,
     },
 };
-
-fn run_once(
-    application: &BoundedDimensionWorkflowRuntime,
-    instance: PublishedWorkflowInstanceRef,
-    key: u64,
-) -> worth_query_host::facade::application_entry::WorthQueryOrdinaryWorkflowRunProgress {
-    let runtime = application.runtime();
-    let scope = request_scope();
-    let principal = authenticate_operator(runtime.installed_schema(), &scope);
-    runtime
-        .request(&principal, &scope)
-        .mutate(WorkflowAdvanceIntent {
-            input: WorkflowAdvanceInput {
-                part_identity: PART_IDENTITY.to_owned(),
-            },
-        })
-        .run_workflow(application, instance)
-        .idempotency_keys(&[key])
-        .execute()
-}
 
 #[test]
 fn ordinary_run_after_back_reuses_advanced_evidence_without_a_new_effect() {
@@ -118,7 +98,7 @@ fn ordinary_run_after_back_reuses_advanced_evidence_without_a_new_effect() {
     else {
         panic!("advanced Back did not reuse first assessment");
     };
-    let ordinary_reused = run_once(&application, ordinary, 919_233);
+    let ordinary_reused = run_instance(&application, ordinary, &[919_233]);
     assert!(matches!(
         ordinary_reused.stop(),
         WorthQueryOrdinaryWorkflowRunStop::CallerKeysExhausted

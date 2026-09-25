@@ -14,6 +14,8 @@ mod grant_status;
 mod join_replay_definition;
 #[path = "workflow/mutation.rs"]
 mod mutation;
+#[path = "workflow/ordinary_run.rs"]
+mod ordinary_run;
 #[path = "workflow/retry_definition.rs"]
 mod retry_definition;
 #[path = "workflow/review_requirement.rs"]
@@ -58,6 +60,7 @@ pub use mutation::{
     WorkflowDefinitionAuthoringIntent, WorkflowInstanceStartBinding, WorkflowInstanceStartHandler,
     WorkflowInstanceStartIntent,
 };
+pub use ordinary_run::run_instance;
 pub use retry_definition::{bounded_retry_definition, bounded_retry_definition_with_attempts};
 pub use review_requirement::{
     link_review_requirement, ReviewRequirementBinding, ReviewRequirementHandler,
