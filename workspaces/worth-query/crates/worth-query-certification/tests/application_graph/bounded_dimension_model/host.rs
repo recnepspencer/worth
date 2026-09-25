@@ -32,9 +32,9 @@ use super::dimension_entry::{
 use super::programs::{
     validated_changed_feature_program, validated_changed_operation_program,
     validated_first_program, validated_first_resource_program, validated_foreign_rule_program,
-    validated_removed_operation_program, validated_second_program,
-    validated_second_resource_program, DimensionProgramP0, DimensionProgramP1,
-    ResourceDimensionProgramP0,
+    validated_removed_assessment_supplier_program, validated_removed_operation_program,
+    validated_second_program, validated_second_resource_program, DimensionProgramP0,
+    DimensionProgramP1, ResourceDimensionProgramP0,
 };
 use super::rules::{resolve_first_rule, resolve_second_rule};
 use super::schema::{
@@ -160,6 +160,7 @@ fn publish_on_first_program_with_limits(
             .support(validated_second_program())
             .support(validated_changed_feature_program())
             .support(validated_changed_operation_program())
+            .support(validated_removed_assessment_supplier_program())
             .support(validated_removed_operation_program()),
         limits,
     )

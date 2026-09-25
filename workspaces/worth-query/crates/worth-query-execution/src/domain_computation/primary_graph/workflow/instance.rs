@@ -1,10 +1,14 @@
 //! Authoritative branch-local workflow-instance facts.
 
+mod adoption_inventory;
 mod facts;
 mod progression;
 mod state;
 mod transition;
 
+pub(in crate::domain_computation::primary_graph) use adoption_inventory::{
+    inventory_for_adoption, WorkflowAdoptionInventoryDenial,
+};
 pub(in crate::domain_computation::primary_graph) use facts::visit_instance_start_facts;
 pub use progression::WorthQueryWorkflowInstanceProgressCounters;
 pub(in crate::domain_computation::primary_graph) use progression::{

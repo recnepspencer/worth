@@ -134,8 +134,17 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         kind,
         &layout.instance.protocol_version,
         AspectValue::UInt64(
-            crate::domain_computation::primary_graph::workflow::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION,
+            crate::domain_computation::primary_graph::workflow::schema::version::WORKFLOW_INSTANCE_FACT_PROTOCOL_VERSION,
         ),
+        &mut facts,
+    )?;
+    exact(
+        runtime,
+        snapshot,
+        entity,
+        kind,
+        &layout.instance.branch_occurrence,
+        AspectValue::UInt64(instance.branch().occurrence_ordinal()),
         &mut facts,
     )?;
     exact(

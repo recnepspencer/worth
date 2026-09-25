@@ -154,7 +154,7 @@ fn newly_required_related_review_stales_after_relation_away_and_back() {
             instance.clone(),
             "checks/related",
             &refreshed,
-        782,
+            782,
         ),
         Ok(WorkflowProgressOutcome::Completed(_)),
     ));

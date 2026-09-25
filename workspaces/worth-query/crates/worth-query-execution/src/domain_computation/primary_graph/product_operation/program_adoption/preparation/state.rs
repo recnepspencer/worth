@@ -13,6 +13,9 @@ use super::{
 };
 use crate::domain_computation::primary_graph::product_operation::WorthQuerySelectedProductOperation;
 use crate::domain_computation::primary_graph::program_occurrence::program_revision_rendering;
+use crate::domain_computation::primary_graph::workflow::instance::{
+    inventory_for_adoption, WorkflowAdoptionInventoryDenial,
+};
 
 fn map_relational_preparation_denial(
     denial: worth_relational::facade::transactions::TransactionCommitError,
@@ -113,7 +116,43 @@ pub(super) fn prepare<Schema: ApplicationSchema>(
         )
     })?;
     let selected_entity_count = selection.entities.len();
-    let selection_work_units = selection.work_units;
+    let workflow_inventory = graph
+        .with_runtime(|runtime| {
+            inventory_for_adoption(
+                runtime,
+                graph.layout.workflow(),
+                version,
+                selected.product().product_branch().occurrence_ordinal(),
+                maximum_selection_work.saturating_sub(selection.work_units),
+            )
+        })
+        .map_err(|denial| match denial {
+            WorkflowAdoptionInventoryDenial::WorkLimitExceeded {
+                consumed_work_units,
+            } => WorthQueryBranchAdoptionPreparationDenial::SelectionLimitExceeded {
+                maximum_work_units: maximum_selection_work,
+                consumed_work_units: selection.work_units.saturating_add(consumed_work_units),
+            },
+            WorkflowAdoptionInventoryDenial::UnreadableInstance { instance } => {
+                WorthQueryBranchAdoptionPreparationDenial::WorkflowInventoryUnreadable { instance }
+            }
+            WorkflowAdoptionInventoryDenial::UnreadableRelationSlot { partition_id, slot } => {
+                WorthQueryBranchAdoptionPreparationDenial::WorkflowInventoryRelationUnreadable {
+                    partition_id,
+                    slot,
+                }
+            }
+        })?;
+    if source != *target && !workflow_inventory.instances().is_empty() {
+        return Err(
+            WorthQueryBranchAdoptionPreparationDenial::WorkflowDispositionRequired {
+                instances: workflow_inventory.instances().to_vec().into_boxed_slice(),
+            },
+        );
+    }
+    let selection_work_units = selection
+        .work_units
+        .saturating_add(workflow_inventory.work_units());
     let target_rendering = program_revision_rendering(target);
     let candidate = graph.with_runtime_mut(|runtime| {
         let mut batch =

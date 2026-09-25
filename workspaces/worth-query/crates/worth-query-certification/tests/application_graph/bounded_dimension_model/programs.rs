@@ -27,6 +27,12 @@ use super::workflow::{
     WorkflowInstanceStartBinding,
 };
 
+#[path = "programs/removed_assessment_supplier.rs"]
+mod removed_assessment_supplier;
+pub use removed_assessment_supplier::{
+    validated_removed_assessment_supplier_program, RemovedAssessmentSupplierProgram,
+};
+
 /// The one feature both programs govern.
 pub struct BoundedDimensionFeature;
 pub struct BoundedDimensionFeatureV2;
