@@ -1,7 +1,8 @@
 use bank_domain::schema::ApprovePayment;
 use bank_server::BankApprovedPaymentWorkflow;
 use worth_query_host::facade::application_entry::{
-    PublishedWorkflowInstanceRef, RequiredWorkflowOperation, WorkflowDefinitionExpectedPredecessor,
+    PublishedWorkflowInstanceRef, PublishedWorkflowProposalRef, RequiredWorkflowApproval,
+    RequiredWorkflowOperation, WorkflowDefinitionExpectedPredecessor,
     WorkflowDefinitionPublicationOutcome, WorkflowInstanceStartOutcome, WorkflowProgressOutcome,
     WorkflowProposalOutcome, WorthQueryOrdinaryWorkflowRunStop,
     WorthQueryWorkflowAssessmentDemandProgress,
@@ -10,10 +11,14 @@ use worth_query_host::facade::application_entry::{
 use super::approval::require_authenticated_approval_and_replay;
 use super::assertions::{key, require_assessment, require_completed};
 
-pub(super) fn prepare_approved_payment_operation(
+pub(super) fn prepare_approved_payment_approval(
     workflow: &BankApprovedPaymentWorkflow<'_, '_, '_>,
     authority: &ApprovePayment,
-) -> (PublishedWorkflowInstanceRef, RequiredWorkflowOperation) {
+) -> (
+    PublishedWorkflowInstanceRef,
+    PublishedWorkflowProposalRef,
+    RequiredWorkflowApproval,
+) {
     let published = match workflow
         .publish_definition(
             authority.clone(),
@@ -138,13 +143,15 @@ pub(super) fn prepare_approved_payment_operation(
         )) => required,
         other => panic!("expected typed approval wait after the evidence join, got {other:?}"),
     };
-    require_authenticated_approval_and_replay(
-        workflow,
-        &instance,
-        &approval,
-        proposal.proposal(),
-        authority,
-    );
+    (instance, proposal.proposal().clone(), approval.clone())
+}
+
+pub(super) fn prepare_approved_payment_operation(
+    workflow: &BankApprovedPaymentWorkflow<'_, '_, '_>,
+    authority: &ApprovePayment,
+) -> (PublishedWorkflowInstanceRef, RequiredWorkflowOperation) {
+    let (instance, proposal, approval) = prepare_approved_payment_approval(workflow, authority);
+    require_authenticated_approval_and_replay(workflow, &instance, &approval, &proposal, authority);
 
     let keys = [key("approved-payment:advance:operation")];
     let progressed = workflow.run(instance.clone(), authority.clone(), &keys);

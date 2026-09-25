@@ -20,6 +20,8 @@ mod postures;
 )]
 #[path = "ordinary_mutations/estate_operations/external_effect_dispatch/rail_transport.rs"]
 mod rail_transport;
+#[path = "approved_payment_workflow/rejection.rs"]
+mod rejection;
 mod support;
 
 use std::{sync::Arc, time::Duration};
