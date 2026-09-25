@@ -6,7 +6,7 @@ use worth_query_host::facade::application_entry::{
     PublishedWorkflowInstanceRef, WorkflowProgressOutcome, WorthQueryOrdinaryWorkflowRunProgress,
 };
 
-use super::{error::other_denial, BankApprovedPaymentWorkflow, BankApprovedPaymentWorkflowError};
+use super::{BankApprovedPaymentWorkflow, BankApprovedPaymentWorkflowError};
 
 impl BankApprovedPaymentWorkflow<'_, '_, '_> {
     pub fn advance(
@@ -22,7 +22,7 @@ impl BankApprovedPaymentWorkflow<'_, '_, '_> {
             .idempotency(command_key)
             .prepare_workflow_advance(self.runtime.approved_payment_workflow_runtime(), instance)
             .map(|request| request.execute())
-            .map_err(other_denial)
+            .map_err(BankApprovedPaymentWorkflowError::Advance)
     }
 
     pub fn run(

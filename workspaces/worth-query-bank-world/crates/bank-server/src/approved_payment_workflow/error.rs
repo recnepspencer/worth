@@ -1,5 +1,14 @@
 use worth_query_host::facade::admission::authentication_event::WorthQueryAuthenticationEventDenial;
-use worth_query_host::facade::application_entry::WorthQueryWorkflowOperationBindingDenial;
+use worth_query_host::facade::application_entry::{
+    WorthQueryApplicationOutputDemandDenial, WorthQueryApplicationRequestMutationDenial,
+    WorthQueryWorkflowAdvancePreparationDenial, WorthQueryWorkflowAssessmentAcceptanceDenial,
+    WorthQueryWorkflowAssessmentDemandPreparationDenial,
+    WorthQueryWorkflowDefinitionPublicationPreparationDenial,
+    WorthQueryWorkflowInstanceStartPreparationDenial, WorthQueryWorkflowOperationAcceptanceDenial,
+    WorthQueryWorkflowOperationBindingDenial, WorthQueryWorkflowOperationRecoveryPreparationDenial,
+    WorthQueryWorkflowProposalPreparationDenial,
+};
+use worth_query_host::facade::domain::WorthQueryApplicationWorkflowInstallationDenial;
 
 use crate::ApprovedBusinessPaymentDefinitionDenial;
 
@@ -7,24 +16,25 @@ use crate::ApprovedBusinessPaymentDefinitionDenial;
 pub enum BankApprovedPaymentWorkflowError {
     Authentication(WorthQueryAuthenticationEventDenial),
     Definition(ApprovedBusinessPaymentDefinitionDenial),
+    DefinitionBinding(WorthQueryApplicationWorkflowInstallationDenial),
+    DefinitionPublication(WorthQueryWorkflowDefinitionPublicationPreparationDenial),
+    InstanceStart(WorthQueryWorkflowInstanceStartPreparationDenial),
+    Proposal(WorthQueryWorkflowProposalPreparationDenial),
+    Advance(WorthQueryWorkflowAdvancePreparationDenial),
+    AssessmentPreparation(WorthQueryWorkflowAssessmentDemandPreparationDenial),
+    AssessmentDemand(WorthQueryApplicationOutputDemandDenial),
+    AssessmentAcceptance(WorthQueryWorkflowAssessmentAcceptanceDenial),
     OperationBinding(WorthQueryWorkflowOperationBindingDenial),
-    Other(Box<dyn std::error::Error + Send + Sync>),
+    OperationMutation(WorthQueryApplicationRequestMutationDenial),
+    OperationAcceptance(WorthQueryWorkflowOperationAcceptanceDenial),
+    OperationRecoveryPreparation(WorthQueryWorkflowOperationRecoveryPreparationDenial),
 }
 
 impl BankApprovedPaymentWorkflowError {
-    pub fn denial<Denial: std::error::Error + 'static>(&self) -> Option<&Denial> {
-        match self {
-            Self::Other(denial) => denial.downcast_ref::<Denial>(),
-            Self::Authentication(_) => None,
-            Self::Definition(_) | Self::OperationBinding(_) => None,
-        }
-    }
-
     pub const fn authentication_denial(&self) -> Option<WorthQueryAuthenticationEventDenial> {
         match self {
             Self::Authentication(denial) => Some(*denial),
-            Self::Other(_) => None,
-            Self::Definition(_) | Self::OperationBinding(_) => None,
+            _ => None,
         }
     }
 }
@@ -39,7 +49,17 @@ impl std::fmt::Display for BankApprovedPaymentWorkflowError {
             Self::OperationBinding(denial) => {
                 write!(formatter, "workflow operation binding denied: {denial:?}")
             }
-            Self::Other(denial) => denial.fmt(formatter),
+            Self::DefinitionBinding(denial) => denial.fmt(formatter),
+            Self::DefinitionPublication(denial) => denial.fmt(formatter),
+            Self::InstanceStart(denial) => denial.fmt(formatter),
+            Self::Proposal(denial) => denial.fmt(formatter),
+            Self::Advance(denial) => denial.fmt(formatter),
+            Self::AssessmentPreparation(denial) => denial.fmt(formatter),
+            Self::AssessmentDemand(denial) => denial.fmt(formatter),
+            Self::AssessmentAcceptance(denial) => denial.fmt(formatter),
+            Self::OperationMutation(denial) => denial.fmt(formatter),
+            Self::OperationAcceptance(denial) => denial.fmt(formatter),
+            Self::OperationRecoveryPreparation(denial) => denial.fmt(formatter),
         }
     }
 }
@@ -49,13 +69,17 @@ impl std::error::Error for BankApprovedPaymentWorkflowError {
         match self {
             Self::Authentication(_) => None,
             Self::Definition(_) | Self::OperationBinding(_) => None,
-            Self::Other(denial) => Some(denial.as_ref()),
+            Self::DefinitionBinding(denial) => Some(denial),
+            Self::DefinitionPublication(denial) => Some(denial),
+            Self::InstanceStart(denial) => Some(denial),
+            Self::Proposal(denial) => Some(denial),
+            Self::Advance(denial) => Some(denial),
+            Self::AssessmentPreparation(denial) => Some(denial),
+            Self::AssessmentDemand(denial) => Some(denial),
+            Self::AssessmentAcceptance(denial) => Some(denial),
+            Self::OperationMutation(denial) => Some(denial),
+            Self::OperationAcceptance(denial) => Some(denial),
+            Self::OperationRecoveryPreparation(denial) => Some(denial),
         }
     }
-}
-
-pub(super) fn other_denial<Denial: std::error::Error + Send + Sync + 'static>(
-    denial: Denial,
-) -> BankApprovedPaymentWorkflowError {
-    BankApprovedPaymentWorkflowError::Other(Box::new(denial))
 }

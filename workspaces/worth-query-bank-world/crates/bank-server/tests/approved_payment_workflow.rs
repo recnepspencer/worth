@@ -120,8 +120,10 @@ fn approved_business_payment_runs_through_query_and_commits_the_real_payment_ope
         )
         .expect_err("unresolved external custody cannot settle the workflow operation");
     assert!(matches!(
-        unresolved.denial::<WorthQueryWorkflowOperationAcceptanceDenial>(),
-        Some(WorthQueryWorkflowOperationAcceptanceDenial::RecoveryRequired)
+        unresolved,
+        bank_server::BankApprovedPaymentWorkflowError::OperationAcceptance(
+            WorthQueryWorkflowOperationAcceptanceDenial::RecoveryRequired
+        )
     ));
     let still_required = match workflow
         .advance(
@@ -148,8 +150,10 @@ fn approved_business_payment_runs_through_query_and_commits_the_real_payment_ope
         .err()
         .expect("a different workflow operation command cannot claim recovery custody");
     assert!(matches!(
-        mismatched_recovery.denial::<WorthQueryWorkflowOperationRecoveryPreparationDenial>(),
-        Some(WorthQueryWorkflowOperationRecoveryPreparationDenial::Recovery(denial))
+        mismatched_recovery,
+        bank_server::BankApprovedPaymentWorkflowError::OperationRecoveryPreparation(
+            WorthQueryWorkflowOperationRecoveryPreparationDenial::Recovery(denial)
+        )
             if denial.kind() == WorthQueryRecoveryHandleDenialKind::IdempotencyMismatch
     ));
     let recovery = workflow

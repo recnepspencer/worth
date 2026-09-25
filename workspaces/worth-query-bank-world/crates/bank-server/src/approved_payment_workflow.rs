@@ -32,7 +32,6 @@ use crate::{
 mod error;
 #[path = "approved_payment_workflow/progression.rs"]
 mod progression;
-use error::other_denial;
 pub use error::BankApprovedPaymentWorkflowError;
 
 pub type BankApprovedPaymentAssessment =
@@ -131,7 +130,7 @@ impl<'runtime, 'principal, 'scope> BankApprovedPaymentWorkflow<'runtime, 'princi
                 approved_business_payment_definition()
                     .map_err(BankApprovedPaymentWorkflowError::Definition)?,
             )
-            .map_err(other_denial)?;
+            .map_err(BankApprovedPaymentWorkflowError::DefinitionBinding)?;
         self.runtime
             .request(self.principal, self.scope)
             .mutate(ApprovedBusinessPaymentAuthoringIntent { input: authority })
@@ -139,7 +138,7 @@ impl<'runtime, 'principal, 'scope> BankApprovedPaymentWorkflow<'runtime, 'princi
             .idempotency(command_key)
             .prepare_workflow_publication(contract, expected_predecessor)
             .map(|request| request.execute())
-            .map_err(other_denial)
+            .map_err(BankApprovedPaymentWorkflowError::DefinitionPublication)
     }
 
     pub fn start(
@@ -158,7 +157,7 @@ impl<'runtime, 'principal, 'scope> BankApprovedPaymentWorkflow<'runtime, 'princi
                 definition,
             )
             .map(|request| request.execute())
-            .map_err(other_denial)
+            .map_err(BankApprovedPaymentWorkflowError::InstanceStart)
     }
 
     pub fn propose(
@@ -174,7 +173,7 @@ impl<'runtime, 'principal, 'scope> BankApprovedPaymentWorkflow<'runtime, 'princi
             .idempotency(command_key)
             .prepare_workflow_proposal(self.runtime.approved_payment_workflow_runtime(), instance)
             .map(|request| request.execute())
-            .map_err(other_denial)
+            .map_err(BankApprovedPaymentWorkflowError::Proposal)
     }
 
     pub fn begin_payment_assessment(
@@ -191,15 +190,15 @@ impl<'runtime, 'principal, 'scope> BankApprovedPaymentWorkflow<'runtime, 'princi
             .without_source()
             .idempotency(command_key)
             .prepare_workflow_advance(self.runtime.approved_payment_workflow_runtime(), instance)
-            .map_err(other_denial)?
+            .map_err(BankApprovedPaymentWorkflowError::Advance)?
             .into_assessment_demand(ApprovedPaymentAssessmentDemand::new(payment_id))
-            .map_err(other_denial)?
+            .map_err(BankApprovedPaymentWorkflowError::AssessmentPreparation)?
             .controls(WorthQueryOutputDemandControls::new(
                 std::num::NonZeroUsize::new(1_024).expect("assessment work is nonzero"),
                 std::num::NonZeroUsize::new(16_384).expect("assessment bytes are nonzero"),
             ))
             .start()
-            .map_err(other_denial)
+            .map_err(BankApprovedPaymentWorkflowError::AssessmentDemand)
     }
 
     pub fn settle_payment_assessment(
@@ -211,7 +210,7 @@ impl<'runtime, 'principal, 'scope> BankApprovedPaymentWorkflow<'runtime, 'princi
     > {
         demand
             .settle(&self.runtime.request(self.principal, self.scope))
-            .map_err(other_denial)
+            .map_err(BankApprovedPaymentWorkflowError::AssessmentDemand)
     }
 
     pub fn accept_assessment(
@@ -227,9 +226,9 @@ impl<'runtime, 'principal, 'scope> BankApprovedPaymentWorkflow<'runtime, 'princi
             .without_source()
             .idempotency(command_key)
             .prepare_workflow_advance(self.runtime.approved_payment_workflow_runtime(), instance)
-            .map_err(other_denial)?
+            .map_err(BankApprovedPaymentWorkflowError::Advance)?
             .accept_assessment(assessment)
-            .map_err(other_denial)
+            .map_err(BankApprovedPaymentWorkflowError::AssessmentAcceptance)
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -256,9 +255,11 @@ impl<'runtime, 'principal, 'scope> BankApprovedPaymentWorkflow<'runtime, 'princi
                 proposal,
                 decision,
             )
-            .map_err(other_denial)?;
+            .map_err(BankApprovedPaymentWorkflowError::Advance)?;
         let Some(intent) = signing.authentication_intent().cloned() else {
-            return signing.execute_replay().map_err(other_denial);
+            return signing
+                .execute_replay()
+                .map_err(BankApprovedPaymentWorkflowError::Advance);
         };
         let event = self
             .runtime
@@ -269,7 +270,7 @@ impl<'runtime, 'principal, 'scope> BankApprovedPaymentWorkflow<'runtime, 'princi
         signing
             .sign(&event)
             .map(|request| request.execute())
-            .map_err(other_denial)
+            .map_err(BankApprovedPaymentWorkflowError::Advance)
     }
 
     pub fn perform_apply(
@@ -290,7 +291,7 @@ impl<'runtime, 'principal, 'scope> BankApprovedPaymentWorkflow<'runtime, 'princi
             .for_workflow_operation(self.runtime.approved_payment_workflow_runtime(), required)
             .map_err(BankApprovedPaymentWorkflowError::OperationBinding)?
             .execute_in_program(self.runtime.approved_payment_workflow_runtime())
-            .map_err(other_denial)?;
+            .map_err(BankApprovedPaymentWorkflowError::OperationMutation)?;
         Ok(match effect {
             WorthQueryApplicationMutationOutcome::Committed { receipt, .. } => {
                 BankApprovedPaymentApplyOutcome::Performed(BankApprovedPaymentPerformedOperation {
@@ -336,9 +337,9 @@ impl<'runtime, 'principal, 'scope> BankApprovedPaymentWorkflow<'runtime, 'princi
             .without_source()
             .idempotency(command_key)
             .prepare_workflow_advance(self.runtime.approved_payment_workflow_runtime(), instance)
-            .map_err(other_denial)?
+            .map_err(BankApprovedPaymentWorkflowError::Advance)?
             .accept_operation::<ApprovePaymentMutationBinding>(required, &performed.receipt)
-            .map_err(other_denial)
+            .map_err(BankApprovedPaymentWorkflowError::OperationAcceptance)
     }
 
     pub fn prepare_apply_recovery(
@@ -360,7 +361,7 @@ impl<'runtime, 'principal, 'scope> BankApprovedPaymentWorkflow<'runtime, 'princi
             )
             .map_err(BankApprovedPaymentWorkflowError::OperationBinding)?
             .prepare_workflow_operation_recovery(&performed.receipt)
-            .map_err(other_denial)
+            .map_err(BankApprovedPaymentWorkflowError::OperationRecoveryPreparation)
     }
 
     pub fn accept_recovered_applied(
@@ -378,12 +379,12 @@ impl<'runtime, 'principal, 'scope> BankApprovedPaymentWorkflow<'runtime, 'princi
             .without_source()
             .idempotency(command_key)
             .prepare_workflow_advance(self.runtime.approved_payment_workflow_runtime(), instance)
-            .map_err(other_denial)?
+            .map_err(BankApprovedPaymentWorkflowError::Advance)?
             .accept_recovered_operation::<ApprovePaymentMutationBinding>(
                 required,
                 &performed.receipt,
                 recovery,
             )
-            .map_err(other_denial)
+            .map_err(BankApprovedPaymentWorkflowError::OperationAcceptance)
     }
 }

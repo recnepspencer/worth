@@ -129,8 +129,10 @@ fn pending_rail_dispatch_remains_under_the_committed_outbox_owner() {
         )
         .expect_err("pending rail settlement cannot complete the workflow operation");
     assert!(matches!(
-        denied.denial::<WorthQueryWorkflowOperationAcceptanceDenial>(),
-        Some(WorthQueryWorkflowOperationAcceptanceDenial::RecoveryRequired)
+        denied,
+        bank_server::BankApprovedPaymentWorkflowError::OperationAcceptance(
+            WorthQueryWorkflowOperationAcceptanceDenial::RecoveryRequired
+        )
     ));
 }
 
@@ -168,8 +170,10 @@ fn lost_dispatch_before_rail_admission_requires_recovery_before_workflow_complet
         )
         .expect_err("an unresolved dispatch cannot complete the workflow operation");
     assert!(matches!(
-        denied.denial::<WorthQueryWorkflowOperationAcceptanceDenial>(),
-        Some(WorthQueryWorkflowOperationAcceptanceDenial::RecoveryRequired)
+        denied,
+        bank_server::BankApprovedPaymentWorkflowError::OperationAcceptance(
+            WorthQueryWorkflowOperationAcceptanceDenial::RecoveryRequired
+        )
     ));
     let required = match workflow
         .advance(
