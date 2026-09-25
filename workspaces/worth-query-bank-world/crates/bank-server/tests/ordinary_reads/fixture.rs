@@ -76,7 +76,18 @@ pub(super) fn ordinary_read_world_with_approval_authentication(
     scenario: &str,
     approval_authentication: BankApprovalAuthenticationConfiguration,
 ) -> OrdinaryReadFixture {
-    build_ordinary_read_world(scenario, 0, 1, Some(approval_authentication))
+    build_ordinary_read_world(scenario, 0, 1, Some(approval_authentication), false)
+}
+
+#[allow(
+    dead_code,
+    reason = "the shared fixture also compiles in targets without the actor-handoff court"
+)]
+pub(super) fn ordinary_read_world_with_two_approvers(
+    scenario: &str,
+    approval_authentication: BankApprovalAuthenticationConfiguration,
+) -> OrdinaryReadFixture {
+    build_ordinary_read_world(scenario, 0, 1, Some(approval_authentication), true)
 }
 
 pub(super) fn ordinary_read_world_with_pending_payments(
@@ -84,7 +95,13 @@ pub(super) fn ordinary_read_world_with_pending_payments(
     unrelated_accounts: usize,
     pending_payment_count: usize,
 ) -> OrdinaryReadFixture {
-    build_ordinary_read_world(scenario, unrelated_accounts, pending_payment_count, None)
+    build_ordinary_read_world(
+        scenario,
+        unrelated_accounts,
+        pending_payment_count,
+        None,
+        false,
+    )
 }
 
 fn build_ordinary_read_world(
@@ -92,6 +109,7 @@ fn build_ordinary_read_world(
     unrelated_accounts: usize,
     pending_payment_count: usize,
     approval_authentication: Option<BankApprovalAuthenticationConfiguration>,
+    second_approver: bool,
 ) -> OrdinaryReadFixture {
     assert!(pending_payment_count > 0);
     let mut identities = (0..(7 + unrelated_accounts))
@@ -156,6 +174,15 @@ fn build_ordinary_read_world(
         CustomerRole::Approver,
         "approver",
     );
+    if second_approver {
+        snapshot = grant(
+            snapshot,
+            business_account,
+            principal_id(STRANGER),
+            CustomerRole::Approver,
+            "second-approver",
+        );
+    }
     for ordinal in 0..pending_payment_count {
         let payment_proposal = BankProposalEngine::prepare_initiate_business_payment(
             &snapshot,

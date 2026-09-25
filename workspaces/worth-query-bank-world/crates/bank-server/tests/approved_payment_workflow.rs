@@ -1,3 +1,5 @@
+#[path = "approved_payment_workflow/actor_handoff.rs"]
+mod actor_handoff;
 #[path = "approved_payment_workflow/approval.rs"]
 mod approval;
 #[path = "approved_payment_workflow/assertions.rs"]

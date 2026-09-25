@@ -1,7 +1,7 @@
 use super::*;
 
 #[test]
-fn public_consumer_executes_every_typed_mutation_family() {
+fn public_consumer_executes_ordinary_mutation_families_without_bypassing_workflow_approval() {
     let fixture = ordinary_read_world("ordinary-mutations", 0);
     let owner = fixture.authenticate(OWNER);
     let recipient = fixture.authenticate(RECIPIENT);
@@ -138,11 +138,14 @@ fn public_consumer_executes_every_typed_mutation_family() {
         }),
         "approve",
     );
-    assert_program_committed::<ApprovePayment>(approval, true);
+    assert!(matches!(
+        approval,
+        Err(WorthQueryApplicationRequestMutationDenial::RequiresWorkflowTransition)
+    ));
     let pending = pending_payments(&fixture, &approver);
     assert!(pending
         .iter()
-        .all(|payment| payment.id() != fixture.payment));
+        .any(|payment| payment.id() == fixture.payment));
     let pending = pending
         .iter()
         .find(|payment| payment.id() != fixture.payment)
