@@ -33,6 +33,8 @@ mod workflow_ordinary;
 mod workflow_ordinary_component;
 #[path = "application_graph/workflow_ordinary_control.rs"]
 mod workflow_ordinary_control;
+#[path = "application_graph/workflow_ordinary_currentness.rs"]
+mod workflow_ordinary_currentness;
 #[path = "application_graph/workflow_ordinary_multi_subject.rs"]
 mod workflow_ordinary_multi_subject;
 #[path = "application_graph/workflow_ordinary_navigation.rs"]
