@@ -17,6 +17,8 @@ mod workflow_compilation;
 mod workflow_component_scale;
 #[path = "application_graph/workflow_condition.rs"]
 mod workflow_condition;
+#[path = "application_graph/workflow_control_scale.rs"]
+mod workflow_control_scale;
 #[path = "application_graph/workflow_effect_resources.rs"]
 mod workflow_effect_resources;
 #[path = "application_graph/workflow_geometry_scale.rs"]

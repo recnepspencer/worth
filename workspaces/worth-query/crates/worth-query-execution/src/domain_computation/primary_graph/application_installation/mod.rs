@@ -147,6 +147,9 @@ where
     {
         relational_builder = relational_builder.publication(publication);
     }
+    if let Some(scope_budget) = limits.profile.relation_integrity_scope_budget() {
+        relational_builder = relational_builder.relation_integrity_scope_budget(scope_budget);
+    }
     let relational_runtime = relational_builder.build();
     let decoded_checkpoint = checkpoint
         .map(super::WorthQueryApplicationCheckpoint::decode)

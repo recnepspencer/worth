@@ -124,10 +124,10 @@ pub fn publish_on_first_program_for_history_scale() -> BoundedDimensionRuntime<D
 }
 
 /// Scheduled 10k publication lane: 200k candidate items, 128 MiB candidate
-/// bytes, 20M candidate work, 200k operation width, and GeometryKernel's
-/// 65,536-record patch ceiling. Ordinary fixture actions retain their smaller
+/// bytes, 20M candidate work, 200k operation width, and WorkflowScale's
+/// finite Relational publication and integrity ceilings. Ordinary actions retain smaller
 /// handler-level candidate requirements.
-pub fn publish_on_first_program_for_geometry_scale() -> BoundedDimensionRuntime<DimensionProgramP0>
+pub fn publish_on_first_program_for_workflow_scale() -> BoundedDimensionRuntime<DimensionProgramP0>
 {
     publish_on_first_program_with_limits(
         WorthQueryInMemoryApplicationLimits::new(
@@ -144,7 +144,7 @@ pub fn publish_on_first_program_for_geometry_scale() -> BoundedDimensionRuntime<
                 .expect("finite geometry query resources"),
             primary_graph::SignalConditionalEvaluationBudget::development(),
         )
-        .with_profile(WorthQueryInMemoryApplicationProfile::GeometryKernel),
+        .with_profile(WorthQueryInMemoryApplicationProfile::WorkflowScale),
     )
 }
 
