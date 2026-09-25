@@ -10,6 +10,7 @@ use crate::source::{
 use super::appearance_declaration_lowerer::lower_role;
 use super::backdrop_declaration_lowerer::lower_backdrop;
 use super::component_appearance_attachment::lower_component;
+use super::layout_declaration_lowerer::lower_layout;
 use super::WorthUiFileAuthoredLoweredDeclaration;
 
 pub(crate) fn lower_parsed_source_declaration(
@@ -97,6 +98,9 @@ pub(crate) fn lower_parsed_source_declaration(
                 token_declaration,
                 declaration_index,
             ))
+        }
+        WorthUiParsedSourceDeclaration::Layout(block_declaration) => {
+            lower_layout(block_declaration, declaration_index)?
         }
         WorthUiParsedSourceDeclaration::AppearanceRole(role) => {
             return lower_role(role, declaration_index)

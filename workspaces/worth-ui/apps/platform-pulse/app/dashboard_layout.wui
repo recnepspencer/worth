@@ -1,0 +1,26 @@
+layout platform.pulse.component.page {
+  columns flex 1 min 480;
+  rows fixed 66, fixed 216, flex 1 min 348, flex 1 min 348, flex 1 min 346, flex 1 min 346;
+  gap 20 20;
+  padding 24 24;
+  member platform.pulse.component.service_eyebrow at 0 0;
+  member platform.pulse.component.service_title at 0 0;
+  member platform.pulse.component.metric_row at 0 1;
+  member platform.pulse.component.chart_panel at 0 2;
+  member platform.pulse.component.health_panel at 0 3;
+  member platform.pulse.component.activity_panel at 0 4;
+  member platform.pulse.component.deployments_panel at 0 5;
+  width from 1200 {
+    columns flex 2 min 480, flex 1 min 320;
+    rows fixed 66, fixed 98, flex 1 min 348, flex 1 min 346;
+    gap 20 20;
+    padding 24 24;
+    member platform.pulse.component.service_eyebrow at 0 0 span 2 1;
+    member platform.pulse.component.service_title at 0 0 span 2 1;
+    member platform.pulse.component.metric_row at 0 1 span 2 1;
+    member platform.pulse.component.chart_panel at 0 2;
+    member platform.pulse.component.health_panel at 1 2;
+    member platform.pulse.component.activity_panel at 0 3;
+    member platform.pulse.component.deployments_panel at 1 3;
+  }
+}

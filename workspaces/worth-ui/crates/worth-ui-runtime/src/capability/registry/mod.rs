@@ -52,7 +52,9 @@ pub use command_projection::{
     CommandProjectionReadinessDisplayPolicy, CommandProjectionShortcutVisibility,
     CommandProjectionSurface, FrozenCommandProjectionCapabilities, FrozenCommandProjectionEntry,
 };
-pub(crate) use component::{ComponentAcceptedRegistrationProof, ComponentRegistry};
+pub(crate) use component::{
+    ComponentAcceptedRegistrationProof, ComponentRegistry, UiAuthoredComponentLayout,
+};
 pub use component::{
     ComponentAccessibilitySupport, ComponentAllocationMeasurementContract,
     ComponentAppearanceAspectContractDenial, ComponentCanvasSpatialContract, ComponentChildPolicy,
@@ -64,7 +66,8 @@ pub use component::{
     ComponentRealtimeOverlayPriority, ComponentSemanticTextContract,
     ComponentSemanticTextContractDenial, ComponentSemanticTextSpanContract,
     ComponentStateOwnership, ComponentViewportAxisPlacement, ComponentViewportInset,
-    ComponentViewportRegion, FrozenComponentCapabilities,
+    ComponentViewportRegion, FrozenComponentCapabilities, UiAuthoredLayoutCause,
+    UiAuthoredLayoutDenial,
 };
 pub(crate) use family_names::{
     APPEARANCE_ROLE_FAMILY_NAME, APPEARANCE_THEME_FAMILY_NAME, COMMAND_FAMILY_NAME,

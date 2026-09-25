@@ -7,7 +7,8 @@ use crate::source::{
 use worth_ui_dsl::WorthUiSealedSemanticPackage;
 
 use super::{
-    prepare_declaration_material, service_declaration_admission::admit_service_declarations,
+    authored_layout::admit_authored_layouts, prepare_declaration_material,
+    service_declaration_admission::admit_service_declarations,
     WorthUiPreparedSemanticHandoffMaterial, WorthUiSemanticHandoffEvidence,
     WorthUiSemanticHandoffPreparationDenial, WorthUiSemanticHandoffPreparationStop,
 };
@@ -54,6 +55,12 @@ pub(in crate::runtime::source_ingress) fn prepare_semantic_handoff(
     let successor_snapshot = refrozen_regions.or(refrozen_roles).map(std::rc::Rc::new);
     evidence.successor_snapshot = successor_snapshot.clone();
     let snapshot = successor_snapshot.as_deref().unwrap_or(snapshot);
+    admit_authored_layouts(&package, snapshot).map_err(|cause| {
+        denial(
+            evidence.clone(),
+            WorthUiSemanticHandoffPreparationStop::AuthoredLayout(cause),
+        )
+    })?;
     let intent_material =
         crate::declaration::prepare_authored_intent_material(&package).map_err(|_| {
             denial(

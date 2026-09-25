@@ -59,6 +59,9 @@ fn nodes_are_equivalent(left: &WorthUiArtifactInputNode, right: &WorthUiArtifact
         (WorthUiArtifactInputNode::Backdrop(left), WorthUiArtifactInputNode::Backdrop(right)) => {
             left.declaration() == right.declaration()
         }
+        (WorthUiArtifactInputNode::Layout(left), WorthUiArtifactInputNode::Layout(right)) => {
+            left.declaration() == right.declaration()
+        }
         _ => false,
     }
 }

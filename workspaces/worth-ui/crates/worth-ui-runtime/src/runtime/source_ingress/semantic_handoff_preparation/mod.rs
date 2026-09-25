@@ -1,3 +1,6 @@
+mod authored_layout;
+#[cfg(test)]
+mod authored_layout_tests;
 mod authored_overlay_material;
 mod authored_scroll_region_clauses;
 #[cfg(test)]

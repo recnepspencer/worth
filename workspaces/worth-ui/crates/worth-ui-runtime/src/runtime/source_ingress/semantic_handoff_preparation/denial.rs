@@ -21,6 +21,7 @@ pub enum WorthUiSemanticHandoffPreparationStop {
     UnsupportedProtocol,
     AppearanceRoleRegistration(crate::capability::AppearanceRoleRegistrationDenial),
     AuthoredScrollRegion(crate::capability::UiAuthoredScrollRegionDenial),
+    AuthoredLayout(crate::capability::UiAuthoredLayoutDenial),
     CapabilityResolution,
     RuntimeStructuralAdmission,
     DeclarationProjection,

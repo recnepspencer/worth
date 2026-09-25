@@ -30,7 +30,8 @@ pub use sealed_semantic_artifact::WorthUiSealedSemanticArtifact;
 pub use sealed_semantic_package::{
     WorthUiSealedSemanticPackage, WorthUiSemanticAppearanceRoleDeclaration,
     WorthUiSemanticBackdropDeclaration, WorthUiSemanticBlock, WorthUiSemanticDeclaration,
-    WorthUiSemanticDeclarationView, WorthUiSemanticImport, WorthUiSemanticModule,
-    WorthUiSemanticProjectionDeclaration, WorthUiSemanticProvenanceRef, WorthUiSemanticToken,
+    WorthUiSemanticDeclarationView, WorthUiSemanticImport, WorthUiSemanticLayoutDeclaration,
+    WorthUiSemanticModule, WorthUiSemanticProjectionDeclaration, WorthUiSemanticProvenanceRef,
+    WorthUiSemanticToken,
 };
 pub use semantic_package_identity::WorthUiSemanticPackageIdentity;

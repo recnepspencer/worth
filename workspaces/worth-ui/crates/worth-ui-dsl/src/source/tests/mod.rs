@@ -1,5 +1,6 @@
 mod appearance_compiler_denial_tests;
 mod appearance_lowering_equivalence_tests;
+mod layout_declaration_tests;
 mod phase1_source_package_tests;
 mod phase2_parse_tests;
 mod phase3_artifact_input_tests;

@@ -80,6 +80,9 @@ fn node_normalization_key(
         WorthUiArtifactInputNode::Backdrop(node) => {
             format!("backdrop:{}", hex(node.declaration().canonical_bytes()))
         }
+        WorthUiArtifactInputNode::Layout(node) => {
+            format!("layout:{}", hex(node.declaration().canonical_bytes()))
+        }
     };
     (node.kind(), detail)
 }

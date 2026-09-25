@@ -1,3 +1,4 @@
+mod appearance;
 mod projection;
 mod revision;
 
@@ -47,6 +48,7 @@ pub(crate) enum WorthUiRustAuthoredDeclaration {
     SemanticArtifact(WorthUiSemanticArtifactDeclaration),
     AppearanceRole(crate::UiAppearanceRoleDeclaration),
     Backdrop(crate::UiBackdropDeclaration),
+    Layout(crate::UiLayoutDeclaration),
 }
 
 impl WorthUiRustAuthoredArtifactInputModule {
@@ -315,72 +317,11 @@ impl WorthUiRustAuthoredArtifactInputModule {
         self
     }
 
-    pub fn with_appearance_role(mut self, role: crate::UiAppearanceRoleDeclaration) -> Self {
+    /// Restates a container's registered layout, as a `layout` block does.
+    pub fn with_layout(mut self, declaration: crate::UiLayoutDeclaration) -> Self {
         self.declarations
-            .push(WorthUiRustAuthoredDeclaration::AppearanceRole(role));
+            .push(WorthUiRustAuthoredDeclaration::Layout(declaration));
         self
-    }
-
-    pub fn with_backdrop(mut self, declaration: crate::UiBackdropDeclaration) -> Self {
-        self.declarations
-            .push(WorthUiRustAuthoredDeclaration::Backdrop(declaration));
-        self
-    }
-
-    pub fn with_component_appearance_role(
-        mut self,
-        component_name: impl Into<String>,
-        attachment: crate::UiAppearanceRoleAttachmentDeclaration,
-    ) -> Result<Self, crate::UiAppearanceRoleAttachmentDeclarationDenial> {
-        let component_name = component_name.into();
-        let matching_components = self
-            .declarations
-            .iter()
-            .filter(|declaration| {
-                matches!(
-                    declaration,
-                    WorthUiRustAuthoredDeclaration::Component { name_text, .. }
-                        if name_text == &component_name
-                )
-            })
-            .count();
-        if matching_components > 1 {
-            return Err(crate::UiAppearanceRoleAttachmentDeclarationDenial::DuplicateAttachment);
-        }
-        if matching_components == 1 {
-            let declaration = self
-                .declarations
-                .iter_mut()
-                .find(|declaration| {
-                    matches!(
-                        declaration,
-                        WorthUiRustAuthoredDeclaration::Component { name_text, .. }
-                            if name_text == &component_name
-                    )
-                })
-                .expect("the single matching component must be present");
-            if let WorthUiRustAuthoredDeclaration::Component {
-                appearance_role_attachment,
-                ..
-            } = declaration
-            {
-                if appearance_role_attachment.is_some() {
-                    return Err(
-                        crate::UiAppearanceRoleAttachmentDeclarationDenial::DuplicateAttachment,
-                    );
-                }
-                *appearance_role_attachment = Some(attachment);
-            }
-            return Ok(self);
-        }
-        self.declarations
-            .push(WorthUiRustAuthoredDeclaration::Component {
-                name_text: component_name,
-                authored_identity: None,
-                body_atoms: Vec::new(),
-                appearance_role_attachment: Some(attachment),
-            });
-        Ok(self)
     }
 
     pub(crate) fn relative_module_path(&self) -> &str {

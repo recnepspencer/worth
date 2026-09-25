@@ -56,6 +56,13 @@ impl CanonicalPlatformPulse {
                 )),
             ),
             (
+                "dashboard_layout.wui",
+                include_bytes!(concat!(
+                    env!("CARGO_MANIFEST_DIR"),
+                    "/app/dashboard_layout.wui"
+                )),
+            ),
+            (
                 "dashboard_metrics.wui",
                 include_bytes!(concat!(
                     env!("CARGO_MANIFEST_DIR"),

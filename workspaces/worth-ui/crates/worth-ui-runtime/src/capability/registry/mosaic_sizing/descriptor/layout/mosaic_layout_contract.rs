@@ -1,9 +1,14 @@
+use std::collections::BTreeMap;
+
 use super::{MosaicLayoutDenial, MosaicTrack};
 use crate::capability::ComponentId;
 
 /// A container's declared track layout: column and row tracks, the gaps
 /// between them, the padding around them, and the member component each cell
 /// holds.
+///
+/// The members are a set keyed by component: the order they are declared in
+/// carries no meaning, so two declarations of the same cells are one layout.
 ///
 /// A member places itself within its cell through its own
 /// `ComponentAllocationMeasurementContract::LayoutCell` region; the container
@@ -17,14 +22,7 @@ pub struct MosaicLayoutContract {
     row_gap_logical_points: u16,
     inline_padding_logical_points: u16,
     block_padding_logical_points: u16,
-    members: Vec<MosaicLayoutMember>,
-}
-
-/// One member component and the cells it spans.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct MosaicLayoutMember {
-    component: ComponentId,
-    cell: MosaicLayoutCell,
+    members: BTreeMap<ComponentId, MosaicLayoutCell>,
 }
 
 /// A half-open span of column and row tracks.
@@ -100,7 +98,7 @@ impl MosaicLayoutContract {
             row_gap_logical_points: 0,
             inline_padding_logical_points: 0,
             block_padding_logical_points: 0,
-            members: Vec::new(),
+            members: BTreeMap::new(),
         })
     }
 
@@ -147,10 +145,10 @@ impl MosaicLayoutContract {
         if column_end > self.columns.len() || row_end > self.rows.len() {
             return Err(MosaicLayoutDenial::CellOutsideTracks);
         }
-        if self.member_cell(&component).is_some() {
+        if self.members.contains_key(&component) {
             return Err(MosaicLayoutDenial::DuplicateMember);
         }
-        self.members.push(MosaicLayoutMember { component, cell });
+        self.members.insert(component, cell);
         Ok(self)
     }
 
@@ -201,14 +199,11 @@ impl MosaicLayoutContract {
     pub fn members(&self) -> impl Iterator<Item = (&ComponentId, MosaicLayoutCell)> {
         self.members
             .iter()
-            .map(|member| (&member.component, member.cell))
+            .map(|(component, cell)| (component, *cell))
     }
 
     pub fn member_cell(&self, component: &ComponentId) -> Option<MosaicLayoutCell> {
-        self.members
-            .iter()
-            .find(|member| &member.component == component)
-            .map(|member| member.cell)
+        self.members.get(component).copied()
     }
 
     pub(crate) fn digest_basis(&self) -> String {
@@ -222,14 +217,14 @@ impl MosaicLayoutContract {
         let members = self
             .members
             .iter()
-            .map(|member| {
+            .map(|(component, cell)| {
                 format!(
                     "{}@{}:{}:{}:{}",
-                    member.component.as_str(),
-                    member.cell.column,
-                    member.cell.row,
-                    member.cell.column_span,
-                    member.cell.row_span,
+                    component.as_str(),
+                    cell.column,
+                    cell.row,
+                    cell.column_span,
+                    cell.row_span,
                 )
             })
             .collect::<Vec<_>>()
@@ -301,6 +296,31 @@ mod tests {
             MosaicLayoutContract::grid([], [MosaicTrack::fixed(1).unwrap()]),
             Err(MosaicLayoutDenial::NoTracks)
         );
+    }
+
+    #[test]
+    fn member_order_is_not_part_of_the_layout() {
+        let tracks = || {
+            MosaicLayoutContract::columns([
+                MosaicTrack::flex(1, 0).unwrap(),
+                MosaicTrack::flex(1, 0).unwrap(),
+            ])
+            .unwrap()
+        };
+        let chart = (id("demo.component.chart"), MosaicLayoutCell::at(0, 0));
+        let table = (id("demo.component.table"), MosaicLayoutCell::at(1, 0));
+        let place = |first: &(ComponentId, MosaicLayoutCell),
+                     second: &(ComponentId, MosaicLayoutCell)| {
+            tracks()
+                .with_member(first.0.clone(), first.1)
+                .unwrap()
+                .with_member(second.0.clone(), second.1)
+                .unwrap()
+        };
+        let forward = place(&chart, &table);
+        let backward = place(&table, &chart);
+        assert_eq!(forward, backward);
+        assert_eq!(forward.digest_basis(), backward.digest_basis());
     }
 
     #[test]

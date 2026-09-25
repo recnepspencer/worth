@@ -8,10 +8,13 @@ mod region_bindings;
 mod sealed_semantic_accessors;
 #[path = "sealed_semantic_appearance.rs"]
 mod sealed_semantic_appearance;
+#[path = "sealed_semantic_layout.rs"]
+mod sealed_semantic_layout;
 mod sealing;
 pub use sealed_semantic_appearance::{
     WorthUiSemanticAppearanceRoleDeclaration, WorthUiSemanticBackdropDeclaration,
 };
+pub use sealed_semantic_layout::WorthUiSemanticLayoutDeclaration;
 use std::collections::{BTreeMap, BTreeSet};
 
 use super::{
@@ -55,6 +58,7 @@ pub enum WorthUiSemanticDeclaration {
     SemanticArtifact(WorthUiSealedSemanticArtifact),
     AppearanceRole(WorthUiSemanticAppearanceRoleDeclaration),
     Backdrop(WorthUiSemanticBackdropDeclaration),
+    Layout(WorthUiSemanticLayoutDeclaration),
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -390,6 +394,7 @@ impl WorthUiSemanticDeclaration {
             Self::SemanticArtifact(declaration) => declaration.provenance_ref(),
             Self::AppearanceRole(declaration) => declaration.provenance_ref(),
             Self::Backdrop(declaration) => declaration.provenance_ref(),
+            Self::Layout(declaration) => declaration.provenance_ref(),
         }
     }
 }

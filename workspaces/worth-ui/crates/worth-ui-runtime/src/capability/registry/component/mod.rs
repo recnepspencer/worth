@@ -1,3 +1,4 @@
+mod authored_component_layout;
 mod component_accepted_registration_proof;
 mod component_allocation_contract_state;
 mod component_allocation_measurement_contract;
@@ -21,6 +22,8 @@ mod component_viewport_inset;
 mod component_viewport_region;
 mod frozen_component_capabilities;
 
+pub(crate) use authored_component_layout::UiAuthoredComponentLayout;
+pub use authored_component_layout::{UiAuthoredLayoutCause, UiAuthoredLayoutDenial};
 pub(crate) use component_accepted_registration_proof::ComponentAcceptedRegistrationProof;
 pub use component_allocation_measurement_contract::ComponentAllocationMeasurementContract;
 pub use component_child_policy::ComponentChildPolicy;

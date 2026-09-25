@@ -1,6 +1,7 @@
 mod appearance_declaration_lowerer;
 mod backdrop_declaration_lowerer;
 mod component_appearance_attachment;
+mod layout_declaration_lowerer;
 mod worth_ui_parsed_source_declaration_lowerer;
 mod worth_ui_parsed_source_to_artifact_input_lowerer;
 

@@ -12,6 +12,7 @@ pub mod graph;
 pub mod inspection;
 pub mod intent;
 pub mod interaction;
+pub mod layout;
 pub mod measurement_exchange;
 mod inspection_bridge {}
 mod lifecycle {}

@@ -318,6 +318,7 @@ fn provenance(node: &WorthUiArtifactInputNode) -> &WorthUiArtifactInputProvenanc
         WorthUiArtifactInputNode::SemanticArtifact(node) => node.provenance(),
         WorthUiArtifactInputNode::AppearanceRole(node) => node.provenance(),
         WorthUiArtifactInputNode::Backdrop(node) => node.provenance(),
+        WorthUiArtifactInputNode::Layout(node) => node.provenance(),
     }
 }
 

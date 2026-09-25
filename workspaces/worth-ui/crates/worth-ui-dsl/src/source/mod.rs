@@ -21,8 +21,8 @@ pub(crate) use artifact_input::WorthUiArtifactInputNormalizer;
 pub use artifact_input::{
     WorthUiArtifactInput, WorthUiArtifactInputAppearanceRoleNode, WorthUiArtifactInputBackdropNode,
     WorthUiArtifactInputBlockNode, WorthUiArtifactInputBodyAtom, WorthUiArtifactInputImportNode,
-    WorthUiArtifactInputModule, WorthUiArtifactInputNode, WorthUiArtifactInputNodeKind,
-    WorthUiArtifactInputProvenance, WorthUiArtifactInputReference,
+    WorthUiArtifactInputLayoutNode, WorthUiArtifactInputModule, WorthUiArtifactInputNode,
+    WorthUiArtifactInputNodeKind, WorthUiArtifactInputProvenance, WorthUiArtifactInputReference,
     WorthUiArtifactInputSemanticArtifactNode, WorthUiArtifactInputTokenNode,
     WorthUiSemanticArtifactDeclaration,
 };
@@ -38,8 +38,9 @@ pub use compile::{
     WorthUiSealedSemanticArtifact, WorthUiSealedSemanticPackage,
     WorthUiSemanticAppearanceRoleDeclaration, WorthUiSemanticBackdropDeclaration,
     WorthUiSemanticBlock, WorthUiSemanticDeclaration, WorthUiSemanticDeclarationView,
-    WorthUiSemanticImport, WorthUiSemanticModule, WorthUiSemanticPackageIdentity,
-    WorthUiSemanticProjectionDeclaration, WorthUiSemanticProvenanceRef, WorthUiSemanticToken,
+    WorthUiSemanticImport, WorthUiSemanticLayoutDeclaration, WorthUiSemanticModule,
+    WorthUiSemanticPackageIdentity, WorthUiSemanticProjectionDeclaration,
+    WorthUiSemanticProvenanceRef, WorthUiSemanticToken,
 };
 pub(crate) use import_graph::{WorthUiSourceImport, WorthUiSourceImportGraph};
 pub use legality::{

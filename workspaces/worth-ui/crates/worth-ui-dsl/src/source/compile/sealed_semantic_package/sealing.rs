@@ -63,6 +63,12 @@ pub(super) fn seal_declaration(
                 provenance_ref,
             ),
         )),
+        WorthUiArtifactInputNode::Layout(node) => Ok(WorthUiSemanticDeclaration::Layout(
+            super::WorthUiSemanticLayoutDeclaration::new(
+                node.declaration().clone(),
+                provenance_ref,
+            ),
+        )),
     }
 }
 
@@ -80,6 +86,7 @@ pub(super) fn input_node_provenance(
         WorthUiArtifactInputNode::SemanticArtifact(declaration) => declaration.provenance(),
         WorthUiArtifactInputNode::AppearanceRole(declaration) => declaration.provenance(),
         WorthUiArtifactInputNode::Backdrop(declaration) => declaration.provenance(),
+        WorthUiArtifactInputNode::Layout(declaration) => declaration.provenance(),
     }
 }
 

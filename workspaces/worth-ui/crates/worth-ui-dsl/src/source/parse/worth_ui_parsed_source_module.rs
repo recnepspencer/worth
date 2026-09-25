@@ -27,6 +27,7 @@ pub(crate) enum WorthUiParsedSourceDeclaration {
     Token(WorthUiParsedTokenDeclaration),
     AppearanceRole(WorthUiParsedAppearanceRoleDeclaration),
     Backdrop(WorthUiParsedBlockDeclaration),
+    Layout(WorthUiParsedBlockDeclaration),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -245,7 +246,8 @@ impl WorthUiParsedSourceDeclaration {
             | (Self::Surface(left), Self::Surface(right))
             | (Self::Binding(left), Self::Binding(right))
             | (Self::QueryScalar(left), Self::QueryScalar(right))
-            | (Self::QueryCollection(left), Self::QueryCollection(right)) => {
+            | (Self::QueryCollection(left), Self::QueryCollection(right))
+            | (Self::Layout(left), Self::Layout(right)) => {
                 left.name_text == right.name_text && left.body.tokens == right.body.tokens
             }
             (Self::Token(left), Self::Token(right)) => {

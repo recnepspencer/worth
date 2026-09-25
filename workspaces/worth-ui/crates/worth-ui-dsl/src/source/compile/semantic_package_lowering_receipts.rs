@@ -62,7 +62,8 @@ fn lower_declaration(view: WorthUiSemanticDeclarationView<'_>) -> Option<Lowerin
         | WorthUiSemanticDeclaration::Projection(_)
         | WorthUiSemanticDeclaration::Token(_)
         | WorthUiSemanticDeclaration::AppearanceRole(_)
-        | WorthUiSemanticDeclaration::Backdrop(_) => {
+        | WorthUiSemanticDeclaration::Backdrop(_)
+        | WorthUiSemanticDeclaration::Layout(_) => {
             return None;
         }
     };

@@ -182,6 +182,12 @@ fn lower_rust_authored_module(
                         ),
                     )
                 }
+                WorthUiRustAuthoredDeclaration::Layout(declaration) => {
+                    WorthUiArtifactInputNode::Layout(crate::WorthUiArtifactInputLayoutNode::new(
+                        declaration.clone(),
+                        provenance,
+                    ))
+                }
                 WorthUiRustAuthoredDeclaration::Backdrop(declaration) => {
                     WorthUiArtifactInputNode::Backdrop(
                         crate::WorthUiArtifactInputBackdropNode::new(

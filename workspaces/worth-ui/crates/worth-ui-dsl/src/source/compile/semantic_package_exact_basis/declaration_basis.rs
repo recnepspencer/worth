@@ -39,6 +39,7 @@ pub(super) enum WorthUiSemanticDeclarationExactBasis {
     },
     AppearanceRole(Box<[u8]>),
     Backdrop(Box<[u8]>),
+    Layout(Box<[u8]>),
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -114,6 +115,9 @@ impl WorthUiSemanticDeclarationExactBasis {
             }
             WorthUiSemanticDeclaration::Backdrop(backdrop) => {
                 Self::Backdrop(backdrop.declaration().canonical_bytes().into_boxed_slice())
+            }
+            WorthUiSemanticDeclaration::Layout(layout) => {
+                Self::Layout(layout.declaration().canonical_bytes().into_boxed_slice())
             }
         }
     }
@@ -203,6 +207,10 @@ impl WorthUiSemanticDeclarationExactBasis {
             Self::Backdrop(text) => {
                 fingerprint.fold_text("backdrop");
                 fingerprint.fold_bytes(text);
+            }
+            Self::Layout(bytes) => {
+                fingerprint.fold_text("layout");
+                fingerprint.fold_bytes(bytes);
             }
         }
     }

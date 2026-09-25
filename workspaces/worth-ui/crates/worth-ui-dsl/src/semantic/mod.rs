@@ -1,5 +1,6 @@
 mod appearance;
 mod intent;
+mod layout;
 mod overlay;
 mod service;
 mod ui_dsl_lowering_receipt;
@@ -18,6 +19,9 @@ pub use intent::{
     WorthUiIntentOperabilityContractSpec, WorthUiIntentPayloadSource,
     WorthUiIntentPayloadSourceSpec, WorthUiIntentPolicySourceSpec,
     WorthUiIntentReadinessSourceSpec, WorthUiIntentSchemaExpectation,
+};
+pub use layout::{
+    UiLayoutCell, UiLayoutDeclaration, UiLayoutGrid, UiLayoutTrack, UiLayoutWidthInterval,
 };
 pub use overlay::*;
 pub use service::{

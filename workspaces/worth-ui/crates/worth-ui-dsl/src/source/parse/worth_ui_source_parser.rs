@@ -138,6 +138,9 @@ fn parse_next_declaration(
                 service_block_kind(keyword).expect("guarded service keyword"),
             )
         }
+        Some(WorthUiSourceTokenKind::Identifier(keyword)) if keyword == "layout" => {
+            parse_block_declaration(module_id, source_length, stream, BlockKind::Layout)
+        }
         Some(_) => Err(unexpected_token_diagnostic(
             stream.next().expect("peeked token should exist"),
             "expected a top-level declaration keyword",
@@ -219,6 +222,7 @@ fn parse_block_declaration(
         BlockKind::Binding => WorthUiParsedSourceDeclaration::Binding(declaration),
         BlockKind::QueryScalar => WorthUiParsedSourceDeclaration::QueryScalar(declaration),
         BlockKind::QueryCollection => WorthUiParsedSourceDeclaration::QueryCollection(declaration),
+        BlockKind::Layout => WorthUiParsedSourceDeclaration::Layout(declaration),
     })
 }
 
@@ -342,6 +346,7 @@ enum BlockKind {
     Binding,
     QueryScalar,
     QueryCollection,
+    Layout,
 }
 
 fn service_block_kind(keyword: &str) -> Option<BlockKind> {

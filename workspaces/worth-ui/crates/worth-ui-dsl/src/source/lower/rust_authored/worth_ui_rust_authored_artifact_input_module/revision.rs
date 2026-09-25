@@ -90,6 +90,14 @@ fn fold_declaration(digest: &mut u64, declaration: &WorthUiRustAuthoredDeclarati
                 fold_u64(digest, u64::from(byte));
             }
         }
+        WorthUiRustAuthoredDeclaration::Layout(declaration) => {
+            fold_text(digest, "layout");
+            let bytes = declaration.canonical_bytes();
+            fold_u64(digest, bytes.len() as u64);
+            for byte in bytes {
+                fold_u64(digest, u64::from(byte));
+            }
+        }
         WorthUiRustAuthoredDeclaration::Backdrop(declaration) => {
             fold_text(digest, "backdrop");
             let bytes = declaration.canonical_bytes();

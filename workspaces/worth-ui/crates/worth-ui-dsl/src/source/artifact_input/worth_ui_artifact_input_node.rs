@@ -15,6 +15,7 @@ pub enum WorthUiArtifactInputNodeKind {
     SemanticArtifact,
     AppearanceRole,
     Backdrop,
+    Layout,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -57,6 +58,7 @@ pub enum WorthUiArtifactInputNode {
     SemanticArtifact(WorthUiArtifactInputSemanticArtifactNode),
     AppearanceRole(WorthUiArtifactInputAppearanceRoleNode),
     Backdrop(WorthUiArtifactInputBackdropNode),
+    Layout(WorthUiArtifactInputLayoutNode),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -100,6 +102,12 @@ pub struct WorthUiArtifactInputBackdropNode {
     provenance: WorthUiArtifactInputProvenance,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct WorthUiArtifactInputLayoutNode {
+    declaration: crate::UiLayoutDeclaration,
+    provenance: WorthUiArtifactInputProvenance,
+}
+
 impl WorthUiArtifactInputNode {
     pub fn kind(&self) -> WorthUiArtifactInputNodeKind {
         match self {
@@ -113,6 +121,7 @@ impl WorthUiArtifactInputNode {
             Self::SemanticArtifact(_) => WorthUiArtifactInputNodeKind::SemanticArtifact,
             Self::AppearanceRole(_) => WorthUiArtifactInputNodeKind::AppearanceRole,
             Self::Backdrop(_) => WorthUiArtifactInputNodeKind::Backdrop,
+            Self::Layout(_) => WorthUiArtifactInputNodeKind::Layout,
         }
     }
 
@@ -129,6 +138,7 @@ impl WorthUiArtifactInputNode {
             Self::SemanticArtifact(node) => node.provenance(),
             Self::AppearanceRole(node) => node.provenance(),
             Self::Backdrop(node) => node.provenance(),
+            Self::Layout(node) => node.provenance(),
         }
     }
 }
@@ -182,6 +192,26 @@ impl WorthUiArtifactInputBackdropNode {
     }
 
     pub fn declaration(&self) -> &crate::UiBackdropDeclaration {
+        &self.declaration
+    }
+
+    pub fn provenance(&self) -> &WorthUiArtifactInputProvenance {
+        &self.provenance
+    }
+}
+
+impl WorthUiArtifactInputLayoutNode {
+    pub(crate) fn new(
+        declaration: crate::UiLayoutDeclaration,
+        provenance: WorthUiArtifactInputProvenance,
+    ) -> Self {
+        Self {
+            declaration,
+            provenance,
+        }
+    }
+
+    pub fn declaration(&self) -> &crate::UiLayoutDeclaration {
         &self.declaration
     }
 
