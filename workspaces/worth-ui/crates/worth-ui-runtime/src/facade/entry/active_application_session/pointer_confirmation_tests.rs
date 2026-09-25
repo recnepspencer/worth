@@ -342,7 +342,7 @@ fn target_position(
             )
         })
         .unwrap();
-    let bounds = row.bounds();
+    let bounds = row.bounds().platform_box();
     UiHostSurfacePosition::viewport_logical(
         ((bounds.x() + bounds.width() / 2.0) * 1000.0) as i64,
         ((bounds.y() + bounds.height() / 2.0) * 1000.0) as i64,

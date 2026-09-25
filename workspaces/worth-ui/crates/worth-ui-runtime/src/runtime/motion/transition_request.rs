@@ -11,7 +11,7 @@ use super::receipt::{UiCommittedMotionPredecessorReceipt, UiPreparedMotionSucces
 pub(crate) struct UiMotionTransitionEndpoint {
     revision: u64,
     presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
-    geometry: Option<super::UiMotionSemanticGeometry>,
+    geometry: Option<crate::mounting::presentation::UiPublishedRect>,
     visible: bool,
 }
 
@@ -19,7 +19,7 @@ impl UiMotionTransitionEndpoint {
     pub(crate) const fn new(
         revision: u64,
         presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
-        geometry: Option<super::UiMotionSemanticGeometry>,
+        geometry: Option<crate::mounting::presentation::UiPublishedRect>,
         visible: bool,
     ) -> Self {
         Self {

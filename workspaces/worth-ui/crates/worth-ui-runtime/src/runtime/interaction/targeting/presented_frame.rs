@@ -61,7 +61,9 @@ pub(crate) fn resolve_presented_target(
                 },
             );
         }
-        if !contains(row.bounds(), point) || !contains(row.clip_bounds(), point) {
+        if !row.bounds().admits_platform_point(point)
+            || !row.clip_bounds().admits_platform_point(point)
+        {
             continue;
         }
         if let Some(current) = selected {
@@ -176,13 +178,6 @@ fn canonical_point(position: UiHostSurfacePosition) -> [f32; 2] {
         (position.x_subpixels() as f64 / scale) as f32,
         (position.y_subpixels() as f64 / scale) as f32,
     ]
-}
-
-fn contains(bounds: worth_ui_host_contract::UiMountedCanonicalBox, point: [f32; 2]) -> bool {
-    point[0] >= bounds.x()
-        && point[0] < bounds.x() + bounds.width()
-        && point[1] >= bounds.y()
-        && point[1] < bounds.y() + bounds.height()
 }
 
 pub(crate) fn map_current_affinity_denial(

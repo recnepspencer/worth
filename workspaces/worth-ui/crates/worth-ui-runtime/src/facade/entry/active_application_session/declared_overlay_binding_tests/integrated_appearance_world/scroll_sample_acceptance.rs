@@ -20,7 +20,7 @@ fn rejected_scroll_sample_preserves_the_previously_displayed_offset() {
     // deliberately separate from the rejection of the next moving sample.
     settle_frame(&mut scroll, 6);
     let before = scroll.accepted_offset();
-    let before_pose = scroll.displayed_offset();
+    let before_pose = scroll.mounted_offset();
     let calls_before = scroll.world.host.presentation_calls();
     scroll.world.host.push_rejected();
     settle_scripted_frame(&mut scroll, 7);
@@ -28,7 +28,7 @@ fn rejected_scroll_sample_preserves_the_previously_displayed_offset() {
     let actual = (
         scroll.world.host.presentation_calls() - calls_before,
         scroll.accepted_offset(),
-        scroll.displayed_offset(),
+        scroll.mounted_offset(),
     );
     let _ = scroll.world.session.shutdown();
     assert_eq!(
@@ -71,7 +71,7 @@ fn rejected_endpoint_retains_signed_target_for_input_after_the_old_horizon() {
         settle_frame(&mut scroll, tick);
     }
     assert_eq!(scroll.accepted_offset().block_subpixels(), 20_000);
-    assert_eq!(scroll.displayed_offset(), Some(scroll.accepted_offset()));
+    assert_eq!(scroll.mounted_offset(), Some(scroll.accepted_offset()));
     let _ = scroll.world.session.shutdown();
 }
 
@@ -106,7 +106,7 @@ fn in_flight_scroll_sample_moves_nothing_until_matching_physical_completion() {
         .mounted
         .motion_sample_presentation_pending());
     assert_eq!(scroll.accepted_offset(), before);
-    assert_eq!(scroll.displayed_offset(), Some(before));
+    assert_eq!(scroll.mounted_offset(), Some(before));
     scroll.world.session.complete_motion_sample_presentation();
     assert!(scroll
         .world
@@ -122,6 +122,6 @@ fn in_flight_scroll_sample_moves_nothing_until_matching_physical_completion() {
         .mounted
         .motion_sample_presentation_pending());
     assert!(scroll.accepted_offset().block_subpixels() > before.block_subpixels());
-    assert_eq!(scroll.displayed_offset(), Some(scroll.accepted_offset()));
+    assert_eq!(scroll.mounted_offset(), Some(scroll.accepted_offset()));
     let _ = scroll.world.session.shutdown();
 }

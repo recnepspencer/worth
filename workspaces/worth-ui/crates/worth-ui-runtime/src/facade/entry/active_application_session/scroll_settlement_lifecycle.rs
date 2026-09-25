@@ -142,7 +142,7 @@ impl super::super::WorthUiActiveApplicationSession {
             .unwrap_or_default();
         let orphaned = self
             .mounted
-            .accepted_scroll_group_translations()
+            .accepted_scroll_group_samples()
             .into_iter()
             .map(|(target, _)| target)
             .filter(|target| !settling.contains(target))

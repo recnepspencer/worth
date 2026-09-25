@@ -85,7 +85,7 @@ fn viewport_bounds(
     geometry: crate::runtime::interaction::UiPresentedInteractionGeometry,
 ) -> crate::runtime::interaction::UiPresentedViewportGeometry {
     crate::runtime::interaction::UiPresentedViewportGeometry::for_test(
-        geometry.clip_bounds(),
+        geometry.clip_bounds().adopted().canonical_box(),
         geometry.presentation(),
     )
 }

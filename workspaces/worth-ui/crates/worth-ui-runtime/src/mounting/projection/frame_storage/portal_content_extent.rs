@@ -89,8 +89,8 @@ impl UiMountedProjectionFrame {
             paint
         };
         Ok(Some(crate::runtime::portal::UiPortalContentBounds {
-            layout,
-            paint,
+            layout: crate::mounting::presentation::UiPublishedRect::from_committed_box(layout),
+            paint: crate::mounting::presentation::UiPublishedRect::from_committed_box(paint),
         }))
     }
 }

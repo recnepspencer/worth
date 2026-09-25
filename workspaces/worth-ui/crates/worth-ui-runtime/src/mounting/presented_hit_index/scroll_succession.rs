@@ -28,10 +28,7 @@ impl UiPresentedHitIndex {
             {
                 continue;
             }
-            let delta = [
-                old.scroll_translation[0] - new.scroll_translation[0],
-                old.scroll_translation[1] - new.scroll_translation[1],
-            ];
+            let delta = old.scroll_translation.beyond(new.scroll_translation);
             let effective = new.effective.map(|row| row.scroll_translated(delta));
             self.update_partition(new.base, new.effective, effective, 0, &mut work);
             work.scroll_rows_displaced += 1;

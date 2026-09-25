@@ -26,20 +26,14 @@ impl UiMountedMotionSampler {
     /// Only a Scroll-content target answers. An ordinary component target and a
     /// Portal-content target name different moving things on the same mounted
     /// instance, so neither can stand in for this group.
-    pub(crate) fn accepted_scroll_group_translation(
+    pub(crate) fn accepted_scroll_group_sample(
         &self,
         target: UiMotionTargetIdentity,
-    ) -> Option<[f32; 2]> {
+    ) -> Option<crate::mounting::presentation::UiAcceptedRect> {
         if target.scope() != UiMotionTargetScope::ScrollContents {
             return None;
         }
-        let components = self
-            .tracks
-            .get(&target)?
-            .on_screen()?
-            .geometry()?
-            .components();
-        Some([components[0], components[1]])
+        self.tracks.get(&target)?.on_screen()?.geometry()
     }
 }
 

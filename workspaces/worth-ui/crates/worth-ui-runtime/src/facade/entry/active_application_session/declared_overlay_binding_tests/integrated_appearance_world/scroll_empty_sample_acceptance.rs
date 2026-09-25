@@ -32,6 +32,7 @@ fn stationary_owner_hit(scroll: &ScrollWorld) -> UiMountedCanonicalBox {
         .find(|row| row.mounted_instance() == scroll.target())
         .unwrap()
         .bounds()
+        .platform_box()
 }
 
 #[test]
@@ -83,7 +84,7 @@ fn an_empty_smooth_group_rejects_waits_and_settles_through_no_paint_host_accepta
         initial.1,
         "retry acceptance replaces physical evidence"
     );
-    let before = (scroll.accepted_offset(), scroll.displayed_offset());
+    let before = (scroll.accepted_offset(), scroll.mounted_offset());
     scroll.world.host.push_in_flight(
         vec![
             ScriptedSurfaceCompletion::Pending,
@@ -97,20 +98,14 @@ fn an_empty_smooth_group_rejects_waits_and_settles_through_no_paint_host_accepta
         .session
         .mounted
         .motion_sample_presentation_pending());
-    assert_eq!(
-        (scroll.accepted_offset(), scroll.displayed_offset()),
-        before
-    );
+    assert_eq!((scroll.accepted_offset(), scroll.mounted_offset()), before);
     scroll.world.session.complete_motion_sample_presentation();
     assert!(scroll
         .world
         .session
         .mounted
         .motion_sample_presentation_pending());
-    assert_eq!(
-        (scroll.accepted_offset(), scroll.displayed_offset()),
-        before
-    );
+    assert_eq!((scroll.accepted_offset(), scroll.mounted_offset()), before);
     scroll.world.session.complete_motion_sample_presentation();
     scroll.world.session.settle_owed_scroll_samples();
     assert!(!scroll
@@ -119,7 +114,7 @@ fn an_empty_smooth_group_rejects_waits_and_settles_through_no_paint_host_accepta
         .mounted
         .motion_sample_presentation_pending());
     assert!(scroll.accepted_offset().block_subpixels() > before.0.block_subpixels());
-    assert_eq!(scroll.displayed_offset(), Some(scroll.accepted_offset()));
+    assert_eq!(scroll.mounted_offset(), Some(scroll.accepted_offset()));
     assert_eq!(stationary_owner_hit(&scroll), initial.2);
 
     for tick in 9..=20 {
@@ -135,7 +130,7 @@ fn an_empty_smooth_group_rejects_waits_and_settles_through_no_paint_host_accepta
         settle_scripted_frame(&mut scroll, tick);
     }
     assert_eq!(scroll.accepted_offset(), block(10));
-    assert_eq!(scroll.displayed_offset(), Some(block(10)));
+    assert_eq!(scroll.mounted_offset(), Some(block(10)));
     assert_eq!(stationary_owner_hit(&scroll), initial.2);
     assert_eq!(
         pending_transitions(&scroll),

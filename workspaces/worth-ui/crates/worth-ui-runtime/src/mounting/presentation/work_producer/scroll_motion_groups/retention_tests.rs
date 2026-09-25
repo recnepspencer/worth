@@ -43,8 +43,15 @@ fn independently_projected_command_clips_are_not_mistaken_for_shared_input_clips
             base_translation: None,
         }]),
         thumbs: Arc::from([]),
-        displayed: [0.0; 2],
-        accepted: Default::default(),
+        bound_standing: super::group_offset::UiBoundGroupStanding::new(
+            super::group_offset::UiGroupStanding::Published(
+                super::group_offset::UiPublishedGroupOffset::of(
+                    crate::runtime::scroll::UiScrollOffset::origin(),
+                ),
+            ),
+            super::group_offset::UiScrollGroupBind::default(),
+        ),
+        displayed_sample: Default::default(),
     };
     assert!(!Arc::ptr_eq(
         &group.input.members[0].clips,

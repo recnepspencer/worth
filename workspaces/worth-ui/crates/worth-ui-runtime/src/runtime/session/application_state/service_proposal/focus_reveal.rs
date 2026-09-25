@@ -57,6 +57,9 @@ impl super::super::WorthUiApplicationSessionState {
         let Some(row) = row else {
             return Ok(None);
         };
+        let [target_x, target_y, target_width, target_height] = row.bounds().adopted().components();
+        let [viewport_x, viewport_y, viewport_width, viewport_height] =
+            row.clip_bounds().adopted().components();
         let mounted_incarnation =
             crate::runtime::scroll::UiScrollOwnerIncarnation::from_mount_incarnation(
                 target.mount_incarnation(),
@@ -67,8 +70,8 @@ impl super::super::WorthUiApplicationSessionState {
                 crate::runtime::scroll::UiScrollAnchorIdentity::application_item,
             ),
             row.mounted().binding(),
-            signed_subpixels(row.bounds().x())?.max(0),
-            signed_subpixels(row.bounds().y())?.max(0),
+            signed_subpixels(target_x)?.max(0),
+            signed_subpixels(target_y)?.max(0),
         )
         .ok_or(UiFocusRevealStagingDenial::GeometryOutOfRange)?;
         let mut successor = scroll.clone();
@@ -106,21 +109,11 @@ impl super::super::WorthUiApplicationSessionState {
                 incarnation,
             ));
         }
-        let target_bounds = row.bounds();
-        let viewport_bounds = row.clip_bounds();
-        let target_inline = interval(
-            target_bounds.x(),
-            target_bounds.width(),
-            viewport_bounds.x(),
-        )?;
-        let target_block = interval(
-            target_bounds.y(),
-            target_bounds.height(),
-            viewport_bounds.y(),
-        )?;
+        let target_inline = interval(target_x, target_width, viewport_x)?;
+        let target_block = interval(target_y, target_height, viewport_y)?;
         let viewport = crate::runtime::scroll::UiScrollViewportExtent::new(
-            positive_subpixels(viewport_bounds.width())?,
-            positive_subpixels(viewport_bounds.height())?,
+            positive_subpixels(viewport_width)?,
+            positive_subpixels(viewport_height)?,
         )
         .ok_or(UiFocusRevealStagingDenial::GeometryOutOfRange)?;
         let request = crate::runtime::scroll::UiScrollProgrammaticRevealRequest::new(

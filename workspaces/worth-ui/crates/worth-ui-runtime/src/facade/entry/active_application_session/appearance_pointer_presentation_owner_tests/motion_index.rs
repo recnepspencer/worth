@@ -25,7 +25,7 @@ fn presented_hit_index_changes_only_after_host_settlement_and_preserves_retired_
                 == graph
         })
         .unwrap();
-    let bounds = row.bounds();
+    let bounds = row.bounds().platform_box();
     let point = [
         f64::from(bounds.x() + bounds.width() / 2.0),
         f64::from(bounds.y() + bounds.height() / 2.0),

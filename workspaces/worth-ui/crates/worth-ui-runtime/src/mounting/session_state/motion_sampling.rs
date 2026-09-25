@@ -63,8 +63,16 @@ impl WorthUiMountedSessionState {
     > {
         let installation = self.motion_sampling.install(receipt)?;
         let sample = installation.sample();
-        if self.presentation.accept_published_entrance(sample)? {
-            self.motion_sampling.accept_published_entrance(sample);
+        // An entrance becomes displayed evidence only against the witness
+        // that displayed its surface; without one it stays published.
+        let displayed = self.current_presentation_for_surface(sample.target().semantic_surface());
+        if let Some(displayed) = displayed {
+            if self
+                .presentation
+                .accept_published_entrance(sample, displayed)?
+            {
+                self.motion_sampling.accept_published_entrance(sample);
+            }
         }
         Ok(installation)
     }
@@ -276,7 +284,7 @@ impl WorthUiMountedSessionState {
         target: crate::runtime::motion::UiMotionTargetIdentity,
         presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
     ) -> Result<
-        Option<worth_ui_host_contract::UiMountedCanonicalBox>,
+        Option<crate::mounting::presentation::UiDisplayedRect>,
         crate::mounting::UiPresentedFrameBasisDenial,
     > {
         if self
@@ -286,32 +294,23 @@ impl WorthUiMountedSessionState {
             return Err(crate::mounting::UiPresentedFrameBasisDenial::PresentationTruthUnavailable);
         }
         self.current_semantic_surface_for_presentation(presentation)?;
-        let coordinate_space = self
-            .retention
-            .interaction_hit_test_basis(presentation)?
+        let hit_test = self.retention.interaction_hit_test_basis(presentation)?;
+        if !hit_test
             .rows()
             .iter()
-            .find(|row| row.mounted_instance() == target.mounted_instance())
-            .map(|row| row.bounds().coordinate_space())
-            .ok_or(crate::mounting::UiPresentedFrameBasisDenial::Unknown)?;
+            .any(|row| row.mounted_instance() == target.mounted_instance())
+        {
+            return Err(crate::mounting::UiPresentedFrameBasisDenial::Unknown);
+        }
         let sample = self
             .motion_sampling
             .current_sample_for_target(target, presentation);
         let Some(geometry) = sample.and_then(|sample| sample.geometry()) else {
             return Ok(None);
         };
-        let components = geometry.components();
-        worth_ui_host_contract::UiMountedCanonicalBox::canonicalize(
-            worth_ui_host_contract::UiMountedCanonicalBoxInput {
-                x: components[0],
-                y: components[1],
-                width: components[2],
-                height: components[3],
-                coordinate_space,
-            },
-        )
-        .map(Some)
-        .map_err(|_| crate::mounting::UiPresentedFrameBasisDenial::Unknown)
+        crate::mounting::presentation::UiDisplayedRect::displayed(geometry, hit_test.displayed())
+            .map(Some)
+            .map_err(|_| crate::mounting::UiPresentedFrameBasisDenial::Unknown)
     }
 
     pub(crate) fn motion_sample_presentation_pending(&self) -> bool {

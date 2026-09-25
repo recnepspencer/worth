@@ -1,4 +1,5 @@
 use super::*;
+use crate::mounting::presentation::UiPublishedRect;
 
 #[test]
 fn accepted_motion_publishes_once_and_terminalizes_once() {
@@ -286,9 +287,9 @@ fn request_for_target_with_declaration(
     .expect("Motion fixture preserves one presentation binding")
 }
 
-fn geometry(components: [f32; 4]) -> Option<UiMotionSemanticGeometry> {
+fn geometry(components: [f32; 4]) -> Option<UiPublishedRect> {
     Some(
-        UiMotionSemanticGeometry::from_committed_components(
+        UiPublishedRect::from_committed_components(
             components,
             worth_ui_host_contract::UiMountedCoordinateSpace::HostSurface,
         )

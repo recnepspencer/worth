@@ -1,7 +1,7 @@
 //! Lower the proposal's first sample against concrete candidate Portal commands.
 use worth_ui_host_contract::{
-    UiHostSurfacePresentationDenial as Denial, UiMountedCanonicalBox, UiMountedCanonicalBoxInput,
-    UiMountedPresentationSampleChange, UiMountedPresentationTransform,
+    UiHostSurfacePresentationDenial as Denial, UiMountedPresentationSampleChange,
+    UiMountedPresentationTransform,
 };
 
 impl super::UiMountedPresentationState {
@@ -19,26 +19,13 @@ impl super::UiMountedPresentationState {
             .portal_motion_group(entrance.target())
             .ok_or(Denial::MalformedProjection)?;
         let transform = match entrance.geometry() {
-            (Some(source), Some(initial)) => {
-                let canonical = |geometry: crate::runtime::motion::UiMotionSemanticGeometry| {
-                    let [x, y, width, height] = geometry.components();
-                    UiMountedCanonicalBox::canonicalize(UiMountedCanonicalBoxInput {
-                        x,
-                        y,
-                        width,
-                        height,
-                        coordinate_space: geometry.coordinate_space(),
-                    })
-                    .map_err(|_| Denial::MalformedProjection)
-                };
-                Some(
-                    UiMountedPresentationTransform::from_runtime_sampling(
-                        canonical(source)?,
-                        canonical(initial)?,
-                    )
-                    .map_err(|_| Denial::MalformedProjection)?,
+            (Some(source), Some(initial)) => Some(
+                UiMountedPresentationTransform::from_runtime_sampling(
+                    source.canonical_box(),
+                    initial.canonical_box(),
                 )
-            }
+                .map_err(|_| Denial::MalformedProjection)?,
+            ),
             (None, None) => None,
             _ => return Err(Denial::MalformedProjection),
         };

@@ -160,6 +160,7 @@ impl UiMountedMotionSampler {
         self.rebound_since_prepare.push((surface, presentation));
     }
 
+    /// Installs `receipt`'s track; a refused install leaves every track as it was.
     pub(crate) fn install(
         &mut self,
         receipt: crate::runtime::motion::UiMotionCommitReceipt,
@@ -167,82 +168,80 @@ impl UiMountedMotionSampler {
     {
         let track = receipt.track();
         let target = track.target();
-        self.note_owner_change(target);
-        if !self.tracks.contains_key(&target) && self.tracks.len() == MAX_PRESENTATION_TRACKS {
+        let full = self.tracks.len() >= MAX_PRESENTATION_TRACKS;
+        let evicted = if self.tracks.contains_key(&target) || !full {
+            None
+        } else {
             let settled = self
                 .tracks
                 .iter()
                 .find_map(|(target, state)| (!state.is_running()).then_some(*target));
-            if let Some(settled) = settled {
-                self.note_owner_change(settled);
-                self.tracks.remove(&settled);
-            } else {
-                return self.deny(UiPresentationMotionSamplingDenial::TrackCapacityExceeded);
+            match settled {
+                Some(settled) => Some(settled),
+                None => {
+                    return self.deny(UiPresentationMotionSamplingDenial::TrackCapacityExceeded)
+                }
             }
-        }
+        };
         let interruption_tick = self.last_tick.unwrap_or(0);
         let current = self.tracks.get(&target).and_then(|state| {
             state
                 .is_running()
                 .then(|| super::interruption::UiPresentationInterruptedSample {
                     tick: interruption_tick,
-                    geometry: state.current_geometry,
+                    geometry: state.current_geometry(),
                     opacity_units: state.current_opacity_units,
                     outgoing: state.outgoing_curve(interruption_tick),
                 })
         });
-        match super::interruption::resolve(track, current, self.reduced_motion) {
-            super::interruption::UiPresentationMotionInstallation::Install {
-                geometry,
-                opacity_units,
-                start_velocity,
-                duration_ticks,
-                start_tick,
-            } => {
-                let state = match super::track_sampling::UiPresentationTrackState::new(
-                    track,
-                    start_tick,
+        let (built, terminal) =
+            match super::interruption::resolve(track, current, self.reduced_motion) {
+                super::interruption::UiPresentationMotionInstallation::Install {
                     geometry,
                     opacity_units,
                     start_velocity,
                     duration_ticks,
-                ) {
-                    Ok(state) => state,
-                    Err(denial) => {
-                        return self.deny(
-                            UiPresentationMotionSamplingDenial::InvalidSampleGeometry(denial),
-                        )
-                    }
-                };
-                let sample = state.current;
-                self.tracks.insert(target, state);
-                Ok(super::UiPresentationMotionInstallationReceipt::new(
-                    sample, None,
-                ))
-            }
-            super::interruption::UiPresentationMotionInstallation::SnapToTarget => {
-                let state = match super::track_sampling::UiPresentationTrackState::terminal(
-                    track,
-                    self.last_tick.unwrap_or(0),
-                ) {
-                    Ok(state) => state,
-                    Err(denial) => {
-                        return self.deny(
-                            UiPresentationMotionSamplingDenial::InvalidSampleGeometry(denial),
-                        )
-                    }
-                };
-                let sample = state.current;
-                self.tracks.insert(target, state);
-                Ok(super::UiPresentationMotionInstallationReceipt::new(
-                    sample,
+                    start_tick,
+                } => (
+                    super::track_sampling::UiPresentationTrackState::new(
+                        track,
+                        start_tick,
+                        geometry,
+                        opacity_units,
+                        start_velocity,
+                        duration_ticks,
+                    ),
+                    None,
+                ),
+                super::interruption::UiPresentationMotionInstallation::SnapToTarget => (
+                    super::track_sampling::UiPresentationTrackState::terminal(
+                        track,
+                        interruption_tick,
+                    ),
                     Some(super::UiPresentationMotionTerminalRequest::new(
                         track.identity(),
                         crate::runtime::motion::UiMotionTerminalCause::SnappedToTarget,
                     )),
+                ),
+            };
+        let state = match built {
+            Ok(state) => state,
+            Err(denial) => {
+                return self.deny(UiPresentationMotionSamplingDenial::InvalidSampleGeometry(
+                    denial,
                 ))
             }
+        };
+        if let Some(settled) = evicted {
+            self.note_owner_change(settled);
+            self.tracks.remove(&settled);
         }
+        self.note_owner_change(target);
+        let sample = state.current;
+        self.tracks.insert(target, state);
+        Ok(super::UiPresentationMotionInstallationReceipt::new(
+            sample, terminal,
+        ))
     }
 
     pub(crate) fn reject_presentation_truth_unavailable(

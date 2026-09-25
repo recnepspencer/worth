@@ -98,7 +98,7 @@ fn a_fractional_offset_paints_on_whole_device_pixels() {
         "Scroll keeps every subpixel the host reported"
     );
     assert_eq!(
-        scroll.displayed_offset(),
+        scroll.mounted_offset(),
         Some(fractional),
         "and so does the pose the region applied to its content"
     );

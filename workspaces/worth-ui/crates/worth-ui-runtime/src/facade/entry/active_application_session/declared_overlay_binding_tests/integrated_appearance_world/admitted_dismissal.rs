@@ -62,7 +62,8 @@ fn inside_decision_cannot_turn_into_outside_when_accepted_geometry_moves() {
         .unwrap()
         .prepared()
         .bounds()
-        .mounted_box();
+        .rect()
+        .canonical_box();
     advance_motion(&mut world, 1, 31);
     let basis = world
         .session

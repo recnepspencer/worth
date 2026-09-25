@@ -80,7 +80,7 @@ pub(super) fn pending_transitions(scroll: &ScrollWorld) -> usize {
 #[test]
 fn a_published_smooth_settle_stages_its_target_and_moves_no_offset() {
     let mut scroll = smooth_world(true);
-    let displayed_before = scroll.displayed_offset();
+    let displayed_before = scroll.mounted_offset();
 
     let UiHostScrollObservationOutcome::Applied(receipt) =
         scroll.wheel(ONE_NOTCH, one_notch_up(), 5)
@@ -91,7 +91,7 @@ fn a_published_smooth_settle_stages_its_target_and_moves_no_offset() {
     // starts, and only the track that settles it moves it.
     assert_eq!(receipt.transitions()[0].current(), block(0));
     assert_eq!(scroll.accepted_offset(), block(0));
-    assert_eq!(scroll.displayed_offset(), displayed_before);
+    assert_eq!(scroll.mounted_offset(), displayed_before);
     assert_eq!(scroll.world.session.last_scroll_settle_stop(), None);
     assert_eq!(pending_transitions(&scroll), 1);
     let target = scroll

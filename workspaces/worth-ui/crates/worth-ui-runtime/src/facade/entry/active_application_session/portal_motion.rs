@@ -40,12 +40,10 @@ impl super::WorthUiActiveApplicationSession {
             .expect("a non-idempotent portal transition retains current or successor placement");
         let committed_predecessor_geometry = predecessor
             .map(crate::runtime::portal::UiPreparedPortalPlacement::bounds)
-            .map(crate::runtime::portal::UiPresentedPortalBounds::mounted_box)
-            .map(crate::runtime::motion::UiMotionSemanticGeometry::from_committed_box);
+            .map(crate::runtime::portal::UiPresentedPortalBounds::rect);
         let successor_geometry = successor
             .map(crate::runtime::portal::UiPreparedPortalPlacement::bounds)
-            .map(crate::runtime::portal::UiPresentedPortalBounds::mounted_box)
-            .map(crate::runtime::motion::UiMotionSemanticGeometry::from_committed_box)
+            .map(crate::runtime::portal::UiPresentedPortalBounds::rect)
             .or(committed_predecessor_geometry);
         let predecessor_geometry = committed_predecessor_geometry.or_else(|| {
             transition
@@ -95,15 +93,9 @@ impl super::WorthUiActiveApplicationSession {
 const PORTAL_ENTRANCE_TRANSLATION_Y: f32 = 8.0;
 
 fn portal_entrance_start_geometry(
-    successor: crate::runtime::motion::UiMotionSemanticGeometry,
-) -> crate::runtime::motion::UiMotionSemanticGeometry {
-    let mut components = successor.components();
-    components[1] += PORTAL_ENTRANCE_TRANSLATION_Y;
-    crate::runtime::motion::UiMotionSemanticGeometry::from_committed_components(
-        components,
-        successor.coordinate_space(),
-    )
-    .expect("a finite portal placement plus the named entrance offset remains valid")
+    successor: crate::mounting::presentation::UiPublishedRect,
+) -> crate::mounting::presentation::UiPublishedRect {
+    successor.translated([0.0, PORTAL_ENTRANCE_TRANSLATION_Y])
 }
 
 /// A Portal transition whose successor keeps the predecessor's presentation
@@ -135,12 +127,11 @@ mod tests {
 
     #[test]
     fn portal_entrance_start_is_explicit_and_preserves_viewport_brand() {
-        let successor =
-            crate::runtime::motion::UiMotionSemanticGeometry::from_committed_components(
-                [12.0, 20.0, 40.0, 24.0],
-                worth_ui_host_contract::UiMountedCoordinateSpace::Viewport,
-            )
-            .unwrap();
+        let successor = crate::mounting::presentation::UiPublishedRect::from_committed_components(
+            [12.0, 20.0, 40.0, 24.0],
+            worth_ui_host_contract::UiMountedCoordinateSpace::Viewport,
+        )
+        .unwrap();
         let predecessor = portal_entrance_start_geometry(successor);
 
         assert_eq!(predecessor.components(), [12.0, 28.0, 40.0, 24.0]);
@@ -157,7 +148,7 @@ mod tests {
         let host = worth_ui_host_contract::UiHostSurfaceIdentity::mint_unbound().unwrap();
         let predecessor = presentation(host, 1);
         let successor = presentation(host, 2);
-        let geometry = crate::runtime::motion::UiMotionSemanticGeometry::from_committed_components(
+        let geometry = crate::mounting::presentation::UiPublishedRect::from_committed_components(
             [12.0, 20.0, 40.0, 24.0],
             worth_ui_host_contract::UiMountedCoordinateSpace::Viewport,
         )

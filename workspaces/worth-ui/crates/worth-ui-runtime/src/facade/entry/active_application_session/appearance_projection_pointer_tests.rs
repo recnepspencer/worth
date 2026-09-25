@@ -306,8 +306,8 @@ fn inside_position(
         .iter()
         .find(|row| row.mounted_instance() == instance)
         .expect("appearance target is hit-testable");
-    let bounds = row.bounds();
-    let clip = row.clip_bounds();
+    let bounds = row.bounds().platform_box();
+    let clip = row.clip_bounds().platform_box();
     UiHostSurfacePosition::viewport_logical(
         ((bounds.x().max(clip.x()) + (bounds.x() + bounds.width()).min(clip.x() + clip.width()))
             * 500.0) as i64,

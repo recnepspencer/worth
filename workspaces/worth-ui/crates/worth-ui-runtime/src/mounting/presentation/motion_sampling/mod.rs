@@ -3,10 +3,11 @@ mod damage;
 mod interruption;
 mod opacity;
 mod receipt;
-mod sampled_geometry;
 mod sampling;
+mod sampling_denial;
 #[cfg(test)]
 mod tests;
+mod track_geometry;
 mod track_sampling;
 mod velocity;
 #[cfg(test)]
@@ -20,10 +21,8 @@ pub(crate) use receipt::{
     UiPresentationMotionSamplingReceipt, UiPresentationMotionTerminalRequest,
     UiPresentationReducedMotionPosture,
 };
-pub(crate) use sampled_geometry::{
-    UiPresentationGeometrySamplingDenial, UiPresentationSampledGeometry,
-};
 pub(crate) use sampling::{
     UiMountedMotionSampler, UiPreparedMotionSampling, UiPreparedMotionWork,
     UiPresentationMotionSamplingDenial,
 };
+pub(crate) use sampling_denial::UiPresentationGeometrySamplingDenial;

@@ -1,13 +1,14 @@
 //! The first physical sample of an exact, derived Portal entrance proposal.
-use super::{UiMotionSemanticGeometry, UiMotionTargetIdentity};
+use super::UiMotionTargetIdentity;
+use crate::mounting::presentation::UiPublishedRect;
 
 #[derive(Clone, Copy)]
 pub(crate) struct UiPreparedMotionEntrance {
     frame: worth_ui_host_contract::UiMountedFrameIdentity,
     track: super::UiMotionTrackIdentity,
     target: UiMotionTargetIdentity,
-    source: Option<UiMotionSemanticGeometry>,
-    initial: Option<UiMotionSemanticGeometry>,
+    source: Option<UiPublishedRect>,
+    initial: Option<UiPublishedRect>,
     declaration: super::UiMotionDeclaration,
 }
 
@@ -46,12 +47,7 @@ impl UiPreparedMotionEntrance {
     pub(crate) const fn target(self) -> UiMotionTargetIdentity {
         self.target
     }
-    pub(crate) const fn geometry(
-        self,
-    ) -> (
-        Option<UiMotionSemanticGeometry>,
-        Option<UiMotionSemanticGeometry>,
-    ) {
+    pub(crate) const fn geometry(self) -> (Option<UiPublishedRect>, Option<UiPublishedRect>) {
         (self.source, self.initial)
     }
     /// Whether a reader who asked for less motion should be shown this

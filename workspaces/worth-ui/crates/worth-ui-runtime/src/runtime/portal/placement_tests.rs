@@ -10,8 +10,7 @@ fn open_uses_exact_presented_anchor_and_prefers_below() {
     let transition = state().prepare(request).expect("placement prepares");
     let placement = transition.placement().expect("open has placement");
 
-    assert_eq!(placement.anchor().x(), 120.0);
-    assert_eq!(placement.anchor().y(), 80.0);
+    assert_eq!(placement.anchor().components()[..2], [120.0, 80.0]);
     assert_eq!(
         placement.bounds().components(),
         [120.0, 112.0, 280.0, 320.0]
@@ -133,7 +132,10 @@ fn local_anchor_clip_cannot_masquerade_as_the_presented_viewport() {
         placement.bounds().components(),
         [544.0, 104.0, 280.0, 320.0]
     );
-    assert_eq!(placement.clip_bounds(), canonical_box(viewport()));
+    assert_eq!(
+        placement.clip_bounds().canonical_box(),
+        canonical_box(viewport())
+    );
 }
 
 #[test]
@@ -178,8 +180,12 @@ fn shadow_gutter_does_not_change_body_anchor_gap() {
         .unwrap()
     };
     let content = super::UiPortalContentBounds {
-        layout: local(36.0, 36.0, 307.0, 253.0),
-        paint: local(0.0, 0.0, 379.0, 325.0),
+        layout: crate::mounting::presentation::UiPublishedRect::from_committed_box(local(
+            36.0, 36.0, 307.0, 253.0,
+        )),
+        paint: crate::mounting::presentation::UiPublishedRect::from_committed_box(local(
+            0.0, 0.0, 379.0, 325.0,
+        )),
     };
     // Independent product rectangles: body starts eight pixels below the
     // anchor, or ends eight pixels above it; shadow support extends 36 pixels.

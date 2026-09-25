@@ -12,6 +12,7 @@ mod reconciliation;
 mod shutdown;
 mod state;
 mod terminal;
+mod truth_geometry;
 pub(crate) mod work_producer;
 #[cfg(test)]
 mod work_producer_tests;
@@ -53,4 +54,11 @@ pub use state::{
     UiMountedPresentationAdmission, UiMountedPresentationAdmissionDenial,
     UiMountedPresentationAdmissionRejection, UiMountedPresentationAttempt,
     UiMountedPresentationCompletionDenial, UiMountedPresentationInFlight,
+};
+#[cfg(test)]
+pub(crate) use truth_geometry::{displayed_rect_for_test, displayed_scroll_offset_for_test};
+pub(crate) use truth_geometry::{
+    UiAcceptedRect, UiDisplayedRect, UiDisplayedScrollOffset, UiPublishedMap, UiPublishedRect,
+    UiPublishedToAcceptedMap, UiRebaseDenial, UiScrollPoseShift, UiScrollStandingDenial,
+    UiTruthGeometryDenial,
 };

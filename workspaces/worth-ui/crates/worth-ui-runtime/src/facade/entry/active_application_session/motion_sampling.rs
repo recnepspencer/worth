@@ -41,7 +41,7 @@ impl super::WorthUiActiveApplicationSession {
         let installation = self
             .mounted
             .install_motion_commit(receipt)
-            .expect("semantic Motion capacity bounds mounted presentation sampling");
+            .expect("Motion capacity bounds sampling; a rebind carries every departed sample");
         if let Some(terminal) = installation.terminal() {
             self.settle_motion_terminal_request(terminal);
         }

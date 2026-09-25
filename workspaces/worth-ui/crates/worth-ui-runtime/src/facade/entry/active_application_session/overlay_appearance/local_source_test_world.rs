@@ -41,7 +41,7 @@ impl SourceWorld {
         let geometry =
             crate::runtime::interaction::UiPresentedInteractionGeometry::for_test(presentation);
         let viewport = crate::runtime::interaction::UiPresentedViewportGeometry::for_test(
-            geometry.clip_bounds(),
+            geometry.clip_bounds().adopted().canonical_box(),
             presentation,
         );
         let foreign = None;

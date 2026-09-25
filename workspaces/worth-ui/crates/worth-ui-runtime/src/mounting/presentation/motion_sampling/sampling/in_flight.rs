@@ -105,7 +105,7 @@ impl UiMountedMotionSampler {
             .is_running()
             .then(|| UiPresentationInterruptedSample {
                 tick,
-                geometry: sampled.current_geometry,
+                geometry: sampled.current_geometry(),
                 opacity_units: sampled.current_opacity_units,
                 outgoing: sampled.outgoing_curve(tick),
             });

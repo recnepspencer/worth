@@ -128,7 +128,7 @@ fn admitted_pointer_targets_the_painted_occurrence_on_each_surface() {
         let target = posture.presented_target().unwrap();
         assert_eq!(target.binding(), presentation.binding());
         assert_eq!(target.presentation(), presentation.basis());
-        let actual = target.geometry().bounds();
+        let actual = target.geometry().bounds().platform_box();
         assert_eq!(
             actual.coordinate_space(),
             UiMountedCoordinateSpace::Viewport

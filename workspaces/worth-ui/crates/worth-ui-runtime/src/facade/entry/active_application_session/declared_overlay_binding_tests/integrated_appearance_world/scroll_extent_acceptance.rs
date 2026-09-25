@@ -147,7 +147,7 @@ fn rejected_partial_shrink_preserves_offset_target_and_motion_then_retry_retarge
     for tick in 9..=5 + u64::from(SETTLE_TICKS) + 1 {
         settle_frame(&mut scroll, tick);
         assert!(scroll.accepted_offset().block_subpixels() <= 5_000);
-        assert_eq!(scroll.displayed_offset(), Some(scroll.accepted_offset()));
+        assert_eq!(scroll.mounted_offset(), Some(scroll.accepted_offset()));
     }
     assert_eq!(
         scroll.accepted_offset(),
@@ -173,7 +173,7 @@ fn accepted_partial_shrink_clamps_past_edge_sample_and_ends_the_track() {
     let frame = scroll.world.prepare_surface(scroll.surface());
     scroll.world.publish(frame, 11, false);
     assert_eq!(scroll.accepted_offset(), block(5));
-    assert_eq!(scroll.displayed_offset(), Some(block(5)));
+    assert_eq!(scroll.mounted_offset(), Some(block(5)));
     assert!(scroll
         .world
         .session
@@ -202,6 +202,6 @@ fn delayed_extent_acceptance_does_not_restart_the_input_horizon() {
         block(5),
         "an extent accepted after the input horizon settles on its next accepted sample"
     );
-    assert_eq!(scroll.displayed_offset(), Some(block(5)));
+    assert_eq!(scroll.mounted_offset(), Some(block(5)));
     let _ = scroll.world.session.shutdown();
 }

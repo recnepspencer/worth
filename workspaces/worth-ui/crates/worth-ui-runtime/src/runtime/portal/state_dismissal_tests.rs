@@ -206,16 +206,10 @@ fn outside_press_respects_bounds_and_duplicate_dismissal_coalesces() {
             .unwrap(),
         UiPortalDismissalPreparation::Ignored(UiPortalDismissalIgnoreReason::InsideTopmostPortal)
     ));
-    let sampled_bounds = worth_ui_host_contract::UiMountedCanonicalBox::canonicalize(
-        worth_ui_host_contract::UiMountedCanonicalBoxInput {
-            x: bounds[0] + 100.0,
-            y: bounds[1] + 100.0,
-            width: bounds[2],
-            height: bounds[3],
-            coordinate_space: worth_ui_host_contract::UiMountedCoordinateSpace::Viewport,
-        },
-    )
-    .unwrap();
+    let sampled_bounds = crate::mounting::presentation::displayed_rect_for_test(
+        [bounds[0] + 100.0, bounds[1] + 100.0, bounds[2], bounds[3]],
+        worth_ui_host_contract::UiMountedCoordinateSpace::Viewport,
+    );
     let UiPortalDismissalPreparation::Prepared(dismissal) = state
         .prepare_dismissal(
             UiPortalDismissalTrigger::OutsidePress {

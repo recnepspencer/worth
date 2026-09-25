@@ -23,7 +23,7 @@ fn accepted_sibling_modal_blocks_older_portal_content_and_queued_clicks() {
         .iter()
         .find(|row| row.mounted_instance() == world.instances[4])
         .unwrap();
-    let bounds = content.bounds();
+    let bounds = content.bounds().platform_box();
     let position = UiHostSurfacePosition::viewport_logical(
         ((bounds.x() + bounds.width() / 2.0) * 1_000.0) as i64,
         ((bounds.y() + bounds.height() / 2.0) * 1_000.0) as i64,
@@ -125,7 +125,7 @@ fn accepted_modal_blocks_background_activation_but_keeps_content_and_dismiss_inp
         .iter()
         .find(|row| row.mounted_instance() == world.instances[4])
         .unwrap();
-    let bounds = content.bounds();
+    let bounds = content.bounds().platform_box();
     let inside = UiHostSurfacePosition::viewport_logical(
         ((bounds.x() + bounds.width() / 2.0) * 1_000.0) as i64,
         ((bounds.y() + bounds.height() / 2.0) * 1_000.0) as i64,

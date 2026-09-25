@@ -18,7 +18,10 @@ impl super::UiRetainedPresentedFrame {
     pub(in crate::mounting::retention) fn refresh_hit_scroll(
         &mut self,
         surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
-        translations: &[(UiMountedInstanceIdentity, [f32; 2])],
+        translations: &[(
+            UiMountedInstanceIdentity,
+            crate::mounting::presentation::UiScrollPoseShift,
+        )],
     ) -> crate::mounting::hit_test_work::UiHitTestSpatialWork {
         let mut work = crate::mounting::hit_test_work::UiHitTestSpatialWork::default();
         for (candidate, presentation) in self.current_presentations().collect::<Vec<_>>() {

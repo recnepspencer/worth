@@ -1,5 +1,5 @@
 use super::*;
-use worth_ui_host_contract::UiMountedCanonicalBoxInput;
+use worth_ui_host_contract::{UiMountedCanonicalBox, UiMountedCanonicalBoxInput};
 
 #[test]
 fn stationary_hover_retests_a_new_target_that_now_overlaps_the_pointer() {
@@ -139,6 +139,9 @@ fn geometry(components: [f32; 4]) -> UiPointerPresenceGeometry {
         coordinate_space: UiMountedCoordinateSpace::Viewport,
     })
     .unwrap();
+    let bounds = UiPresentedHitRect::Published(
+        crate::mounting::presentation::UiPublishedRect::from_committed_box(bounds),
+    );
     UiPointerPresenceGeometry::new(bounds, bounds)
 }
 

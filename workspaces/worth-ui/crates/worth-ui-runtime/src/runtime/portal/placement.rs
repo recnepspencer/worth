@@ -1,3 +1,5 @@
+use crate::mounting::presentation::UiPublishedRect;
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum UiPortalPlacementSide {
     Below,
@@ -27,8 +29,8 @@ pub(crate) struct UiPortalLayerIdentity {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct UiPreparedPortalPlacement {
     presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
-    anchor: worth_ui_host_contract::UiMountedCanonicalBox,
-    clip_bounds: worth_ui_host_contract::UiMountedCanonicalBox,
+    anchor: UiPublishedRect,
+    clip_bounds: UiPublishedRect,
     bounds: UiPresentedPortalBounds,
     paint_bounds: UiPresentedPortalBounds,
     side: UiPortalPlacementSide,
@@ -36,16 +38,16 @@ pub(crate) struct UiPreparedPortalPlacement {
     shielding: super::UiPortalInputShielding,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub(crate) struct UiPresentedPortalBounds(worth_ui_host_contract::UiMountedCanonicalBox);
+/// Where a Portal's committed placement puts it, in viewport space.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) struct UiPresentedPortalBounds(UiPublishedRect);
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct UiCommittedPortalPlacement(UiPreparedPortalPlacement);
 
-// Every geometry component is sourced from canonical finite boxes and bounded arithmetic.
+// Every geometry component is a published rect, which compares by value.
 impl Eq for UiPreparedPortalPlacement {}
 impl Eq for UiCommittedPortalPlacement {}
-impl Eq for UiPresentedPortalBounds {}
 
 impl UiPreparedPortalPlacement {
     pub(crate) fn for_request(
@@ -57,8 +59,8 @@ impl UiPreparedPortalPlacement {
 
     pub(super) const fn planned(
         presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
-        anchor: worth_ui_host_contract::UiMountedCanonicalBox,
-        clip_bounds: worth_ui_host_contract::UiMountedCanonicalBox,
+        anchor: UiPublishedRect,
+        clip_bounds: UiPublishedRect,
         bounds: UiPresentedPortalBounds,
         paint_bounds: UiPresentedPortalBounds,
         side: UiPortalPlacementSide,
@@ -82,7 +84,8 @@ impl UiPreparedPortalPlacement {
     ) -> worth_ui_host_contract::UiHostObservationPresentationBasis {
         self.presentation
     }
-    pub(crate) const fn anchor(self) -> worth_ui_host_contract::UiMountedCanonicalBox {
+    /// Where the host showed the anchor, as the placement committed it.
+    pub(crate) const fn anchor(self) -> UiPublishedRect {
         self.anchor
     }
     pub(crate) const fn bounds(self) -> UiPresentedPortalBounds {
@@ -91,7 +94,7 @@ impl UiPreparedPortalPlacement {
     pub(crate) const fn paint_bounds(self) -> UiPresentedPortalBounds {
         self.paint_bounds
     }
-    pub(crate) const fn clip_bounds(self) -> worth_ui_host_contract::UiMountedCanonicalBox {
+    pub(crate) const fn clip_bounds(self) -> UiPublishedRect {
         self.clip_bounds
     }
     #[cfg(test)]
@@ -117,26 +120,21 @@ impl UiPreparedPortalPlacement {
 impl UiPresentedPortalBounds {
     pub(super) fn new(x: f32, y: f32, width: f32, height: f32) -> Self {
         Self(
-            worth_ui_host_contract::UiMountedCanonicalBox::canonicalize(
-                worth_ui_host_contract::UiMountedCanonicalBoxInput {
-                    x,
-                    y,
-                    width,
-                    height,
-                    coordinate_space: worth_ui_host_contract::UiMountedCoordinateSpace::Viewport,
-                },
+            UiPublishedRect::from_committed_components(
+                [x, y, width, height],
+                worth_ui_host_contract::UiMountedCoordinateSpace::Viewport,
             )
             .expect("placement arithmetic preserves canonical finite viewport geometry"),
         )
     }
 
-    pub(crate) const fn mounted_box(self) -> worth_ui_host_contract::UiMountedCanonicalBox {
+    pub(crate) const fn rect(self) -> UiPublishedRect {
         self.0
     }
 
     #[cfg(test)]
     pub(crate) fn components(self) -> [f32; 4] {
-        [self.0.x(), self.0.y(), self.0.width(), self.0.height()]
+        self.0.components()
     }
 }
 

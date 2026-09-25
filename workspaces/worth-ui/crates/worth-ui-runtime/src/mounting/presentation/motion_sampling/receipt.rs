@@ -29,8 +29,8 @@ pub(crate) struct UiPresentationMotionSampleReceipt {
     target: crate::runtime::motion::UiMotionTargetIdentity,
     tick: u64,
     presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
-    base_geometry: Option<crate::runtime::motion::UiMotionSemanticGeometry>,
-    geometry: Option<super::UiPresentationSampledGeometry>,
+    base_geometry: Option<crate::mounting::presentation::UiPublishedRect>,
+    geometry: Option<crate::mounting::presentation::UiAcceptedRect>,
     opacity_units: u16,
     hit_test_visible: bool,
     damage: super::UiPresentationMotionDamage,
@@ -130,8 +130,8 @@ impl UiPresentationMotionSampleReceipt {
         target: crate::runtime::motion::UiMotionTargetIdentity,
         tick: u64,
         presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
-        base_geometry: Option<crate::runtime::motion::UiMotionSemanticGeometry>,
-        geometry: Option<super::UiPresentationSampledGeometry>,
+        base_geometry: Option<crate::mounting::presentation::UiPublishedRect>,
+        geometry: Option<crate::mounting::presentation::UiAcceptedRect>,
         opacity_units: u16,
         hit_test_visible: bool,
         damage: super::UiPresentationMotionDamage,
@@ -151,12 +151,14 @@ impl UiPresentationMotionSampleReceipt {
         }
     }
 
+    /// The one mint of accepted track geometry: `place` admitted as a sample
+    /// drawn on `presentation`, which must be the track's surface binding.
     #[allow(clippy::too_many_arguments)]
     pub(super) fn from_track_sample(
         track: crate::runtime::motion::UiCommittedMotionTrack,
         tick: u64,
         presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
-        components: Option<[f32; 4]>,
+        place: Option<super::track_geometry::UiTrackSamplePlace>,
         opacity_units: u16,
         posture: UiPresentationMotionSamplePosture,
         damage: super::UiPresentationMotionDamage,
@@ -168,22 +170,13 @@ impl UiPresentationMotionSampleReceipt {
             return Err(super::UiPresentationGeometrySamplingDenial::PresentationBindingChanged);
         }
         let semantic_basis = track.successor_geometry();
-        let geometry = components
-            .zip(semantic_basis)
-            .map(|(components, semantic_basis)| {
-                super::UiPresentationSampledGeometry::from_motion_sample(
-                    track.target(),
-                    track.successor_revision(),
-                    track.successor_presentation(),
-                    semantic_basis,
-                    components,
-                    presentation,
-                )
-            })
-            .transpose()?;
-        if components.is_some() != semantic_basis.is_some() {
+        if place.is_some() != semantic_basis.is_some() {
             return Err(super::UiPresentationGeometrySamplingDenial::MissingSemanticBasis);
         }
+        let geometry = place
+            .zip(semantic_basis)
+            .map(|(place, semantic_basis)| place.accepted_on(semantic_basis, presentation))
+            .transpose()?;
         let hit_test_visible = track.successor_visible();
         Ok(Self::new(
             track.identity(),
@@ -215,10 +208,10 @@ impl UiPresentationMotionSampleReceipt {
     }
     pub(crate) const fn base_geometry(
         self,
-    ) -> Option<crate::runtime::motion::UiMotionSemanticGeometry> {
+    ) -> Option<crate::mounting::presentation::UiPublishedRect> {
         self.base_geometry
     }
-    pub(crate) const fn geometry(self) -> Option<super::UiPresentationSampledGeometry> {
+    pub(crate) const fn geometry(self) -> Option<crate::mounting::presentation::UiAcceptedRect> {
         self.geometry
     }
     pub(crate) const fn opacity_units(self) -> u16 {
@@ -246,7 +239,7 @@ impl UiPresentationMotionSampleReceipt {
         }
         self.geometry = self
             .geometry
-            .map(|geometry| geometry.with_presentation_basis(presentation))
+            .map(|geometry| geometry.rebased(presentation))
             .transpose()?;
         self.presentation = presentation;
         Ok(self)
@@ -256,9 +249,7 @@ impl UiPresentationMotionSampleReceipt {
         mut self,
         presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
     ) -> Self {
-        self.geometry = self
-            .geometry
-            .map(|geometry| geometry.rebind_presentation_basis(presentation));
+        self.geometry = self.geometry.map(|geometry| geometry.rebound(presentation));
         self.presentation = presentation;
         self
     }

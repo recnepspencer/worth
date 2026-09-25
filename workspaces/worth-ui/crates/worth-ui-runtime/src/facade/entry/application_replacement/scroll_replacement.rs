@@ -209,11 +209,12 @@ fn published_anchor(
         .rows()
         .iter()
         .find(|row| row.mounted_instance() == instance)?;
+    let [x, y, _, _] = row.bounds().adopted().components();
     crate::runtime::scroll::UiScrollAnchor::new(
         crate::runtime::scroll::UiScrollAnchorIdentity::mounted(instance),
         presentation.binding(),
-        signed_subpixels(row.bounds().x())?.max(0),
-        signed_subpixels(row.bounds().y())?.max(0),
+        signed_subpixels(x)?.max(0),
+        signed_subpixels(y)?.max(0),
     )
 }
 

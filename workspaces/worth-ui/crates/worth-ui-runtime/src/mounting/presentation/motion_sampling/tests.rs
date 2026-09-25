@@ -4,6 +4,8 @@ use super::*;
 mod damage;
 #[path = "tests/in_flight_commit.rs"]
 mod in_flight_commit;
+#[path = "tests/interruption_binding.rs"]
+mod interruption_binding;
 #[path = "tests/opacity.rs"]
 mod opacity;
 #[path = "tests/presented_index.rs"]
@@ -98,7 +100,7 @@ fn presented_hit_rows_use_only_committed_geometry_and_hide_a_presented_exit() {
     commit_tick(&mut sampler, 71, world.presentation);
     let mounted = world.hit_test_row([20.0, 10.0, 24.0, 12.0]);
     let mut basis = crate::mounting::UiPresentedHitTestBasis::new(
-        world.presentation,
+        world.displayed,
         crate::mounting::UiPresentedFrameBasisRelation::Current,
         vec![crate::mounting::UiMountedHitTestPresentation::for_test(
             mounted,
@@ -107,14 +109,14 @@ fn presented_hit_rows_use_only_committed_geometry_and_hide_a_presented_exit() {
     );
     basis.apply_motion_samples(&sampler);
     let sampled = basis.rows()[0];
-    let sampled_y = sampled.bounds().y();
+    let sampled_y = sampled.bounds().platform_box().y();
     assert!(sampled_y > 0.0 && sampled_y < 10.0);
     assert_eq!(
         sampled.bounds().coordinate_space(),
         mounted.bounds().coordinate_space()
     );
     assert_eq!(
-        sampled.clip_bounds(),
+        sampled.clip_bounds().platform_box(),
         mounted.clip_bounds(),
         "motion changes the presented target bounds, not the viewport scissor"
     );
@@ -123,7 +125,7 @@ fn presented_hit_rows_use_only_committed_geometry_and_hide_a_presented_exit() {
     let exit_track = exit.track().identity();
     sampler.install(exit).unwrap();
     let mut before_exit_sample = crate::mounting::UiPresentedHitTestBasis::new(
-        world.presentation,
+        world.displayed,
         crate::mounting::UiPresentedFrameBasisRelation::Current,
         vec![crate::mounting::UiMountedHitTestPresentation::for_test(
             mounted,
@@ -135,7 +137,7 @@ fn presented_hit_rows_use_only_committed_geometry_and_hide_a_presented_exit() {
 
     commit_tick(&mut sampler, 72, world.presentation);
     let mut exiting = crate::mounting::UiPresentedHitTestBasis::new(
-        world.presentation,
+        world.displayed,
         crate::mounting::UiPresentedFrameBasisRelation::Current,
         vec![crate::mounting::UiMountedHitTestPresentation::for_test(
             mounted,
@@ -150,7 +152,7 @@ fn presented_hit_rows_use_only_committed_geometry_and_hide_a_presented_exit() {
     assert!(!sampler.has_active_tracks());
     assert!(sampler.retire_terminal_track(exit_track));
     let mut after_portal_terminal = crate::mounting::UiPresentedHitTestBasis::new(
-        world.presentation,
+        world.displayed,
         crate::mounting::UiPresentedFrameBasisRelation::Current,
         vec![crate::mounting::UiMountedHitTestPresentation::for_test(
             mounted,
@@ -269,6 +271,7 @@ fn a_track_installed_after_a_long_idle_starts_on_its_own_first_tick() {
 struct World {
     target: crate::runtime::motion::UiMotionTargetIdentity,
     presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
+    displayed: crate::mounting::presentation::UiDisplayedSurfaceBasis,
 }
 
 impl World {
@@ -277,18 +280,23 @@ impl World {
         let host = worth_ui_host_contract::UiHostSurfaceIdentity::mint_unbound().unwrap();
         let binding = worth_ui_host_contract::UiSurfaceBindingGeneration::mint_unbound().unwrap();
         let frame = worth_ui_host_contract::UiMountedFrameIdentity::mint_unbound().unwrap();
+        let presentation = worth_ui_host_contract::UiHostObservationPresentationBasis::new(
+            host,
+            frame,
+            binding,
+            worth_ui_host_contract::UiHostPresentationEpoch::issued_by_host(1),
+        );
         Self {
             target: crate::runtime::motion::UiMotionTargetIdentity::from_mounted_owner(
                 semantic,
                 worth_ui_host_contract::UiMountedInstanceIdentity::mint_unbound().unwrap(),
                 7,
             ),
-            presentation: worth_ui_host_contract::UiHostObservationPresentationBasis::new(
-                host,
-                frame,
-                binding,
-                worth_ui_host_contract::UiHostPresentationEpoch::issued_by_host(1),
-            ),
+            presentation,
+            displayed: crate::mounting::presentation::presented_surface_witness_for_certification(
+                presentation,
+            )
+            .displayed_basis(),
         }
     }
 

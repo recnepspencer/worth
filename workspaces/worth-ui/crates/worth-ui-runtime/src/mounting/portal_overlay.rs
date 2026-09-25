@@ -70,7 +70,8 @@ impl UiMountedPortalOverlayProjectionInput {
         worth_ui_host_contract::UiMountedPortalOverlayMechanic,
         worth_ui_host_contract::UiMountedPortalOverlayCompletionDenial,
     > {
-        let bounds = self.placement.bounds().mounted_box();
+        // The host contract carries the placement as wire boxes.
+        let bounds = self.placement.bounds().rect().canonical_box();
         let layer = self.placement.layer();
         worth_ui_host_contract::UiMountedPortalOverlayMechanic::complete_from_runtime_mounting(
             worth_ui_host_contract::UiMountedPortalOverlayCompletionInput {
@@ -81,10 +82,10 @@ impl UiMountedPortalOverlayProjectionInput {
                 owner_receipt,
                 portal_identity: self.portal_identity,
                 anchor_presentation: self.placement.presentation(),
-                anchor_bounds: self.placement.anchor(),
+                anchor_bounds: self.placement.anchor().canonical_box(),
                 bounds,
-                paint_bounds: self.placement.paint_bounds().mounted_box(),
-                clip_bounds: self.placement.clip_bounds(),
+                paint_bounds: self.placement.paint_bounds().rect().canonical_box(),
+                clip_bounds: self.placement.clip_bounds().canonical_box(),
                 color: worth_ui_host_contract::UiMountedRgba8::new(0, 0, 0, 0),
                 layer_semantic_order: u32::MAX - 4_096 + u32::from(layer.depth()),
                 layer_depth: layer.depth(),

@@ -216,7 +216,7 @@ fn advance_motion_epoch(
         .mounted
         .interaction_hit_test_basis(presentation)
         .unwrap();
-    let bounds = hit.rows()[0].bounds();
+    let bounds = hit.rows()[0].bounds().platform_box();
     let geometry = [bounds.x(), bounds.y(), bounds.width(), bounds.height()];
     // The semantic Motion track is a fixture. Actual mounted completion and
     // host settlement advance the epoch; this does not claim native raster proof.
@@ -286,7 +286,7 @@ fn target_at_center(
         .interaction_hit_test_basis(presentation.basis())
         .unwrap();
     assert_eq!(hit.rows().len(), 1);
-    let bounds = hit.rows()[0].bounds();
+    let bounds = hit.rows()[0].bounds().platform_box();
     let position = UiHostSurfacePosition::viewport_logical(
         ((bounds.x() + bounds.width() / 2.0) * 1_000.0) as i64,
         ((bounds.y() + bounds.height() / 2.0) * 1_000.0) as i64,

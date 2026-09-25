@@ -58,6 +58,12 @@ pub enum UiAcceptedScrollSettlementDenial {
     /// The sample sits before the content's rest position, which no
     /// non-negative offset describes.
     SampleBeforeRest,
+    /// The sample is measured in a different coordinate space than the
+    /// content's rest box.
+    SampleOutsideRestSpace,
+    /// The witness settling the surface did not display the sample: it was
+    /// accepted against another surface or binding.
+    SampleNotDisplayed,
 }
 
 /// Why one applied accepted sample could not be written back into its Scroll

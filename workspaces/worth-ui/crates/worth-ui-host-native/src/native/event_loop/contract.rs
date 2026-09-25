@@ -120,9 +120,12 @@ pub struct UiNativePhysicalProgressGrant {
 }
 
 /// How progress relates to a presentation: it is that presentation (observed
-/// once or as a duplicate), it was caused by one, or it is unattributed.
+/// once or as a duplicate), or it was caused by one. The host attributes every
+/// progress it issues; only certification forges unattributed progress, to
+/// prove clients refuse to credit it to any presentation.
 #[derive(Clone, Copy)]
 pub(super) enum UiNativePhysicalProgressCorrelation {
+    #[cfg(any(test, feature = "certification-support"))]
     Unattributed,
     Presentation(super::UiNativePhysicalPresentationCorrelation),
     DuplicatePresentation(super::UiNativePhysicalPresentationCorrelation),
@@ -147,8 +150,9 @@ impl UiNativePhysicalProgressGrant {
             | UiNativePhysicalProgressCorrelation::DuplicatePresentation(presentation) => {
                 Some(presentation)
             }
-            UiNativePhysicalProgressCorrelation::Unattributed
-            | UiNativePhysicalProgressCorrelation::Originating(_) => None,
+            UiNativePhysicalProgressCorrelation::Originating(_) => None,
+            #[cfg(any(test, feature = "certification-support"))]
+            UiNativePhysicalProgressCorrelation::Unattributed => None,
         }
     }
 
@@ -157,9 +161,10 @@ impl UiNativePhysicalProgressGrant {
     ) -> Option<super::UiNativePhysicalPresentationCorrelation> {
         match self.correlation {
             UiNativePhysicalProgressCorrelation::Originating(presentation) => Some(presentation),
-            UiNativePhysicalProgressCorrelation::Unattributed
-            | UiNativePhysicalProgressCorrelation::Presentation(_)
+            UiNativePhysicalProgressCorrelation::Presentation(_)
             | UiNativePhysicalProgressCorrelation::DuplicatePresentation(_) => None,
+            #[cfg(any(test, feature = "certification-support"))]
+            UiNativePhysicalProgressCorrelation::Unattributed => None,
         }
     }
 

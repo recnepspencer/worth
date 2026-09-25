@@ -31,8 +31,8 @@ fn dropped_release_cancels_gesture_before_fresh_input_can_activate() {
         .interaction_hit_test_basis(basis)
         .unwrap();
     let row = hit_test.rows().first().unwrap();
-    let bounds = row.bounds();
-    let clip = row.clip_bounds();
+    let bounds = row.bounds().platform_box();
+    let clip = row.clip_bounds().platform_box();
     let point = PhysicalPosition::new(
         f64::from(
             (bounds.x().max(clip.x()) + (bounds.x() + bounds.width()).min(clip.x() + clip.width()))

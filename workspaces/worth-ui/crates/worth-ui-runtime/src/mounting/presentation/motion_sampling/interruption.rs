@@ -1,9 +1,10 @@
+use super::track_geometry::UiTrackGeometry;
 use super::velocity::{UiPresentationOutgoingCurve, UiPresentationSampleVelocity};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(super) enum UiPresentationMotionInstallation {
     Install {
-        geometry: Option<[f32; 4]>,
+        geometry: Option<UiTrackGeometry>,
         opacity_units: u16,
         start_velocity: UiPresentationSampleVelocity,
         duration_ticks: u32,
@@ -22,7 +23,7 @@ pub(super) enum UiPresentationMotionInstallation {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(super) struct UiPresentationInterruptedSample {
     pub(super) tick: u64,
-    pub(super) geometry: Option<[f32; 4]>,
+    pub(super) geometry: Option<crate::mounting::presentation::UiAcceptedRect>,
     pub(super) opacity_units: u16,
     pub(super) outgoing: Option<UiPresentationOutgoingCurve>,
 }
@@ -82,7 +83,7 @@ pub(super) fn resolve(
                 };
             };
             UiPresentationMotionInstallation::Install {
-                geometry: interrupted.geometry,
+                geometry: interrupted.geometry.map(UiTrackGeometry::Accepted),
                 opacity_units: interrupted.opacity_units,
                 start_velocity: interrupted.outgoing.map_or(
                     UiPresentationSampleVelocity::RESTING,
@@ -97,10 +98,8 @@ pub(super) fn resolve(
 
 pub(super) fn semantic_predecessor(
     track: crate::runtime::motion::UiCommittedMotionTrack,
-) -> Option<[f32; 4]> {
-    track
-        .predecessor_geometry()
-        .map(crate::runtime::motion::UiMotionSemanticGeometry::components)
+) -> Option<UiTrackGeometry> {
+    track.predecessor_geometry().map(UiTrackGeometry::Published)
 }
 
 pub(super) const fn predecessor_opacity_units(

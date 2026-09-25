@@ -58,7 +58,7 @@ impl super::UiPortalRuntimeState {
     pub(crate) fn prepare_dismissal(
         &self,
         trigger: UiPortalDismissalTrigger,
-        sampled_bounds: Option<worth_ui_host_contract::UiMountedCanonicalBox>,
+        sampled_bounds: Option<crate::mounting::presentation::UiDisplayedRect>,
         idempotency: crate::runtime::intent_execution::UiIntentExecutionIdempotencyIdentity,
     ) -> Result<UiPortalDismissalPreparation, super::UiPortalServiceTransitionDenial> {
         let Some((portal, record)) = self.dismissal_target(trigger) else {
@@ -87,16 +87,21 @@ impl super::UiPortalRuntimeState {
         } = trigger
         {
             let point = viewport_point_bits.map(f32::from_bits);
-            let committed_bounds = record
-                .placement
-                .map(|placement| placement.prepared().bounds().mounted_box());
-            if sampled_bounds
-                .or(committed_bounds)
-                .is_some_and(|bounds| contains(bounds, point))
-                || record
-                    .placement
-                    .is_some_and(|placement| contains(placement.prepared().anchor(), point))
-            {
+            // The press lands where the host shows the Portal: its displayed
+            // Motion sample, else its committed placement, or on its anchor.
+            let inside_portal = match (sampled_bounds, record.placement) {
+                (Some(shown), _) => shown.admits_platform_point(point),
+                (None, Some(placement)) => placement
+                    .prepared()
+                    .bounds()
+                    .rect()
+                    .admits_platform_point(point),
+                (None, None) => false,
+            };
+            let on_anchor = record.placement.is_some_and(|placement| {
+                placement.prepared().anchor().admits_platform_point(point)
+            });
+            if inside_portal || on_anchor {
                 return Ok(UiPortalDismissalPreparation::Ignored(
                     UiPortalDismissalIgnoreReason::InsideTopmostPortal,
                 ));
@@ -223,11 +228,4 @@ impl UiPreparedPortalDismissal {
     pub(crate) fn into_transition(self) -> super::UiPreparedPortalServiceTransition {
         self.transition
     }
-}
-
-fn contains(bounds: worth_ui_host_contract::UiMountedCanonicalBox, point: [f32; 2]) -> bool {
-    point[0] >= bounds.x()
-        && point[1] >= bounds.y()
-        && point[0] < bounds.x() + bounds.width()
-        && point[1] < bounds.y() + bounds.height()
 }

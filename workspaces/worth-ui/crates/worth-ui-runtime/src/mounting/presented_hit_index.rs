@@ -1,3 +1,4 @@
+use super::presentation::{UiDisplayedSurfaceBasis, UiScrollPoseShift};
 use super::spatial_index::UiMountedSpatialTree;
 use super::UiPresentedHitTestRow;
 use crate::mounting::UiHitTestSpatialWork;
@@ -35,7 +36,7 @@ pub(in crate::mounting) struct UiPresentedHitIndex {
 struct Record {
     base: UiPresentedHitTestRow,
     effective: Option<UiPresentedHitTestRow>,
-    scroll_translation: [f32; 2],
+    scroll_translation: UiScrollPoseShift,
 }
 
 // Completed boxes contain no NaN components.
@@ -106,7 +107,7 @@ impl UiPresentedHitIndex {
                     Record {
                         base,
                         effective: Some(base),
-                        scroll_translation: [0.0; 2],
+                        scroll_translation: UiScrollPoseShift::none(),
                     },
                 ),
             );
@@ -119,7 +120,7 @@ impl UiPresentedHitIndex {
     pub(in crate::mounting) fn apply_motion(
         &mut self,
         sampler: &super::presentation::motion_sampling::UiMountedMotionSampler,
-        presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
+        displayed: UiDisplayedSurfaceBasis,
         targets: &[UiMotionTargetIdentity],
     ) -> UiHitTestSpatialWork {
         let mut work = UiHitTestSpatialWork::default();
@@ -151,14 +152,14 @@ impl UiPresentedHitIndex {
             let (record, probes) = self.rows.get_with_probes(&instance);
             work.map_key_probes += probes;
             let record = *record.expect("selected Motion member remains indexed");
-            if record.base.mounted().binding() != presentation.binding() {
+            if record.base.mounted().binding() != displayed.binding() {
                 continue;
             }
             work.motion_rows_projected += 1;
-            let (effective, tracks) = record.base.with_current_motion_work(sampler, presentation);
+            let (effective, tracks) = record.base.with_current_motion_work(sampler, displayed);
             let effective = effective.map(|row| row.scroll_translated(record.scroll_translation));
             work.motion_tracks_considered += tracks;
-            if effective == record.effective {
+            if same_place(effective, record.effective) {
                 continue;
             }
             self.update_partition(record.base, record.effective, effective, 0, &mut work);
@@ -185,7 +186,7 @@ impl UiPresentedHitIndex {
     pub(in crate::mounting) fn apply_scroll_translations(
         &mut self,
         binding: UiSurfaceBindingGeneration,
-        translations: &[(UiMountedInstanceIdentity, [f32; 2])],
+        translations: &[(UiMountedInstanceIdentity, UiScrollPoseShift)],
     ) -> UiHitTestSpatialWork {
         let mut work = UiHitTestSpatialWork::default();
         for (instance, translation) in translations {
@@ -207,7 +208,7 @@ impl UiPresentedHitIndex {
             // nothing, and is not counted. The count answers how much of the
             // index this pose actually moved, so it has to be taken after the
             // question is settled rather than before it is asked.
-            if effective == record.effective {
+            if same_place(effective, record.effective) {
                 continue;
             }
             work.scroll_rows_displaced += 1;
@@ -218,10 +219,7 @@ impl UiPresentedHitIndex {
                     *instance,
                     Record {
                         effective,
-                        scroll_translation: [
-                            record.scroll_translation[0] + translation[0],
-                            record.scroll_translation[1] + translation[1],
-                        ],
+                        scroll_translation: record.scroll_translation.then(*translation),
                         ..record
                     },
                 ),
@@ -247,7 +245,7 @@ impl UiPresentedHitIndex {
             let record = *record.expect("Portal target members retain their hit rows");
             work.motion_rows_projected += 1;
             let effective = Some(record.base.with_prepared_entrance(entrance));
-            if record.effective == effective {
+            if same_place(record.effective, effective) {
                 continue;
             }
             self.update_partition(record.base, record.effective, effective, 0, &mut work);
@@ -363,9 +361,18 @@ fn record_map(work: &mut UiHitTestSpatialWork, mutation: UiPersistentIndexMutati
     work.map_node_copies += mutation.node_copies();
 }
 
+/// Whether two readings of a row leave it where the index already files it.
+fn same_place(left: Option<UiPresentedHitTestRow>, right: Option<UiPresentedHitTestRow>) -> bool {
+    match (left, right) {
+        (Some(left), Some(right)) => left.occupies_same_place(right),
+        (left, right) => left.is_none() && right.is_none(),
+    }
+}
+
+/// The region the spatial index files a row under: the acceleration edge.
 fn region(row: UiPresentedHitTestRow) -> [f64; 4] {
-    let bounds = row.bounds();
-    let clip = row.clip_bounds();
+    let bounds = row.bounds().index_box();
+    let clip = row.clip_bounds().index_box();
     let x = bounds.x().max(clip.x());
     let y = bounds.y().max(clip.y());
     let right = f64::from(bounds.x() + bounds.width())

@@ -80,7 +80,7 @@ fn one_notch_travels_the_platform_line_count_times_the_declared_extent() {
         "and not the line count spent as though a line were a point"
     );
     assert_eq!(
-        scroll.displayed_offset(),
+        scroll.mounted_offset(),
         Some(block(travelled)),
         "the pixels moved the same distance the offset did"
     );

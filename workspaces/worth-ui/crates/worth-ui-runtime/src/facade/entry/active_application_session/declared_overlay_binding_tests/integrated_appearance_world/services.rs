@@ -78,10 +78,10 @@ impl World {
         );
         assert_eq!(
             [
-                row.bounds().x(),
-                row.bounds().y(),
-                row.bounds().width(),
-                row.bounds().height()
+                row.bounds().platform_box().x(),
+                row.bounds().platform_box().y(),
+                row.bounds().platform_box().width(),
+                row.bounds().platform_box().height()
             ],
             super::geometry::BOXES[index]
         );
@@ -114,7 +114,7 @@ impl World {
             )
             .unwrap();
         assert_eq!(
-            viewport.bounds(),
+            viewport.bounds().canonical_box(),
             super::geometry::viewport(super::geometry::VIEWPORT)
         );
         let idempotency =

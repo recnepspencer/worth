@@ -1,5 +1,9 @@
 use super::curve::UiMotionCurvePhase;
+use super::track_geometry::{UiTrackCurveSpan, UiTrackGeometry, UiTrackSamplePlace};
 use super::velocity::{UiPresentationOutgoingCurve, UiPresentationSampleVelocity};
+
+#[path = "track_sampling/presented_lifecycle.rs"]
+mod presented_lifecycle;
 
 /// One track's presentation truth: its current sample, whether the host shows
 /// that sample, and whether the track still moves.
@@ -9,7 +13,6 @@ pub(super) struct UiPresentationTrackState {
     motion: UiTrackMotion,
     screen: UiTrackScreen,
     pub(super) current: super::UiPresentationMotionSampleReceipt,
-    pub(super) current_geometry: Option<[f32; 4]>,
     pub(super) current_opacity_units: u16,
 }
 
@@ -28,7 +31,7 @@ struct UiTrackCurve {
     /// The tick the curve's clock started, or `None` while it starts at the
     /// first tick that samples it.
     start_tick: Option<u64>,
-    start_geometry: Option<[f32; 4]>,
+    start_geometry: Option<crate::mounting::presentation::UiAcceptedRect>,
     start_opacity_units: u16,
     start_velocity: UiPresentationSampleVelocity,
     duration_ticks: u32,
@@ -40,16 +43,20 @@ struct UiTrackCurve {
 enum UiTrackScreen {
     /// The current sample has not reached the screen; the host still shows
     /// `showing`, the published geometry.
-    Unpresented { showing: Option<[f32; 4]> },
+    Unpresented { showing: Option<UiTrackGeometry> },
     /// The host shows the current sample, drawn at `showing`.
-    OnScreen { showing: Option<[f32; 4]> },
+    OnScreen { showing: Option<UiTrackGeometry> },
 }
 
 impl UiTrackScreen {
-    const fn showing(self) -> Option<[f32; 4]> {
+    const fn showing(self) -> Option<UiTrackGeometry> {
         match self {
             Self::Unpresented { showing } | Self::OnScreen { showing } => showing,
         }
+    }
+
+    fn showing_damage(self) -> Option<[f32; 4]> {
+        self.showing().map(UiTrackGeometry::damage_components)
     }
 }
 
@@ -60,6 +67,13 @@ impl UiPresentationTrackState {
             UiTrackScreen::OnScreen { .. } => Some(self.current),
             UiTrackScreen::Unpresented { .. } => None,
         }
+    }
+
+    /// Where the current sample puts the target.
+    pub(super) const fn current_geometry(
+        &self,
+    ) -> Option<crate::mounting::presentation::UiAcceptedRect> {
+        self.current.geometry()
     }
 
     pub(super) const fn is_running(&self) -> bool {
@@ -82,98 +96,33 @@ impl UiPresentationTrackState {
         )
     }
 
-    pub(super) fn rebase_presented_extent(
-        &mut self,
-        tick: u64,
-    ) -> Result<(), super::UiPresentationGeometrySamplingDenial> {
-        let geometry = self
-            .track
-            .predecessor_geometry()
-            .map(|geometry| geometry.components());
-        let sample = super::UiPresentationMotionSampleReceipt::from_track_sample(
-            self.track,
-            tick,
-            self.track.successor_presentation(),
-            geometry,
-            self.current_opacity_units,
-            super::UiPresentationMotionSamplePosture::Active,
-            super::UiPresentationMotionDamage::between(geometry, geometry),
-        )?;
-        let target = self.target_geometry();
-        if let UiTrackMotion::Running(curve) = &mut self.motion {
-            if let (Some(start), Some(end)) = (geometry, target) {
-                curve.start_velocity =
-                    curve
-                        .start_velocity
-                        .within_extent(start, end, curve.duration_ticks);
-            }
-            curve.start_tick = Some(tick);
-            curve.start_geometry = geometry;
-        }
-        self.current_geometry = geometry;
-        self.current = sample;
-        self.screen = UiTrackScreen::OnScreen { showing: geometry };
-        Ok(())
-    }
-
-    /// The entrance sample is accepted as this track's current sample, but it
-    /// is delayed and carries no opacity: the frame that published it drew the
-    /// overlay at its successor geometry, not at the entrance offset. Claiming
-    /// the entrance geometry as presented erased the only record of what the
-    /// host still shows, so the first moving sample damaged its own destination
-    /// twice and left the published successor on screen.
-    pub(super) fn accept_published_entrance(
-        &mut self,
-        sample: super::UiPresentationMotionSampleReceipt,
-    ) {
-        assert_eq!(
-            self.current, sample,
-            "the physically accepted entrance matches the installed initial sample"
-        );
-        self.screen = UiTrackScreen::OnScreen {
-            showing: self.screen.showing(),
-        };
-    }
-
-    /// Record that the host already shows this track's initial sample, which
-    /// `on_screen` put there. A retarget resolved from a presented sample
-    /// starts where that sample left the target, so its departure is what the
-    /// screen holds: the displayed pose settles to it, and the next sample
-    /// damages the place it leaves rather than the published geometry.
-    /// A departure elsewhere is not on screen and stays unpresented.
-    pub(super) fn depart_on_screen(&mut self, on_screen: &Self) {
-        if let UiTrackScreen::OnScreen { showing } = on_screen.screen {
-            if self.current_geometry == on_screen.current_geometry {
-                self.screen = UiTrackScreen::OnScreen { showing };
-            }
-        }
-    }
-
     pub(super) fn new(
         track: crate::runtime::motion::UiCommittedMotionTrack,
         start_tick: Option<u64>,
-        start_geometry: Option<[f32; 4]>,
+        start_geometry: Option<UiTrackGeometry>,
         start_opacity_units: u16,
         start_velocity: UiPresentationSampleVelocity,
         duration_ticks: u32,
     ) -> Result<Self, super::UiPresentationGeometrySamplingDenial> {
-        let host_presented_geometry = track
-            .successor_geometry()
-            .map(crate::runtime::motion::UiMotionSemanticGeometry::components);
+        let host_presented_geometry = track.successor_geometry().map(UiTrackGeometry::Published);
+        let start = start_geometry.map(UiTrackSamplePlace::from);
         let current = super::UiPresentationMotionSampleReceipt::from_track_sample(
             track,
             start_tick.unwrap_or(0),
             track.successor_presentation(),
-            start_geometry,
+            start,
             start_opacity_units,
             super::UiPresentationMotionSamplePosture::Delayed,
-            super::UiPresentationMotionDamage::between(host_presented_geometry, start_geometry),
+            super::UiPresentationMotionDamage::between(
+                host_presented_geometry.map(UiTrackGeometry::damage_components),
+                start.map(UiTrackSamplePlace::damage_components),
+            ),
         )?;
         Ok(Self {
             track,
             motion: UiTrackMotion::Running(UiTrackCurve {
                 start_tick,
-                start_geometry,
+                start_geometry: current.geometry(),
                 start_opacity_units,
                 start_velocity,
                 duration_ticks,
@@ -182,7 +131,6 @@ impl UiPresentationTrackState {
                 showing: host_presented_geometry,
             },
             current,
-            current_geometry: start_geometry,
             current_opacity_units: start_opacity_units,
         })
     }
@@ -191,25 +139,28 @@ impl UiPresentationTrackState {
         track: crate::runtime::motion::UiCommittedMotionTrack,
         tick: u64,
     ) -> Result<Self, super::UiPresentationGeometrySamplingDenial> {
-        let geometry = track
-            .successor_geometry()
-            .map(crate::runtime::motion::UiMotionSemanticGeometry::components);
+        let geometry = track.successor_geometry();
+        let place = geometry.map(UiTrackSamplePlace::Published);
         let opacity_units = target_opacity_units(track);
         let current = super::UiPresentationMotionSampleReceipt::from_track_sample(
             track,
             tick,
             track.successor_presentation(),
-            geometry,
+            place,
             opacity_units,
             super::UiPresentationMotionSamplePosture::Terminal,
-            super::UiPresentationMotionDamage::between(None, geometry),
+            super::UiPresentationMotionDamage::between(
+                None,
+                place.map(UiTrackSamplePlace::damage_components),
+            ),
         )?;
         Ok(Self {
             track,
             motion: UiTrackMotion::Settled,
-            screen: UiTrackScreen::Unpresented { showing: geometry },
+            screen: UiTrackScreen::Unpresented {
+                showing: geometry.map(UiTrackGeometry::Published),
+            },
             current,
-            current_geometry: geometry,
             current_opacity_units: opacity_units,
         })
     }
@@ -226,7 +177,6 @@ impl UiPresentationTrackState {
             super::UiPresentationGeometrySamplingDenial,
         >,
     > {
-        let target_geometry = self.target_geometry();
         let UiTrackMotion::Running(curve) = &mut self.motion else {
             return None;
         };
@@ -234,12 +184,10 @@ impl UiPresentationTrackState {
         let curve = *curve;
         let (normalized, posture) = self.horizon_at(curve, tick.saturating_sub(start));
         let phase = self.phase_at(curve, normalized);
-        let geometry = super::curve::interpolate_geometry(
-            self.track.declaration().channels(),
-            curve.start_geometry,
-            target_geometry,
-            phase,
-        );
+        let geometry = curve
+            .toward(self.track.successor_geometry())
+            .point_at(self.track.declaration().channels(), phase)
+            .map(UiTrackSamplePlace::Curve);
         let target_opacity_units = target_opacity_units(self.track);
         let opacity_units = if self
             .track
@@ -288,17 +236,6 @@ impl UiPresentationTrackState {
         )
     }
 
-    fn target_geometry(&self) -> Option<[f32; 4]> {
-        let start = match self.motion {
-            UiTrackMotion::Running(curve) => curve.start_geometry,
-            UiTrackMotion::Settled => None,
-        };
-        self.track
-            .successor_geometry()
-            .map(crate::runtime::motion::UiMotionSemanticGeometry::components)
-            .or(start)
-    }
-
     /// The curve this track is running at `tick`, for a successor about to
     /// displace it. A settled track, one whose clock has not started, one still
     /// inside its delay, or one with no geometry basis is not moving and
@@ -307,17 +244,14 @@ impl UiPresentationTrackState {
         let UiTrackMotion::Running(curve) = self.motion else {
             return None;
         };
-        let start_geometry = curve.start_geometry?;
         let (normalized, posture) = self.horizon_at(curve, tick.saturating_sub(curve.start_tick?));
         if posture == super::UiPresentationMotionSamplePosture::Delayed {
             return None;
         }
-        Some(UiPresentationOutgoingCurve::interrupted_at(
+        curve.toward(self.track.successor_geometry()).outgoing_at(
             self.track.declaration().channels(),
             self.phase_at(curve, normalized),
-            start_geometry,
-            self.target_geometry().unwrap_or(start_geometry),
-        ))
+        )
     }
 
     pub(super) fn snap_system_reduced_motion(
@@ -329,7 +263,7 @@ impl UiPresentationTrackState {
         let geometry = self
             .track
             .successor_geometry()
-            .map(crate::runtime::motion::UiMotionSemanticGeometry::components);
+            .map(UiTrackSamplePlace::Published);
         let opacity_units = target_opacity_units(self.track);
         let sample = self.present_sample(
             tick,
@@ -354,12 +288,15 @@ impl UiPresentationTrackState {
         &mut self,
         tick: u64,
         presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
-        geometry: Option<[f32; 4]>,
+        geometry: Option<UiTrackSamplePlace>,
         opacity_units: u16,
         posture: super::UiPresentationMotionSamplePosture,
     ) -> Result<super::UiPresentationMotionSampleReceipt, super::UiPresentationGeometrySamplingDenial>
     {
-        let damage = super::UiPresentationMotionDamage::between(self.screen.showing(), geometry);
+        let damage = super::UiPresentationMotionDamage::between(
+            self.screen.showing_damage(),
+            geometry.map(UiTrackSamplePlace::damage_components),
+        );
         let sample = super::UiPresentationMotionSampleReceipt::from_track_sample(
             self.track,
             tick,
@@ -369,19 +306,22 @@ impl UiPresentationTrackState {
             posture,
             damage,
         )?;
-        self.current_geometry = geometry;
         self.current_opacity_units = opacity_units;
         self.current = sample;
-        self.screen = UiTrackScreen::OnScreen { showing: geometry };
+        self.screen = UiTrackScreen::OnScreen {
+            showing: sample.geometry().map(UiTrackGeometry::Accepted),
+        };
         Ok(sample)
     }
+}
 
-    pub(super) fn rebind_published_presentation(
-        &mut self,
-        presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
-    ) {
-        self.track = self.track.rebind_published_presentation(presentation);
-        self.current = self.current.rebind_presentation_basis(presentation);
+impl UiTrackCurve {
+    /// The span this curve travels from its departure to `target`.
+    fn toward(
+        self,
+        target: Option<crate::mounting::presentation::UiPublishedRect>,
+    ) -> UiTrackCurveSpan {
+        UiTrackCurveSpan::new(self.start_geometry, target)
     }
 }
 

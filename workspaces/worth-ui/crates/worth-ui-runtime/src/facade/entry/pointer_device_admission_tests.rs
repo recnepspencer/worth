@@ -179,8 +179,8 @@ fn pointer_world() -> PointerWorld {
         .rows()
         .first()
         .expect("fixture has one hit-test row");
-    let bounds = row.bounds();
-    let clip = row.clip_bounds();
+    let bounds = row.bounds().platform_box();
+    let clip = row.clip_bounds().platform_box();
     let point = UiHostSurfacePosition::viewport_logical(
         (((bounds.x().max(clip.x()) + (bounds.x() + bounds.width()).min(clip.x() + clip.width()))
             / 2.0)

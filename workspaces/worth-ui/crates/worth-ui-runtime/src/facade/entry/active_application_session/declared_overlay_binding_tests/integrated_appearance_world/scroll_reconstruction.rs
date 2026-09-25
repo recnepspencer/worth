@@ -103,7 +103,7 @@ fn the_rebuilt_surface_displays_the_offset_it_came_back_holding() {
     super::reconstruction::reconstruct_surface(&mut scroll.world);
 
     assert_eq!(
-        scroll.displayed_offset(),
+        scroll.mounted_offset(),
         Some(block(TRAVEL_POINTS)),
         "the rebuilt pose is built from the offset rather than from rest"
     );

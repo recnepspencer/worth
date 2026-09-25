@@ -131,7 +131,8 @@ fn exercise_completion_order(input_before_completion: bool) {
         .unwrap()
         .prepared()
         .bounds()
-        .mounted_box();
+        .rect()
+        .canonical_box();
     let outside = UiHostSurfacePosition::viewport_logical(
         ((body.x() + body.width() + 30.0) * 1_000.0) as i64,
         ((body.y() + body.height() + 30.0) * 1_000.0) as i64,

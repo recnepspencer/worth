@@ -1,11 +1,9 @@
-use worth_ui_host_contract::UiMountedCanonicalBox;
+use crate::mounting::presentation::UiPublishedRect;
 
 /// Measured occurrence-local content and its finite paint support. Shadows
 /// participate in paint coverage without becoming anchor spacing.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct UiPortalContentBounds {
-    pub(crate) layout: UiMountedCanonicalBox,
-    pub(crate) paint: UiMountedCanonicalBox,
+    pub(crate) layout: UiPublishedRect,
+    pub(crate) paint: UiPublishedRect,
 }
-
-impl Eq for UiPortalContentBounds {}

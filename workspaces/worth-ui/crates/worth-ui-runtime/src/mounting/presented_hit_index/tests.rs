@@ -74,7 +74,7 @@ fn presented_index_queries_and_updates_are_local_and_preserve_retained_versions(
                 .iter()
                 .skip(1)
                 .filter(|row| {
-                    let b = row.bounds();
+                    let b = row.bounds().platform_box();
                     point[0] >= f64::from(b.x())
                         && point[0] < f64::from(b.x() + b.width())
                         && point[1] >= f64::from(b.y())

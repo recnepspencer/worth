@@ -39,6 +39,9 @@ fn presented_index_portal_motion_selects_only_children_and_keeps_trigger_station
         binding,
         UiHostPresentationEpoch::issued_by_host(1),
     );
+    let displayed =
+        crate::mounting::presentation::presented_surface_witness_for_certification(presentation)
+            .displayed_basis();
     let target =
         UiMotionTargetIdentity::from_portal_owner(surface, owner, portal.portal_identity());
     let b = portal.bounds();
@@ -79,7 +82,7 @@ fn presented_index_portal_motion_selects_only_children_and_keeps_trigger_station
             .unwrap();
         let prepared = sampler.prepare_tick(1, presentation).unwrap();
         sampler.commit_prepared(prepared.presented_for_certification());
-        let work = index.apply_motion(&sampler, presentation, &[target]);
+        let work = index.apply_motion(&sampler, displayed, &[target]);
         assert_eq!(work.motion_members_visited, 1);
         assert_eq!(work.motion_rows_projected, 1);
         assert_eq!(
@@ -95,7 +98,7 @@ fn presented_index_portal_motion_selects_only_children_and_keeps_trigger_station
         assert!(!has(&index, binding, [40.0, 1030.0], owner));
         let prepared = sampler.prepare_tick(500, presentation).unwrap();
         sampler.commit_prepared(prepared.presented_for_certification());
-        index.apply_motion(&sampler, presentation, &[target]);
+        index.apply_motion(&sampler, displayed, &[target]);
         assert!(has(&index, binding, [40.0, 80.0], child));
         assert!(!has(&index, binding, [40.0, 1080.0], child));
     }

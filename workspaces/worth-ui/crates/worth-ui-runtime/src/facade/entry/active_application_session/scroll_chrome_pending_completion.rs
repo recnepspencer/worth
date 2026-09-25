@@ -52,17 +52,17 @@ impl super::WorthUiActiveApplicationSession {
             region.owner(),
             region.mounted_instance(),
         );
-        if let Some(sample) = self.mounted.accepted_scroll_group_translation(target) {
-            let settlement = self.accepted_scroll_settlement(target, sample, surface);
-            let accepted = self
-                .scroll
-                .as_ref()
-                .and_then(|scroll| scroll.offset(region.owner(), region.incarnation()).ok());
-            if !matches!(settlement, Ok(Some(settled))
-                if settled.offset == region.displayed_offset() && Some(settled.offset) == accepted)
-            {
-                return Outcome::AwaitingReconciliation;
-            }
+        let owner_offset = self
+            .scroll
+            .as_ref()
+            .and_then(|scroll| scroll.offset(region.owner(), region.incarnation()).ok());
+        if !self.accepted_scroll_sample_settled(
+            target,
+            surface,
+            region.mounted_offset(),
+            owner_offset,
+        ) {
+            return Outcome::AwaitingReconciliation;
         }
         let Some(thumb) = region.facts().axis(pending.axis()).map(|axis| axis.thumb()) else {
             self.interaction.scroll_chrome_latch_mut().take_pending();
@@ -78,7 +78,7 @@ impl super::WorthUiActiveApplicationSession {
                 pending.axis(),
                 pending.latest_point(),
                 grab,
-                region.displayed_offset(),
+                region.mounted_offset(),
             ) else {
                 self.interaction.scroll_chrome_latch_mut().take_pending();
                 return Outcome::Cancelled;

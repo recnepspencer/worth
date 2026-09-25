@@ -1,17 +1,20 @@
+use crate::mounting::presentation::UiPublishedRect;
+use crate::mounting::UiPresentedHitRect;
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct UiPresentedInteractionGeometry {
-    bounds: worth_ui_host_contract::UiMountedCanonicalBox,
-    clip_bounds: worth_ui_host_contract::UiMountedCanonicalBox,
+    bounds: UiPresentedHitRect,
+    clip_bounds: UiPresentedHitRect,
     presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct UiPresentedViewportGeometry {
-    bounds: worth_ui_host_contract::UiMountedCanonicalBox,
+    bounds: UiPublishedRect,
     presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
 }
 
-// Mounted boxes reject non-finite components, so equality is reflexive.
+// Truth geometry rejects non-finite components, so equality is reflexive.
 impl Eq for UiPresentedInteractionGeometry {}
 impl Eq for UiPresentedViewportGeometry {}
 
@@ -27,12 +30,12 @@ impl UiPresentedInteractionGeometry {
         }
     }
 
-    pub(crate) const fn bounds(self) -> worth_ui_host_contract::UiMountedCanonicalBox {
+    pub(crate) const fn bounds(self) -> UiPresentedHitRect {
         self.bounds
     }
 
     #[cfg(any(test, feature = "certification-support"))]
-    pub(crate) const fn clip_bounds(self) -> worth_ui_host_contract::UiMountedCanonicalBox {
+    pub(crate) const fn clip_bounds(self) -> UiPresentedHitRect {
         self.clip_bounds
     }
 
@@ -69,11 +72,12 @@ impl UiPresentedInteractionGeometry {
                     coordinate_space: worth_ui_host_contract::UiMountedCoordinateSpace::Viewport,
                 },
             )
+            .map(UiPublishedRect::from_committed_box)
             .expect("test geometry is canonical")
         };
         Self {
-            bounds: canonicalize(bounds),
-            clip_bounds: canonicalize(clip_bounds),
+            bounds: UiPresentedHitRect::Published(canonicalize(bounds)),
+            clip_bounds: UiPresentedHitRect::Published(canonicalize(clip_bounds)),
             presentation,
         }
     }
@@ -84,7 +88,7 @@ impl UiPresentedViewportGeometry {
         committed: crate::runtime::UiCommittedViewportGeometry,
         interaction: UiPresentedInteractionGeometry,
     ) -> Option<Self> {
-        let bounds = committed.mounted_box();
+        let bounds = UiPublishedRect::from_committed_box(committed.mounted_box());
         (bounds.coordinate_space() == worth_ui_host_contract::UiMountedCoordinateSpace::Viewport)
             .then_some(Self {
                 bounds,
@@ -92,7 +96,7 @@ impl UiPresentedViewportGeometry {
             })
     }
 
-    pub(crate) const fn bounds(self) -> worth_ui_host_contract::UiMountedCanonicalBox {
+    pub(crate) const fn bounds(self) -> UiPublishedRect {
         self.bounds
     }
 
@@ -103,12 +107,12 @@ impl UiPresentedViewportGeometry {
     }
 
     #[cfg(any(test, feature = "certification-support"))]
-    pub(crate) const fn for_test(
+    pub(crate) fn for_test(
         bounds: worth_ui_host_contract::UiMountedCanonicalBox,
         presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
     ) -> Self {
         Self {
-            bounds,
+            bounds: UiPublishedRect::from_committed_box(bounds),
             presentation,
         }
     }

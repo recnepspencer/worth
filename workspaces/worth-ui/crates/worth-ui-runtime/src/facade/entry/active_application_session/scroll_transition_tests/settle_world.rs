@@ -20,13 +20,18 @@
 //! through Motion's own declared-transition test entry, which runs the same
 //! `stage` -> `derive` -> `commit_published` sequence the lane runs.
 
+use crate::mounting::presentation::{
+    presented_surface_witness_for_certification, UiDisplayedRect, UiDisplayedScrollOffset,
+    UiPublishedRect,
+};
 use crate::runtime::scroll::transition::{
     scroll_settle_motion_request, UiScrollMotionBinding, UiScrollTransitionTarget,
     UiScrollWheelInput, UiScrollWheelLineDelta,
 };
 use crate::runtime::scroll::{
     UiScrollBounds, UiScrollChainEntry, UiScrollOffset, UiScrollOwnerIdentity,
-    UiScrollOwnerIncarnation, UiScrollOwnerRegistration, UiScrollRuntimeState,
+    UiScrollOwnerIncarnation, UiScrollOwnerRegistration, UiScrollRouteDenial, UiScrollRouteReceipt,
+    UiScrollRuntimeState,
 };
 
 /// The declared coarse-wheel arithmetic this milestone names: three lines to a
@@ -295,7 +300,8 @@ impl UiScrollSettleWorld {
     /// absolute sampled origin of the content box, in points.
     pub(super) fn accepted_translation(&self) -> Option<[f32; 2]> {
         self.sampler
-            .accepted_scroll_group_translation(self.motion_target())
+            .accepted_scroll_group_sample(self.motion_target())
+            .map(|sample| [sample.components()[0], sample.components()[1]])
     }
 
     /// The accepted block displacement from rest, in points, when the sampler
@@ -310,20 +316,21 @@ impl UiScrollSettleWorld {
     pub(super) fn settle_accepted(
         &mut self,
         bounds: UiScrollBounds,
-    ) -> Result<
-        crate::runtime::scroll::UiScrollRouteReceipt,
-        crate::runtime::scroll::UiScrollRouteDenial,
-    > {
-        let translation = self
-            .accepted_translation()
-            .expect("a presented settle reports an accepted translation");
+    ) -> Result<UiScrollRouteReceipt, UiScrollRouteDenial> {
+        let sample = self
+            .sampler
+            .accepted_scroll_group_sample(self.motion_target())
+            .expect("a presented settle reports an accepted sample");
+        let witness = presented_surface_witness_for_certification(sample.presentation_basis());
+        let displayed = UiDisplayedRect::displayed(sample, witness.displayed_basis())
+            .expect("the witness displays the binding the sample was accepted on");
         // The owner box is the content box at rest: an applied pose moves the
-        // owner's descendants and never the owner, so the accepted offset is
-        // the distance from that box to where the sample says the group sits.
-        let accepted_block = f64::from(self.content.y()) - f64::from(translation[1]);
-        let entry = self.entry();
+        // owner's descendants and never the owner.
+        let rest = UiPublishedRect::from_committed_box(self.content);
+        let offset = UiDisplayedScrollOffset::from_rest(rest, displayed)
+            .expect("a settle sample stands at or past rest");
         self.scroll
-            .settle_accepted_sample(entry, offset(accepted_block), bounds)
+            .settle_accepted_sample(self.entry(), offset, bounds)
     }
 }
 

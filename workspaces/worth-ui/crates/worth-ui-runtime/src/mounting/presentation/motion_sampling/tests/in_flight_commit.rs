@@ -212,7 +212,9 @@ fn a_scroll_retarget_landing_with_a_tick_in_flight_is_on_screen_where_that_tick_
     sampler.commit_prepared(prepared.presented_for_certification());
 
     assert_eq!(
-        sampler.accepted_scroll_group_translation(target),
+        sampler
+            .accepted_scroll_group_sample(target)
+            .map(|sample| [sample.components()[0], sample.components()[1]]),
         Some([presented[0], presented[1]]),
         "the Scroll settle reads the frame the host shows"
     );

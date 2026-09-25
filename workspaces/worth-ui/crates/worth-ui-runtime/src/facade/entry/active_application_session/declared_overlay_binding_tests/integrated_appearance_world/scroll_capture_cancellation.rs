@@ -182,7 +182,7 @@ fn a_thumb_pressed_during_a_settle_ends_it_where_the_pixels_already_are() {
         "the capture moved nothing: the offset is the one the settle had reached"
     );
     assert_eq!(
-        scroll.displayed_offset(),
+        scroll.mounted_offset(),
         Some(held),
         "and the pose the reader is looking at is that same offset"
     );
@@ -259,7 +259,7 @@ fn a_drag_after_the_capture_places_the_offset_its_thumb_position_names() {
     scroll.publish_direct(NOTCH_TICK + 3);
     assert_eq!(scroll.accepted_offset(), placed);
     assert_eq!(
-        scroll.displayed_offset(),
+        scroll.mounted_offset(),
         Some(placed),
         "and the pose geometry displays is the offset that was placed"
     );

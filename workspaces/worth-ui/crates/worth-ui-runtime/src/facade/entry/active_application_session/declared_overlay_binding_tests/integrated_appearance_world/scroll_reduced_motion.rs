@@ -73,7 +73,7 @@ fn a_reduced_motion_settle_arrives_on_its_first_frame() {
         "the notch asked to be a line further down, and that is where the reader is"
     );
     assert_eq!(
-        scroll.displayed_offset(),
+        scroll.mounted_offset(),
         Some(notch_target()),
         "the displayed pose is the offset Scroll holds"
     );

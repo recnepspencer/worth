@@ -27,7 +27,20 @@ fn scroll_succession_preserves_reused_rows_but_not_new_receipts_at_identical_bou
         }
         let instance = instances[0];
         let mut accepted = source.clone();
-        accepted.apply_scroll_translations(binding, &[(instance, [0.0, -60.0])]);
+        accepted.apply_scroll_translations(
+            binding,
+            &[(
+                instance,
+                crate::mounting::presentation::UiScrollPoseShift::between(
+                    crate::runtime::scroll::UiScrollOffset::origin(),
+                    crate::runtime::scroll::UiScrollOffset::new(
+                        0,
+                        60 * worth_ui_host_contract::UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
+                    )
+                    .unwrap(),
+                ),
+            )],
+        );
         let mut reused = source.clone();
         let work = reused.inherit_accepted_scroll(&accepted, binding);
         assert_eq!(work.scroll_rows_displaced(), 1);
@@ -38,6 +51,7 @@ fn scroll_succession_preserves_reused_rows_but_not_new_receipts_at_identical_bou
                 .0
                 .unwrap()
                 .bounds()
+                .platform_box()
                 .y(),
             40.0
         );
@@ -47,6 +61,7 @@ fn scroll_succession_preserves_reused_rows_but_not_new_receipts_at_identical_bou
                 .0
                 .unwrap()
                 .bounds()
+                .platform_box()
                 .y(),
             100.0
         );
@@ -86,6 +101,7 @@ fn scroll_succession_preserves_reused_rows_but_not_new_receipts_at_identical_bou
                 .0
                 .unwrap()
                 .bounds()
+                .platform_box()
                 .y(),
             100.0
         );

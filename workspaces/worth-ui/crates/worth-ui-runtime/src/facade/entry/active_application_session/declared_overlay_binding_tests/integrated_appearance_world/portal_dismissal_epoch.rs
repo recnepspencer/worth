@@ -54,7 +54,8 @@ fn raw_old_epoch_cannot_classify_inside_or_outside_after_motion_advance() {
         .unwrap()
         .prepared()
         .bounds()
-        .mounted_box();
+        .rect()
+        .canonical_box();
     let position = |x: f32, y: f32| {
         UiHostSurfacePosition::viewport_logical((x * 1_000.0) as i64, (y * 1_000.0) as i64)
     };
@@ -119,7 +120,8 @@ fn portal_entrance_dismissal_uses_the_accepted_displaced_body() {
         .unwrap()
         .prepared()
         .bounds()
-        .mounted_box();
+        .rect()
+        .canonical_box();
     let sample = world.session.prepare_motion_tick(1, observed).unwrap();
     world
         .host

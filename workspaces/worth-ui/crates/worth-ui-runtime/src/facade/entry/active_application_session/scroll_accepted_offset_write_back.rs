@@ -29,7 +29,7 @@ impl super::super::WorthUiActiveApplicationSession {
             .iter()
             .map(|settlement| {
                 self.accepted_scroll_bounds(settlement)
-                    .map(|bounds| (settlement.entry, settlement.offset, bounds))
+                    .map(|bounds| (settlement.owner.entry, settlement.offset, bounds))
             })
             .collect::<Vec<_>>();
         let scroll = self
@@ -43,7 +43,7 @@ impl super::super::WorthUiActiveApplicationSession {
                     .settle_accepted_sample(entry, offset, bounds)
                     .map(|_| ())
                     .map_err(|denial| UiScrollWriteBackRefusal::Route {
-                        region_instance: settlement.region_instance,
+                        region_instance: settlement.owner.region_instance,
                         denial,
                     })
             });
@@ -64,16 +64,16 @@ impl super::super::WorthUiActiveApplicationSession {
         &self,
         settlement: &UiAcceptedScrollSettlement,
     ) -> Result<crate::runtime::scroll::UiScrollBounds, UiScrollWriteBackRefusal> {
-        let region_instance = settlement.region_instance;
+        let region_instance = settlement.owner.region_instance;
         let basis = self
             .mounted
             .current_mounted_identity_basis(region_instance)
             .ok_or(UiScrollWriteBackRefusal::RegionBasisUnavailable { region_instance })?;
         self.scroll_bounds_for_mounted_owner(
-            settlement.entry.owner(),
+            settlement.owner.entry.owner(),
             region_instance,
             basis.graph_node_identity(),
-            settlement.slot,
+            settlement.owner.slot,
         )
         .map_err(|denial| UiScrollWriteBackRefusal::Bounds {
             region_instance,

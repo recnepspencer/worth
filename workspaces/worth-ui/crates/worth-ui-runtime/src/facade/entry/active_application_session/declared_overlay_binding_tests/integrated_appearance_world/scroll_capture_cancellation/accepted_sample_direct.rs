@@ -111,7 +111,7 @@ fn accepted_sample_completion_does_not_overwrite_staged_direct_geometry() {
             "a stale sample must not displace the host's direct geometry"
         );
     }
-    assert_eq!(scroll.displayed_offset(), Some(staged));
+    assert_eq!(scroll.mounted_offset(), Some(staged));
     // Once the direct geometry is presented, the owed settle is paid without
     // displacing it.
     assert_eq!(
@@ -120,6 +120,6 @@ fn accepted_sample_completion_does_not_overwrite_staged_direct_geometry() {
         "the landed direct page retired the owed sample on its own surface"
     );
     assert!(!scroll.world.session.awaits_scroll_settle_retry());
-    assert_eq!(scroll.displayed_offset(), Some(staged));
+    assert_eq!(scroll.mounted_offset(), Some(staged));
     let _ = scroll.world.session.shutdown();
 }

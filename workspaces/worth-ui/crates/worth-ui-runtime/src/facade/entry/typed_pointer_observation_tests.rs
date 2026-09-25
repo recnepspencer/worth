@@ -232,8 +232,8 @@ fn interior_point(
         .rows()
         .first()
         .expect("the fixture has one hit-test row");
-    let bounds = row.bounds();
-    let clip = row.clip_bounds();
+    let bounds = row.bounds().platform_box();
+    let clip = row.clip_bounds().platform_box();
     let x = (bounds.x().max(clip.x()) + (bounds.x() + bounds.width()).min(clip.x() + clip.width()))
         / 2.0;
     let y = (bounds.y().max(clip.y())

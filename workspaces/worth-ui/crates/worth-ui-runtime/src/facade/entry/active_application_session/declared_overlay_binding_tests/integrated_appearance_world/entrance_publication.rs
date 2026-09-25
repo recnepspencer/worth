@@ -47,7 +47,7 @@ fn portal_opening_publication_contains_its_first_motion_sample() {
         .find(|row| row.mounted_instance() == world.instances[4])
         .expect("Portal semantics preserve interaction visibility during entrance");
     assert_eq!(
-        opened_content.bounds().y(),
+        opened_content.bounds().platform_box().y(),
         opened_content.mounted().bounds().y() + 8.0
     );
     let ordinary = world.prepare_surface_with_current_portals(world.surfaces[0]);
@@ -80,7 +80,11 @@ fn portal_opening_publication_contains_its_first_motion_sample() {
         .iter()
         .find(|row| row.mounted_instance() == world.instances[4])
         .unwrap();
-    assert_eq!(content.bounds(), opened_content.bounds(), "ordinary succession preserves the accepted Motion geometry without paint-controlled shielding");
+    assert_eq!(
+        content.bounds().platform_box(),
+        opened_content.bounds().platform_box(),
+        "ordinary succession preserves the accepted Motion geometry without paint-controlled shielding"
+    );
     let first = world.session.prepare_motion_tick(12, basis).unwrap();
     assert_eq!(first.receipt().samples().len(), 1);
     assert_eq!(

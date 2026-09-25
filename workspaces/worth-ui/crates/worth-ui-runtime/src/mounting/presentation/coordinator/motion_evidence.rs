@@ -35,11 +35,11 @@ impl UiMountedPresentationCoordinator {
     pub(in crate::mounting) fn accept_published_entrance(
         &mut self,
         sample: super::super::motion_sampling::UiPresentationMotionSampleReceipt,
+        displayed: super::super::UiDisplayedSurfaceBasis,
     ) -> Result<bool, super::super::motion_sampling::UiPresentationMotionSamplingDenial> {
-        let presentation = sample.presentation_basis();
-        let state = self.presentation_states.get_mut(&presentation.binding())
+        let state = self.presentation_states.get_mut(&displayed.binding())
             .ok_or(super::super::motion_sampling::UiPresentationMotionSamplingDenial::PresentationTruthUnavailable)?;
-        state.accept_entrance(sample)
+        state.accept_entrance(sample, displayed)
             .map_err(|_| super::super::motion_sampling::UiPresentationMotionSamplingDenial::PresentationTruthUnavailable)
     }
 

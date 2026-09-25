@@ -16,7 +16,7 @@ fn pressing_the_portal_anchor_preserves_open_activation_and_its_half_open_bounda
         )
     };
     let open = state.prepare(request(771)).unwrap();
-    let anchor = open.placement().unwrap().anchor();
+    let anchor = open.placement().unwrap().anchor().canonical_box();
     state.commit_published(open).unwrap();
     let press = |x: f32, y: f32| UiPortalDismissalTrigger::OutsidePress {
         semantic_surface: surface,

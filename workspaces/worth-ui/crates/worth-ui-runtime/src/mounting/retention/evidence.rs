@@ -151,16 +151,16 @@ impl UiRetainedPresentedFrame {
         targets: &[crate::runtime::motion::UiMotionTargetIdentity],
     ) -> crate::mounting::hit_test_work::UiHitTestSpatialWork {
         let mut work = crate::mounting::hit_test_work::UiHitTestSpatialWork::default();
-        for (surface, presentation) in self.current_presentations().collect::<Vec<_>>() {
+        for entry in self.presentation_bindings.clone().iter() {
             let targets = targets
                 .iter()
                 .copied()
-                .filter(|target| target.semantic_surface() == surface)
+                .filter(|target| target.semantic_surface() == entry.surface)
                 .collect::<Vec<_>>();
             if !targets.is_empty() {
                 work.merge(self.visual_regions.presented_hits.apply_motion(
                     sampler,
-                    presentation,
+                    entry.displayed,
                     &targets,
                 ));
             }
@@ -328,7 +328,7 @@ impl UiRetainedPresentedFrame {
         presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
         mounted_instance: Option<UiMountedInstanceIdentity>,
         node_receipt: Option<UiMountedNodeReceiptIdentity>,
-    ) -> Result<(), UiPresentedFrameBasisDenial> {
+    ) -> Result<UiDisplayedSurfaceBasis, UiPresentedFrameBasisDenial> {
         let binding = presentation.binding();
         if self.bindings.binary_search(&binding).is_err() {
             return Err(UiPresentedFrameBasisDenial::BindingNotPresented);
@@ -343,15 +343,16 @@ impl UiRetainedPresentedFrame {
         if retained_binding.displayed.basis().epoch() != presentation.epoch() {
             return Err(UiPresentedFrameBasisDenial::PresentationEpochMismatch);
         }
+        let displayed = retained_binding.displayed;
         match (mounted_instance, node_receipt) {
-            (None, None) => Ok(()),
+            (None, None) => Ok(displayed),
             (Some(instance), Some(receipt)) => {
                 let expected = self
                     .receipts
                     .receipt_for(instance)
                     .ok_or(UiPresentedFrameBasisDenial::InstanceNotPresented)?;
                 (expected == receipt)
-                    .then_some(())
+                    .then_some(displayed)
                     .ok_or(UiPresentedFrameBasisDenial::NodeReceiptMismatch)
             }
             _ => Err(UiPresentedFrameBasisDenial::InstanceNotPresented),

@@ -199,11 +199,12 @@ fn the_three_target_scopes_of_one_owner_are_distinct_keys() {
 
     commit_at(&mut sampler, 5, &world);
     let accepted = sampler
-        .accepted_scroll_group_translation(scrolled)
-        .expect("an accepted Scroll-content sample reports its group translation");
+        .accepted_scroll_group_sample(scrolled)
+        .expect("an accepted Scroll-content sample reports its group sample")
+        .components();
     assert_close(f64::from(accepted[1]), 0.0, "the settle has just begun");
-    assert_eq!(sampler.accepted_scroll_group_translation(ordinary), None);
-    assert_eq!(sampler.accepted_scroll_group_translation(portal), None);
+    assert_eq!(sampler.accepted_scroll_group_sample(ordinary), None);
+    assert_eq!(sampler.accepted_scroll_group_sample(portal), None);
 }
 
 /// Cubic Hermite from `(start, start_rate)` to `(end, at rest)` over

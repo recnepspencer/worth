@@ -49,24 +49,8 @@ fn mounted_shadow_caster_and_paint_are_measured_separately() {
             .portal_content_extent(world.owners[0])
             .unwrap()
             .unwrap();
-        assert_eq!(
-            [
-                measured.layout.x(),
-                measured.layout.y(),
-                measured.layout.width(),
-                measured.layout.height()
-            ],
-            expected_layout
-        );
-        assert_eq!(
-            [
-                measured.paint.x(),
-                measured.paint.y(),
-                measured.paint.width(),
-                measured.paint.height()
-            ],
-            expected_paint
-        );
+        assert_eq!(measured.layout.components(), expected_layout);
+        assert_eq!(measured.paint.components(), expected_paint);
         complete_measured_content(&world, measured);
     }
 }
@@ -83,15 +67,7 @@ fn content_beginning_before_its_anchor_is_measured_from_the_union() {
         .portal_content_extent(world.owners[0])
         .unwrap()
         .unwrap();
-    assert_eq!(
-        [
-            measured.paint.x(),
-            measured.paint.y(),
-            measured.paint.width(),
-            measured.paint.height()
-        ],
-        [-12.0, -8.0, 220.0, 120.0]
-    );
+    assert_eq!(measured.paint.components(), [-12.0, -8.0, 220.0, 120.0]);
     assert_eq!(measured.layout, measured.paint);
     complete_measured_content(&world, measured);
 }

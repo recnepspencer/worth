@@ -99,20 +99,32 @@ impl super::WorthUiMountedSessionState {
         self.apply_scroll_geometry_changes(poses, true)
     }
 
-    /// A host-accepted sample has already moved retained paint. Update its
-    /// geometry and hit rows without scheduling that same paint a second time.
+    /// A witness has already displayed these samples, so retained paint is
+    /// already where they put it. Settle mounted geometry and hit rows to
+    /// them without scheduling that same paint a second time.
     pub(crate) fn apply_presented_scroll_geometries(
         &mut self,
         poses: &[(
             worth_ui_host_contract::UiSemanticSurfaceIdentity,
             worth_ui_host_contract::UiMountedInstanceIdentity,
-            crate::runtime::scroll::UiScrollOffset,
+            crate::mounting::presentation::UiDisplayedScrollOffset,
         )],
     ) -> Result<
         Box<[crate::mounting::UiCommittedPresentedHitTransition]>,
         super::super::UiMountedOccurrenceGeometryDenial,
     > {
-        self.apply_scroll_geometry_changes(poses, false)
+        // Each offset settles only the surface whose binding displayed it.
+        if poses.iter().any(|(surface, _, displayed)| {
+            self.current_surface_for_binding(displayed.displayed_basis().binding())
+                != Some(*surface)
+        }) {
+            return Err(super::super::UiMountedOccurrenceGeometryDenial::ForeignSurface);
+        }
+        let settled = poses
+            .iter()
+            .map(|(surface, owner, displayed)| (*surface, *owner, displayed.settled()))
+            .collect::<Vec<_>>();
+        self.apply_scroll_geometry_changes(&settled, false)
     }
 
     fn apply_scroll_geometry_changes(
@@ -189,29 +201,32 @@ impl super::WorthUiMountedSessionState {
         self.motion_sampling.retire_scroll_group_track(target)
     }
 
-    /// The accepted translation of every retained Scroll content group, keyed
-    /// by the target that names it. This is the sole source of displayed
-    /// scrolled geometry: it reports what the host has already presented, never
-    /// the semantic target the content is still travelling toward.
-    pub(crate) fn accepted_scroll_group_translations(
+    /// The accepted content sample of every retained Scroll content group,
+    /// keyed by the target that names it. This is the sole source of scrolled
+    /// geometry: once a witness displays a sample it reports what the host has
+    /// already presented, never the semantic target the content is still
+    /// travelling toward.
+    pub(crate) fn accepted_scroll_group_samples(
         &self,
-    ) -> Vec<(crate::runtime::motion::UiMotionTargetIdentity, [f32; 2])> {
+    ) -> Vec<(
+        crate::runtime::motion::UiMotionTargetIdentity,
+        crate::mounting::presentation::UiAcceptedRect,
+    )> {
         self.motion_sampling
             .retained_targets()
             .into_iter()
             .filter_map(|target| {
                 self.motion_sampling
-                    .accepted_scroll_group_translation(target)
-                    .map(|translation| (target, translation))
+                    .accepted_scroll_group_sample(target)
+                    .map(|sample| (target, sample))
             })
             .collect()
     }
 
-    pub(crate) fn accepted_scroll_group_translation(
+    pub(crate) fn accepted_scroll_group_sample(
         &self,
         target: crate::runtime::motion::UiMotionTargetIdentity,
-    ) -> Option<[f32; 2]> {
-        self.motion_sampling
-            .accepted_scroll_group_translation(target)
+    ) -> Option<crate::mounting::presentation::UiAcceptedRect> {
+        self.motion_sampling.accepted_scroll_group_sample(target)
     }
 }

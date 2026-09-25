@@ -33,7 +33,9 @@ pub(crate) use inspection_basis::{
 };
 #[cfg(test)]
 pub(crate) use interaction_basis::motion_sampling_hit_test_mechanic_for_test;
-pub(crate) use interaction_basis::{UiPresentedHitTestBasis, UiPresentedHitTestRow};
+pub(crate) use interaction_basis::{
+    UiPresentedHitRect, UiPresentedHitTestBasis, UiPresentedHitTestRow,
+};
 pub use lease::UiMountedRetentionLease;
 pub(crate) use lease::{
     UiMountedDiagnosticRetentionLease, UiMountedObservationBasisLease, UiMountedVisualOverlayLease,

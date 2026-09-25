@@ -1,5 +1,5 @@
 use super::*;
-use crate::mounting::presented_hit_index::{UiPresentedHitQuery, UiPresentedHitQueryDenial};
+use crate::mounting::presented_hit_index::UiPresentedHitQueryDenial;
 use crate::mounting::spatial_index::UiMountedSpatialBudget;
 use crate::mounting::UiHitTestSpatialWork;
 
@@ -111,8 +111,7 @@ impl UiMountedFrameRetentionCoordinator {
         presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
         point: [f64; 2],
         budget: UiMountedSpatialBudget,
-    ) -> Result<(UiPresentedFrameBasisRelation, UiPresentedHitQuery), UiPresentedPointLookupDenial>
-    {
+    ) -> Result<super::super::UiPresentedHitTestBasis, UiPresentedPointLookupDenial> {
         let authority = self.authority.borrow();
         let (evidence, relation) = match authority.frame(presentation.frame()) {
             UiMountedRetainedFrameLookup::Found {
@@ -129,7 +128,7 @@ impl UiMountedFrameRetentionCoordinator {
                 ))
             }
         };
-        evidence
+        let displayed = evidence
             .classify(presentation, None, None)
             .map_err(UiPresentedPointLookupDenial::Presentation)?;
         let basis = evidence.visual_region_basis(presentation.binding());
@@ -161,7 +160,9 @@ impl UiMountedFrameRetentionCoordinator {
             *row = reattributed;
             query.work.map_key_probes += probes;
         }
-        Ok((relation, query))
+        Ok(super::super::UiPresentedHitTestBasis::from_candidates(
+            displayed, relation, query,
+        ))
     }
 
     /// Apply one settled scroll pose's translations to the current retained
@@ -175,7 +176,10 @@ impl UiMountedFrameRetentionCoordinator {
     pub(in crate::mounting) fn refresh_presented_hit_scroll(
         &mut self,
         surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
-        translations: &[(worth_ui_host_contract::UiMountedInstanceIdentity, [f32; 2])],
+        translations: &[(
+            worth_ui_host_contract::UiMountedInstanceIdentity,
+            crate::mounting::presentation::UiScrollPoseShift,
+        )],
     ) -> (
         Option<super::super::UiCommittedPresentedHitTransition>,
         UiHitTestSpatialWork,

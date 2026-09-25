@@ -203,7 +203,7 @@ fn motion(
         .interaction_hit_test_basis(presentation.basis())
         .unwrap();
     assert_eq!(hit.rows().len(), 1);
-    let bounds = hit.rows()[0].bounds();
+    let bounds = hit.rows()[0].bounds().platform_box();
     let position = if outside {
         UiHostSurfacePosition::viewport_logical(-1_000, -1_000)
     } else {

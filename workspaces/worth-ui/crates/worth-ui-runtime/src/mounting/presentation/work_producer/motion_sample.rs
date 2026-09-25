@@ -13,6 +13,9 @@ pub(crate) enum UiMountedMotionSampleWorkDenial {
     UnknownTargetCommands,
     AmbiguousTargetCommands,
     InvalidGeometry,
+    /// A command's displayed base was read by another bind than the group
+    /// standing it is moved from.
+    DisplayedBaseFromAnotherBind,
 }
 
 impl UiMountedPresentationState {
@@ -39,7 +42,7 @@ impl UiMountedPresentationState {
         let mut acceptance = Vec::new();
         let mut selected = std::collections::HashSet::new();
         let mut scroll_acceptance = Vec::new();
-        for (change, sample) in self.scroll_sample_changes(sampling.samples())? {
+        for (change, sample) in self.scroll_sample_changes(sampling.samples(), presentation)? {
             selected.insert(change.command());
             damage.extend(
                 change

@@ -20,6 +20,7 @@ fn nested_hit(scroll: &ScrollWorld) -> UiMountedCanonicalBox {
         .find(|row| row.mounted_instance() == scroll.world.instances[2])
         .unwrap()
         .bounds()
+        .platform_box()
 }
 
 fn thumb(scroll: &ScrollWorld) -> [f32; 4] {

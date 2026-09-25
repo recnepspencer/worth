@@ -3,7 +3,7 @@
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::runtime) struct UiCommittedMotionPredecessorReceipt {
-    geometry: Option<super::UiMotionSemanticGeometry>,
+    geometry: Option<crate::mounting::presentation::UiPublishedRect>,
     visible: bool,
 }
 
@@ -12,19 +12,21 @@ pub(in crate::runtime) struct UiPreparedMotionSuccessorReceipt {
     target: super::UiMotionTargetIdentity,
     owner_revision: u64,
     presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
-    geometry: Option<super::UiMotionSemanticGeometry>,
+    geometry: Option<crate::mounting::presentation::UiPublishedRect>,
     visible: bool,
 }
 
 impl UiCommittedMotionPredecessorReceipt {
     pub(super) const fn committed(
-        geometry: Option<super::UiMotionSemanticGeometry>,
+        geometry: Option<crate::mounting::presentation::UiPublishedRect>,
         visible: bool,
     ) -> Self {
         Self { geometry, visible }
     }
 
-    pub(in crate::runtime) const fn geometry(self) -> Option<super::UiMotionSemanticGeometry> {
+    pub(in crate::runtime) const fn geometry(
+        self,
+    ) -> Option<crate::mounting::presentation::UiPublishedRect> {
         self.geometry
     }
 
@@ -38,7 +40,7 @@ impl UiPreparedMotionSuccessorReceipt {
         target: super::UiMotionTargetIdentity,
         owner_revision: u64,
         presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
-        geometry: Option<super::UiMotionSemanticGeometry>,
+        geometry: Option<crate::mounting::presentation::UiPublishedRect>,
         visible: bool,
     ) -> Self {
         Self {
@@ -75,7 +77,9 @@ impl UiPreparedMotionSuccessorReceipt {
         self.presentation
     }
 
-    pub(in crate::runtime) const fn geometry(self) -> Option<super::UiMotionSemanticGeometry> {
+    pub(in crate::runtime) const fn geometry(
+        self,
+    ) -> Option<crate::mounting::presentation::UiPublishedRect> {
         self.geometry
     }
 

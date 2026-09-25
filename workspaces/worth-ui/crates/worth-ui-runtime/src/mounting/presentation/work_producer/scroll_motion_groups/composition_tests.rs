@@ -1,4 +1,7 @@
 //! Producer-unit proof of physical composition, not authored topology admission.
+use super::group_offset::{
+    UiBoundGroupStanding, UiGroupStanding, UiPublishedGroupOffset, UiScrollGroupBind,
+};
 use super::*;
 use crate::mounting::presentation::presented_surface_witness_for_certification;
 use crate::mounting::presentation::work_producer_tests::world::{
@@ -68,8 +71,11 @@ fn nested_scroll_samples_compose_once_and_keep_a_settled_ancestor() {
                 base_translation: None,
             }]),
             thumbs: Arc::from([]),
-            displayed: [0.0; 2],
-            accepted: Default::default(),
+            bound_standing: UiBoundGroupStanding::new(
+                UiGroupStanding::Published(UiPublishedGroupOffset::of(UiScrollOffset::origin())),
+                UiScrollGroupBind::default(),
+            ),
+            displayed_sample: Default::default(),
         }
     };
     state.scroll_motion_groups.groups = std::rc::Rc::new(BTreeMap::from([
@@ -136,6 +142,16 @@ fn nested_scroll_samples_compose_once_and_keep_a_settled_ancestor() {
         )
         .unwrap();
     sampler.commit_prepared(rest.presented_for_certification());
+    let displayed_at_rest = state
+        .scroll_motion_groups
+        .groups
+        .values()
+        .map(|group| group.displayed_sample.get())
+        .collect::<Vec<_>>();
+    assert!(
+        displayed_at_rest.iter().all(Option::is_some),
+        "the witness displayed every group's rest sample"
+    );
     let moving = sampler.prepare_tick(121, presentation).unwrap();
     let (work, rejected) = state
         .prepare_motion_sample(moving.receipt(), presentation, &lease)
@@ -157,13 +173,16 @@ fn nested_scroll_samples_compose_once_and_keep_a_settled_ancestor() {
     let before = state.accepted_motion_change(command);
     drop(rejected);
     assert_eq!(state.accepted_motion_change(command), before);
-    for retained in state.scroll_motion_groups.groups.values() {
-        assert_eq!(
-            retained.accepted.get().unwrap().tick(),
-            1,
-            "rejection moves no group evidence"
-        );
-    }
+    assert_eq!(
+        state
+            .scroll_motion_groups
+            .groups
+            .values()
+            .map(|group| group.displayed_sample.get())
+            .collect::<Vec<_>>(),
+        displayed_at_rest,
+        "rejection moves no group evidence"
+    );
     let (_, accepted) = state
         .prepare_motion_sample(moving.receipt(), presentation, &lease)
         .unwrap();
@@ -242,11 +261,15 @@ fn a_group_rebuilt_before_its_accepted_sample_settles_moves_from_where_the_host_
         commands: Arc::from([UiMountedScrollMotionCommand {
             identity: command,
             clips: clips.clone(),
-            base_translation: state.accepted_base_translation(command),
+            base_translation: state
+                .displayed_base_translation(command, UiScrollGroupBind::default()),
         }]),
         thumbs: Arc::from([]),
-        displayed: state.displayed_scroll_offset(target, UiScrollOffset::origin()),
-        accepted: Default::default(),
+        bound_standing: UiBoundGroupStanding::new(
+            state.group_standing(target, UiScrollOffset::origin()),
+            UiScrollGroupBind::default(),
+        ),
+        displayed_sample: Default::default(),
     };
     state.scroll_motion_groups.groups = std::rc::Rc::new(BTreeMap::from([(target, bind(&state))]));
     state.scroll_motion_groups.memberships =
@@ -296,8 +319,17 @@ fn a_group_rebuilt_before_its_accepted_sample_settles_moves_from_where_the_host_
     assert_translation(present(&state, &mut sampler, 121), -40.0);
 
     let rebound = bind(&state);
-    assert_eq!(rebound.commands[0].base_translation, Some([0.0, -40.0]));
-    assert_eq!(rebound.displayed, [0.0, 40.0]);
+    assert_eq!(
+        rebound.commands[0]
+            .base_translation
+            .map(|base| base.components()),
+        Some([0.0, -40.0])
+    );
+    assert!(matches!(
+        rebound.bound_standing.standing(),
+        UiGroupStanding::Displayed(_)
+    ));
+    assert_eq!(rebound.bound_standing.standing().points(), [0.0, 40.0]);
     state.scroll_motion_groups.groups = std::rc::Rc::new(BTreeMap::from([(target, rebound)]));
     sampler.install(install(82, -40.0, -60.0)).unwrap();
     assert_translation(present(&state, &mut sampler, 200), -40.0);

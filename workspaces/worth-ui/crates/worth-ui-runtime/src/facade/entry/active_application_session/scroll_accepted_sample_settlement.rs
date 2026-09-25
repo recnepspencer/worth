@@ -1,9 +1,9 @@
 //! Settling the accepted Motion sample of a Scroll content group into the
-//! displayed scroll pose.
+//! mounted scroll pose once a witness displays it.
 //!
-//! The accepted sample is the only authority over displayed scrolled geometry,
-//! so every frame that commits one has to move the region's descendants to the
-//! offset that sample reports. Mounted geometry refuses while a presentation
+//! A displayed sample is the only authority over scrolled geometry, so every
+//! frame whose witness displays one has to move the region's descendants to
+//! the offset that sample stands at. Mounted geometry refuses while a presentation
 //! attempt is in flight; that refusal defers the settle to the next frame and
 //! never drops it, because the accepted sample remains true until a later one
 //! replaces it. Every other refusal is reported through the disposition.
@@ -12,19 +12,55 @@ use super::scroll_settle_disposition::{
     UiAcceptedScrollSettlementDenial, UiScrollSettleDisposition, UiScrollSettleRefusal,
 };
 use crate::mounting::presentation::motion_sampling::UiPresentationMotionPresentedSurface;
+use crate::mounting::presentation::{
+    UiDisplayedRect, UiDisplayedScrollOffset, UiPublishedRect, UiScrollStandingDenial,
+};
 use crate::runtime::motion::{UiMotionTargetIdentity, UiMotionTargetScope};
 
-/// One accepted Scroll sample resolved against the owner it belongs to: where
-/// it puts the displayed content, and which owner's semantic offset has to
-/// follow it there.
+/// The region owner an accepted Scroll sample belongs to, and the rest box
+/// its offset is measured from.
 #[derive(Clone, Copy, Debug)]
-pub(in crate::facade::entry) struct UiAcceptedScrollSettlement {
+pub(in crate::facade::entry) struct UiScrollSettlementOwner {
     pub(super) surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
     pub(super) owner_instance: worth_ui_host_contract::UiMountedInstanceIdentity,
     pub(super) region_instance: worth_ui_host_contract::UiMountedInstanceIdentity,
     pub(super) slot: usize,
     pub(super) entry: crate::runtime::scroll::UiScrollChainEntry,
-    pub(super) offset: crate::runtime::scroll::UiScrollOffset,
+    rest: UiPublishedRect,
+}
+
+/// One displayed Scroll sample resolved against the owner it belongs to: where
+/// the witness showed the content, and which owner's offset has to follow it
+/// there.
+#[derive(Clone, Copy, Debug)]
+pub(in crate::facade::entry) struct UiAcceptedScrollSettlement {
+    pub(super) owner: UiScrollSettlementOwner,
+    pub(super) offset: UiDisplayedScrollOffset,
+}
+
+impl UiScrollSettlementOwner {
+    /// The settlement `sample` asks of this owner: the offset that places its
+    /// content group where the witness displayed it.
+    pub(super) fn settle(
+        self,
+        sample: UiDisplayedRect,
+    ) -> Result<UiAcceptedScrollSettlement, UiAcceptedScrollSettlementDenial> {
+        let offset =
+            UiDisplayedScrollOffset::from_rest(self.rest, sample).map_err(
+                |denial| match denial {
+                    UiScrollStandingDenial::CoordinateSpaceChanged => {
+                        UiAcceptedScrollSettlementDenial::SampleOutsideRestSpace
+                    }
+                    UiScrollStandingDenial::BeforeRest => {
+                        UiAcceptedScrollSettlementDenial::SampleBeforeRest
+                    }
+                },
+            )?;
+        Ok(UiAcceptedScrollSettlement {
+            owner: self,
+            offset,
+        })
+    }
 }
 
 impl super::super::WorthUiActiveApplicationSession {
@@ -56,7 +92,7 @@ impl super::super::WorthUiActiveApplicationSession {
         else {
             return UiScrollSettleDisposition::Idle;
         };
-        let accepted = self.mounted.accepted_scroll_group_translations();
+        let accepted = self.mounted.accepted_scroll_group_samples();
         if accepted.is_empty() {
             self.owed_scroll_settles.paid(presented.semantic_surface());
             return UiScrollSettleDisposition::Idle;
@@ -69,8 +105,19 @@ impl super::super::WorthUiActiveApplicationSession {
         }
         let mut settlements = Vec::with_capacity(accepted.len());
         let mut refusal = None;
-        for (target, sampled_position) in accepted {
-            match self.accepted_scroll_settlement(target, sampled_position, surface) {
+        for (target, sample) in accepted {
+            let settlement = self
+                .scroll_settlement_owner(target, surface)
+                .and_then(|owner| {
+                    owner
+                        .map(|owner| {
+                            UiDisplayedRect::displayed(sample, presented.displayed())
+                                .map_err(|_| UiAcceptedScrollSettlementDenial::SampleNotDisplayed)
+                                .and_then(|sample| owner.settle(sample))
+                        })
+                        .transpose()
+                });
+            match settlement {
                 Ok(Some(settlement)) => settlements.push(settlement),
                 Ok(None) => {}
                 Err(denial) => {
@@ -88,8 +135,8 @@ impl super::super::WorthUiActiveApplicationSession {
             .iter()
             .map(|settlement| {
                 (
-                    settlement.surface,
-                    settlement.owner_instance,
+                    settlement.owner.surface,
+                    settlement.owner.owner_instance,
                     settlement.offset,
                 )
             })
@@ -121,20 +168,45 @@ impl super::super::WorthUiActiveApplicationSession {
         }
     }
 
-    /// The displayed pose one accepted sample asks for: the owning region
-    /// occurrence, and the offset that places its content group where the
-    /// sample says the host already put it.
-    ///
-    /// `sampled_position` is where the sampler reports the content box now
-    /// sits, in the region's own coordinate space. `Ok(None)` names a sample
-    /// that is not this surface's Scroll content at all; every failure to
-    /// resolve a sample that is comes back typed.
-    pub(super) fn accepted_scroll_settlement(
+    /// Whether the accepted sample of one region's content group, if it has
+    /// one, has settled: the surface's current witness displays it, and both
+    /// the mounted pose and the owner's offset stand where it was displayed.
+    /// A group with no accepted sample has nothing left to settle.
+    pub(super) fn accepted_scroll_sample_settled(
         &self,
         target: UiMotionTargetIdentity,
-        sampled_position: [f32; 2],
         surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
-    ) -> Result<Option<UiAcceptedScrollSettlement>, UiAcceptedScrollSettlementDenial> {
+        mounted_offset: crate::runtime::scroll::UiScrollOffset,
+        owner_offset: Option<crate::runtime::scroll::UiScrollOffset>,
+    ) -> bool {
+        let Some(sample) = self.mounted.accepted_scroll_group_sample(target) else {
+            return true;
+        };
+        let Some(sample) = self
+            .mounted
+            .current_presentation_for_surface(surface)
+            .and_then(|displayed| UiDisplayedRect::displayed(sample, displayed).ok())
+        else {
+            return false;
+        };
+        matches!(
+            self.scroll_settlement_owner(target, surface)
+                .and_then(|owner| owner.map(|owner| owner.settle(sample)).transpose()),
+            Ok(Some(settled)) if settled.offset.stands_at(mounted_offset)
+                && owner_offset.is_some_and(|offset| settled.offset.stands_at(offset))
+        )
+    }
+
+    /// The region owner one accepted sample settles, and the rest box its
+    /// offset is measured from.
+    ///
+    /// `Ok(None)` names a sample that is not this surface's Scroll content at
+    /// all; every failure to resolve a sample that is comes back typed.
+    pub(super) fn scroll_settlement_owner(
+        &self,
+        target: UiMotionTargetIdentity,
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+    ) -> Result<Option<UiScrollSettlementOwner>, UiAcceptedScrollSettlementDenial> {
         if target.scope() != UiMotionTargetScope::ScrollContents
             || target.semantic_surface() != surface
         {
@@ -152,28 +224,22 @@ impl super::super::WorthUiActiveApplicationSession {
         let slot = latched_chain_slot_for_motion_owner(chain, motion_owner_key)
             .ok_or(UiAcceptedScrollSettlementDenial::OwnerNotInChain { motion_owner_key })?;
         let owner = chain.owners()[slot];
+        // The owner box is the content box at rest: an applied pose moves the
+        // owner's descendants, never the owner.
         let (owner_instance, content, _) = self
             .mounted
             .scroll_region_geometry(mounted_instance, slot)
             .ok_or(UiAcceptedScrollSettlementDenial::GeometryUnavailable)?;
-        // The owner box is the content box at rest: an applied pose moves the
-        // owner's descendants, never the owner. The accepted sample reports
-        // where the group is now, so the distance from rest to the sample is
-        // the offset that sample stands for.
-        let accepted_inline = subpixels(content.x() - sampled_position[0]);
-        let accepted_block = subpixels(content.y() - sampled_position[1]);
         let incarnation = self
             .scroll_region_incarnation(mounted_instance, slot)
             .ok_or(UiAcceptedScrollSettlementDenial::IncarnationUnavailable)?;
-        let offset = crate::runtime::scroll::UiScrollOffset::new(accepted_inline, accepted_block)
-            .ok_or(UiAcceptedScrollSettlementDenial::SampleBeforeRest)?;
-        Ok(Some(UiAcceptedScrollSettlement {
+        Ok(Some(UiScrollSettlementOwner {
             surface: target.semantic_surface(),
             owner_instance,
             region_instance: mounted_instance,
             slot,
             entry: crate::runtime::scroll::UiScrollChainEntry::new(owner, incarnation),
-            offset,
+            rest: UiPublishedRect::from_committed_box(content),
         }))
     }
 }
@@ -190,9 +256,4 @@ fn latched_chain_slot_for_motion_owner(
                 crate::runtime::scroll::UiScrollOwnerIdentity::Region { .. }
             )
     })
-}
-
-fn subpixels(logical_points: f32) -> i64 {
-    (logical_points * worth_ui_host_contract::UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f32)
-        .round() as i64
 }

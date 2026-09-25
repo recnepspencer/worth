@@ -118,17 +118,17 @@ impl super::super::WorthUiActiveApplicationSession {
             region.owner(),
             region.mounted_instance(),
         );
-        if let Some(sample) = self.mounted.accepted_scroll_group_translation(target) {
-            let settlement = self.accepted_scroll_settlement(target, sample, surface);
-            let accepted = self
-                .scroll
-                .as_ref()
-                .and_then(|scroll| scroll.offset(region.owner(), region.incarnation()).ok());
-            if !matches!(settlement, Ok(Some(settled))
-                if settled.offset == region.displayed_offset() && Some(settled.offset) == accepted)
-            {
-                return Err(UiScrollChromeInteractionDenial::AcceptedPoseUnsettled);
-            }
+        let owner_offset = self
+            .scroll
+            .as_ref()
+            .and_then(|scroll| scroll.offset(region.owner(), region.incarnation()).ok());
+        if !self.accepted_scroll_sample_settled(
+            target,
+            surface,
+            region.mounted_offset(),
+            owner_offset,
+        ) {
+            return Err(UiScrollChromeInteractionDenial::AcceptedPoseUnsettled);
         }
         let axis_facts = region
             .facts()
@@ -189,7 +189,7 @@ impl super::super::WorthUiActiveApplicationSession {
                     .unwrap_or(0);
                 let placed = region
                     .facts()
-                    .offset_for_track_click(part.axis(), point, region.displayed_offset(), line)
+                    .offset_for_track_click(part.axis(), point, region.mounted_offset(), line)
                     .ok_or(UiScrollChromeInteractionDenial::PressIsOnTheThumb)?;
                 self.place_scroll_chrome_offset(
                     region.owner(),
@@ -234,7 +234,7 @@ impl super::super::WorthUiActiveApplicationSession {
                 held.axis(),
                 point,
                 held.grab_offset_logical_points(),
-                region.displayed_offset(),
+                region.mounted_offset(),
             )
             .ok_or(UiScrollChromeInteractionDenial::ChromeUnavailable)?;
         // Leaving the gutter changes how the bar looks, never whether the drag

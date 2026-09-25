@@ -1,5 +1,10 @@
 //! Compose all affecting Scroll groups before issuing one change per command.
 use super::super::motion_sample::UiMountedMotionSampleWorkDenial as Denial;
+use super::group_offset::{
+    UiAcceptedCommandTranslation, UiAcceptedGroupOffset, UiDisplayedCommandTranslation,
+    UiDisplayedGroupOffset, UiDisplayedToAcceptedTranslation, UiGroupStanding,
+    UiPublishedGroupOffset, UiPublishedToAcceptedTranslation,
+};
 use super::*;
 use crate::mounting::presentation::motion_sampling::UiPresentationMotionSampleReceipt;
 use crate::runtime::scroll::{
@@ -17,6 +22,7 @@ impl UiMountedPresentationState {
     pub(in crate::mounting::presentation::work_producer) fn scroll_sample_changes(
         &self,
         samples: &[UiPresentationMotionSampleReceipt],
+        presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
     ) -> Result<
         Vec<(
             UiMountedPresentationSampleChange,
@@ -60,17 +66,20 @@ impl UiMountedPresentationState {
                         .groups
                         .get(target)
                         .ok_or(Denial::UnknownTargetCommands)?;
-                    Ok((group, group_delta(group, &active)?))
+                    Ok((group, group.published_move(&active, &receipt)?))
                 })
                 .collect::<Result<Vec<_>, Denial>>()?;
             let mut clip = None;
             for part in command.clips.iter() {
-                let delta = displacement_of(part.owner, &groups);
-                add_clip(&mut clip, translate(part.bounds, delta)?)?;
+                let delta = displacement_of(part.owner, &groups, presentation)?;
+                add_clip(&mut clip, translate(part.bounds, delta.components())?)?;
             }
             for (group, _) in &groups {
-                let delta = displacement_of(Some(group.input.owner), &groups);
-                add_clip(&mut clip, translate(group.input.viewport, delta)?)?;
+                let delta = displacement_of(Some(group.input.owner), &groups, presentation)?;
+                add_clip(
+                    &mut clip,
+                    translate(group.input.viewport, delta.components())?,
+                )?;
             }
             let clip = clip.ok_or(Denial::InvalidGeometry)?;
             let (transform, opacity) = if let Some(chrome) = identity.scroll_chrome_identity() {
@@ -91,11 +100,12 @@ impl UiMountedPresentationState {
                         .groups
                         .get(owner_target)
                         .ok_or(Denial::UnknownTargetCommands)?;
-                    placed = sampled_thumb(group, chrome.axis(), &active)?;
+                    placed = sampled_thumb(group, chrome.axis(), &active, &receipt)?;
                 }
                 placed = translate(
                     placed,
-                    displacement_of(Some(chrome.owner_instance()), &groups),
+                    displacement_of(Some(chrome.owner_instance()), &groups, presentation)?
+                        .components(),
                 )?;
                 (
                     UiMountedPresentationTransform::from_runtime_sampling(target.bounds, placed)
@@ -103,22 +113,28 @@ impl UiMountedPresentationState {
                     target.opacity,
                 )
             } else {
-                // An accepted base already shows every group where the host put
-                // it, so it moves from there; a published command moves from
-                // its groups' published offsets, as its clips do.
+                // A displayed base already shows every group where it stands,
+                // so it moves from there; a published command moves from its
+                // groups' published offsets, as its clips do.
                 let translation = match command.base_translation {
-                    Some(base) => groups.iter().try_fold(base, |sum, (group, _)| {
-                        Ok(add(sum, delta_from(group, group.displayed, &active)?))
-                    })?,
-                    None => groups
-                        .iter()
-                        .fold([0.0; 2], |sum, (_, delta)| add(sum, *delta)),
+                    Some(base) => UiAcceptedCommandTranslation::from_displayed(
+                        presentation,
+                        base,
+                        groups
+                            .iter()
+                            .map(|(group, _)| group.standing_move(base, &active, &receipt))
+                            .collect::<Result<Vec<_>, _>>()?,
+                    )?,
+                    None => UiAcceptedCommandTranslation::from_published(
+                        presentation,
+                        groups.iter().map(|(_, delta)| *delta),
+                    )?,
                 };
                 let source = bounds([0.0, 0.0, 1.0, 1.0], UiMountedCoordinateSpace::Viewport)?;
                 (
                     UiMountedPresentationTransform::from_runtime_sampling(
                         source,
-                        translate(source, translation)?,
+                        translate(source, translation.components())?,
                     )
                     .map_err(|_| Denial::InvalidGeometry)?,
                     self.appearance_opacity_for_command(identity),
@@ -138,69 +154,71 @@ impl UiMountedPresentationState {
 }
 
 impl UiMountedScrollMotionGroup {
-    /// The offset the host shows this group at: its last accepted sample's,
-    /// or, before one is accepted, where it stood when the group was bound.
-    pub(super) fn displayed_offset(&self) -> [f64; 2] {
-        self.accepted
+    /// Where the host's retained commands show this group: at its last
+    /// displayed sample, or, before one, where it stood when it was bound.
+    pub(super) fn standing(&self) -> UiGroupStanding {
+        self.displayed_sample
             .get()
-            .and_then(|sample| self.sample_offset(sample))
-            .unwrap_or(self.displayed)
+            .map_or(self.bound_standing.standing(), |sample| {
+                UiGroupStanding::Displayed(UiDisplayedGroupOffset::of_sample(
+                    self.input.content,
+                    sample,
+                ))
+            })
     }
 
-    fn sample_offset(&self, sample: UiPresentationMotionSampleReceipt) -> Option<[f64; 2]> {
-        let sampled = sample.geometry()?.components();
-        Some([
-            f64::from(self.input.content.x() - sampled[0]),
-            f64::from(self.input.content.y() - sampled[1]),
-        ])
+    /// Where the candidate `tick` accepts puts the group: at its active
+    /// sample, or, when the tick does not move it, where it stands.
+    fn candidate_offset(
+        &self,
+        active: &ActiveSamples,
+        tick: &UiPresentationMotionSampleReceipt,
+    ) -> Result<UiAcceptedGroupOffset, Denial> {
+        match active.get(&self.input.owner) {
+            Some(sample) => sample
+                .geometry()
+                .map(|geometry| UiAcceptedGroupOffset::of_sample(self.input.content, geometry))
+                .ok_or(Denial::InvalidGeometry),
+            None => Ok(UiAcceptedGroupOffset::held_by(tick, self.standing())),
+        }
     }
-}
 
-fn sampled_offset(
-    group: &UiMountedScrollMotionGroup,
-    active: &ActiveSamples,
-) -> Result<[f64; 2], Denial> {
-    match active.get(&group.input.owner) {
-        Some(sample) => group.sample_offset(*sample).ok_or(Denial::InvalidGeometry),
-        None => Ok(group.displayed_offset()),
+    /// How far the candidate moves content at the group's published offset.
+    fn published_move(
+        &self,
+        active: &ActiveSamples,
+        tick: &UiPresentationMotionSampleReceipt,
+    ) -> Result<UiPublishedToAcceptedTranslation, Denial> {
+        Ok(UiPublishedGroupOffset::of(self.input.offset)
+            .move_to(self.candidate_offset(active, tick)?, self.input.scale))
     }
-}
 
-pub(super) fn published_offset(offset: UiScrollOffset) -> [f64; 2] {
-    let unit = worth_ui_host_contract::UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f64;
-    [
-        offset.inline_subpixels() as f64 / unit,
-        offset.block_subpixels() as f64 / unit,
-    ]
-}
-
-fn group_delta(
-    group: &UiMountedScrollMotionGroup,
-    active: &ActiveSamples,
-) -> Result<[f32; 2], Denial> {
-    delta_from(group, published_offset(group.input.offset), active)
-}
-
-/// How far the group's sample moves content that stands at `previous`.
-fn delta_from(
-    group: &UiMountedScrollMotionGroup,
-    previous: [f64; 2],
-    active: &ActiveSamples,
-) -> Result<[f32; 2], Denial> {
-    let desired = sampled_offset(group, active)?;
-    let snap = |value| value - group.input.scale.grid_residue(value);
-    Ok([
-        (snap(previous[0]) - snap(desired[0])) as f32,
-        (snap(previous[1]) - snap(desired[1])) as f32,
-    ])
+    /// How far the candidate moves content where `base`, bound with this
+    /// group, shows it.
+    fn standing_move(
+        &self,
+        base: UiDisplayedCommandTranslation,
+        active: &ActiveSamples,
+        tick: &UiPresentationMotionSampleReceipt,
+    ) -> Result<UiDisplayedToAcceptedTranslation, Denial> {
+        Ok(self
+            .bound_standing
+            .shown_by(base)?
+            .move_to(self.candidate_offset(active, tick)?, self.input.scale))
+    }
 }
 
 fn displacement_of(
     owner: Option<UiMountedInstanceIdentity>,
-    groups: &[(&UiMountedScrollMotionGroup, [f32; 2])],
-) -> [f32; 2] {
+    groups: &[(
+        &UiMountedScrollMotionGroup,
+        UiPublishedToAcceptedTranslation,
+    )],
+    presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
+) -> Result<UiPublishedToAcceptedTranslation, Denial> {
+    let none = UiPublishedToAcceptedTranslation::none(presentation);
     let Some(owner) = owner else {
-        return [0.0; 2];
+        return Ok(none);
     };
     groups
         .iter()
@@ -211,22 +229,20 @@ fn displacement_of(
                 .binary_search_by_key(&owner, |member| member.instance)
                 .is_ok()
         })
-        .fold([0.0; 2], |sum, (_, delta)| add(sum, *delta))
+        .try_fold(none, |sum, (_, delta)| sum.then(*delta))
 }
 
 fn sampled_thumb(
     group: &UiMountedScrollMotionGroup,
     axis: worth_ui_host_contract::UiMountedScrollChromeAxis,
     active: &ActiveSamples,
+    tick: &UiPresentationMotionSampleReceipt,
 ) -> Result<UiMountedCanonicalBox, Denial> {
     let input = &group.input;
-    let desired = sampled_offset(group, active)?;
-    let unit = worth_ui_host_contract::UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f64;
-    let offset = UiScrollOffset::new(
-        (desired[0].max(0.0) * unit).round() as i64,
-        (desired[1].max(0.0) * unit).round() as i64,
-    )
-    .ok_or(Denial::InvalidGeometry)?;
+    let offset = group
+        .candidate_offset(active, tick)?
+        .chrome_derivation_offset()
+        .ok_or(Denial::InvalidGeometry)?;
     let facts = UiScrollChromeFacts::derive(
         input.viewport,
         UiScrollBounds::from_mounted_region(input.content, input.viewport)
@@ -244,10 +260,6 @@ fn sampled_thumb(
         input.scale,
     )
     .map_err(|_| Denial::InvalidGeometry)
-}
-
-fn add(a: [f32; 2], b: [f32; 2]) -> [f32; 2] {
-    [a[0] + b[0], a[1] + b[1]]
 }
 
 fn translate(

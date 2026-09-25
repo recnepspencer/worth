@@ -293,7 +293,9 @@ fn accepted_arrival_cancellation_and_shutdown_release_pending_targets() {
     state
         .settle_accepted_sample(
             UiScrollChainEntry::new(owner, incarnation(1)),
-            UiScrollOffset::new(0, ONE_NOTCH_SUBPIXELS).unwrap(),
+            crate::mounting::presentation::displayed_scroll_offset_for_test(
+                UiScrollOffset::new(0, ONE_NOTCH_SUBPIXELS).unwrap(),
+            ),
             bounds(1_000_000),
         )
         .unwrap();

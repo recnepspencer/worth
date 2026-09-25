@@ -2,7 +2,6 @@
 //! Shared allocations may be charged more than once across groups/frames;
 //! no sample tick recounts membership or performs reservation work.
 use super::*;
-use crate::mounting::presentation::motion_sampling::UiPresentationMotionSampleReceipt;
 use std::mem::size_of;
 
 fn arc_slice_bytes<T>(len: usize) -> Option<usize> {
@@ -62,7 +61,9 @@ impl UiMountedPresentationState {
             )>(groups.chrome.len())?)?;
         for group in groups.groups.values() {
             bytes = bytes
-                .checked_add(size_of::<Option<UiPresentationMotionSampleReceipt>>())?
+                .checked_add(size_of::<
+                    Option<crate::mounting::presentation::UiDisplayedRect>,
+                >())?
                 .checked_add(2 * size_of::<usize>())?
                 .checked_add(size_of::<super::acceptance::UiScrollGroupMotionUpdate>())?
                 .checked_add(

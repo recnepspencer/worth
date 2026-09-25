@@ -109,7 +109,7 @@ fn input_drain_settles_newly_accepted_scroll_pixels_before_thumb_capture() {
     ));
     let held = scroll.accepted_offset();
     assert!(held.block_subpixels() > before.block_subpixels());
-    assert_eq!(scroll.displayed_offset(), Some(held));
+    assert_eq!(scroll.mounted_offset(), Some(held));
     let (_, thumb) = block_chrome(&scroll);
     let latch = scroll
         .world
@@ -176,7 +176,7 @@ fn old_epoch_press_waits_for_pending_physical_sample_then_grabs_accepted_thumb()
     scroll.world.session.complete_motion_sample_presentation();
     let accepted = scroll.accepted_offset();
     assert!(accepted.block_subpixels() > before.block_subpixels());
-    assert_eq!(scroll.displayed_offset(), Some(accepted));
+    assert_eq!(scroll.mounted_offset(), Some(accepted));
     assert!(scroll
         .world
         .session

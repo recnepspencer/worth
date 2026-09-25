@@ -12,6 +12,7 @@ fn closed_portal_motion_cannot_hide_its_stationary_anchor() {
             ordinary.target.owner_key(),
         ),
         presentation: ordinary.presentation,
+        displayed: ordinary.displayed,
     };
     assert_ne!(ordinary.target, portal.target);
     let mut sampler = UiMountedMotionSampler::default();
@@ -25,7 +26,7 @@ fn closed_portal_motion_cannot_hide_its_stationary_anchor() {
     sampler.install(portal.exit_receipt(303)).unwrap();
     commit_tick(&mut sampler, 1, ordinary.presentation);
     commit_tick(&mut sampler, 500, ordinary.presentation);
-    index.apply_motion(&sampler, ordinary.presentation, &[portal.target]);
+    index.apply_motion(&sampler, ordinary.displayed, &[portal.target]);
     assert_eq!(
         at(&index, &ordinary, [30.0, 16.0]),
         [base.mounted_instance()]
@@ -39,7 +40,7 @@ fn closed_portal_motion_cannot_hide_its_stationary_anchor() {
         .is_some());
     sampler.install(ordinary.exit_receipt(304)).unwrap();
     commit_tick(&mut sampler, 501, ordinary.presentation);
-    index.apply_motion(&sampler, ordinary.presentation, &[ordinary.target]);
+    index.apply_motion(&sampler, ordinary.displayed, &[ordinary.target]);
     assert!(at(&index, &ordinary, [30.0, 16.0]).is_empty());
 }
 
@@ -62,17 +63,17 @@ fn indexed_motion_preserves_baseline_clip_retained_versions_and_committed_only_u
     drop(prepared);
     assert_eq!(at(&index, &world, [30.0, 16.0]), [base.mounted_instance()]);
     commit_tick(&mut sampler, 1, world.presentation);
-    index.apply_motion(&sampler, world.presentation, &[world.target]);
+    index.apply_motion(&sampler, world.displayed, &[world.target]);
     // The entrance begins outside the retained viewport clip.
     assert!(at(&index, &world, [30.0, 16.0]).is_empty());
     commit_tick(&mut sampler, 500, world.presentation);
-    let work = index.apply_motion(&sampler, world.presentation, &[world.target]);
+    let work = index.apply_motion(&sampler, world.displayed, &[world.target]);
     assert!(work.node_visits < 16);
     assert_eq!(at(&index, &world, [30.0, 16.0]), [base.mounted_instance()]);
     assert_eq!(index.retained_structural_bytes(), reserved);
     sampler.install(world.exit_receipt(301)).unwrap();
     commit_tick(&mut sampler, 501, world.presentation);
-    index.apply_motion(&sampler, world.presentation, &[world.target]);
+    index.apply_motion(&sampler, world.displayed, &[world.target]);
     assert!(at(&index, &world, [30.0, 16.0]).is_empty());
     assert_eq!(
         at(&retained, &world, [30.0, 16.0]),

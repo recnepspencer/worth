@@ -114,9 +114,9 @@ pub(crate) fn motion_scale_evidence() -> UiMotionScaleEvidence {
     }
 }
 
-fn geometry(components: [f32; 4]) -> Option<super::UiMotionSemanticGeometry> {
+fn geometry(components: [f32; 4]) -> Option<crate::mounting::presentation::UiPublishedRect> {
     Some(
-        super::UiMotionSemanticGeometry::from_committed_components(
+        crate::mounting::presentation::UiPublishedRect::from_committed_components(
             components,
             worth_ui_host_contract::UiMountedCoordinateSpace::HostSurface,
         )

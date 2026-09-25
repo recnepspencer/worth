@@ -124,12 +124,12 @@ fn motion_request(
 pub(crate) fn scroll_content_geometry(
     content: worth_ui_host_contract::UiMountedCanonicalBox,
     offset: super::super::UiScrollOffset,
-) -> Result<crate::runtime::motion::UiMotionSemanticGeometry, UiScrollMotionRequestDenial> {
+) -> Result<crate::mounting::presentation::UiPublishedRect, UiScrollMotionRequestDenial> {
     let points = |subpixels: i64| {
         subpixels as f32
             / worth_ui_host_contract::UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f32
     };
-    crate::runtime::motion::UiMotionSemanticGeometry::from_committed_components(
+    crate::mounting::presentation::UiPublishedRect::from_committed_components(
         [
             content.x() - points(offset.inline_subpixels()),
             content.y() - points(offset.block_subpixels()),

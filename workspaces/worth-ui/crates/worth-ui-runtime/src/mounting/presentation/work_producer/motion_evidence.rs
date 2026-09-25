@@ -1,8 +1,5 @@
 use std::{cell::Cell, rc::Rc};
-use worth_ui_host_contract::{
-    UiHostObservationPresentationBasis, UiMountedPaintCommandIdentity,
-    UiMountedPresentationSampleChange,
-};
+use worth_ui_host_contract::{UiMountedPaintCommandIdentity, UiMountedPresentationSampleChange};
 
 use super::super::motion_sampling::UiPresentationMotionSampleReceipt;
 use super::UiMountedPresentationState;
@@ -10,10 +7,12 @@ use super::UiMountedPresentationState;
 /// Live physical evidence, shared only by versions of one unchanged command.
 /// It is never exposed as an immutable historical frame snapshot.
 #[derive(Clone, Default)]
-pub(super) struct UiCommandMotionAcceptance(Rc<Cell<Option<UiAcceptedCommandMotion>>>);
+pub(super) struct UiCommandMotionAcceptance(Rc<Cell<Option<UiDisplayedCommandMotion>>>);
 
+/// The sample and change an admitted witness displayed for one command. Only
+/// acceptance at a witness's displayed basis writes it.
 #[derive(Clone, Copy)]
-struct UiAcceptedCommandMotion {
+struct UiDisplayedCommandMotion {
     sample: UiPresentationMotionSampleReceipt,
     change: UiMountedPresentationSampleChange,
 }
@@ -63,9 +62,12 @@ impl UiMountedPresentationState {
         Ok(())
     }
 
+    /// Accept a published entrance as displayed, once the witness that
+    /// published it is the one `displayed` names.
     pub(in crate::mounting::presentation) fn accept_entrance(
         &mut self,
         sample: UiPresentationMotionSampleReceipt,
+        displayed: crate::mounting::presentation::UiDisplayedSurfaceBasis,
     ) -> Result<bool, UiCommandMotionAcceptanceDenial> {
         let Some(prepared) = self.entrance_acceptance.as_ref() else {
             return Ok(false);
@@ -74,11 +76,14 @@ impl UiMountedPresentationState {
         if entrance.track() != sample.track()
             || entrance.target() != sample.target()
             || entrance.frame() != sample.presentation_basis().frame()
+            || displayed.basis() != sample.presentation_basis()
             || sample.opacity_units() != 0
-            || entrance.geometry().0.map(|geometry| geometry.components())
-                != sample.base_geometry().map(|geometry| geometry.components())
-            || entrance.geometry().1.map(|geometry| geometry.components())
-                != sample.geometry().map(|geometry| geometry.components())
+            || entrance.geometry().0 != sample.base_geometry()
+            || !match (entrance.geometry().1, sample.geometry()) {
+                (Some(initial), Some(sampled)) => sampled.stands_at(initial),
+                (None, None) => true,
+                _ => false,
+            }
         {
             return Err(UiCommandMotionAcceptanceDenial::SampleBasis);
         }
@@ -92,10 +97,7 @@ impl UiMountedPresentationState {
                 change: *change,
             })
             .collect();
-        // The entrance sample was rebound to the publication's receipt, which
-        // only an admitted presentation witness produces.
-        UiPreparedCommandMotionAcceptance::new(updates)
-            .accept_at(self, sample.presentation_basis())?;
+        UiPreparedCommandMotionAcceptance::new(updates).accept_at(self, displayed)?;
         self.entrance_acceptance = None;
         Ok(true)
     }
@@ -136,14 +138,15 @@ impl UiPreparedCommandMotionAcceptance {
         current: &UiMountedPresentationState,
         witness: &crate::mounting::presentation::UiPresentedSurfaceWitness,
     ) -> Result<(), UiCommandMotionAcceptanceDenial> {
-        self.accept_at(current, witness.displayed_basis().basis())
+        self.accept_at(current, witness.displayed_basis())
     }
 
     fn accept_at(
         mut self,
         current: &UiMountedPresentationState,
-        presentation: UiHostObservationPresentationBasis,
+        displayed: crate::mounting::presentation::UiDisplayedSurfaceBasis,
     ) -> Result<(), UiCommandMotionAcceptanceDenial> {
+        let presentation = displayed.basis();
         let requirement = current.motion_sample_requirement();
         if current.frame() != presentation.frame()
             || requirement.binding() != presentation.binding()
@@ -168,10 +171,10 @@ impl UiPreparedCommandMotionAcceptance {
                 .map_err(|_| UiCommandMotionAcceptanceDenial::SampleBasis)?;
         }
         for group in &mut self.scroll {
-            group.validate(current, presentation)?;
+            group.validate(current, displayed)?;
         }
         for update in self.updates {
-            update.slot.0.set(Some(UiAcceptedCommandMotion {
+            update.slot.0.set(Some(UiDisplayedCommandMotion {
                 sample: update.sample,
                 change: update.change,
             }));
@@ -382,7 +385,7 @@ impl UiMountedPresentationState {
 /// The command count is an admitted upper bound, including clipped commands.
 pub(in crate::mounting) fn motion_acceptance_reserved_bytes(commands: usize) -> Option<usize> {
     let per_command = std::mem::size_of::<UiCommandMotionAcceptance>()
-        .checked_add(std::mem::size_of::<Option<UiAcceptedCommandMotion>>())?
+        .checked_add(std::mem::size_of::<Option<UiDisplayedCommandMotion>>())?
         .checked_add(2 * std::mem::size_of::<usize>())?;
     commands.checked_mul(per_command.checked_add(std::mem::size_of::<UiCommandMotionUpdate>())?)
 }

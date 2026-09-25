@@ -10,7 +10,6 @@ mod receipt;
 mod retarget;
 #[cfg(feature = "certification-support")]
 mod scale_certification;
-mod semantic_geometry;
 mod state;
 #[cfg(test)]
 mod state_tests;
@@ -31,7 +30,6 @@ pub(crate) use rebind::UiPreparedMotionRebind;
 pub(crate) use retarget::{UiMotionRetargetDisposition, UiMotionRetargetPredecessor};
 #[cfg(feature = "certification-support")]
 pub(crate) use scale_certification::motion_scale_evidence;
-pub(crate) use semantic_geometry::UiMotionSemanticGeometry;
 #[cfg(test)]
 pub(in crate::runtime) use state::UiMotionCommitDenial;
 pub(crate) use state::UiMotionRuntimeState;

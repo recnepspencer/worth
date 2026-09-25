@@ -93,19 +93,14 @@ impl WorthUiMountedSessionState {
                 crate::mounting::UiPresentedFrameBasisDenial::PresentationTruthUnavailable,
             ));
         }
-        let (relation, query) = self.retention.presented_hit_candidates(
+        self.retention.presented_hit_candidates(
             presentation,
             point,
             crate::mounting::spatial_index::UiMountedSpatialBudget {
                 node_visits: 1024,
                 candidates: 256,
             },
-        )?;
-        Ok(crate::mounting::UiPresentedHitTestBasis::from_candidates(
-            presentation,
-            relation,
-            query,
-        ))
+        )
     }
     pub(crate) fn current_presented_incarnation_receipt(
         &self,

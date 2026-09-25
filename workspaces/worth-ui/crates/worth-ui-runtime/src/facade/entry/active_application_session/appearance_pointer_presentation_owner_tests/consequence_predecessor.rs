@@ -23,8 +23,10 @@ fn consequence_owner_validation_accepts_receipt_refresh_but_denies_changed_hover
         })
         .unwrap();
     let inside = UiHostSurfacePosition::viewport_logical(
-        ((row.bounds().x() + row.bounds().width() / 2.0) * 1_000.0) as i64,
-        ((row.bounds().y() + row.bounds().height() / 2.0) * 1_000.0) as i64,
+        ((row.bounds().platform_box().x() + row.bounds().platform_box().width() / 2.0) * 1_000.0)
+            as i64,
+        ((row.bounds().platform_box().y() + row.bounds().platform_box().height() / 2.0) * 1_000.0)
+            as i64,
     );
     let pointer = UiHostPointerIdentity::new(1);
     admit(&mut session, first, 1, pointer, inside, false);

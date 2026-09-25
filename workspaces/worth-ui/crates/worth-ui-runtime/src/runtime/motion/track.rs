@@ -179,7 +179,9 @@ impl UiCommittedMotionTrack {
         self.request.successor().target()
     }
 
-    pub(crate) const fn predecessor_geometry(self) -> Option<super::UiMotionSemanticGeometry> {
+    pub(crate) const fn predecessor_geometry(
+        self,
+    ) -> Option<crate::mounting::presentation::UiPublishedRect> {
         self.request.predecessor().geometry()
     }
 
@@ -187,7 +189,9 @@ impl UiCommittedMotionTrack {
         self.request.predecessor().visible()
     }
 
-    pub(crate) const fn successor_geometry(self) -> Option<super::UiMotionSemanticGeometry> {
+    pub(crate) const fn successor_geometry(
+        self,
+    ) -> Option<crate::mounting::presentation::UiPublishedRect> {
         self.request.successor().geometry()
     }
 
@@ -293,7 +297,7 @@ impl UiMotionCommitReceipt {
     ) -> Self {
         let geometry = |components: Option<[f32; 4]>| {
             components.map(|components| {
-                super::UiMotionSemanticGeometry::from_committed_components(
+                crate::mounting::presentation::UiPublishedRect::from_committed_components(
                     components,
                     worth_ui_host_contract::UiMountedCoordinateSpace::Viewport,
                 )

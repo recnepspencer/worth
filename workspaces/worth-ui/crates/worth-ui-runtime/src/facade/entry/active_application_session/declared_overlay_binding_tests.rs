@@ -65,7 +65,7 @@ fn prepared_authored_surface_binding_survives_allocation_and_exports_current_por
         geometry,
         Some(
             crate::runtime::interaction::UiPresentedViewportGeometry::for_test(
-                geometry.clip_bounds(),
+                geometry.clip_bounds().adopted().canonical_box(),
                 geometry.presentation(),
             ),
         ),
@@ -225,7 +225,7 @@ fn retained_close_keeps_binding_until_terminal_portal_exit() {
         geometry,
         Some(
             crate::runtime::interaction::UiPresentedViewportGeometry::for_test(
-                geometry.clip_bounds(),
+                geometry.clip_bounds().adopted().canonical_box(),
                 geometry.presentation(),
             ),
         ),

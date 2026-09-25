@@ -87,7 +87,7 @@ fn content_inserted_above_the_anchor_moves_the_offset_with_it() {
         "the offset moved exactly as far as the anchored content did"
     );
     assert_eq!(
-        scroll.displayed_offset(),
+        scroll.mounted_offset(),
         Some(block(TRAVEL_POINTS + inserted())),
         "the displayed pose is the offset Scroll holds, so the pixels moved too"
     );
@@ -115,7 +115,7 @@ fn losing_the_anchor_clamps_the_offset_instead_of_following_a_sibling() {
         "an offset with nothing left to anchor to stays where it was"
     );
     assert_eq!(
-        scroll.displayed_offset(),
+        scroll.mounted_offset(),
         Some(block(TRAVEL_POINTS)),
         "and the pixels stay with it"
     );

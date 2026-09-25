@@ -121,7 +121,7 @@ fn applied_frames(scroll: &mut ScrollWorld, notch_tick: u64, first: u64, last: u
             "frame {elapsed} after the notch applies its accepted sample"
         );
         assert_eq!(
-            scroll.displayed_offset(),
+            scroll.mounted_offset(),
             Some(scroll.accepted_offset()),
             "frame {elapsed}: the displayed pose is the offset Scroll holds"
         );
@@ -190,7 +190,7 @@ fn a_settle_frame_refused_mid_presentation_is_owed_and_paid_by_the_next() {
     );
     assert!(scroll.world.session.awaits_scroll_settle_retry());
     assert_eq!(scroll.accepted_offset(), before);
-    assert_eq!(scroll.displayed_offset(), Some(before));
+    assert_eq!(scroll.mounted_offset(), Some(before));
 
     // Once the host completes, the committed sample is applied on the surface
     // its witness proved: the deferral cost the settle a frame, not its
@@ -203,7 +203,7 @@ fn a_settle_frame_refused_mid_presentation_is_owed_and_paid_by_the_next() {
         paid.block_subpixels() > before.block_subpixels(),
         "the owed settle lands the sample the in-flight frame committed"
     );
-    assert_eq!(scroll.displayed_offset(), Some(paid));
+    assert_eq!(scroll.mounted_offset(), Some(paid));
 
     // And the settle still arrives on its own clock.
     applied_frames(&mut scroll, NOTCH_TICK, 4, ARRIVAL);
@@ -244,7 +244,7 @@ fn a_settle_owed_to_a_rebound_generation_is_released_not_paid() {
         )
         .expect("a presented surface rebinds");
     let accepted = scroll.accepted_offset();
-    let displayed = scroll.displayed_offset();
+    let displayed = scroll.mounted_offset();
 
     assert_eq!(
         owed_frame(&mut scroll),
@@ -255,7 +255,7 @@ fn a_settle_owed_to_a_rebound_generation_is_released_not_paid() {
         accepted,
         "a released settle moves nothing"
     );
-    assert_eq!(scroll.displayed_offset(), displayed);
+    assert_eq!(scroll.mounted_offset(), displayed);
     assert!(!scroll.world.session.awaits_scroll_settle_retry());
     assert_eq!(
         scroll.world.session.last_scroll_settle_disposition(),
@@ -338,7 +338,7 @@ fn a_track_page_refused_mid_presentation_leaves_the_settle_alive() {
         ))
     );
     assert_eq!(scroll.accepted_offset(), before);
-    assert_eq!(scroll.displayed_offset(), Some(before));
+    assert_eq!(scroll.mounted_offset(), Some(before));
     assert_eq!(pending_transitions(&scroll), 1);
     assert_eq!(
         staged_target(&scroll),
@@ -369,7 +369,7 @@ fn a_track_page_refused_mid_presentation_leaves_the_settle_alive() {
     assert_eq!(placed.transitions()[0].current(), block(3));
     scroll.publish_direct(NOTCH_TICK + 6);
     assert_eq!(scroll.accepted_offset(), block(3));
-    assert_eq!(scroll.displayed_offset(), Some(block(3)));
+    assert_eq!(scroll.mounted_offset(), Some(block(3)));
     assert_eq!(pending_transitions(&scroll), 0);
     assert_eq!(staged_target(&scroll), None);
     assert!(!scroll.world.session.mounted.has_active_motion_samples());

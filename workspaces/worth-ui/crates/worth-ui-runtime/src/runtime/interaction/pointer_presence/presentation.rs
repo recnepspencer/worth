@@ -1,7 +1,7 @@
+use crate::mounting::UiPresentedHitRect;
 use worth_ui_host_contract::{
-    UiHostObservationPresentationBasis, UiHostSurfacePosition, UiMountedCanonicalBox,
-    UiMountedCoordinateSpace, UiMountedInstanceIdentity,
-    UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
+    UiHostObservationPresentationBasis, UiHostSurfacePosition, UiMountedCoordinateSpace,
+    UiMountedInstanceIdentity, UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
 };
 
 #[allow(
@@ -12,11 +12,11 @@ pub(crate) const UI_POINTER_PRESENTATION_CHANGED_INSTANCE_CAPACITY: usize = 2_04
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct UiPointerPresenceGeometry {
-    bounds: UiMountedCanonicalBox,
-    clip_bounds: UiMountedCanonicalBox,
+    bounds: UiPresentedHitRect,
+    clip_bounds: UiPresentedHitRect,
 }
 
-// Canonical geometry rejects non-finite components, so equality is reflexive.
+// Truth geometry rejects non-finite components, so equality is reflexive.
 impl Eq for UiPointerPresenceGeometry {}
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -163,10 +163,7 @@ impl UiPointerPresenceGeometry {
         dead_code,
         reason = "The successor presentation producer will construct geometry after cutover."
     )]
-    pub(crate) const fn new(
-        bounds: UiMountedCanonicalBox,
-        clip_bounds: UiMountedCanonicalBox,
-    ) -> Self {
+    pub(crate) const fn new(bounds: UiPresentedHitRect, clip_bounds: UiPresentedHitRect) -> Self {
         Self {
             bounds,
             clip_bounds,
@@ -177,7 +174,7 @@ impl UiPointerPresenceGeometry {
         dead_code,
         reason = "The successor presentation producer will read geometry bounds after cutover."
     )]
-    pub(crate) const fn bounds(self) -> UiMountedCanonicalBox {
+    pub(crate) const fn bounds(self) -> UiPresentedHitRect {
         self.bounds
     }
 
@@ -185,7 +182,7 @@ impl UiPointerPresenceGeometry {
         dead_code,
         reason = "The successor presentation producer will read clip bounds after cutover."
     )]
-    pub(crate) const fn clip_bounds(self) -> UiMountedCanonicalBox {
+    pub(crate) const fn clip_bounds(self) -> UiPresentedHitRect {
         self.clip_bounds
     }
 
@@ -197,11 +194,17 @@ impl UiPointerPresenceGeometry {
         {
             return false;
         }
+        // The same platform point hit targeting resolves, so a retest and
+        // the hit test it predicts agree at every edge.
+        let scale = UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f64;
         let point = [
-            position.x_subpixels() as f64 / UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f64,
-            position.y_subpixels() as f64 / UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f64,
+            (position.x_subpixels() as f64 / scale) as f32,
+            (position.y_subpixels() as f64 / scale) as f32,
         ];
-        contains(self.bounds, point) && contains(self.clip_bounds, point)
+        [self.bounds, self.clip_bounds].iter().all(|rect| {
+            rect.coordinate_space() == UiMountedCoordinateSpace::Viewport
+                && rect.admits_platform_point(point)
+        })
     }
 }
 
@@ -249,14 +252,6 @@ impl UiPointerPresenceGeometryCandidate {
     pub(crate) const fn new_geometry(self) -> Option<UiPointerPresenceGeometry> {
         self.new
     }
-}
-
-fn contains(bounds: UiMountedCanonicalBox, point: [f64; 2]) -> bool {
-    bounds.coordinate_space() == UiMountedCoordinateSpace::Viewport
-        && point[0] >= f64::from(bounds.x())
-        && point[0] < f64::from(bounds.x()) + f64::from(bounds.width())
-        && point[1] >= f64::from(bounds.y())
-        && point[1] < f64::from(bounds.y()) + f64::from(bounds.height())
 }
 
 #[cfg(test)]

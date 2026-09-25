@@ -90,7 +90,7 @@ impl WorthUiActiveApplicationSession {
     pub(super) fn prepare_portal_dismissal_trigger(
         &mut self,
         trigger: UiPortalDismissalTrigger,
-        sampled_bounds: Option<worth_ui_host_contract::UiMountedCanonicalBox>,
+        sampled_bounds: Option<crate::mounting::presentation::UiDisplayedRect>,
         presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
     ) -> WorthUiAdmittedPortalDismissal {
         let preparation =
@@ -104,7 +104,7 @@ impl WorthUiActiveApplicationSession {
     fn prepare_portal_dismissal_decision(
         &mut self,
         trigger: UiPortalDismissalTrigger,
-        sampled_bounds: Option<worth_ui_host_contract::UiMountedCanonicalBox>,
+        sampled_bounds: Option<crate::mounting::presentation::UiDisplayedRect>,
         presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
     ) -> Result<UiPortalDismissalPreparation, Stop> {
         self.mounted

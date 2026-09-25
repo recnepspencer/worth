@@ -137,11 +137,11 @@ impl UiMountedFrameRetentionCoordinator {
                 return Err(UiPresentedFrameBasisDenial::Unknown)
             }
         };
-        evidence.classify(presentation, None, None)?;
+        let displayed = evidence.classify(presentation, None, None)?;
         let rows = evidence
             .visual_region_basis(presentation.binding())
             .hit_test();
-        Ok(UiPresentedHitTestBasis::new(presentation, relation, rows))
+        Ok(UiPresentedHitTestBasis::new(displayed, relation, rows))
     }
 
     pub(crate) fn presented_portal_overlay(

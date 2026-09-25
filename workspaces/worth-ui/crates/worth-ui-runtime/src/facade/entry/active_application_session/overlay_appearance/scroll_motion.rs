@@ -28,7 +28,7 @@ impl crate::facade::WorthUiActiveApplicationSession {
                 };
                 let offset = self
                     .mounted
-                    .displayed_scroll_pose(target, owner_instance)
+                    .mounted_scroll_pose(target, owner_instance)
                     .unwrap_or_default();
                 groups.push(UiMountedScrollMotionGroupInput {
                     target: UiMotionTargetIdentity::from_scroll_region_owner(

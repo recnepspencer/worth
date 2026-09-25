@@ -109,8 +109,8 @@ fn signature(
     let row = record?.effective?;
     Some((
         row.mounted().binding(),
-        row.bounds(),
-        row.clip_bounds(),
+        row.bounds().index_box(),
+        row.clip_bounds().index_box(),
         row.order(),
     ))
 }

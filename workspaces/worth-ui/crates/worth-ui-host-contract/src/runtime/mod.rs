@@ -40,7 +40,6 @@ pub use runtime_host_contract::{
 };
 pub use service_geometry::{
     UiHostPhysicalPixelGeometry, UiHostPhysicalPixelGeometryInput, UiHostServiceGeometryDenial,
-    UiHostSurfaceLogicalGeometry,
 };
 pub use solicited_effect::{
     UiHostFocusPlacementAcknowledgement, UiHostFocusPlacementDisposition,

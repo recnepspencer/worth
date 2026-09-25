@@ -71,7 +71,7 @@ fn nothing_is_settling(scroll: &mut ScrollWorld, tick: u64) {
             .world
             .session
             .mounted
-            .accepted_scroll_group_translations()
+            .accepted_scroll_group_samples()
             .is_empty(),
         "no accepted sample is left for a later frame to commit"
     );
@@ -94,7 +94,7 @@ fn no_sample_is_owed(scroll: &ScrollWorld) {
             .world
             .session
             .mounted
-            .accepted_scroll_group_translations()
+            .accepted_scroll_group_samples()
             .is_empty(),
         "no accepted sample is left for a later frame to commit"
     );

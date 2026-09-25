@@ -277,7 +277,7 @@ pub(super) fn open_portal(
         geometry,
         Some(
             crate::runtime::interaction::UiPresentedViewportGeometry::for_test(
-                geometry.clip_bounds(),
+                geometry.clip_bounds().adopted().canonical_box(),
                 geometry.presentation(),
             ),
         ),
