@@ -174,8 +174,8 @@ pub(in crate::application) fn register_structure(
         )
         .with_allocation_measurement_contract(allocation)
         .with_layout(container.layout);
-        builder = builder.register_component(match container.scroll_panel {
-            Some(panel) => scrolling::scroll_owner(descriptor, panel, allocation),
+        builder = builder.register_component(match container.scroll_owner {
+            Some(owner) => scrolling::scroll_owner(descriptor, owner, allocation),
             None => descriptor,
         });
     }

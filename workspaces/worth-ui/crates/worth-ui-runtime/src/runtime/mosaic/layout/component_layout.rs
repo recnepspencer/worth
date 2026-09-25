@@ -87,7 +87,11 @@ pub enum UiNativeComponentLayoutDenial {
 
 /// Resolves every component's box for one logical viewport. Containers
 /// select their layout variant by the viewport width, allocate their tracks
-/// across their own box, and place each member within its assigned cell.
+/// across their own box inside its padding, and place each member within its
+/// assigned cell. A container never ends narrower or shorter than its
+/// selected layout's minimum: tracks held at their minimums overflow the
+/// placement, and the container's box covers them, so a Scroll region over
+/// the container can reach all of its content.
 pub(crate) fn resolve_component_layout(
     viewport_width: f32,
     viewport_height: f32,
@@ -184,32 +188,56 @@ impl Resolution<'_, '_> {
                 reference: self.viewport,
             },
         };
+        let placed = match node.layout {
+            Some(layout) => Placed {
+                bounds: at_least_minimum(placed.bounds, layout.select(self.viewport.width)),
+                ..placed
+            },
+            None => placed,
+        };
         self.resolved.insert(instance, placed);
         Ok(placed)
     }
 }
 
-/// A cell's box relative to its container's origin.
+/// `bounds`, extended at its end on each axis where `layout`'s minimum is
+/// larger.
+fn at_least_minimum(bounds: UiMosaicLayoutBox, layout: &MosaicLayoutContract) -> UiMosaicLayoutBox {
+    UiMosaicLayoutBox {
+        width: bounds
+            .width
+            .max(layout.minimum_width_logical_points() as f32),
+        height: bounds
+            .height
+            .max(layout.minimum_height_logical_points() as f32),
+        ..bounds
+    }
+}
+
+/// A cell's box relative to its container's origin. The tracks are
+/// allocated inside the container's padding.
 fn cell_box(
     layout: &MosaicLayoutContract,
     cell: MosaicLayoutCell,
     container: UiMosaicLayoutBox,
 ) -> UiMosaicLayoutBox {
+    let inline_padding = f32::from(layout.inline_padding_logical_points());
+    let block_padding = f32::from(layout.block_padding_logical_points());
     let columns = allocate_axis(
         layout.column_tracks(),
         f32::from(layout.column_gap_logical_points()),
-        container.width,
+        container.width - 2.0 * inline_padding,
     );
     let rows = allocate_axis(
         layout.row_tracks(),
         f32::from(layout.row_gap_logical_points()),
-        container.height,
+        container.height - 2.0 * block_padding,
     );
     let horizontal = span(&columns, cell.column(), cell.column_span());
     let vertical = span(&rows, cell.row(), cell.row_span());
     UiMosaicLayoutBox {
-        x: horizontal.start,
-        y: vertical.start,
+        x: inline_padding + horizontal.start,
+        y: block_padding + vertical.start,
         width: horizontal.extent,
         height: vertical.extent,
     }

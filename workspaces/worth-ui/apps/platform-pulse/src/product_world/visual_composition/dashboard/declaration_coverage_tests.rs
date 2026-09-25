@@ -5,16 +5,16 @@
 use std::collections::BTreeSet;
 use std::path::Path;
 
-use super::{dashboard_containers, dashboard_elements, DashboardScrollPanel};
+use super::{dashboard_containers, dashboard_elements, DashboardScrollOwner};
 use crate::product_world::PlatformPulseMosaicRegion;
 
 /// Components declared outside the element table on purpose: the status band,
-/// the two scroll owners, and the layout containers, which are registered by
-/// the structure owners rather than authored as painted elements.
+/// the scroll owners, and the layout containers, which are registered by the
+/// structure owners rather than authored as painted elements.
 fn declared_without_an_element() -> BTreeSet<String> {
     let mut allowed = BTreeSet::from(["platform.pulse.component.status_band".to_owned()]);
-    for panel in DashboardScrollPanel::ALL {
-        allowed.insert(format!("platform.pulse.component.{}", panel.owner()));
+    for owner in DashboardScrollOwner::ALL {
+        allowed.insert(owner.component().as_str().to_owned());
     }
     for container in dashboard_containers() {
         allowed.insert(container.component().as_str().to_owned());
@@ -113,7 +113,8 @@ fn mounted_regions() -> BTreeSet<(String, String)> {
 
 /// Layout places a region only where its owner declares a placement, so each
 /// mounted region is exactly one the product places for that owner: the
-/// surface regions on the seed, and each list region on its panel owner.
+/// surface regions on the seed, and each scroll region on its owner: the
+/// lists on their panels' content and the page on the page.
 #[test]
 fn every_mounted_region_has_a_placement_from_its_owner() {
     let mut placed = BTreeSet::new();
@@ -124,10 +125,10 @@ fn every_mounted_region_has_a_placement_from_its_owner() {
             region.id().to_owned(),
         ));
     }
-    for panel in DashboardScrollPanel::ALL {
+    for owner in DashboardScrollOwner::ALL {
         placed.insert((
-            format!("platform.pulse.component.{}", panel.owner()),
-            panel.region().to_owned(),
+            owner.component().as_str().to_owned(),
+            owner.region().to_owned(),
         ));
     }
     assert_eq!(mounted_regions(), placed);

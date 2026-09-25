@@ -175,6 +175,74 @@ fn a_member_region_is_placed_within_its_cell() {
     );
 }
 
+/// A page that cannot fit its rows' minimums keeps them and grows past its
+/// placement, so the box a Scroll region measures covers every row; the
+/// padding keeps its inset on every side, including after the last row.
+#[test]
+fn a_container_grows_to_hold_its_minimum_inside_its_padding() {
+    let last = id("demo.component.last");
+    let layout = MosaicResponsiveLayout::from(
+        MosaicLayoutContract::rows([
+            MosaicTrack::fixed(66).unwrap(),
+            MosaicTrack::flex(1, 348).unwrap(),
+        ])
+        .unwrap()
+        .with_gaps(0, 20)
+        .with_padding(24, 24)
+        .with_member(last.clone(), MosaicLayoutCell::at(0, 1))
+        .unwrap(),
+    );
+    let page = instance();
+    let nodes = [
+        UiMosaicLayoutNode {
+            instance: page,
+            allocation: Some(ComponentAllocationMeasurementContract::viewport_region(
+                ComponentViewportRegion::new(
+                    ComponentViewportAxisPlacement::stretch_between(236, 0),
+                    ComponentViewportAxisPlacement::stretch_between(57, 0),
+                ),
+            )),
+            layout: Some(&layout),
+            parent: UiMosaicLayoutParent::Viewport,
+        },
+        UiMosaicLayoutNode {
+            instance: instance(),
+            allocation: Some(ComponentAllocationMeasurementContract::fill_layout_cell()),
+            layout: None,
+            parent: UiMosaicLayoutParent::Container {
+                container: page,
+                member: &last,
+            },
+        },
+    ];
+
+    // 300 tall leaves the page 243 of the 482 its rows, gap and padding need.
+    let short = resolve_component_layout(800.0, 300.0, &nodes).unwrap();
+    assert_eq!(
+        short[0].bounds,
+        UiMosaicLayoutBox {
+            x: 236.0,
+            y: 57.0,
+            width: 564.0,
+            height: 482.0
+        }
+    );
+    assert_eq!(
+        short[1].bounds,
+        UiMosaicLayoutBox {
+            x: 24.0,
+            y: 110.0,
+            width: 516.0,
+            height: 348.0
+        }
+    );
+
+    // 900 tall has room: the page keeps its placement and the row flexes.
+    let tall = resolve_component_layout(800.0, 900.0, &nodes).unwrap();
+    assert_eq!(tall[0].bounds.height, 843.0);
+    assert_eq!(tall[1].bounds.height, 843.0 - 48.0 - 66.0 - 20.0);
+}
+
 #[test]
 fn unplaceable_members_are_denied_instead_of_guessed() {
     let member = id("demo.component.card");

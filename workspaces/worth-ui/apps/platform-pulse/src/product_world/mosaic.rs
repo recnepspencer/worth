@@ -16,6 +16,7 @@ pub enum PlatformPulseMosaicRegion {
     NativeTile,
     ServiceList,
     ActivityList,
+    Page,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -34,10 +35,11 @@ pub enum PlatformPulseMosaicSizing {
     EvidenceRail,
     ServiceStage,
     StatusBand,
+    Page,
 }
 
 impl PlatformPulseMosaicRegion {
-    pub const ALL: [Self; 9] = [
+    pub const ALL: [Self; 10] = [
         Self::Viewport,
         Self::Masthead,
         Self::EvidenceRail,
@@ -47,6 +49,7 @@ impl PlatformPulseMosaicRegion {
         Self::NativeTile,
         Self::ServiceList,
         Self::ActivityList,
+        Self::Page,
     ];
 
     /// The regions the dashboard surface owner places across the viewport.
@@ -86,7 +89,11 @@ impl PlatformPulseMosaicRegion {
                 ComponentViewportAxisPlacement::fixed_from_end(0, STATUS_BAND_HEIGHT)
                     .expect("the status band has height"),
             ),
-            Self::ServiceTile | Self::NativeTile | Self::ServiceList | Self::ActivityList => {
+            Self::ServiceTile
+            | Self::NativeTile
+            | Self::ServiceList
+            | Self::ActivityList
+            | Self::Page => {
                 return None;
             }
         };
@@ -104,6 +111,7 @@ impl PlatformPulseMosaicRegion {
             Self::ServiceList => "platform.pulse.mosaic.region.service_list",
             Self::ActivityList => "platform.pulse.mosaic.region.activity_list",
             Self::NativeTile => "platform.pulse.mosaic.region.native_tile",
+            Self::Page => "platform.pulse.mosaic.region.page",
         }
     }
 }
@@ -122,13 +130,14 @@ impl PlatformPulseMosaicSurface {
 }
 
 impl PlatformPulseMosaicSizing {
-    pub const ALL: [Self; 6] = [
+    pub const ALL: [Self; 7] = [
         Self::DashboardList,
         Self::Viewport,
         Self::Masthead,
         Self::EvidenceRail,
         Self::ServiceStage,
         Self::StatusBand,
+        Self::Page,
     ];
 
     pub const fn id(self) -> &'static str {
@@ -139,12 +148,13 @@ impl PlatformPulseMosaicSizing {
             Self::EvidenceRail => "platform.pulse.mosaic.sizing.evidence_rail",
             Self::ServiceStage => "platform.pulse.mosaic.sizing.service_stage",
             Self::StatusBand => "platform.pulse.mosaic.sizing.status_band",
+            Self::Page => "platform.pulse.mosaic.sizing.page",
         }
     }
 
     pub const fn named_measurement(self) -> Option<(&'static str, u32)> {
         match self {
-            Self::DashboardList | Self::Viewport | Self::ServiceStage => None,
+            Self::DashboardList | Self::Viewport | Self::ServiceStage | Self::Page => None,
             Self::Masthead => Some((
                 "platform.pulse.measurement.masthead_height",
                 PLATFORM_PULSE_MASTHEAD_HEIGHT as u32,

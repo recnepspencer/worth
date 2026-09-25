@@ -30,5 +30,6 @@ pub use visual_composition::{
 pub use visual_composition::{
     dashboard_containers, dashboard_elements, DashboardContainer, DashboardContent,
     DashboardElement, DashboardGraphic, DashboardLayoutCell, DashboardPlacement,
-    DashboardScrollPanel, PLATFORM_PULSE_MASTHEAD_HEIGHT, PLATFORM_PULSE_SIDEBAR_WIDTH,
+    DashboardScrollOwner, DashboardScrollPanel, PLATFORM_PULSE_MASTHEAD_HEIGHT,
+    PLATFORM_PULSE_SIDEBAR_WIDTH,
 };

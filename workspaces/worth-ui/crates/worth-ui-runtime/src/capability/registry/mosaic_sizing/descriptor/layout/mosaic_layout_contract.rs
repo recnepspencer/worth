@@ -2,7 +2,8 @@ use super::{MosaicLayoutDenial, MosaicTrack};
 use crate::capability::ComponentId;
 
 /// A container's declared track layout: column and row tracks, the gaps
-/// between them, and the member component each cell holds.
+/// between them, the padding around them, and the member component each cell
+/// holds.
 ///
 /// A member places itself within its cell through its own
 /// `ComponentAllocationMeasurementContract::LayoutCell` region; the container
@@ -14,6 +15,8 @@ pub struct MosaicLayoutContract {
     rows: Box<[MosaicTrack]>,
     column_gap_logical_points: u16,
     row_gap_logical_points: u16,
+    inline_padding_logical_points: u16,
+    block_padding_logical_points: u16,
     members: Vec<MosaicLayoutMember>,
 }
 
@@ -95,6 +98,8 @@ impl MosaicLayoutContract {
             rows,
             column_gap_logical_points: 0,
             row_gap_logical_points: 0,
+            inline_padding_logical_points: 0,
+            block_padding_logical_points: 0,
             members: Vec::new(),
         })
     }
@@ -119,6 +124,14 @@ impl MosaicLayoutContract {
     pub fn with_gaps(mut self, column_gap: u16, row_gap: u16) -> Self {
         self.column_gap_logical_points = column_gap;
         self.row_gap_logical_points = row_gap;
+        self
+    }
+
+    /// Keeps the tracks `inline` points from the container's left and right
+    /// edges and `block` points from its top and bottom.
+    pub fn with_padding(mut self, inline: u16, block: u16) -> Self {
+        self.inline_padding_logical_points = inline;
+        self.block_padding_logical_points = block;
         self
     }
 
@@ -155,6 +168,34 @@ impl MosaicLayoutContract {
 
     pub const fn row_gap_logical_points(&self) -> u16 {
         self.row_gap_logical_points
+    }
+
+    pub const fn inline_padding_logical_points(&self) -> u16 {
+        self.inline_padding_logical_points
+    }
+
+    pub const fn block_padding_logical_points(&self) -> u16 {
+        self.block_padding_logical_points
+    }
+
+    /// The narrowest box that holds every column at its minimum, with the
+    /// gaps between them and the padding on both sides.
+    pub fn minimum_width_logical_points(&self) -> u32 {
+        minimum_extent(
+            &self.columns,
+            self.column_gap_logical_points,
+            self.inline_padding_logical_points,
+        )
+    }
+
+    /// The shortest box that holds every row at its minimum, with the gaps
+    /// between them and the padding above and below.
+    pub fn minimum_height_logical_points(&self) -> u32 {
+        minimum_extent(
+            &self.rows,
+            self.row_gap_logical_points,
+            self.block_padding_logical_points,
+        )
     }
 
     pub fn members(&self) -> impl Iterator<Item = (&ComponentId, MosaicLayoutCell)> {
@@ -194,13 +235,26 @@ impl MosaicLayoutContract {
             .collect::<Vec<_>>()
             .join(",");
         format!(
-            "grid:[{}]:[{}]:{}:{}:[{members}]",
+            "grid:[{}]:[{}]:{}:{}:{}:{}:[{members}]",
             tracks(&self.columns),
             tracks(&self.rows),
             self.column_gap_logical_points,
             self.row_gap_logical_points,
+            self.inline_padding_logical_points,
+            self.block_padding_logical_points,
         )
     }
+}
+
+/// Every track's minimum, the gaps between the tracks, and the padding on
+/// both sides of them.
+fn minimum_extent(tracks: &[MosaicTrack], gap: u16, padding: u16) -> u32 {
+    let tracks_extent = tracks
+        .iter()
+        .map(|track| u32::from(track.base_logical_points()))
+        .sum::<u32>();
+    let gaps = u32::from(gap) * (tracks.len() as u32).saturating_sub(1);
+    tracks_extent + gaps + 2 * u32::from(padding)
 }
 
 #[cfg(test)]
@@ -246,6 +300,31 @@ mod tests {
         assert_eq!(
             MosaicLayoutContract::grid([], [MosaicTrack::fixed(1).unwrap()]),
             Err(MosaicLayoutDenial::NoTracks)
+        );
+    }
+
+    #[test]
+    fn minimum_extent_holds_every_minimum_with_its_gaps_and_padding() {
+        let layout = MosaicLayoutContract::grid(
+            [
+                MosaicTrack::flex(2, 480).unwrap(),
+                MosaicTrack::flex(1, 320).unwrap(),
+            ],
+            [
+                MosaicTrack::fixed(66).unwrap(),
+                MosaicTrack::flex(1, 348).unwrap(),
+            ],
+        )
+        .unwrap()
+        .with_gaps(20, 10)
+        .with_padding(24, 12);
+        assert_eq!(layout.minimum_width_logical_points(), 480 + 20 + 320 + 48);
+        assert_eq!(layout.minimum_height_logical_points(), 66 + 10 + 348 + 24);
+        assert_eq!(
+            MosaicLayoutContract::frame()
+                .unwrap()
+                .minimum_width_logical_points(),
+            0
         );
     }
 }

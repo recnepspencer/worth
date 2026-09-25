@@ -1,29 +1,40 @@
 //! The dashboard page: a fixed sidebar, a masthead that fills the width beside
 //! it, and the main content laid out in flexible tracks.
 //!
-//! The main content keeps a 24-point gutter from the sidebar, the masthead,
-//! and the viewport edges. It stacks the greeting, the summary card row, and
-//! two rows of panels, 20 points apart. The panels sit in two columns that
-//! share the remaining width 2:1, and never narrower than 480 and 320 points.
+//! The page fills the stage beside the sidebar and below the masthead, and
+//! keeps its content a 24-point gutter inside it. The content stacks the
+//! greeting, the summary card row, and the panels, 20 points apart. From
+//! the breakpoint up, the panels sit in two rows of two columns that share
+//! the width 2:1, and never narrower than 480 and 320 points; below it, they
+//! stack in one column in source order. When the rows' minimums outgrow the
+//! stage, the page keeps them and scrolls.
 use worth_ui::facade::declaration::{
     ComponentViewportAxisPlacement, ComponentViewportRegion, MosaicLayoutCell,
     MosaicLayoutContract, MosaicTrack,
 };
 
 use super::frame::Frame;
-use super::{ContainerTracks, DashboardLayoutCell, DashboardPlacement};
+use super::{
+    ContainerTracks, DashboardLayoutCell, DashboardPlacement, DashboardScrollOwner, StackedTracks,
+};
 
 /// The sidebar's width, which every screen width keeps.
 pub const PLATFORM_PULSE_SIDEBAR_WIDTH: u16 = 236;
 /// The masthead's height, down to and including its bottom rule.
 pub const PLATFORM_PULSE_MASTHEAD_HEIGHT: u16 = 57;
+/// The narrowest viewport, in logical points, that lays the panels and the
+/// summary cards out side by side.
+pub(super) const BREAKPOINT: u16 = 1200;
 const GUTTER: u16 = 24;
 /// The gap between panels, and between summary cards.
 pub(super) const GAP: u16 = 20;
 const GREETING_HEIGHT: u16 = 66;
 /// The summary card row's height.
 pub(super) const CARD_ROW_HEIGHT: u16 = 98;
-const PAGE: &str = "page";
+/// The page row the first panel takes; the greeting and the card row come
+/// before it.
+const FIRST_PANEL_ROW: u16 = 2;
+pub(super) const PAGE: &str = "page";
 
 /// One of the four dashboard panels, each a one-cell container its content
 /// is placed in.
@@ -52,14 +63,14 @@ impl Panel {
         }
     }
 
-    /// The page cell the panel takes: charts and lists on the left, their
-    /// companions on the right.
+    /// The page cell the panel takes from the breakpoint up: charts and
+    /// lists on the left, their companions on the right.
     const fn cell(self) -> MosaicLayoutCell {
         match self {
-            Self::Chart => MosaicLayoutCell::at(0, 2),
-            Self::ServiceHealth => MosaicLayoutCell::at(1, 2),
-            Self::RecentActivity => MosaicLayoutCell::at(0, 3),
-            Self::Deployments => MosaicLayoutCell::at(1, 3),
+            Self::Chart => MosaicLayoutCell::at(0, FIRST_PANEL_ROW),
+            Self::ServiceHealth => MosaicLayoutCell::at(1, FIRST_PANEL_ROW),
+            Self::RecentActivity => MosaicLayoutCell::at(0, FIRST_PANEL_ROW + 1),
+            Self::Deployments => MosaicLayoutCell::at(1, FIRST_PANEL_ROW + 1),
         }
     }
 
@@ -106,36 +117,62 @@ fn fill() -> ComponentViewportRegion {
     )
 }
 
+/// The stage beside the sidebar and below the masthead: where the page
+/// stands, and the region it scrolls its content through.
+pub(super) fn stage() -> ComponentViewportRegion {
+    ComponentViewportRegion::new(
+        ComponentViewportAxisPlacement::stretch_between(PLATFORM_PULSE_SIDEBAR_WIDTH, 0),
+        ComponentViewportAxisPlacement::stretch_between(PLATFORM_PULSE_MASTHEAD_HEIGHT, 0),
+    )
+}
+
+/// Where a member of the page stands below the breakpoint: the greeting and
+/// the card row keep their rows in the one column, and the panels follow in
+/// source order, one per row.
+fn stacked_cell(cell: MosaicLayoutCell) -> MosaicLayoutCell {
+    match Panel::ALL.iter().position(|panel| panel.cell() == cell) {
+        Some(order) => MosaicLayoutCell::at(0, FIRST_PANEL_ROW + order as u16),
+        None => MosaicLayoutCell::at(0, cell.row()),
+    }
+}
+
 /// The page and the four panel frames.
 pub(super) fn containers() -> Vec<ContainerTracks> {
     let track = |track: Result<MosaicTrack, _>| track.expect("the page declares valid tracks");
+    let wide = MosaicLayoutContract::grid(
+        [
+            track(MosaicTrack::flex(2, 480)),
+            track(MosaicTrack::flex(1, 320)),
+        ],
+        [
+            track(MosaicTrack::fixed(GREETING_HEIGHT)),
+            track(MosaicTrack::fixed(CARD_ROW_HEIGHT)),
+            track(MosaicTrack::flex(1, 348)),
+            track(MosaicTrack::flex(1, 346)),
+        ],
+    )
+    .expect("the page declares its tracks");
+    let stacked = MosaicLayoutContract::grid(
+        [track(MosaicTrack::flex(1, 480))],
+        [
+            track(MosaicTrack::fixed(GREETING_HEIGHT)),
+            track(MosaicTrack::fixed(2 * CARD_ROW_HEIGHT + GAP)),
+            track(MosaicTrack::flex(1, 348)),
+            track(MosaicTrack::flex(1, 348)),
+            track(MosaicTrack::flex(1, 346)),
+            track(MosaicTrack::flex(1, 346)),
+        ],
+    )
+    .expect("the stacked page declares its tracks");
     let page = ContainerTracks {
         id: PAGE,
-        placement: DashboardPlacement::Viewport(ComponentViewportRegion::new(
-            ComponentViewportAxisPlacement::stretch_between(
-                PLATFORM_PULSE_SIDEBAR_WIDTH + GUTTER,
-                GUTTER,
-            ),
-            ComponentViewportAxisPlacement::stretch_between(
-                PLATFORM_PULSE_MASTHEAD_HEIGHT + GUTTER,
-                GUTTER,
-            ),
-        )),
-        tracks: MosaicLayoutContract::grid(
-            [
-                track(MosaicTrack::flex(2, 480)),
-                track(MosaicTrack::flex(1, 320)),
-            ],
-            [
-                track(MosaicTrack::fixed(GREETING_HEIGHT)),
-                track(MosaicTrack::fixed(CARD_ROW_HEIGHT)),
-                track(MosaicTrack::flex(1, 348)),
-                track(MosaicTrack::flex(1, 346)),
-            ],
-        )
-        .expect("the page declares its tracks")
-        .with_gaps(GAP, GAP),
-        scroll_panel: None,
+        placement: DashboardPlacement::Viewport(stage()),
+        tracks: wide.with_gaps(GAP, GAP).with_padding(GUTTER, GUTTER),
+        stacked: Some(StackedTracks {
+            tracks: stacked.with_gaps(GAP, GAP).with_padding(GUTTER, GUTTER),
+            cell: stacked_cell,
+        }),
+        scroll_owner: Some(DashboardScrollOwner::Page),
     };
     let panels = Panel::ALL.map(|panel| ContainerTracks {
         id: panel.container(),
@@ -145,7 +182,8 @@ pub(super) fn containers() -> Vec<ContainerTracks> {
             region: fill(),
         }),
         tracks: MosaicLayoutContract::frame().expect("a panel frames its content"),
-        scroll_panel: None,
+        stacked: None,
+        scroll_owner: None,
     });
     std::iter::once(page).chain(panels).collect()
 }

@@ -1,13 +1,15 @@
 //! An independent geometric oracle for the dashboard page.
 //!
 //! The spec fixes the page in closed form: a 236-point sidebar, a 24-point
-//! gutter, 20-point gaps, panel columns sharing the width 2:1 and never
-//! narrower than 480 and 320 points, and panel rows sharing the height left
-//! below the greeting and the summary cards. Each test resolves what the
-//! dashboard declares and checks it against that closed form, at the concept
-//! extent and away from it.
+//! gutter, and 20-point gaps. From 1200 points wide, panel columns share the
+//! width 2:1 and are never narrower than 480 and 320 points, and panel rows
+//! share the height left below the greeting and the summary cards. Below it,
+//! the panels stack in source order and the cards sit two by two. A page
+//! whose rows' minimums outgrow the stage keeps them and scrolls. Each test
+//! resolves what the dashboard declares and checks it against that closed
+//! form, at the concept extent and away from it.
 use super::declared_layout::{assert_near, Declared, Rect, EXTENTS, PANELS};
-use super::{dashboard_elements, DashboardScrollPanel};
+use super::{dashboard_elements, DashboardScrollOwner, DashboardScrollPanel};
 
 /// Splits `available` between two tracks by weight, holding a share below
 /// its minimum at the minimum and giving the other what remains.
@@ -22,24 +24,47 @@ fn split(available: f32, weights: [f32; 2], minimums: [f32; 2]) -> [f32; 2] {
     }
 }
 
-/// The spec's page, card row, and four panels at one extent.
+/// The spec's page box, card row, and four panels at one extent. The page
+/// fills the stage and grows past it to hold its rows; its content stands
+/// 24 points inside it.
 fn spec(width: f32, height: f32) -> (Rect, Rect, [Rect; 4]) {
-    let page = [260.0, 81.0, width - 284.0, height - 105.0];
-    let [left, right] = split(page[2] - 20.0, [2.0, 1.0], [480.0, 320.0]);
-    let [upper, lower] = split(page[3] - 66.0 - 98.0 - 60.0, [1.0, 1.0], [348.0, 346.0]);
-    let (second, upper_y) = (page[0] + left + 20.0, 285.0);
-    let lower_y = upper_y + upper + 20.0;
-    let cards = [page[0], 167.0, page[2], 98.0];
-    (
-        page,
-        cards,
-        [
-            [page[0], upper_y, left, upper],
-            [second, upper_y, right, upper],
-            [page[0], lower_y, left, lower],
-            [second, lower_y, right, lower],
-        ],
-    )
+    let (x, inner) = (260.0, width - 284.0);
+    let page = |content_height: f32| [236.0, 57.0, width - 236.0, content_height + 48.0];
+    if width >= 1200.0 {
+        let content_height = (height - 105.0).max(66.0 + 98.0 + 348.0 + 346.0 + 60.0);
+        let [left, right] = split(inner - 20.0, [2.0, 1.0], [480.0, 320.0]);
+        let [upper, lower] = split(content_height - 224.0, [1.0, 1.0], [348.0, 346.0]);
+        let (second, upper_y) = (x + left + 20.0, 285.0);
+        let lower_y = upper_y + upper + 20.0;
+        return (
+            page(content_height),
+            [x, 167.0, inner, 98.0],
+            [
+                [x, upper_y, left, upper],
+                [second, upper_y, right, upper],
+                [x, lower_y, left, lower],
+                [second, lower_y, right, lower],
+            ],
+        );
+    }
+    let content_height = (height - 105.0).max(66.0 + 216.0 + 1388.0 + 100.0);
+    let flexible = content_height - 66.0 - 216.0 - 100.0;
+    let rows = if flexible / 4.0 >= 348.0 {
+        [flexible / 4.0; 4]
+    } else {
+        assert!(
+            flexible <= 1388.0 + 1e-3,
+            "no extent here holds only some rows"
+        );
+        [348.0, 348.0, 346.0, 346.0]
+    };
+    let mut y = 403.0;
+    let panels = rows.map(|row| {
+        let panel = [x, y, inner, row];
+        y += row + 20.0;
+        panel
+    });
+    (page(content_height), [x, 167.0, inner, 216.0], panels)
 }
 
 fn inside(inner: Rect, outer: Rect) -> bool {
@@ -67,10 +92,39 @@ fn the_page_and_its_panels_resolve_to_the_spec() {
         let greeting = declared.element("service_title");
         assert_near(
             greeting,
-            [page[0], 104.0, page[2], 43.0],
+            [260.0, 104.0, width - 284.0, 43.0],
             &format!("greeting {at}"),
         );
     }
+}
+
+/// The page scrolls its content through the stage. It travels exactly as
+/// far as its rows' minimums, gaps, and gutters outgrow the stage, and not
+/// at all where they fit.
+#[test]
+fn the_page_travels_exactly_as_far_as_its_rows_outgrow_the_stage() {
+    for (width, height) in EXTENTS {
+        let declared = Declared::at(width, height);
+        let at = format!("at {width}x{height}");
+        let stage = [236.0, 57.0, width - 236.0, height - 57.0];
+        let region = declared.region(DashboardScrollOwner::Page);
+        assert_near(region, stage, &format!("page region {at}"));
+        let page = declared.container("page");
+        assert_near(
+            [page[0], page[1], page[2], 0.0],
+            [stage[0], stage[1], stage[2], 0.0],
+            &format!("page origin and width {at}"),
+        );
+        let minimum = if width >= 1200.0 { 966.0 } else { 1818.0 };
+        let travel = page[3] - region[3];
+        assert!(
+            (travel - (minimum - stage[3]).max(0.0)).abs() < 1e-3,
+            "page travel {travel} {at}"
+        );
+    }
+    let concept = Declared::at(1536.0, 1024.0);
+    let page = concept.container("page");
+    assert_near(page, [236.0, 57.0, 1300.0, 967.0], "the concept page fits");
 }
 
 #[test]
@@ -131,7 +185,9 @@ fn each_list_region_fills_its_panel_below_the_heading() {
         let declared = Declared::at(width, height);
         let at = format!("at {width}x{height}");
         let health = declared.container("health_panel");
-        let region = declared.region(DashboardScrollPanel::ServiceHealth);
+        let region = declared.region(DashboardScrollOwner::List(
+            DashboardScrollPanel::ServiceHealth,
+        ));
         let expected = [
             health[0] + 25.0,
             health[1] + 55.0,
@@ -146,7 +202,9 @@ fn each_list_region_fills_its_panel_below_the_heading() {
             &format!("service health content {at}"),
         );
         let activity = declared.container("activity_panel");
-        let region = declared.region(DashboardScrollPanel::RecentActivity);
+        let region = declared.region(DashboardScrollOwner::List(
+            DashboardScrollPanel::RecentActivity,
+        ));
         let expected = [
             activity[0] + 24.0,
             activity[1] + 57.0,
@@ -169,7 +227,9 @@ fn each_list_region_fills_its_panel_below_the_heading() {
         );
     }
     let concept = Declared::at(1536.0, 1024.0);
-    let region = concept.region(DashboardScrollPanel::RecentActivity);
+    let region = concept.region(DashboardScrollOwner::List(
+        DashboardScrollPanel::RecentActivity,
+    ));
     assert_near(
         region,
         [284.0, 710.0, 777.0 + 1.0 / 3.0, 270.0],

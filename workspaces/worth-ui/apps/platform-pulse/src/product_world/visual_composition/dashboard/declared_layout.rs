@@ -1,29 +1,36 @@
 //! Resolves what the dashboard declares, independently of the runtime.
 //!
 //! Each container's tracks are allocated here the way the layout spec states
-//! them: fixed tracks keep their extent, flexible tracks share what is left by
-//! weight, and a share below its minimum is held there. Tests compare these
-//! boxes against closed-form expectations.
+//! them: inside the container's padding, fixed tracks keep their extent,
+//! flexible tracks share what is left by weight, and a share below its
+//! minimum is held there. A container too small for its tracks' minimums
+//! grows to hold them. Tests compare these boxes against closed-form
+//! expectations.
 use std::collections::BTreeMap;
 
 use worth_ui::facade::declaration::{
-    ComponentViewportAxisPlacement as Axis, ComponentViewportRegion, MosaicTrack,
+    ComponentId, ComponentViewportAxisPlacement as Axis, ComponentViewportRegion, MosaicTrack,
 };
 
 use super::{
     dashboard_containers, dashboard_elements, DashboardContainer, DashboardElement,
-    DashboardPlacement, DashboardScrollPanel,
+    DashboardPlacement, DashboardScrollOwner,
 };
 
 pub(super) type Rect = [f32; 4];
 
-/// The concept extent, the supported maximum, the two-column floor, and a
-/// height below the panel rows' minimums.
-pub(super) const EXTENTS: [(f32, f32); 4] = [
+/// The concept extent, the supported maximum, the two-column floor, a
+/// height below the panel rows' minimums, the widest and narrowest stacked
+/// extents the spec drags through, and a stacked extent tall enough for its
+/// panels to share the height.
+pub(super) const EXTENTS: [(f32, f32); 7] = [
     (1536.0, 1024.0),
     (1920.0, 1200.0),
     (1200.0, 800.0),
     (1280.0, 720.0),
+    (1120.0, 800.0),
+    (800.0, 600.0),
+    (1100.0, 2400.0),
 ];
 pub(super) const PANELS: [&str; 4] = [
     "chart_panel",
@@ -56,7 +63,9 @@ impl Declared {
 
     pub(super) fn element(&self, id: &str) -> Rect {
         let element = self.elements[id];
-        let placed = self.resolve(element.placement, Some(element.rect)).0;
+        let placed = self
+            .resolve(&element.component(), element.placement, Some(element.rect))
+            .0;
         match element.portal_owner {
             Some(owner) => {
                 let owner = self.element(owner);
@@ -71,16 +80,35 @@ impl Declared {
         }
     }
 
+    /// A container's box: where its placement puts it, grown on each axis
+    /// to hold its tracks' minimums, gaps, and padding.
     pub(super) fn container(&self, id: &str) -> Rect {
-        self.resolve(self.containers[id].placement, None).0
+        let container = &self.containers[id];
+        let [x, y, width, height] = self
+            .resolve(&container.component(), container.placement, None)
+            .0;
+        let layout = container.layout.select(self.viewport[2]);
+        let across = minimum(
+            layout.column_tracks(),
+            layout.column_gap_logical_points(),
+            layout.inline_padding_logical_points(),
+        );
+        let down = minimum(
+            layout.row_tracks(),
+            layout.row_gap_logical_points(),
+            layout.block_padding_logical_points(),
+        );
+        [x, y, width.max(across), height.max(down)]
     }
 
-    /// A list's region, resolved within the box its content was placed in.
-    pub(super) fn region(&self, panel: DashboardScrollPanel) -> Rect {
+    /// A scroll owner's region, resolved within the box its content was
+    /// placed in.
+    pub(super) fn region(&self, owner: DashboardScrollOwner) -> Rect {
+        let container = &self.containers[owner.container()];
         let reference = self
-            .resolve(self.containers[panel.owner()].placement, None)
+            .resolve(&container.component(), container.placement, None)
             .1;
-        region_box(panel.region_placement(), reference)
+        region_box(owner.region_placement(), reference)
     }
 
     /// The panel a placement stands in, through any containers between.
@@ -92,8 +120,15 @@ impl Declared {
         self.panel_of(self.containers[cell.container].placement)
     }
 
-    /// The box a placement resolves to, and the box it resolved within.
-    fn resolve(&self, placement: DashboardPlacement, authored: Option<[u16; 4]>) -> (Rect, Rect) {
+    /// The box `component`'s placement resolves to, and the box it resolved
+    /// within. A layout member takes the cell its container's layout assigns
+    /// it at this viewport width.
+    fn resolve(
+        &self,
+        component: &ComponentId,
+        placement: DashboardPlacement,
+        authored: Option<[u16; 4]>,
+    ) -> (Rect, Rect) {
         match placement {
             DashboardPlacement::Authored => (
                 authored.expect("an element is authored").map(f32::from),
@@ -107,19 +142,38 @@ impl Declared {
                 let layout = self.containers[cell.container]
                     .layout
                     .select(self.viewport[2]);
+                let inline = f32::from(layout.inline_padding_logical_points());
+                let block = f32::from(layout.block_padding_logical_points());
                 let columns = allocate(
                     layout.column_tracks(),
                     layout.column_gap_logical_points(),
-                    width,
+                    width - 2.0 * inline,
                 );
-                let rows = allocate(layout.row_tracks(), layout.row_gap_logical_points(), height);
-                let (left, across) = span(&columns, cell.cell.column(), cell.cell.column_span());
-                let (top, down) = span(&rows, cell.cell.row(), cell.cell.row_span());
-                let reference = [x + left, y + top, across, down];
+                let rows = allocate(
+                    layout.row_tracks(),
+                    layout.row_gap_logical_points(),
+                    height - 2.0 * block,
+                );
+                let member = layout
+                    .member_cell(component)
+                    .expect("a member sits in its container's selected layout");
+                let (left, across) = span(&columns, member.column(), member.column_span());
+                let (top, down) = span(&rows, member.row(), member.row_span());
+                let reference = [x + inline + left, y + block + top, across, down];
                 (region_box(cell.region, reference), reference)
             }
         }
     }
+}
+
+/// Every track at its minimum, the gaps between, and the padding on both
+/// sides.
+fn minimum(tracks: &[MosaicTrack], gap: u16, padding: u16) -> f32 {
+    let extents = tracks
+        .iter()
+        .map(|track| f32::from(track.base_logical_points()))
+        .sum::<f32>();
+    extents + f32::from(gap) * tracks.len().saturating_sub(1) as f32 + 2.0 * f32::from(padding)
 }
 
 /// Fixed tracks keep their extent; flexible tracks share what is left by

@@ -12,7 +12,7 @@ use worth_ui::facade::declaration::{
 
 use super::frame::{Edge, Frame};
 use super::page::Panel;
-use super::{ContainerTracks, DashboardElement};
+use super::{ContainerTracks, DashboardElement, DashboardScrollOwner};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum DashboardScrollPanel {
@@ -91,7 +91,8 @@ impl DashboardScrollPanel {
                 .frame()
                 .placement(self.content_rect(), horizontal, Edge::Start),
             tracks: MosaicLayoutContract::frame().expect("scrolled content frames its members"),
-            scroll_panel: Some(self),
+            stacked: None,
+            scroll_owner: Some(DashboardScrollOwner::List(self)),
         }
     }
     /// Makes `element`, authored from the content origin, travel with this

@@ -8,8 +8,10 @@ mod navigation;
 mod page;
 mod period;
 mod review;
+mod scroll_owner;
 mod scrolling;
 mod services;
+pub use scroll_owner::DashboardScrollOwner;
 pub use scrolling::DashboardScrollPanel;
 mod signals;
 mod traffic;
@@ -26,7 +28,7 @@ pub use page::{PLATFORM_PULSE_MASTHEAD_HEIGHT, PLATFORM_PULSE_SIDEBAR_WIDTH};
 
 use worth_ui::facade::declaration::{
     ComponentAllocationMeasurementContract, ComponentId, ComponentViewportRegion, MosaicLayoutCell,
-    MosaicLayoutContract, MosaicResponsiveLayout,
+    MosaicLayoutContract, MosaicResponsiveLayout, MosaicViewportWidthInterval,
 };
 
 #[derive(Clone, Copy, Debug)]
@@ -81,13 +83,13 @@ pub struct DashboardLayoutCell {
 }
 
 /// A component that paints nothing and lays its members out in flexible
-/// tracks. A scroll panel's content is one: its members travel with it.
+/// tracks. A scroll owner is one: its members travel with it.
 #[derive(Clone, Debug)]
 pub struct DashboardContainer {
     pub id: &'static str,
     pub placement: DashboardPlacement,
     pub layout: MosaicResponsiveLayout,
-    pub scroll_panel: Option<DashboardScrollPanel>,
+    pub scroll_owner: Option<DashboardScrollOwner>,
 }
 
 impl DashboardContainer {
@@ -108,8 +110,19 @@ fn container_component(id: &str) -> ComponentId {
 struct ContainerTracks {
     id: &'static str,
     placement: DashboardPlacement,
+    /// The tracks at every width, or, for a container with a stacked
+    /// layout, at widths from the dashboard's breakpoint up.
     tracks: MosaicLayoutContract,
-    scroll_panel: Option<DashboardScrollPanel>,
+    stacked: Option<StackedTracks>,
+    scroll_owner: Option<DashboardScrollOwner>,
+}
+
+/// The tracks a container lays its members out in below the dashboard's
+/// breakpoint, and the cell each member moves to there from the cell its
+/// placement names.
+struct StackedTracks {
+    tracks: MosaicLayoutContract,
+    cell: fn(MosaicLayoutCell) -> MosaicLayoutCell,
 }
 
 impl DashboardPlacement {
@@ -176,19 +189,34 @@ pub fn dashboard_containers() -> Vec<DashboardContainer> {
     containers
         .into_iter()
         .map(|container| {
-            let layout = members
-                .iter()
-                .filter(|(_, cell)| cell.container == container.id)
-                .fold(container.tracks, |layout, (component, cell)| {
-                    layout
-                        .with_member(component.clone(), cell.cell)
-                        .expect("each member sits once within its container's tracks")
-                });
+            let with_members =
+                |tracks: MosaicLayoutContract, cell: fn(MosaicLayoutCell) -> MosaicLayoutCell| {
+                    members
+                        .iter()
+                        .filter(|(_, placed)| placed.container == container.id)
+                        .fold(tracks, |layout, (component, placed)| {
+                            layout
+                                .with_member(component.clone(), cell(placed.cell))
+                                .expect("each member sits once within its container's tracks")
+                        })
+                };
+            let wide = with_members(container.tracks, |cell| cell);
+            let layout = match container.stacked {
+                None => wide.into(),
+                Some(stacked) => {
+                    MosaicResponsiveLayout::new(with_members(stacked.tracks, stacked.cell))
+                        .with_variant(
+                            MosaicViewportWidthInterval::at_least(page::BREAKPOINT),
+                            wide,
+                        )
+                        .expect("both layouts hold the same members")
+                }
+            };
             DashboardContainer {
                 id: container.id,
                 placement: container.placement,
-                layout: layout.into(),
-                scroll_panel: container.scroll_panel,
+                layout,
+                scroll_owner: container.scroll_owner,
             }
         })
         .collect()

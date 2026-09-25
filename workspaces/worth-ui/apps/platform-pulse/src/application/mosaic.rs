@@ -17,9 +17,10 @@ use worth_ui::facade::declaration::{
     UiScrollChromeContract, UiScrollLineExtent,
 };
 use worth_ui_platform_pulse::product_world::{
-    DashboardScrollPanel, PlatformPulseMosaicRegion, PlatformPulseMosaicSizing,
-    PLATFORM_PULSE_EVIDENCE_PLACEMENT, PLATFORM_PULSE_FOCUSED_REGION_STATE,
-    PLATFORM_PULSE_SERVICE_PLACEMENT, PLATFORM_PULSE_STATUS_PLACEMENT,
+    DashboardScrollOwner, DashboardScrollPanel, PlatformPulseMosaicRegion,
+    PlatformPulseMosaicSizing, PLATFORM_PULSE_EVIDENCE_PLACEMENT,
+    PLATFORM_PULSE_FOCUSED_REGION_STATE, PLATFORM_PULSE_SERVICE_PLACEMENT,
+    PLATFORM_PULSE_STATUS_PLACEMENT,
 };
 
 use super::presentation::scroll_chrome;
@@ -102,7 +103,9 @@ fn region_descriptor(region: PlatformPulseMosaicRegion) -> MosaicRegionKindDescr
             MosaicChildRule::accepts_surfaces(),
             Some(SurfacePlacementClass::status_region()),
         ),
-        PlatformPulseMosaicRegion::ServiceList | PlatformPulseMosaicRegion::ActivityList => (
+        PlatformPulseMosaicRegion::Page
+        | PlatformPulseMosaicRegion::ServiceList
+        | PlatformPulseMosaicRegion::ActivityList => (
             MosaicRegionRole::auxiliary(),
             MosaicSizingBehavior::fills_available_space(),
             MosaicScrollOwnership::region_owned(),
@@ -132,35 +135,39 @@ fn region_descriptor(region: PlatformPulseMosaicRegion) -> MosaicRegionKindDescr
         Some(surface_class) => descriptor.with_allowed_surface_class(surface_class),
         None => descriptor,
     };
-    match scrolled_panel(region) {
-        Some(panel) => descriptor
-            .with_scroll_line_extent(line_extent(panel))
-            .with_scroll_chrome(chrome_contract(panel)),
+    match scroll_owner(region) {
+        Some(owner) => descriptor
+            .with_scroll_line_extent(line_extent(owner))
+            .with_scroll_chrome(chrome_contract(owner)),
         None => descriptor,
     }
 }
 
-/// The dashboard scroll panel this region kind carries, when it carries one.
-fn scrolled_panel(region: PlatformPulseMosaicRegion) -> Option<DashboardScrollPanel> {
-    DashboardScrollPanel::ALL
+/// The dashboard scroll owner this region kind scrolls for, when it scrolls.
+fn scroll_owner(region: PlatformPulseMosaicRegion) -> Option<DashboardScrollOwner> {
+    DashboardScrollOwner::ALL
         .into_iter()
-        .find(|panel| panel.region() == region.id())
+        .find(|owner| owner.region() == region.id())
 }
 
 /// What one wheel line or keyboard step is worth in this region, taken from the
-/// panel that authors the content. The number lives in one place only.
-fn line_extent(panel: DashboardScrollPanel) -> UiScrollLineExtent {
-    UiScrollLineExtent::logical_points(panel.line_extent_logical_points())
-        .expect("a Pulse panel declares a positive line extent within the named maximum")
+/// owner that authors the content. The number lives in one place only.
+fn line_extent(owner: DashboardScrollOwner) -> UiScrollLineExtent {
+    UiScrollLineExtent::logical_points(owner.line_extent_logical_points())
+        .expect("a Pulse scroll owner declares a positive line extent within the named maximum")
 }
 
-/// Track and thumb for the axes this panel really overflows on. Service health
+/// Track and thumb for the axes this owner really overflows on. Service health
 /// is as wide as its region and only travels in block, so declaring inline
-/// chrome for it would reserve a gutter for a bar that can never move.
-fn chrome_contract(panel: DashboardScrollPanel) -> UiScrollChromeContract {
-    let axes = match panel {
-        DashboardScrollPanel::ServiceHealth => UiScrollAxisSupport::Block,
-        DashboardScrollPanel::RecentActivity => UiScrollAxisSupport::Both,
+/// chrome for it would reserve a gutter for a bar that can never move. The
+/// page grows only downward past the stage at supported widths.
+fn chrome_contract(owner: DashboardScrollOwner) -> UiScrollChromeContract {
+    let axes = match owner {
+        DashboardScrollOwner::List(DashboardScrollPanel::ServiceHealth)
+        | DashboardScrollOwner::Page => UiScrollAxisSupport::Block,
+        DashboardScrollOwner::List(DashboardScrollPanel::RecentActivity) => {
+            UiScrollAxisSupport::Both
+        }
     };
     UiScrollChromeContract::new(
         axes,
@@ -174,7 +181,8 @@ fn sizing_descriptor(sizing: PlatformPulseMosaicSizing) -> MosaicSizingContractD
     let kind = match sizing {
         PlatformPulseMosaicSizing::Viewport
         | PlatformPulseMosaicSizing::ServiceStage
-        | PlatformPulseMosaicSizing::DashboardList => MosaicSizingKind::fill(),
+        | PlatformPulseMosaicSizing::DashboardList
+        | PlatformPulseMosaicSizing::Page => MosaicSizingKind::fill(),
         PlatformPulseMosaicSizing::Masthead
         | PlatformPulseMosaicSizing::EvidenceRail
         | PlatformPulseMosaicSizing::StatusBand => MosaicSizingKind::fixed(),
@@ -244,23 +252,24 @@ fn sizing_id(sizing: PlatformPulseMosaicSizing) -> MosaicSizingContractId {
 mod tests {
     use super::*;
 
-    /// Only the two panels that really overflow carry chrome. A fixed region
-    /// with a declared track would reserve a gutter for a bar that cannot move.
+    /// Only the page and the two lists, which really overflow, carry chrome.
+    /// A fixed region with a declared track would reserve a gutter for a bar
+    /// that cannot move.
     #[test]
     fn only_the_overflowing_regions_declare_chrome_and_a_line_extent() {
         for region in PlatformPulseMosaicRegion::ALL {
             let descriptor = region_descriptor(region);
-            match scrolled_panel(region) {
-                Some(panel) => {
+            match scroll_owner(region) {
+                Some(owner) => {
                     assert_eq!(
                         descriptor
                             .scroll_line_extent()
                             .map(|extent| extent.logical_points_value()),
-                        Some(panel.line_extent_logical_points()),
+                        Some(owner.line_extent_logical_points()),
                     );
                     assert_eq!(
                         descriptor.scroll_chrome().map(UiScrollChromeContract::axes),
-                        Some(chrome_contract(panel).axes()),
+                        Some(chrome_contract(owner).axes()),
                     );
                 }
                 None => {
@@ -274,9 +283,9 @@ mod tests {
     /// The track and the thumb are two distinct registered chrome roles, named
     /// once by the appearance owner and quoted here.
     #[test]
-    fn both_panels_name_the_same_two_distinct_chrome_roles() {
-        for panel in DashboardScrollPanel::ALL {
-            let contract = chrome_contract(panel);
+    fn every_scroll_owner_names_the_same_two_distinct_chrome_roles() {
+        for owner in DashboardScrollOwner::ALL {
+            let contract = chrome_contract(owner);
             assert_eq!(contract.track_role(), scroll_chrome::track_role_identity());
             assert_eq!(contract.thumb_role(), scroll_chrome::thumb_role_identity());
             assert_ne!(contract.track_role(), contract.thumb_role());
