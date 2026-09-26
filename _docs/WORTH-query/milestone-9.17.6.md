@@ -1253,6 +1253,19 @@ of an assessment accepted within the budget replays its recorded outcome warm an
 cold. Evidence is released only with the history that retains it, so a yield, Back or
 a duplicate delivery neither spends nor restores it.
 
+Every live instance pins the definition revision it runs, and one lineage holds at
+most the installed number of live instances. A full lineage refuses a new start with
+the typed `WorkflowInstanceCapacityUnavailable` workflow settlement denial once the
+commit has resolved that the start is no retry, so the refusal performs no effect and
+records nothing; a retry of a recorded start still replays warm and cold, and the
+refused key starts an instance once cancellation releases a pin. Publication takes
+no pin, and a migration or a fork's continuation exchanges its source's pin for its
+own in one commit. Evicting compiled meaning releases no pin: the pinned revision
+compiles once on its next use and is warm again. Once a revision is compiled, a
+further instance's whole run compiles nothing; its first observation is its only
+progress miss, rebuilt from no transitions, and every later step reads retained
+progress.
+
 A definition may declare a total deadline, whole nonzero milliseconds, and only a
 declared deadline enters its content identity. An instance started from it records
 the instant its lineage must finish by on the installed trusted clock: its start plus

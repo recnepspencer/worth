@@ -18,8 +18,8 @@ use super::bounded_dimension_model::{
     host::{publish_workflow_on_first_program, BoundedDimensionWorkflowRuntime},
     operator_identity::{authenticate_operator, request_scope},
     workflow::{
-        advance_instance, authoring_intent, publish_definition, retire_definition, start_instance,
-        terminal_definition, ReviewedGeometryWorkflow,
+        advance_instance, authoring_intent, expect_stale_start, publish_definition,
+        retire_definition, start_instance, terminal_definition, ReviewedGeometryWorkflow,
     },
 };
 
@@ -176,16 +176,5 @@ fn expect_started(
     match result.expect("workflow instance-start preparation must succeed") {
         WorkflowInstanceStartOutcome::Started(started) => started.instance().clone(),
         other => panic!("workflow instance start failed: {other:?}"),
-    }
-}
-
-fn expect_stale_start(
-    result: Result<WorkflowInstanceStartOutcome, WorthQueryWorkflowInstanceStartPreparationDenial>,
-) {
-    match result.expect("the workflow start must reach commit comparison") {
-        WorkflowInstanceStartOutcome::Application(WorthQueryApplicationCommitOutcome::Stale(
-            stale,
-        )) => assert!(stale.stale_fact_count() > 0),
-        unexpected => panic!("expected stale workflow instance start, got {unexpected:?}"),
     }
 }

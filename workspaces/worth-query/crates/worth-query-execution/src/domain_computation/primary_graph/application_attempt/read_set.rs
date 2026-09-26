@@ -68,6 +68,8 @@ pub struct WorthQueryCompleteApplicationReadSet<
     /// The Unix-epoch millisecond the workflow instance this attempt steps
     /// must commit before; the provider checks it again at commit.
     pub(super) workflow_deadline: Option<u64>,
+    /// A refusal for a new commit only: a retry of a recorded outcome replays.
+    pub(super) replay_only_denial: Option<WorthQueryApplicationAttemptDenial>,
     pub(super) _phase: PhantomData<fn() -> Phase>,
 }
 
@@ -381,6 +383,7 @@ impl<Schema, Operation, Input, Scope, Phase>
             workflow_authority_binding: None,
             mutation_handler_binding: None,
             workflow_deadline: None,
+            replay_only_denial: None,
             _phase: PhantomData,
         })
     }

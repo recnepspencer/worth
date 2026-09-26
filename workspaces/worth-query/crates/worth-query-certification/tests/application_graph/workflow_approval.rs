@@ -60,6 +60,8 @@ mod instance_migration_law;
 mod journey;
 #[path = "workflow_approval/lineage_evidence_budget.rs"]
 mod lineage_evidence_budget;
+#[path = "workflow_approval/lineage_pin_capacity.rs"]
+mod lineage_pin_capacity;
 #[path = "workflow_approval/lineage_step_budget.rs"]
 mod lineage_step_budget;
 #[path = "workflow_approval/operation_requirement.rs"]

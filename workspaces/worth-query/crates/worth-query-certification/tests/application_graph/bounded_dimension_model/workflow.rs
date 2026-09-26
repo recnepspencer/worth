@@ -24,6 +24,8 @@ mod retry_definition;
 mod review_requirement;
 #[path = "workflow/runtime.rs"]
 mod runtime;
+#[path = "workflow/start_outcome.rs"]
+mod start_outcome;
 
 pub use advance::{
     WorkflowAdvanceBinding, WorkflowAdvanceCapability, WorkflowAdvanceHandler,
@@ -84,6 +86,7 @@ pub use runtime::{
     install_workflow_spec, retain_workflow, retain_workflow_with_resources,
     support_workflow_program,
 };
+pub use start_outcome::{expect_capacity_refused, expect_stale_start};
 
 pub fn declare(
     schema: worth_query_host::facade::declaration::application_schema::ApplicationSchemaDeclarationBuilder<

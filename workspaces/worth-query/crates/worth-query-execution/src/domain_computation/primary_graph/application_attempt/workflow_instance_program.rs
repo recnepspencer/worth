@@ -119,6 +119,14 @@ where
                 &mut compile_facts,
             )
         })?;
+        // Every live instance pins its revision. A full lineage refuses a new
+        // start once the commit knows it is no retry of a recorded one.
+        if instances.len() >= maximum_instances {
+            self.replay_only_denial = Some(denial(
+                WorthQueryApplicationAttemptDenialKind::WorkflowInstanceCapacityUnavailable,
+                self.admission.operation(),
+            ));
+        }
         compile_facts.push(
             WorthQueryApplicationObservedFact::WorkflowInstanceCapacity {
                 relation_kind: layout.live_instance_lineage_relation,

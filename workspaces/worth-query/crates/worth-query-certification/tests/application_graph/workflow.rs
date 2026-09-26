@@ -14,8 +14,8 @@ use worth_query_host::facade::{
 use super::bounded_dimension_model::{
     host::publish_workflow_on_first_program,
     workflow::{
-        advance_instance, publish_definition, reviewed_geometry_definition, start_instance,
-        terminal_definition,
+        advance_instance, expect_capacity_refused, expect_stale_start, publish_definition,
+        reviewed_geometry_definition, start_instance, terminal_definition,
     },
 };
 
@@ -117,7 +117,7 @@ fn public_terminal_workflow_advances_once_through_authenticated_transition_autho
         after_warm_starts.warm_hits(),
         after_cold_start.warm_hits() + 31
     );
-    expect_stale_start(start_instance(
+    expect_capacity_refused(start_instance(
         &application,
         definition.definition().clone(),
         131,
@@ -153,7 +153,7 @@ fn public_terminal_workflow_advances_once_through_authenticated_transition_autho
         definition.definition().clone(),
         132,
     ));
-    expect_stale_start(start_instance(
+    expect_capacity_refused(start_instance(
         &application,
         definition.definition().clone(),
         133,
@@ -310,7 +310,7 @@ fn public_instance_start_binds_revisions_replays_and_enforces_lineage_capacity()
         replay_at_capacity.instance().entity_id(),
         started.instance().entity_id()
     );
-    expect_stale_start(start_instance(
+    expect_capacity_refused(start_instance(
         &application,
         third.definition().clone(),
         1000,
@@ -352,17 +352,6 @@ fn expect_stale_predecessor(
             WorthQueryApplicationCommitOutcome::Stale(stale),
         )) => assert!(stale.stale_fact_count() > 0),
         unexpected => panic!("expected stale predecessor refusal, got {unexpected:?}"),
-    }
-}
-
-fn expect_stale_start(
-    result: Result<WorkflowInstanceStartOutcome, WorthQueryWorkflowInstanceStartPreparationDenial>,
-) {
-    match result.expect("the workflow start must reach commit comparison") {
-        WorkflowInstanceStartOutcome::Application(WorthQueryApplicationCommitOutcome::Stale(
-            stale,
-        )) => assert!(stale.stale_fact_count() > 0),
-        unexpected => panic!("expected stale workflow instance start, got {unexpected:?}"),
     }
 }
 

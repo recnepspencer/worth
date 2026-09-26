@@ -43,6 +43,16 @@ where
             .release_workflow_instance_progress();
     }
 
+    /// Evicts every compiled workflow definition, leaving revision pins intact.
+    #[doc(hidden)]
+    #[cfg(feature = "test-primary-graph-faults")]
+    pub fn release_workflow_compilation_for_test(&self) {
+        self.runtime
+            .retain_primary_graph_integration_handle()
+            .expect("a published application runtime retains its primary graph")
+            .with_workflow_compilation_reuse_mut(|reuse| reuse.release_all());
+    }
+
     /// Delays one output-readiness delivery before its unique World change is consumed.
     #[doc(hidden)]
     #[cfg(feature = "test-primary-graph-faults")]
