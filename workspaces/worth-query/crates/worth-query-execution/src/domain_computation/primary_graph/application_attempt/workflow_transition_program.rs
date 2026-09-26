@@ -220,16 +220,24 @@ where
                     });
             }
         };
-        if let Err(elapsed) = self.bind_workflow_deadline(clock, &layout, instance.entity_id()) {
-            return match request_kind {
-                WorkflowTransitionRequestKind::NavigateBack => Ok(self.navigation_replay_denial(
+        // A step recorded before the budget is spent or the deadline passes
+        // still replays after it.
+        if let Err(refused) = observed.ensure_step_left().and_then(|()| {
+            self.bind_workflow_deadline(clock, &layout, instance.entity_id())
+                .map(drop)
+        }) {
+            let replays = std::mem::take(&mut observed.replays);
+            return Ok(match request_kind {
+                WorkflowTransitionRequestKind::NavigateBack => {
+                    self.navigation_replay_denial(&layout, instance.entity_id(), replays, refused)
+                }
+                _ => self.replay_only_denial(
                     &layout,
                     instance.entity_id(),
-                    std::mem::take(&mut observed.replays),
-                    elapsed,
-                )),
-                _ => Err(elapsed),
-            };
+                    publication::PreparedWorkflowTransitionReplays::retained(replays),
+                    refused,
+                ),
+            });
         }
         if request_kind == WorkflowTransitionRequestKind::NavigateBack {
             let selected = match select_navigation_back_transition(
@@ -290,16 +298,7 @@ where
                 let replays = publication::PreparedWorkflowTransitionReplays::retained(
                     std::mem::take(&mut observed.replays),
                 );
-                return Ok(PreparedWorkflowAdvance::ReplayOnly {
-                    read_set: self,
-                    transition_identity_locator: layout.transition.identity.clone(),
-                    assessment_identity_locator: layout.assessment_evidence.identity.clone(),
-                    instance: instance.entity_id(),
-                    approval: None,
-                    approval_identity: None,
-                    replays,
-                    denial,
-                });
+                return Ok(self.replay_only_denial(&layout, instance.entity_id(), replays, denial));
             }
             Err(denial) => return Err(denial),
         };

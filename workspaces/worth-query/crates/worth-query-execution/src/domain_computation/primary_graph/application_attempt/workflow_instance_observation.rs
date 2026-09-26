@@ -27,8 +27,8 @@ pub(super) use settlement::{
     observe_retained_assessment_evidence, observe_retained_transition,
     observe_retained_workflow_proposal_identity, recover_settled_live_membership,
 };
+use step_budget::history_basis;
 pub(in crate::domain_computation::primary_graph::application_attempt) use step_budget::WorkflowInstanceObservationPurpose;
-use step_budget::{ensure_step_left, history_basis};
 
 pub(in crate::domain_computation::primary_graph::application_attempt) struct ObservedWorkflowInstance
 {
@@ -47,6 +47,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) struct Obs
     history_budget: worth_query_installation::facade::WorthQueryWorkflowHistoryReconstructionBudget,
     purpose: WorkflowInstanceObservationPurpose,
     inherited_steps: u64,
+    maximum_transitions: usize,
 }
 
 impl ObservedWorkflowInstance {
@@ -287,12 +288,6 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
     let progress_observation = if live_membership.is_some() {
         match progression::finish_retained_progress(progress_observation, compiled) {
             Ok((progress_basis, replays)) => {
-                ensure_step_left(
-                    purpose,
-                    inherited_steps,
-                    &progress_basis,
-                    maximum_transitions,
-                )?;
                 let (key, _) = progress_basis.replay_retention();
                 handle.with_workflow_instance_progress_mut(key, |retention| {
                     retention.observe_warm_core()
@@ -308,6 +303,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
                     history_budget,
                     purpose,
                     inherited_steps,
+                    maximum_transitions,
                 });
             }
             Err(observation) => observation,
@@ -364,14 +360,6 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         replay_projections,
         reconstruction_transition_visits,
     )?;
-    if live_membership.is_some() {
-        ensure_step_left(
-            purpose,
-            inherited_steps,
-            &progress_basis,
-            maximum_transitions,
-        )?;
-    }
     let (key, _) = progress_basis.replay_retention();
     handle.with_workflow_instance_progress_mut(key, |retention| {
         retention.observe_history_reconstruction_charge(history.charge_bytes)
@@ -388,6 +376,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         history_budget,
         purpose,
         inherited_steps,
+        maximum_transitions,
     })
 }
 

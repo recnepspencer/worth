@@ -3,8 +3,10 @@
 //! spends it; closing writes none.
 
 use super::history::HistoryBasis;
-use super::{WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind};
-use crate::domain_computation::primary_graph::workflow::instance::WorkflowTransitionProgressBasis;
+use super::{
+    ObservedWorkflowInstance, WorthQueryApplicationAttemptDenial,
+    WorthQueryApplicationAttemptDenialKind,
+};
 
 /// What a request observes a live instance for. Advancing writes a new
 /// transition and needs a free slot of the retained capacity; closing writes
@@ -16,28 +18,27 @@ pub(in crate::domain_computation::primary_graph::application_attempt) enum Workf
     Close,
 }
 
-/// A step spends one of the lineage's budget, which counts the steps the
-/// instance inherited from its sources as well as its own. Warm and cold
-/// reads refuse a spent budget alike, before any commit.
-pub(super) fn ensure_step_left(
-    purpose: WorkflowInstanceObservationPurpose,
-    inherited_steps: u64,
-    progress_basis: &WorkflowTransitionProgressBasis,
-    maximum_transitions: usize,
-) -> Result<(), WorthQueryApplicationAttemptDenial> {
-    let lineage_steps = usize::try_from(
-        inherited_steps.saturating_add(progress_basis.progress().next_occurrence()),
-    )
-    .unwrap_or(usize::MAX);
-    if purpose == WorkflowInstanceObservationPurpose::Advance
-        && lineage_steps >= maximum_transitions
-    {
-        return Err(WorthQueryApplicationAttemptDenial::new(
-            WorthQueryApplicationAttemptDenialKind::WorkflowInstanceCapacityUnavailable,
-            "workflow instance transition capacity is exhausted",
-        ));
+impl ObservedWorkflowInstance {
+    /// A step spends one of the lineage's budget, which counts the steps the
+    /// instance inherited from its sources as well as its own. Warm and cold
+    /// reads refuse a spent budget alike, before any commit. The caller asks
+    /// where a retry of a step already recorded can still replay, so the step
+    /// that spent the last of the budget still answers.
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn ensure_step_left(
+        &self,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        let lineage_steps = usize::try_from(self.lineage_steps()).unwrap_or(usize::MAX);
+        if self.live_membership.is_some()
+            && self.purpose == WorkflowInstanceObservationPurpose::Advance
+            && lineage_steps >= self.maximum_transitions
+        {
+            return Err(WorthQueryApplicationAttemptDenial::new(
+                WorthQueryApplicationAttemptDenialKind::WorkflowInstanceCapacityUnavailable,
+                "workflow instance transition capacity is exhausted",
+            ));
+        }
+        Ok(())
     }
-    Ok(())
 }
 
 pub(super) fn history_basis(

@@ -25,6 +25,23 @@ where
         replays: crate::domain_computation::primary_graph::workflow::instance::WorkflowTransitionReplayRetention,
         denial: WorthQueryApplicationAttemptDenial,
     ) -> PreparedWorkflowAdvance<Schema, Operation, Input, Scope> {
+        self.replay_only_denial(
+            layout,
+            instance,
+            publication::PreparedWorkflowTransitionReplays::retained(replays).for_navigation_back(),
+            denial,
+        )
+    }
+
+    /// Refuses a new step while a retry of one already recorded still
+    /// replays its outcome.
+    pub(super) fn replay_only_denial(
+        self,
+        layout: &crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
+        instance: worth_relational::facade::identity::EntityId,
+        replays: publication::PreparedWorkflowTransitionReplays,
+        denial: WorthQueryApplicationAttemptDenial,
+    ) -> PreparedWorkflowAdvance<Schema, Operation, Input, Scope> {
         PreparedWorkflowAdvance::ReplayOnly {
             read_set: self,
             transition_identity_locator: layout.transition.identity.clone(),
@@ -32,8 +49,7 @@ where
             instance,
             approval: None,
             approval_identity: None,
-            replays: publication::PreparedWorkflowTransitionReplays::retained(replays)
-                .for_navigation_back(),
+            replays,
             denial,
         }
     }

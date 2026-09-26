@@ -23,15 +23,8 @@ use super::*;
 const BUDGET: u64 = 4;
 const RESUME_AT: &str = "proposal/first";
 
-/// A running instance that has taken `steps` of its lineage's budget.
-fn after_steps(
-    key: u64,
-    steps: u64,
-) -> (
-    BoundedDimensionWorkflowRuntime,
-    PublishedWorkflowDefinitionRef,
-    PublishedWorkflowInstanceRef,
-) {
+/// A workflow host whose lineages each have `BUDGET` steps.
+fn budgeted() -> BoundedDimensionWorkflowRuntime {
     let resources = WorthQueryApplicationWorkflowResourceCeiling::new(
         32,
         64,
@@ -43,7 +36,19 @@ fn after_steps(
         256 * 1024,
     )
     .expect("the workflow installation limits are nonzero");
-    let application = retain_workflow_with_resources(publish_on_first_program(), resources);
+    retain_workflow_with_resources(publish_on_first_program(), resources)
+}
+
+/// A running instance that has taken `steps` of its lineage's budget.
+fn after_steps(
+    key: u64,
+    steps: u64,
+) -> (
+    BoundedDimensionWorkflowRuntime,
+    PublishedWorkflowDefinitionRef,
+    PublishedWorkflowInstanceRef,
+) {
+    let application = budgeted();
     let definition = match publish_definition(
         &application,
         bounded_retry_definition_with_attempts(64),
@@ -199,4 +204,61 @@ fn a_fork_continuation_spends_the_steps_its_copy_took() {
         WorthQueryApplicationAttemptDenialKind::WorkflowInstanceCapacityUnavailable,
         "a later fork cannot restart a spent budget",
     );
+}
+
+/// The advance that spends the last step is still answered when retried:
+/// its recorded outcome replays, and only a new step is refused.
+#[test]
+fn a_retry_of_the_step_that_spent_the_budget_replays() {
+    let application = budgeted();
+    let definition = match publish_definition(
+        &application,
+        reviewed_geometry_definition("completed"),
+        WorkflowDefinitionExpectedPredecessor::Absent,
+        91_200,
+    )
+    .expect("the reviewed definition prepares")
+    {
+        WorkflowDefinitionPublicationOutcome::Published(performed) => {
+            performed.definition().clone()
+        }
+        other => panic!("the reviewed definition did not publish: {other:?}"),
+    };
+    let instance = match start_instance(&application, definition, 91_201)
+        .expect("the instance start prepares")
+    {
+        WorkflowInstanceStartOutcome::Started(performed) => performed.instance().clone(),
+        other => panic!("the instance did not start: {other:?}"),
+    };
+    proposal::published_proposal(&application, instance.clone(), 91_202);
+    for key in [91_203, 91_205] {
+        let settlement = settle_assessment(&application, instance.clone(), key);
+        match accept_assessment(&application, instance.clone(), &settlement, key + 1) {
+            Ok(WorkflowProgressOutcome::Completed(_)) => {}
+            other => panic!("expected an accepted assessment, got {other:?}"),
+        }
+    }
+    match advance_instance(&application, instance.clone(), 91_207) {
+        Ok(WorkflowProgressOutcome::Completed(performed)) => assert!(!performed.replayed()),
+        other => panic!("the last step of the budget did not complete: {other:?}"),
+    }
+    for state in ["warm", "cold"] {
+        match advance_instance(&application, instance.clone(), 91_207) {
+            Ok(WorkflowProgressOutcome::Completed(replay)) => {
+                assert!(replay.replayed(), "the {state} retry replays")
+            }
+            other => panic!("the {state} retry of the spending step must replay: {other:?}"),
+        }
+        application
+            .runtime()
+            .release_workflow_instance_progress_for_test();
+    }
+    match advance_instance(&application, instance, 91_208) {
+        Ok(WorkflowProgressOutcome::PreparationDenied(denial)) => assert_eq!(
+            denial.kind(),
+            WorthQueryApplicationAttemptDenialKind::WorkflowInstanceCapacityUnavailable,
+            "a new step past the spent budget is refused",
+        ),
+        other => panic!("a new step past the spent budget must be refused: {other:?}"),
+    }
 }

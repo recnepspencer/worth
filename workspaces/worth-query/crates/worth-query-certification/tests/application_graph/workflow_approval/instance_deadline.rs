@@ -14,10 +14,11 @@ use worth_query_host::facade::application_entry::{
 use super::super::bounded_dimension_model::{
     host::{publish_on_first_program_with_trusted_time, CertificationTrustedTime},
     workflow::{
-        cancel_instance, migrate_instance, retain_workflow,
+        cancel_instance, continue_on_fork, migrate_instance, retain_workflow,
         reviewed_geometry_definition_with_deadline,
     },
 };
+use super::fork_continuation::fork_of;
 use super::instance_cancellation::{approve, cancelled};
 use super::instance_migration::{migration_denial, replace_definition, started};
 use super::journey::approval_requirement;
@@ -174,6 +175,35 @@ fn an_approval_or_back_after_the_deadline_is_refused() {
     assert!(!ended.replayed());
 }
 
+#[test]
+fn a_step_performed_in_time_replays_after_the_deadline() {
+    let (time, application, _, instance) = deadline_instance(93_700);
+    let (proposal, required, _) = approval_requirement(&application, instance.clone(), 93_700);
+    approve(&application, &instance, &required, &proposal, 93_710);
+    time.advance(DEADLINE);
+    warm_and_cold(&application, |state| {
+        match advance_instance(&application, instance.clone(), 93_707) {
+            Ok(WorkflowProgressOutcome::Completed(replay)) => {
+                assert!(replay.replayed(), "the {state} advance retry replays")
+            }
+            other => panic!("the {state} advance retry must replay: {other:?}"),
+        }
+        match approve_instance(
+            &application,
+            instance.clone(),
+            &required,
+            &proposal,
+            WorkflowApprovalDecision::Approve,
+            93_710,
+        ) {
+            Ok(WorkflowProgressOutcome::Completed(replay)) => {
+                assert!(replay.replayed(), "the {state} approval retry replays")
+            }
+            other => panic!("the {state} approval retry must replay: {other:?}"),
+        }
+    });
+}
+
 /// Admits the approved operation in time, lets `lapse` act on trusted time,
 /// then requests the operation: its commit refusal, or the currentness
 /// refusal that stopped it before its handler.
@@ -267,12 +297,25 @@ fn a_successor_keeps_the_earlier_deadline_and_an_overdue_source_cannot_migrate()
         migration_denial(migrate_instance(
             &application,
             successor.clone(),
-            next,
+            next.clone(),
             "propose",
             93_421,
         )),
         ELAPSED,
         "an overdue instance cannot restart its deadline by migrating",
+    );
+    let fork = fork_of(&application, successor.branch());
+    assert_eq!(
+        migration_denial(continue_on_fork(
+            &application,
+            fork,
+            successor.clone(),
+            next,
+            "propose",
+            93_423,
+        )),
+        ELAPSED,
+        "nor by continuing on a fork",
     );
     let ended = cancelled(cancel_instance(&application, successor, 93_422));
     assert!(!ended.replayed());

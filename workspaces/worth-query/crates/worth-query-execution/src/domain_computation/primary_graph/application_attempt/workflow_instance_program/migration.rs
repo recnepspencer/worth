@@ -185,6 +185,7 @@ where
                     installed.resources().history_reconstruction_budget(),
                     super::super::workflow_instance_observation::WorkflowInstanceObservationPurpose::Advance,
                 )?;
+            observed.ensure_step_left()?;
             observed.ensure_history(
                 handle,
                 runtime,

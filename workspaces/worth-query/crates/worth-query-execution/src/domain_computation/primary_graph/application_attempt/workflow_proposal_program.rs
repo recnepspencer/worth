@@ -117,6 +117,7 @@ where
         let Some(live_membership) = observed.live_membership else {
             return Err(denial("workflow proposal instance is already settled"));
         };
+        observed.ensure_step_left()?;
         self.bind_workflow_deadline(clock, &layout, instance.entity_id())?;
         let selection = select_proposal_transition(
             &compiled,

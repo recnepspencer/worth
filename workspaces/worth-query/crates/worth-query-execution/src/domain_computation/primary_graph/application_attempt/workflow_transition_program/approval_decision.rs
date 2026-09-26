@@ -257,8 +257,12 @@ where
                 ),
             });
         };
-        // A decision recorded before the deadline still replays after it.
-        if let Err(elapsed) = self.bind_workflow_deadline(clock, &layout, instance.entity_id()) {
+        // A decision recorded before the budget is spent or the deadline
+        // passes still replays after it.
+        if let Err(refused) = observed.ensure_step_left().and_then(|()| {
+            self.bind_workflow_deadline(clock, &layout, instance.entity_id())
+                .map(drop)
+        }) {
             return Ok(PreparedWorkflowAdvance::ReplayOnly {
                 read_set: self,
                 transition_identity_locator: layout.transition.identity.clone(),
@@ -267,7 +271,7 @@ where
                 approval: Some(approval_projection.clone()),
                 approval_identity: Some(meaning.identity),
                 replays,
-                denial: elapsed,
+                denial: refused,
             });
         }
         let selected = match select_current_transition(

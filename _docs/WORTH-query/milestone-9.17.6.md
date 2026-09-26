@@ -1233,7 +1233,9 @@ migration successor, or a fork's continuation, records the steps its source had 
 and inherits them, so a loop routed through a successor never starts the budget
 afresh; retry and navigation back-edges spend it like any other step. A spent lineage
 refuses the next step, a further migration and a fork continuation with a typed
-capacity denial before commit, warm or cold, and still cancels. A yield or a duplicate
+capacity denial before commit, warm or cold, and still cancels. A retry of a step
+recorded before the budget was spent, including the step that spent it, replays its
+recorded outcome warm and cold; only a new step is refused. A yield or a duplicate
 delivery writes no transition and so neither spends nor restores a step. Migration
 itself writes no transition and spends none. Navigating Back spends the same budget,
 so the navigation-specific capacity refusal it once had could no longer be reached and
@@ -1249,11 +1251,15 @@ approval, Back navigation and a further migration or fork continuation are refus
 with the typed `WorkflowInstanceDeadlineElapsed` denial before commit, warm or cold.
 A step admitted in time is checked again when its operation commits, and one that
 reaches commit after the deadline is refused as a workflow settlement denial without
-effect. A retried key still replays its recorded outcome, and cancellation stays open,
-so an overdue instance can always end. Trusted time that cannot be read admits no
+effect. A retried key of a proposal, advance or approval recorded in time still
+replays its recorded outcome after the deadline, warm and cold, and cancellation stays
+open, so an overdue instance can always end. Trusted time that cannot be read admits no
 step: authorization refuses the request before the deadline is read. The deadline's
 own `WorkflowTrustedTimeUnavailable` refusal covers a clock that fails between that
-admission and the deadline read; it is argued from its position, not driven by a test.
+admission and the deadline read. Unit tests drive the deadline bind with a fixed and
+an unreadable clock: a step at the recorded instant is elapsed and one before it is
+admitted, a successor keeps the earlier instant, an unreadable clock refuses a
+declared deadline, and a definition without one never reads the clock.
 
 An assessment observation holds interest in its run and nothing more. Closing or
 dropping one releases only that observer's interest: a second observer of the same
