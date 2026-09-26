@@ -96,6 +96,7 @@ where
                 &mut compiled,
                 maximum_transitions,
                 installed.resources().history_reconstruction_budget(),
+                super::super::workflow_instance_observation::WorkflowInstanceObservationPurpose::Advance,
             )
         })?;
         let replays = publication::PreparedWorkflowTransitionReplays::retained(std::mem::take(

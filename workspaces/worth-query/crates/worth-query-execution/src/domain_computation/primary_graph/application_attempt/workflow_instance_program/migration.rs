@@ -178,6 +178,7 @@ where
                     &mut from,
                     maximum_transitions,
                     installed.resources().history_reconstruction_budget(),
+                    super::super::workflow_instance_observation::WorkflowInstanceObservationPurpose::Advance,
                 )?;
             observed.ensure_history(
                 handle,
@@ -239,6 +240,7 @@ where
                 )?;
                 performed.extend(inherited);
                 admit_workflow_migration(succession, &from, &resumed, &settled, &performed)?;
+                let lineage_steps = observed.lineage_steps();
                 facts.extend(observed.facts);
                 successor_effects(
                     &layout,
@@ -247,6 +249,7 @@ where
                     self.lease.product().product_branch().occurrence_ordinal(),
                     subject,
                     (source.entity_id(), live_membership),
+                    lineage_steps,
                     &performed,
                 )?
             }
@@ -297,7 +300,9 @@ where
 
 /// The successor's own start facts, its link to the source and to every
 /// effect it carries, and the source's end. Live membership moves from the
-/// source to the successor, so lineage capacity is unchanged.
+/// source to the successor, so lineage capacity is unchanged, and the
+/// successor inherits every step its sources took, so the step budget is too.
+#[allow(clippy::too_many_arguments)]
 fn successor_effects(
     layout: &WorthQueryWorkflowLayout,
     resumed: &CompiledWorkflowDefinition,
@@ -305,6 +310,7 @@ fn successor_effects(
     branch_occurrence: u64,
     subject: EntityId,
     (source, live_membership): (EntityId, RelationId),
+    inherited_steps: u64,
     performed: &[WorkflowPerformedEffect],
 ) -> Result<Vec<WorthQueryApplicationRealizedEffect>, WorthQueryApplicationAttemptDenial> {
     let mut effects = Vec::new();
@@ -314,6 +320,7 @@ fn successor_effects(
         instance_identity,
         branch_occurrence,
         subject,
+        inherited_steps,
         |effect| {
             effects.push(effect);
             Ok::<(), WorthQueryApplicationAttemptDenial>(())

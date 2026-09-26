@@ -17,7 +17,7 @@ use worth_query_installation::facade::{
 
 use super::super::effect_program::{admit_platform_effects, PlatformEffectDemand};
 use super::super::workflow_instance_observation::{
-    observe_ended_history, observe_workflow_instance,
+    observe_ended_history, observe_workflow_instance, WorkflowInstanceObservationPurpose,
 };
 use super::super::{
     observe_field_value, PublishedWorkflowDefinitionRef, WorthQueryApplicationAttemptDenial,
@@ -129,6 +129,7 @@ where
                 &mut compiled,
                 maximum_transitions,
                 budget,
+                WorkflowInstanceObservationPurpose::Close,
             );
             let (transitions, effects) = match observed {
                 // An instance this request already cancelled emits nothing.

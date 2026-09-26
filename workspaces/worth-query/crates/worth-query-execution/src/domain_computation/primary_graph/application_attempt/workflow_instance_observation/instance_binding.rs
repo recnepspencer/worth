@@ -39,6 +39,39 @@ pub(super) fn deny_ended(
     Ok(())
 }
 
+/// The steps the instance's migration sources took before it, zero for an
+/// instance that began its lineage. It never changes after the start.
+pub(super) fn inherited_steps(
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    layout: &WorthQueryWorkflowLayout,
+    entity_id: EntityId,
+    facts: &mut Vec<WorthQueryApplicationObservedFact>,
+) -> Result<u64, WorthQueryApplicationAttemptDenial> {
+    let kind = layout.instance.entity_kind;
+    let locator = &layout.instance.inherited_steps;
+    match observe_field_value(runtime, snapshot, entity_id, kind, locator) {
+        None => {
+            facts.push(WorthQueryApplicationObservedFact::AbsentField {
+                entity_id,
+                kind,
+                locator: locator.clone(),
+            });
+            Ok(0)
+        }
+        Some(AspectValue::UInt64(steps)) if steps > 0 => {
+            facts.push(WorthQueryApplicationObservedFact::Field {
+                entity_id,
+                kind,
+                locator: locator.clone(),
+                value: AspectValue::UInt64(steps),
+            });
+            Ok(steps)
+        }
+        Some(_) => Err(denial("workflow instance inherited steps are malformed")),
+    }
+}
+
 /// Reads the definition as this instance runs it: from the node its migration
 /// resumed at, which its reference names, or from the definition's start.
 pub(super) fn resume_definition(

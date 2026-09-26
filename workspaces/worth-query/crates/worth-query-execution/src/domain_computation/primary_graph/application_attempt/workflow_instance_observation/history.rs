@@ -14,6 +14,19 @@ mod budget;
 use super::super::fact::{observe_adjacency_checked, AdjacencyObservationDenial};
 use budget::HistoryReconstructionCharge;
 
+/// What the history basis a read records must keep true at commit.
+#[derive(Clone, Copy)]
+pub(super) enum HistoryBasis {
+    /// The request writes one more transition, so a slot must remain free
+    /// once the steps the instance inherited from its sources are spent.
+    Advance { inherited_steps: usize },
+    /// The request ends the live instance and writes no transition, so a
+    /// history that fills the whole retained capacity still closes.
+    Close,
+    /// The instance has already ended; the read only reports its history.
+    Ended,
+}
+
 pub(super) struct ObservedWorkflowHistory {
     pub(super) transitions: Vec<ObservedWorkflowTransition>,
     pub(super) facts: Vec<WorthQueryApplicationObservedFact>,
@@ -43,7 +56,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         snapshot,
         layout,
         instance,
-        false,
+        HistoryBasis::Ended,
         maximum_transitions,
         compiled,
         history_budget,
@@ -56,7 +69,7 @@ pub(super) fn observe(
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     layout: &WorthQueryWorkflowLayout,
     instance: EntityId,
-    live: bool,
+    basis: HistoryBasis,
     maximum_transitions: usize,
     compiled: &CompiledWorkflowDefinition,
     budget: WorthQueryWorkflowHistoryReconstructionBudget,
@@ -150,10 +163,12 @@ pub(super) fn observe(
         transitions: settled,
         facts: vec![WorthQueryApplicationObservedFact::WorkflowHistoryBasis {
             instance,
-            maximum_transitions: if live {
-                maximum_transitions
-            } else {
-                transition_count
+            maximum_transitions: match basis {
+                HistoryBasis::Advance { inherited_steps } => {
+                    maximum_transitions.saturating_sub(inherited_steps)
+                }
+                HistoryBasis::Close => transition_count.saturating_add(1),
+                HistoryBasis::Ended => transition_count,
             },
             transition_count,
             snapshot: snapshot.clone(),

@@ -218,6 +218,10 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowInstanceLayout {
     /// The intent that explicitly cancelled the instance; absent when program
     /// adoption cancelled it or it never ended by cancellation.
     pub(in crate::domain_computation::primary_graph) cancellation_identity: AspectFieldLocator,
+    /// Steps the instance's migration sources took before it; absent when
+    /// none. One lineage spends one step budget, so a successor never
+    /// starts it afresh.
+    pub(in crate::domain_computation::primary_graph) inherited_steps: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) identity_index_id: DerivedIndexId,
 }
 

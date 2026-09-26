@@ -110,6 +110,7 @@ where
                 &mut compiled,
                 maximum_transitions,
                 installed.resources().history_reconstruction_budget(),
+                super::workflow_instance_observation::WorkflowInstanceObservationPurpose::Advance,
             )
         })?;
         let Some(live_membership) = observed.live_membership else {

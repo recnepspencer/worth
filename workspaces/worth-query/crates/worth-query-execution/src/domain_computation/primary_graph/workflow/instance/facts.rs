@@ -17,6 +17,7 @@ pub(in crate::domain_computation::primary_graph) fn visit_instance_start_facts<E
     instance_identity: &str,
     branch_occurrence: u64,
     subject: EntityId,
+    inherited_steps: u64,
     mut emit: impl FnMut(WorthQueryApplicationRealizedEffect) -> Result<(), Error>,
 ) -> Result<CreatedEntityRef, Error> {
     let partition = compiled.definition().partition_id;
@@ -64,6 +65,12 @@ pub(in crate::domain_computation::primary_graph) fn visit_instance_start_facts<E
     ]);
     if let Some(path) = compiled.resumed_path() {
         fields.insert(layout.instance.resume_node_path.clone(), text(path));
+    }
+    if inherited_steps > 0 {
+        fields.insert(
+            layout.instance.inherited_steps.clone(),
+            AspectValue::UInt64(inherited_steps),
+        );
     }
     emit(WorthQueryApplicationRealizedEffect::CreateEntity {
         kind: instance.kind_id,

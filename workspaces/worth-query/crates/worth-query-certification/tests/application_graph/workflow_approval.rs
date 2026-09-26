@@ -46,6 +46,8 @@ mod effect_currentness;
 mod fork_continuation;
 #[path = "workflow_approval/instance_cancellation.rs"]
 mod instance_cancellation;
+#[path = "workflow_approval/instance_cancellation_capacity.rs"]
+mod instance_cancellation_capacity;
 #[path = "workflow_approval/instance_cancellation_reach.rs"]
 mod instance_cancellation_reach;
 #[path = "workflow_approval/instance_migration.rs"]
@@ -54,6 +56,8 @@ mod instance_migration;
 mod instance_migration_law;
 #[path = "workflow_approval/journey.rs"]
 mod journey;
+#[path = "workflow_approval/lineage_step_budget.rs"]
+mod lineage_step_budget;
 #[path = "workflow_approval/operation_requirement.rs"]
 mod operation_requirement;
 use journey::approval_journey;

@@ -141,6 +141,7 @@ where
                 &mut compiled,
                 maximum_transitions,
                 installed.resources().history_reconstruction_budget(),
+                super::workflow_instance_observation::WorkflowInstanceObservationPurpose::Advance,
             )
         })?;
         let (live_membership, retire_live_membership) = match observed.live_membership {
@@ -219,7 +220,7 @@ where
             }
         };
         if request_kind == WorkflowTransitionRequestKind::NavigateBack {
-            if observed.progress_basis.progress().next_occurrence() >= maximum_transitions as u64 {
+            if observed.lineage_steps() >= maximum_transitions as u64 {
                 return Ok(self.navigation_replay_denial(
                     &layout,
                     instance.entity_id(),

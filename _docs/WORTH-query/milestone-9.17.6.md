@@ -1223,9 +1223,19 @@ fork's successor and its source end independently. A request without the start
 capability is refused without claiming its key, and a performed history that cannot
 be read within its retained bounds is refused as unavailable. That refusal is argued
 from the reads that raise it, not driven by a test: reaching it needs a stored
-history the public surface cannot corrupt. An instance that has
-used its whole retained-transition capacity cannot yet be cancelled; slice 5.3b closes
-that with its budgets.
+history the public surface cannot corrupt. Cancellation writes no transition, so an
+instance that has used its whole retained-transition capacity, and so can take no
+further step, still cancels, warm or cold. The cancellation reads exactly the retained
+history, and its replay stays within the same bounds.
+
+One lineage spends one step budget, the installed retained-transition capacity. A
+migration successor, or a fork's continuation, records the steps its source had taken
+and inherits them, so a loop routed through a successor never starts the budget
+afresh; retry and navigation back-edges spend it like any other step. A spent lineage
+refuses the next step, a further migration and a fork continuation with a typed
+capacity denial before commit, warm or cold, and still cancels. A yield or a duplicate
+delivery writes no transition and so neither spends nor restores a step. Migration
+itself writes no transition and spends none.
 
 ## Acceptance, Cost And Review
 
