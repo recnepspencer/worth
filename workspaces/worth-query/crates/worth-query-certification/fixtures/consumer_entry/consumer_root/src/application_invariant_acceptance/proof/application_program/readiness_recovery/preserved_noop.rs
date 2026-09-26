@@ -22,10 +22,13 @@ pub(crate) fn preserved_noop_output_completes_readiness_without_a_signal_success
             controls(),
         )
         .expect("the initial output demand starts");
-    while let WorthQueryApplicationProgramOutputProgress::Pending = initial
-        .advance(&request)
-        .expect("the initial output settles")
-    {}
+    crate::application_invariant_acceptance::proof::settle(|| {
+        crate::application_invariant_acceptance::proof::settled(
+            initial
+                .advance(&request)
+                .expect("the initial output settles"),
+        )
+    });
     drop(initial);
 
     request
@@ -59,15 +62,13 @@ pub(crate) fn preserved_noop_output_completes_readiness_without_a_signal_success
             controls(),
         )
         .expect("the drifted source selects its preserve producer");
-    let settlement = loop {
-        match preserved
-            .advance(&request)
-            .expect("an exact preserved no-op still completes readiness")
-        {
-            WorthQueryApplicationProgramOutputProgress::Pending => {}
-            WorthQueryApplicationProgramOutputProgress::Settled(settlement) => break settlement,
-        }
-    };
+    let settlement = crate::application_invariant_acceptance::proof::settle(|| {
+        crate::application_invariant_acceptance::proof::settled(
+            preserved
+                .advance(&request)
+                .expect("an exact preserved no-op still completes readiness"),
+        )
+    });
     let delivery = settlement
         .root_readiness_delivery()
         .expect("preserved output readiness carries delivery evidence");

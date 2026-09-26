@@ -117,19 +117,17 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn r
             .collect::<Vec<_>>(),
         ["remote-b"]
     );
-    loop {
+    let settled = crate::application_invariant_acceptance::proof::settle(|| {
         match second
             .required_output_mut()
             .advance(&request)
             .expect("newer roots advance")
         {
-            WorthQueryDiscoveredProgramOutputProgress::Pending => {}
-            WorthQueryDiscoveredProgramOutputProgress::Settled(settled) => {
-                assert_eq!(settled.root_outputs().count(), 3);
-                break;
-            }
+            WorthQueryDiscoveredProgramOutputProgress::Pending => None,
+            WorthQueryDiscoveredProgramOutputProgress::Settled(settled) => Some(settled),
         }
-    }
+    });
+    assert_eq!(settled.root_outputs().count(), 3);
     assert_eq!(
         world.application.retained_source_custody_count_for_test(),
         0

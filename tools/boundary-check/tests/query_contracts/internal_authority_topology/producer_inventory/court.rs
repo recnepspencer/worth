@@ -131,8 +131,10 @@ const RAW_QUERY_ELEVATION_TYPES: &[&str] = &[
     "WorthQueryWorkflowApplicationRuntime",
 ];
 // The commit receipt is not on this list: since 9.17.4 it is the ordinary
-// Query mutation outcome Bank hands every caller, and only the runtimes above,
-// which no public Bank item may name, can turn it into authority.
+// Query mutation outcome Bank hands every caller, and only the runtimes above
+// can turn it into authority. That makes it ordinary only once no public Bank
+// item names a runtime; until slice 5.6 closes the pending exposure below, a
+// Bank caller holding `application_program()` can still redeem it.
 
 /// Public Bank items that still name a pinned runtime, each owed by a named
 /// 9.17.6 slice. The court requires this exact set, so the list cannot grow

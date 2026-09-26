@@ -1,8 +1,8 @@
 use std::num::NonZeroUsize;
 
 use worth_query_host::facade::application_entry::{
-    WorthQueryApplicationPerformedMutationOutcome, WorthQueryApplicationProgramOutputProgress,
-    WorthQueryApplicationRequestExt, WorthQueryOutputDemandControls,
+    WorthQueryApplicationPerformedMutationOutcome, WorthQueryApplicationRequestExt,
+    WorthQueryOutputDemandControls,
 };
 use worth_query_topology_entry::{PlanarRead, PlanarSourceAdjustment};
 
@@ -133,16 +133,22 @@ fn secondary_root_settles_independently(
     let mut secondary_started = secondary_performed
         .start_required_outputs(&secondary_request, controls)
         .unwrap_or_else(|failure| panic!("secondary root starts: {:?}", failure.denial()));
-    while let WorthQueryApplicationProgramOutputProgress::Pending = secondary_started
-        .required_output_mut()
-        .advance(&secondary_request)
-        .expect("the selected secondary root advances")
-    {}
-    while let WorthQueryApplicationProgramOutputProgress::Pending = primary_started
-        .required_output_mut()
-        .advance(&request)
-        .expect("the primary root remains live while its sibling settles")
-    {}
+    super::settle(|| {
+        super::settled(
+            secondary_started
+                .required_output_mut()
+                .advance(&secondary_request)
+                .expect("the selected secondary root advances"),
+        )
+    });
+    super::settle(|| {
+        super::settled(
+            primary_started
+                .required_output_mut()
+                .advance(&request)
+                .expect("the primary root remains live while its sibling settles"),
+        )
+    });
     assert_eq!(
         request
             .query(PlanarRead {

@@ -29,6 +29,34 @@ mod publication;
 mod resource_profile;
 
 type Request<'a> = WorthQueryApplicationRequest<'a, 'a, 'a, ConsumerSchema>;
+
+/// Advances pending work to its settlement. A proof that never settles fails
+/// here instead of hanging, as the House journey does.
+const SETTLE_ADVANCES: usize = 256;
+
+fn settle<Settled>(mut advance: impl FnMut() -> Option<Settled>) -> Settled {
+    (0..SETTLE_ADVANCES)
+        .find_map(|_| advance())
+        .expect("pending work settles within the bounded advances")
+}
+
+/// The settlement a program output advance reached, if any.
+fn settled<RootQuery>(
+    progress: worth_query_host::facade::application_entry::WorthQueryApplicationProgramOutputProgress<
+        RootQuery,
+    >,
+) -> Option<
+    worth_query_host::facade::application_entry::WorthQueryApplicationProgramOutputSettlement<
+        RootQuery,
+    >,
+> {
+    match progress {
+        worth_query_host::facade::application_entry::WorthQueryApplicationProgramOutputProgress::Pending => None,
+        worth_query_host::facade::application_entry::WorthQueryApplicationProgramOutputProgress::Settled(
+            settlement,
+        ) => Some(settlement),
+    }
+}
 type ProgramApplication =
     worth_query_host::facade::application_installation::WorthQueryProgramApplicationRuntime<
         ConsumerSchema,

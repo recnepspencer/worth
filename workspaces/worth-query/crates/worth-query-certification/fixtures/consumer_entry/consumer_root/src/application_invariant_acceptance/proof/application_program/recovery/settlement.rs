@@ -18,12 +18,12 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn s
         .controls(controls)
         .start()
         .expect("owner custody is recoverable through the public demand entry");
-    loop {
+    crate::application_invariant_acceptance::proof::settle(|| {
         match recovered.advance(request).unwrap_or_else(|denial| {
             panic!("the recovered {body_key} required output advances: {denial:?}")
         }) {
-            WorthQueryApplicationOutputDemandProgress::Pending => {}
-            WorthQueryApplicationOutputDemandProgress::Settled(settled) => return settled,
+            WorthQueryApplicationOutputDemandProgress::Pending => None,
+            WorthQueryApplicationOutputDemandProgress::Settled(settled) => Some(settled),
         }
-    }
+    })
 }

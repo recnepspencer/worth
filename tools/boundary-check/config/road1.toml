@@ -1126,6 +1126,16 @@ lifecycle_states = ["PlatformPulseNativeInputIngress", "PlatformPulseTerminalPos
 owner_roots = [
   "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/workflow",
   "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/workflow.rs",
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow_definition_program",
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow_definition_program.rs",
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow_instance_observation",
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow_instance_observation.rs",
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow_instance_program",
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow_instance_program.rs",
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow_proposal_program",
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow_proposal_program.rs",
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow_transition_program",
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow_transition_program.rs",
 ]
 guarded_roots = [
   "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/managed_run",

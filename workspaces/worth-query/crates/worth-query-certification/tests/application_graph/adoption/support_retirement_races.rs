@@ -6,9 +6,17 @@ use worth_query_host::facade::product::{
     WorthQueryProductBranchCreateError, WorthQueryProductBranchCreationDenial,
 };
 
+use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome;
+use worth_query_host::facade::primary_graph::{
+    WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitOutcome,
+};
+
 use super::support_retirement::adopt;
-use crate::bounded_dimension_model::host::publish_on_first_program;
+use crate::bounded_dimension_model::host::{publish_on_first_program, SEED_DIMENSION};
+use crate::bounded_dimension_model::presented_request::set_dimension;
 use crate::bounded_dimension_model::programs::DimensionProgramP1;
+use crate::bounded_dimension_model::readback::{observe_head, read_dimension};
+use crate::bounded_dimension_model::settled_verdict::{settle, DimensionVerdict};
 
 #[test]
 fn retirement_barrier_refuses_a_new_fork_of_that_program() {
@@ -108,5 +116,51 @@ fn adopted_source_forks_with_world_carried_program_after_old_support_retires() {
     assert_eq!(
         grandchild.inspect_selected_program().unwrap().revision(),
         &target
+    );
+}
+
+/// A retired program's owner handle still exists, but the commit gate refuses
+/// it as no longer active on this host before any effect, and the adopted
+/// program keeps acting.
+#[test]
+fn a_retired_program_action_is_refused_at_the_commit_gate_without_effect() {
+    let host = publish_on_first_program();
+    let branch = host.current_world();
+    let source = host.owned_revision().clone();
+    let p1 = host
+        .supported_program::<DimensionProgramP1>()
+        .expect("P1 is rostered");
+    adopt(&host, branch, p1.owned_revision());
+    host.retire_program_support(&source)
+        .expect("no branch or retained interpretation still uses P0");
+
+    let before = observe_head(host.runtime(), branch);
+    let WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationCommitOutcome::Denied(
+        denial,
+    )) = set_dimension(&host, branch, SEED_DIMENSION + 1, 0x9176_5331)
+        .expect("the retired owner's request reaches the commit gate")
+    else {
+        panic!("a retired program must be refused at the commit gate");
+    };
+    assert_eq!(
+        denial.kind(),
+        WorthQueryApplicationCommitDenialKind::ProgramNotActiveOnOccurrence
+    );
+    assert!(
+        denial
+            .detail()
+            .is_some_and(|detail| detail.contains("no longer active on this host")),
+        "the refusal names retirement, not the occurrence mismatch: {:?}",
+        denial.detail()
+    );
+    assert_eq!(read_dimension(host.runtime(), branch), SEED_DIMENSION);
+    assert_eq!(
+        before.selected_commit(),
+        observe_head(host.runtime(), branch).selected_commit(),
+        "a refusal before effects cannot have moved the commit head"
+    );
+    assert_eq!(
+        settle(set_dimension(&p1, branch, SEED_DIMENSION + 1, 0x9176_5332)),
+        DimensionVerdict::Performed(SEED_DIMENSION + 1)
     );
 }

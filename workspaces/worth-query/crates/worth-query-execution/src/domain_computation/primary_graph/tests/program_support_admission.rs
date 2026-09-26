@@ -12,6 +12,7 @@ use super::fixture::{
 };
 use crate::domain_computation::primary_graph::program_occurrence::program_revision_rendering;
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind;
+use worth_query_installation::facade::WorthQueryProgramSupportRetirementDenial;
 
 #[test]
 fn a_host_presents_only_the_program_revisions_it_admitted() {
@@ -104,4 +105,32 @@ fn a_commit_names_why_it_cannot_present_a_retiring_or_unadmitted_revision() {
         .is_some_and(|detail| detail.contains("no longer active on this host")));
     drop(retirement);
     assert!(support.present_for_commit(&revision).is_ok());
+}
+
+#[test]
+fn a_completed_retirement_leaves_the_revision_permanently_not_active() {
+    let world = installed_authorization_world(true);
+    let revision = rostered_program_revision();
+    let support = installed_program_support(&world.application.installed_schema);
+    let receipt = support
+        .lifecycle()
+        .begin_retirement(&revision)
+        .unwrap()
+        .finish(0, 0)
+        .expect("an unused revision retires");
+    assert!(receipt.inventory().can_retire());
+
+    let retired = support
+        .present_for_commit(&revision)
+        .err()
+        .expect("a retired revision is refused");
+    assert_eq!(
+        retired.kind(),
+        WorthQueryApplicationCommitDenialKind::ProgramNotActiveOnOccurrence
+    );
+    assert!(support.retain_interpretation(&revision).is_none());
+    assert!(matches!(
+        support.lifecycle().begin_retirement(&revision),
+        Err(WorthQueryProgramSupportRetirementDenial::AlreadyRetired { .. })
+    ));
 }

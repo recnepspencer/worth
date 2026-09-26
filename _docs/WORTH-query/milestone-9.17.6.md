@@ -1146,6 +1146,9 @@ cancellation, close and retirement across every new state. Finish public codecs,
 discovery, authoring/control-flow examples and real product adapters. Ordinary
 product edits and performed-output actions on an adopted branch execute under that
 branch's selected program, and a target that is no longer current is a typed denial.
+The commit receipt Bank hands its callers is ordinary only once slice 5.6 lands:
+until the Bank adapter replaces it, the public `application_program()` accessor
+exposes the program runtime, which can redeem a receipt for recovery authority.
 
 The proprietary slice closes observation, cancellation, retention, resource
 exhaustion, cold reconstruction, command/action exposure and operator diagnostics
@@ -1179,17 +1182,23 @@ lane uses the selected lanes. The House journey `adopted_branch_edits` proves pl
 required-output and discovered-output edits under P1, the typed refusal of the P0
 lanes on that branch, and a sibling still editing under P0. The consumer journey
 proves a foreign runtime and an undeclared root are refused before publication
-without claiming their keys.
+without claiming their keys. The selected owner's own `owns_output_root` and
+`owns_output_source` refusal is argued, not tested: reaching it needs a branch whose
+adopted program drops a root the host still declares, and adopting such a successor
+needs a migration, which may not remove a produced output.
 
 Status: `boundary-check` enforces the import law as a configured source-owner
 isolation in `road1.toml`. `managed_run` and `conditional_operation` may not name a
 path through `primary_graph::workflow`, whether written as a `crate::` path or
 resolved from `self::`, `super::` or an inline module. They also may not name any
 type, visible function, constant, static or exported macro that the workflow kernel
-declares, nor call a visible method the kernel adds to a type declared elsewhere, so
-a re-export through a parent facade is caught too. Test-only kernel items bind
-nothing. A kernel value glob-imported through a facade and then used by bare name
-is not traced; no guarded file can do this while the kernel re-exports nothing.
+or a workflow application lane (`application_attempt/workflow_*`) declares, nor call
+a visible method either adds to a type declared elsewhere, so a re-export through a
+parent facade is caught too. A value restricted to a module binds only guarded code
+inside that module. Test-only items, and every file of a `#[cfg(test)]` module,
+bind nothing; a file's name alone never makes it a test. Bare names are not traced,
+so a crate-relative glob import may not reach outside the guarded roots, where a
+facade could re-export kernel values.
 
 ## Acceptance, Cost And Review
 

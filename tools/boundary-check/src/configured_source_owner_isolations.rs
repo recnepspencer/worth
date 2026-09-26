@@ -5,7 +5,9 @@
 //! way around the law. Relative paths resolve against the guarded file's own
 //! module, so `super::workflow` from a sibling is the same reach as
 //! `crate::primary_graph::workflow`. Methods the owner adds to types it does
-//! not own count as its items too, whether called or named by path.
+//! not own count as its items too, whether called or named by path. A glob
+//! import may not reach outside the guarded roots, since a bare name it brings
+//! in is not traced back to the owner.
 
 use std::{collections::BTreeSet, fs, path::Path};
 
@@ -16,7 +18,7 @@ use crate::diagnostics::{Diagnostic, DiagnosticCode};
 
 mod owned_items;
 
-use owned_items::{is_test_source, OwnedItemCollector, OwnedItems};
+use owned_items::{is_test_source, test_module_roots, OwnedItemCollector, OwnedItems};
 
 pub(crate) fn validate_source_owner_isolations(
     workspace: &Path,
@@ -27,18 +29,23 @@ pub(crate) fn validate_source_owner_isolations(
         let mut owned = OwnedItems::default();
         let mut declared = BTreeSet::new();
         let mut methods = Vec::new();
+        let mut parsed = Vec::new();
         for (path, source) in rust_sources(workspace, &rule.owner_roots, &mut diagnostics) {
-            if is_test_source(&path) {
-                continue;
-            }
             match syn::parse_file(&source) {
-                Ok(file) => OwnedItemCollector {
+                Ok(file) => parsed.push((path, file)),
+                Err(_) => diagnostics.push(unparsable(&path)),
+            }
+        }
+        let tests = test_module_roots(&parsed);
+        for (path, file) in &parsed {
+            if !is_test_source(path, &tests) {
+                OwnedItemCollector {
                     owned: &mut owned,
                     declared: &mut declared,
                     methods: &mut methods,
+                    module: module_path(path),
                 }
-                .visit_file(&file),
-                Err(_) => diagnostics.push(unparsable(&path)),
+                .visit_file(file);
             }
         }
         owned.add_foreign_type_methods(methods, &declared);
@@ -62,6 +69,11 @@ fn diagnostics_for_source(
         owned,
         forbidden_paths: &rule.forbidden_paths,
         module: module_path(path),
+        guarded: rule
+            .guarded_roots
+            .iter()
+            .map(|root| module_path(root))
+            .collect(),
         found: BTreeSet::new(),
     };
     visitor.visit_file(&file);
@@ -160,6 +172,8 @@ struct IsolationVisitor<'a> {
     owned: &'a OwnedItems,
     forbidden_paths: &'a [Vec<String>],
     module: Vec<String>,
+    /// The modules the guarded roots declare.
+    guarded: Vec<Vec<String>>,
     found: BTreeSet<String>,
 }
 
@@ -177,7 +191,7 @@ impl IsolationVisitor<'_> {
             }
         }
         if let (true, Some(last)) = (segments.len() > 1, segments.last()) {
-            if self.owned.values.contains(last) || self.owned.methods.contains(last) {
+            if self.owned.reaches_value(last, &self.module) || self.owned.methods.contains(last) {
                 self.found.insert(last.clone());
             }
         }
@@ -225,12 +239,33 @@ impl IsolationVisitor<'_> {
             }
             syn::UseTree::Name(name) => self.check_leaf(prefix, &name.ident),
             syn::UseTree::Rename(rename) => self.check_leaf(prefix, &rename.ident),
-            syn::UseTree::Glob(_) => self.check_segments(prefix),
+            syn::UseTree::Glob(_) => {
+                let reported = self.found.len();
+                self.check_segments(prefix);
+                if self.found.len() == reported {
+                    self.check_glob(prefix);
+                }
+            }
             syn::UseTree::Group(group) => {
                 for tree in &group.items {
                     self.visit_use_tree_segments(tree, prefix);
                 }
             }
+        }
+    }
+
+    /// A crate-relative glob import must stay inside a guarded root; a glob
+    /// from an enclosing facade could bring owner values in by bare name.
+    fn check_glob(&mut self, prefix: &[String]) {
+        if !matches!(
+            prefix.first().map(String::as_str),
+            Some("crate" | "self" | "super")
+        ) {
+            return;
+        }
+        let resolved = self.resolve(prefix);
+        if !self.guarded.iter().any(|root| resolved.starts_with(root)) {
+            self.found.insert(format!("{}::*", prefix.join("::")));
         }
     }
 

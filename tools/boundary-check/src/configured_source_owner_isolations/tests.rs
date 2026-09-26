@@ -23,6 +23,7 @@ fn owned() -> OwnedItems {
         ]
         .into(),
         methods: std::collections::BTreeSet::new(),
+        scoped_values: std::collections::BTreeMap::new(),
     }
 }
 
@@ -114,6 +115,7 @@ fn collected(owner_source: &str) -> OwnedItems {
         owned: &mut owned,
         declared: &mut declared,
         methods: &mut methods,
+        module: vec!["owner".into(), "lane".into()],
     }
     .visit_file(&syn::parse_file(owner_source).unwrap());
     owned.add_foreign_type_methods(methods, &declared);
@@ -162,6 +164,94 @@ fn test_only_owner_items_do_not_bind_guarded_code() {
     .is_empty());
 }
 
+/// A value visible only inside a module binds guarded code inside that
+/// module and nowhere else; a shared name elsewhere is a different item.
+#[test]
+fn a_restricted_owner_value_binds_only_inside_its_scope() {
+    let owned = collected(
+        "pub(super) fn prepare() {} pub(in crate::primary_graph) fn exact() {}          pub(crate) fn settle() {}",
+    );
+    let outside = "crate/src/managed_run/run.rs";
+    let inside = "crate/src/primary_graph/conditional_operation.rs";
+    let source = "fn f() { Pending::prepare(); MappingSelector::exact(); Run::settle(); }";
+    let reached = |path| {
+        diagnostics_for_source(path, source, &owned, &rule())
+            .into_iter()
+            .map(|diagnostic| diagnostic.message().to_owned())
+            .collect::<Vec<_>>()
+    };
+    let found = reached(outside);
+    assert_eq!(found.len(), 1, "{found:?}");
+    assert!(found[0].contains("`settle`"), "{found:?}");
+    let found = reached(inside);
+    assert_eq!(found.len(), 2, "{found:?}");
+    assert!(
+        found.iter().any(|message| message.contains("`exact`")),
+        "{found:?}"
+    );
+    let owner = "crate/src/owner/sibling.rs";
+    assert!(reached(owner)
+        .iter()
+        .any(|message| message.contains("`prepare`")));
+}
+
+#[test]
+fn test_only_items_of_every_kind_bind_nothing() {
+    let owned = collected(
+        "#[cfg(test)] pub const SEED: u8 = 0; #[cfg(test)] pub static CELL: u8 = 0;          #[cfg(test)] pub trait Probe {} #[cfg(test)] pub type Alias = u8;          #[cfg(test)] #[macro_export] macro_rules! fixture { () => {} }",
+    );
+    assert!(
+        owned.types.is_empty() && owned.values.is_empty(),
+        "test-only items were collected"
+    );
+}
+
+/// Only a `#[cfg(test)]` module declaration exempts a file, however the file
+/// is named; production files named `tests.rs` still bind guarded code.
+#[test]
+fn a_cfg_test_module_declaration_exempts_its_files_and_nothing_else() {
+    let workspace =
+        std::env::temp_dir().join(format!("boundary-owner-tests-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&workspace);
+    for directory in [
+        "owner/state/tests",
+        "owner/audit",
+        "owner/progress",
+        "guarded",
+    ] {
+        std::fs::create_dir_all(workspace.join(directory)).unwrap();
+    }
+    for (file, source) in [
+        (
+            "owner/state.rs",
+            "#[cfg(test)] mod tests; #[cfg(test)] #[path = \"state/checks.rs\"] mod checks;              mod audit_hook; pub struct Kernel;",
+        ),
+        ("owner/state/tests.rs", "pub struct Harness;"),
+        ("owner/state/tests/nested.rs", "pub struct NestedHarness;"),
+        ("owner/state/checks.rs", "pub struct Checks;"),
+        ("owner/audit.rs", "pub mod tests;"),
+        ("owner/audit/tests.rs", "pub struct AuditRecord;"),
+        ("owner/progress.rs", "#[cfg(test)] mod scaling;"),
+        ("owner/progress/scaling.rs", "pub struct ScalingFixture;"),
+        (
+            "guarded/run.rs",
+            "fn f(_: Kernel, _: Harness, _: NestedHarness, _: Checks,                  _: AuditRecord, _: ScalingFixture) {}",
+        ),
+    ] {
+        std::fs::write(workspace.join(file), source).unwrap();
+    }
+    let found = validate_source_owner_isolations(&workspace, &[rule()]);
+    std::fs::remove_dir_all(&workspace).unwrap();
+    let messages = found.iter().map(|d| d.message()).collect::<Vec<_>>();
+    assert_eq!(found.len(), 2, "{messages:?}");
+    for reached in ["`Kernel`", "`AuditRecord`"] {
+        assert!(
+            messages.iter().any(|m| m.contains(reached)),
+            "{reached}: {messages:?}"
+        );
+    }
+}
+
 #[test]
 fn a_relative_path_inside_an_inline_module_resolves_against_that_module() {
     let sibling = "crate/src/primary_graph/conditional_operation.rs";
@@ -174,12 +264,31 @@ fn a_relative_path_inside_an_inline_module_resolves_against_that_module() {
     assert!(findings_at(sibling, "mod workflow { } use self::workflow::Local;").is_empty());
 }
 
-/// Accepted limitation: a glob import from a module that re-exports an owner
-/// value, then a bare call, is not traced. No guarded file can do this while
-/// the kernel module stays private and re-exports nothing.
+/// A bare name is not traced to the owner, so a glob import may not reach
+/// outside the guarded roots, where a facade could re-export owner values.
 #[test]
-fn a_glob_imported_value_used_by_bare_name_is_not_traced() {
-    assert!(findings("use crate::facade::*; fn f() { advance_workflow_instance(); }").is_empty());
+fn a_glob_import_from_outside_the_guarded_roots_is_refused() {
+    for (source, reach) in [
+        ("use crate::facade::*;", "crate::facade::*"),
+        ("use super::super::*;", "super::super::*"),
+        (
+            "mod inner { use crate::{guarded::run, facade::*}; }",
+            "crate::facade::*",
+        ),
+    ] {
+        let found = findings(source);
+        assert_eq!(found.len(), 1, "{source}: {found:?}");
+        assert!(found[0].contains(&format!("`{reach}`")), "{found:?}");
+    }
+    for legal in [
+        "use super::*;",
+        "use self::local::*;",
+        "use crate::guarded::support::*;",
+        "use worth_foundational::facade::*;",
+        "mod tests { use super::*; }",
+    ] {
+        assert!(findings(legal).is_empty(), "{legal}");
+    }
 }
 
 #[test]
@@ -237,4 +346,32 @@ fn road1_isolates_managed_run_and_conditional_operation_from_the_workflow_kernel
     ] {
         assert!(rule.guarded_roots.iter().any(|root| root == guarded), "{guarded}");
     }
+    let lanes = "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt";
+    for lane in [
+        "workflow_definition_program",
+        "workflow_instance_observation",
+        "workflow_instance_program",
+        "workflow_proposal_program",
+        "workflow_transition_program",
+    ] {
+        for owned in [format!("{lanes}/{lane}"), format!("{lanes}/{lane}.rs")] {
+            assert!(rule.owner_roots.contains(&owned), "{owned} is not isolated");
+        }
+    }
+}
+
+/// A workflow application lane is part of the isolated owner: guarded code
+/// naming a lane's outcome type is refused like a kernel item.
+#[test]
+fn guarded_code_naming_a_workflow_lane_item_is_refused() {
+    let owned = collected("pub enum WorkflowInstanceStartOutcome { Started }");
+    let found = findings_against(
+        &owned,
+        "fn settle(outcome: crate::primary_graph::WorkflowInstanceStartOutcome) {}",
+    );
+    assert_eq!(found.len(), 1, "{found:?}");
+    assert!(
+        found[0].contains("`WorkflowInstanceStartOutcome`"),
+        "{found:?}"
+    );
 }
