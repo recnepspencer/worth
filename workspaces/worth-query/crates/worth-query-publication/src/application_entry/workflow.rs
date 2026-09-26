@@ -21,6 +21,9 @@ pub use definition::{
     WorthQueryWorkflowDefinitionPublicationPreparationDenial,
     WorthQueryWorkflowDefinitionPublicationPreparationDenialKind,
     WorthQueryWorkflowDefinitionPublicationRequest,
+    WorthQueryWorkflowDefinitionRetirementPreparationDenial,
+    WorthQueryWorkflowDefinitionRetirementPreparationDenialKind,
+    WorthQueryWorkflowDefinitionRetirementRequest,
 };
 pub use instance::{
     WorthQueryWorkflowInstanceStartPreparationDenial,
@@ -61,6 +64,9 @@ pub use worth_query_execution::facade::workflow_definition_publication::{
     PublishedWorkflowDefinitionRef, WorkflowDefinitionBindingDenial,
     WorkflowDefinitionExpectedPredecessor, WorkflowDefinitionPreparationDenial,
     WorkflowDefinitionPublicationOutcome,
+};
+pub use worth_query_execution::facade::workflow_definition_retirement::{
+    PerformedWorkflowDefinitionRetirement, WorkflowDefinitionRetirementOutcome,
 };
 pub use worth_query_execution::facade::workflow_instance_start::{
     PerformedWorkflowInstanceStart, PublishedWorkflowInstanceRef, WorkflowInstanceBindingDenial,

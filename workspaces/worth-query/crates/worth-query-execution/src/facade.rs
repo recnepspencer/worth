@@ -84,6 +84,16 @@ pub mod workflow_definition_publication {
 
 /// Internal bridge used only by the Publication application-entry owner.
 #[doc(hidden)]
+pub mod workflow_definition_retirement {
+    pub use crate::domain_computation::primary_graph::{
+        PerformedWorkflowDefinitionRetirement, PreparedWorkflowDefinitionRetirement,
+        PublishedWorkflowDefinitionRef, WorkflowDefinitionPreparationDenial,
+        WorkflowDefinitionRetirementOutcome, WorthQueryWorkflowDefinitionRetirementAdapter,
+    };
+}
+
+/// Internal bridge used only by the Publication application-entry owner.
+#[doc(hidden)]
 pub mod workflow_instance_start {
     pub use crate::domain_computation::primary_graph::{
         PerformedWorkflowInstanceStart, PreparedWorkflowInstanceStart,

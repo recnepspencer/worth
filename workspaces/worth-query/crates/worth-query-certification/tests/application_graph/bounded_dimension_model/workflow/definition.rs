@@ -2,10 +2,11 @@ use worth_query_host::facade::{
     application_entry::{
         PublishedWorkflowDefinitionRef, PublishedWorkflowProposalRef, RequiredWorkflowApproval,
         WorkflowApprovalDecision, WorkflowDefinitionExpectedPredecessor,
-        WorkflowDefinitionPublicationOutcome, WorkflowInstanceStartOutcome,
-        WorkflowProgressOutcome, WorkflowProposalOutcome, WorthQueryApplicationRequestExt,
-        WorthQueryWorkflowAdvancePreparationDenial,
+        WorkflowDefinitionPublicationOutcome, WorkflowDefinitionRetirementOutcome,
+        WorkflowInstanceStartOutcome, WorkflowProgressOutcome, WorkflowProposalOutcome,
+        WorthQueryApplicationRequestExt, WorthQueryWorkflowAdvancePreparationDenial,
         WorthQueryWorkflowDefinitionPublicationPreparationDenial,
+        WorthQueryWorkflowDefinitionRetirementPreparationDenial,
         WorthQueryWorkflowInstanceStartPreparationDenial,
         WorthQueryWorkflowProposalPreparationDenial,
     },
@@ -317,16 +318,41 @@ pub fn publish_definition(
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
     runtime
         .request(&principal, &scope)
-        .mutate(WorkflowDefinitionAuthoringIntent {
-            input: WorkflowDefinitionAuthoringInput {
-                identity: PART_IDENTITY.to_owned(),
-                dimension: 8,
-            },
-        })
+        .mutate(authoring_intent())
         .without_source()
         .idempotency(&idempotency)
         .prepare_workflow_publication(contract, expected_predecessor)
         .map(|request| request.execute())
+}
+
+pub fn retire_definition(
+    application: &BoundedDimensionWorkflowRuntime,
+    definition: PublishedWorkflowDefinitionRef,
+    idempotency: u64,
+) -> Result<
+    WorkflowDefinitionRetirementOutcome,
+    WorthQueryWorkflowDefinitionRetirementPreparationDenial,
+> {
+    let runtime = application.runtime();
+    let scope = request_scope();
+    let principal = authenticate_operator(runtime.installed_schema(), &scope);
+    runtime
+        .request(&principal, &scope)
+        .mutate(authoring_intent())
+        .without_source()
+        .idempotency(&idempotency)
+        .prepare_workflow_definition_retirement(application, definition)
+        .map(|request| request.execute())
+}
+
+/// The authoring request every definition publication and retirement presents.
+pub fn authoring_intent() -> WorkflowDefinitionAuthoringIntent {
+    WorkflowDefinitionAuthoringIntent {
+        input: WorkflowDefinitionAuthoringInput {
+            identity: PART_IDENTITY.to_owned(),
+            dimension: 8,
+        },
+    }
 }
 
 pub(crate) fn definition_limits() -> ApplicationWorkflowDefinitionLimits {

@@ -1,13 +1,17 @@
 use super::{
     assessment_evidence_integrity, connection_endpoint_integrity, current_definition_integrity,
-    owned_fact_integrity, workflow_proposal_integrity,
+    definition_start_integrity, owned_fact_integrity, workflow_proposal_integrity,
 };
 
 #[test]
 fn workflow_relation_roles_have_distinct_exact_cardinality() {
     let current = current_definition_integrity().cardinality;
-    assert_eq!((current.source_min, current.source_max), (Some(1), Some(1)));
+    assert_eq!((current.source_min, current.source_max), (None, Some(1)));
     assert_eq!(current.target_max, Some(1));
+
+    let start = definition_start_integrity().cardinality;
+    assert_eq!((start.source_min, start.source_max), (Some(1), Some(1)));
+    assert_eq!(start.target_max, Some(1));
 
     let owned = owned_fact_integrity().cardinality;
     assert_eq!((owned.target_min, owned.target_max), (Some(1), Some(1)));

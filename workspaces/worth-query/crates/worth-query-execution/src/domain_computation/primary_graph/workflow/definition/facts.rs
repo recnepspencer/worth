@@ -22,9 +22,10 @@ use encoding::*;
 #[derive(Clone, Copy)]
 pub(in crate::domain_computation::primary_graph) enum WorkflowLineagePublicationTarget {
     New,
+    /// A retired lineage reopens with no current relation to replace.
     Existing {
         lineage: EntityId,
-        current_relation: RelationId,
+        current_relation: Option<RelationId>,
     },
 }
 
@@ -242,9 +243,9 @@ fn stage_lineage<Spec: ApplicationWorkflowSpec, Error>(
             lineage,
             current_relation,
         } => {
-            emit(WorthQueryApplicationRealizedEffect::DeleteRelation {
-                relation_id: current_relation,
-            })?;
+            if let Some(relation_id) = current_relation {
+                emit(WorthQueryApplicationRealizedEffect::DeleteRelation { relation_id })?;
+            }
             Ok(WorkflowDefinitionPublicationContext {
                 lineage: EntityReference::Existing(lineage),
                 creation_partition: WorthQueryApplicationCreationPartition::Context(

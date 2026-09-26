@@ -26,8 +26,9 @@ use evidence_dependency::lower_evidence_dependency;
 use proposal::lower_proposal;
 use proposal_coverage::lower_proposal_coverage;
 use relations::{
-    allocate_kinds, connection_endpoint_integrity, current_definition_integrity, lower_connection,
-    lower_definition, lower_instance, lower_lineage, lower_node, owned_fact_integrity,
+    allocate_kinds, connection_endpoint_integrity, current_definition_integrity,
+    definition_start_integrity, lower_connection, lower_definition, lower_instance, lower_lineage,
+    lower_node, owned_fact_integrity,
 };
 use transition::lower_transition;
 
@@ -186,7 +187,7 @@ pub(in crate::domain_computation::primary_graph) fn lower_workflow(
             "worth-query-workflow-definition-start",
             kinds[1],
             kinds[2],
-            current_definition_integrity(),
+            definition_start_integrity(),
         ),
     ];
     for (offset, (name, from, to, integrity)) in relations.into_iter().enumerate() {

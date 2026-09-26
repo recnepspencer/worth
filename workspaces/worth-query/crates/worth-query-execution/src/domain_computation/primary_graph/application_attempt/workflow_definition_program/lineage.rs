@@ -11,7 +11,7 @@ use crate::domain_computation::primary_graph::workflow::definition::WorkflowLine
 use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout;
 
 const LINEAGE_LOOKUP_LIMIT: usize = 2;
-const CURRENT_DEFINITION_WORK_LIMIT: usize = 2;
+pub(super) const CURRENT_DEFINITION_WORK_LIMIT: usize = 2;
 
 pub(super) struct SelectedLineage {
     pub(super) target: WorkflowLineagePublicationTarget,
@@ -65,24 +65,13 @@ pub(super) fn select_lineage<Spec: ApplicationWorkflowSpec>(
         });
     };
 
-    facts.push(exact_field_fact(
+    let spec_identity = Spec::IDENTITY;
+    facts.extend(lineage_identity_facts(
         runtime,
         snapshot,
+        layout,
         lineage,
-        layout.lineage.entity_kind,
-        layout.lineage.spec.clone(),
-        text(Spec::IDENTITY.as_str()),
-        definition.identity().as_str(),
-    )?);
-    facts.push(exact_field_fact(
-        runtime,
-        snapshot,
-        lineage,
-        layout.lineage.entity_kind,
-        layout.lineage.protocol_version.clone(),
-        AspectValue::UInt64(
-            crate::domain_computation::primary_graph::workflow::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION,
-        ),
+        spec_identity.as_str(),
         definition.identity().as_str(),
     )?);
     let relations = observe_adjacency(
@@ -94,10 +83,13 @@ pub(super) fn select_lineage<Spec: ApplicationWorkflowSpec>(
         CURRENT_DEFINITION_WORK_LIMIT,
     )
     .ok_or_else(|| lineage_denial(definition.identity().as_str()))?;
-    let [current] = relations.as_slice() else {
-        return Err(lineage_denial(definition.identity().as_str()));
+    // A retired lineage has no current relation. The predecessor fact decides
+    // whether that absence is the author's expectation or a stale revision.
+    let current = match relations.as_slice() {
+        [] => None,
+        [current] => Some(*current),
+        _ => return Err(lineage_denial(definition.identity().as_str())),
     };
-    let current = *current;
     facts.push(
         WorthQueryApplicationObservedFact::WorkflowDefinitionPredecessor {
             relation_kind: layout.current_definition_relation,
@@ -106,11 +98,14 @@ pub(super) fn select_lineage<Spec: ApplicationWorkflowSpec>(
             maximum_work_units: CURRENT_DEFINITION_WORK_LIMIT,
         },
     );
-    let current_definition = WorthQueryApplicationObservedFact::Entity {
+    let current_definition = current.map(|current| WorthQueryApplicationObservedFact::Entity {
         entity_id: current.to,
         kind: layout.definition.entity_kind,
-    };
-    if !current_definition.remains_equal_in(runtime, snapshot) {
+    });
+    if current_definition
+        .as_ref()
+        .is_some_and(|fact| !fact.remains_equal_in(runtime, snapshot))
+    {
         return Err(lineage_denial(definition.identity().as_str()));
     }
     facts.push(WorthQueryApplicationObservedFact::Adjacency {
@@ -120,14 +115,48 @@ pub(super) fn select_lineage<Spec: ApplicationWorkflowSpec>(
         maximum_work_units: CURRENT_DEFINITION_WORK_LIMIT,
         relations,
     });
-    facts.push(current_definition);
+    facts.extend(current_definition);
     Ok(SelectedLineage {
         target: WorkflowLineagePublicationTarget::Existing {
             lineage,
-            current_relation: current.relation_id,
+            current_relation: current.map(|current| current.relation_id),
         },
         facts,
     })
+}
+
+/// The lineage's spec and fact-protocol fields, exactly as publication wrote
+/// them. Every lineage reader pins both before trusting its relations.
+pub(super) fn lineage_identity_facts(
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    layout: &WorthQueryWorkflowLayout,
+    lineage: worth_relational::facade::identity::EntityId,
+    spec_identity: &str,
+    subject: &str,
+) -> Result<[WorthQueryApplicationObservedFact; 2], WorthQueryApplicationAttemptDenial> {
+    Ok([
+        exact_field_fact(
+            runtime,
+            snapshot,
+            lineage,
+            layout.lineage.entity_kind,
+            layout.lineage.spec.clone(),
+            text(spec_identity),
+            subject,
+        )?,
+        exact_field_fact(
+            runtime,
+            snapshot,
+            lineage,
+            layout.lineage.entity_kind,
+            layout.lineage.protocol_version.clone(),
+            AspectValue::UInt64(
+                crate::domain_computation::primary_graph::workflow::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION,
+            ),
+            subject,
+        )?,
+    ])
 }
 
 fn exact_field_fact(
@@ -153,13 +182,13 @@ fn exact_field_fact(
     })
 }
 
-fn lineage_denial(subject: &str) -> WorthQueryApplicationAttemptDenial {
+pub(super) fn lineage_denial(subject: &str) -> WorthQueryApplicationAttemptDenial {
     WorthQueryApplicationAttemptDenial::new(
         WorthQueryApplicationAttemptDenialKind::WorkflowLineageUnavailable,
         subject,
     )
 }
 
-fn text(value: impl Into<String>) -> AspectValue {
+pub(super) fn text(value: impl Into<String>) -> AspectValue {
     AspectValue::String(InternedString::Raw(value.into()))
 }

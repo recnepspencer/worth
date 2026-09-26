@@ -47,5 +47,7 @@ mod workflow_progress_retention;
 mod workflow_proposal;
 #[path = "application_graph/workflow_receipt_lifecycle.rs"]
 mod workflow_receipt_lifecycle;
+#[path = "application_graph/workflow_retirement.rs"]
+mod workflow_retirement;
 #[path = "application_graph/workflow_retry.rs"]
 mod workflow_retry;

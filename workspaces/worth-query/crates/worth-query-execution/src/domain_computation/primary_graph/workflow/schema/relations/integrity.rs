@@ -15,7 +15,23 @@ pub(in crate::domain_computation::primary_graph::workflow::schema) fn live_membe
     ))
 }
 
+/// A lineage has at most one current definition. Retirement leaves it with
+/// none, which denies new starts until the lineage is explicitly reopened.
 pub(in crate::domain_computation::primary_graph::workflow::schema) fn current_definition_integrity(
+) -> ApplicationRelationIntegrity {
+    integrity(ApplicationRelationCardinality::new(
+        None,
+        Some(1),
+        None,
+        Some(1),
+        None,
+        Some(1),
+    ))
+}
+
+/// Every definition names exactly one start node, and a node starts at most
+/// one definition.
+pub(in crate::domain_computation::primary_graph::workflow::schema) fn definition_start_integrity(
 ) -> ApplicationRelationIntegrity {
     integrity(ApplicationRelationCardinality::new(
         Some(1),

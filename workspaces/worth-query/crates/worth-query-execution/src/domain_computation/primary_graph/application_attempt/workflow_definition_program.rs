@@ -19,12 +19,17 @@ use crate::domain_computation::primary_graph::workflow::definition::{
 mod intent_identity;
 mod lineage;
 mod publication;
+mod retirement;
 
 use lineage::select_lineage;
 pub use publication::{
     PerformedWorkflowDefinitionPublication, PreparedWorkflowDefinitionPublication,
     PublishedWorkflowDefinitionRef, WorkflowDefinitionExpectedPredecessor,
     WorkflowDefinitionPublicationOutcome,
+};
+pub use retirement::{
+    PerformedWorkflowDefinitionRetirement, PreparedWorkflowDefinitionRetirement,
+    WorkflowDefinitionRetirementOutcome,
 };
 
 impl<Schema, Operation, Input, Scope>

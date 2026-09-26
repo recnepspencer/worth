@@ -20,6 +20,6 @@ pub(in crate::domain_computation::primary_graph) use assessment::{
 
 pub use definition::{
     WorkflowDefinitionBindingDenial, WorkflowDefinitionPreparationDenial,
-    WorthQueryWorkflowDefinitionPublicationAdapter,
+    WorthQueryWorkflowDefinitionPublicationAdapter, WorthQueryWorkflowDefinitionRetirementAdapter,
 };
 pub use instance::WorthQueryWorkflowInstanceProgressCounters;

@@ -144,9 +144,10 @@ pub use read_set::{
 };
 pub use retained_commit::WorthQueryApplicationRetainedCommitOutcome;
 pub use workflow_definition_program::{
-    PerformedWorkflowDefinitionPublication, PreparedWorkflowDefinitionPublication,
+    PerformedWorkflowDefinitionPublication, PerformedWorkflowDefinitionRetirement,
+    PreparedWorkflowDefinitionPublication, PreparedWorkflowDefinitionRetirement,
     PublishedWorkflowDefinitionRef, WorkflowDefinitionExpectedPredecessor,
-    WorkflowDefinitionPublicationOutcome,
+    WorkflowDefinitionPublicationOutcome, WorkflowDefinitionRetirementOutcome,
 };
 pub use workflow_instance_program::{
     PerformedWorkflowInstanceStart, PreparedWorkflowInstanceStart, PublishedWorkflowInstanceRef,

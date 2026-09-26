@@ -16,7 +16,7 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationR
 /// definition contract. Callers cannot provide lineage IDs, current-pointer
 /// relation IDs, effects, or branch affinity.
 ///
-/// ```compile_fail
+/// ```compile_fail,E0451
 /// use worth_query_execution::facade::workflow_definition_publication::PreparedWorkflowDefinitionPublication;
 ///
 /// fn cannot_forge<Schema, Operation, Input, Scope>()
@@ -24,7 +24,10 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationR
 /// {
 ///     PreparedWorkflowDefinitionPublication {
 ///         program: unsafe { std::mem::zeroed() },
+///         program_revision: unsafe { std::mem::zeroed() },
 ///         content_identity: unsafe { std::mem::zeroed() },
+///         content_identity_locator: unsafe { std::mem::zeroed() },
+///         workflow_intent_identity: [0; 32],
 ///     }
 /// }
 /// ```
