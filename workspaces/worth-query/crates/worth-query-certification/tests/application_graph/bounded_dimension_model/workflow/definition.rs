@@ -38,9 +38,9 @@ pub use authoring::{authoring_intent, publish_definition, retire_definition};
 #[path = "definition/instance.rs"]
 mod instance;
 pub use instance::{
-    advance_instance, approve_instance, continue_on_fork, migrate_instance,
-    propose_authoring_instance, propose_authoring_instance_with_dimension, propose_instance,
-    propose_instance_on_branch, start_instance,
+    advance_instance, approve_instance, cancel_instance, continue_on_fork, migrate_instance,
+    prepare_cancellation, propose_authoring_instance, propose_authoring_instance_with_dimension,
+    propose_instance, propose_instance_on_branch, start_instance,
 };
 
 pub fn reviewed_geometry_definition(

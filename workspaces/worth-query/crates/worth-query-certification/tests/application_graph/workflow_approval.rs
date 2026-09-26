@@ -44,6 +44,8 @@ mod custody;
 mod effect_currentness;
 #[path = "workflow_approval/fork_continuation.rs"]
 mod fork_continuation;
+#[path = "workflow_approval/instance_cancellation.rs"]
+mod instance_cancellation;
 #[path = "workflow_approval/instance_migration.rs"]
 mod instance_migration;
 #[path = "workflow_approval/instance_migration_law.rs"]

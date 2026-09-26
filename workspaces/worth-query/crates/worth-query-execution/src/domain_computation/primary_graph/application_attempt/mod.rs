@@ -150,9 +150,11 @@ pub use workflow_definition_program::{
     WorkflowDefinitionPublicationOutcome, WorkflowDefinitionRetirementOutcome,
 };
 pub use workflow_instance_program::{
-    PerformedWorkflowInstanceStart, PreparedWorkflowInstanceStart, PublishedWorkflowInstanceRef,
-    WorkflowInstanceBindingDenial, WorkflowInstancePreparationDenial, WorkflowInstanceStartOutcome,
-    WorthQueryWorkflowInstanceStartAdapter,
+    PerformedWorkflowInstanceCancellation, PerformedWorkflowInstanceStart,
+    PreparedWorkflowInstanceCancellation, PreparedWorkflowInstanceStart,
+    PublishedWorkflowInstanceRef, WorkflowInstanceBindingDenial,
+    WorkflowInstanceCancellationOutcome, WorkflowInstancePreparationDenial,
+    WorkflowInstanceStartOutcome, WorthQueryWorkflowInstanceStartAdapter,
 };
 pub use workflow_proposal_program::{
     PerformedWorkflowProposal, PreparedWorkflowProposal, PublishedWorkflowProposalRef,

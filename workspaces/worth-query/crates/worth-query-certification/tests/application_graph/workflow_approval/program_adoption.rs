@@ -3,8 +3,9 @@
 //! approval whose guarded operation has not run blocks the move entirely.
 
 use worth_query_host::facade::application_entry::{
-    WorkflowProposalPreparationDenial, WorthQueryApplicationProgramAdoptionPreparationDenial,
-    WorthQueryWorkflowProposalPreparationDenial,
+    WorkflowInstancePreparationDenial, WorkflowProposalPreparationDenial,
+    WorthQueryApplicationProgramAdoptionPreparationDenial,
+    WorthQueryWorkflowInstanceStartPreparationDenial, WorthQueryWorkflowProposalPreparationDenial,
 };
 use worth_query_host::facade::primary_graph::{
     WorthQueryBranchAdoptionPreparationDenial, WorthQueryWorkflowAdoptionInventory,
@@ -15,9 +16,9 @@ use worth_query_host::facade::primary_graph::{
 use super::super::bounded_dimension_model::{
     programs::DimensionProgramP1,
     workflow::{
-        advance_on_second, approve_on_second, prepare_second_program_adoption, propose_on_second,
-        publish_adoption, recollect_on_second, second_program_workflow_inventory,
-        support_workflow_program,
+        advance_on_second, approve_on_second, cancel_on_second, prepare_second_program_adoption,
+        propose_on_second, publish_adoption, recollect_on_second,
+        second_program_workflow_inventory, support_workflow_program,
     },
 };
 use super::fork_continuation::fork_of;
@@ -236,7 +237,7 @@ fn a_cancelled_instance_names_its_cancellation_to_every_request() {
     )
     .expect_err("a cancelled instance takes no decision");
     assert!(cancelled(&decision), "{decision:?}");
-    let proposal = propose_on_second(&application, instance, 86_212)
+    let proposal = propose_on_second(&application, instance.clone(), 86_212)
         .expect_err("a cancelled instance takes no proposal");
     assert!(
         matches!(
@@ -246,5 +247,16 @@ fn a_cancelled_instance_names_its_cancellation_to_every_request() {
             ) if attempt.kind() == WorthQueryApplicationAttemptDenialKind::WorkflowInstanceCancelled
         ),
         "{proposal:?}"
+    );
+    let cancellation = cancel_on_second(&application, instance, 86_213)
+        .expect_err("an instance adoption cancelled takes no cancellation");
+    assert!(
+        matches!(
+            &cancellation,
+            WorthQueryWorkflowInstanceStartPreparationDenial::InstancePreparation(
+                WorkflowInstancePreparationDenial::Attempt(attempt)
+            ) if attempt.kind() == WorthQueryApplicationAttemptDenialKind::WorkflowInstanceCancelled
+        ),
+        "{cancellation:?}"
     );
 }

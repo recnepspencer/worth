@@ -8,8 +8,9 @@ use worth_query_installation::facade::{
 };
 
 use super::{
-    PreparedWorkflowInstanceStart, PublishedWorkflowDefinitionRef, PublishedWorkflowInstanceRef,
-    WorkflowInstanceStartOutcome,
+    PreparedWorkflowInstanceCancellation, PreparedWorkflowInstanceStart,
+    PublishedWorkflowDefinitionRef, PublishedWorkflowInstanceRef,
+    WorkflowInstanceCancellationOutcome, WorkflowInstanceStartOutcome,
 };
 use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryCompleteApplicationReadSet, WorthQueryProjectedApplicationMutation,
@@ -117,6 +118,37 @@ where
                 target,
                 resume_at,
                 start_key_identity,
+            )
+            .map_err(WorkflowInstancePreparationDenial::Attempt)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn prepare_workflow_instance_cancellation<
+        Capability,
+        Operation,
+        Input,
+        Scope,
+        Spec,
+        Program,
+    >(
+        &self,
+        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+        instance: PublishedWorkflowInstanceRef,
+        cancel_key_identity: [u8; 32],
+        admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+    ) -> Result<
+        PreparedWorkflowInstanceCancellation<Schema, Operation, Input, Scope>,
+        WorkflowInstancePreparationDenial,
+    >
+    where
+        Capability: ApplicationCapabilityMarkerIdentity<Schema = Schema> + 'static,
+        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
+        Spec: ApplicationWorkflowSpec<Schema = Schema>,
+    {
+        self.begin_instance_read_set(installed, admission)?
+            .materialize_workflow_instance_cancellation::<Capability, Spec, Program>(
+                installed,
+                instance,
+                cancel_key_identity,
             )
             .map_err(WorkflowInstancePreparationDenial::Attempt)
     }
@@ -275,6 +307,44 @@ impl WorthQueryWorkflowInstanceStartAdapter {
             start_key_identity,
             admission,
         )
+    }
+
+    /// Prepares the cancellation of `instance` on the selected branch.
+    pub fn prepare_cancellation<Schema, Capability, Operation, Input, Scope, Spec, Program>(
+        selected: &WorthQuerySelectedProductOperation<'_, Schema>,
+        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+        instance: PublishedWorkflowInstanceRef,
+        cancel_key_identity: [u8; 32],
+        admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+    ) -> Result<
+        PreparedWorkflowInstanceCancellation<Schema, Operation, Input, Scope>,
+        WorkflowInstancePreparationDenial,
+    >
+    where
+        Schema: ApplicationSchema,
+        Capability: ApplicationCapabilityMarkerIdentity<Schema = Schema> + 'static,
+        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
+        Spec: ApplicationWorkflowSpec<Schema = Schema>,
+    {
+        selected.prepare_workflow_instance_cancellation::<Capability, Operation, Input, Scope, Spec, Program>(
+            installed,
+            instance,
+            cancel_key_identity,
+            admission,
+        )
+    }
+
+    pub fn compare_and_commit_cancellation<Schema, Operation, Input, Scope>(
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        prepared: PreparedWorkflowInstanceCancellation<Schema, Operation, Input, Scope>,
+        idempotency: WorthQueryApplicationIdempotencyBinding,
+    ) -> WorkflowInstanceCancellationOutcome
+    where
+        Schema: ApplicationSchema,
+        Operation: 'static,
+        Input: Clone + Send + Sync + 'static,
+    {
+        runtime.compare_and_commit_workflow_instance_cancellation(prepared, idempotency)
     }
 
     pub fn compare_and_commit<Schema, Operation, Input, Scope>(

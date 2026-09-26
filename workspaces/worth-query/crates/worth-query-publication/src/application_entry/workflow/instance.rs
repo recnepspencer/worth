@@ -17,6 +17,10 @@ use worth_query_execution::facade::{
 };
 use worth_query_installation::facade::ApplicationSchema;
 
+mod cancellation;
+
+pub use cancellation::WorthQueryWorkflowInstanceCancellationRequest;
+
 use crate::application_entry::{
     mutation::{authorization, WorthQueryApplicationMutationRequestWithIdempotency},
     WorthQueryApplicationRequestMutationDenial,
@@ -117,7 +121,7 @@ where
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
-        self.prepare_instance(workflow, |selected, installed, key, admission| {
+        self.prepare_start(workflow, |selected, installed, key, admission| {
             WorthQueryWorkflowInstanceStartAdapter::prepare::<
                 Schema,
                 <IntentBinding<Schema, Intent> as ApplicationCapabilityMutationBinding<Schema>>::Capability,
@@ -158,7 +162,7 @@ where
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
-        self.prepare_instance(workflow, |selected, installed, key, admission| {
+        self.prepare_start(workflow, |selected, installed, key, admission| {
             WorthQueryWorkflowInstanceStartAdapter::prepare_migration::<
                 Schema,
                 <IntentBinding<Schema, Intent> as ApplicationCapabilityMutationBinding<Schema>>::Capability,
@@ -200,7 +204,7 @@ where
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
-        self.prepare_instance(workflow, |selected, installed, key, admission| {
+        self.prepare_start(workflow, |selected, installed, key, admission| {
             WorthQueryWorkflowInstanceStartAdapter::prepare_fork_continuation::<
                 Schema,
                 <IntentBinding<Schema, Intent> as ApplicationCapabilityMutationBinding<Schema>>::Capability,
@@ -214,8 +218,8 @@ where
     }
 
     #[allow(clippy::type_complexity)]
-    fn prepare_instance<'workflow, Spec, Program: 'workflow>(
-        mut self,
+    fn prepare_start<'workflow, Spec, Program: 'workflow>(
+        self,
         workflow: impl Into<WorthQueryWorkflowVocabulary<'workflow, Schema, Spec, Program>>,
         prepare: impl FnOnce(
             &worth_query_execution::facade::primary_graph::WorthQuerySelectedProductOperation<
@@ -256,6 +260,49 @@ where
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
+        let (application, prepared, idempotency) = self.prepare_instance(workflow, prepare)?;
+        Ok(WorthQueryWorkflowInstanceStartRequest {
+            application,
+            prepared,
+            idempotency,
+        })
+    }
+
+    /// Admits the request on its selected branch and prepares one instance
+    /// lifecycle action with its key.
+    #[allow(clippy::type_complexity)]
+    fn prepare_instance<'workflow, Spec, Program: 'workflow, Prepared>(
+        mut self,
+        workflow: impl Into<WorthQueryWorkflowVocabulary<'workflow, Schema, Spec, Program>>,
+        prepare: impl FnOnce(
+            &worth_query_execution::facade::primary_graph::WorthQuerySelectedProductOperation<
+                '_,
+                Schema,
+            >,
+            &worth_query_installation::facade::WorthQueryInstalledApplicationWorkflowSpec<
+                Schema,
+                Spec,
+                Program,
+            >,
+            [u8; 32],
+            worth_query_execution::facade::primary_graph::WorthQueryAdmittedApplicationOperation<
+                Schema,
+                MutationOperation<Schema, Intent>,
+                MutationInput<Schema, Intent>,
+                MutationScope<Schema, IntentBinding<Schema, Intent>>,
+            >,
+        ) -> Result<Prepared, WorkflowInstancePreparationDenial>,
+    ) -> Result<
+        (
+            &'application worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+            Prepared,
+            worth_query_execution::facade::primary_graph::WorthQueryApplicationIdempotencyBinding,
+        ),
+        WorthQueryWorkflowInstanceStartPreparationDenial,
+    >
+    where
+        Spec: ApplicationWorkflowSpec<Schema = Schema>,
+    {
         let workflow = workflow.into();
         let application = self.application_runtime();
         if !std::ptr::eq(application, workflow.runtime()) {
@@ -275,11 +322,7 @@ where
             mutation.admission,
         )
         .map_err(WorthQueryWorkflowInstanceStartPreparationDenial::InstancePreparation)?;
-        Ok(WorthQueryWorkflowInstanceStartRequest {
-            application,
-            prepared,
-            idempotency: mutation.idempotency,
-        })
+        Ok((application, prepared, mutation.idempotency))
     }
 }
 

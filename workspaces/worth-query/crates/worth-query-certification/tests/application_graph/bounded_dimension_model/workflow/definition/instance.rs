@@ -193,3 +193,42 @@ pub fn continue_on_fork(
         .prepare_workflow_fork_continuation(application, instance, target, resume_at)
         .map(|request| request.execute())
 }
+
+/// Prepares the cancellation of `instance` on its own branch and returns its
+/// execution, so a test can race it against another commit.
+pub fn prepare_cancellation(
+    application: &BoundedDimensionWorkflowRuntime,
+    instance: worth_query_host::facade::application_entry::PublishedWorkflowInstanceRef,
+    idempotency: u64,
+) -> Result<
+    impl FnOnce() -> worth_query_host::facade::application_entry::WorkflowInstanceCancellationOutcome
+        + '_,
+    WorthQueryWorkflowInstanceStartPreparationDenial,
+> {
+    let runtime = application.runtime();
+    let scope = request_scope();
+    let principal = authenticate_operator(runtime.installed_schema(), &scope);
+    runtime
+        .request(&principal, &scope)
+        .on_branch(instance.branch())
+        .mutate(WorkflowInstanceStartIntent {
+            input: WorkflowInstanceStartInput {
+                part_identity: PART_IDENTITY.to_owned(),
+            },
+        })
+        .without_source()
+        .idempotency(&idempotency)
+        .prepare_workflow_instance_cancellation(application, instance)
+        .map(|request| move || request.execute())
+}
+
+pub fn cancel_instance(
+    application: &BoundedDimensionWorkflowRuntime,
+    instance: worth_query_host::facade::application_entry::PublishedWorkflowInstanceRef,
+    idempotency: u64,
+) -> Result<
+    worth_query_host::facade::application_entry::WorkflowInstanceCancellationOutcome,
+    WorthQueryWorkflowInstanceStartPreparationDenial,
+> {
+    prepare_cancellation(application, instance, idempotency).map(|execute| execute())
+}

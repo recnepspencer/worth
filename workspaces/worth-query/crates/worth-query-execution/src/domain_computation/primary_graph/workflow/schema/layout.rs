@@ -215,6 +215,9 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowInstanceLayout {
     pub(in crate::domain_computation::primary_graph) state: AspectFieldLocator,
     /// Where a migration successor began, when not at its definition's start.
     pub(in crate::domain_computation::primary_graph) resume_node_path: AspectFieldLocator,
+    /// The intent that explicitly cancelled the instance; absent when program
+    /// adoption cancelled it or it never ended by cancellation.
+    pub(in crate::domain_computation::primary_graph) cancellation_identity: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) identity_index_id: DerivedIndexId,
 }
 

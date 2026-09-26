@@ -1198,7 +1198,23 @@ parent facade is caught too. A value restricted to a module binds only guarded c
 inside that module. Test-only items, and every file of a `#[cfg(test)]` module,
 bind nothing; a file's name alone never makes it a test. Bare names are not traced,
 so a crate-relative glob import may not reach outside the guarded roots, where a
-facade could re-export kernel values.
+facade could re-export kernel values. A glob written through a local `use … as`
+alias is not yet resolved to its target; until it is, the law does not cover it.
+
+Status: an explicit cancellation ends a live instance where it stands, through
+`prepare_workflow_instance_cancellation` on the workflow entry, authorized by the
+start capability on the instance's own branch. It is not rollback. The instance
+records the cancelled state and this cancellation's identity and drops its live
+membership, and the outcome names every node whose effect it, or a source it was
+migrated from, performed; each remains performed. The same key replays its recorded
+outcome, including after the branch adopts a new program, and any other request for a
+cancelled instance is refused as cancelled. A completed instance has nothing left to
+cancel and is refused as completed. A step admitted before the cancellation goes
+stale before its effect; a cancellation prepared before an effect lands goes stale
+without claiming its key, and the same key then cancels afresh and reports that
+effect. Cancelling one instance leaves its siblings running. An instance that has
+used its whole retained-transition capacity cannot yet be cancelled; slice 5.3b closes
+that with its budgets.
 
 ## Acceptance, Cost And Review
 

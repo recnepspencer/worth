@@ -14,6 +14,7 @@ use crate::domain_computation::primary_graph::workflow::instance::{
 use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout;
 
 mod history;
+pub(super) use history::observe_ended_history;
 mod instance_binding;
 mod progression;
 mod settlement;

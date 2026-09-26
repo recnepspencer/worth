@@ -40,6 +40,31 @@ pub(super) fn migration_identity(
     identity(resumed, subject, start_key_identity, material)
 }
 
+/// A cancellation names the one instance it ends, on the branch whose copy
+/// it ends, so the same key never cancels two instances as one intent.
+pub(super) fn cancellation_identity(
+    instance: EntityId,
+    branch_occurrence: u64,
+    cancel_key_identity: [u8; 32],
+) -> Result<(String, [u8; 32]), ()> {
+    digest(vec![
+        (
+            "cancellation.instance.partition",
+            instance.partition_value().to_string(),
+        ),
+        (
+            "cancellation.instance.slot",
+            instance.local_slot_value().to_string(),
+        ),
+        (
+            "cancellation.instance.generation",
+            instance.generation_value().to_string(),
+        ),
+        ("cancellation.branch", branch_occurrence.to_string()),
+        ("cancellation.key", encode(cancel_key_identity)),
+    ])
+}
+
 fn identity(
     compiled: &CompiledWorkflowDefinition,
     subject: EntityId,
@@ -74,6 +99,10 @@ fn identity(
         ("start.key", encode(start_key_identity)),
     ];
     material.extend(migration);
+    digest(material)
+}
+
+fn digest(material: Vec<(&'static str, String)>) -> Result<(String, [u8; 32]), ()> {
     let material = canonical_operation_material(material);
     let identity: [u8; 32] = Sha256::digest(material.as_bytes()).into();
     let mut text = String::with_capacity(64);

@@ -21,6 +21,36 @@ pub(super) struct ObservedWorkflowHistory {
     pub(super) charge_bytes: usize,
 }
 
+/// The settled history of an instance that has already ended, read only to
+/// report what it performed. It admits no progression.
+pub(in crate::domain_computation::primary_graph::application_attempt) fn observe_ended_history(
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    layout: &WorthQueryWorkflowLayout,
+    instance: EntityId,
+    maximum_transitions: usize,
+    compiled: &CompiledWorkflowDefinition,
+    history_budget: WorthQueryWorkflowHistoryReconstructionBudget,
+) -> Result<
+    (
+        Vec<ObservedWorkflowTransition>,
+        Vec<WorthQueryApplicationObservedFact>,
+    ),
+    WorthQueryApplicationAttemptDenial,
+> {
+    let history = observe(
+        runtime,
+        snapshot,
+        layout,
+        instance,
+        false,
+        maximum_transitions,
+        compiled,
+        history_budget,
+    )?;
+    Ok((history.transitions, history.facts))
+}
+
 pub(super) fn observe(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,

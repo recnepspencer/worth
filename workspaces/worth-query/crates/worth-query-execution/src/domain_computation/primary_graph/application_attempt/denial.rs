@@ -52,8 +52,11 @@ pub enum WorthQueryApplicationAttemptDenialKind {
     WorkflowInstanceAuthorityMismatch,
     WorkflowInstanceIntentIdentityUnavailable,
     WorkflowInstanceCapacityUnavailable,
-    /// Program adoption cancelled the instance; no request can advance it.
+    /// An explicit cancellation or program adoption cancelled the instance;
+    /// no request can advance it.
     WorkflowInstanceCancelled,
+    /// The instance completed; nothing is left to cancel.
+    WorkflowInstanceCompleted,
     /// An explicit migration ended the instance; its successor continues.
     WorkflowInstanceMigrated,
     /// The migration target cannot lawfully continue the instance from the

@@ -21,7 +21,7 @@ pub(super) fn deny_ended(
         (
             WorkflowInstanceState::Cancelled,
             WorthQueryApplicationAttemptDenialKind::WorkflowInstanceCancelled,
-            "workflow instance was cancelled by program adoption",
+            "workflow instance was cancelled",
         ),
         (
             WorkflowInstanceState::Migrated,

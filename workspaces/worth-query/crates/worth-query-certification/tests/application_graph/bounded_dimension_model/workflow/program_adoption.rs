@@ -275,3 +275,31 @@ pub fn recollect_on_second(
         .expect("fresh evidence acceptance is admitted under P1")
         .accept_assessment(&settlement)
 }
+
+pub fn cancel_on_second(
+    application: &BoundedDimensionWorkflowRuntime,
+    instance: PublishedWorkflowInstanceRef,
+    idempotency: u64,
+) -> Result<
+    worth_query_host::facade::application_entry::WorkflowInstanceCancellationOutcome,
+    WorthQueryWorkflowInstanceStartPreparationDenial,
+> {
+    let vocabulary = application
+        .supported_vocabulary::<DimensionProgramP1>()
+        .expect("P1 serves its vocabulary");
+    let runtime = vocabulary.runtime();
+    let scope = request_scope();
+    let principal = authenticate_operator(runtime.installed_schema(), &scope);
+    runtime
+        .request(&principal, &scope)
+        .on_branch(instance.branch())
+        .mutate(WorkflowInstanceStartIntent {
+            input: WorkflowInstanceStartInput {
+                part_identity: PART_IDENTITY.to_owned(),
+            },
+        })
+        .without_source()
+        .idempotency(&idempotency)
+        .prepare_workflow_instance_cancellation(vocabulary, instance)
+        .map(|request| request.execute())
+}

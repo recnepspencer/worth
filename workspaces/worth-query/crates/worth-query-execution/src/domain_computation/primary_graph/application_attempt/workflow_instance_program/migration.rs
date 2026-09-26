@@ -27,7 +27,9 @@ use super::super::{
     WorthQueryApplicationObservedFact, WorthQueryApplicationRealizedEffect,
     WorthQueryCompleteApplicationReadSet, WorthQueryProjectedApplicationMutation,
 };
-use super::{intent_identity, PreparedWorkflowInstanceStart, PublishedWorkflowInstanceRef};
+use super::{
+    intent_identity, performed, PreparedWorkflowInstanceStart, PublishedWorkflowInstanceRef,
+};
 use crate::domain_computation::primary_graph::workflow::{
     definition::{
         reconstruct_compiled_definition, CompiledWorkflowDefinition,
@@ -39,7 +41,7 @@ use crate::domain_computation::primary_graph::workflow::{
     },
     schema::WorthQueryWorkflowLayout,
 };
-use lineage::{inherited_effects, successor_identity};
+use lineage::successor_identity;
 
 impl<Schema, Operation, Input, Scope>
     WorthQueryCompleteApplicationReadSet<
@@ -186,13 +188,14 @@ where
                 maximum_transitions,
                 &from,
             )?;
-            let inherited = inherited_effects(
+            let inherited = performed::inherited_effects(
                 runtime,
                 snapshot,
                 &layout,
                 source.entity_id(),
                 maximum_transitions,
                 &mut facts,
+                WorthQueryApplicationAttemptDenialKind::WorkflowInstanceMigrationUnmapped,
             )?;
             Ok::<_, WorthQueryApplicationAttemptDenial>((observed, inherited))
         });
@@ -229,21 +232,11 @@ where
                     .iter()
                     .map(|transition| transition.settlement)
                     .collect::<Vec<_>>();
-                let mut performed = observed
-                    .transitions
-                    .iter()
-                    .filter(|transition| {
-                        transition.settlement.operation_receipt_identity().is_some()
-                    })
-                    .map(|transition| {
-                        from.node(transition.settlement.node())
-                            .map(|node| WorkflowPerformedEffect {
-                                transition: transition.entity,
-                                path: node.path().to_owned(),
-                            })
-                            .ok_or_else(|| unmapped("a performed effect is not in its definition"))
-                    })
-                    .collect::<Result<Vec<_>, _>>()?;
+                let mut performed = performed::own_effects(
+                    &observed.transitions,
+                    &from,
+                    WorthQueryApplicationAttemptDenialKind::WorkflowInstanceMigrationUnmapped,
+                )?;
                 performed.extend(inherited);
                 admit_workflow_migration(succession, &from, &resumed, &settled, &performed)?;
                 facts.extend(observed.facts);

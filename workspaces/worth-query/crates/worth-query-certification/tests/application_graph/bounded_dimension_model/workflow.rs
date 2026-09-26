@@ -46,12 +46,12 @@ pub use declaration::{
 pub(crate) use definition::definition_limits;
 pub use definition::{
     advance_instance, approval_retry_definition, approve_instance, authoring_intent,
-    condition_terminal_definition, condition_terminal_draft, continue_on_fork, migrate_instance,
-    proposal_terminal_definition, propose_authoring_instance,
-    propose_authoring_instance_with_dimension, propose_instance, propose_instance_on_branch,
-    publish_definition, repeated_proposal_definition, reproposing_geometry_definition,
-    retire_definition, reviewed_geometry_definition, reviewed_geometry_definition_with_join_policy,
-    start_instance, terminal_definition,
+    cancel_instance, condition_terminal_definition, condition_terminal_draft, continue_on_fork,
+    migrate_instance, prepare_cancellation, proposal_terminal_definition,
+    propose_authoring_instance, propose_authoring_instance_with_dimension, propose_instance,
+    propose_instance_on_branch, publish_definition, repeated_proposal_definition,
+    reproposing_geometry_definition, retire_definition, reviewed_geometry_definition,
+    reviewed_geometry_definition_with_join_policy, start_instance, terminal_definition,
 };
 pub use grant_status::{
     WorkflowGrantStatusBinding, WorkflowGrantStatusHandler, WorkflowGrantStatusInput,
@@ -69,9 +69,9 @@ pub use mutation::{
 };
 pub use ordinary_run::run_instance;
 pub use program_adoption::{
-    advance_on_second, approve_on_second, prepare_second_program_adoption, propose_on_second,
-    publish_adoption, recollect_on_second, second_program_workflow_inventory, second_revision,
-    start_on_second,
+    advance_on_second, approve_on_second, cancel_on_second, prepare_second_program_adoption,
+    propose_on_second, publish_adoption, recollect_on_second, second_program_workflow_inventory,
+    second_revision, start_on_second,
 };
 pub use retry_definition::{bounded_retry_definition, bounded_retry_definition_with_attempts};
 pub use review_requirement::{

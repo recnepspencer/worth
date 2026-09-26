@@ -293,6 +293,7 @@ pub(super) fn lower_instance(
     let subject_generation = planned_field_locator(INSTANCE_ASPECT, "subject-generation")?;
     let state = planned_field_locator(INSTANCE_ASPECT, "state")?;
     let resume_node_path = planned_field_locator(INSTANCE_ASPECT, "resume-node-path")?;
+    let cancellation_identity = planned_field_locator(INSTANCE_ASPECT, "cancellation-identity")?;
     let shape = aspects()
         .struct_fields()
         .required("identity", ScalarAspectType::String)
@@ -305,6 +306,7 @@ pub(super) fn lower_instance(
         .required("subject-generation", ScalarAspectType::UInt64)
         .required("state", ScalarAspectType::UInt64)
         .optional("resume-node-path", ScalarAspectType::String)
+        .optional("cancellation-identity", ScalarAspectType::String)
         .finish()
         .map_err(|_| invalid_member(INSTANCE_ASPECT))?;
     let registry = register_platform_entity(
@@ -331,6 +333,7 @@ pub(super) fn lower_instance(
             subject_generation,
             state,
             resume_node_path,
+            cancellation_identity,
             identity_index_id: DerivedIndexId(0),
         },
     ))

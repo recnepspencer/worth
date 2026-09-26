@@ -19,11 +19,17 @@ use crate::domain_computation::primary_graph::workflow::{
     instance::visit_instance_start_facts,
 };
 
+mod cancellation;
 mod intent_identity;
 mod migration;
+mod performed;
 mod preparation;
 mod publication;
 
+pub use cancellation::{
+    PerformedWorkflowInstanceCancellation, PreparedWorkflowInstanceCancellation,
+    WorkflowInstanceCancellationOutcome,
+};
 pub use preparation::{
     WorkflowInstanceBindingDenial, WorkflowInstancePreparationDenial,
     WorthQueryWorkflowInstanceStartAdapter,

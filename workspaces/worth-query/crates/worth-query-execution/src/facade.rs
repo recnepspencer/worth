@@ -96,10 +96,12 @@ pub mod workflow_definition_retirement {
 #[doc(hidden)]
 pub mod workflow_instance_start {
     pub use crate::domain_computation::primary_graph::{
-        PerformedWorkflowInstanceStart, PreparedWorkflowInstanceStart,
+        PerformedWorkflowInstanceCancellation, PerformedWorkflowInstanceStart,
+        PreparedWorkflowInstanceCancellation, PreparedWorkflowInstanceStart,
         PublishedWorkflowDefinitionRef, PublishedWorkflowInstanceRef,
-        WorkflowInstanceBindingDenial, WorkflowInstancePreparationDenial,
-        WorkflowInstanceStartOutcome, WorthQueryWorkflowInstanceStartAdapter,
+        WorkflowInstanceBindingDenial, WorkflowInstanceCancellationOutcome,
+        WorkflowInstancePreparationDenial, WorkflowInstanceStartOutcome,
+        WorthQueryWorkflowInstanceStartAdapter,
     };
 }
 
