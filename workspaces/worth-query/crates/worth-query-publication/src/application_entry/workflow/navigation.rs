@@ -20,6 +20,29 @@ use super::progress::{
 };
 use crate::application_entry::mutation::WorthQueryApplicationMutationRequestWithIdempotency;
 
+type WorkflowNavigateBackPreparationResult<
+    'application,
+    'principal,
+    'scope,
+    Schema,
+    Spec,
+    Program,
+    Intent,
+> = Result<
+    WorthQueryWorkflowNavigateBackRequest<
+        'application,
+        'principal,
+        'scope,
+        Schema,
+        Spec,
+        Program,
+        MutationOperation<Schema, Intent>,
+        MutationInput<Schema, Intent>,
+        MutationScope<Schema, IntentBinding<Schema, Intent>>,
+    >,
+    WorthQueryWorkflowAdvancePreparationDenial,
+>;
+
 pub struct WorthQueryWorkflowNavigateBackRequest<
     'application,
     'principal,
@@ -103,20 +126,7 @@ where
         self,
         workflow: &'application WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>,
         instance: PublishedWorkflowInstanceRef,
-    ) -> Result<
-        WorthQueryWorkflowNavigateBackRequest<
-            'application,
-            'principal,
-            'scope,
-            Schema,
-            Spec,
-            Program,
-            MutationOperation<Schema, Intent>,
-            MutationInput<Schema, Intent>,
-            MutationScope<Schema, IntentBinding<Schema, Intent>>,
-        >,
-        WorthQueryWorkflowAdvancePreparationDenial,
-    >
+    ) -> WorkflowNavigateBackPreparationResult<'application, 'principal, 'scope, Schema, Spec, Program, Intent>
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
         Program: worth_query_declaration::facade::application_program::ApplicationProgramDefinition<Schema>,

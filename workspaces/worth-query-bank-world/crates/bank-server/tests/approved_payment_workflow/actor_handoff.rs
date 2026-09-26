@@ -5,7 +5,7 @@ use bank_domain::{
 use fixture::{ordinary_read_world_with_two_approvers, OWNER, STRANGER};
 use worth_query_host::facade::application_entry::{
     WorkflowApprovalDecision, WorthQueryApplicationMutationOutcome,
-    WorthQueryApplicationRequestMutationDenial, WorthQueryWorkflowAdvancePreparationDenial,
+    WorthQueryWorkflowAdvancePreparationDenial,
 };
 use worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationDenialKind;
 
@@ -91,10 +91,9 @@ fn revoked_starter_cannot_advance_but_second_actor_commits_attributed_payment() 
         matches!(
             &denied,
             Err(bank_server::BankApprovedPaymentWorkflowError::Advance(
-                WorthQueryWorkflowAdvancePreparationDenial::RequestAdmission(
-                    WorthQueryApplicationRequestMutationDenial::Authorization(denial)
-                )
-            )) if denial.kind() == WorthQueryOperationAuthorizationDenialKind::CapabilityAuthorizationMissing
+                WorthQueryWorkflowAdvancePreparationDenial::AwaitingActor(required)
+            )) if required.instance() == instance.entity_id()
+                && required.denial().kind() == WorthQueryOperationAuthorizationDenialKind::CapabilityAuthorizationMissing
         ),
         "the revoked starter must lose current capability authority: {denied:?}"
     );

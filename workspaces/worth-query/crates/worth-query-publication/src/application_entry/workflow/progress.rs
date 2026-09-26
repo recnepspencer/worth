@@ -39,6 +39,29 @@ pub(super) type MutationOperation<Schema, Intent> =
 pub(super) type MutationInput<Schema, Intent> =
     <IntentBinding<Schema, Intent> as ApplicationMutationBinding<Schema>>::Input;
 
+pub(super) type WorkflowAdvancePreparationResult<
+    'application,
+    'principal,
+    'scope,
+    Schema,
+    Spec,
+    Program,
+    Intent,
+> = Result<
+    WorthQueryWorkflowAdvanceRequest<
+        'application,
+        'principal,
+        'scope,
+        Schema,
+        Spec,
+        Program,
+        MutationOperation<Schema, Intent>,
+        MutationInput<Schema, Intent>,
+        MutationScope<Schema, IntentBinding<Schema, Intent>>,
+    >,
+    WorthQueryWorkflowAdvancePreparationDenial,
+>;
+
 #[derive(Clone)]
 pub(super) enum WorkflowRequestedAction {
     Advance,
@@ -179,20 +202,7 @@ where
         self,
         workflow: &'application WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>,
         instance: PublishedWorkflowInstanceRef,
-    ) -> Result<
-        WorthQueryWorkflowAdvanceRequest<
-            'application,
-            'principal,
-            'scope,
-            Schema,
-            Spec,
-            Program,
-            MutationOperation<Schema, Intent>,
-            MutationInput<Schema, Intent>,
-            MutationScope<Schema, IntentBinding<Schema, Intent>>,
-        >,
-        WorthQueryWorkflowAdvancePreparationDenial,
-    >
+    ) -> WorkflowAdvancePreparationResult<'application, 'principal, 'scope, Schema, Spec, Program, Intent>
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
         Program: worth_query_declaration::facade::application_program::ApplicationProgramDefinition<Schema>,
@@ -205,20 +215,7 @@ where
         workflow: &'application WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>,
         instance: PublishedWorkflowInstanceRef,
         action: WorkflowRequestedAction,
-    ) -> Result<
-        WorthQueryWorkflowAdvanceRequest<
-            'application,
-            'principal,
-            'scope,
-            Schema,
-            Spec,
-            Program,
-            MutationOperation<Schema, Intent>,
-            MutationInput<Schema, Intent>,
-            MutationScope<Schema, IntentBinding<Schema, Intent>>,
-        >,
-        WorthQueryWorkflowAdvancePreparationDenial,
-    >
+    ) -> WorkflowAdvancePreparationResult<'application, 'principal, 'scope, Schema, Spec, Program, Intent>
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
         Program: worth_query_declaration::facade::application_program::ApplicationProgramDefinition<Schema>,
@@ -239,15 +236,14 @@ where
                     && <<IntentBinding<Schema, Intent> as ApplicationMutationBinding<Schema>>::SourceExpectation as ApplicationMutationSourceExpectation<Schema>>::QUERY_IDENTIFIER.is_none()
                 {
                     if let WorthQueryApplicationRequestMutationDenial::Authorization(actor_denial) = &denial {
-                        if WorthQueryWorkflowAdvanceAdapter::is_actor_permission_denial(actor_denial) {
-                            let actor = authorization::resolve_capability_subject_selected(&self, &selected)
-                                .and_then(|subject| WorthQueryWorkflowAdvanceAdapter::observe_awaiting_actor::<
+                        if instance.branch() == self.product_branch() {
+                            let actor = WorthQueryWorkflowAdvanceAdapter::redacted_awaiting_actor::<
                                     <IntentBinding<Schema, Intent> as ApplicationCapabilityMutationBinding<Schema>>::Capability,
                                     MutationOperation<Schema, Intent>,
-                                    _, _, _, _,
+                                    _, _, _,
                                 >(
-                                    &selected, workflow.workflow_spec(), &instance, &subject, actor_denial,
-                                ));
+                                    workflow.workflow_spec(), &instance, actor_denial,
+                                );
                             if let Some(actor) = actor {
                                 return Err(WorthQueryWorkflowAdvancePreparationDenial::AwaitingActor(actor));
                             }

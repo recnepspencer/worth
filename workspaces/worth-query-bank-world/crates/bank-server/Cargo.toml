@@ -15,7 +15,7 @@ worth-query-host.workspace = true
 [dev-dependencies]
 bank-external-rail.workspace = true
 tokio.workspace = true
-worth-query-host = { workspace = true, features = ["test-durability-faults"] }
+worth-query-host = { workspace = true, features = ["test-durability-faults", "test-world-operation-control"] }
 
 [lints]
 workspace = true

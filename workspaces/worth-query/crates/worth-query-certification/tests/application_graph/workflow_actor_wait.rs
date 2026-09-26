@@ -1,5 +1,6 @@
-//! An actor wait is an observation-time result of a real permission denial.
+//! An actor wait is a typed result of denied authority, without live-head disclosure.
 
+use worth_query_execution::facade::primary_graph::WorthQueryOperationAuthorizationDenialKind;
 use worth_query_host::facade::admission::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
 };
@@ -7,11 +8,9 @@ use worth_query_host::facade::application_entry::{
     WorkflowDefinitionExpectedPredecessor, WorkflowDefinitionPublicationOutcome,
     WorkflowInstanceStartOutcome, WorkflowProgressOutcome, WorkflowProposalOutcome,
     WorthQueryApplicationMutationOutcome, WorthQueryApplicationRequestExt,
-    WorthQueryApplicationRequestMutationDenial,
-    WorthQueryOrdinaryWorkflowRunStop, WorthQueryWorkflowAdvancePreparationDenial,
+    WorthQueryApplicationRequestMutationDenial, WorthQueryOrdinaryWorkflowRunStop,
+    WorthQueryWorkflowAdvancePreparationDenial,
 };
-use worth_query_execution::facade::primary_graph::WorthQueryOperationAuthorizationDenialKind;
-use worth_query_execution::facade::workflow_advance::RequiredWorkflowActorNodeKind;
 
 use super::bounded_dimension_model::{
     dimension_entry::PART_IDENTITY,
@@ -20,13 +19,13 @@ use super::bounded_dimension_model::{
     workflow::{
         advance_instance, condition_terminal_definition, propose_authoring_instance,
         publish_definition, run_instance, start_instance, terminal_definition,
-        WorkflowAdvanceInput, WorkflowAdvanceIntent, WorkflowApprovalIntent, WorkflowGrantStatusInput,
-        WorkflowGrantStatusIntent,
+        WorkflowAdvanceInput, WorkflowAdvanceIntent, WorkflowApprovalIntent,
+        WorkflowGrantStatusInput, WorkflowGrantStatusIntent,
     },
 };
 
 #[test]
-fn revoked_advance_grant_yields_actor_wait_only_for_the_live_instance() {
+fn revoked_advance_grant_yields_a_redacted_actor_wait() {
     let application = publish_workflow_on_first_program();
     let published = match publish_definition(
         &application,
@@ -60,37 +59,45 @@ fn revoked_advance_grant_yields_actor_wait_only_for_the_live_instance() {
         panic!("revoked actor must receive a typed preparation-time wait: {direct:?}");
     };
     assert_eq!(required.instance(), instance.entity_id());
-    assert_eq!(required.node_path(), "positive-dimension");
-    assert_eq!(required.node_kind(), RequiredWorkflowActorNodeKind::Condition);
-    assert!(required.occurrence() > 0);
-    assert!(!required.transition_identity().is_empty());
     assert!(required.denial().causes().iter().all(|cause| matches!(
         cause,
         WorthQueryOperationAuthorizationDenialKind::CapabilityAuthorizationMissing
             | WorthQueryOperationAuthorizationDenialKind::CapabilityGrantMissing
     )));
-    change_grant(&application, &instance, "workflow-approval-grant", "revoked", 9_217_011);
+    change_grant(
+        &application,
+        &instance,
+        "workflow-approval-grant",
+        "revoked",
+        9_217_011,
+    );
     let scope = request_scope();
     let principal = authenticate_operator(application.runtime().installed_schema(), &scope);
-    let wrong_binding = application.runtime()
+    let wrong_binding = application
+        .runtime()
         .request(&principal, &scope)
         .on_branch(instance.branch())
         .mutate(WorkflowApprovalIntent {
-            input: WorkflowAdvanceInput { part_identity: PART_IDENTITY.to_owned() },
+            input: WorkflowAdvanceInput {
+                part_identity: PART_IDENTITY.to_owned(),
+            },
         })
         .without_source()
         .idempotency(&9_217_012)
         .prepare_workflow_advance(&application, instance.clone());
-    assert!(matches!(
-        wrong_binding,
-        Err(WorthQueryWorkflowAdvancePreparationDenial::RequestAdmission(
-            WorthQueryApplicationRequestMutationDenial::Authorization(ref denial)
-        )) if denial.causes().iter().any(|cause| matches!(
-            cause,
-            WorthQueryOperationAuthorizationDenialKind::CapabilityAuthorizationMissing
-                | WorthQueryOperationAuthorizationDenialKind::CapabilityGrantMissing
-        ))
-    ), "a denied non-advance capability cannot become an actor wait");
+    assert!(
+        matches!(
+            wrong_binding,
+            Err(WorthQueryWorkflowAdvancePreparationDenial::RequestAdmission(
+                WorthQueryApplicationRequestMutationDenial::Authorization(ref denial)
+            )) if denial.causes().iter().any(|cause| matches!(
+                cause,
+                WorthQueryOperationAuthorizationDenialKind::CapabilityAuthorizationMissing
+                    | WorthQueryOperationAuthorizationDenialKind::CapabilityGrantMissing
+            ))
+        ),
+        "a denied non-advance capability cannot become an actor wait"
+    );
     let runtime = application.runtime();
     let sibling = runtime
         .branches()
@@ -160,7 +167,7 @@ fn revoked_advance_grant_yields_actor_wait_only_for_the_live_instance() {
 }
 
 #[test]
-fn completed_instance_is_not_relabelled_as_awaiting_an_actor() {
+fn completed_instance_state_is_redacted_from_a_denied_actor() {
     let application = publish_workflow_on_first_program();
     let published = match publish_definition(
         &application,
@@ -184,18 +191,22 @@ fn completed_instance_is_not_relabelled_as_awaiting_an_actor() {
     let Err(WorthQueryWorkflowAdvancePreparationDenial::AwaitingActor(required)) = waiting else {
         panic!("live terminal requires the next actor: {waiting:?}");
     };
-    assert_eq!(required.node_path(), "done");
-    assert_eq!(required.node_kind(), RequiredWorkflowActorNodeKind::Terminal);
+    assert_eq!(required.instance(), instance.entity_id());
+    let live_denial_causes = required.denial().causes().to_vec();
     change_advance_grant(&application, &instance, "active", 9_218_004);
     assert!(matches!(
         advance_instance(&application, instance.clone(), 9_218_005),
         Ok(WorkflowProgressOutcome::Completed(_))
     ));
     change_advance_grant(&application, &instance, "revoked", 9_218_006);
-    assert!(matches!(
-        advance_instance(&application, instance, 9_218_007),
-        Err(WorthQueryWorkflowAdvancePreparationDenial::RequestAdmission(_))
-    ));
+    let denied_after_completion = advance_instance(&application, instance.clone(), 9_218_007);
+    let Err(WorthQueryWorkflowAdvancePreparationDenial::AwaitingActor(required)) =
+        denied_after_completion
+    else {
+        panic!("a denied actor cannot inspect the completed instance: {denied_after_completion:?}");
+    };
+    assert_eq!(required.instance(), instance.entity_id());
+    assert_eq!(required.denial().causes(), live_denial_causes);
 }
 
 fn change_advance_grant(

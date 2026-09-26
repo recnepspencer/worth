@@ -20,7 +20,6 @@ mod authorized;
 use authorized::AuthorizedMutation;
 mod capability;
 pub(in crate::application_entry) use capability::prepare_capability_selected;
-pub(in crate::application_entry) use capability::resolve_capability_subject_selected;
 
 type IntentBinding<Schema, Intent> = <Intent as ApplicationMutationIntent<Schema>>::Binding;
 type IntentPrincipal<Schema, Intent> =
@@ -237,6 +236,7 @@ where
                     .bind_application_source_expectation::<IntentBinding<Schema, Intent>, _>(
                         &mut admission,
                         source,
+                        request.request.intent.input(),
                     ),
                 WorthQueryMutationExpectedSource::ResultSet(source) => request
                     .request
@@ -244,6 +244,7 @@ where
                     .bind_application_result_set_expectation::<IntentBinding<Schema, Intent>, _>(
                         &mut admission,
                         source,
+                        request.request.intent.input(),
                     ),
             }
             .map_err(WorthQueryApplicationRequestMutationDenial::SourceExpectation)?);

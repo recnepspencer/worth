@@ -19,8 +19,8 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphApplicationRuntime, WorthQuerySelectedProductOperation,
 };
 
-#[path = "preparation/actor_observation.rs"]
-mod actor_observation;
+#[path = "preparation/actor_denial.rs"]
+mod actor_denial;
 #[path = "preparation/adapter_commit.rs"]
 mod adapter_commit;
 #[path = "preparation/adapter_owner.rs"]

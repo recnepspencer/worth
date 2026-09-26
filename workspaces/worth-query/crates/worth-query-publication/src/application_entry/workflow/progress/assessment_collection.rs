@@ -31,20 +31,7 @@ where
         workflow: &'application WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>,
         instance: PublishedWorkflowInstanceRef,
         node_path: impl Into<String>,
-    ) -> Result<
-        WorthQueryWorkflowAdvanceRequest<
-            'application,
-            'principal,
-            'scope,
-            Schema,
-            Spec,
-            Program,
-            MutationOperation<Schema, Intent>,
-            MutationInput<Schema, Intent>,
-            MutationScope<Schema, IntentBinding<Schema, Intent>>,
-        >,
-        WorthQueryWorkflowAdvancePreparationDenial,
-    >
+    ) -> WorkflowAdvancePreparationResult<'application, 'principal, 'scope, Schema, Spec, Program, Intent>
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
         Program: worth_query_declaration::facade::application_program::ApplicationProgramDefinition<Schema>,

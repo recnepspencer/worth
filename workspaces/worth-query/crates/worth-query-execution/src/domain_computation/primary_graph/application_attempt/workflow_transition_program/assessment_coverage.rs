@@ -99,7 +99,9 @@ pub(super) fn observe_subject_cached(
         return Err(mismatch("assessment proposal source is ambiguous"));
     }
     let mut facts = Vec::new();
-    if !observed_proposals.by_source.contains_key(&source.entity()) {
+    if let std::collections::btree_map::Entry::Vacant(entry) =
+        observed_proposals.by_source.entry(source.entity())
+    {
         let source_transition = progress
             .latest_transition(source.entity())
             .ok_or_else(|| mismatch("assessment proposal transition is absent"))?;
@@ -123,13 +125,10 @@ pub(super) fn observe_subject_cached(
         })?;
         proposal_facts.extend(coverage_facts);
         enforce_budget(proposal_facts.len(), maximum_facts)?;
-        observed_proposals.by_source.insert(
-            source.entity(),
-            ObservedProposalCoverage {
-                identity,
-                coverages,
-            },
-        );
+        entry.insert(ObservedProposalCoverage {
+            identity,
+            coverages,
+        });
         facts = proposal_facts;
     }
     let observed = observed_proposals

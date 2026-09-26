@@ -33,6 +33,29 @@ type MutationOperation<Schema, Intent> =
 type MutationInput<Schema, Intent> =
     <IntentBinding<Schema, Intent> as ApplicationMutationBinding<Schema>>::Input;
 
+type WorkflowApprovalPreparationResult<
+    'application,
+    'principal,
+    'scope,
+    Schema,
+    Spec,
+    Program,
+    Intent,
+> = Result<
+    WorthQueryWorkflowApprovalSigningRequest<
+        'application,
+        'principal,
+        'scope,
+        Schema,
+        Spec,
+        Program,
+        MutationOperation<Schema, Intent>,
+        MutationInput<Schema, Intent>,
+        MutationScope<Schema, IntentBinding<Schema, Intent>>,
+    >,
+    WorthQueryWorkflowAdvancePreparationDenial,
+>;
+
 impl<'application, 'principal, 'scope, 'key, Schema, Intent, SourcePreparation>
     WorthQueryApplicationMutationRequestWithIdempotency<
         'application,
@@ -67,20 +90,7 @@ where
         required: &RequiredWorkflowApproval,
         proposal: &PublishedWorkflowProposalRef,
         decision: WorkflowApprovalDecision,
-    ) -> Result<
-        WorthQueryWorkflowApprovalSigningRequest<
-            'application,
-            'principal,
-            'scope,
-            Schema,
-            Spec,
-            Program,
-            MutationOperation<Schema, Intent>,
-            MutationInput<Schema, Intent>,
-            MutationScope<Schema, IntentBinding<Schema, Intent>>,
-        >,
-        WorthQueryWorkflowAdvancePreparationDenial,
-    >
+    ) -> WorkflowApprovalPreparationResult<'application, 'principal, 'scope, Schema, Spec, Program, Intent>
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
         Program: worth_query_declaration::facade::application_program::ApplicationProgramDefinition<Schema>,

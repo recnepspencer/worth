@@ -78,6 +78,21 @@ where
 
     fn input_identity(input: &Self::Input) -> [u8; 32];
 
+    /// Binds input-selected subjects to the exact parameters of retained source evidence.
+    /// Return `None` only when the operation accepts any selection of its source query.
+    fn expected_source_parameters(
+        _input: &Self::Input,
+    ) -> Result<
+        Option<
+            crate::application_query::ApplicationQueryParameterSet<
+                <Self::SourceExpectation as ApplicationMutationSourceExpectation<Schema>>::Query,
+            >,
+        >,
+        crate::application_schema::ApplicationValueEncodeDenial,
+    > {
+        Ok(None)
+    }
+
     fn scope_field() -> MutationScopeFieldRef<Schema, Self::ScopeBinding>;
 
     fn principal_binding() -> ApplicationPrincipalBindingRef<

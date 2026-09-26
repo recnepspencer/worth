@@ -326,13 +326,9 @@ fn project_approval(
         return None;
     }
     let required = approval.required_fields.iter().collect::<Vec<_>>();
-    if receipt
+    receipt
         .committed_changes()
-        .committed_field_values(*entity, &required)
-        .is_none()
-    {
-        return None;
-    }
+        .committed_field_values(*entity, &required)?;
     let version = receipt.committed_changes().commit_reference().version_id;
     let exact_targets = |kind, from, maximum_work_units| {
         runtime
@@ -354,13 +350,11 @@ fn project_approval(
     }
     let mut expected_evidence = approval.evidence.to_vec();
     expected_evidence.sort_unstable();
-    let Some(mut actual_evidence) = exact_targets(
+    let mut actual_evidence = exact_targets(
         approval.evidence_relation,
         *entity,
         expected_evidence.len().saturating_mul(2).saturating_add(1),
-    ) else {
-        return None;
-    };
+    )?;
     actual_evidence.sort_unstable();
     if actual_evidence != expected_evidence {
         return None;

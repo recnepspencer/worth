@@ -167,7 +167,12 @@ and `close()` releases the lease. Retained requests cannot open live subscriptio
 Published rows expose `observed_sources()`. Mutations whose bindings require exact
 source evidence call `.expect_source(observed_source)` before idempotent execution.
 The source-local comparison rejects missing, foreign, retired, ABA-changed, or
-changed sources without rejecting unrelated sibling progress.
+changed sources while allowing sibling edits outside the recorded footprint.
+Sibling membership and selector-field changes can still invalidate that footprint.
+Bindings with input-selected subjects implement `expected_source_parameters` so
+the same Query boundary rejects mismatched selectors for rows, result sets and
+framework producers. A source query's type alone does not bind its parameters to
+the mutation input.
 
 ## Typed Handler And Invariant Access
 

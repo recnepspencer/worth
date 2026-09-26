@@ -22,7 +22,7 @@ mod required_assessment;
 #[path = "publication/transition_replay.rs"]
 mod transition_replay;
 pub use approval::{RequiredWorkflowApproval, WorkflowApprovalDecision};
-pub use actor::{RequiredWorkflowActor, RequiredWorkflowActorNodeKind};
+pub use actor::RequiredWorkflowActor;
 pub use assessment_evidence::PerformedWorkflowAssessmentEvidence;
 pub(super) use commit::project;
 pub(in crate::domain_computation::primary_graph::application_attempt) use commit::transition_entity_in_receipt;

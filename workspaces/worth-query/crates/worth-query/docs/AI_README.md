@@ -441,9 +441,14 @@ declares transitive required outputs.
 
 Ordinary query results expose bounded `observed_sources()`. A source-bound edit
 passes one of those observations through `.expect_source(...)`; Query compares its
-declared source footprint during fresh admission and publication. Unrelated sibling
-progress remains legal, while missing, foreign, retired, ABA-changed, or otherwise
+declared source footprint during fresh admission and publication. Sibling edits
+outside that footprint remain legal; membership and selector-field changes may
+invalidate it. Missing, foreign, retired, ABA-changed, or otherwise
 changed source evidence returns a typed source-expectation denial.
+Input-selected subjects also require the binding's `expected_source_parameters`
+hook: return the typed query parameters derived from the input. Query rejects a
+row or result-set proof for different selectors before running the handler;
+matching the query type alone does not bind a parent, owner or selected occurrence.
 
 `request.retain_read()` captures an exact selectable application occurrence, and
 `request.at(&observation).query(intent).execute()` reads that occurrence with fresh

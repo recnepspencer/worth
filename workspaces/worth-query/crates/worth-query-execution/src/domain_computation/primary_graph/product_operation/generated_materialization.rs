@@ -62,6 +62,7 @@ pub(super) struct ProducerQualification {
     output_generation: u64,
     observed_source_facts:
         Arc<[crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact]>,
+    resources: Option<crate::domain_computation::primary_graph::WorthQueryProducerDemandResources>,
 }
 
 #[must_use = "suspended output custody is required to restore the selected product"]
@@ -333,6 +334,7 @@ where
             output_occurrence,
             output_generation,
             observed_source_facts: exact.observed_source_facts,
+            resources: exact.resources,
         };
         match prepared.execute() {
             RuntimeWorldPublicationOutcome::Performed(performed) => {

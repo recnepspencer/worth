@@ -16,7 +16,7 @@ use super::super::bounded_dimension_model::{
 use super::*;
 
 #[test]
-fn approval_rejects_foreign_owner_and_wrong_signing_intent_but_replays_without_reuse() {
+fn approval_rejects_foreign_owner_wrong_purpose_and_intent_but_replays_without_reuse() {
     let (application, _, instance, proposal, required, _) =
         approval_journey("authenticated", 24_000);
     let runtime = application.runtime();
@@ -69,6 +69,28 @@ fn approval_rejects_foreign_owner_and_wrong_signing_intent_but_replays_without_r
     .unwrap();
     assert!(matches!(
         prepare!(instance.clone(), 24_011_u64).unwrap().sign(&wrong_event),
+        Err(WorthQueryWorkflowAdvancePreparationDenial::Authentication(
+            worth_query_admission::facade::authentication_event::WorthQueryAuthenticationEventDenial::IntentMismatch
+        ))
+    ));
+
+    let wrong_purpose_signing = prepare!(instance.clone(), 24_013_u64).unwrap();
+    let expected = wrong_purpose_signing.authentication_intent().unwrap();
+    let wrong_purpose = WorthQueryAuthenticationEventIntent::new(
+        "certification-account-login",
+        *expected.signing_intent(),
+        *expected.subject_coverage(),
+    )
+    .unwrap();
+    let login_event = block_on(application.authentication().authenticate(
+        (),
+        &principal,
+        wrong_purpose,
+        &scope,
+    ))
+    .expect("the same installed owner can authenticate a login without authorizing a signature");
+    assert!(matches!(
+        wrong_purpose_signing.sign(&login_event),
         Err(WorthQueryWorkflowAdvancePreparationDenial::Authentication(
             worth_query_admission::facade::authentication_event::WorthQueryAuthenticationEventDenial::IntentMismatch
         ))

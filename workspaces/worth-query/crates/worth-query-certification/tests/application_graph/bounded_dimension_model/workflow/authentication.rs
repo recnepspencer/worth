@@ -106,7 +106,10 @@ impl WorthQueryAuthenticationEventVerifier for CertificationAuthenticationVerifi
     ) -> WorthQueryAuthenticationEventFuture<'a> {
         Box::pin(async move {
             if challenge.principal() != &operator_identity()
-                || challenge.intent().purpose() != "workflow-approval-signature"
+                || !matches!(
+                    challenge.intent().purpose(),
+                    "workflow-approval-signature" | "certification-account-login"
+                )
                 || *challenge.nonce() == [0; 32]
             {
                 return Err(WorthQueryAuthenticationEventVerifierFailure::CredentialRejected);

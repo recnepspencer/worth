@@ -52,10 +52,10 @@ where
         let transition_instance = admitted.instance();
         let node_path = admitted.node_path().to_owned();
         let mut demand = PlatformEffectDemand::default();
-        visit_terminal_transition_facts(&layout, &admitted, |effect| demand.observe(&effect))?;
+        visit_terminal_transition_facts(layout, &admitted, |effect| demand.observe(&effect))?;
         let reservation = admit_platform_effects(admitted.read_set(), demand)?;
         let mut effects = Vec::new();
-        visit_terminal_transition_facts(&layout, &admitted, |effect| {
+        visit_terminal_transition_facts(layout, &admitted, |effect| {
             effects.push(effect);
             Ok::<(), WorthQueryApplicationAttemptDenial>(())
         })?;

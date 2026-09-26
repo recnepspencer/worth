@@ -1,3 +1,4 @@
+use std::num::NonZeroUsize;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -284,5 +285,44 @@ fn unpublished_product_retains_owner_recovery_and_never_dispatches_the_rail() {
         .inspect()
         .expect("recovery remains inspectable")
         .relational_requires_settlement());
+    assert!(ready.rail.attempts().is_empty());
+}
+
+#[test]
+fn indeterminate_product_comparison_retains_custody_without_rail_dispatch() {
+    let ready = ReadyPaymentWorld::new("indeterminate-payment-product", FaultScript::Succeed);
+    ready
+        .fixture
+        .world
+        .runtime
+        .application_program()
+        .runtime()
+        .world_operation_control_for_test()
+        .panic_before_product_compare_once();
+    let unresolved = match ready.perform() {
+        BankApprovedPaymentApplyOutcome::Commit(
+            WorthQueryApplicationCommitOutcome::Indeterminate(unresolved),
+        ) => unresolved,
+        other => panic!("World comparison unwind must retain indeterminate custody: {other:?}"),
+    };
+    assert!(!unresolved.detail().is_empty());
+    assert!(ready.rail.attempts().is_empty());
+    let owner = ready.fixture.world.runtime.application_program().runtime();
+    let page = owner
+        .product_publication_recovery_page(None, NonZeroUsize::new(1).unwrap())
+        .expect("World retains a bounded recovery catalog for unresolved owner work");
+    let [row] = page.rows() else {
+        panic!("the exact unresolved owner movement must be discoverable");
+    };
+    let recovery = owner
+        .readmit_product_publication_recovery(row.handle())
+        .expect("the same Query owner readmits its World recovery record");
+    assert_eq!(
+        recovery
+            .inspect()
+            .expect("retained owner evidence remains inspectable")
+            .owner_effect_count(),
+        1
+    );
     assert!(ready.rail.attempts().is_empty());
 }
