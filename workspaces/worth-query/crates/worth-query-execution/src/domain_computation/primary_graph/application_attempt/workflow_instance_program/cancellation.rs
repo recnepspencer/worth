@@ -35,8 +35,8 @@ pub use publication::{
     WorkflowInstanceCancellationOutcome,
 };
 
-const KIND: WorthQueryApplicationAttemptDenialKind =
-    WorthQueryApplicationAttemptDenialKind::WorkflowInstanceAffinityMismatch;
+const HISTORY: WorthQueryApplicationAttemptDenialKind =
+    WorthQueryApplicationAttemptDenialKind::WorkflowInstanceHistoryUnavailable;
 
 impl<Schema, Operation, Input, Scope>
     WorthQueryCompleteApplicationReadSet<
@@ -73,7 +73,7 @@ where
         self.authorize_instance_start::<Capability, Spec, Program>(installed, branch)?;
         if instance.branch() != branch {
             return Err(WorthQueryApplicationAttemptDenial::new(
-                KIND,
+                WorthQueryApplicationAttemptDenialKind::WorkflowInstanceAffinityMismatch,
                 self.admission.operation(),
             ));
         }
@@ -114,6 +114,7 @@ where
         let budget = installed.resources().history_reconstruction_budget();
         let subject = self.admission.scope_entity_id();
         let entity = instance.entity_id();
+        let operation = self.admission.operation();
         let handle = self.lease.handle();
         let snapshot = self.lease.snapshot();
         let (effects, performed) = handle.with_runtime(|runtime| {
@@ -172,7 +173,7 @@ where
                     let Some(live_membership) = observed.live_membership else {
                         return Err(WorthQueryApplicationAttemptDenial::new(
                             WorthQueryApplicationAttemptDenialKind::WorkflowInstanceCompleted,
-                            "a completed workflow instance has nothing left to cancel",
+                            operation,
                         ));
                     };
                     observed.ensure_history(
@@ -216,7 +217,7 @@ where
                     (observed.transitions, effects)
                 }
             };
-            let mut performed = performed::own_effects(&transitions, &compiled, KIND)?;
+            let mut performed = performed::own_effects(&transitions, &compiled, HISTORY)?;
             performed.extend(performed::inherited_effects(
                 runtime,
                 snapshot,
@@ -224,7 +225,7 @@ where
                 entity,
                 maximum_transitions,
                 &mut facts,
-                KIND,
+                HISTORY,
             )?);
             Ok::<_, WorthQueryApplicationAttemptDenial>((effects, performed))
         })?;

@@ -6,8 +6,9 @@
 use worth_query_host::facade::application_entry::{
     PerformedWorkflowInstanceCancellation, WorkflowInstanceBindingDenial,
     WorkflowInstanceCancellationOutcome, WorkflowInstancePreparationDenial,
-    WorthQueryWorkflowInstanceStartPreparationDenial,
+    WorthQueryApplicationRequestMutationDenial, WorthQueryWorkflowInstanceStartPreparationDenial,
 };
+use worth_query_host::facade::primary_graph::WorthQueryApplicationCommitDenialStage;
 
 use super::super::bounded_dimension_model::{
     programs::DimensionProgramP1,
@@ -61,13 +62,16 @@ fn a_cancel_before_the_effect_leaves_the_admitted_step_stale() {
         .for_workflow_operation(&application, &operation)
         .expect("the request still matches the requirement it was issued")
         .execute_in_program(application.program_runtime());
-    assert!(
-        !matches!(
-            effect,
-            Ok(WorthQueryApplicationMutationOutcome::Committed { .. })
-        ),
-        "a step admitted before the cancellation never performs: {effect:?}"
-    );
+    match effect {
+        Err(WorthQueryApplicationRequestMutationDenial::WorkflowTransitionCurrentness(denial)) => {
+            assert_eq!(
+                denial.kind(),
+                WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,
+                "a step admitted before the cancellation is no longer current",
+            );
+        }
+        other => panic!("a step admitted before the cancellation never performs: {other:?}"),
+    }
     assert_eq!(
         read_dimension(application.runtime(), instance.branch()),
         SEED_DIMENSION
@@ -109,10 +113,18 @@ fn a_cancel_prepared_before_the_effect_goes_stale_when_the_effect_lands_first() 
         .expect("the cancellation prepares before the effect");
     perform_approved_effect(&application, &instance, 88_212);
     match early() {
-        WorkflowInstanceCancellationOutcome::Application(outcome) => assert!(
-            !matches!(outcome, WorthQueryApplicationCommitOutcome::Committed(_)),
-            "{outcome:?}"
-        ),
+        WorkflowInstanceCancellationOutcome::Application(
+            WorthQueryApplicationCommitOutcome::Denied(denial),
+        ) => {
+            assert_eq!(
+                denial.kind(),
+                WorthQueryApplicationCommitDenialKind::ProductBasisStale
+            );
+            assert_eq!(
+                denial.stage(),
+                WorthQueryApplicationCommitDenialStage::InvariantExecution
+            );
+        }
         other => panic!("a cancellation read before the effect is stale: {other:?}"),
     }
     // The stale attempt claimed no key: the same key now cancels afresh and
@@ -182,7 +194,7 @@ fn a_cancellation_replays_exactly_after_its_branch_adopts_a_new_program() {
     );
 }
 
-fn approve(
+pub(super) fn approve(
     application: &BoundedDimensionWorkflowRuntime,
     instance: &PublishedWorkflowInstanceRef,
     required: &RequiredWorkflowApproval,
@@ -202,7 +214,7 @@ fn approve(
     }
 }
 
-fn cancelled(
+pub(super) fn cancelled(
     outcome: Result<
         WorkflowInstanceCancellationOutcome,
         WorthQueryWorkflowInstanceStartPreparationDenial,
@@ -214,7 +226,7 @@ fn cancelled(
     }
 }
 
-fn cancellation_denial(
+pub(super) fn cancellation_denial(
     outcome: Result<
         WorkflowInstanceCancellationOutcome,
         WorthQueryWorkflowInstanceStartPreparationDenial,

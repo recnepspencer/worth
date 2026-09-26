@@ -57,6 +57,9 @@ pub enum WorthQueryApplicationAttemptDenialKind {
     WorkflowInstanceCancelled,
     /// The instance completed; nothing is left to cancel.
     WorkflowInstanceCompleted,
+    /// The effects the instance, or a source it was migrated from, performed
+    /// cannot be read within their retained bounds.
+    WorkflowInstanceHistoryUnavailable,
     /// An explicit migration ended the instance; its successor continues.
     WorkflowInstanceMigrated,
     /// The migration target cannot lawfully continue the instance from the

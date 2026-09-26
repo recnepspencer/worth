@@ -59,6 +59,7 @@ pub enum BankApplicationAttemptDenialKind {
     WorkflowInstanceCapacityUnavailable,
     WorkflowInstanceCancelled,
     WorkflowInstanceCompleted,
+    WorkflowInstanceHistoryUnavailable,
     WorkflowInstanceMigrated,
     WorkflowInstanceMigrationUnmapped,
     WorkflowTransitionAffinityMismatch,
@@ -233,6 +234,9 @@ const fn application_attempt_kind(
         }
         Query::WorkflowInstanceCompleted => {
             BankApplicationAttemptDenialKind::WorkflowInstanceCompleted
+        }
+        Query::WorkflowInstanceHistoryUnavailable => {
+            BankApplicationAttemptDenialKind::WorkflowInstanceHistoryUnavailable
         }
         Query::WorkflowInstanceMigrated => {
             BankApplicationAttemptDenialKind::WorkflowInstanceMigrated

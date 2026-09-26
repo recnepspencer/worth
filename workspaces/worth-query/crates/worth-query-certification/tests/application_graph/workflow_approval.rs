@@ -46,6 +46,8 @@ mod effect_currentness;
 mod fork_continuation;
 #[path = "workflow_approval/instance_cancellation.rs"]
 mod instance_cancellation;
+#[path = "workflow_approval/instance_cancellation_reach.rs"]
+mod instance_cancellation_reach;
 #[path = "workflow_approval/instance_migration.rs"]
 mod instance_migration;
 #[path = "workflow_approval/instance_migration_law.rs"]

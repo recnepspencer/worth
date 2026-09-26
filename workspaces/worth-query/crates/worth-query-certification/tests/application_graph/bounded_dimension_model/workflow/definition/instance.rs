@@ -205,12 +205,27 @@ pub fn prepare_cancellation(
         + '_,
     WorthQueryWorkflowInstanceStartPreparationDenial,
 > {
+    prepare_cancellation_on(application, instance.branch(), instance, idempotency)
+}
+
+/// Prepares the cancellation of `instance` on `branch`, which may be another
+/// branch than the instance's own.
+pub fn prepare_cancellation_on(
+    application: &BoundedDimensionWorkflowRuntime,
+    branch: worth_query_host::facade::product::WorthQueryProductBranch,
+    instance: worth_query_host::facade::application_entry::PublishedWorkflowInstanceRef,
+    idempotency: u64,
+) -> Result<
+    impl FnOnce() -> worth_query_host::facade::application_entry::WorkflowInstanceCancellationOutcome
+        + '_,
+    WorthQueryWorkflowInstanceStartPreparationDenial,
+> {
     let runtime = application.runtime();
     let scope = request_scope();
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
     runtime
         .request(&principal, &scope)
-        .on_branch(instance.branch())
+        .on_branch(branch)
         .mutate(WorkflowInstanceStartIntent {
             input: WorkflowInstanceStartInput {
                 part_identity: PART_IDENTITY.to_owned(),

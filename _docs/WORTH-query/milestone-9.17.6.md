@@ -1213,7 +1213,11 @@ cancelled instance is refused as cancelled. A completed instance has nothing lef
 cancel and is refused as completed. A step admitted before the cancellation goes
 stale before its effect; a cancellation prepared before an effect lands goes stale
 without claiming its key, and the same key then cancels afresh and reports that
-effect. Cancelling one instance leaves its siblings running. An instance that has
+effect. Cancelling one instance leaves its siblings running, and a request on
+another branch than the instance's own is refused as an affinity mismatch, so a
+fork's successor and its source end independently. A request without the start
+capability is refused without claiming its key, and a performed history that cannot
+be read within its retained bounds is refused as unavailable. An instance that has
 used its whole retained-transition capacity cannot yet be cancelled; slice 5.3b closes
 that with its budgets.
 
