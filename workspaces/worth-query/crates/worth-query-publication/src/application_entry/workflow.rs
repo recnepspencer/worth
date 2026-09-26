@@ -70,7 +70,8 @@ pub use worth_query_execution::facade::workflow_definition_retirement::{
 };
 pub use worth_query_execution::facade::workflow_instance::{
     PerformedWorkflowInstanceCancellation, PerformedWorkflowInstanceStart,
-    PublishedWorkflowInstanceRef, WorkflowInstanceBindingDenial,
+    PublishedWorkflowInstanceRef, RetiredWorkflowDefinitionStart,
+    SupersededWorkflowDefinitionStart, WorkflowInstanceBindingDenial,
     WorkflowInstanceCancellationOutcome, WorkflowInstancePreparationDenial,
     WorkflowInstanceStartOutcome,
 };

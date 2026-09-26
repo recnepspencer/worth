@@ -27,6 +27,10 @@ impl WorthQueryApplicationCommitDenial {
             | WorthQueryApplicationAttemptDenialKind::WorkflowLineageCapacityUnavailable => {
                 WorthQueryApplicationCommitDenialStage::ResourceAdmission
             }
+            WorthQueryApplicationAttemptDenialKind::WorkflowDefinitionSuperseded
+            | WorthQueryApplicationAttemptDenialKind::WorkflowDefinitionRetired => {
+                WorthQueryApplicationCommitDenialStage::DecisionReadSet
+            }
             _ => WorthQueryApplicationCommitDenialStage::ProposalBinding,
         };
         Self {

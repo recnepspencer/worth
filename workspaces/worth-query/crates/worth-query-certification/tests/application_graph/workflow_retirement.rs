@@ -18,8 +18,9 @@ use super::bounded_dimension_model::{
     host::{publish_workflow_on_first_program, BoundedDimensionWorkflowRuntime},
     operator_identity::{authenticate_operator, request_scope},
     workflow::{
-        advance_instance, authoring_intent, expect_stale_start, publish_definition,
-        retire_definition, start_instance, terminal_definition, ReviewedGeometryWorkflow,
+        advance_instance, authoring_intent, expect_retired_start, expect_superseded_start,
+        publish_definition, retire_definition, start_instance, terminal_definition,
+        ReviewedGeometryWorkflow,
     },
 };
 
@@ -27,6 +28,8 @@ use super::bounded_dimension_model::{
 mod contention;
 #[path = "workflow_retirement/denial.rs"]
 mod denial;
+#[path = "workflow_retirement/discovery.rs"]
+mod discovery;
 #[path = "workflow_retirement/fork_definitions.rs"]
 mod fork_definitions;
 
@@ -56,8 +59,8 @@ fn retirement_stops_new_starts_while_pinned_work_completes_and_the_lineage_reope
     let retired = expect_retired(retire_definition(&application, second.clone(), 404));
     assert!(!retired.replayed());
     assert_eq!(retired.definition(), &second);
-    expect_stale_start(start_instance(&application, second.clone(), 405));
-    expect_stale_start(start_instance(&application, first.clone(), 406));
+    expect_retired_start(start_instance(&application, second.clone(), 405));
+    expect_retired_start(start_instance(&application, first.clone(), 406));
 
     let replay = expect_retired(retire_definition(&application, second.clone(), 404));
     assert!(
@@ -100,7 +103,11 @@ fn retirement_stops_new_starts_while_pinned_work_completes_and_the_lineage_reope
     assert_ne!(reopened.entity_id(), second.entity_id());
     let started = expect_started(start_instance(&application, reopened.clone(), 412));
     assert_eq!(started.start_node_path(), "reopened");
-    expect_stale_start(start_instance(&application, second.clone(), 413));
+    let current = expect_superseded_start(start_instance(&application, second.clone(), 413));
+    assert_eq!(
+        current, reopened,
+        "a refused start names the reopened definition"
+    );
 
     let replay_after_reopen = expect_retired(retire_definition(&application, second, 404));
     assert!(

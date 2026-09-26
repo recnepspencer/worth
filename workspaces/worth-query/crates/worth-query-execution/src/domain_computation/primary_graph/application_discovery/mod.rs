@@ -1,9 +1,16 @@
 //! Read-only projections of installed application declaration meaning.
 mod description;
+mod workflow;
 use super::WorthQueryPrimaryGraphApplicationRuntime;
 pub use description::{
     WorthQueryApplicationCallablePosture, WorthQueryApplicationFieldDescription,
     WorthQueryApplicationMutationDescription, WorthQueryApplicationQueryDescription,
+};
+pub(in crate::domain_computation::primary_graph) use workflow::{
+    current_definition, WorkflowDefinitionCurrentness,
+};
+pub use workflow::{
+    WorthQueryWorkflowDefinitionDiscovery, WorthQueryWorkflowDefinitionDiscoveryDenial,
 };
 use worth_query_declaration::facade::application_schema::{
     ApplicationSchema, ApplicationSchemaMember,

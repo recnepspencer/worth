@@ -48,6 +48,12 @@ pub enum WorthQueryApplicationAttemptDenialKind {
     WorkflowDefinitionIntentIdentityUnavailable,
     WorkflowLineageUnavailable,
     WorkflowDefinitionCompilationUnavailable,
+    /// A start named a definition its branch has since superseded. A retry
+    /// of a recorded start still replays.
+    WorkflowDefinitionSuperseded,
+    /// A start named a definition of a retired lineage. A retry of a
+    /// recorded start still replays.
+    WorkflowDefinitionRetired,
     WorkflowInstanceAffinityMismatch,
     WorkflowInstanceAuthorityMismatch,
     WorkflowInstanceIntentIdentityUnavailable,

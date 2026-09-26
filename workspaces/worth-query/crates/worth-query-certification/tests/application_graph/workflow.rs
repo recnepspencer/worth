@@ -14,7 +14,7 @@ use worth_query_host::facade::{
 use super::bounded_dimension_model::{
     host::publish_workflow_on_first_program,
     workflow::{
-        advance_instance, expect_capacity_refused, expect_stale_start, publish_definition,
+        advance_instance, expect_capacity_refused, expect_superseded_start, publish_definition,
         reviewed_geometry_definition, start_instance, terminal_definition,
     },
 };
@@ -279,7 +279,9 @@ fn public_instance_start_binds_revisions_replays_and_enforces_lineage_capacity()
         started.instance().entity_id(),
         "definition replacement must not hide an exact retained replay"
     );
-    expect_stale_start(start_instance(&application, first_definition.clone(), 23));
+    let current =
+        expect_superseded_start(start_instance(&application, first_definition.clone(), 23));
+    assert_eq!(&current, second.definition());
 
     let third = expect_published(
         "same-content new revision",

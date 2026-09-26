@@ -41,14 +41,15 @@ fn a_fork_decides_the_definition_it_copied_on_its_own_truth() {
         ),
     );
     assert_eq!(successor.branch(), fork);
-    expect_stale_start(start_instance(&application, copied, 454));
+    let current = expect_superseded_start(start_instance(&application, copied, 454));
+    assert_eq!(current, successor, "the fork names its own successor");
     let untouched = expect_started(start_instance(&application, first.clone(), 455));
     assert_eq!(untouched.branch(), main, "main still holds its definition");
     let settled = expect_started(start_instance(&application, successor.clone(), 456));
     assert_eq!(settled.start_node_path(), "settled");
 
     expect_retired(retire_definition(&application, successor.clone(), 457));
-    expect_stale_start(start_instance(&application, successor, 458));
+    expect_retired_start(start_instance(&application, successor, 458));
     expect_started(start_instance(&application, first, 459));
     match advance_instance(&application, pinned, 460)
         .expect("pinned fork work prepares against its retained definition")
@@ -122,7 +123,11 @@ fn a_definition_published_on_a_sibling_is_never_another_forks() {
         ),
         other => panic!("the other fork never retires the sibling's definition: {other:?}"),
     }
-    expect_stale_start(start_instance(&application, first.held_on(other), 476));
+    let current = expect_superseded_start(start_instance(&application, first.held_on(other), 476));
+    assert_eq!(
+        current, own_successor,
+        "the other fork names its own successor"
+    );
     let held = expect_started(start_instance(&application, own_successor, 478));
     assert_eq!(
         held.branch(),
@@ -132,7 +137,7 @@ fn a_definition_published_on_a_sibling_is_never_another_forks() {
     assert_eq!(held.start_node_path(), "settled");
 }
 
-fn fork_of(
+pub(super) fn fork_of(
     application: &BoundedDimensionWorkflowRuntime,
     branch: WorthQueryProductBranch,
 ) -> WorthQueryProductBranch {

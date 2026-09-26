@@ -11,8 +11,8 @@ use worth_query_installation::facade::WorthQueryApplicationWorkflowResourceCeili
 use super::super::bounded_dimension_model::{
     host::publish_on_first_program,
     workflow::{
-        cancel_instance, continue_on_fork, expect_capacity_refused, migrate_instance,
-        retain_workflow_with_resources,
+        cancel_instance, continue_on_fork, expect_capacity_refused, expect_superseded_start,
+        migrate_instance, retain_workflow_with_resources,
     },
 };
 use super::fork_continuation::fork_of;
@@ -123,6 +123,11 @@ fn publication_takes_no_pin_and_eviction_releases_none() {
         96_110,
     );
     expect_capacity_refused(start(&application, &successor, 96_111));
+    let current = expect_superseded_start(start(&application, &definition, 96_112));
+    assert_eq!(
+        current, successor,
+        "a superseded definition says so before its full lineage does",
+    );
 
     release_everything(&application);
     let before = application.runtime().workflow_compilation_reuse_counters();

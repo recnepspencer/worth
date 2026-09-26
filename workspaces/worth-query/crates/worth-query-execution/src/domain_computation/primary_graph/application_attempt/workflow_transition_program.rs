@@ -195,7 +195,7 @@ where
                     ));
                 }
                 let replay_probe_identity = *selected.identity_bytes();
-                // A settled instance holds no live membership, so closing spends nothing.
+                // A settled instance holds no live membership, so the check passes.
                 let allowance = observed.ensure_step_left()?;
                 let (membership, mut settlement_facts) =
                     self.lease.handle().with_runtime(|runtime| {

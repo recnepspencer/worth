@@ -2,5 +2,6 @@
 pub use crate::domain_computation::primary_graph::application_discovery::{
     WorthQueryApplicationCallablePosture, WorthQueryApplicationDiscovery,
     WorthQueryApplicationFieldDescription, WorthQueryApplicationMutationDescription,
-    WorthQueryApplicationQueryDescription,
+    WorthQueryApplicationQueryDescription, WorthQueryWorkflowDefinitionDiscovery,
+    WorthQueryWorkflowDefinitionDiscoveryDenial,
 };

@@ -1,5 +1,6 @@
 use worth_query_host::facade::application_entry::{
-    WorkflowInstanceStartOutcome, WorthQueryWorkflowInstancePreparationDenial,
+    PublishedWorkflowDefinitionRef, WorkflowInstanceStartOutcome,
+    WorthQueryWorkflowInstancePreparationDenial,
 };
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationCommitDenialKind,
@@ -9,13 +10,20 @@ use worth_query_host::facade::primary_graph::{
 type StartResult =
     Result<WorkflowInstanceStartOutcome, WorthQueryWorkflowInstancePreparationDenial>;
 
-/// The start reached commit comparison and found a fact it read had moved.
-pub fn expect_stale_start(result: StartResult) {
-    match result.expect("the workflow start must reach commit comparison") {
-        WorkflowInstanceStartOutcome::Application(WorthQueryApplicationCommitOutcome::Stale(
-            stale,
-        )) => assert!(stale.stale_fact_count() > 0),
-        unexpected => panic!("expected stale workflow instance start, got {unexpected:?}"),
+/// The start named a definition its branch has since superseded; the
+/// definition the branch holds current instead is returned.
+pub fn expect_superseded_start(result: StartResult) -> PublishedWorkflowDefinitionRef {
+    match result.expect("the workflow start must reach commit") {
+        WorkflowInstanceStartOutcome::Superseded(start) => start.current().clone(),
+        unexpected => panic!("expected a superseded workflow start, got {unexpected:?}"),
+    }
+}
+
+/// The start named a definition of a retired lineage.
+pub fn expect_retired_start(result: StartResult) {
+    match result.expect("the workflow start must reach commit") {
+        WorkflowInstanceStartOutcome::Retired(_) => {}
+        unexpected => panic!("expected a retired workflow start, got {unexpected:?}"),
     }
 }
 

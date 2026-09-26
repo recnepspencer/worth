@@ -1217,9 +1217,9 @@ cancelled instance is refused as cancelled. A completed instance has nothing lef
 cancel and is refused as completed. A step admitted before the cancellation is
 refused as cancelled before its effect; a cancellation prepared before an effect
 lands goes stale without claiming its key, and the same key then cancels afresh and
-reports that effect. Cancelling one instance leaves its siblings running, and a request on
-another branch than the instance's own is refused as an affinity mismatch, so a
-fork's successor and its source end independently. A request without the start
+reports that effect. Cancelling one instance leaves its siblings running, and a
+request on another branch than the instance's own is refused as an affinity
+mismatch, so a fork's successor and its source end independently. A request without the start
 capability is refused without claiming its key, and a performed history that cannot
 be read within its retained bounds, or that names a node its definition lacks, is
 refused as unavailable. That refusal is argued from the reads that raise it, not
@@ -1227,13 +1227,13 @@ driven by a test: reaching it needs a stored history the public surface cannot
 corrupt, and a compiled definition can be minted only from a validated program.
 Cancellation writes no transition, so an instance that has used its whole
 retained-transition capacity, and so can take no further step, still cancels, warm
-or cold. The cancellation reads exactly the retained
-history, and its replay stays within the same bounds.
+or cold. The cancellation reads exactly the retained history, and its replay stays
+within the same bounds.
 
 One lineage spends one step budget, the installed retained-transition capacity. The
 budget check alone grants the allowance that transition and migration admission
-each require, so no step writer can skip it. A
-migration successor, or a fork's continuation, records the steps its source had taken
+each require, so no step writer can skip it; a settled or closing observation passes
+the check without spending. A migration successor, or a fork's continuation, records the steps its source had taken
 and inherits them, so a loop routed through a successor never starts the budget
 afresh; retry and navigation back-edges spend it like any other step. A spent lineage
 refuses the next step, a further migration and a fork continuation with a typed
@@ -1273,6 +1273,21 @@ compiles once on its next use and is warm again. Once a revision is compiled, a
 further instance's whole run compiles nothing; its first observation is its only
 progress miss, rebuilt from no transitions, and every later step reads retained
 progress.
+
+A selected branch occurrence discovers the definition it holds current under a
+workflow identity with `discover_workflow_definition`: `Current` names it, `Retired`
+says the lineage was retired and nothing is current until a publication reopens it,
+and `Unpublished` says no definition was ever published there. The answer is exact
+for that occurrence alone; a fork that has not committed builds its own generation of
+the lineage index first, and names the definitions it copied as the fork holds them.
+A discovered reference grants nothing. A start that names a definition its branch has
+since superseded returns the typed `Superseded` outcome naming the current definition,
+and one naming a definition of a retired lineage returns `Retired`; both are decided
+after the commit resolves that the start is no retry, so they perform no effect and
+record nothing, while a retry of a recorded start still replays. Supersession is
+reported before a full lineage, since it holds whatever the lineage's membership. A
+successor that commits between a start's prepare and its commit moves the product
+basis, and the start is denied as stale without effect.
 
 A definition may declare a total deadline, whole nonzero milliseconds, and only a
 declared deadline enters its content identity. An instance started from it records

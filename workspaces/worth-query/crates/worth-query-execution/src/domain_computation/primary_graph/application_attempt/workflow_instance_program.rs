@@ -26,6 +26,7 @@ mod migration;
 mod performed;
 mod preparation;
 mod publication;
+mod supersession;
 
 pub use cancellation::{
     PerformedWorkflowInstanceCancellation, PreparedWorkflowInstanceCancellation,
@@ -39,6 +40,7 @@ pub use publication::{
     PerformedWorkflowInstanceStart, PreparedWorkflowInstanceStart, PublishedWorkflowInstanceRef,
     WorkflowInstanceStartOutcome,
 };
+pub use supersession::{RetiredWorkflowDefinitionStart, SupersededWorkflowDefinitionStart};
 
 impl<Schema, Operation, Input, Scope>
     WorthQueryCompleteApplicationReadSet<
@@ -84,6 +86,35 @@ where
             usize::from(installed.resources().maximum_definition_connections()),
             WorkflowDefinitionCompilationPosture::Current,
         )?;
+        // A start writes only from the definition its branch holds current,
+        // but a retry of one already recorded replays whatever changed since.
+        let supersession = self
+            .lease
+            .handle()
+            .with_runtime(|runtime| {
+                crate::domain_computation::primary_graph::application_discovery::current_definition(
+                    runtime,
+                    self.lease.snapshot(),
+                    &layout,
+                    published.branch(),
+                    compiled.lineage(),
+                )
+            })
+            .ok_or_else(|| {
+                denial(
+                    WorthQueryApplicationAttemptDenialKind::WorkflowLineageUnavailable,
+                    self.admission.operation(),
+                )
+            })
+            .map(|currentness| {
+                supersession::WorkflowStartSupersession::of(&published, currentness)
+            })?;
+        if let Some(supersession) = &supersession {
+            self.new_commit_refusal = Some(denial(
+                supersession.denial_kind(),
+                self.admission.operation(),
+            ));
+        }
         let maximum_instances = usize::try_from(installed.resources().maximum_live_instances())
             .map_err(|_| {
                 denial(
@@ -124,10 +155,13 @@ where
                 },
             ),
             _ => {
-                self.new_commit_refusal = Some(denial(
-                    WorthQueryApplicationAttemptDenialKind::WorkflowLineageCapacityUnavailable,
-                    self.admission.operation(),
-                ));
+                let operation = self.admission.operation();
+                self.new_commit_refusal.get_or_insert_with(|| {
+                    denial(
+                        WorthQueryApplicationAttemptDenialKind::WorkflowLineageCapacityUnavailable,
+                        operation,
+                    )
+                });
             }
         }
         if self.facts.len().saturating_add(compile_facts.len())
@@ -210,6 +244,7 @@ where
             instance_intent_identity,
             instance_identity_locator: layout.instance.identity.clone(),
             start_path,
+            supersession,
         })
     }
 }

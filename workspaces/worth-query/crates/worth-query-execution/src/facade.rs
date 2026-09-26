@@ -99,6 +99,7 @@ pub mod workflow_instance {
         PerformedWorkflowInstanceCancellation, PerformedWorkflowInstanceStart,
         PreparedWorkflowInstanceCancellation, PreparedWorkflowInstanceStart,
         PublishedWorkflowDefinitionRef, PublishedWorkflowInstanceRef,
+        RetiredWorkflowDefinitionStart, SupersededWorkflowDefinitionStart,
         WorkflowInstanceBindingDenial, WorkflowInstanceCancellationOutcome,
         WorkflowInstancePreparationDenial, WorkflowInstanceStartOutcome,
         WorthQueryWorkflowInstanceAdapter,

@@ -20,8 +20,10 @@ pub(in crate::domain_computation::primary_graph::application_attempt) enum Workf
 
 /// Leave to write one step, granted only by
 /// [`ObservedWorkflowInstance::ensure_step_left`]. Transition and migration
-/// admission each take one, so no step reaches a commit without its
-/// lineage's budget having been checked.
+/// admission each take one, so no step reaches a commit without passing the
+/// budget check. A settled or closing observation passes it without spending,
+/// and the allowance names no instance, so each caller asks for it from the
+/// observation of the instance it admits.
 #[must_use = "a step is admitted only with the allowance its budget check granted"]
 #[derive(Debug)]
 pub(in crate::domain_computation::primary_graph) struct WorkflowStepAllowance(());

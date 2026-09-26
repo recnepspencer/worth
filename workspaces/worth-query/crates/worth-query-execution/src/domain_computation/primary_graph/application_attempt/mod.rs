@@ -110,8 +110,8 @@ pub(super) use elevation_request_program::validate_elevation_request_program;
 pub use elevation_request_program::WorthQueryElevationRequestProgram;
 pub(in crate::domain_computation) use fact::WorthQueryApplicationObservedFact;
 pub(in crate::domain_computation::primary_graph) use fact::{
-    observe_adjacency, WorthQueryApplicationAdjacencyDirection, WorthQueryApplicationFactKey,
-    WorthQuerySourceCurrentnessFailure,
+    observe_adjacency, observe_indexed_entity_selection, WorthQueryApplicationAdjacencyDirection,
+    WorthQueryApplicationFactKey, WorthQuerySourceCurrentnessFailure,
 };
 pub use idempotency::WorthQueryApplicationIdempotencyBinding;
 pub use idempotency_resolution::WorthQueryGuardedWorkflowOperationCustody;
@@ -154,7 +154,8 @@ pub use workflow_definition_program::{
 pub use workflow_instance_program::{
     PerformedWorkflowInstanceCancellation, PerformedWorkflowInstanceStart,
     PreparedWorkflowInstanceCancellation, PreparedWorkflowInstanceStart,
-    PublishedWorkflowInstanceRef, WorkflowInstanceBindingDenial,
+    PublishedWorkflowInstanceRef, RetiredWorkflowDefinitionStart,
+    SupersededWorkflowDefinitionStart, WorkflowInstanceBindingDenial,
     WorkflowInstanceCancellationOutcome, WorkflowInstancePreparationDenial,
     WorkflowInstanceStartOutcome, WorthQueryWorkflowInstanceAdapter,
 };

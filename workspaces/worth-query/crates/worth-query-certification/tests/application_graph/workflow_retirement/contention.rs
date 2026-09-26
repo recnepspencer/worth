@@ -4,6 +4,10 @@
 
 use worth_query_host::facade::primary_graph::WorthQueryApplicationCommitDenialKind;
 
+use super::super::bounded_dimension_model::{
+    dimension_entry::PART_IDENTITY,
+    workflow::{WorkflowInstanceStartInput, WorkflowInstanceStartIntent},
+};
 use super::*;
 
 #[test]
@@ -37,7 +41,7 @@ fn a_successor_published_after_prepare_makes_the_retirement_stale() {
     expect_stale_retirement(retire_definition(&application, first.clone(), 502));
     let successor = successor.expect("the competing publication ran");
     expect_started(start_instance(&application, successor, 504));
-    expect_stale_start(start_instance(&application, first, 505));
+    expect_superseded_start(start_instance(&application, first, 505));
 }
 
 #[test]
@@ -61,7 +65,7 @@ fn a_competing_retirement_after_prepare_leaves_one_committed_retirement() {
         other => panic!("the loser must not retire, got {other:?}"),
     }));
     expect_stale_retirement(retire_definition(&application, first.clone(), 512));
-    expect_stale_start(start_instance(&application, first, 514));
+    expect_retired_start(start_instance(&application, first, 514));
 }
 
 #[test]
@@ -150,6 +154,51 @@ fn publish_after(
         .prepare_workflow_publication(contract, WorkflowDefinitionExpectedPredecessor::Absent)?;
     between();
     Ok(prepared.execute())
+}
+
+/// A start prepared from the current definition is still denied when a
+/// successor commits between its prepare and its commit.
+#[test]
+fn a_successor_published_after_prepare_leaves_the_start_stale() {
+    let application = publish_workflow_on_first_program();
+    let first = expect_published(
+        "first revision",
+        publish_definition(
+            &application,
+            terminal_definition("completed"),
+            WorkflowDefinitionExpectedPredecessor::Absent,
+            531,
+        ),
+    );
+    let runtime = application.runtime();
+    let scope = request_scope();
+    let principal = authenticate_operator(runtime.installed_schema(), &scope);
+    let idempotency = 532_u64;
+    let prepared = runtime
+        .request(&principal, &scope)
+        .on_branch(first.branch())
+        .mutate(WorkflowInstanceStartIntent {
+            input: WorkflowInstanceStartInput {
+                part_identity: PART_IDENTITY.to_owned(),
+            },
+        })
+        .without_source()
+        .idempotency(&idempotency)
+        .prepare_workflow_instance_start(&application, first.clone())
+        .expect("the start prepares from the current definition");
+    expect_published(
+        "competing successor",
+        publish_definition(
+            &application,
+            terminal_definition("settled"),
+            WorkflowDefinitionExpectedPredecessor::Published(first),
+            533,
+        ),
+    );
+    expect_basis_stale(Ok::<_, ()>(match prepared.execute() {
+        WorkflowInstanceStartOutcome::Application(outcome) => outcome,
+        other => panic!("the start prepared before the successor must not start: {other:?}"),
+    }));
 }
 
 fn expect_basis_stale<Denial: std::fmt::Debug>(

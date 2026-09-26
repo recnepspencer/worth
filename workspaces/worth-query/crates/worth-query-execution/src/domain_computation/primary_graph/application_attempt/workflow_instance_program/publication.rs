@@ -20,6 +20,7 @@ pub struct PreparedWorkflowInstanceStart<Schema, Operation, Input, Scope> {
     pub(super) instance_intent_identity: [u8; 32],
     pub(super) instance_identity_locator: worth_foundational::facade::AspectFieldLocator,
     pub(super) start_path: String,
+    pub(super) supersession: Option<super::supersession::WorkflowStartSupersession>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -107,6 +108,10 @@ impl PerformedWorkflowInstanceStart {
 #[derive(Debug)]
 pub enum WorkflowInstanceStartOutcome {
     Started(PerformedWorkflowInstanceStart),
+    /// The branch holds another definition current. Nothing was written.
+    Superseded(super::supersession::SupersededWorkflowDefinitionStart),
+    /// The definition's lineage is retired. Nothing was written.
+    Retired(super::supersession::RetiredWorkflowDefinitionStart),
     Application(WorthQueryApplicationCommitOutcome),
     ProjectionDenied(super::super::WorthQueryApplicationCommitReceipt),
 }
@@ -136,6 +141,7 @@ where
             instance_intent_identity,
             instance_identity_locator,
             start_path,
+            supersession,
         } = prepared;
         let presented = match self
             .installed_program_support()
@@ -177,7 +183,12 @@ where
                 start_path,
                 true,
             ),
-            other => WorkflowInstanceStartOutcome::Application(other),
+            other => match supersession {
+                Some(supersession) => supersession
+                    .outcome(other)
+                    .unwrap_or_else(WorkflowInstanceStartOutcome::Application),
+                None => WorkflowInstanceStartOutcome::Application(other),
+            },
         }
     }
 }

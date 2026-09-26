@@ -303,6 +303,7 @@ where
             instance_intent_identity,
             instance_identity_locator: layout.instance.identity.clone(),
             start_path: resumed.start_path().to_owned(),
+            supersession: None,
             program: WorthQueryApplicationEffectProgram {
                 read_set: self,
                 effects,
