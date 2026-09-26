@@ -19,7 +19,7 @@ use worth_query_replay::facade::WorthQueryCertificationCostRuntimeExt;
 
 use super::bounded_dimension_model::{
     dimension_entry::PART_IDENTITY,
-    host::publish_on_first_program_for_geometry_scale,
+    host::publish_on_first_program_for_workflow_scale,
     operator_identity::authenticate_operator,
     workflow::{
         retain_workflow_with_resources, start_instance, ReviewedGeometryWorkflow,
@@ -130,7 +130,7 @@ fn qualify(occurrences: u16, key: u64) {
     )
     .expect("finite workflow resources");
     let application =
-        retain_workflow_with_resources(publish_on_first_program_for_geometry_scale(), resources);
+        retain_workflow_with_resources(publish_on_first_program_for_workflow_scale(), resources);
     let runtime = application.runtime();
     let cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(

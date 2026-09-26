@@ -159,17 +159,18 @@ where
             activation_context,
         };
         let observation = self.bind_capability_observation(installed, &retained, &sample)?;
-        let mut decision = observation
+        let (mut decision, expiry) = observation
             .observe_active_capability(Some(resolved.parent), None)?
-            .into_decision_for_grant(resolved.parent)
+            .into_refresh_for_grant(resolved.parent)
             .map_err(|()| rejected(installed))?;
         let narrowing = self.observe_narrowing(installed, proposed, &resolved)?;
         decision
             .attach_delegation_activation(
                 crate::domain_computation::authorization::decision_facts::WorthQueryDelegationActivationDecisionFact::new(
                     self.session,
+                    self.relational,
                     narrowing,
-                ),
+                ).map_err(|()| inconsistent(installed.contract().name()))?,
             )
             .map_err(|()| inconsistent(installed.contract().name()))?;
         let supporting = WorthQueryRetainedCapabilitySupport::active(
@@ -178,6 +179,7 @@ where
             resolved.parent,
             retained,
             sample,
+            expiry,
         );
         Ok(crate::domain_computation::authorization::delegation_progression::support::WorthQueryObservedDelegationSupport::new(resolved, supporting))
     }

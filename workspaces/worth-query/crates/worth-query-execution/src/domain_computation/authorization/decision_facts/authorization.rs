@@ -9,7 +9,10 @@ use worth_runtime_bridge::facade::{
 };
 
 mod delegation;
+mod durable_dependencies;
 pub(in crate::domain_computation::authorization) use delegation::WorthQueryDelegationDecisionFact;
+pub(in crate::domain_computation) use delegation::WorthQueryDurableCapabilityLineage;
+pub(in crate::domain_computation) use durable_dependencies::WorthQueryDurableAuthorizationDependencies;
 mod delegation_activation;
 pub(in crate::domain_computation::authorization) use delegation_activation::WorthQueryDelegationActivationDecisionFact;
 
@@ -19,19 +22,33 @@ pub(in crate::domain_computation) struct WorthQueryAuthorizationDecisionFact {
         crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
     relational: Arc<RelationalAuthorizationObservationEvidence>,
     bridge: Arc<BridgeAuthorizationDecisionEvidence>,
+    native_dependencies: Option<String>,
     delegation: Option<Arc<WorthQueryDelegationDecisionFact>>,
     delegation_activation: Option<Arc<WorthQueryDelegationActivationDecisionFact>>,
     preparatory_relational_work: RelationalAuthorizationObservationCounters,
 }
 
 impl WorthQueryAuthorizationDecisionFact {
+    pub(in crate::domain_computation) fn durable_lineage(
+        &self,
+    ) -> WorthQueryDurableCapabilityLineage {
+        self.delegation
+            .as_ref()
+            .map_or(WorthQueryDurableCapabilityLineage::Unbound, |delegation| {
+                delegation.durable_lineage()
+            })
+    }
     pub(in crate::domain_computation::authorization) fn from_capability_observation(
         _permit: crate::domain_computation::authorization::capability_observation::WorthQueryAuthorizationDecisionPermit,
         session_identity: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+        runtime: &worth_relational::facade::runtime::RelationalRuntime,
         relational: RelationalAuthorizationObservationEvidence,
         bridge: BridgeAuthorizationDecisionEvidence,
-    ) -> Self {
-        Self::mint(session_identity, relational, bridge)
+    ) -> Result<Self, ()> {
+        let dependencies = durable_dependencies::capture(runtime, &relational)?;
+        let mut decision = Self::mint(session_identity, relational, bridge);
+        decision.native_dependencies = Some(dependencies);
+        Ok(decision)
     }
 
     pub(in crate::domain_computation::authorization) fn from_conventional_observation(
@@ -52,6 +69,7 @@ impl WorthQueryAuthorizationDecisionFact {
             session_identity,
             relational: Arc::new(relational),
             bridge: Arc::new(bridge),
+            native_dependencies: None,
             delegation: None,
             delegation_activation: None,
             preparatory_relational_work: RelationalAuthorizationObservationCounters::default(),

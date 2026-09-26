@@ -67,7 +67,7 @@ pub use output_correspondence::{
     WorthQueryApplicationOutputRoleFamily, WorthQueryApplicationOutputRoleNameDenial,
 };
 pub(in crate::domain_computation::primary_graph) use platform_reservation::{
-    admit_platform_effects, PlatformEffectDemand,
+    admit_platform_effects, admit_workflow_settlement_effects, PlatformEffectDemand,
 };
 use target_admission::installed_contract_admits_program_target;
 use worth_query_declaration::facade::{
@@ -294,7 +294,7 @@ impl<Schema, Operation, Input, Scope>
             emission_retained_bytes: self.emission_retained_bytes,
             emission_retained_bytes_ceiling: self.emission_retained_bytes_ceiling,
             conditional_definition: self.conditional_definition,
-            platform_mutation: false,
+            effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Application,
             validator_work_admission,
             output_correspondence: self.output_correspondence,
             retain_output_demand_observation: false,

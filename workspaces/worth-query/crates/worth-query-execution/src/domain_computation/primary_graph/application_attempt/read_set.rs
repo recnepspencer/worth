@@ -22,12 +22,14 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrincipalResolutionMode,
 };
 
+mod binding_proof;
 mod observation_admission;
 mod observations;
 mod projected_completion;
 mod relation_observation;
 mod source_facts;
 
+pub(super) use binding_proof::{MutationHandlerBindingProof, WorkflowOperationBindingProof};
 use source_facts::{merge_source_facts, validate_source_facts};
 
 pub struct WorthQueryApplicationReadAttempt<
@@ -61,6 +63,8 @@ pub struct WorthQueryCompleteApplicationReadSet<
     pub(super) lease: WorthQueryApplicationSnapshotLease,
     pub(super) installed_read_scopes: Vec<WorthQueryOperationGraphReadScope>,
     pub(super) facts: Vec<WorthQueryApplicationObservedFact>,
+    pub(super) workflow_authority_binding: Option<WorkflowOperationBindingProof>,
+    pub(super) mutation_handler_binding: Option<MutationHandlerBindingProof>,
     pub(super) _phase: PhantomData<fn() -> Phase>,
 }
 
@@ -371,6 +375,8 @@ impl<Schema, Operation, Input, Scope, Phase>
             lease: self.lease,
             installed_read_scopes: self.installed_read_scopes.into_values().collect(),
             facts: self.facts.into_values().chain(self.source_facts).collect(),
+            workflow_authority_binding: None,
+            mutation_handler_binding: None,
             _phase: PhantomData,
         })
     }

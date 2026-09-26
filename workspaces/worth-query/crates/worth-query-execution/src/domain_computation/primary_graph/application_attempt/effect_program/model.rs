@@ -298,9 +298,10 @@ pub struct WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope> {
         u64,
     pub(in crate::domain_computation::primary_graph::application_attempt) conditional_definition:
         Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
-    /// True only when Query itself authored graph mutations outside the
-    /// application's declared touch contract after reserving their exact cost.
-    pub(in crate::domain_computation::primary_graph::application_attempt) platform_mutation: bool,
+    /// Whether effects follow the application contract, Query's reserved
+    /// platform contract, or both within one candidate.
+    pub(in crate::domain_computation::primary_graph::application_attempt) effect_posture:
+        crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture,
     pub(in crate::domain_computation::primary_graph::application_attempt) validator_work_admission:
         super::WorthQueryCandidateValidatorWorkAdmission,
     pub(in crate::domain_computation::primary_graph::application_attempt) output_correspondence:

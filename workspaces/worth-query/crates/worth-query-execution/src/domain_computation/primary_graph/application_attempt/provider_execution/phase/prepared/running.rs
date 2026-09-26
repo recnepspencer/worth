@@ -9,7 +9,7 @@ use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationCommitDenialStage as DenialStage, WorthQueryApplicationCommitOutcome,
 };
 use crate::domain_computation::primary_graph::application_attempt::provider_execution::provider_denial::denied;
-use super::WorthQueryPreparedApplicationCommit;
+use super::{LocalWorkflowSettlementPublication, WorthQueryPreparedApplicationCommit};
 use crate::domain_computation::operation_binding::WorthQueryApplicationOperationBindingInput;
 use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedApplicationOperation, WorthQueryPrimaryGraphApplicationRuntime,
@@ -47,6 +47,8 @@ pub(in crate::domain_computation::primary_graph::application_attempt::provider_e
     >,
     lease: WorthQueryApplicationSnapshotLease,
     provider_attempt: WorthQueryPreparedApplicationProviderAttempt,
+    outcome_identity: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitOutcomeIdentity,
+    workflow_settlement_publication: Option<LocalWorkflowSettlementPublication>,
     authorization: crate::domain_computation::authorization::WorthQueryProviderCommitAuthorization,
     idempotency: WorthQueryApplicationIdempotencyBinding,
     running: crate::domain_computation::WorthQueryRunningDirectRun,
@@ -76,7 +78,9 @@ where
         mut admission,
         lease,
         provider_attempt,
-        platform_mutation,
+        outcome_identity,
+        workflow_settlement_publication,
+        effect_posture,
         authorization,
         idempotency,
         aftermath_causality,
@@ -89,7 +93,7 @@ where
         lease.product(),
     )
     .map_err(|_| denied(DenialStage::ManagedRunAdmission))?;
-    let operation = bind_execution_operation(application, &admission, &lease, platform_mutation)?;
+    let operation = bind_execution_operation(application, &admission, &lease, effect_posture)?;
     let reserved = admission
         .graph_work_mut()
         .take_operation_capacity()
@@ -119,6 +123,8 @@ where
         admission,
         lease,
         provider_attempt,
+        outcome_identity,
+        workflow_settlement_publication,
         authorization,
         idempotency,
         running,
@@ -132,7 +138,7 @@ fn bind_execution_operation<Schema, Operation, Input, Scope>(
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     lease: &WorthQueryApplicationSnapshotLease,
-    platform_mutation: bool,
+    effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture,
 ) -> Result<WorthQueryExecutionBoundOperationAuthority, WorthQueryApplicationCommitOutcome>
 where
     Schema: ApplicationSchema,
@@ -191,7 +197,7 @@ where
                 schema_binding: admission.binding_identity(),
                 snapshot,
                 product: lease.product(),
-                platform_mutation,
+                effect_posture,
             },
         ),
     )

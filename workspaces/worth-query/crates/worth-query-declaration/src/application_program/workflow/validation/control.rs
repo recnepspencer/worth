@@ -165,14 +165,25 @@ fn require_bounded_back_edges(
         queue.push_back(connection.target);
         while let Some(current) = queue.pop_front() {
             work.visit_retry_reachability();
+            if current == connection.source {
+                break;
+            }
             for &successor in graph.control_successors(current) {
                 work.visit_retry_reachability();
                 if generations[successor] != generation {
                     generations[successor] = generation;
                     queue.push_back(successor);
                 }
+                if successor == connection.source {
+                    break;
+                }
+            }
+            if generations[connection.source] == generation {
+                break;
             }
         }
+        // A valid local retry need not inspect unrelated downstream control.
+        queue.clear();
         if generations[connection.source] != generation {
             return Err(denial(
                 ApplicationWorkflowValidationDenialKind::ControlCycle,
@@ -264,7 +275,7 @@ fn require_acyclic(
     Ok(order)
 }
 
-const ALL_OUTCOMES: [ApplicationWorkflowControlOutcome; 8] = [
+const ALL_OUTCOMES: [ApplicationWorkflowControlOutcome; 9] = [
     ApplicationWorkflowControlOutcome::Completed,
     ApplicationWorkflowControlOutcome::Approved,
     ApplicationWorkflowControlOutcome::Rejected,
@@ -273,4 +284,5 @@ const ALL_OUTCOMES: [ApplicationWorkflowControlOutcome; 8] = [
     ApplicationWorkflowControlOutcome::ConditionSatisfied,
     ApplicationWorkflowControlOutcome::ConditionUnsatisfied,
     ApplicationWorkflowControlOutcome::RetryExhausted,
+    ApplicationWorkflowControlOutcome::NavigatedBack,
 ];

@@ -108,6 +108,7 @@ fn node_record(node: &ApplicationWorkflowNode) -> String {
                 node.identity().as_str(),
                 operation.identifier(),
                 operation.input_type().as_str(),
+                operation.binding().map_or("", |(identity, _, _)| identity),
                 if *requires_workflow_authority {
                     "1"
                 } else {
@@ -123,6 +124,7 @@ fn node_record(node: &ApplicationWorkflowNode) -> String {
                 assessment.parameter_type().as_str(),
                 assessment.result_type().as_str(),
                 &subject_selector_record(assessment.subject()),
+                &assessment_applicability_record(assessment.applicability()),
             ],
         ),
         ApplicationWorkflowNodeKind::Condition(condition) => framed_record(
@@ -154,6 +156,19 @@ fn node_record(node: &ApplicationWorkflowNode) -> String {
 
 fn subject_selector_record(selector: &super::ApplicationWorkflowSubjectSelector) -> String {
     selector.persistence_identity()
+}
+
+fn assessment_applicability_record(
+    applicability: &super::ApplicationWorkflowAssessmentApplicability,
+) -> String {
+    match applicability {
+        super::ApplicationWorkflowAssessmentApplicability::Always => "always".to_owned(),
+        super::ApplicationWorkflowAssessmentApplicability::WhenRelatedRelationPresent {
+            relation,
+            from,
+            to,
+        } => framed_record("related-relation-present", &[relation, from, to]),
+    }
 }
 
 fn connection_record(connection: &ApplicationWorkflowConnection) -> String {
@@ -208,6 +223,7 @@ const fn control_tag(outcome: ApplicationWorkflowControlOutcome) -> u8 {
         ApplicationWorkflowControlOutcome::RetryExhausted => 5,
         ApplicationWorkflowControlOutcome::ConditionSatisfied => 6,
         ApplicationWorkflowControlOutcome::ConditionUnsatisfied => 7,
+        ApplicationWorkflowControlOutcome::NavigatedBack => 8,
     }
 }
 

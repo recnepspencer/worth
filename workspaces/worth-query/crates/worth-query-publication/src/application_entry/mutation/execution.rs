@@ -63,6 +63,15 @@ where
         >,
         WorthQueryApplicationProgramMigrationPreparationDenial,
     > {
+        if <Intent::Binding as ApplicationMutationBinding<Schema>>::REQUIRES_WORKFLOW_AUTHORITY {
+            return Err(
+                WorthQueryApplicationProgramMigrationPreparationDenial::Request(
+                    WorthQueryApplicationRequestMutationDenial::RequiresWorkflowTransition,
+                ),
+            );
+        }
+        self.require_workflow_transition()
+            .map_err(WorthQueryApplicationProgramMigrationPreparationDenial::Request)?;
         let admitted = self
             .request
             .application
@@ -124,6 +133,7 @@ where
         >,
         WorthQueryApplicationRequestMutationDenial,
     > {
+        self.require_workflow_transition()?;
         if self
             .request
             .application
@@ -231,12 +241,29 @@ where
         >,
         WorthQueryApplicationRequestMutationDenial,
     > {
+        self.require_workflow_transition()?;
         let prepared = prepare(&mut self)?;
         let principal_identity = prepared.principal_identity;
         let admission = prepared.admission;
         let idempotency = prepared.idempotency;
         if let Some(outcome) = self.resolve_idempotency(&admission, idempotency)? {
             return Ok(outcome);
+        }
+        let workflow_authority = self
+            .workflow_authority
+            .as_ref()
+            .and_then(|slot| slot.take());
+        if <Intent::Binding as ApplicationMutationBinding<Schema>>::REQUIRES_WORKFLOW_AUTHORITY {
+            workflow_authority
+                .as_ref()
+                .ok_or(WorthQueryApplicationRequestMutationDenial::WorkflowAuthoritySpent)?
+                .validate_before_handler(
+                    self.request.application,
+                    admission.allowed_graph_contract().decision_fact_budget(),
+                )
+                .map_err(
+                    WorthQueryApplicationRequestMutationDenial::WorkflowTransitionCurrentness,
+                )?;
         }
         let completed = match self
             .request
@@ -265,7 +292,14 @@ where
                 return Ok(WorthQueryApplicationMutationOutcome::DeadlineExceeded);
             }
         };
-        let (program, result) = completed.into_parts();
+        let (mut program, result) = completed.into_parts();
+        if let Some(authority) = workflow_authority.as_ref() {
+            program = program
+                .bind_workflow_operation_authority(authority)
+                .map_err(
+                    WorthQueryApplicationRequestMutationDenial::WorkflowTransitionCurrentness,
+                )?;
+        }
         Ok(
             match commit(self.request.application, program, idempotency) {
                 WorthQueryApplicationCommitOutcome::Committed(receipt) => {
@@ -299,6 +333,7 @@ where
         >,
         WorthQueryApplicationRequestMutationDenial,
     > {
+        self.require_workflow_transition()?;
         if !retain_output_demand_observation
             && self
                 .request
@@ -308,6 +343,17 @@ where
             return Err(WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired);
         }
         self.execute_with_preparation_and_commit(super::authorization::prepare, commit)
+    }
+
+    fn require_workflow_transition(
+        &self,
+    ) -> Result<(), WorthQueryApplicationRequestMutationDenial> {
+        if <Intent::Binding as ApplicationMutationBinding<Schema>>::REQUIRES_WORKFLOW_AUTHORITY
+            && (self.workflow_transition_identity.is_none() || self.workflow_authority.is_none())
+        {
+            return Err(WorthQueryApplicationRequestMutationDenial::RequiresWorkflowTransition);
+        }
+        Ok(())
     }
 
     fn resolve_idempotency(

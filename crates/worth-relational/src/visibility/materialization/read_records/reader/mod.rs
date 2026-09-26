@@ -18,6 +18,7 @@ mod truth_frontier_adjacency;
 mod truth_frontier_field_equality;
 mod truth_kind_scan;
 mod truth_record_access;
+mod truth_relation_kind_scan;
 
 use crate::authority::commit::preparation::planning::strategy::{
     coarse_preparation_packet_count, PreparationStrategySelection,
@@ -74,3 +75,6 @@ pub use truth_frontier_field_equality::{
     BoundedFrontierFieldEqualityTruthRead, FrontierFieldEqualityTruthReadLimitExceeded,
 };
 pub use truth_kind_scan::{BoundedEntityKindTruthRead, EntityKindTruthReadLimitExceeded};
+pub use truth_relation_kind_scan::{
+    BoundedRelationKindTruthRead, RelationKindTruthReadDenial, RelationKindTruthReadLimitExceeded,
+};

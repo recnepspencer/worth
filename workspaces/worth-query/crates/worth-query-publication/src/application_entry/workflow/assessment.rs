@@ -39,6 +39,7 @@ type SourceValue<Schema, Demand> = <<SourceBinding<Schema, Demand> as Applicatio
 pub enum WorthQueryWorkflowAssessmentDemandPreparationDenialKind {
     NotAwaitingAssessment,
     ContractMismatch,
+    RequirementMismatch,
 }
 
 #[derive(Debug)]
@@ -60,6 +61,12 @@ impl WorthQueryWorkflowAssessmentDemandPreparationDenial {
     const fn contract_mismatch() -> Self {
         Self {
             kind: WorthQueryWorkflowAssessmentDemandPreparationDenialKind::ContractMismatch,
+        }
+    }
+
+    pub(super) const fn requirement_mismatch() -> Self {
+        Self {
+            kind: WorthQueryWorkflowAssessmentDemandPreparationDenialKind::RequirementMismatch,
         }
     }
 }

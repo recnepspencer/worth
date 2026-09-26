@@ -60,7 +60,7 @@ where
                 &mut self.admitted,
                 fresh_request.principal,
                 fresh_request.scope,
-                fresh_request.branch.clone(),
+                fresh_request.branch,
                 disclosure,
                 identity.clone(),
                 revision.clone(),
@@ -70,7 +70,7 @@ where
                 &mut self.admitted,
                 fresh_request.principal,
                 fresh_request.scope,
-                fresh_request.branch.clone(),
+                fresh_request.branch,
                 disclosure,
             )
         }

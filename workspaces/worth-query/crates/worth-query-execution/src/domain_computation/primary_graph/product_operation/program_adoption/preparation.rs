@@ -45,6 +45,16 @@ pub enum WorthQueryBranchAdoptionPreparationDenial {
     MigrationTargetMismatch,
     MigrationSourceChanged,
     CustodyDispositionUnsupported(WorthQueryProgramCustodyInventoryRequirement),
+    WorkflowDispositionRequired {
+        instances: Box<[worth_relational::facade::identity::EntityId]>,
+    },
+    WorkflowInventoryUnreadable {
+        instance: worth_relational::facade::identity::EntityId,
+    },
+    WorkflowInventoryRelationUnreadable {
+        partition_id: worth_relational::facade::identity::PartitionId,
+        slot: usize,
+    },
     UnknownEntityScope {
         entity: String,
     },

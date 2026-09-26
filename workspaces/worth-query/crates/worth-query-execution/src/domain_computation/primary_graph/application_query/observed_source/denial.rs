@@ -10,6 +10,7 @@ pub enum WorthQuerySourceExpectationDenialKind {
     SourceChanged,
     IncompleteFootprint,
     SourceContractMismatch,
+    SourceParametersMismatch,
     WorkBudgetExceeded,
 }
 

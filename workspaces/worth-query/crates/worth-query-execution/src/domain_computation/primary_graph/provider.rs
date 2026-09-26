@@ -45,6 +45,7 @@ pub use committed_dispatch_outbox::{
     WorthQueryCommittedDispatchOutboxObservation, WorthQueryCommittedDispatchOutboxReadDenial,
     WorthQueryCommittedDispatchOutboxReadWork,
 };
+pub(in crate::domain_computation::primary_graph) use idempotency::WorthQueryProviderGuardedWorkflowOperationCustody;
 pub(super) use idempotency::{
     WorthQueryProductIdempotencyAffinity, WorthQueryProviderIdempotencyResolution,
     WorthQueryProviderIdempotencyResolutionDenial,

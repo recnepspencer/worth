@@ -1,5 +1,17 @@
 use super::*;
 
+pub(super) fn decode_transition_identity(identity: &str) -> Option<[u8; 32]> {
+    if identity.len() != 64 {
+        return None;
+    }
+    let mut bytes = [0_u8; 32];
+    for (index, byte) in bytes.iter_mut().enumerate() {
+        let offset = index * 2;
+        *byte = u8::from_str_radix(&identity[offset..offset + 2], 16).ok()?;
+    }
+    Some(bytes)
+}
+
 pub(super) fn validate_request_binding<Schema, Capability, Operation, Input, Scope, Spec, Program>(
     read_set: &WorthQueryCompleteApplicationReadSet<
         Schema,

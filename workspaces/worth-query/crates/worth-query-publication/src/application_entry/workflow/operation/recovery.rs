@@ -2,15 +2,22 @@ use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationIntent, ApplicationMutationScopeBinding,
     ApplicationMutationScopeResolution,
 };
+use worth_query_declaration::facade::application_schema::{
+    ApplicationOperationMarkerIdentity, ApplicationStructuredValueBinding,
+};
 use worth_query_execution::facade::primary_graph::{
     safe_retry_recovery_handle, WorthQueryAdmittedApplicationOperation,
-    WorthQueryApplicationCommitReceipt, WorthQueryPrimaryGraphApplicationRuntime,
-    WorthQueryRecoveryHandle, WorthQueryRecoveryHandleDenial, WorthQueryRecoveryHandleDenialKind,
+    WorthQueryPrimaryGraphApplicationRuntime, WorthQueryRecoveryHandle,
+    WorthQueryRecoveryHandleDenial, WorthQueryRecoveryHandleDenialKind,
     WorthQueryRecoverySafeRetryAdmission,
 };
-use worth_query_execution::facade::workflow_advance::WorthQueryWorkflowAdvanceAdapter;
+use worth_query_execution::facade::workflow_advance::{
+    RequiredWorkflowOperation, WorthQueryGuardedWorkflowOperationCustody,
+    WorthQueryWorkflowAdvanceAdapter,
+};
 use worth_query_installation::facade::ApplicationSchema;
 
+use super::owner::{other_custody, WorthQueryWorkflowOperationOwnerPosture};
 use crate::application_entry::mutation::{
     authorization, WorthQueryApplicationMutationRequestWithIdempotency,
 };
@@ -25,8 +32,13 @@ type MutationScope<Schema, Binding> =
 #[derive(Debug)]
 pub enum WorthQueryWorkflowOperationRecoveryPreparationDenial {
     NotWorkflowBound,
+    RequirementMismatch,
     RecoveryNotRequired,
     Request(WorthQueryApplicationRequestMutationDenial),
+    Inspection(
+        worth_query_execution::facade::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial,
+    ),
+    Owner(WorthQueryWorkflowOperationOwnerPosture),
     Recovery(WorthQueryRecoveryHandleDenial),
 }
 
@@ -36,10 +48,16 @@ impl std::fmt::Display for WorthQueryWorkflowOperationRecoveryPreparationDenial 
             Self::NotWorkflowBound => {
                 formatter.write_str("operation recovery request is not workflow-bound")
             }
+            Self::RequirementMismatch => formatter
+                .write_str("operation recovery request does not match the workflow requirement"),
             Self::RecoveryNotRequired => {
                 formatter.write_str("operation receipt has no unresolved external custody")
             }
             Self::Request(denial) => denial.fmt(formatter),
+            Self::Inspection(denial) => denial.fmt(formatter),
+            Self::Owner(posture) => {
+                write!(formatter, "workflow operation owner custody: {posture:?}")
+            }
             Self::Recovery(denial) => write!(formatter, "{denial:?}"),
         }
     }
@@ -142,36 +160,53 @@ where
             <IntentBinding<Schema, Intent> as ApplicationMutationBinding<Schema>>::PrincipalIdentity,
         >,
 {
-    pub fn prepare_workflow_operation_recovery(
+    pub fn prepare_workflow_operation_recovery_from_owner(
         mut self,
-        receipt: &WorthQueryApplicationCommitReceipt,
+        required: &RequiredWorkflowOperation,
     ) -> Result<
         WorthQueryPreparedWorkflowOperationRecovery<'application, Schema, IntentBinding<Schema, Intent>>,
         WorthQueryWorkflowOperationRecoveryPreparationDenial,
-    > {
-        if self.workflow_transition_identity().is_none() {
+    >
+    where
+        <IntentBinding<Schema, Intent> as ApplicationMutationBinding<Schema>>::Input:
+            Clone + Send + Sync + 'static,
+    {
+        if self.workflow_transition_identity() != Some(*required.transition_identity_bytes()) {
             return Err(WorthQueryWorkflowOperationRecoveryPreparationDenial::NotWorkflowBound);
         }
-        if !WorthQueryWorkflowAdvanceAdapter::operation_receipt_requires_recovery(receipt) {
-            return Err(
-                WorthQueryWorkflowOperationRecoveryPreparationDenial::RecoveryNotRequired,
-            );
+        if required.operation()
+            != <<IntentBinding<Schema, Intent> as ApplicationMutationBinding<Schema>>::Operation as ApplicationOperationMarkerIdentity<Schema>>::IDENTIFIER
+            || required.binding() != Some(IntentBinding::<Schema, Intent>::IDENTITY)
+            || required.input_type()
+                != <<IntentBinding<Schema, Intent> as ApplicationMutationBinding<Schema>>::InputBinding as ApplicationStructuredValueBinding>::IDENTITY.as_str()
+            || required.input_identity() != &self.input_identity()
+            || required.branch() != self.product_branch()
+        {
+            return Err(WorthQueryWorkflowOperationRecoveryPreparationDenial::RequirementMismatch);
         }
         let application = self.application_runtime();
         let prepared = authorization::prepare(&mut self)
             .map_err(WorthQueryWorkflowOperationRecoveryPreparationDenial::Request)?;
-        if !WorthQueryWorkflowAdvanceAdapter::recovery_request_matches_receipt(
+        let custody = WorthQueryWorkflowAdvanceAdapter::resolve_guarded_operation_custody(
+            application,
+            &prepared.admission,
             prepared.idempotency,
-            receipt.authority_binding().idempotency_binding(),
-        ) {
-            return Err(WorthQueryWorkflowOperationRecoveryPreparationDenial::Recovery(
-                WorthQueryRecoveryHandleDenial::new(
-                    WorthQueryRecoveryHandleDenialKind::IdempotencyMismatch,
-                ),
-            ));
-        }
+            required.transition_identity_bytes(),
+        )
+        .map_err(WorthQueryWorkflowOperationRecoveryPreparationDenial::Inspection)?;
+        let receipt = match custody {
+            WorthQueryGuardedWorkflowOperationCustody::DispatchPending(receipt) => receipt,
+            WorthQueryGuardedWorkflowOperationCustody::Committed(_) => {
+                return Err(WorthQueryWorkflowOperationRecoveryPreparationDenial::RecoveryNotRequired)
+            }
+            other => {
+                return Err(WorthQueryWorkflowOperationRecoveryPreparationDenial::Owner(
+                    other_custody(other),
+                ))
+            }
+        };
         let handle = application
-            .mint_recovery_handle(receipt)
+            .mint_recovery_handle(&receipt)
             .map_err(WorthQueryWorkflowOperationRecoveryPreparationDenial::Recovery)?;
         Ok(WorthQueryPreparedWorkflowOperationRecovery {
             application,

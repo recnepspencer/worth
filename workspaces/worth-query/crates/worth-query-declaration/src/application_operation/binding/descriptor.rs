@@ -93,6 +93,7 @@ pub struct ApplicationMutationBindingDescriptor {
     candidates: ApplicationCandidateRequirements,
     source_query_identifier: Option<String>,
     requires_application_program: bool,
+    requires_workflow_authority: bool,
 }
 
 impl ApplicationMutationBindingDescriptor {
@@ -118,6 +119,7 @@ impl ApplicationMutationBindingDescriptor {
         principal: ApplicationMutationPrincipalBindingContract,
         candidates: ApplicationCandidateRequirements,
         requires_application_program: bool,
+        requires_workflow_authority: bool,
     ) -> Self
     where
         Binding: 'static,
@@ -191,6 +193,7 @@ impl ApplicationMutationBindingDescriptor {
             candidates,
             source_query_identifier: SourceExpectation::QUERY_IDENTIFIER.map(str::to_owned),
             requires_application_program,
+            requires_workflow_authority,
         }
     }
 
@@ -284,5 +287,9 @@ impl ApplicationMutationBindingDescriptor {
 
     pub const fn requires_application_program(&self) -> bool {
         self.requires_application_program
+    }
+
+    pub const fn requires_workflow_authority(&self) -> bool {
+        self.requires_workflow_authority
     }
 }

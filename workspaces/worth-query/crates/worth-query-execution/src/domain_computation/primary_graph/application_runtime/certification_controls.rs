@@ -7,6 +7,8 @@ use worth_foundational::facade::{AspectValue, InternedString};
 
 use super::WorthQueryPrimaryGraphApplicationRuntime;
 #[cfg(feature = "test-primary-graph-faults")]
+mod workflow_approval;
+#[cfg(feature = "test-primary-graph-faults")]
 use worth_relational::facade::{
     identity::PartitionId,
     symbols::ClientKey,

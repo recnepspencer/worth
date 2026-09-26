@@ -62,7 +62,16 @@ pub enum BankApplicationAttemptDenialKind {
     WorkflowTransitionAlreadySettled,
     WorkflowTransitionNodeUnsupported,
     WorkflowTransitionIdentityUnavailable,
+    WorkflowAssessmentEvidenceIncomplete,
     WorkflowAssessmentEvidenceMismatch,
+    WorkflowApprovalPrincipalStale,
+    WorkflowApprovalGrantUnavailable,
+    WorkflowApprovalExpired,
+    WorkflowApprovalDelegationChanged,
+    WorkflowApprovalAuthorityDenied,
+    ConflictingEffectStep,
+    WorkflowHistoryReconstructionBudgetExceeded,
+    WorkflowTransitionCapacityExceeded,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -229,8 +238,31 @@ const fn application_attempt_kind(
         Query::WorkflowTransitionIdentityUnavailable => {
             BankApplicationAttemptDenialKind::WorkflowTransitionIdentityUnavailable
         }
+        Query::WorkflowAssessmentEvidenceIncomplete => {
+            BankApplicationAttemptDenialKind::WorkflowAssessmentEvidenceIncomplete
+        }
         Query::WorkflowAssessmentEvidenceMismatch => {
             BankApplicationAttemptDenialKind::WorkflowAssessmentEvidenceMismatch
+        }
+        Query::WorkflowApprovalPrincipalStale => {
+            BankApplicationAttemptDenialKind::WorkflowApprovalPrincipalStale
+        }
+        Query::WorkflowApprovalGrantUnavailable => {
+            BankApplicationAttemptDenialKind::WorkflowApprovalGrantUnavailable
+        }
+        Query::WorkflowApprovalExpired => BankApplicationAttemptDenialKind::WorkflowApprovalExpired,
+        Query::WorkflowApprovalDelegationChanged => {
+            BankApplicationAttemptDenialKind::WorkflowApprovalDelegationChanged
+        }
+        Query::WorkflowApprovalAuthorityDenied => {
+            BankApplicationAttemptDenialKind::WorkflowApprovalAuthorityDenied
+        }
+        Query::ConflictingEffectStep => BankApplicationAttemptDenialKind::ConflictingEffectStep,
+        Query::WorkflowHistoryReconstructionBudgetExceeded => {
+            BankApplicationAttemptDenialKind::WorkflowHistoryReconstructionBudgetExceeded
+        }
+        Query::WorkflowTransitionCapacityExceeded => {
+            BankApplicationAttemptDenialKind::WorkflowTransitionCapacityExceeded
         }
     }
 }

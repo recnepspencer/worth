@@ -6,6 +6,7 @@ use super::{
 use crate::domain_computation::primary_graph::workflow::{
     definition::CompiledWorkflowDefinition, schema::WorthQueryWorkflowLayout,
 };
+use worth_foundational::facade::{AspectValue, InternedString};
 use worth_query_installation::facade::WorthQueryWorkflowHistoryReconstructionBudget;
 use worth_relational::facade::identity::EntityId;
 
@@ -84,6 +85,16 @@ pub(super) fn observe(
             transition.to,
             &mut scratch,
         )?;
+        let identity = match super::observe_field_value(
+            runtime,
+            snapshot,
+            transition.to,
+            layout.transition.entity_kind,
+            &layout.transition.identity,
+        ) {
+            Some(AspectValue::String(InternedString::Raw(identity))) => identity,
+            _ => return Err(denial("workflow transition identity is unavailable")),
+        };
         let node = compiled
             .node(settlement.node())
             .ok_or_else(|| denial("history node is absent from the compiled definition"))?;
@@ -97,6 +108,7 @@ pub(super) fn observe(
         )?;
         settled.push(ObservedWorkflowTransition {
             entity: transition.to,
+            identity,
             settlement,
             assessment_evidence,
         });

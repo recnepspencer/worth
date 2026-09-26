@@ -11,7 +11,9 @@ use super::{
     RelationalAuthorizationRelatedEntityConstraint,
 };
 
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(
+    Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd, serde::Serialize, serde::Deserialize,
+)]
 pub enum RelationalAuthorizationTraversalDirection {
     Forward,
     Reverse,

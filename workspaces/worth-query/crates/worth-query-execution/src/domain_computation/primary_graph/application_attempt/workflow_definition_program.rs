@@ -3,7 +3,9 @@ use worth_query_declaration::facade::{
     application_program::ApplicationWorkflowSpec,
     application_schema::ApplicationOperationMarkerIdentity,
 };
-use worth_query_installation::facade::ApplicationSchema;
+use worth_query_installation::facade::{
+    ApplicationSchema, WorthQueryInstalledWorkflowDefinitionParts,
+};
 
 use super::effect_program::{admit_platform_effects, PlatformEffectDemand};
 use super::{
@@ -98,8 +100,12 @@ where
         self.facts.extend(lineage.facts);
 
         let program_revision = bound.contract.program_revision().clone();
-        let (definition, assessment_bindings, condition_bindings, approval_bindings) =
-            bound.contract.into_definition();
+        let WorthQueryInstalledWorkflowDefinitionParts {
+            definition,
+            assessment_bindings,
+            condition_bindings,
+            approval_bindings,
+        } = bound.contract.into_definition();
         let content_identity = definition.content_identity().clone();
         let workflow_intent_identity =
             intent_identity::workflow_definition_intent_identity::<Spec>(
@@ -151,7 +157,7 @@ where
             emission_retained_bytes: 0,
             emission_retained_bytes_ceiling: 0,
             conditional_definition: None,
-            platform_mutation: true,
+            effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Platform,
             validator_work_admission,
             output_correspondence: Default::default(),
             retain_output_demand_observation: false,

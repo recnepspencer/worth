@@ -71,6 +71,9 @@ pub(super) struct InstalledWorkflowOperation {
     pub(super) marker: TypeId,
     pub(super) identifier: &'static str,
     pub(super) input_type: WorthQueryPortableTypeIdentity,
+    pub(super) binding_type: TypeId,
+    pub(super) binding_identity: &'static str,
+    pub(super) requires_workflow_authority: bool,
 }
 
 #[derive(Clone)]

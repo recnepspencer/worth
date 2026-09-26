@@ -142,7 +142,6 @@ where
                 self.recover_proposal_replay(
                     &layout,
                     &compiled,
-                    &instance,
                     &observed,
                     Operation::IDENTIFIER,
                     input_type.as_str(),
@@ -230,7 +229,7 @@ where
                 emission_retained_bytes: 0,
                 emission_retained_bytes_ceiling: 0,
                 conditional_definition: None,
-                platform_mutation: true,
+            effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Platform,
                 validator_work_admission,
                 output_correspondence: Default::default(),
                 retain_output_demand_observation: false,
@@ -259,7 +258,6 @@ where
         &self,
         layout: &crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
         compiled: &crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowDefinition,
-        instance: &super::PublishedWorkflowInstanceRef,
         observed: &super::workflow_instance_observation::ObservedWorkflowInstance,
         operation: &str,
         input_type: &str,
@@ -274,13 +272,20 @@ where
     >{
         let mut match_found = None;
         let mut latest_occurrence = None;
+        let replays = observed.replays.materialize();
         for transition in &observed.transitions {
+            let Some(replay) = usize::try_from(transition.settlement.occurrence())
+                .ok()
+                .and_then(|index| replays.get(index))
+            else {
+                continue;
+            };
             let Ok(selected) = select_proposal_replay_transition(
                 compiled,
-                instance.entity_id(),
                 transition.settlement,
                 operation,
                 input_type,
+                replay,
             ) else {
                 continue;
             };

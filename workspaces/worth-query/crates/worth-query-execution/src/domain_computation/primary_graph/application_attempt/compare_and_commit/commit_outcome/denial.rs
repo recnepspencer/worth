@@ -1,6 +1,7 @@
 //! Pre-publication application denial categories and owner evidence.
 
 mod program_binding;
+mod workflow;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationCommitDenialKind {
@@ -9,6 +10,9 @@ pub enum WorthQueryApplicationCommitDenialKind {
     CandidateValidatorWorkExceeded {
         maximum_work: usize,
         required_work: usize,
+    },
+    WorkflowSettlementDenied {
+        kind: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenialKind,
     },
     ProductBasisStale,
     ActiveSnapshotCapacityExhausted {
@@ -33,6 +37,7 @@ pub enum WorthQueryApplicationCommitDenialKind {
     DelegationActivationRequired,
     CapabilityRevocationRequired,
     ApplicationProgramRequired,
+    WorkflowAuthorityRequired,
     /// The presented program is not the program this occurrence is running.
     ProgramNotActiveOnOccurrence,
     /// This occurrence carries no branch program activation the host can
@@ -349,7 +354,6 @@ impl WorthQueryApplicationCommitDenial {
             custom_invariant: None,
         }
     }
-
     pub(in crate::domain_computation::primary_graph::application_attempt) const fn elevation_request_program_mismatch(
     ) -> Self {
         Self {

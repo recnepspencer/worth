@@ -2388,6 +2388,17 @@ workspace layouts, and multi-window breadth; it consumes this responsive core.
 This slice makes authored conditions and computed semantic values part of the
 real language rather than helper sugar or renderer-side convenience.
 
+The shared language kernel is governed by
+[Query 9.17.6.1](../WORTH-query/milestone-9.17.6.1.md): portable grammar, typed
+admission, canonical meaning, deterministic operators and bounded pure evaluation
+live in `worth-foundational`. `worth-ui-dsl` still owns UI-authored expression
+artifacts, binding roles and provenance; runtime planning owns evaluation over
+admitted facts, and rebind owns currentness and affected-lane lifecycle. No UI-local
+interpreter or renderer evaluation substitutes for that kernel. 9.17.6.1 must deliver
+the real source/rebind pulse and all five evaluation-use integrations below; 3.17
+retains its complete UI acceptance and reuses that evidence. Neither milestone
+defers the same integration to the other. 3.18 extends its source/expansion map.
+
 **Platform pulse**
 
 Author one pulse condition or derived value that visibly controls presence,

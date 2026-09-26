@@ -32,6 +32,26 @@ fn parameter_bindings_converge_and_diverge_through_foundational_comparison() {
 }
 
 #[test]
+fn mutation_selectors_match_exact_admitted_parameters() {
+    let query = installed_query();
+    let source = admitted(&query, 7);
+    let expected = |account| {
+        ApplicationQueryParameterSet::new()
+            .bind(account_parameter(), account)
+            .unwrap()
+    };
+    assert!(source.matches_expected(expected(7)).unwrap());
+    assert!(!source.matches_expected(expected(8)).unwrap());
+    assert!(!source
+        .matches_expected(ApplicationQueryParameterSet::<super::ActivityQuery>::new())
+        .unwrap());
+    assert_eq!(source
+        .matches_expected(expected(7).bind(account_parameter(), 7).unwrap())
+        .unwrap_err().kind(),
+        crate::application_query::WorthQueryApplicationQueryParameterDenialKind::CanonicalEntryBudgetExceeded);
+}
+
+#[test]
 fn parameter_identity_has_no_debug_or_precanonical_value_grammar() {
     let canonical_source = include_str!("../parameter_canonical_basis.rs");
     let source = include_str!("../parameter_binding.rs");

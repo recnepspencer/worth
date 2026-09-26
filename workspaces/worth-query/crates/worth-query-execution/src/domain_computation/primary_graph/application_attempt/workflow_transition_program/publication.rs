@@ -2,10 +2,15 @@ use worth_query_declaration::facade::application_program::ApplicationProgramRevi
 
 use super::super::{WorthQueryApplicationCommitOutcome, WorthQueryApplicationEffectProgram};
 
+#[path = "publication/actor.rs"]
+mod actor;
 #[path = "publication/approval.rs"]
 mod approval;
 #[path = "publication/assessment_evidence.rs"]
 mod assessment_evidence;
+#[path = "publication/authentication.rs"]
+mod authentication;
+pub use authentication::PreparedWorkflowApprovalAuthentication;
 #[path = "publication/commit.rs"]
 mod commit;
 #[path = "publication/evidence_readiness.rs"]
@@ -17,10 +22,15 @@ mod required_assessment;
 #[path = "publication/transition_replay.rs"]
 mod transition_replay;
 pub use approval::{RequiredWorkflowApproval, WorkflowApprovalDecision};
+pub use actor::RequiredWorkflowActor;
 pub use assessment_evidence::PerformedWorkflowAssessmentEvidence;
 pub(super) use commit::project;
+pub(in crate::domain_computation::primary_graph::application_attempt) use commit::transition_entity_in_receipt;
 pub use evidence_readiness::RequiredWorkflowEvidence;
-pub use operation::{PreparedWorkflowOperation, RequiredWorkflowOperation};
+pub use operation::{
+    PreparedWorkflowOperation, RequiredWorkflowOperation, WorkflowOperationAuthority,
+    WorkflowOperationAuthoritySlot,
+};
 pub use required_assessment::RequiredWorkflowAssessment;
 pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) use transition_replay::PreparedWorkflowTransitionReplays;
 
@@ -44,6 +54,7 @@ pub enum PreparedWorkflowAdvance<Schema, Operation, Input, Scope> {
         >,
         approval: Option<PreparedWorkflowApprovalProjection>,
         approval_identity: Option<[u8; 32]>,
+        approval_authentication: Option<PreparedWorkflowApprovalAuthentication<Schema>>,
         replays: PreparedWorkflowTransitionReplays,
     },
     AwaitingAssessment(PreparedWorkflowAssessment<Schema, Operation, Input, Scope>),
@@ -145,6 +156,8 @@ pub struct PreparedWorkflowAssessment<Schema, Operation, Input, Scope> {
             Scope,
         >,
     pub(super) required: RequiredWorkflowAssessment,
+    pub(super) applicability_dependencies:
+        Vec<crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact>,
     pub(super) layout:
         crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
     pub(super) program_revision: ApplicationProgramRevision,
@@ -331,6 +344,7 @@ impl PerformedWorkflowTransition {
 
 #[derive(Debug)]
 pub enum WorkflowProgressOutcome {
+    AwaitingActor(RequiredWorkflowActor),
     AwaitingAssessment(RequiredWorkflowAssessment),
     AwaitingCondition(RequiredWorkflowCondition),
     AwaitingOperation(RequiredWorkflowOperation),
@@ -340,5 +354,8 @@ pub enum WorkflowProgressOutcome {
     Application(WorthQueryApplicationCommitOutcome),
     ProjectionDenied(super::super::WorthQueryApplicationCommitReceipt),
     PreparationDenied(super::super::WorthQueryApplicationAttemptDenial),
+    AuthenticationDenied(
+        worth_query_admission::facade::authentication_event::WorthQueryAuthenticationEventDenial,
+    ),
     IdempotencyDenied(super::super::WorthQueryApplicationIdempotencyResolutionDenial),
 }

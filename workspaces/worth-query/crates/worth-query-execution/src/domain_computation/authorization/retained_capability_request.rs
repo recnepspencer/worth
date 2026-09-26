@@ -10,6 +10,10 @@ use super::operation_progression::{
     WorthQueryCapabilityContextKey, WorthQueryResolvedCapabilityRequest,
 };
 
+mod portable;
+pub(in crate::domain_computation) use portable::WorkflowApprovalRequestEncodingDenial;
+pub(in crate::domain_computation) use portable::MAXIMUM_PORTABLE_BYTES;
+
 #[derive(Clone)]
 pub(in crate::domain_computation) struct WorthQueryRetainedCapabilityRequest {
     capability_identity: [u8; 32],
@@ -39,17 +43,15 @@ impl WorthQueryRetainedCapabilityRequest {
         request
     }
 
-    pub(in crate::domain_computation::authorization) const fn capability_identity(
-        &self,
-    ) -> [u8; 32] {
+    pub(in crate::domain_computation) const fn capability_identity(&self) -> [u8; 32] {
         self.capability_identity
     }
-    pub(in crate::domain_computation::authorization) const fn principal(
+    pub(in crate::domain_computation) const fn principal(
         &self,
     ) -> worth_relational::facade::identity::EntityId {
         self.principal
     }
-    pub(in crate::domain_computation::authorization) const fn resource(
+    pub(in crate::domain_computation) const fn resource(
         &self,
     ) -> worth_relational::facade::identity::EntityId {
         self.resource
@@ -62,10 +64,10 @@ impl WorthQueryRetainedCapabilityRequest {
     ) -> Option<worth_relational::facade::identity::EntityId> {
         self.elevation
     }
-    pub(in crate::domain_computation::authorization) const fn action(&self) -> &AspectValue {
+    pub(in crate::domain_computation) const fn action(&self) -> &AspectValue {
         &self.action
     }
-    pub(in crate::domain_computation::authorization) const fn purpose(&self) -> &AspectValue {
+    pub(in crate::domain_computation) const fn purpose(&self) -> &AspectValue {
         &self.purpose
     }
     pub(in crate::domain_computation::authorization) const fn related_relation(

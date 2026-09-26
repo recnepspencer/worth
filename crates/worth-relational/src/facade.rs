@@ -243,9 +243,10 @@ pub mod runtime {
     pub use crate::visibility::materialization::read_records::{
         AdjacencyTruthReadLimitExceeded, BoundedAdjacencyTruthRead, BoundedEntityKindTruthRead,
         BoundedFrontierAdjacencyTruthRead, BoundedFrontierFieldEqualityTruthRead,
-        EntityKindTruthReadLimitExceeded, FrontierAdjacencyTruthReadLimitExceeded,
-        FrontierFieldEqualityTruthReadLimitExceeded, ProjectionAspectFilter,
-        ProjectionAspectFilterMode, ProjectionAspectRequirement, ProjectionAspectScope,
+        BoundedRelationKindTruthRead, EntityKindTruthReadLimitExceeded,
+        FrontierAdjacencyTruthReadLimitExceeded, FrontierFieldEqualityTruthReadLimitExceeded,
+        ProjectionAspectFilter, ProjectionAspectFilterMode, ProjectionAspectRequirement,
+        ProjectionAspectScope, RelationKindTruthReadDenial, RelationKindTruthReadLimitExceeded,
     };
 }
 

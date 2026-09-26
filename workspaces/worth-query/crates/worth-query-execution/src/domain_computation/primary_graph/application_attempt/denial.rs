@@ -58,7 +58,14 @@ pub enum WorthQueryApplicationAttemptDenialKind {
     WorkflowTransitionAlreadySettled,
     WorkflowTransitionNodeUnsupported,
     WorkflowTransitionIdentityUnavailable,
+    WorkflowTransitionCapacityExceeded,
+    WorkflowAssessmentEvidenceIncomplete,
     WorkflowAssessmentEvidenceMismatch,
+    WorkflowApprovalPrincipalStale,
+    WorkflowApprovalGrantUnavailable,
+    WorkflowApprovalExpired,
+    WorkflowApprovalDelegationChanged,
+    WorkflowApprovalAuthorityDenied,
 }
 
 #[derive(Debug)]

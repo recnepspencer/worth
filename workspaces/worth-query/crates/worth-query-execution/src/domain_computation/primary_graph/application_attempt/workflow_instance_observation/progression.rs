@@ -2,7 +2,7 @@ use worth_relational::facade::identity::{EntityId, VersionId};
 use worth_relational::facade::runtime::RelationalAdjacencyDirection;
 
 use super::{
-    denial, ObservedWorkflowTransition, PublishedWorkflowInstanceRef, SettledWorkflowTransition,
+    denial, ObservedWorkflowTransition, PublishedWorkflowInstanceRef,
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
     WorthQueryApplicationObservedFact,
 };
@@ -33,20 +33,59 @@ pub(super) fn project_replays(
     instance: EntityId,
     transitions: &[ObservedWorkflowTransition],
 ) -> Result<Vec<WorkflowTransitionReplayProjection>, WorthQueryApplicationAttemptDenial> {
-    transitions
-        .iter()
-        .map(|transition| {
-            select_settled_replay_transition(compiled, instance, transition.settlement).map(
-                |selected| WorkflowTransitionReplayProjection {
-                    identity: selected.identity().to_owned(),
-                    identity_bytes: *selected.identity_bytes(),
-                    node_path: selected.node_path().to_owned(),
-                    terminal: selected.terminal(),
-                    operation_receipt_identity: transition.settlement.operation_receipt_identity(),
-                },
-            )
-        })
-        .collect()
+    let mut ordered = transitions.iter().collect::<Vec<_>>();
+    ordered.sort_unstable_by_key(|transition| transition.settlement.occurrence());
+    let mut progress = WorkflowInstanceProgress::start(compiled);
+    let mut replays = Vec::with_capacity(ordered.len());
+    for transition in ordered {
+        let settled = transition.settlement;
+        if settled.occurrence() != progress.next_occurrence() {
+            return Err(denial(
+                "workflow replay history is not a contiguous compiled path",
+            ));
+        }
+        let collection = settled.node() != progress.head();
+        if collection && transition.assessment_evidence.is_none() {
+            return Err(denial(
+                "off-head assessment collection has no linked evidence",
+            ));
+        }
+        let selected = select_settled_replay_transition(
+            compiled,
+            instance,
+            settled,
+            progress.back_edge_iterations(),
+        )?;
+        if selected.identity() != transition.identity {
+            return Err(denial(
+                "published workflow transition identity differs from settled path",
+            ));
+        }
+        replays.push(WorkflowTransitionReplayProjection {
+            identity: selected.identity().to_owned(),
+            identity_bytes: *selected.identity_bytes(),
+            node_path: selected.node_path().to_owned(),
+            terminal: selected.terminal(),
+            navigation_back: settled.outcome() == worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome::NavigatedBack,
+            operation_receipt_identity: settled.operation_receipt_identity(),
+        });
+        if selected.terminal() {
+            if replays.len() != transitions.len() {
+                return Err(denial(
+                    "workflow terminal settlement precedes another transition",
+                ));
+            }
+        } else {
+            progress.apply_observation(
+                compiled,
+                WorkflowTransitionProgressObservation::new(
+                    crate::domain_computation::primary_graph::workflow::instance::WorkflowTransitionLocator::new(transition.entity, settled),
+                    transition.assessment_evidence.as_ref().map(|evidence| evidence.entity),
+                ),
+            )?;
+        }
+    }
+    Ok(replays)
 }
 
 pub(super) fn observe_progress(
@@ -119,13 +158,20 @@ pub(super) fn finish_progress(
             retained.replays,
         )),
         None => {
-            let mut settlements = transitions
-                .iter()
-                .map(|transition| transition.transition().settlement())
-                .collect::<Vec<SettledWorkflowTransition>>();
-            let mut progress = WorkflowInstanceProgress::reconstruct(compiled, &mut settlements)?;
+            let mut observations = transitions.to_vec();
+            let mut progress = WorkflowInstanceProgress::reconstruct(compiled, &mut observations)?;
             for transition in transitions {
-                progress.retain_observation(*transition);
+                let settled = transition.transition().settlement();
+                let index = usize::try_from(settled.occurrence())
+                    .map_err(|_| denial("workflow replay occurrence exceeds supported indexing"))?;
+                let identity = replays.get(index).ok_or_else(|| {
+                    denial("workflow replay identity is missing from settled history")
+                })?;
+                progress.retain_transition_identity(
+                    settled.node(),
+                    settled.occurrence(),
+                    identity.identity.clone(),
+                );
             }
             let replays = WorkflowTransitionReplayRetention::from_replays(replays);
             handle

@@ -28,3 +28,5 @@ mod signal_fork_inheritance;
 mod support_retirement;
 #[path = "adoption/support_retirement_races.rs"]
 mod support_retirement_races;
+#[path = "adoption/workflow_custody.rs"]
+mod workflow_custody;

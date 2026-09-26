@@ -21,6 +21,8 @@ pub(super) struct WorthQueryPrincipalMappingObservation {
     pub(super) kind_id: KindId,
     pub(super) identity: AspectValue,
     pub(super) enabled: bool,
+    pub(super) identity_revision: worth_relational::facade::runtime::RelationalFieldRevision,
+    pub(super) status_revision: worth_relational::facade::runtime::RelationalFieldRevision,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -31,6 +33,9 @@ pub(super) struct WorthQueryPrincipalTargetObservation {
     pub(super) target: EntityId,
     pub(super) principal_kind: KindId,
     pub(super) principal_identity: AspectValue,
+    pub(super) principal_identity_revision:
+        worth_relational::facade::runtime::RelationalFieldRevision,
+    pub(super) adjacency_revision: Option<worth_relational::facade::identity::VersionId>,
 }
 
 pub(super) fn observe_mapping(
@@ -45,6 +50,12 @@ pub(super) fn observe_mapping(
         .project_snapshot(snapshot)
         .ok_or_else(|| stale_proof_denial(binding))?;
     let scope = mapping_projection_scope(layout);
+    let identity_revision = view
+        .entity_field_revision(mapping_id, &authoritative(&layout.identity_locator))
+        .ok_or_else(|| stale_proof_denial(binding))?;
+    let status_revision = view
+        .entity_field_revision(mapping_id, &authoritative(&layout.status_locator))
+        .ok_or_else(|| stale_proof_denial(binding))?;
     view.entity_record_with_projection_scope(mapping_id, scope, |record| {
         if record.kind_id() != layout.mapping_kind
             || record.lifecycle() != RecordLifecycleState::Live
@@ -60,6 +71,8 @@ pub(super) fn observe_mapping(
             kind_id: record.kind_id(),
             identity,
             enabled: *enabled,
+            identity_revision,
+            status_revision,
         })
     })
     .ok_or_else(|| stale_proof_denial(binding))
@@ -129,8 +142,10 @@ pub(super) fn resolve_principal_target(
             binding,
         ));
     }
-    let principal_identity =
+    let (principal_identity, principal_identity_revision) =
         observe_principal_identity(runtime, snapshot, principal.entity_id, layout, binding)?;
+    let adjacency_revision =
+        principal_adjacency_revision(runtime, snapshot, mapping_id, layout, binding)?;
     Ok(WorthQueryPrincipalTargetObservation {
         relation_id: relation.relation_id,
         relation_kind: relation.kind.kind_id,
@@ -138,6 +153,8 @@ pub(super) fn resolve_principal_target(
         target: relation.target,
         principal_kind: principal.kind.kind_id,
         principal_identity,
+        principal_identity_revision,
+        adjacency_revision,
     })
 }
 
@@ -183,8 +200,10 @@ pub(super) fn observe_exact_principal_target(
     {
         return Err(stale_proof_denial(binding));
     }
-    let principal_identity =
+    let (principal_identity, principal_identity_revision) =
         observe_principal_identity(runtime, snapshot, principal_id, layout, binding)?;
+    let adjacency_revision =
+        principal_adjacency_revision(runtime, snapshot, relation.2, layout, binding)?;
     Ok(WorthQueryPrincipalTargetObservation {
         relation_id,
         relation_kind: relation.0,
@@ -192,6 +211,8 @@ pub(super) fn observe_exact_principal_target(
         target: relation.3,
         principal_kind: principal.0,
         principal_identity,
+        principal_identity_revision,
+        adjacency_revision,
     })
 }
 
@@ -201,7 +222,13 @@ fn observe_principal_identity(
     principal_id: EntityId,
     layout: &WorthQueryPrimaryPrincipalBindingLayout,
     binding: &str,
-) -> Result<AspectValue, WorthQueryPrincipalResolutionDenial> {
+) -> Result<
+    (
+        AspectValue,
+        worth_relational::facade::runtime::RelationalFieldRevision,
+    ),
+    WorthQueryPrincipalResolutionDenial,
+> {
     let view = runtime
         .read_truth()
         .project_snapshot(snapshot)
@@ -209,13 +236,21 @@ fn observe_principal_identity(
     let scope = ProjectionAspectScope::from_requirements([projection_requirement(
         &layout.principal_identity_locator,
     )]);
+    let revision = view
+        .entity_field_revision(
+            principal_id,
+            &authoritative(&layout.principal_identity_locator),
+        )
+        .ok_or_else(|| stale_proof_denial(binding))?;
     view.entity_record_with_projection_scope(principal_id, scope, |record| {
         if record.kind_id() != layout.principal_kind
             || record.lifecycle() != RecordLifecycleState::Live
         {
             return None;
         }
-        projected_field(record, &layout.principal_identity_locator).cloned()
+        projected_field(record, &layout.principal_identity_locator)
+            .cloned()
+            .map(|value| (value, revision))
     })
     .ok_or_else(|| stale_proof_denial(binding))
 }
@@ -227,6 +262,40 @@ fn mapping_projection_scope(
         projection_requirement(&layout.identity_locator),
         projection_requirement(&layout.status_locator),
     ])
+}
+
+fn authoritative(
+    locator: &worth_foundational::facade::AspectFieldLocator,
+) -> worth_foundational::facade::AspectFieldLocator {
+    worth_foundational::facade::AspectFieldLocator::new(
+        worth_foundational::facade::LocatorAuthority::Authoritative,
+        locator.aspect().aspect_key().clone(),
+        locator.field_path().clone(),
+    )
+}
+
+fn principal_adjacency_revision(
+    runtime: &RelationalRuntime,
+    snapshot: &SnapshotHandle,
+    mapping: EntityId,
+    layout: &WorthQueryPrimaryPrincipalBindingLayout,
+    binding: &str,
+) -> Result<
+    Option<worth_relational::facade::identity::VersionId>,
+    WorthQueryPrincipalResolutionDenial,
+> {
+    let view = runtime
+        .read_truth()
+        .project_snapshot(snapshot)
+        .ok_or_else(|| stale_proof_denial(binding))?;
+    view.bounded_adjacency_structural_revision(
+        mapping,
+        layout.relation_kind,
+        worth_relational::facade::runtime::RelationalAdjacencyDirection::Outgoing,
+        1,
+    )
+    .map(|revision| revision.revision())
+    .map_err(|_| stale_proof_denial(binding))
 }
 
 fn projection_requirement(

@@ -17,18 +17,34 @@ use worth_query_host::facade::{
         WorkflowDefinitionExpectedPredecessor, WorkflowDefinitionPublicationOutcome,
         WorkflowInstanceStartOutcome, WorkflowProgressOutcome, WorkflowProposalOutcome,
         WorthQueryApplicationMutationOutcome, WorthQueryOutputDemandControls,
-        WorthQueryPreparedWorkflowOperationRecovery, WorthQueryWorkflowAssessmentDemandProgress,
-        WorthQueryWorkflowAssessmentDemandSettlement,
+        WorthQueryPreparedWorkflowOperationRecovery, WorthQueryWorkflowAssessmentDemandHandle,
+        WorthQueryWorkflowAssessmentDemandProgress, WorthQueryWorkflowAssessmentDemandSettlement,
     },
     primary_graph::{WorthQueryApplicationCommitOutcome, WorthQueryApplicationCommitReceipt},
 };
 
 use crate::{
-    approved_business_payment_definition, BankAuthenticatedPrincipal, BankIdentityRuntime,
+    approved_business_payment_definition, BankApprovalCredential, BankAuthenticatedPrincipal,
+    BankIdentityRuntime,
 };
+
+#[path = "approved_payment_workflow/error.rs"]
+mod error;
+#[path = "approved_payment_workflow/owner.rs"]
+mod owner;
+#[path = "approved_payment_workflow/progression.rs"]
+mod progression;
+pub use error::BankApprovedPaymentWorkflowError;
 
 pub type BankApprovedPaymentAssessment =
     WorthQueryWorkflowAssessmentDemandSettlement<PaymentDetailQuery>;
+pub type BankApprovedPaymentAssessmentDemand<'runtime> = WorthQueryWorkflowAssessmentDemandHandle<
+    'runtime,
+    BankSchema,
+    bank_domain::schema::ApprovedBusinessPaymentWorkflow,
+    crate::application_definition::BankApplication,
+    ApprovedPaymentAssessmentDemand,
+>;
 pub type BankApprovedPaymentPreparedRecovery<'runtime> =
     WorthQueryPreparedWorkflowOperationRecovery<
         'runtime,
@@ -112,8 +128,11 @@ impl<'runtime, 'principal, 'scope> BankApprovedPaymentWorkflow<'runtime, 'princi
             .runtime
             .approved_payment_workflow_runtime()
             .workflow_spec()
-            .bind_definition(approved_business_payment_definition().map_err(debug_error)?)
-            .map_err(debug_error)?;
+            .bind_definition(
+                approved_business_payment_definition()
+                    .map_err(BankApprovedPaymentWorkflowError::Definition)?,
+            )
+            .map_err(BankApprovedPaymentWorkflowError::DefinitionBinding)?;
         self.runtime
             .request(self.principal, self.scope)
             .mutate(ApprovedBusinessPaymentAuthoringIntent { input: authority })
@@ -121,7 +140,7 @@ impl<'runtime, 'principal, 'scope> BankApprovedPaymentWorkflow<'runtime, 'princi
             .idempotency(command_key)
             .prepare_workflow_publication(contract, expected_predecessor)
             .map(|request| request.execute())
-            .map_err(debug_error)
+            .map_err(BankApprovedPaymentWorkflowError::DefinitionPublication)
     }
 
     pub fn start(
@@ -140,7 +159,7 @@ impl<'runtime, 'principal, 'scope> BankApprovedPaymentWorkflow<'runtime, 'princi
                 definition,
             )
             .map(|request| request.execute())
-            .map_err(debug_error)
+            .map_err(BankApprovedPaymentWorkflowError::InstanceStart)
     }
 
     pub fn propose(
@@ -156,58 +175,44 @@ impl<'runtime, 'principal, 'scope> BankApprovedPaymentWorkflow<'runtime, 'princi
             .idempotency(command_key)
             .prepare_workflow_proposal(self.runtime.approved_payment_workflow_runtime(), instance)
             .map(|request| request.execute())
-            .map_err(debug_error)
+            .map_err(BankApprovedPaymentWorkflowError::Proposal)
     }
 
-    pub fn advance(
+    pub fn begin_payment_assessment(
         &self,
         instance: PublishedWorkflowInstanceRef,
         authority: ApprovePayment,
         command_key: &BankIdempotencyKey,
-    ) -> Result<WorkflowProgressOutcome, BankApprovedPaymentWorkflowError> {
-        self.runtime
-            .request(self.principal, self.scope)
-            .mutate(ApprovedBusinessPaymentAdvanceIntent { input: authority })
-            .without_source()
-            .idempotency(command_key)
-            .prepare_workflow_advance(self.runtime.approved_payment_workflow_runtime(), instance)
-            .map(|request| request.execute())
-            .map_err(debug_error)
-    }
-
-    pub fn settle_payment_assessment(
-        &self,
-        instance: PublishedWorkflowInstanceRef,
-        authority: ApprovePayment,
-        command_key: &BankIdempotencyKey,
-    ) -> Result<BankApprovedPaymentAssessment, BankApprovedPaymentWorkflowError> {
+    ) -> Result<BankApprovedPaymentAssessmentDemand<'runtime>, BankApprovedPaymentWorkflowError>
+    {
         let payment_id = authority.payment;
         let request = self.runtime.request(self.principal, self.scope);
-        let mut demand = request
+        request
             .mutate(ApprovedBusinessPaymentAdvanceIntent { input: authority })
             .without_source()
             .idempotency(command_key)
             .prepare_workflow_advance(self.runtime.approved_payment_workflow_runtime(), instance)
-            .map_err(debug_error)?
+            .map_err(BankApprovedPaymentWorkflowError::Advance)?
             .into_assessment_demand(ApprovedPaymentAssessmentDemand::new(payment_id))
-            .map_err(debug_error)?
+            .map_err(BankApprovedPaymentWorkflowError::AssessmentPreparation)?
             .controls(WorthQueryOutputDemandControls::new(
                 std::num::NonZeroUsize::new(1_024).expect("assessment work is nonzero"),
                 std::num::NonZeroUsize::new(16_384).expect("assessment bytes are nonzero"),
             ))
             .start()
-            .map_err(debug_error)?;
-        for _ in 0..8 {
-            match demand.settle(&request).map_err(debug_error)? {
-                WorthQueryWorkflowAssessmentDemandProgress::Pending => {}
-                WorthQueryWorkflowAssessmentDemandProgress::Settled(settled) => {
-                    return Ok(settled);
-                }
-            }
-        }
-        Err(BankApprovedPaymentWorkflowError(
-            "payment assessment exceeded its settlement work".to_owned(),
-        ))
+            .map_err(BankApprovedPaymentWorkflowError::AssessmentDemand)
+    }
+
+    pub fn settle_payment_assessment(
+        &self,
+        demand: &mut BankApprovedPaymentAssessmentDemand<'runtime>,
+    ) -> Result<
+        WorthQueryWorkflowAssessmentDemandProgress<PaymentDetailQuery>,
+        BankApprovedPaymentWorkflowError,
+    > {
+        demand
+            .settle(&self.runtime.request(self.principal, self.scope))
+            .map_err(BankApprovedPaymentWorkflowError::AssessmentDemand)
     }
 
     pub fn accept_assessment(
@@ -223,22 +228,24 @@ impl<'runtime, 'principal, 'scope> BankApprovedPaymentWorkflow<'runtime, 'princi
             .without_source()
             .idempotency(command_key)
             .prepare_workflow_advance(self.runtime.approved_payment_workflow_runtime(), instance)
-            .map_err(debug_error)?
+            .map_err(BankApprovedPaymentWorkflowError::Advance)?
             .accept_assessment(assessment)
-            .map_err(debug_error)
+            .map_err(BankApprovedPaymentWorkflowError::AssessmentAcceptance)
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub fn approve(
+    pub async fn approve(
         &self,
         instance: PublishedWorkflowInstanceRef,
         required: &RequiredWorkflowApproval,
         proposal: &PublishedWorkflowProposalRef,
         decision: WorkflowApprovalDecision,
+        credential: BankApprovalCredential,
         authority: ApprovePayment,
         command_key: &BankIdempotencyKey,
     ) -> Result<WorkflowProgressOutcome, BankApprovedPaymentWorkflowError> {
-        self.runtime
+        let signing = self
+            .runtime
             .request(self.principal, self.scope)
             .mutate(ApprovedBusinessPaymentApprovalIntent { input: authority })
             .without_source()
@@ -250,8 +257,22 @@ impl<'runtime, 'principal, 'scope> BankApprovedPaymentWorkflow<'runtime, 'princi
                 proposal,
                 decision,
             )
+            .map_err(BankApprovedPaymentWorkflowError::Advance)?;
+        let Some(intent) = signing.authentication_intent().cloned() else {
+            return signing
+                .execute_replay()
+                .map_err(BankApprovedPaymentWorkflowError::Advance);
+        };
+        let event = self
+            .runtime
+            .approval_authentication()
+            .authenticate(credential, self.principal.external(), intent, self.scope)
+            .await
+            .map_err(BankApprovedPaymentWorkflowError::Authentication)?;
+        signing
+            .sign(&event)
             .map(|request| request.execute())
-            .map_err(debug_error)
+            .map_err(BankApprovedPaymentWorkflowError::Advance)
     }
 
     pub fn perform_apply(
@@ -270,9 +291,9 @@ impl<'runtime, 'principal, 'scope> BankApprovedPaymentWorkflow<'runtime, 'princi
             })
             .idempotency(command_key)
             .for_workflow_operation(self.runtime.approved_payment_workflow_runtime(), required)
-            .map_err(debug_error)?
+            .map_err(BankApprovedPaymentWorkflowError::OperationBinding)?
             .execute_in_program(self.runtime.approved_payment_workflow_runtime())
-            .map_err(debug_error)?;
+            .map_err(BankApprovedPaymentWorkflowError::OperationMutation)?;
         Ok(match effect {
             WorthQueryApplicationMutationOutcome::Committed { receipt, .. } => {
                 BankApprovedPaymentApplyOutcome::Performed(BankApprovedPaymentPerformedOperation {
@@ -303,81 +324,4 @@ impl<'runtime, 'principal, 'scope> BankApprovedPaymentWorkflow<'runtime, 'princi
             }
         })
     }
-
-    pub fn accept_applied(
-        &self,
-        instance: PublishedWorkflowInstanceRef,
-        required: &RequiredWorkflowOperation,
-        authority: ApprovePayment,
-        performed: &BankApprovedPaymentPerformedOperation,
-        command_key: &BankIdempotencyKey,
-    ) -> Result<WorkflowProgressOutcome, BankApprovedPaymentWorkflowError> {
-        self.runtime
-            .request(self.principal, self.scope)
-            .mutate(ApprovedBusinessPaymentAdvanceIntent { input: authority })
-            .without_source()
-            .idempotency(command_key)
-            .prepare_workflow_advance(self.runtime.approved_payment_workflow_runtime(), instance)
-            .map_err(debug_error)?
-            .accept_operation::<ApprovePaymentMutationBinding>(required, &performed.receipt)
-            .map_err(debug_error)
-    }
-
-    pub fn prepare_apply_recovery(
-        &self,
-        required: &RequiredWorkflowOperation,
-        operation: ApprovePayment,
-        performed: &BankApprovedPaymentPerformedOperation,
-        command_key: &BankIdempotencyKey,
-    ) -> Result<BankApprovedPaymentPreparedRecovery<'runtime>, BankApprovedPaymentWorkflowError>
-    {
-        self.runtime
-            .request(self.principal, self.scope)
-            .on_branch(performed.receipt.product_branch())
-            .mutate(ApprovedBusinessPaymentApplyIntent { input: operation })
-            .idempotency(command_key)
-            .for_workflow_operation(self.runtime.approved_payment_workflow_runtime(), required)
-            .map_err(debug_error)?
-            .prepare_workflow_operation_recovery(&performed.receipt)
-            .map_err(debug_error)
-    }
-
-    pub fn accept_recovered_applied(
-        &self,
-        instance: PublishedWorkflowInstanceRef,
-        required: &RequiredWorkflowOperation,
-        authority: ApprovePayment,
-        performed: &BankApprovedPaymentPerformedOperation,
-        recovery: &worth_query_host::facade::primary_graph::WorthQueryRecoverySafeRetryAdmission,
-        command_key: &BankIdempotencyKey,
-    ) -> Result<WorkflowProgressOutcome, BankApprovedPaymentWorkflowError> {
-        self.runtime
-            .request(self.principal, self.scope)
-            .mutate(ApprovedBusinessPaymentAdvanceIntent { input: authority })
-            .without_source()
-            .idempotency(command_key)
-            .prepare_workflow_advance(self.runtime.approved_payment_workflow_runtime(), instance)
-            .map_err(debug_error)?
-            .accept_recovered_operation::<ApprovePaymentMutationBinding>(
-                required,
-                &performed.receipt,
-                recovery,
-            )
-            .map_err(debug_error)
-    }
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct BankApprovedPaymentWorkflowError(String);
-
-impl std::fmt::Display for BankApprovedPaymentWorkflowError {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        formatter.write_str(&self.0)
-    }
-}
-
-impl std::error::Error for BankApprovedPaymentWorkflowError {}
-
-fn debug_error(error: impl std::fmt::Debug) -> BankApprovedPaymentWorkflowError {
-    BankApprovedPaymentWorkflowError(format!("{error:?}"))
 }

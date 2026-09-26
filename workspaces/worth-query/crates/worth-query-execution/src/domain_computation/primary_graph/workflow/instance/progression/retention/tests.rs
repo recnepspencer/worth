@@ -18,7 +18,12 @@ fn progress(head: u64) -> WorkflowInstanceProgress {
             (entity(1), ApplicationWorkflowControlOutcome::Completed),
             2usize,
         )]),
+        path_depth: 0,
+        path: im::OrdMap::new(),
+        back_blocked_by_operation: false,
+        back_edge_iterations: im::OrdMap::new(),
         latest_transitions: im::OrdMap::new(),
+        latest_transition_identities: im::OrdMap::new(),
         latest_assessment_evidence: im::OrdMap::new(),
     }
 }
@@ -29,6 +34,7 @@ fn replay(identity: u8) -> WorkflowTransitionReplayProjection {
         identity_bytes: [identity; 32],
         node_path: format!("node-{identity}"),
         terminal: false,
+        navigation_back: false,
         operation_receipt_identity: None,
     }
 }

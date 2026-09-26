@@ -1,11 +1,15 @@
 //! Program runtime paired with one immutable installed workflow vocabulary.
 
+use worth_query_admission::facade::authentication_event::WorthQueryAuthenticationEventSigningOwner;
 use worth_query_declaration::facade::{
     application_program::ApplicationWorkflowSpec, application_schema::ApplicationSchema,
 };
 use worth_query_installation::facade::WorthQueryInstalledApplicationWorkflowSpec;
 
 use super::WorthQueryProgramApplicationRuntime;
+
+mod authentication;
+pub(crate) use authentication::workflow_approval_authentication_intent;
 
 /// Retains the typed workflow vocabulary beside the program runtime that admitted it.
 ///
@@ -19,6 +23,7 @@ where
 {
     runtime: WorthQueryProgramApplicationRuntime<Schema, Program>,
     workflow: WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+    authentication: WorthQueryAuthenticationEventSigningOwner<Schema>,
 }
 
 impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program>
@@ -28,6 +33,7 @@ where
     pub fn retain_workflow_spec<Spec>(
         self,
         workflow: WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+        authentication: WorthQueryAuthenticationEventSigningOwner<Schema>,
     ) -> Result<
         WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>,
         WorthQueryWorkflowRuntimeBindingDenial,
@@ -38,12 +44,16 @@ where
         if workflow.schema_binding() != &self.runtime.installed_schema().binding_identity() {
             return Err(WorthQueryWorkflowRuntimeBindingDenial::ForeignSchema);
         }
+        if authentication.binding_identity() != workflow.schema_binding() {
+            return Err(WorthQueryWorkflowRuntimeBindingDenial::ForeignAuthenticationOwner);
+        }
         if workflow.program_revision() != self.program.revision() {
             return Err(WorthQueryWorkflowRuntimeBindingDenial::ForeignProgram);
         }
         Ok(WorthQueryWorkflowApplicationRuntime {
             runtime: self,
             workflow,
+            authentication,
         })
     }
 }
@@ -61,6 +71,10 @@ where
         &self,
     ) -> &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program> {
         &self.workflow
+    }
+
+    pub const fn authentication_owner(&self) -> &WorthQueryAuthenticationEventSigningOwner<Schema> {
+        &self.authentication
     }
 
     pub fn into_program_runtime(self) -> WorthQueryProgramApplicationRuntime<Schema, Program> {
@@ -85,4 +99,5 @@ where
 pub enum WorthQueryWorkflowRuntimeBindingDenial {
     ForeignSchema,
     ForeignProgram,
+    ForeignAuthenticationOwner,
 }

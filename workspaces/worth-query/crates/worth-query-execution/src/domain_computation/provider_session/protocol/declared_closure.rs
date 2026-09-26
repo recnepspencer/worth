@@ -8,8 +8,13 @@ use worth_query_installation::facade::{
 };
 
 mod aftermath_posture;
+#[path = "declared_closure/application.rs"]
+mod application;
 #[cfg(test)]
 pub(super) use aftermath_posture::reversal_posture;
+#[cfg(test)]
+pub(super) use application::bind_application_candidate_effect_closure;
+pub(crate) use application::WorthQueryApplicationEffectPosture;
 
 #[derive(Clone, Debug)]
 pub(crate) struct WorthQueryProviderPlanDeclarations {
@@ -62,43 +67,6 @@ impl WorthQueryProviderPlanDeclarations {
         declarations.bind_direct(semantics);
         declarations.bind_workflow(semantics);
         declarations
-    }
-
-    pub(crate) fn from_application_contracts(
-        contracts: &worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts,
-        platform_mutation: bool,
-    ) -> Self {
-        let mut closure = WorthQueryProviderPlanDeclaredClosure::default();
-        bind_direct_role_closure(
-            &mut closure,
-            &effect_families(contracts.effects()),
-            &invariant_slots(contracts.invariants()),
-        );
-        if platform_mutation {
-            // The attempt carries only Query-owned platform effects. Its
-            // application operation supplied admission and decision reads,
-            // not application touch or invariant authority.
-            closure.effect = vec!["mutation".to_owned()];
-            closure.invariant.clear();
-        } else if !contracts.touches().scopes().is_empty() {
-            closure.effect = effect_families(contracts.effects());
-            closure.invariant = invariant_slots(contracts.invariants());
-        }
-        closure.canonicalize();
-        Self {
-            direct: [("primary".to_owned(), closure)].into_iter().collect(),
-            workflow: BTreeMap::new(),
-            decision_fact_families: contracts.decision_facts().required_families().to_vec(),
-            invariant_requirements: if platform_mutation {
-                Vec::new()
-            } else {
-                contracts.invariant_execution().requirements().to_vec()
-            },
-            reconciliation_posture: "provisional-discard".to_owned(),
-            application_graph_reads: Some(contracts.graph_reads().clone()),
-            application_touches: Some(contracts.touches().clone()),
-            application_read_touch_overlap: Some(contracts.read_touch_overlap().clone()),
-        }
     }
 
     pub(super) fn closure(

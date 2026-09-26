@@ -85,7 +85,9 @@ impl ApplicationMutationBinding<BoundedDimensionSchema> for WorkflowDefinitionAu
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
     const CANDIDATES: ApplicationCandidateRequirements =
         ApplicationCandidateRequirements::fixed_shape(
-            ApplicationCandidateCardinalityCeiling::fixed(65_536, 0, 65_536, 2, 65_536, 0),
+            // A 10k control graph needs <30k creates, <68k links and <100k
+            // writes while keeping the installed aggregate below 200k items.
+            ApplicationCandidateCardinalityCeiling::fixed(30_000, 0, 68_000, 2, 100_000, 0),
             ApplicationCandidateResourceCeiling::bounded(128 * 1024 * 1024, 20_000_000),
         );
 

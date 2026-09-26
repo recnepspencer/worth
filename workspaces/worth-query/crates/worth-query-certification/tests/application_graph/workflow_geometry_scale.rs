@@ -15,7 +15,7 @@ use worth_query_replay::facade::WorthQueryCertificationCostRuntimeExt;
 
 use super::bounded_dimension_model::{
     dimension_entry::PART_IDENTITY,
-    host::publish_on_first_program_for_geometry_scale,
+    host::publish_on_first_program_for_workflow_scale,
     operator_identity::authenticate_operator,
     workflow::{
         retain_workflow_with_resources, start_instance, ReviewedGeometryWorkflow,
@@ -88,7 +88,7 @@ fn public_ten_thousand_node_definition_publishes() {
     )
     .expect("finite geometry workflow resources");
     let application =
-        retain_workflow_with_resources(publish_on_first_program_for_geometry_scale(), resources);
+        retain_workflow_with_resources(publish_on_first_program_for_workflow_scale(), resources);
     let runtime = application.runtime();
     let cancellation = worth_query_host::facade::admission::authenticated_principal::WorthQueryCancellationSource::new();
     let scope =
@@ -125,6 +125,14 @@ fn public_ten_thousand_node_definition_publishes() {
     let sharing = cost.relational().sharing_cost_delta();
     assert_eq!(sharing.copied_truth_bytes, 0);
     assert!(sharing.publication_new_authoritative_bytes > 0);
+    assert!(
+        sharing.publication_new_authoritative_bytes <= u64::from(NODES) * 32 * 1024,
+        "10k geometry publication must retain proportional authoritative bytes"
+    );
+    assert!(
+        sharing.publication_content_values_hashed <= u64::from(NODES) * 32,
+        "10k geometry publication must hash proportional content"
+    );
     println!(
         "geometry publication authored_ms={authored_ms} validated_ms={validated_ms} elapsed_ms={} application_work={:?} copied_truth_bytes={} new_authoritative_bytes={} content_values_hashed={} touched_regions={} reused_regions={}",
         started_at.elapsed().as_millis(),
@@ -177,7 +185,7 @@ fn cold_compilation_of_large_definition_uses_bounded_start_facts() {
     )
     .expect("finite workflow resources");
     let application =
-        retain_workflow_with_resources(publish_on_first_program_for_geometry_scale(), resources);
+        retain_workflow_with_resources(publish_on_first_program_for_workflow_scale(), resources);
     let runtime = application.runtime();
     let cancellation = worth_query_host::facade::admission::authenticated_principal::WorthQueryCancellationSource::new();
     let scope =

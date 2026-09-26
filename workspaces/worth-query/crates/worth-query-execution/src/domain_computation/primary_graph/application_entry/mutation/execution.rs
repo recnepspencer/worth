@@ -103,7 +103,8 @@ where
                 .finish()
                 .map(|program| {
                     HandlerResult::Completed(WorthQueryCompletedMutationCandidate::new(
-                        program, result,
+                        program.bind_mutation_handler_input::<Binding>(input),
+                        result,
                     ))
                 })
                 .map_err(MutationHandlerExecutionDenial::Attempt),

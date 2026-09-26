@@ -36,3 +36,5 @@ mod ordinary_admission;
 mod scope_mismatch;
 #[path = "authorization/structured_input_validation.rs"]
 mod structured_input_validation;
+#[path = "authorization/workflow_approval_revalidation.rs"]
+mod workflow_approval_revalidation;

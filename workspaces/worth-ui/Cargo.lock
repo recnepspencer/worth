@@ -4564,6 +4564,7 @@ dependencies = [
 name = "worth-query-admission"
 version = "0.1.0"
 dependencies = [
+ "getrandom 0.3.4",
  "sha2",
  "worth-foundational",
  "worth-query-declaration",
@@ -4598,6 +4599,8 @@ name = "worth-query-execution"
 version = "0.1.0"
 dependencies = [
  "im",
+ "serde",
+ "serde_json",
  "sha2",
  "worth-foundational",
  "worth-proof",

@@ -33,8 +33,8 @@ pub(super) fn apply(
                 ) else {
                     continue;
                 };
+                state.dependencies.entities.insert(candidate);
                 if entity_is_live_kind(context.view, candidate, kind, state.counters) {
-                    state.dependencies.entities.insert(candidate);
                     observed.push(candidate);
                 }
             }

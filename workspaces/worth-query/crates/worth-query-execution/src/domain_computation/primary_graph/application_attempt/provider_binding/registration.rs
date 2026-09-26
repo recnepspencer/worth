@@ -15,6 +15,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationAtt
     decision_facts: crate::domain_computation::authorization::WorthQueryProviderDecisionFactBinding,
     effects: super::effect_accumulator::WorthQueryRegisteredProviderEffects,
     idempotency: super::super::WorthQueryApplicationIdempotencyBinding,
+    outcome_identity: super::super::WorthQueryApplicationCommitOutcomeIdentity,
     retained_authorization_fact_count: usize,
     external_effect: &'a worth_query_installation::facade::InstalledExternalEffectContract,
     preimage_demand: Option<&'a worth_query_installation::facade::InstalledPreImageDemand>,
@@ -107,6 +108,7 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
             decision_facts,
             effects,
             idempotency: context.idempotency(&inspection),
+            outcome_identity: context.outcome_identity(&inspection),
             retained_authorization_fact_count: context
                 .admission(&inspection)
                 .graph_work_decision_fact_count(),

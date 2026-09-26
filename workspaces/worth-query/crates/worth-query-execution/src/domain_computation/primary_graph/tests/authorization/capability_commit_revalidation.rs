@@ -263,7 +263,7 @@ fn assert_readmission_denial(outcome: WorthQueryApplicationCommitOutcome) {
     );
 }
 
-fn revoke_grant(world: &World) {
+pub(super) fn revoke_grant(world: &World) {
     let request = live_scope();
     let grant = world
         .selected_product()
@@ -285,7 +285,7 @@ fn revoke_grant(world: &World) {
     );
 }
 
-fn disable_mapping(world: &World, mapping: EntityId) {
+pub(super) fn disable_mapping(world: &World, mapping: EntityId) {
     let graph = world.application.runtime.primary_graph().unwrap();
     let layout = graph
         .layout()
@@ -300,6 +300,22 @@ fn disable_mapping(world: &World, mapping: EntityId) {
         )
         .unwrap(),
         "disable-capability-principal",
+    );
+}
+
+pub(super) fn enable_mapping(world: &World, mapping: EntityId) {
+    let graph = world.application.runtime.primary_graph().unwrap();
+    let layout = graph
+        .layout()
+        .principal_binding(world.binding.binding())
+        .unwrap();
+    update_field(
+        world,
+        mapping,
+        layout.status_locator.clone(),
+        WorthQueryPrincipalMappingStatusBinding::encode(&WorthQueryPrincipalMappingStatus::Enabled)
+            .unwrap(),
+        "reenable-capability-principal",
     );
 }
 

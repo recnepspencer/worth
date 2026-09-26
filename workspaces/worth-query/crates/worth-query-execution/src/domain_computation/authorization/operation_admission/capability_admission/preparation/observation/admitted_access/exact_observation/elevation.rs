@@ -83,8 +83,8 @@ where
         );
         let observation = self.bind_capability_observation(installed, &retained, sample)?;
         let observed = observation.observe_upper_bound_capability(grant.entity_id(), None)?;
-        let decision = observed
-            .into_decision_for_grant(grant.entity_id())
+        let (decision, expiry) = observed
+            .into_refresh_for_grant(grant.entity_id())
             .map_err(|()| rejected(installed))?;
         Ok(WorthQueryObservedElevationSupport::new(
             WorthQueryElevationUpperBound::capture(
@@ -100,6 +100,7 @@ where
                 grant.entity_id(),
                 retained,
                 sample.clone(),
+                expiry,
             ),
         ))
     }

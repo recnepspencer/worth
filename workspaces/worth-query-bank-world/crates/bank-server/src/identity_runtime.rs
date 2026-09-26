@@ -40,6 +40,7 @@ use worth_query_host::facade::primary_graph::{
 };
 
 use crate::application_definition::BankApplication;
+use crate::approval_authentication::BankApprovalAuthenticationOwner;
 
 use crate::error::{
     BankAuthenticationBoundaryBuildError, BankIdentityRuntimeBuildError,
@@ -47,8 +48,9 @@ use crate::error::{
 };
 use crate::principal_seed::{BankPrincipalSeed, PreparedBankPrincipalSeed};
 use crate::{
-    BankApplicationQueryDenial, BankAuthenticatedPrincipal, BankAuthenticationBoundary,
-    BankBusinessOwnerSeed, BankEmployeeAssignmentSeed, BankPreviewSession, BankWorldSeed,
+    BankApplicationQueryDenial, BankApprovalAuthenticationConfiguration,
+    BankAuthenticatedPrincipal, BankAuthenticationBoundary, BankBusinessOwnerSeed,
+    BankEmployeeAssignmentSeed, BankPreviewSession, BankWorldSeed,
 };
 
 pub struct BankAuthenticationConfiguration {
@@ -80,6 +82,7 @@ pub struct BankIdentityRuntime {
         BankPrincipalIdBinding,
     >,
     invariant_projection: WorthQueryApplicationInvariantProjectionAuthority<BankSchema>,
+    approval_authentication: BankApprovalAuthenticationOwner,
 }
 
 impl BankIdentityRuntime {
@@ -99,6 +102,10 @@ impl BankIdentityRuntime {
         BankApplication,
     > {
         &self.runtime
+    }
+
+    pub(crate) const fn approval_authentication(&self) -> &BankApprovalAuthenticationOwner {
+        &self.approval_authentication
     }
 
     pub const fn application_program(
@@ -123,6 +130,7 @@ impl BankIdentityRuntime {
             seeds,
             None,
             installation::BankAuthorizationTimeInstallation::System,
+            BankApprovalAuthenticationConfiguration::denying(),
         )
     }
 
@@ -132,6 +140,21 @@ impl BankIdentityRuntime {
             principals,
             Some(world),
             installation::BankAuthorizationTimeInstallation::System,
+            BankApprovalAuthenticationConfiguration::denying(),
+        )
+    }
+
+    /// Installs the host's trusted approval factor for the payment workflow.
+    pub fn install_world_with_approval_authentication(
+        seed: BankWorldSeed,
+        approval_authentication: BankApprovalAuthenticationConfiguration,
+    ) -> Result<Self, BankIdentityRuntimeBuildError> {
+        let (principals, world) = prepare_world(seed)?;
+        installation::install_prepared(
+            principals,
+            Some(world),
+            installation::BankAuthorizationTimeInstallation::System,
+            approval_authentication,
         )
     }
 
@@ -148,6 +171,7 @@ impl BankIdentityRuntime {
             principals,
             Some(world),
             installation::BankAuthorizationTimeInstallation::Installed(Box::new(source)),
+            BankApprovalAuthenticationConfiguration::denying(),
         )
     }
 

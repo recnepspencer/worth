@@ -27,6 +27,7 @@ pub(in crate::domain_computation) struct WorthQueryProviderAttemptRegistrationCo
         Scope,
     >,
     idempotency: WorthQueryApplicationIdempotencyBinding,
+    outcome_identity: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitOutcomeIdentity,
     aftermath_causality: Option<
         &'a crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
     >,
@@ -44,6 +45,7 @@ impl<'a, Schema, Operation, Input, Scope>
             Scope,
         >,
         idempotency: WorthQueryApplicationIdempotencyBinding,
+        outcome_identity: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitOutcomeIdentity,
         aftermath_causality: Option<
             &'a crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
         >,
@@ -52,6 +54,7 @@ impl<'a, Schema, Operation, Input, Scope>
             provider,
             admission,
             idempotency,
+            outcome_identity,
             aftermath_causality,
         }
     }
@@ -80,6 +83,13 @@ impl<'a, Schema, Operation, Input, Scope>
         _permit: &WorthQueryProviderRegistrationInspectionPermit,
     ) -> WorthQueryApplicationIdempotencyBinding {
         self.idempotency
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_attempt) const fn outcome_identity(
+        &self,
+        _permit: &WorthQueryProviderRegistrationInspectionPermit,
+    ) -> crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitOutcomeIdentity{
+        self.outcome_identity
     }
 
     pub(in crate::domain_computation::primary_graph::application_attempt) const fn aftermath_causality(

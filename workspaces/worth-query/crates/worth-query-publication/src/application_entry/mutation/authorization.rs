@@ -236,6 +236,7 @@ where
                     .bind_application_source_expectation::<IntentBinding<Schema, Intent>, _>(
                         &mut admission,
                         source,
+                        request.request.intent.input(),
                     ),
                 WorthQueryMutationExpectedSource::ResultSet(source) => request
                     .request
@@ -243,6 +244,7 @@ where
                     .bind_application_result_set_expectation::<IntentBinding<Schema, Intent>, _>(
                         &mut admission,
                         source,
+                        request.request.intent.input(),
                     ),
             }
             .map_err(WorthQueryApplicationRequestMutationDenial::SourceExpectation)?);

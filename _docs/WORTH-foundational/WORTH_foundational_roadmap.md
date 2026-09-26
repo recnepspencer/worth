@@ -37,8 +37,12 @@ That rule governs every milestone:
    representation across crates that legitimately need AoS, SoA, AoSoA, or
    custom topology
 10. lowered plans may need to execute at runtime, but shared crates must expose
-   only the proof/composition and descriptive boundary language, not a generic
-   executor
+    only the proof/composition and descriptive boundary language, not a generic
+    executor. The explicitly scoped pure expression kernel in
+    [Query 9.17.6.1](../WORTH-query/milestone-9.17.6.1.md) additionally owns portable
+    grammar, typing, canonical programs, deterministic operators and bounded
+    stateless interpretation. It owns no runtime registry, clock, scheduler,
+    currentness, resource reservation, cache lifecycle, or operational authority
 11. shared boundary vocabulary must not collapse authoritative truth, derived
    artifacts, and descriptive/forensic surfaces into one generic artifact
    model

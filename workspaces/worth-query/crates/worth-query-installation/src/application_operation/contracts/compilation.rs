@@ -93,6 +93,8 @@ impl WorthQueryCompiledApplicationOperationContracts {
             external_effect,
             aftermath,
             overlap_index,
+            platform_candidate_ceiling: candidate_demand.candidate_ceiling(),
+            workflow_settlement_ceiling: candidate_demand.workflow_settlement_ceiling(),
         })
     }
 }

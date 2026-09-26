@@ -36,6 +36,15 @@ pub struct WorthQueryInstalledWorkflowApprovalBinding {
     pub installed_capability_identity: [u8; 32],
 }
 
+/// The validated definition and its installation-selected member bindings.
+#[doc(hidden)]
+pub struct WorthQueryInstalledWorkflowDefinitionParts<Spec: ApplicationWorkflowSpec> {
+    pub definition: ValidatedWorkflowDefinition<Spec>,
+    pub assessment_bindings: Box<[(String, &'static str)]>,
+    pub condition_bindings: Box<[(String, &'static str)]>,
+    pub approval_bindings: Box<[WorthQueryInstalledWorkflowApprovalBinding]>,
+}
+
 impl<Schema, Spec, Program> WorthQueryInstalledWorkflowDefinitionContract<Schema, Spec, Program>
 where
     Schema: ApplicationSchema,
@@ -93,20 +102,13 @@ where
     }
 
     #[doc(hidden)]
-    pub fn into_definition(
-        self,
-    ) -> (
-        ValidatedWorkflowDefinition<Spec>,
-        Box<[(String, &'static str)]>,
-        Box<[(String, &'static str)]>,
-        Box<[WorthQueryInstalledWorkflowApprovalBinding]>,
-    ) {
-        (
-            self.definition,
-            self.assessment_bindings,
-            self.condition_bindings,
-            self.approval_bindings,
-        )
+    pub fn into_definition(self) -> WorthQueryInstalledWorkflowDefinitionParts<Spec> {
+        WorthQueryInstalledWorkflowDefinitionParts {
+            definition: self.definition,
+            assessment_bindings: self.assessment_bindings,
+            condition_bindings: self.condition_bindings,
+            approval_bindings: self.approval_bindings,
+        }
     }
 }
 
@@ -141,12 +143,25 @@ where
     let mut approval_bindings = Vec::new();
     for node in definition.nodes() {
         let supported = match node.kind() {
-            ApplicationWorkflowNodeKind::Operation { operation, .. } => {
-                installed.operations.iter().any(|candidate| {
+            ApplicationWorkflowNodeKind::Operation {
+                operation,
+                requires_workflow_authority,
+            } => {
+                let matching = installed.operations.iter().filter(|candidate| {
                     candidate.marker == operation.operation_type()
                         && candidate.identifier == operation.identifier()
                         && &candidate.input_type == operation.input_type()
-                })
+                        && candidate.requires_workflow_authority == *requires_workflow_authority
+                        && match operation.binding() {
+                            Some((identity, marker, posture)) => {
+                                candidate.binding_type == marker
+                                    && candidate.binding_identity == identity
+                                    && candidate.requires_workflow_authority == posture
+                            }
+                            None => !*requires_workflow_authority,
+                        }
+                });
+                matching.count() == 1
             }
             ApplicationWorkflowNodeKind::Assessment(assessment) => installed
                 .assessments

@@ -1,7 +1,7 @@
 mod facade;
 pub use facade::*;
 mod aggregate_projection;
-mod application_attempt;
+pub(crate) mod application_attempt;
 mod application_branch;
 mod application_checkpoint;
 mod application_contribution;
@@ -90,7 +90,8 @@ pub(in crate::domain_computation) use entity_resolution::{
     WorthQueryResolvedEntity,
 };
 pub(in crate::domain_computation) use freshness::{
-    validate_freshness_at_snapshot, WorthQueryPrincipalFreshnessEvidence,
+    validate_freshness_at_snapshot, WorthQueryDurablePrincipalCurrentness,
+    WorthQueryPrincipalFreshnessEvidence,
 };
 #[cfg(test)]
 pub(in crate::domain_computation) use tests::recoverable_commit_support::{

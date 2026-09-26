@@ -50,6 +50,7 @@ pub(in crate::domain_computation::primary_graph) enum CompiledWorkflowNodeKind {
     Operation {
         operation: String,
         input_type: String,
+        binding: Option<String>,
         requires_workflow_authority: bool,
     },
     Assessment {
@@ -58,6 +59,7 @@ pub(in crate::domain_computation::primary_graph) enum CompiledWorkflowNodeKind {
         result_type: String,
         binding: String,
         subject: worth_query_declaration::facade::application_program::ApplicationWorkflowSubjectSelector,
+        applicability: CompiledWorkflowAssessmentApplicability,
     },
     Condition {
         query: String,
@@ -75,6 +77,16 @@ pub(in crate::domain_computation::primary_graph) enum CompiledWorkflowNodeKind {
         policy: worth_query_declaration::facade::application_program::ApplicationWorkflowEvidenceJoinPolicy,
     },
     Terminal,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(in crate::domain_computation::primary_graph) enum CompiledWorkflowAssessmentApplicability {
+    Always,
+    WhenRelatedRelationPresent {
+        relation: String,
+        from: String,
+        to: String,
+    },
 }
 
 pub(in crate::domain_computation::primary_graph) struct CompiledWorkflowConnection {
@@ -238,6 +250,13 @@ impl CompiledWorkflowDefinition {
         approval: EntityId,
     ) -> impl Iterator<Item = &CompiledWorkflowNode> {
         self.data_targets(approval, ApplicationWorkflowDataFlow::ApprovalAuthority)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn approval_authority_sources(
+        &self,
+        operation: EntityId,
+    ) -> impl Iterator<Item = &CompiledWorkflowNode> {
+        self.data_sources(operation, ApplicationWorkflowDataFlow::ApprovalAuthority)
     }
 
     fn data_targets(

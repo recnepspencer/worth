@@ -12,19 +12,17 @@ use worth_query_host::facade::{
     declaration::application_program::{
         ApplicationWorkflowComponentLimits, ApplicationWorkflowControlOutcome,
         ApplicationWorkflowDefinitionBuilder, ApplicationWorkflowDefinitionLimits,
-        ValidatedWorkflowDefinition,
+        AuthoredWorkflowDefinition, ValidatedWorkflowDefinition,
     },
 };
 use worth_query_installation::facade::WorthQueryInstalledWorkflowDefinitionContract;
 
 use super::super::{
-    dimension_entry::PART_IDENTITY,
+    dimension_entry::{ReviewedSetPartDimensionBinding, PART_IDENTITY},
     host::BoundedDimensionWorkflowRuntime,
-    operator_identity::{authenticate_operator, request_scope},
+    operator_identity::{authenticate_operator, block_on, request_scope},
     programs::DimensionProgramP0,
-    schema::{
-        BoundedDimensionSchema, PartDimensionConditionQuery, PartDimensionQuery, SetPartDimension,
-    },
+    schema::{BoundedDimensionSchema, PartDimensionConditionQuery, PartDimensionQuery},
 };
 use super::{
     ReviewedGeometryWorkflow, WorkflowAdvanceInput, WorkflowAdvanceIntent,
@@ -36,8 +34,9 @@ use super::{
 #[path = "definition/instance.rs"]
 mod instance;
 pub use instance::{
-    advance_instance, approve_instance, propose_authoring_instance, propose_instance,
-    propose_instance_on_branch, start_instance,
+    advance_instance, approve_instance, propose_authoring_instance,
+    propose_authoring_instance_with_dimension, propose_instance, propose_instance_on_branch,
+    start_instance,
 };
 
 pub fn reviewed_geometry_definition(
@@ -90,7 +89,7 @@ fn reviewed_geometry_definition_with_policy(
         .approval::<WorkflowApprovalCapability>("approval")
         .expect("the approval node is valid");
     let apply = builder
-        .operation::<SetPartDimension>("apply", true)
+        .operation_binding::<ReviewedSetPartDimensionBinding>("apply")
         .expect("the guarded operation node is valid");
     let completed = builder
         .terminal(completion_identity)
@@ -209,6 +208,12 @@ pub fn proposal_terminal_definition() -> ValidatedWorkflowDefinition<ReviewedGeo
 }
 
 pub fn condition_terminal_definition() -> ValidatedWorkflowDefinition<ReviewedGeometryWorkflow> {
+    condition_terminal_draft()
+        .validate()
+        .expect("the condition definition is valid")
+}
+
+pub fn condition_terminal_draft() -> AuthoredWorkflowDefinition<ReviewedGeometryWorkflow> {
     let mut builder = ApplicationWorkflowDefinitionBuilder::<ReviewedGeometryWorkflow>::new(
         "condition-terminal",
         definition_limits(),
@@ -247,8 +252,6 @@ pub fn condition_terminal_definition() -> ValidatedWorkflowDefinition<ReviewedGe
     builder
         .finish()
         .expect("the condition definition is complete")
-        .validate()
-        .expect("the condition definition is valid")
 }
 
 pub fn repeated_proposal_definition() -> ValidatedWorkflowDefinition<ReviewedGeometryWorkflow> {
