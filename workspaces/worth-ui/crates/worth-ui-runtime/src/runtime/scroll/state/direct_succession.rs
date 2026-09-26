@@ -126,6 +126,38 @@ impl UiScrollRuntimeState {
         }
     }
 
+    /// The accepted offset of each owner that direct input on `surface` has
+    /// staged past, keyed by the mounted owner its pose moves: where the
+    /// frame the host shows still stands that owner.
+    pub(crate) fn accepted_offsets_under_direct(
+        &self,
+        surface: UiSemanticSurfaceIdentity,
+    ) -> impl Iterator<
+        Item = (
+            UiMountedInstanceIdentity,
+            crate::runtime::scroll::UiScrollOffset,
+        ),
+    > + '_ {
+        self.pending_direct
+            .iter()
+            .filter(move |(owner, _)| owner.semantic_surface() == surface)
+            .filter_map(|(owner, prepared)| {
+                let (_, geometry_owner, _) = prepared.pose()?;
+                self.owners
+                    .get(owner)
+                    .filter(|accepted| accepted.incarnation == prepared.record.incarnation)
+                    .map(|accepted| (geometry_owner, accepted.offset))
+            })
+    }
+
+    /// Forget the direct input staged on `surface` for a frame no binding
+    /// will present. A surface that ends with no successor carries none of it
+    /// to a later registration.
+    pub(crate) fn retire_surface_direct_successions(&mut self, surface: UiSemanticSurfaceIdentity) {
+        self.pending_direct
+            .retain(|owner, _| owner.semantic_surface() != surface);
+    }
+
     pub(crate) fn has_pending_direct(&self, surface: UiSemanticSurfaceIdentity) -> bool {
         self.pending_direct
             .keys()

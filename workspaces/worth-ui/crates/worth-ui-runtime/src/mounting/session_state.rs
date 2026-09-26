@@ -5,6 +5,7 @@ mod interaction;
 mod layout_reconstruction;
 mod motion_sampling;
 mod occurrence_projection;
+mod paint_hit_agreement;
 mod projection;
 mod publication;
 mod raster_cache_reconstruction;
@@ -12,7 +13,10 @@ mod replacement;
 mod scroll_chrome_pose;
 mod scroll_direct_publication;
 mod scroll_geometry;
+mod scroll_hit_lead;
+mod scroll_staged_pose;
 mod selection_binding;
+mod surface_rebind_carry;
 #[cfg(test)]
 mod test_support;
 pub use selection_binding::UiMountedSelectionBindingDenial;

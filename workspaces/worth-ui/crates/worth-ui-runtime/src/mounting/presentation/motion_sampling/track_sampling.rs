@@ -130,6 +130,10 @@ impl UiPresentationTrackState {
                 start.map(UiTrackSamplePlace::damage_components),
             ),
         )?;
+        // A retarget departs at the displaced curve's rate, which can carry
+        // the successor past a nearer target: its span bounds it.
+        let start_velocity = UiTrackCurveSpan::new(current.geometry(), track.successor_geometry())
+            .bounded_velocity(start_velocity, duration_ticks);
         Ok(Self {
             track,
             motion: UiTrackMotion::Running(UiTrackCurve {

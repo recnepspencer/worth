@@ -22,7 +22,13 @@ pub(crate) struct UiMountedScrollMotionMember {
 pub(crate) struct UiMountedScrollMotionGroupInput {
     pub(crate) target: UiMotionTargetIdentity,
     pub(crate) owner: UiMountedInstanceIdentity,
+    /// The owner's box where the frame lays it out, carried by the published
+    /// offsets of the regions enclosing it.
     pub(crate) content: UiMountedCanonicalBox,
+    /// The content box with this region and every region enclosing it at
+    /// offset zero: what the group's Scroll samples are measured from, which
+    /// no enclosing region's scrolling moves.
+    pub(crate) rest: UiMountedCanonicalBox,
     pub(crate) viewport: UiMountedCanonicalBox,
     pub(crate) offset: UiScrollOffset,
     pub(crate) scale: UiScrollPresentationDeviceScale,
@@ -61,9 +67,9 @@ pub(super) struct UiMountedScrollMotionGroup {
     /// follows only once that sample settles, and a frame published before
     /// then must not move displayed commands by the gap.
     bound_standing: group_offset::UiBoundGroupStanding,
-    /// The group's sample the last admitted witness displayed.
-    pub(super) displayed_sample:
-        std::rc::Rc<std::cell::Cell<Option<crate::mounting::presentation::UiDisplayedRect>>>,
+    /// The group's sample the last admitted witness displayed, shared with
+    /// the group it rebinds unless the frame placed it.
+    pub(super) displayed_sample: std::rc::Rc<std::cell::Cell<Option<UiDisplayedGroupSample>>>,
 }
 
 #[derive(Clone)]
@@ -81,6 +87,9 @@ pub(super) struct UiMountedScrollChromeSampleTarget {
 pub(super) struct UiMountedScrollMotionGroups {
     /// The bind that produced these groups.
     bind: group_offset::UiScrollGroupBind,
+    /// The groups the bound frame placed: each stands where the frame
+    /// publishes it, whatever sample it displaced.
+    placed: std::rc::Rc<std::collections::BTreeSet<UiMotionTargetIdentity>>,
     pub(super) geometry_index_reserved_bytes: usize,
     pub(super) groups: std::rc::Rc<BTreeMap<UiMotionTargetIdentity, UiMountedScrollMotionGroup>>,
     pub(super) chrome:
@@ -120,41 +129,6 @@ impl UiMountedScrollMotionGroups {
 }
 
 impl UiMountedPresentationState {
-    /// The translation a witness displayed for `identity`'s Scroll regions,
-    /// kept as the base a rebuilt group moves it from. A Portal moving the
-    /// command is its own layer and no part of that base.
-    fn displayed_base_translation(
-        &self,
-        identity: UiMountedPaintCommandIdentity,
-        bind: group_offset::UiScrollGroupBind,
-    ) -> Option<group_offset::UiDisplayedCommandTranslation> {
-        let transform = self.accepted_motion_layers(identity).scroll_transform()?;
-        Some(
-            group_offset::UiDisplayedCommandTranslation::of_displayed_transform(
-                transform.source(),
-                transform.sampled(),
-                bind,
-            ),
-        )
-    }
-
-    /// Where the group `target` stands now; a group this frame introduces
-    /// stands at its `published` offset.
-    fn group_standing(
-        &self,
-        target: UiMotionTargetIdentity,
-        published: UiScrollOffset,
-    ) -> group_offset::UiGroupStanding {
-        self.scroll_motion_groups.groups.get(&target).map_or_else(
-            || {
-                group_offset::UiGroupStanding::Published(group_offset::UiPublishedGroupOffset::of(
-                    published,
-                ))
-            },
-            UiMountedScrollMotionGroup::standing,
-        )
-    }
-
     /// Bind only the candidate frame's exact membership. Committing the frame
     /// commits this index; rejecting it leaves the predecessor index intact.
     pub(in crate::mounting::presentation) fn bind_scroll_motion_groups(
@@ -164,6 +138,8 @@ impl UiMountedPresentationState {
         placed_chrome: &[crate::mounting::UiMountedAppearanceScrollChromeInput],
     ) -> Result<(), ()> {
         let bind = self.scroll_motion_groups.bind.next();
+        let placed = self.directly_placed_owners(frame);
+        let mut placements = direct_release::UiFramePlacements::default();
         let mut chrome = BTreeMap::new();
         for input in placed_chrome {
             let (identity, bounds, clip, opacity) = input.sample_target()?;
@@ -233,6 +209,7 @@ impl UiMountedPresentationState {
             };
             let mut input = input.clone();
             input.content = project(input.content)?;
+            input.rest = project(input.rest)?;
             input.viewport = project(input.viewport)?;
             let mut commands = Vec::new();
             for member in input.members.iter() {
@@ -298,9 +275,19 @@ impl UiMountedPresentationState {
                     base_translation: None,
                 });
             }
-            let displayed_sample = owners
-                .entry(input.owner)
-                .or_insert_with(|| (input.target, std::rc::Rc::new(std::cell::Cell::new(None))));
+            let placed_here = placed.contains(&input.owner) || self.lays_out_anew(&input);
+            // As unchanged commands share their slots, an unplaced group
+            // shares what the host displays it at: a sample displayed beside
+            // a frame in flight reaches the group that frame binds.
+            let displayed_sample = owners.entry(input.owner).or_insert_with(|| {
+                let carried = self
+                    .scroll_motion_groups
+                    .groups
+                    .get(&input.target)
+                    .filter(|_| !placed_here)
+                    .map(|group| group.displayed_sample.clone());
+                (input.target, carried.unwrap_or_default())
+            });
             if displayed_sample.0 == input.target {
                 for command in &commands {
                     memberships
@@ -309,10 +296,16 @@ impl UiMountedPresentationState {
                         .push(input.target);
                 }
             }
-            let bound_standing = group_offset::UiBoundGroupStanding::new(
-                self.group_standing(input.target, input.offset),
-                bind,
-            );
+            let standing = if placed_here {
+                placements.place(
+                    input.target,
+                    commands.iter().map(|command| command.identity),
+                );
+                direct_release::placed_standing(input.offset)
+            } else {
+                self.group_standing(input.target, input.offset)
+            };
+            let bound_standing = group_offset::UiBoundGroupStanding::new(standing, bind);
             groups.insert(
                 input.target,
                 UiMountedScrollMotionGroup {
@@ -324,8 +317,10 @@ impl UiMountedPresentationState {
                 },
             );
         }
+        placements.clear_bases(&mut groups);
         self.scroll_motion_groups = UiMountedScrollMotionGroups {
             bind,
+            placed: placements.into_groups(),
             geometry_index_reserved_bytes: derived
                 .scroll_geometry_reservations
                 .get(&self.requirement.semantic_surface())
@@ -346,7 +341,7 @@ impl UiMountedPresentationState {
                     .collect(),
             ),
         };
-        Ok(())
+        self.show_unbased_commands_where_groups_stand()
     }
 }
 
@@ -354,7 +349,7 @@ impl UiMountedPresentationState {
 mod acceptance;
 #[path = "scroll_motion_groups/sampling.rs"]
 mod sampling;
-pub(super) use acceptance::UiScrollGroupMotionUpdate;
+pub(super) use acceptance::{UiDisplayedGroupSample, UiScrollGroupMotionUpdate};
 #[path = "scroll_motion_groups/chrome_geometry.rs"]
 mod chrome_geometry;
 #[cfg(worth_ui_compile_probe)]
@@ -363,10 +358,16 @@ mod compile_probe;
 #[cfg(test)]
 #[path = "scroll_motion_groups/composition_tests.rs"]
 mod composition_tests;
+#[path = "scroll_motion_groups/direct_release.rs"]
+mod direct_release;
 #[path = "scroll_motion_groups/group_offset.rs"]
 mod group_offset;
 #[cfg(test)]
 #[path = "scroll_motion_groups/group_offset_tests.rs"]
 mod group_offset_tests;
+#[path = "scroll_motion_groups/rebuild_base.rs"]
+mod rebuild_base;
 #[path = "scroll_motion_groups/retention.rs"]
 mod retention;
+#[path = "scroll_motion_groups/standing_carry.rs"]
+mod standing_carry;

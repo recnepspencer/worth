@@ -168,7 +168,7 @@ fn attempt(
         instances.insert(*instance);
     }
     let receipts = crate::mounting::UiMountedNodeReceiptBasis::mint(frame, instances).unwrap();
-    source.apply(completion(
+    let mutation = source.apply(completion(
         frame,
         UiMountedContentGeneration::mint_unbound().unwrap(),
         &receipts,
@@ -176,7 +176,41 @@ fn attempt(
         fonts,
         changed,
         1,
-    ))
+    ))?;
+    publish(source, semantic, changed, frame, &receipts);
+    Ok(mutation)
+}
+
+/// Publish the changed rows the way a completed frame does, so a view of the
+/// source presents them. The fixture's rows sit inside no clip.
+fn publish(
+    source: &mut UiMountedMechanicSource,
+    semantic: &UiMountedSemanticProjection,
+    changed: &[UiMountedInstanceIdentity],
+    frame: UiMountedFrameIdentity,
+    receipts: &crate::mounting::UiMountedNodeReceiptBasis,
+) {
+    for instance in changed.iter().copied() {
+        let surface = semantic
+            .node(instance)
+            .and_then(|node| semantic.surface_for(node.receipt.semantic_surface()));
+        let row = surface.and_then(|surface| {
+            source
+                .hit_test_for_instance(instance, surface.surface, surface.binding, frame, receipts)
+                .unwrap()
+        });
+        let row = row.map(|row| {
+            crate::mounting::UiPresentedHitTestRow::from_mounted(
+                crate::mounting::UiMountedHitTestPresentation::completed(
+                    row,
+                    None,
+                    false,
+                    crate::mounting::UiHitAncestorClip::Unclipped,
+                ),
+            )
+        });
+        source.presented_hits.replace_base(instance, row);
+    }
 }
 
 fn projection(
@@ -232,6 +266,7 @@ fn node(
             },
         }),
         plan_index: Some(rank),
+        grid_correction: None,
         occurrence_allocation: UiMountedAllocationProjection::Known {
             bounds,
             basis: UiMountedAllocationBasis::new(1, 2, 3, UiMountedTransformProjection::Identity),

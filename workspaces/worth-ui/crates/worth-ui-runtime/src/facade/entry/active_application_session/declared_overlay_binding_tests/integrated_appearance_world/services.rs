@@ -156,12 +156,17 @@ impl World {
             session.mounted.current_surface_viewport(surface).unwrap().1,
             super::geometry::canonical(super::geometry::VIEWPORT)
         );
+        // Aim at the middle of what the frame shows of the row: the regions it
+        // sits inside can clip it, and a pointer reaches only what they leave.
+        let shown = row
+            .reachable_box()
+            .expect("the frame shows the row an overlay opens from");
         let target = crate::runtime::interaction::targeting::resolve_presented_target(
             &session.mounted,
             presentation.basis(),
             UiHostSurfacePosition::viewport_logical(
-                ((x + width / 2.0) * 1_000.0) as i64,
-                ((y + height / 2.0) * 1_000.0) as i64,
+                ((shown.x() + shown.width() / 2.0) * 1_000.0) as i64,
+                ((shown.y() + shown.height() / 2.0) * 1_000.0) as i64,
             ),
             &mut Default::default(),
         )

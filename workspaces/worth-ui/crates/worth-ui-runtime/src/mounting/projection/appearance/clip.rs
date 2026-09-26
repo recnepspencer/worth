@@ -113,16 +113,17 @@ pub(crate) fn derive_unbound_ancestry(
     ))
 }
 
-/// Whether ancestor clips hide everything they enclose: one has no area, or
-/// together they share no coverage. Scroll moves clips, so a new pose can
-/// change the answer; clip derivation and a Scroll pose read this one rule.
-pub(crate) fn ancestor_clips_suppress(
+/// The coverage ancestor clips leave what they enclose: suppressed when one
+/// has no area or together they share none. Scroll moves clips, so clip
+/// derivation, a Scroll pose, and hit rows read this one rule.
+pub(crate) fn ancestor_clip(
     clips: impl IntoIterator<Item = worth_ui_host_contract::UiMountedCanonicalBox>,
-) -> bool {
-    matches!(
-        intersect_ancestor_clips(clips),
-        Err(UiMountedAppearanceClip::Suppressed)
-    )
+) -> UiMountedAppearanceClip {
+    match intersect_ancestor_clips(clips) {
+        Ok(Some(clip)) => UiMountedAppearanceClip::Ancestor(clip),
+        Ok(None) => UiMountedAppearanceClip::Unclipped,
+        Err(clip) => clip,
+    }
 }
 
 /// The coverage ancestor clips share, in order, or `None` when there are

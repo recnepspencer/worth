@@ -148,7 +148,7 @@ impl UiMountedFrameRetentionCoordinator {
         if let Some(sampler) = motion {
             basis.apply_motion_samples(sampler);
         }
-        basis.follow_committed_scroll_poses(&regions.presented_hits);
+        basis.follow_displayed_scroll_poses(&regions.presented_hits);
         Ok(basis)
     }
 

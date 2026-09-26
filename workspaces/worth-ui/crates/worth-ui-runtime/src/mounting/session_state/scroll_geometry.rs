@@ -76,6 +76,22 @@ impl super::WorthUiMountedSessionState {
         )
     }
 
+    /// The content box of the region at `slot` of `target`'s chain with that
+    /// region and every region enclosing it at offset zero: what a Scroll
+    /// sample of the region is measured from.
+    pub(crate) fn scroll_region_rest(
+        &self,
+        target: worth_ui_host_contract::UiMountedInstanceIdentity,
+        slot: usize,
+    ) -> Option<worth_ui_host_contract::UiMountedCanonicalBox> {
+        let instance = self.identity.projection_instance(target)?;
+        self.occurrence_geometry.scroll_region_rest(
+            instance.basis().semantic_surface_identity(),
+            target,
+            slot,
+        )
+    }
+
     /// The incarnation of the region owner at `slot` of `target`'s chain:
     /// the mount incarnation of the occurrence that owns the region.
     pub(crate) fn scroll_region_incarnation(
@@ -142,18 +158,77 @@ impl super::WorthUiMountedSessionState {
         Box<[crate::mounting::UiCommittedPresentedHitTransition]>,
         super::super::UiMountedOccurrenceGeometryDenial,
     > {
-        // Each offset settles only the surface whose binding displayed it.
+        let settled = self.displayed_scroll_poses(poses)?;
+        self.apply_scroll_geometry_changes(&settled, false)
+    }
+
+    /// The offsets `poses` settle at, each admitted only for the surface
+    /// whose binding displayed it.
+    pub(super) fn displayed_scroll_poses(
+        &self,
+        poses: &[(
+            worth_ui_host_contract::UiSemanticSurfaceIdentity,
+            worth_ui_host_contract::UiMountedInstanceIdentity,
+            crate::mounting::presentation::UiDisplayedScrollOffset,
+        )],
+    ) -> Result<
+        Vec<(
+            worth_ui_host_contract::UiSemanticSurfaceIdentity,
+            worth_ui_host_contract::UiMountedInstanceIdentity,
+            crate::runtime::scroll::UiScrollOffset,
+        )>,
+        super::super::UiMountedOccurrenceGeometryDenial,
+    > {
         if poses.iter().any(|(surface, _, displayed)| {
             self.current_surface_for_binding(displayed.displayed_basis().binding())
                 != Some(*surface)
         }) {
             return Err(super::super::UiMountedOccurrenceGeometryDenial::ForeignSurface);
         }
-        let settled = poses
+        Ok(poses
             .iter()
             .map(|(surface, owner, displayed)| (*surface, *owner, displayed.settled()))
-            .collect::<Vec<_>>();
-        self.apply_scroll_geometry_changes(&settled, false)
+            .collect())
+    }
+
+    /// Prepare `poses` against mounted geometry, one pose per surface,
+    /// without committing any of them. Hit rows move from `shown`, where the
+    /// frame the host shows committed each listed owner.
+    pub(super) fn prepare_scroll_poses(
+        &self,
+        poses: &[(
+            worth_ui_host_contract::UiSemanticSurfaceIdentity,
+            worth_ui_host_contract::UiMountedInstanceIdentity,
+            crate::runtime::scroll::UiScrollOffset,
+        )],
+        shown: &[(
+            worth_ui_host_contract::UiSemanticSurfaceIdentity,
+            worth_ui_host_contract::UiMountedInstanceIdentity,
+            crate::runtime::scroll::UiScrollOffset,
+        )],
+    ) -> Result<
+        Vec<crate::mounting::occurrence_geometry::UiPreparedMountedScrollPose>,
+        super::super::UiMountedOccurrenceGeometryDenial,
+    > {
+        let mut surfaces = std::collections::BTreeMap::<_, Vec<_>>::new();
+        for (surface, owner, offset) in poses {
+            surfaces
+                .entry(*surface)
+                .or_default()
+                .push((*owner, *offset));
+        }
+        surfaces
+            .into_iter()
+            .map(|(surface, poses)| {
+                let shown = shown
+                    .iter()
+                    .filter(|(shown, _, _)| *shown == surface)
+                    .map(|(_, owner, offset)| (*owner, *offset))
+                    .collect::<Vec<_>>();
+                self.occurrence_geometry
+                    .prepare_scroll_pose(surface, &poses, &shown)
+            })
+            .collect()
     }
 
     fn apply_scroll_geometry_changes(
@@ -172,29 +247,23 @@ impl super::WorthUiMountedSessionState {
         if self.has_active_presentation_attempt() {
             return Err(Denial::PresentationInFlight);
         }
-        let mut surfaces = std::collections::BTreeMap::<_, Vec<_>>::new();
-        for (surface, owner, offset) in poses {
-            surfaces
-                .entry(*surface)
-                .or_default()
-                .push((*owner, *offset));
-        }
-        let prepared = surfaces
-            .into_iter()
-            .map(|(surface, poses)| {
-                self.occurrence_geometry
-                    .prepare_scroll_pose(surface, &poses)
-            })
-            .collect::<Result<Vec<_>, _>>()?;
+        // Nothing is staged past what the host shows when a pose commits, so
+        // hit rows move as far as mounted geometry does.
+        let prepared = self.prepare_scroll_poses(poses, &[])?;
         // A sample only moves paint the host already holds. A pose that
         // brings content out from under disjoint clips, or hides it there,
         // owes that paint, and it owes the whole pose as a direct edit does,
         // so committed geometry never mixes two poses.
-        let changed = prepared
-            .iter()
-            .filter(|pose| owes_paint || pose.changes_coverage())
-            .flat_map(|pose| pose.changed_instances().into_vec())
-            .collect::<Vec<_>>();
+        // A pose that owes paint lowers its rows anew, with every row an
+        // earlier settle carried there; the rest are carried by the sample.
+        let owes = |pose: &crate::mounting::occurrence_geometry::UiPreparedMountedScrollPose| {
+            owes_paint || pose.changes_coverage()
+        };
+        let mut changed = Vec::new();
+        for pose in prepared.iter().filter(|pose| owes(pose)) {
+            changed.extend(pose.changed_instances().into_vec());
+            changed.extend(self.occurrence_geometry.sample_carried(pose.surface()));
+        }
         if !changed.is_empty() {
             self.identity
                 .mark_occurrence_geometry_changed(&changed)
@@ -210,6 +279,12 @@ impl super::WorthUiMountedSessionState {
             hit_work.merge(refreshed);
             if let Some(transition) = transition {
                 transitions.push(transition);
+            }
+            if owes(&pose) {
+                self.occurrence_geometry
+                    .release_sample_carried(pose.surface());
+            } else {
+                self.occurrence_geometry.carry_by_sample(&pose);
             }
             self.occurrence_geometry.apply_scroll_pose(pose);
         }
@@ -255,6 +330,19 @@ impl super::WorthUiMountedSessionState {
                     .map(|sample| (target, sample))
             })
             .collect()
+    }
+
+    /// Whether the frame on screen placed the Scroll group `target` where it
+    /// publishes it, displacing any sample a witness displayed.
+    pub(crate) fn scroll_group_placed_on_screen(
+        &self,
+        target: crate::runtime::motion::UiMotionTargetIdentity,
+    ) -> bool {
+        self.current_presentation_for_surface(target.semantic_surface())
+            .is_some_and(|displayed| {
+                self.presentation
+                    .placed_scroll_group(displayed.basis(), target)
+            })
     }
 
     pub(crate) fn accepted_scroll_group_sample(

@@ -161,6 +161,7 @@ fn node(
             },
         }),
         plan_index: Some((graph - 4_151) as u32),
+        grid_correction: None,
         occurrence_allocation: UiMountedAllocationProjection::Known {
             bounds: allocation,
             basis: UiMountedAllocationBasis::new(1, 2, 3, UiMountedTransformProjection::Identity),

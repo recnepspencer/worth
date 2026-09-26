@@ -1,37 +1,10 @@
-use std::{cell::Cell, rc::Rc};
 use worth_ui_host_contract::{UiMountedPaintCommandIdentity, UiMountedPresentationSampleChange};
 
 use super::super::motion_sampling::UiPresentationMotionSampleReceipt;
 use super::command_motion_layers::UiCommandMotionLayers;
+pub(super) use super::command_motion_slot::UiCommandMotionAcceptance;
+use super::command_motion_slot::UiDisplayedCommandMotion;
 use super::UiMountedPresentationState;
-
-/// Live physical evidence, shared only by versions of one unchanged command.
-/// It is never exposed as an immutable historical frame snapshot.
-#[derive(Clone, Default)]
-pub(super) struct UiCommandMotionAcceptance(Rc<Cell<Option<UiDisplayedCommandMotion>>>);
-
-/// The sample and change an admitted witness displayed for one command, and
-/// the Motion layers that change composes. Only acceptance at a witness's
-/// displayed basis writes it.
-#[derive(Clone, Copy)]
-struct UiDisplayedCommandMotion {
-    sample: UiPresentationMotionSampleReceipt,
-    change: UiMountedPresentationSampleChange,
-    layers: UiCommandMotionLayers,
-}
-
-impl UiCommandMotionAcceptance {
-    pub(super) fn sample(&self) -> Option<UiPresentationMotionSampleReceipt> {
-        self.0.get().map(|accepted| accepted.sample)
-    }
-
-    /// The opacity every Motion showing the command scales it by, composed.
-    pub(super) fn motion_units(&self) -> Option<u16> {
-        self.0
-            .get()
-            .map(|accepted| accepted.change.opacity().motion_units())
-    }
-}
 
 pub(super) struct UiCommandMotionUpdate {
     command: UiMountedPaintCommandIdentity,
@@ -175,7 +148,7 @@ impl UiPreparedCommandMotionAcceptance {
             let slot = current
                 .motion_slot(update.command)
                 .ok_or(UiCommandMotionAcceptanceDenial::CommandReplaced)?;
-            if !Rc::ptr_eq(&slot.0, &update.slot.0) {
+            if !slot.is(&update.slot) {
                 return Err(UiCommandMotionAcceptanceDenial::CommandReplaced);
             }
             update.sample = update
@@ -189,11 +162,11 @@ impl UiPreparedCommandMotionAcceptance {
             .map(|group| group.validate(current, displayed))
             .collect::<Result<Vec<_>, _>>()?;
         for update in self.updates {
-            update.slot.0.set(Some(UiDisplayedCommandMotion {
+            update.slot.display(UiDisplayedCommandMotion {
                 sample: update.sample,
                 change: update.change,
                 layers: update.layers,
-            }));
+            });
         }
         for group in scroll {
             group.commit();
@@ -267,7 +240,7 @@ impl UiMountedPresentationState {
         }
     }
 
-    fn motion_slot(
+    pub(super) fn motion_slot(
         &self,
         command: UiMountedPaintCommandIdentity,
     ) -> Option<&UiCommandMotionAcceptance> {
@@ -289,8 +262,7 @@ impl UiMountedPresentationState {
         command: UiMountedPaintCommandIdentity,
     ) -> Option<UiMountedPresentationSampleChange> {
         self.motion_slot(command)?
-            .0
-            .get()
+            .displayed()
             .map(|accepted| accepted.change)
     }
 
@@ -301,7 +273,7 @@ impl UiMountedPresentationState {
         command: UiMountedPaintCommandIdentity,
     ) -> UiCommandMotionLayers {
         self.motion_slot(command)
-            .and_then(|slot| slot.0.get())
+            .and_then(UiCommandMotionAcceptance::displayed)
             .map_or_else(UiCommandMotionLayers::default, |accepted| accepted.layers)
     }
 
@@ -350,6 +322,9 @@ impl UiMountedPresentationState {
             .collect::<Vec<_>>();
         if affected == replacement {
             self.inherit_unchanged_motion(predecessor, &instances);
+            for instance in instances {
+                self.carry_portal_motion(predecessor, instance);
+            }
             return;
         }
         for instance in instances {

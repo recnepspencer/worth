@@ -6,7 +6,9 @@
 //! session's own publication path. After every step the displayed Motion
 //! sample, the Scroll offset, both hit-test lanes and the cursor must equal
 //! the geometry the latest witness proved, and the host's drawn text is the
-//! oracle for what is on screen.
+//! oracle for what is on screen. Each run then comes to rest: the attempt
+//! the host holds completes, the held tick presents, and every settle Scroll
+//! holds lands where the pose rests.
 //!
 //! The seeds are fixed, so a failure names the seed and step that reproduce
 //! it. Every kind of operation must take effect somewhere across the runs, so
@@ -21,7 +23,11 @@ mod witness;
 use std::collections::BTreeSet;
 use steps::{Model, Step};
 
-const SEEDS: [u64; 8] = [
+/// The first eight seeds, one that reaches a settle arriving behind a
+/// resize, and the seeds that once found a sample the host kept drawing
+/// where hit testing no longer read it, a sample a frame in flight displaced
+/// once it landed, and a retarget that carried the content past rest.
+const SEEDS: [u64; 21] = [
     0x5eed_0001,
     0x5eed_0002,
     0x5eed_0003,
@@ -30,6 +36,19 @@ const SEEDS: [u64; 8] = [
     0x5eed_0006,
     0x5eed_0007,
     0x5eed_0008,
+    0x5eed_0028,
+    0x5eed_001e,
+    0x5eed_003c,
+    0x5eed_005e,
+    0x5eed_0075,
+    0x5eed_009e,
+    0x5eed_00e2,
+    0x5eed_004b,
+    0x5eed_006a,
+    0x5eed_00e8,
+    0x5eed_0182,
+    0x5eed_01e3,
+    0x5eed_01f5,
 ];
 const STEPS: usize = 64;
 
@@ -62,6 +81,9 @@ fn every_interleaving_keeps_displayed_geometry_on_the_latest_witness() {
                 &format!("seed {seed:#x} step {index} {step:?} took {effect:?}"),
             ));
         }
+        let label = format!("seed {seed:#x} at rest");
+        model.rest(&label);
+        reached.extend(witness::assert_witnessed(&model, &label));
         model.finish();
     }
     let missing = Step::EVERY

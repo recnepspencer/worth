@@ -18,6 +18,9 @@
 //!   publication that displays an entrance holds it in the hit index before
 //!   its Motion commit installs the sample, so that surface's lanes are
 //!   asserted once the commit installs.
+//! - On every presented surface, interaction reads each row where the host
+//!   shows what its instance paints, and no part of it outside the clip the
+//!   host shows that paint through.
 //! - Each hovering pointer's target is what its position resolves to now.
 //!
 //! A surface whose last settle was refused reports that in its disposition.
@@ -48,6 +51,7 @@ pub(in crate::facade::entry) fn debug_assert_scroll_geometry_witnessed(
     }
     for surface in reading.mounted.current_surfaces() {
         assert_hit_lanes_agree(reading.mounted, surface);
+        assert_paint_and_hit_agree(reading.mounted, surface);
     }
     let stale = interaction.stale_pointer_targets(reading.mounted);
     assert!(
@@ -159,5 +163,18 @@ fn assert_hit_lanes_agree(
     assert!(
         parted.is_empty(),
         "the hit-test lanes of {surface:?} part (instance, interaction, index): {parted:?}"
+    );
+}
+
+/// Assert that interaction reads each row of `surface` where the host shows
+/// what its instance paints.
+fn assert_paint_and_hit_agree(
+    mounted: &WorthUiMountedSessionState,
+    surface: UiSemanticSurfaceIdentity,
+) {
+    let parted = mounted.parted_paint_and_hit(surface);
+    assert!(
+        parted.is_empty(),
+        "paint and hit testing part on {surface:?}: {parted:?}"
     );
 }

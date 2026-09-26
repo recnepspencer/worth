@@ -7,6 +7,16 @@
 //! attempt is in flight; that refusal defers the settle to the next frame and
 //! never drops it, because the accepted sample remains true until a later one
 //! replaces it. Every other refusal is reported through the disposition.
+//!
+//! A settle deferred behind a staged layout whose Motion has arrived is
+//! carried into that layout, so the frame that shows it lands the content
+//! where the sample put it.
+//!
+//! While a settle is owed, the host shows the content where the sample put it
+//! and committed geometry has yet to follow, so hit rows lead to the sample
+//! until the settle is paid. Every outcome that owes nothing retires the
+//! leads: a pointer reaches content where the host shows it, never where a
+//! sample nobody shows any more left it.
 
 use super::scroll_settle_disposition::{
     UiAcceptedScrollSettlementDenial, UiScrollSettleDisposition, UiScrollSettleRefusal,
@@ -73,6 +83,13 @@ impl super::super::WorthUiActiveApplicationSession {
     ) -> UiScrollSettleDisposition {
         let disposition = self.settle_accepted_scroll_sample_inner(presented);
         self.last_scroll_settle_disposition = disposition;
+        if !matches!(
+            disposition,
+            UiScrollSettleDisposition::DeferredPendingGeometry
+                | UiScrollSettleDisposition::DeferredPresentationInFlight
+        ) {
+            self.retire_scroll_hit_leads(presented);
+        }
         if matches!(
             disposition,
             UiScrollSettleDisposition::Applied | UiScrollSettleDisposition::Idle
@@ -97,13 +114,11 @@ impl super::super::WorthUiActiveApplicationSession {
             self.owed_scroll_settles.paid(presented.semantic_surface());
             return UiScrollSettleDisposition::Idle;
         }
-        if self.scroll.as_ref().is_some_and(|scroll| {
+        let pending = self.scroll.as_ref().is_some_and(|scroll| {
             scroll.has_pending_direct(surface) || scroll.has_unpresented_layout(surface)
-        }) {
-            self.owed_scroll_settles.owe(presented);
-            return UiScrollSettleDisposition::DeferredPendingGeometry;
-        }
+        });
         let mut settlements = Vec::with_capacity(accepted.len());
+        let mut targets = Vec::with_capacity(accepted.len());
         let mut refusal = None;
         for (target, sample) in accepted {
             let settlement = self
@@ -119,21 +134,15 @@ impl super::super::WorthUiActiveApplicationSession {
                         .transpose()
                 });
             match settlement {
-                Ok(Some(settlement)) => settlements.push(settlement),
+                Ok(Some(settlement)) => {
+                    targets.push(target);
+                    settlements.push(settlement);
+                }
                 Ok(None) => {}
                 Err(denial) => {
                     refusal.get_or_insert(UiScrollSettleRefusal::Resolution(denial));
                 }
             }
-        }
-        if settlements.is_empty() {
-            let Some(refusal) = refusal else {
-                self.owed_scroll_settles.paid(presented.semantic_surface());
-                return UiScrollSettleDisposition::Idle;
-            };
-            self.owed_scroll_settles
-                .refused(presented.semantic_surface());
-            return UiScrollSettleDisposition::Refused(refusal);
         }
         let poses = settlements
             .iter()
@@ -145,6 +154,22 @@ impl super::super::WorthUiActiveApplicationSession {
                 )
             })
             .collect::<Vec<_>>();
+        if pending {
+            let arrivals = targets.into_iter().zip(settlements.iter().copied());
+            self.carry_arrivals_into_staged_layout(&arrivals.collect::<Vec<_>>());
+            self.owed_scroll_settles.owe(presented);
+            self.lead_scroll_hits(&settlements, &poses, presented);
+            return UiScrollSettleDisposition::DeferredPendingGeometry;
+        }
+        if settlements.is_empty() {
+            let Some(refusal) = refusal else {
+                self.owed_scroll_settles.paid(presented.semantic_surface());
+                return UiScrollSettleDisposition::Idle;
+            };
+            self.owed_scroll_settles
+                .refused(presented.semantic_surface());
+            return UiScrollSettleDisposition::Refused(refusal);
+        }
         match self.mounted.apply_presented_scroll_geometries(&poses) {
             Ok(transitions) => {
                 for transition in transitions.iter() {
@@ -166,6 +191,7 @@ impl super::super::WorthUiActiveApplicationSession {
                 // The accepted sample is still true, so the settle is owed, not
                 // lost. Re-arming keeps frames coming until it is paid.
                 self.owed_scroll_settles.owe(presented);
+                self.lead_scroll_hits(&settlements, &poses, presented);
                 UiScrollSettleDisposition::DeferredPresentationInFlight
             }
             Err(denial) => {
@@ -272,12 +298,14 @@ impl UiScrollSettlementReading<'_> {
         let slot = latched_chain_slot_for_motion_owner(chain, motion_owner_key)
             .ok_or(UiAcceptedScrollSettlementDenial::OwnerNotInChain { motion_owner_key })?;
         let owner = chain.owners()[slot];
-        // The owner box is the content box at rest: an applied pose moves the
-        // owner's descendants, never the owner.
-        let (owner_instance, content, _) = self
-            .mounted
-            .scroll_region_geometry(mounted_instance, slot)
-            .ok_or(UiAcceptedScrollSettlementDenial::GeometryUnavailable)?;
+        // Samples are measured from the content box with this region and
+        // every region enclosing it at offset zero, which no pose moves.
+        let (Some((owner_instance, _, _)), Some(content)) = (
+            self.mounted.scroll_region_geometry(mounted_instance, slot),
+            self.mounted.scroll_region_rest(mounted_instance, slot),
+        ) else {
+            return Err(UiAcceptedScrollSettlementDenial::GeometryUnavailable);
+        };
         let incarnation = self
             .mounted
             .scroll_region_incarnation(mounted_instance, slot)

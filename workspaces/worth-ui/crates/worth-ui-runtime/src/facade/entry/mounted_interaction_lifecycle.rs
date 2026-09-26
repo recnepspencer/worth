@@ -144,6 +144,9 @@ impl WorthUiActiveApplicationSession {
                 })
             }
             Err(denial) => {
+                if let Some(scroll) = self.scroll.as_mut() {
+                    scroll.retire_surface_direct_successions(semantic_surface);
+                }
                 self.intent_admission
                     .cancel_binding(&mut self.intent_execution, binding);
                 Err(

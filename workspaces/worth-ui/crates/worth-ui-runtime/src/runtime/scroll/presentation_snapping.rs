@@ -62,6 +62,11 @@ impl UiScrollPresentationDeviceScale {
         f64::from(self.device_scale_milli) / f64::from(Self::UNSCALED_MILLI)
     }
 
+    /// One device pixel, in logical points.
+    pub(crate) fn pixel_in_points(self) -> f64 {
+        1.0 / self.pixels_per_point()
+    }
+
     /// The nearest grid line to one logical coordinate, back in logical points.
     fn snap_edge(self, logical_points: f32) -> f64 {
         let pixels_per_point = self.pixels_per_point();

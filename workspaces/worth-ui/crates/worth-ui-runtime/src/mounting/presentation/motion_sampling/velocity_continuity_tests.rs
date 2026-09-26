@@ -85,6 +85,54 @@ fn resetting_the_carried_rate_to_zero_would_produce_a_visibly_different_curve() 
     );
 }
 
+/// A retarget toward a target nearer than the interrupted rate can stop in,
+/// or behind the content, departs no faster than its span allows: Scroll
+/// content moved by the successor never passes the target or turns back.
+#[test]
+fn a_retarget_never_carries_the_content_past_its_new_target() {
+    for (identity, target) in [(5_u64, -17.0_f32), (6, 0.0)] {
+        let world = World::new();
+        let mut sampler = UiMountedMotionSampler::default();
+        sampler.install(world.settle(1, 0.0, -60.0, None)).unwrap();
+        commit_at(&mut sampler, 100, &world);
+        let interruption_tick = 100 + u64::from(SETTLE_TICKS) / 3;
+        let interrupted = translation_y(&commit_at(&mut sampler, interruption_tick, &world));
+        sampler
+            .install(world.settle(
+                identity,
+                -60.0,
+                target,
+                Some(retarget_from_current_sample()),
+            ))
+            .unwrap();
+        let (low, high) = if f64::from(target) < interrupted {
+            (f64::from(target), interrupted)
+        } else {
+            (interrupted, f64::from(target))
+        };
+        let mut previous = interrupted;
+        for offset in 1..=u64::from(SETTLE_TICKS) {
+            let sampled =
+                translation_y(&commit_at(&mut sampler, interruption_tick + offset, &world));
+            assert!(
+                (low - TOLERANCE..=high + TOLERANCE).contains(&sampled),
+                "toward {target}: tick {offset} shows {sampled}, outside {low}..={high}"
+            );
+            assert!(
+                (sampled - f64::from(target)).abs()
+                    <= (previous - f64::from(target)).abs() + TOLERANCE,
+                "toward {target}: tick {offset} turns back from {previous} to {sampled}"
+            );
+            previous = sampled;
+        }
+        assert_close(
+            previous,
+            f64::from(target),
+            "the successor arrives on its target",
+        );
+    }
+}
+
 /// The declared settle family arrives exactly on its endpoint and arrives at
 /// rest, so settlement neither undershoots nor stops abruptly.
 #[test]

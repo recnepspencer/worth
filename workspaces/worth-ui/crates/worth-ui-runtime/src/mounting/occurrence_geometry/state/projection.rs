@@ -9,6 +9,24 @@ impl super::UiMountedOccurrenceGeometryState {
         Option<UiMountedAllocationProjection>,
         crate::mounting::UiMountedOccurrenceGeometryDenial,
     > {
+        Ok(self
+            .projection_on_grid(instance)?
+            .map(|(projection, _)| projection))
+    }
+
+    /// The allocation `projection` paints, and how far the device grid moved
+    /// it from the box on record. Hit testing reads the box on record, so it
+    /// takes the correction back out.
+    pub(crate) fn projection_on_grid(
+        &self,
+        instance: &crate::mounting::UiMountedInstanceIdentityView,
+    ) -> Result<
+        Option<(
+            UiMountedAllocationProjection,
+            Option<super::super::UiDeviceGridCorrection>,
+        )>,
+        crate::mounting::UiMountedOccurrenceGeometryDenial,
+    > {
         let surface = instance.basis().semantic_surface_identity();
         let Some(surface_geometry) = self.surfaces.get(&surface) else {
             return Ok(None);
@@ -25,14 +43,18 @@ impl super::UiMountedOccurrenceGeometryState {
         // The box on record is where the accepted offset put it. What is
         // painted is that box moved onto the device grid, derived here and
         // written nowhere, so the offset behind it keeps its precision.
-        let bounds = match self.presented_scroll_grid_correction(surface, instance.identity())? {
-            Some((dx, dy)) => super::scroll::translate(row.bounds, dx, dy)?,
+        let correction = self.presented_scroll_grid_correction(surface, instance.identity())?;
+        let bounds = match correction {
+            Some(correction) => correction.onto_grid(row.bounds)?,
             None => row.bounds,
         };
-        Ok(Some(UiMountedAllocationProjection::Known {
-            bounds,
-            basis: row.basis,
-        }))
+        Ok(Some((
+            UiMountedAllocationProjection::Known {
+                bounds,
+                basis: row.basis,
+            },
+            correction,
+        )))
     }
 
     pub(crate) fn mosaic_clips(

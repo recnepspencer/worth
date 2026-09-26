@@ -107,6 +107,37 @@ fn a_portal_moves_scrolled_content_with_its_clip_and_fades_it() {
 }
 
 #[test]
+fn a_portal_layer_alone_shows_what_it_shows_among_the_layers() {
+    let command = command();
+    for units in [0, 1, 32_768, u16::MAX] {
+        let portal = UiCommandMotionLayer::moved(
+            Some(transform([0.0, 0.0, 2.0, 2.0], [50.0, 60.0, 1.0, 1.0])),
+            units,
+        );
+        let held = layers(&[(UiCommandMotionLayerKind::Portal, portal)]);
+        let alone = held.portal_only().unwrap();
+        assert_eq!(alone.layers(), held);
+        assert_eq!(
+            alone.change(command, RESTING),
+            held.change(command, RESTING).unwrap()
+        );
+    }
+}
+
+#[test]
+fn only_scroll_clips() {
+    for kind in [
+        UiCommandMotionLayerKind::Own,
+        UiCommandMotionLayerKind::Portal,
+    ] {
+        assert_eq!(
+            UiCommandMotionLayers::default().sample(kind, scroll()),
+            Err(Denial::InvalidGeometry)
+        );
+    }
+}
+
+#[test]
 fn own_motion_inside_a_portal_multiplies_both_fades() {
     let command = command();
     let change = layers(&[

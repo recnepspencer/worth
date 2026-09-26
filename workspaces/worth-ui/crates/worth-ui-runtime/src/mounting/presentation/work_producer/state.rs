@@ -5,7 +5,10 @@ mod command_view;
 #[cfg(test)]
 #[path = "state/retained_order_tests.rs"]
 mod retained_order_tests;
+#[path = "state/shown_paint.rs"]
+mod shown_paint;
 pub(super) use appearance_targets::UiMountedAppearanceSurfaceSampleTarget;
+pub(crate) use shown_paint::UiShownOwnPaint;
 
 use worth_ui_host_contract::{
     UiMountedEffectFamily, UiMountedPaintCommand, UiMountedPaintCommandIdentity,
@@ -35,7 +38,7 @@ pub(crate) struct UiMountedPresentationState {
         worth_ui_host_contract::UiMountedInstanceIdentity,
         UiMountedAppearanceSurfaceSampleTarget,
     >,
-    portal_motion_groups: super::portal_motion_groups::UiMountedPortalMotionGroups,
+    pub(super) portal_motion_groups: super::portal_motion_groups::UiMountedPortalMotionGroups,
     pub(super) scroll_motion_groups: super::scroll_motion_groups::UiMountedScrollMotionGroups,
     instance_order: UiPersistentOrder<worth_ui_host_contract::UiMountedInstanceIdentity>,
     presented_instances: UiPersistentOrdSet<worth_ui_host_contract::UiMountedInstanceIdentity>,
@@ -47,6 +50,12 @@ pub(crate) struct UiMountedPresentationState {
         std::sync::Arc<[worth_ui_host_contract::UiMountedPresentationNodeChange]>,
     pub(super) projection_rows_materialized: u64,
     pub(super) entrance_acceptance: Option<super::motion_evidence::UiPreparedEntranceAcceptance>,
+    /// The commands this frame carried a Portal's Motion into.
+    pub(super) carried_motion: Vec<UiMountedPaintCommandIdentity>,
+    /// The commands whose samples the work presenting this frame displaces,
+    /// absent when it displaces none.
+    pub(super) displaced_samples:
+        Option<std::rc::Rc<std::collections::HashSet<UiMountedPaintCommandIdentity>>>,
 }
 
 type PresentationOrderKey = (u32, u64, usize);
@@ -136,6 +145,8 @@ impl UiMountedPresentationState {
         Self {
             predecessor,
             entrance_acceptance: None,
+            carried_motion: Vec::new(),
+            displaced_samples: None,
             frame: projection.frame(),
             requirement,
             rebound_from_binding: None,
@@ -171,6 +182,8 @@ impl UiMountedPresentationState {
     ) -> Self {
         let mut successor = predecessor.clone();
         successor.entrance_acceptance = None;
+        successor.carried_motion = Vec::new();
+        successor.displaced_samples = None;
         successor.predecessor = source.predecessor();
         successor.frame = source.frame().frame_identity();
         successor.requirement = requirement;
@@ -222,6 +235,9 @@ impl UiMountedPresentationState {
                 requirement.semantic_surface(),
                 false,
             );
+        }
+        for instance in source.changed_instances().iter().copied() {
+            successor.carry_portal_motion(predecessor, instance);
         }
         successor.effects = source
             .frame()

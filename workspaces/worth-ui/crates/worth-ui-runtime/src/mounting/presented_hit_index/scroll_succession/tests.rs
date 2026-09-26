@@ -31,14 +31,14 @@ fn scroll_succession_preserves_reused_rows_but_not_new_receipts_at_identical_bou
             binding,
             &[(
                 instance,
-                crate::mounting::presentation::UiScrollPoseShift::between(
+                crate::mounting::UiHitScrollMove::new(crate::mounting::presentation::UiScrollPoseShift::between(
                     crate::runtime::scroll::UiScrollOffset::origin(),
                     crate::runtime::scroll::UiScrollOffset::new(
                         0,
                         60 * worth_ui_host_contract::UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
                     )
                     .unwrap(),
-                ),
+                ), crate::mounting::UiHitAncestorClip::Unclipped),
             )],
         );
         let mut reused = source.clone();
@@ -135,9 +135,12 @@ fn scroll_poses_too_small_to_move_a_row_still_accumulate() {
             binding,
             &[(
                 instance,
-                crate::mounting::presentation::UiScrollPoseShift::between(
-                    pose(step),
-                    pose(step + 1),
+                crate::mounting::UiHitScrollMove::new(
+                    crate::mounting::presentation::UiScrollPoseShift::between(
+                        pose(step),
+                        pose(step + 1),
+                    ),
+                    crate::mounting::UiHitAncestorClip::Unclipped,
                 ),
             )],
         );
@@ -146,7 +149,10 @@ fn scroll_poses_too_small_to_move_a_row_still_accumulate() {
         binding,
         &[(
             instance,
-            crate::mounting::presentation::UiScrollPoseShift::between(pose(0), pose(8)),
+            crate::mounting::UiHitScrollMove::new(
+                crate::mounting::presentation::UiScrollPoseShift::between(pose(0), pose(8)),
+                crate::mounting::UiHitAncestorClip::Unclipped,
+            ),
         )],
     );
     let y = |index: &UiPresentedHitIndex| {
@@ -161,7 +167,7 @@ fn scroll_poses_too_small_to_move_a_row_still_accumulate() {
     assert!(y(&settled) < 100_000.0);
     assert_eq!(y(&stepped), y(&settled));
     assert_eq!(
-        stepped.committed_scroll_translation(binding, instance).0,
-        settled.committed_scroll_translation(binding, instance).0,
+        stepped.displayed_scroll_translation(binding, instance).0,
+        settled.displayed_scroll_translation(binding, instance).0,
     );
 }

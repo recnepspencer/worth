@@ -1,3 +1,4 @@
+mod hit_test_presentation;
 mod input_shielding;
 pub(in crate::mounting) use input_shielding::UiModalInputAdmission;
 mod text_paint;
@@ -39,6 +40,7 @@ pub(crate) struct UiMountedHitTestPresentation {
     mechanic: worth_ui_host_contract::UiMountedHitTestMechanic,
     portal: Option<worth_ui_host_contract::UiMountedPortalOverlayMechanic>,
     owns_presented_portal: bool,
+    ancestor_clip: crate::mounting::UiHitAncestorClip,
 }
 
 #[cfg(test)]
@@ -152,11 +154,7 @@ impl UiMountedVisualRegionBasis {
                 .hit_test
                 .iter()
                 .copied()
-                .map(|mechanic| UiMountedHitTestPresentation {
-                    mechanic,
-                    portal: None,
-                    owns_presented_portal: false,
-                })
+                .map(UiMountedHitTestPresentation::for_test)
                 .collect();
         }
         let mut portal_owners = std::collections::BTreeSet::new();
@@ -185,10 +183,16 @@ impl UiMountedVisualRegionBasis {
                         Some(*portal),
                     )),
                 }?;
+                // The frame published each row with the ancestor clips it sits
+                // inside; a row it did not publish is not presented.
+                let ancestor_clip = self
+                    .presented_hits
+                    .published_ancestor_clip(mechanic.mounted_instance())?;
                 Some(UiMountedHitTestPresentation {
                     mechanic,
                     portal,
                     owns_presented_portal: portal_owners.contains(&mechanic.mounted_instance()),
+                    ancestor_clip,
                 })
             })
             .collect()
@@ -319,44 +323,6 @@ impl UiMountedVisualRegionBasis {
                         Option<worth_ui_host_contract::UiMountedPortalOverlayMechanic>,
                     )>())?,
             )
-    }
-}
-
-impl UiMountedHitTestPresentation {
-    pub(in crate::mounting) fn completed(
-        mechanic: worth_ui_host_contract::UiMountedHitTestMechanic,
-        portal: Option<worth_ui_host_contract::UiMountedPortalOverlayMechanic>,
-        owns_presented_portal: bool,
-    ) -> Self {
-        Self {
-            mechanic,
-            portal,
-            owns_presented_portal,
-        }
-    }
-    pub(crate) const fn mechanic(&self) -> worth_ui_host_contract::UiMountedHitTestMechanic {
-        self.mechanic
-    }
-
-    pub(crate) const fn portal(
-        &self,
-    ) -> Option<worth_ui_host_contract::UiMountedPortalOverlayMechanic> {
-        self.portal
-    }
-
-    pub(crate) const fn owns_presented_portal(&self) -> bool {
-        self.owns_presented_portal
-    }
-
-    #[cfg(test)]
-    pub(crate) const fn for_test(
-        mechanic: worth_ui_host_contract::UiMountedHitTestMechanic,
-    ) -> Self {
-        Self {
-            mechanic,
-            portal: None,
-            owns_presented_portal: false,
-        }
     }
 }
 

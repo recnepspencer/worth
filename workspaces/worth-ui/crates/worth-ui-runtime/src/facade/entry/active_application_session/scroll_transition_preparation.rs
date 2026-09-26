@@ -193,21 +193,18 @@ impl super::super::WorthUiActiveApplicationSession {
             .map_or(accepted_offset, |displayed| displayed.settled())
     }
 
-    /// The region's content box where an offset of zero places it. The owner
-    /// box is that box: an applied pose translates the owner's descendants and
-    /// leaves the owner where layout put it, so the Motion request that
-    /// translates from rest composes with it directly.
+    /// The region's content box where an offset of zero places it, with every
+    /// region enclosing it at offset zero too: the rest settlement measures
+    /// the request's samples from, which no enclosing pose moves.
     fn unscrolled_region_content(
         &self,
         mounted_instance: worth_ui_host_contract::UiMountedInstanceIdentity,
         slot: usize,
     ) -> Result<worth_ui_host_contract::UiMountedCanonicalBox, UiScrollTransitionStagingDenial>
     {
-        let (_, content, _) = self
-            .mounted
-            .scroll_region_geometry(mounted_instance, slot)
-            .ok_or(UiScrollTransitionStagingDenial::ContentGeometryUnavailable)?;
-        Ok(content)
+        self.mounted
+            .scroll_region_rest(mounted_instance, slot)
+            .ok_or(UiScrollTransitionStagingDenial::ContentGeometryUnavailable)
     }
 }
 

@@ -17,6 +17,18 @@ impl World {
                 self.host.push_native_display_settled_without_effects();
             }
         }
+        self.present_published(frame, now);
+    }
+
+    /// Publish `frame` against a host that paints exactly what it carries.
+    pub(super) fn publish_as_issued(&mut self, frame: UiPreparedMountedFrame, now: u64) {
+        for _ in frame.surfaces() {
+            self.host.push_native_display_as_issued();
+        }
+        self.present_published(frame, now);
+    }
+
+    fn present_published(&mut self, frame: UiPreparedMountedFrame, now: u64) {
         let outcome = self.session.present_prepared_mounted_frame_internal(
             frame,
             UiPresentationDeadline::at_tick(u64::MAX),

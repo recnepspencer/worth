@@ -17,9 +17,10 @@ impl crate::facade::WorthUiActiveApplicationSession {
                 if !matches!(owner, UiScrollOwnerIdentity::Region { .. }) {
                     continue;
                 }
-                let Some((owner_instance, content, viewport)) =
-                    self.mounted.scroll_region_geometry(target, slot)
-                else {
+                let (Some((owner_instance, content, viewport)), Some(rest)) = (
+                    self.mounted.scroll_region_geometry(target, slot),
+                    self.mounted.scroll_region_rest(target, slot),
+                ) else {
                     continue;
                 };
                 let surface = owner.semantic_surface();
@@ -38,6 +39,7 @@ impl crate::facade::WorthUiActiveApplicationSession {
                     ),
                     owner: owner_instance,
                     content,
+                    rest,
                     viewport,
                     offset,
                     scale,

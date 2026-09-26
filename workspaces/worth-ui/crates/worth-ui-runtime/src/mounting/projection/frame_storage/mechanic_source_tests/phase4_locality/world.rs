@@ -148,6 +148,7 @@ fn locality_node(
             },
         }),
         plan_index: None,
+        grid_correction: None,
         occurrence_allocation: UiMountedAllocationProjection::Known {
             bounds,
             basis: UiMountedAllocationBasis::new(1, 2, 3, UiMountedTransformProjection::Identity),

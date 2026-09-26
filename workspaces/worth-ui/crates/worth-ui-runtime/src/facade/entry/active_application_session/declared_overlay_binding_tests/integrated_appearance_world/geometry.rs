@@ -30,10 +30,35 @@ struct RegionOverrides {
     /// surface, so it is that component's content and travels with its scroll
     /// offset. The child occurrence is by default; this names a second.
     nested: Option<usize>,
+    /// A region nested in the first component's: its owner is laid out as
+    /// that component's content, and one more mount as its own.
+    inner: Option<InnerRegion>,
     /// Lay the child occurrence out against the surface instead of inside the
     /// first component, so that component's region stops carrying it while it
     /// stays mounted.
     detach_child: bool,
+}
+
+/// A mount that owns a region while it travels as the first component's
+/// content, and the mount laid out as that region's content.
+#[derive(Clone, Copy)]
+struct InnerRegion {
+    owner: usize,
+    /// The owner's region, in its own local space.
+    region: [f32; 4],
+    content: usize,
+}
+
+impl RegionOverrides {
+    /// The mount `mount` is laid out relative to, if not the surface.
+    fn parent(&self, mount: usize) -> Option<usize> {
+        match self.inner {
+            Some(inner) if inner.content == mount => Some(inner.owner),
+            Some(inner) if inner.owner == mount => Some(0),
+            _ if (mount == 4 && !self.detach_child) || Some(mount) == self.nested => Some(0),
+            _ => None,
+        }
+    }
 }
 
 pub(super) fn canonical([x, y, width, height]: [f32; 4]) -> UiMountedCanonicalBox {
@@ -214,6 +239,7 @@ pub(super) fn install_disjoint_child_region(
             child: Some([1_000.0, 1_000.0, 20.0, 20.0]),
             primary: None,
             nested: None,
+            inner: None,
             detach_child: false,
         },
         None,
@@ -271,10 +297,10 @@ fn install_with_child_region(
             .enumerate()
             .filter(|(mount, _)| Some(*mount) != excluded && (*mount == 3) == (index == 1))
             .map(|(mount, instance)| {
-                if (mount == 4 && !overrides.detach_child) || Some(mount) == overrides.nested {
+                if let Some(parent) = overrides.parent(mount) {
                     UiMountedOccurrenceGeometry::parent_relative(
                         *instance,
-                        instances[0],
+                        instances[parent],
                         canonical_in(boxes[mount], UiMountedCoordinateSpace::GraphNodeLocal),
                     )
                 } else {
@@ -297,6 +323,9 @@ fn install_with_child_region(
                     .0;
                 let filling = [0.0, 0.0, boxes[mount][2], boxes[mount][3]];
                 let bounds = match mount {
+                    _ if overrides.inner.is_some_and(|inner| inner.owner == mount) => {
+                        overrides.inner.map_or(filling, |inner| inner.region)
+                    }
                     4 => overrides.child.unwrap_or(filling),
                     3 => [10.0, 10.0, 120.0, 40.0],
                     0 => overrides.primary.unwrap_or(filling),

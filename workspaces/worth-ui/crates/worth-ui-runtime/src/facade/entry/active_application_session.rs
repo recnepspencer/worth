@@ -81,6 +81,8 @@ pub(crate) use scroll_chrome_ingress::UiScrollChromeIngressOutcome;
 #[cfg(any(test, feature = "certification-support"))]
 pub(crate) use scroll_chrome_interaction::UiScrollChromePressOutcome;
 pub(in crate::facade::entry) use scroll_settlement_lifecycle::UiScrollSettlementScope;
+#[path = "active_application_session/scroll_arrival_placement.rs"]
+mod scroll_arrival_placement;
 #[path = "active_application_session/scroll_chrome_presentation.rs"]
 mod scroll_chrome_presentation;
 #[path = "active_application_session/scroll_chrome_projection.rs"]
@@ -92,6 +94,8 @@ mod scroll_chrome_tests;
 mod scroll_direct_control;
 #[path = "active_application_session/scroll_extent_retarget.rs"]
 mod scroll_extent_retarget;
+#[path = "active_application_session/scroll_staged_layout_arrival.rs"]
+mod scroll_staged_layout_arrival;
 pub(in crate::facade::entry) use scroll_accepted_sample_settlement::UiScrollSettlementReading;
 pub(in crate::facade::entry) use scroll_extent_retarget::settle_presented_scroll_extent;
 pub(in crate::facade::entry) use scroll_settle_retry::UiOwedScrollSettles;
@@ -103,10 +107,14 @@ mod scroll_gesture_latching;
 mod scroll_observation;
 #[path = "active_application_session/scroll_pose_application.rs"]
 mod scroll_pose_application;
+#[path = "active_application_session/scroll_publication_hit_lead.rs"]
+mod scroll_publication_hit_lead;
 #[path = "active_application_session/scroll_region_declaration.rs"]
 mod scroll_region_declaration;
 #[path = "active_application_session/scroll_settle_disposition.rs"]
 mod scroll_settle_disposition;
+#[path = "active_application_session/scroll_settle_hit_lead.rs"]
+mod scroll_settle_hit_lead;
 #[path = "active_application_session/scroll_settle_retry.rs"]
 mod scroll_settle_retry;
 #[path = "active_application_session/scroll_settlement_lifecycle.rs"]

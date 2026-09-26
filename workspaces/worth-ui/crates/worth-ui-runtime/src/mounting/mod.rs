@@ -147,6 +147,10 @@ pub(crate) use publication::{
 };
 pub(crate) use receipt_basis::UiMountedNodeReceiptBasis;
 pub(crate) use retention::{
+    UiHitAncestorClip, UiHitAncestorReach, UiHitScrollMove, UiPresentedHitRect,
+    UiPresentedHitTestRow,
+};
+pub(crate) use retention::{
     UiMountedDiagnosticInspectionBasis, UiMountedDiagnosticInspectionDenial,
     UiMountedDiagnosticRetentionLease, UiMountedFrameInspectionBasis,
     UiMountedFrameInspectionDenial, UiMountedFrameInspectionSelection,
@@ -162,7 +166,6 @@ pub use retention::{
     UiMountedFrameRetentionDenial, UiMountedFrameRetentionRejection, UiMountedRetentionClass,
     UiMountedRetentionClassBudget, UiMountedRetentionLease,
 };
-pub(crate) use retention::{UiPresentedHitRect, UiPresentedHitTestRow};
 pub(crate) use reuse::UiMountedFrameReuseExternalBasis;
 pub use reuse::{
     UiMountedFrameExecutionPosture, UiMountedFrameReuse, UiMountedFrameReuseComparator,

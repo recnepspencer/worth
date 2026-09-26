@@ -16,7 +16,8 @@ use worth_ui_host_contract::{
     UiMountedPresentationTransform,
 };
 
-type ActiveSamples = BTreeMap<UiMountedInstanceIdentity, UiPresentationMotionSampleReceipt>;
+pub(super) type ActiveSamples =
+    BTreeMap<UiMountedInstanceIdentity, UiPresentationMotionSampleReceipt>;
 
 impl UiMountedPresentationState {
     pub(in crate::mounting::presentation::work_producer) fn scroll_sample_changes(
@@ -50,106 +51,120 @@ impl UiMountedPresentationState {
                 }
             }
         }
-        let mut changes = Vec::with_capacity(commands.len());
-        for (command, receipt) in commands {
-            let identity = command.identity;
-            let contributors = self
-                .scroll_motion_groups
-                .memberships
-                .get(&identity)
-                .ok_or(Denial::UnknownTargetCommands)?;
-            let groups = contributors
-                .iter()
-                .map(|target| {
-                    let group = self
-                        .scroll_motion_groups
-                        .groups
-                        .get(target)
-                        .ok_or(Denial::UnknownTargetCommands)?;
-                    Ok((group, group.published_move(&active, &receipt)?))
-                })
-                .collect::<Result<Vec<_>, Denial>>()?;
-            let mut clip = None;
-            for part in command.clips.iter() {
-                let delta = displacement_of(part.owner, &groups, presentation)?;
-                add_clip(&mut clip, translate(part.bounds, delta.components())?)?;
-            }
-            for (group, _) in &groups {
-                let delta = displacement_of(Some(group.input.owner), &groups, presentation)?;
-                add_clip(
-                    &mut clip,
-                    translate(group.input.viewport, delta.components())?,
-                )?;
-            }
-            let clip = clip.ok_or(Denial::InvalidGeometry)?;
-            let (transform, opacity) = if let Some(chrome) = identity.scroll_chrome_identity() {
-                let target = self
+        commands
+            .into_iter()
+            .map(|(command, receipt)| {
+                Ok((
+                    self.scroll_command_change(command, &active, &receipt, presentation)?,
+                    receipt,
+                ))
+            })
+            .collect()
+    }
+
+    /// The change showing `command` where the candidate `receipt` accepts,
+    /// with `active` moving the groups it samples, puts each of its groups.
+    pub(super) fn scroll_command_change(
+        &self,
+        command: &UiMountedScrollMotionCommand,
+        active: &ActiveSamples,
+        receipt: &UiPresentationMotionSampleReceipt,
+        presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
+    ) -> Result<UiMountedPresentationSampleChange, Denial> {
+        let identity = command.identity;
+        let contributors = self
+            .scroll_motion_groups
+            .memberships
+            .get(&identity)
+            .ok_or(Denial::UnknownTargetCommands)?;
+        let groups = contributors
+            .iter()
+            .map(|target| {
+                let group = self
                     .scroll_motion_groups
-                    .chrome
-                    .get(&chrome)
+                    .groups
+                    .get(target)
                     .ok_or(Denial::UnknownTargetCommands)?;
-                let mut placed = target.bounds;
-                if chrome.part() == worth_ui_host_contract::UiMountedScrollChromePart::Thumb {
-                    let owner_target = self
-                        .scroll_motion_groups
-                        .owners
-                        .get(&chrome.owner_instance())
-                        .ok_or(Denial::UnknownTargetCommands)?;
-                    let group = self
-                        .scroll_motion_groups
-                        .groups
-                        .get(owner_target)
-                        .ok_or(Denial::UnknownTargetCommands)?;
-                    placed = sampled_thumb(group, chrome.axis(), &active, &receipt)?;
-                }
-                placed = translate(
-                    placed,
-                    displacement_of(Some(chrome.owner_instance()), &groups, presentation)?
-                        .components(),
-                )?;
-                (
-                    UiMountedPresentationTransform::from_runtime_sampling(target.bounds, placed)
-                        .map_err(|_| Denial::InvalidGeometry)?,
-                    target.opacity,
-                )
-            } else {
-                // A displayed base already shows every group where it stands,
-                // so it moves from there; a published command moves from its
-                // groups' published offsets, as its clips do.
-                let translation = match command.base_translation {
-                    Some(base) => UiAcceptedCommandTranslation::from_displayed(
-                        presentation,
-                        base,
-                        groups
-                            .iter()
-                            .map(|(group, _)| group.standing_move(base, &active, &receipt))
-                            .collect::<Result<Vec<_>, _>>()?,
-                    )?,
-                    None => UiAcceptedCommandTranslation::from_published(
-                        presentation,
-                        groups.iter().map(|(_, delta)| *delta),
-                    )?,
-                };
-                let source = bounds([0.0, 0.0, 1.0, 1.0], UiMountedCoordinateSpace::Viewport)?;
-                (
-                    UiMountedPresentationTransform::from_runtime_sampling(
-                        source,
-                        translate(source, translation.components())?,
-                    )
-                    .map_err(|_| Denial::InvalidGeometry)?,
-                    self.appearance_opacity_for_command(identity),
-                )
-            };
-            let change = UiMountedPresentationSampleChange::from_runtime_scroll_sampling(
-                identity,
-                transform,
-                crate::mounting::presentation::compose_opacity(opacity, receipt.opacity_units()),
-                clip,
-            )
-            .map_err(|_| Denial::InvalidGeometry)?;
-            changes.push((change, receipt));
+                Ok((group, group.published_move(active, receipt)?))
+            })
+            .collect::<Result<Vec<_>, Denial>>()?;
+        let mut clip = None;
+        for part in command.clips.iter() {
+            let delta = displacement_of(part.owner, &groups, presentation)?;
+            add_clip(&mut clip, translate(part.bounds, delta.components())?)?;
         }
-        Ok(changes)
+        for (group, _) in &groups {
+            let delta = displacement_of(Some(group.input.owner), &groups, presentation)?;
+            add_clip(
+                &mut clip,
+                translate(group.input.viewport, delta.components())?,
+            )?;
+        }
+        let clip = clip.ok_or(Denial::InvalidGeometry)?;
+        let (transform, opacity) = if let Some(chrome) = identity.scroll_chrome_identity() {
+            let target = self
+                .scroll_motion_groups
+                .chrome
+                .get(&chrome)
+                .ok_or(Denial::UnknownTargetCommands)?;
+            let mut placed = target.bounds;
+            if chrome.part() == worth_ui_host_contract::UiMountedScrollChromePart::Thumb {
+                let owner_target = self
+                    .scroll_motion_groups
+                    .owners
+                    .get(&chrome.owner_instance())
+                    .ok_or(Denial::UnknownTargetCommands)?;
+                let group = self
+                    .scroll_motion_groups
+                    .groups
+                    .get(owner_target)
+                    .ok_or(Denial::UnknownTargetCommands)?;
+                placed = sampled_thumb(group, chrome.axis(), active, receipt)?;
+            }
+            placed = translate(
+                placed,
+                displacement_of(Some(chrome.owner_instance()), &groups, presentation)?.components(),
+            )?;
+            (
+                UiMountedPresentationTransform::from_runtime_sampling(target.bounds, placed)
+                    .map_err(|_| Denial::InvalidGeometry)?,
+                target.opacity,
+            )
+        } else {
+            // A displayed base already shows every group where it stands,
+            // so it moves from there; a published command moves from its
+            // groups' published offsets, as its clips do.
+            let translation = match command.base_translation {
+                Some(base) => UiAcceptedCommandTranslation::from_displayed(
+                    presentation,
+                    base,
+                    groups
+                        .iter()
+                        .map(|(group, _)| group.standing_move(base, active, receipt))
+                        .collect::<Result<Vec<_>, _>>()?,
+                )?,
+                None => UiAcceptedCommandTranslation::from_published(
+                    presentation,
+                    groups.iter().map(|(_, delta)| *delta),
+                )?,
+            };
+            let source = bounds([0.0, 0.0, 1.0, 1.0], UiMountedCoordinateSpace::Viewport)?;
+            (
+                UiMountedPresentationTransform::from_runtime_sampling(
+                    source,
+                    translate(source, translation.components())?,
+                )
+                .map_err(|_| Denial::InvalidGeometry)?,
+                self.appearance_opacity_for_command(identity),
+            )
+        };
+        UiMountedPresentationSampleChange::from_runtime_scroll_sampling(
+            identity,
+            transform,
+            crate::mounting::presentation::compose_opacity(opacity, receipt.opacity_units()),
+            clip,
+        )
+        .map_err(|_| Denial::InvalidGeometry)
     }
 }
 
@@ -159,11 +174,11 @@ impl UiMountedScrollMotionGroup {
     pub(super) fn standing(&self) -> UiGroupStanding {
         self.displayed_sample
             .get()
-            .map_or(self.bound_standing.standing(), |sample| {
-                UiGroupStanding::Displayed(UiDisplayedGroupOffset::of_sample(
-                    self.input.content,
-                    sample,
-                ))
+            .map_or(self.bound_standing.standing(), |shown| {
+                UiGroupStanding::Displayed(
+                    UiDisplayedGroupOffset::of_sample(self.input.rest, shown.rect),
+                    shown.sample,
+                )
             })
     }
 
@@ -177,7 +192,7 @@ impl UiMountedScrollMotionGroup {
         match active.get(&self.input.owner) {
             Some(sample) => sample
                 .geometry()
-                .map(|geometry| UiAcceptedGroupOffset::of_sample(self.input.content, geometry))
+                .map(|geometry| UiAcceptedGroupOffset::of_sample(self.input.rest, geometry))
                 .ok_or(Denial::InvalidGeometry),
             None => Ok(UiAcceptedGroupOffset::held_by(tick, self.standing())),
         }

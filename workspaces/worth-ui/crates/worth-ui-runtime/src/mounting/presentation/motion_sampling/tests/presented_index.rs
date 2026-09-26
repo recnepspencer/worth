@@ -102,7 +102,10 @@ fn a_pose_that_moves_a_hidden_row_still_moves_it_once_revealed() {
         )
         .unwrap()
     };
-    let shift = crate::mounting::presentation::UiScrollPoseShift::between(pose(0), pose(5));
+    let shift = crate::mounting::UiHitScrollMove::new(
+        crate::mounting::presentation::UiScrollPoseShift::between(pose(0), pose(5)),
+        crate::mounting::UiHitAncestorClip::Unclipped,
+    );
     let binding = world.presentation.binding();
     let mut hidden = UiPresentedHitIndex::default();
     hidden.replace_base(base.mounted_instance(), Some(base));

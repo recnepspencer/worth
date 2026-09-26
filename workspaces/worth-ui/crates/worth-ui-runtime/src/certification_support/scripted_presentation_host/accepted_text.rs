@@ -213,6 +213,30 @@ impl super::ScriptedPresentationHost {
             .map(|shown| (shown.attempt, shown.commands.clone()))
     }
 
+    /// The commands on `surface` whose samples a request the host holds open
+    /// retires or re-issues once it lands.
+    pub fn held_open_displaced_commands(
+        &self,
+        surface: UiSemanticSurfaceIdentity,
+    ) -> Vec<UiMountedPaintCommandIdentity> {
+        let state = self.state.lock().unwrap();
+        state
+            .accepted_text
+            .pending
+            .values()
+            .filter(|(pending, ..)| *pending == surface)
+            .flat_map(|(_, _, work, samples)| {
+                let touched = match work {
+                    ScriptedTextWork::Delta(changes) => changes.iter().flat_map(touched).collect(),
+                    _ => Vec::new(),
+                };
+                touched
+                    .into_iter()
+                    .chain(samples.iter().map(|sample| sample.command()))
+            })
+            .collect()
+    }
+
     /// Where the host draws each accepted text command on `surface`, through
     /// the samples it has accepted since that command was committed.
     pub fn accepted_text_drawn_bounds(

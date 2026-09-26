@@ -33,7 +33,7 @@ impl UiMountedProjectionFrame {
         let Some(surface) = self.semantic.surface_for(node.receipt.semantic_surface()) else {
             return Ok(None);
         };
-        let Some(row) = self.mechanics.hit_test_for_instance(
+        let Some(laid_out) = self.mechanics.hit_test_for_instance(
             instance,
             surface.surface,
             surface.binding,
@@ -45,10 +45,10 @@ impl UiMountedProjectionFrame {
         };
         let (row, portal) =
             match self.portal_child_presentation(instance, surface.surface, surface.binding)? {
-                UiMountedPortalChildPresentation::Ordinary => (row, None),
+                UiMountedPortalChildPresentation::Ordinary => (laid_out, None),
                 UiMountedPortalChildPresentation::Suppressed => return Ok(None),
                 UiMountedPortalChildPresentation::Presented(portal, source_anchor) => {
-                    let Some(row) = row
+                    let Some(row) = laid_out
                         .presented_within_portal(portal, source_anchor)
                         .map_err(UiMountedProjectionDenial::HitTestCompletion)?
                     else {
@@ -64,6 +64,12 @@ impl UiMountedProjectionFrame {
                 self.portal_overlays
                     .iter()
                     .any(|portal| portal.owner() == instance),
+                // Ancestor clips are laid out with the row, before any Portal
+                // presents it.
+                crate::mounting::UiHitAncestorClip::relative_to(
+                    node.appearance_clip,
+                    laid_out.bounds(),
+                ),
             ),
         )))
     }

@@ -12,6 +12,8 @@ use super::{UiMountedPresentationLease, UiMountedPresentationWork};
 mod command_bundle;
 #[path = "work_producer/command_motion_layers.rs"]
 mod command_motion_layers;
+#[path = "work_producer/command_motion_slot.rs"]
+mod command_motion_slot;
 #[path = "work_producer/command_motion_ticks.rs"]
 mod command_motion_ticks;
 #[path = "work_producer/delta_diff.rs"]
@@ -30,8 +32,12 @@ mod motion_sample;
 mod motion_sample_command;
 #[path = "work_producer/overlay_attribution.rs"]
 mod overlay_attribution;
+#[path = "work_producer/portal_motion_carry.rs"]
+mod portal_motion_carry;
 #[path = "work_producer/portal_motion_groups.rs"]
 mod portal_motion_groups;
+#[path = "work_producer/sample_displacement.rs"]
+mod sample_displacement;
 #[path = "work_producer/scroll_motion_groups.rs"]
 mod scroll_motion_groups;
 pub(crate) use scroll_motion_groups::{
@@ -47,7 +53,7 @@ mod state_rebind;
 mod successor_issue;
 pub(super) use successor_issue::SuccessorIssueRequest;
 
-pub(crate) use state::UiMountedPresentationState;
+pub(crate) use state::{UiMountedPresentationState, UiShownOwnPaint};
 
 pub(super) type UiMountedPresentationCandidates =
     BTreeMap<worth_ui_host_contract::UiSurfaceBindingGeneration, UiMountedPresentationState>;

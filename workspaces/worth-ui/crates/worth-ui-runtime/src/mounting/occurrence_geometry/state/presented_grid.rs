@@ -43,7 +43,8 @@ impl UiMountedOccurrenceGeometryState {
         &self,
         surface: UiSemanticSurfaceIdentity,
         instance: UiMountedInstanceIdentity,
-    ) -> Result<Option<(f32, f32)>, UiMountedOccurrenceGeometryDenial> {
+    ) -> Result<Option<super::super::UiDeviceGridCorrection>, UiMountedOccurrenceGeometryDenial>
+    {
         let geometry = self
             .surfaces
             .get(&surface)
@@ -63,7 +64,9 @@ impl UiMountedOccurrenceGeometryState {
             }
             cursor = self.parent_of(geometry, ancestor)?;
         }
-        Ok((inline != 0.0 || block != 0.0).then_some((inline as f32, block as f32)))
+        Ok(super::super::UiDeviceGridCorrection::from_residues(
+            inline, block,
+        ))
     }
 
     /// The occurrence one occurrence was laid out inside, on a surface that has

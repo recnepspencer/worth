@@ -28,6 +28,7 @@ fn independently_projected_command_clips_are_not_mistaken_for_shared_input_clips
             target,
             owner: world.first_instance,
             content: bounds,
+            rest: bounds,
             viewport: bounds,
             offset: UiScrollOffset::default(),
             scale: UiScrollPresentationDeviceScale::admit(1000).unwrap(),

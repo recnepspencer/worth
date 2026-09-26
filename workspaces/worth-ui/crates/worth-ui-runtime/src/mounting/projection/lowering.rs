@@ -65,6 +65,7 @@ struct UiMountedProjectionNodeDraft {
     participation: worth_ui_host_contract::UiMountedParticipation,
     allocation: worth_ui_host_contract::UiMountedAllocationProjection,
     appearance_allocation: worth_ui_host_contract::UiMountedAllocationProjection,
+    grid_correction: Option<crate::mounting::occurrence_geometry::UiDeviceGridCorrection>,
     appearance_clip: super::appearance::UiMountedAppearanceClip,
     surface_paint_posture: super::super::UiMountedSurfacePaintPosture,
     surface_paint_order: Option<u32>,

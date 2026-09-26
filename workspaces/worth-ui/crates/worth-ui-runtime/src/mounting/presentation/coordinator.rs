@@ -6,9 +6,8 @@ use worth_ui_host_contract::{
 
 use super::consumption_view::UiMountedHostPresentationAuthority;
 use super::outcome::{
-    UiMountedIndeterminateFrame, UiMountedPresentationOutcome, UiMountedPresentationReceipt,
+    UiMountedPresentationOutcome, UiMountedPresentationReceipt,
     UiMountedSurfacePresentationReceipt, UiMountedSurfacePresentationRejection,
-    UiPresentationIndeterminateReport,
 };
 use super::preflight::validate_before_effects;
 use super::terminal::{
@@ -32,11 +31,14 @@ mod presentation_outcome;
 mod presented;
 mod presented_semantic_settlement;
 mod raster_cache_reconstruction;
+mod sample_displacement;
 mod semantic_text_raster;
 mod settlement;
+mod shown_paint;
 mod superseding_admission;
 mod surface_binding;
 mod surface_uncertainty;
+mod terminal_outcome;
 mod text_pins;
 mod work_preparation;
 
@@ -318,83 +320,5 @@ impl UiMountedPresentationCoordinator {
         let handle = UiMountedPresentationInFlight::from_state(&state, cost);
         self.in_flight.insert(state.attempt, state);
         UiMountedPresentationOutcome::InFlight(handle)
-    }
-
-    fn finish_rejected(
-        &mut self,
-        settlement: UiMountedPresentationSettlement<'_>,
-    ) -> UiMountedPresentationOutcome {
-        self.active.borrow_mut().remove(&settlement.attempt);
-        for rejection in &settlement.rejected {
-            if rejection.denial()
-                == worth_ui_host_contract::UiHostSurfacePresentationDenial::ReconstructionRequired
-            {
-                if let Some(requirement) = settlement
-                    .frame
-                    .surfaces()
-                    .iter()
-                    .find(|surface| surface.requirement().binding() == rejection.binding())
-                    .map(|surface| surface.requirement())
-                {
-                    self.host_truth.block_presentation(requirement);
-                }
-                self.reconstruction_bindings.insert(rejection.binding());
-            }
-        }
-        rejected_outcome(
-            settlement.attempt,
-            settlement.frame,
-            settlement.retention,
-            settlement.rejected,
-        )
-    }
-
-    fn finish_partially_presented(
-        &mut self,
-        settlement: UiMountedPresentationSettlement<'_>,
-    ) -> UiMountedPresentationOutcome {
-        let affected = aggregate_affected(&settlement.completed, &[], &settlement.rejected);
-        self.indeterminate(
-            settlement.frame,
-            settlement.retention,
-            settlement.attempt,
-            UiIndeterminatePresentationEvidence::new(affected, settlement.completed),
-        )
-    }
-
-    fn indeterminate(
-        &mut self,
-        frame: super::super::UiPreparedMountedFrame,
-        retention: super::super::retention::UiMountedRetentionReservation,
-        attempt: UiMountedPresentationAttemptIdentity,
-        evidence: UiIndeterminatePresentationEvidence,
-    ) -> UiMountedPresentationOutcome {
-        let (affected, cost, semantic_receipts, recovery_required, physical_recovery_bindings) =
-            evidence.into_terminal_parts(frame.cost_report());
-        self.retain_semantic_uncertainty(attempt, semantic_receipts);
-        if !recovery_required.is_empty() {
-            self.unresolved_semantic_receipts
-                .entry(attempt)
-                .or_default()
-                .extend(recovery_required);
-        }
-        self.active.borrow_mut().remove(&attempt);
-        for binding in &affected {
-            // Retain accepted commands and Motion for reconstruction while host truth is blocked.
-            self.reconstruction_bindings.insert(*binding);
-            let requirement = frame
-                .surfaces()
-                .iter()
-                .find(|surface| surface.requirement().binding() == *binding)
-                .expect("affected binding belongs to the retained prepared frame")
-                .requirement();
-            self.host_truth.block_presentation(requirement);
-        }
-        drop(retention);
-        let report =
-            UiPresentationIndeterminateReport::new(attempt, affected, physical_recovery_bindings);
-        UiMountedPresentationOutcome::PresentationIndeterminate(UiMountedIndeterminateFrame::new(
-            frame, report, cost,
-        ))
     }
 }

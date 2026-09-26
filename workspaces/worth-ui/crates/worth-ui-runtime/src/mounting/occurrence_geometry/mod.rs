@@ -11,9 +11,11 @@ pub(crate) use surface_paint_posture::{
 mod clip_binding;
 pub(crate) use clip_binding::{UiMountedMosaicClipBinding, UiMountedScrollClipBinding};
 mod basis;
+mod grid_correction;
 pub use basis::UiMountedLayoutBasis;
+pub(crate) use grid_correction::UiDeviceGridCorrection;
 
-pub(crate) use state::UiMountedOccurrenceGeometryState;
+pub(crate) use state::{UiMountedOccurrenceGeometryState, UiPreparedMountedScrollPose};
 
 use worth_ui_host_contract::{
     UiMountedCanonicalBox, UiMountedInstanceIdentity, UiSemanticSurfaceIdentity,

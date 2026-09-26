@@ -887,7 +887,7 @@ edges = [
   { path = "src/inspection/visual_snapshot/spatial/geometry.rs", kind = "serialization", reason = "visual snapshot spatial reports are wire data" },
   { path = "src/runtime/motion/scale_certification.rs", items = ["geometry"], kind = "serialization", reason = "Motion scale certification reports sampled geometry as wire data" },
   { path = "src/runtime/interaction/targeting/presented_geometry.rs", items = ["UiPresentedInteractionGeometry::for_test_with_components"], kind = "serialization", reason = "test and certification builds only: scenarios build targeting geometry from projection components" },
-  { path = "src/mounting/presentation/work_producer/motion_sample.rs", items = ["logical_damage", "canonical_box"], kind = "serialization", reason = "a Motion sample becomes host-contract damage and a canonical box" },
+  { path = "src/mounting/presentation/work_producer/motion_sample.rs", items = ["canonical_box"], kind = "serialization", reason = "a Motion sample becomes a host-contract canonical box" },
   { path = "src/mounting/projection/frame_storage/appearance_order/row.rs", kind = "serialization", reason = "appearance rows are ordered by their host-contract projection bounds" },
   { path = "src/native_platform/application_driver/visual_snapshot.rs", items = ["bits"], kind = "serialization", reason = "visual snapshot values are compared as their bit patterns" },
   { path = "src/mounting/presentation/work_producer/scroll_motion_groups/sampling.rs", items = ["translate", "bounds"], kind = "gpu-upload", reason = "the Scroll group clip translate and bounds are uploaded with the sampled command" },
@@ -901,7 +901,6 @@ edges = [
   { path = "src/mounting/presentation/motion_sampling", kind = "sealed-owner", reason = "the Motion sampler mints accepted geometry; its curve, velocity, and damage arithmetic is the mint's inside" },
   { path = "src/mounting/presentation/work_producer/scroll_motion_groups/group_offset.rs", kind = "sealed-owner", reason = "the Scroll group offset and translation status types own their representation" },
   { path = "src/mounting/occurrence_geometry/region_paint.rs", kind = "committed-layout", reason = "paint omission spans derive from committed boxes before any status is assigned" },
-  { path = "src/mounting/occurrence_geometry/state/presented_grid.rs", items = ["UiMountedOccurrenceGeometryState::presented_scroll_grid_correction"], kind = "committed-layout", reason = "the subpixel grid correction applies to committed allocation before any status is assigned" },
   { path = "src/mounting/projection/frame_storage/portal_content_extent.rs", items = ["local_bounds"], kind = "committed-layout", reason = "Portal content extent is measured from committed layout" },
   { path = "src/runtime/allocation_receipt/committed_truth/geometry_evidence.rs", items = ["resolve_viewport_axis"], kind = "committed-layout", reason = "viewport placement resolves committed allocation" },
 ]
@@ -1008,10 +1007,11 @@ mints = [
     { path = "src/runtime/interaction/targeting/presented_geometry.rs", items = ["UiPresentedInteractionGeometry::for_test_with_components", "UiPresentedViewportGeometry::from_current_interaction", "UiPresentedViewportGeometry::for_test"] },
   ], reason = "committed layout is published where the committed frame is read: a canonical committed box becomes published geometry" },
   { call = "UiPublishedRect::from_committed_components", callers = [
+    { path = "src/mounting/retention/interaction_basis/ancestor_clip.rs", items = ["UiHitAncestorPlacement::reach"] },
     { path = "src/runtime/motion/scale_certification.rs", items = ["geometry"] },
     { path = "src/runtime/portal/placement.rs", items = ["UiPresentedPortalBounds::new"] },
     { path = "src/runtime/scroll/transition/motion_request.rs", items = ["scroll_content_geometry"] },
-  ], reason = "committed layout components are published as Portal bounds, Scroll content, and certification scale geometry" },
+  ], reason = "committed layout components are published as Portal bounds, Scroll content, a hit row's ancestor coverage, and certification scale geometry" },
   { call = "UiPublishedRect::translated", clippy = "worth_ui_runtime::mounting::presentation::truth_geometry::published::UiPublishedRect::translated", callers = [
     { path = "src/facade/entry/active_application_session/portal_motion.rs", items = ["portal_entrance_start_geometry"] },
     { path = "src/mounting/portal_placement_succession.rs", items = ["nested_anchor"] },
@@ -1039,6 +1039,7 @@ mints = [
     { path = "src/facade/entry/active_application_session/scroll_accepted_sample_settlement.rs", items = ["WorthUiActiveApplicationSession::settle_accepted_scroll_sample_inner", "UiScrollSettlementReading::displayed_sample"] },
     { path = "src/mounting/presentation/work_producer/scroll_motion_groups/acceptance.rs", items = ["UiScrollGroupMotionUpdate::validate"] },
     { path = "src/mounting/retention/interaction_basis.rs", items = ["UiPresentedHitTestRow::with_motion_sample"] },
+    { path = "src/mounting/retention/interaction_basis/ancestor_clip.rs", items = ["UiHitAncestorPlacement::reach"] },
     { path = "src/mounting/session_state/motion_sampling.rs", items = ["WorthUiMountedSessionState::committed_motion_geometry_for_target"] },
   ], reason = "accepted geometry becomes displayed only against a displayed basis an admitted witness proved" },
   { call = "UiDisplayedScrollOffset::from_rest", callers = [
@@ -1052,10 +1053,13 @@ mints = [
   ], reason = "a platform event's host position becomes a platform point where the event is read" },
   { call = "UiScrollPoseShift::between", callers = [
     { path = "src/mounting/occurrence_geometry/state/scroll.rs", items = ["UiMountedOccurrenceGeometryState::prepare_scroll_pose"] },
-  ], reason = "occurrence geometry measures the shift between two Scroll poses it prepared" },
+    { path = "src/mounting/occurrence_geometry/state/scroll_rest.rs", items = ["UiMountedOccurrenceGeometryState::scroll_region_rest"] },
+  ], reason = "occurrence geometry measures the shift between two Scroll poses it prepared or holds" },
   { call = "UiScrollPoseShift::none", callers = [
     { path = "src/mounting/occurrence_geometry/state/scroll.rs", items = ["UiMountedOccurrenceGeometryState::prepare_scroll_pose"] },
-    { path = "src/mounting/presented_hit_index.rs", items = ["UiPresentedHitIndex::replace_base"] },
+    { path = "src/mounting/occurrence_geometry/state/scroll_rest.rs", items = ["UiMountedOccurrenceGeometryState::scroll_region_rest"] },
+    { path = "src/mounting/retention/interaction_basis.rs", items = ["UiPresentedHitTestRow::from_mounted"] },
+    { path = "src/mounting/retention/interaction_basis/ancestor_clip.rs", items = ["UiHitScrollMove::none"] },
     { path = "src/mounting/retention/interaction_basis/hit_rect.rs", items = ["UiPresentedHitRect::displayed"] },
   ], reason = "geometry no Scroll pose moved carries no shift" },
   { call = "UiPresentedPortalBounds::new", callers = [

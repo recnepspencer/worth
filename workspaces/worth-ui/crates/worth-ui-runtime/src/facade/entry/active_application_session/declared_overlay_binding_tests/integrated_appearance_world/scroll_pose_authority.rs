@@ -56,7 +56,7 @@ impl ScrollWorld {
         Self::publish_installed(world)
     }
 
-    fn publish_installed(mut world: World) -> Self {
+    pub(super) fn publish_installed(mut world: World) -> Self {
         let frame = world.prepare();
         world.publish(frame, 1, true);
         let target = world.instances[0];
@@ -172,11 +172,11 @@ impl ScrollWorld {
             .expect("the routed owner keeps its offset")
     }
 
-    /// Publish the direct candidate through the actual NativeDisplay host
-    /// acceptance boundary; observing a delta alone never calls this implicitly.
+    /// Publish the direct candidate to a NativeDisplay host painting what it
+    /// carries; observing a delta alone never calls this implicitly.
     pub(super) fn publish_direct(&mut self, tick: u64) {
         let frame = self.world.prepare_surface(self.surface());
-        self.world.publish(frame, tick, true);
+        self.world.publish_as_issued(frame, tick);
     }
 
     pub(super) fn mounted_offset(&self) -> Option<UiScrollOffset> {

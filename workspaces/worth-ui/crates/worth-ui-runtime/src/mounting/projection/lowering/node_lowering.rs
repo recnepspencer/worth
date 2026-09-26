@@ -14,9 +14,9 @@ impl super::UiMountedNodeLoweringContext<'_, '_> {
             .plan
             .plan_index(provenance)
             .map_err(|_| super::UiMountedProjectionDenial::ForeignPlan)?;
-        let appearance_allocation = self
+        let (appearance_allocation, grid_correction) = self
             .occurrence_geometry
-            .projection(instance)
+            .projection_on_grid(instance)
             .map_err(super::UiMountedProjectionDenial::OccurrenceGeometry)?
             .ok_or(super::UiMountedProjectionDenial::OccurrenceGeometry(
                 super::super::super::UiMountedOccurrenceGeometryDenial::MissingOccurrenceGeometry,
@@ -127,6 +127,7 @@ impl super::UiMountedNodeLoweringContext<'_, '_> {
             participation,
             allocation,
             appearance_allocation,
+            grid_correction,
             appearance_clip,
             surface_paint_posture,
             surface_paint_order,

@@ -94,6 +94,9 @@ impl UiMountedPresentationCoordinator {
             Ok(work) => work,
             Err(_) => return UiMotionSamplePresentationOutcome::RejectedBeforeEffects,
         };
+        if self.frame_in_flight_displaces(requirement.binding(), &work) {
+            return UiMotionSamplePresentationOutcome::RejectedBeforeEffects;
+        }
         let expected_effects = state
             .expected_completion_effects(Some(state), &work, requirement.presentation_mode())
             .into_boxed_slice();

@@ -1,6 +1,6 @@
-use super::presentation::{UiDisplayedSurfaceBasis, UiScrollPoseShift};
+use super::presentation::UiDisplayedSurfaceBasis;
 use super::spatial_index::UiMountedSpatialTree;
-use super::UiPresentedHitTestRow;
+use super::{UiHitScrollMove, UiPresentedHitTestRow};
 use crate::mounting::UiHitTestSpatialWork;
 use crate::runtime::motion::{UiMotionTargetIdentity, UiMotionTargetScope};
 use crate::runtime::persistent_index::{
@@ -10,6 +10,7 @@ use worth_ui_host_contract::{UiMountedInstanceIdentity, UiSurfaceBindingGenerati
 
 mod changes;
 mod query;
+mod scroll_lead;
 mod scroll_succession;
 pub(crate) use changes::UiPresentedHitChanges;
 #[cfg(test)]
@@ -18,6 +19,7 @@ mod changes_tests;
 mod tests;
 pub(in crate::mounting) use query::UiPresentedHitQuery;
 pub(crate) use query::UiPresentedHitQueryDenial;
+pub(in crate::mounting) use scroll_lead::UiHitScrollStanding;
 
 type PartitionKey = (UiSurfaceBindingGeneration, u8);
 
@@ -30,6 +32,8 @@ pub(in crate::mounting) struct UiPresentedHitIndex {
     portal_targets:
         UiPersistentOrdMap<UiMotionTargetIdentity, UiPersistentOrdSet<UiMountedInstanceIdentity>>,
     target_member_bytes: usize,
+    /// The rows a displayed pose leads past their committed poses.
+    scroll_leads: UiPersistentOrdSet<UiMountedInstanceIdentity>,
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -38,7 +42,10 @@ struct Record {
     /// The row as Motion projects it, before the committed Scroll poses.
     unscrolled: Option<UiPresentedHitTestRow>,
     effective: Option<UiPresentedHitTestRow>,
-    scroll_translation: UiScrollPoseShift,
+    scroll_translation: UiHitScrollMove,
+    /// A displayed pose mounted geometry has yet to commit, past
+    /// `scroll_translation`.
+    scroll_lead: UiHitScrollMove,
 }
 
 // Completed boxes contain no NaN components.
@@ -80,13 +87,17 @@ impl UiPresentedHitIndex {
         if old.map(|old| old.base) == row {
             return work;
         }
+        // A row its ancestors suppress is published, but reached nowhere.
+        let record = row.map(Record::published);
+        self.scroll_leads.remove(&instance);
+        let effective = record.and_then(|record| record.effective);
         let same_partition = old.zip(row).is_some_and(|(old, new)| {
             old.base.mounted().binding() == new.mounted().binding()
                 && old.base.bounds().coordinate_space() == new.bounds().coordinate_space()
         });
         if let Some(old) = old {
             if same_partition {
-                self.update_partition(old.base, old.effective, row, 0, &mut work);
+                self.update_partition(old.base, old.effective, effective, 0, &mut work);
             } else {
                 self.update_partition(old.base, old.effective, None, -1, &mut work);
             }
@@ -94,26 +105,16 @@ impl UiPresentedHitIndex {
                 self.update_target(old.base, false, &mut work);
             }
         }
-        if let Some(base) = row {
+        if let Some(record) = record {
+            let base = record.base;
             assert_eq!(base.mounted_instance(), instance);
             if !same_partition {
-                self.update_partition(base, None, Some(base), 1, &mut work);
+                self.update_partition(base, None, effective, 1, &mut work);
             }
             if old.and_then(|old| old.base.portal_motion_target()) != base.portal_motion_target() {
                 self.update_target(base, true, &mut work);
             }
-            record_map(
-                &mut work,
-                self.rows.insert_with_work(
-                    instance,
-                    Record {
-                        base,
-                        unscrolled: Some(base),
-                        effective: Some(base),
-                        scroll_translation: UiScrollPoseShift::none(),
-                    },
-                ),
-            );
+            record_map(&mut work, self.rows.insert_with_work(instance, record));
         } else if old.is_some() {
             record_map(&mut work, self.rows.remove_with_work(&instance).1);
         }
@@ -176,7 +177,7 @@ impl UiPresentedHitIndex {
     pub(in crate::mounting) fn apply_scroll_translations(
         &mut self,
         binding: UiSurfaceBindingGeneration,
-        translations: &[(UiMountedInstanceIdentity, UiScrollPoseShift)],
+        translations: &[(UiMountedInstanceIdentity, UiHitScrollMove)],
     ) -> UiHitTestSpatialWork {
         let mut work = UiHitTestSpatialWork::default();
         for (instance, translation) in translations {
@@ -190,8 +191,13 @@ impl UiPresentedHitIndex {
             }
             // Every pose accumulates, even one that leaves the row where it
             // was or moves a row Motion hides: a later pose or Motion
-            // projection moves the row from the sum.
-            let next = record.projected(
+            // projection moves the row from the sum. A committed pose
+            // replaces the lead that showed it ahead of the commit.
+            let next = Record {
+                scroll_lead: UiHitScrollMove::none(),
+                ..record
+            }
+            .projected(
                 record.unscrolled,
                 record.scroll_translation.then(*translation),
             );
@@ -202,7 +208,10 @@ impl UiPresentedHitIndex {
                 work.scroll_rows_displaced += 1;
             }
             self.store(*instance, record, next, &mut work);
+            self.note_scroll_lead(*instance, UiHitScrollMove::none());
         }
+        // A lead this pose did not commit showed a pose that no longer stands.
+        work.merge(self.lead_scroll_translations(binding, &[]));
         work
     }
 
@@ -337,6 +346,7 @@ impl UiPresentedHitIndex {
             .checked_add(self.partitions.retained_structural_bytes()?)?
             .checked_add(self.portal_targets.retained_structural_bytes()?)?
             .checked_add(self.target_member_bytes)?
+            .checked_add(self.scroll_leads.retained_structural_bytes()?)?
             .checked_add(UiMountedSpatialTree::structural_bytes_for_nodes(
                 self.rows.len(),
             )?)
@@ -358,15 +368,15 @@ fn same_place(left: Option<UiPresentedHitTestRow>, right: Option<UiPresentedHitT
 
 /// The region the spatial index files a row under: the acceleration edge.
 fn region(row: UiPresentedHitTestRow) -> [f64; 4] {
-    let bounds = row.bounds().index_box();
-    let clip = row.clip_bounds().index_box();
-    let x = bounds.x().max(clip.x());
-    let y = bounds.y().max(clip.y());
-    let right = f64::from(bounds.x() + bounds.width())
-        .min(f64::from(clip.x() + clip.width()))
-        .max(f64::from(x));
-    let bottom = f64::from(bounds.y() + bounds.height())
-        .min(f64::from(clip.y() + clip.height()))
-        .max(f64::from(y));
-    [f64::from(x), f64::from(y), right, bottom]
+    let boxes = [row.bounds().index_box(), row.clip_bounds().index_box()]
+        .into_iter()
+        .chain(row.ancestor_reach().index_box());
+    let [mut x, mut y, mut right, mut bottom] = [f64::MIN, f64::MIN, f64::MAX, f64::MAX];
+    for next in boxes {
+        x = x.max(f64::from(next.x()));
+        y = y.max(f64::from(next.y()));
+        right = right.min(f64::from(next.x() + next.width()));
+        bottom = bottom.min(f64::from(next.y() + next.height()));
+    }
+    [x, y, right.max(x), bottom.max(y)]
 }

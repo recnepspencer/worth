@@ -139,6 +139,7 @@ fn node(
             allocation,
         }),
         plan_index: Some(rank),
+        grid_correction: None,
         occurrence_allocation: allocation,
         appearance_geometry:
             crate::mounting::projection::frame_storage::UiMountedAppearanceGeometry::from_occurrence(

@@ -49,8 +49,8 @@ pub(super) struct UiAcceptedGroupOffset {
 pub(super) enum UiGroupStanding {
     /// No witness has displayed the group; it stands where it was published.
     Published(UiPublishedGroupOffset),
-    /// A witness displayed the group here.
-    Displayed(UiDisplayedGroupOffset),
+    /// A witness displayed the group here, showing `sample`.
+    Displayed(UiDisplayedGroupOffset, UiPresentationMotionSampleReceipt),
 }
 
 /// Where a group stood when `bound_in` bound it.
@@ -140,12 +140,8 @@ impl UiAcceptedGroupOffset {
         tick: &UiPresentationMotionSampleReceipt,
         standing: UiGroupStanding,
     ) -> Self {
-        let points = match standing {
-            UiGroupStanding::Published(UiPublishedGroupOffset(points))
-            | UiGroupStanding::Displayed(UiDisplayedGroupOffset(points)) => points,
-        };
         Self {
-            points,
+            points: standing.points(),
             accepted_on: tick.presentation_basis(),
         }
     }
@@ -190,21 +186,24 @@ impl UiBoundGroupStanding {
         if base.bound_in != self.bound_in {
             return Err(Denial::DisplayedBaseFromAnotherBind);
         }
-        Ok(match self.standing {
-            UiGroupStanding::Published(UiPublishedGroupOffset(points)) => {
-                UiDisplayedGroupOffset(points)
-            }
-            UiGroupStanding::Displayed(displayed) => displayed,
-        })
+        Ok(UiDisplayedGroupOffset(self.standing.points()))
     }
 }
 
 impl UiGroupStanding {
-    #[cfg(test)]
-    pub(super) fn points(self) -> [f64; 2] {
+    /// The sample a witness displayed the group at, if one did.
+    pub(super) const fn displayed_by(self) -> Option<UiPresentationMotionSampleReceipt> {
+        match self {
+            Self::Published(_) => None,
+            Self::Displayed(_, sample) => Some(sample),
+        }
+    }
+
+    /// The offset the group stands at, in logical points.
+    pub(super) const fn points(self) -> [f64; 2] {
         match self {
             Self::Published(UiPublishedGroupOffset(points))
-            | Self::Displayed(UiDisplayedGroupOffset(points)) => points,
+            | Self::Displayed(UiDisplayedGroupOffset(points), _) => points,
         }
     }
 }

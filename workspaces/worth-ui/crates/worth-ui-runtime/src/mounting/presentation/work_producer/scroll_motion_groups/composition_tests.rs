@@ -52,6 +52,7 @@ fn nested_scroll_samples_compose_once_and_keep_a_settled_ancestor() {
                 target,
                 owner,
                 content,
+                rest: content,
                 viewport,
                 offset: UiScrollOffset::origin(),
                 scale: UiScrollPresentationDeviceScale::admit(1000).unwrap(),
@@ -249,6 +250,7 @@ fn a_group_rebuilt_before_its_accepted_sample_settles_moves_from_where_the_host_
             target,
             owner,
             content: rect(0.0, 200.0),
+            rest: rect(0.0, 200.0),
             viewport: rect(0.0, 100.0),
             offset: UiScrollOffset::origin(),
             scale: UiScrollPresentationDeviceScale::admit(1000).unwrap(),
@@ -333,11 +335,11 @@ fn a_group_rebuilt_before_its_accepted_sample_settles_moves_from_where_the_host_
     let standing = state.scroll_motion_groups.groups[&target]
         .bound_standing
         .standing();
-    assert!(matches!(standing, UiGroupStanding::Displayed(_)));
+    assert!(matches!(standing, UiGroupStanding::Displayed(..)));
     assert_eq!(standing.points(), [0.0, 40.0]);
 }
 
-fn rect(y: f32, height: f32) -> UiMountedCanonicalBox {
+pub(super) fn rect(y: f32, height: f32) -> UiMountedCanonicalBox {
     UiMountedCanonicalBox::canonicalize(UiMountedCanonicalBoxInput {
         x: 0.0,
         y,
@@ -348,7 +350,7 @@ fn rect(y: f32, height: f32) -> UiMountedCanonicalBox {
     .unwrap()
 }
 
-fn assert_translation(change: UiMountedPresentationSampleChange, dy: f32) {
+pub(super) fn assert_translation(change: UiMountedPresentationSampleChange, dy: f32) {
     let transform = change.transform().unwrap();
     assert_eq!(transform.sampled().y() - transform.source().y(), dy);
 }

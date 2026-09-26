@@ -8,7 +8,7 @@
 //! left over. Every layout here states that difference, moves the content
 //! across it, or takes it away again.
 
-use super::{install_with_child_region, RegionOverrides, BOXES};
+use super::{install_with_child_region, InnerRegion, RegionOverrides, BOXES};
 use crate::facade::WorthUiActiveApplicationSession;
 use worth_ui_host_contract::{UiMountedInstanceIdentity, UiSemanticSurfaceIdentity};
 
@@ -33,6 +33,7 @@ pub(in super::super) fn install_scrollable_primary(
             child: None,
             primary: Some(SCROLLABLE_PRIMARY_REGION),
             nested: None,
+            inner: None,
             detach_child: false,
         },
         None,
@@ -69,6 +70,7 @@ pub(in super::super) fn install_scrollable_primary_with_nested_content(
             child: None,
             primary: Some(SCROLLABLE_PRIMARY_REGION),
             nested: Some(2),
+            inner: None,
             detach_child: false,
         },
         None,
@@ -102,6 +104,7 @@ pub(in super::super) fn install_scrollable_primary_with_inserted_content(
             child: None,
             primary: Some(SCROLLABLE_PRIMARY_REGION),
             nested: Some(2),
+            inner: None,
             detach_child: false,
         },
         None,
@@ -133,6 +136,7 @@ pub(in super::super) fn install_scrollable_primary_without_the_anchored_content(
             child: None,
             primary: Some(SCROLLABLE_PRIMARY_REGION),
             nested: Some(2),
+            inner: None,
             detach_child: true,
         },
         None,
@@ -161,6 +165,7 @@ pub(in super::super) fn install_scrollable_primary_with_collapsed_content(
             child: None,
             primary: Some(SCROLLABLE_PRIMARY_REGION),
             nested: None,
+            inner: None,
             detach_child: false,
         },
         None,
@@ -200,6 +205,7 @@ pub(in super::super) fn install_scrollable_child(
             child: Some(SCROLLABLE_CHILD_REGION),
             primary: None,
             nested: None,
+            inner: None,
             detach_child: false,
         },
         None,
@@ -230,6 +236,54 @@ pub(in super::super) fn install_scrollable_primary_with_travel(
             child: None,
             primary: Some(SCROLLABLE_PRIMARY_REGION),
             nested: Some(2),
+            inner: None,
+            detach_child: false,
+        },
+        None,
+        super::VIEWPORT,
+    );
+}
+
+/// The second component's box as the first component's content, in that
+/// component's local space: inside its region at rest.
+const INNER_OWNER_BOX: [f32; 4] = [8.0, 12.0, 160.0, 36.0];
+
+/// The second component's region in its own local space: half its height, so
+/// it has eighteen points of block travel.
+const INNER_REGION: [f32; 4] = [0.0, 0.0, 160.0, 18.0];
+
+/// The third component's box as the second component's content, in the
+/// second's local space: inside its region at rest, with room below it for a
+/// pointer to reach the second component's region itself.
+const INNER_ROW_BOX: [f32; 4] = [4.0, 4.0, 120.0, 8.0];
+
+/// The scrollable World with the second component laid out as the first's
+/// content and owning a region of its own, and the third component laid out
+/// as that region's content: a region nested in the first component's,
+/// carried across the surface by its offset.
+pub(in super::super) fn install_scrollable_primary_with_inner_region(
+    session: &mut WorthUiActiveApplicationSession,
+    surfaces: [UiSemanticSurfaceIdentity; 2],
+    instances: [UiMountedInstanceIdentity; 5],
+) {
+    let mut boxes = BOXES;
+    boxes[1] = INNER_OWNER_BOX;
+    boxes[2] = INNER_ROW_BOX;
+    install_with_child_region(
+        session,
+        surfaces,
+        instances,
+        26,
+        boxes,
+        RegionOverrides {
+            child: None,
+            primary: Some(SCROLLABLE_PRIMARY_REGION),
+            nested: None,
+            inner: Some(InnerRegion {
+                owner: 1,
+                region: INNER_REGION,
+                content: 2,
+            }),
             detach_child: false,
         },
         None,

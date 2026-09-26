@@ -19,6 +19,7 @@ impl UiMountedProjectionNodeDraft {
             }),
             plan_index: self.plan_index,
             occurrence_allocation: self.appearance_allocation,
+            grid_correction: self.grid_correction,
             appearance_geometry:
                 super::super::frame_storage::UiMountedAppearanceGeometry::from_occurrence(
                     self.appearance_allocation,

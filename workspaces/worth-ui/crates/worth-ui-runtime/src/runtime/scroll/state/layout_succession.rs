@@ -1,10 +1,14 @@
 //! Prepared layout offsets remain separate from accepted Scroll records until
 //! the host accepts the surface whose content was lowered from those offsets.
+//!
+//! A layout is lowered from the offsets Scroll accepted when it was staged.
+//! A settle that arrives before the layout is shown shows its content past
+//! them, so the staged record follows it there, within the staged bounds.
 
 use std::collections::BTreeMap;
 
 use super::{UiScrollOwnerRecord, UiScrollRuntimeState};
-use crate::runtime::scroll::UiScrollOwnerIdentity;
+use crate::runtime::scroll::{UiScrollOffset, UiScrollOwnerIdentity, UiScrollOwnerIncarnation};
 use worth_ui_host_contract::UiSemanticSurfaceIdentity;
 
 #[derive(Clone)]
@@ -52,6 +56,49 @@ impl UiScrollRuntimeState {
             self.reconcile_transition_bounds(owner, record.incarnation, record.bounds);
         }
         true
+    }
+
+    /// Where the layout staged for `owner`'s surface would move this
+    /// incarnation of `owner` to follow `displayed`: that offset within the
+    /// staged bounds. `None` when no staged layout holds it or it already
+    /// stands there.
+    pub(crate) fn staged_layout_offset(
+        &self,
+        owner: UiScrollOwnerIdentity,
+        incarnation: UiScrollOwnerIncarnation,
+        displayed: UiScrollOffset,
+    ) -> Option<UiScrollOffset> {
+        self.pending_layouts
+            .get(&owner.semantic_surface())?
+            .owners
+            .get(&owner)
+            .filter(|record| record.incarnation == incarnation)
+            .map(|record| (record.offset, record.bounds.clamp(displayed)))
+            .and_then(|(stands, follows)| (stands != follows).then_some(follows))
+    }
+
+    /// Stand this incarnation of `owner` in its surface's staged layout
+    /// where `staged_layout_offset` answered for `displayed`.
+    pub(crate) fn settle_staged_layout(
+        &mut self,
+        owner: UiScrollOwnerIdentity,
+        incarnation: UiScrollOwnerIncarnation,
+        displayed: UiScrollOffset,
+    ) {
+        if let Some(record) = self
+            .pending_layouts
+            .get_mut(&owner.semantic_surface())
+            .and_then(|candidate| candidate.owners.get_mut(&owner))
+            .filter(|record| record.incarnation == incarnation)
+        {
+            record.offset = record.bounds.clamp(displayed);
+        }
+    }
+
+    /// Whether direct input awaiting its frame has staged `owner` past its
+    /// accepted offset.
+    pub(crate) fn has_pending_direct_owner(&self, owner: UiScrollOwnerIdentity) -> bool {
+        self.pending_direct.contains_key(&owner)
     }
 
     pub(crate) fn has_unpresented_layout(&self, surface: UiSemanticSurfaceIdentity) -> bool {

@@ -94,6 +94,7 @@ fn node() -> UiMountedProjectionNodeRecord {
         has_appearance_attachment: true,
         appearance_clip:
             crate::mounting::projection::appearance::UiMountedAppearanceClip::Unclipped,
+        grid_correction: None,
         occurrence_allocation: UiMountedAllocationProjection::Omitted(
             UiMountedOmissionReason::NoCommittedAllocation,
         ),

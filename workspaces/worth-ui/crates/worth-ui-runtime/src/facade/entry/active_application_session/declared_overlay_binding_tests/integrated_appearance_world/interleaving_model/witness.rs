@@ -13,7 +13,8 @@ use super::super::super::super::UiScrollSettleDisposition;
 use super::super::scroll_hover_reresolution::{hovered, RESTING_POINT};
 use super::steps::Model;
 use crate::mounting::presentation::{UiDisplayedRect, UiPlatformPoint};
-use crate::mounting::UiHitTestSpatialWork;
+use crate::mounting::{UiHitTestSpatialWork, UiPresentedFrameBasisDenial};
+use crate::runtime::motion::UiMotionTargetIdentity;
 use worth_ui_host_contract::{UiHostSurfacePosition, UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT};
 
 /// The scrollable region's top edge on the surface.
@@ -33,16 +34,30 @@ const SNAPPED: f32 = 0.5 + EXACT;
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub(super) enum Reached {
     SampleOnScreen,
-    OwedSettle,
+    /// A settle is owed behind a presentation attempt in flight.
+    OwedBehindPresentation,
+    /// A settle is owed behind geometry no witness has shown.
+    OwedBehindGeometry,
+    /// A settle whose Motion has arrived is owed behind a staged resize: the
+    /// resize must land the content where the arrival was shown.
+    ArrivedBehindResize,
+    /// Hit rows lead to a sample the host shows away from the settled pose.
+    HitLeadsSettle,
     StagedResize,
+    /// A page placed directly, which no publication has landed yet.
+    StagedDirect,
     PointerOverNested,
 }
 
 impl Reached {
-    pub(super) const EVERY: [Self; 4] = [
+    pub(super) const EVERY: [Self; 8] = [
         Self::SampleOnScreen,
-        Self::OwedSettle,
+        Self::OwedBehindPresentation,
+        Self::OwedBehindGeometry,
+        Self::ArrivedBehindResize,
+        Self::HitLeadsSettle,
         Self::StagedResize,
+        Self::StagedDirect,
         Self::PointerOverNested,
     ];
 }
@@ -60,15 +75,22 @@ pub(super) fn assert_witnessed(model: &Model, label: &str) -> Vec<Reached> {
     );
 
     // Scroll and mounted geometry hold one pose. A staged resize is the
-    // layout the next frame prepares, clamped to its own travel; no witness
-    // has shown it, so only the retained record below is read under it.
+    // layout the next frame prepares, clamped to its own travel, and a staged
+    // page the offset it prepares; no witness has shown either, so only the
+    // retained record below is read under them.
     let accepted = scroll.accepted_offset();
-    if !model.staged {
-        assert_eq!(
+    match (model.staged, model.direct) {
+        (true, _) => {}
+        (false, Some(direct)) => assert_eq!(
+            scroll.mounted_offset(),
+            Some(direct),
+            "{label}: mounted geometry holds the staged page"
+        ),
+        (false, None) => assert_eq!(
             scroll.mounted_offset(),
             Some(accepted),
             "{label}: Scroll and mounted geometry hold one pose"
-        );
+        ),
     }
     let pose =
         accepted.block_subpixels() as f32 / UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f32;
@@ -128,10 +150,17 @@ pub(super) fn assert_witnessed(model: &Model, label: &str) -> Vec<Reached> {
         );
     }
 
-    // Both hit-test lanes agree, and put the nested row where Scroll settled
-    // it or exactly where the host draws it. A settle moves hit rows by the
-    // exact offset; a publication measures them from the commands the host
-    // draws, and a sample it displayed left those on the device grid.
+    // Both hit-test lanes agree. While a settle is owed they put the nested
+    // row where Motion shows it, and otherwise where Scroll settled it, or in
+    // either case exactly where the host draws it. A settle moves hit rows by
+    // the exact offset, and a lead by the exact offset of the sample the host
+    // shows; a publication measures them from the commands the host draws,
+    // and a sample it displayed left those on the device grid. The lanes
+    // carry the row exactly while it is in view there, as the host draws
+    // nothing of it once the region has clipped it out.
+    let owed = session.awaits_scroll_settle_retry();
+    let hit_at = if owed { shown } else { pose };
+    let leads = owed && (shown - pose).abs() > EXACT;
     let presentation = scroll.presentation();
     let basis_row = session
         .mounted
@@ -140,25 +169,44 @@ pub(super) fn assert_witnessed(model: &Model, label: &str) -> Vec<Reached> {
         .rows()
         .iter()
         .find(|row| row.mounted_instance() == nested)
-        .copied()
-        .unwrap_or_else(|| panic!("{label}: the interaction basis carries the nested row"));
+        .copied();
     let mut work = UiHitTestSpatialWork::default();
-    let index_row = session
+    let index_row = match session
         .mounted
         .current_presented_hit_row(presentation, nested, &mut work)
-        .unwrap_or_else(|denial| panic!("{label}: the hit index reads: {denial:?}"));
+    {
+        Ok(row) => Some(row),
+        Err(UiPresentedFrameBasisDenial::InstanceNotPresented) => None,
+        Err(denial) => panic!("{label}: the hit index reads: {denial:?}"),
+    };
     assert_eq!(
-        basis_row.bounds(),
-        index_row.bounds(),
+        basis_row.map(|row| row.bounds()),
+        index_row.map(|row| row.bounds()),
         "{label}: both hit-test lanes hold one nested row"
     );
-    let y = index_row.bounds().platform_box().y();
-    let settled = NESTED_AT_REST - pose;
+    let expected_y = NESTED_AT_REST - hit_at;
+    let Some(index_row) = index_row else {
+        assert!(
+            clipped(hit_at),
+            "{label}: the hit lanes carry no nested row, but it stands in view at {expected_y} (owed {owed})"
+        );
+        assert_eq!(
+            hovered(scroll),
+            Some(scroll.target()),
+            "{label}: the cursor is over the region once its content is clipped out"
+        );
+        return reached(model, motion, leads, false);
+    };
     assert!(
-        std::iter::once(settled)
+        !clipped(hit_at),
+        "{label}: the hit lanes carry the nested row, but it is clipped out at {expected_y} (owed {owed})"
+    );
+    let y = index_row.bounds().platform_box().y();
+    assert!(
+        std::iter::once(expected_y)
             .chain(drawn.iter().copied())
             .any(|at| (y - at).abs() <= EXACT),
-        "{label}: the hit lanes put the nested row at {y}, Scroll settled it at {settled}, the host draws it at {drawn:?}"
+        "{label}: the hit lanes put the nested row at {y}, it stands at {expected_y} (owed {owed}), the host draws it at {drawn:?}"
     );
 
     // The cursor is over what a click at the resting point would reach.
@@ -167,7 +215,9 @@ pub(super) fn assert_witnessed(model: &Model, label: &str) -> Vec<Reached> {
         RESTING_POINT[1],
     ))
     .expect("the resting point is a logical viewport position");
-    let expected = if index_row.bounds().admits_platform_point(point) {
+    let expected = if index_row.bounds().admits_platform_point(point)
+        && index_row.ancestor_reach().admits_platform_point(point)
+    {
         nested
     } else {
         scroll.target()
@@ -177,6 +227,20 @@ pub(super) fn assert_witnessed(model: &Model, label: &str) -> Vec<Reached> {
         Some(expected),
         "{label}: the cursor is over what a click would reach"
     );
+    reached(model, motion, leads, expected == nested)
+}
+
+/// The states a step left the model in.
+fn reached(
+    model: &Model,
+    motion: UiMotionTargetIdentity,
+    leads: bool,
+    pointer_over_nested: bool,
+) -> Vec<Reached> {
+    let session = &model.scroll.world.session;
+    let owed = |deferral| {
+        session.awaits_scroll_settle_retry() && session.last_scroll_settle_disposition() == deferral
+    };
     [
         (
             session
@@ -185,9 +249,27 @@ pub(super) fn assert_witnessed(model: &Model, label: &str) -> Vec<Reached> {
                 .is_some(),
             Reached::SampleOnScreen,
         ),
-        (session.awaits_scroll_settle_retry(), Reached::OwedSettle),
+        (
+            owed(UiScrollSettleDisposition::DeferredPresentationInFlight),
+            Reached::OwedBehindPresentation,
+        ),
+        (
+            owed(UiScrollSettleDisposition::DeferredPendingGeometry),
+            Reached::OwedBehindGeometry,
+        ),
+        (
+            owed(UiScrollSettleDisposition::DeferredPendingGeometry)
+                && model.staged
+                && session
+                    .motion
+                    .as_ref()
+                    .is_some_and(|motion_state| motion_state.committed_track(motion).is_none()),
+            Reached::ArrivedBehindResize,
+        ),
+        (leads, Reached::HitLeadsSettle),
         (model.staged, Reached::StagedResize),
-        (expected == nested, Reached::PointerOverNested),
+        (model.direct.is_some(), Reached::StagedDirect),
+        (pointer_over_nested, Reached::PointerOverNested),
     ]
     .into_iter()
     .filter_map(|(reached, state)| reached.then_some(state))

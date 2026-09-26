@@ -29,6 +29,13 @@ impl UiLogicalRect {
         if components[2] < 0.0 || components[3] < 0.0 {
             return Err(UiTruthGeometryDenial::NegativeExtent);
         }
+        // A rectangle's far edges are geometry too: finite components whose
+        // sum overflows bound nothing.
+        if !(components[0] + components[2]).is_finite()
+            || !(components[1] + components[3]).is_finite()
+        {
+            return Err(UiTruthGeometryDenial::NonFinite);
+        }
         Ok(Self {
             components: components.map(normalized_bits),
             coordinate_space,
@@ -80,8 +87,9 @@ impl UiLogicalRect {
     /// Where this rectangle lands when `from` is carried onto `to`: its offset
     /// from `from` and its extent scale with `from`'s extent. It must share
     /// `from`'s space, and keeps its own. `from` has area: the maps that call
-    /// this refuse a source without it.
-    pub(super) fn mapped(self, from: Self, to: Self) -> Self {
+    /// this refuse a source without it. `None` when the map scales the
+    /// rectangle beyond finite geometry, as a sliver of a source can.
+    pub(super) fn mapped(self, from: Self, to: Self) -> Option<Self> {
         assert_eq!(
             from.coordinate_space, self.coordinate_space,
             "a mapped rectangle shares the space of the geometry that carries it"
@@ -101,7 +109,7 @@ impl UiLogicalRect {
             ],
             self.coordinate_space,
         )
-        .expect("a validated carrying map keeps the rectangle finite")
+        .ok()
     }
 }
 

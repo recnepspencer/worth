@@ -81,18 +81,26 @@ impl UiMountedPresentationWork {
             self.appearance.is_none(),
             "appearance work binds exactly once"
         );
-        self.appearance = source
-            .map(|source| {
+        let frame = self.view().affinity().successor();
+        // A frame that changes no appearance still reissues the samples it
+        // owes the host.
+        self.appearance = match source {
+            Some(source) => {
                 worth_ui_host_contract::UiMountedAppearancePresentationWork::from_runtime_mounting(
                     source,
-                    self.view().affinity().successor(),
+                    frame,
                     presentation,
                     requirement,
                     sample_overrides,
                 )
-            })
-            .transpose()?
-            .flatten();
+            }
+            None => worth_ui_host_contract::UiMountedAppearancePresentationWork::from_runtime_sample_overrides(
+                frame,
+                presentation,
+                requirement,
+                sample_overrides,
+            ),
+        }?;
         Ok(())
     }
 

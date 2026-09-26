@@ -152,6 +152,9 @@ impl WorthUiActiveApplicationSession {
         let semantic_surface = self
             .mounted
             .deregister_host_surface(&self.host_session, binding)?;
+        if let Some(scroll) = self.scroll.as_mut() {
+            scroll.retire_surface_direct_successions(semantic_surface);
+        }
         self.intent_confirmation.cancel_binding(
             binding,
             crate::runtime::intent::UiIntentConfirmationCancellationReason::SurfaceRebound,

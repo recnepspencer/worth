@@ -22,6 +22,15 @@ impl UiMountedAppearanceSurfaceSampleGeometry {
     pub(crate) const fn clip(self) -> UiMountedCanonicalBox {
         self.clip
     }
+
+    /// A surface drawn at `bounds`, clipped to `clip`, as a test binds it.
+    #[cfg(test)]
+    pub(crate) const fn for_sampling_test(
+        bounds: UiMountedCanonicalBox,
+        clip: UiMountedCanonicalBox,
+    ) -> Self {
+        Self { bounds, clip }
+    }
 }
 
 impl UiMountedProjectionFrameOwner {
