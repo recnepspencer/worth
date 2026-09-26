@@ -19,7 +19,7 @@ pub enum BankProgramInspectionDenial {
 #[derive(Debug)]
 pub enum BankProgramAdoptionPreparationDenial {
     TargetUnsupported,
-    Query(WorthQueryApplicationProgramAdoptionPreparationDenial),
+    Query(Box<WorthQueryApplicationProgramAdoptionPreparationDenial>),
 }
 
 impl BankIdentityRuntime {
@@ -59,11 +59,11 @@ impl BankIdentityRuntime {
         let programs = self.request(principal, scope).on_branch(branch).programs();
         let requirements = programs
             .compare(&target)
-            .map_err(BankProgramAdoptionPreparationDenial::Query)?;
+            .map_err(|denial| BankProgramAdoptionPreparationDenial::Query(Box::new(denial)))?;
         programs
             .adopt(&target)
             .requirements(&requirements)
             .prepare(maximum_selection_work)
-            .map_err(BankProgramAdoptionPreparationDenial::Query)
+            .map_err(|denial| BankProgramAdoptionPreparationDenial::Query(Box::new(denial)))
     }
 }

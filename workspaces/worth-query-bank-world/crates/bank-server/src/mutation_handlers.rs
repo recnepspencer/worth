@@ -8,6 +8,7 @@ mod institution_money_movement;
 mod journal;
 mod notify_estate_death;
 mod open_estate_case;
+mod payment_approval_grant;
 mod payment_decision;
 mod payment_workflow_assessment;
 mod payment_workflow_control;

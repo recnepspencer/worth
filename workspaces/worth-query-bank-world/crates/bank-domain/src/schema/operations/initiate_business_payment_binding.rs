@@ -38,18 +38,26 @@ worth_query_structured_value_binding!(
     }
 );
 
+/// The most approvers one initiation grants its payment's approval workflow;
+/// the candidate ceilings below are sized for exactly this many grants.
+pub const MAX_PAYMENT_APPROVAL_GRANTEES: usize = 8;
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct InitiateBusinessPaymentDecision {
     payment: BusinessPayment,
+    approval_grantees: Vec<BankPrincipalId>,
 }
 
 impl InitiateBusinessPaymentDecision {
-    pub fn from_payment(payment: BusinessPayment) -> Self {
-        Self { payment }
+    pub(crate) fn new(payment: BusinessPayment, approval_grantees: Vec<BankPrincipalId>) -> Self {
+        Self {
+            payment,
+            approval_grantees,
+        }
     }
 
-    pub fn into_payment(self) -> BusinessPayment {
-        self.payment
+    pub fn into_parts(self) -> (BusinessPayment, Vec<BankPrincipalId>) {
+        (self.payment, self.approval_grantees)
     }
 }
 
@@ -123,6 +131,6 @@ worth_query_mutation_binding!(
         NoApplicationUnit,
     field BusinessIdentityField::reference(),
     value business_scope,
-    candidates creates 1, deletes 0, links 4, unlinks 0, writes 3, emits 0,
-    resources retained_representation_bytes 4096, validator_work 72
+    candidates creates 9, deletes 0, links 28, unlinks 0, writes 59, emits 0,
+    resources retained_representation_bytes 32768, validator_work 275
 );

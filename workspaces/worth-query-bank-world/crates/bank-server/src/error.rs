@@ -34,7 +34,7 @@ impl std::error::Error for BankWorldSeedDenial {}
 #[derive(Debug)]
 pub enum BankIdentityRuntimeBuildError {
     ApplicationProgramValidation(ApplicationProgramValidationDenial),
-    ApplicationInstallation(WorthQueryInMemoryApplicationDenial),
+    ApplicationInstallation(Box<WorthQueryInMemoryApplicationDenial>),
     SchemaDeclaration(ApplicationSchemaDeclarationDenial),
     PrincipalKey(WorthQueryApplicationPrincipalKeyDenial),
     PackageValidation(WorthQueryPortablePackageValidationDenial),

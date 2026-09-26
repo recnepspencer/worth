@@ -24,6 +24,8 @@ mod postures;
 mod rail_transport;
 #[path = "approved_payment_workflow/rejection.rs"]
 mod rejection;
+#[path = "approved_payment_workflow/relabel.rs"]
+mod relabel;
 mod support;
 
 use std::{sync::Arc, time::Duration};

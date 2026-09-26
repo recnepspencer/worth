@@ -1130,10 +1130,14 @@ adoption as authority. Repeat the fixed-local-work scale case on an unaffected s
 Status: the sibling courts found version-addressed reads that answered from whichever
 branch published last. A branch's program is now read on its own root, and authorization
 path evaluation reads its basis's own adjacency, so a sibling's approval dependencies no
-longer change when its parent adopts. Phase 4 closes once invariant and aggregate
-projection reads are branch-rooted the same way. Ordinary House edits and
+longer change when its parent adopts. Invariant and aggregate projection reads are
+branch-rooted the same way, so Phase 4 is closed. Ordinary House edits and
 performed-output actions on an adopted branch still run through the installed program;
 selected-program execution for those lanes moves to Phase 5.
+Bank approval now runs only through the workflow. A payment initiated at runtime grants
+its approval workflow to each approver on the source account inside the initiation
+candidate itself, up to eight approvers. Before this fix, only bootstrapped payments
+could be approved.
 
 ### Phase 5: Workflow-kernel lifecycle and public closure
 

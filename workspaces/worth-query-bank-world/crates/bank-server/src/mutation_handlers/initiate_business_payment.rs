@@ -16,6 +16,7 @@ use worth_query_host::facade::primary_graph::{
     WorthQueryCreateOutput,
 };
 
+use super::payment_approval_grant::author_approval_grant;
 use crate::bank_projection::project_business_payment_initiation;
 use crate::graph_bootstrap::payment_key;
 use crate::operation_admission::bank_operation_scope_binding;
@@ -51,9 +52,7 @@ impl OperationHandler<BankSchema, InitiateBusinessPaymentMutationBinding>
             actor,
             input,
         ) {
-            Ok(payment) => {
-                HandlerResult::Completed(InitiateBusinessPaymentDecision::from_payment(payment))
-            }
+            Ok(decision) => HandlerResult::Completed(decision),
             Err(denial) => HandlerResult::DomainDenied(denial),
         }
     }
@@ -86,7 +85,7 @@ fn author_candidate(
     decision: InitiateBusinessPaymentDecision,
     candidate: &mut CandidateWriter<'_, BankSchema, InitiateBusinessPaymentMutationBinding>,
 ) -> Result<InitiateBusinessPaymentResult, HandlerExecutionDenial> {
-    let payment = decision.into_payment();
+    let (payment, approval_grantees) = decision.into_parts();
     let business = candidate
         .resolve_entity(BusinessIdentityField::reference(), payment.business())
         .map_err(HandlerExecutionDenial::new)?;
@@ -147,6 +146,11 @@ fn author_candidate(
             &created,
         )
         .map_err(HandlerExecutionDenial::new)?;
+    for grantee in approval_grantees {
+        author_approval_grant(
+            candidate, &payment, &business, &created, &initiator, grantee,
+        )?;
+    }
     candidate
         .create_output(
             WorthQueryApplicationOutputRole::<

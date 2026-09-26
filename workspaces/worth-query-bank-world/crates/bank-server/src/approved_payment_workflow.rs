@@ -71,10 +71,10 @@ pub enum BankApprovedPaymentApplyOutcome {
 impl BankApprovedPaymentApplyOutcome {
     pub fn into_performed(
         self,
-    ) -> Result<BankApprovedPaymentPerformedOperation, BankApprovedPaymentApplyOutcome> {
+    ) -> Result<BankApprovedPaymentPerformedOperation, Box<BankApprovedPaymentApplyOutcome>> {
         match self {
             Self::Performed(performed) => Ok(performed),
-            other => Err(other),
+            other => Err(Box::new(other)),
         }
     }
 }

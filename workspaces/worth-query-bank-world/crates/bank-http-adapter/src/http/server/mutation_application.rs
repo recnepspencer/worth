@@ -21,7 +21,7 @@ use super::super::protocol::{
 use super::authentication::BankHttpApplicationAuthenticator;
 
 mod denial;
-use denial::request_mutation_denial;
+pub(super) use denial::request_mutation_denial;
 
 pub(super) enum AdmittedBankHttpMutation {
     Deposit(Deposit),

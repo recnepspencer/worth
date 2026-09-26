@@ -49,7 +49,7 @@ pub enum EstateLifecycleProgressionOutcome {
 #[derive(Debug)]
 pub enum EstateCommandCertificationDenial {
     Progression(BankEstateProgressionDenial),
-    Stopped(EstateCommandStoppedOutcome),
+    Stopped(Box<EstateCommandStoppedOutcome>),
 }
 
 #[derive(Debug)]
@@ -141,9 +141,9 @@ fn committed_command(
     match outcome {
         BankMutationCommitOutcome::Committed(_)
         | BankMutationCommitOutcome::AlreadyCommitted(_) => Ok(()),
-        stopped => Err(EstateCommandCertificationDenial::Stopped(
+        stopped => Err(EstateCommandCertificationDenial::Stopped(Box::new(
             EstateCommandStoppedOutcome::Mutation(stopped),
-        )),
+        ))),
     }
 }
 
@@ -153,9 +153,9 @@ fn certified_elevation_request(
     match outcome {
         BankEstateElevationRequestOutcome::Requested(_)
         | BankEstateElevationRequestOutcome::AlreadyRequested(_) => Ok(()),
-        stopped => Err(EstateCommandCertificationDenial::Stopped(
+        stopped => Err(EstateCommandCertificationDenial::Stopped(Box::new(
             EstateCommandStoppedOutcome::ElevationRequest(stopped),
-        )),
+        ))),
     }
 }
 

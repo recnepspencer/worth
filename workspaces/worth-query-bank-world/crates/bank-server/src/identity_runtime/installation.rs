@@ -99,7 +99,7 @@ pub(super) fn install_prepared(
             )
         }
     }
-    .map_err(BankIdentityRuntimeBuildError::ApplicationInstallation)?;
+    .map_err(|denial| BankIdentityRuntimeBuildError::ApplicationInstallation(Box::new(denial)))?;
     let invariant_projection = invariant_projection
         .expect("program construction invokes the initializer before publication");
     let binding = resolve_installed_principal_binding(runtime.runtime())?;

@@ -129,15 +129,19 @@ fn public_consumer_executes_ordinary_mutation_families_without_bypassing_workflo
         .map(|item| item.amount().minor_units())
         .sum::<i64>();
     assert!(available >= 900);
-    let approval = execute!(
-        fixture,
-        approver,
-        mutations::approve_payment(ApprovePayment {
+    // The typed ordinary surface offers no approval; a raw program request
+    // for one is refused before it can bypass the workflow.
+    let approval_scope = request_scope();
+    let approval = fixture
+        .world
+        .runtime
+        .request(&approver, &approval_scope)
+        .mutate(ApprovePayment {
             payment: fixture.payment,
             approver: principal_id(APPROVER),
-        }),
-        "approve",
-    );
+        })
+        .idempotency(&key("approve"))
+        .execute_in_program(fixture.world.runtime.application_program());
     assert!(matches!(
         approval,
         Err(WorthQueryApplicationRequestMutationDenial::RequiresWorkflowTransition)

@@ -235,7 +235,7 @@ fn install_payment_operation_budgets(
         .operation_decision_fact_budget(DepositOperation::reference(), 256)
         .operation_decision_fact_budget(WithdrawOperation::reference(), 256)
         .operation_decision_fact_budget(SendMoneyOperation::reference(), 256)
-        .operation_decision_fact_budget(InitiateBusinessPaymentOperation::reference(), 64)
+        .operation_decision_fact_budget(InitiateBusinessPaymentOperation::reference(), 256)
         .operation_decision_fact_budget(
             ApprovedBusinessPaymentAuthoringOperation::reference(),
             1_024,
@@ -256,7 +256,7 @@ fn install_payment_operation_budgets(
         .operation_projection_work_budget(DepositOperation::reference(), 4_096)
         .operation_projection_work_budget(WithdrawOperation::reference(), 4_096)
         .operation_projection_work_budget(SendMoneyOperation::reference(), 8_192)
-        .operation_projection_work_budget(InitiateBusinessPaymentOperation::reference(), 4_096)
+        .operation_projection_work_budget(InitiateBusinessPaymentOperation::reference(), 8_192)
         .operation_projection_work_budget(
             ApprovedBusinessPaymentAuthoringOperation::reference(),
             1_024,

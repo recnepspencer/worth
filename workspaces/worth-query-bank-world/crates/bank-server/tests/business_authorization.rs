@@ -2,19 +2,33 @@
 mod business_authorization_fixture;
 mod support;
 
-use bank_domain::model::{BankPrincipalId, BusinessId, CustomerRole, InstitutionId};
-use bank_domain::proposals::{BankProposalDenial, BankProposalEngine};
-use bank_domain::schema::{ApprovePayment, RevokeAccountAuthorization};
+use bank_domain::model::{BankPrincipalId, BusinessId, CustomerRole, InstitutionId, Money};
+use bank_domain::proposals::BankProposalEngine;
+use bank_domain::schema::{
+    ApprovePayment, InitiateBusinessPayment, RevokeAccountAuthorization,
+    MAX_PAYMENT_APPROVAL_GRANTEES,
+};
 use bank_server::{
-    BankBusinessOwnerSeed, BankEmployeeAssignmentSeed, BankPaymentDecisionExecution,
+    BankApprovedPaymentWorkflowError, BankBusinessOwnerSeed, BankEmployeeAssignmentSeed,
     BankPrincipalSeed, BankWorldSeed,
 };
 use worth_query_host::facade::application_entry::{
-    WorthQueryApplicationMutationOutcome, WorthQueryApplicationRequestMutationDenialKind,
+    WorkflowDefinitionExpectedPredecessor, WorkflowDefinitionPublicationOutcome,
+    WorkflowInstanceStartOutcome, WorthQueryApplicationMutationOutcome,
+    WorthQueryApplicationRequestMutationDenial,
+    WorthQueryWorkflowDefinitionPublicationPreparationDenial,
+};
+use worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationDenialKind;
+
+use business_authorization_fixture::{
+    approver_crowded_world, binding, id, key, pending_business_payment_world,
+};
+use support::{
+    block_on, request_scope, runtime, CausalCredential, DynamicIdentity, TestIdentityWorld,
 };
 
-use business_authorization_fixture::{binding, id, key, pending_business_payment_world};
-use support::{block_on, request_scope, runtime, CausalCredential, DynamicIdentity};
+// A business payment is approved only through its Bank-owned workflow, so the
+// real authorization graph answers at the workflow's first authored step.
 
 #[test]
 fn real_graph_allows_distinct_approver_and_deny_precedence_blocks_initiator() {
@@ -23,7 +37,7 @@ fn real_graph_allows_distinct_approver_and_deny_precedence_blocks_initiator() {
     let recipient = DynamicIdentity::new("recipient");
     let approver = DynamicIdentity::new("approver");
     let world = runtime(
-        BankWorldSeed::new(snapshot.clone())
+        BankWorldSeed::new(snapshot)
             .principal(BankPrincipalSeed::enabled(
                 id(BankPrincipalId::new, 1),
                 initiator.external(),
@@ -41,95 +55,40 @@ fn real_graph_allows_distinct_approver_and_deny_precedence_blocks_initiator() {
                 id(BankPrincipalId::new, 1),
             )),
     );
+    let authority = ApprovePayment {
+        payment,
+        approver: id(BankPrincipalId::new, 3),
+    };
+    let published = publish(&world, &approver, authority.clone(), "approver")
+        .expect("the distinct approver publishes the payment workflow");
+    let WorkflowDefinitionPublicationOutcome::Published(published) = published else {
+        panic!("expected definition publication, got {published:?}");
+    };
     let request = request_scope();
-    let approver_actor = block_on(world.runtime.authenticate_with(
-        &world.authentication,
-        CausalCredential::for_identity(&approver),
-        &request,
-    ))
-    .unwrap();
-    let approved = world
+    let actor = authenticate(&world, &approver);
+    let started = world
         .runtime
-        .request(&approver_actor, &request)
-        .mutate(ApprovePayment {
-            payment,
-            approver: id(BankPrincipalId::new, 3),
-        })
-        .idempotency(&key("approve"))
-        .execute_in_program(world.runtime.application_program())
-        .unwrap();
-    assert!(matches!(
-        approved,
-        WorthQueryApplicationMutationOutcome::Committed { .. }
-    ));
+        .approved_business_payment(&actor, &request)
+        .start(
+            published.definition().clone(),
+            authority,
+            &key("approver:start"),
+        )
+        .expect("the distinct approver starts the payment workflow");
+    assert!(matches!(started, WorkflowInstanceStartOutcome::Started(_)));
 
-    let initiator_actor = block_on(world.runtime.authenticate_with(
-        &world.authentication,
-        CausalCredential::for_identity(&initiator),
-        &request,
-    ))
-    .unwrap();
-    assert_permission_denied(
-        world
-            .runtime
-            .request(&initiator_actor, &request)
-            .mutate(ApprovePayment {
+    assert_authorization_denied(
+        publish(
+            &world,
+            &initiator,
+            ApprovePayment {
                 payment,
                 approver: id(BankPrincipalId::new, 1),
-            })
-            .idempotency(&key("initiator-denied"))
-            .execute_in_program(world.runtime.application_program()),
+            },
+            "initiator",
+        ),
+        WorthQueryOperationAuthorizationDenialKind::ExplicitDenyRuleMatched,
     );
-}
-
-#[test]
-fn authenticated_actor_cannot_be_relabelled_in_payment_input() {
-    let (snapshot, payment) = pending_business_payment_world();
-    let initiator = DynamicIdentity::new("initiator");
-    let recipient = DynamicIdentity::new("recipient");
-    let approver = DynamicIdentity::new("approver");
-    let world = runtime(
-        BankWorldSeed::new(snapshot.clone())
-            .principal(BankPrincipalSeed::enabled(
-                id(BankPrincipalId::new, 1),
-                initiator.external(),
-            ))
-            .principal(BankPrincipalSeed::enabled(
-                id(BankPrincipalId::new, 2),
-                recipient.external(),
-            ))
-            .principal(BankPrincipalSeed::enabled(
-                id(BankPrincipalId::new, 3),
-                approver.external(),
-            ))
-            .business_owner(BankBusinessOwnerSeed::new(
-                id(BusinessId::new, 1),
-                id(BankPrincipalId::new, 1),
-            )),
-    );
-    let request = request_scope();
-    let actor = block_on(world.runtime.authenticate_with(
-        &world.authentication,
-        CausalCredential::for_identity(&approver),
-        &request,
-    ))
-    .unwrap();
-    let denial = world
-        .runtime
-        .request(&actor, &request)
-        .mutate(ApprovePayment {
-            payment,
-            approver: id(BankPrincipalId::new, 2),
-        })
-        .idempotency(&key("relabel"))
-        .execute_in_program(world.runtime.application_program())
-        .unwrap();
-    assert!(matches!(
-        denial,
-        WorthQueryApplicationMutationOutcome::DomainDenied(
-            BankProposalDenial::AuthenticatedActorMismatch
-        )
-    ));
 }
 
 #[test]
@@ -159,23 +118,17 @@ fn viewer_cross_business_and_employee_roles_do_not_combine_into_approval() {
                 bank_domain::model::EmployeeRole::Teller,
             )),
     );
-    let request = request_scope();
-    let actor = block_on(world.runtime.authenticate_with(
-        &world.authentication,
-        CausalCredential::for_identity(&combined),
-        &request,
-    ))
-    .unwrap();
-    assert_permission_denied(
-        world
-            .runtime
-            .request(&actor, &request)
-            .mutate(ApprovePayment {
+    assert_authorization_denied(
+        publish(
+            &world,
+            &combined,
+            ApprovePayment {
                 payment,
                 approver: id(BankPrincipalId::new, 2),
-            })
-            .idempotency(&key("cross-business-denied"))
-            .execute_in_program(world.runtime.application_program()),
+            },
+            "cross-business",
+        ),
+        WorthQueryOperationAuthorizationDenialKind::CapabilityGrantMissing,
     );
 }
 
@@ -220,30 +173,126 @@ fn revoked_approver_membership_is_absent_from_current_authorization_graph() {
                 revoked_approver.external(),
             )),
     );
-    let request = request_scope();
-    let actor = block_on(world.runtime.authenticate_with(
-        &world.authentication,
-        CausalCredential::for_identity(&revoked_approver),
-        &request,
-    ))
-    .unwrap();
-    assert_permission_denied(
-        world
-            .runtime
-            .request(&actor, &request)
-            .mutate(ApprovePayment {
+    assert_authorization_denied(
+        publish(
+            &world,
+            &revoked_approver,
+            ApprovePayment {
                 payment,
                 approver: id(BankPrincipalId::new, 3),
-            })
-            .idempotency(&key("revoked-denied"))
-            .execute_in_program(world.runtime.application_program()),
+            },
+            "revoked",
+        ),
+        WorthQueryOperationAuthorizationDenialKind::CapabilityGrantMissing,
     );
 }
 
-fn assert_permission_denied(result: BankPaymentDecisionExecution) {
-    assert!(matches!(
-        result,
-        Err(ref denial)
-            if denial.kind() == WorthQueryApplicationRequestMutationDenialKind::Authorization
+#[test]
+fn runtime_initiation_grants_its_workflow_to_every_source_approver_at_the_ceiling() {
+    let approvers = u64::try_from(MAX_PAYMENT_APPROVAL_GRANTEES).unwrap();
+    let (snapshot, source) = approver_crowded_world(approvers);
+    let identities = (1..=2 + approvers)
+        .map(|principal| DynamicIdentity::new(&format!("crowded-{principal}")))
+        .collect::<Vec<_>>();
+    let world = runtime(identities.iter().enumerate().fold(
+        BankWorldSeed::new(snapshot).business_owner(BankBusinessOwnerSeed::new(
+            id(BusinessId::new, 1),
+            id(BankPrincipalId::new, 1),
+        )),
+        |seed, (ordinal, identity)| {
+            seed.principal(BankPrincipalSeed::enabled(
+                id(BankPrincipalId::new, u64::try_from(ordinal).unwrap() + 1),
+                identity.external(),
+            ))
+        },
     ));
+    let initiator = authenticate(&world, &identities[0]);
+    let scope = request_scope();
+    let initiated = world
+        .runtime
+        .request(&initiator, &scope)
+        .mutate(InitiateBusinessPayment {
+            business: id(BusinessId::new, 1),
+            from: source,
+            recipient: id(BankPrincipalId::new, 2),
+            amount: Money::from_minor(700).unwrap(),
+        })
+        .idempotency(&key("crowded-initiation"))
+        .execute_in_program(world.runtime.application_program())
+        .expect("the initiation reaches its handler");
+    let WorthQueryApplicationMutationOutcome::Committed { result, .. } = initiated else {
+        panic!("an initiation within the approver ceiling commits: {initiated:?}");
+    };
+    for principal in 3..3 + approvers {
+        let identity = &identities[usize::try_from(principal - 1).unwrap()];
+        let published = publish(
+            &world,
+            identity,
+            ApprovePayment {
+                payment: result.payment,
+                approver: id(BankPrincipalId::new, principal),
+            },
+            &format!("crowded-approver-{principal}"),
+        );
+        // The first approver publishes; later ones pass authorization and
+        // then meet the already-published definition.
+        assert!(
+            if principal == 3 {
+                matches!(
+                    published,
+                    Ok(WorkflowDefinitionPublicationOutcome::Published(_))
+                )
+            } else {
+                published.is_ok()
+            },
+            "approver {principal} holds the new payment's workflow grant: {published:?}"
+        );
+    }
+}
+
+fn authenticate(
+    world: &TestIdentityWorld,
+    identity: &DynamicIdentity,
+) -> bank_server::BankAuthenticatedPrincipal {
+    block_on(world.runtime.authenticate_with(
+        &world.authentication,
+        CausalCredential::for_identity(identity),
+        &request_scope(),
+    ))
+    .unwrap()
+}
+
+fn publish(
+    world: &TestIdentityWorld,
+    identity: &DynamicIdentity,
+    authority: ApprovePayment,
+    label: &str,
+) -> Result<WorkflowDefinitionPublicationOutcome, BankApprovedPaymentWorkflowError> {
+    let actor = authenticate(world, identity);
+    let request = request_scope();
+    world
+        .runtime
+        .approved_business_payment(&actor, &request)
+        .publish_definition(
+            authority,
+            WorkflowDefinitionExpectedPredecessor::Absent,
+            &key(&format!("{label}:definition")),
+        )
+}
+
+fn assert_authorization_denied(
+    result: Result<WorkflowDefinitionPublicationOutcome, BankApprovedPaymentWorkflowError>,
+    expected: WorthQueryOperationAuthorizationDenialKind,
+) {
+    assert!(
+        matches!(
+            &result,
+            Err(BankApprovedPaymentWorkflowError::DefinitionPublication(
+                WorthQueryWorkflowDefinitionPublicationPreparationDenial::RequestAdmission(
+                    WorthQueryApplicationRequestMutationDenial::Authorization(denial)
+                )
+            )) if denial.kind() == expected
+        ),
+        "expected {expected:?} from the real authorization graph, got {result:?}"
+    );
 }

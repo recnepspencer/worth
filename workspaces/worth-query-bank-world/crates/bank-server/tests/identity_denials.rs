@@ -71,12 +71,13 @@ fn ambiguous_dynamic_identity_is_denied() {
     };
 
     match error {
-        BankIdentityRuntimeBuildError::ApplicationInstallation(
-            WorthQueryInMemoryApplicationDenial::InitialState(denial),
-        ) => assert_eq!(
-            denial.kind(),
-            WorthQueryPrimaryGraphInstallationDenialKind::DuplicateExternalIdentity
-        ),
+        BankIdentityRuntimeBuildError::ApplicationInstallation(denial) => match *denial {
+            WorthQueryInMemoryApplicationDenial::InitialState(denial) => assert_eq!(
+                denial.kind(),
+                WorthQueryPrimaryGraphInstallationDenialKind::DuplicateExternalIdentity
+            ),
+            other => panic!("unexpected duplicate-identity installation denial: {other:?}"),
+        },
         other => panic!("unexpected duplicate-identity denial: {other:?}"),
     }
 }

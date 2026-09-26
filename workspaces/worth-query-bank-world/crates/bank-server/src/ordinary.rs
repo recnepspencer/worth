@@ -2,8 +2,8 @@ mod mutation;
 mod read;
 
 pub use mutation::{
-    mutations, BankAccountAccessExecution, BankApprovePendingPayment, BankAuthorizationDenial,
-    BankAuthorizationDenialKind, BankBusinessAccountCreationExecution, BankEntityResolutionDenial,
+    mutations, BankAccountAccessExecution, BankAuthorizationDenial, BankAuthorizationDenialKind,
+    BankBusinessAccountCreationExecution, BankEntityResolutionDenial,
     BankEntityResolutionDenialKind, BankMoneyMovementExecution, BankMutation, BankMutationControls,
     BankMutationForPrincipal, BankOperationInstallationDenial, BankOperationInstallationDenialKind,
     BankPaymentContinuationDenial, BankPaymentDecisionExecution, BankPaymentInitiationOutcome,

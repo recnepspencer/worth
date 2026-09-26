@@ -13,12 +13,14 @@ mod assessment_readiness;
 mod authority;
 #[path = "workflow/control.rs"]
 mod control;
+mod grant_minting;
 mod settlement;
 
 pub use assessment::*;
 pub use assessment_readiness::*;
 pub use authority::*;
 pub use control::*;
+pub(crate) use grant_minting::install_payment_approval_grant_minting;
 pub use settlement::*;
 
 pub struct ApprovedBusinessPaymentWorkflow;

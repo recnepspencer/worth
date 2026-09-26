@@ -32,7 +32,7 @@ pub(super) fn binding(value: u8) -> BankOperationScopeBinding {
 }
 
 pub(super) fn pending_business_payment_world() -> (BankSnapshot, PaymentId) {
-    let accounts = create_business_payment_accounts();
+    let accounts = create_business_payment_accounts(3);
     let source = accounts.business_account(id(BusinessId::new, 1)).unwrap();
     let other_source = accounts.business_account(id(BusinessId::new, 2)).unwrap();
     let funded = fund_business_account(&accounts, source);
@@ -67,12 +67,37 @@ pub(super) fn pending_business_payment_world() -> (BankSnapshot, PaymentId) {
     initiate_business_payment(&cross_business_access, source)
 }
 
-fn create_business_payment_accounts() -> BankSnapshot {
-    let empty = BankSnapshotBuilder::new(id(BankSnapshotVersion::new, 1))
-        .institution(id(InstitutionId::new, 1))
-        .principal(id(BankPrincipalId::new, 1))
-        .principal(id(BankPrincipalId::new, 2))
-        .principal(id(BankPrincipalId::new, 3))
+/// A funded business account whose initiator is principal 1 and whose
+/// approvers are principals 3 onward; principal 2 is the recipient.
+pub(super) fn approver_crowded_world(approvers: u64) -> (BankSnapshot, AccountId) {
+    let accounts = create_business_payment_accounts(2 + approvers);
+    let source = accounts.business_account(id(BusinessId::new, 1)).unwrap();
+    let initiator = grant_access(
+        &fund_business_account(&accounts, source),
+        source,
+        1,
+        CustomerRole::Initiator,
+        "initiator-role",
+    );
+    let crowded = (3..3 + approvers).fold(initiator, |snapshot, principal| {
+        grant_access(
+            &snapshot,
+            source,
+            principal,
+            CustomerRole::Approver,
+            &format!("approver-role-{principal}"),
+        )
+    });
+    (crowded, source)
+}
+
+fn create_business_payment_accounts(principals: u64) -> BankSnapshot {
+    let empty = (1..=principals)
+        .fold(
+            BankSnapshotBuilder::new(id(BankSnapshotVersion::new, 1))
+                .institution(id(InstitutionId::new, 1)),
+            |builder, principal| builder.principal(id(BankPrincipalId::new, principal)),
+        )
         .business(id(BusinessId::new, 1))
         .business(id(BusinessId::new, 2))
         .institution_cash_account(id(AccountId::new, 100), id(InstitutionId::new, 1))

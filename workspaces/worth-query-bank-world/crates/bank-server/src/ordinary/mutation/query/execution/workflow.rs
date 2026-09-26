@@ -1,12 +1,11 @@
 use bank_domain::schema::{
-    ApprovePayment, ApprovePaymentOperation, BankSchema, Business, InitiateBusinessPayment,
-    InitiateBusinessPaymentOperation, PaymentIntent, RejectPayment, RejectPaymentOperation,
+    BankSchema, Business, InitiateBusinessPayment, InitiateBusinessPaymentOperation, PaymentIntent,
+    RejectPayment, RejectPaymentOperation,
 };
 use worth_query_host::facade::declaration::application_schema::TypedMutationPreconditions;
 
 use crate::ordinary::mutation::{
-    mutations, BankApprovePendingPayment, BankPaymentDecisionExecution,
-    BankPaymentInitiationOutcome, BankRejectPendingPayment,
+    mutations, BankPaymentDecisionExecution, BankPaymentInitiationOutcome, BankRejectPendingPayment,
 };
 use crate::{BankIdentityRuntime, BankReadyMutation};
 
@@ -26,22 +25,6 @@ impl
             self.preconditions,
             &self.controls,
             self.mutation.input,
-        )
-    }
-}
-
-impl BankReadyMutation<'_, '_, BankApprovePendingPayment, ApprovePaymentOperation, PaymentIntent> {
-    pub fn execute(self) -> BankPaymentDecisionExecution {
-        let input = ApprovePayment {
-            payment: self.mutation.payment,
-            approver: self.principal.principal_id(),
-        };
-        execute_approval(
-            self.runtime,
-            self.principal,
-            self.preconditions,
-            &self.controls,
-            input,
         )
     }
 }
@@ -66,26 +49,6 @@ impl
     BankReadyMutation<
         '_,
         '_,
-        mutations::ApprovePaymentMutation,
-        ApprovePaymentOperation,
-        PaymentIntent,
-    >
-{
-    pub fn execute(self) -> BankPaymentDecisionExecution {
-        execute_approval(
-            self.runtime,
-            self.principal,
-            self.preconditions,
-            &self.controls,
-            self.mutation.input,
-        )
-    }
-}
-
-impl
-    BankReadyMutation<
-        '_,
-        '_,
         mutations::RejectPaymentMutation,
         RejectPaymentOperation,
         PaymentIntent,
@@ -100,21 +63,6 @@ impl
             self.mutation.input,
         )
     }
-}
-
-fn execute_approval(
-    runtime: &BankIdentityRuntime,
-    principal: &crate::BankAuthenticatedPrincipal,
-    preconditions: TypedMutationPreconditions<BankSchema, ApprovePaymentOperation, PaymentIntent>,
-    controls: &crate::BankMutationControls,
-    input: ApprovePayment,
-) -> BankPaymentDecisionExecution {
-    runtime
-        .request(principal, controls.request())
-        .mutate(input)
-        .preconditions(preconditions)
-        .idempotency(controls.idempotency_key())
-        .execute_in_selected_program(runtime.application_program())
 }
 
 fn execute_rejection(

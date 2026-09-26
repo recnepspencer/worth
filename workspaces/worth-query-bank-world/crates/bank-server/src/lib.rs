@@ -100,15 +100,14 @@ pub use operation_commit::{
     BankUnresolvedCommitEvidence,
 };
 pub use ordinary::{
-    mutations, queries, BankAccountAccessExecution, BankApprovePendingPayment,
-    BankAuthorizationDenial, BankAuthorizationDenialKind, BankBusinessAccountCreationExecution,
-    BankEntityResolutionDenial, BankEntityResolutionDenialKind, BankMoneyMovementExecution,
-    BankMutation, BankMutationControls, BankMutationForPrincipal, BankOperationInstallationDenial,
-    BankOperationInstallationDenialKind, BankPaymentContinuationDenial,
-    BankPaymentDecisionExecution, BankPaymentInitiationOutcome, BankPendingPaymentContinuation,
-    BankPersonalAccountCreationExecution, BankProgramMutationExecution, BankQuery,
-    BankQueryForPrincipal, BankReadControlDenial, BankReadControls, BankReadyMutation,
-    BankReadyQuery, BankRejectPendingPayment,
+    mutations, queries, BankAccountAccessExecution, BankAuthorizationDenial,
+    BankAuthorizationDenialKind, BankBusinessAccountCreationExecution, BankEntityResolutionDenial,
+    BankEntityResolutionDenialKind, BankMoneyMovementExecution, BankMutation, BankMutationControls,
+    BankMutationForPrincipal, BankOperationInstallationDenial, BankOperationInstallationDenialKind,
+    BankPaymentContinuationDenial, BankPaymentDecisionExecution, BankPaymentInitiationOutcome,
+    BankPendingPaymentContinuation, BankPersonalAccountCreationExecution,
+    BankProgramMutationExecution, BankQuery, BankQueryForPrincipal, BankReadControlDenial,
+    BankReadControls, BankReadyMutation, BankReadyQuery, BankRejectPendingPayment,
 };
 pub use principal_seed::BankPrincipalSeed;
 pub use program_adoption::{BankProgramAdoptionPreparationDenial, BankProgramInspectionDenial};

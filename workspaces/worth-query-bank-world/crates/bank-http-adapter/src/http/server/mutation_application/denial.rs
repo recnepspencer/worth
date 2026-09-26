@@ -2,7 +2,7 @@ use worth_query_host::facade::application_entry::WorthQueryApplicationRequestMut
 
 use super::{BankHttpDenial, BankHttpDenialKind, BankHttpNextAction};
 
-pub(super) fn request_mutation_denial(
+pub(in crate::http::server) fn request_mutation_denial(
     kind: WorthQueryApplicationRequestMutationDenialKind,
 ) -> BankHttpDenial {
     use WorthQueryApplicationRequestMutationDenialKind as Denial;
