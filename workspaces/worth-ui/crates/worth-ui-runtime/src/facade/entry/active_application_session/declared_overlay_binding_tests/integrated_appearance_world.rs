@@ -51,6 +51,8 @@ mod portal_dismissal_epoch;
 mod portal_exit_retention;
 #[path = "integrated_appearance_world/portal_lifecycle.rs"]
 mod portal_lifecycle;
+#[path = "integrated_appearance_world/portal_outer_settle.rs"]
+mod portal_outer_settle;
 #[path = "integrated_appearance_world/portal_placement_succession.rs"]
 mod portal_placement_succession;
 #[path = "integrated_appearance_world/portal_scroll_region.rs"]

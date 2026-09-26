@@ -111,6 +111,17 @@ impl UiAssembledMountedFrame {
         self.candidate.frame().semantic_projection()
     }
 
+    pub(in crate::mounting) fn scrolls_with_region(
+        &self,
+        region: worth_ui_host_contract::UiMountedInstanceIdentity,
+        instance: worth_ui_host_contract::UiMountedInstanceIdentity,
+        opened: Option<worth_ui_host_contract::UiMountedPortalOverlayMechanic>,
+    ) -> bool {
+        self.candidate
+            .frame()
+            .scrolls_with_region(region, instance, opened)
+    }
+
     pub(crate) fn appearance_attempt_inputs(
         &mut self,
         batch: &crate::runtime::appearance::UiAppearanceInvalidationBatch,

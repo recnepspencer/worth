@@ -34,20 +34,34 @@ pub(crate) enum UiMountedPlacement {
 pub(crate) struct UiPortalPresentation {
     portal: UiMountedPortalOverlayMechanic,
     source_anchor: UiMountedCanonicalBox,
+    follows_anchor: bool,
 }
 
 impl UiPortalPresentation {
     /// `portal` presenting the content it was fitted to, which begins at
     /// `content_anchor`'s origin: not the owner's origin when that content is
-    /// laid out away from it.
+    /// laid out away from it. `follows_anchor` says whether the Portal
+    /// stands where it does because of where that anchor is.
     pub(in crate::mounting::projection) const fn fitted_to(
         portal: UiMountedPortalOverlayMechanic,
         content_anchor: UiMountedCanonicalBox,
+        follows_anchor: bool,
     ) -> Self {
         Self {
             portal,
             source_anchor: content_anchor,
+            follows_anchor,
         }
+    }
+
+    pub(crate) const fn portal(self) -> UiMountedPortalOverlayMechanic {
+        self.portal
+    }
+
+    /// Whether the Portal stands where it does because of where its anchor
+    /// is: below or above it, not centered or fitted to the viewport.
+    pub(crate) const fn follows_anchor(self) -> bool {
+        self.follows_anchor
     }
 }
 
@@ -94,8 +108,16 @@ impl UiMountedPlacement {
 
     /// The Portal this placement presents through.
     pub(crate) const fn portal(self) -> Option<UiMountedPortalOverlayMechanic> {
+        match self.presentation() {
+            Some(presentation) => Some(presentation.portal),
+            None => None,
+        }
+    }
+
+    /// How the Portal this placement presents through presents it.
+    pub(crate) const fn presentation(self) -> Option<UiPortalPresentation> {
         match self {
-            Self::ThroughPortal(presentation) => Some(presentation.portal),
+            Self::ThroughPortal(presentation) => Some(presentation),
             Self::InPlace | Self::Hidden => None,
         }
     }

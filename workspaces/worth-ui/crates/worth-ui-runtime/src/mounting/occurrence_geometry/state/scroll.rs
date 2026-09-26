@@ -102,6 +102,9 @@ impl UiMountedOccurrenceGeometryState {
     /// the frame the host shows; an owner `shown` omits stands there where
     /// mounted geometry holds it. Geometry staged past what the host shows
     /// moves from where it is staged, and hit rows from where they committed.
+    /// A pose moves a descendant's hit row only where `hit_scrolls(owner,
+    /// descendant)` says the frame the host shows presents that row moving
+    /// with the owner's region: Portal content can stand apart from it.
     pub(crate) fn prepare_scroll_pose(
         &self,
         surface: UiSemanticSurfaceIdentity,
@@ -113,6 +116,7 @@ impl UiMountedOccurrenceGeometryState {
             UiMountedInstanceIdentity,
             crate::runtime::scroll::UiScrollOffset,
         )],
+        hit_scrolls: impl Fn(UiMountedInstanceIdentity, UiMountedInstanceIdentity) -> bool,
     ) -> Result<UiPreparedMountedScrollPose, UiMountedOccurrenceGeometryDenial> {
         let geometry = self
             .surfaces
@@ -146,9 +150,14 @@ impl UiMountedOccurrenceGeometryState {
                     geometry: UiScrollPoseShift::none(),
                     hits: UiScrollPoseShift::none(),
                 });
+                let hits = if hit_scrolls(*owner, *instance) {
+                    shift.hits
+                } else {
+                    UiScrollPoseShift::none()
+                };
                 *translation = PoseMove {
                     geometry: translation.geometry.then(shift.geometry),
-                    hits: translation.hits.then(shift.hits),
+                    hits: translation.hits.then(hits),
                 };
             }
         }
@@ -294,8 +303,14 @@ impl UiMountedOccurrenceGeometryState {
                 );
             }
         }
-        let prepared =
-            self.prepare_scroll_pose(surface, &poses.into_iter().collect::<Vec<_>>(), &[])?;
+        // A restored pose moves no hit row; the frame republished over it
+        // places them.
+        let prepared = self.prepare_scroll_pose(
+            surface,
+            &poses.into_iter().collect::<Vec<_>>(),
+            &[],
+            |_, _| false,
+        )?;
         let changed = prepared.changed_instances();
         self.apply_scroll_pose(prepared);
         Ok(changed)

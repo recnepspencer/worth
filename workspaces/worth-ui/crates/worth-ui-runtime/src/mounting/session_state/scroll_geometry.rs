@@ -192,7 +192,8 @@ impl super::WorthUiMountedSessionState {
 
     /// Prepare `poses` against mounted geometry, one pose per surface,
     /// without committing any of them. Hit rows move from `shown`, where the
-    /// frame the host shows committed each listed owner.
+    /// frame the host shows committed each listed owner, and only where that
+    /// frame presents them moving with the region.
     pub(super) fn prepare_scroll_poses(
         &self,
         poses: &[(
@@ -216,6 +217,10 @@ impl super::WorthUiMountedSessionState {
                 .or_default()
                 .push((*owner, *offset));
         }
+        let frame = self.identity.current_projection();
+        let hit_scrolls = |region, instance| {
+            frame.is_none_or(|frame| frame.scrolls_with_region(region, instance, None))
+        };
         surfaces
             .into_iter()
             .map(|(surface, poses)| {
@@ -225,7 +230,7 @@ impl super::WorthUiMountedSessionState {
                     .map(|(_, owner, offset)| (*owner, *offset))
                     .collect::<Vec<_>>();
                 self.occurrence_geometry
-                    .prepare_scroll_pose(surface, &poses, &shown)
+                    .prepare_scroll_pose(surface, &poses, &shown, hit_scrolls)
             })
             .collect()
     }

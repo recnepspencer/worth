@@ -152,6 +152,7 @@ impl UiMountedProjectionFrame {
                     .mechanic_for(self.frame, binding, receipt)
                     .map_err(UiMountedProjectionDenial::PortalOverlayCompletion)?,
                 content_anchor,
+                input.placement().follows_anchor(),
             ));
         }
         Ok((

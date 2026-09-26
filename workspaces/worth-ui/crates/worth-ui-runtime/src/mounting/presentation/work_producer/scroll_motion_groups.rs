@@ -45,7 +45,8 @@ use std::{
     sync::Arc,
 };
 use worth_ui_host_contract::{
-    UiMountedAppearanceOpacity, UiMountedPaintCommandIdentity, UiMountedScrollChromeIdentity,
+    UiMountedAppearanceOpacity, UiMountedPaintCommand, UiMountedPaintCommandIdentity,
+    UiMountedScrollChromeIdentity,
 };
 
 #[derive(Clone)]
@@ -196,10 +197,21 @@ impl UiMountedPresentationState {
             let (shown, member_clips) = shown_region::show_group(frame, input)?;
             let mut commands = Vec::new();
             for (member, clips) in input.members.iter().zip(member_clips) {
+                // Content a Portal presents apart from the region, and the
+                // overlay of a Portal standing apart from it, stay where the
+                // frame shows them while the region scrolls.
+                if !frame.scrolls_with_region(input.owner, member.instance, None) {
+                    continue;
+                }
                 let clips: Arc<[_]> = clips.into();
-                let mut identities = self
-                    .command_identities_for_instance(member.instance)
-                    .collect::<Vec<_>>();
+                let mut identities =
+                    self.command_identities_for_instance(member.instance)
+                        .filter(|identity| match self.command(*identity) {
+                            UiMountedPaintCommand::PortalOverlay { mechanic, .. } => frame
+                                .scrolls_with_region(input.owner, member.instance, Some(*mechanic)),
+                            UiMountedPaintCommand::SemanticText { .. } => true,
+                        })
+                        .collect::<Vec<_>>();
                 identities.extend(
                     chrome
                         .keys()

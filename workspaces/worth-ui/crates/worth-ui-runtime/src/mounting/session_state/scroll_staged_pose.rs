@@ -38,8 +38,9 @@ impl super::WorthUiMountedSessionState {
         let poses = surfaces
             .into_iter()
             .map(|(surface, poses)| {
+                // A staged pose moves no hit row; only geometry is staged.
                 self.occurrence_geometry
-                    .prepare_scroll_pose(surface, &poses, &[])
+                    .prepare_scroll_pose(surface, &poses, &[], |_, _| false)
             })
             .collect::<Result<Vec<_>, _>>()?;
         let mut changed = poses
