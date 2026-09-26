@@ -7,7 +7,8 @@
 //! `crate::primary_graph::workflow`. Methods the owner adds to types it does
 //! not own count as its items too, whether called or named by path. A glob
 //! import may not reach outside the guarded roots, since a bare name it brings
-//! in is not traced back to the owner.
+//! in is not traced back to the owner. A name a `use` binds resolves through
+//! its binding, so an alias reaches only what its target reaches.
 
 use std::{collections::BTreeSet, fs, path::Path};
 
@@ -17,8 +18,13 @@ use crate::config::SourceOwnerIsolationConfig;
 use crate::diagnostics::{Diagnostic, DiagnosticCode};
 
 mod owned_items;
+mod use_bindings;
 
 use owned_items::{is_test_source, test_module_roots, OwnedItemCollector, OwnedItems};
+use use_bindings::UseBindings;
+
+/// How many aliases one path may pass through before it stops resolving.
+const MAXIMUM_ALIAS_DEPTH: usize = 16;
 
 pub(crate) fn validate_source_owner_isolations(
     workspace: &Path,
@@ -65,10 +71,12 @@ fn diagnostics_for_source(
     let Ok(file) = syn::parse_file(source) else {
         return vec![unparsable(path)];
     };
+    let module = module_path(path);
     let mut visitor = IsolationVisitor {
         owned,
         forbidden_paths: &rule.forbidden_paths,
-        module: module_path(path),
+        bindings: UseBindings::collect(&file, &module),
+        module,
         guarded: rule
             .guarded_roots
             .iter()
@@ -171,6 +179,7 @@ fn unreadable(path: &str, error: &std::io::Error) -> Diagnostic {
 struct IsolationVisitor<'a> {
     owned: &'a OwnedItems,
     forbidden_paths: &'a [Vec<String>],
+    bindings: UseBindings,
     module: Vec<String>,
     /// The modules the guarded roots declare.
     guarded: Vec<Vec<String>>,
@@ -197,18 +206,35 @@ impl IsolationVisitor<'_> {
         }
     }
 
-    /// The crate-absolute form of a `crate::`, `self::` or `super::` path.
+    /// The crate-absolute form of a path, or the path as written when it
+    /// names no module of this crate.
     fn resolve(&self, segments: &[String]) -> Vec<String> {
-        match segments.first().map(String::as_str) {
-            Some("crate") => segments[1..].to_vec(),
-            Some("self") => [&self.module[..], &segments[1..]].concat(),
-            Some("super") => {
-                let depth = segments.iter().take_while(|s| *s == "super").count();
-                let kept = self.module.len().saturating_sub(depth);
-                [&self.module[..kept], &segments[depth..]].concat()
+        self.resolve_local(segments)
+            .unwrap_or_else(|| segments.to_vec())
+    }
+
+    /// The crate-absolute form of a `crate::`, `self::` or `super::` path, or
+    /// of one that starts with a name a `use` in this module binds. An alias
+    /// chain too deep to follow resolves nowhere, which a glob refuses.
+    fn resolve_local(&self, segments: &[String]) -> Option<Vec<String>> {
+        let mut segments = segments.to_vec();
+        for _ in 0..MAXIMUM_ALIAS_DEPTH {
+            match segments.first().map(String::as_str) {
+                Some("crate") => return Some(segments[1..].to_vec()),
+                Some("self") => return Some([&self.module[..], &segments[1..]].concat()),
+                Some("super") => {
+                    let depth = segments.iter().take_while(|s| *s == "super").count();
+                    let kept = self.module.len().saturating_sub(depth);
+                    return Some([&self.module[..kept], &segments[depth..]].concat());
+                }
+                Some(name) => {
+                    let target = self.bindings.target(&self.module, name)?;
+                    segments = [target, &segments[1..]].concat();
+                }
+                None => return None,
             }
-            _ => segments.to_vec(),
         }
+        Some(Vec::new())
     }
 
     fn visit_tokens(&mut self, tokens: proc_macro2::TokenStream) {
@@ -257,14 +283,10 @@ impl IsolationVisitor<'_> {
     /// A crate-relative glob import must stay inside a guarded root; a glob
     /// from an enclosing facade could bring owner values in by bare name.
     fn check_glob(&mut self, prefix: &[String]) {
-        if !matches!(
-            prefix.first().map(String::as_str),
-            Some("crate" | "self" | "super")
-        ) {
+        let Some(resolved) = self.resolve_local(prefix) else {
             return;
-        }
-        let resolved = self.resolve(prefix);
-        if !self.guarded.iter().any(|root| resolved.starts_with(root)) {
+        };
+        if resolved.is_empty() || !self.guarded.iter().any(|root| resolved.starts_with(root)) {
             self.found.insert(format!("{}::*", prefix.join("::")));
         }
     }

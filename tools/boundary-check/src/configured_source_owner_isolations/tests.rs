@@ -47,6 +47,8 @@ fn a_path_through_the_isolated_owner_is_refused_in_every_position() {
         "use crate::primary_graph::workflow::*;",
         "fn f() { crate::primary_graph::workflow::start(); }",
         "fn f() { format!(\"{}\", crate::primary_graph::workflow::NAME); }",
+        "use crate::primary_graph as pg; use pg::workflow::definition;",
+        "use crate::primary_graph as pg; fn f() { pg::workflow::start(); }",
     ] {
         let found = findings(source);
         assert_eq!(found.len(), 1, "{source}: {found:?}");
@@ -275,6 +277,15 @@ fn a_glob_import_from_outside_the_guarded_roots_is_refused() {
             "mod inner { use crate::{guarded::run, facade::*}; }",
             "crate::facade::*",
         ),
+        ("use crate::facade as f; use f::*;", "f::*"),
+        ("use super::super as up; use up::*;", "up::*"),
+        ("use crate::{facade}; use facade::*;", "facade::*"),
+        ("use crate::facade::{self as f}; use f::*;", "f::*"),
+        (
+            "use crate::facade as f; use f::inner as g; use g::*;",
+            "g::*",
+        ),
+        ("use crate::*;", "crate::*"),
     ] {
         let found = findings(source);
         assert_eq!(found.len(), 1, "{source}: {found:?}");
@@ -286,6 +297,8 @@ fn a_glob_import_from_outside_the_guarded_roots_is_refused() {
         "use crate::guarded::support::*;",
         "use worth_foundational::facade::*;",
         "mod tests { use super::*; }",
+        "use crate::guarded as g; use g::support::*;",
+        "use std::collections as c; use c::*;",
     ] {
         assert!(findings(legal).is_empty(), "{legal}");
     }

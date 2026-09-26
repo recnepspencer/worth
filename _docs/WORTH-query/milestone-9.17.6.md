@@ -1198,8 +1198,9 @@ parent facade is caught too. A value restricted to a module binds only guarded c
 inside that module. Test-only items, and every file of a `#[cfg(test)]` module,
 bind nothing; a file's name alone never makes it a test. Bare names are not traced,
 so a crate-relative glob import may not reach outside the guarded roots, where a
-facade could re-export kernel values. A glob written through a local `use … as`
-alias is not yet resolved to its target; until it is, the law does not cover it.
+facade could re-export kernel values. A path or glob written through a name a
+`use` binds, renamed or not, resolves through that binding, so an alias reaches only
+what its target reaches.
 
 Status: an explicit cancellation ends a live instance where it stands, through
 `prepare_workflow_instance_cancellation` on the workflow entry, authorized by the
