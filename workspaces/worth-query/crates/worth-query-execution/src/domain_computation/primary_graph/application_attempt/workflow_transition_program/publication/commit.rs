@@ -329,11 +329,21 @@ fn project_approval(
     receipt
         .committed_changes()
         .committed_field_values(*entity, &required)?;
-    let version = receipt.committed_changes().commit_reference().version_id;
-    let exact_targets = |kind, from, maximum_work_units| {
-        runtime
-            .read_truth()
-            .bounded_outgoing_relations_of_kind_at_version(from, kind, version, maximum_work_units)
+    // The committing branch's own state: a fork's approval never lands in
+    // main's edition.
+    let committed = runtime
+        .read_truth()
+        .try_project_historical_version(receipt.committed_changes().commit_reference().version_id)
+        .ok()?;
+    // One unit for the adjacency list and two per expected relation: an
+    // unexpected extra relation exhausts the bound and fails closed.
+    let exact_targets = |kind, from, expected: usize| {
+        committed
+            .bounded_outgoing_relations_for_frontier(
+                &std::collections::BTreeSet::from([from]),
+                kind,
+                expected.saturating_mul(2).saturating_add(1),
+            )
             .ok()
             .map(|read| {
                 read.into_records()
@@ -342,19 +352,16 @@ fn project_approval(
                     .collect::<Vec<_>>()
             })
     };
-    if exact_targets(approval.transition_relation, transition, 2).as_deref() != Some(&[*entity])
-        || exact_targets(approval.proposal_relation, *entity, 2).as_deref()
+    if exact_targets(approval.transition_relation, transition, 1).as_deref() != Some(&[*entity])
+        || exact_targets(approval.proposal_relation, *entity, 1).as_deref()
             != Some(&[approval.proposal])
     {
         return None;
     }
     let mut expected_evidence = approval.evidence.to_vec();
     expected_evidence.sort_unstable();
-    let mut actual_evidence = exact_targets(
-        approval.evidence_relation,
-        *entity,
-        expected_evidence.len().saturating_mul(2).saturating_add(1),
-    )?;
+    let mut actual_evidence =
+        exact_targets(approval.evidence_relation, *entity, expected_evidence.len())?;
     actual_evidence.sort_unstable();
     if actual_evidence != expected_evidence {
         return None;

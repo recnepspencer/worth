@@ -26,6 +26,7 @@ pub fn accept_assessment(
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
     runtime
         .request(&principal, &scope)
+        .on_branch(instance.branch())
         .mutate(WorkflowAdvanceIntent {
             input: WorkflowAdvanceInput {
                 part_identity: PART_IDENTITY.to_owned(),
@@ -53,6 +54,7 @@ pub fn accept_early_assessment(
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
     runtime
         .request(&principal, &scope)
+        .on_branch(instance.branch())
         .mutate(WorkflowAdvanceIntent {
             input: WorkflowAdvanceInput {
                 part_identity: PART_IDENTITY.to_owned(),
@@ -75,8 +77,10 @@ pub fn settle_early_assessment_for(
     let runtime = application.runtime();
     let scope = request_scope();
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
+    let branch = instance.branch();
     let mut handle = runtime
         .request(&principal, &scope)
+        .on_branch(branch)
         .mutate(WorkflowAdvanceIntent {
             input: WorkflowAdvanceInput {
                 part_identity: PART_IDENTITY.to_owned(),
@@ -95,7 +99,7 @@ pub fn settle_early_assessment_for(
         .start()
         .expect("the installed early assessment demand must start");
     match handle
-        .settle(&runtime.request(&principal, &scope))
+        .settle(&runtime.request(&principal, &scope).on_branch(branch))
         .expect("the installed assessment producer must advance")
     {
         WorthQueryWorkflowAssessmentDemandProgress::Settled(settled) => settled,
@@ -116,6 +120,7 @@ pub fn prepare_early_assessment_denial(
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
     match runtime
         .request(&principal, &scope)
+        .on_branch(instance.branch())
         .mutate(WorkflowAdvanceIntent {
             input: WorkflowAdvanceInput {
                 part_identity: PART_IDENTITY.to_owned(),
@@ -147,8 +152,10 @@ pub fn settle_assessment_for(
     let runtime = application.runtime();
     let scope = request_scope();
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
+    let branch = instance.branch();
     let mut handle = runtime
         .request(&principal, &scope)
+        .on_branch(branch)
         .mutate(WorkflowAdvanceIntent {
             input: WorkflowAdvanceInput {
                 part_identity: PART_IDENTITY.to_owned(),
@@ -167,7 +174,7 @@ pub fn settle_assessment_for(
         .start()
         .expect("the installed assessment output demand must start");
     match handle
-        .settle(&runtime.request(&principal, &scope))
+        .settle(&runtime.request(&principal, &scope).on_branch(branch))
         .expect("the installed assessment producer must advance")
     {
         WorthQueryWorkflowAssessmentDemandProgress::Settled(settled) => settled,
@@ -187,6 +194,7 @@ pub fn spoofed_assessment_denial(
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
     let request = runtime
         .request(&principal, &scope)
+        .on_branch(instance.branch())
         .mutate(WorkflowAdvanceIntent {
             input: WorkflowAdvanceInput {
                 part_identity: PART_IDENTITY.to_owned(),

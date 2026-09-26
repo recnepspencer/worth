@@ -46,7 +46,7 @@ pub use declaration::{
 pub(crate) use definition::definition_limits;
 pub use definition::{
     advance_instance, approval_retry_definition, approve_instance, authoring_intent,
-    condition_terminal_definition, condition_terminal_draft, migrate_instance,
+    condition_terminal_definition, condition_terminal_draft, continue_on_fork, migrate_instance,
     proposal_terminal_definition, propose_authoring_instance,
     propose_authoring_instance_with_dimension, propose_instance, propose_instance_on_branch,
     publish_definition, repeated_proposal_definition, reproposing_geometry_definition,

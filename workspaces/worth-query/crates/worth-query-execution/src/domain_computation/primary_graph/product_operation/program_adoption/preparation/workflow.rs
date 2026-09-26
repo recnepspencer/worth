@@ -35,11 +35,6 @@ pub(super) fn inventory<Schema: ApplicationSchema>(
     let graph = &application.primary_provider.graph;
     let request = WorkflowAdoptionInventoryRequest {
         layout: graph.layout.workflow(),
-        version: selected
-            .product()
-            .relational_basis()
-            .observation()
-            .version_id(),
         branch_occurrence: selected.product().product_branch().occurrence_ordinal(),
         coverage: &application.workflow_coverage,
         requirements: &requirements,
@@ -47,9 +42,11 @@ pub(super) fn inventory<Schema: ApplicationSchema>(
         target,
         maximum_work_units,
     };
-    graph
-        .with_runtime(|runtime| inventory_workflows(runtime, &request))
-        .map_err(|denial| workflow_read_denial(denial, maximum_work_units, 0))
+    graph.with_runtime(|runtime| {
+        let branch = super::selection::branch_view(runtime, selected.product().relational_basis())?;
+        inventory_workflows(branch, &request)
+            .map_err(|denial| workflow_read_denial(denial, maximum_work_units, 0))
+    })
 }
 
 /// Admits the caller's workflow choices against the fresh inventory. An empty

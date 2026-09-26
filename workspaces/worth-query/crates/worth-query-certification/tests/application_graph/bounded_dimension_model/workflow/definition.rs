@@ -32,12 +32,15 @@ use super::{
     WorkflowInstanceStartInput, WorkflowInstanceStartIntent,
 };
 
+#[path = "definition/authoring.rs"]
+mod authoring;
+pub use authoring::{authoring_intent, publish_definition, retire_definition};
 #[path = "definition/instance.rs"]
 mod instance;
 pub use instance::{
-    advance_instance, approve_instance, migrate_instance, propose_authoring_instance,
-    propose_authoring_instance_with_dimension, propose_instance, propose_instance_on_branch,
-    start_instance,
+    advance_instance, approve_instance, continue_on_fork, migrate_instance,
+    propose_authoring_instance, propose_authoring_instance_with_dimension, propose_instance,
+    propose_instance_on_branch, start_instance,
 };
 
 pub fn reviewed_geometry_definition(
@@ -330,58 +333,6 @@ pub fn bind_definition(
         .workflow_spec()
         .bind_definition(definition)
         .expect("the workflow definition binds to installed vocabulary")
-}
-
-pub fn publish_definition(
-    application: &BoundedDimensionWorkflowRuntime,
-    definition: ValidatedWorkflowDefinition<ReviewedGeometryWorkflow>,
-    expected_predecessor: WorkflowDefinitionExpectedPredecessor,
-    idempotency: u64,
-) -> Result<
-    WorkflowDefinitionPublicationOutcome,
-    WorthQueryWorkflowDefinitionPublicationPreparationDenial,
-> {
-    let contract = bind_definition(application, definition);
-    let runtime = application.runtime();
-    let scope = request_scope();
-    let principal = authenticate_operator(runtime.installed_schema(), &scope);
-    runtime
-        .request(&principal, &scope)
-        .mutate(authoring_intent())
-        .without_source()
-        .idempotency(&idempotency)
-        .prepare_workflow_publication(contract, expected_predecessor)
-        .map(|request| request.execute())
-}
-
-pub fn retire_definition(
-    application: &BoundedDimensionWorkflowRuntime,
-    definition: PublishedWorkflowDefinitionRef,
-    idempotency: u64,
-) -> Result<
-    WorkflowDefinitionRetirementOutcome,
-    WorthQueryWorkflowDefinitionRetirementPreparationDenial,
-> {
-    let runtime = application.runtime();
-    let scope = request_scope();
-    let principal = authenticate_operator(runtime.installed_schema(), &scope);
-    runtime
-        .request(&principal, &scope)
-        .mutate(authoring_intent())
-        .without_source()
-        .idempotency(&idempotency)
-        .prepare_workflow_definition_retirement(application, definition)
-        .map(|request| request.execute())
-}
-
-/// The authoring request every definition publication and retirement presents.
-pub fn authoring_intent() -> WorkflowDefinitionAuthoringIntent {
-    WorkflowDefinitionAuthoringIntent {
-        input: WorkflowDefinitionAuthoringInput {
-            identity: PART_IDENTITY.to_owned(),
-            dimension: 8,
-        },
-    }
 }
 
 pub(crate) fn definition_limits() -> ApplicationWorkflowDefinitionLimits {

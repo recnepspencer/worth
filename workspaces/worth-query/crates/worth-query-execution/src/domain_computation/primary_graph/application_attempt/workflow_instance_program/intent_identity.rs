@@ -13,32 +13,31 @@ pub(super) fn instance_identity(
 }
 
 /// A successor's identity also names the instance its migration ends, so
-/// two sources never mint the same successor.
+/// two sources never mint the same successor. A fork continuation names the
+/// fork too, so the same source continued on two forks mints two successors.
 pub(super) fn migration_identity(
     resumed: &CompiledWorkflowDefinition,
     source: EntityId,
+    fork: Option<u64>,
     subject: EntityId,
     start_key_identity: [u8; 32],
 ) -> Result<(String, [u8; 32]), ()> {
-    identity(
-        resumed,
-        subject,
-        start_key_identity,
-        vec![
-            (
-                "migration.source.partition",
-                source.partition_value().to_string(),
-            ),
-            (
-                "migration.source.slot",
-                source.local_slot_value().to_string(),
-            ),
-            (
-                "migration.source.generation",
-                source.generation_value().to_string(),
-            ),
-        ],
-    )
+    let mut material = vec![
+        (
+            "migration.source.partition",
+            source.partition_value().to_string(),
+        ),
+        (
+            "migration.source.slot",
+            source.local_slot_value().to_string(),
+        ),
+        (
+            "migration.source.generation",
+            source.generation_value().to_string(),
+        ),
+    ];
+    material.extend(fork.map(|occurrence| ("continuation.fork", occurrence.to_string())));
+    identity(resumed, subject, start_key_identity, material)
 }
 
 fn identity(

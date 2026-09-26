@@ -171,6 +171,48 @@ where
         })
     }
 
+    /// Continues a fork's copy of `instance`, started on another branch, as a
+    /// new instance on the fork's current `target` definition, beginning at
+    /// the node `resume_at` names. Issue it on the fork.
+    ///
+    /// A fork copies history, not execution: the copy's approvals and
+    /// receipts open nothing. The continuation obeys the migration law and
+    /// ends only the fork's copy; the instance on its own branch is
+    /// untouched. `target` may be the copied definition itself, named by the
+    /// reference issued on the branch the fork was taken from or by its
+    /// `held_on(fork)` reference, while the fork holds it current.
+    pub fn prepare_workflow_fork_continuation<'workflow, Spec, Program: 'workflow>(
+        self,
+        workflow: impl Into<WorthQueryWorkflowVocabulary<'workflow, Schema, Spec, Program>>,
+        instance: PublishedWorkflowInstanceRef,
+        target: PublishedWorkflowDefinitionRef,
+        resume_at: &str,
+    ) -> Result<
+        WorthQueryWorkflowInstanceStartRequest<
+            'application,
+            Schema,
+            MutationOperation<Schema, Intent>,
+            MutationInput<Schema, Intent>,
+            MutationScope<Schema, IntentBinding<Schema, Intent>>,
+        >,
+        WorthQueryWorkflowInstanceStartPreparationDenial,
+    >
+    where
+        Spec: ApplicationWorkflowSpec<Schema = Schema>,
+    {
+        self.prepare_instance(workflow, |selected, installed, key, admission| {
+            WorthQueryWorkflowInstanceStartAdapter::prepare_fork_continuation::<
+                Schema,
+                <IntentBinding<Schema, Intent> as ApplicationCapabilityMutationBinding<Schema>>::Capability,
+                MutationOperation<Schema, Intent>,
+                MutationInput<Schema, Intent>,
+                MutationScope<Schema, IntentBinding<Schema, Intent>>,
+                Spec,
+                Program,
+            >(selected, installed, instance, target, resume_at, key, admission)
+        })
+    }
+
     #[allow(clippy::type_complexity)]
     fn prepare_instance<'workflow, Spec, Program: 'workflow>(
         mut self,

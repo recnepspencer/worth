@@ -30,16 +30,33 @@ pub(super) fn approval_journey(
         WorkflowInstanceStartOutcome::Started(performed) => performed.instance().clone(),
         other => panic!("expected a started approval instance, got {other:?}"),
     };
-    let proposal = proposal::published_proposal(&application, instance.clone(), key + 2);
+    let (proposal, required, evidence) = approval_requirement(&application, instance.clone(), key);
+    (
+        application,
+        definition.definition().clone(),
+        instance,
+        proposal,
+        required,
+        evidence,
+    )
+}
+
+/// Proposes, collects both assessments and joins them, leaving `instance`
+/// awaiting its approval on its own branch. Uses keys `key + 2..=key + 8`.
+pub(super) fn approval_requirement(
+    application: &BoundedDimensionWorkflowRuntime,
+    instance: PublishedWorkflowInstanceRef,
+    key: u64,
+) -> (
+    PublishedWorkflowProposalRef,
+    RequiredWorkflowApproval,
+    Vec<worth_relational::facade::identity::EntityId>,
+) {
+    let proposal = proposal::published_proposal(application, instance.clone(), key + 2);
     let mut evidence = Vec::new();
     for offset in [3, 5] {
-        let settlement = settle_assessment(&application, instance.clone(), key + offset);
-        match accept_assessment(
-            &application,
-            instance.clone(),
-            &settlement,
-            key + offset + 1,
-        ) {
+        let settlement = settle_assessment(application, instance.clone(), key + offset);
+        match accept_assessment(application, instance.clone(), &settlement, key + offset + 1) {
             Ok(WorkflowProgressOutcome::Completed(performed)) => evidence.push(
                 performed
                     .assessment_evidence()
@@ -49,22 +66,15 @@ pub(super) fn approval_journey(
             other => panic!("expected accepted assessment, got {other:?}"),
         }
     }
-    match advance_instance(&application, instance.clone(), key + 7) {
+    match advance_instance(application, instance.clone(), key + 7) {
         Ok(WorkflowProgressOutcome::Completed(_)) => {}
         other => panic!("expected completed evidence join, got {other:?}"),
     }
-    let required = match advance_instance(&application, instance.clone(), key + 8)
+    let required = match advance_instance(application, instance.clone(), key + 8)
         .expect("approval requirement must prepare")
     {
         WorkflowProgressOutcome::AwaitingApproval(required) => required,
         other => panic!("expected an approval requirement, got {other:?}"),
     };
-    (
-        application,
-        definition.definition().clone(),
-        instance,
-        proposal,
-        required,
-        evidence,
-    )
+    (proposal, required, evidence)
 }

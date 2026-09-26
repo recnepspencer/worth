@@ -17,7 +17,7 @@ pub(super) struct HistoricalProjectionReader<'view, 'runtime> {
     basis: &'view HistoricalVisibilityBasis,
 }
 
-enum HistoricalProjectionStorage<'view> {
+pub(super) enum HistoricalProjectionStorage<'view> {
     Retained(&'view Arc<RelationalBranchRoot>),
     EmptyGenesis,
 }
@@ -196,14 +196,14 @@ impl<'view, 'runtime> HistoricalProjectionReader<'view, 'runtime> {
         records
     }
 
-    fn storage(&self) -> HistoricalProjectionStorage<'_> {
+    pub(super) fn storage(&self) -> HistoricalProjectionStorage<'_> {
         match self.basis.root() {
             Some(root) => HistoricalProjectionStorage::Retained(root),
             None => HistoricalProjectionStorage::EmptyGenesis,
         }
     }
 
-    fn registry(&self) -> &crate::schema::data::RelationalSchemaRegistry {
+    pub(super) fn registry(&self) -> &crate::schema::data::RelationalSchemaRegistry {
         self.basis
             .root()
             .map_or(&self.view.runtime.config.schema.registry, |root| {

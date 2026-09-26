@@ -148,7 +148,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         entity,
         kind,
         &layout.instance.branch_occurrence,
-        AspectValue::UInt64(instance.branch().occurrence_ordinal()),
+        AspectValue::UInt64(instance.started_occurrence()),
         &mut facts,
     )?;
     instance_binding::deny_ended(runtime, snapshot, layout, entity)?;

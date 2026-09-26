@@ -7,6 +7,7 @@ mod exact_basis_reads;
 mod field_revisions;
 mod frontier_adjacency;
 mod historical_basis_reads;
+mod kind_scans;
 mod projection_records;
 mod query_locus_projection;
 mod read_record_identity_ordering;

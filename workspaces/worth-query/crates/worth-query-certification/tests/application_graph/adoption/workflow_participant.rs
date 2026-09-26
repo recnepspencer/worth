@@ -152,7 +152,7 @@ fn choices_made_against_a_moved_inventory_are_refused() {
     ));
 }
 
-fn live_instance_on_first_program(
+pub(super) fn live_instance_on_first_program(
     key: u64,
 ) -> (
     BoundedDimensionWorkflowRuntime,
@@ -178,7 +178,7 @@ fn live_instance_on_first_program(
     (application, definition, instance)
 }
 
-fn expect_started(
+pub(super) fn expect_started(
     outcome: Result<WorkflowInstanceStartOutcome, WorthQueryWorkflowInstanceStartPreparationDenial>,
 ) -> PublishedWorkflowInstanceRef {
     match outcome.expect("the instance prepares") {

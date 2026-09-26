@@ -9,6 +9,12 @@
 //! successor can never run that operation, or any other with its meaning,
 //! again. An approval that has not yet been consumed by its receipted
 //! operation blocks migration; it settles under the source.
+//!
+//! A fork continuation obeys the same law for a fork's copy of an instance.
+//! Its successor may keep the copied definition while the fork still holds
+//! it current, since it continues the work on another branch rather than
+//! moving it to a newer definition. New work never commits under a
+//! definition the fork has superseded or retired.
 
 use worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome;
 use worth_relational::facade::identity::EntityId;
@@ -29,14 +35,28 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowPerformedEffect 
     pub(in crate::domain_computation::primary_graph) path: String,
 }
 
+/// How a successor relates to the instance whose work it takes over.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(in crate::domain_computation::primary_graph) enum WorkflowSuccession {
+    /// The source's own branch, onto a newer definition of its workflow.
+    Migration,
+    /// A fork's copy of an instance started on another branch, onto the
+    /// fork's current definition of its workflow.
+    ForkContinuation,
+}
+
 /// Admits `resumed`, the target definition as the successor runs it.
 pub(in crate::domain_computation::primary_graph) fn admit_workflow_migration(
+    succession: WorkflowSuccession,
     source: &CompiledWorkflowDefinition,
     resumed: &CompiledWorkflowDefinition,
     settled: &[SettledWorkflowTransition],
     performed: &[WorkflowPerformedEffect],
 ) -> Result<(), WorthQueryApplicationAttemptDenial> {
-    if resumed.lineage() != source.lineage() || resumed.definition() == source.definition() {
+    if resumed.lineage() != source.lineage() {
+        return Err(unmapped("a successor continues the same workflow"));
+    }
+    if succession == WorkflowSuccession::Migration && resumed.definition() == source.definition() {
         return Err(unmapped(
             "a migration target is another definition of the same workflow",
         ));

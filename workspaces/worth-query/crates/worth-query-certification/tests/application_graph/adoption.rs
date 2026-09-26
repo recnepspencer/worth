@@ -30,7 +30,11 @@ mod support_retirement;
 mod support_retirement_races;
 #[path = "adoption/workflow_custody.rs"]
 mod workflow_custody;
+#[path = "adoption/workflow_identity.rs"]
+mod workflow_identity;
 #[path = "adoption/workflow_participant.rs"]
 mod workflow_participant;
+#[path = "adoption/workflow_participant_races.rs"]
+mod workflow_participant_races;
 #[path = "adoption/workflow_vocabulary.rs"]
 mod workflow_vocabulary;

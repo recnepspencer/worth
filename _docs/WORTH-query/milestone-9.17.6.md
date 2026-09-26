@@ -715,6 +715,42 @@ history. Adoption inventories a successor that inherits effects as performed, of
 only carry, and never inventories the migrated source; inherited effects never settle
 the successor's own approvals.
 
+The fork continuation law, as delivered. A fork copies an instance's history, never
+its execution: the copy keeps the occurrence it was started on and stays historical on
+the fork. Work continues there only as a fork continuation, the migration law applied
+to the fork's copy and issued on the fork. It ends only that copy, and the instance on
+its own branch is untouched and still needs its own decision there. The successor
+then runs on the fork like any instance: its proposal, evidence, approval and effect
+are the fork's own, and none reaches the source's branch. The target may be the
+source's own definition, or any definition current on the fork, including one the
+fork copied; like a migration, a target not current on the fork comes back
+stale, and a definition published on another branch after the fork is not the fork's
+to continue under. A continuation on the instance's own branch is refused as an
+affinity mismatch, since migration is the only way to move an instance forward there,
+and so is one naming a third branch, such as a sibling fork's instance or definition.
+Copied receipts carry as prior-effect history, so the fork never repeats an effect the
+source performed, and a copied approval still awaiting its operation is refused as
+unsettled until the operation settles under the source on its own branch. The
+continuation's identity binds the fork occurrence, so it replays exactly and a second
+continuation of the same copy is refused as migrated. Program adoption reads the
+selected branch's own root, so a fork's inventory lists its successors and never the
+copies it holds or its parent's later writes. A copied definition is named on the
+fork with `held_on`, which grants nothing: the fork's own truth decides its new starts,
+its successor and its retirement exactly as for a definition the fork published, and
+the branch it was copied from keeps its own. A definition the fork never held, such as
+a sibling's successor, cannot compile or retire there, and a successor over it is stale.
+
+Adoption races and identity, as delivered. Preparation binds the exact workflow
+inventory, so an instance started between preparation and publication makes the
+publication stale; re-preparing with the old choices is refused with the fresh
+inventory, which lists the new instance for its own disposition. A fork taken while an
+instance waits adopts without deciding that instance, since the fork holds only its
+historical copy; the instance keeps its disposition on its own branch and still
+progresses there. Equal-content publications are distinct definitions, and their
+instances stay distinct through a carry: each progresses and completes on its own. A
+progression prepared under the source program cannot commit after adoption, and the
+carried instance progresses only through the target program's binding.
+
 ## Required Public Experience
 
 These target Rust examples compile in the existing host/decl audience tests when

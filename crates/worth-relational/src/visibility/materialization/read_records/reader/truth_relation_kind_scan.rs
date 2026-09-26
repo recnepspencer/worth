@@ -34,15 +34,33 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         maximum_work_units: usize,
     ) -> Result<BoundedRelationKindTruthRead, RelationKindTruthReadDenial> {
         let state = self.runtime.storage_access().current_edition();
-        let registry = &self.runtime.config.schema.registry;
+        self.bounded_relations_of_kind_in_state(
+            &state,
+            &self.runtime.config.schema.registry,
+            kind_id,
+            KindScanVisibility::for_version(self.runtime, version_id),
+            maximum_work_units,
+        )
+    }
+
+    /// Reads the relations of one kind in one state, such as a branch root,
+    /// under the same bound and cost model as the current-edition scan.
+    pub(crate) fn bounded_relations_of_kind_in_state(
+        &self,
+        state: &(impl PartitionAccess + ?Sized),
+        registry: &crate::schema::data::RelationalSchemaRegistry,
+        kind_id: crate::identity::data::KindId,
+        visibility: KindScanVisibility,
+        maximum_work_units: usize,
+    ) -> Result<BoundedRelationKindTruthRead, RelationKindTruthReadDenial> {
         let mut scan = RelationKindScan::new(maximum_work_units, true);
         for partition_id in state.partition_ids() {
             self.scan_relation_kind_in_partition(
-                &state,
+                state,
                 registry,
                 partition_id,
                 kind_id,
-                version_id,
+                visibility,
                 &mut scan,
             )?;
         }
@@ -55,52 +73,55 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         registry: &crate::schema::data::RelationalSchemaRegistry,
         partition_id: crate::identity::data::PartitionId,
         kind_id: crate::identity::data::KindId,
-        version_id: crate::identity::data::VersionId,
+        visibility: KindScanVisibility,
         scan: &mut RelationKindScan,
     ) -> Result<(), RelationKindTruthReadDenial> {
         let current_version = VersionSource::current_version_id(self.runtime);
         let Some(partition) = state.get_partition(partition_id) else {
             return Ok(());
         };
-        if version_id == current_version {
-            for slot in partition.relation_arena.live_bitset.iter_set_slots() {
-                scan.examine_slot()?;
-                if !slot_kind_matches_current(&partition.relation_arena, slot, kind_id) {
-                    continue;
+        match visibility {
+            KindScanVisibility::Live => {
+                for slot in partition.relation_arena.live_bitset.iter_set_slots() {
+                    scan.examine_slot()?;
+                    if !slot_kind_matches_current(&partition.relation_arena, slot, kind_id) {
+                        continue;
+                    }
+                    scan.reserve_with(partition_id, slot, || {
+                        materialize_current_authoritative_relation_record(
+                            registry,
+                            partition,
+                            partition_id,
+                            slot,
+                        )
+                    })?;
                 }
-                scan.reserve_with(partition_id, slot, || {
-                    materialize_current_authoritative_relation_record(
-                        registry,
-                        partition,
-                        partition_id,
-                        slot,
-                    )
-                })?;
             }
-        } else {
-            for slot in partition.relation_arena.occupied_slots() {
-                scan.examine_slot()?;
-                self.runtime.services.instrumentation.count(|counters| {
-                    counters.visibility_relation_slot_scans += 1;
-                });
-                if !relation_slot_matches_kind_at_version(
-                    partition,
-                    slot,
-                    kind_id,
-                    version_id,
-                    current_version,
-                ) {
-                    continue;
-                }
-                scan.reserve_with(partition_id, slot, || {
-                    materialize_authoritative_relation_record_at_version(
-                        registry,
+            KindScanVisibility::AtVersion(version_id) => {
+                for slot in partition.relation_arena.occupied_slots() {
+                    scan.examine_slot()?;
+                    self.runtime.services.instrumentation.count(|counters| {
+                        counters.visibility_relation_slot_scans += 1;
+                    });
+                    if !relation_slot_matches_kind_at_version(
                         partition,
-                        partition_id,
                         slot,
+                        kind_id,
                         version_id,
-                    )
-                })?;
+                        current_version,
+                    ) {
+                        continue;
+                    }
+                    scan.reserve_with(partition_id, slot, || {
+                        materialize_authoritative_relation_record_at_version(
+                            registry,
+                            partition,
+                            partition_id,
+                            slot,
+                            version_id,
+                        )
+                    })?;
+                }
             }
         }
         Ok(())

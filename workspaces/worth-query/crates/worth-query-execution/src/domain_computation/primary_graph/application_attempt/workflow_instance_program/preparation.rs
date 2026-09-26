@@ -14,6 +14,7 @@ use super::{
 use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryCompleteApplicationReadSet, WorthQueryProjectedApplicationMutation,
 };
+use crate::domain_computation::primary_graph::workflow::instance::WorkflowSuccession;
 use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedApplicationOperation, WorthQueryApplicationAttemptDenial,
     WorthQueryApplicationIdempotencyBinding, WorthQueryOperationProjectionDenial,
@@ -93,6 +94,7 @@ where
     >(
         &self,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+        succession: WorkflowSuccession,
         source: PublishedWorkflowInstanceRef,
         target: PublishedWorkflowDefinitionRef,
         resume_at: &str,
@@ -110,6 +112,7 @@ where
         self.begin_instance_read_set(installed, admission)?
             .materialize_workflow_instance_migration::<Capability, Spec, Program>(
                 installed,
+                succession,
                 source,
                 target,
                 resume_at,
@@ -232,6 +235,40 @@ impl WorthQueryWorkflowInstanceStartAdapter {
     {
         selected.prepare_workflow_instance_migration::<Capability, Operation, Input, Scope, Spec, Program>(
             installed,
+            WorkflowSuccession::Migration,
+            source,
+            target,
+            resume_at,
+            start_key_identity,
+            admission,
+        )
+    }
+
+    /// Prepares a successor for the selected fork's copy of `source`, an
+    /// instance started on another branch, on the fork's current `target`
+    /// definition, resumed at `resume_at`.
+    #[allow(clippy::too_many_arguments)]
+    pub fn prepare_fork_continuation<Schema, Capability, Operation, Input, Scope, Spec, Program>(
+        selected: &WorthQuerySelectedProductOperation<'_, Schema>,
+        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+        source: PublishedWorkflowInstanceRef,
+        target: PublishedWorkflowDefinitionRef,
+        resume_at: &str,
+        start_key_identity: [u8; 32],
+        admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+    ) -> Result<
+        PreparedWorkflowInstanceStart<Schema, Operation, Input, Scope>,
+        WorkflowInstancePreparationDenial,
+    >
+    where
+        Schema: ApplicationSchema,
+        Capability: ApplicationCapabilityMarkerIdentity<Schema = Schema> + 'static,
+        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
+        Spec: ApplicationWorkflowSpec<Schema = Schema>,
+    {
+        selected.prepare_workflow_instance_migration::<Capability, Operation, Input, Scope, Spec, Program>(
+            installed,
+            WorkflowSuccession::ForkContinuation,
             source,
             target,
             resume_at,

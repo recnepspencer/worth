@@ -10,6 +10,7 @@ pub fn start_instance(
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
     runtime
         .request(&principal, &scope)
+        .on_branch(definition.branch())
         .mutate(WorkflowInstanceStartIntent {
             input: WorkflowInstanceStartInput {
                 part_identity: PART_IDENTITY.to_owned(),
@@ -31,6 +32,7 @@ pub fn advance_instance(
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
     runtime
         .request(&principal, &scope)
+        .on_branch(instance.branch())
         .mutate(WorkflowAdvanceIntent {
             input: WorkflowAdvanceInput {
                 part_identity: PART_IDENTITY.to_owned(),
@@ -55,6 +57,7 @@ pub fn approve_instance(
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
     let signing = runtime
         .request(&principal, &scope)
+        .on_branch(instance.branch())
         .mutate(WorkflowApprovalIntent {
             input: WorkflowAdvanceInput {
                 part_identity: PART_IDENTITY.to_owned(),
@@ -103,6 +106,7 @@ pub fn propose_authoring_instance_with_dimension(
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
     runtime
         .request(&principal, &scope)
+        .on_branch(instance.branch())
         .mutate(WorkflowDefinitionAuthoringIntent {
             input: WorkflowDefinitionAuthoringInput {
                 identity: PART_IDENTITY.to_owned(),
@@ -160,5 +164,32 @@ pub fn migrate_instance(
         .without_source()
         .idempotency(&idempotency)
         .prepare_workflow_instance_migration(application, instance, target, resume_at)
+        .map(|request| request.execute())
+}
+
+/// Continues the copy `fork` holds of `instance`, started on another branch,
+/// as a successor on the fork's current `target`, at `resume_at`.
+pub fn continue_on_fork(
+    application: &BoundedDimensionWorkflowRuntime,
+    fork: worth_query_host::facade::product::WorthQueryProductBranch,
+    instance: worth_query_host::facade::application_entry::PublishedWorkflowInstanceRef,
+    target: PublishedWorkflowDefinitionRef,
+    resume_at: &str,
+    idempotency: u64,
+) -> Result<WorkflowInstanceStartOutcome, WorthQueryWorkflowInstanceStartPreparationDenial> {
+    let runtime = application.runtime();
+    let scope = request_scope();
+    let principal = authenticate_operator(runtime.installed_schema(), &scope);
+    runtime
+        .request(&principal, &scope)
+        .on_branch(fork)
+        .mutate(WorkflowInstanceStartIntent {
+            input: WorkflowInstanceStartInput {
+                part_identity: PART_IDENTITY.to_owned(),
+            },
+        })
+        .without_source()
+        .idempotency(&idempotency)
+        .prepare_workflow_fork_continuation(application, instance, target, resume_at)
         .map(|request| request.execute())
 }

@@ -12,7 +12,7 @@ pub(in crate::domain_computation::primary_graph) use adoption_inventory::{
 };
 pub(in crate::domain_computation::primary_graph) use facts::visit_instance_start_facts;
 pub(in crate::domain_computation::primary_graph) use migration::{
-    admit_workflow_migration, WorkflowPerformedEffect,
+    admit_workflow_migration, WorkflowPerformedEffect, WorkflowSuccession,
 };
 pub use progression::WorthQueryWorkflowInstanceProgressCounters;
 pub(in crate::domain_computation::primary_graph) use progression::{

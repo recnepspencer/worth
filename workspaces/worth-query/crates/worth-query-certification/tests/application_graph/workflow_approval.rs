@@ -42,6 +42,8 @@ mod commit_boundary;
 mod custody;
 #[path = "workflow_approval/effect_currentness.rs"]
 mod effect_currentness;
+#[path = "workflow_approval/fork_continuation.rs"]
+mod fork_continuation;
 #[path = "workflow_approval/instance_migration.rs"]
 mod instance_migration;
 #[path = "workflow_approval/instance_migration_law.rs"]

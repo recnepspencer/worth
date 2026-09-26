@@ -208,6 +208,7 @@ pub fn propose_on_second(
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
     runtime
         .request(&principal, &scope)
+        .on_branch(instance.branch())
         .mutate(WorkflowDefinitionAuthoringIntent {
             input: WorkflowDefinitionAuthoringInput {
                 identity: PART_IDENTITY.to_owned(),
@@ -238,8 +239,10 @@ pub fn recollect_on_second(
             part_identity: PART_IDENTITY.to_owned(),
         },
     };
+    let branch = instance.branch();
     let mut handle = runtime
         .request(&principal, &scope)
+        .on_branch(branch)
         .mutate(intent())
         .without_source()
         .idempotency(&idempotency)
@@ -254,7 +257,7 @@ pub fn recollect_on_second(
         .start()
         .expect("the P1 assessment demand starts");
     let settlement = match handle
-        .settle(&runtime.request(&principal, &scope))
+        .settle(&runtime.request(&principal, &scope).on_branch(branch))
         .expect("the P1 assessment producer advances")
     {
         WorthQueryWorkflowAssessmentDemandProgress::Settled(settled) => settled,
@@ -264,6 +267,7 @@ pub fn recollect_on_second(
     };
     runtime
         .request(&principal, &scope)
+        .on_branch(branch)
         .mutate(intent())
         .without_source()
         .idempotency(&(idempotency + 1))

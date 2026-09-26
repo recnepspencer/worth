@@ -7,8 +7,8 @@ use std::collections::BTreeMap;
 use sha2::{Digest, Sha256};
 use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
 use worth_query_installation::facade::WorthQueryProgramAdoptionRequirements;
-use worth_relational::facade::identity::{EntityId, RelationId, VersionId};
-use worth_relational::facade::runtime::RelationalRuntime;
+use worth_relational::facade::identity::{EntityId, RelationId};
+use worth_relational::facade::runtime::VisibilityProjectionView;
 
 use super::super::definition::{read_definition_dependencies, WorkflowDefinitionDependencies};
 use super::super::instance::read_live_instances;
@@ -25,7 +25,6 @@ const DIGEST_DOMAIN: &[u8] = b"worth-query/workflow-adoption-inventory/1\0";
 
 pub(in crate::domain_computation::primary_graph) struct WorkflowAdoptionInventoryRequest<'a> {
     pub(in crate::domain_computation::primary_graph) layout: &'a WorthQueryWorkflowLayout,
-    pub(in crate::domain_computation::primary_graph) version: VersionId,
     pub(in crate::domain_computation::primary_graph) branch_occurrence: u64,
     pub(in crate::domain_computation::primary_graph) coverage:
         &'a WorkflowVocabularyCoverageRegistry,
@@ -43,12 +42,11 @@ struct ReadDefinition {
 }
 
 pub(in crate::domain_computation::primary_graph) fn inventory_workflows(
-    runtime: &RelationalRuntime,
+    branch: VisibilityProjectionView<'_>,
     request: &WorkflowAdoptionInventoryRequest<'_>,
 ) -> Result<WorthQueryWorkflowAdoptionInventory, WorkflowAdoptionReadDenial> {
     let layout = request.layout;
-    let mut truth =
-        WorkflowAdoptionTruth::new(runtime, request.version, request.maximum_work_units);
+    let mut truth = WorkflowAdoptionTruth::new(branch, request.maximum_work_units);
     let mut read = BTreeMap::<EntityId, ReadDefinition>::new();
     let mut definitions = Vec::new();
     for current in truth.relations_of_kind(layout.current_definition_relation)? {

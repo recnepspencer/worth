@@ -1,14 +1,20 @@
 //! One bounded owner-truth read shared by every workflow adoption inventory
 //! step, so the whole inventory spends a single `maximum_selection_work`
 //! allowance and refuses rather than truncating.
+//!
+//! Every read goes through the selected branch's own root, so a fork's
+//! inventory sees the fork's writes and never its parent's later ones.
 
-use worth_foundational::facade::{
-    AspectFieldLocator, AspectValue, ContractValidatedAspectValueView, InternedString,
-};
-use worth_relational::facade::identity::{EntityId, KindId, PartitionId, VersionId};
+use std::cell::Cell;
+use std::collections::BTreeSet;
+
+use worth_foundational::facade::{AspectFieldLocator, AspectValue, InternedString};
+use worth_relational::facade::identity::{EntityId, KindId, PartitionId};
 use worth_relational::facade::runtime::{
-    EntityReadRecord, RelationKindTruthReadDenial, RelationReadRecord, RelationalRuntime,
+    ProjectionAspectScope, RelationKindTruthReadDenial, RelationReadRecord,
+    VisibilityProjectionView,
 };
+use worth_relational::facade::storage::RecordLifecycleState;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum WorkflowAdoptionReadDenial {
@@ -25,50 +31,61 @@ pub(in crate::domain_computation::primary_graph) enum WorkflowAdoptionReadDenial
 }
 
 pub(in crate::domain_computation::primary_graph) struct WorkflowAdoptionTruth<'runtime> {
-    runtime: &'runtime RelationalRuntime,
-    version: VersionId,
+    view: VisibilityProjectionView<'runtime>,
     maximum_work_units: usize,
-    consumed_work_units: usize,
+    // Shared with the entities it lends out, which charge each field read.
+    consumed_work_units: Cell<usize>,
 }
 
 impl<'runtime> WorkflowAdoptionTruth<'runtime> {
     pub(in crate::domain_computation::primary_graph) const fn new(
-        runtime: &'runtime RelationalRuntime,
-        version: VersionId,
+        view: VisibilityProjectionView<'runtime>,
         maximum_work_units: usize,
     ) -> Self {
         Self {
-            runtime,
-            version,
+            view,
             maximum_work_units,
-            consumed_work_units: 0,
+            consumed_work_units: Cell::new(0),
         }
     }
 
-    pub(in crate::domain_computation::primary_graph) const fn consumed_work_units(&self) -> usize {
-        self.consumed_work_units
+    pub(in crate::domain_computation::primary_graph) fn consumed_work_units(&self) -> usize {
+        self.consumed_work_units.get()
     }
 
-    const fn remaining(&self) -> usize {
+    fn remaining(&self) -> usize {
         self.maximum_work_units
-            .saturating_sub(self.consumed_work_units)
+            .saturating_sub(self.consumed_work_units.get())
     }
 
     fn exhausted(&self, attempted: usize) -> WorkflowAdoptionReadDenial {
         WorkflowAdoptionReadDenial::WorkLimitExceeded {
-            consumed_work_units: self.consumed_work_units.saturating_add(attempted),
+            consumed_work_units: self.consumed_work_units.get().saturating_add(attempted),
         }
     }
 
-    /// Every live relation of one kind visible at the inventory version.
+    fn spend(&self, units: usize) {
+        self.consumed_work_units
+            .set(self.consumed_work_units.get().saturating_add(units));
+    }
+
+    /// One point read, refused when the allowance is spent.
+    fn charge_one(&self) -> Result<(), WorkflowAdoptionReadDenial> {
+        if self.remaining() == 0 {
+            return Err(self.exhausted(1));
+        }
+        self.spend(1);
+        Ok(())
+    }
+
+    /// Every live relation of one kind on the branch.
     pub(in crate::domain_computation::primary_graph) fn relations_of_kind(
         &mut self,
         kind: KindId,
     ) -> Result<Vec<RelationReadRecord>, WorkflowAdoptionReadDenial> {
         let read = self
-            .runtime
-            .read_truth()
-            .bounded_visible_relations_of_kind(kind, self.version, self.remaining())
+            .view
+            .bounded_relations_of_kind(kind, self.remaining())
             .map_err(|denial| match denial {
                 RelationKindTruthReadDenial::WorkLimitExceeded(limit) => {
                     self.exhausted(limit.consumed_work_units())
@@ -77,7 +94,7 @@ impl<'runtime> WorkflowAdoptionTruth<'runtime> {
                     WorkflowAdoptionReadDenial::UnreadableRelationSlot { partition_id, slot }
                 }
             })?;
-        self.consumed_work_units = self.consumed_work_units.saturating_add(read.work_units());
+        self.spend(read.work_units());
         Ok(read.into_records())
     }
 
@@ -88,16 +105,14 @@ impl<'runtime> WorkflowAdoptionTruth<'runtime> {
         kind: KindId,
     ) -> Result<Vec<RelationReadRecord>, WorkflowAdoptionReadDenial> {
         let read = self
-            .runtime
-            .read_truth()
-            .bounded_outgoing_relations_of_kind_at_version(
-                entity,
+            .view
+            .bounded_outgoing_relations_for_frontier(
+                &BTreeSet::from([entity]),
                 kind,
-                self.version,
                 self.remaining(),
             )
             .map_err(|limit| self.exhausted(limit.consumed_work_units()))?;
-        self.consumed_work_units = self.consumed_work_units.saturating_add(read.work_units());
+        self.spend(read.work_units());
         Ok(read.into_records())
     }
 
@@ -118,44 +133,53 @@ impl<'runtime> WorkflowAdoptionTruth<'runtime> {
         &mut self,
         entity: EntityId,
         kind: KindId,
-    ) -> Result<WorkflowAdoptionEntity, WorkflowAdoptionReadDenial> {
-        if self.remaining() == 0 {
-            return Err(self.exhausted(1));
-        }
-        self.consumed_work_units += 1;
-        self.runtime
-            .read_truth()
-            .visible_entity_at_version(entity, self.version)
-            .filter(|record| record.kind.kind_id == kind)
-            .map(|record| WorkflowAdoptionEntity { entity, record })
+    ) -> Result<WorkflowAdoptionEntity<'_, 'runtime>, WorkflowAdoptionReadDenial> {
+        self.charge_one()?;
+        self.view
+            .entity_record_with_projection_scope(entity, ProjectionAspectScope::empty(), |record| {
+                (record.kind_id() == kind && record.lifecycle() == RecordLifecycleState::Live)
+                    .then_some(())
+            })
+            .map(|()| WorkflowAdoptionEntity {
+                truth: self,
+                entity,
+            })
             .ok_or(WorkflowAdoptionReadDenial::UnreadableEntity { entity })
     }
 }
 
-pub(in crate::domain_computation::primary_graph) struct WorkflowAdoptionEntity {
+/// A live entity on the branch, whose fields are read from the same root,
+/// each charged one unit of the same allowance.
+pub(in crate::domain_computation::primary_graph) struct WorkflowAdoptionEntity<'truth, 'runtime> {
+    truth: &'truth WorkflowAdoptionTruth<'runtime>,
     entity: EntityId,
-    record: EntityReadRecord,
 }
 
-impl WorkflowAdoptionEntity {
+impl WorkflowAdoptionEntity<'_, '_> {
     fn value(
         &self,
         locator: &AspectFieldLocator,
     ) -> Result<Option<AspectValue>, WorkflowAdoptionReadDenial> {
-        let unreadable = WorkflowAdoptionReadDenial::UnreadableEntity {
-            entity: self.entity,
-        };
-        let Some(state) = self.record.authoritative_aspect_state.as_ref() else {
-            return Err(unreadable);
-        };
-        let Some(aspect) = state.get(locator.aspect().aspect_key()) else {
-            return Ok(None);
-        };
-        let ContractValidatedAspectValueView::Struct(fields) = aspect.view() else {
-            return Err(unreadable);
-        };
-        let field = locator.field_path().fields().first().ok_or(unreadable)?;
-        Ok(fields.get(field).cloned())
+        let field = locator
+            .field_path()
+            .fields()
+            .first()
+            .ok_or_else(|| self.unreadable())?;
+        self.truth.charge_one()?;
+        let aspect = locator.aspect().aspect_key();
+        let scope = ProjectionAspectScope::whole_aspects([aspect.clone()]);
+        // An absent aspect holds no field; a scalar one is not this layout.
+        self.truth
+            .view
+            .entity_record_with_projection_scope(self.entity, scope, |record| {
+                Some(match record.struct_aspect_value(aspect) {
+                    Some(fields) => Ok(fields.get(field).cloned()),
+                    None if record.aspect_value(aspect).is_some() => Err(()),
+                    None => Ok(None),
+                })
+            })
+            .and_then(Result::ok)
+            .ok_or_else(|| self.unreadable())
     }
 
     fn unreadable(&self) -> WorkflowAdoptionReadDenial {

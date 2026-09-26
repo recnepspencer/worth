@@ -1,6 +1,10 @@
 //! An explicit migration publishes a successor instance on the target
 //! definition, resumed at the requested node, and ends the source in the same
 //! commit. [`admit_workflow_migration`] decides whether the move is lawful.
+//!
+//! A fork continuation is the same succession for a fork's copy of an
+//! instance started on another branch. It ends only that copy, on the fork;
+//! the instance on its own branch is untouched.
 
 mod lineage;
 
@@ -31,7 +35,7 @@ use crate::domain_computation::primary_graph::workflow::{
     },
     instance::{
         admit_workflow_migration, visit_instance_start_facts, WorkflowInstanceState,
-        WorkflowPerformedEffect,
+        WorkflowPerformedEffect, WorkflowSuccession,
     },
     schema::WorthQueryWorkflowLayout,
 };
@@ -56,6 +60,7 @@ where
     >(
         mut self,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+        succession: WorkflowSuccession,
         source: PublishedWorkflowInstanceRef,
         target: PublishedWorkflowDefinitionRef,
         resume_at: &str,
@@ -68,8 +73,44 @@ where
         Capability: ApplicationCapabilityMarkerIdentity<Schema = Schema> + 'static,
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
-        self.authorize_instance_start::<Capability, Spec, Program>(installed, source.branch())?;
-        self.authorize_instance_start::<Capability, Spec, Program>(installed, target.branch())?;
+        let branch = self.lease.product().product_branch();
+        let fork = match succession {
+            WorkflowSuccession::Migration => {
+                self.authorize_instance_start::<Capability, Spec, Program>(
+                    installed,
+                    source.branch(),
+                )?;
+                self.authorize_instance_start::<Capability, Spec, Program>(
+                    installed,
+                    target.branch(),
+                )?;
+                None
+            }
+            // The fork's copy records the branch it was started on, and the
+            // target names a definition the fork holds: its own, or one it
+            // copied from that branch. Fork truth decides both below.
+            WorkflowSuccession::ForkContinuation => {
+                self.authorize_instance_start::<Capability, Spec, Program>(installed, branch)?;
+                // An instance on its own branch moves only by migration.
+                let own_branch = source.branch() == branch;
+                // A definition from any third branch is not one the fork holds.
+                let foreign_target =
+                    target.branch() != branch && target.branch() != source.branch();
+                if own_branch || foreign_target {
+                    return Err(WorthQueryApplicationAttemptDenial::new(
+                        WorthQueryApplicationAttemptDenialKind::WorkflowInstanceAffinityMismatch,
+                        self.admission.operation(),
+                    ));
+                }
+                Some(branch.occurrence_ordinal())
+            }
+        };
+        let source = source.copied_onto(branch);
+        let target = PublishedWorkflowDefinitionRef::retained(
+            branch,
+            target.entity_id(),
+            target.content_identity().clone(),
+        );
         let layout = self.lease.layout.workflow().clone();
         let compile = |published: &PublishedWorkflowDefinitionRef, posture| {
             reconstruct_compiled_definition(
@@ -104,6 +145,7 @@ where
         let (instance_identity, instance_intent_identity) = intent_identity::migration_identity(
             &resumed,
             source.entity_id(),
+            fork,
             subject,
             start_key_identity,
         )
@@ -203,7 +245,7 @@ where
                     })
                     .collect::<Result<Vec<_>, _>>()?;
                 performed.extend(inherited);
-                admit_workflow_migration(&from, &resumed, &settled, &performed)?;
+                admit_workflow_migration(succession, &from, &resumed, &settled, &performed)?;
                 facts.extend(observed.facts);
                 successor_effects(
                     &layout,

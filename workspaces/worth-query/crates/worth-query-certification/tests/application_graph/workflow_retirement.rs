@@ -27,6 +27,8 @@ use super::bounded_dimension_model::{
 mod contention;
 #[path = "workflow_retirement/denial.rs"]
 mod denial;
+#[path = "workflow_retirement/fork_definitions.rs"]
+mod fork_definitions;
 
 #[test]
 fn retirement_stops_new_starts_while_pinned_work_completes_and_the_lineage_reopens() {

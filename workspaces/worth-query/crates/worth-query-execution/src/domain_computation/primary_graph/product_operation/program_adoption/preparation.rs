@@ -80,6 +80,8 @@ pub enum WorthQueryBranchAdoptionPreparationDenial {
         maximum_work_units: usize,
         consumed_work_units: usize,
     },
+    /// The selected branch's root could not be read for adoption.
+    BranchBasisUnavailable(worth_relational::facade::branch::RelationalBranchBasisDenial),
     TransactionAdmission(
         worth_relational::facade::mvcc::RelationalBranchTransactionAdmissionDenial,
     ),

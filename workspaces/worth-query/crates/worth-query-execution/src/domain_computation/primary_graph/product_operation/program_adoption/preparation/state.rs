@@ -105,43 +105,31 @@ pub(super) fn prepare<Schema: ApplicationSchema>(
         .ok_or(WorthQueryBranchAdoptionPreparationDenial::ProgramActivationUnavailable)?;
     let graph = &application.primary_provider.graph;
     let layout = graph.layout.program_activation().clone();
-    let version = selected
-        .product()
-        .relational_basis()
-        .observation()
-        .version_id();
+    let basis = selected.product().relational_basis();
 
-    let selection = graph.with_runtime(|runtime| {
-        selection::select(
-            runtime,
-            &graph.layout,
-            version,
-            &requirements,
-            maximum_selection_work,
-        )
+    // One view of the branch's own root serves both reads.
+    let (selection, workflow_inventory) = graph.with_runtime(|runtime| {
+        let view = selection::branch_view(runtime, basis)?;
+        let selection =
+            selection::select(&view, &graph.layout, &requirements, maximum_selection_work)?;
+        if source == *target {
+            return Ok((selection, None));
+        }
+        let workflow_request = WorkflowAdoptionInventoryRequest {
+            layout: graph.layout.workflow(),
+            branch_occurrence: selected.product().product_branch().occurrence_ordinal(),
+            coverage: &application.workflow_coverage,
+            requirements: &requirements,
+            source: &source,
+            target,
+            maximum_work_units: maximum_selection_work.saturating_sub(selection.work_units),
+        };
+        let inventory = inventory_workflows(view, &workflow_request).map_err(|denial| {
+            workflow_read_denial(denial, maximum_selection_work, selection.work_units)
+        })?;
+        Ok((selection, Some(inventory)))
     })?;
     let selected_entity_count = selection.entities.len();
-    let workflow_request = WorkflowAdoptionInventoryRequest {
-        layout: graph.layout.workflow(),
-        version,
-        branch_occurrence: selected.product().product_branch().occurrence_ordinal(),
-        coverage: &application.workflow_coverage,
-        requirements: &requirements,
-        source: &source,
-        target,
-        maximum_work_units: maximum_selection_work.saturating_sub(selection.work_units),
-    };
-    let workflow_inventory = if source == *target {
-        None
-    } else {
-        Some(
-            graph
-                .with_runtime(|runtime| inventory_workflows(runtime, &workflow_request))
-                .map_err(|denial| {
-                    workflow_read_denial(denial, maximum_selection_work, selection.work_units)
-                })?,
-        )
-    };
     let workflow_intents = match workflow_inventory.as_ref() {
         Some(inventory) => admit_workflow_dispositions(inventory, workflow.as_ref())?
             .map(|choices| {

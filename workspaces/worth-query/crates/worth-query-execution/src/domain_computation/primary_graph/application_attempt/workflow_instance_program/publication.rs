@@ -25,6 +25,9 @@ pub struct PreparedWorkflowInstanceStart<Schema, Operation, Input, Scope> {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct PublishedWorkflowInstanceRef {
     branch: crate::basis::WorthQueryProductBranch,
+    /// The branch the instance was started on, whose occurrence its facts
+    /// record. Only a fork's copy is read on another branch.
+    started_on: crate::basis::WorthQueryProductBranch,
     entity_id: worth_relational::facade::identity::EntityId,
     definition_content_identity: ApplicationWorkflowDefinitionContentIdentity,
     definition: worth_relational::facade::identity::EntityId,
@@ -39,6 +42,23 @@ impl PublishedWorkflowInstanceRef {
 
     pub const fn entity_id(&self) -> worth_relational::facade::identity::EntityId {
         self.entity_id
+    }
+
+    /// The occurrence the instance's own facts record.
+    pub(in crate::domain_computation::primary_graph) const fn started_occurrence(&self) -> u64 {
+        self.started_on.occurrence_ordinal()
+    }
+
+    /// The same instance as `fork` copied it: read on the fork, still
+    /// recording the branch it was started on.
+    pub(in crate::domain_computation::primary_graph) fn copied_onto(
+        &self,
+        fork: crate::basis::WorthQueryProductBranch,
+    ) -> Self {
+        Self {
+            branch: fork,
+            ..self.clone()
+        }
     }
 
     pub const fn definition_entity_id(&self) -> worth_relational::facade::identity::EntityId {
@@ -190,6 +210,7 @@ fn project(
     WorkflowInstanceStartOutcome::Started(PerformedWorkflowInstanceStart {
         instance: PublishedWorkflowInstanceRef {
             branch: receipt.product_branch(),
+            started_on: receipt.product_branch(),
             entity_id: *entity_id,
             definition_content_identity,
             definition,
