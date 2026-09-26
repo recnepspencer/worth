@@ -3,14 +3,14 @@ mod business_authorization_fixture;
 mod support;
 
 use bank_domain::model::{BankPrincipalId, BusinessId, CustomerRole, InstitutionId, Money};
-use bank_domain::proposals::BankProposalEngine;
+use bank_domain::proposals::{BankProposalDenial, BankProposalEngine};
 use bank_domain::schema::{
     ApprovePayment, InitiateBusinessPayment, RevokeAccountAuthorization,
     MAX_PAYMENT_APPROVAL_GRANTEES,
 };
 use bank_server::{
-    BankApprovedPaymentWorkflowError, BankBusinessOwnerSeed, BankEmployeeAssignmentSeed,
-    BankPrincipalSeed, BankWorldSeed,
+    mutations, BankApprovedPaymentWorkflowError, BankBusinessOwnerSeed, BankEmployeeAssignmentSeed,
+    BankMutationControls, BankPaymentInitiationOutcome, BankPrincipalSeed, BankWorldSeed,
 };
 use worth_query_host::facade::application_entry::{
     WorkflowDefinitionExpectedPredecessor, WorkflowDefinitionPublicationOutcome,
@@ -190,37 +190,8 @@ fn revoked_approver_membership_is_absent_from_current_authorization_graph() {
 #[test]
 fn runtime_initiation_grants_its_workflow_to_every_source_approver_at_the_ceiling() {
     let approvers = u64::try_from(MAX_PAYMENT_APPROVAL_GRANTEES).unwrap();
-    let (snapshot, source) = approver_crowded_world(approvers);
-    let identities = (1..=2 + approvers)
-        .map(|principal| DynamicIdentity::new(&format!("crowded-{principal}")))
-        .collect::<Vec<_>>();
-    let world = runtime(identities.iter().enumerate().fold(
-        BankWorldSeed::new(snapshot).business_owner(BankBusinessOwnerSeed::new(
-            id(BusinessId::new, 1),
-            id(BankPrincipalId::new, 1),
-        )),
-        |seed, (ordinal, identity)| {
-            seed.principal(BankPrincipalSeed::enabled(
-                id(BankPrincipalId::new, u64::try_from(ordinal).unwrap() + 1),
-                identity.external(),
-            ))
-        },
-    ));
-    let initiator = authenticate(&world, &identities[0]);
-    let scope = request_scope();
-    let initiated = world
-        .runtime
-        .request(&initiator, &scope)
-        .mutate(InitiateBusinessPayment {
-            business: id(BusinessId::new, 1),
-            from: source,
-            recipient: id(BankPrincipalId::new, 2),
-            amount: Money::from_minor(700).unwrap(),
-        })
-        .idempotency(&key("crowded-initiation"))
-        .execute_in_program(world.runtime.application_program())
-        .expect("the initiation reaches its handler");
-    let WorthQueryApplicationMutationOutcome::Committed { result, .. } = initiated else {
+    let (world, identities, initiated) = crowded_initiation(approvers);
+    let Some(pending) = initiated.continuation() else {
         panic!("an initiation within the approver ceiling commits: {initiated:?}");
     };
     for principal in 3..3 + approvers {
@@ -229,7 +200,7 @@ fn runtime_initiation_grants_its_workflow_to_every_source_approver_at_the_ceilin
             &world,
             identity,
             ApprovePayment {
-                payment: result.payment,
+                payment: pending.payment_id(),
                 approver: id(BankPrincipalId::new, principal),
             },
             &format!("crowded-approver-{principal}"),
@@ -248,6 +219,69 @@ fn runtime_initiation_grants_its_workflow_to_every_source_approver_at_the_ceilin
             "approver {principal} holds the new payment's workflow grant: {published:?}"
         );
     }
+}
+
+#[test]
+fn runtime_initiation_past_the_approver_ceiling_is_domain_denied() {
+    let approvers = u64::try_from(MAX_PAYMENT_APPROVAL_GRANTEES).unwrap() + 1;
+    let (_world, _identities, initiated) = crowded_initiation(approvers);
+    assert!(
+        initiated.continuation().is_none(),
+        "a refused initiation leaves no payment to continue"
+    );
+    assert!(
+        matches!(
+            initiated.execution(),
+            Ok(WorthQueryApplicationMutationOutcome::DomainDenied(
+                BankProposalDenial::TooManyPaymentApprovers
+            ))
+        ),
+        "one approver past the ceiling refuses the initiation: {:?}",
+        initiated.execution()
+    );
+}
+
+fn crowded_initiation(
+    approvers: u64,
+) -> (
+    TestIdentityWorld,
+    Vec<DynamicIdentity>,
+    BankPaymentInitiationOutcome,
+) {
+    let (snapshot, source) = approver_crowded_world(approvers);
+    let identities = (1..=2 + approvers)
+        .map(|principal| DynamicIdentity::new(&format!("crowded-{principal}")))
+        .collect::<Vec<_>>();
+    let world = runtime(identities.iter().enumerate().fold(
+        BankWorldSeed::new(snapshot).business_owner(BankBusinessOwnerSeed::new(
+            id(BusinessId::new, 1),
+            id(BankPrincipalId::new, 1),
+        )),
+        |seed, (ordinal, identity)| {
+            seed.principal(BankPrincipalSeed::enabled(
+                id(BankPrincipalId::new, u64::try_from(ordinal).unwrap() + 1),
+                identity.external(),
+            ))
+        },
+    ));
+    let initiator = authenticate(&world, &identities[0]);
+    let initiated = world
+        .runtime
+        .mutate(mutations::initiate_business_payment(
+            InitiateBusinessPayment {
+                business: id(BusinessId::new, 1),
+                from: source,
+                recipient: id(BankPrincipalId::new, 2),
+                amount: Money::from_minor(700).unwrap(),
+            },
+        ))
+        .as_principal(&initiator)
+        .controls(BankMutationControls::new(
+            request_scope(),
+            key("crowded-initiation"),
+        ))
+        .execute();
+    (world, identities, initiated)
 }
 
 fn authenticate(

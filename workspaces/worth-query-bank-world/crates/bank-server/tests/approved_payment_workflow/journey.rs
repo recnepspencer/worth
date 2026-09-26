@@ -1,5 +1,5 @@
 use bank_domain::schema::ApprovePayment;
-use bank_server::BankApprovedPaymentWorkflow;
+use bank_server::{BankApprovedPaymentWorkflow, BankPaymentAssessmentSettlement};
 use worth_query_host::facade::application_entry::{
     PublishedWorkflowInstanceRef, PublishedWorkflowProposalRef, RequiredWorkflowApproval,
     RequiredWorkflowOperation, WorkflowDefinitionExpectedPredecessor,
@@ -88,6 +88,7 @@ pub(super) fn prepare_approved_payment_approval_on_instance(
         .begin_payment_assessment(
             instance.clone(),
             actor_authority.clone(),
+            BankPaymentAssessmentSettlement::DEFAULT,
             &key("approved-payment:assessment:payment:settle"),
         )
         .expect("the payment assessment demand starts");
@@ -126,6 +127,7 @@ pub(super) fn prepare_approved_payment_approval_on_instance(
         .begin_payment_assessment(
             instance.clone(),
             actor_authority.clone(),
+            BankPaymentAssessmentSettlement::DEFAULT,
             &key("approved-payment:assessment:independent:settle"),
         )
         .expect("the independent assessment demand starts");

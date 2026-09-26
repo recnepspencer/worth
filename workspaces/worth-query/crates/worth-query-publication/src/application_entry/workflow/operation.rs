@@ -34,6 +34,14 @@ pub enum WorthQueryWorkflowOperationBindingDenial {
     AuthorityUnavailable,
 }
 
+impl std::fmt::Display for WorthQueryWorkflowOperationBindingDenial {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(formatter, "workflow operation binding denied: {self:?}")
+    }
+}
+
+impl std::error::Error for WorthQueryWorkflowOperationBindingDenial {}
+
 #[derive(Debug)]
 pub enum WorthQueryWorkflowOperationAcceptanceDenial {
     NotAwaitingOperation,

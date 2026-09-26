@@ -221,6 +221,6 @@ pub use worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts;
 pub use worth_runtime_world::facade::{
     ProductUnpublishedNextAction, ProductUnpublishedRecoveryHandle, RecoveryContinuationContract,
     RuntimeWorldRecoveryCursor, RuntimeWorldRecoveryDenial, RuntimeWorldRecoveryPage,
-    RuntimeWorldSettledRelationalAdoptionDenial,
+    RuntimeWorldServiceDenial, RuntimeWorldSettledRelationalAdoptionDenial,
 };
 pub use worth_signal::facade::runtime::SignalConditionalEvaluationBudget;

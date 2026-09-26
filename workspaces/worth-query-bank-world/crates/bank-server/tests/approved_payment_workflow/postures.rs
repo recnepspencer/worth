@@ -242,8 +242,6 @@ fn unpublished_product_retains_owner_recovery_and_never_dispatches_the_rail() {
         .fixture
         .world
         .runtime
-        .application_program()
-        .runtime()
         .fail_next_durable_append_for_test();
     let partial = match ready.perform() {
         BankApprovedPaymentApplyOutcome::Commit(
@@ -295,10 +293,7 @@ fn indeterminate_product_comparison_retains_custody_without_rail_dispatch() {
         .fixture
         .world
         .runtime
-        .application_program()
-        .runtime()
-        .world_operation_control_for_test()
-        .panic_before_product_compare_once();
+        .panic_before_product_compare_once_for_test();
     let unresolved = match ready.perform() {
         BankApprovedPaymentApplyOutcome::Commit(
             WorthQueryApplicationCommitOutcome::Indeterminate(unresolved),
@@ -307,7 +302,7 @@ fn indeterminate_product_comparison_retains_custody_without_rail_dispatch() {
     };
     assert!(!unresolved.detail().is_empty());
     assert!(ready.rail.attempts().is_empty());
-    let owner = ready.fixture.world.runtime.application_program().runtime();
+    let owner = &ready.fixture.world.runtime;
     let page = owner
         .product_publication_recovery_page(None, NonZeroUsize::new(1).unwrap())
         .expect("World retains a bounded recovery catalog for unresolved owner work");

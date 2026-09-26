@@ -1,11 +1,9 @@
 use bank_domain::{
     proposals::{BankIdempotencyKey, BankProposalDenial},
-    queries::PaymentDetailQuery,
     schema::{
-        ApprovePayment, ApprovePaymentMutationBinding, ApprovedBusinessPaymentAdvanceIntent,
-        ApprovedBusinessPaymentApplyIntent, ApprovedBusinessPaymentApprovalIntent,
-        ApprovedBusinessPaymentAuthoringIntent, ApprovedBusinessPaymentInstanceStartIntent,
-        ApprovedPaymentAssessmentDemand, BankSchema,
+        ApprovePayment, ApprovePaymentMutationBinding, ApprovedBusinessPaymentApplyIntent,
+        ApprovedBusinessPaymentApprovalIntent, ApprovedBusinessPaymentAuthoringIntent,
+        ApprovedBusinessPaymentInstanceStartIntent, BankSchema,
     },
 };
 use worth_query_host::facade::primary_graph::WorthQueryExternalDispatchPostureKind;
@@ -16,9 +14,7 @@ use worth_query_host::facade::{
         RequiredWorkflowApproval, RequiredWorkflowOperation, WorkflowApprovalDecision,
         WorkflowDefinitionExpectedPredecessor, WorkflowDefinitionPublicationOutcome,
         WorkflowInstanceStartOutcome, WorkflowProgressOutcome, WorkflowProposalOutcome,
-        WorthQueryApplicationMutationOutcome, WorthQueryOutputDemandControls,
-        WorthQueryPreparedWorkflowOperationRecovery, WorthQueryWorkflowAssessmentDemandHandle,
-        WorthQueryWorkflowAssessmentDemandProgress, WorthQueryWorkflowAssessmentDemandSettlement,
+        WorthQueryApplicationMutationOutcome, WorthQueryPreparedWorkflowOperationRecovery,
     },
     primary_graph::{WorthQueryApplicationCommitOutcome, WorthQueryApplicationCommitReceipt},
 };
@@ -28,23 +24,20 @@ use crate::{
     BankIdentityRuntime,
 };
 
+#[path = "approved_payment_workflow/assessment.rs"]
+mod assessment;
 #[path = "approved_payment_workflow/error.rs"]
 mod error;
 #[path = "approved_payment_workflow/owner.rs"]
 mod owner;
 #[path = "approved_payment_workflow/progression.rs"]
 mod progression;
+pub use assessment::{
+    BankApprovedPaymentAssessment, BankApprovedPaymentAssessmentDemand,
+    BankApprovedPaymentAssessmentProgress, BankPaymentAssessmentSettlement,
+};
 pub use error::BankApprovedPaymentWorkflowError;
 
-pub type BankApprovedPaymentAssessment =
-    WorthQueryWorkflowAssessmentDemandSettlement<PaymentDetailQuery>;
-pub type BankApprovedPaymentAssessmentDemand<'runtime> = WorthQueryWorkflowAssessmentDemandHandle<
-    'runtime,
-    BankSchema,
-    bank_domain::schema::ApprovedBusinessPaymentWorkflow,
-    crate::application_definition::BankApplication,
-    ApprovedPaymentAssessmentDemand,
->;
 pub type BankApprovedPaymentPreparedRecovery<'runtime> =
     WorthQueryPreparedWorkflowOperationRecovery<
         'runtime,
@@ -176,61 +169,6 @@ impl<'runtime, 'principal, 'scope> BankApprovedPaymentWorkflow<'runtime, 'princi
             .prepare_workflow_proposal(self.runtime.approved_payment_workflow_runtime(), instance)
             .map(|request| request.execute())
             .map_err(BankApprovedPaymentWorkflowError::Proposal)
-    }
-
-    pub fn begin_payment_assessment(
-        &self,
-        instance: PublishedWorkflowInstanceRef,
-        authority: ApprovePayment,
-        command_key: &BankIdempotencyKey,
-    ) -> Result<BankApprovedPaymentAssessmentDemand<'runtime>, BankApprovedPaymentWorkflowError>
-    {
-        let payment_id = authority.payment;
-        let request = self.runtime.request(self.principal, self.scope);
-        request
-            .mutate(ApprovedBusinessPaymentAdvanceIntent { input: authority })
-            .without_source()
-            .idempotency(command_key)
-            .prepare_workflow_advance(self.runtime.approved_payment_workflow_runtime(), instance)
-            .map_err(BankApprovedPaymentWorkflowError::Advance)?
-            .into_assessment_demand(ApprovedPaymentAssessmentDemand::new(payment_id))
-            .map_err(BankApprovedPaymentWorkflowError::AssessmentPreparation)?
-            .controls(WorthQueryOutputDemandControls::new(
-                std::num::NonZeroUsize::new(1_024).expect("assessment work is nonzero"),
-                std::num::NonZeroUsize::new(16_384).expect("assessment bytes are nonzero"),
-            ))
-            .start()
-            .map_err(BankApprovedPaymentWorkflowError::AssessmentDemand)
-    }
-
-    pub fn settle_payment_assessment(
-        &self,
-        demand: &mut BankApprovedPaymentAssessmentDemand<'runtime>,
-    ) -> Result<
-        WorthQueryWorkflowAssessmentDemandProgress<PaymentDetailQuery>,
-        BankApprovedPaymentWorkflowError,
-    > {
-        demand
-            .settle(&self.runtime.request(self.principal, self.scope))
-            .map_err(BankApprovedPaymentWorkflowError::AssessmentDemand)
-    }
-
-    pub fn accept_assessment(
-        &self,
-        instance: PublishedWorkflowInstanceRef,
-        authority: ApprovePayment,
-        assessment: &BankApprovedPaymentAssessment,
-        command_key: &BankIdempotencyKey,
-    ) -> Result<WorkflowProgressOutcome, BankApprovedPaymentWorkflowError> {
-        self.runtime
-            .request(self.principal, self.scope)
-            .mutate(ApprovedBusinessPaymentAdvanceIntent { input: authority })
-            .without_source()
-            .idempotency(command_key)
-            .prepare_workflow_advance(self.runtime.approved_payment_workflow_runtime(), instance)
-            .map_err(BankApprovedPaymentWorkflowError::Advance)?
-            .accept_assessment(assessment)
-            .map_err(BankApprovedPaymentWorkflowError::AssessmentAcceptance)
     }
 
     #[allow(clippy::too_many_arguments)]

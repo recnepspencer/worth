@@ -127,3 +127,11 @@ pub enum WorthQueryWorkflowRuntimeBindingDenial {
     /// vocabulary, so adoption could not tell which one the host executes.
     ConflictingVocabularyCoverage,
 }
+
+impl std::fmt::Display for WorthQueryWorkflowRuntimeBindingDenial {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(formatter, "workflow runtime binding denied: {self:?}")
+    }
+}
+
+impl std::error::Error for WorthQueryWorkflowRuntimeBindingDenial {}

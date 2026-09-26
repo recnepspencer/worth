@@ -10,7 +10,9 @@ use bank_domain::schema::{
     Account, CreatePersonalAccount, CreatePersonalAccountMutationBinding,
     CREATE_PERSONAL_ACCOUNT_OUTPUT_ACCOUNT,
 };
-use bank_server::{BankEmployeeAssignmentSeed, BankPrincipalSeed, BankWorldSeed};
+use bank_server::{
+    mutations, BankEmployeeAssignmentSeed, BankMutationControls, BankPrincipalSeed, BankWorldSeed,
+};
 use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome;
 use worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenialKind;
 use worth_query_host::facade::primary_graph::{
@@ -80,11 +82,15 @@ fn assert_public_creation(display_name: &str) {
         WorthQueryApplicationRequestMutationDenialKind::ApplicationProgramRequired
     );
 
-    let first = request
-        .mutate(input.clone())
-        .idempotency(&key)
-        .execute_in_program(world.runtime.application_program())
-        .expect("the public mutation request should execute");
+    let create = |input| {
+        world
+            .runtime
+            .mutate(mutations::create_personal_account(input))
+            .as_principal(&actor)
+            .controls(BankMutationControls::new(scope.clone(), key.clone()))
+            .execute()
+    };
+    let first = create(input.clone()).expect("the public mutation request should execute");
     let WorthQueryApplicationMutationOutcome::Committed {
         receipt: mut first_receipt,
         result,
@@ -116,11 +122,7 @@ fn assert_public_creation(display_name: &str) {
     assert_eq!(detail.institution(), institution);
     assert_eq!(detail.personal_owner(), Some(actor_id));
 
-    let retry = request
-        .mutate(input.clone())
-        .idempotency(&key)
-        .execute_in_program(world.runtime.application_program())
-        .expect("the identical retry should execute");
+    let retry = create(input.clone()).expect("the identical retry should execute");
     let WorthQueryApplicationMutationOutcome::AlreadyCommitted(mut retry_receipt) = retry else {
         panic!("the identical retry must recover the prior commit");
     };
@@ -140,14 +142,11 @@ fn assert_public_creation(display_name: &str) {
         .take_performed_relational_product_change()
         .is_none());
 
-    let changed = request
-        .mutate(CreatePersonalAccount {
-            display_name: AccountName::new("Changed account").expect("the name should be valid"),
-            ..input
-        })
-        .idempotency(&key)
-        .execute_in_program(world.runtime.application_program())
-        .expect("the changed retry should resolve idempotency");
+    let changed = create(CreatePersonalAccount {
+        display_name: AccountName::new("Changed account").expect("the name should be valid"),
+        ..input
+    })
+    .expect("the changed retry should resolve idempotency");
     assert!(matches!(
         changed,
         WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift

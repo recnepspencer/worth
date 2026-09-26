@@ -58,8 +58,9 @@ pub use approval_authentication::{
 };
 pub use approved_payment_workflow::{
     BankApprovedPaymentApplyOutcome, BankApprovedPaymentAssessment,
+    BankApprovedPaymentAssessmentDemand, BankApprovedPaymentAssessmentProgress,
     BankApprovedPaymentPerformedOperation, BankApprovedPaymentPreparedRecovery,
-    BankApprovedPaymentWorkflow, BankApprovedPaymentWorkflowError,
+    BankApprovedPaymentWorkflow, BankApprovedPaymentWorkflowError, BankPaymentAssessmentSettlement,
 };
 pub use authenticated_principal::BankAuthenticatedPrincipal;
 pub use authentication_boundary::BankAuthenticationBoundary;

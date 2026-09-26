@@ -28,11 +28,7 @@ use worth_query_host::facade::application_entry::{
     WorthQueryBranchAdoptionPublicationOutcome,
     WorthQueryWorkflowDefinitionPublicationPreparationDenial,
 };
-use worth_query_host::facade::application_installation::WorthQueryProgramOwner;
 use worth_query_host::facade::primary_graph::WorthQueryPrincipalResolutionDenialKind;
-use worth_query_host::facade::primary_graph::{
-    WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitOutcome,
-};
 
 #[test]
 fn initiation_recovers_one_continuation_and_a_fresh_approver_starts_its_workflow() {
@@ -46,27 +42,25 @@ fn initiation_recovers_one_continuation_and_a_fresh_approver_starts_its_workflow
         amount: Money::from_minor(300).unwrap(),
     };
 
-    let initiation_scope = request_scope();
-    let request = fixture.world.runtime.request(&owner, &initiation_scope);
-    let key = BankIdempotencyKey::new("initiate-workflow").unwrap();
-    let first = request
-        .mutate(input.clone())
-        .idempotency(&key)
-        .execute_in_program(fixture.world.runtime.application_program())
-        .expect("the program-owned initiation should execute");
-    let WorthQueryApplicationMutationOutcome::Committed { result, .. } = first else {
-        panic!("the first initiation must commit: {first:?}");
+    let initiate = |input| {
+        fixture
+            .world
+            .runtime
+            .mutate(mutations::initiate_business_payment(input))
+            .as_principal(&owner)
+            .controls(controls("initiate-workflow"))
+            .execute()
     };
-    let pending = BankPendingPaymentContinuation::from_payment_id(result.payment);
-    let recovered = request
-        .mutate(input)
-        .idempotency(&key)
-        .execute_in_program(fixture.world.runtime.application_program())
-        .expect("the identical initiation retry should execute");
+    let first = initiate(input.clone());
+    let pending = first
+        .continuation()
+        .unwrap_or_else(|| panic!("the first initiation must commit: {first:?}"));
+    let recovered = initiate(input);
     assert!(matches!(
-        recovered,
-        WorthQueryApplicationMutationOutcome::AlreadyCommitted(_)
+        recovered.execution(),
+        Ok(WorthQueryApplicationMutationOutcome::AlreadyCommitted(_))
     ));
+    assert!(recovered.continuation().is_none());
 
     let approval_scope = request_scope();
     let approval_request = fixture.world.runtime.request(&approver, &approval_scope);
@@ -77,7 +71,7 @@ fn initiation_recovers_one_continuation_and_a_fresh_approver_starts_its_workflow
     let direct = approval_request
         .mutate(authority.clone())
         .idempotency(&BankIdempotencyKey::new("approve-directly").unwrap())
-        .execute_in_program(fixture.world.runtime.application_program());
+        .execute();
     assert!(
         matches!(
             direct,
@@ -179,16 +173,16 @@ fn a_fresh_authorized_rejector_can_reject_the_read_derived_continuation() {
     let approver = fixture.authenticate(APPROVER);
     let pending = pending_continuation(&fixture, &approver);
 
-    let rejection_scope = request_scope();
-    let rejection_request = fixture.world.runtime.request(&approver, &rejection_scope);
-    let rejection_key = BankIdempotencyKey::new("reject-pending").unwrap();
-    let rejection = rejection_request
-        .mutate(RejectPayment {
+    let rejection = fixture
+        .world
+        .runtime
+        .mutate(mutations::reject_payment(RejectPayment {
             payment: pending.payment_id(),
             rejecting_principal: principal_id(APPROVER),
-        })
-        .idempotency(&rejection_key)
-        .execute_in_program(fixture.world.runtime.application_program())
+        }))
+        .as_principal(&approver)
+        .controls(controls("reject-pending"))
+        .execute()
         .expect("the program-owned rejection should execute");
 
     assert!(
@@ -205,19 +199,18 @@ fn pending_decision_crosses_adoption_only_through_fresh_p1_admission() {
     let fixture = ordinary_read_world("adopted-payment-continuation", 0);
     let approver = fixture.authenticate(APPROVER);
     let pending = pending_continuation(&fixture, &approver);
-    let application = fixture.world.runtime.application_program();
-    let branch = application.current_world();
-    let target_owner = application
-        .supported_program::<BankApplicationP1>()
+    let runtime = &fixture.world.runtime;
+    let branch = runtime.current_branch();
+    let target = runtime
+        .supported_program_revision::<BankApplicationP1>()
         .expect("Bank P1 is rostered beside P0");
-    let target = target_owner.owned_revision().clone();
     let adoption_scope = request_scope();
     let initial = fixture
         .world
         .runtime
         .inspect_branch_program(&approver, &adoption_scope, branch)
         .expect("Bank exposes the selected program at its production root");
-    assert_eq!(initial.revision(), application.owned_revision());
+    assert_eq!(initial.revision(), runtime.installed_program_revision());
     let prepared = fixture
         .world
         .runtime
@@ -239,24 +232,9 @@ fn pending_decision_crosses_adoption_only_through_fresh_p1_admission() {
         .expect("Bank reports the performed branch-local activation");
     assert_eq!(adopted.revision(), &target);
 
-    let rejection_scope = request_scope();
-    let rejection_request = fixture.world.runtime.request(&approver, &rejection_scope);
-    let stale_rejection_key = BankIdempotencyKey::new("reject-after-adoption-source").unwrap();
-    let stale_rejection = rejection_request
-        .mutate(RejectPayment {
-            payment: pending.payment_id(),
-            rejecting_principal: principal_id(APPROVER),
-        })
-        .idempotency(&stale_rejection_key)
-        .execute_in_program(application)
-        .expect("the stale source request reaches occurrence gating");
-    assert!(matches!(
-        stale_rejection,
-        WorthQueryApplicationMutationOutcome::Commit(
-            WorthQueryApplicationCommitOutcome::Denied(ref denial)
-        ) if denial.kind() == WorthQueryApplicationCommitDenialKind::ProgramNotActiveOnOccurrence
-    ));
-
+    // No Bank caller holds the retired P0 program: every Bank lane executes
+    // in the branch's selected program, so the decision below is admitted
+    // afresh under P1.
     let rejection = fixture
         .world
         .runtime

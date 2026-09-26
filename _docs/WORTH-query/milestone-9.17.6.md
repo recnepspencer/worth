@@ -1146,9 +1146,8 @@ cancellation, close and retirement across every new state. Finish public codecs,
 discovery, authoring/control-flow examples and real product adapters. Ordinary
 product edits and performed-output actions on an adopted branch execute under that
 branch's selected program, and a target that is no longer current is a typed denial.
-The commit receipt Bank hands its callers is ordinary only once slice 5.6 lands:
-until the Bank adapter replaces it, the public `application_program()` accessor
-exposes the program runtime, which can redeem a receipt for recovery authority.
+The commit receipt Bank hands its callers is ordinary: no public Bank item names a
+program runtime, so no Bank caller can redeem a receipt for recovery authority.
 
 The proprietary slice closes observation, cancellation, retention, resource
 exhaustion, cold reconstruction, command/action exposure and operator diagnostics
@@ -1353,6 +1352,27 @@ observer settles it and the instance proceeds, and it can still be cancelled. Pe
 notifications are bounded at one per observation by construction: an observer's wakes
 coalesce into its run's single generation, so any number of state changes since it
 last looked is one pending wake, and there is no per-change queue to exhaust.
+
+Status: Bank's callers reach the program only through typed Bank lanes. Its program
+runtime accessor is crate-private, and the boundary court requires that no public
+Bank item name a runtime that can redeem a receipt. Product-publication recovery
+pages and readmission, the current branch and the installed and supported program
+revisions are Bank methods; test-only controls sit behind Bank's `test-controls`
+feature. Bank's payment assessment no longer polls on a fixed loop.
+`begin_payment_assessment` takes a `BankPaymentAssessmentSettlement` policy, the
+attempts one round may spend and a bound on rounds, and `settle_payment_assessment`
+never blocks: another round runs only when the demand was notified during the last
+one, and a spent or quiet demand reports `Pending` so a later call resumes the same
+demand. Every settle attempt that advances the demand notifies it, so the quiet return
+is argued from the generation check, not driven by a test. Bank's build, admission and
+workflow errors print their Query denials through `Display` and chain them as sources,
+never their debug form. Payment status enters an assessment's identity through pinned
+canonical text. An initiation that would grant approval to more than eight approvers is
+refused at runtime with the typed `TooManyPaymentApprovers` denial, before any payment
+exists. Query installs a handler for every mutation binding, but the workflow kernel
+records the approved-payment control steps itself and never calls one, so Bank's
+control handler checks nothing; the payment operation's handler refuses an input
+that names another approver than the authenticated principal.
 
 ## Acceptance, Cost And Review
 

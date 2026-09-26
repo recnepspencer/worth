@@ -160,6 +160,7 @@ exports = [
     "RuntimeWorldRecoveryCursor",
     "RuntimeWorldRecoveryDenial",
     "RuntimeWorldRecoveryPage",
+    "RuntimeWorldServiceDenial",
     "RuntimeWorldSettledRelationalAdoptionDenial",
     "SignalConditionalEvaluationBudget",
     "WorthQueryAdmittedApplicationCapabilityAccess",

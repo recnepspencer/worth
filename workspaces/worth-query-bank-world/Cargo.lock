@@ -203,6 +203,7 @@ version = "0.1.0"
 dependencies = [
  "bank-domain",
  "bank-external-rail",
+ "bank-server",
  "getrandom 0.3.4",
  "tokio",
  "worth-foundational",

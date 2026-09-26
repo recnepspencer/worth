@@ -59,6 +59,14 @@ pub enum WorthQueryAuthenticationEventDenial {
     DeadlineExceeded,
 }
 
+impl std::fmt::Display for WorthQueryAuthenticationEventDenial {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(formatter, "authentication event denied: {self:?}")
+    }
+}
+
+impl std::error::Error for WorthQueryAuthenticationEventDenial {}
+
 impl From<AuthenticationEventClockDenial> for WorthQueryAuthenticationEventDenial {
     fn from(value: AuthenticationEventClockDenial) -> Self {
         match value {

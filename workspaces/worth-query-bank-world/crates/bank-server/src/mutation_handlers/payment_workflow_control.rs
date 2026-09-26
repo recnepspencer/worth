@@ -13,6 +13,13 @@ use worth_query_host::facade::{
     primary_graph::{CandidateWriter, DecisionReader, HandlerResult, OperationHandler},
 };
 
+/// The handler every approved-payment workflow control binding must install.
+///
+/// Query installs a handler for each mutation binding, but the workflow kernel
+/// authorizes and records authoring, start, advance and approval itself and
+/// never calls one. The approver named in the input is checked where it
+/// matters: the payment operation's own handler compares it with the
+/// authenticated principal before any effect.
 pub(crate) struct ApprovedBusinessPaymentControlHandler;
 
 macro_rules! control_handler {
@@ -20,14 +27,9 @@ macro_rules! control_handler {
         impl OperationHandler<BankSchema, $binding> for ApprovedBusinessPaymentControlHandler {
             fn decide(
                 &self,
-                input: &ApprovePayment,
-                reader: &mut DecisionReader<'_, '_, '_, BankSchema, $binding>,
+                _: &ApprovePayment,
+                _: &mut DecisionReader<'_, '_, '_, BankSchema, $binding>,
             ) -> HandlerResult<(), BankProposalDenial> {
-                if *reader.principal_identity() != input.approver {
-                    return HandlerResult::DomainDenied(
-                        BankProposalDenial::AuthenticatedActorMismatch,
-                    );
-                }
                 HandlerResult::Completed(())
             }
 

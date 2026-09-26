@@ -66,17 +66,26 @@ fn revoked_starter_cannot_advance_but_second_actor_commits_attributed_payment() 
             user.principal() == principal_id(APPROVER) && user.role() == CustomerRole::Approver
         })
         .expect("the starter has a live Approver authorization");
+    assert_eq!(
+        instance.branch(),
+        fixture.world.runtime.current_branch(),
+        "the payment workflow runs on the Bank production branch"
+    );
     let revoked = fixture
         .world
         .runtime
-        .request(&owner, &scope)
-        .on_branch(instance.branch())
-        .mutate(RevokeAccountAuthorization {
-            account: fixture.business_account,
-            authorization: starter_grant.authorization(),
-        })
-        .idempotency(&key("approved-payment:handoff:revoke-starter"))
-        .execute_in_program(fixture.world.runtime.application_program())
+        .mutate(bank_server::mutations::revoke_account_access(
+            RevokeAccountAuthorization {
+                account: fixture.business_account,
+                authorization: starter_grant.authorization(),
+            },
+        ))
+        .as_principal(&owner)
+        .controls(bank_server::BankMutationControls::new(
+            scope.clone(),
+            key("approved-payment:handoff:revoke-starter"),
+        ))
+        .execute()
         .expect("the Bank owner revokes the starter's account authorization");
     assert!(matches!(
         revoked,

@@ -22,6 +22,14 @@ pub enum WorthQueryProductBranchAdmissionDenial {
     BridgeSourceUnavailable,
 }
 
+impl std::fmt::Display for WorthQueryProductBranchAdmissionDenial {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(formatter, "product branch admission denied: {self:?}")
+    }
+}
+
+impl std::error::Error for WorthQueryProductBranchAdmissionDenial {}
+
 impl WorthQueryProductBranchAdmissionDenial {
     pub const fn is_transient(self) -> bool {
         matches!(
