@@ -164,9 +164,9 @@ impl World {
         let target = crate::runtime::interaction::targeting::resolve_presented_target(
             &session.mounted,
             presentation.basis(),
-            UiHostSurfacePosition::viewport_logical(
-                ((shown.x() + shown.width() / 2.0) * 1_000.0) as i64,
-                ((shown.y() + shown.height() / 2.0) * 1_000.0) as i64,
+            crate::units::viewport_position_for_test(
+                shown.x() + shown.width() / 2.0,
+                shown.y() + shown.height() / 2.0,
             ),
             &mut Default::default(),
         )

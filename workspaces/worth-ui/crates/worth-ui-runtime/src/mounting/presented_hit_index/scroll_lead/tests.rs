@@ -41,7 +41,9 @@ fn up(points: i64) -> UiHitScrollMove {
             crate::runtime::scroll::UiScrollOffset::origin(),
             crate::runtime::scroll::UiScrollOffset::new(
                 0,
-                points * UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
+                crate::units::UiSubpixels::whole_points(points)
+                    .unwrap()
+                    .count(),
             )
             .unwrap(),
         ),

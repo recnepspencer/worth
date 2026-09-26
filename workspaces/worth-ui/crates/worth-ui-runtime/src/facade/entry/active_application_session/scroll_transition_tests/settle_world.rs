@@ -48,8 +48,6 @@ const PLAN_REGION_INDEX: u32 = 3;
 /// so a displacement and an absolute position can never be confused.
 pub(super) const CONTENT_REST_X: f32 = 290.0;
 pub(super) const CONTENT_REST_Y: f32 = 693.0;
-const SUBPIXELS_PER_POINT: f64 =
-    worth_ui_host_contract::UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f64;
 
 pub(super) struct UiScrollSettleWorld {
     owner: UiScrollOwnerIdentity,
@@ -368,11 +366,11 @@ pub(super) fn offset(block_points: f64) -> UiScrollOffset {
 }
 
 pub(super) fn points(subpixels: i64) -> f64 {
-    subpixels as f64 / SUBPIXELS_PER_POINT
+    crate::units::UiSubpixels::new(subpixels).to_points()
 }
 
 pub(super) fn subpixels(points: f64) -> i64 {
-    (points * SUBPIXELS_PER_POINT).round() as i64
+    crate::units::UiSubpixels::nearest(points).unwrap().count()
 }
 
 fn content_box() -> worth_ui_host_contract::UiMountedCanonicalBox {

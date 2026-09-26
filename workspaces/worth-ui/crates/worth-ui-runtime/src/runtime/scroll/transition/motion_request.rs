@@ -130,10 +130,7 @@ pub(crate) fn scroll_content_geometry(
     offset: super::super::UiScrollOffset,
 ) -> Result<crate::mounting::presentation::UiPublishedRect, UiScrollMotionRequestDenial> {
     let content = content.into_layout_space();
-    let points = |subpixels: i64| {
-        subpixels as f32
-            / worth_ui_host_contract::UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f32
-    };
+    let points = |subpixels: i64| crate::units::UiSubpixels::new(subpixels).to_points_f32();
     crate::mounting::presentation::UiPublishedRect::from_committed_components(
         [
             content.x() - points(offset.inline_subpixels()),

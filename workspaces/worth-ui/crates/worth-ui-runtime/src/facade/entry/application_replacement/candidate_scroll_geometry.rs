@@ -24,8 +24,14 @@ impl WorthUiPreparedApplicationActivation {
         let inline_content = declared.map_or(content.width(), |value| content.width().max(value));
         let block_content = declared.map_or(content.height(), |value| content.height().max(value));
         crate::runtime::scroll::UiScrollBounds::new(
-            logical_subpixels((inline_content - viewport.width()).max(0.0))?,
-            logical_subpixels((block_content - viewport.height()).max(0.0))?,
+            crate::units::UiSubpixels::nearest_distance(
+                (inline_content - viewport.width()).max(0.0),
+            )?
+            .count(),
+            crate::units::UiSubpixels::nearest_distance(
+                (block_content - viewport.height()).max(0.0),
+            )?
+            .count(),
         )
     }
 
@@ -54,11 +60,4 @@ impl WorthUiPreparedApplicationActivation {
         };
         Some(*value as f32)
     }
-}
-
-fn logical_subpixels(value: f32) -> Option<i64> {
-    let scaled = f64::from(value)
-        * worth_ui_host_contract::UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f64;
-    (scaled.is_finite() && scaled >= 0.0 && scaled <= i64::MAX as f64)
-        .then(|| scaled.round() as i64)
 }

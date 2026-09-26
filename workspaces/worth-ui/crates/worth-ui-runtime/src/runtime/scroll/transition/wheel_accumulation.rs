@@ -7,9 +7,6 @@
 //! the product: one notch of three lines against a 20-point line extent is
 //! 60 points, never a device-layer constant.
 
-/// Thousandths of a line per reported line, matching the host's line encoding.
-pub(crate) const UI_SCROLL_WHEEL_LINE_MILLI_PER_LINE: i64 = 1_000;
-
 /// A host-reported coarse-wheel delta in thousandths of a line per axis.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub(crate) struct UiScrollWheelLineDelta {
@@ -46,18 +43,24 @@ impl UiScrollWheelLineDelta {
     }
 
     /// Whole notches of `lines_per_notch` lines each, the ordinary coarse-wheel
-    /// authoring shape.
+    /// authoring shape, read through the same decoding a host delta takes.
     #[cfg(test)]
-    pub(crate) const fn from_notches(
+    pub(crate) fn from_notches(
         inline_notches: i64,
         block_notches: i64,
         lines_per_notch: u16,
     ) -> Self {
-        let per_notch = UI_SCROLL_WHEEL_LINE_MILLI_PER_LINE * lines_per_notch as i64;
-        Self {
-            inline_milli_lines: inline_notches * per_notch,
-            block_milli_lines: block_notches * per_notch,
-        }
+        let milli_lines = |notches: i64| {
+            crate::units::host_count_thousandths(crate::units::host_count_of(
+                notches * i64::from(lines_per_notch),
+            ))
+            .expect("a notch count in range")
+        };
+        Self::new(milli_lines(inline_notches), milli_lines(block_notches))
+    }
+
+    pub(crate) fn heading(self) -> super::super::UiScrollHeading {
+        super::super::UiScrollHeading::new(self.inline_milli_lines, self.block_milli_lines)
     }
 
     #[cfg(test)]
@@ -165,8 +168,11 @@ pub(crate) fn line_travel(
     lines: UiScrollWheelLineDelta,
     line_extent_logical_points: u16,
 ) -> Option<super::super::UiScrollDelta> {
-    let extent = i64::from(line_extent_logical_points);
-    let axis = |milli_lines: i64| milli_lines.checked_mul(extent);
+    let line = crate::units::UiSubpixels::whole_points(i64::from(line_extent_logical_points))?;
+    let axis = |milli_lines: i64| {
+        line.thousandths(milli_lines)
+            .map(crate::units::UiSubpixels::count)
+    };
     Some(super::super::UiScrollDelta::new(
         axis(lines.inline_milli_lines)?,
         axis(lines.block_milli_lines)?,

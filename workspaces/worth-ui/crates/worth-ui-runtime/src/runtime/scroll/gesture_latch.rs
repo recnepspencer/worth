@@ -138,23 +138,27 @@ impl UiScrollGestureLatch {
 pub(crate) fn latching_chain_index(
     offsets: &[super::UiScrollOffset],
     bounds: &[super::UiScrollBounds],
-    delta: super::UiScrollDelta,
+    heading: super::UiScrollHeading,
 ) -> Option<usize> {
     offsets.iter().zip(bounds).position(|(offset, bounds)| {
         has_room(
-            delta.inline_subpixels(),
+            heading.inline(),
             offset.inline_subpixels(),
             bounds.max_inline_subpixels(),
         ) || has_room(
-            delta.block_subpixels(),
+            heading.block(),
             offset.block_subpixels(),
             bounds.max_block_subpixels(),
         )
     })
 }
 
-/// Whether one axis has travel left in the direction `delta` asks for. An axis
-/// the gesture does not name asks for nothing and answers no.
-const fn has_room(delta: i64, offset: i64, max: i64) -> bool {
-    (delta > 0 && offset < max) || (delta < 0 && offset > 0)
+/// Whether one axis has travel left the way `heading` asks. An axis the
+/// gesture does not name asks for nothing and answers no.
+fn has_room(heading: std::cmp::Ordering, offset: i64, max: i64) -> bool {
+    match heading {
+        std::cmp::Ordering::Greater => offset < max,
+        std::cmp::Ordering::Less => offset > 0,
+        std::cmp::Ordering::Equal => false,
+    }
 }

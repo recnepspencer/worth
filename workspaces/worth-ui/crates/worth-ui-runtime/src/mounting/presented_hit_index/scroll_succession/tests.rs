@@ -31,14 +31,17 @@ fn scroll_succession_preserves_reused_rows_but_not_new_receipts_at_identical_bou
             binding,
             &[(
                 instance,
-                crate::mounting::UiHitScrollMove::new(crate::mounting::presentation::UiScrollPoseShift::between(
-                    crate::runtime::scroll::UiScrollOffset::origin(),
-                    crate::runtime::scroll::UiScrollOffset::new(
-                        0,
-                        60 * worth_ui_host_contract::UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
-                    )
-                    .unwrap(),
-                ), crate::mounting::UiHitAncestorClip::Unclipped),
+                crate::mounting::UiHitScrollMove::new(
+                    crate::mounting::presentation::UiScrollPoseShift::between(
+                        crate::runtime::scroll::UiScrollOffset::origin(),
+                        crate::runtime::scroll::UiScrollOffset::new(
+                            0,
+                            crate::units::UiSubpixels::whole_points(60).unwrap().count(),
+                        )
+                        .unwrap(),
+                    ),
+                    crate::mounting::UiHitAncestorClip::Unclipped,
+                ),
             )],
         );
         let mut reused = source.clone();

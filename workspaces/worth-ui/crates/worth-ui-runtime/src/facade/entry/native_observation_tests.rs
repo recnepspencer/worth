@@ -13,7 +13,7 @@ use worth_ui_host_contract::{
     UiHostObservationSequence, UiHostObservationSequenceRange, UiHostObservationTimeBasis,
     UiHostPointerCaptureEpoch, UiHostPointerDeviceKind, UiHostPointerIdentity,
     UiHostPresentationEpoch, UiHostPressedPointerButtons, UiHostProtocolContract,
-    UiHostProtocolNegotiation, UiHostSurfacePosition, UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
+    UiHostProtocolNegotiation, UiHostSurfacePosition,
 };
 
 #[path = "native_observation_test_support.rs"]
@@ -199,14 +199,11 @@ fn pointer_motion_publishes_only_owner_issued_target_changes() {
         .expect("the mounted component should expose a hit-test row");
     let bounds = row.bounds().platform_box();
     let clip = row.clip_bounds().platform_box();
-    let point = UiHostSurfacePosition::viewport_logical(
-        (((bounds.x().max(clip.x()) + (bounds.x() + bounds.width()).min(clip.x() + clip.width()))
-            / 2.0)
-            * UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f32) as i64,
-        (((bounds.y().max(clip.y())
-            + (bounds.y() + bounds.height()).min(clip.y() + clip.height()))
-            / 2.0)
-            * UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f32) as i64,
+    let point = crate::units::viewport_position_for_test(
+        (bounds.x().max(clip.x()) + (bounds.x() + bounds.width()).min(clip.x() + clip.width()))
+            / 2.0,
+        (bounds.y().max(clip.y()) + (bounds.y() + bounds.height()).min(clip.y() + clip.height()))
+            / 2.0,
     );
 
     let first = match shell
@@ -257,8 +254,9 @@ fn pointer_motion_publishes_only_owner_issued_target_changes() {
             presentation,
             3,
             UiHostSurfacePosition::viewport_logical(
-                ((bounds.x() + bounds.width() + 1.0)
-                    * UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f32) as i64,
+                crate::units::UiSubpixels::nearest(bounds.x() + bounds.width() + 1.0)
+                    .unwrap()
+                    .count(),
                 point.y_subpixels(),
             ),
         )) {

@@ -16,6 +16,7 @@ pub mod native_platform;
 mod obligations;
 mod runtime;
 mod source;
+mod units;
 
 #[cfg(feature = "certification-support")]
 #[doc(hidden)]

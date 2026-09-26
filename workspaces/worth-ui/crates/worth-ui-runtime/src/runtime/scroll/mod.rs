@@ -3,6 +3,7 @@ mod anchor;
 pub(crate) mod chrome;
 mod gesture_latch;
 mod host_observation;
+mod host_travel;
 mod identity;
 mod inspection;
 mod model;
@@ -33,6 +34,7 @@ pub(crate) use gesture_latch::{
 pub(crate) use host_observation::{
     UiHostScrollObservationDenial, UiHostScrollObservationOutcome, UiScrollBoundsResolutionDenial,
 };
+pub(crate) use host_travel::{page_travel, UiScrollHeading, UiScrollHostTravel};
 pub(crate) use identity::{
     UiScrollOwnerIdentity, UiScrollOwnerIncarnation, UiScrollOwnerRegistration,
 };

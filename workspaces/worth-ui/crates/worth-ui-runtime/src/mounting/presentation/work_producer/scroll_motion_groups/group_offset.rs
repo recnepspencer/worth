@@ -95,10 +95,10 @@ impl UiScrollGroupBind {
 
 impl UiPublishedGroupOffset {
     pub(super) fn of(offset: UiScrollOffset) -> Self {
-        let unit = worth_ui_host_contract::UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f64;
+        let points = |subpixels: i64| crate::units::UiSubpixels::new(subpixels).to_points();
         Self([
-            offset.inline_subpixels() as f64 / unit,
-            offset.block_subpixels() as f64 / unit,
+            points(offset.inline_subpixels()),
+            points(offset.block_subpixels()),
         ])
     }
 
@@ -158,11 +158,12 @@ impl UiAcceptedGroupOffset {
     /// is geometry only: the thumb it yields is issued in the same candidate,
     /// so it is accepted too, never published.
     pub(super) fn chrome_derivation_offset(self) -> Option<UiScrollOffset> {
-        let unit = worth_ui_host_contract::UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f64;
-        UiScrollOffset::new(
-            (self.points[0].max(0.0) * unit).round() as i64,
-            (self.points[1].max(0.0) * unit).round() as i64,
-        )
+        // Content pulled past its rest shows the thumb at the start.
+        let at = |points: f64| {
+            crate::units::UiSubpixels::nearest_distance(points.max(0.0))
+                .map(crate::units::UiSubpixels::count)
+        };
+        UiScrollOffset::new(at(self.points[0])?, at(self.points[1])?)
     }
 }
 

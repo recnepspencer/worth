@@ -148,10 +148,7 @@ pub(super) fn release_target(world: &mut World, sequence: u64, activation_expect
 
 fn target_position() -> UiHostSurfacePosition {
     let [x, y, width, height] = super::geometry::BOXES[1];
-    UiHostSurfacePosition::viewport_logical(
-        ((x + width / 2.0) * 1_000.0) as i64,
-        ((y + height / 2.0) * 1_000.0) as i64,
-    )
+    crate::units::viewport_position_for_test(x + width / 2.0, y + height / 2.0)
 }
 
 fn assert_capture(

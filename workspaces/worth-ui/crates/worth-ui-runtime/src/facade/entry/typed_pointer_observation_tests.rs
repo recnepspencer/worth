@@ -8,7 +8,7 @@ use worth_ui_host_contract::{
     UiHostPointerButton, UiHostPointerButtonTransition, UiHostPointerCaptureEpoch,
     UiHostPointerDeviceKind, UiHostPointerIdentity, UiHostPresentationEpoch,
     UiHostPressedPointerButtons, UiHostProtocolContract, UiHostProtocolNegotiation,
-    UiHostSurfacePosition, UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
+    UiHostSurfacePosition,
 };
 
 #[test]
@@ -239,10 +239,7 @@ fn interior_point(
     let y = (bounds.y().max(clip.y())
         + (bounds.y() + bounds.height()).min(clip.y() + clip.height()))
         / 2.0;
-    UiHostSurfacePosition::viewport_logical(
-        (x * UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f32) as i64,
-        (y * UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f32) as i64,
-    )
+    crate::units::viewport_position_for_test(x, y)
 }
 
 fn pointer_batch(

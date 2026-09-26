@@ -254,7 +254,7 @@ fn a_popover_on_scrolled_content_follows_the_scroll() {
     assert!(matches!(
         scroll.wheel(
             UiHostScrollDeltaPrecision::Pixel,
-            -5 * worth_ui_host_contract::UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
+            -crate::units::host_count_of(5),
             11,
         ),
         crate::runtime::scroll::UiHostScrollObservationOutcome::Applied(_)

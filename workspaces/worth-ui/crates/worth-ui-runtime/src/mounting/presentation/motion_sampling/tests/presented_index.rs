@@ -98,7 +98,9 @@ fn a_pose_that_moves_a_hidden_row_still_moves_it_once_revealed() {
     let pose = |units| {
         crate::runtime::scroll::UiScrollOffset::new(
             0,
-            units * worth_ui_host_contract::UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
+            crate::units::UiSubpixels::whole_points(units)
+                .unwrap()
+                .count(),
         )
         .unwrap()
     };

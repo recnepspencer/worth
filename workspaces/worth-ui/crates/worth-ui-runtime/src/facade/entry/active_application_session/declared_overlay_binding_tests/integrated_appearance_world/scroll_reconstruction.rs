@@ -17,9 +17,7 @@ use super::scroll_pose_authority::{block, ScrollWorld};
 use crate::runtime::scroll::{
     UiHostScrollObservationOutcome, UiScrollOffset, UiScrollOwnerIdentity,
 };
-use worth_ui_host_contract::{
-    UiHostScrollDeltaPrecision, UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
-};
+use worth_ui_host_contract::UiHostScrollDeltaPrecision;
 
 /// Far enough down the region's thirty points of travel to be unmistakable,
 /// and short of the bound so a clamp could not produce it by accident.
@@ -27,7 +25,7 @@ const TRAVEL_POINTS: i64 = 10;
 const WHEEL_TICK: u64 = 5;
 
 fn pixels(points: i64) -> i64 {
-    -points * UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT
+    -crate::units::host_count_of(points)
 }
 
 /// The offset the first component's region holds right now, resolved through

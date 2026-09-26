@@ -64,6 +64,9 @@ impl UiScrollSettlementOwner {
                     UiScrollStandingDenial::BeforeRest => {
                         UiAcceptedScrollSettlementDenial::SampleBeforeRest
                     }
+                    UiScrollStandingDenial::OutOfRange => {
+                        UiAcceptedScrollSettlementDenial::SampleOutOfRange
+                    }
                 },
             )?;
         Ok(UiAcceptedScrollSettlement {

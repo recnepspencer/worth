@@ -72,9 +72,9 @@ fn inside_decision_cannot_turn_into_outside_when_accepted_geometry_moves() {
         .unwrap();
     // Entrance starts eight points below the final body. This point is in
     // the accepted lower strip, but outside the body once entrance completes.
-    let point = UiHostSurfacePosition::viewport_logical(
-        ((body.x() + body.width() / 2.0) * 1_000.0) as i64,
-        ((body.y() + body.height() + 4.0) * 1_000.0) as i64,
+    let point = crate::units::viewport_position_for_test(
+        body.x() + body.width() / 2.0,
+        body.y() + body.height() + 4.0,
     );
     let admitted = drain_outside_press(&mut world, basis.basis(), point, 1);
     advance_motion(&mut world, 10_000, 32);

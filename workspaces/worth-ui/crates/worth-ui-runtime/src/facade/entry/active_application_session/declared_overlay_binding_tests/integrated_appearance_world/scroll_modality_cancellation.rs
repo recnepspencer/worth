@@ -16,9 +16,7 @@
 
 use super::scroll_pose_authority::{block, ScrollWorld};
 use crate::runtime::scroll::{UiHostScrollObservationDenial, UiHostScrollObservationOutcome};
-use worth_ui_host_contract::{
-    UiHostScrollDeltaPhase, UiHostScrollDeltaPrecision, UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
-};
+use worth_ui_host_contract::{UiHostScrollDeltaPhase, UiHostScrollDeltaPrecision};
 
 /// The overlay declaration the World publishes with modal input shielding.
 const SHIELDING_OVERLAY: &str = "overlay.child";
@@ -36,7 +34,7 @@ const CONTINUATION_TICK: u64 = 15;
 const TRAVEL_POINTS: i64 = 10;
 
 fn pixels(points: i64) -> i64 {
-    -points * UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT
+    -crate::units::host_count_of(points)
 }
 
 /// A World whose first component has taken a scroll gesture and moved once, so

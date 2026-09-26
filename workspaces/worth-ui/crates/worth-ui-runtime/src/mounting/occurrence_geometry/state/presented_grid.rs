@@ -59,14 +59,14 @@ impl UiMountedOccurrenceGeometryState {
             return Ok(None);
         }
         let scale = geometry.device_scale;
-        let subpixels = worth_ui_host_contract::UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f64;
+        let points = |subpixels: i64| crate::units::UiSubpixels::new(subpixels).to_points();
         let mut inline = 0.0;
         let mut block = 0.0;
         let mut cursor = self.parent_of(geometry, instance)?;
         while let Some(ancestor) = cursor {
             if let Some(offset) = geometry.scroll_poses.get(&ancestor) {
-                inline += scale.grid_residue(offset.inline_subpixels() as f64 / subpixels);
-                block += scale.grid_residue(offset.block_subpixels() as f64 / subpixels);
+                inline += scale.grid_residue(points(offset.inline_subpixels()));
+                block += scale.grid_residue(points(offset.block_subpixels()));
             }
             cursor = self.parent_of(geometry, ancestor)?;
         }

@@ -10,18 +10,7 @@
 use crate::runtime::scroll::transition::{
     scroll_settle_motion_request, UiScrollMotionBinding, UiScrollMotionRequestDenial,
     UiScrollTransitionDenial, UiScrollWheelInput, UiScrollWheelLineDelta,
-    UI_SCROLL_WHEEL_LINE_MILLI_PER_LINE,
 };
-
-/// A `Line`-precision host delta carries lines at
-/// [`worth_ui_host_contract::UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT`]
-/// subpixels per line, and the wheel accumulator counts thousandths of a line.
-/// The two scales are the same number, so the delta already is a milli-line
-/// count; this states that equality instead of assuming it.
-const _: () = assert!(
-    worth_ui_host_contract::UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT
-        == UI_SCROLL_WHEEL_LINE_MILLI_PER_LINE
-);
 
 /// One host wheel observation admitted as coarse-line evidence under a declared
 /// smooth wheel, bound to the mounted occurrence and the presentation it was
@@ -65,8 +54,7 @@ impl super::super::WorthUiActiveApplicationSession {
         mounted_instance: worth_ui_host_contract::UiMountedInstanceIdentity,
         presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
         phase: worth_ui_host_contract::UiHostScrollDeltaPhase,
-        precision: worth_ui_host_contract::UiHostScrollDeltaPrecision,
-        offset_delta: crate::runtime::scroll::UiScrollDelta,
+        travel: crate::runtime::scroll::UiScrollHostTravel,
         input_tick: u64,
     ) -> Option<UiScrollWheelObservation> {
         let settle_ticks = self
@@ -76,16 +64,13 @@ impl super::super::WorthUiActiveApplicationSession {
             .scroll()?
             .wheel_behavior()
             .settle_ticks()?;
-        precision.lines_per_notch()?;
-        // `offset_delta` already travels in offset direction; the caller turned
-        // the host sign once, and a `Line`-precision delta is a milli-line count.
+        let crate::runtime::scroll::UiScrollHostTravel::Lines(lines) = travel else {
+            return None;
+        };
         Some(UiScrollWheelObservation {
             mounted_instance,
             presentation,
-            lines: UiScrollWheelLineDelta::new(
-                offset_delta.inline_subpixels(),
-                offset_delta.block_subpixels(),
-            ),
+            lines,
             phase,
             input_tick,
             settle_ticks,

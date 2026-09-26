@@ -73,11 +73,11 @@ fn region_at([x, y]: [f32; 2]) -> [f32; 4] {
 
 /// Logical points of a mechanic coordinate.
 fn points(subpixels: i64) -> f32 {
-    subpixels as f32 / UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f32
+    crate::units::UiSubpixels::new(subpixels).to_points_f32()
 }
 
 pub(super) fn subpixels(points: f32) -> i64 {
-    (points * UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f32) as i64
+    crate::units::UiSubpixels::nearest(points).unwrap().count()
 }
 
 /// Bars paint at the Portal's resting presentation, which is where the

@@ -10,12 +10,12 @@ const SETTLE_TICKS: u32 = 8;
 /// fraction, and a notch is whole lines in that encoding.
 #[test]
 fn a_notch_is_its_lines_in_the_hosts_thousandths_of_a_line_encoding() {
-    assert_eq!(UI_SCROLL_WHEEL_LINE_MILLI_PER_LINE, 1_000);
     let lines = UiScrollWheelLineDelta::from_notches(0, 1, LINES_PER_NOTCH);
     assert_eq!(lines.inline_milli_lines(), 0);
     assert_eq!(
         lines.block_milli_lines(),
-        i64::from(LINES_PER_NOTCH) * UI_SCROLL_WHEEL_LINE_MILLI_PER_LINE
+        3_000,
+        "three lines, in thousandths"
     );
 }
 

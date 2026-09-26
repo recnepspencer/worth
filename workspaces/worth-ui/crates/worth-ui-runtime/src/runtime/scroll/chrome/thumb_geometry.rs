@@ -33,8 +33,7 @@ pub(crate) fn thumb_extent(
     if !viewport_extent_logical_points.is_finite() || viewport_extent_logical_points <= 0.0 {
         return None;
     }
-    let overflow_logical_points = max_offset_subpixels as f64
-        / worth_ui_host_contract::UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f64;
+    let overflow_logical_points = crate::units::UiSubpixels::new(max_offset_subpixels).to_points();
     let viewport = f64::from(viewport_extent_logical_points);
     let content = viewport + overflow_logical_points;
     let proportional = f64::from(track_length_logical_points) * viewport / content;

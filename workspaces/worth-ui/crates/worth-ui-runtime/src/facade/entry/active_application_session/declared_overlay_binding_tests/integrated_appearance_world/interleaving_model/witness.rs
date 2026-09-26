@@ -15,7 +15,7 @@ use super::steps::Model;
 use crate::mounting::presentation::{UiDisplayedRect, UiPlatformPoint};
 use crate::mounting::{UiHitTestSpatialWork, UiPresentedFrameBasisDenial};
 use crate::runtime::motion::UiMotionTargetIdentity;
-use worth_ui_host_contract::{UiHostSurfacePosition, UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT};
+use worth_ui_host_contract::UiHostSurfacePosition;
 
 /// The scrollable region's top edge on the surface.
 const REGION_TOP: f32 = 50.0;
@@ -92,8 +92,7 @@ pub(super) fn assert_witnessed(model: &Model, label: &str) -> Vec<Reached> {
             "{label}: Scroll and mounted geometry hold one pose"
         ),
     }
-    let pose =
-        accepted.block_subpixels() as f32 / UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f32;
+    let pose = crate::units::UiSubpixels::new(accepted.block_subpixels()).to_points_f32();
 
     // Motion shows a sample the latest witness displays, at the settled pose
     // unless a deferral still owes its settle.

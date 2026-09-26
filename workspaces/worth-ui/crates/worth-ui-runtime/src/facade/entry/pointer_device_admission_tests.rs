@@ -8,7 +8,7 @@ use worth_ui_host_contract::{
     UiHostObservationTimeBasis, UiHostPointerButton, UiHostPointerButtonTransition,
     UiHostPointerCaptureEpoch, UiHostPointerDeviceKind, UiHostPointerIdentity,
     UiHostPresentationEpoch, UiHostPressedPointerButtons, UiHostProtocolContract,
-    UiHostProtocolNegotiation, UiHostSurfacePosition, UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
+    UiHostProtocolNegotiation, UiHostSurfacePosition,
 };
 
 #[test]
@@ -181,14 +181,11 @@ fn pointer_world() -> PointerWorld {
         .expect("fixture has one hit-test row");
     let bounds = row.bounds().platform_box();
     let clip = row.clip_bounds().platform_box();
-    let point = UiHostSurfacePosition::viewport_logical(
-        (((bounds.x().max(clip.x()) + (bounds.x() + bounds.width()).min(clip.x() + clip.width()))
-            / 2.0)
-            * UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f32) as i64,
-        (((bounds.y().max(clip.y())
-            + (bounds.y() + bounds.height()).min(clip.y() + clip.height()))
-            / 2.0)
-            * UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f32) as i64,
+    let point = crate::units::viewport_position_for_test(
+        (bounds.x().max(clip.x()) + (bounds.x() + bounds.width()).min(clip.x() + clip.width()))
+            / 2.0,
+        (bounds.y().max(clip.y()) + (bounds.y() + bounds.height()).min(clip.y() + clip.height()))
+            / 2.0,
     );
     PointerWorld {
         host_session: shell.session.host_session.identity().as_u64(),

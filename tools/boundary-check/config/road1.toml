@@ -372,6 +372,15 @@ forbidden_identifiers = [
 guidance = "Milestones 3.10.1 and 3.15: runtime may transport sealed source and admit runtime capabilities, but authored text, syntax trees, language normalization, and sealing belong only to worth-ui-dsl; portal-anchor and scroll-allocation imports use their canonical family axes with no legacy module lane"
 
 [[source_identifier_denials]]
+root = "workspaces/worth-ui/crates/worth-ui-runtime/src"
+exclude_paths = [
+  "workspaces/worth-ui/crates/worth-ui-runtime/src/units.rs",
+  "workspaces/worth-ui/crates/worth-ui-runtime/src/facade/observation_report.rs",
+]
+forbidden_identifiers = ["UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT"]
+guidance = "Hardening 3: host subpixels and logical points cross only through crate::units, so every crossing rounds one way and refuses the same values; lines and pages the host encodes at that scale are counts read through units::host_count_thousandths, never distances. observation_report only re-exports the contract constant to hosts"
+
+[[source_identifier_denials]]
 root = "workspaces/worth-ui/crates/worth-ui-runtime/src/runtime/session/service_proposal"
 forbidden_identifiers = [
   "AuthorityMarker",

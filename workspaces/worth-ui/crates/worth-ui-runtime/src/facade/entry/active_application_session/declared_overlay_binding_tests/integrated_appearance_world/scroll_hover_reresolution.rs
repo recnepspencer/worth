@@ -21,15 +21,15 @@ use super::World;
 use crate::runtime::scroll::UiHostScrollObservationOutcome;
 use worth_ui_host_contract::{
     UiHostPointerIdentity, UiHostScrollDeltaPhase, UiHostScrollDeltaPrecision,
-    UiHostSurfacePosition, UiMountedInstanceIdentity, UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
+    UiHostSurfacePosition, UiMountedInstanceIdentity,
 };
 
 /// Where the pointer rests: inside the first component and five points below
 /// the top edge its region shares with it, which is seven points above the
 /// nested component at rest.
 pub(super) const RESTING_POINT: [i64; 2] = [
-    150 * UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
-    55 * UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
+    crate::units::host_count_of(150),
+    crate::units::host_count_of(55),
 ];
 
 /// How far the content travels in these scenarios: enough to carry the nested
@@ -39,7 +39,7 @@ const TRAVEL_POINTS: i64 = 10;
 /// A host block delta that pushes content toward the top of the viewport by
 /// `TRAVEL_POINTS`, which moves the accepted offset the other way.
 fn wheel_travel() -> i64 {
-    -TRAVEL_POINTS * UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT
+    -crate::units::host_count_of(TRAVEL_POINTS)
 }
 
 /// Put one pointer at the resting point and leave it there. Every later

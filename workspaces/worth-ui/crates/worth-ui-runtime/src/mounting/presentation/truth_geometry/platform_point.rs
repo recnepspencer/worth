@@ -1,6 +1,7 @@
+use crate::units::UiSubpixels;
 use worth_ui_host_contract::{
     UiHostSurfaceCoordinateSpace, UiHostSurfaceCoordinateUnit, UiHostSurfacePosition,
-    UiHostSurfacePositionBasis, UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
+    UiHostSurfacePositionBasis,
 };
 
 /// Where a platform event puts the pointer, in viewport logical points: the
@@ -28,12 +29,12 @@ impl UiPlatformPoint {
 
     /// The inline coordinate, in logical points.
     pub(crate) fn x(self) -> f32 {
-        logical_points(self.0.x_subpixels())
+        UiSubpixels::new(self.0.x_subpixels()).to_points_f32()
     }
 
     /// The block coordinate, in logical points.
     pub(crate) fn y(self) -> f32 {
-        logical_points(self.0.y_subpixels())
+        UiSubpixels::new(self.0.y_subpixels()).to_points_f32()
     }
 
     /// The point the spatial index is queried at: the acceleration edge,
@@ -43,20 +44,18 @@ impl UiPlatformPoint {
     }
 }
 
-fn logical_points(subpixels: i64) -> f32 {
-    (subpixels as f64 / UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f64) as f32
-}
-
 /// A platform point at `x`, `y` logical points, minted from the host position
 /// a platform event would report there.
 #[cfg(test)]
 pub(crate) fn platform_point_for_test(x: f32, y: f32) -> UiPlatformPoint {
     let subpixels = |value: f32| {
-        (f64::from(value) * UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f64).round()
+        UiSubpixels::nearest(value)
+            .expect("a test point names a subpixel")
+            .count()
     };
     UiPlatformPoint::from_host_position(UiHostSurfacePosition::viewport_logical(
-        subpixels(x) as i64,
-        subpixels(y) as i64,
+        subpixels(x),
+        subpixels(y),
     ))
     .expect("a viewport logical position names a platform point")
 }

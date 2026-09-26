@@ -105,17 +105,18 @@ pub(crate) fn offset_for_thumb_position(
     extent.offset_subpixels_for_start(start, max_offset_subpixels)
 }
 
-/// One page step in subpixels: a viewport minus a line, never negative and
-/// never larger than the viewport itself.
+/// One page step in subpixels: a viewport minus a line, so the line the
+/// reader was on stays in view -- but never less than a line, or a viewport
+/// barely taller than one would page by a sliver and one no taller would never
+/// move. A viewport shorter than a line pages by all of itself. `None` for a
+/// viewport no distance measures.
 pub(crate) fn page_step_subpixels(
     viewport_extent_logical_points: f32,
     line_extent_logical_points: u16,
-) -> i64 {
-    let viewport = f64::from(viewport_extent_logical_points)
-        * worth_ui_host_contract::UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f64;
-    let line = f64::from(line_extent_logical_points)
-        * worth_ui_host_contract::UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f64;
-    (viewport - line).max(0.0).round() as i64
+) -> Option<i64> {
+    let viewport = crate::units::UiSubpixels::nearest_distance(viewport_extent_logical_points)?;
+    let line = crate::units::UiSubpixels::whole_points(i64::from(line_extent_logical_points))?;
+    Some((viewport.count() - line.count()).max(line.count().min(viewport.count())))
 }
 
 /// The offset a track click produces: one page toward the pointer, clamped into

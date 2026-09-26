@@ -243,6 +243,24 @@ fn direct_drag_preserves_the_grab_offset_established_at_the_press() {
     assert_eq!(placed.inline_subpixels(), 0, "the other axis must not move");
 }
 
+/// A page never steps less than a line: keeping a line in view in a viewport
+/// barely taller than one would page by a sliver, and in one no taller would
+/// never move. A viewport shorter than a line pages by all of itself.
+#[test]
+fn a_page_never_steps_less_than_a_line() {
+    assert_eq!(page_step_subpixels(20.0, 20), Some(20_000));
+    assert_eq!(page_step_subpixels(12.5, 20), Some(12_500));
+    assert_eq!(page_step_subpixels(20.5, 20), Some(20_000));
+    assert_eq!(page_step_subpixels(30.0, 20), Some(20_000));
+    assert_eq!(page_step_subpixels(45.0, 20), Some(25_000));
+    assert_eq!(
+        page_step_subpixels(0.0, 20),
+        Some(0),
+        "an empty viewport has nothing to page"
+    );
+    assert_eq!(page_step_subpixels(-1.0, 20), None);
+}
+
 /// A track click pages toward the pointer by one viewport minus one line.
 #[test]
 fn a_track_click_pages_one_viewport_minus_one_line_toward_the_pointer() {
@@ -251,7 +269,7 @@ fn a_track_click_pages_one_viewport_minus_one_line_toward_the_pointer() {
     let expected = ((VIEWPORT_HEIGHT - f64::from(line_extent_points)) * SUBPIXELS_PER_POINT) as i64;
     assert_eq!(
         page_step_subpixels(VIEWPORT_HEIGHT as f32, line_extent_points),
-        expected
+        Some(expected)
     );
 
     assert_eq!(

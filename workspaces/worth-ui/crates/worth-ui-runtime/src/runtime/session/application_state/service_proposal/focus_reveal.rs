@@ -220,12 +220,9 @@ fn interval(
 }
 
 fn signed_subpixels(value: f32) -> Result<i64, UiFocusRevealStagingDenial> {
-    let scaled = f64::from(value)
-        * worth_ui_host_contract::UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f64;
-    if !scaled.is_finite() || scaled < i64::MIN as f64 || scaled > i64::MAX as f64 {
-        return Err(UiFocusRevealStagingDenial::GeometryOutOfRange);
-    }
-    Ok(scaled.round() as i64)
+    crate::units::UiSubpixels::nearest(value)
+        .map(crate::units::UiSubpixels::count)
+        .ok_or(UiFocusRevealStagingDenial::GeometryOutOfRange)
 }
 
 fn positive_subpixels(value: f32) -> Result<i64, UiFocusRevealStagingDenial> {

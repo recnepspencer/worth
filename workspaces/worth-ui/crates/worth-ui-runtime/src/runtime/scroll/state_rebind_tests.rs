@@ -187,6 +187,48 @@ fn clamp_without_a_new_anchor_retains_the_last_observed_anchor_for_later_rebase(
     assert_eq!(rebased.offset(), UiScrollOffset::new(0, 160).unwrap());
 }
 
+/// A shared owner's anchor row that has since scrolled above the viewport
+/// offers no anchor, so the owner clamps and keeps its offset. Read as sitting
+/// at the top edge, the row would rebase the offset by the whole distance it
+/// once stood below the edge -- a jump the reader never made.
+#[test]
+fn a_shared_owner_whose_anchor_row_scrolled_away_clamps_rather_than_rebasing() {
+    let owner = UiScrollOwnerIdentity::viewport(surface());
+    let shared = incarnation(11);
+    let binding = worth_ui_host_contract::UiSurfaceBindingGeneration::mint_unbound().unwrap();
+    let row = worth_ui_host_contract::UiMountedInstanceIdentity::mint_unbound().unwrap();
+    let identity = UiScrollAnchorIdentity::mounted(row);
+    let registration = |offset| {
+        UiScrollOwnerRegistration::new(owner, shared, UiScrollAxes::Block, bounds(0, 500), offset)
+    };
+    let mut state = UiScrollRuntimeState::new_session_restore_candidate();
+    state
+        .reconcile_rebind(UiScrollRebindRequest::new(
+            registration(UiScrollOffset::new(0, 100).unwrap()),
+            Some(UiScrollAnchor::new(identity, binding, 0, 200).unwrap()),
+            UiScrollAnchorPolicy::Rebase,
+        ))
+        .unwrap();
+
+    let scrolled_away = UiScrollAnchor::new(identity, binding, 0, -40);
+    assert_eq!(
+        scrolled_away, None,
+        "a row above the viewport anchors nothing"
+    );
+    let receipt = UiSharedScrollOwnerReconciliation::new(
+        registration(UiScrollOffset::origin()),
+        row,
+        scrolled_away,
+    )
+    .reconcile(&mut state)
+    .unwrap();
+    assert_eq!(
+        receipt.outcome(),
+        UiScrollAnchorReconciliationOutcome::Clamped
+    );
+    assert_eq!(receipt.offset(), UiScrollOffset::new(0, 100).unwrap());
+}
+
 fn application_item(value: u64) -> crate::runtime::UiApplicationItemKey {
     crate::runtime::UiApplicationItemKey::new(
         crate::runtime::UiApplicationItemKeyFamily::new(core::num::NonZeroU64::new(1).unwrap()),

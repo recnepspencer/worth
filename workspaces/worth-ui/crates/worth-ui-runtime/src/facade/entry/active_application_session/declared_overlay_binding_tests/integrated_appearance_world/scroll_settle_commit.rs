@@ -64,7 +64,7 @@ pub(super) fn scroll_region(line_extent: bool) -> crate::capability::MosaicRegio
 /// One notch toward the top of the content: a milli-line count in offset
 /// direction once the host sign is turned.
 pub(super) fn one_notch_up() -> i64 {
-    -worth_ui_host_contract::UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT
+    -crate::units::host_count_of(1)
 }
 
 pub(super) fn pending_transitions(scroll: &ScrollWorld) -> usize {

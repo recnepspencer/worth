@@ -23,6 +23,8 @@ pub(crate) enum UiScrollStandingDenial {
     CoordinateSpaceChanged,
     /// The sample sits before rest, which no non-negative offset describes.
     BeforeRest,
+    /// The sample stands farther from rest than an offset can count.
+    OutOfRange,
 }
 
 impl UiDisplayedScrollOffset {
@@ -39,8 +41,13 @@ impl UiDisplayedScrollOffset {
         }
         let ([rest_x, rest_y, ..], [shown_x, shown_y, ..]) =
             (rest.components(), shown.components());
-        let inline_subpixels = subpixels(rest_x - shown_x);
-        let block_subpixels = subpixels(rest_y - shown_y);
+        let distance = |points: f32| {
+            crate::units::UiSubpixels::nearest(points)
+                .map(crate::units::UiSubpixels::count)
+                .ok_or(UiScrollStandingDenial::OutOfRange)
+        };
+        let inline_subpixels = distance(rest_x - shown_x)?;
+        let block_subpixels = distance(rest_y - shown_y)?;
         if inline_subpixels < 0 || block_subpixels < 0 {
             return Err(UiScrollStandingDenial::BeforeRest);
         }
@@ -73,10 +80,7 @@ impl UiDisplayedScrollOffset {
 #[cfg(test)]
 pub(crate) fn displayed_scroll_offset_for_test(offset: UiScrollOffset) -> UiDisplayedScrollOffset {
     use worth_ui_host_contract::UiMountedCoordinateSpace::Viewport;
-    let points = |subpixels: i64| {
-        subpixels as f32
-            / worth_ui_host_contract::UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f32
-    };
+    let points = |subpixels: i64| crate::units::UiSubpixels::new(subpixels).to_points_f32();
     let basis = worth_ui_host_contract::UiHostObservationPresentationBasis::new(
         worth_ui_host_contract::UiHostSurfaceIdentity::mint_unbound().unwrap(),
         worth_ui_host_contract::UiMountedFrameIdentity::mint_unbound().unwrap(),
@@ -102,11 +106,6 @@ pub(crate) fn displayed_scroll_offset_for_test(offset: UiScrollOffset) -> UiDisp
     minted
 }
 
-fn subpixels(logical_points: f32) -> i64 {
-    (logical_points * worth_ui_host_contract::UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f32)
-        .round() as i64
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -116,7 +115,6 @@ mod tests {
     use worth_ui_host_contract::{
         UiHostObservationPresentationBasis, UiHostPresentationEpoch, UiHostSurfaceIdentity,
         UiMountedCoordinateSpace, UiMountedFrameIdentity, UiSurfaceBindingGeneration,
-        UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as PER_POINT,
     };
 
     const SPACE: UiMountedCoordinateSpace = UiMountedCoordinateSpace::Viewport;
@@ -141,9 +139,19 @@ mod tests {
             .expect("content sampled above rest is scrolled content");
         assert_eq!(
             scrolled.settled(),
-            UiScrollOffset::new(0, 12 * PER_POINT).unwrap()
+            UiScrollOffset::new(
+                0,
+                crate::units::UiSubpixels::whole_points(12).unwrap().count()
+            )
+            .unwrap()
         );
-        assert!(scrolled.stands_at(UiScrollOffset::new(0, 12 * PER_POINT).unwrap()));
+        assert!(scrolled.stands_at(
+            UiScrollOffset::new(
+                0,
+                crate::units::UiSubpixels::whole_points(12).unwrap().count()
+            )
+            .unwrap()
+        ));
         assert!(!scrolled.stands_at(UiScrollOffset::origin()));
         let at_rest =
             UiDisplayedScrollOffset::from_rest(rest, displayed_at(10.0, 30.0, SPACE)).unwrap();
@@ -158,6 +166,25 @@ mod tests {
                 displayed_at(10.0, 18.0, UiMountedCoordinateSpace::HostSurface)
             ),
             Err(UiScrollStandingDenial::CoordinateSpaceChanged)
+        );
+    }
+
+    /// A sample farther from rest than an offset can count is refused, not
+    /// saturated to the largest offset or read as standing somewhere nearer.
+    #[test]
+    fn a_sample_past_every_countable_offset_stands_nowhere() {
+        let rest =
+            UiPublishedRect::from_committed_components([10.0, 30.0, 40.0, 80.0], SPACE).unwrap();
+        assert_eq!(
+            UiDisplayedScrollOffset::from_rest(rest, displayed_at(10.0, -1.0e16, SPACE)),
+            Err(UiScrollStandingDenial::OutOfRange)
+        );
+        let far = UiPublishedRect::from_committed_components([10.0, f32::MAX, 40.0, 80.0], SPACE)
+            .unwrap();
+        assert_eq!(
+            UiDisplayedScrollOffset::from_rest(far, displayed_at(10.0, -f32::MAX, SPACE)),
+            Err(UiScrollStandingDenial::OutOfRange),
+            "a distance too large for f32 itself is refused too"
         );
     }
 }

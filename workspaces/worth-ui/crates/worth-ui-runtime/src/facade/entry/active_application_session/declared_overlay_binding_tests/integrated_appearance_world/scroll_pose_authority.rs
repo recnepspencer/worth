@@ -19,7 +19,6 @@ use worth_ui_host_contract::*;
 /// A point inside the first component's box, so a wheel there addresses the
 /// region that component owns.
 const WHEEL_POSITION: [i64; 2] = [150_000, 55_000];
-const SUBPIXELS: i64 = UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT;
 
 /// The shared World with its first component's region made scrollable and
 /// one frame published, plus the Scroll owner that region resolves to.
@@ -210,11 +209,17 @@ impl ScrollWorld {
 }
 
 pub(super) fn block(points: i64) -> UiScrollOffset {
-    UiScrollOffset::new(0, points * SUBPIXELS).expect("a nonnegative offset")
+    UiScrollOffset::new(
+        0,
+        crate::units::UiSubpixels::whole_points(points)
+            .unwrap()
+            .count(),
+    )
+    .expect("a nonnegative offset")
 }
 
 fn pixels(points: i64) -> i64 {
-    -points * SUBPIXELS
+    -crate::units::host_count_of(points)
 }
 
 #[test]

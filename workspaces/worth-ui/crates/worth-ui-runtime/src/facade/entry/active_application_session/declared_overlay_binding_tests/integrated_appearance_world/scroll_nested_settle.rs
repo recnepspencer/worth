@@ -113,9 +113,9 @@ fn assert_drawn_by_each_region(scroll: &ScrollWorld, label: &str) {
     let scale =
         UiScrollPresentationDeviceScale::admit(UiScrollPresentationDeviceScale::UNSCALED_MILLI)
             .expect("the World binds its surface unscaled");
-    let subpixels = UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f64;
-    let residue =
-        |offset: UiScrollOffset| scale.grid_residue(offset.block_subpixels() as f64 / subpixels);
+    let residue = |offset: UiScrollOffset| {
+        scale.grid_residue(crate::units::UiSubpixels::new(offset.block_subpixels()).to_points())
+    };
     let hit = nested_hit_y(scroll).expect("hit testing reads the nested row");
     let drawn_at = f64::from(hit)
         + residue(scroll.accepted_offset())

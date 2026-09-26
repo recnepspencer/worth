@@ -102,7 +102,7 @@ fn latch(chain: &Nested, block_delta: i64) -> Option<usize> {
     latching_chain_index(
         &chain.offsets,
         &chain.bounds,
-        UiScrollDelta::new(0, block_delta),
+        UiScrollHeading::new(0, block_delta),
     )
 }
 
