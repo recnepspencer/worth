@@ -37,6 +37,21 @@ impl WorthQueryApplicationCommitDenial {
         }
     }
 
+    /// Refuses a rostered revision whose support this host is retiring or has
+    /// retired.
+    pub(in crate::domain_computation::primary_graph) fn program_support_not_active(
+        revision: &ApplicationProgramRevision,
+    ) -> Self {
+        Self {
+            kind: WorthQueryApplicationCommitDenialKind::ProgramNotActiveOnOccurrence,
+            stage: WorthQueryApplicationCommitDenialStage::ProposalBinding,
+            detail: Some(std::sync::Arc::from(format!(
+                "program revision {revision} is no longer active on this host"
+            ))),
+            custom_invariant: None,
+        }
+    }
+
     pub(in crate::domain_computation::primary_graph::application_attempt) fn program_revision_not_active_on_occurrence(
         presented_identity: &ApplicationProgramIdentity,
         presented_revision: &ApplicationProgramRevision,

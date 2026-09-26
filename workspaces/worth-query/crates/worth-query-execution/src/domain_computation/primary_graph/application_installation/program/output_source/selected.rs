@@ -58,8 +58,9 @@ where
         Source::Input: Clone + Send + Sync + 'static,
     {
         let root = TypeId::of::<Root>();
-        let Some(presented) = self.selected_source_owner::<Source>(owner, root) else {
-            return Ok((program_required(), None));
+        let presented = match self.selected_source_owner::<Source>(owner, root) {
+            Ok(presented) => presented,
+            Err(denial) => return Ok((WorthQueryApplicationCommitOutcome::Denied(denial), None)),
         };
         self.compare_and_commit_output_source::<Source>(
             Some(presented),
@@ -87,8 +88,9 @@ where
         Source::Input: Clone + Send + Sync + 'static,
     {
         let root = TypeId::of::<Root>();
-        let Some(presented) = self.selected_source_owner::<Source>(owner, root) else {
-            return Ok((program_required(), None));
+        let presented = match self.selected_source_owner::<Source>(owner, root) {
+            Ok(presented) => presented,
+            Err(denial) => return Ok((WorthQueryApplicationCommitOutcome::Denied(denial), None)),
         };
         self.compare_and_commit_output_source::<Source>(
             Some(presented),
@@ -101,12 +103,13 @@ where
 
     /// Presents `owner`'s program for `Source` under `root`, only when the
     /// owner was resolved on this host and both the initial program's output
-    /// shape and the selected program declare that source and root.
+    /// shape and the selected program declare that source and root. A selected
+    /// revision whose support has since retired is refused as not active.
     fn selected_source_owner<Source: 'static>(
         &self,
         owner: &WorthQuerySelectedProgramOwner<'_, Schema>,
         root: TypeId,
-    ) -> Option<WorthQueryPresentedProgram<'_>> {
+    ) -> Result<WorthQueryPresentedProgram<'_>, WorthQueryApplicationCommitDenial> {
         use super::super::WorthQueryProgramOwner;
 
         let source = TypeId::of::<Source>();
@@ -115,16 +118,11 @@ where
             || !owner.owns_output_root(root)
             || !owner.owns_output_source(source)
         {
-            return None;
+            return Err(WorthQueryApplicationCommitDenial::application_program_required());
         }
         self.runtime
-            .installed_program_support()?
-            .present(owner.owned_revision())
+            .installed_program_support()
+            .ok_or_else(WorthQueryApplicationCommitDenial::application_program_required)?
+            .present_for_commit(owner.owned_revision())
     }
-}
-
-fn program_required() -> WorthQueryApplicationCommitOutcome {
-    WorthQueryApplicationCommitOutcome::Denied(
-        WorthQueryApplicationCommitDenial::application_program_required(),
-    )
 }

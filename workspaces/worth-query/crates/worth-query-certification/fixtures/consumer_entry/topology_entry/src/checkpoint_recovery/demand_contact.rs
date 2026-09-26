@@ -38,7 +38,6 @@ fn restored_output_retains_its_resource_profile_without_provider_contact() {
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     drop(settle(&request, &application));
-    drop(request);
     drop(principal);
     drop(scope);
     let checkpoint = application.capture_application_checkpoint().unwrap();
@@ -61,7 +60,6 @@ fn restored_final_output_keeps_original_create_producer_and_zero_contact() {
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     drop(settle(&request, &application));
-    drop(request);
     drop(principal);
     drop(scope);
     let checkpoint = application.capture_application_checkpoint().unwrap();

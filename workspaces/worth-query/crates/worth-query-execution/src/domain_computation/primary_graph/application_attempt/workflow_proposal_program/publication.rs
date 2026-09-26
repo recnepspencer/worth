@@ -198,15 +198,19 @@ where
             source_identity,
             progress_update,
         } = prepared;
-        let Some(presented) = self
+        let presented = match self
             .installed_program_support()
-            .and_then(|support| support.present(&program_revision))
-        else {
-            return WorkflowProposalOutcome::Application(
-                WorthQueryApplicationCommitOutcome::Denied(
-                    super::super::WorthQueryApplicationCommitDenial::application_program_required(),
-                ),
-            );
+            .ok_or_else(
+                super::super::WorthQueryApplicationCommitDenial::application_program_required,
+            )
+            .and_then(|support| support.present_for_commit(&program_revision))
+        {
+            Ok(presented) => presented,
+            Err(denial) => {
+                return WorkflowProposalOutcome::Application(
+                    WorthQueryApplicationCommitOutcome::Denied(denial),
+                );
+            }
         };
         let outcome = self.compare_and_commit_application_for_program_action(
             &presented,

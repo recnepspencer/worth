@@ -54,7 +54,13 @@ where
     /// The selected program must declare this source and `Root`, and the
     /// host's initial output shape must declare `Root`, since the returned
     /// custody is typed by that shape. A branch whose program changes after
-    /// selection is refused at commit as not active on its occurrence.
+    /// selection, or whose program's support this host has since retired, is
+    /// refused at commit as not active.
+    ///
+    /// A retried key replays its recorded outcome before any commit, even
+    /// after the branch adopts another program. Only a host that does not
+    /// roster the branch's current program refuses the retry, at owner
+    /// resolution, before the replay is consulted.
     pub fn execute_performed_in_selected_program<Program, Root>(
         self,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,

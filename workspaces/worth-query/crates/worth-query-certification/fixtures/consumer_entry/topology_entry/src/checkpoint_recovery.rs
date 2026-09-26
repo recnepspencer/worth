@@ -122,7 +122,6 @@ fn checkpoint_reopens_ready_output_without_producer_contact_and_recomputes_after
     assert!(settled.work().producer_contact_count() > 0);
     assert!(super::producer::provider_contacts() > 0);
     drop(settled);
-    drop(request);
     drop(principal);
     drop(scope);
 
@@ -197,7 +196,6 @@ fn recovered_output_survives_an_unrelated_settled_edit_without_producer_contact(
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     drop(settle(&request, &application));
-    drop(request);
     drop(principal);
     drop(scope);
     let checkpoint = application
@@ -238,7 +236,6 @@ fn unadopted_recovered_output_survives_an_unrelated_edit_before_first_demand() {
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     drop(settle(&request, &application));
-    drop(request);
     drop(principal);
     drop(scope);
     let checkpoint = application
@@ -279,7 +276,6 @@ fn checkpoint_reopens_sibling_parameter_partitions_without_contact_or_panic() {
     let request = application.request(&principal, &scope);
     drop(settle_for(&request, &application, "anchor-a"));
     drop(settle_for(&request, &application, "anchor-b"));
-    drop(request);
     drop(principal);
     drop(scope);
     let checkpoint = application

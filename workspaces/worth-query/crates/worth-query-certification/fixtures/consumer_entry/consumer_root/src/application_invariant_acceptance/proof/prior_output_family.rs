@@ -152,7 +152,6 @@ fn create_cycle_from_points(
     let vertices = points
         .iter()
         .copied()
-        .into_iter()
         .enumerate()
         .map(|(index, (x, y))| PlanarVertex {
             body_key: format!("{prefix}-{index}"),

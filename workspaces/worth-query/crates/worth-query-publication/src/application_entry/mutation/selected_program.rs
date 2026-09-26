@@ -42,6 +42,11 @@ where
     /// owner is presented only so the authoritative occurrence gate can
     /// publish its established inactive-program denial. That presentation
     /// cannot commit the removed action or perform its external effects.
+    ///
+    /// A retried key replays its recorded outcome before any commit, even
+    /// after the branch adopts another program. Only a host that does not
+    /// roster the branch's current program refuses the retry, at owner
+    /// resolution, before the replay is consulted.
     pub fn execute_in_selected_program<Program>(
         self,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,

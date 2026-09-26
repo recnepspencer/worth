@@ -1169,19 +1169,27 @@ execute under that branch's selected program. `execute_performed_in_selected_pro
 and `execute_performed_discovered_in_selected_program` join
 `execute_in_selected_program`. Each selects the request's exact branch and presents
 that program at the source commit, so the source and its outputs settle under the
-successor. An installed-program lane on an adopted branch, or an adoption that lands
-between selection and commit, is refused before any effect with the typed
-`ProgramNotActiveOnOccurrence` commit denial. Every House edit lane uses the selected
-lanes. The House journey `adopted_branch_edits` proves plain, required-output and
-discovered-output edits under P1, the typed refusal of the P0 lanes on that branch,
-and a sibling still editing under P0.
+successor. An installed-program lane on an adopted branch is refused before any
+effect with the typed `ProgramNotActiveOnOccurrence` commit denial, and so is a
+revision retired from the host after selection. An adoption that lands between
+selection and commit is refused by the same commit-time check; that interleaving is
+argued from the check's position, not driven by a test. A retried key replays its
+recorded outcome before any commit, and no refusal claims its key. Every House edit
+lane uses the selected lanes. The House journey `adopted_branch_edits` proves plain,
+required-output and discovered-output edits under P1, the typed refusal of the P0
+lanes on that branch, and a sibling still editing under P0. The consumer journey
+proves a foreign runtime and an undeclared root are refused before publication
+without claiming their keys.
 
 Status: `boundary-check` enforces the import law as a configured source-owner
 isolation in `road1.toml`. `managed_run` and `conditional_operation` may not name a
 path through `primary_graph::workflow`, whether written as a `crate::` path or
-resolved from `self::` or `super::`. They also may not name any type, visible
-function, constant, static or exported macro that the workflow kernel declares, so a
-re-export through a parent facade is caught too.
+resolved from `self::`, `super::` or an inline module. They also may not name any
+type, visible function, constant, static or exported macro that the workflow kernel
+declares, nor call a visible method the kernel adds to a type declared elsewhere, so
+a re-export through a parent facade is caught too. Test-only kernel items bind
+nothing. A kernel value glob-imported through a facade and then used by bare name
+is not traced; no guarded file can do this while the kernel re-exports nothing.
 
 ## Acceptance, Cost And Review
 

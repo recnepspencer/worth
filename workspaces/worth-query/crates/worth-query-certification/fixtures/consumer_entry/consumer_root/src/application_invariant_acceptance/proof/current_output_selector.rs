@@ -108,15 +108,10 @@ fn publish_initial(request: &Request<'_>, application: &ProgramApplication, scop
             ),
         )
         .expect("the declared root producer starts for the selected source");
-    loop {
-        match output
-            .advance(request)
-            .expect("the declared root producer settles")
-        {
-            WorthQueryApplicationProgramOutputProgress::Pending => {}
-            WorthQueryApplicationProgramOutputProgress::Settled(_) => break,
-        }
-    }
+    while let WorthQueryApplicationProgramOutputProgress::Pending = output
+        .advance(request)
+        .expect("the declared root producer settles")
+    {}
 }
 
 fn adjust_source(

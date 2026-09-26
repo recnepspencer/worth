@@ -94,15 +94,17 @@ where
             definition,
             workflow_intent_identity,
         } = prepared;
-        let Some(presented) = self
+        let presented = match self
             .installed_program_support()
-            .and_then(|support| support.present(&program_revision))
-        else {
-            return WorkflowDefinitionRetirementOutcome::Application(
-                WorthQueryApplicationCommitOutcome::Denied(
-                    WorthQueryApplicationCommitDenial::application_program_required(),
-                ),
-            );
+            .ok_or_else(WorthQueryApplicationCommitDenial::application_program_required)
+            .and_then(|support| support.present_for_commit(&program_revision))
+        {
+            Ok(presented) => presented,
+            Err(denial) => {
+                return WorkflowDefinitionRetirementOutcome::Application(
+                    WorthQueryApplicationCommitOutcome::Denied(denial),
+                );
+            }
         };
         let outcome = self.compare_and_commit_application_for_program_action(
             &presented,

@@ -120,15 +120,17 @@ where
             }
             (false, None) => {}
         }
-        let Some(presented) = self
+        let presented = match self
             .installed_program_support()
-            .and_then(|support| support.present(&program_revision))
-        else {
-            return WorkflowProgressOutcome::Application(
-                super::super::super::WorthQueryApplicationCommitOutcome::Denied(
-                    super::super::super::WorthQueryApplicationCommitDenial::application_program_required(),
-                ),
-            );
+            .ok_or_else(super::super::super::WorthQueryApplicationCommitDenial::application_program_required)
+            .and_then(|support| support.present_for_commit(&program_revision))
+        {
+            Ok(presented) => presented,
+            Err(denial) => {
+                return WorkflowProgressOutcome::Application(super::super::super::WorthQueryApplicationCommitOutcome::Denied(
+                    denial,
+                ));
+            }
         };
         let idempotency = match &assessment {
             Some(assessment) => idempotency

@@ -240,7 +240,7 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, FinalPlanarMutation
             WorthQueryCreateOutput,
         >::try_new("anchor")
         .expect("the final output role is declared");
-        if let Err(error) = writer.create_output(role, &entity) {
+        if let Err(error) = writer.create_output(role, entity) {
             return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error));
         }
         for (key, entity) in keys.iter().zip(entities.iter()).skip(1) {

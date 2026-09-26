@@ -222,3 +222,50 @@ fn same_operation_intent_cannot_cross_an_admitted_scope() {
         crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind::IdempotencyIntentDrift
     );
 }
+
+#[test]
+fn lifecycle_replay_resolvers_have_no_replay_for_an_ordinary_admission() {
+    let world = installed_authorization_world(true);
+    let request = live_scope();
+    let principal = authenticated_principal(&world, &request);
+    let account = resolved_account(&world, "open", &request);
+    let first = admitted_program(&world, &principal, &account, &request, "lifecycle");
+    assert!(matches!(
+        world
+            .application
+            .compare_and_commit_application(first, idempotency(12, 12)),
+        WorthQueryApplicationCommitOutcome::Committed(_)
+    ));
+
+    // The same key already committed, but an ordinary admission holds no
+    // lifecycle binding, so no lifecycle resolver may replay or panic on it.
+    let account = resolved_account(&world, "lifecycle", &request);
+    let operation = world
+        .application
+        .installed_schema()
+        .installed_operation(MultiTouchOperation::reference())
+        .unwrap();
+    let mut admission = world
+        .selected_product()
+        .authorize_operation(
+            &principal,
+            &account,
+            &operation,
+            Default::default(),
+            &request,
+        )
+        .unwrap();
+    let application = &world.application;
+    assert!(matches!(
+        application.resolve_admitted_elevation_close_replay(&mut admission, idempotency(12, 12)),
+        Ok(None)
+    ));
+    assert!(matches!(
+        application.resolve_admitted_elevation_approval_replay(&mut admission, idempotency(12, 12)),
+        Ok(None)
+    ));
+    assert!(matches!(
+        application.resolve_admitted_mandatory_review_replay(&mut admission, idempotency(12, 12)),
+        Ok(None)
+    ));
+}

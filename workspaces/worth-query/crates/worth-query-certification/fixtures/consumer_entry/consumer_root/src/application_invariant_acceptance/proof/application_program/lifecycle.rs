@@ -192,8 +192,6 @@ pub(super) fn two_forks_preserve_predecessor_output(
     drop(right_settled);
     drop(left_output);
     drop(right_output);
-    drop(left_request);
-    drop(right_request);
     world.application.on_branch(left).close().unwrap();
     world.application.on_branch(right).close().unwrap();
 }
@@ -231,7 +229,6 @@ pub(super) fn branch_close_wakes_live_required_output(
     };
     assert!(notifications.generation() > before);
     drop(output);
-    drop(request);
     if let Some(cleanup) = pending_cleanup {
         cleanup.retry().unwrap();
     }

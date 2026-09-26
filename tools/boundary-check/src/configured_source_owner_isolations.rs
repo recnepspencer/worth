@@ -4,7 +4,8 @@
 //! any item the owner declares, so a re-export through a parent facade is no
 //! way around the law. Relative paths resolve against the guarded file's own
 //! module, so `super::workflow` from a sibling is the same reach as
-//! `crate::primary_graph::workflow`.
+//! `crate::primary_graph::workflow`. Methods the owner adds to types it does
+//! not own count as its items too, whether called or named by path.
 
 use std::{collections::BTreeSet, fs, path::Path};
 
@@ -13,6 +14,10 @@ use syn::visit::Visit;
 use crate::config::SourceOwnerIsolationConfig;
 use crate::diagnostics::{Diagnostic, DiagnosticCode};
 
+mod owned_items;
+
+use owned_items::{is_test_source, OwnedItemCollector, OwnedItems};
+
 pub(crate) fn validate_source_owner_isolations(
     workspace: &Path,
     rules: &[SourceOwnerIsolationConfig],
@@ -20,27 +25,28 @@ pub(crate) fn validate_source_owner_isolations(
     let mut diagnostics = Vec::new();
     for rule in rules {
         let mut owned = OwnedItems::default();
+        let mut declared = BTreeSet::new();
+        let mut methods = Vec::new();
         for (path, source) in rust_sources(workspace, &rule.owner_roots, &mut diagnostics) {
+            if is_test_source(&path) {
+                continue;
+            }
             match syn::parse_file(&source) {
-                Ok(file) => OwnedItemCollector { owned: &mut owned }.visit_file(&file),
+                Ok(file) => OwnedItemCollector {
+                    owned: &mut owned,
+                    declared: &mut declared,
+                    methods: &mut methods,
+                }
+                .visit_file(&file),
                 Err(_) => diagnostics.push(unparsable(&path)),
             }
         }
+        owned.add_foreign_type_methods(methods, &declared);
         for (path, source) in rust_sources(workspace, &rule.guarded_roots, &mut diagnostics) {
             diagnostics.extend(diagnostics_for_source(&path, &source, &owned, rule));
         }
     }
     diagnostics
-}
-
-/// What an isolated owner declares.
-#[derive(Default)]
-struct OwnedItems {
-    /// Type names, refused wherever they appear.
-    types: BTreeSet<String>,
-    /// Visible function, constant, static and exported macro names, refused
-    /// when a qualified path or an import reaches them.
-    values: BTreeSet<String>,
 }
 
 fn diagnostics_for_source(
@@ -150,62 +156,6 @@ fn unreadable(path: &str, error: &std::io::Error) -> Diagnostic {
     )
 }
 
-struct OwnedItemCollector<'a> {
-    owned: &'a mut OwnedItems,
-}
-
-impl OwnedItemCollector<'_> {
-    fn value(&mut self, visibility: &syn::Visibility, identifier: &proc_macro2::Ident) {
-        if !matches!(visibility, syn::Visibility::Inherited) {
-            self.owned.values.insert(identifier.to_string());
-        }
-    }
-}
-
-impl Visit<'_> for OwnedItemCollector<'_> {
-    fn visit_item_struct(&mut self, item: &syn::ItemStruct) {
-        self.owned.types.insert(item.ident.to_string());
-    }
-
-    fn visit_item_enum(&mut self, item: &syn::ItemEnum) {
-        self.owned.types.insert(item.ident.to_string());
-    }
-
-    fn visit_item_trait(&mut self, item: &syn::ItemTrait) {
-        self.owned.types.insert(item.ident.to_string());
-    }
-
-    fn visit_item_type(&mut self, item: &syn::ItemType) {
-        self.owned.types.insert(item.ident.to_string());
-    }
-
-    fn visit_item_union(&mut self, item: &syn::ItemUnion) {
-        self.owned.types.insert(item.ident.to_string());
-    }
-
-    fn visit_item_fn(&mut self, item: &syn::ItemFn) {
-        self.value(&item.vis, &item.sig.ident);
-    }
-
-    fn visit_item_const(&mut self, item: &syn::ItemConst) {
-        self.value(&item.vis, &item.ident);
-    }
-
-    fn visit_item_static(&mut self, item: &syn::ItemStatic) {
-        self.value(&item.vis, &item.ident);
-    }
-
-    fn visit_item_macro(&mut self, item: &syn::ItemMacro) {
-        let exported = item
-            .attrs
-            .iter()
-            .any(|attribute| attribute.path().is_ident("macro_export"));
-        if let (true, Some(identifier)) = (exported, &item.ident) {
-            self.owned.values.insert(identifier.to_string());
-        }
-    }
-}
-
 struct IsolationVisitor<'a> {
     owned: &'a OwnedItems,
     forbidden_paths: &'a [Vec<String>],
@@ -227,7 +177,7 @@ impl IsolationVisitor<'_> {
             }
         }
         if let (true, Some(last)) = (segments.len() > 1, segments.last()) {
-            if self.owned.values.contains(last) {
+            if self.owned.values.contains(last) || self.owned.methods.contains(last) {
                 self.found.insert(last.clone());
             }
         }
@@ -307,6 +257,26 @@ impl Visit<'_> for IsolationVisitor<'_> {
             .collect::<Vec<_>>();
         self.check_segments(&segments);
         syn::visit::visit_path(self, path);
+    }
+
+    fn visit_expr_method_call(&mut self, call: &syn::ExprMethodCall) {
+        let method = call.method.to_string();
+        if self.owned.methods.contains(&method) {
+            self.found.insert(method);
+        }
+        syn::visit::visit_expr_method_call(self, call);
+    }
+
+    /// Relative paths inside an inline module resolve against that module.
+    fn visit_item_mod(&mut self, item: &syn::ItemMod) {
+        let inline = item.content.is_some();
+        if inline {
+            self.module.push(item.ident.to_string());
+        }
+        syn::visit::visit_item_mod(self, item);
+        if inline {
+            self.module.pop();
+        }
     }
 
     fn visit_item_use(&mut self, item: &syn::ItemUse) {

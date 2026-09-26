@@ -78,7 +78,6 @@ pub(super) fn abandoned_and_superseded_preparations_are_bounded(
 
     drop(recovered_settlement);
     drop(recovered);
-    drop(request);
     drop(world);
     let world = installation::install(foreign);
     let adapter = authentication::admit(world.application.installed_schema());
@@ -197,7 +196,6 @@ pub(super) fn close_before_required_output_start_is_typed(
         worth_query_host::facade::primary_graph::WorthQueryProductBranchAdmissionDenial::RetiredBranch
     );
     drop(failure);
-    drop(request);
     if let Some(cleanup) = pending_cleanup {
         cleanup
             .retry()

@@ -52,6 +52,9 @@ pub(crate) fn run(
     application_program::root_selection::undeclared_root_is_denied_before_publication(foreign);
     application_program::root_selection::truncated_root_is_denied_before_publication(foreign);
     application_program::root_selection::result_set_source_binds_through_publication(foreign);
+    application_program::selected_root_selection::selected_lane_refuses_what_the_selected_program_does_not_own(
+        foreign,
+    );
     application_program::ordinary_source_publication_cannot_bypass_program(foreign);
     application_program::lifecycle_proofs(foreign);
     resource_profile::candidate_bytes_beyond_host_limit_are_denied(foreign);

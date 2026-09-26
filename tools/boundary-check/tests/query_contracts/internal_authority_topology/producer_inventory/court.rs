@@ -124,10 +124,24 @@ const RAW_QUERY_ELEVATION_TYPES: &[&str] = &[
     "WorthQueryElevationApprovalOutcome",
     "WorthQueryElevationCloseOutcome",
     "WorthQueryMandatoryReviewOutcome",
+    // The runtimes that can redeem a commit receipt for recovery or outbox
+    // authority. Pinning them here is what keeps the receipt itself ordinary.
+    "WorthQueryPrimaryGraphApplicationRuntime",
+    "WorthQueryProgramApplicationRuntime",
+    "WorthQueryWorkflowApplicationRuntime",
 ];
 // The commit receipt is not on this list: since 9.17.4 it is the ordinary
-// Query mutation outcome Bank hands every caller, and the Query runtime that
-// could turn it into recovery or outbox authority stays crate-private.
+// Query mutation outcome Bank hands every caller, and only the runtimes above,
+// which no public Bank item may name, can turn it into authority.
+
+/// Public Bank items that still name a pinned runtime, each owed by a named
+/// 9.17.6 slice. The court requires this exact set, so the list cannot grow
+/// and an entry must be removed in the change that closes it.
+const PENDING_BANK_RUNTIME_EXPOSURES: &[&str] = &[
+    // 9.17.6 slice 5.6: Bank's integration tests still reach the program
+    // runtime directly; the Bank adapter replaces this with typed lanes.
+    "identity_runtime.rs::application_program",
+];
 
 fn names_raw_query_elevation(tokens: impl ToTokens) -> bool {
     let source = tokens.to_token_stream().to_string();
@@ -211,9 +225,9 @@ fn public_bank_api_never_exposes_raw_query_elevation_authority() {
             escaped.push(format!("{relative}::{signature}"));
         }
     }
-    assert!(
-        escaped.is_empty(),
-        "raw Query elevation escaped Bank: {escaped:?}"
+    assert_eq!(
+        escaped, PENDING_BANK_RUNTIME_EXPOSURES,
+        "raw Query elevation escaped Bank beyond the pending slice exposures"
     );
 
     let mutants = [

@@ -1,4 +1,8 @@
-use super::{diagnostics_for_source, validate_source_owner_isolations, OwnedItems};
+use syn::visit::Visit;
+
+use super::{
+    diagnostics_for_source, validate_source_owner_isolations, OwnedItemCollector, OwnedItems,
+};
 use crate::config::SourceOwnerIsolationConfig;
 
 fn rule() -> SourceOwnerIsolationConfig {
@@ -18,6 +22,7 @@ fn owned() -> OwnedItems {
             "MAX_BACK_EDGES".to_owned(),
         ]
         .into(),
+        methods: std::collections::BTreeSet::new(),
     }
 }
 
@@ -98,6 +103,83 @@ fn a_relative_path_resolves_against_the_guarded_file_module() {
     let own_module = "crate/src/managed_run/workflow_stage.rs";
     assert!(findings_at(own_module, "use super::workflow::WorkflowRun;").is_empty());
     assert!(findings_at(nested, "use super::workflow_gate::Gate;").is_empty());
+}
+
+/// What `rule()` isolates when the owner declares exactly `owner_source`.
+fn collected(owner_source: &str) -> OwnedItems {
+    let mut owned = OwnedItems::default();
+    let mut declared = std::collections::BTreeSet::new();
+    let mut methods = Vec::new();
+    OwnedItemCollector {
+        owned: &mut owned,
+        declared: &mut declared,
+        methods: &mut methods,
+    }
+    .visit_file(&syn::parse_file(owner_source).unwrap());
+    owned.add_foreign_type_methods(methods, &declared);
+    owned
+}
+
+fn findings_against(owned: &OwnedItems, source: &str) -> Vec<String> {
+    diagnostics_for_source("guarded/run.rs", source, owned, &rule())
+        .into_iter()
+        .map(|diagnostic| diagnostic.message().to_owned())
+        .collect()
+}
+
+#[test]
+fn a_method_the_owner_adds_to_a_foreign_type_is_refused_when_called_or_named() {
+    let owned = collected(
+        "pub struct WorkflowDefinition;          impl WorthQuerySelectedProductOperation {              pub(in crate::primary_graph) fn prepare_workflow_publication(&self) {}              fn private_step(&self) {}          }          impl WorkflowDefinition { pub fn new() -> Self { Self } }          struct PrivateEntity; impl PrivateEntity { pub(crate) fn text(&self) {} }          pub(super) fn encode() {}",
+    );
+    for source in [
+        "fn f(product: &Product) { product.prepare_workflow_publication(); }",
+        "fn f(product: &Product) {              WorthQuerySelectedProductOperation::prepare_workflow_publication(product); }",
+    ] {
+        let found = findings_against(&owned, source);
+        assert_eq!(found.len(), 1, "{source}: {found:?}");
+        assert!(found[0].contains("`prepare_workflow_publication`"), "{found:?}");
+    }
+    for legal in [
+        "fn f(product: &Product) { product.private_step(); }",
+        "fn f() { let _ = Run::new(); }",
+        "fn f(material: &mut Material) { material.text(); material.encode(); }",
+    ] {
+        assert!(findings_against(&owned, legal).is_empty(), "{legal}");
+    }
+}
+
+#[test]
+fn test_only_owner_items_do_not_bind_guarded_code() {
+    let owned = collected(
+        "struct Fixture; #[cfg(test)] pub(crate) struct Harness;          #[cfg(test)] mod tests { pub(crate) fn seeded() {} } pub struct Kernel;",
+    );
+    assert!(owned.types.contains("Kernel"));
+    assert!(findings_against(
+        &owned,
+        "struct Fixture; struct Harness; fn f() { crate::support::seeded(); }"
+    )
+    .is_empty());
+}
+
+#[test]
+fn a_relative_path_inside_an_inline_module_resolves_against_that_module() {
+    let sibling = "crate/src/primary_graph/conditional_operation.rs";
+    let found = findings_at(
+        sibling,
+        "mod helpers { use super::super::workflow::advance; }",
+    );
+    assert_eq!(found.len(), 1, "{found:?}");
+    assert!(found[0].contains("`primary_graph::workflow`"), "{found:?}");
+    assert!(findings_at(sibling, "mod workflow { } use self::workflow::Local;").is_empty());
+}
+
+/// Accepted limitation: a glob import from a module that re-exports an owner
+/// value, then a bare call, is not traced. No guarded file can do this while
+/// the kernel module stays private and re-exports nothing.
+#[test]
+fn a_glob_imported_value_used_by_bare_name_is_not_traced() {
+    assert!(findings("use crate::facade::*; fn f() { advance_workflow_instance(); }").is_empty());
 }
 
 #[test]

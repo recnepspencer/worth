@@ -189,15 +189,19 @@ where
             content_identity_locator,
             workflow_intent_identity,
         ) = prepared.into_parts();
-        let Some(presented) = self
+        let presented = match self
             .installed_program_support()
-            .and_then(|support| support.present(&program_revision))
-        else {
-            return WorkflowDefinitionPublicationOutcome::Application(
-                WorthQueryApplicationCommitOutcome::Denied(
-                    super::super::WorthQueryApplicationCommitDenial::application_program_required(),
-                ),
-            );
+            .ok_or_else(
+                super::super::WorthQueryApplicationCommitDenial::application_program_required,
+            )
+            .and_then(|support| support.present_for_commit(&program_revision))
+        {
+            Ok(presented) => presented,
+            Err(denial) => {
+                return WorkflowDefinitionPublicationOutcome::Application(
+                    WorthQueryApplicationCommitOutcome::Denied(denial),
+                );
+            }
         };
         let outcome = self.compare_and_commit_application_for_program_action(
             &presented,
