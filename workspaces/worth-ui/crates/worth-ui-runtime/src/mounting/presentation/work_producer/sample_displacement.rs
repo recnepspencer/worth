@@ -59,6 +59,12 @@ impl UiMountedPresentationState {
             .as_ref()
             .is_some_and(|displaced| displaced.contains(&command))
     }
+
+    /// Whether the work presenting this frame recorded nothing it displaces.
+    #[cfg(test)]
+    pub(in crate::mounting::presentation) fn records_no_displacement(&self) -> bool {
+        self.displaced_samples.is_none()
+    }
 }
 
 /// The commands a delta change touches that the displayed frame draws: the

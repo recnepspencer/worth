@@ -12,14 +12,14 @@
 use super::geometry::scrollable::install_scrollable_primary_with_inner_region;
 use super::scroll_pose_authority::{block, ScrollWorld};
 use super::scroll_settle_commit::{
-    one_notch_up, pending_transitions, smooth_scroll, LINE_EXTENT_POINTS, ONE_NOTCH,
+    one_notch_up, pending_transitions, smooth_scroll, LINE_EXTENT_POINTS, ONE_NOTCH, SETTLE_TICKS,
 };
 use super::scroll_settle_frame::{notch, quiet_frame};
-use super::scroll_settle_hit_lead::{assert_drawn_where_hit, assert_paint_and_hit_agree};
+use super::scroll_settle_hit_lead::{assert_paint_and_hit_agree, nested_hit_y};
 use super::session::World;
 use crate::runtime::scroll::{
     UiHostScrollObservationOutcome, UiScrollDeltaCause, UiScrollOffset, UiScrollOwnerIdentity,
-    UiScrollOwnerIncarnation,
+    UiScrollOwnerIncarnation, UiScrollPresentationDeviceScale,
 };
 use worth_ui_host_contract::*;
 
@@ -39,6 +39,16 @@ fn nested_world() -> (ScrollWorld, UiScrollOwnerIdentity, UiScrollOwnerIncarnati
         world.instances,
     );
     let scroll = ScrollWorld::publish_installed(world);
+    let (owner, incarnation) = inner_owner(&scroll);
+    assert!(
+        owner != scroll.owner,
+        "the inner region is its own owner, nested in the first component's"
+    );
+    (scroll, owner, incarnation)
+}
+
+/// The Scroll owner the inner region resolves to.
+fn inner_owner(scroll: &ScrollWorld) -> (UiScrollOwnerIdentity, UiScrollOwnerIncarnation) {
     let inner = scroll.world.instances[1];
     let owner = scroll
         .world
@@ -49,17 +59,13 @@ fn nested_world() -> (ScrollWorld, UiScrollOwnerIdentity, UiScrollOwnerIncarnati
         .ownership_chain(inner)
         .expect("the inner region's owner resolves its Scroll chain")
         .owners()[0];
-    assert!(
-        owner != scroll.owner,
-        "the inner region is its own owner, nested in the first component's"
-    );
     let incarnation = scroll
         .world
         .session
         .mounted
         .scroll_region_incarnation(inner, 0)
         .expect("the inner region has a current allocation");
-    (scroll, owner, incarnation)
+    (owner, incarnation)
 }
 
 /// One smooth notch over the inner region.
@@ -96,12 +102,50 @@ fn inner_offset(
         .expect("the inner region keeps its offset")
 }
 
+/// The host draws the nested row where each region's offset, rounded to the
+/// device grid on its own, puts it. Hit testing reads the row where the exact
+/// offsets put it, so the two stand apart by exactly the fraction of a device
+/// pixel each region's offset carries: up to a whole pixel across the two
+/// regions, never anything else. It reads the accepted offsets, so it holds
+/// on frames that applied their sample, not beside a Motion tick in flight.
+fn assert_drawn_by_each_region(scroll: &ScrollWorld, label: &str) {
+    let (owner, incarnation) = inner_owner(scroll);
+    let scale =
+        UiScrollPresentationDeviceScale::admit(UiScrollPresentationDeviceScale::UNSCALED_MILLI)
+            .expect("the World binds its surface unscaled");
+    let subpixels = UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f64;
+    let residue =
+        |offset: UiScrollOffset| scale.grid_residue(offset.block_subpixels() as f64 / subpixels);
+    let hit = nested_hit_y(scroll).expect("hit testing reads the nested row");
+    let drawn_at = f64::from(hit)
+        + residue(scroll.accepted_offset())
+        + residue(inner_offset(scroll, owner, incarnation));
+    let nested = scroll.world.instances[2];
+    let drawn = scroll
+        .world
+        .host
+        .accepted_text_drawn_bounds(scroll.surface())
+        .into_iter()
+        .filter(|(identity, _)| identity.mounted_instance() == nested)
+        .map(|(_, drawn)| drawn)
+        .collect::<Vec<_>>();
+    assert!(!drawn.is_empty(), "{label}: the host draws the nested row");
+    for drawn in drawn {
+        assert!(
+            (f64::from(drawn.y()) - drawn_at).abs() < 1e-3,
+            "{label}: the host draws the nested row at {}, each region's rounding puts it at \
+             {drawn_at} (hit testing reads it at {hit})",
+            drawn.y()
+        );
+    }
+}
+
 /// Run quiet frames `ticks`, holding the oracles at each.
 fn frames(scroll: &mut ScrollWorld, ticks: std::ops::RangeInclusive<u64>, label: &str) {
     for tick in ticks {
         quiet_frame(scroll, tick);
         assert_paint_and_hit_agree(scroll, &format!("{label}: frame {tick}"));
-        assert_drawn_where_hit(scroll, &format!("{label}: frame {tick}"));
+        assert_drawn_by_each_region(scroll, &format!("{label}: frame {tick}"));
     }
 }
 
@@ -129,7 +173,7 @@ fn a_nested_settle_lands_while_a_page_carries_its_region() {
         .expect("a page with no attempt in flight applies");
     scroll.publish_direct(8);
     assert_paint_and_hit_agree(&scroll, "the page published mid-settle");
-    assert_drawn_where_hit(&scroll, "the page published mid-settle");
+    assert_drawn_by_each_region(&scroll, "the page published mid-settle");
     frames(&mut scroll, 9..=20, "the page published");
     assert_eq!(pending_transitions(&scroll), 0, "nothing strands");
     assert!(!scroll.world.session.awaits_scroll_settle_retry());
@@ -139,8 +183,9 @@ fn a_nested_settle_lands_while_a_page_carries_its_region() {
 }
 
 /// A settle of the region carrying the inner one moves the inner content box
-/// every frame without moving the inner offset, which a notch put short of
-/// rest.
+/// every frame without moving the inner offset, which the inner settle has
+/// already brought to rest. Both settling at once is
+/// `nested_settles_in_flight_together_each_land_at_their_own_target`.
 #[test]
 fn an_outer_settle_carries_a_nested_region_at_its_own_offset() {
     let (mut scroll, inner, incarnation) = nested_world();
@@ -153,6 +198,47 @@ fn an_outer_settle_carries_a_nested_region_at_its_own_offset() {
     notch(&mut scroll, 14);
     frames(&mut scroll, 15..=24, "the first component settling");
     assert_eq!(pending_transitions(&scroll), 0, "nothing strands");
+    assert_eq!(scroll.accepted_offset(), line);
+    assert_eq!(scroll.mounted_offset(), Some(line));
+    assert_eq!(inner_offset(&scroll, inner, incarnation), line);
+    let _ = scroll.world.session.shutdown();
+}
+
+/// A settle of the region carrying the inner one while the inner region's
+/// own settle is still in flight: both advance on the same frames, the row
+/// is hit where it is drawn at every one, and each comes to rest at its own
+/// target.
+#[test]
+fn nested_settles_in_flight_together_each_land_at_their_own_target() {
+    let (mut scroll, inner, incarnation) = nested_world();
+    let line = block(i64::from(LINE_EXTENT_POINTS));
+    notch_inner(&mut scroll, 5);
+    // No frame has sampled the inner settle, so it has not started when the
+    // latch the inner notch took lapses and the next notch is the first
+    // component's.
+    notch(&mut scroll, 5 + u64::from(SETTLE_TICKS) + 1);
+    assert_eq!(
+        pending_transitions(&scroll),
+        2,
+        "both settles are in flight"
+    );
+    frames(&mut scroll, 12..=14, "both regions settling");
+    for (region, offset) in [
+        ("the first component", scroll.accepted_offset()),
+        (
+            "the inner region",
+            inner_offset(&scroll, inner, incarnation),
+        ),
+    ] {
+        assert!(
+            (1..line.block_subpixels()).contains(&offset.block_subpixels()),
+            "{region} is mid-settle: {offset:?}"
+        );
+    }
+    assert_eq!(pending_transitions(&scroll), 2, "neither settle has ended");
+    frames(&mut scroll, 15..=24, "both regions coming to rest");
+    assert_eq!(pending_transitions(&scroll), 0, "nothing strands");
+    assert!(!scroll.world.session.awaits_scroll_settle_retry());
     assert_eq!(scroll.accepted_offset(), line);
     assert_eq!(scroll.mounted_offset(), Some(line));
     assert_eq!(inner_offset(&scroll, inner, incarnation), line);

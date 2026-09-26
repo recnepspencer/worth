@@ -27,8 +27,12 @@ pub(in crate::mounting::projection) fn complete_hit_test(
             node.receipt.graph_node(),
         ));
     }
+    // Scrolled content is painted on the device grid, but hit testing reads
+    // it exactly where its offset put it, as every later pose moves it.
     let bounds = match node.presentation_allocation() {
-        UiMountedAllocationProjection::Known { bounds, .. } => off_the_grid(bounds, node)?,
+        UiMountedAllocationProjection::Known { bounds, .. } => {
+            node.recorded_bounds.unwrap_or(bounds)
+        }
         UiMountedAllocationProjection::PortalAnchorObservation { .. } => {
             return Err(UiMountedProjectionDenial::UnsupportedHitTestAllocation(
                 node.receipt.graph_node(),
@@ -106,21 +110,6 @@ pub(in crate::mounting) fn reattribute_hit_test_with_probes(
     })
     .map(|row| (row, probes))
     .map_err(UiMountedProjectionDenial::HitTestCompletion)
-}
-
-/// The box on record under a painted allocation: scrolled content is painted
-/// on the device grid, but hit testing reads it exactly where its offset put
-/// it, as every later pose moves it.
-fn off_the_grid(
-    painted: worth_ui_host_contract::UiMountedCanonicalBox,
-    node: &super::super::frame_storage::UiMountedProjectionNodeRecord,
-) -> Result<worth_ui_host_contract::UiMountedCanonicalBox, UiMountedProjectionDenial> {
-    let Some(correction) = node.grid_correction else {
-        return Ok(painted);
-    };
-    correction
-        .off_grid(painted)
-        .map_err(UiMountedProjectionDenial::OccurrenceGeometry)
 }
 
 fn complete_clip_bounds(

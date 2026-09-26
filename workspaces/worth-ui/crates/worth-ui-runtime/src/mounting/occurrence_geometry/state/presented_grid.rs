@@ -16,7 +16,13 @@
 //!
 //! The walk collects every scrolled ancestor rather than the nearest one,
 //! because a region inside a region moves its content by both offsets and a box
-//! corrected for one of them would still be off the grid by the other. Clip
+//! corrected for one of them would still be off the grid by the other. Each
+//! offset is rounded on its own rather than their sum, as each region's Motion
+//! samples are: content then keeps its place against the edges of the region
+//! holding it while an outer region moves, where rounding the sum would step
+//! it a device pixel against those edges each time the outer offset crossed a
+//! half pixel. Hit testing reads the exact box, so nested content is drawn up
+//! to half a device pixel per scrolled ancestor from where it is hit. Clip
 //! rectangles are left alone: a clip is the edge of the region itself, which is
 //! at rest, and a region whose edge moved every time the content behind it
 //! rounded would open and close a hairline at its own boundary.

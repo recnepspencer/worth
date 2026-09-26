@@ -329,7 +329,7 @@ fn semantic_projection_in(
                 },
             }),
             plan_index: Some(0),
-        grid_correction: None,
+        recorded_bounds: None,
         occurrence_allocation: UiMountedAllocationProjection::Known {
                     bounds,
                     basis: UiMountedAllocationBasis::new(

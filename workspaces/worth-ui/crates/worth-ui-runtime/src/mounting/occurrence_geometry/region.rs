@@ -67,7 +67,7 @@ pub(super) fn complete_regions(
             height: local.height(),
             coordinate_space: UiMountedCoordinateSpace::HostSurface,
         })
-        .map_err(|_| Denial::ParentCoordinateSpaceMismatch)?;
+        .map_err(Denial::UnrepresentableBox)?;
         let incarnation = identity
             .projection_instance(region.owner())
             .ok_or(Denial::UnknownMountedInstance)?

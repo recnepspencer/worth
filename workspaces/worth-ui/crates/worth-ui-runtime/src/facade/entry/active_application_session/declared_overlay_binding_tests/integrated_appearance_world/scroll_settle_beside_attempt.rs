@@ -22,7 +22,13 @@ const NOTCH_TICK: u64 = 5;
 /// Run quiet frames from `first` through `last`, holding the oracles at
 /// each, then hold that nothing is left to settle and the content rests at
 /// `rests`.
-fn rest_at(scroll: &mut ScrollWorld, first: u64, last: u64, rests: UiScrollOffset, label: &str) {
+pub(super) fn rest_at(
+    scroll: &mut ScrollWorld,
+    first: u64,
+    last: u64,
+    rests: UiScrollOffset,
+    label: &str,
+) {
     for tick in first..=last {
         let _ = quiet_frame(scroll, NOTCH_TICK + tick);
         assert_paint_and_hit_agree(scroll, &format!("{label}: quiet frame {tick}"));
@@ -62,6 +68,14 @@ fn a_page_to_where_the_content_stands_displaces_samples_shown_beside_it() {
         )
         .expect("a page with no attempt in flight applies");
     let pending = scroll.hold_presentation_open(NOTCH_TICK + 3);
+    assert!(
+        !scroll
+            .world
+            .host
+            .held_open_displaced_commands(scroll.surface())
+            .is_empty(),
+        "the page touches the scrolled commands"
+    );
     for tick in 4..6 {
         let shown = motion_frame(&mut scroll, NOTCH_TICK + tick, true);
         assert!(
@@ -71,6 +85,11 @@ fn a_page_to_where_the_content_stands_displaces_samples_shown_beside_it() {
                     | UiScrollSettleDisposition::DeferredPresentationInFlight)
             ),
             "the settle shows a sample beside the page: {shown:?}"
+        );
+        assert_eq!(
+            scroll.world.host.pending_presentation_count(),
+            0,
+            "the sample {tick} beside the page is presented"
         );
         assert_paint_and_hit_agree(&scroll, &format!("sample {tick} beside the page"));
     }

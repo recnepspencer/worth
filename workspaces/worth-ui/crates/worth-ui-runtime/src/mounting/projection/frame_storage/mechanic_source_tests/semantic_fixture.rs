@@ -56,7 +56,7 @@ pub(super) fn semantic_projection_in_coordinates(
                 },
             }),
             plan_index: Some(0),
-        grid_correction: None,
+        recorded_bounds: None,
         occurrence_allocation: UiMountedAllocationProjection::Known {
                     bounds,
                     basis: UiMountedAllocationBasis::new(

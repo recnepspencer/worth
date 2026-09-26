@@ -109,6 +109,8 @@ mod scroll_sample_acceptance;
 mod scroll_settle_beside_attempt;
 #[path = "integrated_appearance_world/scroll_settle_commit.rs"]
 mod scroll_settle_commit;
+#[path = "integrated_appearance_world/scroll_settle_displacement.rs"]
+mod scroll_settle_displacement;
 #[path = "integrated_appearance_world/scroll_settle_frame.rs"]
 mod scroll_settle_frame;
 #[path = "integrated_appearance_world/scroll_settle_hit_lead.rs"]

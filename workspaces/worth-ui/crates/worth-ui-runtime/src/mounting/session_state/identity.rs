@@ -86,15 +86,17 @@ impl WorthUiMountedSessionState {
         mode: UiHostSurfacePresentationMode,
         profile: UiSurfaceBindingProfile,
     ) -> Result<UiSurfaceBindingIdentityView, UiMountedIdentityDenial> {
-        self.ensure_identity_mutation_available()?;
-        let candidate = match self.identity.prepare_surface_rebind_registration(
-            host.protocol(),
-            host.capability_report(),
-            semantic_surface,
-            host_surface,
-            mode,
-            profile,
-        ) {
+        let prepared = self.ensure_identity_mutation_available().and_then(|()| {
+            self.identity.prepare_surface_rebind_registration(
+                host.protocol(),
+                host.capability_report(),
+                semantic_surface,
+                host_surface,
+                mode,
+                profile,
+            )
+        });
+        let candidate = match prepared {
             Ok(candidate) => candidate,
             Err(denial) => {
                 self.abandon_surface_rebind(prior_binding, semantic_surface);

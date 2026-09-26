@@ -266,7 +266,7 @@ fn node(
             },
         }),
         plan_index: Some(rank),
-        grid_correction: None,
+        recorded_bounds: None,
         occurrence_allocation: UiMountedAllocationProjection::Known {
             bounds,
             basis: UiMountedAllocationBasis::new(1, 2, 3, UiMountedTransformProjection::Identity),

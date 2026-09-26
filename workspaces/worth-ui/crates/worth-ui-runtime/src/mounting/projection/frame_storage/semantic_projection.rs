@@ -20,10 +20,11 @@ pub(in crate::mounting) struct UiMountedProjectionNodeRecord {
     pub(in crate::mounting::projection) appearance_geometry: super::UiMountedAppearanceGeometry,
     pub(in crate::mounting::projection) occurrence_allocation:
         worth_ui_host_contract::UiMountedAllocationProjection,
-    /// How far the device grid moved the painted allocation from the box on
-    /// record, which is where hit testing reads the occurrence.
-    pub(in crate::mounting::projection) grid_correction:
-        Option<crate::mounting::occurrence_geometry::UiDeviceGridCorrection>,
+    /// The box on record, where hit testing reads the occurrence, when the
+    /// device grid painted it elsewhere; absent when the painted allocation is
+    /// the box on record.
+    pub(in crate::mounting::projection) recorded_bounds:
+        Option<worth_ui_host_contract::UiMountedCanonicalBox>,
     pub(in crate::mounting::projection) semantic_text:
         Option<super::super::semantic_text::UiMountedSemanticTextSeed>,
     pub(in crate::mounting::projection) hit_test:
