@@ -131,7 +131,10 @@ fn revocation_changes_only_new_snapshot_authority() {
 
     assert!(before_evidence.paths()[0].matched());
     assert!(historical_evidence.paths()[0].matched());
-    assert!(historical_evidence.counters().reconstructive_graph_scans > 0);
+    // The pinned snapshot keeps its exact root, so its own index answers it
+    // after the revocation publishes.
+    assert_eq!(historical_evidence.counters().reconstructive_graph_scans, 0);
+    assert_eq!(historical_evidence.paths()[0].relations().len(), 2);
     assert!(!after_evidence.paths()[0].matched());
     assert_eq!(after_evidence.paths()[0].adjacency_lists().len(), 2);
 }

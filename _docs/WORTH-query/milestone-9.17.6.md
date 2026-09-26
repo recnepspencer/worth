@@ -1127,11 +1127,21 @@ Prove semantic sharing does not alias concrete IDs across equal-content publicat
 runtime instances or forks; a stale compiled binding/progress projection cannot survive
 adoption as authority. Repeat the fixed-local-work scale case on an unaffected sibling.
 
+Status: the sibling courts found version-addressed reads that answered from whichever
+branch published last. A branch's program is now read on its own root, and authorization
+path evaluation reads its basis's own adjacency, so a sibling's approval dependencies no
+longer change when its parent adopts. Phase 4 closes once invariant and aggregate
+projection reads are branch-rooted the same way. Ordinary House edits and
+performed-output actions on an adopted branch still run through the installed program;
+selected-program execution for those lanes moves to Phase 5.
+
 ### Phase 5: Workflow-kernel lifecycle and public closure
 
 Complete bounded observations, pending notifications, retention, deadline/iteration accounting,
 cancellation, close and retirement across every new state. Finish public codecs,
-discovery, authoring/control-flow examples and real product adapters.
+discovery, authoring/control-flow examples and real product adapters. Ordinary
+product edits and performed-output actions on an adopted branch execute under that
+branch's selected program, and a target that is no longer current is a typed denial.
 
 The proprietary slice closes observation, cancellation, retention, resource
 exhaustion, cold reconstruction, command/action exposure and operator diagnostics

@@ -266,7 +266,7 @@ pub const COMPLEXITY_CONTRACTS: &[ComplexityContract] = &[
     },
     ComplexityContract {
         id: "runtime.relation_adjacency.lookup",
-        function_path: "storage/partition/adjacency_queries.rs::{outgoing_relations_for_entity,incoming_relations_for_entity,outgoing_relations_for_entity_kind,incoming_relations_for_entity_kind,all_relations_for_entity}",
+        function_path: "storage/partition/adjacency_queries.rs::{outgoing_relations_for_entity,incoming_relations_for_entity,all_relations_for_entity}",
         declared_time_complexity: "O(out_degree) / O(in_degree) time, plus an O(degree) candidate-id copy charged to adjacency_relation_ids_copied",
         budget_summary: "Whole-neighborhood traversal must not require full relation scans, must resolve every candidate against one pinned edition rather than reacquiring the substrate per candidate, and must charge the candidate list it does copy.",
         status: ComplexityStatus::Verified,

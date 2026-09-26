@@ -95,13 +95,14 @@ fn a_fork_adopts_without_deciding_the_instance_it_copied() {
         Some(&|inventory| inventory.carry_compatible().unwrap()),
     ));
     match advance_on_second(&application, fork, instance.clone(), 85_410) {
-        // The fork runs P1 now, so the copy is refused as another branch's
-        // incarnation, not for its program.
+        // Adoption carries only the fork's live facts, so the copied history
+        // stays another branch's incarnation: the fork refuses it by
+        // affinity before its program is consulted, under P1 as under P0.
         Err(WorthQueryWorkflowAdvancePreparationDenial::TransitionPreparation(
             WorkflowTransitionPreparationDenial::Attempt(attempt),
         )) if attempt.kind()
             == WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch => {}
-        other => panic!("adoption on the fork never revives the copy: {other:?}"),
+        other => panic!("the adopted fork still refuses the copied instance: {other:?}"),
     }
 
     match prepare_second_program_adoption(&application, main, None) {

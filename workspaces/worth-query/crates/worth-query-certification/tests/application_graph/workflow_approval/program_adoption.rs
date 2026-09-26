@@ -21,6 +21,7 @@ use super::super::bounded_dimension_model::{
     },
 };
 use super::fork_continuation::fork_of;
+use super::instance_migration::perform_approved_effect;
 use super::journey::approval_requirement;
 use super::*;
 
@@ -102,6 +103,8 @@ fn a_sibling_instance_keeps_its_program_after_its_parent_adopts() {
         WorkflowInstanceStartOutcome::Started(started) => started.instance().clone(),
         other => panic!("expected a sibling instance, got {other:?}"),
     };
+    // The sibling waits for approval while its parent moves to P1.
+    let (proposal, required, _) = approval_requirement(&application, unaffected.clone(), 86_320);
     publish_adoption(prepare_second_program_adoption(
         &application,
         main,
@@ -109,11 +112,10 @@ fn a_sibling_instance_keeps_its_program_after_its_parent_adopts() {
     ));
 
     // The carriage belongs to main's truth; the sibling's copy of the
-    // definition still executes under P0.
-    let (proposal, required, _) = approval_requirement(&application, unaffected.clone(), 86_320);
+    // definition still executes under P0, and its approved effect runs.
     match approve_instance(
         &application,
-        unaffected,
+        unaffected.clone(),
         &required,
         &proposal,
         WorkflowApprovalDecision::Approve,
@@ -122,6 +124,7 @@ fn a_sibling_instance_keeps_its_program_after_its_parent_adopts() {
         Ok(WorkflowProgressOutcome::Completed(_)) => {}
         other => panic!("the sibling approves under P0, got {other:?}"),
     }
+    perform_approved_effect(&application, &unaffected, 86_340);
 }
 
 #[test]

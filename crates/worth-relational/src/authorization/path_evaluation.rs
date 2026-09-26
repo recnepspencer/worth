@@ -49,10 +49,9 @@ impl RelationalAuthorizationWitness {
     }
 }
 
-struct PathReadContext<'runtime, 'projection, 'snapshot, 'plan> {
+struct PathReadContext<'runtime, 'projection, 'snapshot> {
     runtime: &'runtime RelationalRuntime,
     view: &'projection VisibilityProjectionView<'snapshot>,
-    plan: &'plan RelationalAuthorizationObservationPlan,
 }
 
 struct PathEvaluationState<'counters> {
@@ -67,11 +66,7 @@ pub(super) fn evaluate_path(
     path: &RelationalAuthorizationPathPlan,
     counters: &mut RelationalAuthorizationObservationCounters,
 ) -> RelationalAuthorizationPathObservation {
-    let context = PathReadContext {
-        runtime,
-        view,
-        plan,
-    };
+    let context = PathReadContext { runtime, view };
     let mut state = PathEvaluationState {
         dependencies: RelationalAuthorizationDependencySets::new(plan.principal()),
         counters,
@@ -110,7 +105,7 @@ pub(super) fn evaluate_path(
 }
 
 fn traverse_frontier(
-    context: &PathReadContext<'_, '_, '_, '_>,
+    context: &PathReadContext<'_, '_, '_>,
     traversal: &RelationalAuthorizationTraversal,
     next_anchor: Option<EntityId>,
     frontier: &BTreeSet<RelationalAuthorizationWitness>,
@@ -149,7 +144,7 @@ fn traverse_frontier(
 }
 
 fn apply_constraints(
-    context: &PathReadContext<'_, '_, '_, '_>,
+    context: &PathReadContext<'_, '_, '_>,
     path: &RelationalAuthorizationPathPlan,
     ordinal: usize,
     frontier: &mut BTreeSet<RelationalAuthorizationWitness>,
@@ -163,7 +158,7 @@ fn apply_constraints(
 }
 
 fn apply_field_constraints(
-    context: &PathReadContext<'_, '_, '_, '_>,
+    context: &PathReadContext<'_, '_, '_>,
     path: &RelationalAuthorizationPathPlan,
     ordinal: usize,
     frontier: &mut BTreeSet<RelationalAuthorizationWitness>,
@@ -215,7 +210,7 @@ fn apply_field_constraints(
 }
 
 fn apply_predicates(
-    context: &PathReadContext<'_, '_, '_, '_>,
+    context: &PathReadContext<'_, '_, '_>,
     path: &RelationalAuthorizationPathPlan,
     ordinal: usize,
     frontier: &mut BTreeSet<RelationalAuthorizationWitness>,
@@ -261,7 +256,7 @@ fn apply_entity_anchors(
 }
 
 fn apply_related_entities(
-    context: &PathReadContext<'_, '_, '_, '_>,
+    context: &PathReadContext<'_, '_, '_>,
     path: &RelationalAuthorizationPathPlan,
     ordinal: usize,
     frontier: &mut BTreeSet<RelationalAuthorizationWitness>,
@@ -301,7 +296,7 @@ fn apply_related_entities(
 }
 
 fn relation_ids_for_step(
-    context: &PathReadContext<'_, '_, '_, '_>,
+    context: &PathReadContext<'_, '_, '_>,
     entity: EntityId,
     traversal: &RelationalAuthorizationTraversal,
     state: &mut PathEvaluationState<'_>,
@@ -314,45 +309,31 @@ fn relation_ids_for_step(
             traversal.relation_kind(),
             traversal.direction(),
         ));
-    if context.plan.snapshot().version_id == context.runtime.current_version_id() {
-        state.counters.adjacency_lists_read += 1;
-        let relation_ids = match traversal.direction() {
-            RelationalAuthorizationTraversalDirection::Forward => {
-                crate::storage::partition::adjacency_queries::outgoing_relations_for_entity_kind(
-                    context.runtime,
-                    entity,
-                    traversal.relation_kind(),
-                    context.plan.snapshot().version_id,
-                )
-            }
-            RelationalAuthorizationTraversalDirection::Reverse => {
-                crate::storage::partition::adjacency_queries::incoming_relations_for_entity_kind(
-                    context.runtime,
-                    entity,
-                    traversal.relation_kind(),
-                    context.plan.snapshot().version_id,
-                )
-            }
-        };
-        state.counters.adjacency_edges_inspected += relation_ids.len();
-        return relation_ids;
+    // Evaluation always reads an exact basis, which carries its own branch
+    // root and adjacency index. The runtime's current edition belongs to
+    // whichever branch published last, so it cannot answer for this root.
+    let entities = BTreeSet::from([entity]);
+    let read = match traversal.direction() {
+        RelationalAuthorizationTraversalDirection::Forward => {
+            context.view.bounded_outgoing_relations_for_frontier(
+                &entities,
+                traversal.relation_kind(),
+                usize::MAX,
+            )
+        }
+        RelationalAuthorizationTraversalDirection::Reverse => {
+            context.view.bounded_incoming_relations_for_frontier(
+                &entities,
+                traversal.relation_kind(),
+                usize::MAX,
+            )
+        }
     }
-    state.counters.reconstructive_graph_scans += 1;
-    let records = context.view.all_authoritative_relation_records();
-    state.counters.reconstructive_relation_records_scanned += records.len();
-    state
-        .dependencies
-        .relations
-        .extend(records.iter().map(|record| record.relation_id));
-    records
+    .expect("an unbounded adjacency read never exceeds its limit");
+    state.counters.adjacency_lists_read += read.adjacency_lists_read;
+    state.counters.adjacency_edges_inspected += read.relation_records_examined;
+    read.records
         .into_iter()
-        .filter(|record| {
-            record.kind.kind_id == traversal.relation_kind()
-                && match traversal.direction() {
-                    RelationalAuthorizationTraversalDirection::Forward => record.source == entity,
-                    RelationalAuthorizationTraversalDirection::Reverse => record.target == entity,
-                }
-        })
         .map(|record| record.relation_id)
         .collect()
 }

@@ -83,6 +83,45 @@ fn source_native_stamp_survives_unrelated_publication_and_wire_roundtrip() {
 }
 
 #[test]
+fn pinned_stamp_does_not_depend_on_which_snapshot_is_latest() {
+    let fixture = authorization_fixture();
+    // An off-path edge in the pinned root: a whole-graph read would record it.
+    let bystander = create_entity(&fixture.runtime, "bystander");
+    let other = create_entity(&fixture.runtime, "bystander-other");
+    create_relation(&fixture.runtime, bystander, other, "bystander-edge");
+    let pinned = fixture.runtime.visibility_authority().snapshot();
+    let observe_pinned = || {
+        fixture
+            .runtime
+            .observe_authorization(allow_plan(
+                pinned.clone(),
+                fixture.principal,
+                fixture.scope,
+                [],
+            ))
+            .expect("the pinned policy can be observed")
+    };
+    let stamp = |evidence| {
+        fixture
+            .runtime
+            .capture_authorization_durable_dependencies(&evidence)
+            .expect("the pinned exact root has native provenance")
+    };
+    let while_latest = stamp(observe_pinned());
+
+    let later = create_entity(&fixture.runtime, "later");
+    let later_other = create_entity(&fixture.runtime, "later-other");
+    create_relation(&fixture.runtime, later, later_other, "later-edge");
+
+    // The same basis answers the same dependencies once a later publication
+    // exists: evaluation reads the basis's own root, not the latest edition.
+    let after_later = observe_pinned();
+    assert_eq!(after_later.counters().reconstructive_graph_scans, 0);
+    assert_eq!(after_later.paths()[0].relations().len(), 2);
+    assert!(stamp(after_later).matches(&while_latest));
+}
+
+#[test]
 fn source_native_stamp_compares_after_checkpoint_recovery() {
     let runtime = runtime_with_test_schema();
     let principal = create_entity(&runtime, "principal");
