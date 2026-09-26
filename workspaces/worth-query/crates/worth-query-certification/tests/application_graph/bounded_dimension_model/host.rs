@@ -49,8 +49,11 @@ use super::workflow::{
     WorkflowInstanceStartBinding, WorkflowInstanceStartHandler,
 };
 
+#[path = "host/checkpoint_restore.rs"]
+mod checkpoint_restore;
 #[path = "host/workflow_runtime.rs"]
 mod workflow_runtime;
+pub use checkpoint_restore::restore_on_first_program;
 pub use workflow_runtime::BoundedDimensionWorkflowRuntime;
 
 /// The dimension every host seeds. It satisfies both installed rules, so the

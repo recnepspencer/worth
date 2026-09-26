@@ -12,6 +12,7 @@ pub(crate) use program::workflow_approval_authentication_intent;
 pub use program::{
     in_memory_program, in_memory_program_from_checkpoint,
     in_memory_program_with_authorization_time_source, in_memory_rostered_program,
+    in_memory_rostered_program_from_checkpoint,
     in_memory_rostered_program_with_authorization_time_source, WorthQueryAdmittedProgramOperation,
     WorthQueryAdmittedProgramOutput, WorthQueryApplicationPreviewReadmissionDenial,
     WorthQueryApplicationPreviewRequest, WorthQueryApplicationPreviewSession,

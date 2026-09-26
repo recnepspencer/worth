@@ -20,6 +20,8 @@ mod program_codec;
 mod recovery_terminals;
 #[path = "adoption/roster_admission.rs"]
 mod roster_admission;
+#[path = "adoption/rostered_restore.rs"]
+mod rostered_restore;
 #[path = "adoption/semantic_impact.rs"]
 mod semantic_impact;
 #[path = "adoption/signal_fork_inheritance.rs"]
