@@ -3,7 +3,7 @@ use worth_query_declaration::facade::{
     application_operation::{
         ApplicationCapabilityMutationBinding, ApplicationMutationBinding,
         ApplicationMutationIntent, ApplicationMutationScopeBinding,
-        ApplicationMutationScopeResolution,
+        ApplicationMutationScopeResolution, ApplicationMutationSourceExpectation,
     },
     application_program::ApplicationWorkflowSpec,
 };
@@ -52,6 +52,7 @@ pub enum WorthQueryWorkflowAdvancePreparationDenialKind {
     RequestAdmission,
     TransitionPreparation,
     Authentication,
+    AwaitingActor,
 }
 
 #[derive(Debug)]
@@ -62,6 +63,8 @@ pub enum WorthQueryWorkflowAdvancePreparationDenial {
     Authentication(
         worth_query_admission::facade::authentication_event::WorthQueryAuthenticationEventDenial,
     ),
+    /// Observation-time readiness; no transition attempt was prepared.
+    AwaitingActor(worth_query_execution::facade::workflow_advance::RequiredWorkflowActor),
 }
 
 #[derive(Debug)]
@@ -129,6 +132,7 @@ impl WorthQueryWorkflowAdvancePreparationDenial {
             Self::Authentication(_) => {
                 WorthQueryWorkflowAdvancePreparationDenialKind::Authentication
             }
+            Self::AwaitingActor(_) => WorthQueryWorkflowAdvancePreparationDenialKind::AwaitingActor,
         }
     }
 }
@@ -228,8 +232,31 @@ where
             .select()
             .map_err(WorthQueryApplicationRequestMutationDenial::ProductSelection)
             .map_err(WorthQueryWorkflowAdvancePreparationDenial::RequestAdmission)?;
-        let mutation = authorization::prepare_capability_selected(&mut self, &selected)
-            .map_err(WorthQueryWorkflowAdvancePreparationDenial::RequestAdmission)?;
+        let mutation = match authorization::prepare_capability_selected(&mut self, &selected) {
+            Ok(mutation) => mutation,
+            Err(denial) => {
+                if matches!(action, WorkflowRequestedAction::Advance)
+                    && <<IntentBinding<Schema, Intent> as ApplicationMutationBinding<Schema>>::SourceExpectation as ApplicationMutationSourceExpectation<Schema>>::QUERY_IDENTIFIER.is_none()
+                {
+                    if let WorthQueryApplicationRequestMutationDenial::Authorization(actor_denial) = &denial {
+                        if WorthQueryWorkflowAdvanceAdapter::is_actor_permission_denial(actor_denial) {
+                            let actor = authorization::resolve_capability_subject_selected(&self, &selected)
+                                .and_then(|subject| WorthQueryWorkflowAdvanceAdapter::observe_awaiting_actor::<
+                                    <IntentBinding<Schema, Intent> as ApplicationCapabilityMutationBinding<Schema>>::Capability,
+                                    MutationOperation<Schema, Intent>,
+                                    _, _, _, _,
+                                >(
+                                    &selected, workflow.workflow_spec(), &instance, &subject, actor_denial,
+                                ));
+                            if let Some(actor) = actor {
+                                return Err(WorthQueryWorkflowAdvancePreparationDenial::AwaitingActor(actor));
+                            }
+                        }
+                    }
+                }
+                return Err(WorthQueryWorkflowAdvancePreparationDenial::RequestAdmission(denial));
+            }
+        };
         let prepared = match action {
             WorkflowRequestedAction::Advance => WorthQueryWorkflowAdvanceAdapter::prepare::<
                 Schema,

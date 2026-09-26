@@ -1,6 +1,45 @@
 use super::*;
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityRef;
 
+pub(in crate::application_entry) fn resolve_capability_subject_selected<Schema, Intent, SourcePreparation>(
+    request: &WorthQueryApplicationMutationRequestWithIdempotency<'_, '_, '_, '_, Schema, Intent, SourcePreparation>,
+    selected: &WorthQuerySelectedProductOperation<'_, Schema>,
+) -> Option<worth_query_execution::facade::primary_graph::WorthQueryApplicationEntityIdentity<Schema, MutationScope<Schema, IntentBinding<Schema, Intent>>>>
+where
+    Schema: ApplicationSchema,
+    Intent: ApplicationMutationIntent<Schema>,
+    <IntentBinding<Schema, Intent> as ApplicationMutationBinding<Schema>>::ScopeBinding:
+        ApplicationMutationScopeResolution<Schema, <IntentBinding<Schema, Intent> as ApplicationMutationBinding<Schema>>::PrincipalIdentity>,
+{
+    let binding = request
+        .request
+        .application
+        .installed_schema()
+        .installed_mutation_binding::<IntentBinding<Schema, Intent>>()
+        .ok()?;
+    let principal = selected
+        .resolve_authenticated_principal(
+            binding.principal_binding(),
+            request.request.principal,
+            request.request.scope,
+            WorthQueryPrincipalResolutionMode::Ordinary,
+        )
+        .ok()?;
+    let (field, value) = request
+        .request
+        .intent
+        .scope_binding()
+        .into_field_parts(principal.principal_identity());
+    selected
+        .resolve_entity(
+            field,
+            value,
+            request.request.scope,
+            WorthQueryPrincipalResolutionMode::Ordinary,
+        )
+        .ok()
+}
+
 pub(in crate::application_entry) fn prepare_capability_selected<Schema, Intent, SourcePreparation>(
     request: &mut WorthQueryApplicationMutationRequestWithIdempotency<
         '_,

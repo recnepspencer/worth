@@ -20,6 +20,7 @@ mod authorized;
 use authorized::AuthorizedMutation;
 mod capability;
 pub(in crate::application_entry) use capability::prepare_capability_selected;
+pub(in crate::application_entry) use capability::resolve_capability_subject_selected;
 
 type IntentBinding<Schema, Intent> = <Intent as ApplicationMutationIntent<Schema>>::Binding;
 type IntentPrincipal<Schema, Intent> =

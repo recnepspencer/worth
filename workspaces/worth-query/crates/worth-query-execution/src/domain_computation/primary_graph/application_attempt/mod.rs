@@ -161,9 +161,9 @@ pub use workflow_proposal_program::{
 pub use workflow_transition_program::{
     PerformedWorkflowApproval, PerformedWorkflowAssessmentEvidence, PerformedWorkflowTransition,
     PreparedWorkflowAdvance, PreparedWorkflowAssessment, PreparedWorkflowOperation,
-    RequiredWorkflowApproval, RequiredWorkflowAssessment, RequiredWorkflowCondition,
-    RequiredWorkflowEvidence, RequiredWorkflowOperation, WorkflowApprovalDecision,
-    WorkflowOperationAuthority, WorkflowOperationAuthoritySlot, WorkflowProgressOutcome,
-    WorkflowTransitionBindingDenial, WorkflowTransitionPreparationDenial,
-    WorthQueryWorkflowAdvanceAdapter,
+    RequiredWorkflowActor, RequiredWorkflowActorNodeKind, RequiredWorkflowApproval,
+    RequiredWorkflowAssessment, RequiredWorkflowCondition, RequiredWorkflowEvidence,
+    RequiredWorkflowOperation, WorkflowApprovalDecision, WorkflowOperationAuthority,
+    WorkflowOperationAuthoritySlot, WorkflowProgressOutcome, WorkflowTransitionBindingDenial,
+    WorkflowTransitionPreparationDenial, WorthQueryWorkflowAdvanceAdapter,
 };

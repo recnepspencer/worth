@@ -47,10 +47,10 @@ pub use preparation::{
 pub use publication::{
     PerformedWorkflowApproval, PerformedWorkflowAssessmentEvidence, PerformedWorkflowTransition,
     PreparedWorkflowAdvance, PreparedWorkflowAssessment, PreparedWorkflowCondition,
-    PreparedWorkflowOperation, RequiredWorkflowApproval, RequiredWorkflowAssessment,
-    RequiredWorkflowCondition, RequiredWorkflowEvidence, RequiredWorkflowOperation,
-    WorkflowApprovalDecision, WorkflowOperationAuthority, WorkflowOperationAuthoritySlot,
-    WorkflowProgressOutcome,
+    PreparedWorkflowOperation, RequiredWorkflowActor, RequiredWorkflowActorNodeKind,
+    RequiredWorkflowApproval, RequiredWorkflowAssessment, RequiredWorkflowCondition,
+    RequiredWorkflowEvidence, RequiredWorkflowOperation, WorkflowApprovalDecision,
+    WorkflowOperationAuthority, WorkflowOperationAuthoritySlot, WorkflowProgressOutcome,
 };
 
 #[derive(Clone, Eq, PartialEq)]

@@ -7,6 +7,8 @@ mod adoption;
 mod bounded_dimension_model;
 #[path = "application_graph/workflow.rs"]
 mod workflow;
+#[path = "application_graph/workflow_actor_wait.rs"]
+mod workflow_actor_wait;
 #[path = "application_graph/workflow_approval.rs"]
 mod workflow_approval;
 #[path = "application_graph/workflow_assessment.rs"]

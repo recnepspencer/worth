@@ -219,6 +219,15 @@ where
             attempted_steps += 1;
             let outcome = match step {
                 Ok(step) => step.execute(),
+                Err(WorthQueryWorkflowAdvancePreparationDenial::AwaitingActor(actor)) => {
+                    return WorthQueryOrdinaryWorkflowRunProgress {
+                        transitions,
+                        attempted_steps,
+                        stop: WorthQueryOrdinaryWorkflowRunStop::Outcome(
+                            WorkflowProgressOutcome::AwaitingActor(actor),
+                        ),
+                    }
+                }
                 Err(denial) => {
                     return WorthQueryOrdinaryWorkflowRunProgress {
                         transitions,
