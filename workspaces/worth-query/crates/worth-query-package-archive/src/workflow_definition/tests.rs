@@ -226,3 +226,42 @@ fn drafts_beyond_the_byte_budget_are_refused_before_decoding() {
         .expect_err("the draft exceeds the caller's budget");
     assert_eq!(denial.kind(), Kind::LogicalByteBudgetExceeded);
 }
+
+#[test]
+fn control_and_data_wire_tags_are_pinned() {
+    use super::records::{control_outcome, control_tag, data_flow, data_tag};
+    use worth_query_declaration::facade::application_program::{
+        ApplicationWorkflowControlOutcome as Outcome, ApplicationWorkflowDataFlow as Flow,
+    };
+
+    let outcomes = [
+        (Outcome::Completed, 0),
+        (Outcome::Approved, 1),
+        (Outcome::Rejected, 2),
+        (Outcome::EvidenceSatisfied, 3),
+        (Outcome::EvidenceFailed, 4),
+        (Outcome::RetryExhausted, 5),
+        (Outcome::ConditionSatisfied, 6),
+        (Outcome::ConditionUnsatisfied, 7),
+        (Outcome::NavigatedBack, 8),
+    ];
+    for (outcome, tag) in outcomes {
+        assert_eq!(control_tag(outcome), tag, "{outcome:?} keeps its v1 tag");
+        assert_eq!(control_outcome(tag).ok(), Some(outcome));
+    }
+    let flows = [
+        (Flow::ProposalSubject, 0),
+        (Flow::AssessmentSubject, 1),
+        (Flow::AssessmentEvidence, 2),
+        (Flow::JoinedEvidence, 3),
+        (Flow::ApprovalAuthority, 4),
+        (Flow::OperationInput, 5),
+        (Flow::ConditionSubject, 6),
+    ];
+    for (flow, tag) in flows {
+        assert_eq!(data_tag(flow), tag, "{flow:?} keeps its v1 tag");
+        assert_eq!(data_flow(tag).ok(), Some(flow));
+    }
+    assert!(control_outcome(9).is_err());
+    assert!(data_flow(7).is_err());
+}

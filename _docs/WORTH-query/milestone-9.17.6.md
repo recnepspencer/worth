@@ -1307,7 +1307,12 @@ foreign spec, a member the spec did not install, a member whose portable types
 changed, or a related-relation applicability the schema does not declare. The authored
 result validates, binds and publishes through the ordinary path with the original's
 content identity; component provenance does not enter that identity, so a
-component-built definition travels flat and re-encodes to the same bytes.
+component-built definition travels flat and re-encodes to the same bytes. Expansion
+provenance is authoring-time only: publication and discovery never record it. Nodes
+must arrive in identity order, but connection order is not canonical in the draft;
+the authored definition canonicalizes it, so a reordered draft keeps its content
+identity. Control-outcome and data-flow wire tags are written out by hand and pinned
+by test, so no reordering moves one.
 
 The compiled `authored_workflow` example is the authoring/control-flow walkthrough.
 It builds one review component, two assessments joined into approval evidence, and

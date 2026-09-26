@@ -110,6 +110,46 @@ fn drafts_naming_foreign_or_changed_vocabulary_are_refused_by_node() {
 }
 
 #[test]
+fn drafts_naming_another_binding_or_capability_are_refused() {
+    let application = publish_workflow_on_first_program();
+    let definition = reviewed_geometry_definition("applied");
+    let bytes = encode(&definition);
+    let binding = definition
+        .nodes()
+        .iter()
+        .find_map(|node| match node.kind() {
+            ApplicationWorkflowNodeKind::Operation { operation, .. } => operation
+                .binding()
+                .map(|(identity, _, _)| identity.to_owned()),
+            _ => None,
+        })
+        .expect("the definition performs through a bound operation");
+    let (approval, capability) = definition
+        .nodes()
+        .iter()
+        .find_map(|node| match node.kind() {
+            ApplicationWorkflowNodeKind::Approval(approval) => Some((
+                approval.identifier().to_owned(),
+                approval.capability_type().as_str().to_owned(),
+            )),
+            _ => None,
+        })
+        .expect("the definition gates its effect on approval");
+
+    let rebound = retext(&bytes, &binding, "binding.not-installed.v1");
+    assert_eq!(refusal(&application, &rebound), DraftDenial::UnknownMember);
+
+    // The capability follows its approval's identifier, which may share its
+    // text, so only the field after the identifier is replaced.
+    let widened = replace(
+        &bytes,
+        &[framed(&approval), framed(&capability)].concat(),
+        &[framed(&approval), framed("changed.capability.v1")].concat(),
+    );
+    assert_eq!(refusal(&application, &widened), DraftDenial::ChangedMember);
+}
+
+#[test]
 fn a_relation_the_schema_does_not_declare_is_refused() {
     let application = publish_workflow_on_first_program();
     let definition = conditionally_required_related_assessment_definition();
@@ -200,13 +240,17 @@ fn framed(text: &str) -> Vec<u8> {
 
 /// Replaces every length-framed occurrence of `from` with `to`.
 fn retext(bytes: &[u8], from: &str, to: &str) -> Vec<u8> {
-    let (from, to) = (framed(from), framed(to));
+    replace(bytes, &framed(from), &framed(to))
+}
+
+/// Replaces every occurrence of the byte sequence `from` with `to`.
+fn replace(bytes: &[u8], from: &[u8], to: &[u8]) -> Vec<u8> {
     let mut output = Vec::with_capacity(bytes.len());
     let mut index = 0;
     let mut replaced = false;
     while index < bytes.len() {
-        if bytes[index..].starts_with(&from) {
-            output.extend_from_slice(&to);
+        if bytes[index..].starts_with(from) {
+            output.extend_from_slice(to);
             index += from.len();
             replaced = true;
         } else {

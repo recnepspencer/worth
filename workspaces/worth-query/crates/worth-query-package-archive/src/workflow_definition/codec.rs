@@ -1,5 +1,7 @@
 //! WQWD bytes: a header naming the spec, identity, limits and start, then
-//! the definition's nodes in identity order and its connections.
+//! the definition's nodes in identity order and its connections. Connection
+//! order is not canonical in the draft: the authored definition canonicalizes
+//! it, so a reordered draft keeps its content identity.
 
 use std::time::Duration;
 
@@ -36,7 +38,7 @@ where
     Spec: ApplicationWorkflowSpec,
 {
     let limits = limits.narrowed();
-    let mut output = BinaryOutput::with_capacity(0);
+    let mut output = BinaryOutput::with_capacity(256);
     output.raw_bytes(MAGIC);
     output.u16(WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION);
     records::text(&mut output, Spec::IDENTITY.as_str())?;

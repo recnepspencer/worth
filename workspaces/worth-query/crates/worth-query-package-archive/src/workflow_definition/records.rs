@@ -213,54 +213,59 @@ fn boolean(input: &mut BinaryInput<'_>) -> Result<bool, Denial> {
     }
 }
 
-const CONTROL_OUTCOMES: [ApplicationWorkflowControlOutcome; 9] = [
-    ApplicationWorkflowControlOutcome::Completed,
-    ApplicationWorkflowControlOutcome::Approved,
-    ApplicationWorkflowControlOutcome::Rejected,
-    ApplicationWorkflowControlOutcome::EvidenceSatisfied,
-    ApplicationWorkflowControlOutcome::EvidenceFailed,
-    ApplicationWorkflowControlOutcome::RetryExhausted,
-    ApplicationWorkflowControlOutcome::ConditionSatisfied,
-    ApplicationWorkflowControlOutcome::ConditionUnsatisfied,
-    ApplicationWorkflowControlOutcome::NavigatedBack,
-];
+// Wire tags are part of the v1 draft format: each is written out by hand so
+// no reordering can move one, and a new variant fails to compile here.
 
-const DATA_FLOWS: [ApplicationWorkflowDataFlow; 7] = [
-    ApplicationWorkflowDataFlow::ProposalSubject,
-    ApplicationWorkflowDataFlow::AssessmentSubject,
-    ApplicationWorkflowDataFlow::AssessmentEvidence,
-    ApplicationWorkflowDataFlow::JoinedEvidence,
-    ApplicationWorkflowDataFlow::ApprovalAuthority,
-    ApplicationWorkflowDataFlow::OperationInput,
-    ApplicationWorkflowDataFlow::ConditionSubject,
-];
-
-fn control_tag(outcome: ApplicationWorkflowControlOutcome) -> u8 {
-    tag_of(&CONTROL_OUTCOMES, &outcome)
+pub(super) const fn control_tag(outcome: ApplicationWorkflowControlOutcome) -> u8 {
+    match outcome {
+        ApplicationWorkflowControlOutcome::Completed => 0,
+        ApplicationWorkflowControlOutcome::Approved => 1,
+        ApplicationWorkflowControlOutcome::Rejected => 2,
+        ApplicationWorkflowControlOutcome::EvidenceSatisfied => 3,
+        ApplicationWorkflowControlOutcome::EvidenceFailed => 4,
+        ApplicationWorkflowControlOutcome::RetryExhausted => 5,
+        ApplicationWorkflowControlOutcome::ConditionSatisfied => 6,
+        ApplicationWorkflowControlOutcome::ConditionUnsatisfied => 7,
+        ApplicationWorkflowControlOutcome::NavigatedBack => 8,
+    }
 }
 
-fn data_tag(flow: ApplicationWorkflowDataFlow) -> u8 {
-    tag_of(&DATA_FLOWS, &flow)
+pub(super) const fn data_tag(flow: ApplicationWorkflowDataFlow) -> u8 {
+    match flow {
+        ApplicationWorkflowDataFlow::ProposalSubject => 0,
+        ApplicationWorkflowDataFlow::AssessmentSubject => 1,
+        ApplicationWorkflowDataFlow::AssessmentEvidence => 2,
+        ApplicationWorkflowDataFlow::JoinedEvidence => 3,
+        ApplicationWorkflowDataFlow::ApprovalAuthority => 4,
+        ApplicationWorkflowDataFlow::OperationInput => 5,
+        ApplicationWorkflowDataFlow::ConditionSubject => 6,
+    }
 }
 
-fn tag_of<T: PartialEq>(members: &[T], member: &T) -> u8 {
-    let index = members
-        .iter()
-        .position(|candidate| candidate == member)
-        .expect("every declared member has a wire tag");
-    u8::try_from(index).expect("wire tags fit one byte")
+pub(super) fn control_outcome(tag: u8) -> Result<ApplicationWorkflowControlOutcome, Denial> {
+    Ok(match tag {
+        0 => ApplicationWorkflowControlOutcome::Completed,
+        1 => ApplicationWorkflowControlOutcome::Approved,
+        2 => ApplicationWorkflowControlOutcome::Rejected,
+        3 => ApplicationWorkflowControlOutcome::EvidenceSatisfied,
+        4 => ApplicationWorkflowControlOutcome::EvidenceFailed,
+        5 => ApplicationWorkflowControlOutcome::RetryExhausted,
+        6 => ApplicationWorkflowControlOutcome::ConditionSatisfied,
+        7 => ApplicationWorkflowControlOutcome::ConditionUnsatisfied,
+        8 => ApplicationWorkflowControlOutcome::NavigatedBack,
+        _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
+    })
 }
 
-fn control_outcome(tag: u8) -> Result<ApplicationWorkflowControlOutcome, Denial> {
-    CONTROL_OUTCOMES
-        .get(usize::from(tag))
-        .copied()
-        .ok_or_else(|| Denial::new(Kind::UnsupportedRecordVariant))
-}
-
-fn data_flow(tag: u8) -> Result<ApplicationWorkflowDataFlow, Denial> {
-    DATA_FLOWS
-        .get(usize::from(tag))
-        .copied()
-        .ok_or_else(|| Denial::new(Kind::UnsupportedRecordVariant))
+pub(super) fn data_flow(tag: u8) -> Result<ApplicationWorkflowDataFlow, Denial> {
+    Ok(match tag {
+        0 => ApplicationWorkflowDataFlow::ProposalSubject,
+        1 => ApplicationWorkflowDataFlow::AssessmentSubject,
+        2 => ApplicationWorkflowDataFlow::AssessmentEvidence,
+        3 => ApplicationWorkflowDataFlow::JoinedEvidence,
+        4 => ApplicationWorkflowDataFlow::ApprovalAuthority,
+        5 => ApplicationWorkflowDataFlow::OperationInput,
+        6 => ApplicationWorkflowDataFlow::ConditionSubject,
+        _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
+    })
 }
