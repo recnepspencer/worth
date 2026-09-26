@@ -1,4 +1,5 @@
 use super::*;
+use crate::application_invariant_acceptance::proof::settle;
 
 mod running;
 pub(in crate::application_invariant_acceptance::proof::application_program) use running::running_root_supersession_preserves_sibling;
@@ -94,16 +95,16 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
         .unwrap_or_else(|failure| {
             panic!("the older unaffected root starts: {:?}", failure.denial())
         });
-    let first_settled = loop {
+    let first_settled = settle(|| {
         match first
             .required_output_mut()
             .advance(&request)
             .expect("older roots advance")
         {
-            WorthQueryDiscoveredProgramOutputProgress::Pending => {}
-            WorthQueryDiscoveredProgramOutputProgress::Settled(settled) => break settled,
+            WorthQueryDiscoveredProgramOutputProgress::Pending => None,
+            WorthQueryDiscoveredProgramOutputProgress::Settled(settled) => Some(settled),
         }
-    };
+    });
     assert_eq!(
         first_settled
             .superseded_roots()
@@ -118,16 +119,16 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
             .collect::<Vec<_>>(),
         ["remote-b"]
     );
-    let second_settled = loop {
+    let second_settled = settle(|| {
         match second
             .required_output_mut()
             .advance(&request)
             .expect("newer roots advance")
         {
-            WorthQueryDiscoveredProgramOutputProgress::Pending => {}
-            WorthQueryDiscoveredProgramOutputProgress::Settled(settled) => break settled,
+            WorthQueryDiscoveredProgramOutputProgress::Pending => None,
+            WorthQueryDiscoveredProgramOutputProgress::Settled(settled) => Some(settled),
         }
-    };
+    });
     assert_eq!(second_settled.root_outputs().count(), 3);
     assert_eq!(second_settled.superseded_roots().count(), 0);
     let first_remote = first_settled
@@ -227,16 +228,16 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn u
         .start_required_outputs(&request, controls)
         .unwrap_or_else(|failure| panic!("unchanged roots join: {:?}", failure.denial()));
     for output in [&mut first, &mut second] {
-        let settled = loop {
+        let settled = settle(|| {
             match output
                 .required_output_mut()
                 .advance(&request)
                 .expect("shared roots advance")
             {
-                WorthQueryDiscoveredProgramOutputProgress::Pending => {}
-                WorthQueryDiscoveredProgramOutputProgress::Settled(settled) => break settled,
+                WorthQueryDiscoveredProgramOutputProgress::Pending => None,
+                WorthQueryDiscoveredProgramOutputProgress::Settled(settled) => Some(settled),
             }
-        };
+        });
         assert_eq!(settled.root_outputs().count(), 3);
         assert_eq!(settled.output_count(), 6);
     }

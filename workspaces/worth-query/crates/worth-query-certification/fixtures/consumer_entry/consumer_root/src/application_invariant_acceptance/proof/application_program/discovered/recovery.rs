@@ -1,4 +1,5 @@
 use super::*;
+use crate::application_invariant_acceptance::proof::settle;
 
 pub(in crate::application_invariant_acceptance::proof::application_program) fn required_recovery_cannot_claim_discovered_custody(
     foreign: &worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema<
@@ -71,15 +72,15 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn r
             controls,
         )
         .expect("the correct root kind still recovers the same receipt");
-    let settled = loop {
+    let settled = settle(|| {
         match recovered
             .advance(&request)
             .expect("discovered roots advance")
         {
-            WorthQueryDiscoveredProgramOutputProgress::Pending => {}
-            WorthQueryDiscoveredProgramOutputProgress::Settled(settled) => break settled,
+            WorthQueryDiscoveredProgramOutputProgress::Pending => None,
+            WorthQueryDiscoveredProgramOutputProgress::Settled(settled) => Some(settled),
         }
-    };
+    });
     assert_eq!(settled.root_outputs().count(), 3);
     assert_eq!(
         world.application.retained_source_custody_count_for_test(),
@@ -156,12 +157,12 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn n
             ),
         )
         .expect("the unaffected sibling remains recoverable");
-    let settled = loop {
-        match recovered.advance(&request).expect("the sibling advances") {
-            WorthQueryDiscoveredProgramOutputProgress::Pending => {}
-            WorthQueryDiscoveredProgramOutputProgress::Settled(settled) => break settled,
-        }
-    };
+    let settled = settle(
+        || match recovered.advance(&request).expect("the sibling advances") {
+            WorthQueryDiscoveredProgramOutputProgress::Pending => None,
+            WorthQueryDiscoveredProgramOutputProgress::Settled(settled) => Some(settled),
+        },
+    );
     assert_eq!(
         settled
             .superseded_roots()
@@ -339,12 +340,12 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn i
             controls,
         )
         .expect("the exact source receipt re-enters both admitted roots");
-    let settled = loop {
-        match recovered.advance(&request).expect("both roots recover") {
-            WorthQueryDiscoveredProgramOutputProgress::Pending => {}
-            WorthQueryDiscoveredProgramOutputProgress::Settled(settled) => break settled,
-        }
-    };
+    let settled = settle(
+        || match recovered.advance(&request).expect("both roots recover") {
+            WorthQueryDiscoveredProgramOutputProgress::Pending => None,
+            WorthQueryDiscoveredProgramOutputProgress::Settled(settled) => Some(settled),
+        },
+    );
     assert_eq!(settled.root_outputs().count(), 3);
     assert_eq!(settled.output_count(), 6);
     assert_eq!(

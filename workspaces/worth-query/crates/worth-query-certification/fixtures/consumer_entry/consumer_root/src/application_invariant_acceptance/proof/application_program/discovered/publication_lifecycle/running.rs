@@ -1,4 +1,5 @@
 use super::*;
+use crate::application_invariant_acceptance::proof::settle;
 
 pub(in crate::application_invariant_acceptance::proof::application_program) fn running_root_supersession_preserves_sibling(
     foreign: &worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema<
@@ -93,16 +94,16 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn r
     let mut second = second
         .start_required_outputs(&request, controls)
         .unwrap_or_else(|failure| panic!("the newer roots bind: {:?}", failure.denial()));
-    let first_settled = loop {
+    let first_settled = settle(|| {
         match first
             .required_output_mut()
             .advance(&request)
             .expect("older roots advance")
         {
-            WorthQueryDiscoveredProgramOutputProgress::Pending => {}
-            WorthQueryDiscoveredProgramOutputProgress::Settled(settled) => break settled,
+            WorthQueryDiscoveredProgramOutputProgress::Pending => None,
+            WorthQueryDiscoveredProgramOutputProgress::Settled(settled) => Some(settled),
         }
-    };
+    });
     assert_eq!(
         first_settled
             .superseded_roots()
@@ -117,7 +118,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn r
             .collect::<Vec<_>>(),
         ["remote-b"]
     );
-    let settled = crate::application_invariant_acceptance::proof::settle(|| {
+    let settled = settle(|| {
         match second
             .required_output_mut()
             .advance(&request)

@@ -3,9 +3,12 @@ use std::sync::atomic::Ordering;
 use worth_query_consumer_values::{PlanarAdjustment, PlanarAdjustmentResult, PlanarOperation};
 use worth_query_host::facade::{
     application_entry::{
-        WorthQueryApplicationMutationOutcome, WorthQueryApplicationRequest,
+        WorthQueryApplicationMutationOutcome, WorthQueryApplicationProgramOutputProgress,
+        WorthQueryApplicationProgramOutputSettlement, WorthQueryApplicationRequest,
         WorthQueryApplicationRequestExt,
     },
+    application_installation::WorthQueryProgramApplicationRuntime,
+    domain::WorthQueryInstalledApplicationSchema,
     primary_graph::{
         WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitDenialStage,
         WorthQueryApplicationCommitOutcome, WorthQueryCustomInvariantDenial,
@@ -42,36 +45,22 @@ fn settle<Settled>(mut advance: impl FnMut() -> Option<Settled>) -> Settled {
 
 /// The settlement a program output advance reached, if any.
 fn settled<RootQuery>(
-    progress: worth_query_host::facade::application_entry::WorthQueryApplicationProgramOutputProgress<
-        RootQuery,
-    >,
-) -> Option<
-    worth_query_host::facade::application_entry::WorthQueryApplicationProgramOutputSettlement<
-        RootQuery,
-    >,
-> {
+    progress: WorthQueryApplicationProgramOutputProgress<RootQuery>,
+) -> Option<WorthQueryApplicationProgramOutputSettlement<RootQuery>> {
     match progress {
-        worth_query_host::facade::application_entry::WorthQueryApplicationProgramOutputProgress::Pending => None,
-        worth_query_host::facade::application_entry::WorthQueryApplicationProgramOutputProgress::Settled(
-            settlement,
-        ) => Some(settlement),
+        WorthQueryApplicationProgramOutputProgress::Pending => None,
+        WorthQueryApplicationProgramOutputProgress::Settled(settlement) => Some(settlement),
     }
 }
+
 type ProgramApplication =
-    worth_query_host::facade::application_installation::WorthQueryProgramApplicationRuntime<
-        ConsumerSchema,
-        crate::ConsumerProgram,
-    >;
+    WorthQueryProgramApplicationRuntime<ConsumerSchema, crate::ConsumerProgram>;
 type MutationOutcome = WorthQueryApplicationMutationOutcome<
     worth_query_consumer_values::PlanarMutationDenial,
     PlanarAdjustmentResult,
 >;
 
-pub(crate) fn run(
-    foreign: &worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema<
-        ConsumerSchema,
-    >,
-) {
+pub(crate) fn run(foreign: &WorthQueryInstalledApplicationSchema<ConsumerSchema>) {
     super::contribution_denials::run();
     application_program::performed_source_settles_required_output(foreign);
     application_program::caller_disposal_before_progress_recovers(foreign);

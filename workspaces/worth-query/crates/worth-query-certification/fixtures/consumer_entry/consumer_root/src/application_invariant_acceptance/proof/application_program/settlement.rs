@@ -13,6 +13,7 @@ use worth_query_topology_entry::{
 
 use super::super::super::{authentication, installation, seed::length};
 use super::{program_contract, recovery};
+use crate::application_invariant_acceptance::proof::settle;
 use crate::ConsumerSchema;
 pub(super) fn performed_source_settles_required_output(
     foreign: &worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema<
@@ -105,15 +106,15 @@ pub(super) fn performed_source_settles_required_output(
         .controls(controls)
         .start()
         .expect("a concurrent interest joins the exact pending delivery");
-    let settled = loop {
+    let settled = settle(|| {
         match recovered
             .advance(&request)
             .expect("the required output advances through the production entry")
         {
-            WorthQueryApplicationOutputDemandProgress::Pending => {}
-            WorthQueryApplicationOutputDemandProgress::Settled(settled) => break settled,
+            WorthQueryApplicationOutputDemandProgress::Pending => None,
+            WorthQueryApplicationOutputDemandProgress::Settled(settled) => Some(settled),
         }
-    };
+    });
     let retained = request.at(settled.observation());
     let row = retained
         .query(PlanarOutputRead {
@@ -148,16 +149,16 @@ pub(super) fn performed_source_settles_required_output(
         repeated_settlement.observation().selected_commit(),
         settled.observation().selected_commit()
     );
-    let original_settlement = loop {
+    let original_settlement = settle(|| {
         match performed
             .required_output_mut()
             .advance(&request)
             .expect("the installed transitive outputs advance")
         {
-            WorthQueryApplicationProgramOutputProgress::Pending => {}
-            WorthQueryApplicationProgramOutputProgress::Settled(settled) => break settled,
+            WorthQueryApplicationProgramOutputProgress::Pending => None,
+            WorthQueryApplicationProgramOutputProgress::Settled(settled) => Some(settled),
         }
-    };
+    });
     assert_eq!(
         original_settlement.root_observation().selected_commit(),
         settled.observation().selected_commit()

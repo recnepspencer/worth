@@ -57,12 +57,12 @@ pub(super) fn abandoned_and_superseded_preparations_are_bounded(
         0,
         "recovery consumes the exact prepared carrier"
     );
-    let recovered_settlement = loop {
+    let recovered_settlement = crate::application_invariant_acceptance::proof::settle(|| {
         match recovered.advance(&request).unwrap() {
-            WorthQueryApplicationProgramOutputProgress::Pending => {}
-            WorthQueryApplicationProgramOutputProgress::Settled(settled) => break settled,
+            WorthQueryApplicationProgramOutputProgress::Pending => None,
+            WorthQueryApplicationProgramOutputProgress::Settled(settled) => Some(settled),
         }
-    };
+    });
     assert_eq!(
         request
             .at(recovered_settlement.observation())

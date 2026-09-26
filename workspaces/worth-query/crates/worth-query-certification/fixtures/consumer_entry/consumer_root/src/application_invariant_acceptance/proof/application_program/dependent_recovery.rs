@@ -10,6 +10,7 @@ use worth_query_topology_entry::{
 };
 
 use super::super::super::{authentication, installation, seed::length};
+use crate::application_invariant_acceptance::proof::settle;
 use crate::ConsumerSchema;
 
 pub(super) fn caller_disposal_after_root_recovers_dependent(
@@ -91,12 +92,10 @@ pub(super) fn caller_disposal_after_root_recovers_dependent(
             controls,
         )
         .expect("fresh caller authority recovers the installed obligation");
-    let settled = loop {
-        match recovered.advance(&request).unwrap() {
-            WorthQueryApplicationProgramOutputProgress::Pending => {}
-            WorthQueryApplicationProgramOutputProgress::Settled(settled) => break settled,
-        }
-    };
+    let settled = settle(|| match recovered.advance(&request).unwrap() {
+        WorthQueryApplicationProgramOutputProgress::Pending => None,
+        WorthQueryApplicationProgramOutputProgress::Settled(settled) => Some(settled),
+    });
     assert_eq!(
         settled
             .outputs_for::<ConsumerSchema, PlanarOutputToFinalConnection>()

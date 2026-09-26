@@ -159,8 +159,9 @@ fn a_retired_program_action_is_refused_at_the_commit_gate_without_effect() {
         observe_head(host.runtime(), branch).selected_commit(),
         "a refusal before effects cannot have moved the commit head"
     );
+    // The refusal claimed no key: the adopted program performs under it.
     assert_eq!(
-        settle(set_dimension(&p1, branch, SEED_DIMENSION + 1, 0x9176_5332)),
+        settle(set_dimension(&p1, branch, SEED_DIMENSION + 1, 0x9176_5331)),
         DimensionVerdict::Performed(SEED_DIMENSION + 1)
     );
 }
