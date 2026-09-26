@@ -18,9 +18,11 @@ use crate::config::SourceOwnerIsolationConfig;
 use crate::diagnostics::{Diagnostic, DiagnosticCode};
 
 mod owned_items;
+mod test_sources;
 mod use_bindings;
 
-use owned_items::{is_test_source, test_module_roots, OwnedItemCollector, OwnedItems};
+use owned_items::{OwnedItemCollector, OwnedItems};
+use test_sources::TestSources;
 use use_bindings::UseBindings;
 
 /// How many aliases one path may pass through before it stops resolving.
@@ -42,9 +44,9 @@ pub(crate) fn validate_source_owner_isolations(
                 Err(_) => diagnostics.push(unparsable(&path)),
             }
         }
-        let tests = test_module_roots(&parsed);
+        let tests = TestSources::new(&parsed);
         for (path, file) in &parsed {
-            if !is_test_source(path, &tests) {
+            if !tests.contains(path) {
                 OwnedItemCollector {
                     owned: &mut owned,
                     declared: &mut declared,
@@ -200,7 +202,9 @@ impl IsolationVisitor<'_> {
             }
         }
         if let (true, Some(last)) = (segments.len() > 1, segments.last()) {
-            if self.owned.reaches_value(last, &self.module) || self.owned.methods.contains(last) {
+            if self.owned.reaches_value(last, &self.module)
+                || self.owned.reaches_method(last, &self.module)
+            {
                 self.found.insert(last.clone());
             }
         }
@@ -215,7 +219,8 @@ impl IsolationVisitor<'_> {
 
     /// The crate-absolute form of a `crate::`, `self::` or `super::` path, or
     /// of one that starts with a name a `use` in this module binds. An alias
-    /// chain too deep to follow resolves nowhere, which a glob refuses.
+    /// chain too deep to follow, or an ambiguous alias, resolves to the empty
+    /// path, which a glob refuses.
     fn resolve_local(&self, segments: &[String]) -> Option<Vec<String>> {
         let mut segments = segments.to_vec();
         for _ in 0..MAXIMUM_ALIAS_DEPTH {
@@ -229,6 +234,9 @@ impl IsolationVisitor<'_> {
                 }
                 Some(name) => {
                     let target = self.bindings.target(&self.module, name)?;
+                    if target.is_empty() {
+                        return Some(Vec::new());
+                    }
                     segments = [target, &segments[1..]].concat();
                 }
                 None => return None,
@@ -318,7 +326,7 @@ impl Visit<'_> for IsolationVisitor<'_> {
 
     fn visit_expr_method_call(&mut self, call: &syn::ExprMethodCall) {
         let method = call.method.to_string();
-        if self.owned.methods.contains(&method) {
+        if self.owned.reaches_method(&method, &self.module) {
             self.found.insert(method);
         }
         syn::visit::visit_expr_method_call(self, call);

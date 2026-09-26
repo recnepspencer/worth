@@ -1194,13 +1194,17 @@ resolved from `self::`, `super::` or an inline module. They also may not name an
 type, visible function, constant, static or exported macro that the workflow kernel
 or a workflow application lane (`application_attempt/workflow_*`) declares, nor call
 a visible method either adds to a type declared elsewhere, so a re-export through a
-parent facade is caught too. A value restricted to a module binds only guarded code
-inside that module. Test-only items, and every file of a `#[cfg(test)]` module,
-bind nothing; a file's name alone never makes it a test. Bare names are not traced,
+parent facade is caught too. A value or method restricted to a module binds only
+guarded code inside that module. Test-only items, and every file only a
+`#[cfg(test)]` module declares, including one inside an inline module, bind nothing;
+a file's name alone never makes it a test, a test-only `#[path]` to a file production
+also declares exempts nothing, and a file whose parent lies outside the owner roots
+stays production. Bare names are not traced,
 so a crate-relative glob import may not reach outside the guarded roots, where a
 facade could re-export kernel values. A path or glob written through a name a
 `use` binds, renamed or not, resolves through that binding, so an alias reaches only
-what its target reaches.
+what its target reaches; a cyclic, too-deep or ambiguously rebound alias resolves
+nowhere, and a glob through it is refused.
 
 Status: an explicit cancellation ends a live instance where it stands, through
 `prepare_workflow_instance_cancellation` on the workflow entry, authorized by the
@@ -1217,7 +1221,9 @@ effect. Cancelling one instance leaves its siblings running, and a request on
 another branch than the instance's own is refused as an affinity mismatch, so a
 fork's successor and its source end independently. A request without the start
 capability is refused without claiming its key, and a performed history that cannot
-be read within its retained bounds is refused as unavailable. An instance that has
+be read within its retained bounds is refused as unavailable. That refusal is argued
+from the reads that raise it, not driven by a test: reaching it needs a stored
+history the public surface cannot corrupt. An instance that has
 used its whole retained-transition capacity cannot yet be cancelled; slice 5.3b closes
 that with its budgets.
 

@@ -5,7 +5,7 @@ use super::{
 };
 use crate::config::SourceOwnerIsolationConfig;
 
-fn rule() -> SourceOwnerIsolationConfig {
+pub(super) fn rule() -> SourceOwnerIsolationConfig {
     SourceOwnerIsolationConfig {
         owner_roots: vec!["owner".into()],
         guarded_roots: vec!["guarded".into()],
@@ -24,6 +24,7 @@ fn owned() -> OwnedItems {
         .into(),
         methods: std::collections::BTreeSet::new(),
         scoped_values: std::collections::BTreeMap::new(),
+        scoped_methods: std::collections::BTreeMap::new(),
     }
 }
 
@@ -125,25 +126,37 @@ fn collected(owner_source: &str) -> OwnedItems {
 }
 
 fn findings_against(owned: &OwnedItems, source: &str) -> Vec<String> {
-    diagnostics_for_source("guarded/run.rs", source, owned, &rule())
+    findings_in(owned, "guarded/run.rs", source)
+}
+
+fn findings_in(owned: &OwnedItems, path: &str, source: &str) -> Vec<String> {
+    diagnostics_for_source(path, source, owned, &rule())
         .into_iter()
         .map(|diagnostic| diagnostic.message().to_owned())
         .collect()
 }
 
 #[test]
-fn a_method_the_owner_adds_to_a_foreign_type_is_refused_when_called_or_named() {
+fn a_method_the_owner_adds_to_a_foreign_type_is_refused_where_visible() {
     let owned = collected(
-        "pub struct WorkflowDefinition;          impl WorthQuerySelectedProductOperation {              pub(in crate::primary_graph) fn prepare_workflow_publication(&self) {}              fn private_step(&self) {}          }          impl WorkflowDefinition { pub fn new() -> Self { Self } }          struct PrivateEntity; impl PrivateEntity { pub(crate) fn text(&self) {} }          pub(super) fn encode() {}",
+        "pub struct WorkflowDefinition;          impl WorthQuerySelectedProductOperation {              pub(in crate::primary_graph) fn prepare_workflow_publication(&self) {}              fn private_step(&self) {} pub(crate) fn settle(&self) {}          }          impl WorkflowDefinition { pub fn new() -> Self { Self } }          struct PrivateEntity; impl PrivateEntity { pub(crate) fn text(&self) {} }          pub(super) fn encode() {}",
     );
+    let inside = "crate/src/primary_graph/run.rs";
     for source in [
         "fn f(product: &Product) { product.prepare_workflow_publication(); }",
         "fn f(product: &Product) {              WorthQuerySelectedProductOperation::prepare_workflow_publication(product); }",
     ] {
-        let found = findings_against(&owned, source);
+        let found = findings_in(&owned, inside, source);
         assert_eq!(found.len(), 1, "{source}: {found:?}");
         assert!(found[0].contains("`prepare_workflow_publication`"), "{found:?}");
+        // Outside its restriction the name is some other type's method.
+        assert!(findings_against(&owned, source).is_empty(), "{source}");
     }
+    let found = findings_against(&owned, "fn f(p: &Product) { p.settle(); }");
+    assert!(
+        found.len() == 1 && found[0].contains("`settle`"),
+        "{found:?}"
+    );
     for legal in [
         "fn f(product: &Product) { product.private_step(); }",
         "fn f() { let _ = Run::new(); }",
@@ -211,50 +224,6 @@ fn test_only_items_of_every_kind_bind_nothing() {
 /// Only a `#[cfg(test)]` module declaration exempts a file, however the file
 /// is named; production files named `tests.rs` still bind guarded code.
 #[test]
-fn a_cfg_test_module_declaration_exempts_its_files_and_nothing_else() {
-    let workspace =
-        std::env::temp_dir().join(format!("boundary-owner-tests-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&workspace);
-    for directory in [
-        "owner/state/tests",
-        "owner/audit",
-        "owner/progress",
-        "guarded",
-    ] {
-        std::fs::create_dir_all(workspace.join(directory)).unwrap();
-    }
-    for (file, source) in [
-        (
-            "owner/state.rs",
-            "#[cfg(test)] mod tests; #[cfg(test)] #[path = \"state/checks.rs\"] mod checks;              mod audit_hook; pub struct Kernel;",
-        ),
-        ("owner/state/tests.rs", "pub struct Harness;"),
-        ("owner/state/tests/nested.rs", "pub struct NestedHarness;"),
-        ("owner/state/checks.rs", "pub struct Checks;"),
-        ("owner/audit.rs", "pub mod tests;"),
-        ("owner/audit/tests.rs", "pub struct AuditRecord;"),
-        ("owner/progress.rs", "#[cfg(test)] mod scaling;"),
-        ("owner/progress/scaling.rs", "pub struct ScalingFixture;"),
-        (
-            "guarded/run.rs",
-            "fn f(_: Kernel, _: Harness, _: NestedHarness, _: Checks,                  _: AuditRecord, _: ScalingFixture) {}",
-        ),
-    ] {
-        std::fs::write(workspace.join(file), source).unwrap();
-    }
-    let found = validate_source_owner_isolations(&workspace, &[rule()]);
-    std::fs::remove_dir_all(&workspace).unwrap();
-    let messages = found.iter().map(|d| d.message()).collect::<Vec<_>>();
-    assert_eq!(found.len(), 2, "{messages:?}");
-    for reached in ["`Kernel`", "`AuditRecord`"] {
-        assert!(
-            messages.iter().any(|m| m.contains(reached)),
-            "{reached}: {messages:?}"
-        );
-    }
-}
-
-#[test]
 fn a_relative_path_inside_an_inline_module_resolves_against_that_module() {
     let sibling = "crate/src/primary_graph/conditional_operation.rs";
     let found = findings_at(
@@ -286,6 +255,11 @@ fn a_glob_import_from_outside_the_guarded_roots_is_refused() {
             "g::*",
         ),
         ("use crate::*;", "crate::*"),
+        ("use a as b; use b as a; use a::*;", "a::*"),
+        (
+            "use crate::facade as f; fn g() { use crate::guarded as f; } use f::*;",
+            "f::*",
+        ),
     ] {
         let found = findings(source);
         assert_eq!(found.len(), 1, "{source}: {found:?}");

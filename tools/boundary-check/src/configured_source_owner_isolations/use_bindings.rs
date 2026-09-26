@@ -1,6 +1,8 @@
 //! The local names a guarded file's `use` declarations bind. A path or glob
 //! written through such a name resolves through it, so `use crate::x as y;`
 //! followed by `use y::*;` reaches exactly what `use crate::x::*;` reaches.
+//! A name one module binds to two paths, say once in a function body, is
+//! ambiguous and resolves nowhere.
 
 use std::collections::BTreeMap;
 
@@ -9,7 +11,8 @@ use syn::visit::Visit;
 #[derive(Default)]
 pub(super) struct UseBindings {
     /// Each name bound in a module, keyed by that module and the name, and
-    /// mapped to the path the declaration wrote.
+    /// mapped to the path the declaration wrote, or to nothing when two
+    /// declarations bind it differently.
     bindings: BTreeMap<(Vec<String>, String), Vec<String>>,
 }
 
@@ -24,7 +27,7 @@ impl UseBindings {
     }
 
     /// The path `name` was bound to in `module`, if a `use` there bound it to
-    /// anything but itself.
+    /// anything but itself; an empty path when the binding is ambiguous.
     pub(super) fn target(&self, module: &[String], name: &str) -> Option<&[String]> {
         self.bindings
             .get(&(module.to_vec(), name.to_owned()))
@@ -33,9 +36,17 @@ impl UseBindings {
     }
 
     fn bind(&mut self, module: &[String], name: String, target: Vec<String>) {
-        if !target.is_empty() {
-            self.bindings.insert((module.to_vec(), name), target);
+        if target.is_empty() {
+            return;
         }
+        self.bindings
+            .entry((module.to_vec(), name))
+            .and_modify(|bound| {
+                if *bound != target {
+                    bound.clear();
+                }
+            })
+            .or_insert(target);
     }
 }
 
