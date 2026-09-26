@@ -1121,3 +1121,16 @@ lifecycle_states = ["OriginalOrderPlacement"]
 crate_root = "workspaces/worth-ui/apps/platform-pulse"
 guidance = "Milestone 3.16.2 requirement 2: name a Pulse lifecycle state's variant where it is built"
 lifecycle_states = ["PlatformPulseNativeInputIngress", "PlatformPulseTerminalPosture", "PlatformPulseVisualIdentityExecution", "PlatformPulseDisabledVisualIdentity", "PlatformPulseQueryOwnerState"]
+
+[[source_owner_isolations]]
+owner_roots = [
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/workflow",
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/workflow.rs",
+]
+guarded_roots = [
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/managed_run",
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/conditional_operation",
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/conditional_operation.rs",
+]
+forbidden_paths = [["primary_graph", "workflow"]]
+guidance = "9.17.6 Phase 5: provider-read managed runs and conditional operations stay independent of the authored workflow kernel; the kernel composes them, never the reverse"

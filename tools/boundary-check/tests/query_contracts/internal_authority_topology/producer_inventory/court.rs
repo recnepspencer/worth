@@ -124,8 +124,10 @@ const RAW_QUERY_ELEVATION_TYPES: &[&str] = &[
     "WorthQueryElevationApprovalOutcome",
     "WorthQueryElevationCloseOutcome",
     "WorthQueryMandatoryReviewOutcome",
-    "WorthQueryApplicationCommitReceipt",
 ];
+// The commit receipt is not on this list: since 9.17.4 it is the ordinary
+// Query mutation outcome Bank hands every caller, and the Query runtime that
+// could turn it into recovery or outbox authority stays crate-private.
 
 fn names_raw_query_elevation(tokens: impl ToTokens) -> bool {
     let source = tokens.to_token_stream().to_string();
