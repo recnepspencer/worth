@@ -230,6 +230,14 @@ pub(super) fn observe_assessment_evidence(
         &layout.assessment_evidence.subject_generation,
         facts,
     )?;
+    let retained_bytes = observed_u64(
+        runtime,
+        snapshot,
+        evidence,
+        kind,
+        &layout.assessment_evidence.retained_bytes,
+        facts,
+    )?;
     let partition = u32::try_from(partition)
         .map_err(|_| denial("assessment evidence subject partition is malformed"))?;
     let generation = u32::try_from(generation)
@@ -237,6 +245,7 @@ pub(super) fn observe_assessment_evidence(
     Ok(Some(ObservedWorkflowAssessmentEvidence {
         entity: evidence,
         identity,
+        retained_bytes,
         query: observed_text(
             runtime,
             snapshot,

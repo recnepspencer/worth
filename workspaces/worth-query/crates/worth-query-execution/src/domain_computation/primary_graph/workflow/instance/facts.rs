@@ -11,13 +11,15 @@ use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationCreationPartition, WorthQueryApplicationRealizedEffect,
 };
 
-/// What an instance carries from its lineage: the steps its sources took and
-/// the earliest total deadline any definition it ran declared.
+/// What an instance carries from its lineage: the steps its sources took, the
+/// assessment evidence bytes they retain and the earliest total deadline any
+/// definition it ran declared.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) struct WorkflowLineageCarry {
     pub(in crate::domain_computation::primary_graph) inherited_steps: u64,
     /// Unix-epoch milliseconds.
     pub(in crate::domain_computation::primary_graph) deadline: Option<u64>,
+    pub(in crate::domain_computation::primary_graph) inherited_evidence_bytes: u64,
 }
 
 pub(in crate::domain_computation::primary_graph) fn visit_instance_start_facts<Error>(
@@ -79,6 +81,12 @@ pub(in crate::domain_computation::primary_graph) fn visit_instance_start_facts<E
         fields.insert(
             layout.instance.inherited_steps.clone(),
             AspectValue::UInt64(carry.inherited_steps),
+        );
+    }
+    if carry.inherited_evidence_bytes > 0 {
+        fields.insert(
+            layout.instance.inherited_evidence_bytes.clone(),
+            AspectValue::UInt64(carry.inherited_evidence_bytes),
         );
     }
     if let Some(deadline) = carry.deadline {

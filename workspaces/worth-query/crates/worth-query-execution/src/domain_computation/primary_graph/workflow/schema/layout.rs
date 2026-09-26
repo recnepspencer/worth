@@ -132,6 +132,9 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowAssessmentEviden
     /// adoption can carry an instance forward; evidence from an earlier
     /// revision is never reused under a later one.
     pub(in crate::domain_computation::primary_graph) program_revision: AspectFieldLocator,
+    /// The logical bytes this evidence and its dependency facts retain,
+    /// charged against the lineage's evidence ceiling when it settled.
+    pub(in crate::domain_computation::primary_graph) retained_bytes: AspectFieldLocator,
 }
 
 #[derive(Clone, Debug)]
@@ -228,6 +231,9 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowInstanceLayout {
     /// The Unix-epoch millisecond at which the lineage's earliest total
     /// deadline elapses; absent when no definition it ran declared one.
     pub(in crate::domain_computation::primary_graph) deadline: AspectFieldLocator,
+    /// Assessment evidence bytes the instance's migration sources retained
+    /// before it; absent when none. One lineage retains one evidence budget.
+    pub(in crate::domain_computation::primary_graph) inherited_evidence_bytes: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) identity_index_id: DerivedIndexId,
 }
 

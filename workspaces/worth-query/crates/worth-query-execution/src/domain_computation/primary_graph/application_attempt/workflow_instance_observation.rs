@@ -8,11 +8,11 @@ use super::{
 };
 use crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowDefinition;
 use crate::domain_computation::primary_graph::workflow::instance::{
-    SettledWorkflowTransition, WorkflowInstanceState, WorkflowTransitionLocator,
-    WorkflowTransitionProgressBasis, WorkflowTransitionProgressObservation,
+    SettledWorkflowTransition, WorkflowInstanceState, WorkflowTransitionProgressBasis,
 };
 use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout;
 
+mod evidence_budget;
 mod history;
 pub(super) use history::observe_ended_history;
 mod instance_binding;
@@ -47,6 +47,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) struct Obs
     history_budget: worth_query_installation::facade::WorthQueryWorkflowHistoryReconstructionBudget,
     purpose: WorkflowInstanceObservationPurpose,
     inherited_steps: u64,
+    inherited_evidence_bytes: u64,
     maximum_transitions: usize,
 }
 
@@ -115,6 +116,8 @@ pub(in crate::domain_computation::primary_graph::application_attempt) struct Obs
 {
     pub(in crate::domain_computation::primary_graph::application_attempt) entity: EntityId,
     pub(in crate::domain_computation::primary_graph::application_attempt) identity: String,
+    /// The bytes it retains against the lineage's evidence ceiling.
+    pub(in crate::domain_computation::primary_graph::application_attempt) retained_bytes: u64,
     pub(in crate::domain_computation::primary_graph::application_attempt) query: String,
     pub(in crate::domain_computation::primary_graph::application_attempt) parameter_type: String,
     pub(in crate::domain_computation::primary_graph::application_attempt) result_type: String,
@@ -216,8 +219,22 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         )?;
     }
     instance_binding::resume_definition(runtime, snapshot, layout, instance, compiled, &mut facts)?;
-    let inherited_steps =
-        instance_binding::inherited_steps(runtime, snapshot, layout, entity, &mut facts)?;
+    let inherited_steps = instance_binding::inherited(
+        runtime,
+        snapshot,
+        layout,
+        entity,
+        &layout.instance.inherited_steps,
+        &mut facts,
+    )?;
+    let inherited_evidence_bytes = instance_binding::inherited(
+        runtime,
+        snapshot,
+        layout,
+        entity,
+        &layout.instance.inherited_evidence_bytes,
+        &mut facts,
+    )?;
     let compiled = &*compiled;
     let definitions = adjacency(
         runtime,
@@ -303,6 +320,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
                     history_budget,
                     purpose,
                     inherited_steps,
+                    inherited_evidence_bytes,
                     maximum_transitions,
                 });
             }
@@ -330,15 +348,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
     }
     let mut progress_observations = settled_transitions
         .iter()
-        .map(|transition| {
-            WorkflowTransitionProgressObservation::new(
-                WorkflowTransitionLocator::new(transition.entity, transition.settlement),
-                transition
-                    .assessment_evidence
-                    .as_ref()
-                    .map(|evidence| evidence.entity),
-            )
-        })
+        .map(|transition| transition.progress_observation())
         .collect::<Vec<_>>();
     if live_membership.is_none() {
         let settled_index = progress_observations
@@ -376,6 +386,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         history_budget,
         purpose,
         inherited_steps,
+        inherited_evidence_bytes,
         maximum_transitions,
     })
 }

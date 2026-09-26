@@ -202,7 +202,14 @@ fn closing_one_observer_leaves_the_other_settling_the_shared_run() {
 #[test]
 fn closing_every_observer_leaves_the_instance_awaiting_its_assessment() {
     let (application, instance) = awaiting_assessment(94_100);
-    let mut closed_observer = observe(&application, &instance, 94_110, 64);
+    let mut closed_observer = observe(&application, &instance, 94_110, 1);
+    assert!(
+        matches!(
+            progress(&application, &instance, &mut closed_observer),
+            Ok(WorthQueryWorkflowAssessmentDemandProgress::Pending)
+        ),
+        "the closed observer releases a run it had in flight",
+    );
     closed_observer.close();
     drop(observe(&application, &instance, 94_111, 64));
     drop(closed_observer);
@@ -211,11 +218,6 @@ fn closing_every_observer_leaves_the_instance_awaiting_its_assessment() {
     let mut later = observe(&application, &instance, 94_113, 64);
     let settled = settle(&application, &instance, &mut later)
         .expect("a later observer settles the released assessment");
-    assert_eq!(
-        settled.settlement().producer_contacts_in_this_demand(),
-        1,
-        "the later observer runs the released assessment to completion itself",
-    );
     accepted_past_assessment(&application, &instance, &settled, 94_114);
     drop(later);
     match cancel_instance(&application, instance, 94_115).expect("the cancellation prepares") {

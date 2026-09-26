@@ -9,6 +9,7 @@ mod assessment;
 mod evidence_dependency;
 mod fact_custody;
 mod indexes;
+mod instance;
 mod layout;
 mod proposal;
 mod proposal_coverage;
@@ -23,12 +24,13 @@ pub(in crate::domain_computation::primary_graph) use layout::*;
 
 use approval::lower_approval;
 use evidence_dependency::lower_evidence_dependency;
+use instance::lower_instance;
 use proposal::lower_proposal;
 use proposal_coverage::lower_proposal_coverage;
 use relations::{
     allocate_kinds, connection_endpoint_integrity, current_definition_integrity,
-    definition_start_integrity, lower_connection, lower_definition, lower_instance, lower_lineage,
-    lower_node, owned_fact_integrity,
+    definition_start_integrity, lower_connection, lower_definition, lower_lineage, lower_node,
+    owned_fact_integrity,
 };
 use transition::lower_transition;
 

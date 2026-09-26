@@ -162,6 +162,8 @@ pub struct PreparedWorkflowAssessment<Schema, Operation, Input, Scope> {
         crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
     pub(super) program_revision: ApplicationProgramRevision,
     pub(super) replays: PreparedWorkflowTransitionReplays,
+    /// Evidence bytes the lineage may still retain when this settles.
+    pub(super) evidence_allowance: u64,
 }
 
 pub struct PreparedWorkflowCondition<Schema, Operation, Input, Scope> {

@@ -259,6 +259,7 @@ where
                 admit_workflow_migration(succession, &from, &resumed, &settled, &performed)?;
                 let carry = WorkflowLineageCarry {
                     inherited_steps: observed.lineage_steps(),
+                    inherited_evidence_bytes: observed.lineage_evidence_bytes(),
                     deadline: start_deadline(clock, inherited_deadline, declared_deadline)?,
                 };
                 facts.extend(observed.facts);

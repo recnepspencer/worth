@@ -65,6 +65,7 @@ impl WorkflowTransitionProgressBasis {
             source: self.progress.clone(),
             advanced,
             settlement,
+            evidence_bytes: 0,
             replay: WorkflowTransitionReplayProjection {
                 identity: transition_identity,
                 identity_bytes: transition_identity_bytes,
@@ -99,6 +100,7 @@ impl WorkflowTransitionProgressBasis {
             source: self.progress.clone(),
             advanced,
             settlement,
+            evidence_bytes: 0,
             replay: WorkflowTransitionReplayProjection {
                 identity: transition_identity,
                 identity_bytes: transition_identity_bytes,
@@ -119,6 +121,7 @@ pub struct PreparedWorkflowProgressUpdate {
     source: WorkflowInstanceProgress,
     advanced: WorkflowInstanceProgress,
     settlement: SettledWorkflowTransition,
+    evidence_bytes: u64,
     replay: WorkflowTransitionReplayProjection,
 }
 
@@ -127,6 +130,16 @@ impl PreparedWorkflowProgressUpdate {
         &self,
     ) -> WorkflowInstanceProgressKey {
         self.key
+    }
+
+    /// Charges the assessment evidence this step writes to the progress it
+    /// commits.
+    pub(in crate::domain_computation::primary_graph) const fn charging_evidence(
+        mut self,
+        bytes: u64,
+    ) -> Self {
+        self.evidence_bytes = bytes;
+        self
     }
 
     pub(in crate::domain_computation::primary_graph) fn apply(
@@ -142,6 +155,7 @@ impl PreparedWorkflowProgressUpdate {
             source,
             mut advanced,
             settlement,
+            evidence_bytes,
             replay,
         } = self;
         advanced.retain_transition_identity(
@@ -149,10 +163,13 @@ impl PreparedWorkflowProgressUpdate {
             settlement.occurrence(),
             replay.identity.clone(),
         );
-        advanced.retain_observation(WorkflowTransitionProgressObservation::new(
-            WorkflowTransitionLocator::new(transition, settlement),
-            assessment_evidence,
-        ));
+        advanced.retain_observation(
+            WorkflowTransitionProgressObservation::new(
+                WorkflowTransitionLocator::new(transition, settlement),
+                assessment_evidence,
+            )
+            .retaining_evidence_bytes(evidence_bytes),
+        );
         retention.advance(
             key,
             source_revision,

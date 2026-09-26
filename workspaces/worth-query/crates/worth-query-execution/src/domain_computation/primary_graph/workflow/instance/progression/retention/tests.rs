@@ -25,6 +25,7 @@ fn progress(head: u64) -> WorkflowInstanceProgress {
         latest_transitions: im::OrdMap::new(),
         latest_transition_identities: im::OrdMap::new(),
         latest_assessment_evidence: im::OrdMap::new(),
+        retained_evidence_bytes: 0,
     }
 }
 

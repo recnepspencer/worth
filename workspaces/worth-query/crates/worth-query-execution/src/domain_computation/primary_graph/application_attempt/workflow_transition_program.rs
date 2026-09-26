@@ -324,6 +324,7 @@ where
                     facts,
                     assessment,
                     observed.progress_basis.progress(),
+                    observed.evidence_allowance(installed.resources().maximum_evidence_bytes()),
                 ),
             SelectedWorkflowTransitionKind::Condition(condition) => self
                 .materialize_condition_requirement(

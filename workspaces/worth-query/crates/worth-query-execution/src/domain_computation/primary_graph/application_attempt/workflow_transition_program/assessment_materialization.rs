@@ -24,6 +24,7 @@ where
         mut facts: Vec<super::super::WorthQueryApplicationObservedFact>,
         assessment: crate::domain_computation::primary_graph::workflow::instance::SelectedWorkflowAssessment,
         progress: &crate::domain_computation::primary_graph::workflow::instance::WorkflowInstanceProgress,
+        evidence_allowance: u64,
     ) -> Result<
         PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
         WorthQueryApplicationAttemptDenial,
@@ -207,6 +208,7 @@ where
                 layout: layout.clone(),
                 program_revision,
                 replays: Default::default(),
+                evidence_allowance,
             },
         ))
     }

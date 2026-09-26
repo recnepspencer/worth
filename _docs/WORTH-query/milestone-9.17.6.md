@@ -1241,6 +1241,18 @@ itself writes no transition and spends none. Navigating Back spends the same bud
 so the navigation-specific capacity refusal it once had could no longer be reached and
 is retired from the public denial kinds.
 
+One lineage also retains one evidence budget, the installed maximum evidence bytes.
+Accepting an assessment charges the semantic width of every evidence and dependency
+field it writes, and the evidence records its own charge, so a cold read recounts the
+lineage's spend from history exactly; accepting current evidence again writes none and
+charges none. A migration successor or a fork's continuation inherits the evidence
+its source retained. An assessment whose evidence would pass the ceiling is refused
+with the typed `WorkflowInstanceEvidenceCapacityUnavailable` denial before commit,
+warm or cold; the instance still awaits that assessment and can be cancelled. A retry
+of an assessment accepted within the budget replays its recorded outcome warm and
+cold. Evidence is released only with the history that retains it, so a yield, Back or
+a duplicate delivery neither spends nor restores it.
+
 A definition may declare a total deadline, whole nonzero milliseconds, and only a
 declared deadline enters its content identity. An instance started from it records
 the instant its lineage must finish by on the installed trusted clock: its start plus
@@ -1262,11 +1274,11 @@ admitted, a successor keeps the earlier instant, an unreadable clock refuses a
 declared deadline, and a definition without one never reads the clock.
 
 An assessment observation holds interest in its run and nothing more. Closing or
-dropping one releases only that observer's interest: a second observer of the same
-run, joined while the first had it in flight, settles it after the first closes, and
-the closed observation refuses further settlement and notifications as closed.
-Closing every observer neither cancels the instance nor settles its head: the
-instance still awaits its assessment, a later observer settles it and the instance
+dropping one releases only that observer's interest: a second observer, joined while
+the first had the run in flight, still settles the assessment after the first closes,
+and the closed observation refuses further settlement and notifications as closed.
+Closing every observer, including one with a run in flight, neither cancels the
+instance nor settles its head: the instance still awaits its assessment, a later observer settles it and the instance
 proceeds, and it can still be cancelled. Pending notifications are bounded at one per
 observation by construction: an observer's wakes coalesce into its run's single
 generation, so any number of state changes since it last looked is one pending wake,

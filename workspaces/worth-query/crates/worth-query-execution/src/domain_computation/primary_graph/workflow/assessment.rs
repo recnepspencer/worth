@@ -34,6 +34,8 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowAssessmentEviden
     pub(in crate::domain_computation::primary_graph) publication_identity: String,
     pub(in crate::domain_computation::primary_graph) output_content_identity: String,
     pub(in crate::domain_computation::primary_graph) program_revision: String,
+    /// What the evidence retains; see [`workflow_evidence_retained_bytes`].
+    pub(in crate::domain_computation::primary_graph) retained_bytes: u64,
     pub(in crate::domain_computation::primary_graph) currentness_facts:
         std::sync::Arc<[super::super::WorthQueryApplicationObservedFact]>,
 }
@@ -138,6 +140,10 @@ pub(in crate::domain_computation::primary_graph) fn visit_workflow_assessment_fa
                 layout.assessment_evidence.program_revision.clone(),
                 text(&meaning.program_revision),
             ),
+            (
+                layout.assessment_evidence.retained_bytes.clone(),
+                AspectValue::UInt64(meaning.retained_bytes),
+            ),
         ]),
         partition: WorthQueryApplicationCreationPartition::Context(
             admitted.instance().partition_id,
@@ -151,6 +157,27 @@ pub(in crate::domain_computation::primary_graph) fn visit_workflow_assessment_fa
         to: EntityReference::Created(evidence.clone()),
     })?;
     Ok((transition, evidence))
+}
+
+/// The logical bytes one emitted effect retains as assessment evidence: the
+/// summed semantic widths of the fields of an evidence or evidence-dependency
+/// entity, zero for anything else. A `u64` field's width does not depend on
+/// its value, so the evidence can record its own charge exactly.
+pub(in crate::domain_computation::primary_graph) fn workflow_evidence_retained_bytes(
+    layout: &WorthQueryWorkflowLayout,
+    effect: &WorthQueryApplicationRealizedEffect,
+) -> u64 {
+    match effect {
+        WorthQueryApplicationRealizedEffect::CreateEntity { kind, fields, .. }
+            if *kind == layout.assessment_evidence.entity_kind
+                || *kind == layout.evidence_dependency.entity_kind =>
+        {
+            fields.values().fold(0, |bytes, value| {
+                bytes.saturating_add(u64::try_from(value.semantic_byte_width()).unwrap_or(u64::MAX))
+            })
+        }
+        _ => 0,
+    }
 }
 
 fn text(value: &str) -> AspectValue {

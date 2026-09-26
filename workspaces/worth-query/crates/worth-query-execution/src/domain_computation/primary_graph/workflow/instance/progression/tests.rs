@@ -100,6 +100,7 @@ fn latest_transition_locator_tracks_occurrence_without_becoming_authority() {
         latest_transitions: OrdMap::new(),
         latest_transition_identities: OrdMap::new(),
         latest_assessment_evidence: OrdMap::new(),
+        retained_evidence_bytes: 0,
     };
     let latest = WorkflowTransitionLocator::new(entity(52), completed(node, 1));
     progress.retain_observation(WorkflowTransitionProgressObservation::new(latest, None));
@@ -125,6 +126,7 @@ fn evidence_locator_survives_a_later_reuse_transition_without_new_evidence() {
         latest_transitions: OrdMap::new(),
         latest_transition_identities: OrdMap::new(),
         latest_assessment_evidence: OrdMap::new(),
+        retained_evidence_bytes: 0,
     };
     let evidence_transition = WorkflowTransitionLocator::new(entity(61), completed(node, 0));
     progress.retain_observation(WorkflowTransitionProgressObservation::new(

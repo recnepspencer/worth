@@ -151,6 +151,7 @@ where
             )?;
         let carry = WorkflowLineageCarry {
             inherited_steps: 0,
+            inherited_evidence_bytes: 0,
             deadline: super::workflow_deadline::start_deadline(clock, None, declared_deadline)?,
         };
         let mut demand = PlatformEffectDemand::default();

@@ -73,6 +73,10 @@ pub enum WorthQueryApplicationAttemptDenialKind {
     /// The installed clock could not be read, so a deadline cannot be shown
     /// to lie ahead and the step is refused.
     WorkflowTrustedTimeUnavailable,
+    /// The assessment evidence the instance's lineage retains would exceed
+    /// the installed evidence ceiling. Recorded steps still replay, and the
+    /// instance can still be cancelled or navigate without new evidence.
+    WorkflowInstanceEvidenceCapacityUnavailable,
     WorkflowHistoryReconstructionBudgetExceeded,
     WorkflowTransitionAffinityMismatch,
     WorkflowTransitionAuthorityMismatch,

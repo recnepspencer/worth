@@ -64,6 +64,7 @@ pub enum BankApplicationAttemptDenialKind {
     WorkflowInstanceMigrationUnmapped,
     WorkflowInstanceDeadlineElapsed,
     WorkflowTrustedTimeUnavailable,
+    WorkflowInstanceEvidenceCapacityUnavailable,
     WorkflowTransitionAffinityMismatch,
     WorkflowTransitionAuthorityMismatch,
     WorkflowTransitionAlreadySettled,
@@ -250,6 +251,9 @@ const fn application_attempt_kind(
         }
         Query::WorkflowTrustedTimeUnavailable => {
             BankApplicationAttemptDenialKind::WorkflowTrustedTimeUnavailable
+        }
+        Query::WorkflowInstanceEvidenceCapacityUnavailable => {
+            BankApplicationAttemptDenialKind::WorkflowInstanceEvidenceCapacityUnavailable
         }
         Query::WorkflowTransitionAffinityMismatch => {
             BankApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch
