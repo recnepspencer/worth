@@ -3,10 +3,7 @@ use worth_ui_host_contract::{
 };
 
 use super::super::UiMountedProjectionDenial;
-use super::{
-    portal_child_view::UiMountedPortalChildPresentation, UiMountedProjectionFrame,
-    UiMountedProjectionSurface,
-};
+use super::{UiMountedProjectionFrame, UiMountedProjectionSurface};
 
 pub(super) type UiMountedHitTestReferenceIndex =
     std::collections::BTreeMap<UiMountedInstanceIdentity, UiMountedHitTestReference>;
@@ -30,18 +27,17 @@ impl UiMountedProjectionFrame {
         )?;
         let mut rows = Vec::with_capacity(source_rows.len());
         for row in source_rows {
-            match self.portal_child_presentation(
-                row.mounted_instance(),
+            let placement = self.portal_child_placement(
+                row.in_layout_space().mounted_instance(),
                 surface.surface,
                 surface.binding,
-            )? {
-                UiMountedPortalChildPresentation::Ordinary => rows.push(row),
-                UiMountedPortalChildPresentation::Suppressed => {}
-                UiMountedPortalChildPresentation::Presented(portal, source_anchor) => rows.extend(
-                    row.presented_within_portal(portal, source_anchor)
-                        .map_err(UiMountedProjectionDenial::HitTestCompletion)?,
-                ),
-            }
+            )?;
+            rows.extend(
+                placement
+                    .present(row)
+                    .map_err(UiMountedProjectionDenial::HitTestCompletion)?
+                    .map(crate::mounting::UiPresented::into_shown),
+            );
         }
         let references = rows
             .iter()

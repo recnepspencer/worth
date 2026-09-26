@@ -30,7 +30,8 @@ impl UiMountedSemanticProjection {
         let anchor = bounds(
             self.node(owner)
                 .ok_or(UiMountedProjectionDenial::PortalOverlayOwnerMissing)?
-                .occurrence_allocation,
+                .occurrence_allocation
+                .into_layout_space(),
         )?;
         // Content is one union measured in anchor-relative space. An authored
         // overlay routinely begins before the control that opens it: a
@@ -52,7 +53,7 @@ impl UiMountedSemanticProjection {
                 }
                 _ => 0.0,
             };
-            let child = bounds(child.occurrence_allocation)?;
+            let child = bounds(child.occurrence_allocation.into_layout_space())?;
             if child.coordinate_space() != anchor.coordinate_space() {
                 return Err(UiMountedProjectionDenial::CoordinateBasisMismatch);
             }

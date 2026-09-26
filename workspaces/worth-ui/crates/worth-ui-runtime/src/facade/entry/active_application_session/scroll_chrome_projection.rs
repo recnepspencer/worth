@@ -227,9 +227,17 @@ impl super::super::WorthUiActiveApplicationSession {
         } else if reading == UiScrollChromeReading::Paint {
             None
         } else {
+            // Region geometry is derived where the region is laid out.
             let placement = self.mounted.presented_region_placement(owner_instance);
-            content = placement.place(content)?;
-            viewport = placement.place(viewport)?;
+            let place = |bounds| {
+                placement
+                    .present(crate::mounting::UiLaidOut::from_layout(bounds))
+                    .ok()
+                    .flatten()
+                    .map(crate::mounting::UiPresented::into_shown)
+            };
+            content = place(content)?;
+            viewport = place(viewport)?;
             placement.coverage()
         };
         let bounds =

@@ -11,13 +11,16 @@ fn authored_portal_child_projects_only_during_the_exact_open_lifecycle() {
     // Its host position is (38, 42); the anchor is (20, 20) and the presented
     // Portal starts at (20, 60), so the independently expected position is (38, 82).
     let mut relocated = semantic.node(child).unwrap().clone();
-    let UiMountedAllocationProjection::Known { basis, .. } = relocated.occurrence_allocation else {
+    let UiMountedAllocationProjection::Known { basis, .. } =
+        *relocated.occurrence_allocation.in_layout_space()
+    else {
         panic!("fixture supplies concrete occurrence geometry")
     };
-    relocated.occurrence_allocation = UiMountedAllocationProjection::Known {
-        bounds: surface_bounds([38.0, 42.0, 220.0, 120.0]),
-        basis,
-    };
+    relocated.occurrence_allocation =
+        crate::mounting::UiLaidOut::from_layout(UiMountedAllocationProjection::Known {
+            bounds: surface_bounds([38.0, 42.0, 220.0, 120.0]),
+            basis,
+        });
     semantic.insert_node(relocated);
     let (fonts, _) = worth_ui_text::UiGlobalFontCollection::admit_qualified_profile().unwrap();
     let fonts = Arc::new(fonts);

@@ -26,9 +26,11 @@ impl UiMountedProjectionFrame {
         let candidates = self.raw_appearance_text_candidates(instance)?;
         if !candidates.iter().any(|candidate| {
             if text.requires_lifecycle_caption() {
-                candidate.slot() == worth_ui_host_contract::UiSemanticTextSlot::Posture
+                candidate.in_layout_space().slot()
+                    == worth_ui_host_contract::UiSemanticTextSlot::Posture
             } else {
-                candidate.slot() != worth_ui_host_contract::UiSemanticTextSlot::Posture
+                candidate.in_layout_space().slot()
+                    != worth_ui_host_contract::UiSemanticTextSlot::Posture
             }
         }) {
             return Err(UiMountedAppearanceOutputDenial::TextCandidate(
@@ -38,9 +40,9 @@ impl UiMountedProjectionFrame {
         let mut retained = std::collections::HashSet::new();
         for candidate in candidates
             .iter()
-            .filter(|candidate| !candidate.text().is_empty())
+            .filter(|candidate| !candidate.in_layout_space().text().is_empty())
         {
-            let formatting = match candidate.slot() {
+            let formatting = match candidate.in_layout_space().slot() {
                 worth_ui_host_contract::UiSemanticTextSlot::Value => {
                     text.formatting().scalar_value_row()
                 }
@@ -51,6 +53,7 @@ impl UiMountedProjectionFrame {
             };
             for span in formatting.appearance_foreground_spans() {
                 if !candidate
+                    .in_layout_space()
                     .foregrounds()
                     .iter()
                     .any(|row| row.identity() == span)
@@ -106,7 +109,10 @@ impl UiMountedProjectionFrame {
     fn raw_appearance_text_candidates(
         &self,
         instance: UiMountedInstanceIdentity,
-    ) -> Result<Vec<UiMountedSemanticTextMechanic>, UiMountedAppearanceOutputDenial> {
+    ) -> Result<
+        Vec<crate::mounting::UiLaidOut<UiMountedSemanticTextMechanic>>,
+        UiMountedAppearanceOutputDenial,
+    > {
         self.mechanics
             .semantic_text_for_instance(
                 instance,
@@ -119,7 +125,7 @@ impl UiMountedProjectionFrame {
 
     fn clip_appearance_text_candidates(
         &self,
-        candidates: Vec<UiMountedSemanticTextMechanic>,
+        candidates: Vec<crate::mounting::UiLaidOut<UiMountedSemanticTextMechanic>>,
     ) -> Result<Vec<UiMountedSemanticTextMechanic>, UiMountedAppearanceOutputDenial> {
         candidates
             .into_iter()

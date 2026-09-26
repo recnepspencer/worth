@@ -16,7 +16,10 @@ pub(crate) struct UiMountedAppearanceDerivedInput {
         std::collections::BTreeMap<worth_ui_host_contract::UiSemanticSurfaceIdentity, usize>,
     >,
     pub(crate) overlays: Vec<super::UiMountedAppearanceSurfaceOverlayInput>,
-    pub(crate) scroll_chrome: Vec<super::UiMountedAppearanceScrollChromeInput>,
+    /// Chrome where each region is laid out; a frame places it where it
+    /// presents that region before lowering it.
+    pub(crate) scroll_chrome:
+        Vec<crate::mounting::UiLaidOut<super::UiMountedAppearanceScrollChromeInput>>,
     pub(crate) scroll_motion:
         Vec<crate::mounting::presentation::work_producer::UiMountedScrollMotionGroupInput>,
 }

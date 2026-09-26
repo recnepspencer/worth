@@ -1,4 +1,5 @@
-use super::{portal_child_view::UiMountedPortalChildPresentation, UiMountedProjectionFrame};
+use super::UiMountedProjectionFrame;
+use crate::mounting::{UiLaidOut, UiMountedPlacement};
 
 impl UiMountedProjectionFrame {
     pub(in crate::mounting) fn presentation_authored_order(
@@ -15,19 +16,15 @@ impl UiMountedProjectionFrame {
         surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
         binding: worth_ui_host_contract::UiSurfaceBindingGeneration,
     ) -> Option<worth_ui_host_contract::UiMountedPortalPresentationAffinity> {
-        match self
-            .portal_child_presentation(instance, surface, binding)
+        self.portal_child_placement(instance, surface, binding)
             .expect("prepared Portal children retain an unambiguous mounted owner")
-        {
-            UiMountedPortalChildPresentation::Presented(portal, _) => Some(
+            .portal()
+            .map(|portal| {
                 worth_ui_host_contract::UiMountedPortalPresentationAffinity::from_runtime_mounting(
                     portal.owner(),
                     portal.portal_identity(),
-                ),
-            ),
-            UiMountedPortalChildPresentation::Ordinary
-            | UiMountedPortalChildPresentation::Suppressed => None,
-        }
+                )
+            })
     }
 
     pub(in crate::mounting) fn visual_region_basis(
@@ -50,15 +47,12 @@ impl UiMountedProjectionFrame {
                 continue;
             };
             match self
-                .portal_child_presentation(instance, surface.surface, surface.binding)
+                .portal_child_placement(instance, surface.surface, surface.binding)
                 .expect("prepared Portal children retain an unambiguous mounted owner")
             {
-                UiMountedPortalChildPresentation::Ordinary => {}
-                UiMountedPortalChildPresentation::Suppressed => {
-                    portal_children.insert(instance, None);
-                }
-                UiMountedPortalChildPresentation::Presented(portal, source_anchor) => {
-                    portal_children.insert(instance, Some((portal, source_anchor)));
+                UiMountedPlacement::InPlace => {}
+                placement @ (UiMountedPlacement::Hidden | UiMountedPlacement::ThroughPortal(_)) => {
+                    portal_children.insert(instance, placement);
                 }
             }
         }
@@ -86,8 +80,9 @@ impl UiMountedProjectionFrame {
             .commands_for_instance(instance, surface, binding)
             .to_vec();
         commands = commands.into_iter().filter_map(|command| match command {
+            // The mechanic source holds each row where layout put it.
             worth_ui_host_contract::UiMountedPaintCommand::SemanticText { mechanic, .. } => {
-                self.present_semantic_text_row(mechanic)
+                self.present_semantic_text_row(UiLaidOut::from_layout(mechanic))
                     .expect("prepared text retains validated mounted clip geometry")
                     .map(|mechanic| worth_ui_host_contract::UiMountedPaintCommand::SemanticText {
                         identity: worth_ui_host_contract::UiMountedPaintCommandIdentity::semantic_text(&mechanic), mechanic,

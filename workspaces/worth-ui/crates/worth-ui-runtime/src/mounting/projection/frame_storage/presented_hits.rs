@@ -1,4 +1,3 @@
-use super::portal_child_view::UiMountedPortalChildPresentation;
 use super::{UiMountedProjectionDenial, UiMountedProjectionFrame};
 
 impl UiMountedProjectionFrame {
@@ -43,24 +42,17 @@ impl UiMountedProjectionFrame {
         else {
             return Ok(None);
         };
-        let (row, portal) =
-            match self.portal_child_presentation(instance, surface.surface, surface.binding)? {
-                UiMountedPortalChildPresentation::Ordinary => (laid_out, None),
-                UiMountedPortalChildPresentation::Suppressed => return Ok(None),
-                UiMountedPortalChildPresentation::Presented(portal, source_anchor) => {
-                    let Some(row) = laid_out
-                        .presented_within_portal(portal, source_anchor)
-                        .map_err(UiMountedProjectionDenial::HitTestCompletion)?
-                    else {
-                        return Ok(None);
-                    };
-                    (row, Some(portal))
-                }
-            };
+        let placement = self.portal_child_placement(instance, surface.surface, surface.binding)?;
+        let Some(row) = placement
+            .present(laid_out)
+            .map_err(UiMountedProjectionDenial::HitTestCompletion)?
+        else {
+            return Ok(None);
+        };
         Ok(Some(crate::mounting::UiPresentedHitTestRow::from_mounted(
             crate::mounting::UiMountedHitTestPresentation::completed(
-                row,
-                portal,
+                row.into_shown(),
+                placement.portal(),
                 self.portal_overlays
                     .iter()
                     .any(|portal| portal.owner() == instance),
@@ -68,7 +60,7 @@ impl UiMountedProjectionFrame {
                 // presents it.
                 crate::mounting::UiHitAncestorClip::relative_to(
                     node.appearance_clip,
-                    laid_out.bounds(),
+                    laid_out.in_layout_space().bounds(),
                 ),
             ),
         )))

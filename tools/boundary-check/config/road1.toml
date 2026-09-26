@@ -984,6 +984,9 @@ sealed = [
   { name = "UiPresentationMotionDamageRegion", requirement = 1, owners = ["src/mounting/presentation/motion_sampling"] },
   { name = "UiPresentedHitRect", requirement = 1, owners = ["src/mounting/retention/interaction_basis.rs", "src/mounting/retention/interaction_basis"] },
   { name = "UiPresentedPortalBounds", requirement = 1, owners = ["src/runtime/portal/placement.rs"] },
+  { name = "UiPresented", requirement = 1, owners = ["src/mounting/projection/placement.rs", "src/mounting/projection/placement"] },
+  { name = "UiPortalPresentation", requirement = 1, owners = ["src/mounting/projection/placement.rs", "src/mounting/projection/placement"] },
+  { name = "UiPortalMove", requirement = 1, owners = ["src/mounting/projection/placement.rs", "src/mounting/projection/placement"] },
   { name = "UiScrollGroupBind", requirement = 1, owners = ["src/mounting/presentation/work_producer/scroll_motion_groups.rs", "src/mounting/presentation/work_producer/scroll_motion_groups"] },
   { name = "UiPublishedGroupOffset", requirement = 1, owners = ["src/mounting/presentation/work_producer/scroll_motion_groups.rs", "src/mounting/presentation/work_producer/scroll_motion_groups"] },
   { name = "UiDisplayedGroupOffset", requirement = 1, owners = ["src/mounting/presentation/work_producer/scroll_motion_groups.rs", "src/mounting/presentation/work_producer/scroll_motion_groups"] },
@@ -1002,7 +1005,7 @@ mints = [
     { path = "src/facade/entry/active_application_session/scroll_accepted_sample_settlement.rs", items = ["UiScrollSettlementReading::owner"] },
     { path = "src/mounting/projection/frame_storage/portal_content_extent.rs", items = ["UiMountedSemanticProjection::portal_content_extent"] },
     { path = "src/mounting/portal_placement_succession.rs", items = ["viewport_rect"] },
-    { path = "src/mounting/projection/frame_storage/portal_child_view.rs", items = ["UiMountedProjectionFrame::portal_child_presentation_with_work"] },
+    { path = "src/mounting/projection/frame_storage/portal_child_view.rs", items = ["UiMountedProjectionFrame::portal_child_placement_with_work"] },
     { path = "src/mounting/retention/interaction_basis.rs", items = ["UiPresentedHitTestRow::committed", "UiPresentedHitTestRow::from_mounted"] },
     { path = "src/runtime/interaction/targeting/presented_geometry.rs", items = ["UiPresentedInteractionGeometry::for_test_with_components", "UiPresentedViewportGeometry::from_current_interaction", "UiPresentedViewportGeometry::for_test"] },
   ], reason = "committed layout is published where the committed frame is read: a canonical committed box becomes published geometry" },
@@ -1017,6 +1020,15 @@ mints = [
     { path = "src/mounting/portal_placement_succession.rs", items = ["nested_anchor"] },
     { path = "src/runtime/portal/placement.rs", items = ["UiPreparedPortalPlacement::content_anchor"] },
   ], reason = "a Portal entrance starts at its published rect shifted by the entrance offset, a Portal's content anchor is its owner's layout moved to where the content it was fitted to begins, and a nested Portal's anchor is its owner's layout moved by its parent Portal's placement" },
+  { call = "UiPortalPresentation::fitted_to", callers = [
+    { path = "src/mounting/projection/frame_storage/portal_child_view.rs", items = ["UiMountedProjectionFrame::portal_child_placement_with_work"] },
+  ], reason = "a Portal child is presented through the Portal fitted to the content it belongs to, whose anchor only the child's mounted owner resolves" },
+  { call = "UiLaidOut::in_place", clippy = "worth_ui_runtime::mounting::projection::placement::spaces::UiLaidOut::in_place", callers = [
+    { path = "src/mounting/projection/frame_storage/appearance_geometry.rs", items = ["UiMountedAppearanceGeometry::in_place"] },
+  ], reason = "an occurrence's appearance geometry starts where it is laid out, and its placement then moves or suppresses it" },
+  { call = "UiPresented::map", clippy = "worth_ui_runtime::mounting::projection::placement::spaces::UiPresented::map", callers = [
+    { path = "src/mounting/projection/frame_storage/semantic_projection/surface_rebind.rs", items = ["UiMountedSemanticProjection::rebind_surface_allocations"] },
+  ], reason = "rebinding a surface changes only its allocations' binding generation, never where they are shown" },
   { call = "UiPublishedRect::adopting", callers = [
     { path = "src/mounting/retention/interaction_basis/hit_rect.rs", items = ["UiPresentedHitRect::adopted"] },
   ], reason = "a hit rect adopts the published rect its prepared entrance maps to" },

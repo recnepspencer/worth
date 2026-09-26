@@ -43,7 +43,7 @@ pub(super) fn derive(
         work.map_key_probes += probes;
         let mounted = mounted.ok_or(Denial::MountedGeometryUnavailable)?;
         let geometry = mounted.completed_appearance_geometry();
-        let space = match geometry.allocation {
+        let space = match geometry.allocation.into_shown() {
             worth_ui_host_contract::UiMountedAllocationProjection::Known { bounds, .. }
             | worth_ui_host_contract::UiMountedAllocationProjection::PortalAnchorObservation {
                 bounds,
@@ -63,14 +63,14 @@ pub(super) fn derive(
                     0,
                     m.visual_bounds(),
                     m.clip(),
-                    geometry.portal_group,
+                    geometry.portal_group(),
                 ),
                 Mechanic::Outline(m) => (
                     m.surface_paint_order(),
                     1,
                     m.visual_bounds(),
                     m.clip(),
-                    geometry.portal_group,
+                    geometry.portal_group(),
                 ),
                 Mechanic::PortalSurface(m) => (
                     m.surface().surface_paint_order(),

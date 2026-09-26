@@ -149,13 +149,20 @@ fn locality_node(
         }),
         plan_index: None,
         recorded_bounds: None,
-        occurrence_allocation: UiMountedAllocationProjection::Known {
-            bounds,
-            basis: UiMountedAllocationBasis::new(1, 2, 3, UiMountedTransformProjection::Identity),
-        },
+        occurrence_allocation: crate::mounting::UiLaidOut::from_layout(
+            UiMountedAllocationProjection::Known {
+                bounds,
+                basis: UiMountedAllocationBasis::new(
+                    1,
+                    2,
+                    3,
+                    UiMountedTransformProjection::Identity,
+                ),
+            },
+        ),
         appearance_geometry:
-            crate::mounting::projection::frame_storage::UiMountedAppearanceGeometry::from_occurrence(
-                UiMountedAllocationProjection::Known {
+            crate::mounting::projection::frame_storage::UiMountedAppearanceGeometry::in_place(
+                crate::mounting::UiLaidOut::from_layout(UiMountedAllocationProjection::Known {
                     bounds,
                     basis: UiMountedAllocationBasis::new(
                         1,
@@ -163,7 +170,7 @@ fn locality_node(
                         3,
                         UiMountedTransformProjection::Identity,
                     ),
-                },
+                }),
                 crate::mounting::projection::appearance::UiMountedAppearanceClip::Unclipped,
             ),
         surface_paint_order: Some(0),

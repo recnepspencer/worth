@@ -253,7 +253,9 @@ impl UiAssembledMountedFrame {
         profile: Option<&worth_ui_host_contract::UiHostAppearanceProfileContract>,
         motion: crate::mounting::presentation::UiAcceptedAppearanceMotion,
         overlays: &[crate::mounting::UiMountedAppearanceSurfaceOverlayInput],
-        scroll_chrome: &[crate::mounting::UiMountedAppearanceScrollChromeInput],
+        scroll_chrome: &[crate::mounting::UiPresented<
+            crate::mounting::UiMountedAppearanceScrollChromeInput,
+        >],
     ) -> crate::runtime::appearance::UiAppearanceInspectionAttemptBatch {
         let invalidation = self.appearance_invalidation_batch();
         let records = self.candidate.lower_appearance_with_motion_and_overlays(

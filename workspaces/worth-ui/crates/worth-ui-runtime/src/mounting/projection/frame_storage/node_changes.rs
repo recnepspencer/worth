@@ -7,6 +7,7 @@ use worth_ui_host_contract::{
 };
 
 use super::{UiMountedProjectionFrame, UiMountedProjectionNodeRecord, UiMountedProjectionSurface};
+use crate::mounting::UiMountedPlacement;
 
 impl UiMountedProjectionFrame {
     pub(in crate::mounting) fn presentation_node_changes(
@@ -26,25 +27,18 @@ impl UiMountedProjectionFrame {
             .iter()
             .map(|instance| match self.semantic.nodes.get(instance) {
                 Some(node) if node.receipt.semantic_surface() == surface.surface => match self
-                    .portal_child_presentation(*instance, surface.surface, surface.binding)
+                    .portal_child_placement(*instance, surface.surface, surface.binding)
                     .expect("prepared Portal children retain an unambiguous mounted owner")
                 {
-                    super::portal_child_view::UiMountedPortalChildPresentation::Ordinary => {
-                        UiMountedPresentationNodeChange::Upsert(
-                            self.presentation_node_state(node, surface, None),
-                        )
-                    }
-                    super::portal_child_view::UiMountedPortalChildPresentation::Suppressed => {
+                    UiMountedPlacement::Hidden => {
                         UiMountedPresentationNodeChange::Remove(*instance)
                     }
-                    super::portal_child_view::UiMountedPortalChildPresentation::Presented(
-                        portal,
-                        source_anchor,
-                    ) => UiMountedPresentationNodeChange::Upsert(self.presentation_node_state(
-                        node,
-                        surface,
-                        Some((portal, source_anchor)),
-                    )),
+                    placement @ (UiMountedPlacement::InPlace
+                    | UiMountedPlacement::ThroughPortal(_)) => {
+                        UiMountedPresentationNodeChange::Upsert(
+                            self.presentation_node_state(node, surface, placement),
+                        )
+                    }
                 },
                 Some(_) | None => UiMountedPresentationNodeChange::Remove(*instance),
             })
@@ -55,18 +49,19 @@ impl UiMountedProjectionFrame {
         &self,
         node: &UiMountedProjectionNodeRecord,
         surface: UiMountedProjectionSurface,
-        portal: Option<(
-            worth_ui_host_contract::UiMountedPortalOverlayMechanic,
-            worth_ui_host_contract::UiMountedCanonicalBox,
-        )>,
+        placement: UiMountedPlacement,
     ) -> UiMountedPresentationNodeState {
         let receipt = &node.receipt;
         let audience = surface.audience;
-        let occurrence = super::surface_coordinates::viewport_allocation(
-            node.presentation_allocation(),
-            surface.coordinate_posture,
-        )
-        .expect("completed occurrence geometry uses the admitted surface coordinates");
+        let occurrence = node
+            .occurrence_allocation
+            .try_map(|allocation| {
+                super::surface_coordinates::viewport_allocation(
+                    allocation,
+                    surface.coordinate_posture,
+                )
+            })
+            .expect("completed occurrence geometry uses the admitted surface coordinates");
         let accessibility = if audience.accessibility_disclosed() {
             receipt.accessibility()
         } else {
@@ -83,21 +78,19 @@ impl UiMountedProjectionFrame {
                 .expect("a projected node remains in owner-authored order"),
             role: receipt.role(),
             participation: receipt.participation(),
-            allocation: portal
-                .map_or_else(
-                    || Ok(occurrence),
-                    |(portal, source_anchor)| {
-                        super::super::appearance::portal_presented_allocation(
-                            occurrence,
-                            portal,
-                            source_anchor,
-                        )
-                    },
-                )
-                .expect("completed occurrence allocation remains canonical in its Portal"),
+            allocation: placement
+                .present(occurrence)
+                .ok()
+                .flatten()
+                .expect("completed occurrence allocation remains canonical in its Portal")
+                .into_shown(),
             preview: self.presentation_preview(receipt.mounted_instance()),
             paint: self.presentation_node_paint(node),
-            hit_test: self.presentation_node_hit_test(receipt.mounted_instance(), surface, portal),
+            hit_test: self.presentation_node_hit_test(
+                receipt.mounted_instance(),
+                surface,
+                placement,
+            ),
             accessibility,
             motion: receipt.motion(),
             diagnostic: self.presentation_diagnostic(node, surface),
@@ -108,10 +101,7 @@ impl UiMountedProjectionFrame {
         &self,
         instance: worth_ui_host_contract::UiMountedInstanceIdentity,
         surface: UiMountedProjectionSurface,
-        portal: Option<(
-            worth_ui_host_contract::UiMountedPortalOverlayMechanic,
-            worth_ui_host_contract::UiMountedCanonicalBox,
-        )>,
+        placement: UiMountedPlacement,
     ) -> UiMountedPresentationNodeHitTest {
         self.mechanics
             .hit_test_for_instance(
@@ -123,10 +113,9 @@ impl UiMountedProjectionFrame {
             )
             .expect("prepared hit-test mechanics remain attributable")
             .and_then(|row| {
-                portal.map_or(Some(row), |(portal, source_anchor)| {
-                    row.presented_within_portal(portal, source_anchor)
-                        .expect("validated Portal-relative hit region remains canonical")
-                })
+                placement
+                    .present(row)
+                    .expect("validated Portal-relative hit region remains canonical")
             })
             .map_or_else(
                 || {
@@ -134,7 +123,7 @@ impl UiMountedProjectionFrame {
                         UiMountedOmissionReason::NotProducedByExecutedLane,
                     )
                 },
-                UiMountedPresentationNodeHitTest::Region,
+                |row| UiMountedPresentationNodeHitTest::Region(row.into_shown()),
             )
     }
 

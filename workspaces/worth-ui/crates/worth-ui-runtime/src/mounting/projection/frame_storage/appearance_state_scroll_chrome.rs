@@ -102,7 +102,7 @@ impl UiMountedAppearanceFrameState {
         &mut self,
         frame: &UiMountedProjectionFrame,
         bindings: &[UiMountedSurfaceBindingRequirement],
-        chrome: &[UiMountedAppearanceScrollChromeInput],
+        chrome: &[crate::mounting::UiPresented<UiMountedAppearanceScrollChromeInput>],
     ) -> Result<(), UiMountedAppearanceOutputDenial> {
         let mut next: BTreeMap<
             UiMountedInstanceIdentity,
@@ -110,6 +110,7 @@ impl UiMountedAppearanceFrameState {
         > = BTreeMap::new();
         for input in chrome
             .iter()
+            .map(crate::mounting::UiPresented::shown)
             .filter(|input| bound(bindings, input.semantic_surface()))
         {
             next.entry(input.owner_instance()).or_default().push(*input);

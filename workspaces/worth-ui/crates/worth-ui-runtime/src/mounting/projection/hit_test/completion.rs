@@ -29,7 +29,7 @@ pub(in crate::mounting::projection) fn complete_hit_test(
     }
     // Scrolled content is painted on the device grid, but hit testing reads
     // it exactly where its offset put it, as every later pose moves it.
-    let bounds = match node.presentation_allocation() {
+    let bounds = match *node.occurrence_allocation.in_layout_space() {
         UiMountedAllocationProjection::Known { bounds, .. } => {
             node.recorded_bounds.unwrap_or(bounds)
         }

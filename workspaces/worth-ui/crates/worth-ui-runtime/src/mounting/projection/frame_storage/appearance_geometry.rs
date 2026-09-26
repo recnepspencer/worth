@@ -1,32 +1,38 @@
-use super::portal_child_view::UiMountedPortalChildPresentation;
 use super::{UiMountedProjectionDenial, UiMountedProjectionFrame, UiMountedProjectionNodeRecord};
 use crate::mounting::projection::appearance::{
     UiMountedAppearanceClip as Clip, UiMountedAppearanceClipDenial as Denial,
 };
+use crate::mounting::{UiLaidOut, UiMountedPlacement, UiPresented};
 
 /// Derived geometry retained with its mounted node, separate from raw ancestry.
 #[derive(Clone, Debug, PartialEq)]
 pub(in crate::mounting::projection) struct UiMountedAppearanceGeometry {
-    pub(super) allocation: worth_ui_host_contract::UiMountedAllocationProjection,
+    /// Where the frame shows the occurrence. Portal content the frame
+    /// presents nowhere keeps its laid-out allocation here, under a
+    /// suppressed clip: its lowering keeps a coordinate space while it paints
+    /// nothing.
+    pub(super) allocation: UiPresented<worth_ui_host_contract::UiMountedAllocationProjection>,
     pub(super) clip: Clip,
-    pub(super) portal_group: Option<worth_ui_host_contract::UiMountedInstanceIdentity>,
-    pub(super) portal_presentation: Option<(
-        worth_ui_host_contract::UiMountedPortalOverlayMechanic,
-        worth_ui_host_contract::UiMountedCanonicalBox,
-    )>,
+    /// Where the frame presents the occurrence. Portal content whose
+    /// placement could not be resolved stays in place, and its clip says so.
+    pub(super) placement: UiMountedPlacement,
     pub(super) surface_paint_posture: crate::mounting::UiMountedSurfacePaintPosture,
 }
 
 impl UiMountedAppearanceGeometry {
-    pub(in crate::mounting::projection) fn from_occurrence(
-        allocation: worth_ui_host_contract::UiMountedAllocationProjection,
+    /// The geometry of an occurrence presented where it is laid out.
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "an occurrence's geometry starts where it is laid out; its placement then moves or suppresses it"
+    )]
+    pub(in crate::mounting::projection) fn in_place(
+        allocation: UiLaidOut<worth_ui_host_contract::UiMountedAllocationProjection>,
         clip: Clip,
     ) -> Self {
         Self {
-            allocation,
+            allocation: allocation.in_place(),
             clip,
-            portal_group: None,
-            portal_presentation: None,
+            placement: UiMountedPlacement::InPlace,
             surface_paint_posture: crate::mounting::UiMountedSurfacePaintPosture::ordinary(),
         }
     }
@@ -47,14 +53,19 @@ impl UiMountedAppearanceGeometry {
 
     pub(in crate::mounting::projection) const fn allocation(
         &self,
-    ) -> worth_ui_host_contract::UiMountedAllocationProjection {
+    ) -> UiPresented<worth_ui_host_contract::UiMountedAllocationProjection> {
         self.allocation
     }
 
-    pub(in crate::mounting::projection) const fn portal_group(
+    pub(in crate::mounting::projection) const fn placement(&self) -> UiMountedPlacement {
+        self.placement
+    }
+
+    /// The Portal owner whose group presents this occurrence.
+    pub(in crate::mounting::projection) fn portal_group(
         &self,
     ) -> Option<worth_ui_host_contract::UiMountedInstanceIdentity> {
-        self.portal_group
+        self.placement.portal().map(|portal| portal.owner())
     }
 }
 
@@ -75,7 +86,7 @@ impl UiMountedProjectionFrame {
         self.semantic
             .node(instance)
             .map(UiMountedProjectionNodeRecord::completed_appearance_geometry)
-            .map(|geometry| geometry.allocation)
+            .map(|geometry| geometry.allocation.into_shown())
     }
 
     #[cfg(test)]
@@ -128,11 +139,9 @@ impl UiMountedProjectionFrame {
         &self,
         node: &UiMountedProjectionNodeRecord,
     ) -> Result<(UiMountedAppearanceGeometry, usize, usize), UiMountedProjectionDenial> {
-        let mut geometry = UiMountedAppearanceGeometry::from_occurrence(
-            node.occurrence_allocation,
-            node.appearance_clip,
-        )
-        .with_surface_paint_posture(node.appearance_geometry.surface_paint_posture());
+        let mut geometry =
+            UiMountedAppearanceGeometry::in_place(node.occurrence_allocation, node.appearance_clip)
+                .with_surface_paint_posture(node.appearance_geometry.surface_paint_posture());
         if node.portal_child_owner.is_none() {
             return Ok((geometry, 0, 0));
         }
@@ -149,31 +158,33 @@ impl UiMountedProjectionFrame {
             geometry.clip = Clip::Unresolved(Denial::MountedGeometryUnavailable);
             return Ok((geometry, surface_probes, 0));
         };
-        let (presentation, probes, rows) = self.portal_child_presentation_with_work(
+        let (placement, probes, rows) = self.portal_child_placement_with_work(
             node.receipt.mounted_instance(),
             surface.surface,
             surface.binding,
         )?;
-        match presentation {
-            UiMountedPortalChildPresentation::Ordinary => {
+        match placement {
+            UiMountedPlacement::InPlace => {
                 geometry.clip = Clip::Unresolved(Denial::MountedGeometryUnavailable);
             }
-            UiMountedPortalChildPresentation::Suppressed => geometry.clip = Clip::Suppressed,
-            UiMountedPortalChildPresentation::Presented(portal, source_anchor) => {
-                geometry.portal_group = Some(portal.owner());
-                geometry.portal_presentation = Some((portal, source_anchor));
-                geometry.allocation = super::super::appearance::portal_presented_allocation(
-                    geometry.allocation,
-                    portal,
-                    source_anchor,
-                )
-                .map_err(|_| UiMountedProjectionDenial::NonFiniteGeometry)?;
-                geometry.clip = super::super::appearance::portal_ancestor_clip(
-                    geometry.clip,
-                    portal,
-                    source_anchor,
-                )
-                .unwrap_or_else(|denial| Clip::Unresolved(Denial::Geometry(denial)));
+            // Its Portal presents none of it: the clip suppresses its paint
+            // where it is laid out.
+            UiMountedPlacement::Hidden => {
+                geometry.placement = placement;
+                geometry.clip = Clip::Suppressed;
+            }
+            UiMountedPlacement::ThroughPortal(_) => {
+                geometry.placement = placement;
+                geometry.allocation = placement
+                    .present(node.occurrence_allocation)
+                    .ok()
+                    .flatten()
+                    .ok_or(UiMountedProjectionDenial::NonFiniteGeometry)?;
+                geometry.clip =
+                    match placement.present(UiLaidOut::from_layout(node.appearance_clip)) {
+                        Ok(clip) => clip.map_or(Clip::Suppressed, UiPresented::into_shown),
+                        Err(denial) => Clip::Unresolved(Denial::Geometry(denial)),
+                    };
             }
         }
         Ok((

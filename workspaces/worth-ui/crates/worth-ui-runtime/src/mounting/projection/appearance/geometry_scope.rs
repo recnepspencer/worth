@@ -59,9 +59,9 @@ impl UiMountedAppearanceGeometryScope {
     /// fragment paints it, so every node lowering path can pick up its own.
     pub(crate) fn with_scroll_chrome(
         mut self,
-        chrome: &[super::UiMountedAppearanceScrollChromeInput],
+        chrome: &[crate::mounting::UiPresented<super::UiMountedAppearanceScrollChromeInput>],
     ) -> Self {
-        for input in chrome {
+        for input in chrome.iter().map(crate::mounting::UiPresented::shown) {
             self.scroll_chrome
                 .entry(input.owner_instance())
                 .or_default()

@@ -12,13 +12,12 @@ pub(crate) struct UiMountedVisualRegionBasis {
     portal_overlays: std::rc::Rc<[worth_ui_host_contract::UiMountedPortalOverlayMechanic]>,
     portal_input_order:
         std::rc::Rc<std::collections::BTreeMap<u64, crate::runtime::portal::UiPortalStackOrdinal>>,
+    /// Where the frame presents each Portal child it does not present in
+    /// place.
     portal_children: std::rc::Rc<
         std::collections::BTreeMap<
             worth_ui_host_contract::UiMountedInstanceIdentity,
-            Option<(
-                worth_ui_host_contract::UiMountedPortalOverlayMechanic,
-                worth_ui_host_contract::UiMountedCanonicalBox,
-            )>,
+            super::UiMountedPlacement,
         >,
     >,
     text_clips: std::rc::Rc<
@@ -174,15 +173,13 @@ impl UiMountedVisualRegionBasis {
                     )
                     .expect("retained hit rows belong to the presented receipt basis")
                 });
-                let (mechanic, portal) = match self.portal_children.get(&row.mounted_instance()) {
-                    None => Some((row, None)),
-                    Some(None) => None,
-                    Some(Some((portal, source_anchor))) => Some((
-                        row.presented_within_portal(*portal, *source_anchor)
-                            .expect("validated Portal-relative hit region remains canonical")?,
-                        Some(*portal),
-                    )),
-                }?;
+                let placement = self.placement_of(row.mounted_instance());
+                // The mechanic source holds each row where layout put it.
+                let mechanic = placement
+                    .present(super::UiLaidOut::from_layout(row))
+                    .expect("validated Portal-relative hit region remains canonical")?
+                    .into_shown();
+                let portal = placement.portal();
                 // The frame published each row with the ancestor clips it sits
                 // inside; a row it did not publish is not presented.
                 let ancestor_clip = self
@@ -249,14 +246,22 @@ impl UiMountedVisualRegionBasis {
         mut self,
         portal_children: std::collections::BTreeMap<
             worth_ui_host_contract::UiMountedInstanceIdentity,
-            Option<(
-                worth_ui_host_contract::UiMountedPortalOverlayMechanic,
-                worth_ui_host_contract::UiMountedCanonicalBox,
-            )>,
+            super::UiMountedPlacement,
         >,
     ) -> Self {
         self.portal_children = std::rc::Rc::new(portal_children);
         self
+    }
+
+    /// Where the frame presents `instance`.
+    fn placement_of(
+        &self,
+        instance: worth_ui_host_contract::UiMountedInstanceIdentity,
+    ) -> super::UiMountedPlacement {
+        self.portal_children
+            .get(&instance)
+            .copied()
+            .unwrap_or(super::UiMountedPlacement::InPlace)
     }
 
     /// Admission ceiling includes commands later suppressed by Portal clipping.
@@ -320,7 +325,7 @@ impl UiMountedVisualRegionBasis {
                     .len()
                     .checked_mul(std::mem::size_of::<(
                         worth_ui_host_contract::UiMountedInstanceIdentity,
-                        Option<worth_ui_host_contract::UiMountedPortalOverlayMechanic>,
+                        super::UiMountedPlacement,
                     )>())?,
             )
     }

@@ -32,13 +32,13 @@ fn rebound_portal_recompletion_keeps_raw_and_completed_coordinate_ownership_curr
     let node = rebound.semantic.node(child).unwrap();
     let UiMountedAllocationProjection::Known {
         basis: occurrence, ..
-    } = node.occurrence_allocation
+    } = *node.occurrence_allocation.in_layout_space()
     else {
         panic!("raw occurrence is known");
     };
     let UiMountedAllocationProjection::Known {
         basis: completed, ..
-    } = node.appearance_geometry.allocation
+    } = node.appearance_geometry.allocation.into_shown()
     else {
         panic!("completed Portal occurrence is known");
     };

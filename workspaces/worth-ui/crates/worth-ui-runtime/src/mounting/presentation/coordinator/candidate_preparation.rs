@@ -105,7 +105,9 @@ impl UiPreparedFrameCandidates {
         &mut self,
         frame: &crate::mounting::UiPreparedMountedFrame,
         derived: &crate::mounting::UiMountedAppearanceDerivedInput,
-        placed_chrome: &[crate::mounting::UiMountedAppearanceScrollChromeInput],
+        placed_chrome: &[crate::mounting::UiPresented<
+            crate::mounting::UiMountedAppearanceScrollChromeInput,
+        >],
     ) -> Result<(), ()> {
         for surface in &mut self.surfaces {
             surface

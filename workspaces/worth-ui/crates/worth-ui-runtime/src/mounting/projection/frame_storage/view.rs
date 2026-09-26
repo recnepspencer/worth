@@ -71,35 +71,29 @@ impl UiMountedProjectionFrame {
             .filter_map(|instance| self.semantic.nodes.get(instance))
             .filter(|node| node.receipt.semantic_surface() == surface.surface)
         {
-            let occurrence = super::surface_coordinates::viewport_allocation(
-                node.presentation_allocation(),
-                surface.coordinate_posture,
-            )?;
-            let (allocation, portal_presentation) = match self.portal_child_presentation(
+            let occurrence = node.occurrence_allocation.try_map(|allocation| {
+                super::surface_coordinates::viewport_allocation(
+                    allocation,
+                    surface.coordinate_posture,
+                )
+            })?;
+            let placement = self.portal_child_placement(
                 node.receipt.mounted_instance(),
                 surface.surface,
                 surface.binding,
-            )? {
-                super::portal_child_view::UiMountedPortalChildPresentation::Ordinary => {
-                    (occurrence, None)
-                }
-                super::portal_child_view::UiMountedPortalChildPresentation::Suppressed => continue,
-                super::portal_child_view::UiMountedPortalChildPresentation::Presented(portal, source_anchor) => {
-                    (
-                        super::super::appearance::portal_presented_allocation(
-                            occurrence,
-                            portal,
-                            source_anchor,
-                        ).map_err(|_| UiMountedProjectionDenial::NonFiniteGeometry)?,
-                        Some(
-                            worth_ui_host_contract::UiMountedPortalPresentationAffinity::from_runtime_mounting(
-                                portal.owner(),
-                                portal.portal_identity(),
-                            ),
-                        ),
-                    )
-                }
+            )?;
+            let Some(allocation) = placement
+                .present(occurrence)
+                .map_err(|_| UiMountedProjectionDenial::NonFiniteGeometry)?
+            else {
+                continue;
             };
+            let portal_presentation = placement.portal().map(|portal| {
+                worth_ui_host_contract::UiMountedPortalPresentationAffinity::from_runtime_mounting(
+                    portal.owner(),
+                    portal.portal_identity(),
+                )
+            });
             nodes.push(self.audience_node_view(
                 node,
                 &node_view_context,
@@ -170,7 +164,9 @@ impl UiMountedProjectionFrame {
         &self,
         node: &UiMountedProjectionNodeRecord,
         context: &UiMountedNodeViewContext<'_>,
-        allocation: worth_ui_host_contract::UiMountedAllocationProjection,
+        allocation: crate::mounting::UiPresented<
+            worth_ui_host_contract::UiMountedAllocationProjection,
+        >,
         portal_presentation: Option<worth_ui_host_contract::UiMountedPortalPresentationAffinity>,
     ) -> UiMountedNodeProjectionView {
         let receipt = &node.receipt;
@@ -196,7 +192,7 @@ impl UiMountedProjectionFrame {
                 .expect("a projected node remains in owner-authored order"),
             role: receipt.role(),
             participation: receipt.participation(),
-            allocation,
+            allocation: allocation.into_shown(),
             preview: self.preview_for(receipt),
             paint: self.paint_for(node),
             hit_test: context

@@ -95,14 +95,14 @@ fn node() -> UiMountedProjectionNodeRecord {
         appearance_clip:
             crate::mounting::projection::appearance::UiMountedAppearanceClip::Unclipped,
         recorded_bounds: None,
-        occurrence_allocation: UiMountedAllocationProjection::Omitted(
-            UiMountedOmissionReason::NoCommittedAllocation,
+        occurrence_allocation: crate::mounting::UiLaidOut::from_layout(
+            UiMountedAllocationProjection::Omitted(UiMountedOmissionReason::NoCommittedAllocation),
         ),
         appearance_geometry:
-            crate::mounting::projection::frame_storage::UiMountedAppearanceGeometry::from_occurrence(
-                UiMountedAllocationProjection::Omitted(
+            crate::mounting::projection::frame_storage::UiMountedAppearanceGeometry::in_place(
+                crate::mounting::UiLaidOut::from_layout(UiMountedAllocationProjection::Omitted(
                     UiMountedOmissionReason::NoCommittedAllocation,
-                ),
+                )),
                 crate::mounting::projection::appearance::UiMountedAppearanceClip::Unclipped,
             ),
         semantic_text: None,

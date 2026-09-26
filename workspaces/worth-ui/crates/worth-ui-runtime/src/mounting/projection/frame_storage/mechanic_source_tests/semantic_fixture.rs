@@ -56,17 +56,8 @@ pub(super) fn semantic_projection_in_coordinates(
                 },
             }),
             plan_index: Some(0),
-        recorded_bounds: None,
-        occurrence_allocation: UiMountedAllocationProjection::Known {
-                    bounds,
-                    basis: UiMountedAllocationBasis::new(
-                        1,
-                        2,
-                        3,
-                        UiMountedTransformProjection::Identity,
-                    ),
-                },
-        appearance_geometry: crate::mounting::projection::frame_storage::UiMountedAppearanceGeometry::from_occurrence(
+            recorded_bounds: None,
+            occurrence_allocation: crate::mounting::UiLaidOut::from_layout(
                 UiMountedAllocationProjection::Known {
                     bounds,
                     basis: UiMountedAllocationBasis::new(
@@ -76,11 +67,23 @@ pub(super) fn semantic_projection_in_coordinates(
                         UiMountedTransformProjection::Identity,
                     ),
                 },
-                crate::mounting::projection::appearance::UiMountedAppearanceClip::Unclipped,
             ),
-        surface_paint_order: Some(0),
-        portal_surface_appearance: true,
-        has_appearance_attachment: false,
+            appearance_geometry:
+                crate::mounting::projection::frame_storage::UiMountedAppearanceGeometry::in_place(
+                    crate::mounting::UiLaidOut::from_layout(UiMountedAllocationProjection::Known {
+                        bounds,
+                        basis: UiMountedAllocationBasis::new(
+                            1,
+                            2,
+                            3,
+                            UiMountedTransformProjection::Identity,
+                        ),
+                    }),
+                    crate::mounting::projection::appearance::UiMountedAppearanceClip::Unclipped,
+                ),
+            surface_paint_order: Some(0),
+            portal_surface_appearance: true,
+            has_appearance_attachment: false,
             appearance_clip:
                 crate::mounting::projection::appearance::UiMountedAppearanceClip::Unclipped,
             semantic_text: Some(seed),
@@ -92,7 +95,7 @@ pub(super) fn semantic_projection_in_coordinates(
             portal_child_owner: None,
         }],
         vec![UiMountedProjectionSurface {
-                coordinate_posture: crate::mounting::UiSurfaceBindingCoordinatePosture::LogicalPoints,
+            coordinate_posture: crate::mounting::UiSurfaceBindingCoordinatePosture::LogicalPoints,
             surface,
             binding,
             audience: UiMountedProjectionAudience::full(),

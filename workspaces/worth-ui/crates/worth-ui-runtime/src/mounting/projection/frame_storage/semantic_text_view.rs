@@ -19,7 +19,7 @@ impl UiMountedProjectionFrame {
     ) -> bool {
         instances.iter().all(|instance| self.semantic.node(*instance).is_some_and(|node| {
             let geometry = node.completed_appearance_geometry();
-            geometry.portal_presentation.is_none()
+            geometry.placement() == crate::mounting::UiMountedPlacement::InPlace
                 && geometry.clip == crate::mounting::projection::appearance::UiMountedAppearanceClip::Unclipped
         }))
     }
@@ -28,13 +28,13 @@ impl UiMountedProjectionFrame {
     /// mounted presentation geometry. Qualification remains in source space.
     pub(super) fn present_semantic_text_row(
         &self,
-        candidate: UiMountedSemanticTextMechanic,
+        candidate: crate::mounting::UiLaidOut<UiMountedSemanticTextMechanic>,
     ) -> Result<Option<UiMountedSemanticTextMechanic>, super::UiMountedAppearanceOutputDenial> {
         use super::UiMountedAppearanceOutputDenial as Denial;
         use crate::mounting::projection::appearance::UiMountedAppearanceClip as Clip;
         let node = self
             .semantic
-            .node(candidate.mounted_instance())
+            .node(candidate.in_layout_space().mounted_instance())
             .ok_or(Denial::CurrentProjectionUnavailable)?;
         let geometry = node.completed_appearance_geometry();
         match geometry.clip {
@@ -42,16 +42,19 @@ impl UiMountedProjectionFrame {
             Clip::Suppressed => return Ok(None),
             _ => {}
         }
-        let presented = match geometry.portal_presentation {
-            Some((portal, anchor)) => candidate.presented_within_portal(portal, anchor),
-            None => Ok(Some(candidate)),
-        };
-        presented
-            .and_then(|candidate| match (candidate, geometry.clip) {
-                (Some(candidate), Clip::Ancestor(clip)) => {
-                    candidate.clipped_to_appearance_ancestor(clip)
+        geometry
+            .placement()
+            .present(candidate)
+            .and_then(|candidate| {
+                match (
+                    candidate.map(crate::mounting::UiPresented::into_shown),
+                    geometry.clip,
+                ) {
+                    (Some(candidate), Clip::Ancestor(clip)) => {
+                        candidate.clipped_to_appearance_ancestor(clip)
+                    }
+                    (candidate, _) => Ok(candidate),
                 }
-                (candidate, _) => Ok(candidate),
             })
             .map_err(|denial| {
                 Denial::TextCandidate(UiMountedProjectionDenial::SemanticTextCompletion(denial))

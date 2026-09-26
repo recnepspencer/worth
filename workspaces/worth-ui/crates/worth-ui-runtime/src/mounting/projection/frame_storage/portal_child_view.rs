@@ -1,20 +1,7 @@
-use worth_ui_host_contract::{
-    UiMountedInstanceIdentity, UiMountedPortalOverlayMechanic, UiSemanticSurfaceIdentity,
-};
+use worth_ui_host_contract::{UiMountedInstanceIdentity, UiSemanticSurfaceIdentity};
 
 use super::{UiMountedProjectionDenial, UiMountedProjectionFrame};
-
-#[derive(Clone, Copy)]
-pub(super) enum UiMountedPortalChildPresentation {
-    Ordinary,
-    Suppressed,
-    /// Presented through a Portal, with the laid-out box whose origin the
-    /// Portal presents at the origin of its paint bounds.
-    Presented(
-        UiMountedPortalOverlayMechanic,
-        worth_ui_host_contract::UiMountedCanonicalBox,
-    ),
-}
+use crate::mounting::projection::placement::{UiMountedPlacement, UiPortalPresentation};
 
 impl UiMountedProjectionFrame {
     pub(in crate::mounting) fn portal_owner_for_child(
@@ -70,29 +57,31 @@ impl UiMountedProjectionFrame {
         })
     }
 
-    pub(super) fn portal_child_presentation(
+    /// Where this frame presents `instance`: Portal content through its
+    /// Portal, every other occurrence where it is laid out.
+    pub(super) fn portal_child_placement(
         &self,
         instance: UiMountedInstanceIdentity,
         surface: UiSemanticSurfaceIdentity,
         binding: worth_ui_host_contract::UiSurfaceBindingGeneration,
-    ) -> Result<UiMountedPortalChildPresentation, UiMountedProjectionDenial> {
-        self.portal_child_presentation_with_work(instance, surface, binding)
-            .map(|(presentation, _, _)| presentation)
+    ) -> Result<UiMountedPlacement, UiMountedProjectionDenial> {
+        self.portal_child_placement_with_work(instance, surface, binding)
+            .map(|(placement, _, _)| placement)
     }
 
-    /// Returns the presentation, actual node-index probes, and overlay rows visited.
-    pub(super) fn portal_child_presentation_with_work(
+    /// Returns the placement, actual node-index probes, and overlay rows visited.
+    pub(super) fn portal_child_placement_with_work(
         &self,
         instance: UiMountedInstanceIdentity,
         surface: UiSemanticSurfaceIdentity,
         binding: worth_ui_host_contract::UiSurfaceBindingGeneration,
-    ) -> Result<(UiMountedPortalChildPresentation, usize, usize), UiMountedProjectionDenial> {
+    ) -> Result<(UiMountedPlacement, usize, usize), UiMountedProjectionDenial> {
         let (node, mut probes) = self.semantic.nodes.get_with_probes(&instance);
         let Some(node) = node else {
-            return Ok((UiMountedPortalChildPresentation::Ordinary, probes, 0));
+            return Ok((UiMountedPlacement::InPlace, probes, 0));
         };
         let Some(owner_component) = node.portal_child_owner.as_ref() else {
-            return Ok((UiMountedPortalChildPresentation::Ordinary, probes, 0));
+            return Ok((UiMountedPlacement::InPlace, probes, 0));
         };
         let mut matched = None;
         for input in self.portal_overlays.iter().copied() {
@@ -126,7 +115,8 @@ impl UiMountedProjectionFrame {
                 .filter(|surface| surface.binding == binding)
                 .ok_or(UiMountedProjectionDenial::PortalOverlayOwnerMissing)?;
             let source_anchor = match super::surface_coordinates::viewport_allocation(
-                owner.occurrence_allocation, source_surface.coordinate_posture,
+                *owner.occurrence_allocation.in_layout_space(),
+                source_surface.coordinate_posture,
             )? {
                 worth_ui_host_contract::UiMountedAllocationProjection::Known { bounds, .. }
                 | worth_ui_host_contract::UiMountedAllocationProjection::PortalAnchorObservation { bounds, .. } => bounds,
@@ -149,7 +139,7 @@ impl UiMountedProjectionFrame {
             // Paint bounds begin where the content the Portal was fitted to
             // begins, which is not the owner's origin when that content is
             // laid out away from it.
-            let source_anchor = input
+            let content_anchor = input
                 .placement()
                 .content_anchor(
                     crate::mounting::presentation::UiPublishedRect::from_committed_box(
@@ -157,19 +147,17 @@ impl UiMountedProjectionFrame {
                     ),
                 )
                 .canonical_box();
-            matched = Some((
+            matched = Some(UiPortalPresentation::fitted_to(
                 input
                     .mechanic_for(self.frame, binding, receipt)
                     .map_err(UiMountedProjectionDenial::PortalOverlayCompletion)?,
-                source_anchor,
+                content_anchor,
             ));
         }
         Ok((
             matched.map_or(
-                UiMountedPortalChildPresentation::Suppressed,
-                |(portal, source_anchor)| {
-                    UiMountedPortalChildPresentation::Presented(portal, source_anchor)
-                },
+                UiMountedPlacement::Hidden,
+                UiMountedPlacement::ThroughPortal,
             ),
             probes,
             self.portal_overlays.len(),

@@ -2,10 +2,11 @@ use super::UiMountedProjectionNodeDraft;
 use crate::mounting::projection::{
     frame_storage::UiMountedProjectionNodeRecord, node_receipt::UiMountedNodeReceiptInput,
 };
-use crate::mounting::UiMountedNodeReceipt;
+use crate::mounting::{UiLaidOut, UiMountedNodeReceipt};
 
 impl UiMountedProjectionNodeDraft {
     pub(super) fn materialize(self) -> UiMountedProjectionNodeRecord {
+        let occurrence_allocation = UiLaidOut::from_layout(self.appearance_allocation);
         UiMountedProjectionNodeRecord {
             receipt: UiMountedNodeReceipt::from_input(UiMountedNodeReceiptInput {
                 mounted_instance: self.mounted_instance,
@@ -18,11 +19,11 @@ impl UiMountedProjectionNodeDraft {
                 allocation: self.allocation,
             }),
             plan_index: self.plan_index,
-            occurrence_allocation: self.appearance_allocation,
+            occurrence_allocation,
             recorded_bounds: self.recorded_bounds,
             appearance_geometry:
-                super::super::frame_storage::UiMountedAppearanceGeometry::from_occurrence(
-                    self.appearance_allocation,
+                super::super::frame_storage::UiMountedAppearanceGeometry::in_place(
+                    occurrence_allocation,
                     self.appearance_clip,
                 )
                 .with_surface_paint_posture(self.surface_paint_posture),

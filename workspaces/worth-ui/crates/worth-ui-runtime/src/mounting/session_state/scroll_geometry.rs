@@ -52,11 +52,12 @@ impl super::WorthUiMountedSessionState {
     pub(crate) fn presented_region_placement(
         &self,
         owner: worth_ui_host_contract::UiMountedInstanceIdentity,
-    ) -> crate::mounting::UiMountedRegionPlacement {
-        self.identity.current_projection().map_or(
-            crate::mounting::UiMountedRegionPlacement::InPlace,
-            |frame| frame.semantic_projection().region_placement(owner),
-        )
+    ) -> crate::mounting::UiMountedPlacement {
+        self.identity
+            .current_projection()
+            .map_or(crate::mounting::UiMountedPlacement::InPlace, |frame| {
+                frame.semantic_projection().region_placement(owner)
+            })
     }
 
     pub(crate) fn scroll_region_geometry(

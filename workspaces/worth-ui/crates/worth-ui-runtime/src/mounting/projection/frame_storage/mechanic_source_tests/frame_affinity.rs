@@ -87,16 +87,20 @@ fn unchanged_successor_views_refresh_affinity_without_mutating_retained_mechanic
             &successor_receipts,
         )
         .unwrap();
-    assert_eq!(successor_hits[0].node_receipt(), successor_receipt);
+    assert_eq!(
+        successor_hits[0].in_layout_space().node_receipt(),
+        successor_receipt
+    );
     assert!(successor_text.iter().all(|row| {
+        let row = row.in_layout_space();
         row.frame() == successor_frame
             && row.content_generation() == successor_content
             && row.node_receipt() == successor_receipt
     }));
-    assert_eq!(predecessor_hit.frame(), predecessor_frame);
+    assert_eq!(predecessor_hit.in_layout_space().frame(), predecessor_frame);
     assert!(predecessor_text
         .iter()
-        .all(|row| row.frame() == predecessor_frame));
+        .all(|row| row.in_layout_space().frame() == predecessor_frame));
     assert!(source
         .commands_for_instance(instance, surface, binding)
         .iter()

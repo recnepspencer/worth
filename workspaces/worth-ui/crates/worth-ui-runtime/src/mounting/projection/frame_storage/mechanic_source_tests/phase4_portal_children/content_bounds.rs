@@ -21,10 +21,16 @@ fn mounted_shadow_caster_and_paint_are_measured_separately() {
         let mut world = GeometryWorld::new();
         let owner = world.semantic.node(world.owners[0]).unwrap().clone();
         let mut shadow = world.semantic.node(world.children[0]).unwrap().clone();
-        shadow.occurrence_allocation = UiMountedAllocationProjection::Known {
-            bounds: surface_bounds(shadow_box),
-            basis: UiMountedAllocationBasis::new(1, 2, 3, UiMountedTransformProjection::Identity),
-        };
+        shadow.occurrence_allocation =
+            crate::mounting::UiLaidOut::from_layout(UiMountedAllocationProjection::Known {
+                bounds: surface_bounds(shadow_box),
+                basis: UiMountedAllocationBasis::new(
+                    1,
+                    2,
+                    3,
+                    UiMountedTransformProjection::Identity,
+                ),
+            });
         shadow.surface_geometry = worth_ui_host_contract::UiSurfaceGeometry::SoftShadow(
             worth_ui_host_contract::UiSoftShadowGeometry::new(
                 worth_ui_host_contract::UiAppearanceLogicalLength::new(sigma).unwrap(),

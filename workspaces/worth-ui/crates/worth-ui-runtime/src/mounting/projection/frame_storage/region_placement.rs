@@ -10,80 +10,34 @@
 
 use super::UiMountedSemanticProjection;
 use crate::mounting::projection::appearance::UiMountedAppearanceGeometryDenial;
-use crate::mounting::UiMountedAppearanceScrollChromeInput;
-use worth_ui_host_contract::{
-    UiMountedCanonicalBox, UiMountedInstanceIdentity, UiMountedPortalOverlayMechanic,
+use crate::mounting::{
+    UiLaidOut, UiMountedAppearanceScrollChromeInput, UiMountedPlacement, UiPresented,
 };
-
-/// Where one frame presents a Scroll region occurrence.
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub(crate) enum UiMountedRegionPlacement {
-    /// Where it is laid out.
-    InPlace,
-    /// Moved through an open Portal, and shown only within `coverage`.
-    ThroughPortal {
-        portal: UiMountedPortalOverlayMechanic,
-        source_anchor: UiMountedCanonicalBox,
-        coverage: UiMountedCanonicalBox,
-    },
-    /// Portal content the frame presents nowhere.
-    Hidden,
-}
-
-impl UiMountedRegionPlacement {
-    /// Laid-out `bounds` where this placement presents them: `None` when it
-    /// presents nothing, or the move leaves canonical geometry.
-    pub(crate) fn place(self, bounds: UiMountedCanonicalBox) -> Option<UiMountedCanonicalBox> {
-        match self {
-            Self::InPlace => Some(bounds),
-            Self::ThroughPortal {
-                portal,
-                source_anchor,
-                ..
-            } => crate::mounting::projection::appearance::translate_box(
-                bounds,
-                portal,
-                source_anchor,
-            )
-            .ok(),
-            Self::Hidden => None,
-        }
-    }
-
-    /// What of the surface a region placed here shows through beyond its own
-    /// viewport: `None` when nothing else confines it.
-    pub(crate) const fn coverage(self) -> Option<UiMountedCanonicalBox> {
-        match self {
-            Self::ThroughPortal { coverage, .. } => Some(coverage),
-            Self::InPlace | Self::Hidden => None,
-        }
-    }
-}
+use worth_ui_host_contract::UiMountedInstanceIdentity;
 
 impl UiMountedSemanticProjection {
-    /// Where this projection presents `instance`. An occurrence it does not
-    /// project is no Portal content, so it stays where it is laid out.
+    /// Where this projection presents the Scroll region occurrence
+    /// `instance`. An occurrence it does not project is no Portal content, so
+    /// it stays where it is laid out; Portal content is shown only through a
+    /// Portal that covers some of its surface.
     pub(in crate::mounting) fn region_placement(
         &self,
         instance: UiMountedInstanceIdentity,
-    ) -> UiMountedRegionPlacement {
+    ) -> UiMountedPlacement {
         let Some(node) = self.node(instance) else {
-            return UiMountedRegionPlacement::InPlace;
+            return UiMountedPlacement::InPlace;
         };
         if node.portal_child_owner.is_none() {
-            return UiMountedRegionPlacement::InPlace;
+            return UiMountedPlacement::InPlace;
         }
-        let Some((portal, source_anchor)) = node.appearance_geometry.portal_presentation else {
-            return UiMountedRegionPlacement::Hidden;
-        };
-        crate::mounting::projection::appearance::portal_coverage_box(portal).map_or(
-            UiMountedRegionPlacement::Hidden,
-            |coverage| UiMountedRegionPlacement::ThroughPortal {
-                portal,
-                source_anchor,
-                coverage,
-            },
-        )
+        match node.appearance_geometry.placement() {
+            placement @ UiMountedPlacement::ThroughPortal(_) if placement.coverage().is_some() => {
+                placement
+            }
+            UiMountedPlacement::ThroughPortal(_)
+            | UiMountedPlacement::InPlace
+            | UiMountedPlacement::Hidden => UiMountedPlacement::Hidden,
+        }
     }
 
     /// `chrome`, derived where each region is laid out, placed where this
@@ -91,19 +45,17 @@ impl UiMountedSemanticProjection {
     /// no chrome.
     pub(in crate::mounting) fn place_scroll_chrome(
         &self,
-        chrome: &[UiMountedAppearanceScrollChromeInput],
-    ) -> Result<Vec<UiMountedAppearanceScrollChromeInput>, UiMountedAppearanceGeometryDenial> {
+        chrome: &[UiLaidOut<UiMountedAppearanceScrollChromeInput>],
+    ) -> Result<
+        Vec<UiPresented<UiMountedAppearanceScrollChromeInput>>,
+        UiMountedAppearanceGeometryDenial,
+    > {
         let mut placed = Vec::with_capacity(chrome.len());
         for input in chrome {
-            match self.region_placement(input.owner_instance()) {
-                UiMountedRegionPlacement::InPlace => placed.push(*input),
-                UiMountedRegionPlacement::ThroughPortal {
-                    portal,
-                    source_anchor,
-                    ..
-                } => placed.extend(input.through_portal(portal, source_anchor)?),
-                UiMountedRegionPlacement::Hidden => {}
-            }
+            placed.extend(
+                self.region_placement(input.in_layout_space().owner_instance())
+                    .present(*input)?,
+            );
         }
         Ok(placed)
     }

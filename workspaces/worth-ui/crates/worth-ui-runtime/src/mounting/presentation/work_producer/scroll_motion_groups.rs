@@ -135,14 +135,16 @@ impl UiMountedPresentationState {
         &mut self,
         frame: &crate::mounting::UiPreparedMountedFrame,
         derived: &crate::mounting::UiMountedAppearanceDerivedInput,
-        placed_chrome: &[crate::mounting::UiMountedAppearanceScrollChromeInput],
+        placed_chrome: &[crate::mounting::UiPresented<
+            crate::mounting::UiMountedAppearanceScrollChromeInput,
+        >],
     ) -> Result<(), ()> {
         let bind = self.scroll_motion_groups.bind.next();
         let placed = self.directly_placed_owners(frame);
         let mut placements = direct_release::UiFramePlacements::default();
         let mut chrome = BTreeMap::new();
         for input in placed_chrome {
-            let (identity, bounds, clip, opacity) = input.sample_target()?;
+            let (identity, bounds, clip, opacity) = input.shown().sample_target()?;
             if !derived.scroll_motion.iter().any(|group| {
                 group.target.semantic_surface() == self.requirement.semantic_surface()
                     && group.owner == identity.owner_instance()
@@ -156,20 +158,17 @@ impl UiMountedPresentationState {
                 .filter(|old| old.bounds == bounds && old.clip == clip)
                 .map(|old| old.motion.clone())
                 .unwrap_or_default();
-            let portal = match frame
+            let portal = frame
                 .semantic_projection()
                 .region_placement(identity.owner_instance())
-            {
-                crate::mounting::UiMountedRegionPlacement::ThroughPortal { portal, .. } => {
-                    Some(UiMotionTargetIdentity::from_portal_owner(
+                .portal()
+                .map(|portal| {
+                    UiMotionTargetIdentity::from_portal_owner(
                         portal.surface(),
                         portal.owner(),
                         portal.portal_identity(),
-                    ))
-                }
-                crate::mounting::UiMountedRegionPlacement::InPlace
-                | crate::mounting::UiMountedRegionPlacement::Hidden => None,
-            };
+                    )
+                });
             chrome.insert(
                 identity,
                 UiMountedScrollChromeSampleTarget {
@@ -193,9 +192,17 @@ impl UiMountedPresentationState {
             // frame presents nowhere paints nothing, but its group still binds
             // at its laid-out geometry so a settle under way lands its offset.
             let placement = frame.semantic_projection().region_placement(input.owner);
-            let place = |bounds| match placement {
-                crate::mounting::UiMountedRegionPlacement::Hidden => Some(bounds),
-                placement => placement.place(bounds),
+            // Group geometry is derived where each region is laid out.
+            let place = |bounds| {
+                let bounds = crate::mounting::UiLaidOut::from_layout(bounds);
+                match placement {
+                    crate::mounting::UiMountedPlacement::Hidden => Some(bounds.into_layout_space()),
+                    placement => placement
+                        .present(bounds)
+                        .ok()
+                        .flatten()
+                        .map(crate::mounting::UiPresented::into_shown),
+                }
             };
             let project = |bounds| {
                 frame

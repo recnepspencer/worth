@@ -202,7 +202,11 @@ fn publish(
         let row = row.map(|row| {
             crate::mounting::UiPresentedHitTestRow::from_mounted(
                 crate::mounting::UiMountedHitTestPresentation::completed(
-                    row,
+                    crate::mounting::UiMountedPlacement::InPlace
+                        .present(row)
+                        .unwrap()
+                        .unwrap()
+                        .into_shown(),
                     None,
                     false,
                     crate::mounting::UiHitAncestorClip::Unclipped,
@@ -267,13 +271,20 @@ fn node(
         }),
         plan_index: Some(rank),
         recorded_bounds: None,
-        occurrence_allocation: UiMountedAllocationProjection::Known {
-            bounds,
-            basis: UiMountedAllocationBasis::new(1, 2, 3, UiMountedTransformProjection::Identity),
-        },
+        occurrence_allocation: crate::mounting::UiLaidOut::from_layout(
+            UiMountedAllocationProjection::Known {
+                bounds,
+                basis: UiMountedAllocationBasis::new(
+                    1,
+                    2,
+                    3,
+                    UiMountedTransformProjection::Identity,
+                ),
+            },
+        ),
         appearance_geometry:
-            crate::mounting::projection::frame_storage::UiMountedAppearanceGeometry::from_occurrence(
-                UiMountedAllocationProjection::Known {
+            crate::mounting::projection::frame_storage::UiMountedAppearanceGeometry::in_place(
+                crate::mounting::UiLaidOut::from_layout(UiMountedAllocationProjection::Known {
                     bounds,
                     basis: UiMountedAllocationBasis::new(
                         1,
@@ -281,7 +292,7 @@ fn node(
                         3,
                         UiMountedTransformProjection::Identity,
                     ),
-                },
+                }),
                 crate::mounting::projection::appearance::UiMountedAppearanceClip::Unclipped,
             ),
         surface_paint_order: Some(0),

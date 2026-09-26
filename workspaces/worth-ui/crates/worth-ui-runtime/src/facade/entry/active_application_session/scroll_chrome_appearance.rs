@@ -8,7 +8,8 @@
 //! collects rectangles per surface, lowering marries each to its role.
 
 use crate::mounting::{
-    UiMountedAppearanceScrollChromeInput, UiMountedScrollChromeNode, UiScrollChromeLoweringDenial,
+    UiLaidOut, UiMountedAppearanceScrollChromeInput, UiMountedScrollChromeNode,
+    UiScrollChromeLoweringDenial,
 };
 
 /// One surface's derived chrome, waiting for the attempt that paints it.
@@ -64,7 +65,7 @@ impl super::super::WorthUiActiveApplicationSession {
 }
 
 /// Resolve each prepared part's role at its Hover and Pressed classes and
-/// complete the mounted input a frame paints.
+/// complete the mounted input a frame paints, where each region is laid out.
 ///
 /// Without an appearance owner snapshot there is no appearance world to
 /// resolve roles in, and chrome is left unpainted rather than guessed: a
@@ -79,7 +80,7 @@ pub(in crate::facade::entry) fn lower_scroll_chrome_appearance(
     appearance: Option<&crate::runtime::appearance::UiAppearanceOwnerSnapshot>,
     themes: Option<&crate::runtime::presentation_state::UiPreparedAppearanceGenerationSuccession>,
     prepared_binding: Option<&crate::runtime::appearance::UiActiveThemeBinding>,
-) -> Result<Vec<UiMountedAppearanceScrollChromeInput>, UiScrollChromeAppearanceDenial> {
+) -> Result<Vec<UiLaidOut<UiMountedAppearanceScrollChromeInput>>, UiScrollChromeAppearanceDenial> {
     let Some(owner_snapshot) = appearance else {
         return Ok(Vec::new());
     };
@@ -117,14 +118,14 @@ pub(in crate::facade::entry) fn lower_scroll_chrome_appearance(
             let projection = resolver
                 .resolve_scroll_chrome(role, &node.appearance().classes(), &theme)
                 .map_err(UiScrollChromeAppearanceDenial::Resolution)?;
-            inputs.push(
+            inputs.push(UiLaidOut::from_layout(
                 UiMountedAppearanceScrollChromeInput::from_runtime_projection(
                     node,
                     runtime_surface,
                     &projection,
                 )
                 .map_err(UiScrollChromeAppearanceDenial::Input)?,
-            );
+            ));
         }
     }
     Ok(inputs)

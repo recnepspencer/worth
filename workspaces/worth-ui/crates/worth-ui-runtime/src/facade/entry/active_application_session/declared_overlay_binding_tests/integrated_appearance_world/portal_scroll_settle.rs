@@ -14,7 +14,7 @@ use super::scroll_settle_commit::{one_notch_up, scroll_region, LINE_EXTENT_POINT
 use super::session::{World, WorldScroll};
 use crate::facade::entry::active_application_session::UiPortalExitTerminalProgress;
 use crate::facade::entry::portal_dismissal::UiPortalDismissalPublicationOutcome as Outcome;
-use crate::mounting::UiMountedRegionPlacement;
+use crate::mounting::UiMountedPlacement;
 use crate::runtime::portal::{UiPortalIdentity, UiPortalLifecyclePosture};
 use crate::runtime::scroll::{UiHostScrollObservationOutcome, UiScrollOffset};
 use worth_ui_host_contract::*;
@@ -200,7 +200,7 @@ fn a_portal_closing_over_a_settle_still_plays_its_exit() {
             .session
             .mounted
             .presented_region_placement(world.instances[4]),
-        UiMountedRegionPlacement::Hidden
+        UiMountedPlacement::Hidden
     );
     // The settle still presents each tick over content shown nowhere.
     present_unpainted_tick(&mut world, 10_300);

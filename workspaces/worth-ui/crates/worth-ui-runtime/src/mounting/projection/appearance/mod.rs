@@ -40,7 +40,7 @@ pub(crate) use fact::{
 pub(crate) use geometry::UiMountedAppearanceGeometryDenial;
 pub(crate) use geometry_scope::UiMountedAppearanceGeometryScope;
 pub(in crate::mounting::projection) use portal_geometry::{
-    portal_ancestor_clip, portal_coverage_box, portal_presented_allocation, translate_box,
+    portal_coverage_box, portal_surface_clip,
 };
 pub(crate) use resolved_node_source::UiResolvedAppearanceNodeSource;
 #[derive(Clone, Debug, Eq, PartialEq)]

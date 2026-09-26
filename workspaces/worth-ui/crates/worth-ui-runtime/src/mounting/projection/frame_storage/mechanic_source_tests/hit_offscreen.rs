@@ -140,10 +140,10 @@ fn node(
         }),
         plan_index: Some(rank),
         recorded_bounds: None,
-        occurrence_allocation: allocation,
+        occurrence_allocation: crate::mounting::UiLaidOut::from_layout(allocation),
         appearance_geometry:
-            crate::mounting::projection::frame_storage::UiMountedAppearanceGeometry::from_occurrence(
-                allocation,
+            crate::mounting::projection::frame_storage::UiMountedAppearanceGeometry::in_place(
+                crate::mounting::UiLaidOut::from_layout(allocation),
                 crate::mounting::projection::appearance::UiMountedAppearanceClip::Unclipped,
             ),
         surface_paint_order: Some(0),
