@@ -1,6 +1,6 @@
 use worth_ui_host_contract::{
-    UiAppearanceAllocationBounds, UiMountedCanonicalBox, UiMountedGeometryPosture,
-    UI_APPEARANCE_LOGICAL_SUBPIXELS_PER_POINT,
+    appearance_coordinate_nearest, appearance_extent_nearest, UiAppearanceAllocationBounds,
+    UiMountedCanonicalBox, UiMountedGeometryPosture,
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -29,24 +29,12 @@ pub(super) fn allocation(
 }
 
 pub(super) fn coordinate(points: f32) -> Result<i32, UiMountedAppearanceGeometryDenial> {
-    let subpixels = quantized_subpixels(points);
-    if !(f64::from(i32::MIN)..=f64::from(i32::MAX)).contains(&subpixels) {
-        return Err(UiMountedAppearanceGeometryDenial::CoordinateOverflow);
-    }
-    Ok(subpixels as i32)
+    appearance_coordinate_nearest(points)
+        .ok_or(UiMountedAppearanceGeometryDenial::CoordinateOverflow)
 }
 
 pub(super) fn extent(points: f32) -> Result<u32, UiMountedAppearanceGeometryDenial> {
-    let subpixels = quantized_subpixels(points);
-    if !(0.0..=f64::from(u32::MAX)).contains(&subpixels) {
-        return Err(UiMountedAppearanceGeometryDenial::ExtentOverflow);
-    }
-    Ok(subpixels as u32)
-}
-
-fn quantized_subpixels(points: f32) -> f64 {
-    // Widen before multiplication so source f32 precision is not reduced again.
-    (f64::from(points) * f64::from(UI_APPEARANCE_LOGICAL_SUBPIXELS_PER_POINT)).round_ties_even()
+    appearance_extent_nearest(points).ok_or(UiMountedAppearanceGeometryDenial::ExtentOverflow)
 }
 
 #[cfg(test)]

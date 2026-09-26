@@ -1,7 +1,4 @@
-use worth_ui_host_contract::{
-    UiMountedCanonicalBox, UiMountedCanonicalBoxInput, UiMountedCoordinateSpace,
-    UI_APPEARANCE_LOGICAL_SUBPIXELS_PER_POINT,
-};
+use worth_ui_host_contract::UiMountedCanonicalBox;
 
 use super::UiMountedProjectionFrameOwner;
 
@@ -42,24 +39,10 @@ impl UiMountedProjectionFrameOwner {
         instance: worth_ui_host_contract::UiMountedInstanceIdentity,
     ) -> Option<UiMountedAppearanceSurfaceSampleGeometry> {
         let surface = self.appearance.retained_surface(instance)?;
-        let visual = surface.visual_bounds();
-        let bounds = canonical_box(visual.x(), visual.y(), visual.width(), visual.height())?;
-        let clip = surface.clip();
-        let clip = canonical_box(clip.x(), clip.y(), clip.width(), clip.height())?;
-        Some(UiMountedAppearanceSurfaceSampleGeometry { bounds, clip })
+        // The admitted mechanic's quantized, presented geometry.
+        Some(UiMountedAppearanceSurfaceSampleGeometry {
+            bounds: surface.visual_bounds().canonical_box()?,
+            clip: surface.clip().canonical_box()?,
+        })
     }
-}
-
-/// Use the admitted mechanic's quantized, presented geometry. Both hosts
-/// interpret appearance mechanics in viewport coordinates, including Portal children.
-fn canonical_box(x: i32, y: i32, width: u32, height: u32) -> Option<UiMountedCanonicalBox> {
-    let units = UI_APPEARANCE_LOGICAL_SUBPIXELS_PER_POINT as f32;
-    UiMountedCanonicalBox::canonicalize(UiMountedCanonicalBoxInput {
-        x: x as f32 / units,
-        y: y as f32 / units,
-        width: width as f32 / units,
-        height: height as f32 / units,
-        coordinate_space: UiMountedCoordinateSpace::Viewport,
-    })
-    .ok()
 }

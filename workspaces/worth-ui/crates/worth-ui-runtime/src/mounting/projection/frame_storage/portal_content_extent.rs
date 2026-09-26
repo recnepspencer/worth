@@ -49,7 +49,7 @@ impl UiMountedSemanticProjection {
             let inset = match child.surface_geometry {
                 UiSurfaceGeometry::SoftShadow(shadow) => {
                     has_shadow = true;
-                    shadow.sigma().subpixels() as f32 * 3.0 / 1_000.0
+                    shadow.sigma().points_f32() * 3.0
                 }
                 _ => 0.0,
             };

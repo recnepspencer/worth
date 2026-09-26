@@ -114,7 +114,7 @@ fn profile_materialization_front_door_preserves_disposition_boundary() {
         },
     )
     .expect("on-demand profile should compose");
-    let admitted = admit_same_profile(on_demand.clone());
+    let admitted = admit_same_profile(on_demand);
     let artifact = match profiles().attach().to_boundary_artifact(
         admitted,
         on_demand,

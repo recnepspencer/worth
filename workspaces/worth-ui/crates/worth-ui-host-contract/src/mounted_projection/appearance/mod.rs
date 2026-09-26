@@ -57,7 +57,8 @@ pub use geometry_qualification::{
     UiHostAppearanceScaleGeometryQualification, UI_HOST_APPEARANCE_GEOMETRY_ROW_CAPACITY,
 };
 pub use logical_length::{
-    UiAppearanceLogicalLength, UiAppearanceNegativeLength,
+    appearance_coordinate_nearest, appearance_extent_nearest, appearance_points,
+    appearance_points_f32, UiAppearanceLogicalLength, UiAppearanceNegativeLength,
     UI_APPEARANCE_LOGICAL_SUBPIXELS_PER_POINT,
 };
 pub use native_profile::{

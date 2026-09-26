@@ -251,17 +251,12 @@ fn assert_geometry_output(
         .expect("the six-axis target keeps its mounted surface mechanic");
     let bounds = surface.bounds();
     assert_eq!(
-        [
-            bounds.x(),
-            bounds.y(),
-            bounds.width() as i32,
-            bounds.height() as i32
-        ],
-        [
-            (expected[0] * 1_000.0) as i32,
-            (expected[1] * 1_000.0) as i32,
-            (expected[2] * 1_000.0) as i32,
-            (expected[3] * 1_000.0) as i32,
-        ]
+        (bounds.x(), bounds.y(), bounds.width(), bounds.height()),
+        (
+            worth_ui_host_contract::appearance_coordinate_nearest(expected[0]).unwrap(),
+            worth_ui_host_contract::appearance_coordinate_nearest(expected[1]).unwrap(),
+            worth_ui_host_contract::appearance_extent_nearest(expected[2]).unwrap(),
+            worth_ui_host_contract::appearance_extent_nearest(expected[3]).unwrap(),
+        )
     );
 }

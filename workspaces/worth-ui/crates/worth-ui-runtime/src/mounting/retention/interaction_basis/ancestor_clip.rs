@@ -68,17 +68,18 @@ fn relative_rect(
     clip: UiAppearanceClip,
     row: UiMountedCanonicalBox,
 ) -> Option<UiHitAncestorOffset> {
-    let unit = f64::from(worth_ui_host_contract::UI_APPEARANCE_LOGICAL_SUBPIXELS_PER_POINT);
     #[expect(
         clippy::cast_possible_truncation,
         reason = "clip subpixels come from finite f32 points, so points fit f32"
     )]
-    let points = |subpixels: f64, origin: f32| (subpixels / unit - f64::from(origin)) as f32;
+    let points = |subpixels: i64, origin: f32| {
+        (worth_ui_host_contract::appearance_points(subpixels) - f64::from(origin)) as f32
+    };
     let offset = UiHitAncestorOffset {
-        x: points(f64::from(clip.x()), row.x()),
-        y: points(f64::from(clip.y()), row.y()),
-        width: points(f64::from(clip.width()), 0.0),
-        height: points(f64::from(clip.height()), 0.0),
+        x: points(i64::from(clip.x()), row.x()),
+        y: points(i64::from(clip.y()), row.y()),
+        width: points(i64::from(clip.width()), 0.0),
+        height: points(i64::from(clip.height()), 0.0),
     };
     [offset.x, offset.y, offset.width, offset.height]
         .iter()

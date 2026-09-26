@@ -53,9 +53,7 @@ impl UiNativeRetainedDrawList {
                     }
                     UiNativeAppearanceCommand::Outline(outline) => Some(Attribution {
                         color: rgba(outline.color()),
-                        bounds: super::appearance_regions::canonical_visual(
-                            outline.visual_bounds(),
-                        )?,
+                        bounds: outline.visual_bounds().canonical_box()?,
                         mounted_instance: outline.node_receipt().mounted_instance(),
                         node_receipt: outline.node_receipt(),
                     }),
@@ -126,7 +124,7 @@ fn surface_attribution(
     };
     Some(Attribution {
         color: rgba(color),
-        bounds: super::appearance_regions::canonical_visual(surface.visual_bounds())?,
+        bounds: surface.visual_bounds().canonical_box()?,
         mounted_instance: surface.node_receipt().mounted_instance(),
         node_receipt: surface.node_receipt(),
     })

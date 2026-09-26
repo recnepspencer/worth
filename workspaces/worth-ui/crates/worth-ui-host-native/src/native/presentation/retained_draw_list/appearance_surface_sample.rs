@@ -1,5 +1,4 @@
 //! Sample targets addressing staged node surfaces and derived scrollbar parts.
-use super::appearance_regions::{canonical_clip, canonical_visual};
 use super::sample_transaction::{sampled_bounds, sampled_visible_bounds};
 use super::{UiNativeRetainedDrawList, UiNativeRetainedDrawListDenial as Denial};
 use crate::native::presentation::appearance::{
@@ -60,18 +59,12 @@ impl UiNativeRetainedDrawList {
             .ok_or(Denial::CommandMismatch)?;
         let (bounds, clip) = match appearance.command(key) {
             Some(UiNativeAppearanceCommand::Surface(surface)) => (
-                canonical_visual(surface.visual_bounds()),
-                canonical_clip(surface.clip()),
+                surface.visual_bounds().canonical_box(),
+                surface.clip().canonical_box(),
             ),
-            Some(UiNativeAppearanceCommand::ScrollChrome(chrome)) => (
-                super::appearance_regions::canonical(
-                    chrome.rect().x(),
-                    chrome.rect().y(),
-                    chrome.rect().width(),
-                    chrome.rect().height(),
-                ),
-                canonical_clip(chrome.clip()),
-            ),
+            Some(UiNativeAppearanceCommand::ScrollChrome(chrome)) => {
+                (chrome.rect().canonical_box(), chrome.clip().canonical_box())
+            }
             _ => return Err(Denial::CommandMismatch),
         };
         Ok((

@@ -140,13 +140,17 @@ fn composed(
                             let [x, y, width, height] = super::geometry::BOXES[index];
                             let bounds = surface.bounds();
                             assert_eq!(
-                                [
-                                    bounds.x() as f32,
-                                    bounds.y() as f32,
-                                    bounds.width() as f32,
-                                    bounds.height() as f32
-                                ],
-                                [x, y, width, height].map(|value| value * 1_000.0),
+                                (bounds.x(), bounds.y(), bounds.width(), bounds.height()),
+                                (
+                                    worth_ui_host_contract::appearance_coordinate_nearest(x)
+                                        .unwrap(),
+                                    worth_ui_host_contract::appearance_coordinate_nearest(y)
+                                        .unwrap(),
+                                    worth_ui_host_contract::appearance_extent_nearest(width)
+                                        .unwrap(),
+                                    worth_ui_host_contract::appearance_extent_nearest(height)
+                                        .unwrap(),
+                                ),
                                 "Portal Motion cannot move or erase its ordinary anchor surface"
                             );
                             assert_eq!(surface.portal_group(), None);
