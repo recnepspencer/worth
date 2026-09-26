@@ -81,7 +81,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         }
         let mut application_basis = self.retain_product_application_basis(product.observation())?;
         let selected_program = self.bind_selected_program_interpretation(
-            product.relational_basis().observation().version_id(),
+            product.relational_basis(),
             &mut application_basis,
         )?;
         Ok(WorthQuerySelectedProductOperation {
@@ -105,7 +105,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let application_basis = self.retain_product_application_basis(product.observation())?;
         let selected_program = super::super::product_activation::inspect_selected_program(
             self,
-            product.relational_basis().observation().version_id(),
+            product.relational_basis(),
         );
         Ok(WorthQuerySelectedProductOperation {
             application: self,

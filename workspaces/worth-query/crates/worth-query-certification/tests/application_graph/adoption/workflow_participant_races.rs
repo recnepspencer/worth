@@ -3,11 +3,13 @@
 //! decides only its own live facts, never the history it copied.
 
 use worth_query_host::facade::application_entry::{
-    WorkflowProgressOutcome, WorkflowTransitionBindingDenial, WorkflowTransitionPreparationDenial,
+    WorkflowProgressOutcome, WorkflowTransitionPreparationDenial,
     WorthQueryApplicationProgramAdoptionPreparationDenial,
     WorthQueryBranchAdoptionPublicationOutcome, WorthQueryWorkflowAdvancePreparationDenial,
 };
-use worth_query_host::facade::primary_graph::WorthQueryBranchAdoptionPreparationDenial;
+use worth_query_host::facade::primary_graph::{
+    WorthQueryApplicationAttemptDenialKind, WorthQueryBranchAdoptionPreparationDenial,
+};
 use worth_query_host::facade::runtime::NoEffectCause;
 
 use super::workflow_participant::{expect_started, live_instance_on_first_program};
@@ -93,11 +95,12 @@ fn a_fork_adopts_without_deciding_the_instance_it_copied() {
         Some(&|inventory| inventory.carry_compatible().unwrap()),
     ));
     match advance_on_second(&application, fork, instance.clone(), 85_410) {
+        // The fork runs P1 now, so the copy is refused as another branch's
+        // incarnation, not for its program.
         Err(WorthQueryWorkflowAdvancePreparationDenial::TransitionPreparation(
-            WorkflowTransitionPreparationDenial::Binding(
-                WorkflowTransitionBindingDenial::ProgramRevisionChanged,
-            ),
-        )) => {}
+            WorkflowTransitionPreparationDenial::Attempt(attempt),
+        )) if attempt.kind()
+            == WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch => {}
         other => panic!("adoption on the fork never revives the copy: {other:?}"),
     }
 

@@ -47,7 +47,7 @@ impl<Schema: ApplicationSchema> crate::basis::WorthQuerySourceProgramResolver
     {
         crate::domain_computation::primary_graph::product_activation::inspect_selected_program(
             self,
-            source.relational_basis().observation().version_id(),
+            source.relational_basis(),
         )
         .ok()
         .map(|selected| selected.revision().clone())

@@ -159,11 +159,14 @@ fn unpublished_adoption_prevents_retirement_until_exact_recovery_is_released() {
 
     let denial = host
         .retire_program_support(&target)
-        .expect_err("unpublished owner effects prevent complete branch inventory");
-    let WorthQueryProgramSupportRetirementDenial::InventoryUnavailable(inventory) = denial else {
-        panic!("the partial inventory must preserve exact support-use evidence")
+        .expect_err("the unpublished adoption's custody holds the target support");
+    // The branch still publishes P0, so the inventory is complete: only the
+    // retained adoption custody uses P1.
+    let WorthQueryProgramSupportRetirementDenial::MandatoryCustody(inventory) = denial else {
+        panic!("the unpublished adoption must be named as mandatory custody: {denial:?}")
     };
     assert_eq!(inventory.revision(), &target);
+    assert_eq!(inventory.current_branches(), 0);
     assert_eq!(inventory.retained_interpretations(), 0);
     assert_eq!(inventory.mandatory_custody(), 1);
     assert!(inventory.retained_program_bytes() > 0);
@@ -243,9 +246,10 @@ fn denied_recovery_release_preserves_support_custody_for_retry() {
     let denial = host
         .retire_program_support(&target)
         .expect_err("returned recovery must continue owning target support custody");
-    let WorthQueryProgramSupportRetirementDenial::InventoryUnavailable(inventory) = denial else {
-        panic!("the unpublished recovery must preserve partial support-use evidence")
+    let WorthQueryProgramSupportRetirementDenial::MandatoryCustody(inventory) = denial else {
+        panic!("the returned recovery must be named as mandatory custody: {denial:?}")
     };
+    assert_eq!(inventory.current_branches(), 0);
     assert_eq!(inventory.mandatory_custody(), 1);
 
     let outcome = host

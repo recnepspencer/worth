@@ -280,7 +280,7 @@ fn a_fork_never_continues_a_siblings_copy() {
     );
 }
 
-fn fork_of(
+pub(super) fn fork_of(
     application: &BoundedDimensionWorkflowRuntime,
     branch: WorthQueryProductBranch,
 ) -> WorthQueryProductBranch {

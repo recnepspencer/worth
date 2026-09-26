@@ -84,16 +84,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 )
             })
             .map_err(|_| WorthQueryProductBranchAdmissionDenial::ObservationRejected)?;
-        let version = observation
-            .basis()
-            .relational_basis()
-            .observation()
-            .version_id();
+        let relational = observation.basis().relational_basis();
         if let Some(query_basis) =
             query_basis.filter(|basis| basis.can_reuse_security_snapshot_at(observation))
         {
             let (_, interpretation) = self
-                .retain_selected_program_interpretation(version)?
+                .retain_selected_program_interpretation(relational)?
                 .into_parts();
             if let Some(snapshot) = query_basis.reusable_security_snapshot(interpretation.as_ref())
             {
@@ -101,7 +97,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             }
         }
         let mut application_basis = self.retain_product_application_basis(observation)?;
-        let _ = self.bind_selected_program_interpretation(version, &mut application_basis)?;
+        let _ = self.bind_selected_program_interpretation(relational, &mut application_basis)?;
         Ok((SecurityApplicationBasis::Owned(application_basis), None))
     }
 

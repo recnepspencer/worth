@@ -20,6 +20,8 @@ use super::super::bounded_dimension_model::{
         support_workflow_program,
     },
 };
+use super::fork_continuation::fork_of;
+use super::journey::approval_requirement;
 use super::*;
 
 #[test]
@@ -85,6 +87,40 @@ fn a_carried_instance_refuses_evidence_collected_under_the_source_program() {
     ) {
         Ok(WorkflowProgressOutcome::Completed(_)) => {}
         other => panic!("fresh P1 evidence authorizes the approval, got {other:?}"),
+    }
+}
+
+#[test]
+fn a_sibling_instance_keeps_its_program_after_its_parent_adopts() {
+    let (mut application, definition, _, _, _, _) = approval_journey("approved", 86_300);
+    support_workflow_program::<DimensionProgramP1>(&mut application);
+    let main = application.current_world();
+    let sibling = fork_of(&application, main);
+    let unaffected = match start_instance(&application, definition.held_on(sibling), 86_310)
+        .expect("the sibling starts under its own copy of the definition")
+    {
+        WorkflowInstanceStartOutcome::Started(started) => started.instance().clone(),
+        other => panic!("expected a sibling instance, got {other:?}"),
+    };
+    publish_adoption(prepare_second_program_adoption(
+        &application,
+        main,
+        Some(&|inventory| inventory.carry_compatible().unwrap()),
+    ));
+
+    // The carriage belongs to main's truth; the sibling's copy of the
+    // definition still executes under P0.
+    let (proposal, required, _) = approval_requirement(&application, unaffected.clone(), 86_320);
+    match approve_instance(
+        &application,
+        unaffected,
+        &required,
+        &proposal,
+        WorkflowApprovalDecision::Approve,
+        86_330,
+    ) {
+        Ok(WorkflowProgressOutcome::Completed(_)) => {}
+        other => panic!("the sibling approves under P0, got {other:?}"),
     }
 }
 

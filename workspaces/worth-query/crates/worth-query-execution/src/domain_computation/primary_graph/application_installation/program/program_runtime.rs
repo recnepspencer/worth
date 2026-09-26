@@ -170,7 +170,7 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
             };
             let inspection = match crate::domain_computation::primary_graph::product_activation::inspect_selected_program(
                     &self.runtime,
-                    selected.relational_basis().observation().version_id(),
+                    selected.relational_basis(),
                 ) {
                     Ok(inspection) => inspection,
                     Err(_) => return Err(retirement.inventory_unavailable(retained_program_bytes)),
