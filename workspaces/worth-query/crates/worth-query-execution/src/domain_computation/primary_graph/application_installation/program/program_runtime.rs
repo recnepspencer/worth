@@ -109,10 +109,7 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
         self.runtime
             .installed_program_support()?
             .present(record.revision())?;
-        Some(WorthQuerySupportedProgramHandle::rostered(
-            &self.runtime,
-            record,
-        ))
+        WorthQuerySupportedProgramHandle::rostered(&self.runtime, record)
     }
 
     /// Removes one rostered program from ordinary host service only after

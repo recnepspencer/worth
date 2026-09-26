@@ -2,7 +2,9 @@
 
 use std::time::Duration;
 
-use worth_query_host::facade::application_installation::WorthQueryWorkflowApplicationRuntime;
+use worth_query_host::facade::application_installation::{
+    WorthQueryWorkflowApplicationRuntime, WorthQueryWorkflowVocabulary,
+};
 
 use super::super::{
     programs::DimensionProgramP0,
@@ -28,6 +30,17 @@ impl BoundedDimensionWorkflowRuntime {
         &self.authentication
     }
 
+    /// Lets a certification add vocabularies for other rostered programs.
+    pub fn workflow_mut(
+        &mut self,
+    ) -> &mut WorthQueryWorkflowApplicationRuntime<
+        BoundedDimensionSchema,
+        ReviewedGeometryWorkflow,
+        DimensionProgramP0,
+    > {
+        &mut self.workflow
+    }
+
     pub fn advance_authentication_clock_for_test(&self, duration: Duration) {
         self.authentication_clock.advance_for_test(duration);
     }
@@ -42,5 +55,20 @@ impl std::ops::Deref for BoundedDimensionWorkflowRuntime {
 
     fn deref(&self) -> &Self::Target {
         &self.workflow
+    }
+}
+
+/// Every workflow entry names its vocabulary; this host's initial one is the
+/// P0 vocabulary its workflow runtime retained at installation.
+impl<'application> From<&'application BoundedDimensionWorkflowRuntime>
+    for WorthQueryWorkflowVocabulary<
+        'application,
+        BoundedDimensionSchema,
+        ReviewedGeometryWorkflow,
+        DimensionProgramP0,
+    >
+{
+    fn from(application: &'application BoundedDimensionWorkflowRuntime) -> Self {
+        application.workflow.vocabulary()
     }
 }

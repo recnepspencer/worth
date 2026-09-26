@@ -8,7 +8,7 @@ use worth_query_declaration::facade::{
     application_program::ApplicationWorkflowSpec,
 };
 use worth_query_execution::facade::{
-    application_installation::WorthQueryWorkflowApplicationRuntime,
+    application_installation::WorthQueryWorkflowVocabulary,
     workflow_instance_start::{PublishedWorkflowDefinitionRef, WorkflowInstanceStartOutcome},
 };
 use worth_query_installation::facade::ApplicationSchema;
@@ -45,7 +45,7 @@ pub struct WorthQueryOrdinaryWorkflowStart<
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
 {
     request: WorthQueryApplicationMutationRequest<'application, 'principal, 'scope, Schema, Intent>,
-    workflow: &'application WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>,
+    workflow: WorthQueryWorkflowVocabulary<'application, Schema, Spec, Program>,
     definition: PublishedWorkflowDefinitionRef,
 }
 
@@ -72,7 +72,7 @@ pub struct WorthQueryOrdinaryWorkflowStartWithIdempotency<
         Intent,
         WorthQueryMutationSourcePrepared,
     >,
-    workflow: &'application WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>,
+    workflow: WorthQueryWorkflowVocabulary<'application, Schema, Spec, Program>,
     definition: PublishedWorkflowDefinitionRef,
 }
 
@@ -85,7 +85,7 @@ where
     /// Subjects and intended capability remain in the caller's typed mutation intent.
     pub fn start_workflow<Spec, Program>(
         self,
-        workflow: &'application WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>,
+        workflow: impl Into<WorthQueryWorkflowVocabulary<'application, Schema, Spec, Program>>,
         definition: PublishedWorkflowDefinitionRef,
     ) -> WorthQueryOrdinaryWorkflowStart<
         'application,
@@ -99,6 +99,7 @@ where
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
+        let workflow = workflow.into();
         WorthQueryOrdinaryWorkflowStart {
             request: self,
             workflow,

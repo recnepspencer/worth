@@ -81,6 +81,13 @@ impl<'runtime> IndexAccess<'runtime> {
         DerivedIndexDefinitionLookup::new(self.runtime.indexes.definitions())
     }
 
+    /// The generation published for one index by the branch that authored a
+    /// commit.
+    ///
+    /// This names the receipt's branch. It is not a currency check for a
+    /// fresh fork that selects the same commit: that fork needs its own
+    /// branch-scoped generation, so judge observed reads with
+    /// [`Self::published_generation_for_observation`].
     pub fn published_generation_for_commit(
         &self,
         index_id: DerivedIndexId,
@@ -92,6 +99,28 @@ impl<'runtime> IndexAccess<'runtime> {
             definition.branch_scoped.then_some(&commit.branch_id),
             commit.commit_id,
             commit.version_id,
+        )
+    }
+
+    /// The generation published for one index at an exact branch observation.
+    ///
+    /// A fork that has not committed yet selects its parent's commit, so the
+    /// commit receipt names the parent branch. A branch-scoped index is still
+    /// judged on the observing branch, which has to publish its own
+    /// generation before its reads can use the index.
+    pub fn published_generation_for_observation(
+        &self,
+        index_id: DerivedIndexId,
+        observation: &crate::mvcc::RelationalBranchObservation,
+    ) -> Option<std::sync::Arc<DerivedIndexGeneration>> {
+        let definition = self.runtime.indexes.definition(index_id)?;
+        self.runtime.indexes.published_generation_for_commit(
+            index_id,
+            definition
+                .branch_scoped
+                .then_some(observation.identity().branch_id()),
+            observation.commit_id()?,
+            observation.version_id(),
         )
     }
 

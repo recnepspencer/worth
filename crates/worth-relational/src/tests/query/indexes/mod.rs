@@ -5,6 +5,7 @@ mod candidate_index_publication;
 mod canonical_build_basis;
 mod entity_field_lookup;
 mod exact_observation;
+mod fork_observation_currency;
 mod generation_identity_recovery;
 mod generation_routing;
 mod generation_selection_locality;

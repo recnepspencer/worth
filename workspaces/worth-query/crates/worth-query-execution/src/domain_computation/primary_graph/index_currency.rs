@@ -1,5 +1,4 @@
 use worth_relational::facade::branch::AdmittedRelationalBranchBasis;
-use worth_relational::facade::history::RelationalCommitReceipt;
 use worth_relational::facade::indexes::DerivedIndexBuildRequest;
 use worth_relational::facade::runtime::RelationalRuntime;
 
@@ -12,66 +11,70 @@ pub(crate) enum WorthQueryPrimaryIndexCurrencyDenial {
 }
 
 impl WorthQueryPrimaryGraphIntegrationHandle {
+    /// Makes every primary index current for the exact admitted basis.
+    ///
+    /// Currency is judged on the observing branch. A fork that has not
+    /// committed selects its parent's commit, and a branch-scoped index still
+    /// needs a generation of its own there, built from the same exact root.
     pub(crate) fn ensure_primary_indexes_for_basis(
         &self,
         runtime: &mut RelationalRuntime,
         basis: &AdmittedRelationalBranchBasis,
     ) -> Result<(), WorthQueryPrimaryIndexCurrencyDenial> {
         let observation = basis.observation();
-        let Some(head) = observation.commit_receipt().cloned() else {
+        let Some(source_commit_id) = observation.commit_id() else {
             return Ok(());
         };
-        if self.primary_indexes_are_current(runtime, &head) {
+        let stale = self
+            .primary_index_ids
+            .iter()
+            .copied()
+            .filter(|index_id| {
+                runtime
+                    .index_access()
+                    .published_generation_for_observation(*index_id, &observation)
+                    .is_none()
+            })
+            .collect::<Vec<_>>();
+        if stale.is_empty() {
             return Ok(());
         }
+        let expected = stale.len();
         let build = runtime.index_authority().refresh_for_basis(
             DerivedIndexBuildRequest {
-                source_commit_id: head.commit_id,
-                branch_id: head.branch_id,
-                index_ids: self.primary_index_ids.to_vec(),
+                source_commit_id,
+                branch_id: observation.identity().branch_id().clone(),
+                index_ids: stale,
             },
             basis,
             None,
             super::index_maintenance_budget::cold_index_reconstruction_budget(),
         );
-        self.require_complete_build(build)
+        require_complete_build(build, expected)
     }
+}
 
-    fn primary_indexes_are_current(
-        &self,
-        runtime: &RelationalRuntime,
-        head: &RelationalCommitReceipt,
-    ) -> bool {
-        self.primary_index_ids.iter().all(|index_id| {
-            runtime
-                .index_access()
-                .published_generation_for_commit(*index_id, head)
-                .is_some()
-        })
-    }
-
-    fn require_complete_build(
-        &self,
-        build: Result<
-            worth_relational::facade::indexes::DerivedIndexMaintenanceOutcome,
-            worth_relational::facade::indexes::DerivedIndexMaintenanceDenial,
-        >,
-    ) -> Result<(), WorthQueryPrimaryIndexCurrencyDenial> {
-        let build = build.map_err(|denial| match denial.kind {
-            worth_relational::facade::indexes::DerivedIndexMaintenanceDenialKind::Basis(basis) => {
-                WorthQueryPrimaryIndexCurrencyDenial::Basis(index_basis_denial(basis))
-            }
-            _ => WorthQueryPrimaryIndexCurrencyDenial::IndexUnavailable(
-                "primary graph index reconstruction exceeded its budget or lacked exact authority",
-            ),
-        })?;
-        if build.generations.len() == self.primary_index_ids.len() {
-            Ok(())
-        } else {
-            Err(WorthQueryPrimaryIndexCurrencyDenial::IndexUnavailable(
-                "primary graph indexes could not recover to the authoritative head",
-            ))
+fn require_complete_build(
+    build: Result<
+        worth_relational::facade::indexes::DerivedIndexMaintenanceOutcome,
+        worth_relational::facade::indexes::DerivedIndexMaintenanceDenial,
+    >,
+    expected: usize,
+) -> Result<(), WorthQueryPrimaryIndexCurrencyDenial> {
+    let build = build.map_err(|denial| match denial.kind {
+        worth_relational::facade::indexes::DerivedIndexMaintenanceDenialKind::Basis(basis) => {
+            WorthQueryPrimaryIndexCurrencyDenial::Basis(index_basis_denial(basis))
         }
+        _ => WorthQueryPrimaryIndexCurrencyDenial::IndexUnavailable(
+            "primary graph index reconstruction exceeded its budget or lacked exact authority",
+        ),
+    })?;
+    if build.generations.len() == expected {
+        Ok(())
+    } else {
+        Err(WorthQueryPrimaryIndexCurrencyDenial::IndexUnavailable(
+            "primary graph indexes could not recover to the authoritative head",
+        ))
     }
 }
 

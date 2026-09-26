@@ -1,6 +1,9 @@
+use worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition;
 use worth_query_host::facade::declaration::application_program::ApplicationWorkflowComponentLimits;
 use worth_query_installation::facade::{
     WorthQueryApplicationWorkflowResourceCeiling, WorthQueryApplicationWorkflowSpecInstallation,
+    WorthQueryInstalledApplicationProgram, WorthQueryInstalledApplicationSchema,
+    WorthQueryInstalledApplicationWorkflowSpec,
 };
 
 use super::super::{
@@ -31,11 +34,42 @@ pub fn retain_workflow_with_resources(
     application: BoundedDimensionRuntime<DimensionProgramP0>,
     resources: WorthQueryApplicationWorkflowResourceCeiling,
 ) -> BoundedDimensionWorkflowRuntime {
-    let workflow = WorthQueryApplicationWorkflowSpecInstallation::<
+    let workflow = install_workflow_spec(
+        application.runtime().installed_schema(),
+        application.installed_program(),
+        resources,
+    );
+    let (authentication, authentication_clock) =
+        install_certification_authentication_with_clock(application.runtime().installed_schema());
+    let workflow = application
+        .retain_workflow_spec(workflow, authentication.signing_owner())
+        .expect("the workflow vocabulary belongs to the runtime");
+    BoundedDimensionWorkflowRuntime {
+        workflow,
+        authentication,
+        authentication_clock,
+    }
+}
+
+/// Installs the reviewed-geometry vocabulary against one installed program,
+/// so the same spec can serve every program the host rosters.
+pub fn install_workflow_spec<Program>(
+    schema: &WorthQueryInstalledApplicationSchema<BoundedDimensionSchema>,
+    program: &WorthQueryInstalledApplicationProgram<BoundedDimensionSchema, Program>,
+    resources: WorthQueryApplicationWorkflowResourceCeiling,
+) -> WorthQueryInstalledApplicationWorkflowSpec<
+    BoundedDimensionSchema,
+    ReviewedGeometryWorkflow,
+    Program,
+>
+where
+    Program: ApplicationProgramDefinition<BoundedDimensionSchema>,
+{
+    WorthQueryApplicationWorkflowSpecInstallation::<
         BoundedDimensionSchema,
         ReviewedGeometryWorkflow,
-        DimensionProgramP0,
-    >::begin(application.runtime().installed_schema(), application.installed_program(), resources)
+        Program,
+    >::begin(schema, program, resources)
     .operation::<WorkflowDefinitionAuthoringBinding>()
     .expect("the workflow operation is installed")
     .operation::<ReviewedSetPartDimensionBinding>()
@@ -53,17 +87,27 @@ pub fn retain_workflow_with_resources(
     .advance_capability::<WorkflowAdvanceCapability, WorkflowAdvanceOperation, WorkflowAdvanceInput>()
     .expect("the workflow advance capability is installed")
     .finish()
-    .expect("the workflow vocabulary is valid");
-    let (authentication, authentication_clock) =
-        install_certification_authentication_with_clock(application.runtime().installed_schema());
-    let workflow = application
-        .retain_workflow_spec(workflow, authentication.signing_owner())
-        .expect("the workflow vocabulary belongs to the runtime");
-    BoundedDimensionWorkflowRuntime {
-        workflow,
-        authentication,
-        authentication_clock,
-    }
+    .expect("the workflow vocabulary is valid")
+}
+
+/// Gives the workflow runtime its vocabulary for one other rostered program.
+pub fn support_workflow_program<Program>(application: &mut BoundedDimensionWorkflowRuntime)
+where
+    Program: ApplicationProgramDefinition<BoundedDimensionSchema> + 'static,
+{
+    let workflow = install_workflow_spec(
+        application.workflow.installed_schema(),
+        application
+            .workflow
+            .supported_program::<Program>()
+            .expect("the program is rostered on this host")
+            .installed_program(),
+        workflow_resources(),
+    );
+    application
+        .workflow
+        .support_workflow_spec(workflow)
+        .expect("the vocabulary belongs to a rostered program");
 }
 
 fn workflow_resources() -> WorthQueryApplicationWorkflowResourceCeiling {

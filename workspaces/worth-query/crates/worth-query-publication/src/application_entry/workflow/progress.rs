@@ -8,7 +8,7 @@ use worth_query_declaration::facade::{
     application_program::ApplicationWorkflowSpec,
 };
 use worth_query_execution::facade::{
-    application_installation::WorthQueryWorkflowApplicationRuntime,
+    application_installation::WorthQueryWorkflowVocabulary,
     workflow_advance::{
         PreparedWorkflowAdvance, PublishedWorkflowInstanceRef, RequiredWorkflowAssessment,
         WorkflowProgressOutcome, WorkflowTransitionPreparationDenial,
@@ -200,19 +200,19 @@ where
 {
     pub fn prepare_workflow_advance<Spec, Program>(
         self,
-        workflow: &'application WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>,
+        workflow: impl Into<WorthQueryWorkflowVocabulary<'application, Schema, Spec, Program>>,
         instance: PublishedWorkflowInstanceRef,
     ) -> WorkflowAdvancePreparationResult<'application, 'principal, 'scope, Schema, Spec, Program, Intent>
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
         Program: worth_query_declaration::facade::application_program::ApplicationProgramDefinition<Schema>,
     {
-        self.prepare_workflow_request(workflow, instance, WorkflowRequestedAction::Advance)
+        self.prepare_workflow_request(workflow.into(), instance, WorkflowRequestedAction::Advance)
     }
 
     pub(super) fn prepare_workflow_request<Spec, Program>(
         mut self,
-        workflow: &'application WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>,
+        workflow: WorthQueryWorkflowVocabulary<'application, Schema, Spec, Program>,
         instance: PublishedWorkflowInstanceRef,
         action: WorkflowRequestedAction,
     ) -> WorkflowAdvancePreparationResult<'application, 'principal, 'scope, Schema, Spec, Program, Intent>
@@ -221,7 +221,7 @@ where
         Program: worth_query_declaration::facade::application_program::ApplicationProgramDefinition<Schema>,
     {
         let application = self.application_runtime();
-        if !std::ptr::eq(application, workflow.program_runtime().runtime()) {
+        if !std::ptr::eq(application, workflow.runtime()) {
             return Err(WorthQueryWorkflowAdvancePreparationDenial::RuntimeMismatch);
         }
         let selected = application
@@ -315,7 +315,7 @@ where
     pub(super) principal: &'principal worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal<Schema>,
     pub(super) scope: &'scope worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     pub(super) branch: worth_query_execution::facade::product::WorthQueryProductBranch,
-    pub(super) workflow: &'application WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>,
+    pub(super) workflow: WorthQueryWorkflowVocabulary<'application, Schema, Spec, Program>,
     pub(super) prepared: PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
     pub(super) idempotency:
         worth_query_execution::facade::primary_graph::WorthQueryApplicationIdempotencyBinding,

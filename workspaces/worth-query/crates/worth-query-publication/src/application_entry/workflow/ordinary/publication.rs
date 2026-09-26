@@ -10,7 +10,7 @@ use worth_query_declaration::facade::{
     },
 };
 use worth_query_execution::facade::{
-    application_installation::WorthQueryWorkflowApplicationRuntime,
+    application_installation::WorthQueryWorkflowVocabulary,
     workflow_definition_publication::{
         WorkflowDefinitionExpectedPredecessor, WorkflowDefinitionPublicationOutcome,
     },
@@ -154,9 +154,9 @@ where
     Intent: ApplicationMutationIntent<Schema>,
 {
     /// Pure admission and installed-vocabulary binding; no product selection or permission is retained.
-    pub fn workflow<Spec, Program>(
+    pub fn workflow<'workflow, Spec, Program: 'workflow>(
         self,
-        workflow: &WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>,
+        workflow: impl Into<WorthQueryWorkflowVocabulary<'workflow, Schema, Spec, Program>>,
         authored: AuthoredWorkflowDefinition<Spec>,
     ) -> Result<
         WorthQueryOrdinaryWorkflowDraft<
@@ -173,10 +173,8 @@ where
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
-        if !std::ptr::eq(
-            self.application_runtime(),
-            workflow.program_runtime().runtime(),
-        ) {
+        let workflow = workflow.into();
+        if !std::ptr::eq(self.application_runtime(), workflow.runtime()) {
             return Err(WorthQueryOrdinaryWorkflowPublicationDenial::RuntimeMismatch);
         }
         let validated = authored

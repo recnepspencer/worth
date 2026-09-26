@@ -21,7 +21,7 @@ pub use program::{
     WorthQueryReadmittedApplicationPreview, WorthQuerySelectedProgramOwner,
     WorthQuerySelectedProgramOwnerDenial, WorthQuerySettledProgramOutput,
     WorthQuerySupportedProgramHandle, WorthQueryWorkflowApplicationRuntime,
-    WorthQueryWorkflowRuntimeBindingDenial,
+    WorthQueryWorkflowRuntimeBindingDenial, WorthQueryWorkflowVocabulary,
 };
 use program_admission::WorthQueryProgramAdmissionStep;
 

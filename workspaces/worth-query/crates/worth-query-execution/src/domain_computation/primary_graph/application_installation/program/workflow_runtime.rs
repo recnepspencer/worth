@@ -9,7 +9,11 @@ use worth_query_installation::facade::WorthQueryInstalledApplicationWorkflowSpec
 use super::WorthQueryProgramApplicationRuntime;
 
 mod authentication;
+mod support;
+mod vocabulary;
 pub(crate) use authentication::workflow_approval_authentication_intent;
+use support::WorthQuerySupportedWorkflowSpec;
+pub use vocabulary::WorthQueryWorkflowVocabulary;
 
 /// Retains the typed workflow vocabulary beside the program runtime that admitted it.
 ///
@@ -24,6 +28,9 @@ where
     runtime: WorthQueryProgramApplicationRuntime<Schema, Program>,
     workflow: WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
     authentication: WorthQueryAuthenticationEventSigningOwner<Schema>,
+    /// The same spec installed against programs this host rostered, one per
+    /// program, so adopted branches keep a vocabulary for what they now run.
+    supported: Vec<WorthQuerySupportedWorkflowSpec>,
 }
 
 impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program>
@@ -54,6 +61,7 @@ where
             runtime: self,
             workflow,
             authentication,
+            supported: Vec::new(),
         })
     }
 }
@@ -75,6 +83,15 @@ where
 
     pub const fn authentication_owner(&self) -> &WorthQueryAuthenticationEventSigningOwner<Schema> {
         &self.authentication
+    }
+
+    /// The vocabulary installed against this runtime's initial program.
+    pub const fn vocabulary(&self) -> WorthQueryWorkflowVocabulary<'_, Schema, Spec, Program> {
+        WorthQueryWorkflowVocabulary::new(
+            &self.runtime.runtime,
+            &self.workflow,
+            &self.authentication,
+        )
     }
 
     pub fn into_program_runtime(self) -> WorthQueryProgramApplicationRuntime<Schema, Program> {
@@ -100,4 +117,6 @@ pub enum WorthQueryWorkflowRuntimeBindingDenial {
     ForeignSchema,
     ForeignProgram,
     ForeignAuthenticationOwner,
+    /// The program already has a vocabulary on this runtime.
+    AlreadySupported,
 }

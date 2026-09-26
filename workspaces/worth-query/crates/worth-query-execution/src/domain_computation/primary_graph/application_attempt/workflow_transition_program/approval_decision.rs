@@ -1,5 +1,5 @@
 use crate::domain_computation::primary_graph::application_installation::{
-    workflow_approval_authentication_intent, WorthQueryWorkflowApplicationRuntime,
+    workflow_approval_authentication_intent, WorthQueryWorkflowVocabulary,
 };
 use worth_query_declaration::facade::{
     application_capability::ApplicationCapabilityMarkerIdentity,
@@ -42,7 +42,7 @@ where
         Program,
     >(
         mut self,
-        workflow: &WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>,
+        workflow: WorthQueryWorkflowVocabulary<'_, Schema, Spec, Program>,
         instance: super::super::PublishedWorkflowInstanceRef,
         required: &RequiredWorkflowApproval,
         proposal: &super::super::PublishedWorkflowProposalRef,

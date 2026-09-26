@@ -24,6 +24,10 @@ pub struct DerivedIndexMaintenanceWork {
     pub cold_record_slots: usize,
     pub derived_rows: usize,
     pub reused_generations: usize,
+    /// Fork generations published from the authoring branch's generation at
+    /// the same exact root, without cold projection.
+    #[serde(default)]
+    pub seeded_generations: usize,
     /// Catalog insertions prepared for the performed-commit finalizer.
     #[serde(default)]
     pub generation_publications_reserved: usize,

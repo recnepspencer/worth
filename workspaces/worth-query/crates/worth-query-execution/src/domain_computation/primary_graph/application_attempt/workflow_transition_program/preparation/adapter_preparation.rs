@@ -66,7 +66,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
     #[allow(clippy::too_many_arguments)]
     pub fn prepare_approval<Schema, Capability, Operation, Input, Scope, Spec, Program>(
         selected: &WorthQuerySelectedProductOperation<'_, Schema>,
-        workflow: &WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>,
+        workflow: WorthQueryWorkflowVocabulary<'_, Schema, Spec, Program>,
         instance: PublishedWorkflowInstanceRef,
         required: &RequiredWorkflowApproval,
         proposal: &PublishedWorkflowProposalRef,

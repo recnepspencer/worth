@@ -28,7 +28,7 @@ where
 {
     pub fn prepare_workflow_collect_assessment<Spec, Program>(
         self,
-        workflow: &'application WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>,
+        workflow: impl Into<WorthQueryWorkflowVocabulary<'application, Schema, Spec, Program>>,
         instance: PublishedWorkflowInstanceRef,
         node_path: impl Into<String>,
     ) -> WorkflowAdvancePreparationResult<'application, 'principal, 'scope, Schema, Spec, Program, Intent>
@@ -36,6 +36,7 @@ where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
         Program: worth_query_declaration::facade::application_program::ApplicationProgramDefinition<Schema>,
     {
+        let workflow = workflow.into();
         self.prepare_workflow_request(
             workflow,
             instance,

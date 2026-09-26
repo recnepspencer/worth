@@ -8,7 +8,7 @@ use worth_query_declaration::facade::{
     application_program::ApplicationWorkflowSpec,
 };
 use worth_query_execution::facade::{
-    application_installation::WorthQueryWorkflowApplicationRuntime,
+    application_installation::WorthQueryWorkflowVocabulary,
     workflow_proposal::{
         PreparedWorkflowProposal, PublishedWorkflowInstanceRef, WorkflowProposalOutcome,
         WorkflowProposalPreparationDenial, WorthQueryWorkflowProposalAdapter,
@@ -98,17 +98,18 @@ where
             Scope = MutationScope<Schema, IntentBinding<Schema, Intent>>,
         >,
 {
-    pub fn prepare_workflow_proposal<Spec, Program>(
+    pub fn prepare_workflow_proposal<'workflow, Spec, Program: 'workflow>(
         mut self,
-        workflow: &WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>,
+        workflow: impl Into<WorthQueryWorkflowVocabulary<'workflow, Schema, Spec, Program>>,
         instance: PublishedWorkflowInstanceRef,
     ) -> Result<WorthQueryWorkflowProposalRequest<'application, Schema, MutationOperation<Schema, Intent>, MutationInput<Schema, Intent>, MutationScope<Schema, IntentBinding<Schema, Intent>>>, WorthQueryWorkflowProposalPreparationDenial>
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
+        let workflow = workflow.into();
         let application = self.application_runtime();
         let request_branch = self.product_branch();
-        if !std::ptr::eq(application, workflow.program_runtime().runtime()) {
+        if !std::ptr::eq(application, workflow.runtime()) {
             return Err(WorthQueryWorkflowProposalPreparationDenial::RuntimeMismatch);
         }
         let selected = application.on_branch(self.product_branch()).select()

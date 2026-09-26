@@ -8,7 +8,7 @@ use worth_query_declaration::facade::{
     application_program::ApplicationWorkflowSpec,
 };
 use worth_query_execution::facade::{
-    application_installation::WorthQueryWorkflowApplicationRuntime,
+    application_installation::WorthQueryWorkflowVocabulary,
     workflow_instance_start::{
         PreparedWorkflowInstanceStart, PublishedWorkflowDefinitionRef,
         WorkflowInstancePreparationDenial, WorkflowInstanceStartOutcome,
@@ -100,9 +100,9 @@ where
             Scope = MutationScope<Schema, IntentBinding<Schema, Intent>>,
         >,
 {
-    pub fn prepare_workflow_instance_start<Spec, Program>(
+    pub fn prepare_workflow_instance_start<'workflow, Spec, Program: 'workflow>(
         mut self,
-        workflow: &WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>,
+        workflow: impl Into<WorthQueryWorkflowVocabulary<'workflow, Schema, Spec, Program>>,
         definition: PublishedWorkflowDefinitionRef,
     ) -> Result<
         WorthQueryWorkflowInstanceStartRequest<
@@ -117,8 +117,9 @@ where
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
+        let workflow = workflow.into();
         let application = self.application_runtime();
-        if !std::ptr::eq(application, workflow.program_runtime().runtime()) {
+        if !std::ptr::eq(application, workflow.runtime()) {
             return Err(WorthQueryWorkflowInstanceStartPreparationDenial::RuntimeMismatch);
         }
         let selected = application

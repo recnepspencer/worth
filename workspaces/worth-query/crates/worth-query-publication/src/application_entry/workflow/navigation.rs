@@ -7,7 +7,7 @@ use worth_query_declaration::facade::{
     application_program::ApplicationWorkflowSpec,
 };
 use worth_query_execution::facade::{
-    application_installation::WorthQueryWorkflowApplicationRuntime,
+    application_installation::WorthQueryWorkflowVocabulary,
     workflow_advance::{
         PerformedWorkflowTransition, PublishedWorkflowInstanceRef, WorkflowProgressOutcome,
     },
@@ -124,13 +124,14 @@ where
 {
     pub fn prepare_workflow_navigate_back<Spec, Program>(
         self,
-        workflow: &'application WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>,
+        workflow: impl Into<WorthQueryWorkflowVocabulary<'application, Schema, Spec, Program>>,
         instance: PublishedWorkflowInstanceRef,
     ) -> WorkflowNavigateBackPreparationResult<'application, 'principal, 'scope, Schema, Spec, Program, Intent>
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
         Program: worth_query_declaration::facade::application_program::ApplicationProgramDefinition<Schema>,
     {
+        let workflow = workflow.into();
         self.prepare_workflow_request(workflow, instance, WorkflowRequestedAction::NavigateBack)
             .map(WorthQueryWorkflowNavigateBackRequest)
     }

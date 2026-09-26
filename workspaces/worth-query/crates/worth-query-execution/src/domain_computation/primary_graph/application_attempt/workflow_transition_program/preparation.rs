@@ -1,4 +1,4 @@
-use crate::domain_computation::primary_graph::application_installation::WorthQueryWorkflowApplicationRuntime;
+use crate::domain_computation::primary_graph::application_installation::WorthQueryWorkflowVocabulary;
 use worth_query_declaration::facade::{
     application_capability::ApplicationCapabilityMarkerIdentity,
     application_program::ApplicationWorkflowSpec,
@@ -223,7 +223,7 @@ where
         Program,
     >(
         &self,
-        workflow: &WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>,
+        workflow: WorthQueryWorkflowVocabulary<'_, Schema, Spec, Program>,
         instance: PublishedWorkflowInstanceRef,
         required: &RequiredWorkflowApproval,
         proposal: &PublishedWorkflowProposalRef,

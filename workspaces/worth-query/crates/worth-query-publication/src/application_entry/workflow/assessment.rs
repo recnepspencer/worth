@@ -11,7 +11,7 @@ use worth_query_execution::facade::{
         WorthQueryApplicationOutputDemand, WorthQueryProducerOutputFamily,
         WorthQueryWorkflowAssessmentOutputFamily, WorthQueryWorkflowAssessmentPosture,
     },
-    application_installation::WorthQueryWorkflowApplicationRuntime,
+    application_installation::WorthQueryWorkflowVocabulary,
     primary_graph::{
         WorthQueryAdmittedOutputDemand, WorthQueryApplicationProjection,
         WorthQueryOutputDemandAdvance, WorthQueryOutputDemandNotifications,
@@ -98,7 +98,7 @@ pub struct WorthQueryWorkflowAssessmentDemandRequest<
     Demand: WorthQueryApplicationOutputDemand<Schema>,
 {
     required: RequiredWorkflowAssessment,
-    workflow: &'application WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>,
+    workflow: WorthQueryWorkflowVocabulary<'application, Schema, Spec, Program>,
     demand:
         WorthQueryApplicationOutputDemandRequest<'application, 'principal, 'scope, Schema, Demand>,
 }
@@ -124,7 +124,7 @@ where
         principal: &'principal worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal<Schema>,
         scope: &'scope worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
         branch: worth_query_execution::facade::product::WorthQueryProductBranch,
-        workflow: &'application WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>,
+        workflow: WorthQueryWorkflowVocabulary<'application, Schema, Spec, Program>,
         required: RequiredWorkflowAssessment,
         demand: Demand,
     ) -> Result<Self, WorthQueryWorkflowAssessmentDemandPreparationDenial> {
@@ -205,7 +205,7 @@ where
     Demand: WorthQueryApplicationOutputDemand<Schema>,
 {
     required: RequiredWorkflowAssessment,
-    workflow: &'application WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>,
+    workflow: WorthQueryWorkflowVocabulary<'application, Schema, Spec, Program>,
     admitted: WorthQueryAdmittedOutputDemand<Schema, Family<Schema, Demand>>,
     demand: Demand,
     controls: WorthQueryOutputDemandControls,

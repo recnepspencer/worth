@@ -9,7 +9,7 @@ use worth_query_declaration::facade::{
     application_program::ApplicationWorkflowSpec,
 };
 use worth_query_execution::facade::{
-    application_installation::WorthQueryWorkflowApplicationRuntime,
+    application_installation::WorthQueryWorkflowVocabulary,
     workflow_advance::{
         PublishedWorkflowInstanceRef, PublishedWorkflowProposalRef, RequiredWorkflowApproval,
         WorkflowApprovalDecision, WorthQueryWorkflowAdvanceAdapter,
@@ -85,7 +85,7 @@ where
     #[allow(clippy::too_many_arguments)]
     pub fn prepare_workflow_approval<Spec, Program>(
         mut self,
-        workflow: &'application WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>,
+        workflow: impl Into<WorthQueryWorkflowVocabulary<'application, Schema, Spec, Program>>,
         instance: PublishedWorkflowInstanceRef,
         required: &RequiredWorkflowApproval,
         proposal: &PublishedWorkflowProposalRef,
@@ -95,8 +95,9 @@ where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
         Program: worth_query_declaration::facade::application_program::ApplicationProgramDefinition<Schema>,
     {
+        let workflow = workflow.into();
         let application = self.application_runtime();
-        if !std::ptr::eq(application, workflow.program_runtime().runtime()) {
+        if !std::ptr::eq(application, workflow.runtime()) {
             return Err(WorthQueryWorkflowAdvancePreparationDenial::RuntimeMismatch);
         }
         let selected = application

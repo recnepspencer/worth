@@ -39,4 +39,5 @@ pub use supported_program::WorthQuerySupportedProgramHandle;
 pub(crate) use workflow_runtime::workflow_approval_authentication_intent;
 pub use workflow_runtime::{
     WorthQueryWorkflowApplicationRuntime, WorthQueryWorkflowRuntimeBindingDenial,
+    WorthQueryWorkflowVocabulary,
 };

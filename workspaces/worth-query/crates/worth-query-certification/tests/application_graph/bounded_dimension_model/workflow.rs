@@ -70,7 +70,10 @@ pub use review_requirement::{
     link_review_requirement, unlink_review_requirement, ReviewRequirementBinding,
     ReviewRequirementHandler, UnlinkReviewRequirementBinding, UnlinkReviewRequirementHandler,
 };
-pub use runtime::{retain_workflow, retain_workflow_with_resources};
+pub use runtime::{
+    install_workflow_spec, retain_workflow, retain_workflow_with_resources,
+    support_workflow_program,
+};
 
 pub fn declare(
     schema: worth_query_host::facade::declaration::application_schema::ApplicationSchemaDeclarationBuilder<

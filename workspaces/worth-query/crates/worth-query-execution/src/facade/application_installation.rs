@@ -13,6 +13,7 @@ pub use crate::domain_computation::primary_graph::application_installation::{
     WorthQuerySelectedProgramOwner, WorthQuerySelectedProgramOwnerDenial,
     WorthQuerySettledProgramOutput, WorthQuerySupportedProgramHandle,
     WorthQueryWorkflowApplicationRuntime, WorthQueryWorkflowRuntimeBindingDenial,
+    WorthQueryWorkflowVocabulary,
 };
 pub use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCheckpoint, WorthQueryApplicationCheckpointSectionBytes,

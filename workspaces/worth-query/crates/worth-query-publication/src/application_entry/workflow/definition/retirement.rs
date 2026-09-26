@@ -7,7 +7,7 @@ use worth_query_declaration::facade::{
     application_program::ApplicationWorkflowSpec,
 };
 use worth_query_execution::facade::{
-    application_installation::WorthQueryWorkflowApplicationRuntime,
+    application_installation::WorthQueryWorkflowVocabulary,
     primary_graph::{
         WorthQueryApplicationIdempotencyBinding, WorthQueryPrimaryGraphApplicationRuntime,
     },
@@ -97,9 +97,9 @@ where
 {
     /// Retires one exact current definition so its lineage admits no new
     /// starts. History, custody, and instances pinned to it are untouched.
-    pub fn prepare_workflow_definition_retirement<Spec, Program>(
+    pub fn prepare_workflow_definition_retirement<'workflow, Spec, Program: 'workflow>(
         mut self,
-        workflow: &WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>,
+        workflow: impl Into<WorthQueryWorkflowVocabulary<'workflow, Schema, Spec, Program>>,
         definition: PublishedWorkflowDefinitionRef,
     ) -> Result<
         WorthQueryWorkflowDefinitionRetirementRequest<
@@ -114,8 +114,9 @@ where
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
+        let workflow = workflow.into();
         let application = self.application_runtime();
-        if !std::ptr::eq(application, workflow.program_runtime().runtime()) {
+        if !std::ptr::eq(application, workflow.runtime()) {
             return Err(PreparationDenial::RuntimeMismatch);
         }
         let selected = application

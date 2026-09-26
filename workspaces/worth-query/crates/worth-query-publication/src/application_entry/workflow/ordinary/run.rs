@@ -9,7 +9,7 @@ use worth_query_declaration::facade::{
     application_program::{ApplicationProgramDefinition, ApplicationWorkflowSpec},
 };
 use worth_query_execution::facade::{
-    application_installation::WorthQueryWorkflowApplicationRuntime,
+    application_installation::WorthQueryWorkflowVocabulary,
     workflow_advance::{
         PerformedWorkflowTransition, PublishedWorkflowInstanceRef, WorkflowProgressOutcome,
     },
@@ -47,7 +47,7 @@ pub struct WorthQueryOrdinaryWorkflowRun<
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
 {
     request: WorthQueryApplicationMutationRequest<'application, 'principal, 'scope, Schema, Intent>,
-    workflow: &'application WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>,
+    workflow: WorthQueryWorkflowVocabulary<'application, Schema, Spec, Program>,
     instance: PublishedWorkflowInstanceRef,
 }
 
@@ -120,7 +120,7 @@ where
 {
     pub fn run_workflow<Spec, Program>(
         self,
-        workflow: &'application WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>,
+        workflow: impl Into<WorthQueryWorkflowVocabulary<'application, Schema, Spec, Program>>,
         instance: PublishedWorkflowInstanceRef,
     ) -> WorthQueryOrdinaryWorkflowRun<
         'application,
@@ -134,6 +134,7 @@ where
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
+        let workflow = workflow.into();
         WorthQueryOrdinaryWorkflowRun {
             request: self,
             workflow,
