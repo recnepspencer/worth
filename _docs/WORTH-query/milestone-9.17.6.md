@@ -1255,6 +1255,17 @@ step: authorization refuses the request before the deadline is read. The deadlin
 own `WorkflowTrustedTimeUnavailable` refusal covers a clock that fails between that
 admission and the deadline read; it is argued from its position, not driven by a test.
 
+An assessment observation holds interest in its run and nothing more. Closing or
+dropping one releases only that observer's interest: a second observer of the same
+run, joined while the first had it in flight, settles it after the first closes, and
+the closed observation refuses further settlement and notifications as closed.
+Closing every observer neither cancels the instance nor settles its head: the
+instance still awaits its assessment, a later observer settles it and the instance
+proceeds, and it can still be cancelled. Pending notifications are bounded at one per
+observation by construction: an observer's wakes coalesce into its run's single
+generation, so any number of state changes since it last looked is one pending wake,
+and there is no per-change queue to exhaust.
+
 ## Acceptance, Cost And Review
 
 A user-authored definition must reach real proposal/assessment/approval/effect and

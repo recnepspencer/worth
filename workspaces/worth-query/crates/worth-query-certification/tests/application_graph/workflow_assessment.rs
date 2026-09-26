@@ -42,6 +42,8 @@ mod early_collection;
 mod join_policy;
 #[path = "workflow_assessment/multi_subject_currentness.rs"]
 mod multi_subject_currentness;
+#[path = "workflow_assessment/observation_close.rs"]
+mod observation_close;
 #[path = "workflow_assessment/relation_aba.rs"]
 mod relation_aba;
 
