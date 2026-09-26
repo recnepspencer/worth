@@ -9,6 +9,7 @@ use worth_relational::facade::identity::EntityId;
 mod coverage;
 mod dispatch;
 mod identity;
+mod resume;
 mod retained_bytes;
 
 pub(super) use dispatch::CompiledWorkflowDispatch;
@@ -22,6 +23,8 @@ pub(in crate::domain_computation::primary_graph) struct CompiledWorkflowDefiniti
     pub(super) publication: Arc<CompiledWorkflowPublicationPlan>,
     pub(super) content_identity: ApplicationWorkflowDefinitionContentIdentity,
     pub(super) program_revision: ApplicationProgramRevision,
+    /// A migration successor's first node; see [`Self::resumed_at`].
+    pub(super) resume: Option<usize>,
 }
 
 pub(super) struct CompiledWorkflowPublicationPlan {
@@ -167,7 +170,7 @@ impl CompiledWorkflowDefinition {
     }
 
     pub(in crate::domain_computation::primary_graph) fn start(&self) -> &CompiledWorkflowNode {
-        &self.publication.nodes[self.publication.start]
+        &self.publication.nodes[self.resume.unwrap_or(self.publication.start)]
     }
 
     pub(in crate::domain_computation::primary_graph) fn node(

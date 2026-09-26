@@ -20,6 +20,7 @@ use crate::domain_computation::primary_graph::workflow::{
 };
 
 mod intent_identity;
+mod migration;
 mod preparation;
 mod publication;
 
@@ -61,21 +62,7 @@ where
         Capability: ApplicationCapabilityMarkerIdentity<Schema = Schema> + 'static,
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
-        if published.branch() != self.lease.product().product_branch() {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::WorkflowInstanceAffinityMismatch,
-                self.admission.operation(),
-            ));
-        }
-        if !installed.instance_start_binding_matches::<Capability, Operation>()
-            || self.admission.installed_capability_identity()
-                != Some(*installed.instance_start_capability_identity_bytes())
-        {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::WorkflowInstanceAuthorityMismatch,
-                self.admission.operation(),
-            ));
-        }
+        self.authorize_instance_start::<Capability, Spec, Program>(installed, published.branch())?;
         let layout = self.lease.layout.workflow().clone();
         let (compiled, mut compile_facts) = reconstruct_compiled_definition(
             self.lease.handle(),
@@ -197,6 +184,48 @@ where
             instance_identity_locator: layout.instance.identity.clone(),
             start_path,
         })
+    }
+}
+
+impl<Schema, Operation, Input, Scope>
+    WorthQueryCompleteApplicationReadSet<
+        Schema,
+        Operation,
+        Input,
+        Scope,
+        WorthQueryProjectedApplicationMutation,
+    >
+where
+    Schema: ApplicationSchema,
+    Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
+{
+    /// Starting and migrating an instance share one authority: the workflow's
+    /// installed start binding, on the branch the request selected.
+    fn authorize_instance_start<Capability, Spec, Program>(
+        &self,
+        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+        branch: crate::basis::WorthQueryProductBranch,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial>
+    where
+        Capability: ApplicationCapabilityMarkerIdentity<Schema = Schema> + 'static,
+        Spec: ApplicationWorkflowSpec<Schema = Schema>,
+    {
+        if branch != self.lease.product().product_branch() {
+            return Err(denial(
+                WorthQueryApplicationAttemptDenialKind::WorkflowInstanceAffinityMismatch,
+                self.admission.operation(),
+            ));
+        }
+        if !installed.instance_start_binding_matches::<Capability, Operation>()
+            || self.admission.installed_capability_identity()
+                != Some(*installed.instance_start_capability_identity_bytes())
+        {
+            return Err(denial(
+                WorthQueryApplicationAttemptDenialKind::WorkflowInstanceAuthorityMismatch,
+                self.admission.operation(),
+            ));
+        }
+        Ok(())
     }
 }
 

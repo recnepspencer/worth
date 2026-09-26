@@ -35,7 +35,7 @@ use super::{
 #[path = "definition/instance.rs"]
 mod instance;
 pub use instance::{
-    advance_instance, approve_instance, propose_authoring_instance,
+    advance_instance, approve_instance, migrate_instance, propose_authoring_instance,
     propose_authoring_instance_with_dimension, propose_instance, propose_instance_on_branch,
     start_instance,
 };
@@ -53,21 +53,38 @@ pub fn reviewed_geometry_definition_with_join_policy(
     completion_identity: &str,
     join_policy: worth_query_host::facade::declaration::application_program::ApplicationWorkflowEvidenceJoinPolicy,
 ) -> ValidatedWorkflowDefinition<ReviewedGeometryWorkflow> {
-    reviewed_geometry_definition_with_policy(completion_identity, join_policy, None)
+    reviewed_geometry_definition_with_policy(completion_identity, join_policy, Rejection::Terminal)
+}
+
+/// A rejected approval loops back to a fresh proposal.
+pub fn reproposing_geometry_definition(
+    completion_identity: &str,
+) -> ValidatedWorkflowDefinition<ReviewedGeometryWorkflow> {
+    reviewed_geometry_definition_with_policy(
+        completion_identity,
+        worth_query_host::facade::declaration::application_program::ApplicationWorkflowEvidenceJoinPolicy::AllRequiredPassing,
+        Rejection::Repropose,
+    )
+}
+
+enum Rejection {
+    Terminal,
+    Retry(u16),
+    Repropose,
 }
 
 pub fn approval_retry_definition() -> ValidatedWorkflowDefinition<ReviewedGeometryWorkflow> {
     reviewed_geometry_definition_with_policy(
         "applied",
         worth_query_host::facade::declaration::application_program::ApplicationWorkflowEvidenceJoinPolicy::AllRequiredPassing,
-        Some(2),
+        Rejection::Retry(2),
     )
 }
 
 fn reviewed_geometry_definition_with_policy(
     completion_identity: &str,
     join_policy: worth_query_host::facade::declaration::application_program::ApplicationWorkflowEvidenceJoinPolicy,
-    approval_retries: Option<u16>,
+    rejection: Rejection,
 ) -> ValidatedWorkflowDefinition<ReviewedGeometryWorkflow> {
     let mut builder = ApplicationWorkflowDefinitionBuilder::<ReviewedGeometryWorkflow>::new(
         "reviewed-geometry",
@@ -143,20 +160,32 @@ fn reviewed_geometry_definition_with_policy(
         .joined_evidence(&evidence, &approval)
         .approval_authority(&approval, &apply)
         .operation_input(&propose, &apply);
-    if let Some(bound) = approval_retries {
-        builder.retry(
+    match rejection {
+        Rejection::Retry(bound) => {
+            builder.retry(
             &approval,
             worth_query_host::facade::declaration::application_program::ApplicationWorkflowRetry::new(
                 ApplicationWorkflowControlOutcome::Rejected, "reconsider", bound,
             ).expect("the reconsideration bound is valid"),
             &approval,
         ).control(&approval, ApplicationWorkflowControlOutcome::RetryExhausted, &rejected);
-    } else {
-        builder.control(
-            &approval,
-            ApplicationWorkflowControlOutcome::Rejected,
-            &rejected,
-        );
+        }
+        Rejection::Terminal => {
+            builder.control(
+                &approval,
+                ApplicationWorkflowControlOutcome::Rejected,
+                &rejected,
+            );
+        }
+        Rejection::Repropose => {
+            builder.retry(
+                &approval,
+                worth_query_host::facade::declaration::application_program::ApplicationWorkflowRetry::new(
+                    ApplicationWorkflowControlOutcome::Rejected, "repropose", 2,
+                ).expect("the reproposal bound is valid"),
+                &propose,
+            ).control(&approval, ApplicationWorkflowControlOutcome::RetryExhausted, &rejected);
+        }
     }
     builder
         .finish()

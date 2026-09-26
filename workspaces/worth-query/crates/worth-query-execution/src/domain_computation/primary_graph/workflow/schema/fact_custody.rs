@@ -20,15 +20,16 @@ use super::WorthQueryWorkflowLayout;
 #[derive(Clone, Copy)]
 struct WorkflowFactCustody {
     entity_kinds: [KindId; 3],
-    relation_kinds: [KindId; 8],
-    approval_kind: KindId,
-    approval_existing_target_relations: [KindId; 2],
+    relation_kinds: [KindId; 10],
+    /// `(new source kind, relation kind)` pairs that may attach to an
+    /// existing fact. Every other existing-endpoint attachment is forbidden.
+    existing_target_links: [(KindId, KindId); 4],
 }
 
 // The installed identity predates approval custody; retain its name across
 // semantic versions so diagnostics preserve the same rule lineage.
 const RULE_ID: &str = "worth-query.workflow.publication-immutability";
-const RULE_VERSION: CustomInvariantSemanticVersion = CustomInvariantSemanticVersion::new(1, 2);
+const RULE_VERSION: CustomInvariantSemanticVersion = CustomInvariantSemanticVersion::new(1, 3);
 const MAXIMUM_WORK_UNITS: u64 = 2_000_000;
 
 pub(in crate::domain_computation::primary_graph) const fn fact_custody_receipt_contract(
@@ -59,11 +60,26 @@ pub(in crate::domain_computation::primary_graph) fn fact_custody_registration(
             layout.transition_approval_relation,
             layout.approval_proposal_relation,
             layout.approval_evidence_relation,
+            layout.instance_migrated_from_relation,
+            layout.instance_prior_effect_relation,
         ],
-        approval_kind: layout.approval.entity_kind,
-        approval_existing_target_relations: [
-            layout.approval_proposal_relation,
-            layout.approval_evidence_relation,
+        existing_target_links: [
+            (
+                layout.approval.entity_kind,
+                layout.approval_proposal_relation,
+            ),
+            (
+                layout.approval.entity_kind,
+                layout.approval_evidence_relation,
+            ),
+            (
+                layout.instance.entity_kind,
+                layout.instance_migrated_from_relation,
+            ),
+            (
+                layout.instance.entity_kind,
+                layout.instance_prior_effect_relation,
+            ),
         ],
     })
     .map_err(|error| format!("workflow fact custody registration: {error:?}"))
@@ -197,11 +213,11 @@ impl WorkflowFactCustody {
     ) -> bool {
         match (source, target) {
             (EntityReference::Created(_), EntityReference::Created(_)) => true,
-            // Issuance links its new approval to published proposal/evidence;
-            // every other existing-endpoint attachment remains forbidden.
+            // Issuance links its new approval to published proposal/evidence,
+            // and migration links its new successor to the source and to the
+            // effects it carries. Nothing may attach to an existing fact later.
             (EntityReference::Created(source), EntityReference::Existing(_)) => {
-                source.kind_id == self.approval_kind
-                    && self.approval_existing_target_relations.contains(&kind)
+                self.existing_target_links.contains(&(source.kind_id, kind))
             }
             _ => false,
         }
@@ -223,7 +239,7 @@ mod tests {
     use super::WorkflowFactCustody;
 
     #[test]
-    fn only_a_new_approval_may_link_to_existing_proposal_or_evidence() {
+    fn only_a_new_approval_or_successor_may_link_to_an_existing_fact() {
         let rule = WorkflowFactCustody {
             entity_kinds: [KindId(1), KindId(2), KindId(3)],
             relation_kinds: [
@@ -235,9 +251,15 @@ mod tests {
                 KindId(9),
                 KindId(10),
                 KindId(11),
+                KindId(12),
+                KindId(13),
             ],
-            approval_kind: KindId(3),
-            approval_existing_target_relations: [KindId(10), KindId(11)],
+            existing_target_links: [
+                (KindId(3), KindId(10)),
+                (KindId(3), KindId(11)),
+                (KindId(20), KindId(12)),
+                (KindId(20), KindId(13)),
+            ],
         };
         let created = |kind_id| {
             EntityReference::Created(CreatedEntityRef {
@@ -254,5 +276,10 @@ mod tests {
         assert!(!rule.allows_relation_create(KindId(9), &created(KindId(3)), &existing));
         assert!(!rule.allows_relation_create(KindId(10), &existing, &created(KindId(3))));
         assert!(!rule.allows_relation_create(KindId(10), &existing, &existing));
+        assert!(rule.allows_relation_create(KindId(12), &created(KindId(20)), &existing));
+        assert!(rule.allows_relation_create(KindId(13), &created(KindId(20)), &existing));
+        assert!(!rule.allows_relation_create(KindId(13), &created(KindId(3)), &existing));
+        assert!(!rule.allows_relation_create(KindId(10), &created(KindId(20)), &existing));
+        assert!(!rule.allows_relation_create(KindId(13), &existing, &existing));
     }
 }

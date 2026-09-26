@@ -292,6 +292,7 @@ pub(super) fn lower_instance(
     let subject_slot = planned_field_locator(INSTANCE_ASPECT, "subject-slot")?;
     let subject_generation = planned_field_locator(INSTANCE_ASPECT, "subject-generation")?;
     let state = planned_field_locator(INSTANCE_ASPECT, "state")?;
+    let resume_node_path = planned_field_locator(INSTANCE_ASPECT, "resume-node-path")?;
     let shape = aspects()
         .struct_fields()
         .required("identity", ScalarAspectType::String)
@@ -303,6 +304,7 @@ pub(super) fn lower_instance(
         .required("subject-slot", ScalarAspectType::UInt64)
         .required("subject-generation", ScalarAspectType::UInt64)
         .required("state", ScalarAspectType::UInt64)
+        .optional("resume-node-path", ScalarAspectType::String)
         .finish()
         .map_err(|_| invalid_member(INSTANCE_ASPECT))?;
     let registry = register_platform_entity(
@@ -328,6 +330,7 @@ pub(super) fn lower_instance(
             subject_slot,
             subject_generation,
             state,
+            resume_node_path,
             identity_index_id: DerivedIndexId(0),
         },
     ))
@@ -366,9 +369,9 @@ pub(super) fn register_platform_entity(
 
 pub(super) fn allocate_kinds(
     first: KindId,
-) -> Result<[KindId; 30], WorthQueryPrimaryGraphInstallationDenial> {
+) -> Result<[KindId; 32], WorthQueryPrimaryGraphInstallationDenial> {
     let mut next = first.0;
-    let mut kinds = [first; 30];
+    let mut kinds = [first; 32];
     for kind in kinds.iter_mut().skip(1) {
         next = next.checked_add(1).ok_or_else(kind_space_exhausted)?;
         *kind = KindId(next);

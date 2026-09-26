@@ -8,7 +8,11 @@ use worth_query_installation::facade::{
 };
 
 use super::{
-    PreparedWorkflowInstanceStart, PublishedWorkflowDefinitionRef, WorkflowInstanceStartOutcome,
+    PreparedWorkflowInstanceStart, PublishedWorkflowDefinitionRef, PublishedWorkflowInstanceRef,
+    WorkflowInstanceStartOutcome,
+};
+use crate::domain_computation::primary_graph::application_attempt::{
+    WorthQueryCompleteApplicationReadSet, WorthQueryProjectedApplicationMutation,
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedApplicationOperation, WorthQueryApplicationAttemptDenial,
@@ -69,6 +73,69 @@ where
         Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
+        self.begin_instance_read_set(installed, admission)?
+            .materialize_workflow_instance_start::<Capability, Spec, Program>(
+                installed,
+                published,
+                start_key_identity,
+            )
+            .map_err(WorkflowInstancePreparationDenial::Attempt)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub(in crate::domain_computation::primary_graph) fn prepare_workflow_instance_migration<
+        Capability,
+        Operation,
+        Input,
+        Scope,
+        Spec,
+        Program,
+    >(
+        &self,
+        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+        source: PublishedWorkflowInstanceRef,
+        target: PublishedWorkflowDefinitionRef,
+        resume_at: &str,
+        start_key_identity: [u8; 32],
+        admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+    ) -> Result<
+        PreparedWorkflowInstanceStart<Schema, Operation, Input, Scope>,
+        WorkflowInstancePreparationDenial,
+    >
+    where
+        Capability: ApplicationCapabilityMarkerIdentity<Schema = Schema> + 'static,
+        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
+        Spec: ApplicationWorkflowSpec<Schema = Schema>,
+    {
+        self.begin_instance_read_set(installed, admission)?
+            .materialize_workflow_instance_migration::<Capability, Spec, Program>(
+                installed,
+                source,
+                target,
+                resume_at,
+                start_key_identity,
+            )
+            .map_err(WorkflowInstancePreparationDenial::Attempt)
+    }
+
+    fn begin_instance_read_set<Operation, Input, Scope, Spec, Program>(
+        &self,
+        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+        admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+    ) -> Result<
+        WorthQueryCompleteApplicationReadSet<
+            Schema,
+            Operation,
+            Input,
+            Scope,
+            WorthQueryProjectedApplicationMutation,
+        >,
+        WorkflowInstancePreparationDenial,
+    >
+    where
+        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
+        Spec: ApplicationWorkflowSpec<Schema = Schema>,
+    {
         if installed.schema_binding() != &self.application().installed_schema().binding_identity() {
             return Err(WorkflowInstancePreparationDenial::Binding(
                 WorkflowInstanceBindingDenial::ForeignSchema,
@@ -109,13 +176,7 @@ where
                 WorkflowInstanceBindingDenial::SelectedOccurrenceChanged,
             ));
         }
-        read_set
-            .materialize_workflow_instance_start::<Capability, Spec, Program>(
-                installed,
-                published,
-                start_key_identity,
-            )
-            .map_err(WorkflowInstancePreparationDenial::Attempt)
+        Ok(read_set)
     }
 }
 
@@ -146,6 +207,37 @@ impl WorthQueryWorkflowInstanceStartAdapter {
                 start_key_identity,
                 admission,
             )
+    }
+
+    /// Prepares a successor for `source` on the current `target` definition,
+    /// resumed at `resume_at`, committed and replayed exactly like a start.
+    #[allow(clippy::too_many_arguments)]
+    pub fn prepare_migration<Schema, Capability, Operation, Input, Scope, Spec, Program>(
+        selected: &WorthQuerySelectedProductOperation<'_, Schema>,
+        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+        source: PublishedWorkflowInstanceRef,
+        target: PublishedWorkflowDefinitionRef,
+        resume_at: &str,
+        start_key_identity: [u8; 32],
+        admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+    ) -> Result<
+        PreparedWorkflowInstanceStart<Schema, Operation, Input, Scope>,
+        WorkflowInstancePreparationDenial,
+    >
+    where
+        Schema: ApplicationSchema,
+        Capability: ApplicationCapabilityMarkerIdentity<Schema = Schema> + 'static,
+        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
+        Spec: ApplicationWorkflowSpec<Schema = Schema>,
+    {
+        selected.prepare_workflow_instance_migration::<Capability, Operation, Input, Scope, Spec, Program>(
+            installed,
+            source,
+            target,
+            resume_at,
+            start_key_identity,
+            admission,
+        )
     }
 
     pub fn compare_and_commit<Schema, Operation, Input, Scope>(

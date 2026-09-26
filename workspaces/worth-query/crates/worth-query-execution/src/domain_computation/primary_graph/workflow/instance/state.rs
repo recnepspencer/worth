@@ -4,6 +4,8 @@ pub(in crate::domain_computation::primary_graph) enum WorkflowInstanceState {
     Completed,
     /// Ended by an explicit program adoption disposition; runs no further node.
     Cancelled,
+    /// Ended by an explicit migration; its successor continues the work.
+    Migrated,
 }
 
 impl WorkflowInstanceState {
@@ -12,6 +14,7 @@ impl WorkflowInstanceState {
             Self::Ready => 0,
             Self::Completed => 4,
             Self::Cancelled => 5,
+            Self::Migrated => 6,
         }
     }
 }

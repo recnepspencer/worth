@@ -120,7 +120,8 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
     instance: &PublishedWorkflowInstanceRef,
     subject: EntityId,
     lineage: EntityId,
-    compiled: &CompiledWorkflowDefinition,
+    // Resumed in place when the instance is a migration successor.
+    compiled: &mut CompiledWorkflowDefinition,
     maximum_transitions: usize,
     history_budget: worth_query_installation::facade::WorthQueryWorkflowHistoryReconstructionBudget,
 ) -> Result<ObservedWorkflowInstance, WorthQueryApplicationAttemptDenial> {
@@ -150,17 +151,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         AspectValue::UInt64(instance.branch().occurrence_ordinal()),
         &mut facts,
     )?;
-    // Cancellation is named before any field it left behind can mismatch.
-    if observe_field_value(runtime, snapshot, entity, kind, &layout.instance.state)
-        == Some(AspectValue::UInt64(
-            WorkflowInstanceState::Cancelled.persisted_tag(),
-        ))
-    {
-        return Err(WorthQueryApplicationAttemptDenial::new(
-            WorthQueryApplicationAttemptDenialKind::WorkflowInstanceCancelled,
-            "workflow instance was cancelled by program adoption",
-        ));
-    }
+    instance_binding::deny_ended(runtime, snapshot, layout, entity)?;
     exact(
         runtime,
         snapshot,
@@ -202,6 +193,8 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
             &mut facts,
         )?;
     }
+    instance_binding::resume_definition(runtime, snapshot, layout, instance, compiled, &mut facts)?;
+    let compiled = &*compiled;
     let definitions = adjacency(
         runtime,
         snapshot,

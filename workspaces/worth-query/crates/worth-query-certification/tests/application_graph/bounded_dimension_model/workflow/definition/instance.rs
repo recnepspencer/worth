@@ -138,3 +138,27 @@ pub fn propose_instance_on_branch(
         .prepare_workflow_proposal(application, instance)
         .map(|request| request.execute())
 }
+
+/// Continues `instance` as a successor on the current `target`, at `resume_at`.
+pub fn migrate_instance(
+    application: &BoundedDimensionWorkflowRuntime,
+    instance: worth_query_host::facade::application_entry::PublishedWorkflowInstanceRef,
+    target: PublishedWorkflowDefinitionRef,
+    resume_at: &str,
+    idempotency: u64,
+) -> Result<WorkflowInstanceStartOutcome, WorthQueryWorkflowInstanceStartPreparationDenial> {
+    let runtime = application.runtime();
+    let scope = request_scope();
+    let principal = authenticate_operator(runtime.installed_schema(), &scope);
+    runtime
+        .request(&principal, &scope)
+        .mutate(WorkflowInstanceStartIntent {
+            input: WorkflowInstanceStartInput {
+                part_identity: PART_IDENTITY.to_owned(),
+            },
+        })
+        .without_source()
+        .idempotency(&idempotency)
+        .prepare_workflow_instance_migration(application, instance, target, resume_at)
+        .map(|request| request.execute())
+}

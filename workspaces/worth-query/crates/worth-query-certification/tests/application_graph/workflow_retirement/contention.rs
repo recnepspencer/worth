@@ -101,7 +101,7 @@ fn only_one_of_two_prepared_reopens_commits() {
     ));
     let winner = winner.expect("the winning reopen ran");
     let started = expect_started(start_instance(&application, winner, 525));
-    assert_eq!(started.current_node_path(), "early");
+    assert_eq!(started.start_node_path(), "early");
 }
 
 fn retire_after(

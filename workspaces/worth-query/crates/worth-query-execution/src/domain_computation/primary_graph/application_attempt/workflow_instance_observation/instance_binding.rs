@@ -2,9 +2,83 @@ use worth_foundational::facade::{AspectValue, InternedString};
 use worth_relational::facade::identity::EntityId;
 
 use super::{
-    denial, observe_adjacency, observe_field_value, WorthQueryApplicationAdjacencyDirection,
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationObservedFact,
+    denial, observe_adjacency, observe_field_value, CompiledWorkflowDefinition,
+    PublishedWorkflowInstanceRef, WorkflowInstanceState, WorthQueryApplicationAdjacencyDirection,
+    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
+    WorthQueryApplicationObservedFact, WorthQueryWorkflowLayout,
 };
+
+/// An ended instance is named before any field it left behind can mismatch.
+pub(super) fn deny_ended(
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    layout: &WorthQueryWorkflowLayout,
+    entity: EntityId,
+) -> Result<(), WorthQueryApplicationAttemptDenial> {
+    let kind = layout.instance.entity_kind;
+    let state = observe_field_value(runtime, snapshot, entity, kind, &layout.instance.state);
+    for (ended, denial_kind, subject) in [
+        (
+            WorkflowInstanceState::Cancelled,
+            WorthQueryApplicationAttemptDenialKind::WorkflowInstanceCancelled,
+            "workflow instance was cancelled by program adoption",
+        ),
+        (
+            WorkflowInstanceState::Migrated,
+            WorthQueryApplicationAttemptDenialKind::WorkflowInstanceMigrated,
+            "workflow instance was migrated to a successor",
+        ),
+    ] {
+        if state == Some(AspectValue::UInt64(ended.persisted_tag())) {
+            return Err(WorthQueryApplicationAttemptDenial::new(
+                denial_kind,
+                subject,
+            ));
+        }
+    }
+    Ok(())
+}
+
+/// Reads the definition as this instance runs it: from the node its migration
+/// resumed at, which its reference names, or from the definition's start.
+pub(super) fn resume_definition(
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    layout: &WorthQueryWorkflowLayout,
+    instance: &PublishedWorkflowInstanceRef,
+    compiled: &mut CompiledWorkflowDefinition,
+    facts: &mut Vec<WorthQueryApplicationObservedFact>,
+) -> Result<(), WorthQueryApplicationAttemptDenial> {
+    let entity_id = instance.entity_id();
+    let kind = layout.instance.entity_kind;
+    let locator = &layout.instance.resume_node_path;
+    match observe_field_value(runtime, snapshot, entity_id, kind, locator) {
+        None => {
+            facts.push(WorthQueryApplicationObservedFact::AbsentField {
+                entity_id,
+                kind,
+                locator: locator.clone(),
+            });
+            Ok(())
+        }
+        Some(AspectValue::String(InternedString::Raw(path))) => {
+            if path != instance.start_node_path() {
+                return Err(denial("workflow instance resume node changed"));
+            }
+            *compiled = compiled
+                .resumed_at(&path)
+                .ok_or_else(|| denial("workflow instance resume node is not in its definition"))?;
+            facts.push(WorthQueryApplicationObservedFact::Field {
+                entity_id,
+                kind,
+                locator: locator.clone(),
+                value: text(path),
+            });
+            Ok(())
+        }
+        Some(_) => Err(denial("workflow instance resume node has the wrong type")),
+    }
+}
 
 pub(super) fn exact_u64(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,

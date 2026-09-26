@@ -27,6 +27,9 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowLiveInstance {
     pub(in crate::domain_computation::primary_graph) live_membership: RelationId,
     pub(in crate::domain_computation::primary_graph) transitions:
         Vec<WorkflowInventoriedTransition>,
+    /// A migration successor carries performed effects of an earlier
+    /// definition. They make it performed but never settle its approvals.
+    pub(in crate::domain_computation::primary_graph) inherits_effects: bool,
 }
 
 #[derive(Clone, Copy)]
@@ -64,12 +67,16 @@ pub(in crate::domain_computation::primary_graph) fn read_live_instances(
         for relation in truth.outgoing(instance, layout.instance_transition_relation)? {
             transitions.push(read_transition(truth, layout, relation.target)?);
         }
+        let inherits_effects = !truth
+            .outgoing(instance, layout.instance_prior_effect_relation)?
+            .is_empty();
         instances.push(WorkflowLiveInstance {
             instance,
             lineage: membership.target,
             definition,
             live_membership: membership.relation_id,
             transitions,
+            inherits_effects,
         });
     }
     instances.sort_unstable_by_key(|live| live.instance);

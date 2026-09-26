@@ -20,7 +20,8 @@ pub(super) fn deny_back_over_authorized_operation(
     progress: &WorkflowInstanceProgress,
     node: &CompiledWorkflowNode,
 ) -> Result<(), WorthQueryApplicationAttemptDenial> {
-    // Matches adoption custody: only a receipted settlement consumes approval.
+    // Only a receipted settlement consumes approval. Reading just the latest
+    // transition is stricter than adoption custody, never looser.
     let settled = progress
         .latest_transition(node.entity())
         .map(|transition| transition.settlement())

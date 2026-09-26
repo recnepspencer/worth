@@ -58,7 +58,7 @@ impl PublishedWorkflowInstanceRef {
         &self.definition_content_identity
     }
 
-    pub fn current_node_path(&self) -> &str {
+    pub fn start_node_path(&self) -> &str {
         &self.start_path
     }
 }

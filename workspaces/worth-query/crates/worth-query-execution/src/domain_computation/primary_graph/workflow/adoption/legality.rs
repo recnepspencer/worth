@@ -60,10 +60,12 @@ pub(super) fn definition_compatibility(
 }
 
 /// An approval is outstanding when its latest decision approved and no
-/// operation it authorizes has settled a receipt after that decision.
+/// operation it authorizes has settled a receipt after that decision. An
+/// instance that inherits effects is performed, whatever its own history.
 pub(super) fn instance_custody(
     dependencies: &WorkflowDefinitionDependencies,
     transitions: &[WorkflowInventoriedTransition],
+    inherits_effects: bool,
 ) -> Custody {
     let outstanding = dependencies
         .approval_authorities
@@ -92,7 +94,7 @@ pub(super) fn instance_custody(
             approval_node_path: path.to_owned(),
         };
     }
-    if transitions.iter().any(|transition| transition.receipted) {
+    if inherits_effects || transitions.iter().any(|transition| transition.receipted) {
         Custody::Performed
     } else {
         Custody::Unperformed

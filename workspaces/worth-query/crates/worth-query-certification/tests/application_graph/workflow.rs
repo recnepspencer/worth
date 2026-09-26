@@ -100,7 +100,7 @@ fn public_terminal_workflow_advances_once_through_authenticated_transition_autho
     let after_cold_start = application.runtime().workflow_compilation_reuse_counters();
     assert_eq!(after_cold_start.cold_misses(), before.cold_misses() + 1);
     assert_eq!(after_cold_start.cold_retains(), before.cold_retains() + 1);
-    assert_eq!(started.instance().current_node_path(), "completed");
+    assert_eq!(started.instance().start_node_path(), "completed");
     for key in 100..131 {
         expect_started(start_instance(
             &application,
@@ -242,7 +242,7 @@ fn public_instance_start_binds_revisions_replays_and_enforces_lineage_capacity()
     let first_definition = first.definition().clone();
     let started = expect_started(start_instance(&application, first_definition.clone(), 21));
     assert!(!started.replayed());
-    assert_eq!(started.instance().current_node_path(), "propose");
+    assert_eq!(started.instance().start_node_path(), "propose");
     assert_eq!(
         started.instance().definition_content_identity(),
         first_definition.content_identity()

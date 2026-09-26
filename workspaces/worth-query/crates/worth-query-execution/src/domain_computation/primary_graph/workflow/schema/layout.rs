@@ -38,6 +38,10 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryWorkflowLayout
     pub(in crate::domain_computation::primary_graph) approval_proposal_relation: KindId,
     pub(in crate::domain_computation::primary_graph) approval_evidence_relation: KindId,
     pub(in crate::domain_computation::primary_graph) evidence_dependency_relation: KindId,
+    /// Successor instance to the instance its migration ended.
+    pub(in crate::domain_computation::primary_graph) instance_migrated_from_relation: KindId,
+    /// Successor instance to each receipted transition it inherits as history.
+    pub(in crate::domain_computation::primary_graph) instance_prior_effect_relation: KindId,
 }
 
 #[derive(Clone, Debug)]
@@ -209,6 +213,8 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowInstanceLayout {
     pub(in crate::domain_computation::primary_graph) subject_slot: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) subject_generation: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) state: AspectFieldLocator,
+    /// Where a migration successor began, when not at its definition's start.
+    pub(in crate::domain_computation::primary_graph) resume_node_path: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) identity_index_id: DerivedIndexId,
 }
 

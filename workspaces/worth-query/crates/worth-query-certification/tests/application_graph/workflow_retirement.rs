@@ -97,7 +97,7 @@ fn retirement_stops_new_starts_while_pinned_work_completes_and_the_lineage_reope
     assert_ne!(reopened.entity_id(), first.entity_id());
     assert_ne!(reopened.entity_id(), second.entity_id());
     let started = expect_started(start_instance(&application, reopened.clone(), 412));
-    assert_eq!(started.current_node_path(), "reopened");
+    assert_eq!(started.start_node_path(), "reopened");
     expect_stale_start(start_instance(&application, second.clone(), 413));
 
     let replay_after_reopen = expect_retired(retire_definition(&application, second, 404));

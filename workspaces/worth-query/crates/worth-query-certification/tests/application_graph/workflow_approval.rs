@@ -42,6 +42,10 @@ mod commit_boundary;
 mod custody;
 #[path = "workflow_approval/effect_currentness.rs"]
 mod effect_currentness;
+#[path = "workflow_approval/instance_migration.rs"]
+mod instance_migration;
+#[path = "workflow_approval/instance_migration_law.rs"]
+mod instance_migration_law;
 #[path = "workflow_approval/journey.rs"]
 mod journey;
 #[path = "workflow_approval/operation_requirement.rs"]

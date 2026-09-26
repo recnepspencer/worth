@@ -25,7 +25,7 @@ pub(in crate::domain_computation::primary_graph) fn visit_instance_start_facts<E
         kind_id: layout.instance.entity_kind,
         client_key: ClientKey::raw("instance"),
     };
-    let fields = BTreeMap::from([
+    let mut fields = BTreeMap::from([
         (layout.instance.identity.clone(), text(instance_identity)),
         (
             layout.instance.protocol_version.clone(),
@@ -62,6 +62,9 @@ pub(in crate::domain_computation::primary_graph) fn visit_instance_start_facts<E
             AspectValue::UInt64(super::state::WorkflowInstanceState::Ready.persisted_tag()),
         ),
     ]);
+    if let Some(path) = compiled.resumed_path() {
+        fields.insert(layout.instance.resume_node_path.clone(), text(path));
+    }
     emit(WorthQueryApplicationRealizedEffect::CreateEntity {
         kind: instance.kind_id,
         key: "instance".to_owned(),

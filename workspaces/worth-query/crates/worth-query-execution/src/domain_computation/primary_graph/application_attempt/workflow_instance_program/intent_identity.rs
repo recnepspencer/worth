@@ -9,7 +9,45 @@ pub(super) fn instance_identity(
     subject: EntityId,
     start_key_identity: [u8; 32],
 ) -> Result<(String, [u8; 32]), ()> {
-    let material = canonical_operation_material(vec![
+    identity(compiled, subject, start_key_identity, Vec::new())
+}
+
+/// A successor's identity also names the instance its migration ends, so
+/// two sources never mint the same successor.
+pub(super) fn migration_identity(
+    resumed: &CompiledWorkflowDefinition,
+    source: EntityId,
+    subject: EntityId,
+    start_key_identity: [u8; 32],
+) -> Result<(String, [u8; 32]), ()> {
+    identity(
+        resumed,
+        subject,
+        start_key_identity,
+        vec![
+            (
+                "migration.source.partition",
+                source.partition_value().to_string(),
+            ),
+            (
+                "migration.source.slot",
+                source.local_slot_value().to_string(),
+            ),
+            (
+                "migration.source.generation",
+                source.generation_value().to_string(),
+            ),
+        ],
+    )
+}
+
+fn identity(
+    compiled: &CompiledWorkflowDefinition,
+    subject: EntityId,
+    start_key_identity: [u8; 32],
+    migration: Vec<(&'static str, String)>,
+) -> Result<(String, [u8; 32]), ()> {
+    let mut material = vec![
         (
             "workflow.definition.partition",
             compiled.definition().partition_value().to_string(),
@@ -35,7 +73,9 @@ pub(super) fn instance_identity(
         ("subject.slot", subject.local_slot_value().to_string()),
         ("subject.generation", subject.generation_value().to_string()),
         ("start.key", encode(start_key_identity)),
-    ]);
+    ];
+    material.extend(migration);
+    let material = canonical_operation_material(material);
     let identity: [u8; 32] = Sha256::digest(material.as_bytes()).into();
     let mut text = String::with_capacity(64);
     for byte in identity {

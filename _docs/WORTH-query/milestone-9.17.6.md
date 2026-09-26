@@ -693,6 +693,28 @@ collected under and is never reused under another, so a carried instance collect
 fresh evidence before any approval. A fork's copied current definition governs its
 new starts and is decided on that fork like any other.
 
+The migration law, as delivered. Migration never rewrites an instance: it ends the
+exact source as migrated and starts a successor on the current target definition of
+the same lineage, resumed at a named target node. The node mapping is identity by
+path. The successor carries only receipted effects, linked as prior-effect history;
+proposals, evidence, joins and approvals are re-established by running the nodes that
+produce them. Admission refuses as unmapped another workflow's definition, a resume
+node missing from the target, a resume that could run a node before a proposal or
+evidence it consumes where a fresh instance could not (a retry loop back to the
+producer never counts), a completed source, and any performed effect without a
+same-path, same-kind target operation, or whose operation meaning the successor could
+reach again under any path. An approval not yet followed by its receipted operation is
+refused as unsettled until it settles under the source. The request is start-shaped:
+it runs under the workflow's start capability, which therefore also authorizes ending
+the source and discarding its unconsumed proposal, evidence and decisions. Like a
+start, a target that is no longer current comes back stale. It replays exactly, and
+its identity binds the source occurrence; any other request for a migrated source,
+including another migration, is refused as migrated. Only a new successor may link to
+an existing instance or transition, so native writers can neither forge nor erase that
+history. Adoption inventories a successor that inherits effects as performed, offering
+only carry, and never inventories the migrated source; inherited effects never settle
+the successor's own approvals.
+
 ## Required Public Experience
 
 These target Rust examples compile in the existing host/decl audience tests when

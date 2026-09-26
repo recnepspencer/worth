@@ -77,6 +77,7 @@ impl WorkflowDefinitionPublicationBinding {
             publication,
             content_identity,
             program_revision,
+            resume: None,
         })
     }
 

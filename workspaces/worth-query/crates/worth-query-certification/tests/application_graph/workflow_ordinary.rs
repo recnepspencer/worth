@@ -246,7 +246,7 @@ fn ordinary_publication_uses_installed_binding_and_real_commit_authority() {
         other => panic!("the ordinary definition must start: {other:?}"),
     };
     assert!(!started.replayed());
-    assert_eq!(started.instance().current_node_path(), "done");
+    assert_eq!(started.instance().start_node_path(), "done");
     let replayed_start = match start() {
         WorkflowInstanceStartOutcome::Started(started) => started,
         other => panic!("the exact ordinary start must replay: {other:?}"),

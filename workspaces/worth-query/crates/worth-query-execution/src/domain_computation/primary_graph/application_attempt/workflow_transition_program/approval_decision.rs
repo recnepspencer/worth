@@ -65,7 +65,7 @@ where
             instance.definition_entity_id(),
             instance.definition_content_identity().clone(),
         );
-        let (compiled, mut facts) = crate::domain_computation::primary_graph::workflow::definition::reconstruct_compiled_definition(
+        let (mut compiled, mut facts) = crate::domain_computation::primary_graph::workflow::definition::reconstruct_compiled_definition(
                 self.lease.handle(),
                 self.lease.snapshot(),
                 &layout,
@@ -93,7 +93,7 @@ where
                 &instance,
                 subject,
                 compiled.lineage(),
-                &compiled,
+                &mut compiled,
                 maximum_transitions,
                 installed.resources().history_reconstruction_budget(),
             )

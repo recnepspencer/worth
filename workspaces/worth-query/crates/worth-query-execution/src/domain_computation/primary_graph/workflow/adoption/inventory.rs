@@ -83,7 +83,11 @@ pub(in crate::domain_computation::primary_graph) fn inventory_workflows(
             definition: live.definition,
             live_membership: live.live_membership,
             compatibility: definition.compatibility.clone(),
-            custody: legality::instance_custody(&definition.dependencies, &live.transitions),
+            custody: legality::instance_custody(
+                &definition.dependencies,
+                &live.transitions,
+                live.inherits_effects,
+            ),
         });
     }
     let digest = digest(request, &definitions, &instances, &read);

@@ -322,6 +322,26 @@ pub(in crate::domain_computation::primary_graph) fn lower_workflow(
         kinds[1],
         connection_endpoint_integrity(),
     )?;
+    registry = register_relation(
+        registry,
+        schema_id,
+        schema_version_id,
+        "worth-query-workflow-instance-migrated-from",
+        kinds[30],
+        kinds[4],
+        kinds[4],
+        relations::migration_successor_integrity(),
+    )?;
+    registry = register_relation(
+        registry,
+        schema_id,
+        schema_version_id,
+        "worth-query-workflow-instance-prior-effect",
+        kinds[31],
+        kinds[4],
+        kinds[14],
+        relations::prior_effect_integrity(),
+    )?;
     Ok((
         registry,
         WorthQueryWorkflowLayout {
@@ -355,6 +375,8 @@ pub(in crate::domain_computation::primary_graph) fn lower_workflow(
             approval_proposal_relation: kinds[24],
             approval_evidence_relation: kinds[25],
             evidence_dependency_relation: kinds[27],
+            instance_migrated_from_relation: kinds[30],
+            instance_prior_effect_relation: kinds[31],
         },
     ))
 }

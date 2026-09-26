@@ -11,8 +11,8 @@ use worth_query_execution::facade::{
     application_installation::WorthQueryWorkflowVocabulary,
     workflow_instance_start::{
         PreparedWorkflowInstanceStart, PublishedWorkflowDefinitionRef,
-        WorkflowInstancePreparationDenial, WorkflowInstanceStartOutcome,
-        WorthQueryWorkflowInstanceStartAdapter,
+        PublishedWorkflowInstanceRef, WorkflowInstancePreparationDenial,
+        WorkflowInstanceStartOutcome, WorthQueryWorkflowInstanceStartAdapter,
     },
 };
 use worth_query_installation::facade::ApplicationSchema;
@@ -101,9 +101,106 @@ where
         >,
 {
     pub fn prepare_workflow_instance_start<'workflow, Spec, Program: 'workflow>(
-        mut self,
+        self,
         workflow: impl Into<WorthQueryWorkflowVocabulary<'workflow, Schema, Spec, Program>>,
         definition: PublishedWorkflowDefinitionRef,
+    ) -> Result<
+        WorthQueryWorkflowInstanceStartRequest<
+            'application,
+            Schema,
+            MutationOperation<Schema, Intent>,
+            MutationInput<Schema, Intent>,
+            MutationScope<Schema, IntentBinding<Schema, Intent>>,
+        >,
+        WorthQueryWorkflowInstanceStartPreparationDenial,
+    >
+    where
+        Spec: ApplicationWorkflowSpec<Schema = Schema>,
+    {
+        self.prepare_instance(workflow, |selected, installed, key, admission| {
+            WorthQueryWorkflowInstanceStartAdapter::prepare::<
+                Schema,
+                <IntentBinding<Schema, Intent> as ApplicationCapabilityMutationBinding<Schema>>::Capability,
+                MutationOperation<Schema, Intent>,
+                MutationInput<Schema, Intent>,
+                MutationScope<Schema, IntentBinding<Schema, Intent>>,
+                Spec,
+                Program,
+            >(selected, installed, definition, key, admission)
+        })
+    }
+
+    /// Ends `instance` and continues its work as a new instance on the
+    /// current `target` definition, beginning at the node `resume_at` names.
+    ///
+    /// The successor carries only performed effects, as history it can never
+    /// repeat. Proposals, evidence and approvals are re-established by running
+    /// the nodes that produce them, so each one the successor consumes must
+    /// run before its consumer. An approval whose operation has not yet run
+    /// blocks migration until it settles under the source. The start
+    /// capability authorizes migration, and with it ending the source.
+    pub fn prepare_workflow_instance_migration<'workflow, Spec, Program: 'workflow>(
+        self,
+        workflow: impl Into<WorthQueryWorkflowVocabulary<'workflow, Schema, Spec, Program>>,
+        instance: PublishedWorkflowInstanceRef,
+        target: PublishedWorkflowDefinitionRef,
+        resume_at: &str,
+    ) -> Result<
+        WorthQueryWorkflowInstanceStartRequest<
+            'application,
+            Schema,
+            MutationOperation<Schema, Intent>,
+            MutationInput<Schema, Intent>,
+            MutationScope<Schema, IntentBinding<Schema, Intent>>,
+        >,
+        WorthQueryWorkflowInstanceStartPreparationDenial,
+    >
+    where
+        Spec: ApplicationWorkflowSpec<Schema = Schema>,
+    {
+        self.prepare_instance(workflow, |selected, installed, key, admission| {
+            WorthQueryWorkflowInstanceStartAdapter::prepare_migration::<
+                Schema,
+                <IntentBinding<Schema, Intent> as ApplicationCapabilityMutationBinding<Schema>>::Capability,
+                MutationOperation<Schema, Intent>,
+                MutationInput<Schema, Intent>,
+                MutationScope<Schema, IntentBinding<Schema, Intent>>,
+                Spec,
+                Program,
+            >(selected, installed, instance, target, resume_at, key, admission)
+        })
+    }
+
+    #[allow(clippy::type_complexity)]
+    fn prepare_instance<'workflow, Spec, Program: 'workflow>(
+        mut self,
+        workflow: impl Into<WorthQueryWorkflowVocabulary<'workflow, Schema, Spec, Program>>,
+        prepare: impl FnOnce(
+            &worth_query_execution::facade::primary_graph::WorthQuerySelectedProductOperation<
+                '_,
+                Schema,
+            >,
+            &worth_query_installation::facade::WorthQueryInstalledApplicationWorkflowSpec<
+                Schema,
+                Spec,
+                Program,
+            >,
+            [u8; 32],
+            worth_query_execution::facade::primary_graph::WorthQueryAdmittedApplicationOperation<
+                Schema,
+                MutationOperation<Schema, Intent>,
+                MutationInput<Schema, Intent>,
+                MutationScope<Schema, IntentBinding<Schema, Intent>>,
+            >,
+        ) -> Result<
+            PreparedWorkflowInstanceStart<
+                Schema,
+                MutationOperation<Schema, Intent>,
+                MutationInput<Schema, Intent>,
+                MutationScope<Schema, IntentBinding<Schema, Intent>>,
+            >,
+            WorkflowInstancePreparationDenial,
+        >,
     ) -> Result<
         WorthQueryWorkflowInstanceStartRequest<
             'application,
@@ -129,18 +226,9 @@ where
             .map_err(WorthQueryWorkflowInstanceStartPreparationDenial::RequestAdmission)?;
         let mutation = authorization::prepare_capability_selected(&mut self, &selected)
             .map_err(WorthQueryWorkflowInstanceStartPreparationDenial::RequestAdmission)?;
-        let prepared = WorthQueryWorkflowInstanceStartAdapter::prepare::<
-            Schema,
-            <IntentBinding<Schema, Intent> as ApplicationCapabilityMutationBinding<Schema>>::Capability,
-            MutationOperation<Schema, Intent>,
-            MutationInput<Schema, Intent>,
-            MutationScope<Schema, IntentBinding<Schema, Intent>>,
-            Spec,
-            Program,
-        >(
+        let prepared = prepare(
             &selected,
             workflow.workflow_spec(),
-            definition,
             *mutation.idempotency.key_identity(),
             mutation.admission,
         )
