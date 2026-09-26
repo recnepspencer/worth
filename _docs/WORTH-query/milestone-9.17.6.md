@@ -1291,8 +1291,8 @@ dropping one releases only that observer's interest: a second observer, joined w
 the first had the run in flight, still settles the assessment after the first closes,
 and the closed observation refuses further settlement and notifications as closed.
 Closing every observer, including one with a run in flight, neither cancels the
-instance nor settles its head: the instance still awaits its assessment, a later observer settles it and the instance
-proceeds, and it can still be cancelled. Pending notifications are bounded at one per
+instance nor settles its head: the instance still awaits its assessment, a later
+observer settles it and the instance proceeds, and it can still be cancelled. Pending notifications are bounded at one per
 observation by construction: an observer's wakes coalesce into its run's single
 generation, so any number of state changes since it last looked is one pending wake,
 and there is no per-change queue to exhaust.

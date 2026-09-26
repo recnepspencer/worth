@@ -17,6 +17,9 @@ use crate::domain_computation::primary_graph::application_attempt::{
 
 #[path = "assessment/dependency.rs"]
 mod dependency;
+#[cfg(test)]
+#[path = "assessment/tests.rs"]
+mod tests;
 
 pub(in crate::domain_computation::primary_graph) struct WorkflowAssessmentEvidenceMeaning {
     pub(in crate::domain_computation::primary_graph) identity: String,

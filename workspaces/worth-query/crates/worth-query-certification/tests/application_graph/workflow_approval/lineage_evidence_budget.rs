@@ -97,8 +97,9 @@ fn evidence_refused(
     key: u64,
 ) {
     let settlement = settle_assessment(application, instance.clone(), key);
+    // The ceiling is enforced where the evidence settles, so its refusal is
+    // the acceptance's own attempt denial rather than a prepared step's.
     let kind = match accept_assessment(application, instance.clone(), &settlement, key + 1) {
-        Ok(WorkflowProgressOutcome::PreparationDenied(denial)) => denial.kind(),
         Err(WorthQueryWorkflowAssessmentAcceptanceDenial::Attempt(denial)) => denial.kind(),
         other => panic!("expected a refused assessment, got {other:?}"),
     };
@@ -155,7 +156,8 @@ fn evidence_past_the_ceiling_is_refused_and_leaves_the_instance_waiting() {
 #[test]
 fn a_lineage_retains_evidence_only_up_to_its_ceiling() {
     let charge = one_assessment_charge(95_100);
-    let application = bounded(charge + charge / 2);
+    // The first assessment fills the ceiling exactly and is admitted.
+    let application = bounded(charge);
     let (_, instance) = proposed(&application, 95_100);
     let first = accepted(&application, &instance, 95_103);
     assert!(

@@ -12,6 +12,9 @@ mod authorization_world_installation;
 #[path = "fixture/commit_snapshot_closeout.rs"]
 mod commit_snapshot_closeout;
 pub(in crate::domain_computation::primary_graph) use commit_snapshot_closeout::release_test_commit_snapshot;
+#[path = "fixture/installed_layout.rs"]
+mod installed_layout;
+pub(in crate::domain_computation::primary_graph) use installed_layout::installed_layout;
 #[path = "fixture/product_publication.rs"]
 mod product_publication;
 pub(in crate::domain_computation::primary_graph) use product_publication::{

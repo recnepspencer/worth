@@ -17,9 +17,9 @@ use crate::domain_computation::primary_graph::application_attempt::{
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) struct WorkflowLineageCarry {
     pub(in crate::domain_computation::primary_graph) inherited_steps: u64,
+    pub(in crate::domain_computation::primary_graph) inherited_evidence_bytes: u64,
     /// Unix-epoch milliseconds.
     pub(in crate::domain_computation::primary_graph) deadline: Option<u64>,
-    pub(in crate::domain_computation::primary_graph) inherited_evidence_bytes: u64,
 }
 
 pub(in crate::domain_computation::primary_graph) fn visit_instance_start_facts<Error>(
