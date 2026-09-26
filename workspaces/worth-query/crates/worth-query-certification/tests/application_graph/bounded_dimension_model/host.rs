@@ -20,6 +20,7 @@ use worth_query_host::facade::declaration::application_schema::{
     ApplicationInvariantExecutionPoint, ApplicationInvariantMarkerIdentity,
 };
 use worth_query_host::facade::{declaration, primary_graph, runtime};
+use worth_query_installation::facade::WorthQueryInstalledApplicationSchema;
 
 use super::assessment_output::{
     PartAssessmentBinding, PartAssessmentHandler, PartAssessmentProducer, PartAssessmentProvider,
@@ -51,9 +52,12 @@ use super::workflow::{
 
 #[path = "host/checkpoint_restore.rs"]
 mod checkpoint_restore;
+#[path = "host/trusted_time.rs"]
+mod trusted_time;
 #[path = "host/workflow_runtime.rs"]
 mod workflow_runtime;
 pub use checkpoint_restore::restore_on_first_program;
+pub use trusted_time::{publish_on_first_program_with_trusted_time, CertificationTrustedTime};
 pub use workflow_runtime::BoundedDimensionWorkflowRuntime;
 
 /// The dimension every host seeds. It satisfies both installed rules, so the
@@ -260,16 +264,21 @@ where
         BoundedDimensionSchema::declaration().expect("the bounded-dimension schema is valid"),
         ((),),
         limits,
-        |graph, installed| {
-            let principal_binding = installed
-                .principal_binding(PartPrincipalBinding::reference())
-                .expect("the part principal binding must install");
-            seed_operator(graph, &principal_binding);
-            seed_part(graph);
-            super::workflow::seed_authoring(graph);
-            Ok(())
-        },
+        seed_host,
     )
+}
+
+fn seed_host(
+    graph: &mut primary_graph::WorthQueryPrimaryGraphBootstrap<BoundedDimensionSchema>,
+    installed: &WorthQueryInstalledApplicationSchema<BoundedDimensionSchema>,
+) -> Result<(), primary_graph::WorthQueryPrimaryGraphInstallationDenial> {
+    let principal_binding = installed
+        .principal_binding(PartPrincipalBinding::reference())
+        .expect("the part principal binding must install");
+    seed_operator(graph, &principal_binding);
+    seed_part(graph);
+    super::workflow::seed_authoring(graph);
+    Ok(())
 }
 
 fn seed_operator(

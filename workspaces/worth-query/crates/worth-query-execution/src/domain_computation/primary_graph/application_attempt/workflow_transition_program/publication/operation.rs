@@ -75,6 +75,8 @@ pub struct WorkflowOperationAuthority {
     pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) observation:
         WorthQueryProductBranchReadIdentity,
     pub(super) facts: Arc<[WorthQueryApplicationObservedFact]>,
+    /// The instance's deadline; the operation commits only before it.
+    pub(in crate::domain_computation::primary_graph::application_attempt) deadline: Option<u64>,
     pub(in crate::domain_computation::primary_graph::application_attempt) settlement_basis:
         crate::domain_computation::primary_graph::workflow::instance::WorkflowOperationSettlementBasis,
     pub(in crate::domain_computation::primary_graph::application_attempt) workflow_layout:
@@ -220,12 +222,21 @@ impl WorkflowOperationAuthority {
             session_identity,
             observation,
             facts: facts.into(),
+            deadline: None,
             settlement_basis,
             workflow_layout,
             approval_authority,
             handle,
             layout,
         }
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn with_deadline(
+        mut self,
+        deadline: Option<u64>,
+    ) -> Self {
+        self.deadline = deadline;
+        self
     }
 
     #[doc(hidden)]

@@ -66,6 +66,13 @@ pub enum WorthQueryApplicationAttemptDenialKind {
     /// requested node: a performed effect is unmapped or would run again, or
     /// a node it would run consumes a result the successor cannot produce.
     WorkflowInstanceMigrationUnmapped,
+    /// The total deadline a definition in the instance's lineage declared
+    /// has elapsed on the installed clock. The instance takes no further
+    /// step, migration, or fork continuation; it can still be cancelled.
+    WorkflowInstanceDeadlineElapsed,
+    /// The installed clock could not be read, so a deadline cannot be shown
+    /// to lie ahead and the step is refused.
+    WorkflowTrustedTimeUnavailable,
     WorkflowHistoryReconstructionBudgetExceeded,
     WorkflowTransitionAffinityMismatch,
     WorkflowTransitionAuthorityMismatch,
@@ -75,7 +82,6 @@ pub enum WorthQueryApplicationAttemptDenialKind {
     /// been consumed by a receipted settlement.
     WorkflowTransitionOperationUnsettled,
     WorkflowTransitionIdentityUnavailable,
-    WorkflowTransitionCapacityExceeded,
     WorkflowAssessmentEvidenceIncomplete,
     WorkflowAssessmentEvidenceMismatch,
     WorkflowApprovalPrincipalStale,

@@ -200,8 +200,16 @@ fn primitive_definition_named_with_policy(
     identity: &str,
     policy: ApplicationWorkflowEvidenceJoinPolicy,
 ) -> Result<ValidatedWorkflowDefinition<ReviewedGeometry>, Box<dyn std::error::Error>> {
+    primitive_definition_with_limits(identity, policy, limits())
+}
+
+fn primitive_definition_with_limits(
+    identity: &str,
+    policy: ApplicationWorkflowEvidenceJoinPolicy,
+    limits: ApplicationWorkflowDefinitionLimits,
+) -> Result<ValidatedWorkflowDefinition<ReviewedGeometry>, Box<dyn std::error::Error>> {
     let mut builder =
-        ApplicationWorkflowDefinitionBuilder::<ReviewedGeometry>::new(identity, limits())?;
+        ApplicationWorkflowDefinitionBuilder::<ReviewedGeometry>::new(identity, limits)?;
     let propose = builder.operation::<ProposeChange>("propose", false)?;
     let structural = builder.assessment::<StructuralAssessment>("checks/structural")?;
     let manufacturability =

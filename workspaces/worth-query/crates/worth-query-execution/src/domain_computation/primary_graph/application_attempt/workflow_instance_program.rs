@@ -16,8 +16,9 @@ use super::{
 };
 use crate::domain_computation::primary_graph::workflow::{
     definition::{reconstruct_compiled_definition, WorkflowDefinitionCompilationPosture},
-    instance::visit_instance_start_facts,
+    instance::{visit_instance_start_facts, WorkflowLineageCarry},
 };
+use crate::domain_computation::runtime_time::WorthQueryRuntimeClock;
 
 mod cancellation;
 mod intent_identity;
@@ -60,6 +61,7 @@ where
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
         published: PublishedWorkflowDefinitionRef,
         start_key_identity: [u8; 32],
+        clock: &WorthQueryRuntimeClock,
     ) -> Result<
         PreparedWorkflowInstanceStart<Schema, Operation, Input, Scope>,
         WorthQueryApplicationAttemptDenial,
@@ -108,6 +110,15 @@ where
                     self.admission.operation(),
                 )
             })?;
+        let declared_deadline = self.lease.handle().with_runtime(|runtime| {
+            super::workflow_deadline::definition_deadline(
+                runtime,
+                self.lease.snapshot(),
+                &layout,
+                compiled.definition(),
+                &mut compile_facts,
+            )
+        })?;
         compile_facts.push(
             WorthQueryApplicationObservedFact::WorkflowInstanceCapacity {
                 relation_kind: layout.live_instance_lineage_relation,
@@ -138,6 +149,10 @@ where
             )
                 },
             )?;
+        let carry = WorkflowLineageCarry {
+            inherited_steps: 0,
+            deadline: super::workflow_deadline::start_deadline(clock, None, declared_deadline)?,
+        };
         let mut demand = PlatformEffectDemand::default();
         let branch_occurrence = self.lease.product().product_branch().occurrence_ordinal();
         visit_instance_start_facts(
@@ -146,7 +161,7 @@ where
             &instance_identity,
             branch_occurrence,
             subject,
-            0,
+            carry,
             |effect| demand.observe(&effect),
         )?;
         let reservation = admit_platform_effects(&self, demand)?;
@@ -157,7 +172,7 @@ where
             &instance_identity,
             branch_occurrence,
             subject,
-            0,
+            carry,
             |effect| {
                 effects.push(effect);
                 Ok::<(), WorthQueryApplicationAttemptDenial>(())

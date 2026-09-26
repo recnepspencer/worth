@@ -162,6 +162,9 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowDefinitionLayout
         AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) maximum_port_provenance: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) maximum_canonical_bytes: AspectFieldLocator,
+    /// The declared total deadline in milliseconds; absent when none.
+    pub(in crate::domain_computation::primary_graph) total_deadline_milliseconds:
+        AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) content_identity_index_id: DerivedIndexId,
 }
 
@@ -222,6 +225,9 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowInstanceLayout {
     /// none. One lineage spends one step budget, so a successor never
     /// starts it afresh.
     pub(in crate::domain_computation::primary_graph) inherited_steps: AspectFieldLocator,
+    /// The Unix-epoch millisecond at which the lineage's earliest total
+    /// deadline elapses; absent when no definition it ran declared one.
+    pub(in crate::domain_computation::primary_graph) deadline: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) identity_index_id: DerivedIndexId,
 }
 

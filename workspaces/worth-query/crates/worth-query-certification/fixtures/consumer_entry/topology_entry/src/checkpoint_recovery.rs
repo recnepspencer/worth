@@ -338,13 +338,16 @@ fn settle_for<'application, 'principal, 'scope>(
             controls,
         )
         .expect("the program output starts");
-    loop {
-        match output
-            .advance(request)
-            .expect("the program output advances")
-        {
-            WorthQueryApplicationProgramOutputProgress::Pending => {}
-            WorthQueryApplicationProgramOutputProgress::Settled(settled) => return settled,
-        }
-    }
+    // An output that never settles fails the recovery instead of hanging it.
+    (0..256)
+        .find_map(|_| {
+            match output
+                .advance(request)
+                .expect("the program output advances")
+            {
+                WorthQueryApplicationProgramOutputProgress::Pending => None,
+                WorthQueryApplicationProgramOutputProgress::Settled(settled) => Some(settled),
+            }
+        })
+        .expect("the program output settles within the bounded advances")
 }

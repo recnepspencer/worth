@@ -92,6 +92,8 @@ pub(super) fn lower_definition(
         planned_field_locator(DEFINITION_ASPECT, "maximum-port-provenance")?;
     let maximum_canonical_bytes =
         planned_field_locator(DEFINITION_ASPECT, "maximum-canonical-bytes")?;
+    let total_deadline_milliseconds =
+        planned_field_locator(DEFINITION_ASPECT, "total-deadline-milliseconds")?;
     let shape = aspects()
         .struct_fields()
         .required("content-identity", ScalarAspectType::String)
@@ -106,6 +108,7 @@ pub(super) fn lower_definition(
         .required("maximum-connection-provenance", ScalarAspectType::UInt64)
         .required("maximum-port-provenance", ScalarAspectType::UInt64)
         .required("maximum-canonical-bytes", ScalarAspectType::UInt64)
+        .optional("total-deadline-milliseconds", ScalarAspectType::UInt64)
         .finish()
         .map_err(|_| invalid_member(DEFINITION_ASPECT))?;
     let registry = register_platform_entity(
@@ -134,6 +137,7 @@ pub(super) fn lower_definition(
             maximum_connection_provenance,
             maximum_port_provenance,
             maximum_canonical_bytes,
+            total_deadline_milliseconds,
             content_identity_index_id: DerivedIndexId(0),
         },
     ))
@@ -295,6 +299,7 @@ pub(super) fn lower_instance(
     let resume_node_path = planned_field_locator(INSTANCE_ASPECT, "resume-node-path")?;
     let cancellation_identity = planned_field_locator(INSTANCE_ASPECT, "cancellation-identity")?;
     let inherited_steps = planned_field_locator(INSTANCE_ASPECT, "inherited-steps")?;
+    let deadline = planned_field_locator(INSTANCE_ASPECT, "deadline")?;
     let shape = aspects()
         .struct_fields()
         .required("identity", ScalarAspectType::String)
@@ -309,6 +314,7 @@ pub(super) fn lower_instance(
         .optional("resume-node-path", ScalarAspectType::String)
         .optional("cancellation-identity", ScalarAspectType::String)
         .optional("inherited-steps", ScalarAspectType::UInt64)
+        .optional("deadline", ScalarAspectType::UInt64)
         .finish()
         .map_err(|_| invalid_member(INSTANCE_ASPECT))?;
     let registry = register_platform_entity(
@@ -337,6 +343,7 @@ pub(super) fn lower_instance(
             resume_node_path,
             cancellation_identity,
             inherited_steps,
+            deadline,
             identity_index_id: DerivedIndexId(0),
         },
     ))

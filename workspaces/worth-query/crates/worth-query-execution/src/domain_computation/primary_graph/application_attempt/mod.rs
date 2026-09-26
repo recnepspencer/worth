@@ -39,6 +39,7 @@ mod read_scope;
 mod read_set;
 mod retained_commit;
 pub(super) mod snapshot_lease;
+mod workflow_deadline;
 mod workflow_definition_program;
 mod workflow_instance_observation;
 #[cfg(test)]

@@ -50,6 +50,8 @@ mod instance_cancellation;
 mod instance_cancellation_capacity;
 #[path = "workflow_approval/instance_cancellation_reach.rs"]
 mod instance_cancellation_reach;
+#[path = "workflow_approval/instance_deadline.rs"]
+mod instance_deadline;
 #[path = "workflow_approval/instance_migration.rs"]
 mod instance_migration;
 #[path = "workflow_approval/instance_migration_law.rs"]

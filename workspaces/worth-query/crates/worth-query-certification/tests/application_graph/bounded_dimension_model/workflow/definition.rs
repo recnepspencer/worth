@@ -57,7 +57,28 @@ pub fn reviewed_geometry_definition_with_join_policy(
     completion_identity: &str,
     join_policy: worth_query_host::facade::declaration::application_program::ApplicationWorkflowEvidenceJoinPolicy,
 ) -> ValidatedWorkflowDefinition<ReviewedGeometryWorkflow> {
-    reviewed_geometry_definition_with_policy(completion_identity, join_policy, Rejection::Terminal)
+    reviewed_geometry_definition_with_policy(
+        completion_identity,
+        join_policy,
+        Rejection::Terminal,
+        definition_limits(),
+    )
+}
+
+/// Every instance of this definition must finish within `deadline` of its
+/// start.
+pub fn reviewed_geometry_definition_with_deadline(
+    completion_identity: &str,
+    deadline: std::time::Duration,
+) -> ValidatedWorkflowDefinition<ReviewedGeometryWorkflow> {
+    reviewed_geometry_definition_with_policy(
+        completion_identity,
+        worth_query_host::facade::declaration::application_program::ApplicationWorkflowEvidenceJoinPolicy::AllRequiredPassing,
+        Rejection::Terminal,
+        definition_limits()
+            .with_total_deadline(deadline)
+            .expect("the deadline is whole nonzero milliseconds"),
+    )
 }
 
 /// A rejected approval loops back to a fresh proposal.
@@ -68,6 +89,7 @@ pub fn reproposing_geometry_definition(
         completion_identity,
         worth_query_host::facade::declaration::application_program::ApplicationWorkflowEvidenceJoinPolicy::AllRequiredPassing,
         Rejection::Repropose,
+        definition_limits(),
     )
 }
 
@@ -82,6 +104,7 @@ pub fn approval_retry_definition() -> ValidatedWorkflowDefinition<ReviewedGeomet
         "applied",
         worth_query_host::facade::declaration::application_program::ApplicationWorkflowEvidenceJoinPolicy::AllRequiredPassing,
         Rejection::Retry(2),
+        definition_limits(),
     )
 }
 
@@ -89,10 +112,11 @@ fn reviewed_geometry_definition_with_policy(
     completion_identity: &str,
     join_policy: worth_query_host::facade::declaration::application_program::ApplicationWorkflowEvidenceJoinPolicy,
     rejection: Rejection,
+    limits: ApplicationWorkflowDefinitionLimits,
 ) -> ValidatedWorkflowDefinition<ReviewedGeometryWorkflow> {
     let mut builder = ApplicationWorkflowDefinitionBuilder::<ReviewedGeometryWorkflow>::new(
         "reviewed-geometry",
-        definition_limits(),
+        limits,
     )
     .expect("the workflow identity is valid");
     let propose = builder

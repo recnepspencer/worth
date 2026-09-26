@@ -51,7 +51,8 @@ pub use definition::{
     propose_authoring_instance, propose_authoring_instance_with_dimension, propose_instance,
     propose_instance_on_branch, publish_definition, repeated_proposal_definition,
     reproposing_geometry_definition, retire_definition, reviewed_geometry_definition,
-    reviewed_geometry_definition_with_join_policy, start_instance, terminal_definition,
+    reviewed_geometry_definition_with_deadline, reviewed_geometry_definition_with_join_policy,
+    start_instance, terminal_definition,
 };
 pub use grant_status::{
     WorkflowGrantStatusBinding, WorkflowGrantStatusHandler, WorkflowGrantStatusInput,

@@ -65,6 +65,9 @@ pub struct WorthQueryCompleteApplicationReadSet<
     pub(super) facts: Vec<WorthQueryApplicationObservedFact>,
     pub(super) workflow_authority_binding: Option<WorkflowOperationBindingProof>,
     pub(super) mutation_handler_binding: Option<MutationHandlerBindingProof>,
+    /// The Unix-epoch millisecond the workflow instance this attempt steps
+    /// must commit before; the provider checks it again at commit.
+    pub(super) workflow_deadline: Option<u64>,
     pub(super) _phase: PhantomData<fn() -> Phase>,
 }
 
@@ -377,6 +380,7 @@ impl<Schema, Operation, Input, Scope, Phase>
             facts: self.facts.into_values().chain(self.source_facts).collect(),
             workflow_authority_binding: None,
             mutation_handler_binding: None,
+            workflow_deadline: None,
             _phase: PhantomData,
         })
     }

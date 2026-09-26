@@ -104,7 +104,13 @@ where
             ));
         }
         read_set
-            .materialize_workflow_proposal(installed, instance, input_identity, source_identity)
+            .materialize_workflow_proposal(
+                installed,
+                instance,
+                input_identity,
+                source_identity,
+                &self.application().authorization_clock,
+            )
             .map_err(WorkflowProposalPreparationDenial::Attempt)
     }
 }

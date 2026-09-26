@@ -1235,7 +1235,25 @@ afresh; retry and navigation back-edges spend it like any other step. A spent li
 refuses the next step, a further migration and a fork continuation with a typed
 capacity denial before commit, warm or cold, and still cancels. A yield or a duplicate
 delivery writes no transition and so neither spends nor restores a step. Migration
-itself writes no transition and spends none.
+itself writes no transition and spends none. Navigating Back spends the same budget,
+so the navigation-specific capacity refusal it once had could no longer be reached and
+is retired from the public denial kinds.
+
+A definition may declare a total deadline, whole nonzero milliseconds, and only a
+declared deadline enters its content identity. An instance started from it records
+the instant its lineage must finish by on the installed trusted clock: its start plus
+the deadline, or for a migration successor or a fork's continuation the earlier of its
+source's recorded instant and its own start plus its target's deadline, so no
+successor starts the deadline afresh. From that instant on, a proposal, advance,
+approval, Back navigation and a further migration or fork continuation are refused
+with the typed `WorkflowInstanceDeadlineElapsed` denial before commit, warm or cold.
+A step admitted in time is checked again when its operation commits, and one that
+reaches commit after the deadline is refused as a workflow settlement denial without
+effect. A retried key still replays its recorded outcome, and cancellation stays open,
+so an overdue instance can always end. Trusted time that cannot be read admits no
+step: authorization refuses the request before the deadline is read. The deadline's
+own `WorkflowTrustedTimeUnavailable` refusal covers a clock that fails between that
+admission and the deadline read; it is argued from its position, not driven by a test.
 
 ## Acceptance, Cost And Review
 

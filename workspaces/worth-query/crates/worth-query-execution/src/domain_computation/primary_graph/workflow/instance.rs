@@ -10,7 +10,9 @@ mod transition;
 pub(in crate::domain_computation::primary_graph) use adoption_inventory::{
     read_live_instances, WorkflowInventoriedTransition,
 };
-pub(in crate::domain_computation::primary_graph) use facts::visit_instance_start_facts;
+pub(in crate::domain_computation::primary_graph) use facts::{
+    visit_instance_start_facts, WorkflowLineageCarry,
+};
 pub(in crate::domain_computation::primary_graph) use migration::{
     admit_workflow_migration, WorkflowPerformedEffect, WorkflowSuccession,
 };

@@ -47,6 +47,7 @@ where
         required: &RequiredWorkflowApproval,
         proposal: &super::super::PublishedWorkflowProposalRef,
         decision: WorkflowApprovalDecision,
+        clock: &crate::domain_computation::runtime_time::WorthQueryRuntimeClock,
     ) -> Result<
         PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
         WorthQueryApplicationAttemptDenial,
@@ -256,6 +257,19 @@ where
                 ),
             });
         };
+        // A decision recorded before the deadline still replays after it.
+        if let Err(elapsed) = self.bind_workflow_deadline(clock, &layout, instance.entity_id()) {
+            return Ok(PreparedWorkflowAdvance::ReplayOnly {
+                read_set: self,
+                transition_identity_locator: layout.transition.identity.clone(),
+                assessment_identity_locator: layout.assessment_evidence.identity.clone(),
+                instance: instance.entity_id(),
+                approval: Some(approval_projection.clone()),
+                approval_identity: Some(meaning.identity),
+                replays,
+                denial: elapsed,
+            });
+        }
         let selected = match select_current_transition(
             &compiled,
             instance.entity_id(),

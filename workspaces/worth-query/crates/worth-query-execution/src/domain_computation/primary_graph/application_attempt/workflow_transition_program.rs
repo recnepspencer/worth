@@ -77,10 +77,11 @@ where
         Spec,
         Program,
     >(
-        self,
+        mut self,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
         instance: super::PublishedWorkflowInstanceRef,
         request_kind: WorkflowTransitionRequestKind,
+        clock: &crate::domain_computation::runtime_time::WorthQueryRuntimeClock,
     ) -> Result<
         PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
         WorthQueryApplicationAttemptDenial,
@@ -219,18 +220,18 @@ where
                     });
             }
         };
-        if request_kind == WorkflowTransitionRequestKind::NavigateBack {
-            if observed.lineage_steps() >= maximum_transitions as u64 {
-                return Ok(self.navigation_replay_denial(
+        if let Err(elapsed) = self.bind_workflow_deadline(clock, &layout, instance.entity_id()) {
+            return match request_kind {
+                WorkflowTransitionRequestKind::NavigateBack => Ok(self.navigation_replay_denial(
                     &layout,
                     instance.entity_id(),
                     std::mem::take(&mut observed.replays),
-                    denial(
-                        WorthQueryApplicationAttemptDenialKind::WorkflowTransitionCapacityExceeded,
-                        "workflow transition retention capacity is exhausted",
-                    ),
-                ));
-            }
+                    elapsed,
+                )),
+                _ => Err(elapsed),
+            };
+        }
+        if request_kind == WorkflowTransitionRequestKind::NavigateBack {
             let selected = match select_navigation_back_transition(
                 &compiled,
                 instance.entity_id(),

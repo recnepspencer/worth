@@ -81,7 +81,7 @@ fn take_steps(
     }
 }
 
-fn step_denial(
+pub(super) fn step_denial(
     outcome: Result<WorkflowProposalOutcome, WorthQueryWorkflowProposalPreparationDenial>,
 ) -> WorthQueryApplicationAttemptDenialKind {
     match outcome {

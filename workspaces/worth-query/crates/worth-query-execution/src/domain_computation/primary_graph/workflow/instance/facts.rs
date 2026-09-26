@@ -11,13 +11,22 @@ use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationCreationPartition, WorthQueryApplicationRealizedEffect,
 };
 
+/// What an instance carries from its lineage: the steps its sources took and
+/// the earliest total deadline any definition it ran declared.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub(in crate::domain_computation::primary_graph) struct WorkflowLineageCarry {
+    pub(in crate::domain_computation::primary_graph) inherited_steps: u64,
+    /// Unix-epoch milliseconds.
+    pub(in crate::domain_computation::primary_graph) deadline: Option<u64>,
+}
+
 pub(in crate::domain_computation::primary_graph) fn visit_instance_start_facts<Error>(
     layout: &WorthQueryWorkflowLayout,
     compiled: &CompiledWorkflowDefinition,
     instance_identity: &str,
     branch_occurrence: u64,
     subject: EntityId,
-    inherited_steps: u64,
+    carry: WorkflowLineageCarry,
     mut emit: impl FnMut(WorthQueryApplicationRealizedEffect) -> Result<(), Error>,
 ) -> Result<CreatedEntityRef, Error> {
     let partition = compiled.definition().partition_id;
@@ -66,10 +75,16 @@ pub(in crate::domain_computation::primary_graph) fn visit_instance_start_facts<E
     if let Some(path) = compiled.resumed_path() {
         fields.insert(layout.instance.resume_node_path.clone(), text(path));
     }
-    if inherited_steps > 0 {
+    if carry.inherited_steps > 0 {
         fields.insert(
             layout.instance.inherited_steps.clone(),
-            AspectValue::UInt64(inherited_steps),
+            AspectValue::UInt64(carry.inherited_steps),
+        );
+    }
+    if let Some(deadline) = carry.deadline {
+        fields.insert(
+            layout.instance.deadline.clone(),
+            AspectValue::UInt64(deadline),
         );
     }
     emit(WorthQueryApplicationRealizedEffect::CreateEntity {

@@ -21,6 +21,9 @@ use worth_relational::facade::identity::{EntityId, RelationId};
 use worth_relational::facade::transactions::EntityReference;
 
 use super::super::effect_program::{admit_platform_effects, PlatformEffectDemand};
+use super::super::workflow_deadline::{
+    definition_deadline, ensure_before, instance_deadline, start_deadline,
+};
 use super::super::{
     PublishedWorkflowDefinitionRef, WorthQueryApplicationAttemptDenial,
     WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationEffectProgram,
@@ -37,10 +40,11 @@ use crate::domain_computation::primary_graph::workflow::{
     },
     instance::{
         admit_workflow_migration, visit_instance_start_facts, WorkflowInstanceState,
-        WorkflowPerformedEffect, WorkflowSuccession,
+        WorkflowLineageCarry, WorkflowPerformedEffect, WorkflowSuccession,
     },
     schema::WorthQueryWorkflowLayout,
 };
+use crate::domain_computation::runtime_time::WorthQueryRuntimeClock;
 use lineage::successor_identity;
 
 impl<Schema, Operation, Input, Scope>
@@ -67,6 +71,7 @@ where
         target: PublishedWorkflowDefinitionRef,
         resume_at: &str,
         start_key_identity: [u8; 32],
+        clock: &WorthQueryRuntimeClock,
     ) -> Result<
         PreparedWorkflowInstanceStart<Schema, Operation, Input, Scope>,
         WorthQueryApplicationAttemptDenial,
@@ -198,8 +203,13 @@ where
                 &mut facts,
                 WorthQueryApplicationAttemptDenialKind::WorkflowInstanceMigrationUnmapped,
             )?;
-            Ok::<_, WorthQueryApplicationAttemptDenial>((observed, inherited))
+            let deadlines = (
+                instance_deadline(runtime, snapshot, &layout, source.entity_id(), &mut facts)?,
+                definition_deadline(runtime, snapshot, &layout, resumed.definition(), &mut facts)?,
+            );
+            Ok::<_, WorthQueryApplicationAttemptDenial>((observed, inherited, deadlines))
         });
+        let mut source_deadline = None;
         let effects = match observed {
             // A source this request already migrated emits nothing. Its false
             // readiness fact never becomes true again, so the program resolves
@@ -224,10 +234,16 @@ where
                 Vec::new()
             }
             Err(denial) => return Err(denial),
-            Ok((observed, inherited)) => {
+            Ok((observed, inherited, (inherited_deadline, declared_deadline))) => {
                 let Some(live_membership) = observed.live_membership else {
                     return Err(unmapped("a completed instance has no work left to migrate"));
                 };
+                // A successor cannot outrun its source's deadline, and never
+                // begins once that deadline has passed.
+                if let Some(deadline) = inherited_deadline {
+                    ensure_before(clock, deadline)?;
+                }
+                source_deadline = inherited_deadline;
                 let settled = observed
                     .transitions
                     .iter()
@@ -240,7 +256,10 @@ where
                 )?;
                 performed.extend(inherited);
                 admit_workflow_migration(succession, &from, &resumed, &settled, &performed)?;
-                let lineage_steps = observed.lineage_steps();
+                let carry = WorkflowLineageCarry {
+                    inherited_steps: observed.lineage_steps(),
+                    deadline: start_deadline(clock, inherited_deadline, declared_deadline)?,
+                };
                 facts.extend(observed.facts);
                 successor_effects(
                     &layout,
@@ -248,8 +267,7 @@ where
                     &instance_identity,
                     self.lease.product().product_branch().occurrence_ordinal(),
                     subject,
-                    (source.entity_id(), live_membership),
-                    lineage_steps,
+                    (source.entity_id(), live_membership, carry),
                     &performed,
                 )?
             }
@@ -266,6 +284,7 @@ where
             ));
         }
         self.facts.extend(facts);
+        self.workflow_deadline = source_deadline;
         let mut demand = PlatformEffectDemand::default();
         for effect in &effects {
             demand.observe(effect)?;
@@ -301,16 +320,15 @@ where
 /// The successor's own start facts, its link to the source and to every
 /// effect it carries, and the source's end. Live membership moves from the
 /// source to the successor, so lineage capacity is unchanged, and the
-/// successor inherits every step its sources took, so the step budget is too.
-#[allow(clippy::too_many_arguments)]
+/// successor carries every step its sources took and their earliest
+/// deadline, so neither bound starts afresh.
 fn successor_effects(
     layout: &WorthQueryWorkflowLayout,
     resumed: &CompiledWorkflowDefinition,
     instance_identity: &str,
     branch_occurrence: u64,
     subject: EntityId,
-    (source, live_membership): (EntityId, RelationId),
-    inherited_steps: u64,
+    (source, live_membership, carry): (EntityId, RelationId, WorkflowLineageCarry),
     performed: &[WorkflowPerformedEffect],
 ) -> Result<Vec<WorthQueryApplicationRealizedEffect>, WorthQueryApplicationAttemptDenial> {
     let mut effects = Vec::new();
@@ -320,7 +338,7 @@ fn successor_effects(
         instance_identity,
         branch_occurrence,
         subject,
-        inherited_steps,
+        carry,
         |effect| {
             effects.push(effect);
             Ok::<(), WorthQueryApplicationAttemptDenial>(())

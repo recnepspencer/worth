@@ -209,6 +209,7 @@ where
                 installed,
                 instance,
                 request_kind,
+                &self.application().authorization_clock,
             )
             .map_err(WorkflowTransitionPreparationDenial::Attempt)
     }
@@ -281,7 +282,12 @@ where
         }
         read_set
             .materialize_workflow_approval::<Capability, Spec, Program>(
-                workflow, instance, required, proposal, decision,
+                workflow,
+                instance,
+                required,
+                proposal,
+                decision,
+                &self.application().authorization_clock,
             )
             .map_err(WorkflowTransitionPreparationDenial::Attempt)
     }

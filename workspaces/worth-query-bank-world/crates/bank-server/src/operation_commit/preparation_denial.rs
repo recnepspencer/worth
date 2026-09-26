@@ -62,6 +62,8 @@ pub enum BankApplicationAttemptDenialKind {
     WorkflowInstanceHistoryUnavailable,
     WorkflowInstanceMigrated,
     WorkflowInstanceMigrationUnmapped,
+    WorkflowInstanceDeadlineElapsed,
+    WorkflowTrustedTimeUnavailable,
     WorkflowTransitionAffinityMismatch,
     WorkflowTransitionAuthorityMismatch,
     WorkflowTransitionAlreadySettled,
@@ -77,7 +79,6 @@ pub enum BankApplicationAttemptDenialKind {
     WorkflowApprovalAuthorityDenied,
     ConflictingEffectStep,
     WorkflowHistoryReconstructionBudgetExceeded,
-    WorkflowTransitionCapacityExceeded,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -244,6 +245,12 @@ const fn application_attempt_kind(
         Query::WorkflowInstanceMigrationUnmapped => {
             BankApplicationAttemptDenialKind::WorkflowInstanceMigrationUnmapped
         }
+        Query::WorkflowInstanceDeadlineElapsed => {
+            BankApplicationAttemptDenialKind::WorkflowInstanceDeadlineElapsed
+        }
+        Query::WorkflowTrustedTimeUnavailable => {
+            BankApplicationAttemptDenialKind::WorkflowTrustedTimeUnavailable
+        }
         Query::WorkflowTransitionAffinityMismatch => {
             BankApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch
         }
@@ -284,9 +291,6 @@ const fn application_attempt_kind(
         Query::ConflictingEffectStep => BankApplicationAttemptDenialKind::ConflictingEffectStep,
         Query::WorkflowHistoryReconstructionBudgetExceeded => {
             BankApplicationAttemptDenialKind::WorkflowHistoryReconstructionBudgetExceeded
-        }
-        Query::WorkflowTransitionCapacityExceeded => {
-            BankApplicationAttemptDenialKind::WorkflowTransitionCapacityExceeded
         }
     }
 }

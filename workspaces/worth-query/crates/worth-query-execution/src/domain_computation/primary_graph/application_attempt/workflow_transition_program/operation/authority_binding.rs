@@ -85,6 +85,7 @@ impl<Schema, Operation, Input, Scope>
             settlement_basis: authority.settlement_basis.clone(),
             workflow_layout: authority.workflow_layout.clone(),
         });
+        self.read_set.workflow_deadline = authority.deadline;
         Ok(self)
     }
 

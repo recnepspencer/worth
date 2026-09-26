@@ -56,6 +56,7 @@ where
         instance: super::PublishedWorkflowInstanceRef,
         input_identity: [u8; 32],
         source_identity: Option<[u8; 32]>,
+        clock: &crate::domain_computation::runtime_time::WorthQueryRuntimeClock,
     ) -> Result<
         PreparedWorkflowProposal<Schema, Operation, Input, Scope>,
         WorthQueryApplicationAttemptDenial,
@@ -116,6 +117,7 @@ where
         let Some(live_membership) = observed.live_membership else {
             return Err(denial("workflow proposal instance is already settled"));
         };
+        self.bind_workflow_deadline(clock, &layout, instance.entity_id())?;
         let selection = select_proposal_transition(
             &compiled,
             instance.entity_id(),

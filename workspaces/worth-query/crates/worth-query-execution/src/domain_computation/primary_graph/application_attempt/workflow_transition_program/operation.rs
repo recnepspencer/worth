@@ -191,6 +191,7 @@ where
         );
         let handle = self.lease.handle().clone();
         let graph_layout = std::sync::Arc::clone(&self.lease.layout);
+        let deadline = self.workflow_deadline;
         let admitted =
             crate::domain_computation::primary_graph::workflow::instance::admit_workflow_transition(
                 self,
@@ -216,6 +217,7 @@ where
                 handle,
                 graph_layout,
             )
+            .with_deadline(deadline)
         });
         let required = RequiredWorkflowOperation::from_selected(
             branch,
