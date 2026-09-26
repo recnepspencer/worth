@@ -23,7 +23,8 @@ impl SupersededWorkflowDefinitionStart {
         &self.requested
     }
 
-    /// The definition the branch held current when the start was refused.
+    /// The definition the branch held current at prepare, which the commit
+    /// confirmed unchanged before refusing the start.
     /// It grants nothing: a start from it is checked like any other.
     pub const fn current(&self) -> &PublishedWorkflowDefinitionRef {
         &self.current

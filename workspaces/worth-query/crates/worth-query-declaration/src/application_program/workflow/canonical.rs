@@ -173,7 +173,10 @@ fn assessment_applicability_record(
             relation,
             from,
             to,
-        } => framed_record("related-relation-present", &[relation, from, to]),
+        } => framed_record(
+            "related-relation-present",
+            &[relation, from, to].map(String::as_str),
+        ),
     }
 }
 

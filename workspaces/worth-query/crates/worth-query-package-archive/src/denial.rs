@@ -24,6 +24,7 @@ pub enum WorthQueryPackageArchiveDenialKind {
     UnsupportedManifestVersion,
     UnsupportedRecordVersion,
     UnsupportedApplicationProgramDescriptionVersion,
+    UnsupportedWorkflowDefinitionDraftVersion,
     UnsupportedRecordFamily,
     PackageRootRecordFamilyRequired,
     InvalidManifestLength,

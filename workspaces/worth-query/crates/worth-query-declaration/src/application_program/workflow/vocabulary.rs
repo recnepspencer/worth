@@ -11,6 +11,8 @@ use crate::{
 
 use super::ApplicationWorkflowSpecIdentity;
 
+mod draft;
+
 /// Pure marker for one workflow vocabulary family.
 ///
 /// Installation binds the concrete supported members separately; declaring this
@@ -92,14 +94,14 @@ pub struct ApplicationWorkflowAssessmentRef {
 pub enum ApplicationWorkflowAssessmentApplicability {
     Always,
     WhenRelatedRelationPresent {
-        relation: &'static str,
-        from: &'static str,
-        to: &'static str,
+        relation: String,
+        from: String,
+        to: String,
     },
 }
 
 impl ApplicationWorkflowAssessmentApplicability {
-    pub const fn relation(&self) -> Option<(&'static str, &'static str, &'static str)> {
+    pub fn relation(&self) -> Option<(&str, &str, &str)> {
         match self {
             Self::Always => None,
             Self::WhenRelatedRelationPresent { relation, from, to } => Some((relation, from, to)),
@@ -281,9 +283,9 @@ impl ApplicationWorkflowAssessmentRef {
             Self::declared_for::<Spec, Query>(ApplicationWorkflowSubjectSelector::Related);
         assessment.applicability =
             ApplicationWorkflowAssessmentApplicability::WhenRelatedRelationPresent {
-                relation: relation.name(),
-                from: relation.from(),
-                to: relation.to(),
+                relation: relation.name().to_owned(),
+                from: relation.from().to_owned(),
+                to: relation.to().to_owned(),
             };
         assessment
     }

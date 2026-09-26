@@ -3,7 +3,9 @@ use std::marker::PhantomData;
 
 use worth_query_declaration::facade::{
     application_program::{
-        ApplicationProgramRevision, ApplicationWorkflowSpec, ValidatedWorkflowDefinition,
+        ApplicationProgramRevision, ApplicationWorkflowApprovalRef,
+        ApplicationWorkflowAssessmentRef, ApplicationWorkflowConditionRef,
+        ApplicationWorkflowOperationRef, ApplicationWorkflowSpec, ValidatedWorkflowDefinition,
     },
     application_schema::{ApplicationSchema, ApplicationSchemaBindingIdentity},
     portable_identity::WorthQueryPortableTypeIdentity,
@@ -11,6 +13,7 @@ use worth_query_declaration::facade::{
 
 mod adoption_coverage;
 mod approval_binding;
+mod draft_vocabulary;
 mod installation;
 mod support_identity;
 pub use adoption_coverage::{
@@ -78,6 +81,7 @@ pub(super) struct InstalledWorkflowOperation {
     pub(super) binding_type: TypeId,
     pub(super) binding_identity: &'static str,
     pub(super) requires_workflow_authority: bool,
+    pub(super) reference: ApplicationWorkflowOperationRef,
 }
 
 #[derive(Clone)]
@@ -87,6 +91,7 @@ pub(super) struct InstalledWorkflowAssessment {
     pub(super) parameter_type: WorthQueryPortableTypeIdentity,
     pub(super) result_type: WorthQueryPortableTypeIdentity,
     pub(super) binding_identity: &'static str,
+    pub(super) reference: ApplicationWorkflowAssessmentRef,
 }
 
 #[derive(Clone)]
@@ -96,6 +101,7 @@ pub(super) struct InstalledWorkflowCondition {
     pub(super) parameter_type: WorthQueryPortableTypeIdentity,
     pub(super) result_type: WorthQueryPortableTypeIdentity,
     pub(super) binding_identity: &'static str,
+    pub(super) reference: ApplicationWorkflowConditionRef,
 }
 
 #[derive(Clone)]
@@ -152,6 +158,7 @@ pub(super) struct InstalledWorkflowAdvanceCapability {
 #[derive(Clone)]
 pub(super) struct InstalledWorkflowApproval {
     pub(super) binding: InstalledWorkflowCapabilityBinding,
+    pub(super) reference: ApplicationWorkflowApprovalRef,
 }
 
 pub struct WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>

@@ -42,3 +42,9 @@ pub use crate::repository::{
     WorthQueryPackageArchiveStoreOutcome, WorthQuerySignedPackageArchiveRecord,
     WorthQueryUntrustedLoadedPackageArchive,
 };
+pub use crate::workflow_definition::{
+    decode_workflow_definition_draft, encode_workflow_definition_draft,
+    WorthQueryUntrustedWorkflowDefinitionDraft, WorthQueryWorkflowDefinitionDraftDenial,
+    WorthQueryWorkflowDefinitionDraftDenialKind,
+    WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION,
+};

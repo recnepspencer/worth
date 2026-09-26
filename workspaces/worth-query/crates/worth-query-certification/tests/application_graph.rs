@@ -23,6 +23,8 @@ mod workflow_component_scale;
 mod workflow_condition;
 #[path = "application_graph/workflow_control_scale.rs"]
 mod workflow_control_scale;
+#[path = "application_graph/workflow_draft_archive.rs"]
+mod workflow_draft_archive;
 #[path = "application_graph/workflow_effect_resources.rs"]
 mod workflow_effect_resources;
 #[path = "application_graph/workflow_geometry_scale.rs"]

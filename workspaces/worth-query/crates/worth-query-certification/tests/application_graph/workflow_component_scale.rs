@@ -31,7 +31,9 @@ use super::bounded_dimension_model::{
 const FRAGMENT_NODES: u16 = 9;
 const FRAGMENT_CONNECTIONS: u16 = FRAGMENT_NODES - 1;
 
-fn component_definition(occurrences: u16) -> AuthoredWorkflowDefinition<ReviewedGeometryWorkflow> {
+pub(super) fn component_definition(
+    occurrences: u16,
+) -> AuthoredWorkflowDefinition<ReviewedGeometryWorkflow> {
     let nodes = occurrences * FRAGMENT_NODES + 1;
     let connections = nodes - 1;
     let component_limits = component_limits(occurrences);

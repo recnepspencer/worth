@@ -1,4 +1,5 @@
-//! Read-only projections of installed application declaration meaning.
+//! Projections of installed application declaration meaning, read-only over
+//! truth. Workflow discovery may build a basis's derived index generation.
 mod description;
 mod workflow;
 use super::WorthQueryPrimaryGraphApplicationRuntime;
