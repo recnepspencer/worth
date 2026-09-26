@@ -8,7 +8,9 @@
 use std::collections::BTreeMap;
 
 use super::{UiScrollOwnerRecord, UiScrollRuntimeState};
-use crate::runtime::scroll::{UiScrollOffset, UiScrollOwnerIdentity, UiScrollOwnerIncarnation};
+use crate::runtime::scroll::{
+    UiScrollOffset, UiScrollOwnerIdentity, UiScrollOwnerIncarnation, UiStagedScrollOffset,
+};
 use worth_ui_host_contract::UiSemanticSurfaceIdentity;
 
 #[derive(Clone)]
@@ -67,7 +69,7 @@ impl UiScrollRuntimeState {
         owner: UiScrollOwnerIdentity,
         incarnation: UiScrollOwnerIncarnation,
         displayed: UiScrollOffset,
-    ) -> Option<UiScrollOffset> {
+    ) -> Option<UiStagedScrollOffset> {
         self.pending_layouts
             .get(&owner.semantic_surface())?
             .owners
@@ -75,6 +77,7 @@ impl UiScrollRuntimeState {
             .filter(|record| record.incarnation == incarnation)
             .map(|record| (record.offset, record.bounds.clamp(displayed)))
             .and_then(|(stands, follows)| (stands != follows).then_some(follows))
+            .map(UiStagedScrollOffset::staged)
     }
 
     /// Stand this incarnation of `owner` in its surface's staged layout
@@ -115,3 +118,6 @@ impl UiScrollRuntimeState {
             .map(|record| record.bounds)
     }
 }
+
+#[cfg(test)]
+mod tests;

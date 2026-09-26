@@ -20,6 +20,7 @@ mod settle_proposal;
 mod settle_stop;
 mod settle_transition;
 mod shared_owner_reconciliation;
+mod staged_offset;
 mod state;
 pub(crate) mod transition;
 
@@ -63,6 +64,7 @@ pub(crate) use settle_transition::{
     UiPreparedScrollSettleTransition, UiScrollSettleTransitionDenial,
 };
 pub(crate) use shared_owner_reconciliation::UiSharedScrollOwnerReconciliation;
+pub(crate) use staged_offset::UiStagedScrollOffset;
 pub(crate) use state::UiPreparedScrollDirectSuccession;
 pub(crate) use state::UiScrollRuntimeState;
 

@@ -6,7 +6,7 @@
 //! frame prepared before it can publish the geometry it replaced.
 
 use crate::mounting::UiMountedOccurrenceGeometryDenial as Denial;
-use crate::runtime::scroll::UiScrollOffset;
+use crate::runtime::scroll::UiStagedScrollOffset;
 use worth_ui_host_contract::{UiMountedInstanceIdentity, UiSemanticSurfaceIdentity};
 
 impl super::WorthUiMountedSessionState {
@@ -20,7 +20,7 @@ impl super::WorthUiMountedSessionState {
             Item = (
                 UiSemanticSurfaceIdentity,
                 UiMountedInstanceIdentity,
-                UiScrollOffset,
+                UiStagedScrollOffset,
             ),
         >,
         unmoved: impl IntoIterator<Item = UiMountedInstanceIdentity>,
@@ -30,7 +30,10 @@ impl super::WorthUiMountedSessionState {
         }
         let mut surfaces = std::collections::BTreeMap::<_, Vec<_>>::new();
         for (surface, owner, offset) in poses {
-            surfaces.entry(surface).or_default().push((owner, offset));
+            surfaces
+                .entry(surface)
+                .or_default()
+                .push((owner, offset.staged_pose_offset()));
         }
         let poses = surfaces
             .into_iter()
@@ -68,7 +71,7 @@ impl super::WorthUiMountedSessionState {
         &mut self,
         surface: UiSemanticSurfaceIdentity,
         owner: UiMountedInstanceIdentity,
-        offset: UiScrollOffset,
+        offset: UiStagedScrollOffset,
     ) -> Result<(), Denial> {
         self.stage_scroll_poses([(surface, owner, offset)], [])
     }

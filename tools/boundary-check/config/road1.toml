@@ -391,6 +391,15 @@ forbidden_identifiers = ["UI_APPEARANCE_LOGICAL_SUBPIXELS_PER_POINT"]
 guidance = "Hardening 3b: appearance subpixels and logical points cross only through worth_foundational's logical_points (appearance_coordinate_nearest, appearance_extent_nearest, appearance_points) and the appearance regions' canonical_box, so paint and hit read one conversion"
 
 [[source_identifier_denials]]
+root = "workspaces/worth-ui/crates/worth-ui-runtime/src"
+exclude_paths = [
+  "workspaces/worth-ui/crates/worth-ui-runtime/src/runtime/scroll/staged_offset.rs",
+  "workspaces/worth-ui/crates/worth-ui-runtime/src/mounting/session_state/scroll_staged_pose.rs",
+]
+forbidden_identifiers = ["staged_pose_offset"]
+guidance = "Hardening 4: an offset Scroll staged past the frame the host shows is a UiStagedScrollOffset, and only mounted pose staging reads the offset inside, so no staged offset stands in for or compares with the accepted one that UiScrollRuntimeState::offset reads"
+
+[[source_identifier_denials]]
 root = "workspaces/worth-ui/crates/worth-ui-runtime/src/runtime/session/service_proposal"
 forbidden_identifiers = [
   "AuthorityMarker",
