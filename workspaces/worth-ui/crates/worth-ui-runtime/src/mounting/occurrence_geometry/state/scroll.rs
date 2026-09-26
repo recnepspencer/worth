@@ -70,12 +70,15 @@ impl UiMountedOccurrenceGeometryState {
         &self,
         surface: UiSemanticSurfaceIdentity,
         instance: UiMountedInstanceIdentity,
-    ) -> Option<UiMountedInstanceIdentity> {
+    ) -> Option<crate::mounting::UiAddressedScrollOwner> {
         let geometry = self.surfaces.get(&surface)?;
         if !geometry.scroll_index.regions(instance).is_empty() {
-            return Some(instance);
+            return Some(crate::mounting::UiAddressedScrollOwner::OwnsRegion(
+                instance,
+            ));
         }
         self.scrolled_content_owner(surface, instance)
+            .map(crate::mounting::UiAddressedScrollOwner::ContentOf)
     }
 
     /// The offset the displayed pose of one region occurrence was last built

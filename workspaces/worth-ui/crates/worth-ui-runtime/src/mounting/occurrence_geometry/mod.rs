@@ -1,5 +1,7 @@
+mod addressed_scroll_owner;
 mod region;
 mod state;
+pub(crate) use addressed_scroll_owner::UiAddressedScrollOwner;
 pub use region::UiMountedMosaicRegionGeometry;
 mod receipt;
 pub use receipt::UiMountedLayoutCompletionReceipt;

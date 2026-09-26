@@ -73,13 +73,14 @@ pub use identity_view::{
     UiSurfaceBindingIdentityView,
 };
 pub(crate) use occurrence_geometry::UiMountedOccurrenceGeometryState;
+pub(crate) use occurrence_geometry::{
+    UiAddressedScrollOwner, UiMountedMosaicClipBinding, UiMountedScrollClipBinding,
+    UiMountedSurfacePaintPosture,
+};
 pub use occurrence_geometry::{
     UiMountedLayoutBasis, UiMountedLayoutCompletionReceipt, UiMountedLayoutRevision,
     UiMountedMosaicRegionGeometry, UiMountedOccurrenceGeometry, UiMountedOccurrenceGeometryDenial,
     UiMountedOccurrencePlacement, UiMountedSurfaceGeometryBatch,
-};
-pub(crate) use occurrence_geometry::{
-    UiMountedMosaicClipBinding, UiMountedScrollClipBinding, UiMountedSurfacePaintPosture,
 };
 pub(crate) use portal_overlay::UiMountedPortalOverlayProjectionInput;
 pub use presentation::motion_sampling::UiPresentationMotionSamplingCost;

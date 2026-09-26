@@ -112,7 +112,7 @@ impl super::WorthUiMountedSessionState {
     pub(crate) fn addressed_scroll_owner(
         &self,
         instance: worth_ui_host_contract::UiMountedInstanceIdentity,
-    ) -> Option<worth_ui_host_contract::UiMountedInstanceIdentity> {
+    ) -> Option<crate::mounting::UiAddressedScrollOwner> {
         let projected = self.identity.projection_instance(instance)?;
         self.occurrence_geometry
             .addressed_scroll_owner(projected.basis().semantic_surface_identity(), instance)
