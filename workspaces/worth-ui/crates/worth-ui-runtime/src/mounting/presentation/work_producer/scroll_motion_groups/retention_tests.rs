@@ -27,20 +27,25 @@ fn independently_projected_command_clips_are_not_mistaken_for_shared_input_clips
         input: UiMountedScrollMotionGroupInput {
             target,
             owner: world.first_instance,
-            content: bounds,
-            rest: bounds,
-            viewport: bounds,
+            region: crate::mounting::UiLaidOut::from_layout(
+                crate::mounting::UiMountedScrollRegionBoxes::new(bounds, bounds),
+            ),
+            rest: crate::mounting::UiLaidOut::from_layout(bounds),
             offset: UiScrollOffset::default(),
             scale: UiScrollPresentationDeviceScale::admit(1000).unwrap(),
             chrome: None,
             members: Arc::from([UiMountedScrollMotionMember {
                 instance: world.first_instance,
-                clips: Arc::from([clip.clone()]),
+                clips: Arc::from([crate::mounting::UiLaidOut::from_layout(clip)]),
             }]),
         },
+        shown: super::shown_region::UiShownScrollGroup::new(
+            crate::mounting::UiMountedScrollRegionBoxes::new(bounds, bounds),
+            Vec::new(),
+        ),
         commands: Arc::from([UiMountedScrollMotionCommand {
             identity: command.identity(),
-            clips: Arc::from([clip.clone()]),
+            clips: Arc::from([clip]),
             base_translation: None,
         }]),
         thumbs: Arc::from([]),
@@ -54,10 +59,6 @@ fn independently_projected_command_clips_are_not_mistaken_for_shared_input_clips
         ),
         displayed_sample: Default::default(),
     };
-    assert!(!Arc::ptr_eq(
-        &group.input.members[0].clips,
-        &group.commands[0].clips
-    ));
     state.scroll_motion_groups.groups = std::rc::Rc::new(BTreeMap::from([(target, group.clone())]));
     state.scroll_motion_groups.owners = Arc::new(BTreeMap::from([(world.first_instance, target)]));
     state.scroll_motion_groups.memberships = Arc::new(std::collections::HashMap::from([(
@@ -74,7 +75,7 @@ fn independently_projected_command_clips_are_not_mistaken_for_shared_input_clips
     state.scroll_motion_groups.geometry_index_reserved_bytes = 0;
     let mut enlarged = group.clone();
     let mut projected = enlarged.commands[0].clone();
-    projected.clips = Arc::from([clip.clone(), clip.clone()]);
+    projected.clips = Arc::from([clip, clip]);
     enlarged.commands = Arc::from([projected]);
     state.scroll_motion_groups.groups =
         std::rc::Rc::new(BTreeMap::from([(target, enlarged.clone())]));
@@ -84,12 +85,15 @@ fn independently_projected_command_clips_are_not_mistaken_for_shared_input_clips
         "the projected allocation has its own charge"
     );
     let mut member = enlarged.input.members[0].clone();
-    member.clips = Arc::from([clip.clone(), clip]);
+    member.clips = Arc::from([
+        crate::mounting::UiLaidOut::from_layout(clip),
+        crate::mounting::UiLaidOut::from_layout(clip),
+    ]);
     enlarged.input.members = Arc::from([member]);
     state.scroll_motion_groups.groups = std::rc::Rc::new(BTreeMap::from([(target, enlarged)]));
     assert_eq!(
         state.indexed_motion_reserved_bytes().unwrap() - initial,
-        2 * size_of::<UiMountedScrollMotionClip>(),
+        2 * size_of::<crate::mounting::UiLaidOut<UiMountedScrollMotionClip>>(),
         "input provenance remains separately retained"
     );
 

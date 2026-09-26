@@ -207,3 +207,35 @@ fn a_portal_closing_over_a_settle_still_plays_its_exit() {
     present_unpainted_tick(&mut world, 10_500);
     assert_eq!(child_offset(&world), block(i64::from(LINE_EXTENT_POINTS)));
 }
+
+#[test]
+fn a_settle_in_open_portal_content_clips_its_thumb_where_the_portal_shows_it() {
+    let (mut world, _) = opened();
+    advance_motion(&mut world, 11, 40);
+    advance_motion(&mut world, 10_000, 41);
+    wheel(&mut world, 10_001);
+    advance_motion(&mut world, 10_100, 42);
+    let thumb = child_bars(&world)
+        .into_iter()
+        .find(|change| {
+            change
+                .command()
+                .scroll_chrome_identity()
+                .is_some_and(|chrome| chrome.part() == UiMountedScrollChromePart::Thumb)
+        })
+        .expect("the tick shows the child's thumb");
+    // The page region the child is laid out in clips it where the Portal
+    // moves it, so the thumb shows through the whole of the child's region.
+    let [x, y, width, height] = presented_region(&world);
+    let clip = thumb.clip().expect("the settle clips the thumb");
+    assert_eq!(
+        [clip.x(), clip.y(), clip.width(), clip.height()],
+        [x, y, width, height],
+        "{thumb:?}"
+    );
+    let placed = thumb
+        .transform()
+        .expect("the settle places the thumb")
+        .sampled();
+    assert!(clip.intersection(placed).is_some(), "{thumb:?}");
+}

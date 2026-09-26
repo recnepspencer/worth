@@ -13,8 +13,7 @@ impl super::WorthUiMountedSessionState {
         &self,
         target: crate::runtime::motion::UiMotionTargetIdentity,
     ) -> Option<(
-        worth_ui_host_contract::UiMountedCanonicalBox,
-        worth_ui_host_contract::UiMountedCanonicalBox,
+        crate::mounting::UiMountedScrollRegionBoxes,
         worth_ui_host_contract::UiMountedCanonicalBox,
     )> {
         // This lookup admits the exact retained physical epoch and live binding,
@@ -66,8 +65,7 @@ impl super::WorthUiMountedSessionState {
         slot: usize,
     ) -> Option<(
         worth_ui_host_contract::UiMountedInstanceIdentity,
-        worth_ui_host_contract::UiMountedCanonicalBox,
-        worth_ui_host_contract::UiMountedCanonicalBox,
+        crate::mounting::UiLaidOut<crate::mounting::UiMountedScrollRegionBoxes>,
     )> {
         let instance = self.identity.projection_instance(target)?;
         self.occurrence_geometry.scroll_region_geometry(
@@ -84,7 +82,7 @@ impl super::WorthUiMountedSessionState {
         &self,
         target: worth_ui_host_contract::UiMountedInstanceIdentity,
         slot: usize,
-    ) -> Option<worth_ui_host_contract::UiMountedCanonicalBox> {
+    ) -> Option<crate::mounting::UiLaidOut<worth_ui_host_contract::UiMountedCanonicalBox>> {
         let instance = self.identity.projection_instance(target)?;
         self.occurrence_geometry.scroll_region_rest(
             instance.basis().semantic_surface_identity(),
@@ -100,7 +98,7 @@ impl super::WorthUiMountedSessionState {
         target: worth_ui_host_contract::UiMountedInstanceIdentity,
         slot: usize,
     ) -> Option<crate::runtime::scroll::UiScrollOwnerIncarnation> {
-        let (owner, _, _) = self.scroll_region_geometry(target, slot)?;
+        let (owner, _) = self.scroll_region_geometry(target, slot)?;
         let basis = self.current_mounted_identity_basis(owner)?;
         Some(
             crate::runtime::scroll::UiScrollOwnerIncarnation::from_mount_incarnation(

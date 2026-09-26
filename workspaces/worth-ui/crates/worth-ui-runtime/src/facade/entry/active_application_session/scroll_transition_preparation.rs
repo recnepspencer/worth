@@ -200,8 +200,10 @@ impl super::super::WorthUiActiveApplicationSession {
         &self,
         mounted_instance: worth_ui_host_contract::UiMountedInstanceIdentity,
         slot: usize,
-    ) -> Result<worth_ui_host_contract::UiMountedCanonicalBox, UiScrollTransitionStagingDenial>
-    {
+    ) -> Result<
+        crate::mounting::UiLaidOut<worth_ui_host_contract::UiMountedCanonicalBox>,
+        UiScrollTransitionStagingDenial,
+    > {
         self.mounted
             .scroll_region_rest(mounted_instance, slot)
             .ok_or(UiScrollTransitionStagingDenial::ContentGeometryUnavailable)

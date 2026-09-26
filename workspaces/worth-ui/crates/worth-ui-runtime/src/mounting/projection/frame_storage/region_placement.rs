@@ -16,10 +16,10 @@ use crate::mounting::{
 use worth_ui_host_contract::UiMountedInstanceIdentity;
 
 impl UiMountedSemanticProjection {
-    /// Where this projection presents the Scroll region occurrence
-    /// `instance`. An occurrence it does not project is no Portal content, so
-    /// it stays where it is laid out; Portal content is shown only through a
-    /// Portal that covers some of its surface.
+    /// Where this projection presents the occurrence `instance`. An
+    /// occurrence it does not project is no Portal content, so it stays where
+    /// it is laid out; Portal content is shown only through a Portal that
+    /// covers some of its surface.
     pub(in crate::mounting) fn region_placement(
         &self,
         instance: UiMountedInstanceIdentity,

@@ -19,7 +19,7 @@ pub(crate) struct UiScrollMotionBinding {
     predecessor_revision: u64,
     successor_revision: u64,
     presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
-    content: worth_ui_host_contract::UiMountedCanonicalBox,
+    content: crate::mounting::UiLaidOut<worth_ui_host_contract::UiMountedCanonicalBox>,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -40,7 +40,7 @@ impl UiScrollMotionBinding {
         predecessor_revision: u64,
         successor_revision: u64,
         presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
-        content: worth_ui_host_contract::UiMountedCanonicalBox,
+        content: crate::mounting::UiLaidOut<worth_ui_host_contract::UiMountedCanonicalBox>,
     ) -> Self {
         Self {
             mounted_instance,
@@ -121,10 +121,15 @@ fn motion_request(
 
 /// The content box as the scrolled offset places it. A positive scroll offset
 /// moves content toward the viewport origin, so the translation is negative.
+///
+/// A Scroll track moves content where it is laid out, so every sample it
+/// yields is measured from a laid-out rest; a frame presenting the region
+/// through a Portal moves the track's translation with the region.
 pub(crate) fn scroll_content_geometry(
-    content: worth_ui_host_contract::UiMountedCanonicalBox,
+    content: crate::mounting::UiLaidOut<worth_ui_host_contract::UiMountedCanonicalBox>,
     offset: super::super::UiScrollOffset,
 ) -> Result<crate::mounting::presentation::UiPublishedRect, UiScrollMotionRequestDenial> {
+    let content = content.into_layout_space();
     let points = |subpixels: i64| {
         subpixels as f32
             / worth_ui_host_contract::UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f32

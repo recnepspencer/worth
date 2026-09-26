@@ -51,9 +51,10 @@ fn nested_scroll_samples_compose_once_and_keep_a_settled_ancestor() {
             input: UiMountedScrollMotionGroupInput {
                 target,
                 owner,
-                content,
-                rest: content,
-                viewport,
+                region: crate::mounting::UiLaidOut::from_layout(
+                    crate::mounting::UiMountedScrollRegionBoxes::new(content, viewport),
+                ),
+                rest: crate::mounting::UiLaidOut::from_layout(content),
                 offset: UiScrollOffset::origin(),
                 scale: UiScrollPresentationDeviceScale::admit(1000).unwrap(),
                 chrome: None,
@@ -61,11 +62,19 @@ fn nested_scroll_samples_compose_once_and_keep_a_settled_ancestor() {
                     .into_iter()
                     .map(|instance| UiMountedScrollMotionMember {
                         instance,
-                        clips: clips.clone(),
+                        clips: clips
+                            .iter()
+                            .copied()
+                            .map(crate::mounting::UiLaidOut::from_layout)
+                            .collect(),
                     })
                     .collect::<Vec<_>>()
                     .into(),
             },
+            shown: super::shown_region::UiShownScrollGroup::new(
+                crate::mounting::UiMountedScrollRegionBoxes::new(content, viewport),
+                Vec::new(),
+            ),
             commands: Arc::from([UiMountedScrollMotionCommand {
                 identity: command,
                 clips: clips.clone(),
@@ -249,17 +258,29 @@ fn a_group_rebuilt_before_its_accepted_sample_settles_moves_from_where_the_host_
         input: UiMountedScrollMotionGroupInput {
             target,
             owner,
-            content: rect(0.0, 200.0),
-            rest: rect(0.0, 200.0),
-            viewport: rect(0.0, 100.0),
+            region: crate::mounting::UiLaidOut::from_layout(
+                crate::mounting::UiMountedScrollRegionBoxes::new(
+                    rect(0.0, 200.0),
+                    rect(0.0, 100.0),
+                ),
+            ),
+            rest: crate::mounting::UiLaidOut::from_layout(rect(0.0, 200.0)),
             offset: UiScrollOffset::origin(),
             scale: UiScrollPresentationDeviceScale::admit(1000).unwrap(),
             chrome: None,
             members: Arc::from([UiMountedScrollMotionMember {
                 instance: world.first_instance,
-                clips: clips.clone(),
+                clips: clips
+                    .iter()
+                    .copied()
+                    .map(crate::mounting::UiLaidOut::from_layout)
+                    .collect(),
             }]),
         },
+        shown: super::shown_region::UiShownScrollGroup::new(
+            crate::mounting::UiMountedScrollRegionBoxes::new(rect(0.0, 200.0), rect(0.0, 100.0)),
+            Vec::new(),
+        ),
         commands: Arc::from([UiMountedScrollMotionCommand {
             identity: command,
             clips: clips.clone(),

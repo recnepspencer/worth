@@ -4,8 +4,10 @@ use crate::mounting::projection::UiMountedAppearanceClip;
 use crate::mounting::{UiHitAncestorClip, UiHitScrollMove};
 
 impl UiMountedOccurrenceGeometryState {
-    /// The slot is the Scroll owner's validated ownership-chain slot, paired
-    /// with the clip bindings by mounted geometry admission.
+    /// The owner of the region at `slot` of `target`'s chain, and the
+    /// region's boxes where it is laid out. The slot is the Scroll owner's
+    /// validated ownership-chain slot, paired with the clip bindings by
+    /// mounted geometry admission.
     pub(crate) fn scroll_region_geometry(
         &self,
         surface: UiSemanticSurfaceIdentity,
@@ -13,8 +15,7 @@ impl UiMountedOccurrenceGeometryState {
         slot: usize,
     ) -> Option<(
         UiMountedInstanceIdentity,
-        UiMountedCanonicalBox,
-        UiMountedCanonicalBox,
+        crate::mounting::UiLaidOut<crate::mounting::UiMountedScrollRegionBoxes>,
     )> {
         let geometry = self.surfaces.get(&surface)?;
         let target = geometry.occurrences.get(&target)?;
@@ -30,7 +31,12 @@ impl UiMountedOccurrenceGeometryState {
             .iter()
             .find(|(candidate, _)| candidate == declaration)?;
         let viewport = geometry.regions.get(declaration)?.get(*slot)?.2;
-        Some((*owner, content, viewport))
+        Some((
+            *owner,
+            crate::mounting::UiLaidOut::from_layout(
+                crate::mounting::UiMountedScrollRegionBoxes::new(content, viewport),
+            ),
+        ))
     }
 
     /// The Scroll region owner whose offset moves `instance`, when `instance`
@@ -233,8 +239,7 @@ impl UiMountedOccurrenceGeometryState {
                 if owner.semantic_surface() != surface {
                     continue;
                 }
-                let Some((mounted, content, viewport)) =
-                    self.scroll_region_geometry(surface, target, slot)
+                let Some((mounted, region)) = self.scroll_region_geometry(surface, target, slot)
                 else {
                     continue;
                 };
@@ -245,9 +250,10 @@ impl UiMountedOccurrenceGeometryState {
                     crate::runtime::scroll::UiScrollOwnerIncarnation::from_mount_incarnation(
                         instance.mount_incarnation(),
                     );
-                let bounds =
-                    crate::runtime::scroll::UiScrollBounds::from_mounted_region(content, viewport)
-                        .ok_or(UiMountedOccurrenceGeometryDenial::MissingOccurrenceGeometry)?;
+                let bounds = region
+                    .in_layout_space()
+                    .bounds()
+                    .ok_or(UiMountedOccurrenceGeometryDenial::MissingOccurrenceGeometry)?;
                 let registration = crate::runtime::scroll::UiScrollOwnerRegistration::new(
                     owner,
                     incarnation,

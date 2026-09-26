@@ -9,12 +9,10 @@
 //! semantic offset Scroll holds and the pose geometry displays.
 
 use super::World;
-use crate::mounting::presentation::displayed_rect_for_test;
 use crate::mounting::{UiMountedFrameOutcome, UiMountedOccurrenceGeometryDenial};
-use crate::runtime::motion::UiMotionTargetIdentity;
 use crate::runtime::scroll::{
-    UiHostScrollObservationDenial, UiHostScrollObservationOutcome, UiScrollChainEntry,
-    UiScrollDeltaCause, UiScrollOffset, UiScrollOwnerIdentity, UiScrollOwnerIncarnation,
+    UiHostScrollObservationDenial, UiHostScrollObservationOutcome, UiScrollDeltaCause,
+    UiScrollOffset, UiScrollOwnerIdentity, UiScrollOwnerIncarnation,
 };
 use worth_ui_host_contract::*;
 
@@ -308,75 +306,6 @@ fn a_thumb_placement_commits_only_the_pose_geometry_displays() {
     scroll.publish_direct(4);
     assert_eq!(scroll.accepted_offset(), block(10));
     assert_eq!(scroll.mounted_offset(), Some(block(10)));
-    let _ = scroll.world.session.shutdown();
-}
-
-#[test]
-fn an_accepted_sample_settles_to_its_displacement_from_a_nonzero_rest() {
-    use super::super::super::UiAcceptedScrollSettlementDenial;
-
-    let scroll = ScrollWorld::launch_published();
-    let (target, surface) = (scroll.target(), scroll.surface());
-    let (owner_instance, content, _) = scroll
-        .world
-        .session
-        .mounted
-        .scroll_region_geometry(target, 0)
-        .expect("the scrollable region has geometry");
-    assert_eq!(owner_instance, target);
-    assert!(
-        content.x() > 0.0 && content.y() > 0.0,
-        "the content box rests off the origin: {content:?}"
-    );
-    let key =
-        super::super::super::scroll_transition_preparation::scroll_motion_owner_key(scroll.owner);
-    let motion_target = UiMotionTargetIdentity::from_scroll_region_owner(surface, target, key);
-    let owner = scroll
-        .world
-        .session
-        .scroll_settlement_reading()
-        .owner(motion_target, surface)
-        .expect("this surface's Scroll content resolves")
-        .expect("this surface's Scroll content is not foreign");
-    assert_eq!(owner.owner_instance, target);
-    assert_eq!(owner.region_instance, target);
-    assert_eq!(owner.slot, 0);
-    assert_eq!(
-        owner.entry,
-        UiScrollChainEntry::new(scroll.owner, scroll.incarnation)
-    );
-    let settle = |dy: f32| {
-        let [x, y, width, height] = [content.x(), content.y(), content.width(), content.height()];
-        owner.settle(displayed_rect_for_test(
-            [x, y + dy, width, height],
-            content.coordinate_space(),
-        ))
-    };
-
-    // Content displayed twelve points above rest is content scrolled by twelve
-    // points, whatever absolute position rest happens to be.
-    let scrolled = settle(-12.0).expect("a sample above rest settles");
-    assert_eq!(scrolled.offset.settled(), block(12));
-    assert_eq!(scrolled.owner.owner_instance, target);
-    let at_rest = settle(0.0).expect("a sample at rest settles");
-    assert_eq!(at_rest.offset.settled(), block(0));
-    assert!(
-        matches!(
-            settle(12.0),
-            Err(UiAcceptedScrollSettlementDenial::SampleBeforeRest)
-        ),
-        "content displayed below rest names no offset"
-    );
-    assert!(
-        matches!(
-            scroll.world.session.scroll_settlement_reading().owner(
-                UiMotionTargetIdentity::from_mounted_owner(surface, target, key),
-                surface,
-            ),
-            Ok(None)
-        ),
-        "an ordinary Motion target is not Scroll content"
-    );
     let _ = scroll.world.session.shutdown();
 }
 

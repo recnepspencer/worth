@@ -157,7 +157,7 @@ fn retarget_presented_scroll_extent(
         }) else {
             continue;
         };
-        let (Some((owner_instance, _, _)), Some(content)) = (
+        let (Some((owner_instance, _)), Some(content)) = (
             mounted.scroll_region_geometry(occurrence, slot),
             mounted.scroll_region_rest(occurrence, slot),
         ) else {

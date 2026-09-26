@@ -205,43 +205,32 @@ impl super::super::WorthUiActiveApplicationSession {
         // whose chrome cannot be admitted presents none rather than presenting
         // chrome built from roles or an ownership the declaration never had.
         let admitted = self.admitted_scroll_chrome(owner).ok()?;
-        let (owner_instance, mut content, mut viewport) = self
+        let (owner_instance, region) = self
             .mounted
             .scroll_region_geometry(mounted_instance, slot)?;
         let scroll = self.scroll.as_ref()?;
         let retained = reading == UiScrollChromeReading::Pointer
             && (scroll.has_unpresented_layout(owner.semantic_surface())
                 || scroll.has_pending_direct(owner.semantic_surface()));
-        let pointer_clip = if retained {
+        let (region, pointer_clip) = if retained {
             let target = crate::runtime::motion::UiMotionTargetIdentity::from_scroll_region_owner(
                 owner.semantic_surface(),
                 mounted_instance,
                 super::scroll_transition_preparation::scroll_motion_owner_key(owner),
             );
-            let (accepted_content, accepted_viewport, clip) =
-                self.mounted.retained_scroll_chrome_geometry(target)?;
             // Retained geometry is already where that frame presented it.
-            content = accepted_content;
-            viewport = accepted_viewport;
-            Some(clip)
+            let (region, clip) = self.mounted.retained_scroll_chrome_geometry(target)?;
+            (region, Some(clip))
         } else if reading == UiScrollChromeReading::Paint {
-            None
+            // Painted chrome is laid out with its region; the frame presents
+            // it wherever it presents the region.
+            (region.into_layout_space(), None)
         } else {
-            // Region geometry is derived where the region is laid out.
             let placement = self.mounted.presented_region_placement(owner_instance);
-            let place = |bounds| {
-                placement
-                    .present(crate::mounting::UiLaidOut::from_layout(bounds))
-                    .ok()
-                    .flatten()
-                    .map(crate::mounting::UiPresented::into_shown)
-            };
-            content = place(content)?;
-            viewport = place(viewport)?;
-            placement.coverage()
+            let shown = placement.present(region).ok().flatten()?.into_shown();
+            (shown, placement.coverage())
         };
-        let bounds =
-            crate::runtime::scroll::UiScrollBounds::from_mounted_region(content, viewport)?;
+        let (viewport, bounds) = (region.viewport(), region.bounds()?);
         let incarnation = self
             .mounted
             .scroll_region_incarnation(mounted_instance, slot)?;

@@ -119,7 +119,9 @@ pub(crate) use projection::{
     UiMountedPresentationDeltaSource, UiMountedPreviewProjectionInput, UiMountedProjectionInput,
     UiPreparedMountedProjection,
 };
-pub(crate) use projection::{UiLaidOut, UiMountedPlacement, UiPresented};
+pub(crate) use projection::{
+    UiLaidOut, UiMountedPlacement, UiMountedScrollRegionBoxes, UiPresented,
+};
 pub(crate) use projection::{
     UiMountedAppearanceDerivedInput, UiMountedAppearanceGeometryInput,
     UiMountedAppearanceLoweringDenial, UiMountedAppearanceLoweringInput,

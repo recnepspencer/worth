@@ -78,7 +78,8 @@ pub(super) fn placed_standing(published: UiScrollOffset) -> UiGroupStanding {
 impl UiMountedPresentationState {
     /// Whether the frame binding `input` lays its group's content out
     /// somewhere other than the bound group's box at rest. A region
-    /// enclosing the group carries its content without moving its rest.
+    /// enclosing the group carries its content without moving its rest, and
+    /// a Portal presenting it moves its samples with it.
     pub(super) fn lays_out_anew(&self, input: &super::UiMountedScrollMotionGroupInput) -> bool {
         self.scroll_motion_groups
             .groups

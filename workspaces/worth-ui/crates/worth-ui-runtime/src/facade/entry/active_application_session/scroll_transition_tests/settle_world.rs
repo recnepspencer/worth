@@ -176,7 +176,7 @@ impl UiScrollSettleWorld {
                 self.revision,
                 self.revision + 1,
                 self.presentation,
-                self.content,
+                crate::mounting::UiLaidOut::from_layout(self.content),
             ),
         )
         .expect("an unexhausted horizon lowers into a Motion request");

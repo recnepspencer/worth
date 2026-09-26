@@ -11,8 +11,7 @@ impl UiMountedPresentationCoordinator {
         presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
         target: crate::runtime::motion::UiMotionTargetIdentity,
     ) -> Option<(
-        worth_ui_host_contract::UiMountedCanonicalBox,
-        worth_ui_host_contract::UiMountedCanonicalBox,
+        crate::mounting::UiMountedScrollRegionBoxes,
         worth_ui_host_contract::UiMountedCanonicalBox,
     )> {
         let state = self.presentation_states.get(&presentation.binding())?;

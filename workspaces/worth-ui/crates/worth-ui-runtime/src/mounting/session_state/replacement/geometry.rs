@@ -6,8 +6,7 @@ impl super::UiMountedGraphReplacementSuccessor {
         slot: usize,
     ) -> Option<(
         worth_ui_host_contract::UiMountedInstanceIdentity,
-        worth_ui_host_contract::UiMountedCanonicalBox,
-        worth_ui_host_contract::UiMountedCanonicalBox,
+        crate::mounting::UiLaidOut<crate::mounting::UiMountedScrollRegionBoxes>,
     )> {
         self.occurrence_geometry
             .scroll_region_geometry(surface, target, slot)

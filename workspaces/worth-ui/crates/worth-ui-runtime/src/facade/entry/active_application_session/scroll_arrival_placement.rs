@@ -12,7 +12,7 @@
 use crate::mounting::WorthUiMountedSessionState;
 use crate::runtime::motion::UiMotionTargetIdentity;
 use crate::runtime::scroll::{
-    UiScrollBounds, UiScrollChainEntry, UiScrollDelta, UiScrollDeltaCause, UiScrollDeltaRequest,
+    UiScrollChainEntry, UiScrollDelta, UiScrollDeltaCause, UiScrollDeltaRequest,
     UiScrollOwnerIdentity, UiScrollRuntimeState,
 };
 
@@ -34,7 +34,7 @@ pub(super) fn place_pulled_back_arrival(
     }) else {
         return false;
     };
-    let (Some(incarnation), Some((owner_instance, content, viewport))) = (
+    let (Some(incarnation), Some((owner_instance, region))) = (
         mounted.scroll_region_incarnation(occurrence, slot),
         mounted.scroll_region_geometry(occurrence, slot),
     ) else {
@@ -60,7 +60,7 @@ pub(super) fn place_pulled_back_arrival(
         arrived
             .block_subpixels()
             .checked_sub(current.block_subpixels()),
-        UiScrollBounds::from_mounted_region(content, viewport),
+        region.in_layout_space().bounds(),
     ) else {
         return false;
     };

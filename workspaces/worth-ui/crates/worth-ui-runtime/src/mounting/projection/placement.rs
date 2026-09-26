@@ -10,8 +10,10 @@
 //! only [`UiMountedPlacement::present`] makes.
 
 mod mechanics;
+mod scroll_region;
 mod spaces;
 
+pub(crate) use scroll_region::UiMountedScrollRegionBoxes;
 pub(crate) use spaces::{UiLaidOut, UiPresented};
 use worth_ui_host_contract::{UiMountedCanonicalBox, UiMountedPortalOverlayMechanic};
 

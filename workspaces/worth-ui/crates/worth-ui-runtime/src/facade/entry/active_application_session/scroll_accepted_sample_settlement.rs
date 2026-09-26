@@ -300,7 +300,7 @@ impl UiScrollSettlementReading<'_> {
         let owner = chain.owners()[slot];
         // Samples are measured from the content box with this region and
         // every region enclosing it at offset zero, which no pose moves.
-        let (Some((owner_instance, _, _)), Some(content)) = (
+        let (Some((owner_instance, _)), Some(rest)) = (
             self.mounted.scroll_region_geometry(mounted_instance, slot),
             self.mounted.scroll_region_rest(mounted_instance, slot),
         ) else {
@@ -316,7 +316,9 @@ impl UiScrollSettlementReading<'_> {
             region_instance: mounted_instance,
             slot,
             entry: crate::runtime::scroll::UiScrollChainEntry::new(owner, incarnation),
-            rest: UiPublishedRect::from_committed_box(content),
+            // A Scroll track moves content where it is laid out, so its
+            // samples stand in layout space, wherever a Portal presents them.
+            rest: UiPublishedRect::from_committed_box(rest.into_layout_space()),
         }))
     }
 }

@@ -91,17 +91,32 @@ impl Settling {
             input: UiMountedScrollMotionGroupInput {
                 target: self.target,
                 owner: self.owner,
-                content: rect(0.0, 200.0),
-                rest: rect(0.0, 200.0),
-                viewport: rect(0.0, 100.0),
+                region: crate::mounting::UiLaidOut::from_layout(
+                    crate::mounting::UiMountedScrollRegionBoxes::new(
+                        rect(0.0, 200.0),
+                        rect(0.0, 100.0),
+                    ),
+                ),
+                rest: crate::mounting::UiLaidOut::from_layout(rect(0.0, 200.0)),
                 offset: UiScrollOffset::origin(),
                 scale: UiScrollPresentationDeviceScale::admit(1000).unwrap(),
                 chrome: (!thumbs.is_empty()).then(block_chrome),
                 members: Arc::from([UiMountedScrollMotionMember {
                     instance: self.world.first_instance,
-                    clips: clips.clone(),
+                    clips: clips
+                        .iter()
+                        .copied()
+                        .map(crate::mounting::UiLaidOut::from_layout)
+                        .collect(),
                 }]),
             },
+            shown: super::super::shown_region::UiShownScrollGroup::new(
+                crate::mounting::UiMountedScrollRegionBoxes::new(
+                    rect(0.0, 200.0),
+                    rect(0.0, 100.0),
+                ),
+                Vec::new(),
+            ),
             commands: commands
                 .iter()
                 .map(|identity| UiMountedScrollMotionCommand {

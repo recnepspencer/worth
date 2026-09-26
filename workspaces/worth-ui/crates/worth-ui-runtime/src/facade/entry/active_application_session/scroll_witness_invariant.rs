@@ -130,7 +130,7 @@ fn assert_regions_hold_one_pose(
             if settles.refuses(surface) || staged(scroll, surface) {
                 continue;
             }
-            let (Some((owner_instance, _, _)), Some(incarnation)) = (
+            let (Some((owner_instance, _)), Some(incarnation)) = (
                 mounted.scroll_region_geometry(instance, slot),
                 mounted.scroll_region_incarnation(instance, slot),
             ) else {

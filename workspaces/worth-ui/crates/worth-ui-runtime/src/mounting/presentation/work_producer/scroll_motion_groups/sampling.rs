@@ -9,7 +9,7 @@ use super::*;
 use crate::mounting::presentation::motion_sampling::UiPresentationMotionSampleReceipt;
 use crate::runtime::scroll::{
     chrome::{UiScrollChromeAxis, UiScrollChromeFacts},
-    snap_to_device_grid, UiScrollBounds,
+    snap_to_device_grid,
 };
 use worth_ui_host_contract::{
     UiMountedCanonicalBoxInput, UiMountedCoordinateSpace, UiMountedPresentationSampleChange,
@@ -97,7 +97,10 @@ impl UiMountedPresentationState {
             let delta = displacement_of(Some(group.input.owner), &groups, presentation)?;
             add_clip(
                 &mut clip,
-                translate(group.input.viewport, delta.components())?,
+                translate(
+                    group.shown.viewport_showing(identity.mounted_instance()),
+                    delta.components(),
+                )?,
             )?;
         }
         let clip = clip.ok_or(Denial::InvalidGeometry)?;
@@ -176,7 +179,10 @@ impl UiMountedScrollMotionGroup {
             .get()
             .map_or(self.bound_standing.standing(), |shown| {
                 UiGroupStanding::Displayed(
-                    UiDisplayedGroupOffset::of_sample(self.input.rest, shown.rect),
+                    UiDisplayedGroupOffset::of_sample(
+                        *self.input.rest.in_layout_space(),
+                        shown.rect,
+                    ),
                     shown.sample,
                 )
             })
@@ -192,7 +198,9 @@ impl UiMountedScrollMotionGroup {
         match active.get(&self.input.owner) {
             Some(sample) => sample
                 .geometry()
-                .map(|geometry| UiAcceptedGroupOffset::of_sample(self.input.rest, geometry))
+                .map(|geometry| {
+                    UiAcceptedGroupOffset::of_sample(*self.input.rest.in_layout_space(), geometry)
+                })
                 .ok_or(Denial::InvalidGeometry),
             None => Ok(UiAcceptedGroupOffset::held_by(tick, self.standing())),
         }
@@ -259,8 +267,11 @@ fn sampled_thumb(
         .chrome_derivation_offset()
         .ok_or(Denial::InvalidGeometry)?;
     let facts = UiScrollChromeFacts::derive(
-        input.viewport,
-        UiScrollBounds::from_mounted_region(input.content, input.viewport)
+        group.shown.region().viewport(),
+        group
+            .shown
+            .region()
+            .bounds()
             .ok_or(Denial::InvalidGeometry)?,
         offset,
         input.chrome.as_ref().ok_or(Denial::UnknownTargetCommands)?,

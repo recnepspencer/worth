@@ -106,15 +106,15 @@ fn prepare_successor_ownership(
         for (slot, owner) in chain.owners().iter().copied().enumerate() {
             let (bounds, incarnation) = match owner {
                 crate::runtime::scroll::UiScrollOwnerIdentity::Region { .. } => {
-                    let Some((mounted_owner, content, viewport)) = successor
-                        .scroll_region_geometry(owner.semantic_surface(), next.identity(), slot)
-                    else {
+                    let Some((mounted_owner, region)) = successor.scroll_region_geometry(
+                        owner.semantic_surface(),
+                        next.identity(),
+                        slot,
+                    ) else {
                         registrations.clear();
                         break;
                     };
-                    let Some(bounds) = crate::runtime::scroll::UiScrollBounds::from_mounted_region(
-                        content, viewport,
-                    ) else {
+                    let Some(bounds) = region.in_layout_space().bounds() else {
                         registrations.clear();
                         break;
                     };

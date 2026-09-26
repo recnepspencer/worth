@@ -121,6 +121,8 @@ mod scroll_settle_over_open_attempt;
 mod scroll_settle_rebind;
 #[path = "integrated_appearance_world/scroll_settlement_lifecycle.rs"]
 mod scroll_settlement_lifecycle;
+#[path = "integrated_appearance_world/scroll_settlement_rest.rs"]
+mod scroll_settlement_rest;
 #[path = "integrated_appearance_world/seam.rs"]
 mod seam;
 #[path = "integrated_appearance_world/services.rs"]

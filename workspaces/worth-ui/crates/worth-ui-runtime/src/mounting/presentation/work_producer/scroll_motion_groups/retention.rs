@@ -79,11 +79,15 @@ impl UiMountedPresentationState {
                 )?)?
                 .checked_add(arc_slice_bytes::<UiMountedScrollChromeIdentity>(
                     group.thumbs.len(),
-                )?)?;
+                )?)?
+                .checked_add(arc_slice_bytes::<(
+                    UiMountedInstanceIdentity,
+                    worth_ui_host_contract::UiMountedCanonicalBox,
+                )>(group.shown.elsewhere_len())?)?;
             for member in group.input.members.iter() {
-                bytes = bytes.checked_add(arc_slice_bytes::<UiMountedScrollMotionClip>(
-                    member.clips.len(),
-                )?)?;
+                bytes = bytes.checked_add(arc_slice_bytes::<
+                    crate::mounting::UiLaidOut<UiMountedScrollMotionClip>,
+                >(member.clips.len())?)?;
             }
             // Projected command clips are separately allocated after coordinate
             // conversion; retain both them and the prepared input provenance.

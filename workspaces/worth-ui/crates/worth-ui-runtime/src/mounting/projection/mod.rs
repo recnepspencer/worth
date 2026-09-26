@@ -59,7 +59,9 @@ pub(crate) use frame_storage::{
 };
 pub(in crate::mounting) use hit_test::{reattribute_hit_test, reattribute_hit_test_with_probes};
 pub use node_receipt::UiMountedNodeReceipt;
-pub(crate) use placement::{UiLaidOut, UiMountedPlacement, UiPresented};
+pub(crate) use placement::{
+    UiLaidOut, UiMountedPlacement, UiMountedScrollRegionBoxes, UiPresented,
+};
 pub(crate) use pointer_affordance::UiMountedPointerAffordanceState;
 pub use pointer_affordance::UiMountedPointerAffordanceWork;
 pub use prepared_projection::UiProjectedMountedFrameCandidate;

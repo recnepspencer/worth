@@ -18,8 +18,10 @@ impl super::super::WorthUiActiveApplicationSession {
                 }
             }
         }
-        if let Some((_, content, viewport)) = self.mounted.scroll_region_geometry(target, slot) {
-            return crate::runtime::scroll::UiScrollBounds::from_mounted_region(content, viewport)
+        if let Some((_, region)) = self.mounted.scroll_region_geometry(target, slot) {
+            return region
+                .in_layout_space()
+                .bounds()
                 .ok_or(crate::runtime::scroll::UiScrollBoundsResolutionDenial::OutOfRange);
         }
         if matches!(
