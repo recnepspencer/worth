@@ -26,14 +26,8 @@ where
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
-        if self.has_installed_application_program()
-            || self
-                .program_required_operations
-                .contains(&std::any::TypeId::of::<Operation>())
-        {
-            return WorthQueryElevationRequestOutcome::Denied(
-                WorthQueryApplicationCommitDenial::application_program_required(),
-            );
+        if let Some(denial) = self.direct_operation_commit_denial::<Operation>() {
+            return WorthQueryElevationRequestOutcome::Denied(denial);
         }
         self.compare_and_commit_elevation_request_for_program(program, idempotency)
     }
@@ -88,10 +82,7 @@ where
         self.compare_and_commit_elevation_approval_for_program(
             program,
             idempotency,
-            !self.has_installed_application_program()
-                && !self
-                    .program_required_operations
-                    .contains(&std::any::TypeId::of::<Operation>()),
+            self.direct_operation_commit_denial::<Operation>(),
         )
     }
 
@@ -103,20 +94,17 @@ where
         &self,
         program: WorthQueryElevationApprovalProgram<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
-        admitted: bool,
+        direct_denial: Option<WorthQueryApplicationCommitDenial>,
     ) -> WorthQueryElevationApprovalOutcome
     where
         Input: Clone + Send + Sync + 'static,
     {
         let mut program = program.into_inner();
-        if !admitted {
+        if let Some(denial) = direct_denial {
             let Some(binding) = program.read_set.admission.take_elevation_approval_binding() else {
                 return WorthQueryElevationApprovalOutcome::Indeterminate;
             };
-            return WorthQueryElevationApprovalOutcome::Denied(
-                WorthQueryApplicationCommitDenial::application_program_required(),
-                binding.into_requested(),
-            );
+            return WorthQueryElevationApprovalOutcome::Denied(denial, binding.into_requested());
         }
         if validate_elevation_approval_program(&program).is_err() {
             let binding = program
@@ -159,10 +147,7 @@ where
         self.compare_and_commit_elevation_close_for_program(
             program,
             idempotency,
-            !self.has_installed_application_program()
-                && !self
-                    .program_required_operations
-                    .contains(&std::any::TypeId::of::<Operation>()),
+            self.direct_operation_commit_denial::<Operation>(),
         )
     }
 
@@ -174,20 +159,17 @@ where
         &self,
         program: WorthQueryElevationCloseProgram<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
-        admitted: bool,
+        direct_denial: Option<WorthQueryApplicationCommitDenial>,
     ) -> WorthQueryElevationCloseOutcome
     where
         Input: Clone + Send + Sync + 'static,
     {
         let mut program = program.into_inner();
-        if !admitted {
+        if let Some(denial) = direct_denial {
             let Some(binding) = program.read_set.admission.take_elevation_close_binding() else {
                 return WorthQueryElevationCloseOutcome::Indeterminate;
             };
-            return WorthQueryElevationCloseOutcome::Denied(
-                WorthQueryApplicationCommitDenial::application_program_required(),
-                binding.into_approved(),
-            );
+            return WorthQueryElevationCloseOutcome::Denied(denial, binding.into_approved());
         }
         if validate_elevation_close_program(&program).is_err() {
             let Some(binding) = program.read_set.admission.take_elevation_close_binding() else {
@@ -228,10 +210,7 @@ where
         self.compare_and_commit_mandatory_review_for_program(
             program,
             idempotency,
-            !self.has_installed_application_program()
-                && !self
-                    .program_required_operations
-                    .contains(&std::any::TypeId::of::<Operation>()),
+            self.direct_operation_commit_denial::<Operation>(),
         )
     }
 
@@ -243,20 +222,17 @@ where
         &self,
         program: WorthQueryMandatoryReviewProgram<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
-        admitted: bool,
+        direct_denial: Option<WorthQueryApplicationCommitDenial>,
     ) -> WorthQueryMandatoryReviewOutcome
     where
         Input: Clone + Send + Sync + 'static,
     {
         let mut program = program.into_inner();
-        if !admitted {
+        if let Some(denial) = direct_denial {
             let Some(binding) = program.read_set.admission.take_mandatory_review_binding() else {
                 return WorthQueryMandatoryReviewOutcome::Indeterminate;
             };
-            return WorthQueryMandatoryReviewOutcome::Denied(
-                WorthQueryApplicationCommitDenial::application_program_required(),
-                binding.into_mandatory(),
-            );
+            return WorthQueryMandatoryReviewOutcome::Denied(denial, binding.into_mandatory());
         }
         if validate_mandatory_review_program(&program).is_err() {
             let Some(binding) = program.read_set.admission.take_mandatory_review_binding() else {

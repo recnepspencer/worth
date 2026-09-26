@@ -72,6 +72,11 @@ pub struct WorthQueryApplicationMutationRequestWithIdempotency<
     >,
     pub(super) key: &'key <Intent::Binding as ApplicationMutationBinding<Schema>>::IdempotencyKey,
     pub(super) workflow_transition_identity: Option<[u8; 32]>,
+    pub(super) workflow_authority: Option<
+        std::sync::Arc<
+            worth_query_execution::facade::workflow_advance::WorkflowOperationAuthoritySlot,
+        >,
+    >,
 }
 
 impl<'application, 'principal, 'scope, Schema, Intent>
@@ -251,6 +256,7 @@ where
             request: self,
             key,
             workflow_transition_identity: None,
+            workflow_authority: None,
         }
     }
 }
@@ -270,6 +276,18 @@ where
     Intent: ApplicationMutationIntent<Schema>,
 {
     pub(in crate::application_entry) fn bind_workflow_transition(
+        mut self,
+        identity: [u8; 32],
+        authority: std::sync::Arc<
+            worth_query_execution::facade::workflow_advance::WorkflowOperationAuthoritySlot,
+        >,
+    ) -> Self {
+        self.workflow_transition_identity = Some(identity);
+        self.workflow_authority = Some(authority);
+        self
+    }
+
+    pub(in crate::application_entry) fn bind_workflow_recovery_transition(
         mut self,
         identity: [u8; 32],
     ) -> Self {

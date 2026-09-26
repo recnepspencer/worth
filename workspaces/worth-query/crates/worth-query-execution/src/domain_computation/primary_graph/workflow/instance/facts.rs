@@ -15,6 +15,7 @@ pub(in crate::domain_computation::primary_graph) fn visit_instance_start_facts<E
     layout: &WorthQueryWorkflowLayout,
     compiled: &CompiledWorkflowDefinition,
     instance_identity: &str,
+    branch_occurrence: u64,
     subject: EntityId,
     mut emit: impl FnMut(WorthQueryApplicationRealizedEffect) -> Result<(), Error>,
 ) -> Result<CreatedEntityRef, Error> {
@@ -28,7 +29,13 @@ pub(in crate::domain_computation::primary_graph) fn visit_instance_start_facts<E
         (layout.instance.identity.clone(), text(instance_identity)),
         (
             layout.instance.protocol_version.clone(),
-            AspectValue::UInt64(super::super::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION),
+            AspectValue::UInt64(
+                super::super::schema::version::WORKFLOW_INSTANCE_FACT_PROTOCOL_VERSION,
+            ),
+        ),
+        (
+            layout.instance.branch_occurrence.clone(),
+            AspectValue::UInt64(branch_occurrence),
         ),
         (
             layout.instance.program_revision.clone(),

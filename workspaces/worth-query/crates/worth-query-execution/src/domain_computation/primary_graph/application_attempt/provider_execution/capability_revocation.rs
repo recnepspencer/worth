@@ -1,8 +1,8 @@
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::super::{
-    WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitOutcome,
-    WorthQueryApplicationIdempotencyBinding, WorthQueryCapabilityRevocationProgram,
+    WorthQueryApplicationCommitOutcome, WorthQueryApplicationIdempotencyBinding,
+    WorthQueryCapabilityRevocationProgram,
 };
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
@@ -19,14 +19,8 @@ where
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
-        if self.has_installed_application_program()
-            || self
-                .program_required_operations
-                .contains(&std::any::TypeId::of::<Operation>())
-        {
-            return WorthQueryApplicationCommitOutcome::Denied(
-                WorthQueryApplicationCommitDenial::application_program_required(),
-            );
+        if let Some(denial) = self.direct_operation_commit_denial::<Operation>() {
+            return WorthQueryApplicationCommitOutcome::Denied(denial);
         }
         self.compare_and_commit_capability_revocation_for_program(program, idempotency)
     }

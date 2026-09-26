@@ -118,6 +118,7 @@ pub struct WorthQueryObservedSource<Query> {
     pub(in crate::domain_computation) schema_binding: ApplicationSchemaBindingIdentity,
     pub(in crate::domain_computation) query_identity: WorthQueryInstalledApplicationQueryIdentity,
     pub(in crate::domain_computation) parameter_binding_identity: CanonicalDigestId,
+    pub(super) parameters: std::sync::Arc<worth_query_admission::facade::application_query::WorthQueryAdmittedApplicationQueryParameters>,
     pub(in crate::domain_computation) query_identifier: String,
     pub(in crate::domain_computation) branch: BranchId,
     pub(in crate::domain_computation) selection: WorthQueryApplicationBasisSelectionIdentity,
@@ -141,6 +142,7 @@ impl<Query> Clone for WorthQueryObservedSource<Query> {
             schema_binding: self.schema_binding.clone(),
             query_identity: self.query_identity.clone(),
             parameter_binding_identity: self.parameter_binding_identity,
+            parameters: std::sync::Arc::clone(&self.parameters),
             query_identifier: self.query_identifier.clone(),
             branch: self.branch.clone(),
             selection: self.selection.clone(),
@@ -244,6 +246,7 @@ where
         source: WorthQueryObservedSource<
             <Binding::SourceExpectation as worth_query_declaration::facade::application_operation::ApplicationMutationSourceExpectation<Schema>>::Query,
         >,
+        input: &Binding::Input,
     ) -> Result<WorthQueryBoundSourceExpectation, WorthQuerySourceExpectationDenial>
     where
         Binding: worth_query_declaration::facade::application_operation::ApplicationMutationBinding<
@@ -251,7 +254,7 @@ where
         >,
     {
         let identity = source.idempotency_identity().bytes();
-        self.bind_checked_source_expectation::<Binding, Scope>(admission, source, identity)
+        self.bind_checked_source_expectation::<Binding, Scope>(admission, source, identity, input)
     }
 
     pub fn bind_application_result_set_expectation<Binding, Scope>(
@@ -265,6 +268,7 @@ where
         result_set: WorthQueryObservedResultSet<
             <Binding::SourceExpectation as worth_query_declaration::facade::application_operation::ApplicationMutationSourceExpectation<Schema>>::Query,
         >,
+        input: &Binding::Input,
     ) -> Result<WorthQueryBoundSourceExpectation, WorthQuerySourceExpectationDenial>
     where
         Binding: worth_query_declaration::facade::application_operation::ApplicationMutationBinding<
@@ -276,6 +280,7 @@ where
             admission,
             result_set.source,
             identity,
+            input,
         )
     }
 
@@ -291,6 +296,7 @@ where
             <Binding::SourceExpectation as worth_query_declaration::facade::application_operation::ApplicationMutationSourceExpectation<Schema>>::Query,
         >,
         identity: [u8; 32],
+        input: &Binding::Input,
     ) -> Result<WorthQueryBoundSourceExpectation, WorthQuerySourceExpectationDenial>
     where
         Binding: worth_query_declaration::facade::application_operation::ApplicationMutationBinding<
@@ -333,6 +339,32 @@ where
                     Binding::IDENTITY,
                 )
             })?;
+        let parameters_denial = || {
+            WorthQuerySourceExpectationDenial::new(
+                WorthQuerySourceExpectationDenialKind::SourceParametersMismatch,
+                Binding::IDENTITY,
+            )
+        };
+        if let Some(expected) =
+            Binding::expected_source_parameters(input).map_err(|_| parameters_denial())?
+        {
+            if !source
+                .parameters
+                .matches_expected(expected)
+                .map_err(|denial| {
+                    use worth_query_admission::facade::application_query::WorthQueryApplicationQueryParameterDenialKind as Kind;
+                    WorthQuerySourceExpectationDenial::new(
+                        match denial.kind() {
+                            Kind::CanonicalEntryBudgetExceeded | Kind::CanonicalEncodedByteBudgetExceeded => WorthQuerySourceExpectationDenialKind::WorkBudgetExceeded,
+                            _ => WorthQuerySourceExpectationDenialKind::SourceContractMismatch,
+                        },
+                        Binding::IDENTITY,
+                    )
+                })?
+            {
+                return Err(parameters_denial());
+            }
+        }
         let partition_identity = source.partition_identity();
         let facts = source.validate_and_into_facts(
             self.runtime.authority_identity().as_u64(),

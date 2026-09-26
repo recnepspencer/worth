@@ -4,6 +4,7 @@ use std::marker::PhantomData;
 
 use worth_query_declaration::facade::{
     application_capability::{ApplicationCapabilityMarkerIdentity, ApplicationCapabilityRef},
+    application_operation::ApplicationMutationBinding,
     application_program::ApplicationWorkflowSpec,
     application_query::{ApplicationQueryBinding, ApplicationQueryMarkerIdentity},
     application_schema::{
@@ -74,35 +75,39 @@ where
         }
     }
 
-    pub fn operation<Operation, Input>(
+    pub fn operation<Binding>(
         mut self,
     ) -> Result<Self, WorthQueryApplicationWorkflowInstallationDenial>
     where
-        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
-        Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
-        Input: 'static,
+        Binding: ApplicationMutationBinding<Schema>,
     {
-        self.insert_marker(0, TypeId::of::<Operation>(), Operation::IDENTIFIER)?;
-        if !self.program.contains_operation_type::<Operation>() {
+        self.insert_marker(0, TypeId::of::<Binding>(), Binding::IDENTITY)?;
+        if !self
+            .program
+            .actions()
+            .iter()
+            .any(|action| action.mutation_binding_type() == Some(TypeId::of::<Binding>()))
+        {
             return Err(denial(
                 WorthQueryApplicationWorkflowInstallationDenialKind::OperationNotInProgram,
-                Operation::IDENTIFIER,
+                Binding::IDENTITY,
             ));
         }
         self.schema
-            .installed_operation(
-                ApplicationOperationRef::<Schema, Operation, Input>::from_declaration(),
-            )
+            .installed_mutation_binding::<Binding>()
             .map_err(|_| {
                 denial(
                     WorthQueryApplicationWorkflowInstallationDenialKind::OperationNotInstalled,
-                    Operation::IDENTIFIER,
+                    Binding::IDENTITY,
                 )
             })?;
         self.operations.push(InstalledWorkflowOperation {
-            marker: TypeId::of::<Operation>(),
-            identifier: Operation::IDENTIFIER,
-            input_type: Operation::InputBinding::IDENTITY,
+            marker: TypeId::of::<Binding::Operation>(),
+            identifier: Binding::Operation::IDENTIFIER,
+            input_type: Binding::InputBinding::IDENTITY,
+            binding_type: TypeId::of::<Binding>(),
+            binding_identity: Binding::IDENTITY,
+            requires_workflow_authority: Binding::REQUIRES_WORKFLOW_AUTHORITY,
         });
         Ok(self)
     }

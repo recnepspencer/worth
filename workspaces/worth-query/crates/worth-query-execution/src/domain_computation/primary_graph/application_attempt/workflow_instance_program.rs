@@ -146,15 +146,28 @@ where
                 },
             )?;
         let mut demand = PlatformEffectDemand::default();
-        visit_instance_start_facts(&layout, &compiled, &instance_identity, subject, |effect| {
-            demand.observe(&effect)
-        })?;
+        let branch_occurrence = self.lease.product().product_branch().occurrence_ordinal();
+        visit_instance_start_facts(
+            &layout,
+            &compiled,
+            &instance_identity,
+            branch_occurrence,
+            subject,
+            |effect| demand.observe(&effect),
+        )?;
         let reservation = admit_platform_effects(&self, demand)?;
         let mut effects = Vec::new();
-        visit_instance_start_facts(&layout, &compiled, &instance_identity, subject, |effect| {
-            effects.push(effect);
-            Ok::<(), WorthQueryApplicationAttemptDenial>(())
-        })?;
+        visit_instance_start_facts(
+            &layout,
+            &compiled,
+            &instance_identity,
+            branch_occurrence,
+            subject,
+            |effect| {
+                effects.push(effect);
+                Ok::<(), WorthQueryApplicationAttemptDenial>(())
+            },
+        )?;
         let validator_work_admission = reservation.materialize(&effects)?;
         let start_path = compiled.start_path().to_owned();
         let definition = compiled.definition();
@@ -166,7 +179,7 @@ where
             emission_retained_bytes: 0,
             emission_retained_bytes_ceiling: 0,
             conditional_definition: None,
-            platform_mutation: true,
+            effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Platform,
             validator_work_admission,
             output_correspondence: Default::default(),
             retain_output_demand_observation: false,

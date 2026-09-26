@@ -53,7 +53,7 @@ pub fn approve_instance(
     let runtime = application.runtime();
     let scope = request_scope();
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
-    runtime
+    let signing = runtime
         .request(&principal, &scope)
         .mutate(WorkflowApprovalIntent {
             input: WorkflowAdvanceInput {
@@ -62,8 +62,18 @@ pub fn approve_instance(
         })
         .without_source()
         .idempotency(&idempotency)
-        .prepare_workflow_approval(application, instance, required, proposal, decision)
-        .map(|request| request.execute())
+        .prepare_workflow_approval(application, instance, required, proposal, decision)?;
+    let Some(authentication_intent) = signing.authentication_intent().cloned() else {
+        return signing.execute_replay();
+    };
+    let event = block_on(application.authentication().authenticate(
+        (),
+        &principal,
+        authentication_intent,
+        &scope,
+    ))
+    .expect("the installed certification factor accepts the exact approval challenge");
+    signing.sign(&event).map(|request| request.execute())
 }
 
 pub fn propose_instance(
@@ -79,6 +89,15 @@ pub fn propose_authoring_instance(
     instance: worth_query_host::facade::application_entry::PublishedWorkflowInstanceRef,
     idempotency: u64,
 ) -> Result<WorkflowProposalOutcome, WorthQueryWorkflowProposalPreparationDenial> {
+    propose_authoring_instance_with_dimension(application, instance, idempotency, 8)
+}
+
+pub fn propose_authoring_instance_with_dimension(
+    application: &BoundedDimensionWorkflowRuntime,
+    instance: worth_query_host::facade::application_entry::PublishedWorkflowInstanceRef,
+    idempotency: u64,
+    dimension: u64,
+) -> Result<WorkflowProposalOutcome, WorthQueryWorkflowProposalPreparationDenial> {
     let runtime = application.runtime();
     let scope = request_scope();
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
@@ -87,7 +106,7 @@ pub fn propose_authoring_instance(
         .mutate(WorkflowDefinitionAuthoringIntent {
             input: WorkflowDefinitionAuthoringInput {
                 identity: PART_IDENTITY.to_owned(),
-                dimension: 8,
+                dimension,
             },
         })
         .without_source()

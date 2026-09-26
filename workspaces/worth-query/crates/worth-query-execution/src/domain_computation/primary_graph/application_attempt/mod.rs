@@ -112,6 +112,7 @@ pub(in crate::domain_computation::primary_graph) use fact::{
     WorthQuerySourceCurrentnessFailure,
 };
 pub use idempotency::WorthQueryApplicationIdempotencyBinding;
+pub use idempotency_resolution::WorthQueryGuardedWorkflowOperationCustody;
 pub use idempotency_resolution::{
     WorthQueryApplicationIdempotencyResolution, WorthQueryApplicationIdempotencyResolutionDenial,
     WorthQueryApplicationIdempotencyResolutionDenialKind,
@@ -160,8 +161,9 @@ pub use workflow_proposal_program::{
 pub use workflow_transition_program::{
     PerformedWorkflowApproval, PerformedWorkflowAssessmentEvidence, PerformedWorkflowTransition,
     PreparedWorkflowAdvance, PreparedWorkflowAssessment, PreparedWorkflowOperation,
-    RequiredWorkflowApproval, RequiredWorkflowAssessment, RequiredWorkflowCondition,
-    RequiredWorkflowEvidence, RequiredWorkflowOperation, WorkflowApprovalDecision,
+    RequiredWorkflowActor, RequiredWorkflowApproval, RequiredWorkflowAssessment,
+    RequiredWorkflowCondition, RequiredWorkflowEvidence, RequiredWorkflowOperation,
+    WorkflowApprovalDecision, WorkflowOperationAuthority, WorkflowOperationAuthoritySlot,
     WorkflowProgressOutcome, WorkflowTransitionBindingDenial, WorkflowTransitionPreparationDenial,
     WorthQueryWorkflowAdvanceAdapter,
 };

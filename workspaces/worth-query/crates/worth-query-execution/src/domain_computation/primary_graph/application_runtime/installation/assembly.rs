@@ -69,6 +69,11 @@ where
         .filter(|binding| binding.requires_application_program())
         .map(|binding| binding.operation_type())
         .collect();
+    let workflow_guarded_operations = installed_schema
+        .installed_mutation_binding_inventory()
+        .filter(|binding| binding.requires_workflow_authority())
+        .map(|binding| binding.operation_type())
+        .collect();
     // One clock, shared. The registry hands it back to any handle that needs to
     // re-check its own deadline, which is why no recovery transition takes a
     // clock argument (R8.31).
@@ -114,6 +119,7 @@ where
         recovered_outputs: Default::default(),
         program_required_bindings,
         program_required_operations,
+        workflow_guarded_operations,
         program_support: None,
         installed_conditionals: Default::default(),
     })

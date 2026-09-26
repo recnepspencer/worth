@@ -24,7 +24,9 @@ use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedApplicationOperation, WorthQueryPrimaryGraphApplicationRuntime,
 };
 
+mod local_workflow_settlement;
 pub(super) mod running;
+pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) use local_workflow_settlement::LocalWorkflowSettlementPublication;
 
 pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) struct WorthQueryPreparedApplicationCommit<
     Schema,
@@ -40,7 +42,9 @@ pub(in crate::domain_computation::primary_graph::application_attempt::provider_e
     >,
     lease: WorthQueryApplicationSnapshotLease,
     provider_attempt: WorthQueryPreparedApplicationProviderAttempt,
-    platform_mutation: bool,
+    outcome_identity: super::super::super::WorthQueryApplicationCommitOutcomeIdentity,
+    workflow_settlement_publication: Option<LocalWorkflowSettlementPublication>,
+    effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture,
     authorization: WorthQueryProviderCommitAuthorization,
     idempotency: WorthQueryApplicationIdempotencyBinding,
     aftermath_causality: Option<
@@ -103,12 +107,13 @@ struct WorthQueryProviderAttemptPreparation {
     installed_read_scopes: Vec<worth_query_installation::facade::WorthQueryOperationGraphReadScope>,
     facts: Vec<WorthQueryApplicationObservedFact>,
     effects: Vec<WorthQueryApplicationRealizedEffect>,
+    application_effect_count: usize,
     emission_retained_bytes: u64,
     emission_retained_bytes_ceiling: u64,
     preimage_demand: Option<worth_query_installation::facade::InstalledPreImageDemand>,
     conditional_definition:
         Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
-    platform_mutation: bool,
+    effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture,
     validator_work_admission: crate::domain_computation::primary_graph::application_attempt::effect_program::WorthQueryCandidateValidatorWorkAdmission,
     output_correspondence: super::super::super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
     retain_output_demand_observation: bool,
@@ -116,6 +121,9 @@ struct WorthQueryProviderAttemptPreparation {
     producer_required_invariants:
         &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement],
     output_currentness_facts: Option<std::sync::Arc<[WorthQueryApplicationObservedFact]>>,
+    workflow_settlement: Option<
+        crate::domain_computation::primary_graph::application_attempt::read_set::WorkflowOperationBindingProof,
+    >,
 }
 
 struct WorthQueryCurrentApplicationCommit<Schema, Operation, Input, Scope> {
@@ -124,6 +132,8 @@ struct WorthQueryCurrentApplicationCommit<Schema, Operation, Input, Scope> {
     provider: WorthQueryProviderAttemptPreparation,
     idempotency: WorthQueryApplicationIdempotencyBinding,
     aftermath_causality: Option<WorthQueryPendingAftermathCausality>,
+    workflow_approval_authority:
+        Option<crate::domain_computation::authorization::WorthQueryWorkflowApprovalAuthorityBasis>,
 }
 
 pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) fn prepare_application_commit<
@@ -151,7 +161,7 @@ where
         emission_retained_bytes,
         emission_retained_bytes_ceiling,
         conditional_definition,
-        platform_mutation,
+        effect_posture,
         validator_work_admission,
         output_correspondence,
         retain_output_demand_observation,
@@ -159,6 +169,10 @@ where
         producer_required_invariants,
         output_currentness_facts,
     } = program;
+    let workflow_settlement = read_set.workflow_authority_binding;
+    let workflow_approval_authority = workflow_settlement
+        .as_ref()
+        .map(|binding| binding.approval_authority.clone());
     let mut admission = read_set.admission;
     let preimage_demand = installed_preimage_demand(admission.allowed_graph_contract().aftermath());
     let idempotency =
@@ -185,21 +199,24 @@ where
             provider: WorthQueryProviderAttemptPreparation {
                 installed_read_scopes: read_set.installed_read_scopes,
                 facts: read_set.facts,
+                application_effect_count: effects.len(),
                 effects,
                 emission_retained_bytes,
                 emission_retained_bytes_ceiling,
                 preimage_demand,
                 conditional_definition,
-                platform_mutation,
+                effect_posture,
                 validator_work_admission,
                 output_correspondence,
                 retain_output_demand_observation,
                 retain_client_observation,
                 producer_required_invariants,
                 output_currentness_facts,
+                workflow_settlement,
             },
             idempotency,
             aftermath_causality,
+            workflow_approval_authority,
         },
     )
 }
@@ -214,15 +231,31 @@ fn prepare_authorized_application_commit<Schema, Operation, Input, Scope>(
         provider,
         idempotency,
         aftermath_causality,
+        workflow_approval_authority,
     } = current;
+    let Some(outcome_identity) =
+        super::super::super::WorthQueryApplicationCommitOutcomeIdentity::mint()
+    else {
+        return terminal(denied(DenialStage::ProposalBinding));
+    };
+    let (provider, workflow_settlement_publication) =
+        match provider.stage_local_workflow_settlement(&admission, outcome_identity) {
+            Ok(prepared) => prepared,
+            Err(denial) => {
+                return terminal(WorthQueryApplicationCommitOutcome::Denied(
+                    WorthQueryApplicationCommitDenial::workflow_settlement_denied(&denial),
+                ))
+            }
+        };
     let authorization = match take_commit_authorization(application, &mut admission) {
         Ok(authorization) => authorization,
         Err(outcome) => return terminal(outcome),
-    };
+    }
+    .with_workflow_approval_authority(workflow_approval_authority);
     let Some(mutation_partition) = application.issue_application_mutation_partition() else {
         return terminal(denied(DenialStage::ProposalBinding));
     };
-    let platform_mutation = provider.platform_mutation;
+    let effect_posture = provider.effect_posture;
     let provider_attempt = match prepare_application_provider_attempt(provider, mutation_partition)
     {
         Ok(prepared) => prepared,
@@ -232,7 +265,9 @@ fn prepare_authorized_application_commit<Schema, Operation, Input, Scope>(
         admission,
         lease,
         provider_attempt,
-        platform_mutation,
+        outcome_identity,
+        workflow_settlement_publication,
+        effect_posture,
         authorization,
         idempotency,
         aftermath_causality,
@@ -245,6 +280,7 @@ fn prepare_application_provider_attempt(
 ) -> Result<WorthQueryPreparedApplicationProviderAttempt, ()> {
     prepare_provider_attempt(
         mutation_partition,
+        preparation.application_effect_count,
         preparation.installed_read_scopes,
         preparation.facts,
         preparation.effects,

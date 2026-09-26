@@ -8,6 +8,7 @@ mod program_admission;
 pub use denial::WorthQueryInMemoryApplicationDenial;
 pub use limits::WorthQueryInMemoryApplicationLimits;
 pub use profile::WorthQueryInMemoryApplicationProfile;
+pub(crate) use program::workflow_approval_authentication_intent;
 pub use program::{
     in_memory_program, in_memory_program_from_checkpoint,
     in_memory_program_with_authorization_time_source, in_memory_rostered_program,
@@ -112,6 +113,13 @@ where
         .installed_packages()
         .bind_application_schema(declaration)
         .map_err(Denial::Schema)?;
+    if program_admission.is_none()
+        && installed
+            .installed_mutation_binding_inventory()
+            .any(|binding| binding.requires_workflow_authority())
+    {
+        return Err(Denial::WorkflowAuthorityRequiresProgram);
+    }
     let admitted_program_support = match program_admission {
         Some(admit) => Some(admit(&installed)?),
         None => None,
@@ -138,6 +146,9 @@ where
         .publication_override(limits.maximum_publication_records)
     {
         relational_builder = relational_builder.publication(publication);
+    }
+    if let Some(scope_budget) = limits.profile.relation_integrity_scope_budget() {
+        relational_builder = relational_builder.relation_integrity_scope_budget(scope_budget);
     }
     let relational_runtime = relational_builder.build();
     let decoded_checkpoint = checkpoint

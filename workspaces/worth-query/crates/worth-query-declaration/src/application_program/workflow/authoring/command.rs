@@ -1,5 +1,6 @@
 use crate::{
     application_capability::ApplicationCapabilityMarkerIdentity,
+    application_operation::ApplicationMutationBinding,
     application_query::ApplicationQueryMarkerIdentity,
     application_schema::ApplicationOperationMarkerIdentity,
 };
@@ -35,6 +36,22 @@ impl ApplicationWorkflowAuthoringCommand {
             ApplicationWorkflowNodeKind::Operation {
                 operation: ApplicationWorkflowOperationRef::declared::<Spec, Operation>(),
                 requires_workflow_authority,
+            },
+        )
+    }
+
+    pub fn operation_binding<Spec, Binding>(
+        identity: impl Into<String>,
+    ) -> Result<Self, ApplicationWorkflowAuthoringDenial>
+    where
+        Spec: ApplicationWorkflowSpec,
+        Binding: ApplicationMutationBinding<Spec::Schema>,
+    {
+        Self::node(
+            identity,
+            ApplicationWorkflowNodeKind::Operation {
+                operation: ApplicationWorkflowOperationRef::declared_binding::<Spec, Binding>(),
+                requires_workflow_authority: Binding::REQUIRES_WORKFLOW_AUTHORITY,
             },
         )
     }

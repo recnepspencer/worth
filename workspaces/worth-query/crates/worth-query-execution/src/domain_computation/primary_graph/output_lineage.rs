@@ -70,6 +70,8 @@ pub(super) struct WorthQueryExactRecordedOutput {
         crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
     pub(super) observed_source_facts:
         Arc<[super::application_attempt::WorthQueryApplicationObservedFact]>,
+    pub(super) resources:
+        Option<super::application_contribution::WorthQueryProducerDemandResources>,
 }
 
 #[derive(Clone, Copy)]
@@ -342,11 +344,11 @@ impl WorthQueryApplicationOutputLineage {
     }
 }
 
-fn latest_output_matching<'a>(
-    history: &'a BTreeMap<u64, Vec<RecordedOutput>>,
+fn latest_output_matching(
+    history: &BTreeMap<u64, Vec<RecordedOutput>>,
     maximum_generation: u64,
     mut matches: impl FnMut(&RecordedOutput) -> bool,
-) -> Option<&'a RecordedOutput> {
+) -> Option<&RecordedOutput> {
     history
         .range(..=maximum_generation)
         .rev()

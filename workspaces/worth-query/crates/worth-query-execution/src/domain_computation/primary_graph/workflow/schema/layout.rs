@@ -90,6 +90,13 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowApprovalLayout {
     pub(in crate::domain_computation::primary_graph) grant_slot: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) grant_generation: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) authorization_decision: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) authorization_request: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) authorization_principal: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) capability_authority_identity:
+        AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) authorization_lineage: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) authorization_support: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) authorization_dependencies: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) action: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) purpose: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) validity_timeline: AspectFieldLocator,
@@ -154,10 +161,17 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowNodeLayout {
     pub(in crate::domain_computation::primary_graph) kind: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) member: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) input_type: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) operation_binding: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) parameter_type: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) result_type: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) assessment_binding: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) assessment_subject: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) assessment_applicability_relation:
+        AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) assessment_applicability_from:
+        AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) assessment_applicability_to:
+        AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) condition_binding: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) capability_type: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) approval_operation: AspectFieldLocator,
@@ -180,6 +194,7 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowInstanceLayout {
     pub(in crate::domain_computation::primary_graph) entity_kind: KindId,
     pub(in crate::domain_computation::primary_graph) identity: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) protocol_version: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) branch_occurrence: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) program_revision: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) definition_content_identity:
         AspectFieldLocator,

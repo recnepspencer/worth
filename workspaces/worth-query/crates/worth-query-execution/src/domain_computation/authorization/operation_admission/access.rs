@@ -20,10 +20,14 @@ use crate::domain_computation::primary_graph::WorthQueryBoundMutationPreconditio
 use super::WorthQueryOperationAdmissionIdentity;
 use std::time::Instant;
 
+#[path = "access/workflow_approval_snapshot.rs"]
+mod workflow_approval_snapshot;
+
 pub(in crate::domain_computation) struct WorthQueryWorkflowApprovalAuthority {
     pub principal: worth_relational::facade::identity::EntityId,
     pub grant: worth_relational::facade::identity::EntityId,
     pub decision_identity: [u8; 32],
+    pub capability_authority_identity: String,
     pub action: worth_foundational::facade::AspectValue,
     pub purpose: worth_foundational::facade::AspectValue,
     pub timeline:
@@ -186,6 +190,7 @@ impl<Schema, Operation, Input, Scope>
             principal: authorization.request().principal(),
             grant: authorization.grant(),
             decision_identity: authorization.decision_identity(),
+            capability_authority_identity: authorization.capability_authority_identity().to_owned(),
             action: authorization.request().action().clone(),
             purpose: authorization.request().purpose().clone(),
             timeline: authorization.timeline(),

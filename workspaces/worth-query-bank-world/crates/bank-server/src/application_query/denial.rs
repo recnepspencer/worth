@@ -66,6 +66,7 @@ pub enum BankApplicationOutputSettlementDenialKind {
     RetainedBasisUnavailable,
     Closed,
     DuplicatePerformedSource,
+    IncompleteDependencyCoverage,
 }
 
 impl<Kind> BankApplicationQueryLaneDenial<Kind>
@@ -262,6 +263,7 @@ impl BankApplicationQueryDenial {
             Query::RetainedBasisUnavailable => Bank::RetainedBasisUnavailable,
             Query::Closed => Bank::Closed,
             Query::DuplicatePerformedSource => Bank::DuplicatePerformedSource,
+            Query::IncompleteDependencyCoverage => Bank::IncompleteDependencyCoverage,
         };
         Self::OutputSettlement(kind)
     }

@@ -60,7 +60,7 @@ worth_query_application_contribution! {
                         .no_aftermath()
                         .finish(),
                 )
-                .operation_decision_fact_budget(SetPartDimension::reference(), 4)
+                .operation_decision_fact_budget(SetPartDimension::reference(), 512)
                 .operation_projection_work_budget(SetPartDimension::reference(), 8)
                 .operation_read_field(SetPartDimension::reference(), PartIdentityField::reference())
                 .operation_read_field(SetPartDimension::reference(), PartDimensionField::reference())

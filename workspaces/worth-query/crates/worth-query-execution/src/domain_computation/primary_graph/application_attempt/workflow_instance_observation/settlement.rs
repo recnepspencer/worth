@@ -15,12 +15,14 @@ use crate::domain_computation::primary_graph::workflow::{
     schema::WorthQueryWorkflowLayout,
 };
 
+mod approval;
 mod dependency;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use dependency::decode_field_revision_fact;
 mod proposal;
 mod retained_evidence;
 mod value;
+pub(in crate::domain_computation::primary_graph::application_attempt) use approval::observe_retained_approval_binding;
 pub(in crate::domain_computation::primary_graph::application_attempt) use dependency::observe_evidence_dependencies;
 pub(in crate::domain_computation::primary_graph::application_attempt) use proposal::observe_retained_workflow_proposal_identity;
 pub(in crate::domain_computation::primary_graph::application_attempt) use retained_evidence::observe_retained_assessment_evidence;
@@ -186,7 +188,7 @@ pub(super) fn observe_assessment_evidence(
         &layout.assessment_evidence.output_content_identity,
         facts,
     )?;
-    observed_text(
+    let proposal_identity = observed_text(
         runtime,
         snapshot,
         evidence,
@@ -194,13 +196,34 @@ pub(super) fn observe_assessment_evidence(
         &layout.assessment_evidence.proposal_identity,
         facts,
     )?;
-    for locator in [
+    let partition = observed_u64(
+        runtime,
+        snapshot,
+        evidence,
+        kind,
         &layout.assessment_evidence.subject_partition,
+        facts,
+    )?;
+    let slot = observed_u64(
+        runtime,
+        snapshot,
+        evidence,
+        kind,
         &layout.assessment_evidence.subject_slot,
+        facts,
+    )?;
+    let generation = observed_u64(
+        runtime,
+        snapshot,
+        evidence,
+        kind,
         &layout.assessment_evidence.subject_generation,
-    ] {
-        observed_u64(runtime, snapshot, evidence, kind, locator, facts)?;
-    }
+        facts,
+    )?;
+    let partition = u32::try_from(partition)
+        .map_err(|_| denial("assessment evidence subject partition is malformed"))?;
+    let generation = u32::try_from(generation)
+        .map_err(|_| denial("assessment evidence subject generation is malformed"))?;
     Ok(Some(ObservedWorkflowAssessmentEvidence {
         entity: evidence,
         identity,
@@ -252,6 +275,8 @@ pub(super) fn observe_assessment_evidence(
             &layout.assessment_evidence.coverage_identity,
             facts,
         )?,
+        proposal_identity,
+        subject: EntityId::new(PartitionId::new(partition), slot, generation),
         source_identity,
         publication_identity,
         output_content_identity,

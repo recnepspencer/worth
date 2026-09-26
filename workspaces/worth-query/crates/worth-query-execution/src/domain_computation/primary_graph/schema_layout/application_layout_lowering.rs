@@ -43,17 +43,21 @@ pub(super) fn lower_relation_layouts(
         .iter()
         .filter_map(|member| match member {
             ApplicationSchemaMember::Relation {
-                relation, from, to, ..
-            } => Some((relation, from, to)),
+                relation,
+                from,
+                to,
+                integrity,
+            } => Some((relation, from, to, integrity)),
             _ => None,
         })
-        .map(|(relation, from, to)| {
+        .map(|(relation, from, to, integrity)| {
             Ok((
                 relation.clone(),
                 WorthQueryPrimaryRelationLayout {
                     kind: required_kind(relation_kinds, relation)?,
                     from: required_kind(entity_kinds, from)?,
                     to: required_kind(entity_kinds, to)?,
+                    source_max: integrity.cardinality.source_max,
                 },
             ))
         })

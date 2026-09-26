@@ -39,6 +39,12 @@ use super::schema::{
 #[path = "dimension_entry/candidate_tracking.rs"]
 mod candidate_tracking;
 pub use candidate_tracking::{candidate_count, reset_candidate_count};
+#[path = "dimension_entry/reviewed_write.rs"]
+mod reviewed_write;
+pub use reviewed_write::{
+    ReviewedSetPartDimensionBinding, ReviewedSetPartDimensionHandler,
+    ReviewedSetPartDimensionIntent,
+};
 
 /// The one part every host in this court seeds and both programs act on.
 pub const PART_IDENTITY: &str = "part-1";
@@ -363,6 +369,7 @@ pub fn declare(
         .application_query_binding::<PartDimensionQueryBinding>()
         .application_query_binding::<PartDimensionConditionQueryBinding>()
         .application_mutation_binding::<SetPartDimensionBinding>()
+        .application_mutation_binding::<ReviewedSetPartDimensionBinding>()
 }
 
 /// A stable content identity for one authored value. Nothing in this court

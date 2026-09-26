@@ -76,6 +76,7 @@ pub(super) fn installed_preimage_demand(
 
 pub(super) fn prepare_provider_attempt(
     mutation_partition: worth_relational::facade::identity::PartitionId,
+    application_effect_count: usize,
     installed_read_scopes: Vec<worth_query_installation::facade::WorthQueryOperationGraphReadScope>,
     facts: Vec<WorthQueryApplicationObservedFact>,
     effects: Vec<WorthQueryApplicationRealizedEffect>,
@@ -93,8 +94,12 @@ pub(super) fn prepare_provider_attempt(
         &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement],
     output_currentness_facts: Option<std::sync::Arc<[WorthQueryApplicationObservedFact]>>,
 ) -> Result<WorthQueryPreparedApplicationProviderAttempt, WorthQueryApplicationAttemptDenial> {
-    let mut accumulator =
-        WorthQueryProviderEffectAccumulator::new(&facts, &effects, mutation_partition);
+    let mut accumulator = WorthQueryProviderEffectAccumulator::new(
+        &facts,
+        &effects,
+        mutation_partition,
+        application_effect_count,
+    );
     for effect in effects {
         accumulator.add_effect(effect)?;
     }
@@ -125,8 +130,12 @@ pub(super) fn prepare_program_migration_batch(
     worth_relational::facade::transactions::WorkerIntentBatch,
     WorthQueryApplicationAttemptDenial,
 > {
-    let mut accumulator =
-        WorthQueryProviderEffectAccumulator::new(facts, &effects, mutation_partition);
+    let mut accumulator = WorthQueryProviderEffectAccumulator::new(
+        facts,
+        &effects,
+        mutation_partition,
+        effects.len(),
+    );
     for effect in effects {
         accumulator.add_effect(effect)?;
     }

@@ -107,6 +107,9 @@ pub enum WorthQueryApplicationRequestMutationDenialKind {
     SourceExpectation,
     ApplicationProgramRequired,
     ApplicationProgramMismatch,
+    RequiresWorkflowTransition,
+    WorkflowAuthoritySpent,
+    WorkflowTransitionCurrentness,
 }
 
 #[derive(Debug)]
@@ -124,6 +127,11 @@ pub enum WorthQueryApplicationRequestMutationDenial {
     ),
     ApplicationProgramRequired,
     ApplicationProgramMismatch,
+    RequiresWorkflowTransition,
+    WorkflowAuthoritySpent,
+    WorkflowTransitionCurrentness(
+        worth_query_execution::facade::primary_graph::WorthQueryApplicationAttemptDenial,
+    ),
 }
 
 impl WorthQueryApplicationRequestMutationDenial {
@@ -155,6 +163,15 @@ impl WorthQueryApplicationRequestMutationDenial {
             }
             Self::ApplicationProgramMismatch => {
                 WorthQueryApplicationRequestMutationDenialKind::ApplicationProgramMismatch
+            }
+            Self::RequiresWorkflowTransition => {
+                WorthQueryApplicationRequestMutationDenialKind::RequiresWorkflowTransition
+            }
+            Self::WorkflowAuthoritySpent => {
+                WorthQueryApplicationRequestMutationDenialKind::WorkflowAuthoritySpent
+            }
+            Self::WorkflowTransitionCurrentness(_) => {
+                WorthQueryApplicationRequestMutationDenialKind::WorkflowTransitionCurrentness
             }
         }
     }

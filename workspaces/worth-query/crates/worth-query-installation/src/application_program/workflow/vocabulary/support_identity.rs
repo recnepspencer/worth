@@ -35,16 +35,26 @@ pub(super) fn derive(
     approvals: &[InstalledWorkflowApproval],
     resources: WorthQueryApplicationWorkflowResourceCeiling,
 ) -> [u8; 32] {
-    let mut entries = Vec::new();
-    entries.push(encoded("program", program.as_bytes()));
-    entries.push(encoded("vocabulary", vocabulary.as_bytes()));
-    entries.push(capability("authoring", &authoring.binding));
-    entries.push(capability("start", &start.binding));
-    entries.push(capability("advance", &advance.binding));
+    let mut entries = vec![
+        encoded("program", program.as_bytes()),
+        encoded("vocabulary", vocabulary.as_bytes()),
+        capability("authoring", &authoring.binding),
+        capability("start", &start.binding),
+        capability("advance", &advance.binding),
+    ];
     entries.extend(operations.iter().map(|operation| {
         fields(
             "operation",
-            &[operation.identifier, operation.input_type.as_str()],
+            &[
+                operation.identifier,
+                operation.input_type.as_str(),
+                operation.binding_identity,
+                if operation.requires_workflow_authority {
+                    "guarded"
+                } else {
+                    "direct"
+                },
+            ],
         )
     }));
     entries.extend(assessments.iter().map(|assessment| {

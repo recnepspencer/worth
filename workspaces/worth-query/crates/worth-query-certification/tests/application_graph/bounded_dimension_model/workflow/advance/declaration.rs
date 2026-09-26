@@ -25,9 +25,10 @@ use super::super::super::{
 };
 use super::super::declaration::{
     WorkflowAuthoringGrant, WorkflowGrantActionField, WorkflowGrantDelegationLimitField,
-    WorkflowGrantGrantee, WorkflowGrantGrantor, WorkflowGrantNotAfterField,
-    WorkflowGrantNotBeforeField, WorkflowGrantPurposeField, WorkflowGrantRelated,
-    WorkflowGrantResource, WorkflowGrantStatusField, WorkflowGrantWorkflowField,
+    WorkflowGrantGrantee, WorkflowGrantGrantor, WorkflowGrantIdentityField,
+    WorkflowGrantNotAfterField, WorkflowGrantNotBeforeField, WorkflowGrantPurposeField,
+    WorkflowGrantRelated, WorkflowGrantResource, WorkflowGrantStatusField,
+    WorkflowGrantWorkflowField,
 };
 
 worth_query_capability_context!(pub WorkflowAdvanceContext in BoundedDimensionSchema);
@@ -123,7 +124,7 @@ pub(super) fn install_members(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_decision_fact_budget(WorkflowAdvanceOperation::reference(), 512)
+        .operation_decision_fact_budget(WorkflowAdvanceOperation::reference(), 2048)
         .operation_projection_work_budget(WorkflowAdvanceOperation::reference(), 512)
         .operation_read_field(
             WorkflowAdvanceOperation::reference(),
@@ -137,6 +138,10 @@ pub(super) fn seed(graph: &mut WorthQueryPrimaryGraphBootstrap<BoundedDimensionS
             WorthQueryApplicationEntitySeed::new(
                 WorkflowAuthoringGrant::reference(),
                 entity_key("workflow-advance-grant"),
+            )
+            .field(
+                WorkflowGrantIdentityField::reference(),
+                "workflow-advance-grant".to_owned(),
             )
             .field(
                 WorkflowGrantActionField::reference(),
@@ -193,6 +198,10 @@ pub(super) fn seed(graph: &mut WorthQueryPrimaryGraphBootstrap<BoundedDimensionS
             WorthQueryApplicationEntitySeed::new(
                 WorkflowAuthoringGrant::reference(),
                 entity_key("workflow-approval-grant"),
+            )
+            .field(
+                WorkflowGrantIdentityField::reference(),
+                "workflow-approval-grant".to_owned(),
             )
             .field(
                 WorkflowGrantActionField::reference(),

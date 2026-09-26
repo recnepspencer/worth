@@ -6,6 +6,7 @@ use worth_query_declaration::facade::application_program::ApplicationWorkflowCon
 use worth_relational::facade::identity::EntityId;
 
 mod accounting;
+mod collection;
 mod locator;
 mod navigation;
 mod replay;
@@ -16,7 +17,9 @@ mod update;
 use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
 };
-use crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowDefinition;
+use crate::domain_computation::primary_graph::workflow::definition::{
+    CompiledWorkflowDefinition, CompiledWorkflowNodeKind,
+};
 pub(in crate::domain_computation::primary_graph) use locator::{
     WorkflowAssessmentEvidenceLocator, WorkflowTransitionLocator,
     WorkflowTransitionProgressObservation,
@@ -90,36 +93,50 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowInstanceProgress
     head: EntityId,
     next_occurrence: u64,
     retry_counts: OrdMap<(EntityId, ApplicationWorkflowControlOutcome), usize>,
+    path_depth: u64,
+    path: OrdMap<u64, WorkflowPathFrame>,
+    back_blocked_by_operation: bool,
+    back_edge_iterations: OrdMap<(EntityId, EntityId), u64>,
     latest_transitions: OrdMap<EntityId, WorkflowTransitionLocator>,
+    latest_transition_identities: OrdMap<EntityId, (u64, String)>,
     latest_assessment_evidence: OrdMap<EntityId, WorkflowAssessmentEvidenceLocator>,
 }
 
-impl WorkflowInstanceProgress {
-    pub(super) fn retained_charge_bytes(&self) -> usize {
-        std::mem::size_of::<Self>()
-            .saturating_add(accounting::map_charge_bytes(&self.retry_counts))
-            .saturating_add(accounting::map_charge_bytes(&self.latest_transitions))
-            .saturating_add(accounting::map_charge_bytes(
-                &self.latest_assessment_evidence,
-            ))
-    }
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+struct WorkflowPathFrame {
+    source: EntityId,
+}
 
-    pub(in crate::domain_computation::primary_graph) fn reconstruct(
+impl WorkflowInstanceProgress {
+    pub(in crate::domain_computation::primary_graph) fn start(
         compiled: &CompiledWorkflowDefinition,
-        settled: &mut [SettledWorkflowTransition],
-    ) -> Result<Self, WorthQueryApplicationAttemptDenial> {
-        settled.sort_unstable_by_key(|transition| transition.occurrence());
-        let mut progress = Self {
+    ) -> Self {
+        Self {
             head: compiled.start().entity(),
             next_occurrence: 0,
             retry_counts: OrdMap::new(),
+            path_depth: 0,
+            path: OrdMap::new(),
+            back_blocked_by_operation: false,
+            back_edge_iterations: OrdMap::new(),
             latest_transitions: OrdMap::new(),
+            latest_transition_identities: OrdMap::new(),
             latest_assessment_evidence: OrdMap::new(),
-        };
-        for transition in settled {
-            progress.advance(compiled, *transition)?;
         }
-        Ok(progress)
+    }
+
+    pub(super) fn retained_charge_bytes(&self) -> usize {
+        std::mem::size_of::<Self>()
+            .saturating_add(accounting::map_charge_bytes(&self.retry_counts))
+            .saturating_add(accounting::map_charge_bytes(&self.path))
+            .saturating_add(accounting::map_charge_bytes(&self.back_edge_iterations))
+            .saturating_add(accounting::map_charge_bytes(&self.latest_transitions))
+            .saturating_add(accounting::map_charge_bytes(
+                &self.latest_transition_identities,
+            ))
+            .saturating_add(accounting::map_charge_bytes(
+                &self.latest_assessment_evidence,
+            ))
     }
 
     #[cfg(test)]
@@ -137,7 +154,12 @@ impl WorkflowInstanceProgress {
             head: start,
             next_occurrence: 0,
             retry_counts: OrdMap::new(),
+            path_depth: 0,
+            path: OrdMap::new(),
+            back_blocked_by_operation: false,
+            back_edge_iterations: OrdMap::new(),
             latest_transitions: OrdMap::new(),
+            latest_transition_identities: OrdMap::new(),
             latest_assessment_evidence: OrdMap::new(),
         };
         for transition in settled {
@@ -154,15 +176,70 @@ impl WorkflowInstanceProgress {
         self.next_occurrence
     }
 
+    pub(in crate::domain_computation::primary_graph) const fn back_edge_iterations(
+        &self,
+    ) -> &OrdMap<(EntityId, EntityId), u64> {
+        &self.back_edge_iterations
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn latest_transition_identity(
+        &self,
+        node: EntityId,
+    ) -> Option<&str> {
+        self.latest_transition_identities
+            .get(&node)
+            .map(|(_, identity)| identity.as_str())
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn retain_transition_identity(
+        &mut self,
+        node: EntityId,
+        occurrence: u64,
+        identity: String,
+    ) {
+        if self
+            .latest_transition_identities
+            .get(&node)
+            .is_none_or(|(latest, _)| occurrence > *latest)
+        {
+            self.latest_transition_identities
+                .insert(node, (occurrence, identity));
+        }
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn back_target(
+        &self,
+    ) -> Result<EntityId, WorthQueryApplicationAttemptDenial> {
+        let depth = self.path_depth.checked_sub(1).ok_or_else(|| {
+            if self.back_blocked_by_operation {
+                WorthQueryApplicationAttemptDenial::new(
+                    WorthQueryApplicationAttemptDenialKind::WorkflowTransitionNodeUnsupported,
+                    "workflow Back cannot cross a performed operation",
+                )
+            } else {
+                denial("workflow cannot navigate Back before a settled forward transition")
+            }
+        })?;
+        let frame = self.path.get(&depth).ok_or_else(|| {
+            denial("workflow Back path is not reconstructible from settled transitions")
+        })?;
+        Ok(frame.source)
+    }
+
     pub(in crate::domain_computation::primary_graph) fn advance(
         &mut self,
         compiled: &CompiledWorkflowDefinition,
         transition: SettledWorkflowTransition,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
         self.validate_next(transition)?;
+        if transition.outcome() == ApplicationWorkflowControlOutcome::NavigatedBack {
+            self.back_target()?;
+            return self.advance_back();
+        }
         let source = transition.node();
         let outcome = transition.outcome();
-        let attempts = if compiled.retry_successors(source, outcome).next().is_some() {
+        let retry = compiled.retry_successors(source, outcome).next();
+        let attempts = if retry.is_some() {
             let attempts = self.retry_counts.entry((source, outcome)).or_default();
             *attempts = attempts.saturating_add(1);
             *attempts
@@ -170,6 +247,17 @@ impl WorkflowInstanceProgress {
             1
         };
         let successor = unique_successor(compiled, source, outcome, attempts)?.entity();
+        if retry.is_some_and(|(_, maximum)| attempts <= usize::from(maximum)) {
+            self.increment_back_edge(source, successor)?;
+        }
+        if matches!(
+            compiled.node(source).map(|node| node.kind()),
+            Some(CompiledWorkflowNodeKind::Operation { .. })
+        ) {
+            self.cross_operation_boundary();
+        } else {
+            self.push_forward(transition)?;
+        }
         self.finish_advance(successor)
     }
 
@@ -184,11 +272,66 @@ impl WorkflowInstanceProgress {
         ) -> Result<EntityId, WorthQueryApplicationAttemptDenial>,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
         self.validate_next(transition)?;
+        if transition.outcome() == ApplicationWorkflowControlOutcome::NavigatedBack {
+            return self.advance_back();
+        }
         let key = (transition.node(), transition.outcome());
         let attempts = self.retry_counts.entry(key).or_default();
         *attempts = attempts.saturating_add(1);
         let successor = successor(transition.node(), transition.outcome(), *attempts)?;
+        if transition.operation_receipt_identity().is_some() {
+            self.cross_operation_boundary();
+        } else {
+            self.push_forward(transition)?;
+        }
         self.finish_advance(successor)
+    }
+
+    fn cross_operation_boundary(&mut self) {
+        self.path.clear();
+        self.path_depth = 0;
+        self.back_blocked_by_operation = true;
+    }
+
+    fn push_forward(
+        &mut self,
+        transition: SettledWorkflowTransition,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        let next_depth = self
+            .path_depth
+            .checked_add(1)
+            .ok_or_else(|| denial("workflow Back path exceeds supported depth"))?;
+        self.path.insert(
+            self.path_depth,
+            WorkflowPathFrame {
+                source: transition.node(),
+            },
+        );
+        self.path_depth = next_depth;
+        Ok(())
+    }
+
+    fn advance_back(&mut self) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        let target = self.back_target()?;
+        self.increment_back_edge(self.head, target)?;
+        self.path_depth -= 1;
+        self.path.remove(&self.path_depth);
+        self.finish_advance(target)
+    }
+
+    fn increment_back_edge(
+        &mut self,
+        source: EntityId,
+        target: EntityId,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        let iterations = self
+            .back_edge_iterations
+            .entry((source, target))
+            .or_default();
+        *iterations = iterations
+            .checked_add(1)
+            .ok_or_else(|| denial("workflow back-edge iteration exceeds supported range"))?;
+        Ok(())
     }
 
     fn validate_next(
@@ -226,143 +369,5 @@ fn denial(subject: &'static str) -> WorthQueryApplicationAttemptDenial {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use worth_relational::facade::identity::PartitionId;
-
-    fn entity(slot: u64) -> EntityId {
-        EntityId::new(PartitionId::new(7), slot, 1)
-    }
-
-    fn completed(node: EntityId, occurrence: u64) -> SettledWorkflowTransition {
-        SettledWorkflowTransition::new(
-            node,
-            occurrence,
-            ApplicationWorkflowControlOutcome::Completed,
-            None,
-        )
-    }
-
-    #[test]
-    fn out_of_order_history_reconstructs_one_incremental_head() {
-        let start = entity(10);
-        let middle = entity(11);
-        let terminal = entity(12);
-        let edges = BTreeMap::from([(start, middle), (middle, terminal)]);
-        let mut history = [completed(middle, 1), completed(start, 0)];
-
-        let progress =
-            WorkflowInstanceProgress::reconstruct_with(&mut history, start, |source, _, _| {
-                edges
-                    .get(&source)
-                    .copied()
-                    .ok_or_else(|| denial("missing successor"))
-            })
-            .expect("the immutable history selects its compiled terminal");
-
-        assert_eq!(progress.head(), terminal);
-        assert_eq!(progress.next_occurrence(), 2);
-    }
-
-    #[test]
-    fn duplicate_gap_and_wrong_node_histories_fail_closed() {
-        let start = entity(20);
-        let middle = entity(21);
-        let terminal = entity(22);
-        let edges = BTreeMap::from([(start, middle), (middle, terminal)]);
-        for mut history in [
-            vec![completed(start, 0), completed(middle, 0)],
-            vec![completed(start, 0), completed(middle, 2)],
-            vec![completed(entity(99), 0)],
-        ] {
-            assert!(WorkflowInstanceProgress::reconstruct_with(
-                &mut history,
-                start,
-                |source, _, _| edges
-                    .get(&source)
-                    .copied()
-                    .ok_or_else(|| denial("missing successor")),
-            )
-            .is_err());
-        }
-    }
-
-    #[test]
-    fn retry_attempt_counts_advance_without_rescanning_history() {
-        let start = entity(30);
-        let mut history = [completed(start, 0), completed(start, 1)];
-        let mut observed_attempts = Vec::new();
-        WorkflowInstanceProgress::reconstruct_with(&mut history, start, |source, _, attempts| {
-            observed_attempts.push(attempts);
-            Ok(source)
-        })
-        .expect("retry history is contiguous");
-
-        assert_eq!(observed_attempts, [1, 2]);
-    }
-
-    #[test]
-    fn completed_history_requires_the_terminal_settlement_to_be_excluded() {
-        let start = entity(40);
-        let terminal = entity(41);
-        let edges = BTreeMap::from([(start, terminal)]);
-        let mut untrimmed = [completed(start, 0), completed(terminal, 1)];
-
-        assert!(WorkflowInstanceProgress::reconstruct_with(
-            &mut untrimmed,
-            start,
-            |source, _, _| edges
-                .get(&source)
-                .copied()
-                .ok_or_else(|| denial("settled terminal has no successor")),
-        )
-        .is_err());
-    }
-
-    #[test]
-    fn latest_transition_locator_tracks_occurrence_without_becoming_authority() {
-        let node = entity(50);
-        let mut progress = WorkflowInstanceProgress {
-            head: node,
-            next_occurrence: 2,
-            retry_counts: OrdMap::new(),
-            latest_transitions: OrdMap::new(),
-            latest_assessment_evidence: OrdMap::new(),
-        };
-        let latest = WorkflowTransitionLocator::new(entity(52), completed(node, 1));
-        progress.retain_observation(WorkflowTransitionProgressObservation::new(latest, None));
-        progress.retain_observation(WorkflowTransitionProgressObservation::new(
-            WorkflowTransitionLocator::new(entity(51), completed(node, 0)),
-            None,
-        ));
-
-        assert_eq!(progress.latest_transition(node), Some(latest));
-    }
-
-    #[test]
-    fn evidence_locator_survives_a_later_reuse_transition_without_new_evidence() {
-        let node = entity(60);
-        let mut progress = WorkflowInstanceProgress {
-            head: node,
-            next_occurrence: 2,
-            retry_counts: OrdMap::new(),
-            latest_transitions: OrdMap::new(),
-            latest_assessment_evidence: OrdMap::new(),
-        };
-        let evidence_transition = WorkflowTransitionLocator::new(entity(61), completed(node, 0));
-        progress.retain_observation(WorkflowTransitionProgressObservation::new(
-            evidence_transition,
-            Some(entity(62)),
-        ));
-        progress.retain_observation(WorkflowTransitionProgressObservation::new(
-            WorkflowTransitionLocator::new(entity(63), completed(node, 1)),
-            None,
-        ));
-
-        let retained = progress
-            .latest_assessment_evidence(node)
-            .expect("reused evidence remains locatable");
-        assert_eq!(retained.transition(), evidence_transition);
-        assert_eq!(retained.evidence(), entity(62));
-    }
-}
+#[path = "progression/tests.rs"]
+mod tests;

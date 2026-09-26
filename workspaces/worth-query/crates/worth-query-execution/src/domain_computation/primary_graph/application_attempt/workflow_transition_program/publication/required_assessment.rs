@@ -1,4 +1,4 @@
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct RequiredWorkflowAssessment {
     pub(super) instance: worth_relational::facade::identity::EntityId,
     pub(super) node_path: String,
@@ -65,5 +65,34 @@ impl RequiredWorkflowAssessment {
     }
     pub fn coverage_identity(&self) -> &str {
         &self.coverage_identity
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use worth_relational::facade::identity::{EntityId, PartitionId};
+
+    use super::RequiredWorkflowAssessment;
+
+    #[test]
+    fn exact_requirement_distinguishes_proposal_and_coverage_with_same_execution_affinity() {
+        let original = RequiredWorkflowAssessment {
+            instance: EntityId::new(PartitionId::main(), 1, 1),
+            node_path: "review".to_owned(),
+            transition_identity: "transition".to_owned(),
+            occurrence: 1,
+            query: "query".to_owned(),
+            parameter_type: "parameters".to_owned(),
+            result_type: "result".to_owned(),
+            binding: "binding".to_owned(),
+            proposal_identity: "proposal-a".to_owned(),
+            coverage_identity: "coverage-a".to_owned(),
+        };
+        let mut revised_proposal = original.clone();
+        revised_proposal.proposal_identity = "proposal-b".to_owned();
+        assert_ne!(original, revised_proposal);
+        let mut revised_coverage = original.clone();
+        revised_coverage.coverage_identity = "coverage-b".to_owned();
+        assert_ne!(original, revised_coverage);
     }
 }

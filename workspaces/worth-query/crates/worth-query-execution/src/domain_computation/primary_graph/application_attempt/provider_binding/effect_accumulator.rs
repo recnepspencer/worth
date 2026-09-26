@@ -1,10 +1,9 @@
-use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use worth_relational::facade::transactions::{EntityReference, MutationIntent, WorkerIntentBatch};
+use worth_relational::facade::transactions::{MutationIntent, WorkerIntentBatch};
 
 use super::effect_lowering::{
-    created_entity_symbols, lower_provider_effect, ObservedFactIndex,
+    lower_provider_effect, CreatedEffectReferences, ObservedFactIndex,
     WorthQueryLoweredProviderEffect,
 };
 use super::{
@@ -22,7 +21,7 @@ use expected_steps::WorthQueryExpectedEffectSteps;
 pub(super) struct WorthQueryProviderEffectAccumulator<'facts> {
     facts: ObservedFactIndex<'facts>,
     mutation_partition: worth_relational::facade::identity::PartitionId,
-    symbols: BTreeMap<EntityReference, Arc<str>>,
+    created: CreatedEffectReferences,
     lowered: Vec<WorthQueryLoweredProviderEffect>,
 }
 
@@ -39,8 +38,9 @@ impl<'facts> WorthQueryProviderEffectAccumulator<'facts> {
         facts: &'facts [WorthQueryApplicationObservedFact],
         effects: &[WorthQueryApplicationRealizedEffect],
         mutation_partition: worth_relational::facade::identity::PartitionId,
+        application_effect_count: usize,
     ) -> Self {
-        let mutation_partition = effects
+        let mutation_partition = effects[..application_effect_count]
             .iter()
             .find_map(|effect| match effect {
                 WorthQueryApplicationRealizedEffect::CreateEntity { partition, .. } => {
@@ -52,7 +52,7 @@ impl<'facts> WorthQueryProviderEffectAccumulator<'facts> {
         Self {
             facts: ObservedFactIndex::new(facts),
             mutation_partition,
-            symbols: created_entity_symbols(effects, mutation_partition),
+            created: CreatedEffectReferences::new(effects, mutation_partition),
             lowered: Vec::with_capacity(effects.len()),
         }
     }
@@ -62,7 +62,7 @@ impl<'facts> WorthQueryProviderEffectAccumulator<'facts> {
         effect: WorthQueryApplicationRealizedEffect,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
         let lowered =
-            lower_provider_effect(&self.facts, &self.symbols, self.mutation_partition, effect)?;
+            lower_provider_effect(&self.facts, &self.created, self.mutation_partition, effect)?;
         self.lowered.push(lowered);
         Ok(())
     }
@@ -205,4 +205,27 @@ fn materialize_commit_projections(
         }
     }
     (intents, emissions)
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::BTreeMap;
+
+    use super::*;
+    use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCreationPartition;
+    use worth_relational::facade::identity::{KindId, PartitionId};
+
+    #[test]
+    fn platform_only_create_does_not_select_the_application_mutation_partition() {
+        let issued = PartitionId::new(3);
+        let workflow = PartitionId::new(7);
+        let effects = [WorthQueryApplicationRealizedEffect::CreateEntity {
+            kind: KindId::new(11),
+            key: "transition".to_owned(),
+            fields: BTreeMap::new(),
+            partition: WorthQueryApplicationCreationPartition::Context(workflow),
+        }];
+        let accumulator = WorthQueryProviderEffectAccumulator::new(&[], &effects, issued, 0);
+        assert_eq!(accumulator.mutation_partition, issued);
+    }
 }

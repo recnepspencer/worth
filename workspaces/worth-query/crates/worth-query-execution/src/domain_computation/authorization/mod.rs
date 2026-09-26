@@ -23,8 +23,20 @@ mod lowering;
 mod operation_progression;
 mod operation_scope_binding;
 mod retained_capability_request;
-pub(in crate::domain_computation) use retained_capability_request::WorthQueryRetainedCapabilityRequest;
+pub(in crate::domain_computation) use retained_capability_request::{
+    WorkflowApprovalRequestEncodingDenial, WorthQueryRetainedCapabilityRequest,
+    MAXIMUM_PORTABLE_BYTES,
+};
 mod retained_capability_support;
+mod workflow_approval_authority;
+mod workflow_approval_dependencies;
+pub(in crate::domain_computation) use workflow_approval_authority::{
+    decode_workflow_approval_support, encode_workflow_approval_support,
+    WorthQueryWorkflowApprovalAuthorityBasis,
+};
+pub(in crate::domain_computation) use workflow_approval_dependencies::{
+    encode_workflow_approval_dependencies, WorthQueryWorkflowApprovalDependencies,
+};
 
 pub(in crate::domain_computation) use crate::domain_computation::runtime_time::{
     WorthQueryRuntimeClock, WorthQueryRuntimeTimeSample,
@@ -40,7 +52,8 @@ pub use capability_registry::WorthQueryCapabilityPlanCompilationEvidence;
 pub(in crate::domain_computation) use capability_revocation_progression::WorthQueryCapabilityRevocationBinding;
 use decision_facts::WorthQueryCommitAuthorizationBasis;
 pub(in crate::domain_computation) use decision_facts::{
-    WorthQueryAuthorizationDecisionFact, WorthQueryPrincipalCurrentnessDependency,
+    WorthQueryAuthorizationDecisionFact, WorthQueryDurableAuthorizationDependencies,
+    WorthQueryDurableCapabilityLineage, WorthQueryPrincipalCurrentnessDependency,
     WorthQueryProviderAuthorizationDecisionFacts, WorthQueryProviderCommitAuthorization,
     WorthQueryProviderDecisionFactBinding, WorthQueryRegisteredCommitAuthorization,
     WorthQueryRetainedAuthorizationDecisionFacts,
@@ -71,7 +84,8 @@ pub use operation_scope_binding::{
     WorthQueryOperationScopeBinding, WorthQueryOperationScopeEntityBinding,
 };
 pub(in crate::domain_computation) use retained_capability_support::{
-    WorthQueryCapabilitySupportCommitBasis, WorthQueryRetainedCapabilitySupport,
+    WorthQueryCapabilitySupportCommitBasis, WorthQueryCapabilitySupportRole,
+    WorthQueryRetainedCapabilitySupport,
 };
 
 fn authorization_denial(

@@ -1,20 +1,18 @@
-use sha2::{Digest, Sha256};
 use worth_query_declaration::facade::{
     application_operation::ApplicationMutationBinding,
-    application_schema::{
-        ApplicationOperationMarkerIdentity, ApplicationOperationRef,
-        ApplicationStructuredValueBinding,
-    },
+    application_schema::ApplicationOperationMarkerIdentity,
 };
 use worth_query_installation::facade::ApplicationSchema;
 
-use super::{PreparedWorkflowAdvance, PreparedWorkflowOperation, RequiredWorkflowOperation};
+use super::{
+    PreparedWorkflowAdvance, PreparedWorkflowOperation, RequiredWorkflowOperation,
+    WorkflowOperationAuthority,
+};
 use crate::domain_computation::primary_graph::{
     application_attempt::workflow_instance_observation::observe_retained_transition,
     workflow::instance::{visit_workflow_operation_transition_facts, WorkflowInstanceProgress},
     workflow::{
         definition::{CompiledWorkflowDefinition, CompiledWorkflowNodeKind},
-        instance::select_settled_replay_transition,
         proposal::observe_workflow_operation_input,
     },
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
@@ -22,6 +20,12 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationObservedFact, WorthQueryCompleteApplicationReadSet,
     WorthQueryPrimaryGraphApplicationRuntime, WorthQueryProjectedApplicationMutation,
 };
+
+mod authority_binding;
+mod receipt;
+pub(in crate::domain_computation::primary_graph::application_attempt) use receipt::operation_receipt_requires_recovery;
+pub(in crate::domain_computation::primary_graph::application_attempt) use receipt::receipt_identity_from_outcome;
+pub(super) use receipt::validate_operation_receipt;
 
 impl<Schema, Operation, Input, Scope>
     WorthQueryCompleteApplicationReadSet<
@@ -45,12 +49,14 @@ where
         live_membership: worth_relational::facade::identity::RelationId,
         retire_live_membership: bool,
         mut facts: Vec<WorthQueryApplicationObservedFact>,
+        mut authority_facts: Vec<WorthQueryApplicationObservedFact>,
         progress: &WorkflowInstanceProgress,
         operation: crate::domain_computation::primary_graph::workflow::instance::SelectedWorkflowOperation,
     ) -> Result<
         PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
         WorthQueryApplicationAttemptDenial,
     > {
+        let handoff_start = facts.len();
         let mut sources = compiled.operation_input_sources(selected.node());
         let source = sources
             .next()
@@ -81,21 +87,84 @@ where
                 &mut facts,
             )
         })?;
-        let source_replay =
-            select_settled_replay_transition(compiled, instance.entity_id(), source_settlement)?;
+        let source_identity = progress
+            .latest_transition_identity(source.entity())
+            .ok_or_else(|| mismatch(selected.node_path()))?;
+        if source_settlement.occurrence() != source_transition.settlement().occurrence() {
+            return Err(mismatch(selected.node_path()));
+        }
         let (input_identity, mut input_facts) = self.lease.handle().with_runtime(|runtime| {
             observe_workflow_operation_input(
                 runtime,
                 self.lease.snapshot(),
                 layout,
                 source_transition.entity(),
-                source_replay.identity(),
+                source_identity,
                 source_operation,
                 source_input_type,
                 source.path(),
             )
         })?;
         facts.append(&mut input_facts);
+        let mut approval_sources = compiled.approval_authority_sources(selected.node());
+        let approval = approval_sources
+            .next()
+            .ok_or_else(|| mismatch(selected.node_path()))?;
+        if approval_sources.next().is_some()
+            || !matches!(approval.kind(), CompiledWorkflowNodeKind::Approval { .. })
+        {
+            return Err(mismatch(selected.node_path()));
+        }
+        let approval_transition = progress
+            .latest_transition(approval.entity())
+            .ok_or_else(|| mismatch(selected.node_path()))?;
+        let settlement = self.lease.handle().with_runtime(|runtime| {
+            observe_retained_transition(
+                runtime,
+                self.lease.snapshot(),
+                layout,
+                approval_transition,
+                &mut facts,
+            )
+        })?;
+        if settlement.outcome()
+            != worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome::Approved
+        {
+            return Err(mismatch(selected.node_path()));
+        }
+        let remaining = self
+            .admission
+            .allowed_graph_contract()
+            .decision_fact_budget()
+            .saturating_sub(self.facts.len().saturating_add(facts.len()));
+        let approval_authority = match super::approval_decision::observe_operation_approval_inputs(
+            compiled,
+            layout,
+            &self.lease.layout,
+            self.admission.scope_entity_id(),
+            &instance,
+            progress,
+            approval.entity(),
+            &operation.operation,
+            self.lease.handle(),
+            self.lease.snapshot(),
+            remaining,
+        ) {
+            Ok((mut observed, authority)) => {
+                facts.append(&mut observed);
+                Some(authority)
+            }
+            Err(denial)
+                if matches!(
+                    denial.kind(),
+                    WorthQueryApplicationAttemptDenialKind::WorkflowAssessmentEvidenceMismatch
+                        | WorthQueryApplicationAttemptDenialKind::WorkflowAssessmentEvidenceIncomplete
+                ) =>
+            {
+                None
+            }
+            Err(denial) => return Err(denial),
+        };
         if self.facts.len().saturating_add(facts.len())
             > self
                 .admission
@@ -107,8 +176,21 @@ where
                 self.admission.operation(),
             ));
         }
+        authority_facts.extend_from_slice(&facts[handoff_start..]);
         self.facts.extend(facts);
         let subject = self.admission.scope_entity_id();
+        let branch = self.lease.product().product_branch();
+        let binding = operation
+            .binding
+            .clone()
+            .ok_or_else(|| mismatch(selected.node_path()))?;
+        let runtime_authority = self.admission.runtime_authority().as_u64();
+        let session_identity = self.admission.graph_work_session_identity();
+        let observation = crate::basis::WorthQueryProductBranchReadIdentity::from_observation(
+            self.lease.product().observation(),
+        );
+        let handle = self.lease.handle().clone();
+        let graph_layout = std::sync::Arc::clone(&self.lease.layout);
         let admitted =
             crate::domain_computation::primary_graph::workflow::instance::admit_workflow_transition(
                 self,
@@ -118,7 +200,25 @@ where
                 live_membership,
                 retire_live_membership,
             );
+        let authority = approval_authority.map(|approval_authority| {
+            WorkflowOperationAuthority::new(
+                operation.operation.clone(),
+                binding,
+                *admitted.identity_bytes(),
+                input_identity,
+                runtime_authority,
+                session_identity,
+                observation,
+                authority_facts,
+                admitted.operation_settlement_basis(),
+                layout.clone(),
+                approval_authority,
+                handle,
+                graph_layout,
+            )
+        });
         let required = RequiredWorkflowOperation::from_selected(
+            branch,
             admitted.instance(),
             admitted.node_path().to_owned(),
             admitted.identity().to_owned(),
@@ -126,6 +226,7 @@ where
             admitted.occurrence(),
             operation,
             input_identity,
+            authority,
         );
         Ok(PreparedWorkflowAdvance::AwaitingOperation(
             PreparedWorkflowOperation {
@@ -229,7 +330,7 @@ where
             emission_retained_bytes: 0,
             emission_retained_bytes_ceiling: 0,
             conditional_definition: None,
-            platform_mutation: true,
+            effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Platform,
             validator_work_admission,
             output_correspondence: Default::default(),
             retain_output_demand_observation: false,
@@ -253,90 +354,10 @@ where
             terminal: false,
             approval: None,
             approval_identity: None,
+            approval_authentication: None,
             replays: self.replays,
         })
     }
-}
-
-pub(super) fn validate_operation_receipt<Schema, Binding>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    required: &RequiredWorkflowOperation,
-    subject: worth_relational::facade::identity::EntityId,
-    branch: crate::basis::WorthQueryProductBranch,
-    receipt: &WorthQueryApplicationCommitReceipt,
-    recovery: Option<
-        &crate::domain_computation::application_aftermath::WorthQueryRecoverySafeRetryAdmission,
-    >,
-) -> Result<[u8; 32], WorthQueryApplicationAttemptDenial>
-where
-    Schema: ApplicationSchema,
-    Binding: ApplicationMutationBinding<Schema>,
-{
-    if required.operation() != Binding::Operation::IDENTIFIER
-        || required.input_type() != Binding::InputBinding::IDENTITY.as_str()
-    {
-        return Err(mismatch(required.node_path()));
-    }
-    let installed = runtime
-        .installed_schema()
-        .installed_operation(ApplicationOperationRef::<
-            Schema,
-            Binding::Operation,
-            Binding::Input,
-        >::from_declaration())
-        .map_err(|_| mismatch(required.node_path()))?;
-    let scope = receipt.authority_binding().principal_scope().scope();
-    let receipt_idempotency = receipt.authority_binding().idempotency_binding();
-    if receipt.runtime_authority() != runtime.runtime.authority_identity()
-        || receipt
-            .authority_binding()
-            .principal_scope()
-            .binding_identity()
-            != &runtime.installed_schema().binding_identity()
-        || receipt.installed_operation() != &installed.authority_identity_bytes()
-        || receipt.product_branch() != branch
-        || scope.partition_id() != subject.partition_value()
-        || scope.local_slot() != subject.local_slot_value()
-        || scope.generation() != subject.generation_value()
-        || !receipt_idempotency.matches_workflow_operation(required.transition_identity_bytes())
-        || receipt_idempotency.intent_identity() != required.input_identity()
-    {
-        return Err(mismatch(required.node_path()));
-    }
-    validate_operation_receipt_custody(required.node_path(), receipt, recovery)
-}
-
-pub(super) fn operation_receipt_requires_recovery(
-    receipt: &WorthQueryApplicationCommitReceipt,
-) -> bool {
-    receipt.dispatch_outbox().is_some()
-        && !receipt
-            .external_dispatch()
-            .is_some_and(|dispatch| dispatch.is_external_completion())
-}
-
-fn validate_operation_receipt_custody(
-    node_path: &str,
-    receipt: &WorthQueryApplicationCommitReceipt,
-    recovery: Option<
-        &crate::domain_computation::application_aftermath::WorthQueryRecoverySafeRetryAdmission,
-    >,
-) -> Result<[u8; 32], WorthQueryApplicationAttemptDenial> {
-    if operation_receipt_requires_recovery(receipt)
-        && !recovery.is_some_and(|proof| proof.completes_receipt(receipt))
-    {
-        return Err(mismatch(node_path));
-    }
-    receipt_identity(receipt).ok_or_else(|| mismatch(node_path))
-}
-
-fn receipt_identity(receipt: &WorthQueryApplicationCommitReceipt) -> Option<[u8; 32]> {
-    let mut digest = Sha256::new();
-    digest.update(b"worth-query.workflow-operation-receipt.v1");
-    digest.update(receipt.runtime_authority().as_u64().to_le_bytes());
-    digest.update(receipt.outcome_identity()?.get().to_le_bytes());
-    digest.update(receipt.installed_operation());
-    Some(digest.finalize().into())
 }
 
 fn mismatch(subject: impl Into<String>) -> WorthQueryApplicationAttemptDenial {

@@ -49,6 +49,32 @@ pub(super) fn observe_lineage(
     let mut current_principal = request.principal();
     let mut current_policy = leaf_policy;
     loop {
+        let status_revision = observation
+            .relational
+            .read_truth()
+            .project_snapshot(observation.snapshot)
+            .and_then(|view| {
+                view.entity_field_revision(
+                    current_grant,
+                    &worth_foundational::facade::AspectFieldLocator::new(
+                        worth_foundational::facade::LocatorAuthority::Authoritative,
+                        installed
+                            .delegation()
+                            .active_status
+                            .0
+                            .aspect()
+                            .aspect_key()
+                            .clone(),
+                        installed.delegation().active_status.0.field_path().clone(),
+                    ),
+                )
+            })
+            .ok_or_else(|| {
+                denial(
+                    WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
+                    installed.contract().name(),
+                )
+            })?;
         let observed = discovery::observe_parent(
             observation.relational,
             observation.snapshot.clone(),
@@ -57,17 +83,36 @@ pub(super) fn observe_lineage(
             current_principal,
         )?;
         let Some(parent_grant) = observed.parent else {
-            let mut decision = current_policy
-                .with_delegation(WorthQueryDelegationDecisionFact::root(observed.evidence));
+            let mut decision = current_policy.with_delegation(
+                WorthQueryDelegationDecisionFact::root(
+                    observation.relational,
+                    observed.evidence,
+                    status_revision,
+                )
+                .map_err(|()| {
+                    denial(
+                        WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
+                        installed.contract().name(),
+                    )
+                })?,
+            );
             while let Some(frame) = frames.pop() {
                 decision = frame.child_policy.with_delegation(
                     WorthQueryDelegationDecisionFact::delegated(
+                        observation.relational,
                         frame.grantor,
                         frame.parent_grant,
                         frame.discovery,
                         frame.transition,
                         decision,
-                    ),
+                        frame.status_revision,
+                    )
+                    .map_err(|()| {
+                        denial(
+                            WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
+                            installed.contract().name(),
+                        )
+                    })?,
                 );
             }
             return Ok(decision);
@@ -106,6 +151,7 @@ pub(super) fn observe_lineage(
             parent_grant,
             discovery: observed.evidence,
             transition: transition.evidence,
+            status_revision,
         });
         current_grant = parent_grant;
         current_principal = transition.grantor;

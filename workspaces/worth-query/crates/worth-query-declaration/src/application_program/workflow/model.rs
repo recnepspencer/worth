@@ -220,6 +220,8 @@ pub enum ApplicationWorkflowControlOutcome {
     ConditionSatisfied,
     ConditionUnsatisfied,
     RetryExhausted,
+    /// Owner-published navigation over the settled path, never an authored control arm.
+    NavigatedBack,
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]

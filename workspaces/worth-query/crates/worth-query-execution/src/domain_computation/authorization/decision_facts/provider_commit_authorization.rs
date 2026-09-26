@@ -5,6 +5,7 @@ use super::{WorthQueryCommitAuthorizationBasis, WorthQueryProviderAuthorizationD
 pub(in crate::domain_computation) struct WorthQueryProviderCommitAuthorization {
     provider: Option<WorthQueryProviderAuthorizationDecisionFacts>,
     commit: WorthQueryCommitAuthorizationBasis,
+    workflow_approval_authority: Option<super::super::WorthQueryWorkflowApprovalAuthorityBasis>,
 }
 
 impl WorthQueryProviderCommitAuthorization {
@@ -15,7 +16,16 @@ impl WorthQueryProviderCommitAuthorization {
         Self {
             provider: Some(provider),
             commit,
+            workflow_approval_authority: None,
         }
+    }
+
+    pub(in crate::domain_computation) fn with_workflow_approval_authority(
+        mut self,
+        authority: Option<super::super::WorthQueryWorkflowApprovalAuthorityBasis>,
+    ) -> Self {
+        self.workflow_approval_authority = authority;
+        self
     }
 
     pub(in crate::domain_computation) fn authorize_application_commit<
@@ -44,6 +54,9 @@ impl WorthQueryProviderCommitAuthorization {
     where
         Schema: worth_query_installation::facade::ApplicationSchema,
     {
+        if let Some(authority) = &self.workflow_approval_authority {
+            application.readmit_workflow_approval_authority(authority, admission)?;
+        }
         application.authorize_application_commit(admission, &self.commit, serialization)
     }
 

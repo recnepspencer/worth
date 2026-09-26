@@ -148,10 +148,17 @@ pub(super) fn lower_node(
     let node_kind = planned_field_locator(NODE_ASPECT, "kind")?;
     let member = planned_field_locator(NODE_ASPECT, "member")?;
     let input_type = planned_field_locator(NODE_ASPECT, "input-type")?;
+    let operation_binding = planned_field_locator(NODE_ASPECT, "operation-binding")?;
     let parameter_type = planned_field_locator(NODE_ASPECT, "parameter-type")?;
     let result_type = planned_field_locator(NODE_ASPECT, "result-type")?;
     let assessment_binding = planned_field_locator(NODE_ASPECT, "assessment-binding")?;
     let assessment_subject = planned_field_locator(NODE_ASPECT, "assessment-subject")?;
+    let assessment_applicability_relation =
+        planned_field_locator(NODE_ASPECT, "assessment-applicability-relation")?;
+    let assessment_applicability_from =
+        planned_field_locator(NODE_ASPECT, "assessment-applicability-from")?;
+    let assessment_applicability_to =
+        planned_field_locator(NODE_ASPECT, "assessment-applicability-to")?;
     let condition_binding = planned_field_locator(NODE_ASPECT, "condition-binding")?;
     let capability_type = planned_field_locator(NODE_ASPECT, "capability-type")?;
     let approval_operation = planned_field_locator(NODE_ASPECT, "approval-operation")?;
@@ -164,10 +171,17 @@ pub(super) fn lower_node(
         .required("kind", ScalarAspectType::UInt64)
         .required("member", ScalarAspectType::String)
         .optional("input-type", ScalarAspectType::String)
+        .optional("operation-binding", ScalarAspectType::String)
         .optional("parameter-type", ScalarAspectType::String)
         .optional("result-type", ScalarAspectType::String)
         .optional("assessment-binding", ScalarAspectType::String)
         .optional("assessment-subject", ScalarAspectType::String)
+        .optional(
+            "assessment-applicability-relation",
+            ScalarAspectType::String,
+        )
+        .optional("assessment-applicability-from", ScalarAspectType::String)
+        .optional("assessment-applicability-to", ScalarAspectType::String)
         .optional("condition-binding", ScalarAspectType::String)
         .optional("capability-type", ScalarAspectType::String)
         .optional("approval-operation", ScalarAspectType::String)
@@ -193,10 +207,14 @@ pub(super) fn lower_node(
             kind: node_kind,
             member,
             input_type,
+            operation_binding,
             parameter_type,
             result_type,
             assessment_binding,
             assessment_subject,
+            assessment_applicability_relation,
+            assessment_applicability_from,
+            assessment_applicability_to,
             condition_binding,
             capability_type,
             approval_operation,
@@ -263,6 +281,7 @@ pub(super) fn lower_instance(
 > {
     let identity_field = planned_field_locator(INSTANCE_ASPECT, "identity")?;
     let protocol_version = planned_field_locator(INSTANCE_ASPECT, "protocol-version")?;
+    let branch_occurrence = planned_field_locator(INSTANCE_ASPECT, "branch-occurrence")?;
     let program_revision = planned_field_locator(INSTANCE_ASPECT, "program-revision")?;
     let definition_content_identity =
         planned_field_locator(INSTANCE_ASPECT, "definition-content-identity")?;
@@ -274,6 +293,7 @@ pub(super) fn lower_instance(
         .struct_fields()
         .required("identity", ScalarAspectType::String)
         .required("protocol-version", ScalarAspectType::UInt64)
+        .required("branch-occurrence", ScalarAspectType::UInt64)
         .required("program-revision", ScalarAspectType::String)
         .required("definition-content-identity", ScalarAspectType::String)
         .required("subject-partition", ScalarAspectType::UInt64)
@@ -298,6 +318,7 @@ pub(super) fn lower_instance(
             entity_kind: kind,
             identity: identity_field,
             protocol_version,
+            branch_occurrence,
             program_revision,
             definition_content_identity,
             subject_partition,

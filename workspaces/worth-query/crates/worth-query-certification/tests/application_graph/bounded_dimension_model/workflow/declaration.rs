@@ -42,6 +42,7 @@ impl ApplicationWorkflowSpec for ReviewedGeometryWorkflow {
 
 worth_query_entity!(pub WorkflowAuthoringGrant for BoundedDimensionSchema);
 worth_query_aspect!(pub WorkflowAuthoringGrantFacts for BoundedDimensionSchema, WorkflowAuthoringGrant; identity = AspectIdentity(0x91750601), revision = AspectContractRevision(1),);
+worth_query_field!(pub WorkflowGrantIdentityField for BoundedDimensionSchema, WorkflowAuthoringGrant, WorkflowAuthoringGrantFacts: String => StringApplicationValueBinding, read_only, equality);
 worth_query_field!(pub WorkflowGrantActionField for BoundedDimensionSchema, WorkflowAuthoringGrant, WorkflowAuthoringGrantFacts: String => StringApplicationValueBinding, read_only, no_equality);
 worth_query_field!(pub WorkflowGrantPurposeField for BoundedDimensionSchema, WorkflowAuthoringGrant, WorkflowAuthoringGrantFacts: String => StringApplicationValueBinding, read_only, no_equality);
 worth_query_field!(pub WorkflowGrantStatusField for BoundedDimensionSchema, WorkflowAuthoringGrant, WorkflowAuthoringGrantFacts: String => StringApplicationValueBinding, read_write, no_equality);
@@ -157,6 +158,10 @@ pub(super) fn install_members(
         )
         .field(
             WorkflowAuthoringGrant::reference(),
+            WorkflowGrantIdentityField::reference(),
+        )
+        .field(
+            WorkflowAuthoringGrant::reference(),
             WorkflowGrantActionField::reference(),
         )
         .field(
@@ -253,6 +258,10 @@ pub fn seed_authoring(graph: &mut WorthQueryPrimaryGraphBootstrap<BoundedDimensi
                 entity_key("workflow-authoring-grant"),
             )
             .field(
+                WorkflowGrantIdentityField::reference(),
+                "workflow-authoring-grant".to_owned(),
+            )
+            .field(
                 WorkflowGrantActionField::reference(),
                 "author-workflow-definition".to_owned(),
             )
@@ -316,6 +325,10 @@ pub fn seed_authoring(graph: &mut WorthQueryPrimaryGraphBootstrap<BoundedDimensi
             WorthQueryApplicationEntitySeed::new(
                 WorkflowAuthoringGrant::reference(),
                 entity_key("workflow-instance-start-grant"),
+            )
+            .field(
+                WorkflowGrantIdentityField::reference(),
+                "workflow-instance-start-grant".to_owned(),
             )
             .field(
                 WorkflowGrantActionField::reference(),

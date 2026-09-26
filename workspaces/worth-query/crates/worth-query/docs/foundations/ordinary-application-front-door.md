@@ -164,8 +164,20 @@ derived publication rather than source success.
 
 Query results expose bounded `observed_sources()`. A source-bound mutation calls
 `.expect_source(...)`; fresh admission and publication compare the declared native
-source footprint. Unrelated sibling progress is allowed, while missing, foreign,
+source footprint. Sibling edits outside that footprint are allowed; sibling
+membership and selector-field changes may invalidate it. Missing, foreign,
 retired, ABA-changed, or changed source evidence is denied explicitly.
+
+When an input selects subjects within its scope (for example, a copied occurrence
+and its destination parent), its `ApplicationMutationBinding` implements
+`expected_source_parameters(input)` with `Ok(Some(typed_query_parameters))`.
+Query compares those selectors against the observation's exact canonical parameter
+basis before binding source facts or invoking the handler. Row sources, result-set
+sources and framework producers use the same check; a mismatch returns
+`SourceParametersMismatch`. The query's installed canonical-work budget still
+applies. `Ok(None)` means the binding intentionally accepts any parameter selection
+of its declared source query; it must not be used to bypass input-selected subjects.
+Scope/branch affinity and native source currentness remain separate required checks.
 
 `request.retain_read()` captures an exact application occurrence.
 `request.at(&observation).query(intent).execute()` reads it after fresh identity and

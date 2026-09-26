@@ -7,9 +7,8 @@ use worth_query_host::facade::application_entry::{
     WorthQueryWorkflowAssessmentAcceptanceDenial,
 };
 use worth_query_host::facade::primary_graph::{
-    WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationCommitDenialKind,
-    WorthQueryApplicationCommitOutcome, WorthQueryApplicationOutputRole,
-    WorthQueryOutputDemandDenialKind, WorthQueryPreserveOutput,
+    WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitOutcome,
+    WorthQueryApplicationOutputRole, WorthQueryOutputDemandDenialKind, WorthQueryPreserveOutput,
 };
 use worth_query_replay::facade::WorthQueryCertificationCostRuntimeExt;
 
@@ -21,20 +20,30 @@ use super::bounded_dimension_model::{
     schema::Part,
     settled_verdict::{settle, DimensionVerdict},
     workflow::{
-        accept_assessment, advance_instance, assessment_join_terminal_definition,
-        assessment_join_terminal_definition_with_policy, assessment_retry_definition,
-        multi_subject_assessment_retry_definition, propose_instance, publish_definition,
-        reviewed_geometry_definition, settle_assessment, settle_assessment_for,
-        spoofed_assessment_denial, start_instance,
+        accept_assessment, accept_early_assessment, advance_instance,
+        assessment_join_terminal_definition, assessment_join_terminal_definition_with_policy,
+        assessment_retry_definition, early_assessment_definition,
+        multi_subject_assessment_retry_definition, prepare_early_assessment_denial,
+        propose_instance, publish_definition, reviewed_geometry_definition, settle_assessment,
+        settle_assessment_for, settle_early_assessment_for, spoofed_assessment_denial,
+        start_instance,
     },
 };
 
+#[path = "workflow_assessment/conditional_requirement.rs"]
+mod conditional_requirement;
 #[path = "workflow_assessment/currentness.rs"]
 mod currentness;
+#[path = "workflow_assessment/demand_affinity.rs"]
+mod demand_affinity;
+#[path = "workflow_assessment/early_collection.rs"]
+mod early_collection;
 #[path = "workflow_assessment/join_policy.rs"]
 mod join_policy;
 #[path = "workflow_assessment/multi_subject_currentness.rs"]
 mod multi_subject_currentness;
+#[path = "workflow_assessment/relation_aba.rs"]
+mod relation_aba;
 
 #[test]
 fn authenticated_advance_reconstructs_the_exact_required_assessment_without_settling_it() {

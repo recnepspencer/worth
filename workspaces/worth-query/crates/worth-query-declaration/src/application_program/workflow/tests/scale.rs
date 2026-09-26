@@ -172,7 +172,9 @@ fn retry_rich_validation_reports_its_separate_sparse_traversal_lane(
         work.retry_complexity_contract(),
         ApplicationWorkflowRetryValidationComplexityContract::PerRetrySparseControlTraversal
     );
-    assert_eq!(work.retry_reachability(), 20_100);
+    // Each retry stops once its source is found; unrelated downstream nodes
+    // are no longer included in the reachability traversal.
+    assert_eq!(work.retry_reachability(), 9_901);
     assert!(work.peak_index_bytes() <= RETRY_RICH_INDEX_BYTE_ENVELOPE);
     Ok(())
 }

@@ -10,7 +10,8 @@ use crate::domain_computation::primary_graph::workflow::instance::progression::{
 
 mod selection;
 pub(in crate::domain_computation::primary_graph) use selection::{
-    select_current_transition, select_proposal_replay_transition, select_proposal_transition,
+    select_assessment_collection, select_current_transition, select_navigation_back_transition,
+    select_proposal_replay_transition, select_proposal_transition,
     select_settled_replay_transition, select_terminal_transition, SelectedWorkflowApproval,
     SelectedWorkflowAssessment, SelectedWorkflowCondition, SelectedWorkflowOperation,
     SelectedWorkflowTransition, SelectedWorkflowTransitionKind,
@@ -41,7 +42,65 @@ pub(in crate::domain_computation::primary_graph) struct AdmittedWorkflowTransiti
     progress_basis: Option<WorkflowTransitionProgressBasis>,
 }
 
+/// The Query-owned settlement facts retained when an admitted operation is
+/// handed to a product mutation binding. It carries no second read authority;
+/// the admitted transition's observed facts still fence the joint candidate.
+#[derive(Clone)]
+pub(in crate::domain_computation::primary_graph) struct WorkflowOperationSettlementBasis {
+    pub(super) instance: EntityId,
+    pub(super) node: EntityId,
+    pub(super) node_path: String,
+    pub(super) occurrence: u64,
+    pub(super) live_membership: RelationId,
+    pub(super) retire_live_membership: bool,
+    pub(super) identity: String,
+    pub(super) identity_bytes: [u8; 32],
+    progress_basis: Option<WorkflowTransitionProgressBasis>,
+}
+
+impl WorkflowOperationSettlementBasis {
+    pub(in crate::domain_computation::primary_graph) fn identity(&self) -> &str {
+        &self.identity
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn prepare_progress_update(
+        &self,
+        operation_receipt_identity: [u8; 32],
+    ) -> Result<PreparedWorkflowProgressUpdate, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial>{
+        self.progress_basis.as_ref().ok_or_else(|| {
+            crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial::new(
+                crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenialKind::WorkflowInstanceAffinityMismatch,
+                "workflow transition progress basis is unavailable",
+            )
+        })?.prepare(
+            self.node,
+            self.occurrence,
+            ApplicationWorkflowControlOutcome::Completed,
+            Some(operation_receipt_identity),
+            self.identity.clone(),
+            self.identity_bytes,
+            self.node_path.clone(),
+        )
+    }
+}
+
 impl<Schema, Operation, Input, Scope> AdmittedWorkflowTransition<Schema, Operation, Input, Scope> {
+    pub(in crate::domain_computation::primary_graph) fn operation_settlement_basis(
+        &self,
+    ) -> WorkflowOperationSettlementBasis {
+        WorkflowOperationSettlementBasis {
+            instance: self.instance,
+            node: self.node,
+            node_path: self.node_path.clone(),
+            occurrence: self.occurrence,
+            live_membership: self.live_membership,
+            retire_live_membership: self.retire_live_membership,
+            identity: self.identity.clone(),
+            identity_bytes: self.identity_bytes,
+            progress_basis: self.progress_basis.clone(),
+        }
+    }
+
     pub(in crate::domain_computation::primary_graph) const fn instance(&self) -> EntityId {
         self.instance
     }
@@ -83,6 +142,29 @@ impl<Schema, Operation, Input, Scope> AdmittedWorkflowTransition<Schema, Operati
             operation_receipt_identity,
             self.identity.clone(),
             self.identity_bytes,
+            self.node_path.clone(),
+        )
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn is_assessment_collection(&self) -> bool {
+        self.progress_basis
+            .as_ref()
+            .is_some_and(|basis| basis.progress().head() != self.node)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn prepare_assessment_collection_update(
+        &self,
+    ) -> Result<PreparedWorkflowProgressUpdate, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial>{
+        self.progress_basis.as_ref().ok_or_else(|| {
+            crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial::new(
+                crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenialKind::WorkflowInstanceAffinityMismatch,
+                "assessment collection progress basis is unavailable",
+            )
+        })?.prepare_assessment_collection(
+            self.node,
+            self.occurrence,
+            self.identity.clone(),
+            *self.identity_bytes(),
             self.node_path.clone(),
         )
     }

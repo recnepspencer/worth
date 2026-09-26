@@ -21,9 +21,9 @@ use instance_binding::{adjacency, adjacency_with_kind, exact, exact_u64, text};
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use settlement::decode_field_revision_fact;
 pub(super) use settlement::{
-    observe_evidence_dependencies, observe_retained_assessment_evidence,
-    observe_retained_transition, observe_retained_workflow_proposal_identity,
-    recover_settled_live_membership,
+    observe_evidence_dependencies, observe_retained_approval_binding,
+    observe_retained_assessment_evidence, observe_retained_transition,
+    observe_retained_workflow_proposal_identity, recover_settled_live_membership,
 };
 
 pub(in crate::domain_computation::primary_graph::application_attempt) struct ObservedWorkflowInstance
@@ -34,6 +34,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) struct Obs
         Vec<ObservedWorkflowTransition>,
     pub(in crate::domain_computation::primary_graph::application_attempt) facts:
         Vec<WorthQueryApplicationObservedFact>,
+    pub(in crate::domain_computation::primary_graph::application_attempt) handoff_fact_count: usize,
     pub(in crate::domain_computation::primary_graph::application_attempt) progress_basis:
         WorkflowTransitionProgressBasis,
     pub(in crate::domain_computation::primary_graph::application_attempt) replays:
@@ -82,6 +83,7 @@ impl ObservedWorkflowInstance {
 pub(in crate::domain_computation::primary_graph::application_attempt) struct ObservedWorkflowTransition
 {
     pub(in crate::domain_computation::primary_graph::application_attempt) entity: EntityId,
+    pub(in crate::domain_computation::primary_graph::application_attempt) identity: String,
     pub(in crate::domain_computation::primary_graph::application_attempt) settlement:
         SettledWorkflowTransition,
     pub(in crate::domain_computation::primary_graph::application_attempt) assessment_evidence:
@@ -98,6 +100,8 @@ pub(in crate::domain_computation::primary_graph::application_attempt) struct Obs
     pub(in crate::domain_computation::primary_graph::application_attempt) binding: String,
     pub(in crate::domain_computation::primary_graph::application_attempt) passing: bool,
     pub(in crate::domain_computation::primary_graph::application_attempt) coverage_identity: String,
+    pub(in crate::domain_computation::primary_graph::application_attempt) proposal_identity: String,
+    pub(in crate::domain_computation::primary_graph::application_attempt) subject: EntityId,
     pub(in crate::domain_computation::primary_graph::application_attempt) source_identity: String,
     pub(in crate::domain_computation::primary_graph::application_attempt) publication_identity:
         String,
@@ -130,8 +134,17 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         kind,
         &layout.instance.protocol_version,
         AspectValue::UInt64(
-            crate::domain_computation::primary_graph::workflow::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION,
+            crate::domain_computation::primary_graph::workflow::schema::version::WORKFLOW_INSTANCE_FACT_PROTOCOL_VERSION,
         ),
+        &mut facts,
+    )?;
+    exact(
+        runtime,
+        snapshot,
+        entity,
+        kind,
+        &layout.instance.branch_occurrence,
+        AspectValue::UInt64(instance.branch().occurrence_ordinal()),
         &mut facts,
     )?;
     exact(
@@ -234,6 +247,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
     )?;
     let progress_observation =
         progression::observe_progress(handle, runtime, snapshot, layout, instance, &mut facts)?;
+    let handoff_fact_count = facts.len();
     let retained_history_key = live_membership
         .is_none()
         .then(|| progress_observation.retained_key())
@@ -257,6 +271,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
                     live_membership,
                     transitions: Vec::new(),
                     facts,
+                    handoff_fact_count,
                     progress_basis,
                     replays,
                     history_materialized: false,
@@ -326,6 +341,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         live_membership,
         transitions: settled_transitions,
         facts,
+        handoff_fact_count,
         progress_basis,
         replays,
         history_materialized: true,

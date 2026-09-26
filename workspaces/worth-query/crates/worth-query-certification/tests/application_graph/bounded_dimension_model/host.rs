@@ -12,7 +12,6 @@ use worth_query_host::facade::application_installation::{
     in_memory_rostered_program, WorthQueryApplicationProgramRoster,
     WorthQueryInMemoryApplicationDenial, WorthQueryInMemoryApplicationLimits,
     WorthQueryInMemoryApplicationProfile, WorthQueryProgramApplicationRuntime,
-    WorthQueryWorkflowApplicationRuntime,
 };
 use worth_query_host::facade::declaration::application_program::{
     ApplicationProgramDefinition, ApplicationProgramOutputsShape, ValidatedApplicationProgram,
@@ -27,14 +26,15 @@ use super::assessment_output::{
 };
 use super::assessment_readiness::PartAssessmentReadiness;
 use super::dimension_entry::{
-    SetPartDimensionBinding, SetPartDimensionHandler, PART_IDENTITY, RELATED_PART_IDENTITY,
+    ReviewedSetPartDimensionBinding, ReviewedSetPartDimensionHandler, SetPartDimensionBinding,
+    SetPartDimensionHandler, PART_IDENTITY, RELATED_PART_IDENTITY,
 };
 use super::programs::{
     validated_changed_feature_program, validated_changed_operation_program,
     validated_first_program, validated_first_resource_program, validated_foreign_rule_program,
-    validated_removed_operation_program, validated_second_program,
-    validated_second_resource_program, DimensionProgramP0, DimensionProgramP1,
-    ResourceDimensionProgramP0,
+    validated_removed_assessment_supplier_program, validated_removed_operation_program,
+    validated_second_program, validated_second_resource_program, DimensionProgramP0,
+    DimensionProgramP1, ResourceDimensionProgramP0,
 };
 use super::rules::{resolve_first_rule, resolve_second_rule};
 use super::schema::{
@@ -42,22 +42,27 @@ use super::schema::{
     Part, PartDimensionField, PartIdentityField, PartPrincipalBinding,
 };
 use super::workflow::{
-    WorkflowAdvanceBinding, WorkflowAdvanceHandler, WorkflowApprovalBinding,
-    WorkflowApprovalHandler, WorkflowDefinitionAuthoringBinding,
-    WorkflowDefinitionAuthoringHandler, WorkflowInstanceStartBinding, WorkflowInstanceStartHandler,
+    ReviewRequirementBinding, ReviewRequirementHandler, UnlinkReviewRequirementBinding,
+    UnlinkReviewRequirementHandler, WorkflowAdvanceBinding, WorkflowAdvanceHandler,
+    WorkflowApprovalBinding, WorkflowApprovalHandler, WorkflowDefinitionAuthoringBinding,
+    WorkflowDefinitionAuthoringHandler, WorkflowGrantStatusBinding, WorkflowGrantStatusHandler,
+    WorkflowInstanceStartBinding, WorkflowInstanceStartHandler,
 };
+
+#[path = "host/workflow_runtime.rs"]
+mod workflow_runtime;
+pub use workflow_runtime::BoundedDimensionWorkflowRuntime;
 
 /// The dimension every host seeds. It satisfies both installed rules, so the
 /// same bootstrap is lawful whichever program the host starts on.
 pub const SEED_DIMENSION: u64 = 7;
 
+#[cfg(test)]
+#[path = "host/tests.rs"]
+mod tests;
+
 pub type BoundedDimensionRuntime<Initial> =
     WorthQueryProgramApplicationRuntime<BoundedDimensionSchema, Initial>;
-pub type BoundedDimensionWorkflowRuntime = WorthQueryWorkflowApplicationRuntime<
-    BoundedDimensionSchema,
-    super::workflow::ReviewedGeometryWorkflow,
-    DimensionProgramP0,
->;
 
 impl WorthQueryApplicationContribution<BoundedDimensionSchema> for BoundedDimensionContribution {
     type Configuration = ();
@@ -86,6 +91,13 @@ impl WorthQueryApplicationContribution<BoundedDimensionSchema> for BoundedDimens
         )?;
         setup
             .handler::<SetPartDimensionBinding, _>(SetPartDimensionHandler)
+            .and_then(|()| {
+                setup.handler::<ReviewedSetPartDimensionBinding, _>(ReviewedSetPartDimensionHandler)
+            })
+            .and_then(|()| setup.handler::<ReviewRequirementBinding, _>(ReviewRequirementHandler))
+            .and_then(|()| {
+                setup.handler::<UnlinkReviewRequirementBinding, _>(UnlinkReviewRequirementHandler)
+            })
             .and_then(|()| setup.handler::<PartAssessmentBinding, _>(PartAssessmentHandler))
             .and_then(|()| setup.producer::<PartAssessmentProducer>(PartAssessmentProvider))
             .and_then(|()| setup.conditional::<PartAssessmentReadiness>(()))
@@ -99,6 +111,9 @@ impl WorthQueryApplicationContribution<BoundedDimensionSchema> for BoundedDimens
             })
             .and_then(|()| setup.handler::<WorkflowAdvanceBinding, _>(WorkflowAdvanceHandler))
             .and_then(|()| setup.handler::<WorkflowApprovalBinding, _>(WorkflowApprovalHandler))
+            .and_then(|()| {
+                setup.handler::<WorkflowGrantStatusBinding, _>(WorkflowGrantStatusHandler)
+            })
     }
 }
 
@@ -112,10 +127,10 @@ pub fn publish_on_first_program_for_history_scale() -> BoundedDimensionRuntime<D
 }
 
 /// Scheduled 10k publication lane: 200k candidate items, 128 MiB candidate
-/// bytes, 20M candidate work, 200k operation width, and GeometryKernel's
-/// 65,536-record patch ceiling. Ordinary fixture actions retain their smaller
+/// bytes, 20M candidate work, 200k operation width, and WorkflowScale's
+/// finite Relational publication and integrity ceilings. Ordinary actions retain smaller
 /// handler-level candidate requirements.
-pub fn publish_on_first_program_for_geometry_scale() -> BoundedDimensionRuntime<DimensionProgramP0>
+pub fn publish_on_first_program_for_workflow_scale() -> BoundedDimensionRuntime<DimensionProgramP0>
 {
     publish_on_first_program_with_limits(
         WorthQueryInMemoryApplicationLimits::new(
@@ -132,7 +147,7 @@ pub fn publish_on_first_program_for_geometry_scale() -> BoundedDimensionRuntime<
                 .expect("finite geometry query resources"),
             primary_graph::SignalConditionalEvaluationBudget::development(),
         )
-        .with_profile(WorthQueryInMemoryApplicationProfile::GeometryKernel),
+        .with_profile(WorthQueryInMemoryApplicationProfile::WorkflowScale),
     )
 }
 
@@ -145,6 +160,7 @@ fn publish_on_first_program_with_limits(
             .support(validated_second_program())
             .support(validated_changed_feature_program())
             .support(validated_changed_operation_program())
+            .support(validated_removed_assessment_supplier_program())
             .support(validated_removed_operation_program()),
         limits,
     )

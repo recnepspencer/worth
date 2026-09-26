@@ -16,14 +16,21 @@ use worth_query_host::facade::declaration::application_program::{
 };
 
 use super::assessment_output::PublishPartAssessment;
-use super::dimension_entry::SetPartDimensionBinding;
+use super::dimension_entry::{ReviewedSetPartDimensionBinding, SetPartDimensionBinding};
 use super::schema::{
     BoundedDimensionContribution, BoundedDimensionSchema, BoundedDimensionV1, BoundedDimensionV2,
     BoundedDimensionV3, PartDimensionRowBinding,
 };
 use super::workflow::{
-    WorkflowAdvanceBinding, WorkflowApprovalBinding, WorkflowDefinitionAuthoringBinding,
+    ReviewRequirementBinding, UnlinkReviewRequirementBinding, WorkflowAdvanceBinding,
+    WorkflowApprovalBinding, WorkflowDefinitionAuthoringBinding, WorkflowGrantStatusBinding,
     WorkflowInstanceStartBinding,
+};
+
+#[path = "programs/removed_assessment_supplier.rs"]
+mod removed_assessment_supplier;
+pub use removed_assessment_supplier::{
+    validated_removed_assessment_supplier_program, RemovedAssessmentSupplierProgram,
 };
 
 /// The one feature both programs govern.
@@ -174,6 +181,7 @@ impl ApplicationProgramDefinition<BoundedDimensionSchema> for ChangedFeatureDime
                 .mutation::<WorkflowInstanceStartBinding>()
                 .mutation::<WorkflowAdvanceBinding>()
                 .mutation::<WorkflowApprovalBinding>()
+                .mutation::<WorkflowGrantStatusBinding>()
                 .finish(),
         ]
     }
@@ -191,11 +199,14 @@ impl ApplicationProgramDefinition<BoundedDimensionSchema> for RemovedOperationDi
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         vec![
             ApplicationFeatureSpec::root::<BoundedDimensionSchema, BoundedDimensionFeature>()
+                .mutation::<ReviewRequirementBinding>()
+                .mutation::<UnlinkReviewRequirementBinding>()
                 .conditional_operation::<PublishPartAssessment>()
                 .mutation::<WorkflowDefinitionAuthoringBinding>()
                 .mutation::<WorkflowInstanceStartBinding>()
                 .mutation::<WorkflowAdvanceBinding>()
                 .mutation::<WorkflowApprovalBinding>()
+                .mutation::<WorkflowGrantStatusBinding>()
                 .finish(),
         ]
     }
@@ -218,11 +229,14 @@ impl ApplicationProgramDefinition<BoundedDimensionSchema> for ChangedOperationDi
                     ChangedOperationLocality,
                     ChangedOperationShape,
                 >()
+                .mutation::<ReviewRequirementBinding>()
+                .mutation::<UnlinkReviewRequirementBinding>()
                 .conditional_operation::<PublishPartAssessment>()
                 .mutation::<WorkflowDefinitionAuthoringBinding>()
                 .mutation::<WorkflowInstanceStartBinding>()
                 .mutation::<WorkflowAdvanceBinding>()
                 .mutation::<WorkflowApprovalBinding>()
+                .mutation::<WorkflowGrantStatusBinding>()
                 .finish(),
         ]
     }
@@ -349,11 +363,15 @@ fn dimension_feature_specs() -> Vec<ApplicationFeatureSpec> {
     vec![
         ApplicationFeatureSpec::root::<BoundedDimensionSchema, BoundedDimensionFeature>()
             .mutation::<SetPartDimensionBinding>()
+            .mutation::<ReviewedSetPartDimensionBinding>()
+            .mutation::<ReviewRequirementBinding>()
+            .mutation::<UnlinkReviewRequirementBinding>()
             .conditional_operation::<PublishPartAssessment>()
             .mutation::<WorkflowDefinitionAuthoringBinding>()
             .mutation::<WorkflowInstanceStartBinding>()
             .mutation::<WorkflowAdvanceBinding>()
             .mutation::<WorkflowApprovalBinding>()
+            .mutation::<WorkflowGrantStatusBinding>()
             .finish(),
     ]
 }

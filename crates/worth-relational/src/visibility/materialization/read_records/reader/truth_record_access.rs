@@ -218,51 +218,17 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         kind_id: crate::identity::data::KindId,
         version_id: crate::identity::data::VersionId,
     ) -> Vec<RelationReadRecord> {
-        let mut records = Vec::new();
-        let current_version = VersionSource::current_version_id(self.runtime);
-        let Some(partition) = state.get_partition(partition_id) else {
-            return records;
-        };
-        if version_id == current_version {
-            for slot in partition.relation_arena.live_bitset.iter_set_slots() {
-                if !slot_kind_matches_current(&partition.relation_arena, slot, kind_id) {
-                    continue;
-                }
-                if let Some(record) = materialize_current_authoritative_relation_record(
-                    registry,
-                    partition,
-                    partition_id,
-                    slot,
-                ) {
-                    records.push(record);
-                }
-            }
-        } else {
-            self.runtime.services.instrumentation.count(|counters| {
-                counters.visibility_relation_slot_scans += partition.relation_arena.slot_count();
-            });
-            for slot in partition.relation_arena.occupied_slots() {
-                if !relation_slot_matches_kind_at_version(
-                    partition,
-                    slot,
-                    kind_id,
-                    version_id,
-                    current_version,
-                ) {
-                    continue;
-                }
-                if let Some(record) = materialize_authoritative_relation_record_at_version(
-                    registry,
-                    partition,
-                    partition_id,
-                    slot,
-                    version_id,
-                ) {
-                    records.push(record);
-                }
-            }
-        }
-        records
+        let mut scan = super::truth_relation_kind_scan::RelationKindScan::new(usize::MAX, false);
+        self.scan_relation_kind_in_partition(
+            state,
+            registry,
+            partition_id,
+            kind_id,
+            version_id,
+            &mut scan,
+        )
+        .expect("an unbounded kind scan cannot exhaust usize::MAX work");
+        scan.into_records()
     }
 
     pub(crate) fn visible_entity_slots_from_state(

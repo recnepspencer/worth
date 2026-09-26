@@ -136,10 +136,11 @@ fn traverse_frontier(
             ) else {
                 continue;
             };
-            if next_anchor.is_none_or(|anchor| candidate.0 == anchor)
-                && entity_is_live_kind(context.view, candidate.0, candidate.1, state.counters)
-            {
-                state.dependencies.entities.insert(candidate.0);
+            if next_anchor.is_some_and(|anchor| candidate.0 != anchor) {
+                continue;
+            }
+            state.dependencies.entities.insert(candidate.0);
+            if entity_is_live_kind(context.view, candidate.0, candidate.1, state.counters) {
                 next.insert(witness.extend(candidate.0));
             }
         }
@@ -286,12 +287,13 @@ fn apply_related_entities(
                     ) else {
                         return false;
                     };
-                    if candidate != constraint.entity()
-                        || !entity_is_live_kind(context.view, candidate, kind, state.counters)
-                    {
+                    if candidate != constraint.entity() {
                         return false;
                     }
                     state.dependencies.entities.insert(candidate);
+                    if !entity_is_live_kind(context.view, candidate, kind, state.counters) {
+                        return false;
+                    }
                     true
                 })
         });

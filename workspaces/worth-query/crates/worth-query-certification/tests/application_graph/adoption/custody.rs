@@ -37,14 +37,17 @@ fn removed_operation_derives_retire_disposition_and_closes_its_source_owner() {
     let requirements = programs
         .compare(&target)
         .expect("the owner must describe operation removal");
-    let requirement = requirements
+    let removed_operations = requirements
         .custody_inventory_requirements()
         .iter()
-        .find(|requirement| {
+        .filter(|requirement| {
             requirement.kind() == WorthQueryProgramCustodyInventoryKind::OperationContinuation
         })
-        .expect("operation removal requires continuation custody");
-    assert_eq!(requirement.change(), ApplicationSemanticChangeKind::Removed);
+        .collect::<Vec<_>>();
+    assert_eq!(removed_operations.len(), 2);
+    assert!(removed_operations
+        .iter()
+        .all(|requirement| requirement.change() == ApplicationSemanticChangeKind::Removed));
 
     let prepared = programs
         .adopt(&target)
@@ -53,12 +56,17 @@ fn removed_operation_derives_retire_disposition_and_closes_its_source_owner() {
         .expect("execution derives the disposition from installed owner truth");
     let expected_custody = prepared.custody().clone();
     let dispositions = expected_custody.dispositions();
-    assert_eq!(dispositions.len(), 1);
-    assert_eq!(dispositions[0].requirement(), requirement);
-    assert_eq!(
-        dispositions[0].kind(),
-        WorthQueryProgramCustodyDispositionKind::RetireUneffectedContinuation
-    );
+    assert_eq!(dispositions.len(), removed_operations.len());
+    for requirement in removed_operations {
+        let disposition = dispositions
+            .iter()
+            .find(|disposition| disposition.requirement() == requirement)
+            .expect("every removed operation needs a custody disposition");
+        assert_eq!(
+            disposition.kind(),
+            WorthQueryProgramCustodyDispositionKind::RetireUneffectedContinuation
+        );
+    }
 
     let performed = match prepared.publish() {
         WorthQueryBranchAdoptionPublicationOutcome::Performed(performed) => performed,

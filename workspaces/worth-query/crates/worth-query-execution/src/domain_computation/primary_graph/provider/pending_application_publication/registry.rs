@@ -34,6 +34,13 @@ enum WorthQueryApplicationPublicationRecoveryState {
     Complete,
 }
 
+pub(super) enum WorthQueryPendingApplicationIdempotency {
+    Reserved,
+    Pending(
+        crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding,
+    ),
+}
+
 impl WorthQueryPendingApplicationPublicationRegistry {
     pub(in crate::domain_computation::primary_graph) fn new(maximum_slots: usize) -> Self {
         Self {
@@ -128,6 +135,22 @@ impl Drop for WorthQueryApplicationPublicationRecoveryReservation {
 }
 
 impl WorthQueryApplicationPublicationRecoverySlot {
+    pub(super) fn inspect_idempotency(&self) -> Option<WorthQueryPendingApplicationIdempotency> {
+        let state = self
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        match &*state {
+            WorthQueryApplicationPublicationRecoveryState::Reserved => {
+                Some(WorthQueryPendingApplicationIdempotency::Reserved)
+            }
+            WorthQueryApplicationPublicationRecoveryState::Pending(pending) => Some(
+                WorthQueryPendingApplicationIdempotency::Pending(pending.idempotency()),
+            ),
+            WorthQueryApplicationPublicationRecoveryState::Complete => None,
+        }
+    }
+
     pub(super) fn with_pending<Outcome>(
         &self,
         use_pending: impl FnOnce(&mut WorthQueryPendingApplicationPublication) -> Outcome,

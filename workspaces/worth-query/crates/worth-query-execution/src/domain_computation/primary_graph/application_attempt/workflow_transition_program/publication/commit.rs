@@ -1,4 +1,7 @@
 use worth_foundational::facade::{AspectValue, InternedString};
+#[path = "commit/transition_lookup.rs"]
+mod transition_lookup;
+pub(in crate::domain_computation::primary_graph::application_attempt) use transition_lookup::transition_entity_in_receipt;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::*;
@@ -20,6 +23,9 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
+        if let Err(denial) = prepared.validate_approval_descriptor() {
+            return WorkflowProgressOutcome::AuthenticationDenied(denial);
+        }
         match prepared.resolve_transition_replay(self, idempotency) {
             Ok(Some(outcome)) => return outcome,
             Ok(None) => {}
@@ -39,6 +45,7 @@ where
             progress_update,
             approval,
             approval_identity,
+            approval_authentication,
         ) = match prepared {
             PreparedWorkflowAdvance::Transition {
                 program,
@@ -54,6 +61,7 @@ where
                 progress_update,
                 approval,
                 approval_identity,
+                approval_authentication,
                 ..
             } => (
                 program,
@@ -69,6 +77,7 @@ where
                 progress_update,
                 approval,
                 approval_identity,
+                approval_authentication,
             ),
             PreparedWorkflowAdvance::AwaitingAssessment(prepared) => {
                 return WorkflowProgressOutcome::AwaitingAssessment(prepared.into_required())
@@ -89,6 +98,28 @@ where
                 return WorkflowProgressOutcome::PreparationDenied(denial)
             }
         };
+        let progress_update = approval_authentication
+            .as_ref()
+            .map(|authentication| authentication.trusted_progress_update())
+            .or(progress_update);
+        match (approval.is_some(), approval_authentication) {
+            (true, Some(authentication)) => {
+                if !authentication.matches_basis(program.output_currentness_facts.as_ref()) {
+                    return WorkflowProgressOutcome::AuthenticationDenied(
+                        worth_query_admission::facade::authentication_event::WorthQueryAuthenticationEventDenial::WrongOwner,
+                    );
+                }
+                if let Err(denial) = authentication.readmit() {
+                    return WorkflowProgressOutcome::AuthenticationDenied(denial);
+                }
+            }
+            (true, None) | (false, Some(_)) => {
+                return WorkflowProgressOutcome::AuthenticationDenied(
+                    worth_query_admission::facade::authentication_event::WorthQueryAuthenticationEventDenial::MissingSigningProof,
+                );
+            }
+            (false, None) => {}
+        }
         let Some(presented) = self
             .installed_program_support()
             .and_then(|support| support.present(&program_revision))
@@ -188,22 +219,9 @@ pub(in crate::domain_computation::primary_graph::application_attempt::workflow_t
     operation_receipt_identity: Option<[u8; 32]>,
     replayed: bool,
 ) -> WorkflowProgressOutcome {
-    let expected = AspectValue::String(InternedString::Raw(transition_identity));
-    let candidates = receipt
-        .committed_changes()
-        .entity_changes()
-        .filter(|(_, change)| {
-            *change == worth_relational::facade::publication::RecordStructuralChange::Created
-        })
-        .filter_map(|(entity, _)| {
-            (receipt
-                .committed_changes()
-                .committed_field_values(entity, &[&transition_identity_locator])
-                == Some(vec![expected.clone()]))
-            .then_some(entity)
-        })
-        .collect::<Vec<_>>();
-    let [transition] = candidates.as_slice() else {
+    let Some(transition) =
+        transition_entity_in_receipt(&receipt, &transition_identity, &transition_identity_locator)
+    else {
         return WorkflowProgressOutcome::ProjectionDenied(receipt);
     };
     let assessment_evidence = match assessment {
@@ -248,14 +266,14 @@ pub(in crate::domain_computation::primary_graph::application_attempt::workflow_t
         None => None,
     };
     let approval = match approval {
-        Some(approval) => match project_approval(runtime, &receipt, *transition, approval) {
+        Some(approval) => match project_approval(runtime, &receipt, transition, approval) {
             Some(approval) => Some(approval),
             None => return WorkflowProgressOutcome::ProjectionDenied(receipt),
         },
         None => None,
     };
     WorkflowProgressOutcome::Completed(PerformedWorkflowTransition {
-        transition: *transition,
+        transition,
         node_path,
         terminal,
         receipt,
@@ -308,13 +326,9 @@ fn project_approval(
         return None;
     }
     let required = approval.required_fields.iter().collect::<Vec<_>>();
-    if receipt
+    receipt
         .committed_changes()
-        .committed_field_values(*entity, &required)
-        .is_none()
-    {
-        return None;
-    }
+        .committed_field_values(*entity, &required)?;
     let version = receipt.committed_changes().commit_reference().version_id;
     let exact_targets = |kind, from, maximum_work_units| {
         runtime
@@ -336,13 +350,11 @@ fn project_approval(
     }
     let mut expected_evidence = approval.evidence.to_vec();
     expected_evidence.sort_unstable();
-    let Some(mut actual_evidence) = exact_targets(
+    let mut actual_evidence = exact_targets(
         approval.evidence_relation,
         *entity,
         expected_evidence.len().saturating_mul(2).saturating_add(1),
-    ) else {
-        return None;
-    };
+    )?;
     actual_evidence.sort_unstable();
     if actual_evidence != expected_evidence {
         return None;

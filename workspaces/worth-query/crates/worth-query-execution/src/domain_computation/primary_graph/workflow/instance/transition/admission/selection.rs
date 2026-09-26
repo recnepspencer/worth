@@ -9,13 +9,16 @@ use crate::domain_computation::primary_graph::workflow::definition::{
 };
 use crate::domain_computation::primary_graph::workflow::instance::{
     SettledWorkflowTransition, WorkflowInstanceProgress, WorkflowTransitionProgressBasis,
+    WorkflowTransitionReplayProjection,
 };
 
 mod approval;
+mod collection;
 mod identity;
 mod replay;
 use approval::select_approval;
 pub(in crate::domain_computation::primary_graph) use approval::SelectedWorkflowApproval;
+pub(in crate::domain_computation::primary_graph) use collection::select_assessment_collection;
 use identity::transition_identity;
 pub(in crate::domain_computation::primary_graph) use replay::select_settled_replay_transition;
 pub(in crate::domain_computation::primary_graph) struct SelectedWorkflowTransition {
@@ -37,6 +40,7 @@ pub(in crate::domain_computation::primary_graph) enum SelectedWorkflowTransition
     EvidenceJoin(
         worth_query_declaration::facade::application_program::ApplicationWorkflowEvidenceJoinPolicy,
     ),
+    NavigationBack,
     Terminal,
 }
 
@@ -44,6 +48,7 @@ pub(in crate::domain_computation::primary_graph) enum SelectedWorkflowTransition
 pub(in crate::domain_computation::primary_graph) struct SelectedWorkflowOperation {
     pub(in crate::domain_computation::primary_graph) operation: String,
     pub(in crate::domain_computation::primary_graph) input_type: String,
+    pub(in crate::domain_computation::primary_graph) binding: Option<String>,
 }
 
 #[derive(Clone)]
@@ -130,10 +135,12 @@ pub(in crate::domain_computation::primary_graph) fn select_current_transition(
         CompiledWorkflowNodeKind::Operation {
             operation,
             input_type,
+            binding,
             requires_workflow_authority: true,
         } => SelectedWorkflowTransitionKind::Operation(SelectedWorkflowOperation {
             operation: operation.clone(),
             input_type: input_type.clone(),
+            binding: binding.clone(),
         }),
         CompiledWorkflowNodeKind::Assessment {
             query,
@@ -141,6 +148,7 @@ pub(in crate::domain_computation::primary_graph) fn select_current_transition(
             result_type,
             binding,
             subject,
+            ..
         } => SelectedWorkflowTransitionKind::Assessment(SelectedWorkflowAssessment {
             query: query.clone(),
             parameter_type: parameter_type.clone(),
@@ -194,6 +202,40 @@ pub(in crate::domain_computation::primary_graph) fn select_current_transition(
     )
 }
 
+pub(in crate::domain_computation::primary_graph) fn select_navigation_back_transition(
+    compiled: &CompiledWorkflowDefinition,
+    instance: EntityId,
+    progress_basis: &WorkflowTransitionProgressBasis,
+) -> Result<SelectedWorkflowTransition, WorthQueryApplicationAttemptDenial> {
+    let progress = progress_basis.progress();
+    progress.back_target()?;
+    let node = select_current_node(compiled, progress)?;
+    if matches!(node.kind(), CompiledWorkflowNodeKind::Terminal) {
+        return Err(denial(
+            WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAlreadySettled,
+            node.path(),
+        ));
+    }
+    let occurrence = progress.next_occurrence();
+    let (identity, identity_bytes) = transition_identity(
+        compiled,
+        instance,
+        node,
+        occurrence,
+        progress.back_edge_iterations(),
+        true,
+    )?;
+    Ok(SelectedWorkflowTransition {
+        node: node.entity(),
+        node_path: node.path().to_owned(),
+        occurrence,
+        identity,
+        identity_bytes,
+        progress_basis: Some(progress_basis.clone()),
+        kind: SelectedWorkflowTransitionKind::NavigationBack,
+    })
+}
+
 pub(in crate::domain_computation::primary_graph) fn select_proposal_transition(
     compiled: &CompiledWorkflowDefinition,
     instance: EntityId,
@@ -208,6 +250,7 @@ pub(in crate::domain_computation::primary_graph) fn select_proposal_transition(
             operation: installed_operation,
             input_type: installed_input_type,
             requires_workflow_authority: false,
+            ..
         } if installed_operation == operation && installed_input_type == input_type => {}
         _ => {
             return Err(denial(
@@ -225,6 +268,7 @@ pub(in crate::domain_computation::primary_graph) fn select_proposal_transition(
         SelectedWorkflowTransitionKind::Operation(SelectedWorkflowOperation {
             operation: operation.to_owned(),
             input_type: input_type.to_owned(),
+            binding: None,
         }),
         Some(progress_basis.clone()),
     )
@@ -232,10 +276,10 @@ pub(in crate::domain_computation::primary_graph) fn select_proposal_transition(
 
 pub(in crate::domain_computation::primary_graph) fn select_proposal_replay_transition(
     compiled: &CompiledWorkflowDefinition,
-    instance: EntityId,
     settled: SettledWorkflowTransition,
     operation: &str,
     input_type: &str,
+    replay: &WorkflowTransitionReplayProjection,
 ) -> Result<SelectedWorkflowTransition, WorthQueryApplicationAttemptDenial> {
     let node = compiled.node(settled.node()).ok_or_else(|| {
         denial(
@@ -248,6 +292,7 @@ pub(in crate::domain_computation::primary_graph) fn select_proposal_replay_trans
             operation: installed_operation,
             input_type: installed_input_type,
             requires_workflow_authority: false,
+            ..
         } if installed_operation == operation && installed_input_type == input_type => {}
         _ => {
             return Err(denial(
@@ -256,17 +301,25 @@ pub(in crate::domain_computation::primary_graph) fn select_proposal_replay_trans
             ))
         }
     }
-    select_transition(
-        compiled,
-        instance,
-        node,
-        settled.occurrence(),
-        SelectedWorkflowTransitionKind::Operation(SelectedWorkflowOperation {
+    if replay.node_path != node.path() || replay.terminal {
+        return Err(denial(
+            WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,
+            "proposal replay does not match its settled node",
+        ));
+    }
+    Ok(SelectedWorkflowTransition {
+        node: node.entity(),
+        node_path: node.path().to_owned(),
+        occurrence: settled.occurrence(),
+        identity: replay.identity.clone(),
+        identity_bytes: replay.identity_bytes,
+        progress_basis: None,
+        kind: SelectedWorkflowTransitionKind::Operation(SelectedWorkflowOperation {
             operation: operation.to_owned(),
             input_type: input_type.to_owned(),
+            binding: None,
         }),
-        None,
-    )
+    })
 }
 
 fn select_transition(
@@ -277,7 +330,18 @@ fn select_transition(
     kind: SelectedWorkflowTransitionKind,
     progress_basis: Option<WorkflowTransitionProgressBasis>,
 ) -> Result<SelectedWorkflowTransition, WorthQueryApplicationAttemptDenial> {
-    let (identity, identity_bytes) = transition_identity(compiled, instance, node, occurrence)?;
+    let iterations = progress_basis
+        .as_ref()
+        .map(|basis| basis.progress().back_edge_iterations());
+    let empty = im::OrdMap::new();
+    let (identity, identity_bytes) = transition_identity(
+        compiled,
+        instance,
+        node,
+        occurrence,
+        iterations.unwrap_or(&empty),
+        false,
+    )?;
     Ok(SelectedWorkflowTransition {
         node: node.entity(),
         node_path: node.path().to_owned(),

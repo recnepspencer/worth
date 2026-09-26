@@ -6,6 +6,7 @@
 
 mod application_definition;
 mod application_query;
+mod approval_authentication;
 mod authenticated_principal;
 mod authentication_boundary;
 mod bank_projection;
@@ -51,6 +52,9 @@ pub use application_query::{
     BankEstateEmergencyAccessActivityPageResult, BankEstateEmergencyAccessActivityResult,
     BankEstateEmergencyAccountDetailsResult, BankGraphReadPlanReviewDenialKind, BankPreviewSession,
     BankPreviewSessionDiscardReceipt, BankProductSelectionDenialKind,
+};
+pub use approval_authentication::{
+    BankApprovalAuthenticationConfiguration, BankApprovalCredential,
 };
 pub use approved_payment_workflow::{
     BankApprovedPaymentApplyOutcome, BankApprovedPaymentAssessment,
