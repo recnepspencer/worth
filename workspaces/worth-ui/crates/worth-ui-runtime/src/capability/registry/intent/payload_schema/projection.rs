@@ -76,7 +76,9 @@ impl<P: UiIntentPayload> UiIntentPayloadProjection<P> {
         self.values
             .iter()
             .position(Option::is_some)
-            .map(|slot| UiIntentPayloadProjectionViolation::UnconsumedField { slot: slot as u8 })
+            .map(|slot| UiIntentPayloadProjectionViolation::UnconsumedField {
+                slot: u8::try_from(slot).expect("a projected value's slot is a u8 field slot"),
+            })
             .map_or(Ok(()), Err)
     }
 }

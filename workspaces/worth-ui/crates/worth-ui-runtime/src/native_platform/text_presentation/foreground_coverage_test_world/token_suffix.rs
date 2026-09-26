@@ -9,8 +9,11 @@ impl CoverageWorld {
     ) -> Self {
         let ranges = [
             UiTextOriginalRange::new(0, adopted_bytes).unwrap(),
-            UiTextOriginalRange::new(adopted_bytes, self.layout.view().source().len() as u32)
-                .unwrap(),
+            UiTextOriginalRange::new(
+                adopted_bytes,
+                u32::try_from(self.layout.view().source().len()).unwrap(),
+            )
+            .unwrap(),
         ];
         self.layout =
             crate::mounting::qualified_text_test_support::UiQualifiedTextTestFixture::new()
@@ -27,8 +30,11 @@ impl CoverageWorld {
                         self.foreground.paint_span(),
                     ),
                     UiMountedTextForegroundSpan::from_runtime_mounting(
-                        UiTextOriginalRange::new(adopted_bytes, original.text().len() as u32)
-                            .unwrap(),
+                        UiTextOriginalRange::new(
+                            adopted_bytes,
+                            u32::try_from(original.text().len()).unwrap(),
+                        )
+                        .unwrap(),
                         UiMountedRgba8::new(100, 150, 200, 255),
                         UiMountedTextPaintSpanIdentity::from_runtime_mounting([18; 32]),
                     ),

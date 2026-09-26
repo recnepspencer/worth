@@ -28,11 +28,9 @@ impl UiResizeLogicalExtent {
         if value < 0.0 {
             return Err(UiResizeLogicalExtentDenial::Negative);
         }
-        let scaled = (value * 64.0).round();
-        if scaled > u32::MAX as f32 {
-            return Err(UiResizeLogicalExtentDenial::OutOfRange);
-        }
-        Ok(Self(scaled as u32))
+        crate::whole_number::whole_u32(f64::from((value * 64.0).round()))
+            .map(Self)
+            .ok_or(UiResizeLogicalExtentDenial::OutOfRange)
     }
     pub fn subpixels(self) -> u32 {
         self.0

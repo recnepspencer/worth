@@ -24,7 +24,10 @@ fn retained_pointer_burst_crosses_structural_and_exact_sequence_admission() {
                 pointer: UiHostPointerIdentity::new(1),
                 capture_epoch: UiHostPointerCaptureEpoch::new(1),
                 pressed_buttons: UiHostPressedPointerButtons::NONE,
-                position: UiHostSurfacePosition::viewport_logical(sequence as i64 * 1_000, 0),
+                position: UiHostSurfacePosition::viewport_logical(
+                    i64::try_from(sequence).unwrap() * 1_000,
+                    0,
+                ),
             },
         )
         .with_pointer_device_kind(UiHostPointerDeviceKind::Mouse)

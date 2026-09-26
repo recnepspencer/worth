@@ -2,9 +2,6 @@ use std::ops::Index;
 
 use super::UiAdmittedAllocationStreamIngress;
 
-pub(super) const ALLOCATION_FRAME_MAILBOX_MAX_CAPACITY: usize =
-    super::ALLOCATION_FRAME_SOURCE_CAPACITY;
-
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct UiAllocationFrameMailboxStoragePosture {
     admitted_capacity: u16,
@@ -16,14 +13,14 @@ pub struct UiAllocationFrameMailboxStoragePosture {
 pub(crate) struct UiAllocationFrameMailbox {
     capacity: u16,
     len: u16,
-    ingress: [Option<UiAdmittedAllocationStreamIngress>; ALLOCATION_FRAME_MAILBOX_MAX_CAPACITY],
+    ingress: [Option<UiAdmittedAllocationStreamIngress>; super::ALLOCATION_FRAME_SOURCE_CAPACITY],
 }
 
 /// Move-only canonical mailbox contents transferred into a sealed or terminal outcome.
 #[derive(Debug)]
 pub(crate) struct UiAllocationFrameMailboxDrain {
     len: u16,
-    ingress: [Option<UiAdmittedAllocationStreamIngress>; ALLOCATION_FRAME_MAILBOX_MAX_CAPACITY],
+    ingress: [Option<UiAdmittedAllocationStreamIngress>; super::ALLOCATION_FRAME_SOURCE_CAPACITY],
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -38,13 +35,13 @@ pub(crate) struct UiAllocationFrameMailboxInsertWork {
 }
 
 fn empty_slots(
-) -> [Option<UiAdmittedAllocationStreamIngress>; ALLOCATION_FRAME_MAILBOX_MAX_CAPACITY] {
+) -> [Option<UiAdmittedAllocationStreamIngress>; super::ALLOCATION_FRAME_SOURCE_CAPACITY] {
     std::array::from_fn(|_| None)
 }
 
 impl UiAllocationFrameMailbox {
     pub(crate) fn new(capacity: u16) -> Self {
-        assert!(usize::from(capacity) <= ALLOCATION_FRAME_MAILBOX_MAX_CAPACITY);
+        assert!(usize::from(capacity) <= super::ALLOCATION_FRAME_SOURCE_CAPACITY);
         Self {
             capacity,
             len: 0,
@@ -59,7 +56,7 @@ impl UiAllocationFrameMailbox {
     pub(crate) fn storage_posture(&self) -> UiAllocationFrameMailboxStoragePosture {
         UiAllocationFrameMailboxStoragePosture {
             admitted_capacity: self.capacity,
-            inline_slot_count: ALLOCATION_FRAME_MAILBOX_MAX_CAPACITY as u16,
+            inline_slot_count: super::ALLOCATION_FRAME_SOURCE_COUNT,
         }
     }
 
@@ -95,7 +92,7 @@ impl UiAllocationFrameMailbox {
     ) {
         let len = usize::from(self.len);
         let mut arrival = std::mem::replace(&mut self.ingress, empty_slots());
-        let mut ranks = [0_usize; ALLOCATION_FRAME_MAILBOX_MAX_CAPACITY];
+        let mut ranks = [0_usize; super::ALLOCATION_FRAME_SOURCE_CAPACITY];
         let mut comparisons = 0;
         for candidate_index in 0..len {
             let candidate = arrival[candidate_index]

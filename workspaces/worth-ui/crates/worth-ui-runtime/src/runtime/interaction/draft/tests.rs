@@ -247,7 +247,12 @@ fn interaction_draft_session_capacity_is_hard_bounded() {
     let budget = UiDraftByteBudget::new(1).expect("one byte is a valid draft budget");
     for slot in 0..UI_DRAFT_SESSION_LIMIT {
         state
-            .create_session(target, &generation, draft_field(slot as u8, 1), budget)
+            .create_session(
+                target,
+                &generation,
+                draft_field(u8::try_from(slot).unwrap(), 1),
+                budget,
+            )
             .expect("capacity admits the declared bound");
     }
 
@@ -255,7 +260,7 @@ fn interaction_draft_session_capacity_is_hard_bounded() {
         .create_session(
             target,
             &generation,
-            draft_field(UI_DRAFT_SESSION_LIMIT as u8, 1),
+            draft_field(u8::try_from(UI_DRAFT_SESSION_LIMIT).unwrap(), 1),
             budget,
         )
         .expect_err("the first session past the bound must stop");

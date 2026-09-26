@@ -15,6 +15,8 @@ pub enum UiConstraintPropagationDenialReason {
     UnsupportedSiblingFixedPoint,
     ContradictorySiblingRequirements,
     ContradictoryEqualShareRequirements,
+    /// More peers share an extent than remainder ranks can order.
+    EqualShareRankExhausted,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

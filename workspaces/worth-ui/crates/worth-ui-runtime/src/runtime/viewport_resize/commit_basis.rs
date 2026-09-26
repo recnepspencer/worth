@@ -10,13 +10,10 @@ impl UiViewportResizeCommitBasis {
         plan: crate::runtime::UiNarrowedAllocationFramePlan,
         selection: crate::graph::UiAdmittedReplanNeighborhoodSet,
     ) -> Result<Self, super::UiViewportResizeDenial> {
-        let selected = selection.ordered_neighborhoods().len();
+        let selected = selection.neighborhood_count();
         let maximum = plan.policy().budget().max_committed_receipts();
-        if selected > usize::from(maximum) {
-            return Err(super::UiViewportResizeDenial::ReceiptBudgetExceeded {
-                selected: selected as u16,
-                maximum,
-            });
+        if selected > maximum {
+            return Err(super::UiViewportResizeDenial::ReceiptBudgetExceeded { selected, maximum });
         }
         Ok(Self { plan, selection })
     }

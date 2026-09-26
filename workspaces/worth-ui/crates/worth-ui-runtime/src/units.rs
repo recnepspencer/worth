@@ -37,10 +37,7 @@ impl UiSubpixels {
     /// The subpixel nearest `points`, halves rounded away from zero. `None`
     /// for a value that is not finite or lies past the representable range.
     pub(crate) fn nearest(points: impl Into<f64>) -> Option<Self> {
-        let scaled = (points.into() * PER_POINT as f64).round();
-        // `i64::MAX as f64` is 2^63 itself, one past the largest count.
-        (scaled.is_finite() && scaled >= i64::MIN as f64 && scaled < i64::MAX as f64)
-            .then_some(Self(scaled as i64))
+        crate::whole_number::whole_i64((points.into() * PER_POINT as f64).round()).map(Self)
     }
 
     /// The subpixel nearest a distance that cannot be negative: an extent, or
@@ -60,7 +57,7 @@ impl UiSubpixels {
     /// Past 16_384 points that precision is coarser than one subpixel, so the
     /// point read back may name a neighboring count.
     pub(crate) fn to_points_f32(self) -> f32 {
-        self.to_points() as f32
+        layout_points(self.to_points())
     }
 
     /// `thousandths` thousandths of this distance, halves rounded away from
@@ -73,6 +70,18 @@ impl UiSubpixels {
         .ok()
         .map(Self)
     }
+}
+
+/// `points` at the precision layout measures in: the nearest `f32`, or an
+/// infinity past its range. Every narrowing of a distance in points crosses
+/// here, so no reader truncates one on its own.
+pub(crate) fn layout_points(points: f64) -> f32 {
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "narrowing to the nearest f32 is what this function means"
+    )]
+    let narrowed = points as f32;
+    narrowed
 }
 
 /// A host count of lines or pages, which the host encodes at its subpixel

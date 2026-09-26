@@ -237,7 +237,8 @@ impl UiIntentEvidenceRegistry {
 
         let slot = self.next_slot;
         self.next_slot =
-            ((usize::from(slot) + 1) % UI_INTENT_INTERACTION_EVIDENCE_ENTRY_CAPACITY) as u8;
+            u8::try_from((usize::from(slot) + 1) % UI_INTENT_INTERACTION_EVIDENCE_ENTRY_CAPACITY)
+                .expect("the evidence ring holds fewer than 256 entries");
         let reference =
             UiIntentEvidenceReference::from_diagnostic_parts(self.session, slot, generation);
         let evidence = UiIntentCausalTraceEvidence::from_interaction(reference, input);

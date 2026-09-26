@@ -127,7 +127,8 @@ pub(crate) fn resolve_stream_families(
         Err(denial) => return UiAllocationStreamCommitDecision::Denied(denial),
     };
     let resolved = resolve_contract_set(first, &contracts, payload_counters);
-    let admitted = ordered_entries.len() as u16;
+    let admitted = u16::try_from(ordered_entries.len())
+        .expect("a frame carries at most ALLOCATION_FRAME_SOURCE_COUNT ingress");
     if admitted > resolved.budget.ingress_window() {
         return UiAllocationStreamCommitDecision::Denied(
             UiAllocationStreamCompositionDenial::InputBudgetExceeded {
@@ -157,7 +158,8 @@ pub(crate) fn resolve_stream_families(
     let intermediate = intermediate.into_boxed_slice();
     let receipt = UiAllocationStreamCompositionReceipt {
         counters: UiAllocationStreamCompositionCounters {
-            admitted_family_count: families.len() as u8,
+            admitted_family_count: u8::try_from(families.len())
+                .expect("a frame composes at most the eight stream families"),
             admitted_input_count: admitted,
             pair_contract_evaluations: payload_counters.pair_contract_evaluations(),
             pair_policy_joins: payload_counters.pair_policy_joins(),

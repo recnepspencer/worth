@@ -160,7 +160,10 @@ mod tests {
             MosaicLayoutContract::columns(tracks).unwrap(),
             |layout, (column, member)| {
                 layout
-                    .with_member(id(member), MosaicLayoutCell::at(column as u16, 0))
+                    .with_member(
+                        id(member),
+                        MosaicLayoutCell::at(u16::try_from(column).unwrap(), 0),
+                    )
                     .unwrap()
             },
         );

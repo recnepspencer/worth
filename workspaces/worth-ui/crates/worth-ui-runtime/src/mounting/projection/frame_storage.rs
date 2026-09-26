@@ -235,7 +235,8 @@ impl UiMountedProjectionFrame {
     ) -> Result<(), UiMountedProjectionDenial> {
         require_once(&mut self.ordinary_recorded)?;
         let batch = self.push_lane_batch(
-            receipt.touch().row_count() as u32,
+            u32::try_from(receipt.touch().row_count())
+                .map_err(|_| UiMountedProjectionDenial::TableCapacityExceeded)?,
             0,
             None,
             UiMountedPaintPrimitiveKind::OrdinaryLaneSummary,

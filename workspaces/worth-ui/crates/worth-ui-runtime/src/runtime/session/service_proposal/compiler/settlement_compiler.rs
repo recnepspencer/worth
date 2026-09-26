@@ -76,7 +76,8 @@ impl super::UiServiceProposalCompiler {
             ));
         }
         let disposition = settlement.publication().disposition();
-        let lease_count = settlement.leases().len() as u16;
+        let lease_count = u16::try_from(settlement.leases().len())
+            .expect("occupancy holds at most OCCUPANCY_LIMIT leases");
         let receipt_count = settlement.retained_receipt_count();
         let next_census = match self
             .census

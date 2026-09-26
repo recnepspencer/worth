@@ -234,6 +234,10 @@ impl UiPresentationTrackState {
             return (0.0, super::UiPresentationMotionSamplePosture::Delayed);
         };
         let duration = u64::from(curve.duration_ticks.max(1));
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "a progress in the unit interval, at the precision easing samples in"
+        )]
         let normalized = (active_elapsed as f64 / duration as f64).min(1.0) as f32;
         let posture = if normalized >= 1.0 {
             super::UiPresentationMotionSamplePosture::Terminal

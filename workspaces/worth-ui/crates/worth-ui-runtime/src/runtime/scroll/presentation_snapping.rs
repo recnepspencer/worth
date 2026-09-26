@@ -110,10 +110,10 @@ pub(crate) fn snap_to_device_grid(
     let height = (bottom - top).max(minimum);
     worth_ui_host_contract::UiMountedCanonicalBox::canonicalize(
         worth_ui_host_contract::UiMountedCanonicalBoxInput {
-            x: left as f32,
-            y: top as f32,
-            width: width as f32,
-            height: height as f32,
+            x: crate::units::layout_points(left),
+            y: crate::units::layout_points(top),
+            width: crate::units::layout_points(width),
+            height: crate::units::layout_points(height),
             coordinate_space: rect.coordinate_space(),
         },
     )

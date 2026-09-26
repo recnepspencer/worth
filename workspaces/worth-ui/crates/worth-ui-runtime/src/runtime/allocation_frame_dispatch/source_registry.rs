@@ -68,7 +68,8 @@ impl UiAllocationFrameSourceRegistry {
         slot.registration = Some(registration);
         Ok(UiAllocationFrameSourceLease::from_registry(
             UiAllocationFrameSourceLeaseIdentity::from_registry(
-                slot_index as u16,
+                u16::try_from(slot_index)
+                    .expect("the registry holds ALLOCATION_FRAME_SOURCE_COUNT slots"),
                 slot.lease_generation,
             ),
             lane,

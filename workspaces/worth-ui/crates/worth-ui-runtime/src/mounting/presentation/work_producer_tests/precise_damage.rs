@@ -47,7 +47,7 @@ fn precise_replacement_carries_vacated_and_successor_bounds() {
     let mut xs = delta
         .damage()
         .iter()
-        .map(|damage| damage.bounds().x() as u32)
+        .map(|damage| crate::whole_number::whole_u32(f64::from(damage.bounds().x())).unwrap())
         .collect::<Vec<_>>();
     xs.sort_unstable();
     assert_eq!(xs, [0, 96], "old and new pixels both require replay");

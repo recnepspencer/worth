@@ -73,7 +73,9 @@ fn every_interleaving_keeps_displayed_geometry_on_the_latest_witness() {
             &format!("seed {seed:#x} launch"),
         ));
         for index in 0..STEPS {
-            let step = Step::CHOICES[next(&mut state) as usize % Step::CHOICES.len()];
+            let step =
+                Step::CHOICES[usize::try_from(next(&mut state) % Step::CHOICES.len() as u64)
+                    .expect("a remainder below the choice count")];
             let effect = model.apply(step, next(&mut state));
             effects.extend(effect);
             reached.extend(witness::assert_witnessed(

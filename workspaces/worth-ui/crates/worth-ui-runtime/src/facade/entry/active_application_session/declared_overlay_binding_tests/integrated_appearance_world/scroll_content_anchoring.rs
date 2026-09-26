@@ -34,7 +34,8 @@ const TRAVEL_POINTS: i64 = 10;
 /// How far the content moves, as an offset distance. The installers state the
 /// same move in layout points.
 fn inserted() -> i64 {
-    INSERTED_POINTS as i64
+    crate::whole_number::whole_i64(f64::from(INSERTED_POINTS))
+        .expect("the content moves by whole points")
 }
 
 /// The nested World with the reader ten points into the content.

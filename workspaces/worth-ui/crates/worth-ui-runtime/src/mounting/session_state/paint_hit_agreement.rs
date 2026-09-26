@@ -94,11 +94,7 @@ impl WorthUiMountedSessionState {
             Ok(basis) => basis,
             Err(denial) => return vec![UiPaintHitParting::Unread(denial)],
         };
-        #[expect(
-            clippy::cast_possible_truncation,
-            reason = "a device pixel in points is a small positive length"
-        )]
-        let slack = Slack(ROUNDING + scale.pixel_in_points() as f32);
+        let slack = Slack(ROUNDING + crate::units::layout_points(scale.pixel_in_points()));
         let mut parted = Vec::new();
         for row in basis.rows() {
             let hit = row.bounds().index_box();

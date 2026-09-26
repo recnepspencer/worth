@@ -278,7 +278,8 @@ mod tests {
             Err(ComponentSemanticTextContractDenial::NonContiguousSpans)
         );
         let too_many = (0..=worth_ui_text::UiGlobalTextProfile::MAX_RUNS_PER_PARAGRAPH)
-            .map(|index| span(index as u32, index as u32 + 1, &token));
+            .map(|index| u32::try_from(index).unwrap())
+            .map(|index| span(index, index + 1, &token));
         assert_eq!(
             ComponentSemanticTextContract::spanned(token.clone(), 1, too_many),
             Err(ComponentSemanticTextContractDenial::SpanCapacityExceeded)

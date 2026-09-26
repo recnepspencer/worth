@@ -37,9 +37,11 @@ pub(crate) fn thumb_extent(
     let viewport = f64::from(viewport_extent_logical_points);
     let content = viewport + overflow_logical_points;
     let proportional = f64::from(track_length_logical_points) * viewport / content;
-    let length = proportional
-        .max(f64::from(metrics.minimum_thumb_length_logical_points()))
-        .min(f64::from(track_length_logical_points)) as f32;
+    let length = crate::units::layout_points(
+        proportional
+            .max(f64::from(metrics.minimum_thumb_length_logical_points()))
+            .min(f64::from(track_length_logical_points)),
+    );
     Some(UiScrollThumbExtent {
         length_logical_points: length,
         travel_logical_points: (track_length_logical_points - length).max(0.0),
@@ -69,7 +71,7 @@ impl UiScrollThumbExtent {
         }
         let clamped = offset_subpixels.clamp(0, max_offset_subpixels);
         let progress = clamped as f64 / max_offset_subpixels as f64;
-        (f64::from(self.travel_logical_points) * progress) as f32
+        crate::units::layout_points(f64::from(self.travel_logical_points) * progress)
     }
 
     /// The offset a thumb start maps back to, inverting [`Self::start_logical_points`].
@@ -85,7 +87,8 @@ impl UiScrollThumbExtent {
         }
         let clamped = start_logical_points.clamp(0.0, self.travel_logical_points);
         let progress = f64::from(clamped) / f64::from(self.travel_logical_points);
-        (max_offset_subpixels as f64 * progress).round() as i64
+        crate::whole_number::whole_i64((max_offset_subpixels as f64 * progress).round())
+            .expect("a progress in the unit interval keeps the offset within its maximum")
     }
 }
 

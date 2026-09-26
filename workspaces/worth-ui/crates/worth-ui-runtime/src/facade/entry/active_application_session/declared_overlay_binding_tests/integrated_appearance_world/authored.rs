@@ -331,10 +331,14 @@ fn six_axis_role_source() -> String {
 
 pub(super) fn component(index: usize) -> ComponentDescriptor {
     let [x, y, width, height] = super::geometry::BOXES[if index == 3 { 4 } else { index }];
+    let whole = |points: f32| {
+        crate::whole_number::whole_u16(f64::from(points))
+            .expect("the fixture boxes are whole points")
+    };
     let allocation =
         ComponentAllocationMeasurementContract::viewport_region(ComponentViewportRegion::new(
-            ComponentViewportAxisPlacement::fixed_from_start(x as u16, width as u16).unwrap(),
-            ComponentViewportAxisPlacement::fixed_from_start(y as u16, height as u16).unwrap(),
+            ComponentViewportAxisPlacement::fixed_from_start(whole(x), whole(width)).unwrap(),
+            ComponentViewportAxisPlacement::fixed_from_start(whole(y), whole(height)).unwrap(),
         ));
     let component = ComponentDescriptor::new(
         ComponentId::new(COMPONENTS[index]).unwrap(),

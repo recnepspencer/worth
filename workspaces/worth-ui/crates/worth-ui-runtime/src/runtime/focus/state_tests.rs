@@ -288,7 +288,7 @@ impl World {
                 issuer.receipt_for(mounted),
                 crate::capability::ComponentFocusSupport::focusable(),
                 crate::mounting::UiMountedFocusScope::ActiveSurface,
-                index as u32,
+                u32::try_from(index).unwrap(),
             ));
         }
         Self {
@@ -328,7 +328,7 @@ impl World {
                     issuer.receipt_for(identity.mounted_instance()),
                     crate::capability::ComponentFocusSupport::focusable(),
                     crate::mounting::UiMountedFocusScope::ActiveSurface,
-                    index as u32,
+                    u32::try_from(index).unwrap(),
                 )
             })
             .collect();
@@ -336,7 +336,7 @@ impl World {
             snapshot: crate::mounting::UiMountedFocusParticipationSnapshot::new(
                 frame,
                 participants,
-                self.identities.len() as u32,
+                u32::try_from(self.identities.len()).unwrap(),
                 Vec::new(),
             ),
             scope: self.scope,

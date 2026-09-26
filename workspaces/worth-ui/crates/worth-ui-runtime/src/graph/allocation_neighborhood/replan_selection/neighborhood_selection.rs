@@ -193,6 +193,18 @@ impl UiAdmittedReplanNeighborhoodSet {
     pub fn ordered_neighborhoods(&self) -> &[UiAdmittedReplanNeighborhood] {
         &self.transaction_basis.ordered
     }
+    /// How many neighborhoods the selection orders; sealing bounds a
+    /// selection to what `u16` counts.
+    pub fn neighborhood_count(&self) -> u16 {
+        u16::try_from(self.transaction_basis.ordered.len())
+            .expect("sealing bounds a selection to u16 neighborhoods")
+    }
+    /// The ordered neighborhoods, each with its ordinal in the selection.
+    pub(crate) fn ordinal_neighborhoods(
+        &self,
+    ) -> impl Iterator<Item = (u16, &UiAdmittedReplanNeighborhood)> {
+        (0..self.neighborhood_count()).zip(self.transaction_basis.ordered.iter())
+    }
     pub fn primary(&self) -> &UiAdmittedReplanNeighborhood {
         &self.transaction_basis.ordered[0]
     }

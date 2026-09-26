@@ -112,6 +112,10 @@ fn finalized_foreground_prepares_existing_glyph_vertex_paint() {
     assert_eq!(colors.len(), 3, "one prepared command per admitted image");
     // Token foreground is white. Endpoint green independently checks decoded RGB;
     // non-endpoint alpha/opacity detects ignored, doubled, or requantized factors.
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "the alpha a vertex color carries, at its f32 precision"
+    )]
     let expected_alpha = (128.0_f64 / 255.0 * 20_000.0 / 65_535.0) as f32;
     for color in colors.iter() {
         assert_eq!(&color[..3], &[0.0, 1.0, 0.0]);

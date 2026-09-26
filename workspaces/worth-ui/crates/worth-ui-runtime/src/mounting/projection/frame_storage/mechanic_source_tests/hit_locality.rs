@@ -20,7 +20,7 @@ fn completed_mechanics_derive_local_hit_candidates_and_preserve_abandoned_predec
             node(
                 *instance,
                 if i == 64 { neighbor } else { surface },
-                (i % 64) as u32,
+                u32::try_from(i % 64).unwrap(),
             )
         })
         .collect();
@@ -113,7 +113,7 @@ fn full_hit_capacity_admits_add_before_remove_and_denies_final_overflow() {
         instances
             .iter()
             .enumerate()
-            .map(|(rank, instance)| node(*instance, surface, rank as u32))
+            .map(|(rank, instance)| node(*instance, surface, u32::try_from(rank).unwrap()))
             .collect(),
         surfaces,
     );
@@ -122,7 +122,10 @@ fn full_hit_capacity_admits_add_before_remove_and_denies_final_overflow() {
     assert_eq!(initial.hit_tests, capacity);
     let retained = source.clone();
     let added = UiMountedInstanceIdentity::mint_unbound().unwrap();
-    let replacement = projection(vec![node(added, surface, capacity as u32)], surfaces);
+    let replacement = projection(
+        vec![node(added, surface, u32::try_from(capacity).unwrap())],
+        surfaces,
+    );
     let mutation = apply(&mut source, &fonts, &replacement, &[added, instances[0]]);
     assert_eq!(mutation.hit_tests, 1);
     assert_eq!(mutation.hit_index_work.reconstructed_rows, 0);
@@ -135,7 +138,10 @@ fn full_hit_capacity_admits_add_before_remove_and_denies_final_overflow() {
     assert_eq!(query(&source, binding, added_point).instances, [added]);
     let mut overflowing = source.clone();
     let excess = UiMountedInstanceIdentity::mint_unbound().unwrap();
-    let excess_semantic = projection(vec![node(excess, surface, capacity as u32 + 1)], surfaces);
+    let excess_semantic = projection(
+        vec![node(excess, surface, u32::try_from(capacity).unwrap() + 1)],
+        surfaces,
+    );
     assert!(matches!(
         attempt(&mut overflowing, &fonts, &excess_semantic, &[excess]),
         Err(crate::mounting::UiMountedProjectionDenial::HitTestCapacityExceeded)

@@ -149,7 +149,7 @@ fn container_world(
             issuer.receipt_for(mounted[index]),
             support,
             crate::mounting::UiMountedFocusScope::ActiveSurface,
-            index as u32,
+            u32::try_from(index).unwrap(),
         )
     };
     let participants = vec![

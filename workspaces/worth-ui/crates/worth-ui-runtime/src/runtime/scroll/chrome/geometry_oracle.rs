@@ -60,7 +60,12 @@ pub(super) fn oracle_thumb_start(travel: f64, offset_points: f64, max_offset_poi
 }
 
 pub(super) fn viewport_box() -> worth_ui_host_contract::UiMountedCanonicalBox {
-    canonical(0.0, 0.0, VIEWPORT_WIDTH as f32, VIEWPORT_HEIGHT as f32)
+    canonical(
+        0.0,
+        0.0,
+        crate::units::layout_points(VIEWPORT_WIDTH),
+        crate::units::layout_points(VIEWPORT_HEIGHT),
+    )
 }
 
 pub(super) fn canonical(
@@ -96,8 +101,8 @@ pub(super) fn bounds(
     content_height: f64,
 ) -> crate::runtime::scroll::UiScrollBounds {
     crate::runtime::scroll::UiScrollBounds::new(
-        ((content_width - VIEWPORT_WIDTH) * SUBPIXELS_PER_POINT) as i64,
-        ((content_height - VIEWPORT_HEIGHT) * SUBPIXELS_PER_POINT) as i64,
+        subpixels(content_width - VIEWPORT_WIDTH),
+        subpixels(content_height - VIEWPORT_HEIGHT),
     )
     .expect("non-negative overflow")
 }
@@ -106,11 +111,14 @@ pub(super) fn offset(
     inline_points: f64,
     block_points: f64,
 ) -> crate::runtime::scroll::UiScrollOffset {
-    crate::runtime::scroll::UiScrollOffset::new(
-        (inline_points * SUBPIXELS_PER_POINT) as i64,
-        (block_points * SUBPIXELS_PER_POINT) as i64,
-    )
-    .expect("non-negative offset")
+    crate::runtime::scroll::UiScrollOffset::new(subpixels(inline_points), subpixels(block_points))
+        .expect("non-negative offset")
+}
+
+/// `points` in the nearest whole subpixels.
+pub(super) fn subpixels(points: f64) -> i64 {
+    crate::whole_number::whole_i64((points * SUBPIXELS_PER_POINT).round())
+        .expect("a fixture length within i64 subpixels")
 }
 
 #[track_caller]

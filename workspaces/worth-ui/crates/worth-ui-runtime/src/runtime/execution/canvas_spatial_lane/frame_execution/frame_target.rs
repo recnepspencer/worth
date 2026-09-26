@@ -55,15 +55,15 @@ impl WorthUiCanvasSpatialFrameTarget {
         match self.kind {
             WorthUiCanvasSpatialFrameTargetKind::Viewport(request) => {
                 1_u64
-                    ^ (request.pan_delta_x() as u32 as u64).rotate_left(7)
-                    ^ (request.pan_delta_y() as u32 as u64).rotate_left(23)
+                    ^ u64::from(request.pan_delta_x().cast_unsigned()).rotate_left(7)
+                    ^ u64::from(request.pan_delta_y().cast_unsigned()).rotate_left(23)
                     ^ u64::from(request.zoom_milli_factor()).rotate_left(41)
             }
             WorthUiCanvasSpatialFrameTargetKind::Draw(_) => 2,
             WorthUiCanvasSpatialFrameTargetKind::HitTest(request) => {
                 3_u64
-                    ^ (request.viewport_point().x() as u32 as u64).rotate_left(11)
-                    ^ (request.viewport_point().y() as u32 as u64).rotate_left(37)
+                    ^ u64::from(request.viewport_point().x().cast_unsigned()).rotate_left(11)
+                    ^ u64::from(request.viewport_point().y().cast_unsigned()).rotate_left(37)
             }
             WorthUiCanvasSpatialFrameTargetKind::Overlay(_) => 4,
             WorthUiCanvasSpatialFrameTargetKind::ToolState(_) => 5,

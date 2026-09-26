@@ -41,7 +41,10 @@ pub(super) fn prepare(
         std::collections::HashMap::<crate::capability::UiIntentId, Vec<u32>>::new();
     for (index, declaration) in declarations.iter().enumerate() {
         let intent = definitions.definition_at(declaration.definition()).id();
-        command_index.entry(intent).or_default().push(index as u32);
+        command_index
+            .entry(intent)
+            .or_default()
+            .push(u32::try_from(index).expect("declarations are bounded to fit u32"));
     }
     let command_index = command_index
         .into_iter()
@@ -91,7 +94,8 @@ fn resolve_declarations(
     let mut indexes = BTreeMap::new();
     for authored in material.declarations() {
         let identity: Box<str> = authored.identity().into();
-        let index = declarations.len() as u32;
+        let index = u32::try_from(declarations.len())
+            .expect("MAXIMUM_INTENT_DECLARATIONS, checked above, fits u32");
         if indexes.insert(identity.clone(), index).is_some() {
             return Err(UiIntentCatalogPreparationDenial::DuplicateDeclaration { identity });
         }

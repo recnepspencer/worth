@@ -22,8 +22,8 @@ impl UiDeviceGridCorrection {
     /// to, or nothing when the box is already on the grid.
     pub(super) fn from_residues(inline: f64, block: f64) -> Option<Self> {
         (inline != 0.0 || block != 0.0).then_some(Self {
-            inline: inline as f32,
-            block: block as f32,
+            inline: crate::units::layout_points(inline),
+            block: crate::units::layout_points(block),
         })
     }
 

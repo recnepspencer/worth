@@ -23,8 +23,8 @@ impl UiServiceFamilyParticipation {
         Ok(Self(bits))
     }
 
-    pub(in crate::runtime) const fn count(self) -> u8 {
-        self.0.count_ones() as u8
+    pub(in crate::runtime) fn count(self) -> u8 {
+        u8::try_from(self.0.count_ones()).expect("an eight-bit set counts at most eight families")
     }
 
     pub(in crate::runtime) const fn contains(

@@ -131,7 +131,8 @@ impl UiMountedAppearancePaintBasis {
 
 fn composed_alpha(color_alpha: u8, opacity: UiMountedPresentationOpacity) -> u8 {
     let product = u32::from(color_alpha) * u32::from(opacity.units());
-    ((product + u32::from(u16::MAX) / 2) / u32::from(u16::MAX)) as u8
+    u8::try_from((product + u32::from(u16::MAX) / 2) / u32::from(u16::MAX))
+        .expect("an alpha scaled by at most one stays an alpha")
 }
 
 #[cfg(test)]

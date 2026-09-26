@@ -310,8 +310,8 @@ fn offset_from_rest(content: UiMountedCanonicalBox, sampled: [f32; 4]) -> [f64; 
 fn snapped_move(from: [f64; 2], to: [f64; 2], scale: UiScrollPresentationDeviceScale) -> [f32; 2] {
     let snap = |value| value - scale.grid_residue(value);
     [
-        (snap(from[0]) - snap(to[0])) as f32,
-        (snap(from[1]) - snap(to[1])) as f32,
+        crate::units::layout_points(snap(from[0]) - snap(to[0])),
+        crate::units::layout_points(snap(from[1]) - snap(to[1])),
     ]
 }
 

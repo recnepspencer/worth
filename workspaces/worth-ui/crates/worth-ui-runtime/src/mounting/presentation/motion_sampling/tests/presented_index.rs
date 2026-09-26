@@ -174,8 +174,8 @@ fn at(
         .at_point(
             world.presentation.binding(),
             crate::mounting::presentation::platform_point_for_test(
-                point[0] as f32,
-                point[1] as f32,
+                crate::units::layout_points(point[0]),
+                crate::units::layout_points(point[1]),
             ),
             UiMountedSpatialBudget {
                 node_visits: 64,

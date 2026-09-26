@@ -130,9 +130,8 @@ fn repeated_scope_admission_replaces_stale_authority() {
 
     let mut index = super::authority::UiAllocationInvalidationAuthority::default();
     let (snapshot, selected) = planning_graph_authority("phase6-capacity", "operator:stack");
-    for generation_index in 0..=64 {
-        let basis =
-            admitted_measurement_basis_with_font_seed("phase6-capacity", generation_index as u64);
+    for generation_index in 0..=64_u64 {
+        let basis = admitted_measurement_basis_with_font_seed("phase6-capacity", generation_index);
         let neighborhood = selected
             .admit_allocation_neighborhood(&snapshot, &basis)
             .expect("graph authority admits");

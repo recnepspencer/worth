@@ -26,12 +26,12 @@ fn a_large_coordinate_keeps_its_subpixel() {
     assert_eq!(
         UiSubpixels::nearest(points),
         Some(UiSubpixels::new(
-            (f64::from(points) * 1_000.0).round() as i64
+            crate::whole_number::whole_i64((f64::from(points) * 1_000.0).round()).unwrap()
         ))
     );
     assert_ne!(
-        UiSubpixels::nearest(points).map(UiSubpixels::count),
-        Some((points * 1_000.0).round() as i64),
+        UiSubpixels::nearest(points).unwrap().count(),
+        crate::whole_number::whole_i64(f64::from((points * 1_000.0).round())).unwrap(),
         "the f32 product this replaces lands elsewhere"
     );
 }

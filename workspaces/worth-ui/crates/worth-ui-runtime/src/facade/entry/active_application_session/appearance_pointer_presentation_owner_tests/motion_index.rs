@@ -174,8 +174,8 @@ fn contains(
         .interaction_hit_test_candidates(
             presentation,
             crate::mounting::presentation::platform_point_for_test(
-                point[0] as f32,
-                point[1] as f32,
+                crate::units::layout_points(point[0]),
+                crate::units::layout_points(point[1]),
             ),
         )
         .unwrap_or_else(|_| panic!("presented candidate basis must remain available"))

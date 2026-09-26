@@ -88,7 +88,7 @@ impl UiIntentPayloadFieldSet {
             });
         }
         for (index, field) in self.fields.iter().enumerate() {
-            let expected = index as u8;
+            let expected = u8::try_from(index).expect("the field limit, checked above, fits u8");
             if field.slot != expected {
                 return Err(UiIntentPayloadSchemaViolation::NonCanonicalSlot {
                     expected,

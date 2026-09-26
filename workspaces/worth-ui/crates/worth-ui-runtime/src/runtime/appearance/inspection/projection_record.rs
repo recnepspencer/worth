@@ -45,7 +45,8 @@ pub(super) fn record_projection(
                 *projection.state().basis().owner_revisions(),
             ),
             UiAppearanceInspectionCost::new(
-                projection.state().classes().count() as u8,
+                u8::try_from(projection.state().classes().count())
+                    .expect("a state vector holds at most one class per state axis"),
                 1,
                 aspect.decision_cells_visited(),
                 aspect.theme_slots_compared(),

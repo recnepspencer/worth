@@ -159,8 +159,7 @@ impl UiAllocationStreamPolicy {
 }
 
 const fn viewport_observation() -> UiAllocationStreamPolicy {
-    let source_capacity =
-        crate::runtime::allocation_frame_dispatch::ALLOCATION_FRAME_SOURCE_CAPACITY as u16;
+    let source_capacity = crate::runtime::allocation_frame_dispatch::ALLOCATION_FRAME_SOURCE_COUNT;
     UiAllocationStreamPolicy {
         cadence: UiAllocationCadenceKind::CoalescedWindow,
         target: UiAllocationCommitTarget::AllocationOnly,

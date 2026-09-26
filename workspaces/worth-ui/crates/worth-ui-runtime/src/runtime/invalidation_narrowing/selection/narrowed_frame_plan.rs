@@ -60,13 +60,16 @@ impl UiNarrowedAllocationFramePlan {
             })
     }
     pub(crate) fn resize_preview_sample_count(&self) -> u16 {
-        self.frame_identity
-            .invalidations()
-            .iter()
-            .filter(|invalidation| {
-                invalidation.family() == UiAllocationInvalidationFamily::ResizePreviewDelta
-            })
-            .count() as u16
+        u16::try_from(
+            self.frame_identity
+                .invalidations()
+                .iter()
+                .filter(|invalidation| {
+                    invalidation.family() == UiAllocationInvalidationFamily::ResizePreviewDelta
+                })
+                .count(),
+        )
+        .expect("a frame carries at most ALLOCATION_FRAME_SOURCE_COUNT ingress")
     }
     pub(crate) fn durable_resize_extent(&self) -> Option<crate::runtime::UiResizeLogicalExtent> {
         self.invalidations
@@ -141,7 +144,8 @@ impl UiNarrowedAllocationFramePlan {
         let owned = self.invalidations().get(ordinal).ok_or(
             UiAllocationInvalidationReferenceDenial::MissingCanonicalIngress {
                 ordinal: reference.ordinal(),
-                ingress_count: self.invalidations().len() as u16,
+                ingress_count: u16::try_from(self.invalidations().len())
+                    .expect("a frame carries at most ALLOCATION_FRAME_SOURCE_COUNT ingress"),
             },
         )?;
         if !std::ptr::eq(owned, invalidation) {
