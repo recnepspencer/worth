@@ -57,10 +57,14 @@ pub enum BankApplicationAttemptDenialKind {
     WorkflowInstanceAuthorityMismatch,
     WorkflowInstanceIntentIdentityUnavailable,
     WorkflowInstanceCapacityUnavailable,
+    WorkflowInstanceCancelled,
+    WorkflowInstanceMigrated,
+    WorkflowInstanceMigrationUnmapped,
     WorkflowTransitionAffinityMismatch,
     WorkflowTransitionAuthorityMismatch,
     WorkflowTransitionAlreadySettled,
     WorkflowTransitionNodeUnsupported,
+    WorkflowTransitionOperationUnsettled,
     WorkflowTransitionIdentityUnavailable,
     WorkflowAssessmentEvidenceIncomplete,
     WorkflowAssessmentEvidenceMismatch,
@@ -223,6 +227,15 @@ const fn application_attempt_kind(
         Query::WorkflowInstanceCapacityUnavailable => {
             BankApplicationAttemptDenialKind::WorkflowInstanceCapacityUnavailable
         }
+        Query::WorkflowInstanceCancelled => {
+            BankApplicationAttemptDenialKind::WorkflowInstanceCancelled
+        }
+        Query::WorkflowInstanceMigrated => {
+            BankApplicationAttemptDenialKind::WorkflowInstanceMigrated
+        }
+        Query::WorkflowInstanceMigrationUnmapped => {
+            BankApplicationAttemptDenialKind::WorkflowInstanceMigrationUnmapped
+        }
         Query::WorkflowTransitionAffinityMismatch => {
             BankApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch
         }
@@ -234,6 +247,9 @@ const fn application_attempt_kind(
         }
         Query::WorkflowTransitionNodeUnsupported => {
             BankApplicationAttemptDenialKind::WorkflowTransitionNodeUnsupported
+        }
+        Query::WorkflowTransitionOperationUnsettled => {
+            BankApplicationAttemptDenialKind::WorkflowTransitionOperationUnsettled
         }
         Query::WorkflowTransitionIdentityUnavailable => {
             BankApplicationAttemptDenialKind::WorkflowTransitionIdentityUnavailable

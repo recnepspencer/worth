@@ -1,5 +1,6 @@
 mod admission_denial;
 mod aggregate;
+mod inventory;
 mod locked_reader;
 mod operation_projection_denial;
 mod operation_reader;
@@ -14,12 +15,11 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 
 use worth_query_installation::facade::{
-    ApplicationEntityRef, ApplicationFieldRef, ApplicationFieldUnit,
-    ApplicationReadableScalarValueBinding, ApplicationRelationRef, ApplicationSchema,
-    ApplicationSchemaBindingIdentity, DeclaredApplicationFieldValue, WritePosture,
+    ApplicationFieldRef, ApplicationFieldUnit, ApplicationReadableScalarValueBinding,
+    ApplicationSchema, ApplicationSchemaBindingIdentity, DeclaredApplicationFieldValue,
+    WritePosture,
 };
 use worth_relational::facade::identity::{EntityId, KindId, RelationId, VersionId};
-use worth_relational::facade::storage::RecordLifecycleState;
 
 use super::schema_layout::WorthQueryPrimaryGraphLayout;
 use super::{
@@ -197,30 +197,6 @@ where
         self.snapshot().version_id()
     }
 
-    pub fn entities<Entity>(
-        &self,
-        entity: ApplicationEntityRef<Schema, Entity>,
-    ) -> Vec<WorthQueryInvariantEntityIdentity<Schema, Entity>> {
-        let Some(kind) = self.layout.entity_kind(entity.name()) else {
-            return Vec::new();
-        };
-        self.graph.with_runtime(|runtime| {
-            runtime
-                .read_truth()
-                .visible_entities_of_kind(kind, self.snapshot().version_id())
-                .into_iter()
-                .filter(|record| record.lifecycle == RecordLifecycleState::Live)
-                .map(|record| WorthQueryInvariantEntityIdentity {
-                    entity_id: record.entity_id,
-                    kind,
-                    entity: Arc::from(entity.name()),
-                    authority_identity: self.authority_identity,
-                    _marker: PhantomData,
-                })
-                .collect()
-        })
-    }
-
     pub fn field<Entity, Aspect, Field, Value, Write, Equality, Unit>(
         &self,
         identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
@@ -252,41 +228,6 @@ where
                 )
             })
             .and_then(|value| Field::Binding::decode(&value).ok())
-    }
-
-    pub fn relations<Relation, From, To>(
-        &self,
-        relation: ApplicationRelationRef<Schema, Relation, From, To>,
-    ) -> Vec<WorthQueryInvariantRelation<Schema, Relation, From, To>> {
-        let Some(layout) = self.layout.relation(relation.name()).cloned() else {
-            return Vec::new();
-        };
-        self.graph.with_runtime(|runtime| {
-            runtime
-                .read_truth()
-                .visible_relations_of_kind(layout.kind, self.snapshot().version_id())
-                .into_iter()
-                .filter(|record| record.lifecycle == RecordLifecycleState::Live)
-                .map(|record| WorthQueryInvariantRelation {
-                    relation_id: record.relation_id,
-                    from: WorthQueryInvariantEntityIdentity {
-                        entity_id: record.source,
-                        kind: layout.from,
-                        entity: Arc::from(relation.from()),
-                        authority_identity: self.authority_identity,
-                        _marker: PhantomData,
-                    },
-                    to: WorthQueryInvariantEntityIdentity {
-                        entity_id: record.target,
-                        kind: layout.to,
-                        entity: Arc::from(relation.to()),
-                        authority_identity: self.authority_identity,
-                        _marker: PhantomData,
-                    },
-                    _relation: PhantomData,
-                })
-                .collect()
-        })
     }
 
     pub(in crate::domain_computation::primary_graph) fn belongs_to(

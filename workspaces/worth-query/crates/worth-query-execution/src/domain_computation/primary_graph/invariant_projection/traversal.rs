@@ -2,6 +2,8 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 
 use worth_query_installation::facade::{ApplicationRelationRef, ApplicationSchema};
+use worth_relational::facade::runtime::{ProjectionAspectScope, VisibilityProjectionView};
+use worth_relational::facade::storage::RecordLifecycleState;
 
 use super::{
     WorthQueryApplicationInvariantProjectionReader, WorthQueryInvariantEntityIdentity,
@@ -27,15 +29,13 @@ where
         }
         self.admit_adjacency_list(relation.name())?;
         let read = self
-            .runtime
-            .read_truth()
-            .bounded_outgoing_relations_of_kind_at_version(
+            .branch_view(relation.name())?
+            .bounded_outgoing_relations_of_kind(
                 from.entity_id,
                 layout.kind,
-                self.snapshot.version_id(),
                 self.work_budget.remaining(),
-            )
-            .map_err(|limit| self.adjacency_limit_denial(limit, relation.name()))?;
+            );
+        let read = read.map_err(|limit| self.adjacency_limit_denial(limit, relation.name()))?;
         self.work_budget.consume(read.work_units());
         self.work.record_adjacency(
             read.relation_records_examined(),
@@ -71,15 +71,13 @@ where
         }
         self.admit_adjacency_list(relation.name())?;
         let read = self
-            .runtime
-            .read_truth()
-            .bounded_incoming_relations_of_kind_at_version(
+            .branch_view(relation.name())?
+            .bounded_incoming_relations_of_kind(
                 to.entity_id,
                 layout.kind,
-                self.snapshot.version_id(),
                 self.work_budget.remaining(),
-            )
-            .map_err(|limit| self.adjacency_limit_denial(limit, relation.name()))?;
+            );
+        let read = read.map_err(|limit| self.adjacency_limit_denial(limit, relation.name()))?;
         self.work_budget.consume(read.work_units());
         self.work.record_adjacency(
             read.relation_records_examined(),
@@ -154,15 +152,19 @@ where
         WorthQueryInvariantProjectionTraversalDenial,
     > {
         let available = self
-            .runtime
-            .read_truth()
-            .visible_entity_at_version(entity_id, self.snapshot.version_id())
-            .is_some_and(|record| record.kind.kind_id == expected_kind);
+            .branch_view(entity)?
+            .entity_record_with_projection_scope(
+                entity_id,
+                ProjectionAspectScope::empty(),
+                |record| {
+                    (record.kind_id() == expected_kind
+                        && record.lifecycle() == RecordLifecycleState::Live)
+                        .then_some(())
+                },
+            )
+            .is_some();
         if !available {
-            return Err(WorthQueryInvariantProjectionTraversalDenial::new(
-                WorthQueryInvariantProjectionTraversalDenialKind::EndpointUnavailable,
-                entity,
-            ));
+            return Err(endpoint_unavailable(entity));
         }
         Ok(WorthQueryInvariantEntityIdentity {
             entity_id,
@@ -171,6 +173,18 @@ where
             authority_identity: self.authority_identity,
             _marker: PhantomData,
         })
+    }
+
+    /// Reads the snapshot on its own branch root. A version alone would admit
+    /// a sibling branch's commits made at older versions.
+    fn branch_view(
+        &self,
+        subject: &str,
+    ) -> Result<VisibilityProjectionView<'_>, WorthQueryInvariantProjectionTraversalDenial> {
+        self.runtime
+            .read_truth()
+            .project_snapshot(self.snapshot)
+            .ok_or_else(|| endpoint_unavailable(subject))
     }
 
     fn retain_identity<Entity>(
@@ -191,6 +205,13 @@ fn foreign(relation: &str) -> WorthQueryInvariantProjectionTraversalDenial {
     WorthQueryInvariantProjectionTraversalDenial::new(
         WorthQueryInvariantProjectionTraversalDenialKind::ForeignIdentity,
         relation,
+    )
+}
+
+fn endpoint_unavailable(subject: &str) -> WorthQueryInvariantProjectionTraversalDenial {
+    WorthQueryInvariantProjectionTraversalDenial::new(
+        WorthQueryInvariantProjectionTraversalDenialKind::EndpointUnavailable,
+        subject,
     )
 }
 

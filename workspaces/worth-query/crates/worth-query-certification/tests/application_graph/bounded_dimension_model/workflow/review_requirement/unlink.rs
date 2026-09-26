@@ -201,11 +201,28 @@ pub fn unlink_review_requirement(
     WorthQueryApplicationMutationOutcome<ReviewRequirementDenial, ReviewRequirementUnlinked>,
     WorthQueryApplicationRequestMutationDenial,
 > {
+    unlink_review_requirement_on(
+        application,
+        application.runtime().current_world(),
+        idempotency,
+    )
+}
+
+/// Issues the same mutation on one exact World product occurrence.
+pub fn unlink_review_requirement_on(
+    application: &BoundedDimensionWorkflowRuntime,
+    branch: WorthQueryProductBranch,
+    idempotency: u64,
+) -> Result<
+    WorthQueryApplicationMutationOutcome<ReviewRequirementDenial, ReviewRequirementUnlinked>,
+    WorthQueryApplicationRequestMutationDenial,
+> {
     let runtime = application.runtime();
     let scope = request_scope();
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
     runtime
         .request(&principal, &scope)
+        .on_branch(branch)
         .mutate(UnlinkReviewRequirementIntent {
             input: ReviewRequirementInput {
                 resource: PART_IDENTITY.to_owned(),

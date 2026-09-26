@@ -19,6 +19,7 @@ use worth_query_host::facade::primary_graph::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
     WorthQueryInvariantMutationTarget,
 };
+use worth_query_host::facade::product::WorthQueryProductBranch;
 use worth_query_host::facade::{
     worth_query_operation, worth_query_relation, worth_query_structured_value_binding,
 };
@@ -34,7 +35,8 @@ use super::super::schema::{
 #[path = "review_requirement/unlink.rs"]
 mod unlink;
 pub use unlink::{
-    unlink_review_requirement, UnlinkReviewRequirementBinding, UnlinkReviewRequirementHandler,
+    unlink_review_requirement, unlink_review_requirement_on, UnlinkReviewRequirementBinding,
+    UnlinkReviewRequirementHandler,
 };
 
 worth_query_relation!(pub ReviewRequired in BoundedDimensionSchema, Part => Part; integrity = ApplicationRelationIntegrity {
@@ -276,11 +278,28 @@ pub fn link_review_requirement(
     WorthQueryApplicationMutationOutcome<ReviewRequirementDenial, ReviewRequirementLinked>,
     WorthQueryApplicationRequestMutationDenial,
 > {
+    link_review_requirement_on(
+        application,
+        application.runtime().current_world(),
+        idempotency,
+    )
+}
+
+/// Issues the same mutation on one exact World product occurrence.
+pub fn link_review_requirement_on(
+    application: &BoundedDimensionWorkflowRuntime,
+    branch: WorthQueryProductBranch,
+    idempotency: u64,
+) -> Result<
+    WorthQueryApplicationMutationOutcome<ReviewRequirementDenial, ReviewRequirementLinked>,
+    WorthQueryApplicationRequestMutationDenial,
+> {
     let runtime = application.runtime();
     let scope = request_scope();
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
     runtime
         .request(&principal, &scope)
+        .on_branch(branch)
         .mutate(ReviewRequirementIntent {
             input: ReviewRequirementInput {
                 resource: PART_IDENTITY.to_owned(),

@@ -2,6 +2,7 @@ mod adjacency_revision;
 mod aspect_versions;
 mod basis_reads;
 mod contracts;
+mod entity_adjacency;
 mod entity_projection;
 mod exact_basis_reads;
 mod field_revisions;

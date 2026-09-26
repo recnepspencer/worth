@@ -1,6 +1,7 @@
 mod bounded_adjacency;
 mod bounded_entity_kind;
 mod bounded_relation_kind;
+mod branch_entity_adjacency;
 mod branch_kind_scan;
 mod branch_locality;
 mod commit_projection;

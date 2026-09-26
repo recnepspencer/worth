@@ -5,6 +5,8 @@
 mod adoption;
 #[path = "application_graph/bounded_dimension_model.rs"]
 mod bounded_dimension_model;
+#[path = "application_graph/fork_decision_reads.rs"]
+mod fork_decision_reads;
 #[path = "application_graph/workflow.rs"]
 mod workflow;
 #[path = "application_graph/workflow_actor_wait.rs"]
