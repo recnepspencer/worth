@@ -243,8 +243,9 @@ fn temporal_wake_settlement_repair_keeps_the_original_product_unpublished() {
 }
 
 #[test]
-fn temporal_wake_post_performed_index_repair_preserves_its_product_commit() {
-    courtroom_settlement::temporal_wake_post_performed_index_repair_preserves_its_product_commit();
+fn temporal_wake_post_commit_snapshot_recovery_preserves_its_product_commit() {
+    courtroom_settlement::temporal_wake_post_commit_snapshot_recovery_preserves_its_product_commit(
+    );
 }
 
 #[test]

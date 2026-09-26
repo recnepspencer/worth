@@ -95,7 +95,9 @@ pub(super) fn read_across<Interleaved>(
 }
 
 pub(super) fn assert_ordinary_work(work: QueryWork) {
-    assert_eq!(work.basis_acquisitions, 3);
+    // Fresh security stages reuse the read's exact snapshot, so one basis
+    // acquisition serves admission and execution.
+    assert_eq!(work.basis_acquisitions, 1);
     assert_eq!(work.admission_product_resolutions, 1);
     assert_eq!(work.execution_product_resolutions, 1);
     assert_eq!(work.reconstructive_graph_scans, 0);
