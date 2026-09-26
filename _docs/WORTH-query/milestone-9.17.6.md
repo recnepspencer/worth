@@ -1214,36 +1214,35 @@ membership, and the outcome names every node whose effect it, or a source it was
 migrated from, performed; each remains performed. The same key replays its recorded
 outcome, including after the branch adopts a new program, and any other request for a
 cancelled instance is refused as cancelled. A completed instance has nothing left to
-cancel and is refused as completed. A step admitted before the cancellation is
-refused as cancelled before its effect; a cancellation prepared before an effect
-lands goes stale without claiming its key, and the same key then cancels afresh and
-reports that effect. Cancelling one instance leaves its siblings running, and a
-request on another branch than the instance's own is refused as an affinity
-mismatch, so a fork's successor and its source end independently. A request without the start
-capability is refused without claiming its key, and a performed history that cannot
-be read within its retained bounds, or that names a node its definition lacks, is
-refused as unavailable. That refusal is argued from the reads that raise it, not
-driven by a test: reaching it needs a stored history the public surface cannot
-corrupt, and a compiled definition can be minted only from a validated program.
-Cancellation writes no transition, so an instance that has used its whole
-retained-transition capacity, and so can take no further step, still cancels, warm
-or cold. The cancellation reads exactly the retained history, and its replay stays
-within the same bounds.
+cancel and is refused as completed. A step admitted before the cancellation is refused
+as cancelled before its effect; a cancellation prepared before an effect lands goes
+stale without claiming its key, and the same key then cancels afresh and reports that
+effect. Cancelling one instance leaves its siblings running, and a request on another
+branch than the instance's own is refused as an affinity mismatch, so a fork's
+successor and its source end independently. A request without the start capability is
+refused without claiming its key, and a performed history that cannot be read within
+its retained bounds, or that names a node its definition lacks, is refused as
+unavailable. That refusal is argued from the reads that raise it, not driven by a
+test: reaching it needs a stored history the public surface cannot corrupt, and a
+compiled definition can be minted only from a validated program. Cancellation writes
+no transition, so an instance that has used its whole retained-transition capacity,
+and so can take no further step, still cancels, warm or cold. The cancellation reads
+exactly the retained history, and its replay stays within the same bounds.
 
 One lineage spends one step budget, the installed retained-transition capacity. The
-budget check alone grants the allowance that transition and migration admission
-each require, so no step writer can skip it; a settled or closing observation passes
-the check without spending. A migration successor, or a fork's continuation, records the steps its source had taken
-and inherits them, so a loop routed through a successor never starts the budget
-afresh; retry and navigation back-edges spend it like any other step. A spent lineage
-refuses the next step, a further migration and a fork continuation with a typed
-capacity denial before commit, warm or cold, and still cancels. A retry of a step
-recorded before the budget was spent, including the step that spent it, replays its
-recorded outcome warm and cold; only a new step is refused. A yield or a duplicate
-delivery writes no transition and so neither spends nor restores a step. Migration
-itself writes no transition and spends none. Navigating Back spends the same budget,
-so the navigation-specific capacity refusal it once had could no longer be reached and
-is retired from the public denial kinds.
+budget check alone grants the allowance that transition and migration admission each
+require, so no step writer can skip it; a settled or closing observation passes the
+check without spending. A migration successor, or a fork's continuation, records the
+steps its source had taken and inherits them, so a loop routed through a successor
+never starts the budget afresh; retry and navigation back-edges spend it like any
+other step. A spent lineage refuses the next step, a further migration and a fork
+continuation with a typed capacity denial before commit, warm or cold, and still
+cancels. A retry of a step recorded before the budget was spent, including the step
+that spent it, replays its recorded outcome warm and cold; only a new step is refused.
+A yield or a duplicate delivery writes no transition and so neither spends nor
+restores a step. Migration itself writes no transition and spends none. Navigating
+Back spends the same budget, so the navigation-specific capacity refusal it once had
+could no longer be reached and is retired from the public denial kinds.
 
 One lineage also retains one evidence budget, the installed maximum evidence bytes.
 Accepting an assessment charges the semantic width of every evidence and dependency
@@ -1288,6 +1287,36 @@ record nothing, while a retry of a recorded start still replays. Supersession is
 reported before a full lineage, since it holds whatever the lineage's membership. A
 successor that commits between a start's prepare and its commit moves the product
 basis, and the start is denied as stale without effect.
+
+Discovery's `IndexUnavailable` refusal, and its `LineageUnavailable` answer for an
+identity that names another workflow's lineage, are argued from the reads that raise
+them, not driven by a test: the public surface cannot corrupt an index generation, and
+the bounded model installs a single workflow spec.
+
+An authored definition travels as a versioned, authority-free draft.
+`encode_workflow_definition_draft` writes a validated definition's identity, limits,
+start, nodes and connections as WQWD v1 bytes, naming each operation, assessment,
+condition and approval by identifier with the portable types it was authored against;
+no instance, approval, publication or authority travels.
+`decode_workflow_definition_draft` bounds every count by the draft's own limits and
+the remaining bytes before allocating, requires nodes in strictly ascending identity
+order, and refuses a zero or future version at the exact `WorkflowDefinitionDraft`
+layer. The decoded draft is untrusted and mints nothing: `author` rebuilds typed
+meaning only against an installed workflow spec, and names the node it refuses for a
+foreign spec, a member the spec did not install, a member whose portable types
+changed, or a related-relation applicability the schema does not declare. The authored
+result validates, binds and publishes through the ordinary path with the original's
+content identity; component provenance does not enter that identity, so a
+component-built definition travels flat and re-encodes to the same bytes.
+
+The compiled `authored_workflow` example is the authoring/control-flow walkthrough.
+It builds one review component, two assessments joined into approval evidence, and
+expands it into a definition whose rejected approval retries a bounded number of
+times back to the proposal. It publishes and discovers the definition, reviews and
+rejects a first proposal, reviews the changed revision afresh, approves it, performs
+the approved effect through the awaited operation requirement and completes. A
+second revision reuses the same component; discovery then names it, and a start from
+the superseded revision is refused naming the same current definition.
 
 A definition may declare a total deadline, whole nonzero milliseconds, and only a
 declared deadline enters its content identity. An instance started from it records

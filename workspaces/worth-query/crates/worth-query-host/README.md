@@ -34,6 +34,12 @@ admits its exact operation, publishes through `commit_for_program`, reads the
 successor, and closes conditional resources. Its source is the executable host
 entry example.
 
+The [authored workflow](../worth-query-certification/examples/authored_workflow/main.rs)
+authors a definition around one reusable review component, publishes and discovers
+it, rejects a proposal so the retry asks for a revision, approves and applies the
+revised effect, then publishes a second revision; a start from the superseded
+revision is refused naming the current one.
+
 `WorthQueryApplicationContributionContracts` and
 `WorthQueryApplicationContributionSetup` resolve installed bindings internally.
 An entry declares `contracts.producer::<Binding>()` and
