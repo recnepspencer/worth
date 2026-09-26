@@ -171,7 +171,7 @@ where
     } = program;
     let workflow_settlement = read_set.workflow_authority_binding;
     let workflow_deadline = read_set.workflow_deadline;
-    let replay_only_denial = read_set.replay_only_denial;
+    let new_commit_refusal = read_set.new_commit_refusal;
     let workflow_approval_authority = workflow_settlement
         .as_ref()
         .map(|binding| binding.approval_authority.clone());
@@ -190,7 +190,7 @@ where
     ) {
         return terminal(outcome);
     }
-    if let Some(denial) = replay_only_denial {
+    if let Some(denial) = new_commit_refusal {
         return terminal(WorthQueryApplicationCommitOutcome::Denied(
             WorthQueryApplicationCommitDenial::workflow_settlement_denied(&denial),
         ));

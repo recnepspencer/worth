@@ -310,14 +310,24 @@ impl WorkflowOperationAuthority {
                 };
                 WorthQueryApplicationAttemptDenial::new(kind, denial.to_string())
             })?;
-        if !lease.handle().with_runtime(|runtime| {
-            self.facts
+        lease.handle().with_runtime(|runtime| {
+            if self
+                .facts
                 .iter()
                 .all(|fact| fact.remains_equal_in(runtime, lease.snapshot()))
-        }) {
-            return Err(mismatch());
-        }
-        Ok(())
+            {
+                return Ok(());
+            }
+            // An instance that ended since is named before any fact it left
+            // behind can mismatch.
+            crate::domain_computation::primary_graph::application_attempt::workflow_instance_observation::instance_binding::deny_ended(
+                runtime,
+                lease.snapshot(),
+                &self.workflow_layout,
+                self.settlement_basis.instance(),
+            )?;
+            Err(mismatch())
+        })
     }
 
     pub(in crate::domain_computation::primary_graph) fn facts(

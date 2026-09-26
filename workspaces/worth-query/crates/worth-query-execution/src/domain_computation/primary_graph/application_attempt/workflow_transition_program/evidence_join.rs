@@ -26,6 +26,7 @@ where
         mut facts: Vec<super::super::WorthQueryApplicationObservedFact>,
         progress: &crate::domain_computation::primary_graph::workflow::instance::WorkflowInstanceProgress,
         policy: worth_query_declaration::facade::application_program::ApplicationWorkflowEvidenceJoinPolicy,
+        allowance: crate::domain_computation::primary_graph::application_attempt::WorkflowStepAllowance,
     ) -> Result<
         PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
         WorthQueryApplicationAttemptDenial,
@@ -204,6 +205,7 @@ where
             subject,
             live_membership,
             false,
+            allowance,
         );
         let transition_identity = admitted.identity().to_owned();
         let transition_identity_bytes = *admitted.identity_bytes();

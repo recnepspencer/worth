@@ -8,7 +8,7 @@ use worth_query_host::facade::{
         WorkflowInstanceStartOutcome, WorkflowProgressOutcome, WorthQueryApplicationRequestExt,
         WorthQueryWorkflowDefinitionPublicationPreparationDenial,
         WorthQueryWorkflowDefinitionRetirementPreparationDenial,
-        WorthQueryWorkflowInstanceStartPreparationDenial,
+        WorthQueryWorkflowInstancePreparationDenial,
     },
     declaration::application_program::ValidatedWorkflowDefinition,
     primary_graph::WorthQueryApplicationCommitOutcome,
@@ -171,7 +171,7 @@ fn expect_stale_retirement(
 }
 
 fn expect_started(
-    result: Result<WorkflowInstanceStartOutcome, WorthQueryWorkflowInstanceStartPreparationDenial>,
+    result: Result<WorkflowInstanceStartOutcome, WorthQueryWorkflowInstancePreparationDenial>,
 ) -> PublishedWorkflowInstanceRef {
     match result.expect("workflow instance-start preparation must succeed") {
         WorkflowInstanceStartOutcome::Started(started) => started.instance().clone(),

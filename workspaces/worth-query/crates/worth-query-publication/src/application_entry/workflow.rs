@@ -26,9 +26,8 @@ pub use definition::{
     WorthQueryWorkflowDefinitionRetirementRequest,
 };
 pub use instance::{
-    WorthQueryWorkflowInstanceCancellationRequest,
-    WorthQueryWorkflowInstanceStartPreparationDenial,
-    WorthQueryWorkflowInstanceStartPreparationDenialKind, WorthQueryWorkflowInstanceStartRequest,
+    WorthQueryWorkflowInstanceCancellationRequest, WorthQueryWorkflowInstancePreparationDenial,
+    WorthQueryWorkflowInstancePreparationDenialKind, WorthQueryWorkflowInstanceStartRequest,
 };
 pub use navigation::WorthQueryWorkflowNavigateBackRequest;
 pub use operation::{
@@ -69,7 +68,7 @@ pub use worth_query_execution::facade::workflow_definition_publication::{
 pub use worth_query_execution::facade::workflow_definition_retirement::{
     PerformedWorkflowDefinitionRetirement, WorkflowDefinitionRetirementOutcome,
 };
-pub use worth_query_execution::facade::workflow_instance_start::{
+pub use worth_query_execution::facade::workflow_instance::{
     PerformedWorkflowInstanceCancellation, PerformedWorkflowInstanceStart,
     PublishedWorkflowInstanceRef, WorkflowInstanceBindingDenial,
     WorkflowInstanceCancellationOutcome, WorkflowInstancePreparationDenial,

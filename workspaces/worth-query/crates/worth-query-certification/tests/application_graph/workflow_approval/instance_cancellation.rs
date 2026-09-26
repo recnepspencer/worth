@@ -1,12 +1,12 @@
 //! Explicit cancellation ends a live instance where it stands. It is not
 //! rollback: a performed effect remains and is reported, a step admitted
-//! before the cancellation goes stale before its effect, and a cancellation
-//! prepared before a step settles goes stale in turn.
+//! before the cancellation is refused as cancelled before its effect, and a
+//! cancellation prepared before a step settles goes stale in turn.
 
 use worth_query_host::facade::application_entry::{
     PerformedWorkflowInstanceCancellation, WorkflowInstanceBindingDenial,
     WorkflowInstanceCancellationOutcome, WorkflowInstancePreparationDenial,
-    WorthQueryApplicationRequestMutationDenial, WorthQueryWorkflowInstanceStartPreparationDenial,
+    WorthQueryApplicationRequestMutationDenial, WorthQueryWorkflowInstancePreparationDenial,
 };
 use worth_query_host::facade::primary_graph::WorthQueryApplicationCommitDenialStage;
 
@@ -21,7 +21,7 @@ use super::instance_migration::perform_approved_effect;
 use super::*;
 
 #[test]
-fn a_cancel_before_the_effect_leaves_the_admitted_step_stale() {
+fn a_cancel_before_the_effect_refuses_the_admitted_step_as_cancelled() {
     let (application, _, instance, proposal, required, _) = approval_journey("applied", 88_000);
     approve(&application, &instance, &required, &proposal, 88_010);
     let operation = match advance_instance(&application, instance.clone(), 88_011) {
@@ -66,8 +66,8 @@ fn a_cancel_before_the_effect_leaves_the_admitted_step_stale() {
         Err(WorthQueryApplicationRequestMutationDenial::WorkflowTransitionCurrentness(denial)) => {
             assert_eq!(
                 denial.kind(),
-                WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,
-                "a step admitted before the cancellation is no longer current",
+                WorthQueryApplicationAttemptDenialKind::WorkflowInstanceCancelled,
+                "a step admitted before the cancellation names the cancellation",
             );
         }
         other => panic!("a step admitted before the cancellation never performs: {other:?}"),
@@ -172,7 +172,7 @@ fn a_cancellation_replays_exactly_after_its_branch_adopts_a_new_program() {
     ));
 
     match cancel_instance(&application, instance.clone(), 88_410) {
-        Err(WorthQueryWorkflowInstanceStartPreparationDenial::InstancePreparation(
+        Err(WorthQueryWorkflowInstancePreparationDenial::InstancePreparation(
             WorkflowInstancePreparationDenial::Binding(
                 WorkflowInstanceBindingDenial::ProgramRevisionChanged,
             ),
@@ -217,7 +217,7 @@ pub(super) fn approve(
 pub(super) fn cancelled(
     outcome: Result<
         WorkflowInstanceCancellationOutcome,
-        WorthQueryWorkflowInstanceStartPreparationDenial,
+        WorthQueryWorkflowInstancePreparationDenial,
     >,
 ) -> PerformedWorkflowInstanceCancellation {
     match outcome.expect("the cancellation prepares") {
@@ -229,11 +229,11 @@ pub(super) fn cancelled(
 pub(super) fn cancellation_denial(
     outcome: Result<
         WorkflowInstanceCancellationOutcome,
-        WorthQueryWorkflowInstanceStartPreparationDenial,
+        WorthQueryWorkflowInstancePreparationDenial,
     >,
 ) -> WorthQueryApplicationAttemptDenialKind {
     match outcome {
-        Err(WorthQueryWorkflowInstanceStartPreparationDenial::InstancePreparation(
+        Err(WorthQueryWorkflowInstancePreparationDenial::InstancePreparation(
             WorkflowInstancePreparationDenial::Attempt(attempt),
         )) => attempt.kind(),
         other => panic!("expected a typed cancellation denial, got {other:?}"),

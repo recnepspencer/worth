@@ -94,14 +94,14 @@ pub mod workflow_definition_retirement {
 
 /// Internal bridge used only by the Publication application-entry owner.
 #[doc(hidden)]
-pub mod workflow_instance_start {
+pub mod workflow_instance {
     pub use crate::domain_computation::primary_graph::{
         PerformedWorkflowInstanceCancellation, PerformedWorkflowInstanceStart,
         PreparedWorkflowInstanceCancellation, PreparedWorkflowInstanceStart,
         PublishedWorkflowDefinitionRef, PublishedWorkflowInstanceRef,
         WorkflowInstanceBindingDenial, WorkflowInstanceCancellationOutcome,
         WorkflowInstancePreparationDenial, WorkflowInstanceStartOutcome,
-        WorthQueryWorkflowInstanceStartAdapter,
+        WorthQueryWorkflowInstanceAdapter,
     };
 }
 

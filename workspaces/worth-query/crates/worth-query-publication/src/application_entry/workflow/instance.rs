@@ -9,10 +9,10 @@ use worth_query_declaration::facade::{
 };
 use worth_query_execution::facade::{
     application_installation::WorthQueryWorkflowVocabulary,
-    workflow_instance_start::{
+    workflow_instance::{
         PreparedWorkflowInstanceStart, PublishedWorkflowDefinitionRef,
         PublishedWorkflowInstanceRef, WorkflowInstancePreparationDenial,
-        WorkflowInstanceStartOutcome, WorthQueryWorkflowInstanceStartAdapter,
+        WorkflowInstanceStartOutcome, WorthQueryWorkflowInstanceAdapter,
     },
 };
 use worth_query_installation::facade::ApplicationSchema;
@@ -37,36 +37,38 @@ type MutationInput<Schema, Intent> =
     <IntentBinding<Schema, Intent> as ApplicationMutationBinding<Schema>>::Input;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryWorkflowInstanceStartPreparationDenialKind {
+pub enum WorthQueryWorkflowInstancePreparationDenialKind {
     RuntimeMismatch,
     RequestAdmission,
     InstancePreparation,
 }
 
+/// Why an instance lifecycle request (a start, migration, fork continuation
+/// or cancellation) did not prepare.
 #[derive(Debug)]
-pub enum WorthQueryWorkflowInstanceStartPreparationDenial {
+pub enum WorthQueryWorkflowInstancePreparationDenial {
     RuntimeMismatch,
     RequestAdmission(WorthQueryApplicationRequestMutationDenial),
     InstancePreparation(WorkflowInstancePreparationDenial),
 }
 
-impl WorthQueryWorkflowInstanceStartPreparationDenial {
-    pub const fn kind(&self) -> WorthQueryWorkflowInstanceStartPreparationDenialKind {
+impl WorthQueryWorkflowInstancePreparationDenial {
+    pub const fn kind(&self) -> WorthQueryWorkflowInstancePreparationDenialKind {
         match self {
             Self::RuntimeMismatch => {
-                WorthQueryWorkflowInstanceStartPreparationDenialKind::RuntimeMismatch
+                WorthQueryWorkflowInstancePreparationDenialKind::RuntimeMismatch
             }
             Self::RequestAdmission(_) => {
-                WorthQueryWorkflowInstanceStartPreparationDenialKind::RequestAdmission
+                WorthQueryWorkflowInstancePreparationDenialKind::RequestAdmission
             }
             Self::InstancePreparation(_) => {
-                WorthQueryWorkflowInstanceStartPreparationDenialKind::InstancePreparation
+                WorthQueryWorkflowInstancePreparationDenialKind::InstancePreparation
             }
         }
     }
 }
 
-impl std::fmt::Display for WorthQueryWorkflowInstanceStartPreparationDenial {
+impl std::fmt::Display for WorthQueryWorkflowInstancePreparationDenial {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             formatter,
@@ -76,7 +78,7 @@ impl std::fmt::Display for WorthQueryWorkflowInstanceStartPreparationDenial {
     }
 }
 
-impl std::error::Error for WorthQueryWorkflowInstanceStartPreparationDenial {}
+impl std::error::Error for WorthQueryWorkflowInstancePreparationDenial {}
 
 impl<'application, 'principal, 'scope, 'key, Schema, Intent, SourcePreparation>
     WorthQueryApplicationMutationRequestWithIdempotency<
@@ -116,13 +118,13 @@ where
             MutationInput<Schema, Intent>,
             MutationScope<Schema, IntentBinding<Schema, Intent>>,
         >,
-        WorthQueryWorkflowInstanceStartPreparationDenial,
+        WorthQueryWorkflowInstancePreparationDenial,
     >
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
         self.prepare_start(workflow, |selected, installed, key, admission| {
-            WorthQueryWorkflowInstanceStartAdapter::prepare::<
+            WorthQueryWorkflowInstanceAdapter::prepare::<
                 Schema,
                 <IntentBinding<Schema, Intent> as ApplicationCapabilityMutationBinding<Schema>>::Capability,
                 MutationOperation<Schema, Intent>,
@@ -157,13 +159,13 @@ where
             MutationInput<Schema, Intent>,
             MutationScope<Schema, IntentBinding<Schema, Intent>>,
         >,
-        WorthQueryWorkflowInstanceStartPreparationDenial,
+        WorthQueryWorkflowInstancePreparationDenial,
     >
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
         self.prepare_start(workflow, |selected, installed, key, admission| {
-            WorthQueryWorkflowInstanceStartAdapter::prepare_migration::<
+            WorthQueryWorkflowInstanceAdapter::prepare_migration::<
                 Schema,
                 <IntentBinding<Schema, Intent> as ApplicationCapabilityMutationBinding<Schema>>::Capability,
                 MutationOperation<Schema, Intent>,
@@ -199,13 +201,13 @@ where
             MutationInput<Schema, Intent>,
             MutationScope<Schema, IntentBinding<Schema, Intent>>,
         >,
-        WorthQueryWorkflowInstanceStartPreparationDenial,
+        WorthQueryWorkflowInstancePreparationDenial,
     >
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
         self.prepare_start(workflow, |selected, installed, key, admission| {
-            WorthQueryWorkflowInstanceStartAdapter::prepare_fork_continuation::<
+            WorthQueryWorkflowInstanceAdapter::prepare_fork_continuation::<
                 Schema,
                 <IntentBinding<Schema, Intent> as ApplicationCapabilityMutationBinding<Schema>>::Capability,
                 MutationOperation<Schema, Intent>,
@@ -255,7 +257,7 @@ where
             MutationInput<Schema, Intent>,
             MutationScope<Schema, IntentBinding<Schema, Intent>>,
         >,
-        WorthQueryWorkflowInstanceStartPreparationDenial,
+        WorthQueryWorkflowInstancePreparationDenial,
     >
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
@@ -298,7 +300,7 @@ where
             Prepared,
             worth_query_execution::facade::primary_graph::WorthQueryApplicationIdempotencyBinding,
         ),
-        WorthQueryWorkflowInstanceStartPreparationDenial,
+        WorthQueryWorkflowInstancePreparationDenial,
     >
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
@@ -306,22 +308,22 @@ where
         let workflow = workflow.into();
         let application = self.application_runtime();
         if !std::ptr::eq(application, workflow.runtime()) {
-            return Err(WorthQueryWorkflowInstanceStartPreparationDenial::RuntimeMismatch);
+            return Err(WorthQueryWorkflowInstancePreparationDenial::RuntimeMismatch);
         }
         let selected = application
             .on_branch(self.product_branch())
             .select()
             .map_err(WorthQueryApplicationRequestMutationDenial::ProductSelection)
-            .map_err(WorthQueryWorkflowInstanceStartPreparationDenial::RequestAdmission)?;
+            .map_err(WorthQueryWorkflowInstancePreparationDenial::RequestAdmission)?;
         let mutation = authorization::prepare_capability_selected(&mut self, &selected)
-            .map_err(WorthQueryWorkflowInstanceStartPreparationDenial::RequestAdmission)?;
+            .map_err(WorthQueryWorkflowInstancePreparationDenial::RequestAdmission)?;
         let prepared = prepare(
             &selected,
             workflow.workflow_spec(),
             *mutation.idempotency.key_identity(),
             mutation.admission,
         )
-        .map_err(WorthQueryWorkflowInstanceStartPreparationDenial::InstancePreparation)?;
+        .map_err(WorthQueryWorkflowInstancePreparationDenial::InstancePreparation)?;
         Ok((application, prepared, mutation.idempotency))
     }
 }
@@ -344,7 +346,7 @@ where
     Input: Clone + Send + Sync + 'static,
 {
     pub fn execute(self) -> WorkflowInstanceStartOutcome {
-        WorthQueryWorkflowInstanceStartAdapter::compare_and_commit(
+        WorthQueryWorkflowInstanceAdapter::compare_and_commit(
             self.application,
             self.prepared,
             self.idempotency,

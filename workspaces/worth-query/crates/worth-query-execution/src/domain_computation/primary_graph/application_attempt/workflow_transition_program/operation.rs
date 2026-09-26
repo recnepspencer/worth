@@ -52,6 +52,7 @@ where
         mut authority_facts: Vec<WorthQueryApplicationObservedFact>,
         progress: &WorkflowInstanceProgress,
         operation: crate::domain_computation::primary_graph::workflow::instance::SelectedWorkflowOperation,
+        allowance: crate::domain_computation::primary_graph::application_attempt::WorkflowStepAllowance,
     ) -> Result<
         PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
         WorthQueryApplicationAttemptDenial,
@@ -200,6 +201,7 @@ where
                 subject,
                 live_membership,
                 retire_live_membership,
+                allowance,
             );
         let authority = approval_authority.map(|approval_authority| {
             WorkflowOperationAuthority::new(

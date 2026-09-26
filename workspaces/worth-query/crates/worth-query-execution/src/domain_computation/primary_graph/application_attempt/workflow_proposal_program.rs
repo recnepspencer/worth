@@ -117,7 +117,7 @@ where
         let Some(live_membership) = observed.live_membership else {
             return Err(denial("workflow proposal instance is already settled"));
         };
-        observed.ensure_step_left()?;
+        let allowance = observed.ensure_step_left()?;
         self.bind_workflow_deadline(clock, &layout, instance.entity_id())?;
         let selection = select_proposal_transition(
             &compiled,
@@ -206,6 +206,7 @@ where
             subject,
             live_membership,
             false,
+            allowance,
         );
         let mut demand = PlatformEffectDemand::default();
         visit_workflow_proposal_facts(&layout, &admitted, &proposal, |effect| {

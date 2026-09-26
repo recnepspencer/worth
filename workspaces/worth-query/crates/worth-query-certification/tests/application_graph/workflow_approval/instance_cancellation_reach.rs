@@ -3,7 +3,7 @@
 //! source, and nothing at all without the start capability.
 
 use worth_query_host::facade::application_entry::{
-    WorkflowInstancePreparationDenial, WorthQueryWorkflowInstanceStartPreparationDenial,
+    WorkflowInstancePreparationDenial, WorthQueryWorkflowInstancePreparationDenial,
 };
 
 use super::super::bounded_dimension_model::workflow::{
@@ -100,7 +100,7 @@ fn a_cancellation_without_the_start_capability_is_refused_and_claims_no_key() {
         .prepare_workflow_instance_cancellation(&application, instance.clone())
         .err();
     match refused {
-        Some(WorthQueryWorkflowInstanceStartPreparationDenial::InstancePreparation(
+        Some(WorthQueryWorkflowInstancePreparationDenial::InstancePreparation(
             WorkflowInstancePreparationDenial::Attempt(attempt),
         )) => assert_eq!(
             attempt.kind(),

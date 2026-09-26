@@ -25,6 +25,7 @@ where
         assessment: crate::domain_computation::primary_graph::workflow::instance::SelectedWorkflowAssessment,
         progress: &crate::domain_computation::primary_graph::workflow::instance::WorkflowInstanceProgress,
         evidence_allowance: u64,
+        allowance: crate::domain_computation::primary_graph::application_attempt::WorkflowStepAllowance,
     ) -> Result<
         PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
         WorthQueryApplicationAttemptDenial,
@@ -166,6 +167,7 @@ where
                     facts,
                     currentness,
                     coverage.subject,
+                    allowance,
                 );
             }
         }
@@ -189,6 +191,7 @@ where
             subject,
             live_membership,
             retire_live_membership,
+            allowance,
         );
         let required = RequiredWorkflowAssessment::from_selected(
             admitted.instance(),
@@ -225,6 +228,7 @@ where
         facts: Vec<super::super::WorthQueryApplicationObservedFact>,
         currentness: Vec<super::super::WorthQueryApplicationObservedFact>,
         subject: worth_relational::facade::identity::EntityId,
+        allowance: crate::domain_computation::primary_graph::application_attempt::WorkflowStepAllowance,
     ) -> Result<
         PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
         WorthQueryApplicationAttemptDenial,
@@ -249,6 +253,7 @@ where
             subject,
             live_membership,
             retire_live_membership,
+            allowance,
         );
         let transition_identity = admitted.identity().to_owned();
         let transition_identity_bytes = *admitted.identity_bytes();

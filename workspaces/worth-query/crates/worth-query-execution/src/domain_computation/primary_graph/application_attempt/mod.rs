@@ -44,6 +44,7 @@ mod workflow_definition_program;
 mod workflow_instance_observation;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use workflow_instance_observation::decode_field_revision_fact;
+pub(in crate::domain_computation::primary_graph) use workflow_instance_observation::WorkflowStepAllowance;
 mod workflow_instance_program;
 mod workflow_proposal_program;
 mod workflow_transition_program;
@@ -155,7 +156,7 @@ pub use workflow_instance_program::{
     PreparedWorkflowInstanceCancellation, PreparedWorkflowInstanceStart,
     PublishedWorkflowInstanceRef, WorkflowInstanceBindingDenial,
     WorkflowInstanceCancellationOutcome, WorkflowInstancePreparationDenial,
-    WorkflowInstanceStartOutcome, WorthQueryWorkflowInstanceStartAdapter,
+    WorkflowInstanceStartOutcome, WorthQueryWorkflowInstanceAdapter,
 };
 pub use workflow_proposal_program::{
     PerformedWorkflowProposal, PreparedWorkflowProposal, PublishedWorkflowProposalRef,

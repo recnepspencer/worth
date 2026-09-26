@@ -1214,21 +1214,25 @@ membership, and the outcome names every node whose effect it, or a source it was
 migrated from, performed; each remains performed. The same key replays its recorded
 outcome, including after the branch adopts a new program, and any other request for a
 cancelled instance is refused as cancelled. A completed instance has nothing left to
-cancel and is refused as completed. A step admitted before the cancellation goes
-stale before its effect; a cancellation prepared before an effect lands goes stale
-without claiming its key, and the same key then cancels afresh and reports that
-effect. Cancelling one instance leaves its siblings running, and a request on
+cancel and is refused as completed. A step admitted before the cancellation is
+refused as cancelled before its effect; a cancellation prepared before an effect
+lands goes stale without claiming its key, and the same key then cancels afresh and
+reports that effect. Cancelling one instance leaves its siblings running, and a request on
 another branch than the instance's own is refused as an affinity mismatch, so a
 fork's successor and its source end independently. A request without the start
 capability is refused without claiming its key, and a performed history that cannot
-be read within its retained bounds is refused as unavailable. That refusal is argued
-from the reads that raise it, not driven by a test: reaching it needs a stored
-history the public surface cannot corrupt. Cancellation writes no transition, so an
-instance that has used its whole retained-transition capacity, and so can take no
-further step, still cancels, warm or cold. The cancellation reads exactly the retained
+be read within its retained bounds, or that names a node its definition lacks, is
+refused as unavailable. That refusal is argued from the reads that raise it, not
+driven by a test: reaching it needs a stored history the public surface cannot
+corrupt, and a compiled definition can be minted only from a validated program.
+Cancellation writes no transition, so an instance that has used its whole
+retained-transition capacity, and so can take no further step, still cancels, warm
+or cold. The cancellation reads exactly the retained
 history, and its replay stays within the same bounds.
 
-One lineage spends one step budget, the installed retained-transition capacity. A
+One lineage spends one step budget, the installed retained-transition capacity. The
+budget check alone grants the allowance that transition and migration admission
+each require, so no step writer can skip it. A
 migration successor, or a fork's continuation, records the steps its source had taken
 and inherits them, so a loop routed through a successor never starts the budget
 afresh; retry and navigation back-edges spend it like any other step. A spent lineage
@@ -1255,12 +1259,16 @@ a duplicate delivery neither spends nor restores it.
 
 Every live instance pins the definition revision it runs, and one lineage holds at
 most the installed number of live instances. A full lineage refuses a new start with
-the typed `WorkflowInstanceCapacityUnavailable` workflow settlement denial once the
+the typed `WorkflowLineageCapacityUnavailable` workflow settlement denial once the
 commit has resolved that the start is no retry, so the refusal performs no effect and
 records nothing; a retry of a recorded start still replays warm and cold, and the
-refused key starts an instance once cancellation releases a pin. Publication takes
-no pin, and a migration or a fork's continuation exchanges its source's pin for its
-own in one commit. Evicting compiled meaning releases no pin: the pinned revision
+refused key starts an instance once cancellation releases a pin. A lineage holding
+more instances than it can read, as a lowered ceiling can leave it, counts as full, so
+its recorded starts still replay. Two starts prepared against one membership cannot
+both commit: each commits only while the membership it read is unchanged. Publication
+takes no pin, even with one free, and a migration or a fork's continuation exchanges
+its source's pin for its own in one commit, so ending the successor frees room for
+exactly one start. Evicting compiled meaning releases no pin: the pinned revision
 compiles once on its next use and is warm again. Once a revision is compiled, a
 further instance's whole run compiles nothing; its first observation is its only
 progress miss, rebuilt from no transitions, and every later step reads retained
@@ -1292,10 +1300,10 @@ the first had the run in flight, still settles the assessment after the first cl
 and the closed observation refuses further settlement and notifications as closed.
 Closing every observer, including one with a run in flight, neither cancels the
 instance nor settles its head: the instance still awaits its assessment, a later
-observer settles it and the instance proceeds, and it can still be cancelled. Pending notifications are bounded at one per
-observation by construction: an observer's wakes coalesce into its run's single
-generation, so any number of state changes since it last looked is one pending wake,
-and there is no per-change queue to exhaust.
+observer settles it and the instance proceeds, and it can still be cancelled. Pending
+notifications are bounded at one per observation by construction: an observer's wakes
+coalesce into its run's single generation, so any number of state changes since it
+last looked is one pending wake, and there is no per-change queue to exhaust.
 
 ## Acceptance, Cost And Review
 

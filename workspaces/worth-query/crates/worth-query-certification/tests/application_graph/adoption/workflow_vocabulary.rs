@@ -8,7 +8,7 @@ use worth_query_host::facade::application_entry::{
     WorkflowInstancePreparationDenial, WorkflowInstanceStartOutcome, WorkflowProgressOutcome,
     WorthQueryApplicationRequestExt, WorthQueryWorkflowAdvancePreparationDenial,
     WorthQueryWorkflowDefinitionPublicationPreparationDenial,
-    WorthQueryWorkflowInstanceStartPreparationDenial,
+    WorthQueryWorkflowInstancePreparationDenial,
 };
 use worth_query_host::facade::application_installation::{
     WorthQueryWorkflowRuntimeBindingDenial, WorthQueryWorkflowVocabulary,
@@ -302,7 +302,7 @@ fn start<Program>(
     branch: WorthQueryProductBranch,
     definition: PublishedWorkflowDefinitionRef,
     idempotency: u64,
-) -> Result<WorkflowInstanceStartOutcome, WorthQueryWorkflowInstanceStartPreparationDenial>
+) -> Result<WorkflowInstanceStartOutcome, WorthQueryWorkflowInstancePreparationDenial>
 where
     Program: ApplicationProgramDefinition<BoundedDimensionSchema>,
 {
@@ -380,10 +380,10 @@ fn expect_stale_definition_vocabulary(
 }
 
 fn expect_stale_instance_vocabulary(
-    result: Result<WorkflowInstanceStartOutcome, WorthQueryWorkflowInstanceStartPreparationDenial>,
+    result: Result<WorkflowInstanceStartOutcome, WorthQueryWorkflowInstancePreparationDenial>,
 ) {
     match result {
-        Err(WorthQueryWorkflowInstanceStartPreparationDenial::InstancePreparation(
+        Err(WorthQueryWorkflowInstancePreparationDenial::InstancePreparation(
             WorkflowInstancePreparationDenial::Binding(
                 WorkflowInstanceBindingDenial::ProgramRevisionChanged,
             ),

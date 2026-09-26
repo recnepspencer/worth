@@ -4,7 +4,7 @@ pub fn start_instance(
     application: &BoundedDimensionWorkflowRuntime,
     definition: PublishedWorkflowDefinitionRef,
     idempotency: u64,
-) -> Result<WorkflowInstanceStartOutcome, WorthQueryWorkflowInstanceStartPreparationDenial> {
+) -> Result<WorkflowInstanceStartOutcome, WorthQueryWorkflowInstancePreparationDenial> {
     let runtime = application.runtime();
     let scope = request_scope();
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
@@ -150,7 +150,7 @@ pub fn migrate_instance(
     target: PublishedWorkflowDefinitionRef,
     resume_at: &str,
     idempotency: u64,
-) -> Result<WorkflowInstanceStartOutcome, WorthQueryWorkflowInstanceStartPreparationDenial> {
+) -> Result<WorkflowInstanceStartOutcome, WorthQueryWorkflowInstancePreparationDenial> {
     let runtime = application.runtime();
     let scope = request_scope();
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
@@ -176,7 +176,7 @@ pub fn continue_on_fork(
     target: PublishedWorkflowDefinitionRef,
     resume_at: &str,
     idempotency: u64,
-) -> Result<WorkflowInstanceStartOutcome, WorthQueryWorkflowInstanceStartPreparationDenial> {
+) -> Result<WorkflowInstanceStartOutcome, WorthQueryWorkflowInstancePreparationDenial> {
     let runtime = application.runtime();
     let scope = request_scope();
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
@@ -203,7 +203,7 @@ pub fn prepare_cancellation(
 ) -> Result<
     impl FnOnce() -> worth_query_host::facade::application_entry::WorkflowInstanceCancellationOutcome
         + '_,
-    WorthQueryWorkflowInstanceStartPreparationDenial,
+    WorthQueryWorkflowInstancePreparationDenial,
 > {
     prepare_cancellation_on(application, instance.branch(), instance, idempotency)
 }
@@ -218,7 +218,7 @@ pub fn prepare_cancellation_on(
 ) -> Result<
     impl FnOnce() -> worth_query_host::facade::application_entry::WorkflowInstanceCancellationOutcome
         + '_,
-    WorthQueryWorkflowInstanceStartPreparationDenial,
+    WorthQueryWorkflowInstancePreparationDenial,
 > {
     let runtime = application.runtime();
     let scope = request_scope();
@@ -243,7 +243,7 @@ pub fn cancel_instance(
     idempotency: u64,
 ) -> Result<
     worth_query_host::facade::application_entry::WorkflowInstanceCancellationOutcome,
-    WorthQueryWorkflowInstanceStartPreparationDenial,
+    WorthQueryWorkflowInstancePreparationDenial,
 > {
     prepare_cancellation(application, instance, idempotency).map(|execute| execute())
 }

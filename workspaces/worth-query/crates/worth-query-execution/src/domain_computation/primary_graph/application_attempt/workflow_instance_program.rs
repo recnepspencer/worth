@@ -33,7 +33,7 @@ pub use cancellation::{
 };
 pub use preparation::{
     WorkflowInstanceBindingDenial, WorkflowInstancePreparationDenial,
-    WorthQueryWorkflowInstanceStartAdapter,
+    WorthQueryWorkflowInstanceAdapter,
 };
 pub use publication::{
     PerformedWorkflowInstanceStart, PreparedWorkflowInstanceStart, PublishedWorkflowInstanceRef,
@@ -87,29 +87,20 @@ where
         let maximum_instances = usize::try_from(installed.resources().maximum_live_instances())
             .map_err(|_| {
                 denial(
-                    WorthQueryApplicationAttemptDenialKind::WorkflowInstanceCapacityUnavailable,
+                    WorthQueryApplicationAttemptDenialKind::WorkflowLineageCapacityUnavailable,
                     self.admission.operation(),
                 )
             })?;
-        let instances = self
-            .lease
-            .handle()
-            .with_runtime(|runtime| {
-                observe_adjacency(
-                    runtime,
-                    self.lease.snapshot(),
-                    layout.live_instance_lineage_relation,
-                    compiled.lineage(),
-                    WorthQueryApplicationAdjacencyDirection::Incoming,
-                    maximum_instances.saturating_mul(2).saturating_add(1),
-                )
-            })
-            .ok_or_else(|| {
-                denial(
-                    WorthQueryApplicationAttemptDenialKind::WorkflowInstanceCapacityUnavailable,
-                    self.admission.operation(),
-                )
-            })?;
+        let instances = self.lease.handle().with_runtime(|runtime| {
+            observe_adjacency(
+                runtime,
+                self.lease.snapshot(),
+                layout.live_instance_lineage_relation,
+                compiled.lineage(),
+                WorthQueryApplicationAdjacencyDirection::Incoming,
+                maximum_instances.saturating_mul(2).saturating_add(1),
+            )
+        });
         let declared_deadline = self.lease.handle().with_runtime(|runtime| {
             super::workflow_deadline::definition_deadline(
                 runtime,
@@ -120,21 +111,25 @@ where
             )
         })?;
         // Every live instance pins its revision. A full lineage refuses a new
-        // start once the commit knows it is no retry of a recorded one.
-        if instances.len() >= maximum_instances {
-            self.replay_only_denial = Some(denial(
-                WorthQueryApplicationAttemptDenialKind::WorkflowInstanceCapacityUnavailable,
-                self.admission.operation(),
-            ));
+        // start once the commit knows it is no retry of a recorded one. A
+        // lineage holding more than it can read, as a lowered ceiling can
+        // leave it, is full too, so its recorded starts still replay.
+        match instances {
+            Some(instances) if instances.len() < maximum_instances => compile_facts.push(
+                WorthQueryApplicationObservedFact::WorkflowInstanceCapacity {
+                    relation_kind: layout.live_instance_lineage_relation,
+                    lineage: compiled.lineage(),
+                    maximum_instances,
+                    instances,
+                },
+            ),
+            _ => {
+                self.new_commit_refusal = Some(denial(
+                    WorthQueryApplicationAttemptDenialKind::WorkflowLineageCapacityUnavailable,
+                    self.admission.operation(),
+                ));
+            }
         }
-        compile_facts.push(
-            WorthQueryApplicationObservedFact::WorkflowInstanceCapacity {
-                relation_kind: layout.live_instance_lineage_relation,
-                lineage: compiled.lineage(),
-                maximum_instances,
-                instances,
-            },
-        );
         if self.facts.len().saturating_add(compile_facts.len())
             > self
                 .admission

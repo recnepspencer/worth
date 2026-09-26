@@ -6,7 +6,7 @@ use worth_query_host::facade::{
         WorkflowDefinitionExpectedPredecessor, WorkflowDefinitionPublicationOutcome,
         WorkflowInstanceStartOutcome, WorkflowProgressOutcome,
         WorthQueryWorkflowDefinitionPublicationPreparationDenial,
-        WorthQueryWorkflowInstanceStartPreparationDenial,
+        WorthQueryWorkflowInstancePreparationDenial,
     },
     primary_graph::{WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitOutcome},
 };
@@ -318,7 +318,7 @@ fn public_instance_start_binds_revisions_replays_and_enforces_lineage_capacity()
 }
 
 fn expect_started(
-    result: Result<WorkflowInstanceStartOutcome, WorthQueryWorkflowInstanceStartPreparationDenial>,
+    result: Result<WorkflowInstanceStartOutcome, WorthQueryWorkflowInstancePreparationDenial>,
 ) -> worth_query_host::facade::application_entry::PerformedWorkflowInstanceStart {
     match result.expect("workflow instance-start preparation must succeed") {
         WorkflowInstanceStartOutcome::Started(started) => started,
@@ -356,7 +356,7 @@ fn expect_stale_predecessor(
 }
 
 fn expect_start_intent_drift(
-    result: Result<WorkflowInstanceStartOutcome, WorthQueryWorkflowInstanceStartPreparationDenial>,
+    result: Result<WorkflowInstanceStartOutcome, WorthQueryWorkflowInstancePreparationDenial>,
 ) {
     match result.expect("the changed workflow start intent must reach idempotency") {
         WorkflowInstanceStartOutcome::Application(WorthQueryApplicationCommitOutcome::Denied(

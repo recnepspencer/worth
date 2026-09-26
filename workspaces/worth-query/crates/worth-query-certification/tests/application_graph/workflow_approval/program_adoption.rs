@@ -5,7 +5,7 @@
 use worth_query_host::facade::application_entry::{
     WorkflowInstancePreparationDenial, WorkflowProposalPreparationDenial,
     WorthQueryApplicationProgramAdoptionPreparationDenial,
-    WorthQueryWorkflowInstanceStartPreparationDenial, WorthQueryWorkflowProposalPreparationDenial,
+    WorthQueryWorkflowInstancePreparationDenial, WorthQueryWorkflowProposalPreparationDenial,
 };
 use worth_query_host::facade::primary_graph::{
     WorthQueryBranchAdoptionPreparationDenial, WorthQueryWorkflowAdoptionInventory,
@@ -253,7 +253,7 @@ fn a_cancelled_instance_names_its_cancellation_to_every_request() {
     assert!(
         matches!(
             &cancellation,
-            WorthQueryWorkflowInstanceStartPreparationDenial::InstancePreparation(
+            WorthQueryWorkflowInstancePreparationDenial::InstancePreparation(
                 WorkflowInstancePreparationDenial::Attempt(attempt)
             ) if attempt.kind() == WorthQueryApplicationAttemptDenialKind::WorkflowInstanceCancelled
         ),

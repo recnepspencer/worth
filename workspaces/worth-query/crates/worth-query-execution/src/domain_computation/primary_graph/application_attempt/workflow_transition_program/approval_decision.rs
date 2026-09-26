@@ -259,21 +259,24 @@ where
         };
         // A decision recorded before the budget is spent or the deadline
         // passes still replays after it.
-        if let Err(refused) = observed.ensure_step_left().and_then(|()| {
+        let allowance = match observed.ensure_step_left().and_then(|allowance| {
             self.bind_workflow_deadline(clock, &layout, instance.entity_id())
-                .map(drop)
+                .map(|_| allowance)
         }) {
-            return Ok(PreparedWorkflowAdvance::ReplayOnly {
-                read_set: self,
-                transition_identity_locator: layout.transition.identity.clone(),
-                assessment_identity_locator: layout.assessment_evidence.identity.clone(),
-                instance: instance.entity_id(),
-                approval: Some(approval_projection.clone()),
-                approval_identity: Some(meaning.identity),
-                replays,
-                denial: refused,
-            });
-        }
+            Ok(allowance) => allowance,
+            Err(refused) => {
+                return Ok(PreparedWorkflowAdvance::ReplayOnly {
+                    read_set: self,
+                    transition_identity_locator: layout.transition.identity.clone(),
+                    assessment_identity_locator: layout.assessment_evidence.identity.clone(),
+                    instance: instance.entity_id(),
+                    approval: Some(approval_projection.clone()),
+                    approval_identity: Some(meaning.identity),
+                    replays,
+                    denial: refused,
+                })
+            }
+        };
         let selected = match select_current_transition(
             &compiled,
             instance.entity_id(),
@@ -347,6 +350,7 @@ where
             subject,
             live_membership,
             false,
+            allowance,
         );
         let mut prepared = materialize_decision(
             &layout,

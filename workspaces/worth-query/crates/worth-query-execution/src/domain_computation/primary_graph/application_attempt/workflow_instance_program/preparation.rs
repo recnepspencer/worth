@@ -217,10 +217,14 @@ where
     }
 }
 
+/// Prepares and commits every instance lifecycle request: start, migration,
+/// fork continuation and cancellation. Each is admitted through the
+/// application's instance binding, the same intent a start uses, so one
+/// capability governs an instance from its start to its end.
 #[doc(hidden)]
-pub struct WorthQueryWorkflowInstanceStartAdapter;
+pub struct WorthQueryWorkflowInstanceAdapter;
 
-impl WorthQueryWorkflowInstanceStartAdapter {
+impl WorthQueryWorkflowInstanceAdapter {
     pub fn prepare<Schema, Capability, Operation, Input, Scope, Spec, Program>(
         selected: &WorthQuerySelectedProductOperation<'_, Schema>,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,

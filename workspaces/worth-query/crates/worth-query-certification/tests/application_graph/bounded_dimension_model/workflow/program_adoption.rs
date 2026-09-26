@@ -8,7 +8,7 @@ use worth_query_host::facade::application_entry::{
     WorthQueryApplicationProgramAdoptionPreparationDenial, WorthQueryApplicationRequestExt,
     WorthQueryOutputDemandControls, WorthQueryWorkflowAdvancePreparationDenial,
     WorthQueryWorkflowAssessmentAcceptanceDenial, WorthQueryWorkflowAssessmentDemandProgress,
-    WorthQueryWorkflowInstanceStartPreparationDenial, WorthQueryWorkflowProposalPreparationDenial,
+    WorthQueryWorkflowInstancePreparationDenial, WorthQueryWorkflowProposalPreparationDenial,
 };
 use worth_query_host::facade::declaration::application_program::ApplicationProgramRevision;
 use worth_query_host::facade::primary_graph::{
@@ -137,7 +137,7 @@ pub fn start_on_second(
     branch: WorthQueryProductBranch,
     definition: PublishedWorkflowDefinitionRef,
     idempotency: u64,
-) -> Result<WorkflowInstanceStartOutcome, WorthQueryWorkflowInstanceStartPreparationDenial> {
+) -> Result<WorkflowInstanceStartOutcome, WorthQueryWorkflowInstancePreparationDenial> {
     let vocabulary = application
         .supported_vocabulary::<DimensionProgramP1>()
         .expect("P1 serves its vocabulary");
@@ -282,7 +282,7 @@ pub fn cancel_on_second(
     idempotency: u64,
 ) -> Result<
     worth_query_host::facade::application_entry::WorkflowInstanceCancellationOutcome,
-    WorthQueryWorkflowInstanceStartPreparationDenial,
+    WorthQueryWorkflowInstancePreparationDenial,
 > {
     let vocabulary = application
         .supported_vocabulary::<DimensionProgramP1>()

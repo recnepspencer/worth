@@ -57,6 +57,7 @@ pub enum BankApplicationAttemptDenialKind {
     WorkflowInstanceAuthorityMismatch,
     WorkflowInstanceIntentIdentityUnavailable,
     WorkflowInstanceCapacityUnavailable,
+    WorkflowLineageCapacityUnavailable,
     WorkflowInstanceCancelled,
     WorkflowInstanceCompleted,
     WorkflowInstanceHistoryUnavailable,
@@ -230,6 +231,9 @@ const fn application_attempt_kind(
         }
         Query::WorkflowInstanceCapacityUnavailable => {
             BankApplicationAttemptDenialKind::WorkflowInstanceCapacityUnavailable
+        }
+        Query::WorkflowLineageCapacityUnavailable => {
+            BankApplicationAttemptDenialKind::WorkflowLineageCapacityUnavailable
         }
         Query::WorkflowInstanceCancelled => {
             BankApplicationAttemptDenialKind::WorkflowInstanceCancelled

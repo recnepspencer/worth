@@ -9,7 +9,7 @@ use super::{
 };
 
 /// An ended instance is named before any field it left behind can mismatch.
-pub(super) fn deny_ended(
+pub(in crate::domain_computation::primary_graph::application_attempt) fn deny_ended(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     layout: &WorthQueryWorkflowLayout,

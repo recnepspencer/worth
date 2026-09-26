@@ -185,7 +185,7 @@ where
                     installed.resources().history_reconstruction_budget(),
                     super::super::workflow_instance_observation::WorkflowInstanceObservationPurpose::Advance,
                 )?;
-            observed.ensure_step_left()?;
+            let allowance = observed.ensure_step_left()?;
             observed.ensure_history(
                 handle,
                 runtime,
@@ -208,7 +208,7 @@ where
                 instance_deadline(runtime, snapshot, &layout, source.entity_id(), &mut facts)?,
                 definition_deadline(runtime, snapshot, &layout, resumed.definition(), &mut facts)?,
             );
-            Ok::<_, WorthQueryApplicationAttemptDenial>((observed, inherited, deadlines))
+            Ok::<_, WorthQueryApplicationAttemptDenial>((observed, inherited, deadlines, allowance))
         });
         let mut source_deadline = None;
         let effects = match observed {
@@ -235,7 +235,7 @@ where
                 Vec::new()
             }
             Err(denial) => return Err(denial),
-            Ok((observed, inherited, (inherited_deadline, declared_deadline))) => {
+            Ok((observed, inherited, (inherited_deadline, declared_deadline), allowance)) => {
                 let Some(live_membership) = observed.live_membership else {
                     return Err(unmapped("a completed instance has no work left to migrate"));
                 };
@@ -256,7 +256,9 @@ where
                     WorthQueryApplicationAttemptDenialKind::WorkflowInstanceMigrationUnmapped,
                 )?;
                 performed.extend(inherited);
-                admit_workflow_migration(succession, &from, &resumed, &settled, &performed)?;
+                admit_workflow_migration(
+                    succession, &from, &resumed, &settled, &performed, allowance,
+                )?;
                 let carry = WorkflowLineageCarry {
                     inherited_steps: observed.lineage_steps(),
                     inherited_evidence_bytes: observed.lineage_evidence_bytes(),

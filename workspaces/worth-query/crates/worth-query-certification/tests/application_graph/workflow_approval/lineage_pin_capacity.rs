@@ -4,16 +4,18 @@
 //! replays. Publication takes no pin, a migration exchanges one pin for
 //! another, and evicting compiled meaning never releases a pin.
 
-use worth_query_host::facade::application_entry::WorthQueryWorkflowInstanceStartPreparationDenial;
+use worth_query_host::facade::application_entry::WorthQueryWorkflowInstancePreparationDenial;
 use worth_query_host::facade::declaration::application_program::ApplicationWorkflowComponentLimits;
 use worth_query_installation::facade::WorthQueryApplicationWorkflowResourceCeiling;
 
 use super::super::bounded_dimension_model::{
     host::publish_on_first_program,
     workflow::{
-        cancel_instance, expect_capacity_refused, migrate_instance, retain_workflow_with_resources,
+        cancel_instance, continue_on_fork, expect_capacity_refused, migrate_instance,
+        retain_workflow_with_resources,
     },
 };
+use super::fork_continuation::fork_of;
 use super::instance_cancellation::cancelled;
 use super::instance_migration::{perform_approved_effect, replace_definition, started};
 use super::journey::approval_requirement;
@@ -22,7 +24,7 @@ use super::*;
 const PINS: u32 = 2;
 
 type StartResult =
-    Result<WorkflowInstanceStartOutcome, WorthQueryWorkflowInstanceStartPreparationDenial>;
+    Result<WorkflowInstanceStartOutcome, WorthQueryWorkflowInstancePreparationDenial>;
 
 /// A workflow host whose lineages each hold at most `PINS` live instances.
 fn pinned(
@@ -151,6 +153,76 @@ fn publication_takes_no_pin_and_eviction_releases_none() {
     ));
     assert_eq!(migrated.definition_entity_id(), successor.entity_id());
     expect_capacity_refused(start(&application, &successor, 96_131));
+}
+
+#[test]
+fn publication_with_a_free_pin_still_admits_one_start() {
+    let (application, definition) = pinned(96_300);
+    admitted(start(&application, &definition, 96_301));
+    let successor = replace_definition(
+        &application,
+        definition,
+        reviewed_geometry_definition("applied"),
+        96_310,
+    );
+    let (_, replay) = admitted(start(&application, &successor, 96_311));
+    assert!(!replay, "publishing the successor took no pin");
+    expect_capacity_refused(start(&application, &successor, 96_312));
+}
+
+/// A migration takes the successor's pin and releases its source's. Ending
+/// the successor frees room for exactly one start, which it would not if the
+/// source still held a pin.
+#[test]
+fn a_migration_exchanges_exactly_one_pin() {
+    let (application, definition) = pinned(96_400);
+    let (first, _) = admitted(start(&application, &definition, 96_401));
+    admitted(start(&application, &definition, 96_402));
+    let successor = replace_definition(
+        &application,
+        definition,
+        reviewed_geometry_definition("applied"),
+        96_410,
+    );
+    let (migrated, _) = admitted(migrate_instance(
+        &application,
+        first,
+        successor.clone(),
+        "propose",
+        96_420,
+    ));
+    expect_capacity_refused(start(&application, &successor, 96_421));
+    assert!(!cancelled(cancel_instance(&application, migrated, 96_430)).replayed());
+    let (_, replay) = admitted(start(&application, &successor, 96_431));
+    assert!(!replay);
+    expect_capacity_refused(start(&application, &successor, 96_432));
+}
+
+/// A fork copies the lineage's pins with its instances. A continuation there
+/// exchanges its copy's pin for its successor's, and the source branch keeps
+/// its own count.
+#[test]
+fn a_fork_continuation_exchanges_its_copys_pin() {
+    let (application, definition) = pinned(96_500);
+    let (first, _) = admitted(start(&application, &definition, 96_501));
+    admitted(start(&application, &definition, 96_502));
+    let fork = fork_of(&application, first.branch());
+    let on_fork = definition.held_on(fork);
+    expect_capacity_refused(start(&application, &on_fork, 96_503));
+    let (successor, _) = admitted(continue_on_fork(
+        &application,
+        fork,
+        first,
+        definition.clone(),
+        "propose",
+        96_510,
+    ));
+    expect_capacity_refused(start(&application, &on_fork, 96_511));
+    assert!(!cancelled(cancel_instance(&application, successor, 96_520)).replayed());
+    let (_, replay) = admitted(start(&application, &on_fork, 96_521));
+    assert!(!replay);
+    expect_capacity_refused(start(&application, &on_fork, 96_522));
+    expect_capacity_refused(start(&application, &definition, 96_530));
 }
 
 fn assert_awaiting_assessment(

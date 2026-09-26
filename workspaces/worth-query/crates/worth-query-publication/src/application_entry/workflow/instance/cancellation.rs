@@ -10,16 +10,16 @@ use worth_query_declaration::facade::{
 };
 use worth_query_execution::facade::{
     application_installation::WorthQueryWorkflowVocabulary,
-    workflow_instance_start::{
+    workflow_instance::{
         PreparedWorkflowInstanceCancellation, PublishedWorkflowInstanceRef,
-        WorkflowInstanceCancellationOutcome, WorthQueryWorkflowInstanceStartAdapter,
+        WorkflowInstanceCancellationOutcome, WorthQueryWorkflowInstanceAdapter,
     },
 };
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{
     IntentBinding, MutationInput, MutationOperation, MutationScope,
-    WorthQueryWorkflowInstanceStartPreparationDenial,
+    WorthQueryWorkflowInstancePreparationDenial,
 };
 use crate::application_entry::mutation::WorthQueryApplicationMutationRequestWithIdempotency;
 
@@ -70,14 +70,14 @@ where
             MutationInput<Schema, Intent>,
             MutationScope<Schema, IntentBinding<Schema, Intent>>,
         >,
-        WorthQueryWorkflowInstanceStartPreparationDenial,
+        WorthQueryWorkflowInstancePreparationDenial,
     >
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
         let (application, prepared, idempotency) =
             self.prepare_instance(workflow, |selected, installed, key, admission| {
-                WorthQueryWorkflowInstanceStartAdapter::prepare_cancellation::<
+                WorthQueryWorkflowInstanceAdapter::prepare_cancellation::<
                     Schema,
                     <IntentBinding<Schema, Intent> as ApplicationCapabilityMutationBinding<Schema>>::Capability,
                     MutationOperation<Schema, Intent>,
@@ -118,7 +118,7 @@ where
     Input: Clone + Send + Sync + 'static,
 {
     pub fn execute(self) -> WorkflowInstanceCancellationOutcome {
-        WorthQueryWorkflowInstanceStartAdapter::compare_and_commit_cancellation(
+        WorthQueryWorkflowInstanceAdapter::compare_and_commit_cancellation(
             self.application,
             self.prepared,
             self.idempotency,

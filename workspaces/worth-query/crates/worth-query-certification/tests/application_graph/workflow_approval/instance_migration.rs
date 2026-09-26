@@ -3,7 +3,7 @@
 //! repeat, and re-establishes every proposal, evidence and approval it needs.
 
 use worth_query_host::facade::application_entry::{
-    WorkflowInstancePreparationDenial, WorthQueryWorkflowInstanceStartPreparationDenial,
+    WorkflowInstancePreparationDenial, WorthQueryWorkflowInstancePreparationDenial,
 };
 use worth_query_host::facade::primary_graph::{
     WorthQueryWorkflowInstanceCustody, WorthQueryWorkflowInstanceDisposition,
@@ -284,7 +284,7 @@ pub(super) fn perform_approved_effect(
 }
 
 pub(super) fn started(
-    outcome: Result<WorkflowInstanceStartOutcome, WorthQueryWorkflowInstanceStartPreparationDenial>,
+    outcome: Result<WorkflowInstanceStartOutcome, WorthQueryWorkflowInstancePreparationDenial>,
 ) -> worth_query_host::facade::application_entry::PerformedWorkflowInstanceStart {
     match outcome.expect("the migration prepares") {
         WorkflowInstanceStartOutcome::Started(performed) => performed,
@@ -293,10 +293,10 @@ pub(super) fn started(
 }
 
 pub(super) fn migration_denial(
-    outcome: Result<WorkflowInstanceStartOutcome, WorthQueryWorkflowInstanceStartPreparationDenial>,
+    outcome: Result<WorkflowInstanceStartOutcome, WorthQueryWorkflowInstancePreparationDenial>,
 ) -> WorthQueryApplicationAttemptDenialKind {
     match outcome {
-        Err(WorthQueryWorkflowInstanceStartPreparationDenial::InstancePreparation(
+        Err(WorthQueryWorkflowInstancePreparationDenial::InstancePreparation(
             WorkflowInstancePreparationDenial::Attempt(attempt),
         )) => attempt.kind(),
         other => panic!("expected a typed migration denial, got {other:?}"),

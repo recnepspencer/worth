@@ -24,7 +24,8 @@ use super::super::definition::{
 };
 use super::SettledWorkflowTransition;
 use crate::domain_computation::primary_graph::application_attempt::{
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
+    WorkflowStepAllowance, WorthQueryApplicationAttemptDenial,
+    WorthQueryApplicationAttemptDenialKind,
 };
 
 /// A receipted transition the successor must carry: the source's own, or one
@@ -52,7 +53,9 @@ pub(in crate::domain_computation::primary_graph) fn admit_workflow_migration(
     resumed: &CompiledWorkflowDefinition,
     settled: &[SettledWorkflowTransition],
     performed: &[WorkflowPerformedEffect],
+    allowance: WorkflowStepAllowance,
 ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+    allowance.spend();
     if resumed.lineage() != source.lineage() {
         return Err(unmapped("a successor continues the same workflow"));
     }

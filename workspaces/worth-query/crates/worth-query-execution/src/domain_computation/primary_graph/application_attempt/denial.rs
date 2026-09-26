@@ -51,7 +51,15 @@ pub enum WorthQueryApplicationAttemptDenialKind {
     WorkflowInstanceAffinityMismatch,
     WorkflowInstanceAuthorityMismatch,
     WorkflowInstanceIntentIdentityUnavailable,
+    /// The instance's lineage has taken its installed number of steps, or
+    /// its retained progress would pass the installed byte budget. Recorded
+    /// steps still replay and the instance can still be cancelled; ending
+    /// other instances frees nothing for it.
     WorkflowInstanceCapacityUnavailable,
+    /// The lineage already holds its installed number of live instances, so
+    /// a new start is refused. A retry of a recorded start still replays,
+    /// and cancelling or completing an instance frees room.
+    WorkflowLineageCapacityUnavailable,
     /// An explicit cancellation or program adoption cancelled the instance;
     /// no request can advance it.
     WorkflowInstanceCancelled,

@@ -24,7 +24,7 @@ impl WorthQueryApplicationCommitDenial {
             | WorthQueryApplicationAttemptDenialKind::CandidateReservationExceeded
             | WorthQueryApplicationAttemptDenialKind::RetainedEffectBytesExceeded
             | WorthQueryApplicationAttemptDenialKind::WorkflowInstanceCapacityUnavailable
-            | WorthQueryApplicationAttemptDenialKind::WorkflowInstanceEvidenceCapacityUnavailable => {
+            | WorthQueryApplicationAttemptDenialKind::WorkflowLineageCapacityUnavailable => {
                 WorthQueryApplicationCommitDenialStage::ResourceAdmission
             }
             _ => WorthQueryApplicationCommitDenialStage::ProposalBinding,

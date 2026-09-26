@@ -1,5 +1,5 @@
 use worth_query_host::facade::application_entry::{
-    WorkflowInstanceStartOutcome, WorthQueryWorkflowInstanceStartPreparationDenial,
+    WorkflowInstanceStartOutcome, WorthQueryWorkflowInstancePreparationDenial,
 };
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationCommitDenialKind,
@@ -7,7 +7,7 @@ use worth_query_host::facade::primary_graph::{
 };
 
 type StartResult =
-    Result<WorkflowInstanceStartOutcome, WorthQueryWorkflowInstanceStartPreparationDenial>;
+    Result<WorkflowInstanceStartOutcome, WorthQueryWorkflowInstancePreparationDenial>;
 
 /// The start reached commit comparison and found a fact it read had moved.
 pub fn expect_stale_start(result: StartResult) {
@@ -27,7 +27,7 @@ pub fn expect_capacity_refused(result: StartResult) {
         )) => assert_eq!(
             denial.kind(),
             WorthQueryApplicationCommitDenialKind::WorkflowSettlementDenied {
-                kind: WorthQueryApplicationAttemptDenialKind::WorkflowInstanceCapacityUnavailable,
+                kind: WorthQueryApplicationAttemptDenialKind::WorkflowLineageCapacityUnavailable,
             },
         ),
         unexpected => panic!("a full lineage must refuse a new start: {unexpected:?}"),

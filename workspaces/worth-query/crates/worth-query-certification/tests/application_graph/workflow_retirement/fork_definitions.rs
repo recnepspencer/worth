@@ -99,7 +99,7 @@ fn a_definition_published_on_a_sibling_is_never_another_forks() {
     // The other fork holds no such definition to compile or retire, even
     // though it holds one with the same content under its own identity.
     match start_instance(&application, named_elsewhere.clone(), 473) {
-        Err(WorthQueryWorkflowInstanceStartPreparationDenial::InstancePreparation(
+        Err(WorthQueryWorkflowInstancePreparationDenial::InstancePreparation(
             WorkflowInstancePreparationDenial::Attempt(attempt),
         )) => assert_eq!(
             attempt.kind(),

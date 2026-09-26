@@ -7,8 +7,7 @@ use worth_query_host::facade::{
         WorthQueryApplicationRequestExt, WorthQueryWorkflowAdvancePreparationDenial,
         WorthQueryWorkflowDefinitionPublicationPreparationDenial,
         WorthQueryWorkflowDefinitionRetirementPreparationDenial,
-        WorthQueryWorkflowInstanceStartPreparationDenial,
-        WorthQueryWorkflowProposalPreparationDenial,
+        WorthQueryWorkflowInstancePreparationDenial, WorthQueryWorkflowProposalPreparationDenial,
     },
     declaration::application_program::{
         ApplicationWorkflowComponentLimits, ApplicationWorkflowControlOutcome,

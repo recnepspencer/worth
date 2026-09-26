@@ -24,3 +24,6 @@ pub(super) fn remains_equal(
         )
         .is_some_and(|current| current == expected)
 }
+
+#[cfg(test)]
+mod tests;

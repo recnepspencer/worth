@@ -7,7 +7,7 @@ use worth_query_host::facade::application_entry::{
     WorkflowDefinitionExpectedPredecessor, WorkflowDefinitionPublicationOutcome,
     WorkflowInstanceStartOutcome, WorkflowProgressOutcome,
     WorthQueryApplicationProgramAdoptionPreparationDenial,
-    WorthQueryWorkflowInstanceStartPreparationDenial,
+    WorthQueryWorkflowInstancePreparationDenial,
 };
 use worth_query_host::facade::primary_graph::{
     WorthQueryBranchAdoptionPreparationDenial,
@@ -179,7 +179,7 @@ pub(super) fn live_instance_on_first_program(
 }
 
 pub(super) fn expect_started(
-    outcome: Result<WorkflowInstanceStartOutcome, WorthQueryWorkflowInstanceStartPreparationDenial>,
+    outcome: Result<WorkflowInstanceStartOutcome, WorthQueryWorkflowInstancePreparationDenial>,
 ) -> PublishedWorkflowInstanceRef {
     match outcome.expect("the instance prepares") {
         WorkflowInstanceStartOutcome::Started(performed) => performed.instance().clone(),

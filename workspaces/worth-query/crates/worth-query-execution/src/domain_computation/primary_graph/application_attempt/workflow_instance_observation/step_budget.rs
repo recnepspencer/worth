@@ -18,6 +18,21 @@ pub(in crate::domain_computation::primary_graph::application_attempt) enum Workf
     Close,
 }
 
+/// Leave to write one step, granted only by
+/// [`ObservedWorkflowInstance::ensure_step_left`]. Transition and migration
+/// admission each take one, so no step reaches a commit without its
+/// lineage's budget having been checked.
+#[must_use = "a step is admitted only with the allowance its budget check granted"]
+#[derive(Debug)]
+pub(in crate::domain_computation::primary_graph) struct WorkflowStepAllowance(());
+
+impl WorkflowStepAllowance {
+    /// Consumes the allowance for the one step being admitted.
+    pub(in crate::domain_computation::primary_graph) fn spend(self) {
+        let Self(()) = self;
+    }
+}
+
 impl ObservedWorkflowInstance {
     /// A step spends one of the lineage's budget, which counts the steps the
     /// instance inherited from its sources as well as its own. Warm and cold
@@ -26,7 +41,7 @@ impl ObservedWorkflowInstance {
     /// that spent the last of the budget still answers.
     pub(in crate::domain_computation::primary_graph::application_attempt) fn ensure_step_left(
         &self,
-    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+    ) -> Result<WorkflowStepAllowance, WorthQueryApplicationAttemptDenial> {
         let lineage_steps = usize::try_from(self.lineage_steps()).unwrap_or(usize::MAX);
         if self.live_membership.is_some()
             && self.purpose == WorkflowInstanceObservationPurpose::Advance
@@ -37,7 +52,7 @@ impl ObservedWorkflowInstance {
                 "workflow instance transition capacity is exhausted",
             ));
         }
-        Ok(())
+        Ok(WorkflowStepAllowance(()))
     }
 }
 

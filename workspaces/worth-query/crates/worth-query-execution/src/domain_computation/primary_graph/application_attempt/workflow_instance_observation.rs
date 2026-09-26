@@ -15,7 +15,7 @@ use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkfl
 mod evidence_budget;
 mod history;
 pub(super) use history::observe_ended_history;
-mod instance_binding;
+pub(in crate::domain_computation::primary_graph::application_attempt) mod instance_binding;
 mod progression;
 mod settlement;
 mod step_budget;
@@ -29,6 +29,7 @@ pub(super) use settlement::{
 };
 use step_budget::history_basis;
 pub(in crate::domain_computation::primary_graph::application_attempt) use step_budget::WorkflowInstanceObservationPurpose;
+pub(in crate::domain_computation::primary_graph) use step_budget::WorkflowStepAllowance;
 
 pub(in crate::domain_computation::primary_graph::application_attempt) struct ObservedWorkflowInstance
 {

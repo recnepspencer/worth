@@ -201,7 +201,7 @@ fn expect_published(
 fn expect_started(
     result: Result<
         WorkflowInstanceStartOutcome,
-        worth_query_host::facade::application_entry::WorthQueryWorkflowInstanceStartPreparationDenial,
+        worth_query_host::facade::application_entry::WorthQueryWorkflowInstancePreparationDenial,
     >,
 ) -> worth_query_host::facade::application_entry::PerformedWorkflowInstanceStart {
     match result.expect("workflow instance start must prepare") {

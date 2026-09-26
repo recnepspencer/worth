@@ -62,6 +62,7 @@ where
         selected: crate::domain_computation::primary_graph::workflow::instance::SelectedWorkflowTransition,
         live_membership: RelationId,
         facts: Vec<super::super::WorthQueryApplicationObservedFact>,
+        allowance: crate::domain_computation::primary_graph::application_attempt::WorkflowStepAllowance,
     ) -> Result<
         PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
         WorthQueryApplicationAttemptDenial,
@@ -86,6 +87,7 @@ where
             subject,
             live_membership,
             false,
+            allowance,
         );
         let progress_update = admitted
             .prepare_progress_update(ApplicationWorkflowControlOutcome::NavigatedBack, None)?;

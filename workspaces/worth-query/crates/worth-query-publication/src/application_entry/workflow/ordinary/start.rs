@@ -9,7 +9,7 @@ use worth_query_declaration::facade::{
 };
 use worth_query_execution::facade::{
     application_installation::WorthQueryWorkflowVocabulary,
-    workflow_instance_start::{PublishedWorkflowDefinitionRef, WorkflowInstanceStartOutcome},
+    workflow_instance::{PublishedWorkflowDefinitionRef, WorkflowInstanceStartOutcome},
 };
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -18,7 +18,7 @@ use crate::application_entry::{
         WorthQueryApplicationMutationRequest, WorthQueryApplicationMutationRequestWithIdempotency,
         WorthQueryMutationSourcePrepared,
     },
-    WorthQueryWorkflowInstanceStartPreparationDenial,
+    WorthQueryWorkflowInstancePreparationDenial,
 };
 
 type IntentBinding<Schema, Intent> = <Intent as ApplicationMutationIntent<Schema>>::Binding;
@@ -158,7 +158,7 @@ where
         >,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
 {
-    pub fn execute(self) -> Result<WorkflowInstanceStartOutcome, WorthQueryWorkflowInstanceStartPreparationDenial> {
+    pub fn execute(self) -> Result<WorkflowInstanceStartOutcome, WorthQueryWorkflowInstancePreparationDenial> {
         let prepared = self.request.prepare_workflow_instance_start(self.workflow, self.definition)?;
         Ok(prepared.execute())
     }

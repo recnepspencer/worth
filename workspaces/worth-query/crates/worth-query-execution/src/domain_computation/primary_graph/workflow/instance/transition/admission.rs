@@ -2,7 +2,8 @@ use worth_query_declaration::facade::application_program::ApplicationWorkflowCon
 use worth_relational::facade::identity::{EntityId, RelationId};
 
 use crate::domain_computation::primary_graph::application_attempt::{
-    WorthQueryCompleteApplicationReadSet, WorthQueryProjectedApplicationMutation,
+    WorkflowStepAllowance, WorthQueryCompleteApplicationReadSet,
+    WorthQueryProjectedApplicationMutation,
 };
 use crate::domain_computation::primary_graph::workflow::instance::progression::{
     PreparedWorkflowProgressUpdate, WorkflowTransitionProgressBasis,
@@ -59,6 +60,10 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowOperationSettlem
 }
 
 impl WorkflowOperationSettlementBasis {
+    pub(in crate::domain_computation::primary_graph) const fn instance(&self) -> EntityId {
+        self.instance
+    }
+
     pub(in crate::domain_computation::primary_graph) fn identity(&self) -> &str {
         &self.identity
     }
@@ -212,7 +217,9 @@ pub(in crate::domain_computation::primary_graph) fn admit_workflow_transition<
     subject: EntityId,
     live_membership: RelationId,
     retire_live_membership: bool,
+    allowance: WorkflowStepAllowance,
 ) -> AdmittedWorkflowTransition<Schema, Operation, Input, Scope> {
+    allowance.spend();
     AdmittedWorkflowTransition {
         read_set,
         instance,

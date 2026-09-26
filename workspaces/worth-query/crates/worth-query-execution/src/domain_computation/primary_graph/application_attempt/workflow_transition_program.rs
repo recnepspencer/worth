@@ -195,6 +195,8 @@ where
                     ));
                 }
                 let replay_probe_identity = *selected.identity_bytes();
+                // A settled instance holds no live membership, so closing spends nothing.
+                let allowance = observed.ensure_step_left()?;
                 let (membership, mut settlement_facts) =
                     self.lease.handle().with_runtime(|runtime| {
                         super::workflow_instance_observation::recover_settled_live_membership(
@@ -213,7 +215,7 @@ where
                 );
                 return self
                     .materialize_terminal_transition(
-                        &layout, compiled, instance, selected, membership, false, facts,
+                        &layout, compiled, instance, selected, membership, false, facts, allowance,
                     )
                     .map(|prepared| {
                         prepared.with_replays(replays.with_probe_identity(replay_probe_identity))
@@ -222,23 +224,26 @@ where
         };
         // A step recorded before the budget is spent or the deadline passes
         // still replays after it.
-        if let Err(refused) = observed.ensure_step_left().and_then(|()| {
+        let allowance = match observed.ensure_step_left().and_then(|allowance| {
             self.bind_workflow_deadline(clock, &layout, instance.entity_id())
-                .map(drop)
+                .map(|_| allowance)
         }) {
-            let replays = std::mem::take(&mut observed.replays);
-            return Ok(match request_kind {
-                WorkflowTransitionRequestKind::NavigateBack => {
-                    self.navigation_replay_denial(&layout, instance.entity_id(), replays, refused)
-                }
-                _ => self.replay_only_denial(
-                    &layout,
-                    instance.entity_id(),
-                    publication::PreparedWorkflowTransitionReplays::retained(replays),
-                    refused,
-                ),
-            });
-        }
+            Ok(allowance) => allowance,
+            Err(refused) => {
+                let entity = instance.entity_id();
+                let replays = std::mem::take(&mut observed.replays);
+                return Ok(match request_kind {
+                    WorkflowTransitionRequestKind::NavigateBack => {
+                        self.navigation_replay_denial(&layout, entity, replays, refused)
+                    }
+                    _ => {
+                        let replays =
+                            publication::PreparedWorkflowTransitionReplays::retained(replays);
+                        self.replay_only_denial(&layout, entity, replays, refused)
+                    }
+                });
+            }
+        };
         if request_kind == WorkflowTransitionRequestKind::NavigateBack {
             let selected = match select_navigation_back_transition(
                 &compiled,
@@ -269,6 +274,7 @@ where
                     selected,
                     live_membership,
                     facts,
+                    allowance,
                 )
                 .map(|prepared| {
                     prepared.with_replays(replays.with_probe_identity(replay_probe_identity))
@@ -325,6 +331,7 @@ where
                     assessment,
                     observed.progress_basis.progress(),
                     observed.evidence_allowance(installed.resources().maximum_evidence_bytes()),
+                    allowance,
                 ),
             SelectedWorkflowTransitionKind::Condition(condition) => self
                 .materialize_condition_requirement(
@@ -336,6 +343,7 @@ where
                     false,
                     facts,
                     condition,
+                    allowance,
                 ),
             SelectedWorkflowTransitionKind::Approval(approval) => {
                 self.materialize_approval_requirement(&layout, instance, selected, facts, approval)
@@ -349,6 +357,7 @@ where
                 facts,
                 observed.progress_basis.progress(),
                 policy,
+                allowance,
             ),
             SelectedWorkflowTransitionKind::Terminal => self.materialize_terminal_transition(
                 &layout,
@@ -358,6 +367,7 @@ where
                 live_membership,
                 retire_live_membership,
                 facts,
+                allowance,
             ),
             SelectedWorkflowTransitionKind::Operation(operation) => self
                 .materialize_operation_requirement(
@@ -371,6 +381,7 @@ where
                     handoff_facts.expect("operation handoff facts were selected"),
                     observed.progress_basis.progress(),
                     operation,
+                    allowance,
                 ),
             SelectedWorkflowTransitionKind::NavigationBack => Err(denial(
                 WorthQueryApplicationAttemptDenialKind::WorkflowTransitionNodeUnsupported,
