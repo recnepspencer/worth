@@ -6,7 +6,6 @@ fn engine_skips_rules_when_request_groups_do_not_intersect() {
         registrations: vec![InvariantRegistration::commit_boundary_blocking(
             InvariantRule::unique_entity_aspect_field(aspect_key("name"), field_key("name")),
         )],
-        ..InvariantCatalog::default()
     });
     let plan = MergedCommitPlan {
         transaction_id: TransactionId(1),
@@ -38,7 +37,6 @@ fn engine_marks_unrelated_commit_boundary_rules_not_applicable() {
         registrations: vec![InvariantRegistration::commit_boundary_blocking(
             InvariantRule::unique_entity_aspect_field(aspect_key("name"), field_key("name")),
         )],
-        ..InvariantCatalog::default()
     });
     let plan = MergedCommitPlan {
         transaction_id: TransactionId(2),

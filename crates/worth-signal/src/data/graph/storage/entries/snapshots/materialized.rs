@@ -69,7 +69,7 @@ impl SignalGraph {
         if delta.changed() {
             self.record_branch_mutation_snapshot(
                 id,
-                DependencySnapshotStructuralDelta::from_snapshot_delta(delta.clone()),
+                DependencySnapshotStructuralDelta::from_snapshot_delta(delta),
             );
             self.record_graph_storage_pressure();
         }

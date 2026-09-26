@@ -27,10 +27,7 @@ pub(super) fn count_changed_partitions(
                 .and_then(|n| n.checked_add(2))
                 .and_then(|cost| cost.checked_mul(partitions.len())),
         )?;
-        if !partitions
-            .iter()
-            .any(|partition| *partition == &region.partition)
-        {
+        if !partitions.contains(&&region.partition) {
             partitions.push(&region.partition);
         }
     }

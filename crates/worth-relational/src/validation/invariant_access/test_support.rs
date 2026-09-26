@@ -202,16 +202,14 @@ pub(super) fn create_entity(
             .expect("owner-admitted transaction context")
     };
     txn.push_batch(
-        crate::facade::transactions::WorkerIntentBatch::new(name)
-            .push(MutationIntent::Create(
-                crate::transactions::data::CreateIntent::Entity(EntitySpec {
-                    partition_id: PartitionId::main(),
-                    kind_id: KindId(1),
-                    client_key: ClientKey::raw(name),
-                    fields: crate::transactions::data::AspectFieldPatch::default(),
-                }),
-            ))
-            .into(),
+        crate::facade::transactions::WorkerIntentBatch::new(name).push(MutationIntent::Create(
+            crate::transactions::data::CreateIntent::Entity(EntitySpec {
+                partition_id: PartitionId::main(),
+                kind_id: KindId(1),
+                client_key: ClientKey::raw(name),
+                fields: crate::transactions::data::AspectFieldPatch::default(),
+            }),
+        )),
     )
     .expect("test staging stays within configured resource budgets");
     let outcome = txn.commit(runtime).unwrap();

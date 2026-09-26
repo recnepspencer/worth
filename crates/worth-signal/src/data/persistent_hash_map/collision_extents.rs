@@ -5,7 +5,7 @@
 //! and releases the vector when one element remains. Public iteration cannot
 //! recover this allocation history. Track it at every overlay mutation.
 
-use std::hash::{BuildHasher, Hash, Hasher};
+use std::hash::{BuildHasher, Hash};
 use std::sync::Arc;
 
 use super::SharedKey;
@@ -115,9 +115,7 @@ impl CollisionExtents {
 }
 
 fn full_hash<K: Hash, V>(changes: &im::HashMap<SharedKey<K>, Option<Arc<V>>>, key: &K) -> u32 {
-    let mut hasher = changes.hasher().build_hasher();
-    key.hash(&mut hasher);
-    hasher.finish() as u32
+    changes.hasher().hash_one(key) as u32
 }
 
 pub(super) fn insert<K: Clone + Eq + Hash, V: Clone>(

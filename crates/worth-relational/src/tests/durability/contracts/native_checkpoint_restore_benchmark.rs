@@ -27,7 +27,7 @@ fn synthetic_native_restore_and_image_digest_benchmark() {
                     kind_id: KindId(1),
                     client_keys: chunk
                         .iter()
-                        .map(|name| crate::symbols::data::ClientKey::raw(name))
+                        .map(crate::symbols::data::ClientKey::raw)
                         .collect(),
                     field_patches: chunk
                         .iter()
@@ -53,7 +53,7 @@ fn synthetic_native_restore_and_image_digest_benchmark() {
     let buffered_started = Instant::now();
     let buffered = (0..DIGEST_SAMPLES)
         .map(|_| black_box(buffered_digest(roots)))
-        .last()
+        .next_back()
         .unwrap();
     let buffered_elapsed = buffered_started.elapsed();
     let streamed_started = Instant::now();
@@ -61,7 +61,7 @@ fn synthetic_native_restore_and_image_digest_benchmark() {
         .map(|_| {
             black_box(crate::durability::data::branch_root_partition_image_digest(roots).unwrap())
         })
-        .last()
+        .next_back()
         .unwrap();
     let streamed_elapsed = streamed_started.elapsed();
     assert_eq!(streamed, buffered);

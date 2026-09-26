@@ -43,9 +43,9 @@ impl RetainedStorageMeasurement for ReverseSubscriptionFlat {
             buckets,
             by_consumer,
         } = self;
-        Ok(Charge::ZERO
+        Charge::ZERO
             .checked_add(buckets.retained_heap_charge(work)?)?
-            .checked_add(by_consumer.retained_heap_charge(work)?)?)
+            .checked_add(by_consumer.retained_heap_charge(work)?)
     }
 }
 impl RetainedStorageMeasurement for SetDelta {
@@ -56,10 +56,10 @@ impl RetainedStorageMeasurement for SetDelta {
             removed,
             retired_base_intervals,
         } = self;
-        Ok(Charge::ZERO
+        Charge::ZERO
             .checked_add(added.retained_heap_charge(work)?)?
             .checked_add(removed.retained_heap_charge(work)?)?
-            .checked_add(retired_base_intervals.retained_heap_charge(work)?)?)
+            .checked_add(retired_base_intervals.retained_heap_charge(work)?)
     }
 }
 impl RetainedStorageMeasurement for BucketDelta {
@@ -72,12 +72,12 @@ impl RetainedStorageMeasurement for BucketDelta {
             exact_details,
             partition_scoped,
         } = self;
-        Ok(Charge::ZERO
+        Charge::ZERO
             .checked_add(all.retained_heap_charge(work)?)?
             .checked_add(unscoped.retained_heap_charge(work)?)?
             .checked_add(whole_partitions.retained_heap_charge(work)?)?
             .checked_add(exact_details.retained_heap_charge(work)?)?
-            .checked_add(partition_scoped.retained_heap_charge(work)?)?)
+            .checked_add(partition_scoped.retained_heap_charge(work)?)
     }
 }
 impl RetainedStorageMeasurement for ReverseSubscriptionStorage {

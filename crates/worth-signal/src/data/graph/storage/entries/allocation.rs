@@ -4,31 +4,6 @@ use crate::data::graph::storage::Slot;
 use crate::data::handle::NodeId;
 use crate::data::node::{NodeDefinitionData, NodeEntry, NodeWarmData};
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn single_node_graph_reserves_at_most_four_rows_per_column() {
-        let mut graph = SignalGraph::new();
-        graph.node().build();
-        for capacity in [
-            graph.arena.nodes.exclusive_capacity(),
-            graph.arena.definitions.exclusive_capacity(),
-            graph.arena.hot.exclusive_capacity(),
-            graph.arena.warm.exclusive_capacity(),
-            graph.arena.cold.exclusive_capacity(),
-        ] {
-            // Vec starts at one row for very wide elements and four for the
-            // narrower columns; neither should reserve a 1,024-row slab.
-            assert!(
-                capacity.is_some_and(|rows| (1..=4).contains(&rows)),
-                "{capacity:?}"
-            );
-        }
-    }
-}
-
 impl SignalGraph {
     pub(in crate::data::graph) fn allocate_node(&mut self, entry: NodeEntry) -> NodeId {
         let (definition, hot, warm, cold) = entry.into_storage_parts();
@@ -199,5 +174,30 @@ impl SignalGraph {
             .get(index as usize)
             .ok_or_else(|| SignalError::invalid_input(format!("unknown slot `{index}`")))?;
         Ok(slot.is_retired())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn single_node_graph_reserves_at_most_four_rows_per_column() {
+        let mut graph = SignalGraph::new();
+        graph.node().build();
+        for capacity in [
+            graph.arena.nodes.exclusive_capacity(),
+            graph.arena.definitions.exclusive_capacity(),
+            graph.arena.hot.exclusive_capacity(),
+            graph.arena.warm.exclusive_capacity(),
+            graph.arena.cold.exclusive_capacity(),
+        ] {
+            // Vec starts at one row for very wide elements and four for the
+            // narrower columns; neither should reserve a 1,024-row slab.
+            assert!(
+                capacity.is_some_and(|rows| (1..=4).contains(&rows)),
+                "{capacity:?}"
+            );
+        }
     }
 }

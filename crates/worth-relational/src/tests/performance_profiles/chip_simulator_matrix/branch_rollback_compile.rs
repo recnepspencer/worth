@@ -90,33 +90,30 @@ pub(super) fn certify_branch_rollback_compile_step_window(suite: &'static str) {
                 .expect("chip savepoint rollback");
             let rollback_micros = rollback_started_at.elapsed().as_micros();
 
-            txn.push_batch(
-                WorkerIntentBatch::new("chip-committed-step").push(
-                    MutationIntent::Entity(EntityMutationIntent::UpdateFields(
-                        UpdateEntityFieldsIntent {
-                            entity_id: source,
-                            fields: crate::tests::support::aspect_field_patch_from_values([
-                                (
-                                    crate::tests::support::aspect_key("name"),
-                                    crate::tests::support::field_key("name"),
-                                    crate::tests::support::string_aspect_value("rollback-driver"),
-                                ),
-                                (
-                                    crate::tests::support::aspect_key("step"),
-                                    crate::tests::support::field_key("step"),
-                                    crate::tests::support::u64_aspect_value(1),
-                                ),
-                                (
-                                    crate::tests::support::aspect_key("branch"),
-                                    crate::tests::support::field_key("branch"),
-                                    crate::tests::support::string_aspect_value("feature"),
-                                ),
-                            ]),
-                        },
-                    ))
-                    .into(),
-                ),
-            )
+            txn.push_batch(WorkerIntentBatch::new("chip-committed-step").push(
+                MutationIntent::Entity(EntityMutationIntent::UpdateFields(
+                    UpdateEntityFieldsIntent {
+                        entity_id: source,
+                        fields: crate::tests::support::aspect_field_patch_from_values([
+                            (
+                                crate::tests::support::aspect_key("name"),
+                                crate::tests::support::field_key("name"),
+                                crate::tests::support::string_aspect_value("rollback-driver"),
+                            ),
+                            (
+                                crate::tests::support::aspect_key("step"),
+                                crate::tests::support::field_key("step"),
+                                crate::tests::support::u64_aspect_value(1),
+                            ),
+                            (
+                                crate::tests::support::aspect_key("branch"),
+                                crate::tests::support::field_key("branch"),
+                                crate::tests::support::string_aspect_value("feature"),
+                            ),
+                        ]),
+                    },
+                )),
+            ))
             .expect("test staging stays within configured resource budgets");
             let commit_started_at = Instant::now();
             let commit_outcome = txn.commit(&runtime).expect("chip branch step commit");

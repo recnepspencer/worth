@@ -106,7 +106,7 @@ pub(super) fn certify_topology_bridge_connectivity_wave(suite: &'static str) {
                 && metrics["component_count"].as_u64() == Some(1)
                 && metrics["largest_component_size"].as_u64() == Some(12)
                 && metrics["enumerated_entity_count"].as_u64() == Some(12)
-                && metrics["availability"].as_str() == Some("Direct".into())
+                && metrics["availability"].as_str() == Some("Direct")
                 && metrics["degradation_count"].as_u64() == Some(1)
                 && counter_u64(metrics, "full_state_clones") == 0
                 && counter_u64(metrics, "relation_slots_touched_by_commit") == 1
@@ -233,7 +233,7 @@ pub(super) fn certify_topology_bridge_connectivity_wave(suite: &'static str) {
                 && metrics["component_count"].as_u64() == Some(1)
                 && metrics["largest_component_size"].as_u64() == Some(12)
                 && metrics["enumerated_entity_count"].as_u64() == Some(12)
-                && metrics["availability"].as_str() == Some("Direct".into())
+                && metrics["availability"].as_str() == Some("Direct")
                 && metrics["degradation_count"].as_u64() == Some(1)
                 && metrics["diagnostic_artifact_count"].as_u64().unwrap_or(0) >= 1
                 && metrics["detailed_trace_entries"].as_u64() == Some(0)
@@ -364,7 +364,7 @@ pub(super) fn certify_topology_bridge_connectivity_wave(suite: &'static str) {
                 && metrics["component_count"].as_u64() == Some(1)
                 && metrics["largest_component_size"].as_u64() == Some(12)
                 && metrics["enumerated_entity_count"].as_u64() == Some(12)
-                && metrics["availability"].as_str() == Some("Direct".into())
+                && metrics["availability"].as_str() == Some("Direct")
                 && metrics["degradation_count"].as_u64() == Some(1)
                 && metrics["diagnostic_artifact_count"].as_u64().unwrap_or(0) >= 1
                 && metrics["detailed_trace_entries"].as_u64() == Some(0)

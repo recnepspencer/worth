@@ -116,7 +116,7 @@ impl BridgeOwnedSignalRuntime {
                 let key = super::contract::lowering_key(current);
                 !candidate
                     .predecessor
-                    .get(&key)
+                    .get(key)
                     .is_some_and(|expected| Arc::ptr_eq(current, expected))
             })
         {
@@ -189,7 +189,7 @@ impl BridgePreparedConditionalReconstitution {
         let key = super::contract::lowering_key(predecessor);
         if !self
             .predecessor
-            .get(&key)
+            .get(key)
             .is_some_and(|installed| Arc::ptr_eq(installed, predecessor))
         {
             return Err(reconstitution_denial(
@@ -197,7 +197,7 @@ impl BridgePreparedConditionalReconstitution {
             ));
         }
         self.lowerings
-            .get(&key)
+            .get(key)
             .cloned()
             .ok_or_else(|| reconstitution_denial("reconstituted lowering is absent"))
     }
@@ -213,7 +213,7 @@ impl BridgePreparedConditionalReconstitution {
         let key = super::contract::lowering_key(lowering);
         if !self
             .lowerings
-            .get(&key)
+            .get(key)
             .is_some_and(|installed| Arc::ptr_eq(installed, lowering))
         {
             return Err(reconstitution_denial(

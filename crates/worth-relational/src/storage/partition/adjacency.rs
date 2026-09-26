@@ -107,7 +107,7 @@ impl AdjacencySet {
         let revisions = self
             .entries_mut()
             .structural_revision_by_kind
-            .get_or_insert_with(|| SharedMap::new());
+            .get_or_insert_with(SharedMap::new);
         let revision = revisions.entry(kind_id).or_insert(version_id);
         *revision = (*revision).max(version_id);
     }
@@ -230,7 +230,7 @@ fn insert_kind_relation(
     relation_id: RelationId,
 ) {
     let relations = buckets
-        .get_or_insert_with(|| SharedMap::new())
+        .get_or_insert_with(SharedMap::new)
         .entry(kind_id)
         .or_default();
     insert_sorted(relations, relation_id);

@@ -146,6 +146,41 @@ fn fresh_map_charge<K: Clone + Ord, V: Clone>(
 }
 
 #[cfg(test)]
+fn empty_history_charge<T>(
+    values: &DiagnosticHistory<T>,
+    work: &mut Preparation,
+) -> Result<Charge, BranchCarrierChargeDenial> {
+    work.visit()?;
+    if values.is_empty() {
+        Ok(crate::data::retained_storage::ordered_index_charge::<
+            u64,
+            std::sync::Arc<T>,
+        >(0)?)
+    } else {
+        Err(BranchCarrierChargeDenial::NotBranchCarrier)
+    }
+}
+
+#[cfg(test)]
+fn empty_map_charge<K: Clone + Ord, V: Clone>(
+    values: &PersistentOrdMap<K, V>,
+    work: &mut Preparation,
+) -> Result<Charge, BranchCarrierChargeDenial> {
+    work.visit()?;
+    if !values.is_empty() {
+        return Err(BranchCarrierChargeDenial::NotBranchCarrier);
+    }
+    // Empty logical contents may still retain a shared base. Only carried
+    // accounting establishes its representation cost without reconstruction.
+    values
+        .prepared_retained_charge()
+        .map_err(|_| BranchCarrierChargeDenial::NotBranchCarrier)
+}
+
+#[cfg(test)]
+use crate::data::retained_storage::RetainedStorageMeasurement;
+
+#[cfg(test)]
 mod tests {
     use super::*;
 
@@ -205,38 +240,3 @@ mod tests {
         );
     }
 }
-
-#[cfg(test)]
-fn empty_history_charge<T>(
-    values: &DiagnosticHistory<T>,
-    work: &mut Preparation,
-) -> Result<Charge, BranchCarrierChargeDenial> {
-    work.visit()?;
-    if values.is_empty() {
-        Ok(crate::data::retained_storage::ordered_index_charge::<
-            u64,
-            std::sync::Arc<T>,
-        >(0)?)
-    } else {
-        Err(BranchCarrierChargeDenial::NotBranchCarrier)
-    }
-}
-
-#[cfg(test)]
-fn empty_map_charge<K: Clone + Ord, V: Clone>(
-    values: &PersistentOrdMap<K, V>,
-    work: &mut Preparation,
-) -> Result<Charge, BranchCarrierChargeDenial> {
-    work.visit()?;
-    if !values.is_empty() {
-        return Err(BranchCarrierChargeDenial::NotBranchCarrier);
-    }
-    // Empty logical contents may still retain a shared base. Only carried
-    // accounting establishes its representation cost without reconstruction.
-    values
-        .prepared_retained_charge()
-        .map_err(|_| BranchCarrierChargeDenial::NotBranchCarrier)
-}
-
-#[cfg(test)]
-use crate::data::retained_storage::RetainedStorageMeasurement;

@@ -199,17 +199,14 @@ pub(super) fn create_entity_of_kind(
     client_key: &str,
 ) -> crate::identity::data::EntityId {
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(runtime);
-    txn.push_batch(
-        WorkerIntentBatch::new(format!("entity-{client_key}")).push(
-            MutationIntent::Create(CreateIntent::Entity(EntitySpec {
-                partition_id: PartitionId::main(),
-                kind_id,
-                client_key: ClientKey::raw(client_key),
-                fields: crate::transactions::data::AspectFieldPatch::default(),
-            }))
-            .into(),
-        ),
-    )
+    txn.push_batch(WorkerIntentBatch::new(format!("entity-{client_key}")).push(
+        MutationIntent::Create(CreateIntent::Entity(EntitySpec {
+            partition_id: PartitionId::main(),
+            kind_id,
+            client_key: ClientKey::raw(client_key),
+            fields: crate::transactions::data::AspectFieldPatch::default(),
+        })),
+    ))
     .expect("test staging stays within configured resource budgets");
     let outcome = txn.commit(runtime).expect("entity creation must succeed");
     outcome
@@ -273,7 +270,6 @@ pub(super) fn runtime_with_summary_title_uniqueness() -> RelationalRuntime {
                     field_key("title"),
                 ),
             )],
-            ..InvariantCatalog::default()
         })
         .build()
 }
@@ -297,7 +293,6 @@ pub(super) fn runtime_with_summary_title_commit_boundary_uniqueness() -> Relatio
                     field_key("title"),
                 ),
             )],
-            ..InvariantCatalog::default()
         })
         .build()
 }

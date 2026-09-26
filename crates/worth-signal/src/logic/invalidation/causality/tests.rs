@@ -37,7 +37,7 @@ fn publish_scoped_delta(
         .unwrap();
     let mut work = crate::data::retained_storage::RetainedStoragePreparation::new(10_000);
     let projection = crate::data::graph::PendingRevalidationNodeProjection::capture(
-        &graph,
+        graph,
         delta.producer,
         &mut work,
     )

@@ -58,7 +58,7 @@ pub(in crate::data::graph::runtime::graph) fn publish_delta(
     // Budget denial is tested by the conditional/waiter admission suites.
     let mut work = crate::data::retained_storage::RetainedStoragePreparation::new(usize::MAX);
     let projection = crate::data::graph::PendingRevalidationNodeProjection::capture(
-        &graph,
+        graph,
         delta.producer,
         &mut work,
     )

@@ -15,10 +15,10 @@ pub(super) fn planning_for(
         .expect("merge planning")
 }
 
-fn entity_classification<'a>(
-    planning: &'a crate::merge::data::MergePlanningArtifactCore,
+fn entity_classification(
+    planning: &crate::merge::data::MergePlanningArtifactCore,
     entity: crate::facade::identity::EntityId,
-) -> Option<&'a crate::merge::data::MergeConflictClassification> {
+) -> Option<&crate::merge::data::MergeConflictClassification> {
     planning
         .conflict_classification
         .classifications

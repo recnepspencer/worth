@@ -162,7 +162,7 @@ fn perf_cad_topology_matrix() {
                 && metrics["component_count"].as_u64() == Some(1)
                 && metrics["largest_component_size"].as_u64() == Some(12)
                 && metrics["enumerated_entity_count"].as_u64() == Some(12)
-                && metrics["availability"].as_str() == Some("Direct".into())
+                && metrics["availability"].as_str() == Some("Direct")
                 && counter_u64(metrics, "full_state_clones") == 0
                 && counter_u64(metrics, "inspection_connectivity_summary_requests") == 1
                 && counter_u64(metrics, "query_packet_count") <= 6

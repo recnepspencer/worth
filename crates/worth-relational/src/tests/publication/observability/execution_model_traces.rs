@@ -90,9 +90,9 @@ fn aspect_relevant_diagnostics(
                 .collect::<Vec<_>>();
             (!entries.is_empty()).then_some(
                 crate::facade::diagnostics::RelationalDiagnosticArtifact {
-                    scope: artifact.scope.clone(),
-                    kind: artifact.kind.clone(),
-                    determinism: artifact.determinism.clone(),
+                    scope: artifact.scope,
+                    kind: artifact.kind,
+                    determinism: artifact.determinism,
                     entries,
                 },
             )

@@ -56,6 +56,6 @@ impl RetainedStorageMeasurement for SignalSchemaRegistration {
     fn retained_heap_charge(&self, work: &mut Preparation) -> Result<Charge, Denial> {
         work.visit()?;
         let Self { descriptor } = self;
-        Ok(Charge::ZERO.checked_add(descriptor.retained_heap_charge(work)?)?)
+        Charge::ZERO.checked_add(descriptor.retained_heap_charge(work)?)
     }
 }

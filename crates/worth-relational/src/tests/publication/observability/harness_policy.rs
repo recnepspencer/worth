@@ -6,7 +6,6 @@ fn harness_heavy_invariants_are_opt_in() {
         registrations: vec![InvariantRegistration::harness_audit_only(
             InvariantRule::unique_entity_aspect_field(aspect_key("name"), field_key("name")),
         )],
-        ..InvariantCatalog::default()
     });
     let _ = create_entity(&runtime, "duplicate");
     let _ = create_entity(&runtime, "duplicate");

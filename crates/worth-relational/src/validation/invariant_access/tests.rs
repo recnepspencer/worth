@@ -31,7 +31,6 @@ fn commit_boundary_short_circuits_when_plan_contract_cannot_touch_profile_groups
             registrations: vec![InvariantRegistration::commit_boundary_blocking(
                 InvariantRule::unique_entity_aspect_field(aspect_key("name"), field_key("name")),
             )],
-            ..InvariantCatalog::default()
         },
         RelationalExecutionModel::SingleLaneExecution,
     );
@@ -84,7 +83,6 @@ fn staged_parallel_commit_boundary_matches_serial_reference_results() {
             ),
             InvariantRegistration::commit_boundary_blocking(InvariantRule::MaxMergedIntents(0)),
         ],
-        ..InvariantCatalog::default()
     };
     let serial_runtime = runtime_with_invariants(
         invariant_catalog.clone(),

@@ -168,7 +168,7 @@ fn nested_savepoint_abandoned_aspect_work_leaves_zero_patch_cdc_history_and_line
     let entity_names = read
         .entities()
         .iter()
-        .filter_map(|record| read_entity_name(record))
+        .filter_map(read_entity_name)
         .collect::<Vec<_>>();
 
     assert!(entity_names.contains(&"target".into()));

@@ -273,6 +273,6 @@ impl RetainedStorageMeasurement for AspectMergePolicyBinding {
             policy_name,
             aspect: _,
         } = self;
-        Ok(Charge::ZERO.checked_add(policy_name.retained_heap_charge(work)?)?)
+        Charge::ZERO.checked_add(policy_name.retained_heap_charge(work)?)
     }
 }

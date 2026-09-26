@@ -30,6 +30,6 @@ impl RetainedStorageMeasurement for NodeReuseContract {
             equivalence,
             retain_certification: _,
         } = self;
-        Ok(Charge::ZERO.checked_add(equivalence.retained_heap_charge(work)?)?)
+        Charge::ZERO.checked_add(equivalence.retained_heap_charge(work)?)
     }
 }

@@ -14,7 +14,7 @@ impl BridgePreparedConditionalReconstitution {
         let key = crate::conditional_execution::contract::lowering_key(parts.lowering);
         if !self
             .lowerings
-            .get(&key)
+            .get(key)
             .is_some_and(|installed| Arc::ptr_eq(installed, parts.lowering))
         {
             return Err(denied(

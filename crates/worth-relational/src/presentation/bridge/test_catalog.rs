@@ -128,7 +128,7 @@ impl TruthBranchHeadSource for PublicationBridgeCatalog {
             .values()
             .filter(|envelope| envelope.branch_identity() == branch_identity)
             .cloned()
-            .last()
+            .next_back()
             .ok_or_else(|| {
                 RelationalBridgeSourceError::new("no publication bridge branch head registered")
             })

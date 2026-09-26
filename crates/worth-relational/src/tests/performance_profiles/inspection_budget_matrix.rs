@@ -191,8 +191,8 @@ fn perf_inspection_budget_matrix() {
             metric_u64(metrics, "query_match_count") == 1
                 && metrics["historical_has_value"].as_bool() == Some(false)
                 && metrics["historical_lineage_context_present"].as_bool() == Some(false)
-                && metrics["direct_availability"].as_str() == Some("Direct".into())
-                && metrics["historical_availability"].as_str() == Some("Reconstructed".into())
+                && metrics["direct_availability"].as_str() == Some("Direct")
+                && metrics["historical_availability"].as_str() == Some("Reconstructed")
                 && counter_u64(metrics, "inspection_structural_identity_query_scans") == 1
                 && counter_u64(metrics, "inspection_structural_identity_lookups") >= 3
                 && counter_u64(metrics, "full_state_clones") == 0
@@ -228,7 +228,7 @@ fn perf_inspection_budget_matrix() {
         let recent_started_at = Instant::now();
         let recent = runtime.inspect_what_happened().inspect_recent_commits(
             &RecentCommitInspectionRequest {
-                branch_id: Some(BranchId("main".to_string()).into()),
+                branch_id: Some(BranchId("main".to_string())),
                 limit: 3,
             },
         );
@@ -265,7 +265,7 @@ fn perf_inspection_budget_matrix() {
         &retention_commit_samples,
         "retention and commit inspection windows should stay index-backed and bounded",
         |metrics| {
-            metrics["retention_availability"].as_str() == Some("Direct".into())
+            metrics["retention_availability"].as_str() == Some("Direct")
                 && metric_u64(metrics, "commit_changed_records") == 1
                 && metric_u64(metrics, "recent_commit_count") == 3
                 && counter_u64(metrics, "inspection_commit_reads") == 4

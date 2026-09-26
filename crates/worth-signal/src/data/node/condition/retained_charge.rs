@@ -38,7 +38,7 @@ impl RetainedStorageMeasurement for NodeEvaluationConfig {
             output_equivalence,
             partitioned_output: _,
         } = self;
-        Ok(Charge::ZERO
+        Charge::ZERO
             .checked_add(schema_binding.retained_heap_charge(work)?)?
             .checked_add(merge_strategy_name.retained_heap_charge(work)?)?
             .checked_add(conflict_policy_name.retained_heap_charge(work)?)?
@@ -50,6 +50,6 @@ impl RetainedStorageMeasurement for NodeEvaluationConfig {
             .checked_add(contract.retained_heap_charge(work)?)?
             .checked_add(condition.retained_heap_charge(work)?)?
             .checked_add(comparator.retained_heap_charge(work)?)?
-            .checked_add(output_equivalence.retained_heap_charge(work)?)?)
+            .checked_add(output_equivalence.retained_heap_charge(work)?)
     }
 }

@@ -129,8 +129,8 @@ mod tests {
         let mut restored = StringInterner::default();
         restored.restore_snapshot(snapshot);
 
-        assert_eq!(restored.resolve(beta), Some("beta".into()));
-        assert_eq!(restored.resolve(alpha), Some("alpha".into()));
+        assert_eq!(restored.resolve(beta), Some("beta"));
+        assert_eq!(restored.resolve(alpha), Some("alpha"));
         assert_eq!(restored.resolve(Symbol(9999)), None);
     }
 

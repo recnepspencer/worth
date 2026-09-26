@@ -167,7 +167,7 @@ impl<'a> NodeEvaluationMutation<'a> {
             EvaluationMutationTarget::Installed { index, hot, .. } => hot[*index]
                 .as_mut()
                 .expect("validated live node retains hot storage"),
-            EvaluationMutationTarget::Draft { hot, .. } => &mut **hot,
+            EvaluationMutationTarget::Draft { hot, .. } => hot,
         }
     }
 

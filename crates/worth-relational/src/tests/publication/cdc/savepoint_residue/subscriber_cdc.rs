@@ -53,7 +53,7 @@ fn savepoint_abandoned_work_never_appears_in_subscriber_cdc() {
     let names = read
         .entities()
         .iter()
-        .filter_map(|record| read_entity_name(record))
+        .filter_map(read_entity_name)
         .collect::<Vec<_>>();
 
     assert!(names.contains(&"surviving".into()));

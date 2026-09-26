@@ -101,15 +101,14 @@ fn create_entity(
 ) -> crate::identity::data::EntityId {
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(runtime);
     txn.push_batch(
-        WorkerIntentBatch::new(format!("entity-{name}")).push(
-            MutationIntent::Create(CreateIntent::Entity(EntitySpec {
+        WorkerIntentBatch::new(format!("entity-{name}")).push(MutationIntent::Create(
+            CreateIntent::Entity(EntitySpec {
                 partition_id: PartitionId::main(),
                 kind_id: KindId(1),
                 client_key: crate::symbols::data::ClientKey::raw(name),
                 fields: crate::transactions::data::AspectFieldPatch::default(),
-            }))
-            .into(),
-        ),
+            }),
+        )),
     )
     .expect("test staging stays within configured resource budgets");
     let outcome = txn.commit(runtime).unwrap();

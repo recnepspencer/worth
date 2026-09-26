@@ -62,7 +62,6 @@ fn runtime_with_source_variants() -> (
     };
     let source_free = install(AspectMask::EMPTY);
     let source_present = install(AspectMask::from_aspect(Aspect::new(1)));
-    drop(install);
     (
         SignalRuntime::build_for::<()>(graph),
         claimant,

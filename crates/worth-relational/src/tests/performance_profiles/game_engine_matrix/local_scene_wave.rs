@@ -146,8 +146,7 @@ pub(super) fn certify_local_scene_graph_propagation_wave(suite: &'static str) {
                 && metrics["changed_records"].as_u64() == Some(1)
                 && metrics["propagation_result_entities"].as_u64().unwrap_or(0) >= 8
                 && metrics["explicit_result_entities"].as_u64().unwrap_or(0) == 12
-                && affected >= 8
-                && affected <= 32
+                && (8..=32).contains(&affected)
                 && metrics["bridge_tasks_scheduled"].as_u64().unwrap_or(0) >= affected
                 && counter_u64(metrics, "full_state_clones") == 0
         },

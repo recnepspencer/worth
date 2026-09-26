@@ -93,7 +93,7 @@ fn harness_snapshot_marks_missing_targets_unknown() {
     );
     assert_eq!(
         snapshot.observations[0].detail.as_deref(),
-        Some("target not visible at captured snapshot".into())
+        Some("target not visible at captured snapshot")
     );
     assert!(snapshot.observations[0].value.is_none());
 }

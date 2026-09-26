@@ -154,29 +154,6 @@ impl AspectHistoryResolutionTrace {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use crate::history::data::{AspectHistoryDigest, BranchId, HistoryAspectQueryTarget};
-    use crate::identity::data::{EntityId, PartitionId};
-    use crate::publication::patch::data::ordered_aspect_keys;
-
-    #[test]
-    fn aspect_history_digest_preserves_wide_counts_as_u64() {
-        let digest = AspectHistoryDigest {
-            requested_target: HistoryAspectQueryTarget::Entity(EntityId::new(PartitionId(1), 0, 1)),
-            branch_id: BranchId("main".to_string()),
-            resolved_aspects: ordered_aspect_keys([]),
-            entry_count: u64::from(u32::MAX) + 17,
-            opaque_aspect_entry_count: 9,
-            traversed_commits: u64::from(u32::MAX) + 23,
-        };
-
-        assert_eq!(digest.entry_count, u64::from(u32::MAX) + 17);
-        assert_eq!(digest.opaque_aspect_entry_count, 9);
-        assert_eq!(digest.traversed_commits, u64::from(u32::MAX) + 23);
-    }
-}
-
 impl AspectHistoryQueryResult {
     pub fn aspect_history_digest(&self) -> AspectHistoryDigest {
         AspectHistoryDigest {
@@ -224,5 +201,28 @@ impl LineageAspectHistoryQueryResult {
                 .map(|history| history.resolved_lineage_chain.len() as u64)
                 .unwrap_or(0),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::history::data::{AspectHistoryDigest, BranchId, HistoryAspectQueryTarget};
+    use crate::identity::data::{EntityId, PartitionId};
+    use crate::publication::patch::data::ordered_aspect_keys;
+
+    #[test]
+    fn aspect_history_digest_preserves_wide_counts_as_u64() {
+        let digest = AspectHistoryDigest {
+            requested_target: HistoryAspectQueryTarget::Entity(EntityId::new(PartitionId(1), 0, 1)),
+            branch_id: BranchId("main".to_string()),
+            resolved_aspects: ordered_aspect_keys([]),
+            entry_count: u64::from(u32::MAX) + 17,
+            opaque_aspect_entry_count: 9,
+            traversed_commits: u64::from(u32::MAX) + 23,
+        };
+
+        assert_eq!(digest.entry_count, u64::from(u32::MAX) + 17);
+        assert_eq!(digest.opaque_aspect_entry_count, 9);
+        assert_eq!(digest.traversed_commits, u64::from(u32::MAX) + 23);
     }
 }

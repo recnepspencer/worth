@@ -22,7 +22,7 @@ impl SignalGraph {
         let growth = crate::data::retained_storage::ordered_lookup_steps(prepared.buckets.len());
         let mutation = map
             .lookup_steps()
-            .checked_add(growth.checked_mul(4).unwrap_or(usize::MAX))
+            .checked_add(growth.saturating_mul(4))
             .and_then(|n| n.checked_mul(32));
         work.reserve(mutation.and_then(|n| n.checked_mul(prepared.buckets.len())))?;
         for (node, next) in &prepared.buckets {

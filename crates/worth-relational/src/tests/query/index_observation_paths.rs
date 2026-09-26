@@ -12,7 +12,6 @@ fn unique_entity_aspect_field_index_refresh_rewrites_name_membership_after_entit
         registrations: vec![InvariantRegistration::mutation_sensitive_blocking(
             InvariantRule::unique_entity_aspect_field(aspect_key("name"), field_key("name")),
         )],
-        ..InvariantCatalog::default()
     });
     let alpha = create_entity(&runtime, "alpha");
     let beta = create_entity(&runtime, "beta");
@@ -88,7 +87,6 @@ fn unique_entity_aspect_field_index_keeps_same_field_key_separate_by_aspect_loca
                     ),
                 ),
             ],
-            ..InvariantCatalog::default()
         })
         .build();
 

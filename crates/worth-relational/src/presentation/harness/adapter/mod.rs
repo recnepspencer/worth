@@ -93,7 +93,7 @@ impl HarnessAdapter for RelationalHarnessAdapter {
             .changed_records
             .iter()
             .filter_map(|record| match record {
-                crate::transactions::data::RecordRef::Entity(entity_id) => Some(entity_id.clone()),
+                crate::transactions::data::RecordRef::Entity(entity_id) => Some(*entity_id),
                 crate::transactions::data::RecordRef::Relation(_) => None,
             })
             .collect::<Vec<_>>();

@@ -136,5 +136,5 @@ impl<T: Clone> ColumnNode<T> {
 }
 
 fn branch_index(index: usize, height: usize) -> usize {
-    (index / PAGE_LEN >> (height - 1)) & 1
+    ((index / PAGE_LEN) >> (height - 1)) & 1
 }

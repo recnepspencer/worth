@@ -65,7 +65,7 @@ fn perf_replay_recovery_matrix() {
             counter_u64(metrics, "full_state_clones") == 0
                 && metrics["failure"].is_null()
                 && metrics["mismatch_count"].as_u64() == Some(0)
-                && metrics["lineage_authority_basis"].as_str() == Some("DurableLogCanonical".into())
+                && metrics["lineage_authority_basis"].as_str() == Some("DurableLogCanonical")
                 && counter_u64(metrics, "replay_lineage_authority_lookup_requests") == 1
         },
     );

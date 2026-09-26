@@ -15,10 +15,10 @@ impl RetainedStorageMeasurement for NodeContract {
             execution: _,
             authority: _,
         } = self;
-        Ok(Charge::ZERO
+        Charge::ZERO
             .checked_add(semantics.retained_heap_charge(work)?)?
             .checked_add(projection.retained_heap_charge(work)?)?
-            .checked_add(reuse.retained_heap_charge(work)?)?)
+            .checked_add(reuse.retained_heap_charge(work)?)
     }
 }
 
@@ -31,7 +31,7 @@ impl RetainedStorageMeasurement for NodeSemanticContract {
             produces: _,
             required_context: _,
         } = self;
-        Ok(Charge::ZERO.checked_add(partition_scope.retained_heap_charge(work)?)?)
+        Charge::ZERO.checked_add(partition_scope.retained_heap_charge(work)?)
     }
 }
 
@@ -42,7 +42,7 @@ impl RetainedStorageMeasurement for NodeProjectionContract {
             consumes_partitions,
             consumes: _,
         } = self;
-        Ok(Charge::ZERO.checked_add(consumes_partitions.retained_heap_charge(work)?)?)
+        Charge::ZERO.checked_add(consumes_partitions.retained_heap_charge(work)?)
     }
 }
 
