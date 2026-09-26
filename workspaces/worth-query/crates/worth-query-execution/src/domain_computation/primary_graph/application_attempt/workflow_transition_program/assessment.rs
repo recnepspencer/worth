@@ -295,6 +295,7 @@ fn evidence_meaning<Query>(
         required.binding(),
         required.proposal_identity(),
         required.coverage_identity(),
+        required.program_revision(),
         &source_identity,
         &publication_identity,
         &output_content_identity,
@@ -321,6 +322,7 @@ fn evidence_meaning<Query>(
         passing,
         publication_identity,
         output_content_identity,
+        program_revision: required.program_revision().to_owned(),
         currentness_facts,
     }
 }

@@ -46,6 +46,14 @@ pub(super) const AUDIT_RULE: &str = "AuditTrail";
 pub(super) const ADJUST_OPERATION: &str = "AdjustDimension";
 pub(super) const UNKNOWN_OPERATION: &str = "RetireDimension";
 
+impl
+    worth_query_declaration::facade::application_schema::ApplicationEntityMarkerIdentity<
+        SupportSchema,
+    > for SupportEntity
+{
+    const IDENTIFIER: &'static str = "SupportEntity";
+}
+
 impl ApplicationInvariantMarkerIdentity<SupportSchema> for BoundedDimension {
     const IDENTIFIER: &'static str = BOUNDED_RULE;
     const MAJOR: u16 = 1;

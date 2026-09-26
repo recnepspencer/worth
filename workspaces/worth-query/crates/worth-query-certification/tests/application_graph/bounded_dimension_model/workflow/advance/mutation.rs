@@ -87,7 +87,7 @@ impl ApplicationMutationBinding<BoundedDimensionSchema> for WorkflowAdvanceBindi
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
     const CANDIDATES: ApplicationCandidateRequirements =
         ApplicationCandidateRequirements::fixed_shape(
-            ApplicationCandidateCardinalityCeiling::fixed(8, 0, 9, 2, 69, 0),
+            ApplicationCandidateCardinalityCeiling::fixed(8, 0, 9, 2, 70, 0),
             ApplicationCandidateResourceCeiling::bounded(256 * 1024, 131_072),
         );
 

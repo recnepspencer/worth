@@ -42,6 +42,19 @@ pub struct WorthQueryProgramSupportEntry {
     mutation_bindings: Box<[TypeId]>,
     semantic_description: ApplicationSemanticDescription,
     effectful_action_subjects: Box<[String]>,
+    action_dependencies: Box<[WorthQueryProgramActionDependency]>,
+}
+
+/// One name a workflow definition can depend on, paired with the semantic
+/// subject of the program action that supplies it.
+///
+/// A mutation action supplies its binding identity and its operation's name;
+/// an operation action supplies its operation identifier. Several actions can
+/// supply one operation name.
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub(crate) struct WorthQueryProgramActionDependency {
+    pub(crate) identity: String,
+    pub(crate) subject: String,
 }
 
 impl WorthQueryProgramSupportEntry {
@@ -53,6 +66,7 @@ impl WorthQueryProgramSupportEntry {
         mutation_bindings: BTreeSet<TypeId>,
         semantic_description: ApplicationSemanticDescription,
         effectful_action_subjects: BTreeSet<String>,
+        action_dependencies: BTreeSet<WorthQueryProgramActionDependency>,
     ) -> Self {
         Self {
             revision,
@@ -62,6 +76,7 @@ impl WorthQueryProgramSupportEntry {
             mutation_bindings: mutation_bindings.into_iter().collect(),
             semantic_description,
             effectful_action_subjects: effectful_action_subjects.into_iter().collect(),
+            action_dependencies: action_dependencies.into_iter().collect(),
         }
     }
 
@@ -91,6 +106,10 @@ impl WorthQueryProgramSupportEntry {
 
     pub(crate) fn effectful_action_subjects(&self) -> &[String] {
         &self.effectful_action_subjects
+    }
+
+    pub(crate) fn action_dependencies(&self) -> &[WorthQueryProgramActionDependency] {
+        &self.action_dependencies
     }
 
     /// Whether this program declares the named installed rule contract, which
@@ -128,6 +147,14 @@ impl WorthQueryProgramSupportEntry {
             .effectful_action_subjects
             .iter()
             .fold(0usize, |bytes, subject| bytes.saturating_add(subject.len()));
+        let dependency_bytes = self
+            .action_dependencies
+            .iter()
+            .fold(0usize, |bytes, dependency| {
+                bytes
+                    .saturating_add(dependency.identity.len())
+                    .saturating_add(dependency.subject.len())
+            });
         std::mem::size_of::<ApplicationProgramRevision>()
             .saturating_add(self.identity.as_str().len())
             .saturating_add(rule_bytes)
@@ -143,6 +170,7 @@ impl WorthQueryProgramSupportEntry {
             )
             .saturating_add(fact_bytes)
             .saturating_add(effect_bytes)
+            .saturating_add(dependency_bytes)
     }
 }
 

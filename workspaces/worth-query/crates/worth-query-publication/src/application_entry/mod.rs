@@ -65,7 +65,6 @@ pub use programs::{
     WorthQueryApplicationProgramAdoptionPreparationDenial,
     WorthQueryApplicationProgramAdoptionRecoveryFailure,
     WorthQueryApplicationProgramAdoptionRequest,
-    WorthQueryApplicationProgramAdoptionRequestWithMigration,
     WorthQueryApplicationProgramAdoptionRequestWithRequirements,
     WorthQueryApplicationProgramInspectionDenial, WorthQueryApplicationProgramsRequest,
     WorthQueryBranchAdoptionPublicationOutcome, WorthQueryBranchAdoptionRecovery,
@@ -80,7 +79,12 @@ pub use programs::{
     WorthQueryPreparedBranchAdoption, WorthQueryPreparedBranchSetAdoption,
     WorthQueryPreparedProgramMigration, WorthQueryProgramAdoptionCoverage,
     WorthQueryProgramAdoptionCoverageDenial, WorthQueryStoppedBranchSetAdoption,
-    WorthQueryUnpublishedBranchAdoption,
+    WorthQueryUnpublishedBranchAdoption, WorthQueryWorkflowAdoptionInventory,
+    WorthQueryWorkflowCompatibility, WorthQueryWorkflowDefinitionDisposition,
+    WorthQueryWorkflowDefinitionOccurrence, WorthQueryWorkflowDispositionDenial,
+    WorthQueryWorkflowDispositions, WorthQueryWorkflowIncompatibility,
+    WorthQueryWorkflowInstanceCustody, WorthQueryWorkflowInstanceDisposition,
+    WorthQueryWorkflowInstanceOccurrence,
 };
 pub use query::WorthQueryApplicationQueryRequest;
 pub use request::{

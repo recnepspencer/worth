@@ -258,6 +258,16 @@ fn mutation(
     Ok(WorthQueryLoweredProviderEffect::Mutation { steps, intent })
 }
 
+fn created_entity_symbol(kind: worth_relational::facade::identity::KindId, key: &str) -> Arc<str> {
+    Arc::from(format!("application-create-entity:{}:{key}", kind.as_u32()))
+}
+
+fn effect_step(
+    action: WorthQueryProvisionalEffectAction,
+) -> Result<WorthQueryProvisionalEffectStep, WorthQueryApplicationAttemptDenial> {
+    WorthQueryProvisionalEffectStep::new("mutation", action).map_err(|_| progression_denial())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -335,14 +345,4 @@ mod tests {
         assert_eq!(cad_relation.partition_id, application_partition);
         assert_eq!(cad_relation.target.partition_id(), application_partition);
     }
-}
-
-fn created_entity_symbol(kind: worth_relational::facade::identity::KindId, key: &str) -> Arc<str> {
-    Arc::from(format!("application-create-entity:{}:{key}", kind.as_u32()))
-}
-
-fn effect_step(
-    action: WorthQueryProvisionalEffectAction,
-) -> Result<WorthQueryProvisionalEffectStep, WorthQueryApplicationAttemptDenial> {
-    WorthQueryProvisionalEffectStep::new("mutation", action).map_err(|_| progression_denial())
 }

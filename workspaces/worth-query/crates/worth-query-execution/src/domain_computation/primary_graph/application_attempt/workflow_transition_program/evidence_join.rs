@@ -147,6 +147,7 @@ where
                 .saturating_sub(self.facts.len().saturating_add(facts.len()));
             let observed = super::assessment_coverage::observe(
                 node,
+                compiled.program_revision(),
                 coverage,
                 &evidence,
                 layout,

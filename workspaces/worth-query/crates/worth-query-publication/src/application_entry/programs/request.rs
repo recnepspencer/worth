@@ -202,6 +202,8 @@ where
             programs: self.programs,
             target: self.target,
             requirements,
+            migration: None,
+            workflow: None,
         }
     }
 }

@@ -24,7 +24,6 @@ impl WorthQueryWorkflowAdvanceAdapter {
     {
         if !actor_permission_denial(denial)
             || !installed.advance_binding_matches::<Capability, Operation>()
-            || instance.program_revision() != installed.program_revision()
         {
             return None;
         }

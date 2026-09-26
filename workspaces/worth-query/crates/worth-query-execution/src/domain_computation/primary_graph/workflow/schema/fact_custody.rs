@@ -208,6 +208,10 @@ impl WorkflowFactCustody {
     }
 }
 
+fn read_failure(error: StructuralReadError) -> CustomInvariantExecutionError {
+    CustomInvariantExecutionError::new(format!("workflow fact custody read failed: {error:?}"))
+}
+
 #[cfg(test)]
 mod tests {
     use worth_relational::facade::{
@@ -251,8 +255,4 @@ mod tests {
         assert!(!rule.allows_relation_create(KindId(10), &existing, &created(KindId(3))));
         assert!(!rule.allows_relation_create(KindId(10), &existing, &existing));
     }
-}
-
-fn read_failure(error: StructuralReadError) -> CustomInvariantExecutionError {
-    CustomInvariantExecutionError::new(format!("workflow fact custody read failed: {error:?}"))
 }

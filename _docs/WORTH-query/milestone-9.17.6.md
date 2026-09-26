@@ -675,6 +675,24 @@ candidate; mapped instance migration publishes earlier. A definition replacement
 depending on target meaning publishes after activation, so the intentional gap denies
 new starts. Fork-copied instances from another incarnation are historical, not live.
 
+The disposition law, as delivered. A definition covered by the target vocabulary
+with unchanged node dependencies may carry or retire; otherwise it only retires.
+A compatible instance that has performed nothing may carry or cancel; a compatible
+performed instance only carries; an incompatible unperformed instance only cancels.
+An incompatible performed instance, or any instance whose latest approval has not
+been followed by its receipted guarded operation, has no adoption disposition: it
+is settled or recovered under the source, or migrated, and then re-inventoried.
+Carry rebinds the exact instance to the target in place. Its pinned definition
+keeps the revision it was published under and records the carriage beside it;
+execution reads the latest carriage, never a rewritten publication revision.
+Retire drops only the current-definition relation; cancel records the cancelled
+state and drops live membership, so every later request is refused as cancelled. Choices are
+bound to the inventory digest, and preparation refuses them with the fresh inventory
+when owner truth moved. Assessment evidence records the program revision it was
+collected under and is never reused under another, so a carried instance collects
+fresh evidence before any approval. A fork's copied current definition governs its
+new starts and is decided on that fork like any other.
+
 ## Required Public Experience
 
 These target Rust examples compile in the existing host/decl audience tests when

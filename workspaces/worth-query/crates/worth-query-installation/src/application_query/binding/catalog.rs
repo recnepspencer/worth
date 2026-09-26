@@ -318,6 +318,10 @@ fn install_declared_limits(
     ))
 }
 
+fn denial(kind: DenialKind, subject: &str) -> WorthQueryApplicationQueryInstallationDenial {
+    WorthQueryApplicationQueryInstallationDenial::new(kind, subject)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -333,8 +337,4 @@ mod tests {
             DenialKind::BindingWorkLimitIsZero
         );
     }
-}
-
-fn denial(kind: DenialKind, subject: &str) -> WorthQueryApplicationQueryInstallationDenial {
-    WorthQueryApplicationQueryInstallationDenial::new(kind, subject)
 }

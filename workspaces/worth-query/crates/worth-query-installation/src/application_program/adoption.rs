@@ -11,6 +11,7 @@
 
 mod requirements;
 mod scope_validation;
+mod workflow_dependencies;
 
 #[cfg(test)]
 mod requirements_tests;
@@ -20,3 +21,4 @@ pub use requirements::{
     WorthQueryProgramAdoptionRequirementsDenial, WorthQueryProgramCustodyInventoryKind,
     WorthQueryProgramCustodyInventoryRequirement, WorthQueryProgramValidationScope,
 };
+pub use workflow_dependencies::WorthQueryWorkflowDependencyName;

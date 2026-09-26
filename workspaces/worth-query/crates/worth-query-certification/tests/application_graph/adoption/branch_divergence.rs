@@ -30,17 +30,16 @@ const HIGH_DIMENSION: u64 = 15;
 const FORK_DIMENSION: u64 = 9;
 
 /// The two probe values must sit on opposite sides of the two laws, or nothing
-/// below distinguishes the programs. Computed here from the bounds themselves.
-#[test]
-fn the_probe_values_separate_the_two_laws() {
+/// below distinguishes the programs. Checked at compile time from the bounds.
+const _: () = {
     assert!(LOW_DIMENSION <= V1_CEILING);
     assert!(LOW_DIMENSION < V2_FLOOR);
     assert!(HIGH_DIMENSION > V1_CEILING);
-    assert!((V2_FLOOR..=V2_CEILING).contains(&HIGH_DIMENSION));
+    assert!(V2_FLOOR <= HIGH_DIMENSION && HIGH_DIMENSION <= V2_CEILING);
     assert!(FORK_DIMENSION <= V1_CEILING);
     assert!(SEED_DIMENSION <= V1_CEILING);
-    assert!((V2_FLOOR..=V2_CEILING).contains(&SEED_DIMENSION));
-}
+    assert!(V2_FLOOR <= SEED_DIMENSION && SEED_DIMENSION <= V2_CEILING);
+};
 
 #[test]
 fn two_programs_over_one_schema_carry_two_revisions() {

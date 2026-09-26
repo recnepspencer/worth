@@ -133,7 +133,7 @@ fn a_supported_vocabulary_names_one_rostered_program_once() {
             .supported_program::<DimensionProgramP1>()
             .expect("P1 is rostered")
             .installed_program(),
-        application.workflow_spec().resources().clone(),
+        application.workflow_spec().resources(),
     );
     assert_eq!(
         application.workflow_mut().support_workflow_spec(duplicate),
@@ -143,7 +143,7 @@ fn a_supported_vocabulary_names_one_rostered_program_once() {
     let initial = install_workflow_spec(
         application.installed_schema(),
         application.installed_program(),
-        application.workflow_spec().resources().clone(),
+        application.workflow_spec().resources(),
     );
     assert_eq!(
         application.workflow_mut().support_workflow_spec(initial),
@@ -154,7 +154,7 @@ fn a_supported_vocabulary_names_one_rostered_program_once() {
     let foreign_schema = install_workflow_spec(
         other.installed_schema(),
         other.installed_program(),
-        application.workflow_spec().resources().clone(),
+        application.workflow_spec().resources(),
     );
     assert_eq!(
         application
@@ -186,7 +186,7 @@ fn a_retired_program_keeps_no_workflow_vocabulary() {
             .supported_program::<DimensionProgramP1>()
             .expect("P1 is rostered")
             .installed_program(),
-        application.workflow_spec().resources().clone(),
+        application.workflow_spec().resources(),
     );
     retire_second_program(&application);
     assert_eq!(

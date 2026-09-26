@@ -52,11 +52,16 @@ pub enum WorthQueryApplicationAttemptDenialKind {
     WorkflowInstanceAuthorityMismatch,
     WorkflowInstanceIntentIdentityUnavailable,
     WorkflowInstanceCapacityUnavailable,
+    /// Program adoption cancelled the instance; no request can advance it.
+    WorkflowInstanceCancelled,
     WorkflowHistoryReconstructionBudgetExceeded,
     WorkflowTransitionAffinityMismatch,
     WorkflowTransitionAuthorityMismatch,
     WorkflowTransitionAlreadySettled,
     WorkflowTransitionNodeUnsupported,
+    /// Back would abandon an operation whose approval has not been consumed
+    /// by a receipted settlement.
+    WorkflowTransitionOperationUnsettled,
     WorkflowTransitionIdentityUnavailable,
     WorkflowTransitionCapacityExceeded,
     WorkflowAssessmentEvidenceIncomplete,

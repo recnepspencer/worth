@@ -2,6 +2,7 @@ mod dispositions;
 mod migration;
 mod selection;
 mod state;
+mod workflow;
 
 pub use dispositions::{
     WorthQueryProgramCustodyDisposition, WorthQueryProgramCustodyDispositionInventory,
@@ -45,11 +46,25 @@ pub enum WorthQueryBranchAdoptionPreparationDenial {
     MigrationTargetMismatch,
     MigrationSourceChanged,
     CustodyDispositionUnsupported(WorthQueryProgramCustodyInventoryRequirement),
+    /// The branch holds workflow facts and no dispositions were supplied.
+    /// Decide each occurrence of the carried inventory and prepare again.
     WorkflowDispositionRequired {
-        instances: Box<[worth_relational::facade::identity::EntityId]>,
+        inventory: Box<
+            crate::domain_computation::primary_graph::workflow::WorthQueryWorkflowAdoptionInventory,
+        >,
     },
+    /// Owner truth moved after the dispositions were decided. Decide the
+    /// carried inventory and prepare again.
+    WorkflowInventoryChanged {
+        inventory: Box<
+            crate::domain_computation::primary_graph::workflow::WorthQueryWorkflowAdoptionInventory,
+        >,
+    },
+    WorkflowDispositionRejected(
+        crate::domain_computation::primary_graph::workflow::WorthQueryWorkflowDispositionDenial,
+    ),
     WorkflowInventoryUnreadable {
-        instance: worth_relational::facade::identity::EntityId,
+        entity: worth_relational::facade::identity::EntityId,
     },
     WorkflowInventoryRelationUnreadable {
         partition_id: worth_relational::facade::identity::PartitionId,
@@ -152,6 +167,9 @@ pub(super) fn prepare<Schema: ApplicationSchema>(
     target: &ApplicationProgramRevision,
     expected_requirements: &WorthQueryProgramAdoptionRequirements,
     migration: Option<WorthQueryPreparedProgramMigration>,
+    workflow: Option<
+        crate::domain_computation::primary_graph::workflow::WorthQueryWorkflowDispositions,
+    >,
     maximum_selection_work: usize,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
 ) -> Result<WorthQueryPreparedBranchAdoption, WorthQueryBranchAdoptionPreparationDenial> {
@@ -160,9 +178,22 @@ pub(super) fn prepare<Schema: ApplicationSchema>(
         target,
         expected_requirements,
         migration,
+        workflow,
         maximum_selection_work,
         request,
     )
+}
+
+pub(super) fn workflow_inventory<Schema: ApplicationSchema>(
+    selected: &WorthQuerySelectedProductOperation<'_, Schema>,
+    target: &ApplicationProgramRevision,
+    expected_requirements: &WorthQueryProgramAdoptionRequirements,
+    maximum_work_units: usize,
+) -> Result<
+    crate::domain_computation::primary_graph::workflow::WorthQueryWorkflowAdoptionInventory,
+    WorthQueryBranchAdoptionPreparationDenial,
+> {
+    workflow::inventory(selected, target, expected_requirements, maximum_work_units)
 }
 
 pub(super) fn requirements<Schema: ApplicationSchema>(

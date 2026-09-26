@@ -136,6 +136,8 @@ pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         Option<super::program_occurrence::WorthQueryInstalledProgramSupport<Schema>>,
     pub(super) installed_conditionals:
         super::application_contribution::WorthQueryInstalledApplicationConditionalRegistry<Schema>,
+    pub(in crate::domain_computation::primary_graph) workflow_coverage:
+        super::workflow::adoption::WorkflowVocabularyCoverageRegistry,
 }
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {

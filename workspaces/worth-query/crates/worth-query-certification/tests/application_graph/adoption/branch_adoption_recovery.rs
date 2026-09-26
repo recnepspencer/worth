@@ -212,9 +212,7 @@ fn performed_recovery_retains_cleanup_failure_after_the_effect() {
     let (adoption, cleanup_failure) = match outcome {
         WorthQueryBranchAdoptionRecoveryOutcome::Performed { adoption, cleanup } => (
             adoption,
-            cleanup
-                .err()
-                .expect("the performed terminal must retain cleanup-capacity failure"),
+            cleanup.expect_err("the performed terminal must retain cleanup-capacity failure"),
         ),
         _ => panic!("cleanup failure occurs after the adoption has performed"),
     };

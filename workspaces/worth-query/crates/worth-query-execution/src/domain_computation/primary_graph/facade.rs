@@ -262,10 +262,17 @@ pub use super::typed_bootstrap::{
     WorthQueryApplicationEntitySeed, WorthQueryApplicationRelationSeed,
 };
 pub use super::workflow::definition::WorthQueryWorkflowCompilationReuseCounters;
-pub use super::workflow::WorthQueryWorkflowInstanceProgressCounters;
 pub use super::workflow::{
     WorkflowDefinitionBindingDenial, WorkflowDefinitionPreparationDenial,
     WorthQueryWorkflowDefinitionPublicationAdapter, WorthQueryWorkflowDefinitionRetirementAdapter,
+};
+pub use super::workflow::{
+    WorthQueryWorkflowAdoptionInventory, WorthQueryWorkflowCompatibility,
+    WorthQueryWorkflowDefinitionDisposition, WorthQueryWorkflowDefinitionOccurrence,
+    WorthQueryWorkflowDispositionDenial, WorthQueryWorkflowDispositions,
+    WorthQueryWorkflowIncompatibility, WorthQueryWorkflowInstanceCustody,
+    WorthQueryWorkflowInstanceDisposition, WorthQueryWorkflowInstanceOccurrence,
+    WorthQueryWorkflowInstanceProgressCounters,
 };
 pub use crate::basis::{
     WorthQueryProductBranchAdmissionDenial, WorthQueryProductBranchLease,

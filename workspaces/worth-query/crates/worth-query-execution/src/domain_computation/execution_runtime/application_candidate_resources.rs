@@ -83,6 +83,12 @@ impl WorthQueryApplicationCandidateResourceProfile {
     }
 }
 
+impl Default for WorthQueryApplicationCandidateResourceProfile {
+    fn default() -> Self {
+        Self::bounded(4096, 4096, 4096).expect("default candidate limits are nonzero")
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -118,11 +124,5 @@ mod tests {
                 .with_maximum_producer_dependency_bytes(0),
             Err(WorthQueryApplicationCandidateResourceProfileDenial::ZeroProducerDependencyBytes)
         );
-    }
-}
-
-impl Default for WorthQueryApplicationCandidateResourceProfile {
-    fn default() -> Self {
-        Self::bounded(4096, 4096, 4096).expect("default candidate limits are nonzero")
     }
 }

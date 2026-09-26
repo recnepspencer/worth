@@ -57,7 +57,7 @@ fn approval_rejects_foreign_owner_wrong_purpose_and_intent_but_replays_without_r
     let wrong_intent = WorthQueryAuthenticationEventIntent::new(
         "workflow-approval-signature",
         CanonicalDigestId::new([0; 32]),
-        intent.subject_coverage().clone(),
+        *intent.subject_coverage(),
     )
     .unwrap();
     let wrong_event = block_on(application.authentication().authenticate(

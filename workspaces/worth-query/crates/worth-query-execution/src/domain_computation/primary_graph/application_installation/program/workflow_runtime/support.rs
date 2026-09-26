@@ -62,8 +62,8 @@ where
             .runtime
             .supported_program::<Supported>()
             .ok_or(WorthQueryWorkflowRuntimeBindingDenial::ForeignProgram)?;
-        let revision = rostered.installed_program().revision();
-        if workflow.program_revision() != revision {
+        let revision = rostered.installed_program().revision().clone();
+        if workflow.program_revision() != &revision {
             return Err(WorthQueryWorkflowRuntimeBindingDenial::ForeignProgram);
         }
         // A schema binding rosters one revision per program type, so an
@@ -75,9 +75,14 @@ where
         {
             return Err(WorthQueryWorkflowRuntimeBindingDenial::AlreadySupported);
         }
+        self.runtime
+            .runtime
+            .workflow_coverage
+            .register(workflow.adoption_coverage())
+            .map_err(|_| WorthQueryWorkflowRuntimeBindingDenial::ConflictingVocabularyCoverage)?;
         self.supported.push(WorthQuerySupportedWorkflowSpec {
             program: TypeId::of::<Supported>(),
-            revision: revision.clone(),
+            revision,
             spec: Box::new(workflow),
         });
         Ok(())

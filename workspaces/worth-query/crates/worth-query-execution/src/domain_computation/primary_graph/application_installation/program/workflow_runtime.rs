@@ -38,7 +38,7 @@ where
     Schema: ApplicationSchema,
 {
     pub fn retain_workflow_spec<Spec>(
-        self,
+        mut self,
         workflow: WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
         authentication: WorthQueryAuthenticationEventSigningOwner<Schema>,
     ) -> Result<
@@ -57,6 +57,10 @@ where
         if workflow.program_revision() != self.program.revision() {
             return Err(WorthQueryWorkflowRuntimeBindingDenial::ForeignProgram);
         }
+        self.runtime
+            .workflow_coverage
+            .register(workflow.adoption_coverage())
+            .map_err(|_| WorthQueryWorkflowRuntimeBindingDenial::ConflictingVocabularyCoverage)?;
         Ok(WorthQueryWorkflowApplicationRuntime {
             runtime: self,
             workflow,
@@ -119,4 +123,7 @@ pub enum WorthQueryWorkflowRuntimeBindingDenial {
     ForeignAuthenticationOwner,
     /// The program already has a vocabulary on this runtime.
     AlreadySupported,
+    /// This spec was already installed for the program with different node
+    /// vocabulary, so adoption could not tell which one the host executes.
+    ConflictingVocabularyCoverage,
 }

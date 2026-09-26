@@ -33,6 +33,7 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowAssessmentEviden
     pub(in crate::domain_computation::primary_graph) passing: bool,
     pub(in crate::domain_computation::primary_graph) publication_identity: String,
     pub(in crate::domain_computation::primary_graph) output_content_identity: String,
+    pub(in crate::domain_computation::primary_graph) program_revision: String,
     pub(in crate::domain_computation::primary_graph) currentness_facts:
         std::sync::Arc<[super::super::WorthQueryApplicationObservedFact]>,
 }
@@ -132,6 +133,10 @@ pub(in crate::domain_computation::primary_graph) fn visit_workflow_assessment_fa
             (
                 layout.assessment_evidence.output_content_identity.clone(),
                 text(&meaning.output_content_identity),
+            ),
+            (
+                layout.assessment_evidence.program_revision.clone(),
+                text(&meaning.program_revision),
             ),
         ]),
         partition: WorthQueryApplicationCreationPartition::Context(

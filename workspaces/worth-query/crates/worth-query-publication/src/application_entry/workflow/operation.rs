@@ -81,14 +81,14 @@ where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
 {
-    pub fn for_workflow_operation<'workflow, Spec, Program: 'workflow>(
+    pub fn for_workflow_operation<'workflow, Spec, Program>(
         self,
         workflow: impl Into<WorthQueryWorkflowVocabulary<'workflow, Schema, Spec, Program>>,
         required: &RequiredWorkflowOperation,
     ) -> Result<Self, WorthQueryWorkflowOperationBindingDenial>
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
-        Program: ApplicationProgramDefinition<Schema>,
+        Program: ApplicationProgramDefinition<Schema> + 'workflow,
     {
         let workflow = workflow.into();
         self.validate_workflow_operation_binding(workflow, required)?;
@@ -103,14 +103,14 @@ where
 
     /// Binds only the exact performed operation for outbox recovery. This does
     /// not issue authority to run a new guarded mutation.
-    pub fn for_workflow_operation_recovery<'workflow, Spec, Program: 'workflow>(
+    pub fn for_workflow_operation_recovery<'workflow, Spec, Program>(
         self,
         workflow: impl Into<WorthQueryWorkflowVocabulary<'workflow, Schema, Spec, Program>>,
         required: &RequiredWorkflowOperation,
     ) -> Result<Self, WorthQueryWorkflowOperationBindingDenial>
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
-        Program: ApplicationProgramDefinition<Schema>,
+        Program: ApplicationProgramDefinition<Schema> + 'workflow,
     {
         let workflow = workflow.into();
         self.validate_workflow_operation_binding(workflow, required)?;

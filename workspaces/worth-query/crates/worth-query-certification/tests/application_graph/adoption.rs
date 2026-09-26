@@ -30,5 +30,7 @@ mod support_retirement;
 mod support_retirement_races;
 #[path = "adoption/workflow_custody.rs"]
 mod workflow_custody;
+#[path = "adoption/workflow_participant.rs"]
+mod workflow_participant;
 #[path = "adoption/workflow_vocabulary.rs"]
 mod workflow_vocabulary;

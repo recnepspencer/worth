@@ -34,6 +34,8 @@ use super::bounded_dimension_model::{
 mod atomic_settlement;
 #[path = "workflow_approval/authentication.rs"]
 mod authentication;
+#[path = "workflow_approval/back_custody.rs"]
+mod back_custody;
 #[path = "workflow_approval/commit_boundary.rs"]
 mod commit_boundary;
 #[path = "workflow_approval/custody.rs"]
@@ -45,6 +47,8 @@ mod journey;
 #[path = "workflow_approval/operation_requirement.rs"]
 mod operation_requirement;
 use journey::approval_journey;
+#[path = "workflow_approval/program_adoption.rs"]
+mod program_adoption;
 #[path = "workflow_approval/proposal.rs"]
 mod proposal;
 #[path = "workflow_approval/rejection.rs"]

@@ -124,6 +124,10 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowAssessmentEviden
     pub(in crate::domain_computation::primary_graph) passing: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) publication_identity: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) output_content_identity: AspectFieldLocator,
+    /// The program revision the evidence was collected under. Program
+    /// adoption can carry an instance forward; evidence from an earlier
+    /// revision is never reused under a later one.
+    pub(in crate::domain_computation::primary_graph) program_revision: AspectFieldLocator,
 }
 
 #[derive(Clone, Debug)]
@@ -139,7 +143,10 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowLineageLayout {
 pub(in crate::domain_computation::primary_graph) struct WorkflowDefinitionLayout {
     pub(in crate::domain_computation::primary_graph) entity_kind: KindId,
     pub(in crate::domain_computation::primary_graph) content_identity: AspectFieldLocator,
+    /// The revision the definition was published under; never rewritten.
     pub(in crate::domain_computation::primary_graph) program_revision: AspectFieldLocator,
+    /// The latest revision adoption carried the definition to, when any.
+    pub(in crate::domain_computation::primary_graph) carried_revision: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) maximum_nodes: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) maximum_connections: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) maximum_effects: AspectFieldLocator,

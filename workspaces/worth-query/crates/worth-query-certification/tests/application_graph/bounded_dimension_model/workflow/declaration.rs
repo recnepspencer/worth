@@ -348,19 +348,14 @@ pub fn seed_authoring(graph: &mut WorthQueryPrimaryGraphBootstrap<BoundedDimensi
             .field(WorkflowGrantDelegationLimitField::reference(), 0_u64),
         )
         .expect("workflow instance-start grant must seed");
-    for (relation, identity) in [(
-        WorkflowGrantResource::reference(),
-        "workflow-start-grant-resource",
-    )] {
-        graph
-            .bind_relation(WorthQueryApplicationRelationSeed::new(
-                relation,
-                identity,
-                entity_key::<WorkflowAuthoringGrant>("workflow-instance-start-grant"),
-                entity_key::<Part>("part-row-1"),
-            ))
-            .expect("workflow instance-start resource must seed");
-    }
+    graph
+        .bind_relation(WorthQueryApplicationRelationSeed::new(
+            WorkflowGrantResource::reference(),
+            "workflow-start-grant-resource",
+            entity_key::<WorkflowAuthoringGrant>("workflow-instance-start-grant"),
+            entity_key::<Part>("part-row-1"),
+        ))
+        .expect("workflow instance-start resource must seed");
     graph
         .bind_relation(WorthQueryApplicationRelationSeed::new(
             WorkflowGrantGrantor::reference(),

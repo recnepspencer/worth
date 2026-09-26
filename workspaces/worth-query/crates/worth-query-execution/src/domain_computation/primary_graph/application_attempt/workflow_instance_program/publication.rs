@@ -45,6 +45,9 @@ impl PublishedWorkflowInstanceRef {
         self.definition
     }
 
+    /// The revision the instance started under. Program adoption may carry
+    /// the instance to a later revision; advancing reads the revision from
+    /// instance truth and never from this reference.
     pub const fn program_revision(&self) -> &ApplicationProgramRevision {
         &self.program_revision
     }

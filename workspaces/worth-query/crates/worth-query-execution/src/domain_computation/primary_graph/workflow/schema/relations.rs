@@ -76,6 +76,7 @@ pub(super) fn lower_definition(
 > {
     let content_identity = planned_field_locator(DEFINITION_ASPECT, "content-identity")?;
     let program_revision = planned_field_locator(DEFINITION_ASPECT, "program-revision")?;
+    let carried_revision = planned_field_locator(DEFINITION_ASPECT, "carried-revision")?;
     let maximum_nodes = planned_field_locator(DEFINITION_ASPECT, "maximum-nodes")?;
     let maximum_connections = planned_field_locator(DEFINITION_ASPECT, "maximum-connections")?;
     let maximum_effects = planned_field_locator(DEFINITION_ASPECT, "maximum-effects")?;
@@ -95,6 +96,7 @@ pub(super) fn lower_definition(
         .struct_fields()
         .required("content-identity", ScalarAspectType::String)
         .required("program-revision", ScalarAspectType::String)
+        .optional("carried-revision", ScalarAspectType::String)
         .required("maximum-nodes", ScalarAspectType::UInt64)
         .required("maximum-connections", ScalarAspectType::UInt64)
         .required("maximum-effects", ScalarAspectType::UInt64)
@@ -122,6 +124,7 @@ pub(super) fn lower_definition(
             entity_kind: kind,
             content_identity,
             program_revision,
+            carried_revision,
             maximum_nodes,
             maximum_connections,
             maximum_effects,

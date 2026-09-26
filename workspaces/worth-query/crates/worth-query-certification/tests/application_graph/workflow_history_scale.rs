@@ -97,7 +97,7 @@ impl HistoryCourt {
         assert!(!performed.replayed());
         assert_eq!(
             performed.node_path(),
-            if self.history % 2 == 0 {
+            if self.history.is_multiple_of(2) {
                 "proposal/first"
             } else {
                 "proposal/revise"

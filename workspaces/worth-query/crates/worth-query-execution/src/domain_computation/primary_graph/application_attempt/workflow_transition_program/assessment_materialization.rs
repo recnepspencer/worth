@@ -138,6 +138,7 @@ where
                 .saturating_sub(self.facts.len().saturating_add(facts.len()));
             let coverage_state = super::assessment_coverage::observe(
                 node,
+                &program_revision,
                 &coverage,
                 &evidence,
                 layout,
@@ -196,6 +197,7 @@ where
             assessment,
             proposal_identity,
             coverage.identity,
+            program_revision.to_string(),
         );
         Ok(PreparedWorkflowAdvance::AwaitingAssessment(
             PreparedWorkflowAssessment {

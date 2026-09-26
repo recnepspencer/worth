@@ -26,7 +26,9 @@ pub(in crate::domain_computation::primary_graph::application_attempt) use approv
 pub(in crate::domain_computation::primary_graph::application_attempt) use dependency::observe_evidence_dependencies;
 pub(in crate::domain_computation::primary_graph::application_attempt) use proposal::observe_retained_workflow_proposal_identity;
 pub(in crate::domain_computation::primary_graph::application_attempt) use retained_evidence::observe_retained_assessment_evidence;
-use value::{observed_bool, observed_text, observed_u64, optional_identity};
+use value::{
+    observed_bool, observed_optional_text, observed_text, observed_u64, optional_identity,
+};
 
 pub(super) fn observe_settled_transition(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
@@ -188,6 +190,14 @@ pub(super) fn observe_assessment_evidence(
         &layout.assessment_evidence.output_content_identity,
         facts,
     )?;
+    let program_revision = observed_optional_text(
+        runtime,
+        snapshot,
+        evidence,
+        kind,
+        &layout.assessment_evidence.program_revision,
+        facts,
+    )?;
     let proposal_identity = observed_text(
         runtime,
         snapshot,
@@ -280,6 +290,7 @@ pub(super) fn observe_assessment_evidence(
         source_identity,
         publication_identity,
         output_content_identity,
+        program_revision,
     }))
 }
 

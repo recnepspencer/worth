@@ -10,6 +10,9 @@ use worth_query_declaration::facade::application_schema::{
 };
 
 use super::scope_validation::installed_validation_scope;
+use super::workflow_dependencies::{
+    changed_workflow_dependencies, WorthQueryWorkflowDependencyName,
+};
 use crate::application_program::support::{
     WorthQueryProgramRuleKey, WorthQueryProgramSupportEntry, WorthQueryProgramSupportRoster,
 };
@@ -87,6 +90,7 @@ impl WorthQueryProgramCustodyInventoryRequirement {
 ///         target: unimplemented!(), semantic_diff: unimplemented!(),
 ///         validation_scopes: unimplemented!(), added_rules: unimplemented!(),
 ///         migration_assessments: unimplemented!(), custody_inventory: unimplemented!(),
+///         changed_workflow_dependencies: unimplemented!(),
 ///     }
 /// }
 /// ```
@@ -100,6 +104,7 @@ pub struct WorthQueryProgramAdoptionRequirements {
     added_rules: Box<[WorthQueryProgramAddedRule]>,
     migration_assessments: Box<[ApplicationProgramMigrationAssessmentRequirement]>,
     custody_inventory: Box<[WorthQueryProgramCustodyInventoryRequirement]>,
+    changed_workflow_dependencies: Box<[WorthQueryWorkflowDependencyName]>,
 }
 
 impl WorthQueryProgramAdoptionRequirements {
@@ -130,6 +135,25 @@ impl WorthQueryProgramAdoptionRequirements {
         &self,
     ) -> &[WorthQueryProgramCustodyInventoryRequirement] {
         &self.custody_inventory
+    }
+    /// Binding identities and operation names the target no longer supplies
+    /// with the source's meaning. A workflow definition whose node names any of
+    /// them cannot be carried onto the target.
+    pub fn changed_workflow_dependencies(&self) -> &[WorthQueryWorkflowDependencyName] {
+        &self.changed_workflow_dependencies
+    }
+    /// The first name this retained workflow node acts through that the target
+    /// stops supplying with the source's meaning.
+    pub fn changed_workflow_node_dependency(
+        &self,
+        node: &crate::application_program::WorthQueryWorkflowNodeDependency,
+    ) -> Option<&WorthQueryWorkflowDependencyName> {
+        node.program_names().find_map(|name| {
+            self.changed_workflow_dependencies
+                .binary_search_by(|changed| changed.as_str().cmp(name))
+                .ok()
+                .map(|index| &self.changed_workflow_dependencies[index])
+        })
     }
     pub fn requires_existing_state_validation(&self) -> bool {
         !self.validation_scopes.is_empty()
@@ -242,6 +266,7 @@ fn compile_requirements<Schema: ApplicationSchema>(
         .filter_map(|change| change.migration_assessment_requirement())
         .collect::<Vec<_>>();
     let custody_inventory = compile_custody_inventory(source, &semantic_diff);
+    let changed_workflow_dependencies = changed_workflow_dependencies(source, &semantic_diff);
     Ok(WorthQueryProgramAdoptionRequirements {
         schema_binding,
         source: source.revision().clone(),
@@ -251,6 +276,7 @@ fn compile_requirements<Schema: ApplicationSchema>(
         added_rules: added_rules.into_boxed_slice(),
         migration_assessments: migration_assessments.into_boxed_slice(),
         custody_inventory: custody_inventory.into_boxed_slice(),
+        changed_workflow_dependencies: changed_workflow_dependencies.into_boxed_slice(),
     })
 }
 

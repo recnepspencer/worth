@@ -16,6 +16,8 @@ mod join_replay_definition;
 mod mutation;
 #[path = "workflow/ordinary_run.rs"]
 mod ordinary_run;
+#[path = "workflow/program_adoption.rs"]
+mod program_adoption;
 #[path = "workflow/retry_definition.rs"]
 mod retry_definition;
 #[path = "workflow/review_requirement.rs"]
@@ -65,6 +67,11 @@ pub use mutation::{
     WorkflowInstanceStartIntent,
 };
 pub use ordinary_run::run_instance;
+pub use program_adoption::{
+    advance_on_second, approve_on_second, prepare_second_program_adoption, propose_on_second,
+    publish_adoption, recollect_on_second, second_program_workflow_inventory, second_revision,
+    start_on_second,
+};
 pub use retry_definition::{bounded_retry_definition, bounded_retry_definition_with_attempts};
 pub use review_requirement::{
     link_review_requirement, unlink_review_requirement, ReviewRequirementBinding,

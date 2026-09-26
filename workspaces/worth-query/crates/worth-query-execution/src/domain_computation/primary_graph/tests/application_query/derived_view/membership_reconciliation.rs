@@ -285,7 +285,7 @@ fn certified_membership_changes_retain_clean_arcs_and_read_only_new_or_dirty_ent
         (added.refreshed_entries(), added.retained_entries()),
         (1, 0)
     );
-    assert_eq!(added.keys(), &[key.clone()]);
+    assert_eq!(added.keys(), std::slice::from_ref(&key));
 
     let after_content = change(after_open.product(), &label_locator, "primary-content");
     assert_eq!(

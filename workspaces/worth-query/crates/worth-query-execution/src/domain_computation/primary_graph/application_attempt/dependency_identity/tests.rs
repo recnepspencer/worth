@@ -29,7 +29,7 @@ fn producer_dependency_identity_rejects_an_insufficient_host_byte_budget() {
     let fact = WorthQueryApplicationObservedFact::SourceEntity {
         entity_id: EntityId::new(PartitionId::main(), 41, 1),
     };
-    assert!(super::dependency_identity([9; 32], &[fact.clone()], 1).is_err());
+    assert!(super::dependency_identity([9; 32], std::slice::from_ref(&fact), 1).is_err());
     assert!(super::dependency_identity([9; 32], &[fact], 4 * 1_024).is_ok());
 }
 
@@ -178,7 +178,7 @@ fn writing_one_field_keeps_the_source_aspect_revision_dependency() {
         fields: std::collections::BTreeMap::from([(locator, AspectValue::UInt64(2))]),
     };
 
-    let normalized = normalized_output_facts(&[source_aspect.clone()], &[effect]);
+    let normalized = normalized_output_facts(std::slice::from_ref(&source_aspect), &[effect]);
 
     assert_eq!(normalized, vec![source_aspect]);
 }

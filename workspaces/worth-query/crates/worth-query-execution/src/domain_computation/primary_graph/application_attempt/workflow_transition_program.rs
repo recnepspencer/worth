@@ -115,7 +115,7 @@ where
             self.lease.snapshot(),
             &layout,
             &published,
-            instance.program_revision(),
+            installed.program_revision(),
             Spec::IDENTITY.as_str(),
             installed.support_identity_bytes(),
             usize::from(installed.resources().maximum_definition_nodes()),

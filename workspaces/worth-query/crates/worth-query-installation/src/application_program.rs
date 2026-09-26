@@ -16,6 +16,7 @@ pub use adoption::{
     WorthQueryProgramAddedRule, WorthQueryProgramAdoptionRequirements,
     WorthQueryProgramAdoptionRequirementsDenial, WorthQueryProgramCustodyInventoryKind,
     WorthQueryProgramCustodyInventoryRequirement, WorthQueryProgramValidationScope,
+    WorthQueryWorkflowDependencyName,
 };
 pub use correspondence::{
     WorthQueryCorrespondedAction, WorthQueryInstalledRepeatedOptionalMember,

@@ -9,9 +9,13 @@ use worth_query_declaration::facade::{
     portable_identity::WorthQueryPortableTypeIdentity,
 };
 
+mod adoption_coverage;
 mod approval_binding;
 mod installation;
 mod support_identity;
+pub use adoption_coverage::{
+    WorthQueryWorkflowNodeDependency, WorthQueryWorkflowVocabularyCoverage,
+};
 pub use installation::WorthQueryApplicationWorkflowSpecInstallation;
 
 mod resource_ceiling;

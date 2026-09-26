@@ -117,7 +117,7 @@ fn two_assessments_collect_before_the_cursor_and_replay_without_duplicate_eviden
             .prepare_workflow_navigate_back(&application, started.instance().clone())
             .expect("Back must receive fresh admission")
             .execute();
-        assert!(matches!(back, Ok(_)));
+        assert!(back.is_ok());
     }
     match advance_instance(&application, started.instance().clone(), 6092)
         .expect("Back must preserve the first reviewed subject")

@@ -7,6 +7,9 @@ use super::super::{
     WorthQueryPreparedProgramMigration,
 };
 use crate::domain_computation::primary_graph::product_operation::WorthQuerySelectedProductOperation;
+use crate::domain_computation::primary_graph::workflow::{
+    WorthQueryWorkflowAdoptionInventory, WorthQueryWorkflowDispositions,
+};
 
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     /// Describes the owner-computed requirements for moving this exact branch
@@ -18,6 +21,19 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     ) -> Result<WorthQueryProgramAdoptionRequirements, WorthQueryBranchAdoptionPreparationDenial>
     {
         preparation::requirements(self, target)
+    }
+
+    /// Reads every workflow definition and live instance this exact branch
+    /// incarnation must decide before moving to `target`, with the
+    /// dispositions the adoption law leaves open for each.
+    pub fn workflow_adoption_inventory(
+        &self,
+        target: &ApplicationProgramRevision,
+        expected_requirements: &WorthQueryProgramAdoptionRequirements,
+        maximum_work_units: usize,
+    ) -> Result<WorthQueryWorkflowAdoptionInventory, WorthQueryBranchAdoptionPreparationDenial>
+    {
+        preparation::workflow_inventory(self, target, expected_requirements, maximum_work_units)
     }
 
     /// Prepares one branch-local move to `target` against the exact selected
@@ -32,6 +48,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         self.prepare_branch_adoption_inner(
             target,
             expected_requirements,
+            None,
             None,
             maximum_selection_work,
             request,
@@ -50,6 +67,29 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             target,
             expected_requirements,
             Some(migration),
+            None,
+            maximum_selection_work,
+            request,
+        )
+    }
+
+    /// Prepares one branch-local move with explicit workflow dispositions,
+    /// decided against [`Self::workflow_adoption_inventory`], and an optional
+    /// admitted migration.
+    pub fn prepare_branch_adoption_with_choices(
+        &self,
+        target: &ApplicationProgramRevision,
+        expected_requirements: &WorthQueryProgramAdoptionRequirements,
+        migration: Option<WorthQueryPreparedProgramMigration>,
+        workflow: Option<WorthQueryWorkflowDispositions>,
+        maximum_selection_work: usize,
+        request: &WorthQueryRequestScope,
+    ) -> Result<WorthQueryPreparedBranchAdoption, WorthQueryBranchAdoptionPreparationDenial> {
+        self.prepare_branch_adoption_inner(
+            target,
+            expected_requirements,
+            migration,
+            workflow,
             maximum_selection_work,
             request,
         )
@@ -60,6 +100,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         target: &ApplicationProgramRevision,
         expected_requirements: &WorthQueryProgramAdoptionRequirements,
         migration: Option<WorthQueryPreparedProgramMigration>,
+        workflow: Option<WorthQueryWorkflowDispositions>,
         maximum_selection_work: usize,
         request: &WorthQueryRequestScope,
     ) -> Result<WorthQueryPreparedBranchAdoption, WorthQueryBranchAdoptionPreparationDenial> {
@@ -77,6 +118,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 target,
                 expected_requirements,
                 migration,
+                workflow,
                 maximum_selection_work,
                 request,
             )

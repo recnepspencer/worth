@@ -2,7 +2,10 @@ use worth_query_declaration::facade::application_program::ApplicationProgramRevi
 use worth_relational::facade::identity::EntityId;
 use worth_relational::facade::runtime::RelationalAdjacencyDirection;
 
-use super::{exact_adjacent, exact_text, exact_u64, WorkflowDefinitionCompilationPosture};
+use super::{
+    exact_adjacent, exact_text, exact_u64, observed_optional_text, observed_text,
+    WorkflowDefinitionCompilationPosture,
+};
 use crate::domain_computation::primary_graph::workflow::definition::compilation::publication_binding::WorkflowDefinitionPublicationRevisions;
 use crate::domain_computation::primary_graph::application_attempt::{
     PublishedWorkflowDefinitionRef, WorthQueryApplicationAdjacencyDirection,
@@ -112,15 +115,29 @@ pub(super) fn observe_publication_header(
         &published.content_identity().to_string(),
         &mut facts,
     )?;
-    exact_text(
+    // Publication provenance is immutable; adoption records a carriage
+    // beside it, and the latest carriage names the executing revision.
+    let published_under = observed_text(
         runtime,
         snapshot,
         definition,
         layout.definition.entity_kind,
         &layout.definition.program_revision,
-        &program_revision.to_string(),
         &mut facts,
     )?;
+    let carried_to = observed_optional_text(
+        runtime,
+        snapshot,
+        definition,
+        layout.definition.entity_kind,
+        &layout.definition.carried_revision,
+        &mut facts,
+    )?;
+    if carried_to.unwrap_or(published_under) != program_revision.to_string() {
+        return Err(super::denial(
+            "workflow definition field does not match installed support",
+        ));
+    }
     let lineage = exact_adjacent(
         runtime,
         snapshot,

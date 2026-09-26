@@ -7,7 +7,7 @@ mod state;
 mod transition;
 
 pub(in crate::domain_computation::primary_graph) use adoption_inventory::{
-    inventory_for_adoption, WorkflowAdoptionInventoryDenial,
+    read_live_instances, WorkflowInventoriedTransition,
 };
 pub(in crate::domain_computation::primary_graph) use facts::visit_instance_start_facts;
 pub use progression::WorthQueryWorkflowInstanceProgressCounters;

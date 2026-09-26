@@ -7,14 +7,18 @@ use worth_relational::facade::transactions::{
     UpdateEntityFieldsIntent, WorkerIntentBatch,
 };
 
+use super::workflow::{admit_workflow_dispositions, workflow_read_denial};
 use super::{
     dispositions, selection, WorthQueryBranchAdoptionPreparationDenial,
     WorthQueryPreparedBranchAdoption, WorthQueryPreparedProgramMigration,
 };
 use crate::domain_computation::primary_graph::product_operation::WorthQuerySelectedProductOperation;
 use crate::domain_computation::primary_graph::program_occurrence::program_revision_rendering;
-use crate::domain_computation::primary_graph::workflow::instance::{
-    inventory_for_adoption, WorkflowAdoptionInventoryDenial,
+use crate::domain_computation::primary_graph::workflow::adoption::{
+    inventory_workflows, stage_workflow_dispositions, WorkflowAdoptionInventoryRequest,
+};
+use crate::domain_computation::primary_graph::workflow::{
+    WorthQueryWorkflowAdoptionInventory, WorthQueryWorkflowDispositions,
 };
 
 fn map_relational_preparation_denial(
@@ -45,6 +49,7 @@ pub(super) fn prepare<Schema: ApplicationSchema>(
     target: &ApplicationProgramRevision,
     expected_requirements: &WorthQueryProgramAdoptionRequirements,
     migration: Option<WorthQueryPreparedProgramMigration>,
+    workflow: Option<WorthQueryWorkflowDispositions>,
     maximum_selection_work: usize,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
 ) -> Result<WorthQueryPreparedBranchAdoption, WorthQueryBranchAdoptionPreparationDenial> {
@@ -116,43 +121,40 @@ pub(super) fn prepare<Schema: ApplicationSchema>(
         )
     })?;
     let selected_entity_count = selection.entities.len();
-    let workflow_inventory = graph
-        .with_runtime(|runtime| {
-            inventory_for_adoption(
-                runtime,
-                graph.layout.workflow(),
-                version,
-                selected.product().product_branch().occurrence_ordinal(),
-                maximum_selection_work.saturating_sub(selection.work_units),
-            )
-        })
-        .map_err(|denial| match denial {
-            WorkflowAdoptionInventoryDenial::WorkLimitExceeded {
-                consumed_work_units,
-            } => WorthQueryBranchAdoptionPreparationDenial::SelectionLimitExceeded {
-                maximum_work_units: maximum_selection_work,
-                consumed_work_units: selection.work_units.saturating_add(consumed_work_units),
-            },
-            WorkflowAdoptionInventoryDenial::UnreadableInstance { instance } => {
-                WorthQueryBranchAdoptionPreparationDenial::WorkflowInventoryUnreadable { instance }
-            }
-            WorkflowAdoptionInventoryDenial::UnreadableRelationSlot { partition_id, slot } => {
-                WorthQueryBranchAdoptionPreparationDenial::WorkflowInventoryRelationUnreadable {
-                    partition_id,
-                    slot,
-                }
-            }
-        })?;
-    if source != *target && !workflow_inventory.instances().is_empty() {
-        return Err(
-            WorthQueryBranchAdoptionPreparationDenial::WorkflowDispositionRequired {
-                instances: workflow_inventory.instances().to_vec().into_boxed_slice(),
-            },
-        );
-    }
-    let selection_work_units = selection
-        .work_units
-        .saturating_add(workflow_inventory.work_units());
+    let workflow_request = WorkflowAdoptionInventoryRequest {
+        layout: graph.layout.workflow(),
+        version,
+        branch_occurrence: selected.product().product_branch().occurrence_ordinal(),
+        coverage: &application.workflow_coverage,
+        requirements: &requirements,
+        source: &source,
+        target,
+        maximum_work_units: maximum_selection_work.saturating_sub(selection.work_units),
+    };
+    let workflow_inventory = if source == *target {
+        None
+    } else {
+        Some(
+            graph
+                .with_runtime(|runtime| inventory_workflows(runtime, &workflow_request))
+                .map_err(|denial| {
+                    workflow_read_denial(denial, maximum_selection_work, selection.work_units)
+                })?,
+        )
+    };
+    let workflow_intents = match workflow_inventory.as_ref() {
+        Some(inventory) => admit_workflow_dispositions(inventory, workflow.as_ref())?
+            .map(|choices| {
+                stage_workflow_dispositions(graph.layout.workflow(), inventory, choices, target)
+            })
+            .unwrap_or_default(),
+        None => Vec::new(),
+    };
+    let selection_work_units = selection.work_units.saturating_add(
+        workflow_inventory
+            .as_ref()
+            .map_or(0, WorthQueryWorkflowAdoptionInventory::work_units),
+    );
     let target_rendering = program_revision_rendering(target);
     let candidate = graph.with_runtime_mut(|runtime| {
         let mut batch =
@@ -172,6 +174,9 @@ pub(super) fn prepare<Schema: ApplicationSchema>(
             batch = batch.push(MutationIntent::Entity(EntityMutationIntent::Revalidate(
                 RevalidateEntityIntent { entity_id },
             )));
+        }
+        for intent in workflow_intents {
+            batch = batch.push(intent);
         }
         let mut transaction = runtime
             .begin_branch_transaction(

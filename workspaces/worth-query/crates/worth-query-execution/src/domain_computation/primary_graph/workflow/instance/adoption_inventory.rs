@@ -1,136 +1,102 @@
-//! Bounded owner-truth inventory for a program change on one selected branch.
+//! Live workflow instances on one exact branch incarnation, read from owner
+//! truth for program adoption.
+//!
+//! Only instances this incarnation authored are live here. A fork copies its
+//! parent's instance facts, but those copies carry the parent's branch
+//! occurrence and stay historical until an explicit fork continuation.
+//!
+//! Custody reads each live instance's whole transition history. Every read is
+//! charged to the one adoption work budget, so a long history exhausts the
+//! caller's `maximum_selection_work` with a typed denial instead of running
+//! unbounded.
 
-use worth_foundational::facade::{AspectValue, ContractValidatedAspectValueView};
-use worth_relational::facade::{
-    identity::{EntityId, VersionId},
-    runtime::{RelationKindTruthReadDenial, RelationalRuntime},
+use worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome;
+use worth_relational::facade::identity::{EntityId, RelationId};
+
+use super::super::adoption::{WorkflowAdoptionReadDenial, WorkflowAdoptionTruth};
+use super::super::schema::version::{
+    WORKFLOW_FACT_PROTOCOL_VERSION, WORKFLOW_INSTANCE_FACT_PROTOCOL_VERSION,
 };
-
 use super::super::schema::WorthQueryWorkflowLayout;
+use super::WorkflowInstanceState;
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum WorkflowAdoptionInventoryDenial {
-    WorkLimitExceeded {
-        consumed_work_units: usize,
-    },
-    UnreadableRelationSlot {
-        partition_id: worth_relational::facade::identity::PartitionId,
-        slot: usize,
-    },
-    UnreadableInstance {
-        instance: EntityId,
-    },
+pub(in crate::domain_computation::primary_graph) struct WorkflowLiveInstance {
+    pub(in crate::domain_computation::primary_graph) instance: EntityId,
+    pub(in crate::domain_computation::primary_graph) lineage: EntityId,
+    pub(in crate::domain_computation::primary_graph) definition: EntityId,
+    pub(in crate::domain_computation::primary_graph) live_membership: RelationId,
+    pub(in crate::domain_computation::primary_graph) transitions:
+        Vec<WorkflowInventoriedTransition>,
 }
 
-pub(in crate::domain_computation::primary_graph) struct WorkflowAdoptionInventory {
-    instances: Box<[EntityId]>,
-    work_units: usize,
+#[derive(Clone, Copy)]
+pub(in crate::domain_computation::primary_graph) struct WorkflowInventoriedTransition {
+    pub(in crate::domain_computation::primary_graph) node: EntityId,
+    pub(in crate::domain_computation::primary_graph) occurrence: u64,
+    pub(in crate::domain_computation::primary_graph) outcome: ApplicationWorkflowControlOutcome,
+    /// The transition settles a performed operation under its receipt.
+    pub(in crate::domain_computation::primary_graph) receipted: bool,
 }
 
-impl WorkflowAdoptionInventory {
-    pub(in crate::domain_computation::primary_graph) fn instances(&self) -> &[EntityId] {
-        &self.instances
-    }
-
-    pub(in crate::domain_computation::primary_graph) const fn work_units(&self) -> usize {
-        self.work_units
-    }
-}
-
-pub(in crate::domain_computation::primary_graph) fn inventory_for_adoption(
-    runtime: &RelationalRuntime,
+pub(in crate::domain_computation::primary_graph) fn read_live_instances(
+    truth: &mut WorkflowAdoptionTruth<'_>,
     layout: &WorthQueryWorkflowLayout,
-    version: VersionId,
     branch_occurrence: u64,
-    maximum_work_units: usize,
-) -> Result<WorkflowAdoptionInventory, WorkflowAdoptionInventoryDenial> {
-    let read = runtime.read_truth();
-    let live = read
-        .bounded_visible_relations_of_kind(
-            layout.live_instance_lineage_relation,
-            version,
-            maximum_work_units,
-        )
-        .map_err(|denial| match denial {
-            RelationKindTruthReadDenial::WorkLimitExceeded(limit) => {
-                WorkflowAdoptionInventoryDenial::WorkLimitExceeded {
-                    consumed_work_units: limit.consumed_work_units(),
-                }
-            }
-            RelationKindTruthReadDenial::UnreadableRelationSlot { partition_id, slot } => {
-                WorkflowAdoptionInventoryDenial::UnreadableRelationSlot { partition_id, slot }
-            }
-        })?;
-    let mut work_units = live.work_units();
+) -> Result<Vec<WorkflowLiveInstance>, WorkflowAdoptionReadDenial> {
     let mut instances = Vec::new();
-    for membership in live.into_records() {
-        if work_units == maximum_work_units {
-            return Err(WorkflowAdoptionInventoryDenial::WorkLimitExceeded {
-                consumed_work_units: work_units,
-            });
-        }
-        work_units += 1;
+    for membership in truth.relations_of_kind(layout.live_instance_lineage_relation)? {
         let instance = membership.source;
-        let record = read
-            .visible_entity_at_version(instance, version)
-            .filter(|record| record.kind.kind_id == layout.instance.entity_kind)
-            .ok_or(WorkflowAdoptionInventoryDenial::UnreadableInstance { instance })?;
-        let state = record
-            .authoritative_aspect_state
-            .as_ref()
-            .ok_or(WorkflowAdoptionInventoryDenial::UnreadableInstance { instance })?;
-        let value = state
-            .get(layout.instance.program_revision.aspect().aspect_key())
-            .ok_or(WorkflowAdoptionInventoryDenial::UnreadableInstance { instance })?;
-        let ContractValidatedAspectValueView::Struct(fields) = value.view() else {
-            return Err(WorkflowAdoptionInventoryDenial::UnreadableInstance { instance });
-        };
-        let protocol_field = layout
-            .instance
-            .protocol_version
-            .field_path()
-            .fields()
-            .first()
-            .ok_or(WorkflowAdoptionInventoryDenial::UnreadableInstance { instance })?;
-        if fields.get(protocol_field)
-            != Some(&AspectValue::UInt64(
-                super::super::schema::version::WORKFLOW_INSTANCE_FACT_PROTOCOL_VERSION,
-            ))
+        let unreadable = WorkflowAdoptionReadDenial::UnreadableEntity { entity: instance };
+        let record = truth.entity(instance, layout.instance.entity_kind)?;
+        if record.u64(&layout.instance.protocol_version)? != WORKFLOW_INSTANCE_FACT_PROTOCOL_VERSION
         {
-            return Err(WorkflowAdoptionInventoryDenial::UnreadableInstance { instance });
+            return Err(unreadable);
         }
-        let branch_field = layout
-            .instance
-            .branch_occurrence
-            .field_path()
-            .fields()
-            .first()
-            .ok_or(WorkflowAdoptionInventoryDenial::UnreadableInstance { instance })?;
-        let authored_branch = fields
-            .get(branch_field)
-            .ok_or(WorkflowAdoptionInventoryDenial::UnreadableInstance { instance })?;
-        if authored_branch != &AspectValue::UInt64(branch_occurrence) {
+        if record.u64(&layout.instance.branch_occurrence)? != branch_occurrence {
             continue;
         }
-        let field = layout
-            .instance
-            .program_revision
-            .field_path()
-            .fields()
-            .first()
-            .ok_or(WorkflowAdoptionInventoryDenial::UnreadableInstance { instance })?;
-        let revision = fields
-            .get(field)
-            .ok_or(WorkflowAdoptionInventoryDenial::UnreadableInstance { instance })?;
-        if !matches!(revision, AspectValue::String(_)) {
-            return Err(WorkflowAdoptionInventoryDenial::UnreadableInstance { instance });
+        if record.u64(&layout.instance.state)? != WorkflowInstanceState::Ready.persisted_tag() {
+            return Err(unreadable);
         }
-        instances.push(instance);
+        record.text(&layout.instance.program_revision)?;
+        let definition = truth.single_target(instance, layout.instance_definition_relation)?;
+        let mut transitions = Vec::new();
+        for relation in truth.outgoing(instance, layout.instance_transition_relation)? {
+            transitions.push(read_transition(truth, layout, relation.target)?);
+        }
+        instances.push(WorkflowLiveInstance {
+            instance,
+            lineage: membership.target,
+            definition,
+            live_membership: membership.relation_id,
+            transitions,
+        });
     }
-    instances.sort_unstable();
-    instances.dedup();
-    Ok(WorkflowAdoptionInventory {
-        instances: instances.into_boxed_slice(),
-        work_units,
+    instances.sort_unstable_by_key(|live| live.instance);
+    Ok(instances)
+}
+
+fn read_transition(
+    truth: &mut WorkflowAdoptionTruth<'_>,
+    layout: &WorthQueryWorkflowLayout,
+    transition: EntityId,
+) -> Result<WorkflowInventoriedTransition, WorkflowAdoptionReadDenial> {
+    let unreadable = WorkflowAdoptionReadDenial::UnreadableEntity { entity: transition };
+    let record = truth.entity(transition, layout.transition.entity_kind)?;
+    if record.u64(&layout.transition.protocol_version)? != WORKFLOW_FACT_PROTOCOL_VERSION {
+        return Err(unreadable);
+    }
+    let occurrence = record.u64(&layout.transition.occurrence)?;
+    let outcome = super::decode_transition_outcome(record.u64(&layout.transition.outcome)?)
+        .ok_or(unreadable)?;
+    let receipted = record
+        .optional_text(&layout.transition.operation_receipt_identity)?
+        .is_some();
+    let node = truth.single_target(transition, layout.transition_node_relation)?;
+    Ok(WorkflowInventoriedTransition {
+        node,
+        occurrence,
+        outcome,
+        receipted,
     })
 }

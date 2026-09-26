@@ -293,7 +293,7 @@ fn v5_complete_facts_roundtrip_and_hostile_lengths_fail_before_allocation() {
             worth_relational::facade::identity::PartitionId(1), 3, 1,
         ),
     };
-    let bytes = super::facts::encode(&[fact.clone()]).unwrap();
+    let bytes = super::facts::encode(std::slice::from_ref(&fact)).unwrap();
     let mut accepted = accepted_without_roles(b"producer", 0);
     accepted.truncate(accepted.len() - 8);
     accepted.extend_from_slice(&(bytes.len() as u64).to_be_bytes());

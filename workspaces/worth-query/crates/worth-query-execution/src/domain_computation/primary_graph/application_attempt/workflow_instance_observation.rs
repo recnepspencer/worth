@@ -107,6 +107,9 @@ pub(in crate::domain_computation::primary_graph::application_attempt) struct Obs
         String,
     pub(in crate::domain_computation::primary_graph::application_attempt) output_content_identity:
         String,
+    /// Absent on evidence recorded before revisions were bound; never current.
+    pub(in crate::domain_computation::primary_graph::application_attempt) program_revision:
+        Option<String>,
 }
 
 pub(in crate::domain_computation::primary_graph::application_attempt) fn observe_workflow_instance(
@@ -147,13 +150,26 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         AspectValue::UInt64(instance.branch().occurrence_ordinal()),
         &mut facts,
     )?;
+    // Cancellation is named before any field it left behind can mismatch.
+    if observe_field_value(runtime, snapshot, entity, kind, &layout.instance.state)
+        == Some(AspectValue::UInt64(
+            WorkflowInstanceState::Cancelled.persisted_tag(),
+        ))
+    {
+        return Err(WorthQueryApplicationAttemptDenial::new(
+            WorthQueryApplicationAttemptDenialKind::WorkflowInstanceCancelled,
+            "workflow instance was cancelled by program adoption",
+        ));
+    }
     exact(
         runtime,
         snapshot,
         entity,
         kind,
         &layout.instance.program_revision,
-        text(instance.program_revision().to_string()),
+        // Instance truth, not the caller's reference, names the revision it
+        // runs under: program adoption may have carried it since start.
+        text(compiled.program_revision().to_string()),
         &mut facts,
     )?;
     exact(

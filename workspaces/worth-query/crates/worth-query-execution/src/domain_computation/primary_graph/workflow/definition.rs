@@ -1,5 +1,6 @@
 mod codec;
 mod compilation;
+mod dependencies;
 mod facts;
 mod preparation;
 mod publication;
@@ -9,6 +10,11 @@ pub(in crate::domain_computation::primary_graph) use compilation::{
     reconstruct_compiled_definition, CompiledWorkflowAssessmentApplicability,
     CompiledWorkflowDefinition, CompiledWorkflowNode, CompiledWorkflowNodeKind,
     WorkflowDefinitionCompilationPosture, WorkflowDefinitionCompilationReuse,
+};
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) use dependencies::WorkflowRetainedNode;
+pub(in crate::domain_computation::primary_graph) use dependencies::{
+    read_definition_dependencies, WorkflowDefinitionDependencies,
 };
 pub(in crate::domain_computation::primary_graph) use facts::{
     visit_definition_facts, WorkflowLineagePublicationTarget,
