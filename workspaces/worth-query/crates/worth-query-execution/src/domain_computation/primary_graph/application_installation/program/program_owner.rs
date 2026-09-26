@@ -43,6 +43,7 @@ pub struct WorthQuerySelectedProgramOwner<'runtime, Schema> {
     revision: &'runtime ApplicationProgramRevision,
     action_bindings: &'runtime [TypeId],
     output_source_bindings: &'runtime [TypeId],
+    root_graph_types: &'runtime [TypeId],
 }
 
 #[derive(Debug)]
@@ -69,6 +70,7 @@ where
     ///         revision: todo!(),
     ///         action_bindings: &[],
     ///         output_source_bindings: &[],
+    ///         root_graph_types: &[],
     ///     };
     /// }
     /// ```
@@ -95,6 +97,7 @@ where
                 revision: self.program.revision(),
                 action_bindings: &self.action_bindings,
                 output_source_bindings: &self.output_source_bindings,
+                root_graph_types: &self.root_graph_types,
             });
         }
         let record = self
@@ -107,6 +110,7 @@ where
             revision: record.revision(),
             action_bindings: &record.action_bindings,
             output_source_bindings: &record.output_source_bindings,
+            root_graph_types: &record.root_graph_types,
         })
     }
 }
@@ -173,6 +177,16 @@ pub trait WorthQueryProgramOwner<Schema>: sealed::WorthQueryProgramOwnership {
         Binding::Input: Clone + Send + Sync + 'static,
     {
         commit_program_action_retained::<Schema, Binding, Self>(self, program, idempotency)
+    }
+}
+
+impl<Schema> WorthQuerySelectedProgramOwner<'_, Schema> {
+    /// Whether the selected program declares one output graph as a root.
+    pub(in crate::domain_computation::primary_graph) fn owns_output_root(
+        &self,
+        root: TypeId,
+    ) -> bool {
+        self.root_graph_types.contains(&root)
     }
 }
 

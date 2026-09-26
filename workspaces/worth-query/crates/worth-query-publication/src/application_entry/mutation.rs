@@ -5,6 +5,7 @@ mod execution;
 mod outcome;
 mod performed;
 mod performed_outputs;
+mod performed_source;
 pub(in crate::application_entry) mod program_output_continuation;
 mod program_output_settlement;
 mod program_output_work;

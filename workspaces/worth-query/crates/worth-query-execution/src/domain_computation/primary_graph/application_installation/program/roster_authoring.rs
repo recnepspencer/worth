@@ -82,6 +82,7 @@ where
         Ok(WorthQuerySupportedProgramRecord::installed(
             installed,
             &output_sources.into_iter().collect::<Vec<TypeId>>(),
+            &Program::Outputs::root_graph_types(),
         ))
     }
 }

@@ -14,9 +14,9 @@ use worth_query_execution::facade::application_contribution::{
 };
 use worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime;
 use worth_query_execution::facade::primary_graph::{
-    WorthQueryApplicationCommitOutcome, WorthQueryApplicationCommitReceipt,
-    WorthQueryApplicationProjection, WorthQueryApplicationRequiredOutputConnection,
-    WorthQueryApplicationRequiredOutputSource, WorthQueryPreparedRequiredOutputSource,
+    WorthQueryApplicationCommitReceipt, WorthQueryApplicationProjection,
+    WorthQueryApplicationRequiredOutputConnection, WorthQueryApplicationRequiredOutputSource,
+    WorthQueryPreparedRequiredOutputSource,
 };
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -266,87 +266,78 @@ where
                     <DemandSource<Schema, Root> as ApplicationQueryBinding<Schema>>::Query,
                 > + Clone,
     {
-        if !std::ptr::eq(application.runtime(), self.request.application)
-            || application.installed_program().schema_binding()
-                != &self
-                    .request
-                    .application
-                    .installed_schema()
-                    .binding_identity()
-        {
-            return Err(WorthQueryPerformedMutationExecutionDenial::ForeignProgram);
-        }
-        if !application.contains_output_root::<Root>() {
-            return Err(WorthQueryPerformedMutationExecutionDenial::UndeclaredOutputRoot);
-        }
+        super::performed_source::require_program_output_root::<Schema, Program, Root>(
+            self.request.application,
+            application,
+        )?;
         let demand = <Intent::Binding as WorthQueryApplicationRequiredOutputSource<
             Schema,
             RootConnection<Schema, Root>,
         >>::demand_from_source(self.request.intent.input())
         .map_err(WorthQueryPerformedMutationExecutionDenial::Connection)?;
-        let preparation_failure = std::cell::RefCell::new(None);
-        let prepared_source = std::cell::RefCell::new(None);
+        let source = super::performed_source::PerformedSourceCommit::default();
         let outcome = self
             .execute_with_commit(true, |_, program, idempotency| {
-                match application
-                    .compare_and_commit_required_output_source::<Root, Intent::Binding>(
+                source.record(
+                    application.compare_and_commit_required_output_source::<Root, Intent::Binding>(
                         &worth_query_execution::publication_boundary::program_publication_access(),
                         program,
                         idempotency,
-                    ) {
-                    Ok((outcome, prepared)) => {
-                        if let Some(prepared) = prepared {
-                            prepared_source.replace(Some(prepared));
-                        }
-                        outcome
-                    }
-                    Err(failure) => {
-                        let receipt = failure.receipt().clone();
-                        preparation_failure.replace(Some(failure));
-                        WorthQueryApplicationCommitOutcome::Committed(receipt)
-                    }
-                }
+                    ),
+                )
             })
             .map_err(WorthQueryPerformedMutationExecutionDenial::Mutation)?;
-        let WorthQueryApplicationMutationOutcome::Committed { receipt, result } = outcome else {
-            return Ok(WorthQueryApplicationPerformedMutationOutcome::NotPerformed(
-                outcome,
-            ));
-        };
-        if let Some(failure) = preparation_failure.into_inner() {
-            return Ok(
-                WorthQueryApplicationPerformedMutationOutcome::RequiredOutputDenied {
+        Ok(performed_outcome(application, demand, outcome, source))
+    }
+}
+
+/// Settles a performed source's commit into its public outcome: not
+/// performed, committed without output custody, or performed with custody.
+fn performed_outcome<'application, Schema, Intent, Program, Root>(
+    application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+    demand: ProgramDemand<Schema, Root>,
+    outcome: WorthQueryApplicationMutationOutcome<
+        <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
+        MutationResult<Schema, Intent>,
+    >,
+    source: super::performed_source::PerformedSourceCommit,
+) -> WorthQueryApplicationPerformedMutationOutcome<'application, Schema, Intent, Program, Root>
+where
+    Schema: ApplicationSchema,
+    Intent: ApplicationMutationIntent<Schema>,
+    Program: ApplicationProgramDefinition<Schema>,
+    Root: ApplicationOutputGraphShape<Schema>
+        + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
+    RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
+    Intent::Binding:
+        WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
+{
+    let WorthQueryApplicationMutationOutcome::Committed { receipt, result } = outcome else {
+        return WorthQueryApplicationPerformedMutationOutcome::NotPerformed(outcome);
+    };
+    match source.into_custody() {
+        Err(denial) => WorthQueryApplicationPerformedMutationOutcome::RequiredOutputDenied {
+            receipt,
+            result,
+            denial,
+        },
+        Ok((prepared, retained_source)) => {
+            WorthQueryApplicationPerformedMutationOutcome::Performed(
+                WorthQueryPerformedApplicationMutation {
                     receipt,
                     result,
-                    denial: WorthQueryRequiredOutputPreparationDenial::DemandExecution(
-                        failure.denial().clone(),
-                    ),
+                    application,
+                    demand,
+                    prepared,
+                    retained_source,
+                    source_bound: false,
                 },
-            );
+            )
         }
-        let Some((prepared, retained_source)) = prepared_source.into_inner() else {
-            return Ok(
-                WorthQueryApplicationPerformedMutationOutcome::RequiredOutputDenied {
-                    receipt,
-                    result,
-                    denial: WorthQueryRequiredOutputPreparationDenial::MissingPerformedDelivery,
-                },
-            );
-        };
-        Ok(WorthQueryApplicationPerformedMutationOutcome::Performed(
-            WorthQueryPerformedApplicationMutation {
-                receipt,
-                result,
-                application,
-                demand,
-                prepared,
-                retained_source,
-                source_bound: false,
-            },
-        ))
     }
 }
 
 mod denial;
+mod selected;
 mod start;
 pub use denial::*;

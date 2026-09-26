@@ -28,12 +28,14 @@ pub(in crate::domain_computation::primary_graph) struct WorthQuerySupportedProgr
     installed: Box<dyn Any + Send + Sync>,
     pub(in crate::domain_computation::primary_graph) action_bindings: Box<[TypeId]>,
     pub(in crate::domain_computation::primary_graph) output_source_bindings: Box<[TypeId]>,
+    pub(in crate::domain_computation::primary_graph) root_graph_types: Box<[TypeId]>,
 }
 
 impl WorthQuerySupportedProgramRecord {
     pub(in crate::domain_computation::primary_graph) fn installed<Schema, Program>(
         installed: WorthQueryInstalledApplicationProgram<Schema, Program>,
         output_source_bindings: &[TypeId],
+        root_graph_types: &[TypeId],
     ) -> Self
     where
         Schema: ApplicationSchema,
@@ -48,6 +50,7 @@ impl WorthQuerySupportedProgramRecord {
                 .filter_map(|action| action.mutation_binding_type())
                 .collect(),
             output_source_bindings: output_source_bindings.into(),
+            root_graph_types: root_graph_types.into(),
             installed: Box::new(installed),
         }
     }

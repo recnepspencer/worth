@@ -8,6 +8,8 @@ use worth_query_declaration::facade::application_program::{
     ApplicationProgramOutputsShape,
 };
 
+mod selected;
+
 type RootConnectionRef<Schema, Root> =
     <Root as ApplicationOutputGraphShape<Schema>>::RootConnection;
 type RootConnection<Schema, Root> =
@@ -60,6 +62,7 @@ where
             ));
         }
         self.compare_and_commit_output_source::<Source>(
+            self.presented_program_for_source::<Source>(),
             program,
             idempotency,
             crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Required(std::any::TypeId::of::<Root>()),
@@ -97,6 +100,7 @@ where
             ));
         }
         self.compare_and_commit_output_source::<Source>(
+            self.presented_program_for_source::<Source>(),
             program,
             idempotency,
             crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Discovered(std::any::TypeId::of::<Root>()),
@@ -144,8 +148,28 @@ where
         >(receipt, std::any::TypeId::of::<Root>())
     }
 
+    /// The initial program, presented only when it requires `Source`.
+    fn presented_program_for_source<Source: 'static>(
+        &self,
+    ) -> Option<
+        crate::domain_computation::primary_graph::program_occurrence::WorthQueryPresentedProgram<
+            '_,
+        >,
+    > {
+        if !self.requires_output_source(std::any::TypeId::of::<Source>()) {
+            return None;
+        }
+        self.presented_program()
+    }
+
+    /// Commits one output source under `presented`, the program its caller
+    /// resolved as owning that source; the occurrence gate still refuses it
+    /// unless it is the program this occurrence runs.
     fn compare_and_commit_output_source<Source>(
         &self,
+        presented: Option<
+            crate::domain_computation::primary_graph::program_occurrence::WorthQueryPresentedProgram<'_>,
+        >,
         program: crate::domain_computation::primary_graph::WorthQueryApplicationEffectProgram<
             Schema,
             Source::Operation,
@@ -162,15 +186,7 @@ where
         >,
         Source::Input: Clone + Send + Sync + 'static,
     {
-        if !self.requires_output_source(std::any::TypeId::of::<Source>()) {
-            return Ok((
-                crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome::Denied(
-                    crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::application_program_required(),
-                ),
-                None,
-            ));
-        }
-        let Some(presented) = self.presented_program() else {
+        let Some(presented) = presented else {
             return Ok((
                 crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome::Denied(
                     crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::application_program_required(),
