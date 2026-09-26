@@ -13,7 +13,20 @@ pub(crate) fn diagnostic_for_reload_failure(
             crate::runtime::WorthUiReloadFailureStage::InvalidCandidate => {
                 WorthUiRuntimeDiagnosticCode::InvalidCandidateDenied
             }
-            _ => WorthUiRuntimeDiagnosticCode::ReloadFailurePreserved,
+            crate::runtime::WorthUiReloadFailureStage::CandidateAdmission
+            | crate::runtime::WorthUiReloadFailureStage::ImpactClassification
+            | crate::runtime::WorthUiReloadFailureStage::ImpactNarrowing
+            | crate::runtime::WorthUiReloadFailureStage::IdentityMatching
+            | crate::runtime::WorthUiReloadFailureStage::DurableStateReconciliation
+            | crate::runtime::WorthUiReloadFailureStage::QueryLiveRebind
+            | crate::runtime::WorthUiReloadFailureStage::ActivationStaging
+            | crate::runtime::WorthUiReloadFailureStage::PlanLowering
+            | crate::runtime::WorthUiReloadFailureStage::RuntimeHandleAllocation
+            | crate::runtime::WorthUiReloadFailureStage::PlanTopologyAssembly
+            | crate::runtime::WorthUiReloadFailureStage::ReadyActivation
+            | crate::runtime::WorthUiReloadFailureStage::ActivationGate => {
+                WorthUiRuntimeDiagnosticCode::ReloadFailurePreserved
+            }
         }
     } else if denial.checked_stop_posture()
         == WorthUiReloadCheckedStopPosture::query_recovery_preserved()

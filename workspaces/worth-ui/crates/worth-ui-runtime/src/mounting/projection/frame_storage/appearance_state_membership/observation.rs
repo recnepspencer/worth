@@ -18,7 +18,12 @@ impl UiMountedAppearanceStateMembers {
                 worth_ui_host_contract::UiMountedAppearanceMechanic::Surface(surface) => {
                     Some(surface)
                 }
-                _ => None,
+                worth_ui_host_contract::UiMountedAppearanceMechanic::PortalSurface(_)
+                | worth_ui_host_contract::UiMountedAppearanceMechanic::Outline(_)
+                | worth_ui_host_contract::UiMountedAppearanceMechanic::TextForeground(_)
+                | worth_ui_host_contract::UiMountedAppearanceMechanic::Pointer(_)
+                | worth_ui_host_contract::UiMountedAppearanceMechanic::Backdrop(_)
+                | worth_ui_host_contract::UiMountedAppearanceMechanic::ScrollChrome(_) => None,
             })
     }
 

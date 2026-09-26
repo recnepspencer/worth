@@ -228,7 +228,9 @@ impl super::ScriptedPresentationHost {
             .flat_map(|(_, _, work, samples)| {
                 let touched = match work {
                     ScriptedTextWork::Delta(changes) => changes.iter().flat_map(touched).collect(),
-                    _ => Vec::new(),
+                    ScriptedTextWork::Complete { .. }
+                    | ScriptedTextWork::Sample(_)
+                    | ScriptedTextWork::Unchanged => Vec::new(),
                 };
                 touched
                     .into_iter()

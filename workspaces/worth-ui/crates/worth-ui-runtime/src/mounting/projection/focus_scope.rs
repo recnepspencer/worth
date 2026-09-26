@@ -1,3 +1,5 @@
+use crate::runtime::planning::execution_plan_input::WorthUiPlanOrdinaryMeaning;
+
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub(crate) enum UiMountedFocusScope {
     ActiveSurface,
@@ -87,10 +89,12 @@ pub(super) fn container_owner(
         let focus = index
             .and_then(|index| plan.ordinary_meaning(index))
             .and_then(|meaning| match meaning.as_ref() {
-                crate::runtime::planning::execution_plan_input::WorthUiPlanOrdinaryMeaning::Component(
-                    component,
-                ) => Some(component.focus_support()),
-                _ => None,
+                WorthUiPlanOrdinaryMeaning::Component(component) => Some(component.focus_support()),
+                WorthUiPlanOrdinaryMeaning::Layout(_)
+                | WorthUiPlanOrdinaryMeaning::ChildRange(_)
+                | WorthUiPlanOrdinaryMeaning::Command(_)
+                | WorthUiPlanOrdinaryMeaning::Token(_)
+                | WorthUiPlanOrdinaryMeaning::StateSlot(_) => None,
             });
         if focus.is_some_and(|support| support.container_policy().is_some()) {
             return Ok(Some(node));
@@ -122,12 +126,14 @@ fn region_kind(
     Ok(plan_index
         .and_then(|index| plan.ordinary_meaning(index))
         .and_then(|meaning| match meaning.as_ref() {
-            crate::runtime::planning::execution_plan_input::WorthUiPlanOrdinaryMeaning::Layout(
-                layout,
-            ) => layout
+            WorthUiPlanOrdinaryMeaning::Layout(layout) => layout
                 .region_descriptor()
                 .map(|descriptor| descriptor.focus_scope().copied()),
-            _ => None,
+            WorthUiPlanOrdinaryMeaning::Component(_)
+            | WorthUiPlanOrdinaryMeaning::ChildRange(_)
+            | WorthUiPlanOrdinaryMeaning::Command(_)
+            | WorthUiPlanOrdinaryMeaning::Token(_)
+            | WorthUiPlanOrdinaryMeaning::StateSlot(_) => None,
         }))
 }
 

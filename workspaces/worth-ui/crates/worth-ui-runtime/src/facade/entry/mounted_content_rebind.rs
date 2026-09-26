@@ -205,7 +205,11 @@ impl<'session> WorthUiPreparedMountedContentRebind<'session> {
                     )
                     .expect("prepared theme reconciliation retains its accepted predecessor")
             }
-            _ => session.present_prepared_mounted_frame_internal(frame, deadline, now),
+            WorthUiMountedContentPublication::RetainedGeneration
+            | WorthUiMountedContentPublication::ThemeSwitch { .. }
+            | WorthUiMountedContentPublication::AuthoredSuccessor { .. } => {
+                session.present_prepared_mounted_frame_internal(frame, deadline, now)
+            }
         };
         finish(session, outcome, publication)
     }

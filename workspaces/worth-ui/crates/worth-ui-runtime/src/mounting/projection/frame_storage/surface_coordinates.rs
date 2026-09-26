@@ -69,6 +69,10 @@ pub(in crate::mounting) fn viewport_bounds(
                 }
             })
         }
-        _ => Err(UiMountedProjectionDenial::CoordinateBasisMismatch),
+        UiMountedCoordinateSpace::Window
+        | UiMountedCoordinateSpace::GraphNodeLocal
+        | UiMountedCoordinateSpace::PortalLayer => {
+            Err(UiMountedProjectionDenial::CoordinateBasisMismatch)
+        }
     }
 }

@@ -56,7 +56,13 @@ impl UiNarrowedAllocationFramePlan {
                 super::UiAllocationInvalidationTarget::ResizePreview { sample, .. } => {
                     Some(*sample)
                 }
-                _ => None,
+                super::UiAllocationInvalidationTarget::Graph(_)
+                | super::UiAllocationInvalidationTarget::SettledQueryFact { .. }
+                | super::UiAllocationInvalidationTarget::ScrollOwnedContentExtent { .. }
+                | super::UiAllocationInvalidationTarget::HostMeasurement { .. }
+                | super::UiAllocationInvalidationTarget::PortalAnchor { .. }
+                | super::UiAllocationInvalidationTarget::ScrollOwnedExtent { .. }
+                | super::UiAllocationInvalidationTarget::DurableResize { .. } => None,
             })
     }
     pub(crate) fn resize_preview_sample_count(&self) -> u16 {
@@ -78,7 +84,13 @@ impl UiNarrowedAllocationFramePlan {
                 super::UiAllocationInvalidationTarget::DurableResize { extent, .. } => {
                     Some(*extent)
                 }
-                _ => None,
+                super::UiAllocationInvalidationTarget::Graph(_)
+                | super::UiAllocationInvalidationTarget::ResizePreview { .. }
+                | super::UiAllocationInvalidationTarget::SettledQueryFact { .. }
+                | super::UiAllocationInvalidationTarget::ScrollOwnedContentExtent { .. }
+                | super::UiAllocationInvalidationTarget::HostMeasurement { .. }
+                | super::UiAllocationInvalidationTarget::PortalAnchor { .. }
+                | super::UiAllocationInvalidationTarget::ScrollOwnedExtent { .. } => None,
             })
     }
     pub(crate) fn durable_resize_identity_digest(&self) -> Option<u64> {
@@ -88,7 +100,13 @@ impl UiNarrowedAllocationFramePlan {
                 super::UiAllocationInvalidationTarget::DurableResize {
                     identity_digest, ..
                 } => Some(*identity_digest),
-                _ => None,
+                super::UiAllocationInvalidationTarget::Graph(_)
+                | super::UiAllocationInvalidationTarget::ResizePreview { .. }
+                | super::UiAllocationInvalidationTarget::SettledQueryFact { .. }
+                | super::UiAllocationInvalidationTarget::ScrollOwnedContentExtent { .. }
+                | super::UiAllocationInvalidationTarget::HostMeasurement { .. }
+                | super::UiAllocationInvalidationTarget::PortalAnchor { .. }
+                | super::UiAllocationInvalidationTarget::ScrollOwnedExtent { .. } => None,
             })
     }
     pub fn counters(&self) -> UiAllocationInvalidationNarrowingCounters {

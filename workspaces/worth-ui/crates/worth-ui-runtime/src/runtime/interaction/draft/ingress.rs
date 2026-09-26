@@ -66,7 +66,14 @@ impl UiDraftRuntimeState {
                 .into_iter()
                 .map(UiDraftProcessingOutcome::Stopped)
                 .collect(),
-            _ => Vec::new(),
+            UiHostObservationPayload::Viewport { .. }
+            | UiHostObservationPayload::DeviceScale { .. }
+            | UiHostObservationPayload::PointerMotion { .. }
+            | UiHostObservationPayload::PointerButton { .. }
+            | UiHostObservationPayload::WindowFocus { .. }
+            | UiHostObservationPayload::ScrollDelta { .. }
+            | UiHostObservationPayload::Clock { .. }
+            | UiHostObservationPayload::Tick { .. } => Vec::new(),
         }
     }
 
@@ -142,7 +149,9 @@ impl UiDraftRuntimeState {
                     context.time_basis,
                 )]
             }
-            _ => Vec::new(),
+            UiValidatedActiveRecipient::Activation(_)
+            | UiValidatedActiveRecipient::Draft(_)
+            | UiValidatedActiveRecipient::Submit(_) => Vec::new(),
         }
     }
 

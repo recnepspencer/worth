@@ -118,7 +118,16 @@ fn expected_names_for_family(family: WorthUiRuntimeCounterFamily) -> &'static [&
         WorthUiRuntimeCounterFamily::QueryRebindPlanning => QUERY_REBIND_NAMES,
         WorthUiRuntimeCounterFamily::PlanLowering => PLAN_LOWERING_NAMES,
         WorthUiRuntimeCounterFamily::PlanAssembly => PLAN_ASSEMBLY_NAMES,
-        _ => &[],
+        WorthUiRuntimeCounterFamily::SourceIngress
+        | WorthUiRuntimeCounterFamily::LaneAdmission
+        | WorthUiRuntimeCounterFamily::OrdinaryLaneExecution
+        | WorthUiRuntimeCounterFamily::VirtualizedDataExecution
+        | WorthUiRuntimeCounterFamily::CanvasSpatialExecution
+        | WorthUiRuntimeCounterFamily::RealtimeOverlayExecution
+        | WorthUiRuntimeCounterFamily::Activation
+        | WorthUiRuntimeCounterFamily::CommittedAllocationActivation
+        | WorthUiRuntimeCounterFamily::SteadyFrameRendering
+        | WorthUiRuntimeCounterFamily::DiagnosticsProjection => &[],
     }
 }
 

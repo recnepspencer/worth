@@ -77,11 +77,7 @@ impl super::UiMountedGraphReplacementSuccessor {
         changed.sort_unstable();
         changed.dedup();
         if !changed.is_empty() {
-            self.identity
-                .mark_occurrence_geometry_changed(&changed)
-                .map_err(|_| {
-                    crate::mounting::UiMountedOccurrenceGeometryDenial::UnknownMountedInstance
-                })?;
+            self.identity.mark_occurrence_geometry_changed(&changed)?;
         }
         Ok(crate::mounting::UiMountedLayoutCompletionReceipt::new(
             surface,

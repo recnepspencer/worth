@@ -14,4 +14,13 @@ impl super::WorthUiMountedSessionState {
         let instance = self.identity.projection_instance(instance)?;
         Some(self.occurrence_geometry.surface_paint_posture(&instance))
     }
+
+    /// Stage no pose, only marking `unmoved` as a settle does, so a test can
+    /// name an occurrence the mounted identity no longer knows.
+    pub(crate) fn stage_unmoved_occurrences_for_test(
+        &mut self,
+        unmoved: &[worth_ui_host_contract::UiMountedInstanceIdentity],
+    ) -> Result<(), crate::mounting::UiMountedOccurrenceGeometryDenial> {
+        self.stage_scroll_poses(std::iter::empty(), unmoved.iter().copied())
+    }
 }

@@ -79,7 +79,11 @@ fn certify_foundational_counter_backed_receipts(
                 authority,
             ) {
             TransitionOutcome::Success(_) => certified_count += 1,
-            _ => {
+            TransitionOutcome::Denied(_)
+            | TransitionOutcome::Deferred(_)
+            | TransitionOutcome::Stale(_)
+            | TransitionOutcome::RebindRequired(_)
+            | TransitionOutcome::Failed(_) => {
                 return Err(
                     WorthUiLaneFrameCostCertificationDenialReason::FoundationalCertificationDenied,
                 )

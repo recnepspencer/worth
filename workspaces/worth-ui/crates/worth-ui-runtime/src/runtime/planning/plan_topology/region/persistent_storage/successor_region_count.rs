@@ -24,6 +24,13 @@ pub(super) fn expected_region_count_after(
                 .unwrap_or(1);
             current - predecessor_width
         }
-        _ => current,
+        WorthUiPlanRegionMutation::Upsert(_)
+        | WorthUiPlanRegionMutation::Insert(_)
+        | WorthUiPlanRegionMutation::Replace(_)
+        | WorthUiPlanRegionMutation::Reparent(_)
+        | WorthUiPlanRegionMutation::Rebind(_)
+        | WorthUiPlanRegionMutation::LaneTransition(_)
+        | WorthUiPlanRegionMutation::Retire(_)
+        | WorthUiPlanRegionMutation::RetireOwner(_) => current,
     }
 }

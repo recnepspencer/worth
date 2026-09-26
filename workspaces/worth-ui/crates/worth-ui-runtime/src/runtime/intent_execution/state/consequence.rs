@@ -54,7 +54,13 @@ impl UiIntentExecutionState {
                 }
                 prepared
             }
-            _ => unreachable!("exact consequence identity excludes other phases"),
+            UiIntentExecutionSlotPhase::Admitted(_)
+            | UiIntentExecutionSlotPhase::AttemptPrepared(_)
+            | UiIntentExecutionSlotPhase::Running(_)
+            | UiIntentExecutionSlotPhase::Recovery(_)
+            | UiIntentExecutionSlotPhase::ConsequenceHandoff(_) => {
+                unreachable!("exact consequence identity excludes other phases")
+            }
         };
         let mismatch = batch_mismatch(&prepared);
         if let Some(reason) = mismatch {

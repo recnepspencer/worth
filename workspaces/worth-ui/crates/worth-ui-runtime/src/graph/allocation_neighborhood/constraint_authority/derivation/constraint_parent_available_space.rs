@@ -230,7 +230,12 @@ fn extent_zero_posture(
     let (width, height) = match value {
         UiMeasurementValue::ViewportExtent(value) => (value.width, value.height),
         UiMeasurementValue::ScrollContainerViewport(value) => (value.width, value.height),
-        _ => return None,
+        UiMeasurementValue::TextIntrinsicSize(_)
+        | UiMeasurementValue::TextBaselineMetrics(_)
+        | UiMeasurementValue::FontMetrics(_)
+        | UiMeasurementValue::NativeControlIntrinsicSize(_)
+        | UiMeasurementValue::DpiScaleFactor(_)
+        | UiMeasurementValue::PortalAnchorRect(_) => return None,
     };
     let zero = match axis_scope {
         UiConstraintAxisScope::Primary => primary_extent(width, height, primary_axis) == 0.0,

@@ -236,7 +236,13 @@ fn capability_reference_for_node_input(node_input: &WorthUiPlanNodeInput) -> Opt
         | WorthUiPlanNodeInputFamily::RenderResourceRef => {
             Some(node_input.identity_basis().to_owned())
         }
-        _ => None,
+        WorthUiPlanNodeInputFamily::ChildRange
+        | WorthUiPlanNodeInputFamily::StateSlot
+        | WorthUiPlanNodeInputFamily::Accessibility
+        | WorthUiPlanNodeInputFamily::DiagnosticsRef
+        | WorthUiPlanNodeInputFamily::LanePartitionRef
+        | WorthUiPlanNodeInputFamily::CanvasSpatial
+        | WorthUiPlanNodeInputFamily::RealtimeOverlay => None,
     }
 }
 
@@ -261,7 +267,17 @@ fn provenance_source_for_family(family: WorthUiPlanNodeInputFamily) -> WorthUiPl
         WorthUiPlanNodeInputFamily::RenderResourceRef => {
             WorthUiPlanProvenanceSource::RenderResource
         }
-        _ => WorthUiPlanProvenanceSource::ReplacementClassification,
+        WorthUiPlanNodeInputFamily::ChildRange
+        | WorthUiPlanNodeInputFamily::Command
+        | WorthUiPlanNodeInputFamily::TokenStyle
+        | WorthUiPlanNodeInputFamily::StateSlot
+        | WorthUiPlanNodeInputFamily::LayoutRegion
+        | WorthUiPlanNodeInputFamily::QueryViewBinding
+        | WorthUiPlanNodeInputFamily::Accessibility
+        | WorthUiPlanNodeInputFamily::CanvasSpatial
+        | WorthUiPlanNodeInputFamily::RealtimeOverlay => {
+            WorthUiPlanProvenanceSource::ReplacementClassification
+        }
     }
 }
 

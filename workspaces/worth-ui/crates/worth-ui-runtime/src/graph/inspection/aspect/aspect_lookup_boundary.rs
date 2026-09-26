@@ -47,7 +47,15 @@ impl<'a> WorthUiAspectInspectionBoundary<'a> {
             UiInspectionTarget::ConsumedAspect { aspect_name } => self
                 .aspect_evidence_indexes
                 .lookup_consumed_aspect(aspect_name.as_str()),
-            _ => return None,
+            UiInspectionTarget::ProductRoot
+            | UiInspectionTarget::DeclaredSurface { .. }
+            | UiInspectionTarget::GraphNodeIdentity { .. }
+            | UiInspectionTarget::DeclarationIdentity { .. }
+            | UiInspectionTarget::AuthoredSourceProvenance { .. }
+            | UiInspectionTarget::ObligationGraphNode { .. }
+            | UiInspectionTarget::ObligationTouch { .. }
+            | UiInspectionTarget::ObligationEvidenceHandle { .. }
+            | _ => return None,
         }?;
         let slice_input = refs_for_query(
             self.declaration_artifacts,
@@ -86,7 +94,15 @@ impl<'a> WorthUiAspectInspectionBoundary<'a> {
                 .aspect_evidence_indexes
                 .lookup_consumed_aspect(aspect_name.as_str())
                 .is_some(),
-            _ => return None,
+            UiInspectionTarget::ProductRoot
+            | UiInspectionTarget::DeclaredSurface { .. }
+            | UiInspectionTarget::GraphNodeIdentity { .. }
+            | UiInspectionTarget::DeclarationIdentity { .. }
+            | UiInspectionTarget::AuthoredSourceProvenance { .. }
+            | UiInspectionTarget::ObligationGraphNode { .. }
+            | UiInspectionTarget::ObligationTouch { .. }
+            | UiInspectionTarget::ObligationEvidenceHandle { .. }
+            | _ => return None,
         };
 
         Some(if supported {

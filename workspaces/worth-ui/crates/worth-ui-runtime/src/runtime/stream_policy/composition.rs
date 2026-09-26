@@ -173,7 +173,10 @@ pub(crate) fn resolve_stream_families(
     };
     match resolved.target {
         UiAllocationCommitTarget::PreviewOnly => UiAllocationStreamCommitDecision::Preview(receipt),
-        _ => UiAllocationStreamCommitDecision::Commit(receipt),
+        UiAllocationCommitTarget::SemanticAndAllocation
+        | UiAllocationCommitTarget::AllocationOnly => {
+            UiAllocationStreamCommitDecision::Commit(receipt)
+        }
     }
 }
 

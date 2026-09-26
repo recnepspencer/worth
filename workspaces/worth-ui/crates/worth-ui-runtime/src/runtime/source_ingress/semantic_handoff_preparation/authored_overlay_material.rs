@@ -72,7 +72,14 @@ impl WorthUiAuthoredOverlayMaterial {
                             });
                         }
                     }
-                    _ => {}
+                    WorthUiSemanticDeclaration::Import(_)
+                    | WorthUiSemanticDeclaration::Component(_)
+                    | WorthUiSemanticDeclaration::Surface(_)
+                    | WorthUiSemanticDeclaration::Binding(_)
+                    | WorthUiSemanticDeclaration::Projection(_)
+                    | WorthUiSemanticDeclaration::Token(_)
+                    | WorthUiSemanticDeclaration::AppearanceRole(_)
+                    | WorthUiSemanticDeclaration::Layout(_) => {}
                 }
             }
         }

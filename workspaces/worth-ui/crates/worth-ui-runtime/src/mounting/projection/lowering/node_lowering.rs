@@ -1,3 +1,5 @@
+use crate::runtime::planning::execution_plan_input::WorthUiPlanOrdinaryMeaning;
+
 impl super::UiMountedNodeLoweringContext<'_, '_> {
     pub(super) fn lower(
         &self,
@@ -68,10 +70,12 @@ impl super::UiMountedNodeLoweringContext<'_, '_> {
         let focus_support = plan_index
             .and_then(|index| self.plan.ordinary_meaning(index))
             .and_then(|meaning| match meaning.as_ref() {
-                crate::runtime::planning::execution_plan_input::WorthUiPlanOrdinaryMeaning::Component(
-                    component,
-                ) => Some(component.focus_support()),
-                _ => None,
+                WorthUiPlanOrdinaryMeaning::Component(component) => Some(component.focus_support()),
+                WorthUiPlanOrdinaryMeaning::Layout(_)
+                | WorthUiPlanOrdinaryMeaning::ChildRange(_)
+                | WorthUiPlanOrdinaryMeaning::Command(_)
+                | WorthUiPlanOrdinaryMeaning::Token(_)
+                | WorthUiPlanOrdinaryMeaning::StateSlot(_) => None,
             })
             .unwrap_or_else(crate::capability::ComponentFocusSupport::not_focusable);
         let focus_scope = if focus_support != crate::capability::ComponentFocusSupport::NotFocusable
@@ -94,15 +98,34 @@ impl super::UiMountedNodeLoweringContext<'_, '_> {
             } else {
                 None
             };
-        let (component_id, portal_child_owner, surface_paint_order, surface_geometry, portal_surface_appearance) = plan_index
+        let (
+            component_id,
+            portal_child_owner,
+            surface_paint_order,
+            surface_geometry,
+            portal_surface_appearance,
+        ) = plan_index
             .and_then(|index| self.plan.ordinary_meaning(index))
             .and_then(|meaning| match meaning.as_ref() {
-                crate::runtime::planning::execution_plan_input::WorthUiPlanOrdinaryMeaning::Component(
-                    component,
-                ) => Some((component.descriptor().id().clone(), component.portal_child_owner().cloned(), component.surface_paint_order(), component.descriptor().surface_geometry().clone(), component.descriptor().portal_surface_appearance())),
-                _ => None,
+                WorthUiPlanOrdinaryMeaning::Component(component) => Some((
+                    component.descriptor().id().clone(),
+                    component.portal_child_owner().cloned(),
+                    component.surface_paint_order(),
+                    component.descriptor().surface_geometry().clone(),
+                    component.descriptor().portal_surface_appearance(),
+                )),
+                WorthUiPlanOrdinaryMeaning::Layout(_)
+                | WorthUiPlanOrdinaryMeaning::ChildRange(_)
+                | WorthUiPlanOrdinaryMeaning::Command(_)
+                | WorthUiPlanOrdinaryMeaning::Token(_)
+                | WorthUiPlanOrdinaryMeaning::StateSlot(_) => None,
             })
-            .map_or((None, None, None, Default::default(), true), |(component, owner, order, geometry, portal_paint)| (Some(component), owner, order, geometry, portal_paint));
+            .map_or(
+                (None, None, None, Default::default(), true),
+                |(component, owner, order, geometry, portal_paint)| {
+                    (Some(component), owner, order, geometry, portal_paint)
+                },
+            );
         let participation = super::lower_participation(
             graph_node.participation_posture(),
             semantic_text.is_some() || graph_node.has_appearance_attachment(),

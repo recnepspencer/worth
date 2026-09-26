@@ -170,7 +170,8 @@ fn validate_route_family(
                 },
             )
         }
-        _ => Ok(()),
+        worth_ui_dsl::WorthUiIntentInteractionRouteKind::Product
+        | worth_ui_dsl::WorthUiIntentInteractionRouteKind::Confirmation => Ok(()),
     }
 }
 

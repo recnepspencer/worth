@@ -8,6 +8,7 @@ use crate::runtime::{
 #[cfg(test)]
 use super::launch_request::WorthUiRuntimeLaunchDenial;
 use super::runtime_instance::WorthUiRuntime;
+use crate::runtime::session::service_proposal::UiServiceProposalTeardownDenial;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthUiRuntimeShutdownBlocker {
@@ -90,10 +91,20 @@ impl WorthUiRuntime {
             Ok(receipt) => receipt,
             Err(denial) => {
                 let blocker = match denial {
-                    crate::runtime::session::service_proposal::UiServiceProposalTeardownDenial::AwaitingOwnerSettlement(_) => {
+                    UiServiceProposalTeardownDenial::AwaitingOwnerSettlement(_) => {
                         WorthUiRuntimeShutdownBlocker::ServiceOwnerSettlementPending
                     }
-                    _ => WorthUiRuntimeShutdownBlocker::ServiceProposalInvariant,
+                    UiServiceProposalTeardownDenial::Census(_)
+                    | UiServiceProposalTeardownDenial::Occupancy(_)
+                    | UiServiceProposalTeardownDenial::Cancellation(_)
+                    | UiServiceProposalTeardownDenial::ForeignProposal
+                    | UiServiceProposalTeardownDenial::NonParticipatingFamily
+                    | UiServiceProposalTeardownDenial::OwnerScopeMismatch
+                    | UiServiceProposalTeardownDenial::ReasonMismatch
+                    | UiServiceProposalTeardownDenial::DuplicateOwnerOutcome
+                    | UiServiceProposalTeardownDenial::IncompleteOwnerDiscard => {
+                        WorthUiRuntimeShutdownBlocker::ServiceProposalInvariant
+                    }
                 };
                 return Err(WorthUiRuntimeShutdownRecovery {
                     runtime: Box::new(self),

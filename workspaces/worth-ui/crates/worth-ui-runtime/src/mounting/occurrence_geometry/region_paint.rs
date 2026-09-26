@@ -165,7 +165,7 @@ fn surface_edge_basis(row: &PaintRow, edge: Edge) -> Option<(f32, f32)> {
             Some((surface.x(), surface.width()))
         }
         Edge::Left if region.x() == surface.x() => Some((surface.y(), surface.height())),
-        _ => None,
+        Edge::Top | Edge::Right | Edge::Bottom | Edge::Left => None,
     }
 }
 

@@ -146,21 +146,30 @@ impl MeasurementEvidenceInput {
     pub(crate) fn as_settled_query_fact(&self) -> Option<&UiSettledQueryFactReceipt> {
         match self {
             Self::SettledQueryFact(receipt) => Some(receipt),
-            _ => None,
+            Self::HostMeasurementResult(_)
+            | Self::HostCapabilityReport(_)
+            | Self::ChildIntrinsicMeasurement(_)
+            | Self::SiblingResizeSupport(_) => None,
         }
     }
 
     pub(crate) fn as_host_measurement_result(&self) -> Option<&UiMeasurementResult> {
         match self {
             Self::HostMeasurementResult(result) => Some(result),
-            _ => None,
+            Self::SettledQueryFact(_)
+            | Self::HostCapabilityReport(_)
+            | Self::ChildIntrinsicMeasurement(_)
+            | Self::SiblingResizeSupport(_) => None,
         }
     }
 
     pub(crate) fn as_host_capability_report(&self) -> Option<&WorthUiHostCapabilityReport> {
         match self {
             Self::HostCapabilityReport(report) => Some(report),
-            _ => None,
+            Self::SettledQueryFact(_)
+            | Self::HostMeasurementResult(_)
+            | Self::ChildIntrinsicMeasurement(_)
+            | Self::SiblingResizeSupport(_) => None,
         }
     }
 
@@ -169,14 +178,20 @@ impl MeasurementEvidenceInput {
     ) -> Option<&UiChildIntrinsicMeasurementEvidence> {
         match self {
             Self::ChildIntrinsicMeasurement(evidence) => Some(evidence),
-            _ => None,
+            Self::SettledQueryFact(_)
+            | Self::HostMeasurementResult(_)
+            | Self::HostCapabilityReport(_)
+            | Self::SiblingResizeSupport(_) => None,
         }
     }
 
     pub(crate) fn as_sibling_resize_support(&self) -> Option<&UiMeasurementSiblingResizeSupport> {
         match self {
             Self::SiblingResizeSupport(support) => Some(support),
-            _ => None,
+            Self::SettledQueryFact(_)
+            | Self::HostMeasurementResult(_)
+            | Self::HostCapabilityReport(_)
+            | Self::ChildIntrinsicMeasurement(_) => None,
         }
     }
 }

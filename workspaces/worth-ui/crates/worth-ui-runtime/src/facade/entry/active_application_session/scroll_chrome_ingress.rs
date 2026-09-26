@@ -145,7 +145,18 @@ pub(in crate::facade::entry) fn scroll_chrome_pointer_intent(
                 UiScrollChromePointerIntent::Untouched
             }
         }
-        _ => UiScrollChromePointerIntent::Untouched,
+        worth_ui_host_contract::UiHostObservationPayload::Viewport { .. }
+        | worth_ui_host_contract::UiHostObservationPayload::DeviceScale { .. }
+        | worth_ui_host_contract::UiHostObservationPayload::PointerButton { .. }
+        | worth_ui_host_contract::UiHostObservationPayload::Keyboard { .. }
+        | worth_ui_host_contract::UiHostObservationPayload::WindowFocus { .. }
+        | worth_ui_host_contract::UiHostObservationPayload::ScrollDelta { .. }
+        | worth_ui_host_contract::UiHostObservationPayload::Clock { .. }
+        | worth_ui_host_contract::UiHostObservationPayload::Tick { .. }
+        | worth_ui_host_contract::UiHostObservationPayload::TextInput { .. }
+        | worth_ui_host_contract::UiHostObservationPayload::ImeComposition { .. } => {
+            UiScrollChromePointerIntent::Untouched
+        }
     }
 }
 
@@ -173,7 +184,15 @@ pub(in crate::facade::entry) fn pointer_report_position(
         | worth_ui_host_contract::UiHostObservationPayload::PointerButton { position, .. } => {
             Some(*position)
         }
-        _ => None,
+        worth_ui_host_contract::UiHostObservationPayload::Viewport { .. }
+        | worth_ui_host_contract::UiHostObservationPayload::DeviceScale { .. }
+        | worth_ui_host_contract::UiHostObservationPayload::Keyboard { .. }
+        | worth_ui_host_contract::UiHostObservationPayload::WindowFocus { .. }
+        | worth_ui_host_contract::UiHostObservationPayload::ScrollDelta { .. }
+        | worth_ui_host_contract::UiHostObservationPayload::Clock { .. }
+        | worth_ui_host_contract::UiHostObservationPayload::Tick { .. }
+        | worth_ui_host_contract::UiHostObservationPayload::TextInput { .. }
+        | worth_ui_host_contract::UiHostObservationPayload::ImeComposition { .. } => None,
     }
 }
 

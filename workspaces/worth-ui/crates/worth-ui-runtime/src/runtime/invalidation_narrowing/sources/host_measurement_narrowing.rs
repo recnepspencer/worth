@@ -19,7 +19,10 @@ pub(super) fn narrow_host_measurement(
                     match reason {
                         crate::runtime::UiPortalAnchorSuccessorDenial::StaleEvidenceGeneration =>
                             super::UiAllocationInvalidationNarrowingDenial::PortalAnchorEvidenceStale { ordinal },
-                        _ => super::UiAllocationInvalidationNarrowingDenial::PortalAnchorSuccessorBasisDenied { ordinal },
+                        crate::runtime::UiPortalAnchorSuccessorDenial::EvidenceCategoryMismatch
+                        | crate::runtime::UiPortalAnchorSuccessorDenial::NormalizationAuthorityMismatch
+                        | crate::runtime::UiPortalAnchorSuccessorDenial::ObservationInvalid =>
+                            super::UiAllocationInvalidationNarrowingDenial::PortalAnchorSuccessorBasisDenied { ordinal },
                     },
             })?
             .ok_or(super::UiAllocationInvalidationNarrowingDenial::PortalAnchorNotAdmitted { ordinal })?;

@@ -91,7 +91,12 @@ impl UiGraphContainmentClaim {
             Self::Mosaic {
                 sizing_contract_id, ..
             } => sizing_contract_id.as_ref(),
-            _ => None,
+            Self::RootPage
+            | Self::PageSet { .. }
+            | Self::Region { .. }
+            | Self::LocalComposition { .. }
+            | Self::Control { .. }
+            | Self::DiagnosticSurface { .. } => None,
         }
     }
 }

@@ -40,7 +40,16 @@ impl<'a> WorthUiGraphInspectionBoundary<'a> {
                     crate::graph::UiGraphNodeIdentity::new(*graph_node_digest),
                 )
             }
-            _ => return None,
+            UiInspectionTarget::ProductRoot
+            | UiInspectionTarget::DeclaredSurface { .. }
+            | UiInspectionTarget::PublishedAspect { .. }
+            | UiInspectionTarget::ConsumedAspect { .. }
+            | UiInspectionTarget::DeclarationIdentity { .. }
+            | UiInspectionTarget::AuthoredSourceProvenance { .. }
+            | UiInspectionTarget::ObligationGraphNode { .. }
+            | UiInspectionTarget::ObligationTouch { .. }
+            | UiInspectionTarget::ObligationEvidenceHandle { .. }
+            | _ => return None,
         }?;
         let refs = filter_refs_for_query(lookup.neighborhood().refs(), &query);
         let assembly = UiEvidenceSliceAssembly::assemble(
@@ -74,7 +83,16 @@ impl<'a> WorthUiGraphInspectionBoundary<'a> {
                 ))?
                 .neighborhood()
                 .declaration_artifact_index(),
-            _ => return None,
+            UiInspectionTarget::ProductRoot
+            | UiInspectionTarget::DeclaredSurface { .. }
+            | UiInspectionTarget::PublishedAspect { .. }
+            | UiInspectionTarget::ConsumedAspect { .. }
+            | UiInspectionTarget::DeclarationIdentity { .. }
+            | UiInspectionTarget::AuthoredSourceProvenance { .. }
+            | UiInspectionTarget::ObligationGraphNode { .. }
+            | UiInspectionTarget::ObligationTouch { .. }
+            | UiInspectionTarget::ObligationEvidenceHandle { .. }
+            | _ => return None,
         };
         let graph_supported = self
             .graph_snapshot
@@ -84,7 +102,16 @@ impl<'a> WorthUiGraphInspectionBoundary<'a> {
                     UiInspectionTarget::GraphNodeIdentity { graph_node_digest } => {
                         *graph_node_digest
                     }
-                    _ => unreachable!(),
+                    UiInspectionTarget::ProductRoot
+                    | UiInspectionTarget::DeclaredSurface { .. }
+                    | UiInspectionTarget::PublishedAspect { .. }
+                    | UiInspectionTarget::ConsumedAspect { .. }
+                    | UiInspectionTarget::DeclarationIdentity { .. }
+                    | UiInspectionTarget::AuthoredSourceProvenance { .. }
+                    | UiInspectionTarget::ObligationGraphNode { .. }
+                    | UiInspectionTarget::ObligationTouch { .. }
+                    | UiInspectionTarget::ObligationEvidenceHandle { .. }
+                    | _ => unreachable!(),
                 },
             ))
             .is_some();

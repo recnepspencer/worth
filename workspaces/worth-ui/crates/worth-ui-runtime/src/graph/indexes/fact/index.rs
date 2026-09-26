@@ -176,7 +176,12 @@ impl UiGraphConsumedFactIndex {
                 .get(&posture.graph_node())
                 .map(Box::as_ref)
                 .unwrap_or_default(),
-            _ => self.subsystem.entries_for(fact.family()),
+            UiProducedFact::HostViewport(_)
+            | UiProducedFact::HostDeviceScale(_)
+            | UiProducedFact::PointerPresenceTarget(_)
+            | UiProducedFact::Measurement(_)
+            | UiProducedFact::CommittedScrollExtent(_)
+            | UiProducedFact::CommittedPortalAnchor(_) => self.subsystem.entries_for(fact.family()),
         };
         debug_assert!(entries
             .iter()

@@ -125,7 +125,10 @@ where
             UiPendingVisualCapturePhase::DerivedRegion(capture) => {
                 UiPendingVisualCaptureRoute::DerivedRegion(capture)
             }
-            phase => UiPendingVisualCaptureRoute::Host(Self { phase }),
+            phase @ (UiPendingVisualCapturePhase::Pinned(_)
+            | UiPendingVisualCapturePhase::HostRequested(_)) => {
+                UiPendingVisualCaptureRoute::Host(Self { phase })
+            }
         }
     }
 

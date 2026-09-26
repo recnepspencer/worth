@@ -49,7 +49,9 @@ pub(super) fn derive(
                 bounds,
                 ..
             } => bounds.coordinate_space() as u8,
-            _ => return Err(Denial::MountedGeometryUnavailable),
+            worth_ui_host_contract::UiMountedAllocationProjection::Omitted(_) => {
+                return Err(Denial::MountedGeometryUnavailable)
+            }
         };
         let (mounted_surface, probes) = frame.semantic.surface_for_with_probes(surface);
         work.map_key_probes += probes;
@@ -79,7 +81,10 @@ pub(super) fn derive(
                     m.surface().clip(),
                     Some(m.portal_instance()),
                 ),
-                _ => continue,
+                Mechanic::TextForeground(_)
+                | Mechanic::Pointer(_)
+                | Mechanic::Backdrop(_)
+                | Mechanic::ScrollChrome(_) => continue,
             };
             if let Some(bounds) = clipped(bounds, clip) {
                 rows.push(Row {

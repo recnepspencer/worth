@@ -60,7 +60,11 @@ impl WorthUiFoundationalCounterBridge {
                 &counter_backed_receipt,
             ) {
                 TransitionOutcome::Success(ready) => ready.payload().cost().entry_count(),
-                _ => {
+                TransitionOutcome::Denied(_)
+                | TransitionOutcome::Deferred(_)
+                | TransitionOutcome::Stale(_)
+                | TransitionOutcome::RebindRequired(_)
+                | TransitionOutcome::Failed(_) => {
                     return Err(
                         WorthUiMeasurementCertificationDenial::FoundationalBasisConstruction,
                     )

@@ -82,7 +82,16 @@ pub(super) fn retry_text_atlas_deferred(
         {
             shell.retry_rejected_frame_presentation(rejected, deadline, now_tick)
         }
-        outcome => outcome,
+        outcome @ (crate::mounting::UiMountedFrameOutcome::Published(_)
+        | crate::mounting::UiMountedFrameOutcome::Unchanged(_)
+        | crate::mounting::UiMountedFrameOutcome::Reconciled(_)
+        | crate::mounting::UiMountedFrameOutcome::RejectedBeforeEffects(_)
+        | crate::mounting::UiMountedFrameOutcome::InFlight(_)
+        | crate::mounting::UiMountedFrameOutcome::PresentationIndeterminate(_)
+        | crate::mounting::UiMountedFrameOutcome::Superseded(_)
+        | crate::mounting::UiMountedFrameOutcome::RetentionDenied(_)
+        | crate::mounting::UiMountedFrameOutcome::AdmissionDenied(_)
+        | crate::mounting::UiMountedFrameOutcome::CompletionDenied(_)) => outcome,
     }
 }
 

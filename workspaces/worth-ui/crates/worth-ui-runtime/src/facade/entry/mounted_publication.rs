@@ -251,7 +251,13 @@ fn finish_mounted_transition_with_ports(
             ports.host_exchange.record_presented_frame(receipt.frame());
             reconcile_focus_after_published_frame_with_ports(&mut ports, receipt);
         }
-        _ => {}
+        UiMountedFrameOutcome::RejectedBeforeEffects(_)
+        | UiMountedFrameOutcome::InFlight(_)
+        | UiMountedFrameOutcome::PresentationIndeterminate(_)
+        | UiMountedFrameOutcome::Superseded(_)
+        | UiMountedFrameOutcome::RetentionDenied(_)
+        | UiMountedFrameOutcome::AdmissionDenied(_)
+        | UiMountedFrameOutcome::CompletionDenied(_) => {}
     }
     if let Some(observation) = observation {
         record_mounted_observation(ports.host_exchange, observation);
@@ -277,7 +283,11 @@ fn finish_mounted_transition_with_ports(
                     producer.record_pre_effect_denials(records);
                 }
             }
-            _ => {}
+            UiMountedFrameOutcome::InFlight(_)
+            | UiMountedFrameOutcome::PresentationIndeterminate(_)
+            | UiMountedFrameOutcome::Superseded(_)
+            | UiMountedFrameOutcome::RetentionDenied(_)
+            | UiMountedFrameOutcome::CompletionDenied(_) => {}
         }
     }
     if let Some(transition) = hit_transition {

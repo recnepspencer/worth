@@ -290,7 +290,9 @@ fn shared_semantic_references(
                 digest_query_posture_entry(entry, WorthUiQueryReferenceSide::Candidate),
                 WorthUiCrossLaneSemanticAuthority::DirectReferenceMatch,
             ),
-            _ => query_rebind_plan
+            WorthUiQueryBindingComparisonOutcome::RebindRequired
+            | WorthUiQueryBindingComparisonOutcome::MissingActiveBinding
+            | WorthUiQueryBindingComparisonOutcome::MissingCandidateBinding => query_rebind_plan
                 .and_then(|plan| {
                     plan.binding_for_view_binding_id(entry.identity().view_binding_id())
                 })

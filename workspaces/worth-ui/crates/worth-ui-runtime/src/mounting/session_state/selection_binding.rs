@@ -1,4 +1,5 @@
 use super::WorthUiMountedSessionState;
+use crate::runtime::selection::UiSelectionProjectionMappingDenial;
 use crate::runtime::selection::{UiSelectionAppearanceChange, UiSelectionProjectionMapping};
 use worth_ui_host_contract::{UiMountedInstanceIdentity, UiMountedNodeReceiptIdentity};
 
@@ -41,11 +42,18 @@ impl WorthUiMountedSessionState {
         else {
             return Err(UiMountedSelectionBindingDenial::CollectionUnavailable);
         };
-        let mapping = UiSelectionProjectionMapping::from_current_option(&owner_basis, &collection, option)
-            .map_err(|denial| match denial {
-                crate::runtime::selection::UiSelectionProjectionMappingDenial::ApplicationKeyUnavailable => UiMountedSelectionBindingDenial::ApplicationKeyUnavailable,
-                _ => UiMountedSelectionBindingDenial::OptionNotCurrent,
-            })?;
+        let mapping =
+            UiSelectionProjectionMapping::from_current_option(&owner_basis, &collection, option)
+                .map_err(|denial| match denial {
+                    UiSelectionProjectionMappingDenial::ApplicationKeyUnavailable => {
+                        UiMountedSelectionBindingDenial::ApplicationKeyUnavailable
+                    }
+                    UiSelectionProjectionMappingDenial::CollectionNotCurrent
+                    | UiSelectionProjectionMappingDenial::OptionRevisionChanged
+                    | UiSelectionProjectionMappingDenial::IncarnationUnavailable => {
+                        UiMountedSelectionBindingDenial::OptionNotCurrent
+                    }
+                })?;
         if self.selection_bindings.owner_conflicts(mapping) {
             return Err(UiMountedSelectionBindingDenial::ConflictingOwnerIncarnation);
         }

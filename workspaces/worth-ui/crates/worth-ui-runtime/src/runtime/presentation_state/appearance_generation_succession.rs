@@ -1,3 +1,5 @@
+use crate::runtime::appearance::UiThemeCapabilityReceiptDenial;
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum UiAppearanceGenerationSuccessionDenial {
     StaleAdmission,
@@ -53,31 +55,40 @@ impl UiPreparedAppearanceGenerationSuccession {
 }
 
 fn map_rebinding_denial(
-    denial: crate::runtime::appearance::UiThemeCapabilityReceiptDenial,
+    denial: UiThemeCapabilityReceiptDenial,
     active_bindings: &[crate::runtime::appearance::UiActiveThemeBinding],
 ) -> UiAppearanceGenerationSuccessionDenial {
     match denial {
-        crate::runtime::appearance::UiThemeCapabilityReceiptDenial::BindingGenerationExhausted => {
-            active_bindings
-                .iter()
-                .find(|binding| binding.binding_generation() == u64::MAX)
-                .map_or(
-                    UiAppearanceGenerationSuccessionDenial::StaleAdmission,
-                    |binding| {
-                        UiAppearanceGenerationSuccessionDenial::BindingGenerationExhausted(
-                            binding.surface(),
-                        )
-                    },
-                )
-        }
-        crate::runtime::appearance::UiThemeCapabilityReceiptDenial::StaleBinding
-        | crate::runtime::appearance::UiThemeCapabilityReceiptDenial::GenerationMismatch => {
-            active_bindings.first().map_or(
+        UiThemeCapabilityReceiptDenial::BindingGenerationExhausted => active_bindings
+            .iter()
+            .find(|binding| binding.binding_generation() == u64::MAX)
+            .map_or(
                 UiAppearanceGenerationSuccessionDenial::StaleAdmission,
-                |binding| UiAppearanceGenerationSuccessionDenial::StaleBinding(binding.surface()),
-            )
+                |binding| {
+                    UiAppearanceGenerationSuccessionDenial::BindingGenerationExhausted(
+                        binding.surface(),
+                    )
+                },
+            ),
+        UiThemeCapabilityReceiptDenial::StaleBinding
+        | UiThemeCapabilityReceiptDenial::GenerationMismatch => active_bindings.first().map_or(
+            UiAppearanceGenerationSuccessionDenial::StaleAdmission,
+            |binding| UiAppearanceGenerationSuccessionDenial::StaleBinding(binding.surface()),
+        ),
+        UiThemeCapabilityReceiptDenial::MissingBundle
+        | UiThemeCapabilityReceiptDenial::MissingHostProfile
+        | UiThemeCapabilityReceiptDenial::CatalogRevisionMismatch
+        | UiThemeCapabilityReceiptDenial::EmptyRequiredRoleSet
+        | UiThemeCapabilityReceiptDenial::DuplicateRequiredRole
+        | UiThemeCapabilityReceiptDenial::MissingRequiredRole
+        | UiThemeCapabilityReceiptDenial::MissingRequiredSlot
+        | UiThemeCapabilityReceiptDenial::RequiredSlotKindMismatch
+        | UiThemeCapabilityReceiptDenial::MissingDefinitionValue
+        | UiThemeCapabilityReceiptDenial::MissingDefinition
+        | UiThemeCapabilityReceiptDenial::RequiredRoleRevisionMismatch
+        | UiThemeCapabilityReceiptDenial::HostProfileMismatch => {
+            UiAppearanceGenerationSuccessionDenial::StaleAdmission
         }
-        _ => UiAppearanceGenerationSuccessionDenial::StaleAdmission,
     }
 }
 

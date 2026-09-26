@@ -100,7 +100,9 @@ impl UiRepeatedInstanceBasis {
     pub fn denial(&self) -> Option<&UiRepeatedInstanceBasisDenial> {
         match self {
             Self::Denied { denial } => Some(denial),
-            _ => None,
+            Self::DeclarationKeyed { .. } | Self::RuntimeDataKeyed { .. } | Self::Unavailable => {
+                None
+            }
         }
     }
 

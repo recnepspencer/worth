@@ -236,21 +236,7 @@ impl WorthUiMountedSessionState {
         changed.sort_unstable();
         changed.dedup();
         if !changed.is_empty() {
-            self.identity
-                .mark_occurrence_geometry_changed(&changed)
-                .map_err(|denial| match denial {
-                    super::super::UiMountedIdentityDenial::UnknownMountedInstance => {
-                        super::super::UiMountedOccurrenceGeometryDenial::UnknownMountedInstance
-                    }
-                    super::super::UiMountedIdentityDenial::IdentityExhausted => {
-                        super::super::UiMountedOccurrenceGeometryDenial::StateRevisionExhausted
-                    }
-                    _ => {
-                        unreachable!(
-                            "occurrence change validates membership before revision minting"
-                        )
-                    }
-                })?;
+            self.identity.mark_occurrence_geometry_changed(&changed)?;
         }
         self.occurrence_geometry = successor;
         Ok(super::super::UiMountedLayoutCompletionReceipt::new(

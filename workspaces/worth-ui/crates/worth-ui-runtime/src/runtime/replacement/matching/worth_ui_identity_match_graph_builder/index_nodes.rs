@@ -79,7 +79,10 @@ fn canonical_match_identity_basis<'node>(
             .view_binding()
             .id()
             .as_str(),
-        _ => seed.basis(),
+        WorthUiArtifactNode::Import(_)
+        | WorthUiArtifactNode::Component(_)
+        | WorthUiArtifactNode::Surface(_)
+        | WorthUiArtifactNode::Token(_) => seed.basis(),
     }
 }
 

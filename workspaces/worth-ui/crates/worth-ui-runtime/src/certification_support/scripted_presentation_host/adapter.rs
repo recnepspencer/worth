@@ -278,7 +278,10 @@ impl WorthUiOperationalHostAdapter for ScriptedPresentationHost {
         };
         let presented = match &outcome {
             UiHostSurfaceInFlightCompletion::Presented(completion) => Some(completion),
-            _ => None,
+            UiHostSurfaceInFlightCompletion::Pending(_)
+            | UiHostSurfaceInFlightCompletion::RejectedBeforeEffects(_)
+            | UiHostSurfaceInFlightCompletion::Superseded(_)
+            | UiHostSurfaceInFlightCompletion::PresentationIndeterminate => None,
         };
         self.settle_native_input_presentation(identity, presented);
         if presented.is_some() {

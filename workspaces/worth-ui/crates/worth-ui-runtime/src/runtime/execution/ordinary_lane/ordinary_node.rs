@@ -127,7 +127,13 @@ pub(crate) fn ordinary_lane_for_family(
         WorthUiPlanNodeInputFamily::StateSlot => {
             Some(WorthUiOrdinaryExecutionLane::StateSlotSupport)
         }
-        _ => None,
+        WorthUiPlanNodeInputFamily::QueryViewBinding
+        | WorthUiPlanNodeInputFamily::Accessibility
+        | WorthUiPlanNodeInputFamily::DiagnosticsRef
+        | WorthUiPlanNodeInputFamily::LanePartitionRef
+        | WorthUiPlanNodeInputFamily::RenderResourceRef
+        | WorthUiPlanNodeInputFamily::CanvasSpatial
+        | WorthUiPlanNodeInputFamily::RealtimeOverlay => None,
     }
 }
 

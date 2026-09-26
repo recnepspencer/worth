@@ -206,7 +206,12 @@ impl super::super::WorthUiNativeApplicationShell {
                     WorthUiNativePredecessorRecovery::IntentConsequence,
                 ))
             }
-            _ => {
+            crate::mounting::UiMountedFrameOutcome::RejectedBeforeEffects(_)
+            | crate::mounting::UiMountedFrameOutcome::PresentationIndeterminate(_)
+            | crate::mounting::UiMountedFrameOutcome::Superseded(_)
+            | crate::mounting::UiMountedFrameOutcome::RetentionDenied(_)
+            | crate::mounting::UiMountedFrameOutcome::AdmissionDenied(_)
+            | crate::mounting::UiMountedFrameOutcome::CompletionDenied(_) => {
                 self.pending_managed_rebind = Some(
                     WorthUiNativePendingManagedRebind::IntentConsequenceReconstructionDeferred {
                         portal,

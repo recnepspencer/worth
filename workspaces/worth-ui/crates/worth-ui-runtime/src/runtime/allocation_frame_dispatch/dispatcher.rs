@@ -114,7 +114,12 @@ impl UiAllocationFrameDispatcher {
             UiAllocationFrameDispatcherState::Paused(
                 UiAllocationFramePauseReason::EpochExhausted,
             ) => return Err(UiAllocationFrameDispatchDenial::EpochExhausted),
-            _ => return Err(UiAllocationFrameDispatchDenial::NoOpenFrame),
+            UiAllocationFrameDispatcherState::Paused(_)
+            | UiAllocationFrameDispatcherState::Closing { .. }
+            | UiAllocationFrameDispatcherState::Sealed(_)
+            | UiAllocationFrameDispatcherState::Dispatched(_) => {
+                return Err(UiAllocationFrameDispatchDenial::NoOpenFrame)
+            }
         };
         let Some(next_epoch) = epoch.checked_next() else {
             self.state = UiAllocationFrameDispatcherState::Paused(

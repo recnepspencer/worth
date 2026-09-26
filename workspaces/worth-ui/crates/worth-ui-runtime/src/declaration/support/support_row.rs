@@ -54,21 +54,33 @@ impl UiDeclarationSupportRow {
     pub fn declared_query_binding_posture(&self) -> Option<&UiDeclaredQueryBindingPosture> {
         match &self.admitted_fact {
             UiDeclarationSupportAdmittedFact::QueryBinding(posture) => Some(posture),
-            _ => None,
+            UiDeclarationSupportAdmittedFact::None
+            | UiDeclarationSupportAdmittedFact::ServiceUsage(_)
+            | UiDeclarationSupportAdmittedFact::TouchMeaning(_)
+            | UiDeclarationSupportAdmittedFact::MeasurementPolicy(_)
+            | UiDeclarationSupportAdmittedFact::HostCapability(_) => None,
         }
     }
 
     pub fn declared_service_usage_posture(&self) -> Option<&UiDeclaredServiceUsagePosture> {
         match &self.admitted_fact {
             UiDeclarationSupportAdmittedFact::ServiceUsage(posture) => Some(posture),
-            _ => None,
+            UiDeclarationSupportAdmittedFact::None
+            | UiDeclarationSupportAdmittedFact::QueryBinding(_)
+            | UiDeclarationSupportAdmittedFact::TouchMeaning(_)
+            | UiDeclarationSupportAdmittedFact::MeasurementPolicy(_)
+            | UiDeclarationSupportAdmittedFact::HostCapability(_) => None,
         }
     }
 
     pub fn declared_touch_meaning_posture(&self) -> Option<&UiDeclaredTouchMeaningPosture> {
         match &self.admitted_fact {
             UiDeclarationSupportAdmittedFact::TouchMeaning(posture) => Some(posture),
-            _ => None,
+            UiDeclarationSupportAdmittedFact::None
+            | UiDeclarationSupportAdmittedFact::QueryBinding(_)
+            | UiDeclarationSupportAdmittedFact::ServiceUsage(_)
+            | UiDeclarationSupportAdmittedFact::MeasurementPolicy(_)
+            | UiDeclarationSupportAdmittedFact::HostCapability(_) => None,
         }
     }
 
@@ -77,14 +89,22 @@ impl UiDeclarationSupportRow {
     ) -> Option<&UiDeclaredMeasurementPolicyPosture> {
         match &self.admitted_fact {
             UiDeclarationSupportAdmittedFact::MeasurementPolicy(posture) => Some(posture),
-            _ => None,
+            UiDeclarationSupportAdmittedFact::None
+            | UiDeclarationSupportAdmittedFact::QueryBinding(_)
+            | UiDeclarationSupportAdmittedFact::ServiceUsage(_)
+            | UiDeclarationSupportAdmittedFact::TouchMeaning(_)
+            | UiDeclarationSupportAdmittedFact::HostCapability(_) => None,
         }
     }
 
     pub fn declared_host_capability_posture(&self) -> Option<&UiDeclaredHostCapabilityPosture> {
         match &self.admitted_fact {
             UiDeclarationSupportAdmittedFact::HostCapability(posture) => Some(posture),
-            _ => None,
+            UiDeclarationSupportAdmittedFact::None
+            | UiDeclarationSupportAdmittedFact::QueryBinding(_)
+            | UiDeclarationSupportAdmittedFact::ServiceUsage(_)
+            | UiDeclarationSupportAdmittedFact::TouchMeaning(_)
+            | UiDeclarationSupportAdmittedFact::MeasurementPolicy(_) => None,
         }
     }
 

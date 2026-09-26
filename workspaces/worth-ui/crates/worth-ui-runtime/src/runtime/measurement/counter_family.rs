@@ -88,7 +88,22 @@ impl WorthUiRuntimeCounterFamily {
         match self {
             Self::QueryRebindPlanning => WorthUiCounterAuthority::WorthUiRuntime,
             Self::DiagnosticsProjection => WorthUiCounterAuthority::DiagnosticsProjection,
-            _ => WorthUiCounterAuthority::WorthUiRuntime,
+            Self::ReloadCandidateAdmission
+            | Self::SourceIngress
+            | Self::ArtifactComparison
+            | Self::ImpactNarrowing
+            | Self::IdentityReplacement
+            | Self::DurableStateReconciliation
+            | Self::PlanAssembly
+            | Self::PlanLowering
+            | Self::LaneAdmission
+            | Self::OrdinaryLaneExecution
+            | Self::VirtualizedDataExecution
+            | Self::CanvasSpatialExecution
+            | Self::RealtimeOverlayExecution
+            | Self::Activation
+            | Self::CommittedAllocationActivation
+            | Self::SteadyFrameRendering => WorthUiCounterAuthority::WorthUiRuntime,
         }
     }
 

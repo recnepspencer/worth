@@ -264,9 +264,7 @@ impl super::WorthUiMountedSessionState {
             changed.extend(self.occurrence_geometry.sample_carried(pose.surface()));
         }
         if !changed.is_empty() {
-            self.identity
-                .mark_occurrence_geometry_changed(&changed)
-                .map_err(|_| Denial::StateRevisionExhausted)?;
+            self.identity.mark_occurrence_geometry_changed(&changed)?;
         }
         let mut transitions = Vec::new();
         let mut hit_work = crate::mounting::UiHitTestSpatialWork::default();

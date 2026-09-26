@@ -47,6 +47,38 @@ impl UiAppearanceInspectionDenial {
         }
     }
 
+    pub(crate) const fn from_state_vector(
+        denial: super::super::UiAppearanceStateVectorDenial,
+    ) -> Self {
+        use super::super::{
+            UiAppearanceStateAdapterDenial as Adapter, UiAppearanceStateVectorDenial as Vector,
+        };
+        match denial {
+            Vector::Adapter(Adapter::MissingSource(UiAppearanceStateAxis::Operability)) => {
+                Self::OperabilitySourceUnavailable
+            }
+            Vector::Adapter(
+                Adapter::MissingSource(
+                    axis @ (UiAppearanceStateAxis::Hover | UiAppearanceStateAxis::Pressed),
+                )
+                | Adapter::AmbiguousSource(
+                    axis @ (UiAppearanceStateAxis::Hover | UiAppearanceStateAxis::Pressed),
+                ),
+            ) => Self::InteractionSourceUnavailable(axis),
+            Vector::SnapshotChanged
+            | Vector::PresentationChanged
+            | Vector::Adapter(
+                Adapter::MissingOwner(_)
+                | Adapter::MissingSource(_)
+                | Adapter::AmbiguousSource(_)
+                | Adapter::StaleSource(_)
+                | Adapter::ForeignSource(_),
+            ) => Self::Basis,
+            #[cfg(test)]
+            Vector::RoleBinding(_) => Self::Basis,
+        }
+    }
+
     pub(crate) const fn retires_owner_dependent_paint(self) -> bool {
         matches!(
             self,

@@ -72,7 +72,13 @@ fn claims_specialized_handle(node_input: &WorthUiPlanNodeInput) -> bool {
         WorthUiPlanNodeInputFamily::QueryViewBinding => {
             node_input.query_binding_identity().is_some()
         }
-        _ => node_input.transition().is_some(),
+        WorthUiPlanNodeInputFamily::StateSlot
+        | WorthUiPlanNodeInputFamily::LayoutRegion
+        | WorthUiPlanNodeInputFamily::Accessibility
+        | WorthUiPlanNodeInputFamily::DiagnosticsRef
+        | WorthUiPlanNodeInputFamily::RenderResourceRef
+        | WorthUiPlanNodeInputFamily::CanvasSpatial
+        | WorthUiPlanNodeInputFamily::RealtimeOverlay => node_input.transition().is_some(),
     }
 }
 

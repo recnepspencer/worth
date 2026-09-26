@@ -115,7 +115,9 @@ where
                     recovery: provider_recovery(recovery, self.provider),
                 }
             }
-            _ => UiManagedIntentRecoveryPoll::Indeterminate {
+            UiIntentProviderPoll::PendingBeforeEffect
+            | UiIntentProviderPoll::PendingEffectMayHaveBegun
+            | UiIntentProviderPoll::Settled(_) => UiManagedIntentRecoveryPoll::Indeterminate {
                 detail: UiIntentProviderStop::stable(
                     "worth_ui.provider.protocol_recovery_unresolved",
                 ),

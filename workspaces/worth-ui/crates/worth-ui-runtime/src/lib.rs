@@ -7,6 +7,16 @@
     clippy::cast_possible_wrap,
     clippy::cast_sign_loss
 )]
+// A `_` arm quietly absorbs every variant added later, so a new outcome,
+// denial, or fact takes whatever branch the old catch-all chose. Runtime
+// matches name their variants; tests may still refuse the rest wholesale.
+#![cfg_attr(
+    not(test),
+    deny(
+        clippy::wildcard_enum_match_arm,
+        clippy::match_wildcard_for_single_variants
+    )
+)]
 
 mod admission;
 mod capability;

@@ -51,7 +51,15 @@ pub(super) fn intrinsic_contribution_scope(
         | UiLayoutOperatorChildParticipationRule::SplitPanels => {
             Some(UiConstraintAxisScope::Primary)
         }
-        _ => Some(UiConstraintAxisScope::Both),
+        UiLayoutOperatorChildParticipationRule::RootViewportFrame
+        | UiLayoutOperatorChildParticipationRule::GridCellPeers
+        | UiLayoutOperatorChildParticipationRule::MosaicTiles
+        | UiLayoutOperatorChildParticipationRule::OverlayLayers
+        | UiLayoutOperatorChildParticipationRule::ScrollContent
+        | UiLayoutOperatorChildParticipationRule::PortalAnchoredContent
+        | UiLayoutOperatorChildParticipationRule::ContainerChildren => {
+            Some(UiConstraintAxisScope::Both)
+        }
     }
 }
 
@@ -68,7 +76,14 @@ pub(super) fn sibling_negotiation_mode(
         | UiLayoutOperatorChildParticipationRule::MosaicTiles => {
             UiConstraintSiblingNegotiationMode::StablePeerTwoDimensional
         }
-        _ => UiConstraintSiblingNegotiationMode::None,
+        UiLayoutOperatorChildParticipationRule::None
+        | UiLayoutOperatorChildParticipationRule::RootViewportFrame
+        | UiLayoutOperatorChildParticipationRule::OverlayLayers
+        | UiLayoutOperatorChildParticipationRule::ScrollContent
+        | UiLayoutOperatorChildParticipationRule::PortalAnchoredContent
+        | UiLayoutOperatorChildParticipationRule::ContainerChildren => {
+            UiConstraintSiblingNegotiationMode::None
+        }
     }
 }
 
@@ -88,7 +103,16 @@ pub(super) fn equal_share_group(
         UiLayoutOperatorChildParticipationRule::SplitPanels => {
             UiConstraintEqualShareGroup::StablePeerPrimaryAxis
         }
-        _ => UiConstraintEqualShareGroup::None,
+        UiLayoutOperatorChildParticipationRule::None
+        | UiLayoutOperatorChildParticipationRule::RootViewportFrame
+        | UiLayoutOperatorChildParticipationRule::VerticalPeerFlow
+        | UiLayoutOperatorChildParticipationRule::HorizontalPeerFlow
+        | UiLayoutOperatorChildParticipationRule::OverlayLayers
+        | UiLayoutOperatorChildParticipationRule::ScrollContent
+        | UiLayoutOperatorChildParticipationRule::PortalAnchoredContent
+        | UiLayoutOperatorChildParticipationRule::ContainerChildren => {
+            UiConstraintEqualShareGroup::None
+        }
     }
 }
 

@@ -139,7 +139,10 @@ impl UiAllocationReceiptLedger {
             let counted = match verdict {
                 UiAllocationReuseVerdict::FullReuse => counters.reused(),
                 UiAllocationReuseVerdict::NewCommit => counters.replanned(),
-                _ => unreachable!("catalog preflight admitted only publishable verdicts"),
+                UiAllocationReuseVerdict::StructureReuseLeafRemeasure(_)
+                | UiAllocationReuseVerdict::Denied(_) => {
+                    unreachable!("catalog preflight admitted only publishable verdicts")
+                }
             };
             counted.map_err(|()| {
                 super::UiAllocationReceiptCommitOutcome::denied(

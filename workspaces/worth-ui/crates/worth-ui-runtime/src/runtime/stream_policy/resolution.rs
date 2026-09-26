@@ -360,7 +360,14 @@ fn classify(fact: &UiAllocationFrameSourceFact) -> Result<(UiAllocationStreamFam
                 (UiAllocationStreamFamily::TextInput, UiAllocationInvalidationFamily::TextContentChange),
             WorthUiTransientInteractionState::ResizePreview =>
                 (UiAllocationStreamFamily::ResizePreview, UiAllocationInvalidationFamily::ResizePreviewDelta),
-            _ => return Err(UiAllocationFrameResolutionDenial::UnsupportedSourcePosture),
+            WorthUiTransientInteractionState::Hover
+            | WorthUiTransientInteractionState::Pressed
+            | WorthUiTransientInteractionState::DragCapture
+            | WorthUiTransientInteractionState::PointerCapture
+            | WorthUiTransientInteractionState::AnimationTick
+            | WorthUiTransientInteractionState::InFlightGesture => {
+                return Err(UiAllocationFrameResolutionDenial::UnsupportedSourcePosture)
+            }
         },
         UiAllocationFrameSourceFact::HostMeasurement(value) => match value.result().value() {
             UiMeasurementValue::ViewportExtent(_) =>
@@ -369,7 +376,12 @@ fn classify(fact: &UiAllocationFrameSourceFact) -> Result<(UiAllocationStreamFam
                 (UiAllocationStreamFamily::ScrollExtentObservation, UiAllocationInvalidationFamily::ScrollExtentObservation),
             UiMeasurementValue::PortalAnchorRect(_) =>
                 (UiAllocationStreamFamily::PortalAnchorObservation, UiAllocationInvalidationFamily::PortalAnchorMovement),
-            _ => (UiAllocationStreamFamily::HostMeasurementReplacement, UiAllocationInvalidationFamily::HostMeasurementResultReplacement),
+            UiMeasurementValue::TextIntrinsicSize(_)
+            | UiMeasurementValue::TextBaselineMetrics(_)
+            | UiMeasurementValue::FontMetrics(_)
+            | UiMeasurementValue::NativeControlIntrinsicSize(_)
+            | UiMeasurementValue::DpiScaleFactor(_) =>
+                (UiAllocationStreamFamily::HostMeasurementReplacement, UiAllocationInvalidationFamily::HostMeasurementResultReplacement),
         },
     })
 }

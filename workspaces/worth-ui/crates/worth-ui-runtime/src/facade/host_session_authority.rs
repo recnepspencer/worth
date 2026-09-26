@@ -182,11 +182,14 @@ impl WorthUiHostSessionAuthority {
             {
                 outcome
             }
-            _ => UiHostSessionReleaseOutcome::ReleaseIndeterminate(
-                UiHostSessionReleaseIndeterminate::after_effects_may_have_begun(
-                    self.identity.value,
-                ),
-            ),
+            UiHostSessionReleaseOutcome::Released(_)
+            | UiHostSessionReleaseOutcome::ReleaseIndeterminate(_) => {
+                UiHostSessionReleaseOutcome::ReleaseIndeterminate(
+                    UiHostSessionReleaseIndeterminate::after_effects_may_have_begun(
+                        self.identity.value,
+                    ),
+                )
+            }
         };
         self.adapter_session_released =
             matches!(validated, UiHostSessionReleaseOutcome::Released(_));

@@ -120,28 +120,36 @@ impl UiIntentProjectedValue {
     pub(crate) fn into_text(self) -> Option<Arc<str>> {
         match self.value {
             UiIntentProjectedValueInner::Text(value) => Some(value),
-            _ => None,
+            UiIntentProjectedValueInner::Boolean(_)
+            | UiIntentProjectedValueInner::Unsigned64(_)
+            | UiIntentProjectedValueInner::Selection(_) => None,
         }
     }
 
     pub(crate) fn into_boolean(self) -> Option<bool> {
         match self.value {
             UiIntentProjectedValueInner::Boolean(value) => Some(value),
-            _ => None,
+            UiIntentProjectedValueInner::Text(_)
+            | UiIntentProjectedValueInner::Unsigned64(_)
+            | UiIntentProjectedValueInner::Selection(_) => None,
         }
     }
 
     pub(crate) fn into_unsigned64(self) -> Option<u64> {
         match self.value {
             UiIntentProjectedValueInner::Unsigned64(value) => Some(value),
-            _ => None,
+            UiIntentProjectedValueInner::Text(_)
+            | UiIntentProjectedValueInner::Boolean(_)
+            | UiIntentProjectedValueInner::Selection(_) => None,
         }
     }
 
     pub(crate) fn into_selection(self) -> Option<UiIntentSelectionValue> {
         match self.value {
             UiIntentProjectedValueInner::Selection(value) => Some(value),
-            _ => None,
+            UiIntentProjectedValueInner::Text(_)
+            | UiIntentProjectedValueInner::Boolean(_)
+            | UiIntentProjectedValueInner::Unsigned64(_) => None,
         }
     }
 }

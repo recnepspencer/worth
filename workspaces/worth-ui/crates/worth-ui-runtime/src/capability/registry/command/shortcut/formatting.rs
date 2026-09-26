@@ -30,7 +30,9 @@ fn format_stroke(
     if modifiers.alt() {
         parts.push(match platform {
             super::UiCommandShortcutPlatform::MacOs => "Option",
-            _ => "Alt",
+            super::UiCommandShortcutPlatform::Windows | super::UiCommandShortcutPlatform::Linux => {
+                "Alt"
+            }
         });
     }
     if modifiers.shift() {
@@ -39,7 +41,9 @@ fn format_stroke(
     if modifiers.meta() {
         parts.push(match platform {
             super::UiCommandShortcutPlatform::MacOs => "Cmd",
-            _ => "Meta",
+            super::UiCommandShortcutPlatform::Windows | super::UiCommandShortcutPlatform::Linux => {
+                "Meta"
+            }
         });
     }
     parts.push(stroke.key().code().canonical_name());

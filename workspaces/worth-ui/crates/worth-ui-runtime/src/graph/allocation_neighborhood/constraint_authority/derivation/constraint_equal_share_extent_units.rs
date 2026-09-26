@@ -32,7 +32,12 @@ fn extent_for(
     let (width, height) = match value {
         UiMeasurementValue::ViewportExtent(value) => (value.width, value.height),
         UiMeasurementValue::ScrollContainerViewport(value) => (value.width, value.height),
-        _ => return None,
+        UiMeasurementValue::TextIntrinsicSize(_)
+        | UiMeasurementValue::TextBaselineMetrics(_)
+        | UiMeasurementValue::FontMetrics(_)
+        | UiMeasurementValue::NativeControlIntrinsicSize(_)
+        | UiMeasurementValue::DpiScaleFactor(_)
+        | UiMeasurementValue::PortalAnchorRect(_) => return None,
     };
     match axis_scope {
         UiConstraintAxisScope::Primary => Some(primary_extent(width, height, primary_axis)),

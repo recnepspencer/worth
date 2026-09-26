@@ -94,7 +94,8 @@ impl ScriptedPresentationHost {
                     .insert(identity, (view.frame(), view.binding()))
                     .is_none());
             }
-            _ => {}
+            UiHostSurfacePresentationOutcome::RejectedBeforeEffects(_)
+            | UiHostSurfacePresentationOutcome::PresentationIndeterminate => {}
         }
     }
 

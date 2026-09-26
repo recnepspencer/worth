@@ -1,8 +1,7 @@
 use super::{
-    intent_posture, reconstruction_matches_progress, reconstruction_settled,
-    WorthUiNativeApplicationShell, WorthUiNativeManagedRebindDenial,
-    WorthUiNativeManagedRebindProgress, WorthUiNativeManagedRebindStop,
-    WorthUiNativePendingManagedRebind,
+    intent_posture, reconstruction_matches_progress, WorthUiNativeApplicationShell,
+    WorthUiNativeManagedRebindDenial, WorthUiNativeManagedRebindProgress,
+    WorthUiNativeManagedRebindStop, WorthUiNativePendingManagedRebind,
 };
 
 type Pending = crate::facade::entry::native_intent_posture::DetachedNativeIntentPosturePending;
@@ -50,7 +49,9 @@ impl WorthUiNativeApplicationShell {
                 );
                 Ok(BeginOutcome::Pending)
             }
-            outcome if reconstruction_settled(&outcome) => {
+            crate::mounting::UiMountedFrameOutcome::Published(_)
+            | crate::mounting::UiMountedFrameOutcome::Unchanged(_)
+            | crate::mounting::UiMountedFrameOutcome::Reconciled(_) => {
                 self.managed_rebind_completion_tick =
                     self.managed_rebind_completion_tick.saturating_add(1);
                 let outcome =
@@ -58,9 +59,15 @@ impl WorthUiNativeApplicationShell {
                 let normalized = intent_posture::normalize_managed_intent_posture(outcome);
                 Ok(self.finish_reconstructed_intent_posture_begin(normalized))
             }
-            _ => Ok(BeginOutcome::Stopped(
-                WorthUiNativeManagedRebindStop::PredecessorReconstructionFailed,
-            )),
+            crate::mounting::UiMountedFrameOutcome::RejectedBeforeEffects(_)
+            | crate::mounting::UiMountedFrameOutcome::Superseded(_)
+            | crate::mounting::UiMountedFrameOutcome::RetentionDenied(_)
+            | crate::mounting::UiMountedFrameOutcome::AdmissionDenied(_)
+            | crate::mounting::UiMountedFrameOutcome::CompletionDenied(_) => {
+                Ok(BeginOutcome::Stopped(
+                    WorthUiNativeManagedRebindStop::PredecessorReconstructionFailed,
+                ))
+            }
         }
     }
 
@@ -96,7 +103,9 @@ impl WorthUiNativeApplicationShell {
                 );
                 Ok(WorthUiNativeManagedRebindProgress::AwaitingProgress)
             }
-            outcome if reconstruction_settled(&outcome) => {
+            crate::mounting::UiMountedFrameOutcome::Published(_)
+            | crate::mounting::UiMountedFrameOutcome::Unchanged(_)
+            | crate::mounting::UiMountedFrameOutcome::Reconciled(_) => {
                 let outcome =
                     retry.complete(&mut self.session, self.managed_rebind_completion_tick);
                 Ok(intent_posture::finish(
@@ -104,9 +113,16 @@ impl WorthUiNativeApplicationShell {
                     outcome,
                 ))
             }
-            _ => Ok(WorthUiNativeManagedRebindProgress::Stopped(
-                WorthUiNativeManagedRebindStop::PredecessorReconstructionFailed,
-            )),
+            crate::mounting::UiMountedFrameOutcome::RejectedBeforeEffects(_)
+            | crate::mounting::UiMountedFrameOutcome::PresentationIndeterminate(_)
+            | crate::mounting::UiMountedFrameOutcome::Superseded(_)
+            | crate::mounting::UiMountedFrameOutcome::RetentionDenied(_)
+            | crate::mounting::UiMountedFrameOutcome::AdmissionDenied(_)
+            | crate::mounting::UiMountedFrameOutcome::CompletionDenied(_) => {
+                Ok(WorthUiNativeManagedRebindProgress::Stopped(
+                    WorthUiNativeManagedRebindStop::PredecessorReconstructionFailed,
+                ))
+            }
         }
     }
 
@@ -149,7 +165,9 @@ impl WorthUiNativeApplicationShell {
                 );
                 Ok(WorthUiNativeManagedRebindProgress::AwaitingProgress)
             }
-            outcome if reconstruction_settled(&outcome) => {
+            crate::mounting::UiMountedFrameOutcome::Published(_)
+            | crate::mounting::UiMountedFrameOutcome::Unchanged(_)
+            | crate::mounting::UiMountedFrameOutcome::Reconciled(_) => {
                 let outcome =
                     retry.complete(&mut self.session, self.managed_rebind_completion_tick);
                 Ok(intent_posture::finish(
@@ -157,9 +175,16 @@ impl WorthUiNativeApplicationShell {
                     outcome,
                 ))
             }
-            _ => Ok(WorthUiNativeManagedRebindProgress::Stopped(
-                WorthUiNativeManagedRebindStop::PredecessorReconstructionFailed,
-            )),
+            crate::mounting::UiMountedFrameOutcome::RejectedBeforeEffects(_)
+            | crate::mounting::UiMountedFrameOutcome::PresentationIndeterminate(_)
+            | crate::mounting::UiMountedFrameOutcome::Superseded(_)
+            | crate::mounting::UiMountedFrameOutcome::RetentionDenied(_)
+            | crate::mounting::UiMountedFrameOutcome::AdmissionDenied(_)
+            | crate::mounting::UiMountedFrameOutcome::CompletionDenied(_) => {
+                Ok(WorthUiNativeManagedRebindProgress::Stopped(
+                    WorthUiNativeManagedRebindStop::PredecessorReconstructionFailed,
+                ))
+            }
         }
     }
 
@@ -224,7 +249,9 @@ impl WorthUiNativeApplicationShell {
                 );
                 Ok(WorthUiNativeManagedRebindProgress::AwaitingProgress)
             }
-            outcome if reconstruction_settled(&outcome) => {
+            crate::mounting::UiMountedFrameOutcome::Published(_)
+            | crate::mounting::UiMountedFrameOutcome::Unchanged(_)
+            | crate::mounting::UiMountedFrameOutcome::Reconciled(_) => {
                 let outcome =
                     retry.complete(&mut self.session, self.managed_rebind_completion_tick);
                 Ok(intent_posture::finish(
@@ -232,9 +259,16 @@ impl WorthUiNativeApplicationShell {
                     outcome,
                 ))
             }
-            _ => Ok(WorthUiNativeManagedRebindProgress::Stopped(
-                WorthUiNativeManagedRebindStop::PredecessorReconstructionFailed,
-            )),
+            crate::mounting::UiMountedFrameOutcome::RejectedBeforeEffects(_)
+            | crate::mounting::UiMountedFrameOutcome::PresentationIndeterminate(_)
+            | crate::mounting::UiMountedFrameOutcome::Superseded(_)
+            | crate::mounting::UiMountedFrameOutcome::RetentionDenied(_)
+            | crate::mounting::UiMountedFrameOutcome::AdmissionDenied(_)
+            | crate::mounting::UiMountedFrameOutcome::CompletionDenied(_) => {
+                Ok(WorthUiNativeManagedRebindProgress::Stopped(
+                    WorthUiNativeManagedRebindStop::PredecessorReconstructionFailed,
+                ))
+            }
         }
     }
 

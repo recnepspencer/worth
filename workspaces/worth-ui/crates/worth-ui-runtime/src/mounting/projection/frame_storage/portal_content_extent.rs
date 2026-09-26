@@ -51,7 +51,7 @@ impl UiMountedSemanticProjection {
                     has_shadow = true;
                     shadow.sigma().points_f32() * 3.0
                 }
-                _ => 0.0,
+                UiSurfaceGeometry::RoundedRectangle | UiSurfaceGeometry::Vector(_) => 0.0,
             };
             let child = bounds(child.occurrence_allocation.into_layout_space())?;
             if child.coordinate_space() != anchor.coordinate_space() {

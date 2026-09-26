@@ -98,7 +98,9 @@ impl UiMountedPresentationCoordinator {
                         .is_none_or(|state| acceptance.accept(state, witness).is_err())
             }
             UiMotionSamplePresentationOutcome::PresentationIndeterminate => true,
-            _ => false,
+            UiMotionSamplePresentationOutcome::RejectedBeforeEffects
+            | UiMotionSamplePresentationOutcome::InFlight
+            | UiMotionSamplePresentationOutcome::Superseded => false,
         };
         if failed {
             self.reconstruction_bindings.insert(binding);

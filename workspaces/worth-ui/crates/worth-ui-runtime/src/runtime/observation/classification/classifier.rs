@@ -154,7 +154,14 @@ impl UiChangeClassifier {
                 UiAdmittedObservationPayload::IntentPosture(observation) => {
                     owner::intent::classify(observation)
                 }
-                _ => unreachable!("intent consequence admission seals only declared families"),
+                UiAdmittedObservationPayload::Source(_)
+                | UiAdmittedObservationPayload::Host(_)
+                | UiAdmittedObservationPayload::PointerPresence(_)
+                | UiAdmittedObservationPayload::Measurement(_)
+                | UiAdmittedObservationPayload::CommittedScrollExtent(_)
+                | UiAdmittedObservationPayload::CommittedPortalAnchor(_) => {
+                    unreachable!("intent consequence admission seals only declared families")
+                }
             })
             .collect::<Vec<_>>()
             .into_boxed_slice();

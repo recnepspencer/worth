@@ -132,7 +132,11 @@ impl UiPresentationAsyncRuntime {
                 worth_ui_query_binding::WorthUiPresentationAsyncPosture::Superseded => {
                     Ok(UiPresentationAsyncPresentedAdmission::Superseded)
                 }
-                posture => {
+                posture @ (worth_ui_query_binding::WorthUiPresentationAsyncPosture::Pending
+                | worth_ui_query_binding::WorthUiPresentationAsyncPosture::Stale
+                | worth_ui_query_binding::WorthUiPresentationAsyncPosture::Failed
+                | worth_ui_query_binding::WorthUiPresentationAsyncPosture::Cancelled
+                | worth_ui_query_binding::WorthUiPresentationAsyncPosture::Unresolved) => {
                     unreachable!("presented completion cannot settle into {posture:?} posture")
                 }
             },

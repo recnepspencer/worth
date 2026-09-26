@@ -386,6 +386,12 @@ fn has_foreign_role_tokens(posture_tokens: &[&str], family: UiDeclarationFamilyK
         UiDeclarationFamilyKind::Intent => posture_tokens
             .iter()
             .any(|token| token.starts_with("query-binding:")),
-        _ => false,
+        UiDeclarationFamilyKind::Page
+        | UiDeclarationFamilyKind::PageSet
+        | UiDeclarationFamilyKind::Region
+        | UiDeclarationFamilyKind::Mosaic
+        | UiDeclarationFamilyKind::LocalComposition
+        | UiDeclarationFamilyKind::Control
+        | UiDeclarationFamilyKind::DiagnosticSurface => false,
     }
 }

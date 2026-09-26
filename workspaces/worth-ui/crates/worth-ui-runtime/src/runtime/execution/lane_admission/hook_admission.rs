@@ -50,7 +50,15 @@ fn reject_forbidden_hook_authority(
             counters.record_private_lane_claim_denial();
             WorthUiUnsupportedHookDenialReason::PrivateLaneClaim
         }
-        _ => return Ok(()),
+        WorthUiLaneAdapterHookKind::SourceIngress
+        | WorthUiLaneAdapterHookKind::DebouncePolicy
+        | WorthUiLaneAdapterHookKind::IdentitySeedContribution
+        | WorthUiLaneAdapterHookKind::DurableStateFamilyAdmission
+        | WorthUiLaneAdapterHookKind::ComponentLowering
+        | WorthUiLaneAdapterHookKind::LaneAdapterMechanics
+        | WorthUiLaneAdapterHookKind::DiagnosticsProjection
+        | WorthUiLaneAdapterHookKind::CounterFamilies
+        | WorthUiLaneAdapterHookKind::ReportMaterialization => return Ok(()),
     };
     counters.record_forbidden_hook();
     Err(WorthUiUnsupportedHookDenial::new(

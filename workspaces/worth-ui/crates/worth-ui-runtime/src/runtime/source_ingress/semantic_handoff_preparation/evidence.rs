@@ -1,6 +1,6 @@
 use worth_ui_dsl::{
     WorthUiAuthoredMode, WorthUiDslProtocolIdentity, WorthUiSealedSemanticPackage,
-    WorthUiSemanticPackageIdentity,
+    WorthUiSemanticBlock, WorthUiSemanticDeclaration, WorthUiSemanticPackageIdentity,
 };
 
 use super::WorthUiAuthoredOverlayMaterial;
@@ -145,7 +145,23 @@ impl WorthUiSemanticHandoffEvidence {
 fn authored_component_command_scopes(
     package: &WorthUiSealedSemanticPackage,
 ) -> Box<[crate::capability::UiCommandRouteScopeIdentity]> {
-    let mut scopes = package
+    let mut scopes = authored_components(package)
+        .map(|component| {
+            crate::capability::UiCommandRouteScopeIdentity::for_authored_component(
+                component.name_text(),
+            )
+        })
+        .collect::<Vec<_>>();
+    scopes.sort_unstable();
+    scopes.dedup();
+    scopes.into_boxed_slice()
+}
+
+/// Every component the sealed package declares, across its canonical modules.
+fn authored_components(
+    package: &WorthUiSealedSemanticPackage,
+) -> impl Iterator<Item = &WorthUiSemanticBlock> {
+    package
         .module_ids()
         .iter()
         .flat_map(|module_id| {
@@ -156,17 +172,17 @@ fn authored_component_command_scopes(
                 .iter()
         })
         .filter_map(|declaration| match declaration {
-            worth_ui_dsl::WorthUiSemanticDeclaration::Component(component) => Some(
-                crate::capability::UiCommandRouteScopeIdentity::for_authored_component(
-                    component.name_text(),
-                ),
-            ),
-            _ => None,
+            WorthUiSemanticDeclaration::Component(component) => Some(component),
+            WorthUiSemanticDeclaration::Import(_)
+            | WorthUiSemanticDeclaration::Surface(_)
+            | WorthUiSemanticDeclaration::Binding(_)
+            | WorthUiSemanticDeclaration::Projection(_)
+            | WorthUiSemanticDeclaration::Token(_)
+            | WorthUiSemanticDeclaration::SemanticArtifact(_)
+            | WorthUiSemanticDeclaration::AppearanceRole(_)
+            | WorthUiSemanticDeclaration::Backdrop(_)
+            | WorthUiSemanticDeclaration::Layout(_) => None,
         })
-        .collect::<Vec<_>>();
-    scopes.sort_unstable();
-    scopes.dedup();
-    scopes.into_boxed_slice()
 }
 
 impl WorthUiAuthoredServiceDeclaration {
@@ -358,36 +374,21 @@ fn projection_contents(
             )
         })
         .collect::<std::collections::BTreeMap<_, _>>();
-    package
-        .module_ids()
-        .iter()
-        .flat_map(|module_id| {
-            package
-                .module(module_id)
-                .expect("sealed package contains every canonical module")
-                .declarations()
+    authored_components(package)
+        .flat_map(|component| {
+            component
+                .structure()
+                .projection_contents()
                 .iter()
-                .filter_map(|declaration| match declaration {
-                    worth_ui_dsl::WorthUiSemanticDeclaration::Component(component) => {
-                        Some(component)
+                .map(|content| {
+                    let view = views[content.projection_identity_text()];
+                    WorthUiProjectionContentEdge {
+                        component_identity: format!("component:{}", component.name_text()).into(),
+                        projection_identity: worth_ui_query_binding::WorthUiQueryViewIdentity::new(
+                            view,
+                        )
+                        .expect("sealed DSL projection view identity is valid"),
                     }
-                    _ => None,
-                })
-                .flat_map(|component| {
-                    component
-                        .structure()
-                        .projection_contents()
-                        .iter()
-                        .map(|content| {
-                            let view = views[content.projection_identity_text()];
-                            WorthUiProjectionContentEdge {
-                                component_identity: format!("component:{}", component.name_text())
-                                    .into(),
-                                projection_identity:
-                                    worth_ui_query_binding::WorthUiQueryViewIdentity::new(view)
-                                        .expect("sealed DSL projection view identity is valid"),
-                            }
-                        })
                 })
         })
         .collect()

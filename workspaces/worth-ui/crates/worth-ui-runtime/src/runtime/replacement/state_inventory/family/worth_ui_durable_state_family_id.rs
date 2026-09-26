@@ -30,7 +30,13 @@ impl WorthUiDurableStateFamilyId {
     pub fn is_explicit_custom_family(&self) -> bool {
         match self {
             Self::Custom(id) => !id.trim().is_empty(),
-            _ => false,
+            Self::FocusChain
+            | Self::ScrollAnchor
+            | Self::SelectionRange
+            | Self::TextEditBuffer
+            | Self::SplitterPosition
+            | Self::TabState
+            | Self::PanelVisibility => false,
         }
     }
 }

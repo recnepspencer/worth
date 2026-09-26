@@ -38,7 +38,9 @@ impl UiNativeObservationIngressSettlement {
                 UiHostInteractionIngressOutcome::Applied(receipt) => {
                     Some(receipt.focus_publications())
                 }
-                _ => None,
+                UiHostInteractionIngressOutcome::Duplicate(_)
+                | UiHostInteractionIngressOutcome::Quarantined(_)
+                | UiHostInteractionIngressOutcome::Denied(_) => None,
             })
             .flatten()
     }

@@ -9,10 +9,11 @@ use super::model::{
     UiPointerGestureRuntimeState, UiTargetedPointerGesture, UI_ACTIVE_POINTER_GESTURE_LIMIT,
 };
 use super::next;
-use crate::runtime::interaction::gesture::{UiPointerGestureStop, UiPointerGestureStopReason};
-use crate::runtime::interaction::targeting::{
-    issue_continuity, resolve_presented_target, UiPointerGestureContinuityDenial,
+use super::stop_reason::{
+    capture_change_reason, map_continuity_denial, pointer_kind_change_reason,
 };
+use crate::runtime::interaction::gesture::{UiPointerGestureStop, UiPointerGestureStopReason};
+use crate::runtime::interaction::targeting::{issue_continuity, resolve_presented_target};
 
 #[derive(Clone, Copy)]
 struct UiPointerButtonReport<'world> {
@@ -70,7 +71,15 @@ impl UiPointerGestureRuntimeState {
             UiHostObservationPayload::WindowFocus { focused: false, .. } => {
                 self.focus_loss(report.sequence())
             }
-            _ => Vec::new(),
+            UiHostObservationPayload::Viewport { .. }
+            | UiHostObservationPayload::DeviceScale { .. }
+            | UiHostObservationPayload::Keyboard { .. }
+            | UiHostObservationPayload::WindowFocus { .. }
+            | UiHostObservationPayload::ScrollDelta { .. }
+            | UiHostObservationPayload::Clock { .. }
+            | UiHostObservationPayload::Tick { .. }
+            | UiHostObservationPayload::TextInput { .. }
+            | UiHostObservationPayload::ImeComposition { .. } => Vec::new(),
         }
     }
 
@@ -349,45 +358,5 @@ impl UiPointerGestureRuntimeState {
             true,
             reason,
         ))
-    }
-}
-
-fn capture_change_reason(
-    active: &UiActivePointerGesture,
-    observed: UiHostPointerCaptureEpoch,
-) -> Option<UiPointerGestureStopReason> {
-    (active.capture_epoch != observed).then_some(UiPointerGestureStopReason::CaptureChanged {
-        expected: active.capture_epoch,
-        observed,
-    })
-}
-
-fn pointer_kind_change_reason(
-    active: &UiActivePointerGesture,
-    observed: crate::runtime::interaction::UiPrimaryPointerKind,
-) -> Option<UiPointerGestureStopReason> {
-    (active.kind != observed).then_some(UiPointerGestureStopReason::PointerDeviceKindChanged {
-        expected: active.kind.host_kind(),
-        observed: observed.host_kind(),
-    })
-}
-
-fn map_continuity_denial(denial: UiPointerGestureContinuityDenial) -> UiPointerGestureStopReason {
-    match denial {
-        UiPointerGestureContinuityDenial::PresentationDidNotAdvance => {
-            UiPointerGestureStopReason::PresentationDidNotAdvance
-        }
-        UiPointerGestureContinuityDenial::SurfaceChanged => {
-            UiPointerGestureStopReason::SurfaceChanged
-        }
-        UiPointerGestureContinuityDenial::BindingChanged => {
-            UiPointerGestureStopReason::BindingChanged
-        }
-        UiPointerGestureContinuityDenial::MountedIncarnationChanged => {
-            UiPointerGestureStopReason::MountedIncarnationChanged
-        }
-        UiPointerGestureContinuityDenial::TargetChangedWithinPresentation => {
-            UiPointerGestureStopReason::TargetChangedWithinPresentation
-        }
     }
 }

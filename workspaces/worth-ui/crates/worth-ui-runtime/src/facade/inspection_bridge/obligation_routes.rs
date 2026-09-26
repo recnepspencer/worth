@@ -32,7 +32,14 @@ pub(crate) fn inspect_retained_obligation_query(
             canonical_touch_for_node(app, *graph_node_digest, None)
                 .map(|touch| inspect_selected_obligations(app, touch, query))
         }
-        _ => None,
+        UiInspectionTarget::ProductRoot
+        | UiInspectionTarget::DeclaredSurface { .. }
+        | UiInspectionTarget::GraphNodeIdentity { .. }
+        | UiInspectionTarget::PublishedAspect { .. }
+        | UiInspectionTarget::ConsumedAspect { .. }
+        | UiInspectionTarget::DeclarationIdentity { .. }
+        | UiInspectionTarget::AuthoredSourceProvenance { .. }
+        | _ => None,
     }
 }
 

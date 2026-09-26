@@ -103,12 +103,14 @@ fn shown_where<'a>(
     move |bounds| {
         let shown = match placement {
             UiMountedPlacement::Hidden => bounds.into_layout_space(),
-            placement => placement
-                .present(bounds)
-                .ok()
-                .flatten()
-                .ok_or(())?
-                .into_shown(),
+            placement @ (UiMountedPlacement::InPlace | UiMountedPlacement::ThroughPortal(_)) => {
+                placement
+                    .present(bounds)
+                    .ok()
+                    .flatten()
+                    .ok_or(())?
+                    .into_shown()
+            }
         };
         frame
             .presentation_delta_source()

@@ -40,7 +40,7 @@ impl UiMountedProjectionFrame {
         match geometry.clip {
             Clip::Unresolved(denial) => return Err(Denial::AncestorClip(denial)),
             Clip::Suppressed => return Ok(None),
-            _ => {}
+            Clip::Unclipped | Clip::Ancestor(_) => {}
         }
         geometry
             .placement()

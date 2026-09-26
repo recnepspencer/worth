@@ -88,7 +88,9 @@ impl UiMountedProjectionFrame {
                         identity: worth_ui_host_contract::UiMountedPaintCommandIdentity::semantic_text(&mechanic), mechanic,
                     })
             }
-            other => Some(other),
+            other @ worth_ui_host_contract::UiMountedPaintCommand::PortalOverlay { .. } => {
+                Some(other)
+            }
         }).collect();
         for input in self
             .portal_overlays

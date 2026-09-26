@@ -20,7 +20,13 @@ pub(super) fn resolved_family_policy(
             UiAllocationStreamFamily::DurableResize => {
                 UiAllocationResolvedCommitLane::DurableResize
             }
-            _ => UiAllocationResolvedCommitLane::Ordinary,
+            UiAllocationStreamFamily::TextInput
+            | UiAllocationStreamFamily::QueryProjection
+            | UiAllocationStreamFamily::ScrollExtentObservation
+            | UiAllocationStreamFamily::PortalAnchorObservation
+            | UiAllocationStreamFamily::HostMeasurementReplacement => {
+                UiAllocationResolvedCommitLane::Ordinary
+            }
         },
         target: policy.target(),
         cadence: policy.cadence(),

@@ -79,7 +79,10 @@ impl WorthUiPlanTopologyAssembler {
                     Default::default(),
                 )
             }
-            _ => regional_denial(),
+            super::WorthUiPlanRegionSuccessorDenial::CreateCollidesWithPredecessor
+            | super::WorthUiPlanRegionSuccessorDenial::MissingPredecessorRegion
+            | super::WorthUiPlanRegionSuccessorDenial::DuplicateMutation
+            | super::WorthUiPlanRegionSuccessorDenial::RegionalStore(_) => regional_denial(),
         })?;
         let lane_admission =
             crate::runtime::execution::lane_admission::WorthUiLaneAdmissionPlanner::admit_regional_successor(

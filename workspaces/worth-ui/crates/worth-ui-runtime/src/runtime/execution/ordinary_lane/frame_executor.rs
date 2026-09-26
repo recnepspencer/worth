@@ -315,6 +315,6 @@ fn touch_row(row: &WorthUiOrdinaryLaneNode, counters: &mut WorthUiOrdinaryLaneCo
         WorthUiOrdinaryExecutionLane::CommandSurface => counters.record_command_surface_touch(),
         WorthUiOrdinaryExecutionLane::TokenStyleSupport => counters.record_token_support_touch(),
         WorthUiOrdinaryExecutionLane::StateSlotSupport => counters.record_state_slot_touch(),
-        _ => {}
+        WorthUiOrdinaryExecutionLane::WidgetShell | WorthUiOrdinaryExecutionLane::ShellRegion => {}
     }
 }

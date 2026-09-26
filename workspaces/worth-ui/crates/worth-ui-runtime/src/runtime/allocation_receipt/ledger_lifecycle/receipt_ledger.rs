@@ -283,7 +283,10 @@ impl UiAllocationReceiptLedger {
             super::replan_commit_mode::UiAllocationReplanCommitMode::Viewport(basis) => {
                 super::viewport_inspection::attach_viewport_inspection(committed, basis)
             }
-            _ => committed,
+            super::replan_commit_mode::UiAllocationReplanCommitMode::Ordinary(_)
+            | super::replan_commit_mode::UiAllocationReplanCommitMode::DurableResize { .. } => {
+                committed
+            }
         };
         Ok((committed, catalog_candidates))
     }

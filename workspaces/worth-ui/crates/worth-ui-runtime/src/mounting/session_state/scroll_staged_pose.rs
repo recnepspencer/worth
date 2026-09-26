@@ -54,9 +54,7 @@ impl super::WorthUiMountedSessionState {
         }
         changed.sort_unstable();
         changed.dedup();
-        self.identity
-            .mark_occurrence_geometry_changed(&changed)
-            .map_err(|_| Denial::StateRevisionExhausted)?;
+        self.identity.mark_occurrence_geometry_changed(&changed)?;
         for pose in poses {
             self.occurrence_geometry
                 .release_sample_carried(pose.surface());

@@ -151,7 +151,10 @@ impl UiIntentPayloadFieldDescriptor {
                     observed: self.byte_budget,
                 })
             }
-            _ => Ok(()),
+            UiIntentPayloadFieldKind::Text
+            | UiIntentPayloadFieldKind::Boolean
+            | UiIntentPayloadFieldKind::Unsigned64
+            | UiIntentPayloadFieldKind::Selection => Ok(()),
         }
     }
 }

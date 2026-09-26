@@ -20,6 +20,16 @@ pub(in crate::runtime::observation::classification) fn classify(
         worth_ui_host_contract::UiHostObservationPayload::DeviceScale { micros } => Ok(
             UiProducedFact::HostDeviceScale(UiHostDeviceScaleChangedFact::new(*micros)),
         ),
-        _ => unreachable!("host admission seals only supported semantic families"),
+        worth_ui_host_contract::UiHostObservationPayload::PointerMotion { .. }
+        | worth_ui_host_contract::UiHostObservationPayload::PointerButton { .. }
+        | worth_ui_host_contract::UiHostObservationPayload::Keyboard { .. }
+        | worth_ui_host_contract::UiHostObservationPayload::WindowFocus { .. }
+        | worth_ui_host_contract::UiHostObservationPayload::ScrollDelta { .. }
+        | worth_ui_host_contract::UiHostObservationPayload::Clock { .. }
+        | worth_ui_host_contract::UiHostObservationPayload::Tick { .. }
+        | worth_ui_host_contract::UiHostObservationPayload::TextInput { .. }
+        | worth_ui_host_contract::UiHostObservationPayload::ImeComposition { .. } => {
+            unreachable!("host admission seals only supported semantic families")
+        }
     }
 }
