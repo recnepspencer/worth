@@ -67,10 +67,31 @@ impl WorthUiPreparedDeclarationMaterial {
     }
 }
 
+/// A declaration whose root regions name more than one sizing contract.
+#[derive(Clone, Eq, PartialEq)]
+pub(crate) struct WorthUiDeclarationProjectionDenial {
+    pub(super) module_path: String,
+    pub(super) declaration_index: usize,
+    pub(super) cause: crate::source::WorthUiMosaicSizingContractProjectionDenial,
+}
+
+// Written out rather than derived: dead-code analysis ignores a derived Debug,
+// and these fields are read only to report the denial.
+impl std::fmt::Debug for WorthUiDeclarationProjectionDenial {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("WorthUiDeclarationProjectionDenial")
+            .field("module_path", &self.module_path)
+            .field("declaration_index", &self.declaration_index)
+            .field("cause", &self.cause)
+            .finish()
+    }
+}
+
 pub(in crate::runtime::source_ingress) fn prepare_declaration_material(
     package: &WorthUiSealedSemanticPackage,
     structured: &WorthUiLegallyStructuredArtifactInput,
-) -> Result<WorthUiPreparedDeclarationMaterial, ()> {
+) -> Result<WorthUiPreparedDeclarationMaterial, WorthUiDeclarationProjectionDenial> {
     let mut artifacts = Vec::with_capacity(package.declaration_lowering_receipts().len() + 1);
     artifacts.push(UiDeclarationLowering::lower_runtime_bootstrap());
     artifacts.extend(
@@ -198,7 +219,7 @@ type RuntimeStructuralClaimKey = (String, usize);
 enum RuntimeStructuralClaimEntry {
     NonStructuralDeclaration,
     StructuralDeclarationWithoutSizing,
-    Denied,
+    Denied(WorthUiDeclarationProjectionDenial),
     Admitted {
         key: RuntimeStructuralClaimKey,
         claims: RuntimeStructuralClaims,
@@ -207,7 +228,10 @@ enum RuntimeStructuralClaimEntry {
 
 fn runtime_structural_claims(
     structured: &WorthUiLegallyStructuredArtifactInput,
-) -> Result<BTreeMap<RuntimeStructuralClaimKey, RuntimeStructuralClaims>, ()> {
+) -> Result<
+    BTreeMap<RuntimeStructuralClaimKey, RuntimeStructuralClaims>,
+    WorthUiDeclarationProjectionDenial,
+> {
     let mut claims = BTreeMap::new();
     for module_id in structured.module_ids() {
         let Some(module) = structured.module(module_id) else {
@@ -217,7 +241,7 @@ fn runtime_structural_claims(
             match structural_claim_entry(node) {
                 RuntimeStructuralClaimEntry::NonStructuralDeclaration
                 | RuntimeStructuralClaimEntry::StructuralDeclarationWithoutSizing => {}
-                RuntimeStructuralClaimEntry::Denied => return Err(()),
+                RuntimeStructuralClaimEntry::Denied(denial) => return Err(denial),
                 RuntimeStructuralClaimEntry::Admitted {
                     key,
                     claims: admitted,
@@ -270,7 +294,11 @@ fn structural_claim_entry(
             claims,
         },
         Ok(None) => RuntimeStructuralClaimEntry::StructuralDeclarationWithoutSizing,
-        Err(()) => RuntimeStructuralClaimEntry::Denied,
+        Err(cause) => RuntimeStructuralClaimEntry::Denied(WorthUiDeclarationProjectionDenial {
+            module_path: provenance.module_path().to_owned(),
+            declaration_index: provenance.declaration_index(),
+            cause,
+        }),
     }
 }
 
@@ -278,9 +306,11 @@ fn structural_claims(
     module_path: &str,
     membership_identity: String,
     structure: &WorthUiMosaicStructureFacts,
-) -> Result<Option<RuntimeStructuralClaims>, ()> {
-    let Some(sizing_contract_id) = structure.unique_root_sizing_contract_id().map_err(|_| ())?
-    else {
+) -> Result<
+    Option<RuntimeStructuralClaims>,
+    crate::source::WorthUiMosaicSizingContractProjectionDenial,
+> {
+    let Some(sizing_contract_id) = structure.unique_root_sizing_contract_id()? else {
         return Ok(None);
     };
     Ok(Some(RuntimeStructuralClaims {

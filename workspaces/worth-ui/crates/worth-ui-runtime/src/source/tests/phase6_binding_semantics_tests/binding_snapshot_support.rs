@@ -29,6 +29,7 @@ pub(super) fn snapshot_with_support_catalog(
         task_presentations: base.task_presentations().clone(),
         theme_tokens: base.theme_tokens().clone(),
         support_catalog,
+        registration_rejections: base.registration_rejections().clone(),
     })
 }
 

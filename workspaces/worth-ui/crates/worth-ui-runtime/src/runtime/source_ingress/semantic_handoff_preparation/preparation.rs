@@ -10,7 +10,8 @@ use super::{
     authored_layout::admit_authored_layouts, prepare_declaration_material,
     service_declaration_admission::admit_service_declarations,
     WorthUiPreparedSemanticHandoffMaterial, WorthUiSemanticHandoffEvidence,
-    WorthUiSemanticHandoffPreparationDenial, WorthUiSemanticHandoffPreparationStop,
+    WorthUiSemanticHandoffPreparationDenial, WorthUiSemanticHandoffPreparationReport as Report,
+    WorthUiSemanticHandoffPreparationStop,
 };
 
 pub(in crate::runtime::source_ingress) fn prepare_semantic_handoff(
@@ -62,34 +63,38 @@ pub(in crate::runtime::source_ingress) fn prepare_semantic_handoff(
         )
     })?;
     let intent_material =
-        crate::declaration::prepare_authored_intent_material(&package).map_err(|_| {
+        crate::declaration::prepare_authored_intent_material(&package).map_err(|report| {
             denial(
                 evidence.clone(),
                 WorthUiSemanticHandoffPreparationStop::IntentDeclaration,
             )
+            .caused_by(Report::IntentDeclaration(report))
         })?;
     evidence.admit_intent_material(intent_material);
     admit_service_declarations(&evidence, snapshot)
         .map_err(|stop| denial(evidence.clone(), stop))?;
-    let resolved = WorthUiArtifactInputResolver::resolve(&package, snapshot).map_err(|_| {
+    let resolved = WorthUiArtifactInputResolver::resolve(&package, snapshot).map_err(|report| {
         denial(
             evidence.clone(),
             WorthUiSemanticHandoffPreparationStop::CapabilityResolution,
         )
+        .caused_by(Report::CapabilityResolution(report))
     })?;
     let structured =
-        WorthUiStructuralLegalityLowerer::lower(&resolved, snapshot).map_err(|_| {
+        WorthUiStructuralLegalityLowerer::lower(&resolved, snapshot).map_err(|report| {
             denial(
                 evidence.clone(),
                 WorthUiSemanticHandoffPreparationStop::RuntimeStructuralAdmission,
             )
+            .caused_by(Report::RuntimeStructuralAdmission(report))
         })?;
     let mut declaration_material =
-        prepare_declaration_material(&package, &structured).map_err(|_| {
+        prepare_declaration_material(&package, &structured).map_err(|report| {
             denial(
                 evidence.clone(),
                 WorthUiSemanticHandoffPreparationStop::DeclarationProjection,
             )
+            .caused_by(Report::DeclarationProjection(report))
         })?;
     declaration_material
         .admit_authored_component_references(snapshot)
@@ -113,26 +118,30 @@ pub(in crate::runtime::source_ingress) fn prepare_semantic_handoff(
                 },
             )
         })?;
-    let bound = WorthUiBindingSemanticsLowerer::lower(&structured, snapshot).map_err(|_| {
+    let bound = WorthUiBindingSemanticsLowerer::lower(&structured, snapshot).map_err(|report| {
         denial(
             evidence.clone(),
             WorthUiSemanticHandoffPreparationStop::BindingAdmission,
         )
+        .caused_by(Report::BindingAdmission(report))
     })?;
     let identity_seeded = WorthUiIdentitySeedLowerer::lower(&bound)
-        .map_err(|_| {
+        .map_err(|report| {
             denial(
                 evidence.clone(),
                 WorthUiSemanticHandoffPreparationStop::IdentitySeeding,
             )
+            .caused_by(Report::IdentitySeeding(report))
         })?
         .0;
-    let artifact = WorthUiCanonicalArtifactAssembler::assemble(&identity_seeded).map_err(|_| {
-        denial(
-            evidence.clone(),
-            WorthUiSemanticHandoffPreparationStop::CanonicalAssembly,
-        )
-    })?;
+    let artifact =
+        WorthUiCanonicalArtifactAssembler::assemble(&identity_seeded).map_err(|report| {
+            denial(
+                evidence.clone(),
+                WorthUiSemanticHandoffPreparationStop::CanonicalAssembly,
+            )
+            .caused_by(Report::CanonicalAssembly(report))
+        })?;
     Ok(WorthUiPreparedSemanticHandoffMaterial::new(
         artifact,
         declaration_material,

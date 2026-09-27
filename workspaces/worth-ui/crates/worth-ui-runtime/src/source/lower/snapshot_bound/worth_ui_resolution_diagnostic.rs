@@ -1,28 +1,50 @@
 use std::cmp::Ordering;
 use worth_ui_dsl::{WorthUiArtifactInputProvenance, WorthUiSourceModuleId};
 
+use crate::capability::CapabilityRegistrationDiagnostic;
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub(crate) enum WorthUiResolutionDiagnosticCode {
     InvalidComponentReferenceId,
     MissingComponentReference,
+    /// Registration named the capability but validation refused it.
+    RejectedComponentReference,
     DeferredComponentReference,
     UnsupportedComponentReference,
     PlatformInternalComponentReference,
     InvalidSurfaceReferenceId,
     MissingSurfaceReference,
+    /// Registration named the capability but validation refused it.
+    RejectedSurfaceReference,
     DeferredSurfaceReference,
     UnsupportedSurfaceReference,
     PlatformInternalSurfaceReference,
     InvalidViewBindingReferenceId,
     MissingViewBindingReference,
+    /// Registration named the capability but validation refused it.
+    RejectedViewBindingReference,
     DeferredViewBindingReference,
     UnsupportedViewBindingReference,
     PlatformInternalViewBindingReference,
     InvalidThemeTokenReferenceId,
     MissingThemeTokenReference,
+    /// Registration named the capability but validation refused it.
+    RejectedThemeTokenReference,
     DeferredThemeTokenReference,
     UnsupportedThemeTokenReference,
     PlatformInternalThemeTokenReference,
+}
+
+impl WorthUiResolutionDiagnosticCode {
+    const fn is_missing_reference(self) -> bool {
+        matches!(
+            self,
+            Self::MissingComponentReference
+                | Self::MissingSurfaceReference
+                | Self::MissingViewBindingReference
+                | Self::MissingThemeTokenReference
+        )
+    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -31,6 +53,9 @@ pub(crate) struct WorthUiResolutionDiagnostic {
     module_id: WorthUiSourceModuleId,
     authored_text: String,
     provenance: Box<WorthUiArtifactInputProvenance>,
+    /// What refused the referenced capability's registration, for a
+    /// `Rejected*Reference`.
+    registration: Box<[CapabilityRegistrationDiagnostic]>,
 }
 
 impl WorthUiResolutionDiagnostic {
@@ -45,7 +70,33 @@ impl WorthUiResolutionDiagnostic {
             module_id,
             authored_text: authored_text.into(),
             provenance: Box::new(provenance),
+            registration: Box::default(),
         }
+    }
+
+    /// Carries the diagnostics that refused the referenced capability's
+    /// registration, when validation refused it, and reports a missing
+    /// reference as `rejected` instead. A reference whose support catalog
+    /// entry declares a posture (deferred, unsupported or platform internal)
+    /// keeps that code, since the declared posture is what the author must
+    /// act on; the registration diagnostics still travel with it.
+    pub(crate) fn refused_at_registration(
+        mut self,
+        rejected: WorthUiResolutionDiagnosticCode,
+        registration: Option<&[CapabilityRegistrationDiagnostic]>,
+    ) -> Self {
+        if let Some(registration) = registration {
+            if self.code.is_missing_reference() {
+                self.code = rejected;
+            }
+            self.registration = registration.into();
+        }
+        self
+    }
+
+    #[cfg(test)]
+    pub(crate) fn registration(&self) -> &[CapabilityRegistrationDiagnostic] {
+        &self.registration
     }
 
     #[cfg(test)]

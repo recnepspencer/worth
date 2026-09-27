@@ -156,15 +156,15 @@ pub use registry::{
     UiThemeSlotCatalogDenial, UiThemeSlotDeclaration, UiThemeSlotDisclosure,
     UiThemeSlotSuccessorCompatibility,
 };
+pub(crate) use snapshot::{
+    CapabilityRegistrationRejections, CapabilitySnapshotBuilder, CapabilitySnapshotFreezeInput,
+    CapabilitySnapshotIndexParts, CapabilitySupportCatalog,
+};
 pub use snapshot::{
     CapabilitySnapshot, CapabilitySnapshotDigest, CapabilitySnapshotIndex, FrozenCapabilityFamily,
     SnapshotFamilyIndex, SnapshotFreezeReport, SnapshotLookupCounters, SnapshotLookupReport,
     SnapshotMetrics, SnapshotReferenceValidationReport, SnapshotReferenceViolation,
     SnapshotReferenceViolationKind, SupportSnapshot,
-};
-pub(crate) use snapshot::{
-    CapabilitySnapshotBuilder, CapabilitySnapshotFreezeInput, CapabilitySnapshotIndexParts,
-    CapabilitySupportCatalog,
 };
 pub use support::{
     AdmittedCapability, CapabilitySupportId, CapabilitySupportKind, CapabilitySupportPosture,

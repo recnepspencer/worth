@@ -1,7 +1,8 @@
 use crate::capability::{
-    AdmittedCapability, CapabilitySnapshot, ComponentDescriptor, ComponentId,
-    FrozenThemeTokenEntry, FrozenViewBindingEntry, SupportRequirement, SurfaceDescriptor,
-    SurfaceId, ThemeTokenId, ViewBindingId,
+    AdmittedCapability, CapabilityRegistrationDiagnostic, CapabilitySnapshot, ComponentDescriptor,
+    ComponentId, FrozenThemeTokenEntry, FrozenViewBindingEntry, SupportRequirement,
+    SurfaceDescriptor, SurfaceId, ThemeTokenId, ViewBindingId, COMPONENT_FAMILY_NAME,
+    SURFACE_FAMILY_NAME, THEME_TOKEN_FAMILY_NAME, VIEW_BINDING_FAMILY_NAME,
 };
 use crate::source::{
     WorthUiResolutionDiagnostic, WorthUiResolutionDiagnosticCode, WorthUiResolutionMetrics,
@@ -28,6 +29,16 @@ impl<'snapshot> WorthUiSnapshotResolutionContext<'snapshot> {
 
     pub(crate) fn finish_metrics(self) -> WorthUiResolutionMetrics {
         self.metrics
+    }
+
+    fn refusal(
+        &self,
+        family: &'static str,
+        identity: &str,
+    ) -> Option<&'snapshot [CapabilityRegistrationDiagnostic]> {
+        self.snapshot
+            .registration_rejections()
+            .diagnostics(family, identity)
     }
 
     pub(crate) fn resolve_component(
@@ -58,6 +69,10 @@ impl<'snapshot> WorthUiSnapshotResolutionContext<'snapshot> {
             module_id.clone(),
             authored_text,
             provenance.clone(),
+        )
+        .refused_at_registration(
+            WorthUiResolutionDiagnosticCode::RejectedComponentReference,
+            self.refusal(COMPONENT_FAMILY_NAME, component_id.as_str()),
         ))
     }
 
@@ -87,6 +102,10 @@ impl<'snapshot> WorthUiSnapshotResolutionContext<'snapshot> {
             module_id.clone(),
             authored_text,
             provenance.clone(),
+        )
+        .refused_at_registration(
+            WorthUiResolutionDiagnosticCode::RejectedSurfaceReference,
+            self.refusal(SURFACE_FAMILY_NAME, surface_id.as_str()),
         ))
     }
 
@@ -128,6 +147,10 @@ impl<'snapshot> WorthUiSnapshotResolutionContext<'snapshot> {
             module_id.clone(),
             authored_text,
             provenance.clone(),
+        )
+        .refused_at_registration(
+            WorthUiResolutionDiagnosticCode::RejectedViewBindingReference,
+            self.refusal(VIEW_BINDING_FAMILY_NAME, view_binding_id.as_str()),
         ))
     }
 
@@ -165,6 +188,10 @@ impl<'snapshot> WorthUiSnapshotResolutionContext<'snapshot> {
             module_id.clone(),
             authored_text,
             provenance.clone(),
+        )
+        .refused_at_registration(
+            WorthUiResolutionDiagnosticCode::RejectedThemeTokenReference,
+            self.refusal(THEME_TOKEN_FAMILY_NAME, theme_token_id.as_str()),
         ))
     }
 }

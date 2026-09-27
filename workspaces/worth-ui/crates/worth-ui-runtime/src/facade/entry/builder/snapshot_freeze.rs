@@ -1,17 +1,18 @@
 use crate::capability::{
     validate_registration_candidates, AppearanceRoleAcceptedRegistrationProof,
-    AppearanceThemeAcceptedRegistrationProof, CapabilityRegistrationReport,
-    CapabilitySnapshotBuilder, CapabilitySnapshotFreezeInput, CapabilitySupportCatalog,
-    CommandAcceptedRegistrationProof, CommandProjectionAcceptedRegistrationProof,
-    ComponentAcceptedRegistrationProof, IconAcceptedRegistrationProof,
-    IntentDefinitionAcceptedRegistrationProof, MosaicPlacementAcceptedRegistrationProof,
-    MosaicRegionAcceptedRegistrationProof, MosaicSeamPaintAcceptedRegistrationProof,
-    MosaicSizingAcceptedRegistrationProof, MosaicStateSlotAcceptedRegistrationProof,
-    NativeCapabilityAcceptedRegistrationProof, PluginSlotAcceptedRegistrationProof,
-    RegisteredCapabilitySet, RegistrationValidationReport, RegistryFamily,
-    RuntimeOutcomeProjectionAcceptedRegistrationProof, SettingAcceptedRegistrationProof,
-    SurfaceAcceptedRegistrationProof, TaskPresentationAcceptedRegistrationProof,
-    ThemeTokenAcceptedRegistrationProof, ViewBindingAcceptedRegistrationProof,
+    AppearanceThemeAcceptedRegistrationProof, CapabilityRegistrationRejections,
+    CapabilityRegistrationReport, CapabilitySnapshotBuilder, CapabilitySnapshotFreezeInput,
+    CapabilitySupportCatalog, CommandAcceptedRegistrationProof,
+    CommandProjectionAcceptedRegistrationProof, ComponentAcceptedRegistrationProof,
+    IconAcceptedRegistrationProof, IntentDefinitionAcceptedRegistrationProof,
+    MosaicPlacementAcceptedRegistrationProof, MosaicRegionAcceptedRegistrationProof,
+    MosaicSeamPaintAcceptedRegistrationProof, MosaicSizingAcceptedRegistrationProof,
+    MosaicStateSlotAcceptedRegistrationProof, NativeCapabilityAcceptedRegistrationProof,
+    PluginSlotAcceptedRegistrationProof, RegisteredCapabilitySet, RegistrationValidationReport,
+    RegistryFamily, RuntimeOutcomeProjectionAcceptedRegistrationProof,
+    SettingAcceptedRegistrationProof, SurfaceAcceptedRegistrationProof,
+    TaskPresentationAcceptedRegistrationProof, ThemeTokenAcceptedRegistrationProof,
+    ViewBindingAcceptedRegistrationProof,
 };
 
 use super::CapabilityRegistrationBuilder;
@@ -28,8 +29,17 @@ impl CapabilityRegistrationBuilder {
         let accepted = AcceptedRegistryProofs::from_validation(&validation);
         let support_catalog =
             CapabilitySupportCatalog::from_registration_candidates(&self.registration_candidates);
+        let rejections = CapabilityRegistrationRejections::from_validation(
+            &self.registration_candidates,
+            &validation,
+        );
         let (accepted_capabilities, diagnostics) = validation.into_parts();
-        let freeze_input = self.freeze_input(&accepted, support_catalog, accepted_capabilities);
+        let freeze_input = self.freeze_input(
+            &accepted,
+            support_catalog,
+            rejections,
+            accepted_capabilities,
+        );
 
         CapabilityRegistrationReport::new(
             CapabilitySnapshotBuilder::new(freeze_input).freeze(),
@@ -73,6 +83,7 @@ impl CapabilityRegistrationBuilder {
         self,
         accepted: &AcceptedRegistryProofs,
         support_catalog: CapabilitySupportCatalog,
+        registration_rejections: CapabilityRegistrationRejections,
         registered_capabilities: RegisteredCapabilitySet,
     ) -> CapabilitySnapshotFreezeInput {
         CapabilitySnapshotFreezeInput {
@@ -117,6 +128,7 @@ impl CapabilityRegistrationBuilder {
                 .freeze(&accepted.task_presentations),
             theme_tokens: self.theme_token_registry.freeze(&accepted.theme_tokens),
             support_catalog,
+            registration_rejections,
         }
     }
 }
