@@ -1,6 +1,6 @@
 # Milestone 9.17.6: Dynamic Workflow Authoring And Execution
 
-> **Status:** Planned successor to [9.17.5](./milestone-9.17.5.md).
+> **Status:** Completed. Successor to [9.17.5](./milestone-9.17.5.md).
 > [9.17.4](./milestone-9.17.4.md) supplies typed graph authoring, ordinary execution,
 > publication return paths and migrated existing consumers. 9.17.5 supplies exact
 > branch-local program adoption and custody disposition. Neither waits for this
@@ -997,6 +997,8 @@ or compiler session for every negative input.
 
 ### Phase 1: Authored definition to approved real effect
 
+Status: completed.
+
 Use 9.17.4 operation/rule/output contracts and 9.17.5 selected program binding.
 Implement the canonical finite authored definition, primitive typed graph builder,
 `worth_query_workflow!`, deterministic component expansion, validation, branch-local
@@ -1021,6 +1023,8 @@ The next phase trusts runtime-authored meaning producing actual admitted effects
 
 ### Phase 2: Geometry-scale foundation and ordinary authoring
 
+Status: completed.
+
 Consume Phase 1's published definitions, transition admission and real geometry effect. Preserve its evidence and carry unfinished work forward.
 Correct inherited validation/expansion scans, ordinary full compilation and history replay. Establish the cost contract, independent component/
 provenance bounds, exact compiled reuse, incremental progress and complete positive/negative dependencies. Select bounded native access/index/
@@ -1035,12 +1039,16 @@ arrive, never defer regressions to closure. Phase 2.1 trusts bounded execution a
 
 ### Phase 2.1: Linear effects and admissible index publication
 
+Status: completed.
+
 Query carries one immutable ordered, exactly deduplicated effect-step summary from registration through overlay, invariants and commit: no growing
 linear deduplication or rebuild. Relational budgets exact index deltas before World publication; post-commit finalization does no unadmitted
 ordinary work. Failure retains a typed recoverable performed obligation, not “producer unavailable.” Prove the first real 802-solid scene under
 ordinary limits, pre-effect exhaustion, retry and generation parity.
 
 ### Phase 2.2: Index lifetime and bounded checkpoints
+
+Status: completed.
 
 Retain index generations reachable from branch/history roots or active readers; reclaim the rest. Shared/delta checkpoint payloads retain exact
 version/digest readmission without repeating full maps. Prove pinned old readers and siblings select exact generations; under repeated House edits,
@@ -1049,12 +1057,16 @@ deny or rebuild within a finite cold budget, never answer stale.
 
 ### Phase 2.3: Shared candidate inputs, independent verdicts
 
+Status: completed.
+
 Derive overlapping topology/field preparation from installed rule declarations and materialize once per exact candidate/observation basis. Each
 rule retains independent validation and denial; developers manage no sibling caches or adjacency maps. Changed topology, absence and foreign basis
 invalidate sharing. Count reads, gathers, adjacency and rule cost; real CAD rules plus an overlapping rule expose duplicate work without suppressing
 an independent failure.
 
 ### Phase 2.4: Exact output reuse and House delta cutover
+
+Status: completed.
 
 Installed query/subfield bounds plus tracked positive, absent, negative and complete-set reads define consumed dependencies. Query compares native
 versions and declared equivalence to retain unchanged outputs automatically; changed/untracked inputs get fresh admission. ABA, foreign meaning,
@@ -1063,12 +1075,16 @@ have zero producer/invariant/index contacts. Prove changed-band correctness and 
 
 ### Phase 2.5: Incremental managed scene views
 
+Status: completed.
+
 The House scene uses a Query-managed derived view over exact definition, occurrence and topology dependencies. Publication refreshes affected
 entries; unchanged geometry requires zero body reads before reuse. Framework-owned scene/tessellation/subscription state has finite retention,
 disposal and cold reconstruction, never currentness authority. Prove services, edits, discarded views and foreign bases through real House; warm scene
 cost follows affected entries rather than all 802 solids.
 
 ### Phase 2.6: Restore and production journey closure
+
+Status: completed.
 
 Complete compatible House capture/reopen, not generic Query Save/Open. Remove avoidable decoded clones and duplicate partition/root/scene rebuild without weakening verification.
 The real 802-solid build -> services -> edit -> capture -> reopen court requires output/evidence parity, zero replayed effects and no stale view within existing byte/resource bounds.
@@ -1077,6 +1093,8 @@ Native restore counts root, mirror, history and index work without duplicate par
 Report release p50/p95 as diagnostics with reads, work, bytes, contacts, peak/retained memory and pinned hardware by source/band/rule/index/World/output/scene/checkpoint/restore. Timeout is a hang guard, not a latency gate. Vary size, history and readers independently; prove typed exhaustion before Phase 3 trusts it.
 
 ### Phase 3: Control flow, coverage and effect custody
+
+Status: completed.
 
 Add typed conditions, joins and bounded revision/retry with complete outcome handling.
 Close the separate-assessment/ABA/new-required-subject sequence. Bind Bank's approved
@@ -1107,6 +1125,8 @@ stringified denials while preserving its existing outbound-custody owner.
 
 ### Phase 4: Definition revisions, branches and program adoption
 
+Status: completed.
+
 Ship definition retirement, A/B coexistence, explicit instance migration and fork
 continuation admission. Implement the definition/instance participant in 9.17.5
 adoption with exact state/evidence dispositions. Test compatible/incompatible
@@ -1126,20 +1146,14 @@ evolution without losing meaning, authorization or custody.
 Prove semantic sharing does not alias concrete IDs across equal-content publications,
 runtime instances or forks; a stale compiled binding/progress projection cannot survive
 adoption as authority. Repeat the fixed-local-work scale case on an unaffected sibling.
-
-Status: the sibling courts found version-addressed reads that answered from whichever
-branch published last. A branch's program is now read on its own root, and authorization
-path evaluation reads its basis's own adjacency, so a sibling's approval dependencies no
-longer change when its parent adopts. Invariant and aggregate projection reads are
-branch-rooted the same way, so Phase 4 is closed. Ordinary House edits and
-performed-output actions on an adopted branch still run through the installed program;
-selected-program execution for those lanes moves to Phase 5.
-Bank approval now runs only through the workflow. A payment initiated at runtime grants
-its approval workflow to each approver on the source account inside the initiation
-candidate itself, up to eight approvers. Before this fix, only bootstrapped payments
-could be approved.
+Every version-addressed read (program, authorization path, invariant and aggregate
+projection) answers from the selected branch's own root, so a sibling's reads never
+change when its parent adopts.
 
 ### Phase 5: Workflow-kernel lifecycle and public closure
+
+Status: completed. `commit_for_program`, a 9.17.4 host lane, stays until it is
+explicitly migrated; `provisional_aftermath` belongs to 9.18.
 
 Complete bounded observations, pending notifications, retention, deadline/iteration accounting,
 cancellation, close and retirement across every new state. Finish public codecs,
@@ -1166,258 +1180,150 @@ public revision and green focused `worthy-house-application` plus
 `worthy-house-certification` workflow/adoption evidence. A green Query-local CAD-shaped
 fixture alone cannot close the milestone.
 
-Status: ordinary product edits and performed-output actions on an adopted branch now
-execute under that branch's selected program. `execute_performed_in_selected_program`
-and `execute_performed_discovered_in_selected_program` join
-`execute_in_selected_program`. Each selects the request's exact branch and presents
-that program at the source commit, so the source and its outputs settle under the
-successor. An installed-program lane on an adopted branch is refused before any
-effect with the typed `ProgramNotActiveOnOccurrence` commit denial, and so is a
-revision retired from the host after selection. An adoption that lands between
-selection and commit is refused by the same commit-time check; that interleaving is
-argued from the check's position, not driven by a test. A retried key replays its
-recorded outcome before any commit, and no refusal claims its key. Every House edit
-lane uses the selected lanes. The House journey `adopted_branch_edits` proves plain,
-required-output and discovered-output edits under P1, the typed refusal of the P0
-lanes on that branch, and a sibling still editing under P0. The consumer journey
-proves a foreign runtime and an undeclared root are refused before publication
-without claiming their keys. The selected owner's own `owns_output_root` and
-`owns_output_source` refusal is argued, not tested: reaching it needs a branch whose
-adopted program drops a root the host still declares, and adopting such a successor
-needs a migration, which may not remove a produced output.
+Phase 5 contracts:
 
-Status: `boundary-check` enforces the import law as a configured source-owner
-isolation in `road1.toml`. `managed_run` and `conditional_operation` may not name a
-path through `primary_graph::workflow`, whether written as a `crate::` path or
-resolved from `self::`, `super::` or an inline module. They also may not name any
-type, visible function, constant, static or exported macro that the workflow kernel
-or a workflow application lane (`application_attempt/workflow_*`) declares, nor call
-a visible method either adds to a type declared elsewhere, so a re-export through a
-parent facade is caught too. A value or method restricted to a module binds only
-guarded code inside that module. Test-only items, and every file only a
-`#[cfg(test)]` module declares, including one inside an inline module, bind nothing;
-a file's name alone never makes it a test, a test-only `#[path]` to a file production
-also declares exempts nothing, and a file whose parent lies outside the owner roots
-stays production. Bare names are not traced,
-so a crate-relative glob import may not reach outside the guarded roots, where a
-facade could re-export kernel values. A path or glob written through a name a
-`use` binds, renamed or not, resolves through that binding, so an alias reaches only
-what its target reaches; a cyclic, too-deep or ambiguously rebound alias resolves
-nowhere, and a glob through it is refused.
-
-Status: an explicit cancellation ends a live instance where it stands, through
-`prepare_workflow_instance_cancellation` on the workflow entry, authorized by the
-start capability on the instance's own branch. It is not rollback. The instance
-records the cancelled state and this cancellation's identity and drops its live
-membership, and the outcome names every node whose effect it, or a source it was
-migrated from, performed; each remains performed. The same key replays its recorded
-outcome, including after the branch adopts a new program, and any other request for a
-cancelled instance is refused as cancelled. A completed instance has nothing left to
-cancel and is refused as completed. A step admitted before the cancellation is refused
-as cancelled before its effect; a cancellation prepared before an effect lands goes
-stale without claiming its key, and the same key then cancels afresh and reports that
-effect. Cancelling one instance leaves its siblings running, and a request on another
-branch than the instance's own is refused as an affinity mismatch, so a fork's
-successor and its source end independently. A request without the start capability is
-refused without claiming its key, and a performed history that cannot be read within
-its retained bounds, or that names a node its definition lacks, is refused as
-unavailable. That refusal is argued from the reads that raise it, not driven by a
-test: reaching it needs a stored history the public surface cannot corrupt, and a
-compiled definition can be minted only from a validated program. Cancellation writes
-no transition, so an instance that has used its whole retained-transition capacity,
-and so can take no further step, still cancels, warm or cold. The cancellation reads
-exactly the retained history, and its replay stays within the same bounds.
-
-An external operation's product commit hands the operation to its dispatch or
-recovery owner before any transition settles it, so the same commit writes an
-owner-custody marker on the instance: the identity of the transition that will
-settle it. The operation's authority pins the marker it read, so a lifecycle request
-prepared before the product commit goes stale instead of disposing of the custody.
-While no settled transition carries the marked identity, cancellation and migration,
-including a fork continuation, refuse with `WorkflowOperationInOwnerCustody` without
-claiming their keys, and the adoption inventory reports the instance as
-`OperationInOwnerCustody` with no legal disposition. The owner's settlement releases
-it: a later cancellation reports the operation as performed, and migration carries
-it. A local operation settles in its own commit and never writes the marker; its
-authority still pins the unwritten field, which nothing but an external commit
-changes. The marker is new in this milestone, so no instance persisted before it
-exists to lack one.
-
-One lineage spends one step budget, the installed retained-transition capacity. The
-budget check alone grants the allowance that transition and migration admission each
-require, so no step writer can skip it; a settled or closing observation passes the
-check without spending. A migration successor, or a fork's continuation, records the
-steps its source had taken and inherits them, so a loop routed through a successor
-never starts the budget afresh; retry and navigation back-edges spend it like any
-other step. A spent lineage refuses the next step, a further migration and a fork
-continuation with a typed capacity denial before commit, warm or cold, and still
-cancels. A retry of a step recorded before the budget was spent, including the step
-that spent it, replays its recorded outcome warm and cold; only a new step is refused.
-A yield or a duplicate delivery writes no transition and so neither spends nor
-restores a step. Migration itself writes no transition and spends none. Navigating
-Back spends the same budget, so the navigation-specific capacity refusal it once had
-could no longer be reached and is retired from the public denial kinds.
-
-One lineage also retains one evidence budget, the installed maximum evidence bytes.
-Accepting an assessment charges the semantic width of every evidence and dependency
-field it writes, and the evidence records its own charge, so a cold read recounts the
-lineage's spend from history exactly; accepting current evidence again writes none and
-charges none. A migration successor or a fork's continuation inherits the evidence
-its source retained. An assessment whose evidence would pass the ceiling is refused
-with the typed `WorkflowInstanceEvidenceCapacityUnavailable` denial before commit,
-warm or cold; the instance still awaits that assessment and can be cancelled. A retry
-of an assessment accepted within the budget replays its recorded outcome warm and
-cold. Evidence is released only with the history that retains it, so a yield, Back or
-a duplicate delivery neither spends nor restores it.
-
-Every live instance pins the definition revision it runs, and one lineage holds at
-most the installed number of live instances. A full lineage refuses a new start with
-the typed `WorkflowLineageCapacityUnavailable` workflow settlement denial once the
-commit has resolved that the start is no retry, so the refusal performs no effect and
-records nothing; a retry of a recorded start still replays warm and cold, and the
-refused key starts an instance once cancellation releases a pin. A lineage holding
-more instances than it can read, as a lowered ceiling can leave it, counts as full, so
-its recorded starts still replay. Two starts prepared against one membership cannot
-both commit: each commits only while the membership it read is unchanged. Publication
-takes no pin, even with one free, and a migration or a fork's continuation exchanges
-its source's pin for its own in one commit, so ending the successor frees room for
-exactly one start. Evicting compiled meaning releases no pin: the pinned revision
-compiles once on its next use and is warm again. Once a revision is compiled, a
-further instance's whole run compiles nothing; its first observation is its only
-progress miss, rebuilt from no transitions, and every later step reads retained
-progress.
-
-A selected branch occurrence discovers the definition it holds current under a
-workflow identity with `discover_workflow_definition`: `Current` names it, `Retired`
-says the lineage was retired and nothing is current until a publication reopens it,
-and `Unpublished` says no definition was ever published there. The answer is exact
-for that occurrence alone; a fork that has not committed builds its own generation of
-the lineage index first, and names the definitions it copied as the fork holds them.
-A discovered reference grants nothing. A start that names a definition its branch has
-since superseded returns the typed `Superseded` outcome naming the current definition,
-and one naming a definition of a retired lineage returns `Retired`; both are decided
-after the commit resolves that the start is no retry, so they perform no effect and
-record nothing, while a retry of a recorded start still replays. Supersession is
-reported before a full lineage, since it holds whatever the lineage's membership. A
-successor that commits between a start's prepare and its commit moves the product
-basis, and the start is denied as stale without effect.
-
-Discovery's `IndexUnavailable` refusal, and its `LineageUnavailable` answer for an
-identity that names another workflow's lineage, are argued from the reads that raise
-them, not driven by a test: the public surface cannot corrupt an index generation, and
-the bounded model installs a single workflow spec.
-
-An authored definition travels as a versioned, authority-free draft.
-`encode_workflow_definition_draft` writes a validated definition's identity, limits,
-start, nodes and connections as WQWD v1 bytes, naming each operation, assessment,
-condition and approval by identifier with the portable types it was authored against;
-no instance, approval, publication or authority travels.
-`decode_workflow_definition_draft` bounds every count by the draft's own limits and
-the remaining bytes before allocating, requires nodes in strictly ascending identity
-order, and refuses a zero or future version at the exact `WorkflowDefinitionDraft`
-layer. The decoded draft is untrusted and mints nothing: `author` rebuilds typed
-meaning only against an installed workflow spec, and names the node it refuses for a
-foreign spec, a member the spec did not install, a member whose portable types
-changed, or a related-relation applicability the schema does not declare. The authored
-result validates, binds and publishes through the ordinary path with the original's
-content identity; component provenance does not enter that identity, so a
-component-built definition travels flat and re-encodes to the same bytes. Expansion
-provenance is authoring-time only: publication and discovery never record it. Nodes
-must arrive in identity order, but connection order is not canonical in the draft;
-the authored definition canonicalizes it, so a reordered draft keeps its content
-identity. Control-outcome and data-flow wire tags are written out by hand and pinned
-by test, so no reordering moves one.
-
-The compiled `authored_workflow` example is the authoring/control-flow walkthrough.
-It builds one review component, two assessments joined into approval evidence, and
-expands it into a definition whose rejected approval retries a bounded number of
-times back to the proposal. It publishes and discovers the definition, reviews and
-rejects a first proposal, reviews the changed revision afresh, approves it, performs
-the approved effect through the awaited operation requirement and completes. A
-second revision reuses the same component; discovery then names it, and a start from
-the superseded revision is refused naming the same current definition.
-
-A definition may declare a total deadline, whole nonzero milliseconds, and only a
-declared deadline enters its content identity. An instance started from it records
-the instant its lineage must finish by on the installed trusted clock: its start plus
-the deadline, or for a migration successor or a fork's continuation the earlier of its
-source's recorded instant and its own start plus its target's deadline, so no
-successor starts the deadline afresh. From that instant on, a proposal, advance,
-approval, Back navigation and a further migration or fork continuation are refused
-with the typed `WorkflowInstanceDeadlineElapsed` denial before commit, warm or cold.
-A step admitted in time is checked again when its operation commits, and one that
-reaches commit after the deadline is refused as a workflow settlement denial without
-effect. A retried key of a proposal, advance or approval recorded in time still
-replays its recorded outcome after the deadline, warm and cold, and cancellation stays
-open, so an overdue instance can always end. Trusted time that cannot be read admits no
-step: authorization refuses the request before the deadline is read. The deadline's
-own `WorkflowTrustedTimeUnavailable` refusal covers a clock that fails between that
-admission and the deadline read. Unit tests drive the deadline bind with a fixed and
-an unreadable clock: a step at the recorded instant is elapsed and one before it is
-admitted, a successor keeps the earlier instant, an unreadable clock refuses a
-declared deadline, and a definition without one never reads the clock.
-
-An assessment observation holds interest in its run and nothing more. Closing or
-dropping one releases only that observer's interest: a second observer, joined while
-the first had the run in flight, still settles the assessment after the first closes,
-and the closed observation refuses further settlement and notifications as closed.
-Closing every observer, including one with a run in flight, neither cancels the
-instance nor settles its head: the instance still awaits its assessment, a later
-observer settles it and the instance proceeds, and it can still be cancelled. Pending
-notifications are bounded at one per observation by construction: an observer's wakes
-coalesce into its run's single generation, so any number of state changes since it
-last looked is one pending wake, and there is no per-change queue to exhaust.
-
-Status: Bank's callers reach the program only through typed Bank lanes. Its program
-runtime accessor is crate-private, and the boundary court requires that no public
-Bank item name a runtime that can redeem a receipt. Product-publication recovery
-pages and readmission, the current branch and the installed and supported program
-revisions are Bank methods; test-only controls sit behind Bank's `test-controls`
-feature. Bank's payment assessment no longer polls on a fixed loop.
-`begin_payment_assessment` takes a `BankPaymentAssessmentSettlement` policy, the
-attempts one round may spend and a bound on rounds, and `settle_payment_assessment`
-never blocks: another round runs only when the demand was notified during the last
-one, and a spent or quiet demand reports `Pending` so a later call resumes the same
-demand. Every settle attempt that advances the demand notifies it, so the quiet return
-is argued from the generation check, not driven by a test. Bank's build, admission and
-workflow errors print their Query denials through `Display` and chain them as sources,
-never their debug form. Payment status enters an assessment's identity through pinned
-canonical text. An initiation that would grant approval to more than eight approvers is
-refused at runtime with the typed `TooManyPaymentApprovers` denial, before any payment
-exists. Query installs a handler for every mutation binding, but the workflow kernel
-records the approved-payment control steps itself and never calls one, so Bank's
-control handler refuses with an execution denial should a kernel ever call it; the
-payment operation's handler refuses an input that names another approver than the
-authenticated principal.
-
-Status: the workflow owner vocabulary is no longer on execution's facade. The
-prepared definition, instance, proposal and transition attempts and their adapters
-sit behind execution's `publication_boundary` seam, and `boundary-check` refuses the
-name `publication_boundary` in any Query crate except execution and Publication. The
-one exception is the certification court that forges a second kernel commit under a
-single operation authority, which proves the kernel's own guard below the owner.
-Publication accepts an operation effect through one path. The owner resolves the
-effect's custody, a committed receipt settles directly and a dispatch-pending
-receipt settles only with the recovery admission that releases it, so the acceptance
-denial no longer carries the recovery checks the owner already made. One idempotency
-helper binds a guarded operation to its transition. The Bank API court also refuses
-a public re-export of a program runtime, a public item inside an inline module, a
-public item that names a runtime through a `use ... as` rename or a type alias,
-followed through chains of them, a public static or constant, and a trait impl whose
-header, associated type or method names one, such as `Deref::Target`.
-`commit_for_program`, a 9.17.4 host lane, stays until it is explicitly migrated, and
-`provisional_aftermath` belongs to 9.18.
-
-Status: Phase 5 is closed. Every `boundary-check` source analysis reads Rust through
-one parser that spells a raw identifier (`r#name`) as its bare name, macro and
-attribute tokens included, so no source rule can be written around with a raw
-spelling. The Bank API court also refuses a trait impl whose self type names a
-runtime, and follows raw renames. House pins this branch at `34ae2b8e80`. A House
-workspace saved after its world branch adopted the successor reopens on the
-successor under the v3 compatibility identity and keeps editing there. House
-workflow commands and adoption refuse a branch another host owns with `ForeignOwner`
-before any effect, and the successor revision is a typed denial rather than an
-expect.
+- **Adopted-branch edits.** `execute_in_program`, `execute_performed` and
+  `execute_performed_discovered` select the request's exact branch and commit under
+  the program it runs at the source commit, so the source and its outputs settle
+  under that program. No mutation lane takes a program owner from its caller. A
+  branch whose program cannot be inspected is refused as `ProgramSelection`, one
+  whose program has no installed owner as `ApplicationProgramRequired`, an adoption
+  landing between selection and commit as `ProgramNotActiveOnOccurrence { active }`,
+  and a revision retired after selection as `ProgramSupportRetired`, all before any
+  effect. A retried key replays its recorded outcome before any commit, and no
+  refusal claims its key. Every House edit lane uses these lanes.
+- **Workflow vocabulary per program.** A workflow request never names the program it
+  runs under. The runtime keeps one installed workflow spec per supported program,
+  keyed by installed revision. `support_workflow_spec` accepts a spec only for a
+  program the host rosters and has not retired, and refuses the initial program, a
+  program already supported and a foreign schema. Each workflow entry prepares
+  against the spec installed for the program its selected branch runs; the installed
+  spec and definition contract carry no program type. A branch whose program has no
+  installed spec is refused by the revision check before any effect.
+- **Commit outcomes.** An outcome that reports its own landed shape carries
+  `WorthQueryApplicationUncommitted`, every commit terminal except a landed commit,
+  so each variant a caller matches can occur.
+  `WorthQueryApplicationCommitOutcome::landed` splits a landed receipt, flagged when
+  it replays, from the rest.
+- **Cancellation.** `prepare_workflow_instance_cancellation` ends a live instance
+  where it stands, authorized by the start capability on the instance's own branch.
+  It is not rollback: the instance records the cancelled state and the
+  cancellation's identity, drops its live membership, and the outcome names every
+  node whose effect it, or a migration source, performed. The same key replays,
+  including after the branch adopts a new program; any other request is refused as
+  cancelled, and a completed instance as completed. A step admitted before the
+  cancellation is refused before its effect; a cancellation prepared before an effect
+  lands goes stale without claiming its key. Siblings keep running, and a request on
+  another branch is an affinity mismatch, so a fork's successor and its source end
+  independently. A request without the start capability claims no key. A history
+  that cannot be read within its retained bounds, or names a node its definition
+  lacks, is refused as unavailable. Cancellation writes no transition, so an instance
+  at its retained-transition capacity still cancels, warm or cold.
+- **Owner custody.** An external operation's product commit writes an owner-custody
+  marker on the instance naming the transition that will settle it, and the
+  operation's authority pins the marker it read. While no settled transition carries
+  that identity, cancellation, migration and fork continuation refuse with
+  `WorkflowOperationInOwnerCustody` without claiming their keys, and the adoption
+  inventory reports `OperationInOwnerCustody` with no legal disposition. The owner's
+  settlement releases it. A local operation settles in its own commit and writes no
+  marker.
+- **Step budget.** One lineage spends one budget, the installed retained-transition
+  capacity. The budget check alone grants the allowance transition and migration
+  admission require. Successors and fork continuations inherit their source's steps;
+  retry and Back spend like any step; a yield, duplicate delivery or migration spends
+  none. A spent lineage refuses the next step, a further migration and a fork
+  continuation with a typed capacity denial before commit, warm or cold, still
+  cancels, and still replays every step it recorded.
+- **Evidence budget.** One lineage retains at most the installed evidence bytes.
+  Accepting an assessment charges the semantic width of every evidence and dependency
+  field it writes, recorded with the evidence so a cold read recounts it exactly;
+  re-accepting current evidence charges nothing. Successors inherit their source's
+  evidence. An assessment past the ceiling is refused with
+  `WorkflowInstanceEvidenceCapacityUnavailable` before commit, leaving the instance
+  awaiting it and cancellable; recorded acceptances replay.
+- **Lineage capacity and compiled reuse.** Every live instance pins its definition
+  revision, and a lineage holds at most the installed number of live instances. A
+  full lineage refuses a new start with `WorkflowLineageCapacityUnavailable` after the
+  commit resolves it is no retry, performing and recording nothing; a lineage holding
+  more instances than it can read counts as full. Two starts prepared against one
+  membership cannot both commit. Publication takes no pin; a migration or fork
+  continuation exchanges its source's pin for its own in one commit. Evicting compiled
+  meaning releases no pin. Once a revision is compiled, a further instance's run
+  compiles nothing, and its first observation is its only progress miss.
+- **Discovery.** `discover_workflow_definition` answers for one selected occurrence:
+  `Current`, `Retired` or `Unpublished`, or `ForeignLineage` for an identity another
+  spec published, `LineageUnreadable` and `IndexUnavailable`. An uncommitted fork
+  builds its own lineage index generation first. A discovered reference grants
+  nothing. A start naming a superseded definition returns `Superseded` naming the
+  current one, and one naming a retired lineage returns `Retired`, both after the
+  commit resolves it is no retry; supersession is reported before a full lineage. A
+  successor committed between a start's prepare and commit stales the start.
+- **Definition drafts.** `encode_workflow_definition_draft` writes a validated
+  definition as authority-free WQWD v1 bytes: identity, limits, start, nodes and
+  connections, naming each member by identifier with its portable types.
+  `decode_workflow_definition_draft` bounds every count by the draft's limits and the
+  remaining bytes before allocating, requires ascending node identities and refuses a
+  zero or future version. The decoded draft mints nothing: `author` rebuilds typed
+  meaning only against an installed spec and names the node it refuses for a foreign
+  spec, an uninstalled member, changed portable types or an undeclared relation
+  applicability. The result publishes with the original's content identity;
+  component provenance and connection order stay outside that identity. Control
+  outcome and data-flow wire tags are written out by hand and pinned.
+- **Authoring example.** The compiled `authored_workflow` example builds one review
+  component, joins two assessments into approval evidence, retries a rejected
+  approval a bounded number of times, performs the approved effect through the awaited
+  operation requirement and completes; a second revision reuses the component and a
+  start from the superseded revision is refused naming the current definition.
+- **Deadline.** A definition may declare a total deadline in whole nonzero
+  milliseconds, entering its content identity only when declared. An instance records
+  the instant its lineage must finish by on the installed trusted clock; a successor
+  keeps the earlier of its source's instant and its own. From that instant, proposal,
+  advance, approval, Back, migration and fork continuation are refused with
+  `WorkflowInstanceDeadlineElapsed` before commit, and a step reaching commit late is a
+  settlement denial without effect. Recorded keys still replay and cancellation stays
+  open. Unreadable trusted time admits no step; `WorkflowTrustedTimeUnavailable`
+  covers a clock that fails between admission and the deadline read.
+- **Observations.** An assessment observation holds interest in its run and nothing
+  more. Closing or dropping one releases only that observer's interest; the closed
+  observation refuses further settlement and notifications. Closing every observer
+  neither cancels the instance nor settles its head. Pending notifications are bounded
+  at one per observation: an observer's wakes coalesce into its run's single
+  generation.
+- **Bank.** Bank's callers reach the program only through typed Bank lanes; its
+  program runtime accessor is crate-private, and the Bank API court refuses any
+  public item, re-export, rename, alias chain, static, constant or trait impl that
+  names a runtime able to redeem a receipt. Recovery pages, readmission, the current
+  branch and program revisions are Bank methods; test-only controls sit behind the
+  `test-controls` feature. Approval runs only through the workflow: a payment
+  initiated at runtime grants its approval workflow to each approver on the source
+  account inside the initiation candidate, and more than eight approvers is refused
+  with `TooManyPaymentApprovers` before any payment exists.
+  `begin_payment_assessment` takes a `BankPaymentAssessmentSettlement` policy (attempts
+  per round, bound on rounds) and `settle_payment_assessment` never blocks, reporting
+  `Pending` for a later call to resume. Bank errors print Query denials through
+  `Display` and chain them as sources. Payment status enters an assessment's identity
+  through pinned canonical text. Approved-payment control steps declare
+  `WORKFLOW_CONTROL`: the kernel authorizes and records them, so no handler serves
+  them and installing one is refused. The payment handler refuses an input naming
+  another approver than the authenticated principal.
+- **Workflow owner seam.** The prepared definition, instance, proposal and transition
+  attempts and their adapters sit behind execution's `publication_boundary` seam, and
+  `boundary-check` refuses that name in any Query crate except execution and
+  Publication, save the certification court that forges a second kernel commit to
+  prove the kernel's own guard. Publication accepts an operation effect through one
+  path: a committed receipt settles directly, and a dispatch-pending receipt settles
+  only with the recovery admission that releases it.
+- **Import law.** `boundary-check` enforces a configured source-owner isolation in
+  `road1.toml`: `managed_run` and `conditional_operation` may not name a path through
+  `primary_graph::workflow`, however spelled, nor any item the workflow kernel or a
+  workflow application lane declares, nor a method either adds to an outside type.
+  Test-only items and files bind nothing; aliases resolve through their binding, and
+  a cyclic, too-deep or ambiguous alias resolves nowhere. Every source analysis reads
+  Rust through one parser that spells a raw identifier as its bare name.
+- **House.** House pins the candidate public revision. A workspace saved after its
+  world branch adopted the successor reopens on the successor under the v3
+  compatibility identity and keeps editing there. House workflow commands and
+  adoption refuse a branch another host owns with `ForeignOwner` before any effect.
 
 ## Acceptance, Cost And Review
 

@@ -14,7 +14,7 @@ use worth_query_host::facade::runtime::NoEffectCause;
 
 use super::workflow_participant::{expect_started, live_instance_on_first_program};
 use crate::bounded_dimension_model::workflow::{
-    advance_instance, advance_on_second, prepare_second_program_adoption, publish_adoption,
+    advance_instance, advance_instance_on, prepare_second_program_adoption, publish_adoption,
     second_program_workflow_inventory, start_instance,
 };
 
@@ -63,7 +63,7 @@ fn a_start_between_preparation_and_publication_stales_the_adoption() {
     for (instance, key) in [(first, 85_320), (second, 85_321)] {
         assert!(
             matches!(
-                advance_on_second(&application, main, instance, key),
+                advance_instance(&application, instance, key),
                 Ok(WorkflowProgressOutcome::Completed(_))
             ),
             "both instances were carried and complete under P1",
@@ -94,7 +94,7 @@ fn a_fork_adopts_without_deciding_the_instance_it_copied() {
         fork,
         Some(&|inventory| inventory.carry_compatible().unwrap()),
     ));
-    match advance_on_second(&application, fork, instance.clone(), 85_410) {
+    match advance_instance_on(&application, fork, instance.clone(), 85_410) {
         // Adoption carries only the fork's live facts, so the copied history
         // stays another branch's incarnation: the fork refuses it by
         // affinity before its program is consulted, under P1 as under P0.

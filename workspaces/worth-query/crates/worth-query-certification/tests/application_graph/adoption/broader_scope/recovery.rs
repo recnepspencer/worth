@@ -17,7 +17,6 @@ use super::{fork, target_revision, P1_ONLY_DIMENSION};
 use crate::bounded_dimension_model::host::publish_on_first_program;
 use crate::bounded_dimension_model::operator_identity::{authenticate_operator, request_scope};
 use crate::bounded_dimension_model::presented_request::set_dimension;
-use crate::bounded_dimension_model::programs::DimensionProgramP1;
 use crate::bounded_dimension_model::settled_verdict::{settle, DimensionVerdict};
 
 #[test]
@@ -118,11 +117,10 @@ fn unpublished_middle_branch_recovers_without_stranding_prefix_or_suffix() {
     };
     assert_eq!(closed.progress().len(), 3);
 
-    let p1 = host.supported_program::<DimensionProgramP1>().unwrap();
     for (ordinal, branch) in [a, b, c].into_iter().enumerate() {
         assert_eq!(
             settle(set_dimension(
-                &p1,
+                &host,
                 branch,
                 P1_ONLY_DIMENSION,
                 0x9175_4040 + ordinal as u64
@@ -228,9 +226,8 @@ fn unpublished_middle_branch_can_release_custody_without_relabeling_untouched_su
     assert_eq!(cancelled.progress().len(), 1);
     assert_eq!(cancelled.cancelled_branch_count(), 2);
 
-    let p1 = host.supported_program::<DimensionProgramP1>().unwrap();
     assert_eq!(
-        settle(set_dimension(&p1, a, P1_ONLY_DIMENSION, 0x9175_4050)),
+        settle(set_dimension(&host, a, P1_ONLY_DIMENSION, 0x9175_4050)),
         DimensionVerdict::Performed(P1_ONLY_DIMENSION),
         "release cannot erase the already-performed prefix"
     );

@@ -85,13 +85,13 @@ where
 /// The canonical revision of the program the fixture host rosters.
 pub(in crate::domain_computation::primary_graph) fn rostered_program_revision(
 ) -> ApplicationProgramRevision {
-    validated::<ProgramRequiredProgram>().revision().clone()
+    *validated::<ProgramRequiredProgram>().revision()
 }
 
 /// The canonical revision of a program no fixture host ever rosters.
 pub(in crate::domain_computation::primary_graph) fn unadmitted_program_revision(
 ) -> ApplicationProgramRevision {
-    validated::<UnadmittedProgram>().revision().clone()
+    *validated::<UnadmittedProgram>().revision()
 }
 
 /// Admits the fixture program against a real installed schema and returns the

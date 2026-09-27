@@ -115,7 +115,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     {
         self.require_target_binding::<Binding>(target)?;
         Ok(WorthQueryAdmittedProgramMigration {
-            target: target.clone(),
+            target: *target,
             marker: PhantomData,
         })
     }

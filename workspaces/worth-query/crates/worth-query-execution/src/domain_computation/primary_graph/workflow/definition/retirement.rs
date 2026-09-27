@@ -22,9 +22,9 @@ impl<Schema> WorthQuerySelectedProductOperation<'_, Schema>
 where
     Schema: ApplicationSchema,
 {
-    fn prepare_workflow_definition_retirement<Capability, Operation, Input, Scope, Spec, Program>(
+    fn prepare_workflow_definition_retirement<Capability, Operation, Input, Scope, Spec>(
         &self,
-        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         definition: PublishedWorkflowDefinitionRef,
         admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     ) -> Result<
@@ -66,7 +66,7 @@ where
             .complete_projected_dependencies()
             .map_err(WorkflowDefinitionPreparationDenial::Attempt)?;
         read_set
-            .materialize_workflow_definition_retirement::<Capability, Spec, Program>(
+            .materialize_workflow_definition_retirement::<Capability, Spec>(
                 installed,
                 definition,
                 &selected_occurrence,
@@ -82,9 +82,9 @@ pub struct WorthQueryWorkflowDefinitionRetirementAdapter;
 
 impl WorthQueryWorkflowDefinitionRetirementAdapter {
     #[doc(hidden)]
-    pub fn prepare<Schema, Capability, Operation, Input, Scope, Spec, Program>(
+    pub fn prepare<Schema, Capability, Operation, Input, Scope, Spec>(
         selected: &WorthQuerySelectedProductOperation<'_, Schema>,
-        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         definition: PublishedWorkflowDefinitionRef,
         admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     ) -> Result<
@@ -98,7 +98,7 @@ impl WorthQueryWorkflowDefinitionRetirementAdapter {
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
         selected
-            .prepare_workflow_definition_retirement::<Capability, Operation, Input, Scope, Spec, Program>(
+            .prepare_workflow_definition_retirement::<Capability, Operation, Input, Scope, Spec>(
                 installed, definition, admission,
             )
     }

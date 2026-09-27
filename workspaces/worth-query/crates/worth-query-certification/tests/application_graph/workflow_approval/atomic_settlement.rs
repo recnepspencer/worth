@@ -86,7 +86,7 @@ fn invariant_rejection_after_handler_stages_neither_mutation_nor_transition() {
         .expect("the handler must reach the commit boundary");
     assert!(matches!(
         result,
-        WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationCommitOutcome::Denied(denial))
+        WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationUncommitted::Denied(denial))
             if denial.kind() == WorthQueryApplicationCommitDenialKind::CustomInvariantDenied
     ));
     assert_eq!(

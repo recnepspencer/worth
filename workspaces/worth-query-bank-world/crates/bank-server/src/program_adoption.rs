@@ -43,7 +43,7 @@ impl BankIdentityRuntime {
     {
         self.application_program()
             .supported_program::<Target>()
-            .map(|owner| owner.owned_revision().clone())
+            .map(|owner| *owner.owned_revision())
     }
 
     /// Inspects the program actually carried by one Bank branch through the
@@ -81,8 +81,7 @@ impl BankIdentityRuntime {
             .compare(&target)
             .map_err(|denial| BankProgramAdoptionPreparationDenial::Query(Box::new(denial)))?;
         programs
-            .adopt(&target)
-            .requirements(&requirements)
+            .adopt(&requirements)
             .prepare(maximum_selection_work)
             .map_err(|denial| BankProgramAdoptionPreparationDenial::Query(Box::new(denial)))
     }

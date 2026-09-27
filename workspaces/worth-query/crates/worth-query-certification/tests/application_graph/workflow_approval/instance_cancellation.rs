@@ -5,17 +5,16 @@
 
 use worth_query_host::facade::application_entry::{
     PerformedWorkflowInstanceCancellation, WorkflowDefinitionRetirementOutcome,
-    WorkflowInstanceBindingDenial, WorkflowInstanceCancellationOutcome,
-    WorkflowInstancePreparationDenial, WorthQueryApplicationRequestMutationDenial,
-    WorthQueryWorkflowInstancePreparationDenial,
+    WorkflowInstanceCancellationOutcome, WorkflowInstancePreparationDenial,
+    WorthQueryApplicationRequestMutationDenial, WorthQueryWorkflowInstancePreparationDenial,
 };
 use worth_query_host::facade::primary_graph::WorthQueryApplicationCommitDenialStage;
 
 use super::super::bounded_dimension_model::{
     programs::DimensionProgramP1,
     workflow::{
-        cancel_instance, cancel_on_second, prepare_cancellation, prepare_second_program_adoption,
-        publish_adoption, retire_definition, support_workflow_program,
+        cancel_instance, prepare_cancellation, prepare_second_program_adoption, publish_adoption,
+        retire_definition, support_workflow_program,
     },
 };
 use super::instance_migration::perform_approved_effect;
@@ -115,7 +114,7 @@ fn a_cancel_prepared_before_the_effect_goes_stale_when_the_effect_lands_first() 
     perform_approved_effect(&application, &instance, 88_212);
     match early() {
         WorkflowInstanceCancellationOutcome::Application(
-            WorthQueryApplicationCommitOutcome::Denied(denial),
+            WorthQueryApplicationUncommitted::Denied(denial),
         ) => {
             assert_eq!(
                 denial.kind(),
@@ -172,15 +171,7 @@ fn a_cancellation_replays_exactly_after_its_branch_adopts_a_new_program() {
         Some(&|inventory| inventory.carry_compatible().unwrap()),
     ));
 
-    match cancel_instance(&application, instance.clone(), 88_410) {
-        Err(WorthQueryWorkflowInstancePreparationDenial::InstancePreparation(
-            WorkflowInstancePreparationDenial::Binding(
-                WorkflowInstanceBindingDenial::ProgramRevisionChanged,
-            ),
-        )) => {}
-        other => panic!("the retired program's vocabulary is refused: {other:?}"),
-    }
-    let replay = cancelled(cancel_on_second(&application, instance.clone(), 88_410));
+    let replay = cancelled(cancel_instance(&application, instance.clone(), 88_410));
     assert!(
         replay.replayed(),
         "the key replays under the adopted program"
@@ -190,7 +181,7 @@ fn a_cancellation_replays_exactly_after_its_branch_adopts_a_new_program() {
         done.receipt().outcome_identity()
     );
     assert_eq!(
-        cancellation_denial(cancel_on_second(&application, instance, 88_411)),
+        cancellation_denial(cancel_instance(&application, instance, 88_411)),
         WorthQueryApplicationAttemptDenialKind::WorkflowInstanceCancelled,
     );
 }
@@ -216,25 +207,24 @@ fn a_cancellation_replays_after_adoption_leaves_its_retired_definition_behind() 
         Some(&|inventory| inventory.carry_compatible().unwrap()),
     ));
 
-    let replay = cancelled(cancel_on_second(&application, instance.clone(), 88_513));
+    let replay = cancelled(cancel_instance(&application, instance.clone(), 88_513));
     assert!(replay.replayed(), "the key replays from recorded history");
     assert_eq!(
         replay.receipt().outcome_identity(),
         done.receipt().outcome_identity()
     );
     assert_eq!(replay.performed_node_paths(), ["apply".to_owned()]);
+    let refused = cancel_instance(&application, instance, 88_515);
+    let stale = refused.as_ref().expect_err("another key is refused");
+    assert!(stale
+        .to_string()
+        .starts_with("workflow instance request did not prepare: "));
+    assert!(std::error::Error::source(stale).is_some());
     assert_eq!(
-        cancellation_denial(cancel_on_second(&application, instance.clone(), 88_515)),
+        cancellation_denial(refused),
         WorthQueryApplicationAttemptDenialKind::WorkflowInstanceCancelled,
         "another key is refused as cancelled, not as unsupported",
     );
-    let stale = cancel_instance(&application, instance, 88_513)
-        .expect_err("the retired program's vocabulary is refused");
-    assert_eq!(
-        stale.to_string(),
-        "workflow instance request did not prepare: workflow instance binding: ProgramRevisionChanged",
-    );
-    assert!(std::error::Error::source(&stale).is_some());
 }
 
 pub(super) fn approve(

@@ -28,9 +28,9 @@ mod runtime;
 mod start_outcome;
 
 pub use advance::{
-    WorkflowAdvanceBinding, WorkflowAdvanceCapability, WorkflowAdvanceHandler,
-    WorkflowAdvanceInput, WorkflowAdvanceIntent, WorkflowAdvanceOperation, WorkflowApprovalBinding,
-    WorkflowApprovalCapability, WorkflowApprovalHandler, WorkflowApprovalIntent,
+    WorkflowAdvanceBinding, WorkflowAdvanceCapability, WorkflowAdvanceInput, WorkflowAdvanceIntent,
+    WorkflowAdvanceOperation, WorkflowApprovalBinding, WorkflowApprovalCapability,
+    WorkflowApprovalIntent,
 };
 pub use assessment::{
     accept_assessment, accept_early_assessment, prepare_early_assessment_denial, settle_assessment,
@@ -47,14 +47,14 @@ pub use declaration::{
 };
 pub(crate) use definition::definition_limits;
 pub use definition::{
-    advance_instance, approval_retry_definition, approve_instance, authoring_intent,
-    cancel_instance, condition_terminal_definition, condition_terminal_draft, continue_on_fork,
-    migrate_instance, prepare_cancellation, prepare_cancellation_on, proposal_terminal_definition,
-    propose_authoring_instance, propose_authoring_instance_with_dimension, propose_instance,
-    propose_instance_on_branch, publish_definition, repeated_proposal_definition,
-    reproposing_geometry_definition, retire_definition, reviewed_geometry_definition,
-    reviewed_geometry_definition_with_deadline, reviewed_geometry_definition_with_join_policy,
-    start_instance, terminal_definition,
+    advance_instance, advance_instance_on, approval_retry_definition, approve_instance,
+    authoring_intent, cancel_instance, condition_terminal_definition, condition_terminal_draft,
+    continue_on_fork, migrate_instance, prepare_cancellation, prepare_cancellation_on,
+    proposal_terminal_definition, propose_authoring_instance,
+    propose_authoring_instance_with_dimension, propose_instance, propose_instance_on_branch,
+    publish_definition, repeated_proposal_definition, reproposing_geometry_definition,
+    retire_definition, reviewed_geometry_definition, reviewed_geometry_definition_with_deadline,
+    reviewed_geometry_definition_with_join_policy, start_instance, terminal_definition,
 };
 pub use grant_status::{
     WorkflowGrantStatusBinding, WorkflowGrantStatusHandler, WorkflowGrantStatusInput,
@@ -66,15 +66,13 @@ pub use join_replay_definition::{
     early_assessment_definition, multi_subject_assessment_retry_definition,
 };
 pub use mutation::{
-    WorkflowDefinitionAuthoringBinding, WorkflowDefinitionAuthoringHandler,
-    WorkflowDefinitionAuthoringIntent, WorkflowInstanceStartBinding, WorkflowInstanceStartHandler,
-    WorkflowInstanceStartIntent,
+    WorkflowDefinitionAuthoringBinding, WorkflowDefinitionAuthoringIntent,
+    WorkflowInstanceStartBinding, WorkflowInstanceStartIntent,
 };
 pub use ordinary_run::run_instance;
 pub use program_adoption::{
-    advance_on_second, approve_on_second, cancel_on_second, prepare_second_program_adoption,
-    propose_on_second, publish_adoption, recollect_on_second, second_program_workflow_inventory,
-    second_revision, start_on_second,
+    prepare_second_program_adoption, publish_adoption, second_program_workflow_inventory,
+    second_revision,
 };
 pub use retry_definition::{bounded_retry_definition, bounded_retry_definition_with_attempts};
 pub use review_requirement::{

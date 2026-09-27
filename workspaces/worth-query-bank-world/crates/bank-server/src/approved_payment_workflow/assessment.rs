@@ -21,7 +21,6 @@ use worth_query_host::facade::application_entry::{
 };
 
 use super::{BankApprovedPaymentWorkflow, BankApprovedPaymentWorkflowError};
-use crate::application_definition::BankApplication;
 
 pub type BankApprovedPaymentAssessment =
     WorthQueryWorkflowAssessmentDemandSettlement<PaymentDetailQuery>;
@@ -64,7 +63,6 @@ pub struct BankApprovedPaymentAssessmentDemand<'runtime> {
         'runtime,
         BankSchema,
         ApprovedBusinessPaymentWorkflow,
-        BankApplication,
         ApprovedPaymentAssessmentDemand,
     >,
     settlement: BankPaymentAssessmentSettlement,

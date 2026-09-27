@@ -349,12 +349,12 @@ fn assessment_acceptance_rejects_output_after_its_native_source_changes() {
     match accept_assessment(&application, started.instance().clone(), &settled, 458)
         .expect("changed assessment meaning must resolve as idempotency drift")
     {
-        WorkflowProgressOutcome::Application(WorthQueryApplicationCommitOutcome::Denied(
-            denial,
-        )) => assert_eq!(
-            denial.kind(),
-            WorthQueryApplicationCommitDenialKind::IdempotencyIntentDrift
-        ),
+        WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::Denied(denial)) => {
+            assert_eq!(
+                denial.kind(),
+                WorthQueryApplicationCommitDenialKind::IdempotencyIntentDrift
+            )
+        }
         other => panic!("expected assessment intent drift, got {other:?}"),
     }
 }

@@ -10,7 +10,7 @@ use worth_query_host::facade::application_entry::{
     WorthQueryWorkflowInstancePreparationDenial,
 };
 use worth_query_host::facade::primary_graph::{
-    WorthQueryBranchAdoptionPreparationDenial,
+    WorthQueryApplicationUncommitted, WorthQueryBranchAdoptionPreparationDenial,
     WorthQueryWorkflowDefinitionDisposition as DefinitionDisposition,
     WorthQueryWorkflowInstanceCustody,
     WorthQueryWorkflowInstanceDisposition as InstanceDisposition,
@@ -20,9 +20,9 @@ use crate::bounded_dimension_model::{
     host::{publish_workflow_on_first_program, BoundedDimensionWorkflowRuntime},
     programs::DimensionProgramP1,
     workflow::{
-        advance_instance, advance_on_second, prepare_second_program_adoption, publish_adoption,
-        publish_definition, second_program_workflow_inventory, second_revision, start_instance,
-        start_on_second, support_workflow_program, terminal_definition,
+        advance_instance, prepare_second_program_adoption, publish_adoption, publish_definition,
+        second_program_workflow_inventory, second_revision, start_instance,
+        support_workflow_program, terminal_definition,
     },
 };
 
@@ -75,17 +75,23 @@ fn carry_moves_a_live_instance_and_its_definition_to_the_target() {
         "carriage never rewrites publication provenance",
     );
     assert!(carried.is_some() && carried != published_under);
-    match advance_on_second(&application, main, instance.clone(), 85_010)
+    match advance_instance(&application, instance.clone(), 85_010)
         .expect("the carried instance advances under P1")
     {
         WorkflowProgressOutcome::Completed(transition) => assert!(transition.terminal()),
         other => panic!("the carried instance did not complete under P1: {other:?}"),
     }
+    let finished = advance_instance(&application, instance, 85_011);
     assert!(
-        advance_instance(&application, instance, 85_011).is_err(),
-        "the source vocabulary no longer serves the carried instance",
+        matches!(
+            finished,
+            Ok(WorkflowProgressOutcome::Application(
+                WorthQueryApplicationUncommitted::Stale(_)
+            ))
+        ),
+        "a completed carried instance does not advance again: {finished:?}",
     );
-    let restarted = start_on_second(&application, main, definition, 85_012);
+    let restarted = start_instance(&application, definition, 85_012);
     assert!(
         matches!(restarted, Ok(WorkflowInstanceStartOutcome::Started(_))),
         "the carried definition starts new P1 instances: {restarted:?}",
@@ -112,12 +118,12 @@ fn retire_and_cancel_end_the_source_workflow_on_the_branch() {
         }),
     ));
 
-    let cancelled = advance_on_second(&application, main, instance, 85_110);
+    let cancelled = advance_instance(&application, instance, 85_110);
     assert!(
         cancelled.is_err(),
         "a cancelled instance never advances: {cancelled:?}"
     );
-    let retired = start_on_second(&application, main, definition, 85_111);
+    let retired = start_instance(&application, definition, 85_111);
     assert!(
         retired.is_err(),
         "a retired definition starts nothing: {retired:?}"

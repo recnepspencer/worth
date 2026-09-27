@@ -108,9 +108,10 @@ fn a_second_program_occurrence_enforces_the_second_law() {
 fn a_rostered_peer_program_is_named_but_not_active() {
     let host = publish_on_first_program();
     let branch = host.current_world();
-    let peer = host
-        .supported_program::<DimensionProgramP1>()
-        .expect("the peer program this host rostered must be nameable");
+    assert!(
+        host.supported_program::<DimensionProgramP1>().is_some(),
+        "the peer program this host rostered must be nameable"
+    );
     assert!(
         host.supported_program::<UnrosteredDimensionProgram>()
             .is_none(),
@@ -119,25 +120,20 @@ fn a_rostered_peer_program_is_named_but_not_active() {
 
     let before = observe_head(host.runtime(), branch);
     assert_eq!(
-        settle(set_dimension(
-            &peer,
-            branch,
-            SEED_DIMENSION + 1,
-            0x9175_0021
-        )),
-        DimensionVerdict::inactive(),
-        "a rostered peer cannot act on an occurrence running another program"
+        settle(set_dimension(&host, branch, HIGH_DIMENSION, 0x9175_0021)),
+        DimensionVerdict::violated("bounded-dimension-v1"),
+        "a rostered peer's law cannot govern an occurrence running another program"
     );
     let after = observe_head(host.runtime(), branch);
     assert_eq!(
         read_dimension(host.runtime(), branch),
         SEED_DIMENSION,
-        "a denial before effects cannot have moved the branch"
+        "a refused candidate cannot have moved the branch"
     );
     assert_eq!(
         before.selected_commit(),
         after.selected_commit(),
-        "a denial before effects cannot have moved the commit head"
+        "a refused candidate cannot have moved the commit head"
     );
 }
 
@@ -145,19 +141,15 @@ fn a_rostered_peer_program_is_named_but_not_active() {
 fn a_rostered_peer_program_is_named_but_not_active_on_a_second_program_host() {
     let host = publish_on_second_program();
     let branch = host.current_world();
-    let peer = host
-        .supported_program::<DimensionProgramP0>()
-        .expect("the peer program this host rostered must be nameable");
+    assert!(
+        host.supported_program::<DimensionProgramP0>().is_some(),
+        "the peer program this host rostered must be nameable"
+    );
 
     let before = observe_head(host.runtime(), branch);
     assert_eq!(
-        settle(set_dimension(
-            &peer,
-            branch,
-            SEED_DIMENSION + 1,
-            0x9175_0031
-        )),
-        DimensionVerdict::inactive()
+        settle(set_dimension(&host, branch, LOW_DIMENSION, 0x9175_0031)),
+        DimensionVerdict::violated("bounded-dimension-v2")
     );
     let after = observe_head(host.runtime(), branch);
     assert_eq!(read_dimension(host.runtime(), branch), SEED_DIMENSION);
@@ -202,15 +194,6 @@ fn a_forked_branch_inherits_the_law_its_source_was_running() {
     );
     assert_eq!(read_dimension(host.runtime(), fork), LOW_DIMENSION);
 
-    let peer = host
-        .supported_program::<DimensionProgramP1>()
-        .expect("the rostered peer is nameable on every occurrence of this host");
-    assert_eq!(
-        settle(set_dimension(&peer, fork, SEED_DIMENSION, 0x9175_0044)),
-        DimensionVerdict::inactive(),
-        "forking an occurrence cannot activate a program it never ran"
-    );
-    assert_eq!(read_dimension(host.runtime(), fork), LOW_DIMENSION);
     assert_eq!(read_dimension(host.runtime(), main), SEED_DIMENSION);
 }
 

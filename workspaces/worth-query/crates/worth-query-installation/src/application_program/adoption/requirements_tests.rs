@@ -30,8 +30,8 @@ fn fixture() -> AdoptionFixture {
     let installed_schema = installed_support_schema();
     let bounded = validated::<BoundedProgram>();
     let complete = validated::<CompleteProgram>();
-    let bounded_revision = bounded.revision().clone();
-    let complete_revision = complete.revision().clone();
+    let bounded_revision = *bounded.revision();
+    let complete_revision = *complete.revision();
     let roster = WorthQueryProgramSupportAdmission::for_installed_schema(&installed_schema)
         .support(&bounded)
         .expect("the bounded program fits the installed contracts")
@@ -226,7 +226,7 @@ fn removed_operation_requires_live_custody_inventory_without_inventing_custody()
 #[test]
 fn a_program_this_host_does_not_support_names_itself_in_the_refusal() {
     let fixture = fixture();
-    let foreign = validated::<AuditProgram>().revision().clone();
+    let foreign = *validated::<AuditProgram>().revision();
 
     let unrostered_target = fixture
         .roster
@@ -234,9 +234,7 @@ fn a_program_this_host_does_not_support_names_itself_in_the_refusal() {
         .expect_err("the audit program was never admitted to this roster");
     assert_eq!(
         unrostered_target,
-        WorthQueryProgramAdoptionRequirementsDenial::UnrosteredTarget {
-            revision: foreign.clone()
-        }
+        WorthQueryProgramAdoptionRequirementsDenial::UnrosteredTarget { revision: foreign }
     );
 
     let unrostered_source = fixture

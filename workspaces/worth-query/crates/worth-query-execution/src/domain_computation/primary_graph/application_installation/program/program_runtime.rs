@@ -131,15 +131,14 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
         let support =
             self.runtime
                 .installed_program_support()
-                .ok_or_else(|| Denial::UnrosteredProgram {
-                    revision: revision.clone(),
+                .ok_or(Denial::UnrosteredProgram {
+                    revision: *revision,
                 })?;
-        let entry =
-            support
-                .rostered_for_recovery(revision)
-                .ok_or_else(|| Denial::UnrosteredProgram {
-                    revision: revision.clone(),
-                })?;
+        let entry = support
+            .rostered_for_recovery(revision)
+            .ok_or(Denial::UnrosteredProgram {
+                revision: *revision,
+            })?;
         let retained_program_bytes = entry.retained_bytes();
         let retirement = support.lifecycle().begin_retirement(revision)?;
         let barrier = match self

@@ -56,9 +56,9 @@ where
     /// prepared before a step settles goes stale in turn. The start
     /// capability authorizes cancellation. The same key replays exactly; any
     /// other request for a cancelled instance is refused as cancelled.
-    pub fn prepare_workflow_instance_cancellation<'workflow, Spec, Program: 'workflow>(
+    pub fn prepare_workflow_instance_cancellation<'workflow, Spec>(
         self,
-        workflow: impl Into<WorthQueryWorkflowVocabulary<'workflow, Schema, Spec, Program>>,
+        workflow: impl Into<WorthQueryWorkflowVocabulary<'workflow, Schema, Spec>>,
         instance: PublishedWorkflowInstanceRef,
     ) -> Result<
         WorthQueryWorkflowInstanceCancellationRequest<
@@ -82,7 +82,6 @@ where
                     MutationInput<Schema, Intent>,
                     MutationScope<Schema, IntentBinding<Schema, Intent>>,
                     Spec,
-                    Program,
                 >(selected, installed, instance, key, admission)
             })?;
         Ok(WorthQueryWorkflowInstanceCancellationRequest {

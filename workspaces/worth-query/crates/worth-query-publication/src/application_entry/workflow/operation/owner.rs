@@ -3,9 +3,7 @@
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationIntent, ApplicationMutationScopeResolution,
 };
-use worth_query_declaration::facade::application_program::{
-    ApplicationProgramDefinition, ApplicationWorkflowSpec,
-};
+use worth_query_declaration::facade::application_program::ApplicationWorkflowSpec;
 use worth_query_execution::publication_boundary::workflow_advance::{
     RequiredWorkflowOperation, WorkflowProgressOutcome, WorthQueryGuardedWorkflowOperationCustody,
     WorthQueryWorkflowAdvanceAdapter,
@@ -68,14 +66,13 @@ impl std::fmt::Display for WorthQueryWorkflowOperationOwnerAcceptanceDenial {
 
 impl std::error::Error for WorthQueryWorkflowOperationOwnerAcceptanceDenial {}
 
-impl<'application, 'principal, 'scope, Schema, Spec, Program, Operation, Input, Scope>
+impl<'application, 'principal, 'scope, Schema, Spec, Operation, Input, Scope>
     WorthQueryWorkflowAdvanceRequest<
         'application,
         'principal,
         'scope,
         Schema,
         Spec,
-        Program,
         Operation,
         Input,
         Scope,
@@ -83,7 +80,6 @@ impl<'application, 'principal, 'scope, Schema, Spec, Program, Operation, Input, 
 where
     Schema: ApplicationSchema,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
-    Program: ApplicationProgramDefinition<Schema>,
     Operation: 'static,
     Input: Clone + Send + Sync + 'static,
 {
@@ -177,18 +173,8 @@ where
     }
 }
 
-fn resolve_owner<Schema, Spec, Program, Operation, Input, Scope, Intent, SourcePreparation>(
-    advance: &WorthQueryWorkflowAdvanceRequest<
-        '_,
-        '_,
-        '_,
-        Schema,
-        Spec,
-        Program,
-        Operation,
-        Input,
-        Scope,
-    >,
+fn resolve_owner<Schema, Spec, Operation, Input, Scope, Intent, SourcePreparation>(
+    advance: &WorthQueryWorkflowAdvanceRequest<'_, '_, '_, Schema, Spec, Operation, Input, Scope>,
     required: &RequiredWorkflowOperation,
     operation: &mut WorthQueryApplicationMutationRequestWithIdempotency<
         '_,
@@ -209,7 +195,6 @@ fn resolve_owner<Schema, Spec, Program, Operation, Input, Scope, Intent, SourceP
 where
     Schema: ApplicationSchema,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
-    Program: ApplicationProgramDefinition<Schema>,
     Intent: ApplicationMutationIntent<Schema>,
     <Intent::Binding as ApplicationMutationBinding<Schema>>::Input: Clone + Send + Sync + 'static,
     <Intent::Binding as ApplicationMutationBinding<Schema>>::ScopeBinding:

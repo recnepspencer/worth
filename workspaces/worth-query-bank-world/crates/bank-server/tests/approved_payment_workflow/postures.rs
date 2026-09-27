@@ -8,7 +8,7 @@ use worth_query_host::facade::application_entry::{
     WorthQueryWorkflowOperationOwnerPosture, WorthQueryWorkflowOperationRecoveryPreparationDenial,
 };
 use worth_query_host::facade::primary_graph::{
-    WorthQueryApplicationCommitOutcome, WorthQueryExternalDispatchPostureKind,
+    WorthQueryApplicationUncommitted, WorthQueryExternalDispatchPostureKind,
 };
 
 use super::assertions::key;
@@ -171,7 +171,7 @@ fn unpublished_product_retains_owner_recovery_and_never_dispatches_the_rail() {
         .fail_next_durable_append_for_test();
     let partial = match ready.perform() {
         BankApprovedPaymentApplyOutcome::Commit(
-            WorthQueryApplicationCommitOutcome::ProductUnpublished(partial),
+            WorthQueryApplicationUncommitted::ProductUnpublished(partial),
         ) => partial,
         other => {
             panic!("owner durability failure must retain unpublished product custody: {other:?}")
@@ -222,7 +222,7 @@ fn indeterminate_product_comparison_retains_custody_without_rail_dispatch() {
         .panic_before_product_compare_once_for_test();
     let unresolved = match ready.perform() {
         BankApprovedPaymentApplyOutcome::Commit(
-            WorthQueryApplicationCommitOutcome::Indeterminate(unresolved),
+            WorthQueryApplicationUncommitted::Indeterminate(unresolved),
         ) => unresolved,
         other => panic!("World comparison unwind must retain indeterminate custody: {other:?}"),
     };

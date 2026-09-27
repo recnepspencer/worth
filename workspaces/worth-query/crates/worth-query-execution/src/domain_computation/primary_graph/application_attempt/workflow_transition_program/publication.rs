@@ -1,6 +1,6 @@
 use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
 
-use super::super::{WorthQueryApplicationCommitOutcome, WorthQueryApplicationEffectProgram};
+use super::super::{WorthQueryApplicationEffectProgram, WorthQueryApplicationUncommitted};
 
 #[path = "publication/actor.rs"]
 mod actor;
@@ -353,7 +353,9 @@ pub enum WorkflowProgressOutcome {
     AwaitingEvidence(RequiredWorkflowEvidence),
     AwaitingApproval(RequiredWorkflowApproval),
     Completed(PerformedWorkflowTransition),
-    Application(WorthQueryApplicationCommitOutcome),
+    /// The commit did not land. A landed commit, first or replayed, is the
+    /// performed variant.
+    Application(WorthQueryApplicationUncommitted),
     ProjectionDenied(super::super::WorthQueryApplicationCommitReceipt),
     PreparationDenied(super::super::WorthQueryApplicationAttemptDenial),
     AuthenticationDenied(

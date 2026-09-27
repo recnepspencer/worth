@@ -1,9 +1,8 @@
 use worth_query_declaration::facade::application_operation::{
-    ApplicationMutationBinding, ApplicationMutationIntent, ApplicationMutationScopeResolution,
+    ApplicationMutationBinding, ApplicationMutationIntent,
 };
 use worth_query_declaration::facade::application_program::{
     ApplicationConnectionShape, ApplicationOutputGraphShape, ApplicationProgramDefinition,
-    ApplicationProgramOutputsShape,
 };
 use worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime;
 use worth_query_execution::facade::primary_graph::{
@@ -12,11 +11,7 @@ use worth_query_execution::facade::primary_graph::{
 };
 use worth_query_installation::facade::ApplicationSchema;
 
-use super::{
-    WorthQueryApplicationMutationOutcome, WorthQueryApplicationMutationRequestWithIdempotency,
-    WorthQueryMutationSourcePrepared, WorthQueryPerformedMutationExecutionDenial,
-    WorthQueryRequiredOutputPreparationDenial,
-};
+use super::{WorthQueryApplicationMutationOutcome, WorthQueryRequiredOutputPreparationDenial};
 
 mod outputs;
 mod recovery;
@@ -151,67 +146,6 @@ where
         &mut self,
     ) -> &mut WorthQueryDiscoveredProgramOutputHandle<'application, Schema, Program, Root> {
         &mut self.required_output
-    }
-}
-
-impl<'application, 'principal, 'scope, 'key, Schema, Intent>
-    WorthQueryApplicationMutationRequestWithIdempotency<
-        'application,
-        'principal,
-        'scope,
-        'key,
-        Schema,
-        Intent,
-        WorthQueryMutationSourcePrepared,
-    >
-where
-    Schema: ApplicationSchema + 'static,
-    Intent: ApplicationMutationIntent<Schema> + Clone + Send + Sync,
-    <Intent::Binding as ApplicationMutationBinding<Schema>>::Input: Clone + Send + Sync,
-    <Intent::Binding as ApplicationMutationBinding<Schema>>::ScopeBinding:
-        ApplicationMutationScopeResolution<
-            Schema,
-            <Intent::Binding as ApplicationMutationBinding<Schema>>::PrincipalIdentity,
-        >,
-{
-    pub fn execute_performed_discovered<Program, Root>(
-        self,
-        application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
-    ) -> Result<
-        WorthQueryApplicationDiscoveredMutationOutcome<'application, Schema, Intent, Program, Root>,
-        WorthQueryPerformedMutationExecutionDenial,
-    >
-    where
-        Program: ApplicationProgramDefinition<Schema>,
-        Program::Outputs: ApplicationProgramOutputsShape<Schema>,
-        Root: ApplicationOutputGraphShape<Schema>
-            + worth_query_declaration::facade::application_program::ApplicationDiscoveredOutputRoot,
-        RootConnection<Schema, Root>:
-            WorthQueryApplicationDiscoveredOutputConnection<Schema, Source = Intent::Binding>,
-    {
-        super::performed_source::require_program_output_root::<Schema, Program, Root>(
-            self.request.application,
-            application,
-        )?;
-        let discovery =
-            RootConnection::<Schema, Root>::discovery_from_source(self.request.intent.input())
-                .map_err(WorthQueryPerformedMutationExecutionDenial::Connection)?;
-        let retained_discovery = discovery.clone();
-        let source = super::performed_source::PerformedSourceCommit::default();
-        let outcome = self
-            .execute_with_commit(true, |_, program, idempotency| {
-                source.record(
-                    application
-                        .compare_and_commit_discovered_output_source::<Root, Intent::Binding>(
-                        &worth_query_execution::publication_boundary::program_publication_access(),
-                        program,
-                        idempotency,
-                        retained_discovery,
-                    ),
-                )
-            })
-            .map_err(WorthQueryPerformedMutationExecutionDenial::Mutation)?;
-        Ok(discovered_outcome(application, discovery, outcome, source))
     }
 }
 

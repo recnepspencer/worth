@@ -15,9 +15,9 @@ where
             <SourceBinding<Schema, Demand> as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
         >,
 {
-    pub(in crate::application_entry) fn start_for_workflow<Spec, Program>(
+    pub(in crate::application_entry) fn start_for_workflow<Spec>(
         self,
-        workflow: worth_query_execution::facade::application_installation::WorthQueryWorkflowVocabulary<'application, Schema, Spec, Program>,
+        workflow: worth_query_execution::facade::application_installation::WorthQueryWorkflowVocabulary<'application, Schema, Spec>,
     ) -> Result<
         (
             WorthQueryAdmittedOutputDemand<Schema, Family<Schema, Demand>>,
@@ -29,9 +29,6 @@ where
     where
         Spec: worth_query_declaration::facade::application_program::ApplicationWorkflowSpec<
             Schema = Schema,
-        >,
-        Program: worth_query_declaration::facade::application_program::ApplicationProgramDefinition<
-            Schema,
         >,
     {
         if !std::ptr::eq(self.application, workflow.runtime()) {

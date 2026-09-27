@@ -69,12 +69,11 @@ fn supplier_removal_requires_owner_disposition_for_a_waiting_instance() {
         .create()
         .expect("fork retains instance history without executable custody");
 
-    let target = application
+    let target = *application
         .program_runtime()
         .supported_program::<RemovedAssessmentSupplierProgram>()
         .expect("supplier-removal target is rostered")
-        .owned_revision()
-        .clone();
+        .owned_revision();
     let runtime = application.runtime();
     let scope = request_scope();
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
@@ -95,8 +94,7 @@ fn supplier_removal_requires_owner_disposition_for_a_waiting_instance() {
         .request(&principal, &scope)
         .on_branch(main)
         .programs()
-        .adopt(&target)
-        .requirements(&requirements)
+        .adopt(&requirements)
         .prepare(1_024)
     {
         Err(denial) => denial,
@@ -157,8 +155,7 @@ fn supplier_removal_requires_owner_disposition_for_a_waiting_instance() {
         .request(&principal, &scope)
         .on_branch(historical_fork)
         .programs()
-        .adopt(&target)
-        .requirements(&fork_requirements);
+        .adopt(&fork_requirements);
     let fork_inventory = fork_adoption
         .workflow_inventory(1_024)
         .expect("the fork inventories its workflow facts");

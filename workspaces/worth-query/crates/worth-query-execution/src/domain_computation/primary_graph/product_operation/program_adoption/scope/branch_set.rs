@@ -254,7 +254,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             pending,
             progress,
             resolution_required: None,
-            target: target.clone(),
+            target: *target,
             total_selection_work_units,
         })
     }

@@ -21,9 +21,9 @@ pub struct WorthQueryWorkflowDefinitionPublicationAdapter;
 
 impl WorthQueryWorkflowDefinitionPublicationAdapter {
     #[doc(hidden)]
-    pub fn prepare<Schema, Capability, Operation, Input, Scope, Spec, Program>(
+    pub fn prepare<Schema, Capability, Operation, Input, Scope, Spec>(
         selected: &WorthQuerySelectedProductOperation<'_, Schema>,
-        contract: WorthQueryInstalledWorkflowDefinitionContract<Schema, Spec, Program>,
+        contract: WorthQueryInstalledWorkflowDefinitionContract<Schema, Spec>,
         expected_predecessor: WorkflowDefinitionExpectedPredecessor,
         admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     ) -> Result<
@@ -36,7 +36,7 @@ impl WorthQueryWorkflowDefinitionPublicationAdapter {
         Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
-        selected.prepare_workflow_publication::<Capability, Operation, Input, Scope, Spec, Program>(
+        selected.prepare_workflow_publication::<Capability, Operation, Input, Scope, Spec>(
             contract,
             expected_predecessor,
             admission,

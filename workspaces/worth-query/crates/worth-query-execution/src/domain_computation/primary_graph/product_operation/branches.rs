@@ -50,7 +50,7 @@ impl<Schema: ApplicationSchema> crate::basis::WorthQuerySourceProgramResolver
             source.relational_basis(),
         )
         .ok()
-        .map(|selected| selected.revision().clone())
+        .map(|selected| *selected.revision())
     }
 }
 

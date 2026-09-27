@@ -67,8 +67,8 @@ pub use compare_and_commit::{
     WorthQueryApplicationCommitRecoveryKind, WorthQueryApplicationCommittedChanges,
     WorthQueryApplicationNoEffect, WorthQueryApplicationNoEffectCause,
     WorthQueryApplicationSettlementDeferred, WorthQueryApplicationSettlementNextAction,
-    WorthQueryApplicationStaleAttempt, WorthQueryApplicationUnresolvedCommitEvidence,
-    WorthQueryCommittedProductPublication,
+    WorthQueryApplicationStaleAttempt, WorthQueryApplicationUncommitted,
+    WorthQueryApplicationUnresolvedCommitEvidence, WorthQueryCommittedProductPublication,
 };
 pub(in crate::domain_computation::primary_graph) use compare_and_commit::{
     WorthQueryCommittedReceiptProjection, WorthQueryPendingApplicationCommitReceipt,

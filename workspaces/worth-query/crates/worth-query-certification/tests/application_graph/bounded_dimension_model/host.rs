@@ -44,10 +44,7 @@ use super::schema::{
 };
 use super::workflow::{
     ReviewRequirementBinding, ReviewRequirementHandler, UnlinkReviewRequirementBinding,
-    UnlinkReviewRequirementHandler, WorkflowAdvanceBinding, WorkflowAdvanceHandler,
-    WorkflowApprovalBinding, WorkflowApprovalHandler, WorkflowDefinitionAuthoringBinding,
-    WorkflowDefinitionAuthoringHandler, WorkflowGrantStatusBinding, WorkflowGrantStatusHandler,
-    WorkflowInstanceStartBinding, WorkflowInstanceStartHandler,
+    UnlinkReviewRequirementHandler, WorkflowGrantStatusBinding, WorkflowGrantStatusHandler,
 };
 
 #[path = "host/checkpoint_restore.rs"]
@@ -108,16 +105,6 @@ impl WorthQueryApplicationContribution<BoundedDimensionSchema> for BoundedDimens
             .and_then(|()| setup.handler::<PartAssessmentBinding, _>(PartAssessmentHandler))
             .and_then(|()| setup.producer::<PartAssessmentProducer>(PartAssessmentProvider))
             .and_then(|()| setup.conditional::<PartAssessmentReadiness>(()))
-            .and_then(|()| {
-                setup.handler::<WorkflowDefinitionAuthoringBinding, _>(
-                    WorkflowDefinitionAuthoringHandler,
-                )
-            })
-            .and_then(|()| {
-                setup.handler::<WorkflowInstanceStartBinding, _>(WorkflowInstanceStartHandler)
-            })
-            .and_then(|()| setup.handler::<WorkflowAdvanceBinding, _>(WorkflowAdvanceHandler))
-            .and_then(|()| setup.handler::<WorkflowApprovalBinding, _>(WorkflowApprovalHandler))
             .and_then(|()| {
                 setup.handler::<WorkflowGrantStatusBinding, _>(WorkflowGrantStatusHandler)
             })

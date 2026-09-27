@@ -16,9 +16,9 @@ use worth_query_host::facade::primary_graph::{
 use super::super::bounded_dimension_model::{
     programs::DimensionProgramP1,
     workflow::{
-        advance_on_second, approve_on_second, cancel_on_second, prepare_second_program_adoption,
-        propose_on_second, publish_adoption, recollect_on_second,
-        second_program_workflow_inventory, support_workflow_program,
+        accept_early_assessment, advance_instance, approve_instance, cancel_instance,
+        prepare_second_program_adoption, propose_instance, publish_adoption,
+        second_program_workflow_inventory, settle_early_assessment_for, support_workflow_program,
     },
 };
 use super::fork_continuation::fork_of;
@@ -42,14 +42,14 @@ fn a_carried_instance_refuses_evidence_collected_under_the_source_program() {
         Some(&|inventory| inventory.carry_compatible().unwrap()),
     ));
 
-    let required = match advance_on_second(&application, main, instance.clone(), 86_010)
+    let required = match advance_instance(&application, instance.clone(), 86_010)
         .expect("the carried approval requirement prepares under P1")
     {
         WorkflowProgressOutcome::AwaitingApproval(required) => required,
         other => panic!("expected the carried instance to await approval, got {other:?}"),
     };
     assert!(matches!(
-        approve_on_second(
+        approve_instance(
             &application,
             instance.clone(),
             &required,
@@ -67,19 +67,21 @@ fn a_carried_instance_refuses_evidence_collected_under_the_source_program() {
         ("checks/structural", 86_020),
         ("checks/manufacturability", 86_030),
     ] {
-        match recollect_on_second(&application, instance.clone(), node, key) {
+        let settlement =
+            settle_early_assessment_for(&application, instance.clone(), node, key, PART_IDENTITY);
+        match accept_early_assessment(&application, instance.clone(), node, &settlement, key + 1) {
             Ok(WorkflowProgressOutcome::Completed(_)) => {}
             other => panic!("{node} did not collect fresh P1 evidence: {other:?}"),
         }
     }
     // The requirement names its evidence; fresh evidence means a fresh one.
-    let required = match advance_on_second(&application, main, instance.clone(), 86_039)
+    let required = match advance_instance(&application, instance.clone(), 86_039)
         .expect("the approval requirement re-reads fresh P1 evidence")
     {
         WorkflowProgressOutcome::AwaitingApproval(required) => required,
         other => panic!("expected the recollected instance to await approval, got {other:?}"),
     };
-    match approve_on_second(
+    match approve_instance(
         &application,
         instance,
         &required,
@@ -224,10 +226,10 @@ fn a_cancelled_instance_names_its_cancellation_to_every_request() {
             ) if attempt.kind() == WorthQueryApplicationAttemptDenialKind::WorkflowInstanceCancelled
         )
     };
-    let advance = advance_on_second(&application, main, instance.clone(), 86_210)
+    let advance = advance_instance(&application, instance.clone(), 86_210)
         .expect_err("a cancelled instance never advances");
     assert!(cancelled(&advance), "{advance:?}");
-    let decision = approve_on_second(
+    let decision = approve_instance(
         &application,
         instance.clone(),
         &required,
@@ -237,7 +239,7 @@ fn a_cancelled_instance_names_its_cancellation_to_every_request() {
     )
     .expect_err("a cancelled instance takes no decision");
     assert!(cancelled(&decision), "{decision:?}");
-    let proposal = propose_on_second(&application, instance.clone(), 86_212)
+    let proposal = propose_instance(&application, instance.clone(), 86_212)
         .expect_err("a cancelled instance takes no proposal");
     assert!(
         matches!(
@@ -248,7 +250,7 @@ fn a_cancelled_instance_names_its_cancellation_to_every_request() {
         ),
         "{proposal:?}"
     );
-    let cancellation = cancel_on_second(&application, instance, 86_213)
+    let cancellation = cancel_instance(&application, instance, 86_213)
         .expect_err("an instance adoption cancelled takes no cancellation");
     assert!(
         matches!(

@@ -10,7 +10,6 @@ use super::{fork, target_revision, P0_ONLY_DIMENSION, P1_ONLY_DIMENSION};
 use crate::bounded_dimension_model::host::{publish_on_first_program, SEED_DIMENSION};
 use crate::bounded_dimension_model::operator_identity::{authenticate_operator, request_scope};
 use crate::bounded_dimension_model::presented_request::set_dimension;
-use crate::bounded_dimension_model::programs::DimensionProgramP1;
 use crate::bounded_dimension_model::settled_verdict::{settle, DimensionVerdict};
 
 #[test]
@@ -90,11 +89,10 @@ fn stale_suffix_resumes_only_after_exact_fresh_coverage_and_preflight() {
         .unwrap_or_else(|_| panic!("the freshly prepared suffix must close"));
     assert_eq!(closed.progress().len(), 3);
 
-    let p1 = host.supported_program::<DimensionProgramP1>().unwrap();
     for (ordinal, branch) in [a, b, c].into_iter().enumerate() {
         assert_eq!(
             settle(set_dimension(
-                &p1,
+                &host,
                 branch,
                 P1_ONLY_DIMENSION,
                 0x9175_4061 + ordinal as u64

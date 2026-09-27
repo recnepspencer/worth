@@ -111,7 +111,7 @@ fn an_unrostered_program_crosses_as_its_rendered_refusal() {
         .expect("the complete program leaves no rule unowned");
     let bounded = validated::<BoundedProgram>();
     let identity = bounded.identity().clone();
-    let revision = bounded.revision().clone();
+    let revision = *bounded.revision();
 
     let denial = install_rostered_application_program(bounded, &installed_schema, &roster)
         .err()

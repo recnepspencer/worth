@@ -5,7 +5,7 @@ use worth_query_host::facade::{
         WorkflowDefinitionExpectedPredecessor, WorkflowDefinitionPublicationOutcome,
         WorkflowInstanceStartOutcome, WorkflowProgressOutcome, WorkflowProposalOutcome,
     },
-    primary_graph::{WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitOutcome},
+    primary_graph::{WorthQueryApplicationCommitDenialKind, WorthQueryApplicationUncommitted},
 };
 
 use super::bounded_dimension_model::{
@@ -51,7 +51,7 @@ fn public_real_operation_request_publishes_and_replays_one_immutable_proposal() 
     match propose_instance(&application, started.instance().clone(), 404)
         .expect("a new proposal key must reach retained-head comparison")
     {
-        WorkflowProposalOutcome::Application(WorthQueryApplicationCommitOutcome::Stale(stale)) => {
+        WorkflowProposalOutcome::Application(WorthQueryApplicationUncommitted::Stale(stale)) => {
             assert!(stale.stale_fact_count() > 0);
         }
         other => panic!("expected a stale duplicate proposal, got {other:?}"),
@@ -65,12 +65,12 @@ fn public_real_operation_request_publishes_and_replays_one_immutable_proposal() 
     match propose_instance(&application, other_instance.instance().clone(), 403)
         .expect("same-key proposal drift must reach idempotency comparison")
     {
-        WorkflowProposalOutcome::Application(WorthQueryApplicationCommitOutcome::Denied(
-            denial,
-        )) => assert_eq!(
-            denial.kind(),
-            WorthQueryApplicationCommitDenialKind::IdempotencyIntentDrift
-        ),
+        WorkflowProposalOutcome::Application(WorthQueryApplicationUncommitted::Denied(denial)) => {
+            assert_eq!(
+                denial.kind(),
+                WorthQueryApplicationCommitDenialKind::IdempotencyIntentDrift
+            )
+        }
         other => panic!("expected proposal intent drift, got {other:?}"),
     }
 }

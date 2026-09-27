@@ -132,11 +132,10 @@ impl
 fn target_program_must_own_the_exact_migration_binding() {
     let host = publish_on_first_program();
     let branch = host.current_world();
-    let target = host
+    let target = *host
         .supported_program::<DimensionProgramP1>()
         .expect("P1 is rostered")
-        .owned_revision()
-        .clone();
+        .owned_revision();
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let denial = host

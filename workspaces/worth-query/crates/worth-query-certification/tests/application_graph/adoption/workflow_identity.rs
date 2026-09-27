@@ -7,14 +7,14 @@ use worth_query_host::facade::application_entry::{
     WorkflowDefinitionPublicationOutcome, WorkflowDefinitionRetirementOutcome,
     WorkflowProgressOutcome, WorthQueryApplicationRequestExt,
 };
-use worth_query_host::facade::primary_graph::WorthQueryApplicationCommitOutcome;
+use worth_query_host::facade::primary_graph::WorthQueryApplicationUncommitted;
 
 use super::workflow_participant::{expect_started, live_instance_on_first_program};
 use crate::bounded_dimension_model::{
     dimension_entry::PART_IDENTITY,
     operator_identity::{authenticate_operator, request_scope},
     workflow::{
-        advance_on_second, prepare_second_program_adoption, publish_adoption, publish_definition,
+        advance_instance, prepare_second_program_adoption, publish_adoption, publish_definition,
         retire_definition, second_program_workflow_inventory, start_instance, terminal_definition,
         WorkflowAdvanceInput, WorkflowAdvanceIntent,
     },
@@ -48,16 +48,16 @@ fn equal_content_publications_and_their_instances_never_alias() {
     ));
 
     assert!(matches!(
-        advance_on_second(&application, main, early.clone(), 85_530),
+        advance_instance(&application, early.clone(), 85_530),
         Ok(WorkflowProgressOutcome::Completed(_))
     ));
-    match advance_on_second(&application, main, early, 85_531) {
-        Ok(WorkflowProgressOutcome::Application(WorthQueryApplicationCommitOutcome::Stale(_))) => {}
+    match advance_instance(&application, early, 85_531) {
+        Ok(WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::Stale(_))) => {}
         other => panic!("a completed instance never advances again: {other:?}"),
     }
     assert!(
         matches!(
-            advance_on_second(&application, main, late, 85_532),
+            advance_instance(&application, late, 85_532),
             Ok(WorkflowProgressOutcome::Completed(_))
         ),
         "the equal-content sibling keeps its own progress",
@@ -89,12 +89,12 @@ fn an_advance_prepared_under_the_source_program_is_stale_after_adoption() {
     ));
 
     match prepared.execute() {
-        WorkflowProgressOutcome::Application(WorthQueryApplicationCommitOutcome::Denied(_)) => {}
+        WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::Denied(_)) => {}
         other => panic!("a P0 binding never commits after the carry: {other:?}"),
     }
     assert!(
         matches!(
-            advance_on_second(&application, main, instance, 85_622),
+            advance_instance(&application, instance, 85_622),
             Ok(WorkflowProgressOutcome::Completed(_))
         ),
         "the carried instance progresses only through the P1 binding",

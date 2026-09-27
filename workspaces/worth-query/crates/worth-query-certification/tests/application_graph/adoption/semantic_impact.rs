@@ -14,11 +14,10 @@ use crate::bounded_dimension_model::readback::read_dimension;
 fn migration_assessment_impact_is_inspectable_and_stops_before_selection() {
     let host = publish_on_first_program();
     let branch = host.current_world();
-    let target = host
+    let target = *host
         .supported_program::<ChangedFeatureDimensionProgram>()
         .expect("the changed-feature target is rostered")
-        .owned_revision()
-        .clone();
+        .owned_revision();
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let programs = host
@@ -35,11 +34,7 @@ fn migration_assessment_impact_is_inspectable_and_stops_before_selection() {
             == worth_query_host::facade::declaration::application_program::ApplicationSemanticFamily::Features
     }));
 
-    let denial = match programs
-        .adopt(&target)
-        .requirements(&requirements)
-        .prepare(0)
-    {
+    let denial = match programs.adopt(&requirements).prepare(0) {
         Ok(_) => panic!("migration assessment must fail before zero-budget selection"),
         Err(denial) => denial,
     };

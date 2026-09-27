@@ -5,7 +5,7 @@ use worth_query_host::facade::application_entry::{
     WorthQueryApplicationRequestExt, WorthQueryBranchAdoptionPublicationOutcome,
 };
 use worth_query_host::facade::application_installation::WorthQueryProgramOwner;
-use worth_query_host::facade::primary_graph::WorthQueryApplicationCommitOutcome;
+use worth_query_host::facade::primary_graph::WorthQueryApplicationUncommitted;
 
 use crate::bounded_dimension_model::host::{publish_on_first_program, SEED_DIMENSION};
 use crate::bounded_dimension_model::operator_identity::{authenticate_operator, request_scope};
@@ -32,11 +32,10 @@ fn one_branch_adopts_p1_while_its_sibling_keeps_running_p0() {
         .components(|components| components.fork_relational().reuse_exact_signal_basis())
         .create()
         .expect("the sibling branch must publish");
-    let target = host
+    let target = *host
         .supported_program::<DimensionProgramP1>()
         .expect("P1 is rostered")
-        .owned_revision()
-        .clone();
+        .owned_revision();
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let programs = host
@@ -49,8 +48,7 @@ fn one_branch_adopts_p1_while_its_sibling_keeps_running_p0() {
         .expect("the host must describe P0 to P1 requirements");
     assert!(requirements.requires_existing_state_validation());
     let prepared = programs
-        .adopt(&target)
-        .requirements(&requirements)
+        .adopt(&requirements)
         .prepare(64)
         .expect("the seed satisfies P1 and adoption must prepare");
     assert_eq!(
@@ -79,17 +77,19 @@ fn one_branch_adopts_p1_while_its_sibling_keeps_running_p0() {
         settle(set_dimension(
             &host,
             adopted,
-            P1_ONLY_DIMENSION,
+            P0_ONLY_DIMENSION,
             0x9175_1001
         )),
-        DimensionVerdict::inactive(),
-        "P0 can no longer act on the adopted branch"
+        DimensionVerdict::violated("bounded-dimension-v2"),
+        "P0's law no longer governs the adopted branch"
     );
-    let p1 = host
-        .supported_program::<DimensionProgramP1>()
-        .expect("P1 remains rostered");
     assert_eq!(
-        settle(set_dimension(&p1, adopted, P1_ONLY_DIMENSION, 0x9175_1002)),
+        settle(set_dimension(
+            &host,
+            adopted,
+            P1_ONLY_DIMENSION,
+            0x9175_1002
+        )),
         DimensionVerdict::Performed(P1_ONLY_DIMENSION)
     );
     assert_eq!(read_dimension(host.runtime(), adopted), P1_ONLY_DIMENSION);
@@ -121,11 +121,10 @@ fn target_rule_rejects_existing_state_by_its_installed_identity() {
         DimensionVerdict::Performed(P0_ONLY_DIMENSION)
     );
     let branch = host.current_world();
-    let target = host
+    let target = *host
         .supported_program::<DimensionProgramP1>()
         .expect("P1 is rostered")
-        .owned_revision()
-        .clone();
+        .owned_revision();
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let programs = host
@@ -134,11 +133,7 @@ fn target_rule_rejects_existing_state_by_its_installed_identity() {
         .on_branch(branch)
         .programs();
     let requirements = programs.compare(&target).expect("comparison must succeed");
-    let denial = match programs
-        .adopt(&target)
-        .requirements(&requirements)
-        .prepare(64)
-    {
+    let denial = match programs.adopt(&requirements).prepare(64) {
         Ok(_) => panic!("P1 must judge and reject the existing P0-only value"),
         Err(denial) => denial,
     };
@@ -158,11 +153,10 @@ fn target_rule_rejects_existing_state_by_its_installed_identity() {
 fn prepared_adoption_refuses_a_branch_head_that_moved() {
     let host = publish_on_first_program();
     let branch = host.current_world();
-    let target = host
+    let target = *host
         .supported_program::<DimensionProgramP1>()
         .expect("P1 is rostered")
-        .owned_revision()
-        .clone();
+        .owned_revision();
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let programs = host
@@ -172,8 +166,7 @@ fn prepared_adoption_refuses_a_branch_head_that_moved() {
         .programs();
     let requirements = programs.compare(&target).expect("comparison must succeed");
     let prepared = programs
-        .adopt(&target)
-        .requirements(&requirements)
+        .adopt(&requirements)
         .prepare(64)
         .expect("the adoption must prepare against the selected head");
 
@@ -204,11 +197,10 @@ fn prepared_adoption_refuses_a_branch_head_that_moved() {
 fn affected_state_selection_refuses_an_understated_ceiling() {
     let host = publish_on_first_program();
     let branch = host.current_world();
-    let target = host
+    let target = *host
         .supported_program::<DimensionProgramP1>()
         .expect("P1 is rostered")
-        .owned_revision()
-        .clone();
+        .owned_revision();
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let first_programs = host
@@ -220,8 +212,7 @@ fn affected_state_selection_refuses_an_understated_ceiling() {
         .compare(&target)
         .expect("comparison must succeed");
     let prepared = first_programs
-        .adopt(&target)
-        .requirements(&requirements)
+        .adopt(&requirements)
         .prepare(64)
         .expect("a sufficient ceiling must prepare");
     let exact_work = prepared.selection_work_units();
@@ -233,11 +224,7 @@ fn affected_state_selection_refuses_an_understated_ceiling() {
         .request(&principal, &scope)
         .on_branch(branch)
         .programs();
-    let denial = match denied_programs
-        .adopt(&target)
-        .requirements(&requirements)
-        .prepare(exact_work - 1)
-    {
+    let denial = match denied_programs.adopt(&requirements).prepare(exact_work - 1) {
         Ok(_) => panic!("a ceiling below the measured cost cannot cover the live state"),
         Err(denial) => denial,
     };
@@ -260,8 +247,7 @@ fn affected_state_selection_refuses_an_understated_ceiling() {
         .on_branch(branch)
         .programs();
     let exact = exact_programs
-        .adopt(&target)
-        .requirements(&requirements)
+        .adopt(&requirements)
         .prepare(exact_work)
         .expect("the exact measured ceiling must prepare");
     assert_eq!(exact.selection_work_units(), exact_work);
@@ -284,11 +270,10 @@ fn a_p0_candidate_prepared_before_adoption_cannot_publish_after_p1_activates() {
         });
         assert!(pause.wait_until_reached(std::time::Duration::from_secs(10)));
 
-        let target = host
+        let target = *host
             .supported_program::<DimensionProgramP1>()
             .expect("P1 is rostered")
-            .owned_revision()
-            .clone();
+            .owned_revision();
         let scope = request_scope();
         let principal = authenticate_operator(host.installed_schema(), &scope);
         let programs = host
@@ -298,8 +283,7 @@ fn a_p0_candidate_prepared_before_adoption_cannot_publish_after_p1_activates() {
             .programs();
         let requirements = programs.compare(&target).expect("comparison must succeed");
         let prepared = programs
-            .adopt(&target)
-            .requirements(&requirements)
+            .adopt(&requirements)
             .prepare(64)
             .expect("adoption must prepare while the old candidate is parked");
         assert!(matches!(
@@ -312,7 +296,7 @@ fn a_p0_candidate_prepared_before_adoption_cannot_publish_after_p1_activates() {
         assert!(matches!(
             old_outcome,
             WorthQueryApplicationMutationOutcome::Commit(
-                WorthQueryApplicationCommitOutcome::ProductStale(_)
+                WorthQueryApplicationUncommitted::ProductStale(_)
             )
         ));
     });
@@ -328,11 +312,10 @@ fn a_p0_candidate_prepared_before_adoption_cannot_publish_after_p1_activates() {
 fn requirements_from_an_old_activation_cannot_authorize_a_later_adoption() {
     let host = publish_on_first_program();
     let branch = host.current_world();
-    let target = host
+    let target = *host
         .supported_program::<DimensionProgramP1>()
         .expect("P1 is rostered")
-        .owned_revision()
-        .clone();
+        .owned_revision();
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let programs = host
@@ -342,8 +325,7 @@ fn requirements_from_an_old_activation_cannot_authorize_a_later_adoption() {
         .programs();
     let old_requirements = programs.compare(&target).expect("comparison must succeed");
     let prepared = programs
-        .adopt(&target)
-        .requirements(&old_requirements)
+        .adopt(&old_requirements)
         .prepare(64)
         .expect("the first adoption must prepare");
     assert!(matches!(
@@ -357,8 +339,7 @@ fn requirements_from_an_old_activation_cannot_authorize_a_later_adoption() {
         .request(&principal, &scope)
         .on_branch(adopted)
         .programs()
-        .adopt(&target)
-        .requirements(&old_requirements)
+        .adopt(&old_requirements)
         .prepare(64)
     {
         Ok(_) => panic!("requirements compiled under P0 cannot authorize a P1 occurrence"),

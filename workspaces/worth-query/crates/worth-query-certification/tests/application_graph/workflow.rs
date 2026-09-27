@@ -8,7 +8,7 @@ use worth_query_host::facade::{
         WorthQueryWorkflowDefinitionPublicationPreparationDenial,
         WorthQueryWorkflowInstancePreparationDenial,
     },
-    primary_graph::{WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitOutcome},
+    primary_graph::{WorthQueryApplicationCommitDenialKind, WorthQueryApplicationUncommitted},
 };
 
 use super::bounded_dimension_model::{
@@ -143,7 +143,7 @@ fn public_terminal_workflow_advances_once_through_authenticated_transition_autho
     match advance_instance(&application, started.instance().clone(), 34)
         .expect("a new key must reach transition-head comparison")
     {
-        WorkflowProgressOutcome::Application(WorthQueryApplicationCommitOutcome::Stale(stale)) => {
+        WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::Stale(stale)) => {
             assert!(stale.stale_fact_count() > 0)
         }
         other => panic!("expected a stale second terminal occurrence, got {other:?}"),
@@ -351,7 +351,7 @@ fn expect_stale_predecessor(
 ) {
     match result {
         Ok(WorkflowDefinitionPublicationOutcome::Application(
-            WorthQueryApplicationCommitOutcome::Stale(stale),
+            WorthQueryApplicationUncommitted::Stale(stale),
         )) => assert!(stale.stale_fact_count() > 0),
         unexpected => panic!("expected stale predecessor refusal, got {unexpected:?}"),
     }
@@ -361,7 +361,7 @@ fn expect_start_intent_drift(
     result: Result<WorkflowInstanceStartOutcome, WorthQueryWorkflowInstancePreparationDenial>,
 ) {
     match result.expect("the changed workflow start intent must reach idempotency") {
-        WorkflowInstanceStartOutcome::Application(WorthQueryApplicationCommitOutcome::Denied(
+        WorkflowInstanceStartOutcome::Application(WorthQueryApplicationUncommitted::Denied(
             denial,
         )) => assert_eq!(
             denial.kind(),
@@ -381,7 +381,7 @@ fn expect_intent_drift(
 ) {
     match result.expect("the changed workflow intent must reach idempotency") {
         WorkflowDefinitionPublicationOutcome::Application(
-            WorthQueryApplicationCommitOutcome::Denied(denial),
+            WorthQueryApplicationUncommitted::Denied(denial),
         ) => assert_eq!(
             denial.kind(),
             WorthQueryApplicationCommitDenialKind::IdempotencyIntentDrift

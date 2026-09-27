@@ -5,11 +5,17 @@
 //! replays.
 
 use worth_query_host::facade::{
-    application_discovery::WorthQueryWorkflowDefinitionDiscovery,
-    declaration::application_program::ApplicationWorkflowDefinitionIdentity,
+    application_discovery::{
+        WorthQueryWorkflowDefinitionDiscovery, WorthQueryWorkflowDefinitionDiscoveryDenial,
+    },
+    declaration::application_program::{
+        ApplicationWorkflowDefinitionIdentity, ApplicationWorkflowSpec,
+        ApplicationWorkflowSpecIdentity,
+    },
     product::WorthQueryProductBranch,
 };
 
+use super::super::bounded_dimension_model::schema::BoundedDimensionSchema;
 use super::fork_definitions::fork_of;
 use super::*;
 
@@ -137,4 +143,43 @@ fn discovery_on_a_fork_names_the_forks_own_definition() {
     assert_eq!(discovered_current(&application, fork, &identity), successor);
     assert_eq!(discovered_current(&application, main, &identity), first);
     expect_started(start_instance(&application, first, 613));
+}
+
+/// A second workflow family over the same schema, which never published the
+/// lineage the reviewed-geometry spec owns.
+struct ForeignWorkflow;
+
+impl ApplicationWorkflowSpec for ForeignWorkflow {
+    type Schema = BoundedDimensionSchema;
+    const IDENTITY: ApplicationWorkflowSpecIdentity =
+        ApplicationWorkflowSpecIdentity::new("worth.query.certification.foreign-workflow.v1");
+}
+
+#[test]
+fn discovery_under_another_spec_names_the_lineage_foreign() {
+    let application = publish_workflow_on_first_program();
+    let main = application.runtime().current_world();
+    let draft = terminal_definition("completed");
+    let identity = draft.identity().clone();
+    let first = expect_published(
+        "owned revision",
+        publish_definition(
+            &application,
+            draft,
+            WorkflowDefinitionExpectedPredecessor::Absent,
+            621,
+        ),
+    );
+    let foreign = application
+        .runtime()
+        .on_branch(main)
+        .select()
+        .expect("the branch selects its exact occurrence")
+        .discover_workflow_definition::<ForeignWorkflow>(&identity);
+    assert_eq!(
+        foreign,
+        Err(WorthQueryWorkflowDefinitionDiscoveryDenial::ForeignLineage),
+        "a lineage another spec published is named foreign, not unreadable",
+    );
+    assert_eq!(discovered_current(&application, main, &identity), first);
 }

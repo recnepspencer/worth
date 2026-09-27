@@ -47,10 +47,9 @@ where
         Input,
         Scope,
         Spec,
-        Program,
     >(
         &self,
-        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         instance: PublishedWorkflowInstanceRef,
         admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         input_identity: [u8; 32],
@@ -144,9 +143,9 @@ impl WorthQueryWorkflowProposalAdapter {
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub fn prepare<Schema, Operation, Input, Scope, Spec, Program>(
+    pub fn prepare<Schema, Operation, Input, Scope, Spec>(
         selected: &WorthQuerySelectedProductOperation<'_, Schema>,
-        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         instance: PublishedWorkflowInstanceRef,
         admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         idempotency: &WorthQueryApplicationIdempotencyBinding,

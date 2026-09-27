@@ -4,9 +4,9 @@ use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::identity::EntityId;
 
 use super::super::{
-    PublishedWorkflowInstanceRef, WorthQueryApplicationCommitOutcome,
-    WorthQueryApplicationEffectProgram, WorthQueryApplicationIdempotencyBinding,
-    WorthQueryApplicationIdempotencyResolution, WorthQueryApplicationIdempotencyResolutionDenial,
+    PublishedWorkflowInstanceRef, WorthQueryApplicationEffectProgram,
+    WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationIdempotencyResolution,
+    WorthQueryApplicationIdempotencyResolutionDenial, WorthQueryApplicationUncommitted,
 };
 use crate::domain_computation::primary_graph::workflow::proposal::derive_workflow_proposal_context_identity;
 use crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation;
@@ -106,7 +106,9 @@ impl PerformedWorkflowProposal {
 #[derive(Debug)]
 pub enum WorkflowProposalOutcome {
     Published(PerformedWorkflowProposal),
-    Application(WorthQueryApplicationCommitOutcome),
+    /// The commit did not land. A landed commit, first or replayed, is the
+    /// performed variant.
+    Application(WorthQueryApplicationUncommitted),
     ProjectionDenied(super::super::WorthQueryApplicationCommitReceipt),
 }
 
@@ -142,7 +144,7 @@ where
         let outcome = match resolution {
             WorthQueryApplicationIdempotencyResolution::Unseen => return Ok(None),
             WorthQueryApplicationIdempotencyResolution::IntentDrift => {
-                WorkflowProposalOutcome::Application(WorthQueryApplicationCommitOutcome::Denied(
+                WorkflowProposalOutcome::Application(WorthQueryApplicationUncommitted::Denied(
                     super::super::WorthQueryApplicationCommitDenial::idempotency_intent_drift(),
                 ))
             }
@@ -208,7 +210,7 @@ where
             Ok(presented) => presented,
             Err(denial) => {
                 return WorkflowProposalOutcome::Application(
-                    WorthQueryApplicationCommitOutcome::Denied(denial),
+                    WorthQueryApplicationUncommitted::Denied(denial),
                 );
             }
         };
@@ -227,14 +229,9 @@ where
             input_identity,
             source_identity,
         };
-        let projected = match outcome {
-            WorthQueryApplicationCommitOutcome::Committed(receipt) => {
-                project(receipt, context, false)
-            }
-            WorthQueryApplicationCommitOutcome::AlreadyCommitted(receipt) => {
-                project(receipt, context, true)
-            }
-            other => WorkflowProposalOutcome::Application(other),
+        let projected = match outcome.landed() {
+            Ok((receipt, replayed)) => project(receipt, context, replayed),
+            Err(uncommitted) => WorkflowProposalOutcome::Application(uncommitted),
         };
         if let (Some(progress_update), WorkflowProposalOutcome::Published(performed)) =
             (progress_update, &projected)

@@ -4,7 +4,7 @@ use worth_query_host::facade::application_entry::{
 };
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationCommitDenialKind,
-    WorthQueryApplicationCommitOutcome,
+    WorthQueryApplicationUncommitted,
 };
 
 type StartResult =
@@ -30,7 +30,7 @@ pub fn expect_retired_start(result: StartResult) {
 /// The start's lineage already holds its installed number of live instances.
 pub fn expect_capacity_refused(result: StartResult) {
     match result.expect("the workflow start must reach commit") {
-        WorkflowInstanceStartOutcome::Application(WorthQueryApplicationCommitOutcome::Denied(
+        WorkflowInstanceStartOutcome::Application(WorthQueryApplicationUncommitted::Denied(
             denial,
         )) => assert_eq!(
             denial.kind(),

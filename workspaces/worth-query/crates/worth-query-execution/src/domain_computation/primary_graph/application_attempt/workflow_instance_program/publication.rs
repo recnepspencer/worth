@@ -5,8 +5,8 @@ use worth_query_declaration::facade::application_program::{
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::super::{
-    WorthQueryApplicationCommitOutcome, WorthQueryApplicationEffectProgram,
-    WorthQueryApplicationIdempotencyBinding,
+    WorthQueryApplicationEffectProgram, WorthQueryApplicationIdempotencyBinding,
+    WorthQueryApplicationUncommitted,
 };
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
@@ -112,7 +112,9 @@ pub enum WorkflowInstanceStartOutcome {
     Superseded(super::supersession::SupersededWorkflowDefinitionStart),
     /// The definition's lineage is retired. Nothing was written.
     Retired(super::supersession::RetiredWorkflowDefinitionStart),
-    Application(WorthQueryApplicationCommitOutcome),
+    /// The commit did not land. A landed commit, first or replayed, is the
+    /// performed variant.
+    Application(WorthQueryApplicationUncommitted),
     ProjectionDenied(super::super::WorthQueryApplicationCommitReceipt),
 }
 
@@ -153,7 +155,7 @@ where
             Ok(presented) => presented,
             Err(denial) => {
                 return WorkflowInstanceStartOutcome::Application(
-                    WorthQueryApplicationCommitOutcome::Denied(denial),
+                    WorthQueryApplicationUncommitted::Denied(denial),
                 );
             }
         };
@@ -162,18 +164,8 @@ where
             program,
             idempotency.bind_workflow_instance(&instance_intent_identity),
         );
-        match outcome {
-            WorthQueryApplicationCommitOutcome::Committed(receipt) => project(
-                receipt,
-                definition_content_identity,
-                definition,
-                program_revision.clone(),
-                instance_identity,
-                instance_identity_locator,
-                start_path,
-                false,
-            ),
-            WorthQueryApplicationCommitOutcome::AlreadyCommitted(receipt) => project(
+        match outcome.landed() {
+            Ok((receipt, replayed)) => project(
                 receipt,
                 definition_content_identity,
                 definition,
@@ -181,13 +173,13 @@ where
                 instance_identity,
                 instance_identity_locator,
                 start_path,
-                true,
+                replayed,
             ),
-            other => match supersession {
+            Err(uncommitted) => match supersession {
                 Some(supersession) => supersession
-                    .outcome(other)
+                    .outcome(uncommitted)
                     .unwrap_or_else(WorkflowInstanceStartOutcome::Application),
-                None => WorkflowInstanceStartOutcome::Application(other),
+                None => WorkflowInstanceStartOutcome::Application(uncommitted),
             },
         }
     }

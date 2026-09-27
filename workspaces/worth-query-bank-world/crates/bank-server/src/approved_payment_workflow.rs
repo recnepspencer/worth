@@ -16,7 +16,7 @@ use worth_query_host::facade::{
         WorkflowInstanceStartOutcome, WorkflowProgressOutcome, WorkflowProposalOutcome,
         WorthQueryApplicationMutationOutcome, WorthQueryPreparedWorkflowOperationRecovery,
     },
-    primary_graph::{WorthQueryApplicationCommitOutcome, WorthQueryApplicationCommitReceipt},
+    primary_graph::{WorthQueryApplicationCommitReceipt, WorthQueryApplicationUncommitted},
 };
 
 use crate::{
@@ -59,7 +59,7 @@ pub enum BankApprovedPaymentApplyOutcome {
     DomainDenied(BankProposalDenial),
     Cancelled,
     DeadlineExceeded,
-    Commit(WorthQueryApplicationCommitOutcome),
+    Commit(WorthQueryApplicationUncommitted),
 }
 
 impl BankApprovedPaymentApplyOutcome {
@@ -231,7 +231,11 @@ impl<'runtime, 'principal, 'scope> BankApprovedPaymentWorkflow<'runtime, 'princi
             .idempotency(command_key)
             .for_workflow_operation(self.runtime.approved_payment_workflow_runtime(), required)
             .map_err(BankApprovedPaymentWorkflowError::OperationBinding)?
-            .execute_in_program(self.runtime.approved_payment_workflow_runtime())
+            .execute_in_program(
+                self.runtime
+                    .approved_payment_workflow_runtime()
+                    .program_runtime(),
+            )
             .map_err(BankApprovedPaymentWorkflowError::OperationMutation)?;
         Ok(match effect {
             WorthQueryApplicationMutationOutcome::Committed { receipt, .. } => {

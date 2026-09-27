@@ -253,7 +253,7 @@ where
                 admitted,
                 required,
                 layout: layout.clone(),
-                program_revision: compiled.program_revision().clone(),
+                program_revision: *compiled.program_revision(),
                 replays: Default::default(),
             },
         ))

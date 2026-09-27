@@ -14,7 +14,7 @@ use super::vocabulary::{
     WorthQueryInstalledApplicationWorkflowSpec,
 };
 
-pub struct WorthQueryInstalledWorkflowDefinitionContract<Schema, Spec, Program>
+pub struct WorthQueryInstalledWorkflowDefinitionContract<Schema, Spec>
 where
     Schema: ApplicationSchema,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
@@ -26,7 +26,7 @@ where
     condition_bindings: Box<[(String, &'static str)]>,
     approval_bindings: Box<[WorthQueryInstalledWorkflowApprovalBinding]>,
     authoring_capability: InstalledWorkflowAuthoringCapability,
-    marker: PhantomData<fn() -> (Schema, Program)>,
+    marker: PhantomData<fn() -> Schema>,
 }
 
 #[doc(hidden)]
@@ -45,7 +45,7 @@ pub struct WorthQueryInstalledWorkflowDefinitionParts<Spec: ApplicationWorkflowS
     pub approval_bindings: Box<[WorthQueryInstalledWorkflowApprovalBinding]>,
 }
 
-impl<Schema, Spec, Program> WorthQueryInstalledWorkflowDefinitionContract<Schema, Spec, Program>
+impl<Schema, Spec> WorthQueryInstalledWorkflowDefinitionContract<Schema, Spec>
 where
     Schema: ApplicationSchema,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
@@ -112,11 +112,11 @@ where
     }
 }
 
-pub(super) fn bind<Schema, Spec, Program>(
-    installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+pub(super) fn bind<Schema, Spec>(
+    installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
     definition: ValidatedWorkflowDefinition<Spec>,
 ) -> Result<
-    WorthQueryInstalledWorkflowDefinitionContract<Schema, Spec, Program>,
+    WorthQueryInstalledWorkflowDefinitionContract<Schema, Spec>,
     WorthQueryApplicationWorkflowInstallationDenial,
 >
 where
@@ -228,7 +228,7 @@ where
     approval_bindings.sort_unstable_by(|left, right| left.node_path.cmp(&right.node_path));
     Ok(WorthQueryInstalledWorkflowDefinitionContract {
         schema_binding: installed.schema_binding.clone(),
-        program_revision: installed.program_revision.clone(),
+        program_revision: installed.program_revision,
         definition,
         assessment_bindings: assessment_bindings.into_boxed_slice(),
         condition_bindings: condition_bindings.into_boxed_slice(),

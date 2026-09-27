@@ -11,7 +11,7 @@ use worth_query_host::facade::application_entry::{
 };
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationCommitDenialKind,
-    WorthQueryApplicationCommitOutcome, WorthQueryWorkflowInstanceCustody,
+    WorthQueryApplicationUncommitted, WorthQueryWorkflowInstanceCustody,
 };
 
 use super::assertions::key;
@@ -119,7 +119,7 @@ fn a_cancellation_prepared_before_the_rail_takes_the_payment_goes_stale() {
         .expect("the payment commits into rail custody");
     match early.execute() {
         WorkflowInstanceCancellationOutcome::Application(
-            WorthQueryApplicationCommitOutcome::Denied(denial),
+            WorthQueryApplicationUncommitted::Denied(denial),
         ) => assert_eq!(
             denial.kind(),
             WorthQueryApplicationCommitDenialKind::ProductBasisStale,
@@ -203,8 +203,7 @@ fn adoption_leaves_a_payment_the_rail_holds_with_no_disposition() {
         .programs();
     let requirements = programs.compare(&target).expect("P0 to P1 compares");
     let inventory = programs
-        .adopt(&target)
-        .requirements(&requirements)
+        .adopt(&requirements)
         .workflow_inventory(4_096)
         .expect("the workflow inventory reads");
     let payment = inventory

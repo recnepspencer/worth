@@ -225,16 +225,12 @@ where
                 },
             );
         }
-        let source_entry = self.entry(source).ok_or_else(|| {
-            WorthQueryProgramAdoptionRequirementsDenial::UnrosteredSource {
-                revision: source.clone(),
-            }
-        })?;
-        let target_entry = self.entry(target).ok_or_else(|| {
-            WorthQueryProgramAdoptionRequirementsDenial::UnrosteredTarget {
-                revision: target.clone(),
-            }
-        })?;
+        let source_entry = self.entry(source).ok_or(
+            WorthQueryProgramAdoptionRequirementsDenial::UnrosteredSource { revision: *source },
+        )?;
+        let target_entry = self.entry(target).ok_or(
+            WorthQueryProgramAdoptionRequirementsDenial::UnrosteredTarget { revision: *target },
+        )?;
         compile_requirements(
             installed_schema,
             installed,
@@ -269,8 +265,8 @@ fn compile_requirements<Schema: ApplicationSchema>(
     let changed_workflow_dependencies = changed_workflow_dependencies(source, &semantic_diff);
     Ok(WorthQueryProgramAdoptionRequirements {
         schema_binding,
-        source: source.revision().clone(),
-        target: target.revision().clone(),
+        source: *source.revision(),
+        target: *target.revision(),
         semantic_diff,
         validation_scopes: validation_scopes.into_boxed_slice(),
         added_rules: added_rules.into_boxed_slice(),

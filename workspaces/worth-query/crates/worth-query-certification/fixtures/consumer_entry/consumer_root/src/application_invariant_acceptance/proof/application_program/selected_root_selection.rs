@@ -37,7 +37,7 @@ macro_rules! selected {
             })
             .expect_source(source)
             .idempotency(&$key)
-            .execute_performed_in_selected_program::<ConsumerProgram, $root>($application)
+            .execute_performed::<ConsumerProgram, $root>($application)
     }};
 }
 

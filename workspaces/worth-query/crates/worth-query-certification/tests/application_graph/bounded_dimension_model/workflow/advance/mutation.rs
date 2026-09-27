@@ -10,10 +10,7 @@ use worth_query_host::facade::declaration::{
         EqualityPredicate, NoApplicationUnit, ReadOnly, U64ApplicationValueBinding,
     },
 };
-use worth_query_host::facade::primary_graph::{
-    CandidateWriter, DecisionReader, HandlerResult, OperationHandler,
-    WorthQueryInvariantMutationTarget,
-};
+use worth_query_host::facade::primary_graph::WorthQueryInvariantMutationTarget;
 use worth_query_host::facade::worth_query_structured_value_binding;
 
 use super::super::super::schema::{
@@ -85,6 +82,7 @@ impl ApplicationMutationBinding<BoundedDimensionSchema> for WorkflowAdvanceBindi
     const HANDLER_IDENTITY: &'static str = "worth.query.certification.workflow-advance-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.certification.workflow-advance.v1";
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
+    const WORKFLOW_CONTROL: bool = true;
     const CANDIDATES: ApplicationCandidateRequirements =
         ApplicationCandidateRequirements::fixed_shape(
             ApplicationCandidateCardinalityCeiling::fixed(8, 0, 9, 2, 71, 0),
@@ -151,6 +149,7 @@ impl ApplicationMutationBinding<BoundedDimensionSchema> for WorkflowApprovalBind
     const HANDLER_IDENTITY: &'static str = "worth.query.certification.workflow-approval-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.certification.workflow-approval.v1";
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
+    const WORKFLOW_CONTROL: bool = true;
     const CANDIDATES: ApplicationCandidateRequirements = WorkflowAdvanceBinding::CANDIDATES;
 
     fn idempotency_key_identity(key: &u64) -> [u8; 32] {
@@ -217,87 +216,6 @@ impl ApplicationMutationIntent<BoundedDimensionSchema> for WorkflowApprovalInten
             PartIdentityField::reference(),
             self.input.part_identity.clone(),
         )
-    }
-}
-
-pub struct WorkflowAdvanceHandler;
-pub struct WorkflowApprovalHandler;
-
-impl OperationHandler<BoundedDimensionSchema, WorkflowAdvanceBinding> for WorkflowAdvanceHandler {
-    fn decide(
-        &self,
-        input: &WorkflowAdvanceInput,
-        reader: &mut DecisionReader<'_, '_, '_, BoundedDimensionSchema, WorkflowAdvanceBinding>,
-    ) -> HandlerResult<
-        WorthQueryInvariantMutationTarget<BoundedDimensionSchema, Part>,
-        WorkflowAdvanceDenial,
-    > {
-        let part = match reader
-            .resolve_entity(PartIdentityField::reference(), input.part_identity.clone())
-        {
-            Ok(part) => part,
-            Err(error) => return HandlerResult::ExecutionDenied(error),
-        };
-        match reader.mutation_target(&part) {
-            Ok(target) => HandlerResult::Completed(target),
-            Err(error) => HandlerResult::ExecutionDenied(error),
-        }
-    }
-
-    fn candidate_requirements(
-        &self,
-        _: &WorkflowAdvanceInput,
-        _: &WorthQueryInvariantMutationTarget<BoundedDimensionSchema, Part>,
-    ) -> ApplicationCandidateRequirements {
-        WorkflowAdvanceBinding::CANDIDATES
-    }
-
-    fn build_candidate(
-        &self,
-        _: &WorkflowAdvanceInput,
-        _: WorthQueryInvariantMutationTarget<BoundedDimensionSchema, Part>,
-        _: &mut CandidateWriter<'_, BoundedDimensionSchema, WorkflowAdvanceBinding>,
-    ) -> HandlerResult<WorkflowAdvanceAccepted, WorkflowAdvanceDenial> {
-        HandlerResult::Completed(WorkflowAdvanceAccepted)
-    }
-}
-
-impl OperationHandler<BoundedDimensionSchema, WorkflowApprovalBinding> for WorkflowApprovalHandler {
-    fn decide(
-        &self,
-        input: &WorkflowAdvanceInput,
-        reader: &mut DecisionReader<'_, '_, '_, BoundedDimensionSchema, WorkflowApprovalBinding>,
-    ) -> HandlerResult<
-        WorthQueryInvariantMutationTarget<BoundedDimensionSchema, Part>,
-        WorkflowAdvanceDenial,
-    > {
-        let part = match reader
-            .resolve_entity(PartIdentityField::reference(), input.part_identity.clone())
-        {
-            Ok(part) => part,
-            Err(error) => return HandlerResult::ExecutionDenied(error),
-        };
-        match reader.mutation_target(&part) {
-            Ok(target) => HandlerResult::Completed(target),
-            Err(error) => HandlerResult::ExecutionDenied(error),
-        }
-    }
-
-    fn candidate_requirements(
-        &self,
-        _: &WorkflowAdvanceInput,
-        _: &WorthQueryInvariantMutationTarget<BoundedDimensionSchema, Part>,
-    ) -> ApplicationCandidateRequirements {
-        WorkflowApprovalBinding::CANDIDATES
-    }
-
-    fn build_candidate(
-        &self,
-        _: &WorkflowAdvanceInput,
-        _: WorthQueryInvariantMutationTarget<BoundedDimensionSchema, Part>,
-        _: &mut CandidateWriter<'_, BoundedDimensionSchema, WorkflowApprovalBinding>,
-    ) -> HandlerResult<WorkflowAdvanceAccepted, WorkflowAdvanceDenial> {
-        HandlerResult::Completed(WorkflowAdvanceAccepted)
     }
 }
 

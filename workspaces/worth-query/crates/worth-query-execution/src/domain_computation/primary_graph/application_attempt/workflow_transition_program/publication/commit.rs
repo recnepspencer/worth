@@ -127,7 +127,7 @@ where
         {
             Ok(presented) => presented,
             Err(denial) => {
-                return WorkflowProgressOutcome::Application(super::super::super::WorthQueryApplicationCommitOutcome::Denied(
+                return WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::Denied(
                     denial,
                 ));
             }
@@ -151,40 +151,22 @@ where
             program,
             idempotency,
         );
-        let projected = match outcome {
-            super::super::super::WorthQueryApplicationCommitOutcome::Committed(receipt) => {
-                self.primary_provider.graph.with_runtime(|runtime| {
-                    project(
-                        runtime,
-                        receipt,
-                        transition_identity,
-                        transition_identity_locator,
-                        node_path,
-                        terminal,
-                        assessment,
-                        approval,
-                        operation_receipt_identity,
-                        false,
-                    )
-                })
-            }
-            super::super::super::WorthQueryApplicationCommitOutcome::AlreadyCommitted(receipt) => {
-                self.primary_provider.graph.with_runtime(|runtime| {
-                    project(
-                        runtime,
-                        receipt,
-                        transition_identity,
-                        transition_identity_locator,
-                        node_path,
-                        terminal,
-                        assessment,
-                        approval,
-                        operation_receipt_identity,
-                        true,
-                    )
-                })
-            }
-            other => WorkflowProgressOutcome::Application(other),
+        let projected = match outcome.landed() {
+            Ok((receipt, replayed)) => self.primary_provider.graph.with_runtime(|runtime| {
+                project(
+                    runtime,
+                    receipt,
+                    transition_identity,
+                    transition_identity_locator,
+                    node_path,
+                    terminal,
+                    assessment,
+                    approval,
+                    operation_receipt_identity,
+                    replayed,
+                )
+            }),
+            Err(uncommitted) => WorkflowProgressOutcome::Application(uncommitted),
         };
         if let (Some(progress_update), WorkflowProgressOutcome::Completed(performed)) =
             (progress_update, &projected)

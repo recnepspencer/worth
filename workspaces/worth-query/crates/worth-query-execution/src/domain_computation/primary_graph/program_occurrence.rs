@@ -89,8 +89,9 @@ impl<Schema> WorthQueryInstalledProgramSupport<Schema> {
     /// denial that refuses it before any effect.
     ///
     /// A revision this host never admitted is refused as program required. A
-    /// rostered revision whose support is retiring or retired is refused as not
-    /// active, so a caller holding a stale owner learns why it lost standing.
+    /// rostered revision whose support is retiring or retired is refused as
+    /// retired support, so a caller holding a stale owner learns why it lost
+    /// standing.
     pub(in crate::domain_computation::primary_graph) fn present_for_commit(
         &self,
         revision: &ApplicationProgramRevision,
@@ -102,7 +103,7 @@ impl<Schema> WorthQueryInstalledProgramSupport<Schema> {
                 .iter()
                 .any(|entry| entry.revision() == revision)
             {
-                WorthQueryApplicationCommitDenial::program_support_not_active(revision)
+                WorthQueryApplicationCommitDenial::program_support_retired(revision)
             } else {
                 WorthQueryApplicationCommitDenial::application_program_required()
             }
@@ -172,9 +173,7 @@ impl<Schema> WorthQueryInstalledProgramSupport<Schema> {
     {
         if !self.lifecycle.is_active(target) {
             return Err(
-                WorthQueryProgramAdoptionRequirementsDenial::UnrosteredTarget {
-                    revision: target.clone(),
-                },
+                WorthQueryProgramAdoptionRequirementsDenial::UnrosteredTarget { revision: *target },
             );
         }
         self.roster

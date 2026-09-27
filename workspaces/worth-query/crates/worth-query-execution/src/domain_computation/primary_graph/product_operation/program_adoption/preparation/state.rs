@@ -197,7 +197,7 @@ pub(super) fn prepare<Schema: ApplicationSchema>(
         .map_err(WorthQueryBranchAdoptionPreparationDenial::WorldPreparation)?;
     Ok(WorthQueryPreparedBranchAdoption {
         source,
-        target: target.clone(),
+        target: *target,
         requirements,
         selected_entity_count,
         selection_work_units,
@@ -236,7 +236,7 @@ pub(super) fn requirements<Schema: ApplicationSchema>(
     WorthQueryBranchAdoptionPreparationDenial,
 > {
     let application = selected.application();
-    let source = selected
+    let source = *selected
         .inspect_selected_program()
         .map_err(|denial| match denial {
             crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial::ProgramSupportUnavailable => {
@@ -252,8 +252,7 @@ pub(super) fn requirements<Schema: ApplicationSchema>(
                 WorthQueryBranchAdoptionPreparationDenial::ProgramActivationUnrostered
             }
         })?
-        .revision()
-        .clone();
+        .revision();
     let support = application
         .installed_program_support()
         .ok_or(WorthQueryBranchAdoptionPreparationDenial::ProgramSupportUnavailable)?;

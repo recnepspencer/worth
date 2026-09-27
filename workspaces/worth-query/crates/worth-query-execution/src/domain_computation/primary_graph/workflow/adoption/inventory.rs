@@ -91,8 +91,8 @@ pub(in crate::domain_computation::primary_graph) fn inventory_workflows(
     }
     let digest = digest(request, &definitions, &instances, &read);
     Ok(WorthQueryWorkflowAdoptionInventory {
-        source: request.source.clone(),
-        target: request.target.clone(),
+        source: *request.source,
+        target: *request.target,
         definitions: definitions.into_boxed_slice(),
         instances: instances.into_boxed_slice(),
         digest,

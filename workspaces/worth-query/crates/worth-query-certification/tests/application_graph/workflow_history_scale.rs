@@ -91,8 +91,16 @@ impl HistoryCourt {
         .unwrap_or_else(|denial| panic!("history {} preparation failed: {denial:?}", self.history))
         {
             WorkflowProposalOutcome::Published(performed) => performed,
-            WorkflowProposalOutcome::Application(worth_query_host::facade::primary_graph::WorthQueryApplicationCommitOutcome::NoEffect(denial)) => panic!("history {} no effect: {:?}", self.history, denial.cause()),
-            other => panic!("history {} proposal failed with outcome {:?}", self.history, std::mem::discriminant(&other)),
+            WorkflowProposalOutcome::Application(
+                worth_query_host::facade::primary_graph::WorthQueryApplicationUncommitted::NoEffect(
+                    denial,
+                ),
+            ) => panic!("history {} no effect: {:?}", self.history, denial.cause()),
+            other => panic!(
+                "history {} proposal failed with outcome {:?}",
+                self.history,
+                std::mem::discriminant(&other)
+            ),
         };
         assert!(!performed.replayed());
         assert_eq!(

@@ -75,10 +75,9 @@ where
     pub(in crate::domain_computation::primary_graph) fn materialize_workflow_advance<
         Capability,
         Spec,
-        Program,
     >(
         mut self,
-        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         instance: super::PublishedWorkflowInstanceRef,
         request_kind: WorkflowTransitionRequestKind,
         clock: &crate::domain_computation::runtime_time::WorthQueryRuntimeClock,
@@ -336,7 +335,7 @@ where
             SelectedWorkflowTransitionKind::Condition(condition) => self
                 .materialize_condition_requirement(
                     &layout,
-                    compiled.program_revision().clone(),
+                    *compiled.program_revision(),
                     instance,
                     selected,
                     live_membership,

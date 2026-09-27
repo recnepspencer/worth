@@ -63,10 +63,9 @@ where
     pub(in crate::domain_computation::primary_graph) fn materialize_workflow_instance_migration<
         Capability,
         Spec,
-        Program,
     >(
         mut self,
-        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         succession: WorkflowSuccession,
         source: PublishedWorkflowInstanceRef,
         target: PublishedWorkflowDefinitionRef,
@@ -84,21 +83,15 @@ where
         let branch = self.lease.product().product_branch();
         let fork = match succession {
             WorkflowSuccession::Migration => {
-                self.authorize_instance_start::<Capability, Spec, Program>(
-                    installed,
-                    source.branch(),
-                )?;
-                self.authorize_instance_start::<Capability, Spec, Program>(
-                    installed,
-                    target.branch(),
-                )?;
+                self.authorize_instance_start::<Capability, Spec>(installed, source.branch())?;
+                self.authorize_instance_start::<Capability, Spec>(installed, target.branch())?;
                 None
             }
             // The fork's copy records the branch it was started on, and the
             // target names a definition the fork holds: its own, or one it
             // copied from that branch. Fork truth decides both below.
             WorkflowSuccession::ForkContinuation => {
-                self.authorize_instance_start::<Capability, Spec, Program>(installed, branch)?;
+                self.authorize_instance_start::<Capability, Spec>(installed, branch)?;
                 // An instance on its own branch moves only by migration.
                 let own_branch = source.branch() == branch;
                 // A definition from any third branch is not one the fork holds.
@@ -307,7 +300,7 @@ where
         let reservation = admit_platform_effects(&self, demand)?;
         let validator_work_admission = reservation.materialize(&effects)?;
         Ok(PreparedWorkflowInstanceStart {
-            program_revision: resumed.program_revision().clone(),
+            program_revision: *resumed.program_revision(),
             definition: resumed.definition(),
             definition_content_identity: resumed.content_identity().clone(),
             instance_identity,

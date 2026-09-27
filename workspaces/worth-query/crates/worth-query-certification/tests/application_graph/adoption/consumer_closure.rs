@@ -2,7 +2,7 @@
 
 use crate::bounded_dimension_model::host::publish_on_first_program;
 use crate::bounded_dimension_model::operator_identity::{authenticate_operator, request_scope};
-use crate::bounded_dimension_model::presented_request::{set_dimension, set_dimension_selected};
+use crate::bounded_dimension_model::presented_request::set_dimension;
 use crate::bounded_dimension_model::programs::DimensionProgramP1;
 use crate::bounded_dimension_model::settled_verdict::{settle, DimensionVerdict};
 use worth_query_host::facade::application_entry::{
@@ -24,12 +24,11 @@ fn public_entry_inspects_and_executes_each_branch_under_its_carried_program() {
         .components(|components| components.fork_relational().reuse_exact_signal_basis())
         .create()
         .expect("the sibling branch publishes");
-    let target = host
+    let target = *host
         .supported_program::<DimensionProgramP1>()
         .expect("P1 is rostered")
-        .owned_revision()
-        .clone();
-    let source = host.owned_revision().clone();
+        .owned_revision();
+    let source = *host.owned_revision();
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
 
@@ -51,8 +50,7 @@ fn public_entry_inspects_and_executes_each_branch_under_its_carried_program() {
         .programs();
     let requirements = programs.compare(&target).expect("P0 to P1 compares");
     let prepared = programs
-        .adopt(&target)
-        .requirements(&requirements)
+        .adopt(&requirements)
         .prepare(64)
         .expect("main prepares");
     assert!(matches!(
@@ -79,11 +77,11 @@ fn public_entry_inspects_and_executes_each_branch_under_its_carried_program() {
     assert_eq!(main_owner.owned_revision(), &target);
     assert_eq!(sibling_owner.owned_revision(), &source);
     assert_eq!(
-        settle(set_dimension(&main_owner, main, 15, 0x9175_5001)),
+        settle(set_dimension(&host, main, 15, 0x9175_5001)),
         DimensionVerdict::Performed(15)
     );
     assert_eq!(
-        settle(set_dimension(&sibling_owner, sibling, 3, 0x9175_5002)),
+        settle(set_dimension(&host, sibling, 3, 0x9175_5002)),
         DimensionVerdict::Performed(3)
     );
 }
@@ -113,7 +111,7 @@ fn selected_program_mutation_reuses_its_authorization_selection() {
     let before = observer.observe().acquisitions();
 
     assert_eq!(
-        settle(set_dimension_selected(&host, branch, 3, 0x9175_5003)),
+        settle(set_dimension(&host, branch, 3, 0x9175_5003)),
         DimensionVerdict::Performed(3)
     );
 

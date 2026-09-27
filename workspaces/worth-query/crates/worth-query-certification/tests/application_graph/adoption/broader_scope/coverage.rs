@@ -4,7 +4,6 @@ use super::{fork, target_revision, P0_ONLY_DIMENSION, P1_ONLY_DIMENSION};
 use crate::bounded_dimension_model::host::publish_on_first_program;
 use crate::bounded_dimension_model::operator_identity::{authenticate_operator, request_scope};
 use crate::bounded_dimension_model::presented_request::set_dimension;
-use crate::bounded_dimension_model::programs::DimensionProgramP1;
 use crate::bounded_dimension_model::readback::read_dimension;
 use crate::bounded_dimension_model::settled_verdict::{settle, DimensionVerdict};
 use worth_query_host::facade::application_entry::{
@@ -101,13 +100,10 @@ fn covered_branches_advance_in_order_without_absorbing_a_later_branch() {
     };
     assert_eq!(closed.progress().len(), 3);
 
-    let p1 = host
-        .supported_program::<DimensionProgramP1>()
-        .expect("P1 remains rostered");
     for (ordinal, branch) in [a, b, c].into_iter().enumerate() {
         assert_eq!(
             settle(set_dimension(
-                &p1,
+                &host,
                 branch,
                 P1_ONLY_DIMENSION,
                 0x9175_4000 + ordinal as u64

@@ -6,7 +6,7 @@ use worth_query_installation::facade::{ApplicationSchema, WorthQueryProgramAdopt
 
 use super::{
     WorthQueryApplicationProgramAdoptionPreparationDenial,
-    WorthQueryApplicationProgramAdoptionRequestWithRequirements,
+    WorthQueryApplicationProgramAdoptionRequest,
 };
 
 pub struct WorthQueryApplicationProgramsRequest<'application, 'principal, 'scope, Schema> {
@@ -46,17 +46,6 @@ impl WorthQueryApplicationProgramAdoptionRecoveryFailure {
             Self::Recovery(failure) => failure.into_recovery(),
         }
     }
-}
-
-pub struct WorthQueryApplicationProgramAdoptionRequest<
-    'application,
-    'principal,
-    'scope,
-    'target,
-    Schema,
-> {
-    programs: WorthQueryApplicationProgramsRequest<'application, 'principal, 'scope, Schema>,
-    target: &'target ApplicationProgramRevision,
 }
 
 impl<'application, 'principal, 'scope, Schema>
@@ -110,19 +99,24 @@ where
             .map_err(WorthQueryApplicationProgramInspectionDenial::Inspection)
     }
 
-    pub fn adopt<'target>(
+    /// Adopts the target that `requirements`, as [`Self::compare`] returned
+    /// them, name. Preparation refuses requirements this branch no longer
+    /// matches.
+    pub fn adopt<'requirements>(
         self,
-        target: &'target ApplicationProgramRevision,
+        requirements: &'requirements WorthQueryProgramAdoptionRequirements,
     ) -> WorthQueryApplicationProgramAdoptionRequest<
         'application,
         'principal,
         'scope,
-        'target,
+        'requirements,
         Schema,
     > {
         WorthQueryApplicationProgramAdoptionRequest {
             programs: self,
-            target,
+            requirements,
+            migration: None,
+            workflow: None,
         }
     }
 
@@ -178,32 +172,6 @@ where
                     recovery,
                 },
             ),
-        }
-    }
-}
-
-impl<'application, 'principal, 'scope, 'target, Schema>
-    WorthQueryApplicationProgramAdoptionRequest<'application, 'principal, 'scope, 'target, Schema>
-where
-    Schema: ApplicationSchema,
-{
-    pub fn requirements<'requirements>(
-        self,
-        requirements: &'requirements WorthQueryProgramAdoptionRequirements,
-    ) -> WorthQueryApplicationProgramAdoptionRequestWithRequirements<
-        'application,
-        'principal,
-        'scope,
-        'target,
-        'requirements,
-        Schema,
-    > {
-        WorthQueryApplicationProgramAdoptionRequestWithRequirements {
-            programs: self.programs,
-            target: self.target,
-            requirements,
-            migration: None,
-            workflow: None,
         }
     }
 }

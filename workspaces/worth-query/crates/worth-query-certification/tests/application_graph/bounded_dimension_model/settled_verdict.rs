@@ -7,9 +7,10 @@
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationMutationOutcome, WorthQueryApplicationRequestMutationDenial,
 };
+use worth_query_host::facade::declaration::application_program::ApplicationProgramRevision;
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitDenialStage,
-    WorthQueryApplicationCommitOutcome,
+    WorthQueryApplicationUncommitted,
 };
 
 use super::presented_request::DimensionOutcome;
@@ -26,9 +27,11 @@ pub enum DimensionVerdict {
         major: u16,
         minor: u16,
     },
-    /// The presented program is not the program this occurrence is running.
+    /// The presented program is not the program this occurrence is running,
+    /// which runs `active`.
     ProgramNotActiveOnOccurrence {
         stage: WorthQueryApplicationCommitDenialStage,
+        active: ApplicationProgramRevision,
     },
 }
 
@@ -43,11 +46,12 @@ impl DimensionVerdict {
     }
 
     /// The verdict a host reaches when a rostered but inactive program is
-    /// presented on this occurrence. Proposal binding is the stage that refuses
-    /// it, which is before any effect is lowered.
-    pub fn inactive() -> Self {
+    /// presented on an occurrence running `active`. Proposal binding is the
+    /// stage that refuses it, which is before any effect is lowered.
+    pub fn inactive(active: &ApplicationProgramRevision) -> Self {
         Self::ProgramNotActiveOnOccurrence {
             stage: WorthQueryApplicationCommitDenialStage::ProposalBinding,
+            active: *active,
         }
     }
 }
@@ -62,9 +66,9 @@ pub fn settle(
         WorthQueryApplicationMutationOutcome::Committed { result, .. } => {
             DimensionVerdict::Performed(result.dimension)
         }
-        WorthQueryApplicationMutationOutcome::Commit(
-            WorthQueryApplicationCommitOutcome::Denied(denial),
-        ) => match denial.kind() {
+        WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationUncommitted::Denied(
+            denial,
+        )) => match denial.kind() {
             WorthQueryApplicationCommitDenialKind::CustomInvariantDenied => {
                 let identity = denial
                     .custom_invariant_violation_identity()
@@ -75,9 +79,10 @@ pub fn settle(
                     minor: identity.semantic_version.minor,
                 }
             }
-            WorthQueryApplicationCommitDenialKind::ProgramNotActiveOnOccurrence => {
+            WorthQueryApplicationCommitDenialKind::ProgramNotActiveOnOccurrence { active } => {
                 DimensionVerdict::ProgramNotActiveOnOccurrence {
                     stage: denial.stage(),
+                    active,
                 }
             }
             unexpected => panic!(

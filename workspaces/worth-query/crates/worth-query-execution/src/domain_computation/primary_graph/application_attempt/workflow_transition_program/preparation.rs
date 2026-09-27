@@ -67,10 +67,9 @@ where
         Input,
         Scope,
         Spec,
-        Program,
     >(
         &self,
-        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         instance: PublishedWorkflowInstanceRef,
         admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     ) -> Result<
@@ -82,7 +81,7 @@ where
         Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
-        self.prepare_workflow_transition::<Capability, Operation, Input, Scope, Spec, Program>(
+        self.prepare_workflow_transition::<Capability, Operation, Input, Scope, Spec>(
             installed,
             instance,
             admission,
@@ -96,10 +95,9 @@ where
         Input,
         Scope,
         Spec,
-        Program,
     >(
         &self,
-        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         instance: PublishedWorkflowInstanceRef,
         admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     ) -> Result<
@@ -111,7 +109,7 @@ where
         Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
-        self.prepare_workflow_transition::<Capability, Operation, Input, Scope, Spec, Program>(
+        self.prepare_workflow_transition::<Capability, Operation, Input, Scope, Spec>(
             installed,
             instance,
             admission,
@@ -125,10 +123,9 @@ where
         Input,
         Scope,
         Spec,
-        Program,
     >(
         &self,
-        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         instance: PublishedWorkflowInstanceRef,
         node_path: String,
         admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
@@ -141,7 +138,7 @@ where
         Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
-        self.prepare_workflow_transition::<Capability, Operation, Input, Scope, Spec, Program>(
+        self.prepare_workflow_transition::<Capability, Operation, Input, Scope, Spec>(
             installed,
             instance,
             admission,
@@ -149,9 +146,9 @@ where
         )
     }
 
-    fn prepare_workflow_transition<Capability, Operation, Input, Scope, Spec, Program>(
+    fn prepare_workflow_transition<Capability, Operation, Input, Scope, Spec>(
         &self,
-        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         instance: PublishedWorkflowInstanceRef,
         admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         request_kind: WorkflowTransitionRequestKind,
@@ -205,7 +202,7 @@ where
             ));
         }
         read_set
-            .materialize_workflow_advance::<Capability, Spec, Program>(
+            .materialize_workflow_advance::<Capability, Spec>(
                 installed,
                 instance,
                 request_kind,
@@ -221,10 +218,9 @@ where
         Input,
         Scope,
         Spec,
-        Program,
     >(
         &self,
-        workflow: WorthQueryWorkflowVocabulary<'_, Schema, Spec, Program>,
+        workflow: WorthQueryWorkflowVocabulary<'_, Schema, Spec>,
         instance: PublishedWorkflowInstanceRef,
         required: &RequiredWorkflowApproval,
         proposal: &PublishedWorkflowProposalRef,
@@ -239,7 +235,7 @@ where
         Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
-        let installed = workflow.workflow_spec();
+        let installed = workflow.workflow_spec_for(self);
         if installed.schema_binding() != &self.application().installed_schema().binding_identity() {
             return Err(WorkflowTransitionPreparationDenial::Binding(
                 WorkflowTransitionBindingDenial::ForeignSchema,
@@ -281,8 +277,9 @@ where
             ));
         }
         read_set
-            .materialize_workflow_approval::<Capability, Spec, Program>(
+            .materialize_workflow_approval::<Capability, Spec>(
                 workflow,
+                installed,
                 instance,
                 required,
                 proposal,

@@ -52,9 +52,9 @@ where
 {
     /// Reads the live instance under the definition the installed program
     /// runs and closes it; an instance that already ended is refused.
-    pub(super) fn close_live_workflow_instance<Spec, Program>(
+    pub(super) fn close_live_workflow_instance<Spec>(
         &self,
-        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         layout: &WorthQueryWorkflowLayout,
         instance: &PublishedWorkflowInstanceRef,
         identity: &str,

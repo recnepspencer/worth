@@ -8,8 +8,7 @@ pub use declaration::{
     WorkflowAdvanceOperation, WorkflowAdvanceProvenance, WorkflowApprovalCapability,
 };
 pub use mutation::{
-    WorkflowAdvanceBinding, WorkflowAdvanceHandler, WorkflowAdvanceIntent, WorkflowApprovalBinding,
-    WorkflowApprovalHandler, WorkflowApprovalIntent,
+    WorkflowAdvanceBinding, WorkflowAdvanceIntent, WorkflowApprovalBinding, WorkflowApprovalIntent,
 };
 
 pub(super) fn install_members(

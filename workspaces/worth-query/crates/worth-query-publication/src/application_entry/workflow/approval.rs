@@ -31,28 +31,20 @@ type MutationOperation<Schema, Intent> =
 type MutationInput<Schema, Intent> =
     <IntentBinding<Schema, Intent> as ApplicationMutationBinding<Schema>>::Input;
 
-type WorkflowApprovalPreparationResult<
-    'application,
-    'principal,
-    'scope,
-    Schema,
-    Spec,
-    Program,
-    Intent,
-> = Result<
-    WorthQueryWorkflowApprovalSigningRequest<
-        'application,
-        'principal,
-        'scope,
-        Schema,
-        Spec,
-        Program,
-        MutationOperation<Schema, Intent>,
-        MutationInput<Schema, Intent>,
-        MutationScope<Schema, IntentBinding<Schema, Intent>>,
-    >,
-    WorthQueryWorkflowAdvancePreparationDenial,
->;
+type WorkflowApprovalPreparationResult<'application, 'principal, 'scope, Schema, Spec, Intent> =
+    Result<
+        WorthQueryWorkflowApprovalSigningRequest<
+            'application,
+            'principal,
+            'scope,
+            Schema,
+            Spec,
+            MutationOperation<Schema, Intent>,
+            MutationInput<Schema, Intent>,
+            MutationScope<Schema, IntentBinding<Schema, Intent>>,
+        >,
+        WorthQueryWorkflowAdvancePreparationDenial,
+    >;
 
 impl<'application, 'principal, 'scope, 'key, Schema, Intent, SourcePreparation>
     WorthQueryApplicationMutationRequestWithIdempotency<
@@ -81,17 +73,16 @@ where
         >,
 {
     #[allow(clippy::too_many_arguments)]
-    pub fn prepare_workflow_approval<Spec, Program>(
+    pub fn prepare_workflow_approval<Spec>(
         mut self,
-        workflow: impl Into<WorthQueryWorkflowVocabulary<'application, Schema, Spec, Program>>,
+        workflow: impl Into<WorthQueryWorkflowVocabulary<'application, Schema, Spec>>,
         instance: PublishedWorkflowInstanceRef,
         required: &RequiredWorkflowApproval,
         proposal: &PublishedWorkflowProposalRef,
         decision: WorkflowApprovalDecision,
-    ) -> WorkflowApprovalPreparationResult<'application, 'principal, 'scope, Schema, Spec, Program, Intent>
+    ) -> WorkflowApprovalPreparationResult<'application, 'principal, 'scope, Schema, Spec, Intent>
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
-        Program: worth_query_declaration::facade::application_program::ApplicationProgramDefinition<Schema>,
     {
         let workflow = workflow.into();
         let application = self.application_runtime();
@@ -112,7 +103,6 @@ where
             MutationInput<Schema, Intent>,
             MutationScope<Schema, IntentBinding<Schema, Intent>>,
             Spec,
-            Program,
         >(
             &selected,
             workflow,
@@ -145,15 +135,12 @@ pub struct WorthQueryWorkflowApprovalSigningRequest<
     'scope,
     Schema,
     Spec,
-    Program,
     Operation,
     Input,
     Scope,
 > where
     Schema: ApplicationSchema,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
-    Program:
-        worth_query_declaration::facade::application_program::ApplicationProgramDefinition<Schema>,
 {
     request: WorthQueryWorkflowAdvanceRequest<
         'application,
@@ -161,21 +148,19 @@ pub struct WorthQueryWorkflowApprovalSigningRequest<
         'scope,
         Schema,
         Spec,
-        Program,
         Operation,
         Input,
         Scope,
     >,
 }
 
-impl<'application, 'principal, 'scope, Schema, Spec, Program, Operation, Input, Scope>
+impl<'application, 'principal, 'scope, Schema, Spec, Operation, Input, Scope>
     WorthQueryWorkflowApprovalSigningRequest<
         'application,
         'principal,
         'scope,
         Schema,
         Spec,
-        Program,
         Operation,
         Input,
         Scope,
@@ -183,8 +168,6 @@ impl<'application, 'principal, 'scope, Schema, Spec, Program, Operation, Input, 
 where
     Schema: ApplicationSchema,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
-    Program:
-        worth_query_declaration::facade::application_program::ApplicationProgramDefinition<Schema>,
 {
     pub fn authentication_intent(
         &self,
@@ -204,7 +187,6 @@ where
             'scope,
             Schema,
             Spec,
-            Program,
             Operation,
             Input,
             Scope,

@@ -122,7 +122,7 @@ fn installing_one_rostered_program_carries_its_canonical_revision() {
     let installed_schema = installed_support_schema();
     let bounded = validated::<BoundedProgram>();
     let audit = validated::<AuditProgram>();
-    let expected = bounded.revision().clone();
+    let expected = *bounded.revision();
     let roster = WorthQueryProgramSupportAdmission::for_installed_schema(&installed_schema)
         .support(&bounded)
         .expect("the bounded program fits the installed contracts")
@@ -151,7 +151,7 @@ fn installing_a_program_the_roster_never_admitted_is_denied() {
         .close()
         .expect("the complete program leaves no rule unowned");
     let bounded = validated::<BoundedProgram>();
-    let revision = bounded.revision().clone();
+    let revision = *bounded.revision();
 
     let denial = install_rostered_application_program(bounded, &installed_schema, &roster)
         .err()
@@ -203,7 +203,7 @@ fn support_denies_the_same_revision_admitted_twice() {
         denial,
         WorthQueryProgramSupportDenial::DuplicateProgram {
             program: complete.identity().clone(),
-            revision: complete.revision().clone(),
+            revision: *complete.revision(),
         }
     );
 }

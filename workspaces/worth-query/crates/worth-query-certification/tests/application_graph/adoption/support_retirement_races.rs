@@ -8,21 +8,22 @@ use worth_query_host::facade::product::{
 
 use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome;
 use worth_query_host::facade::primary_graph::{
-    WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitOutcome,
+    WorthQueryApplicationCommitDenialKind, WorthQueryApplicationUncommitted,
 };
 
 use super::support_retirement::adopt;
 use crate::bounded_dimension_model::host::{publish_on_first_program, SEED_DIMENSION};
 use crate::bounded_dimension_model::presented_request::set_dimension;
-use crate::bounded_dimension_model::programs::DimensionProgramP1;
+use crate::bounded_dimension_model::programs::{
+    DimensionProgramP1, RemovedOperationDimensionProgram,
+};
 use crate::bounded_dimension_model::readback::{observe_head, read_dimension};
-use crate::bounded_dimension_model::settled_verdict::{settle, DimensionVerdict};
 
 #[test]
 fn retirement_barrier_refuses_a_new_fork_of_that_program() {
     let host = publish_on_first_program();
     let branch = host.current_world();
-    let source = host.owned_revision().clone();
+    let source = *host.owned_revision();
 
     let result = host
         .runtime()
@@ -45,7 +46,7 @@ fn retirement_barrier_refuses_a_new_fork_of_that_program() {
 fn in_flight_fork_reservation_blocks_retirement_until_its_terminal() {
     let host = publish_on_first_program();
     let branch = host.current_world();
-    let source = host.owned_revision().clone();
+    let source = *host.owned_revision();
 
     host.runtime()
         .with_program_fork_reservation_for_test(&source, || {
@@ -74,12 +75,11 @@ fn in_flight_fork_reservation_blocks_retirement_until_its_terminal() {
 fn adopted_source_forks_with_world_carried_program_after_old_support_retires() {
     let host = publish_on_first_program();
     let source_branch = host.current_world();
-    let source_program = host.owned_revision().clone();
-    let target = host
+    let source_program = *host.owned_revision();
+    let target = *host
         .supported_program::<DimensionProgramP1>()
         .expect("P1 is rostered")
-        .owned_revision()
-        .clone();
+        .owned_revision();
     adopt(&host, source_branch, &target);
     let child = host
         .runtime()
@@ -119,49 +119,42 @@ fn adopted_source_forks_with_world_carried_program_after_old_support_retires() {
     );
 }
 
-/// A retired program's owner handle still exists, but the commit gate refuses
-/// it as no longer active on this host before any effect, and the adopted
-/// program keeps acting.
+/// A request for an action the branch's program removed presents the initial
+/// owner only to be refused. Once that owner's program is retired, the commit
+/// gate refuses it as retired before any effect, and the refusal claims no key.
 #[test]
 fn a_retired_program_action_is_refused_at_the_commit_gate_without_effect() {
     let host = publish_on_first_program();
     let branch = host.current_world();
-    let source = host.owned_revision().clone();
-    let p1 = host
-        .supported_program::<DimensionProgramP1>()
-        .expect("P1 is rostered");
-    adopt(&host, branch, p1.owned_revision());
+    let source = *host.owned_revision();
+    let removal = *host
+        .supported_program::<RemovedOperationDimensionProgram>()
+        .expect("the removal target is rostered")
+        .owned_revision();
+    adopt(&host, branch, &removal);
     host.retire_program_support(&source)
         .expect("no branch or retained interpretation still uses P0");
 
+    let branch = host.current_world();
     let before = observe_head(host.runtime(), branch);
-    let WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationCommitOutcome::Denied(
-        denial,
-    )) = set_dimension(&host, branch, SEED_DIMENSION + 1, 0x9176_5331)
-        .expect("the retired owner's request reaches the commit gate")
-    else {
-        panic!("a retired program must be refused at the commit gate");
-    };
-    assert_eq!(
-        denial.kind(),
-        WorthQueryApplicationCommitDenialKind::ProgramNotActiveOnOccurrence
-    );
-    assert!(
-        denial
-            .detail()
-            .is_some_and(|detail| detail.contains("no longer active on this host")),
-        "the refusal names retirement, not the occurrence mismatch: {:?}",
-        denial.detail()
-    );
+    for attempt in 0..2 {
+        let WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationUncommitted::Denied(
+            denial,
+        )) = set_dimension(&host, branch, SEED_DIMENSION + 1, 0x9176_5331)
+            .expect("the removed action's request reaches the commit gate")
+        else {
+            panic!("a retired program must be refused at the commit gate (attempt {attempt})");
+        };
+        assert_eq!(
+            denial.kind(),
+            WorthQueryApplicationCommitDenialKind::ProgramSupportRetired,
+            "the refusal names retirement, not the occurrence mismatch"
+        );
+    }
     assert_eq!(read_dimension(host.runtime(), branch), SEED_DIMENSION);
     assert_eq!(
         before.selected_commit(),
         observe_head(host.runtime(), branch).selected_commit(),
         "a refusal before effects cannot have moved the commit head"
-    );
-    // The refusal claimed no key: the adopted program performs under it.
-    assert_eq!(
-        settle(set_dimension(&p1, branch, SEED_DIMENSION + 1, 0x9176_5331)),
-        DimensionVerdict::Performed(SEED_DIMENSION + 1)
     );
 }

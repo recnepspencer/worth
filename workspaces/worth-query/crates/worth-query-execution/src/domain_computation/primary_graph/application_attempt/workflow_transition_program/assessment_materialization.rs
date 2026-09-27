@@ -114,7 +114,7 @@ where
                 "assessment requirement is not currently applicable",
             ));
         }
-        let program_revision = compiled.program_revision().clone();
+        let program_revision = *compiled.program_revision();
         let coverage = subject.coverage;
         let proposal_identity = subject.proposal_identity;
         if let Some(evidence_locator) = progress.latest_assessment_evidence(selected.node()) {

@@ -96,9 +96,9 @@ where
             Scope = MutationScope<Schema, IntentBinding<Schema, Intent>>,
         >,
 {
-    pub fn prepare_workflow_proposal<'workflow, Spec, Program: 'workflow>(
+    pub fn prepare_workflow_proposal<'workflow, Spec>(
         mut self,
-        workflow: impl Into<WorthQueryWorkflowVocabulary<'workflow, Schema, Spec, Program>>,
+        workflow: impl Into<WorthQueryWorkflowVocabulary<'workflow, Schema, Spec>>,
         instance: PublishedWorkflowInstanceRef,
     ) -> Result<WorthQueryWorkflowProposalRequest<'application, Schema, MutationOperation<Schema, Intent>, MutationInput<Schema, Intent>, MutationScope<Schema, IntentBinding<Schema, Intent>>>, WorthQueryWorkflowProposalPreparationDenial>
     where
@@ -132,7 +132,7 @@ where
         }
         let prepared = WorthQueryWorkflowProposalAdapter::prepare(
             &selected,
-            workflow.workflow_spec(),
+            workflow.workflow_spec_for(&selected),
             instance,
             mutation.admission,
             &mutation.idempotency,

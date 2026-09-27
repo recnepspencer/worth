@@ -125,8 +125,7 @@ let programs = application
 let inspection = programs.inspect()?;
 let requirements = programs.compare(&target_revision)?;
 let prepared = programs
-    .adopt(&target_revision)
-    .requirements(&requirements)
+    .adopt(&requirements)
     .prepare(maximum_selection_work)?;
 let outcome = prepared.publish();
 ```

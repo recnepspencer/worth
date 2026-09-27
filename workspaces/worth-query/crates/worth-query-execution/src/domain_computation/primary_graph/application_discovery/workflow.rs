@@ -40,9 +40,12 @@ pub enum WorthQueryWorkflowDefinitionDiscovery {
 /// Why a branch's workflow definitions could not be discovered.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryWorkflowDefinitionDiscoveryDenial {
-    /// The identity names a lineage of another workflow, or one whose
-    /// records cannot be read within their bound.
-    LineageUnavailable,
+    /// The identity names a lineage another workflow spec published. Naming
+    /// the spec that published it is the only way to discover it.
+    ForeignLineage,
+    /// The lineage's records cannot be read within their fixed bounds, so
+    /// no retry of the same discovery can succeed.
+    LineageUnreadable,
     /// The lineage index could not be made current for the selected
     /// occurrence within its reconstruction budget.
     IndexUnavailable,
@@ -71,7 +74,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 .map_err(|_| WorthQueryWorkflowDefinitionDiscoveryDenial::IndexUnavailable)?;
             let runtime = &*runtime;
             let lineage = select_lineage(runtime, snapshot, layout, identity.as_str())
-                .ok_or(WorthQueryWorkflowDefinitionDiscoveryDenial::LineageUnavailable)?;
+                .ok_or(WorthQueryWorkflowDefinitionDiscoveryDenial::LineageUnreadable)?;
             let Some(lineage) = lineage else {
                 return Ok(WorthQueryWorkflowDefinitionDiscovery::Unpublished);
             };
@@ -81,9 +84,10 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 lineage,
                 layout.lineage.entity_kind,
                 &layout.lineage.spec,
-            );
-            if spec != Some(text(Spec::IDENTITY.as_str())) {
-                return Err(WorthQueryWorkflowDefinitionDiscoveryDenial::LineageUnavailable);
+            )
+            .ok_or(WorthQueryWorkflowDefinitionDiscoveryDenial::LineageUnreadable)?;
+            if spec != text(Spec::IDENTITY.as_str()) {
+                return Err(WorthQueryWorkflowDefinitionDiscoveryDenial::ForeignLineage);
             }
             match current_definition(runtime, snapshot, layout, branch, lineage) {
                 Some(WorkflowDefinitionCurrentness::Current(current)) => {
@@ -92,7 +96,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 Some(WorkflowDefinitionCurrentness::Retired) => {
                     Ok(WorthQueryWorkflowDefinitionDiscovery::Retired)
                 }
-                None => Err(WorthQueryWorkflowDefinitionDiscoveryDenial::LineageUnavailable),
+                None => Err(WorthQueryWorkflowDefinitionDiscoveryDenial::LineageUnreadable),
             }
         })
     }

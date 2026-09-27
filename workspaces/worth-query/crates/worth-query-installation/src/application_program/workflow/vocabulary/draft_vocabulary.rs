@@ -77,7 +77,7 @@ impl InstalledWorkflowCondition {
     }
 }
 
-impl<Schema, Spec, Program> WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>
+impl<Schema, Spec> WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>
 where
     Schema: ApplicationSchema,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,

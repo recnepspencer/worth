@@ -10,10 +10,7 @@ use worth_query_host::facade::declaration::{
         EqualityPredicate, NoApplicationUnit, ReadOnly, U64ApplicationValueBinding,
     },
 };
-use worth_query_host::facade::primary_graph::{
-    CandidateWriter, DecisionReader, HandlerResult, OperationHandler,
-    WorthQueryInvariantMutationTarget,
-};
+use worth_query_host::facade::primary_graph::WorthQueryInvariantMutationTarget;
 use worth_query_host::facade::worth_query_structured_value_binding;
 
 use super::super::schema::{
@@ -83,6 +80,7 @@ impl ApplicationMutationBinding<BoundedDimensionSchema> for WorkflowDefinitionAu
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.workflow-definition-publication.v1";
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
+    const WORKFLOW_CONTROL: bool = true;
     const CANDIDATES: ApplicationCandidateRequirements =
         ApplicationCandidateRequirements::fixed_shape(
             // A 10k control graph needs <30k creates, <68k links and <100k
@@ -147,57 +145,6 @@ impl ApplicationMutationIntent<BoundedDimensionSchema> for WorkflowDefinitionAut
     }
 }
 
-pub struct WorkflowDefinitionAuthoringHandler;
-
-impl OperationHandler<BoundedDimensionSchema, WorkflowDefinitionAuthoringBinding>
-    for WorkflowDefinitionAuthoringHandler
-{
-    fn decide(
-        &self,
-        input: &WorkflowDefinitionAuthoringInput,
-        reader: &mut DecisionReader<
-            '_,
-            '_,
-            '_,
-            BoundedDimensionSchema,
-            WorkflowDefinitionAuthoringBinding,
-        >,
-    ) -> HandlerResult<
-        WorthQueryInvariantMutationTarget<BoundedDimensionSchema, Part>,
-        WorkflowDefinitionAuthoringDenial,
-    > {
-        let part =
-            match reader.resolve_entity(PartIdentityField::reference(), input.identity.clone()) {
-                Ok(part) => part,
-                Err(error) => return HandlerResult::ExecutionDenied(error),
-            };
-        match reader.mutation_target(&part) {
-            Ok(target) => HandlerResult::Completed(target),
-            Err(error) => HandlerResult::ExecutionDenied(error),
-        }
-    }
-
-    fn candidate_requirements(
-        &self,
-        _: &WorkflowDefinitionAuthoringInput,
-        _: &WorthQueryInvariantMutationTarget<BoundedDimensionSchema, Part>,
-    ) -> ApplicationCandidateRequirements {
-        ApplicationCandidateRequirements::fixed_shape(
-            ApplicationCandidateCardinalityCeiling::fixed(64, 0, 128, 2, 512, 0),
-            ApplicationCandidateResourceCeiling::bounded(2 * 1024 * 1024, 1_048_576),
-        )
-    }
-
-    fn build_candidate(
-        &self,
-        _: &WorkflowDefinitionAuthoringInput,
-        _: WorthQueryInvariantMutationTarget<BoundedDimensionSchema, Part>,
-        _: &mut CandidateWriter<'_, BoundedDimensionSchema, WorkflowDefinitionAuthoringBinding>,
-    ) -> HandlerResult<WorkflowDefinitionAuthoringAccepted, WorkflowDefinitionAuthoringDenial> {
-        HandlerResult::Completed(WorkflowDefinitionAuthoringAccepted)
-    }
-}
-
 pub(super) fn install_binding(
     schema: ApplicationSchemaDeclarationBuilder<BoundedDimensionSchema>,
 ) -> ApplicationSchemaDeclarationBuilder<BoundedDimensionSchema> {
@@ -251,6 +198,7 @@ impl ApplicationMutationBinding<BoundedDimensionSchema> for WorkflowInstanceStar
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.workflow-instance-start.v1";
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
+    const WORKFLOW_CONTROL: bool = true;
     const CANDIDATES: ApplicationCandidateRequirements =
         ApplicationCandidateRequirements::fixed_shape(
             ApplicationCandidateCardinalityCeiling::fixed(64, 0, 128, 2, 512, 0),
@@ -306,55 +254,6 @@ impl ApplicationMutationIntent<BoundedDimensionSchema> for WorkflowInstanceStart
             PartIdentityField::reference(),
             self.input.part_identity.clone(),
         )
-    }
-}
-
-pub struct WorkflowInstanceStartHandler;
-
-impl OperationHandler<BoundedDimensionSchema, WorkflowInstanceStartBinding>
-    for WorkflowInstanceStartHandler
-{
-    fn decide(
-        &self,
-        input: &WorkflowInstanceStartInput,
-        reader: &mut DecisionReader<
-            '_,
-            '_,
-            '_,
-            BoundedDimensionSchema,
-            WorkflowInstanceStartBinding,
-        >,
-    ) -> HandlerResult<
-        WorthQueryInvariantMutationTarget<BoundedDimensionSchema, Part>,
-        WorkflowInstanceStartDenial,
-    > {
-        let part = match reader
-            .resolve_entity(PartIdentityField::reference(), input.part_identity.clone())
-        {
-            Ok(part) => part,
-            Err(error) => return HandlerResult::ExecutionDenied(error),
-        };
-        match reader.mutation_target(&part) {
-            Ok(target) => HandlerResult::Completed(target),
-            Err(error) => HandlerResult::ExecutionDenied(error),
-        }
-    }
-
-    fn candidate_requirements(
-        &self,
-        _: &WorkflowInstanceStartInput,
-        _: &WorthQueryInvariantMutationTarget<BoundedDimensionSchema, Part>,
-    ) -> ApplicationCandidateRequirements {
-        WorkflowInstanceStartBinding::CANDIDATES
-    }
-
-    fn build_candidate(
-        &self,
-        _: &WorkflowInstanceStartInput,
-        _: WorthQueryInvariantMutationTarget<BoundedDimensionSchema, Part>,
-        _: &mut CandidateWriter<'_, BoundedDimensionSchema, WorkflowInstanceStartBinding>,
-    ) -> HandlerResult<WorkflowInstanceStartAccepted, WorkflowInstanceStartDenial> {
-        HandlerResult::Completed(WorkflowInstanceStartAccepted)
     }
 }
 

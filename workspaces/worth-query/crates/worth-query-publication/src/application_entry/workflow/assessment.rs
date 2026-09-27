@@ -1,5 +1,5 @@
 use worth_query_declaration::facade::{
-    application_program::{ApplicationProgramDefinition, ApplicationWorkflowSpec},
+    application_program::ApplicationWorkflowSpec,
     application_query::{
         ApplicationQueryBinding, ApplicationQueryIntent, ApplicationQueryMarkerIdentity,
         ApplicationQueryScopeResolution,
@@ -89,34 +89,30 @@ pub struct WorthQueryWorkflowAssessmentDemandRequest<
     'scope,
     Schema,
     Spec,
-    Program,
     Demand,
 > where
     Schema: ApplicationSchema,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
-    Program: ApplicationProgramDefinition<Schema>,
     Demand: WorthQueryApplicationOutputDemand<Schema>,
 {
     required: RequiredWorkflowAssessment,
-    workflow: WorthQueryWorkflowVocabulary<'application, Schema, Spec, Program>,
+    workflow: WorthQueryWorkflowVocabulary<'application, Schema, Spec>,
     demand:
         WorthQueryApplicationOutputDemandRequest<'application, 'principal, 'scope, Schema, Demand>,
 }
 
-impl<'application, 'principal, 'scope, Schema, Spec, Program, Demand>
+impl<'application, 'principal, 'scope, Schema, Spec, Demand>
     WorthQueryWorkflowAssessmentDemandRequest<
         'application,
         'principal,
         'scope,
         Schema,
         Spec,
-        Program,
         Demand,
     >
 where
     Schema: ApplicationSchema,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
-    Program: ApplicationProgramDefinition<Schema>,
     Demand: WorthQueryApplicationOutputDemand<Schema>,
 {
     pub(super) fn new(
@@ -124,7 +120,7 @@ where
         principal: &'principal worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal<Schema>,
         scope: &'scope worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
         branch: worth_query_execution::facade::product::WorthQueryProductBranch,
-        workflow: WorthQueryWorkflowVocabulary<'application, Schema, Spec, Program>,
+        workflow: WorthQueryWorkflowVocabulary<'application, Schema, Spec>,
         required: RequiredWorkflowAssessment,
         demand: Demand,
     ) -> Result<Self, WorthQueryWorkflowAssessmentDemandPreparationDenial> {
@@ -154,20 +150,18 @@ where
     }
 }
 
-impl<'application, 'principal, 'scope, Schema, Spec, Program, Demand>
+impl<'application, 'principal, 'scope, Schema, Spec, Demand>
     WorthQueryWorkflowAssessmentDemandRequest<
         'application,
         'principal,
         'scope,
         Schema,
         Spec,
-        Program,
         Demand,
     >
 where
     Schema: ApplicationSchema + 'static,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
-    Program: ApplicationProgramDefinition<Schema>,
     Demand: WorthQueryApplicationOutputDemand<Schema>,
     Family<Schema, Demand>: WorthQueryWorkflowAssessmentOutputFamily<Schema>,
     SourceValue<Schema, Demand>:
@@ -183,7 +177,7 @@ where
     pub fn start(
         self,
     ) -> Result<
-        WorthQueryWorkflowAssessmentDemandHandle<'application, Schema, Spec, Program, Demand>,
+        WorthQueryWorkflowAssessmentDemandHandle<'application, Schema, Spec, Demand>,
         WorthQueryApplicationOutputDemandDenial,
     > {
         let (admitted, demand, controls) = self.demand.start_for_workflow(self.workflow)?;
@@ -197,15 +191,14 @@ where
     }
 }
 
-pub struct WorthQueryWorkflowAssessmentDemandHandle<'application, Schema, Spec, Program, Demand>
+pub struct WorthQueryWorkflowAssessmentDemandHandle<'application, Schema, Spec, Demand>
 where
     Schema: ApplicationSchema,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
-    Program: ApplicationProgramDefinition<Schema>,
     Demand: WorthQueryApplicationOutputDemand<Schema>,
 {
     required: RequiredWorkflowAssessment,
-    workflow: WorthQueryWorkflowVocabulary<'application, Schema, Spec, Program>,
+    workflow: WorthQueryWorkflowVocabulary<'application, Schema, Spec>,
     admitted: WorthQueryAdmittedOutputDemand<Schema, Family<Schema, Demand>>,
     demand: Demand,
     controls: WorthQueryOutputDemandControls,
@@ -240,12 +233,10 @@ impl<Query> WorthQueryWorkflowAssessmentDemandSettlement<Query> {
     }
 }
 
-impl<Schema, Spec, Program, Demand>
-    WorthQueryWorkflowAssessmentDemandHandle<'_, Schema, Spec, Program, Demand>
+impl<Schema, Spec, Demand> WorthQueryWorkflowAssessmentDemandHandle<'_, Schema, Spec, Demand>
 where
     Schema: ApplicationSchema + 'static,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
-    Program: ApplicationProgramDefinition<Schema>,
     Demand: WorthQueryApplicationOutputDemand<Schema>,
     Family<Schema, Demand>: WorthQueryWorkflowAssessmentOutputFamily<Schema>,
     SourceValue<Schema, Demand>:

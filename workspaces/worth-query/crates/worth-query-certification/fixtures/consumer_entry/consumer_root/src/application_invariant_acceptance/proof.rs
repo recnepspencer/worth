@@ -11,7 +11,7 @@ use worth_query_host::facade::{
     domain::WorthQueryInstalledApplicationSchema,
     primary_graph::{
         WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitDenialStage,
-        WorthQueryApplicationCommitOutcome, WorthQueryCustomInvariantDenial,
+        WorthQueryApplicationUncommitted, WorthQueryCustomInvariantDenial,
     },
 };
 use worth_query_topology_entry::{PlanarEdit, PlanarMutation, PlanarRead};
@@ -165,7 +165,7 @@ fn typed_invariant_access_is_bounded(request: &Request<'_>, world: &installation
 }
 
 fn require_invariant_access_failure(outcome: MutationOutcome) {
-    let WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationCommitOutcome::Denied(
+    let WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationUncommitted::Denied(
         denial,
     )) = outcome
     else {
@@ -214,7 +214,7 @@ fn insufficient_work_is_denied_before_owner(
     let calls = world.invariant_calls.load(Ordering::SeqCst);
     let before = source_version(request);
     let outcome = mutate(request, &world.application, adjust("anchor-a", 2, 1), 1);
-    let WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationCommitOutcome::Denied(
+    let WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationUncommitted::Denied(
         denial,
     )) = outcome
     else {
@@ -297,7 +297,7 @@ fn actual_candidate_checks_untouched_neighbors(
 fn require_planar_violation<Denial: std::fmt::Debug, Result: std::fmt::Debug>(
     outcome: WorthQueryApplicationMutationOutcome<Denial, Result>,
 ) {
-    let WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationCommitOutcome::Denied(
+    let WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationUncommitted::Denied(
         denial,
     )) = outcome
     else {

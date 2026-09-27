@@ -1,6 +1,6 @@
 use worth_query_declaration::facade::{
     application_operation::{ApplicationMutationBinding, ApplicationMutationIntent},
-    application_program::{ApplicationProgramDefinition, ApplicationWorkflowSpec},
+    application_program::ApplicationWorkflowSpec,
     application_schema::{ApplicationOperationMarkerIdentity, ApplicationStructuredValueBinding},
 };
 use worth_query_execution::facade::application_installation::WorthQueryWorkflowVocabulary;
@@ -79,14 +79,13 @@ where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
 {
-    pub fn for_workflow_operation<'workflow, Spec, Program>(
+    pub fn for_workflow_operation<'workflow, Spec>(
         self,
-        workflow: impl Into<WorthQueryWorkflowVocabulary<'workflow, Schema, Spec, Program>>,
+        workflow: impl Into<WorthQueryWorkflowVocabulary<'workflow, Schema, Spec>>,
         required: &RequiredWorkflowOperation,
     ) -> Result<Self, WorthQueryWorkflowOperationBindingDenial>
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
-        Program: ApplicationProgramDefinition<Schema> + 'workflow,
     {
         let workflow = workflow.into();
         self.validate_workflow_operation_binding(workflow, required)?;
@@ -101,28 +100,26 @@ where
 
     /// Binds only the exact performed operation for outbox recovery. This does
     /// not issue authority to run a new guarded mutation.
-    pub fn for_workflow_operation_recovery<'workflow, Spec, Program>(
+    pub fn for_workflow_operation_recovery<'workflow, Spec>(
         self,
-        workflow: impl Into<WorthQueryWorkflowVocabulary<'workflow, Schema, Spec, Program>>,
+        workflow: impl Into<WorthQueryWorkflowVocabulary<'workflow, Schema, Spec>>,
         required: &RequiredWorkflowOperation,
     ) -> Result<Self, WorthQueryWorkflowOperationBindingDenial>
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
-        Program: ApplicationProgramDefinition<Schema> + 'workflow,
     {
         let workflow = workflow.into();
         self.validate_workflow_operation_binding(workflow, required)?;
         Ok(self.bind_workflow_recovery_transition(*required.transition_identity_bytes()))
     }
 
-    fn validate_workflow_operation_binding<Spec, Program>(
+    fn validate_workflow_operation_binding<Spec>(
         &self,
-        workflow: WorthQueryWorkflowVocabulary<'_, Schema, Spec, Program>,
+        workflow: WorthQueryWorkflowVocabulary<'_, Schema, Spec>,
         required: &RequiredWorkflowOperation,
     ) -> Result<(), WorthQueryWorkflowOperationBindingDenial>
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
-        Program: ApplicationProgramDefinition<Schema>,
     {
         if !std::ptr::eq(self.application_runtime(), workflow.runtime()) {
             return Err(WorthQueryWorkflowOperationBindingDenial::RuntimeMismatch);
@@ -143,14 +140,13 @@ where
     }
 }
 
-impl<'application, 'principal, 'scope, Schema, Spec, Program, Operation, Input, Scope>
+impl<'application, 'principal, 'scope, Schema, Spec, Operation, Input, Scope>
     WorthQueryWorkflowAdvanceRequest<
         'application,
         'principal,
         'scope,
         Schema,
         Spec,
-        Program,
         Operation,
         Input,
         Scope,
@@ -158,7 +154,6 @@ impl<'application, 'principal, 'scope, Schema, Spec, Program, Operation, Input, 
 where
     Schema: ApplicationSchema,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
-    Program: ApplicationProgramDefinition<Schema>,
     Operation: 'static,
     Input: Clone + Send + Sync + 'static,
 {

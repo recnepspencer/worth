@@ -101,6 +101,69 @@ impl WorthQueryApplicationCommitOutcome {
             other => Err(other),
         }
     }
+
+    /// Splits a landed commit from every terminal that did not land. The flag
+    /// is true when the landing replays an earlier commit of the same
+    /// idempotency.
+    pub fn landed(
+        self,
+    ) -> Result<(super::WorthQueryApplicationCommitReceipt, bool), WorthQueryApplicationUncommitted>
+    {
+        use WorthQueryApplicationUncommitted as Uncommitted;
+        Err(match self {
+            Self::Committed(receipt) => return Ok((receipt, false)),
+            Self::AlreadyCommitted(receipt) => return Ok((receipt, true)),
+            Self::ProductStale(stale) => Uncommitted::ProductStale(stale),
+            Self::ProductUnpublished(unpublished) => Uncommitted::ProductUnpublished(unpublished),
+            Self::NoEffect(no_effect) => Uncommitted::NoEffect(no_effect),
+            Self::Stale(stale) => Uncommitted::Stale(stale),
+            Self::Cancelled => Uncommitted::Cancelled,
+            Self::TimedOut => Uncommitted::TimedOut,
+            Self::Denied(denial) => Uncommitted::Denied(denial),
+            Self::Aborted => Uncommitted::Aborted,
+            Self::Deferred(deferred) => Uncommitted::Deferred(deferred),
+            Self::SettlementDeferred(deferred) => Uncommitted::SettlementDeferred(deferred),
+            Self::Indeterminate(evidence) => Uncommitted::Indeterminate(evidence),
+        })
+    }
+}
+
+/// Every commit terminal except a landed commit. An outcome that reports its
+/// own landed shape carries this in place of the whole commit outcome, so each
+/// variant a caller matches can occur. `Indeterminate` means the landing is
+/// unresolved, not that it failed.
+#[derive(Debug)]
+pub enum WorthQueryApplicationUncommitted {
+    ProductStale(crate::domain_computation::WorthQueryProductStaleApplication),
+    ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
+    NoEffect(WorthQueryApplicationNoEffect),
+    Stale(WorthQueryApplicationStaleAttempt),
+    Cancelled,
+    TimedOut,
+    Denied(WorthQueryApplicationCommitDenial),
+    Aborted,
+    Deferred(WorthQueryApplicationCommitDeferred),
+    SettlementDeferred(WorthQueryApplicationSettlementDeferred),
+    Indeterminate(WorthQueryApplicationUnresolvedCommitEvidence),
+}
+
+impl From<WorthQueryApplicationUncommitted> for WorthQueryApplicationCommitOutcome {
+    fn from(uncommitted: WorthQueryApplicationUncommitted) -> Self {
+        use WorthQueryApplicationUncommitted as Uncommitted;
+        match uncommitted {
+            Uncommitted::ProductStale(stale) => Self::ProductStale(stale),
+            Uncommitted::ProductUnpublished(unpublished) => Self::ProductUnpublished(unpublished),
+            Uncommitted::NoEffect(no_effect) => Self::NoEffect(no_effect),
+            Uncommitted::Stale(stale) => Self::Stale(stale),
+            Uncommitted::Cancelled => Self::Cancelled,
+            Uncommitted::TimedOut => Self::TimedOut,
+            Uncommitted::Denied(denial) => Self::Denied(denial),
+            Uncommitted::Aborted => Self::Aborted,
+            Uncommitted::Deferred(deferred) => Self::Deferred(deferred),
+            Uncommitted::SettlementDeferred(deferred) => Self::SettlementDeferred(deferred),
+            Uncommitted::Indeterminate(evidence) => Self::Indeterminate(evidence),
+        }
+    }
 }
 
 /// Correlation evidence retained when commit outcome is unresolved (R8.26 / C3).

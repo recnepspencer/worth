@@ -10,7 +10,7 @@ use worth_query_host::facade::application_entry::{
 };
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationCommitDenialKind,
-    WorthQueryApplicationCommitOutcome,
+    WorthQueryApplicationCommitOutcome, WorthQueryApplicationUncommitted,
 };
 
 use super::bounded_dimension_model::{

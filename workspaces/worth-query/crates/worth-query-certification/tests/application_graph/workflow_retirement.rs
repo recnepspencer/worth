@@ -11,7 +11,7 @@ use worth_query_host::facade::{
         WorthQueryWorkflowInstancePreparationDenial,
     },
     declaration::application_program::ValidatedWorkflowDefinition,
-    primary_graph::WorthQueryApplicationCommitOutcome,
+    primary_graph::WorthQueryApplicationUncommitted,
 };
 
 use super::bounded_dimension_model::{
@@ -145,7 +145,7 @@ fn expect_stale_publication(
 ) {
     match result.expect("the workflow publication must reach commit comparison") {
         WorkflowDefinitionPublicationOutcome::Application(
-            WorthQueryApplicationCommitOutcome::Stale(stale),
+            WorthQueryApplicationUncommitted::Stale(stale),
         ) => assert!(stale.stale_fact_count() > 0),
         unexpected => panic!("expected a stale publication predecessor, got {unexpected:?}"),
     }
@@ -171,7 +171,7 @@ fn expect_stale_retirement(
 ) {
     match result.expect("the workflow retirement must reach commit comparison") {
         WorkflowDefinitionRetirementOutcome::Application(
-            WorthQueryApplicationCommitOutcome::Stale(stale),
+            WorthQueryApplicationUncommitted::Stale(stale),
         ) => assert!(stale.stale_fact_count() > 0),
         unexpected => panic!("expected a stale retirement, got {unexpected:?}"),
     }

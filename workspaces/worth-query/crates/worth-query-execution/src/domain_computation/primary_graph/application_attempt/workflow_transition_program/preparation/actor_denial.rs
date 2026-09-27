@@ -11,8 +11,8 @@ use crate::domain_computation::authorization::{
 impl WorthQueryWorkflowAdvanceAdapter {
     /// An actor permission denial can identify the blocked posture, but never
     /// authorizes reading the workflow's live head.
-    pub fn redacted_awaiting_actor<Capability, Operation, Schema, Spec, Program>(
-        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+    pub fn redacted_awaiting_actor<Capability, Operation, Schema, Spec>(
+        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         instance: &PublishedWorkflowInstanceRef,
         denial: &WorthQueryOperationAuthorizationDenial,
     ) -> Option<super::super::RequiredWorkflowActor>

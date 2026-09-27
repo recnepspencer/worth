@@ -229,8 +229,7 @@ let programs = application
 let selected = programs.inspect()?;
 let requirements = programs.compare(target_revision)?;
 let prepared = programs
-    .adopt(target_revision)
-    .requirements(&requirements)
+    .adopt(&requirements)
     .prepare(maximum_selection_work)?;
 
 match prepared.publish() {
@@ -340,10 +339,10 @@ than translating every transport success or failure into a business result:
 #     application_entry::{
 #         WorthQueryApplicationMutationOutcome, WorthQueryApplicationRequestMutationDenial,
 #     },
-#     primary_graph::{WorthQueryApplicationCommitOutcome, WorthQueryApplicationCommitReceipt},
+#     primary_graph::{WorthQueryApplicationCommitReceipt, WorthQueryApplicationUncommitted},
 # };
 # fn publish(_: WorthQueryApplicationCommitReceipt) {}
-# fn inspect_commit_outcome(_: WorthQueryApplicationCommitOutcome) {}
+# fn inspect_uncommitted(_: WorthQueryApplicationUncommitted) {}
 # fn explain_domain(_: BankProposalDenial) {}
 # fn explain_request(_: WorthQueryApplicationRequestMutationDenial) {}
 # fn handle_terminal_stop() {}
@@ -366,7 +365,7 @@ let outcome = bank
 match outcome {
     Ok(WorthQueryApplicationMutationOutcome::Committed { receipt, .. })
     | Ok(WorthQueryApplicationMutationOutcome::AlreadyCommitted(receipt)) => publish(receipt),
-    Ok(WorthQueryApplicationMutationOutcome::Commit(commit)) => inspect_commit_outcome(commit),
+    Ok(WorthQueryApplicationMutationOutcome::Commit(uncommitted)) => inspect_uncommitted(uncommitted),
     Ok(WorthQueryApplicationMutationOutcome::DomainDenied(reason)) => explain_domain(reason),
     Err(reason) => explain_request(reason),
     Ok(WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift)

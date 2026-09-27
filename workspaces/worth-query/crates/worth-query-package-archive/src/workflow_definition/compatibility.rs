@@ -80,9 +80,9 @@ impl WorthQueryUntrustedWorkflowDefinitionDraft {
     /// Rebuilds the draft as a typed definition against `installed`. The
     /// result is authored, not validated: it still validates, binds and
     /// publishes through the ordinary path.
-    pub fn author<Schema, Spec, Program>(
+    pub fn author<Schema, Spec>(
         &self,
-        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
     ) -> Result<AuthoredWorkflowDefinition<Spec>, Denial>
     where
         Schema: ApplicationSchema,
@@ -123,9 +123,9 @@ impl WorthQueryUntrustedWorkflowDefinitionDraft {
     }
 }
 
-fn resolve<Schema, Spec, Program>(
+fn resolve<Schema, Spec>(
     node: &DraftNode,
-    installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+    installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
     schema: &mut Option<ApplicationSchemaDeclaration<Schema>>,
 ) -> Result<ApplicationWorkflowNodeKind, Denial>
 where

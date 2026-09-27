@@ -2,75 +2,59 @@
 //! the program it now runs, and only that one.
 
 use worth_query_host::facade::application_entry::{
-    PublishedWorkflowDefinitionRef, PublishedWorkflowInstanceRef, WorkflowDefinitionBindingDenial,
+    PublishedWorkflowDefinitionRef, WorkflowDefinitionBindingDenial,
     WorkflowDefinitionExpectedPredecessor, WorkflowDefinitionPreparationDenial,
-    WorkflowDefinitionPublicationOutcome, WorkflowInstanceBindingDenial,
-    WorkflowInstancePreparationDenial, WorkflowInstanceStartOutcome, WorkflowProgressOutcome,
-    WorthQueryApplicationRequestExt, WorthQueryWorkflowAdvancePreparationDenial,
-    WorthQueryWorkflowDefinitionPublicationPreparationDenial,
-    WorthQueryWorkflowInstancePreparationDenial,
+    WorkflowDefinitionPublicationOutcome, WorkflowInstanceStartOutcome, WorkflowProgressOutcome,
+    WorthQueryApplicationRequestExt, WorthQueryWorkflowDefinitionPublicationPreparationDenial,
 };
-use worth_query_host::facade::application_installation::{
-    WorthQueryWorkflowRuntimeBindingDenial, WorthQueryWorkflowVocabulary,
-};
-use worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition;
+use worth_query_host::facade::application_installation::WorthQueryWorkflowRuntimeBindingDenial;
 use worth_query_host::facade::primary_graph::WorthQueryBranchAdoptionPublicationOutcome;
 use worth_query_host::facade::product::WorthQueryProductBranch;
+use worth_query_installation::facade::WorthQueryInstalledApplicationWorkflowSpec;
 
 use crate::bounded_dimension_model::{
-    dimension_entry::PART_IDENTITY,
-    host::publish_workflow_on_first_program,
+    host::{publish_workflow_on_first_program, BoundedDimensionWorkflowRuntime},
     operator_identity::{authenticate_operator, request_scope},
-    programs::{DimensionProgramP0, DimensionProgramP1},
+    programs::DimensionProgramP1,
     schema::BoundedDimensionSchema,
     workflow::{
-        authoring_intent, install_workflow_spec, support_workflow_program, terminal_definition,
-        ReviewedGeometryWorkflow, WorkflowAdvanceInput, WorkflowAdvanceIntent,
-        WorkflowInstanceStartInput, WorkflowInstanceStartIntent,
+        advance_instance, authoring_intent, install_workflow_spec, start_instance,
+        support_workflow_program, terminal_definition, ReviewedGeometryWorkflow,
     },
 };
 
-type Vocabulary<'application, Program> = WorthQueryWorkflowVocabulary<
-    'application,
-    BoundedDimensionSchema,
-    ReviewedGeometryWorkflow,
-    Program,
->;
+type InstalledSpec =
+    WorthQueryInstalledApplicationWorkflowSpec<BoundedDimensionSchema, ReviewedGeometryWorkflow>;
 
 #[test]
 fn an_adopted_branch_runs_workflows_through_its_new_program_vocabulary() {
     let mut application = publish_workflow_on_first_program();
-    assert!(
-        application
-            .supported_vocabulary::<DimensionProgramP1>()
-            .is_none(),
-        "a rostered program has no workflow vocabulary until one is installed",
-    );
     support_workflow_program::<DimensionProgramP1>(&mut application);
     let main = application.current_world();
+    let initial = application.workflow_spec().program_revision();
+    assert_eq!(
+        application
+            .vocabulary()
+            .workflow_spec_on(main)
+            .program_revision(),
+        initial,
+        "a supported vocabulary serves no branch until the branch adopts its program",
+    );
     adopt_second_program(&application, main);
 
-    let first = application.vocabulary();
-    let second = application
-        .supported_vocabulary::<DimensionProgramP1>()
-        .expect("the supported vocabulary serves while P1 is rostered");
-    assert_ne!(
-        first.workflow_spec().program_revision(),
-        second.workflow_spec().program_revision(),
-    );
+    let second = application.vocabulary().workflow_spec_on(main);
+    assert_eq!(second.program_revision(), second_revision(&application));
+    assert_ne!(second.program_revision(), initial);
 
-    let definition = expect_published(publish(second, main, "completed", 84_000));
-    let instance = match start(second, main, definition.clone(), 84_001)
+    let definition = expect_published(publish(&application, main, "completed", 84_000));
+    let instance = match start_instance(&application, definition, 84_001)
         .expect("the P1 instance prepares on the adopted branch")
     {
         WorkflowInstanceStartOutcome::Started(performed) => performed.instance().clone(),
         other => panic!("the P1 instance did not start: {other:?}"),
     };
-    assert_eq!(
-        instance.program_revision(),
-        second.workflow_spec().program_revision()
-    );
-    match advance(second, main, instance, 84_002)
+    assert_eq!(instance.program_revision(), second.program_revision());
+    match advance_instance(&application, instance, 84_002)
         .expect("the P1 advance prepares on the adopted branch")
     {
         WorkflowProgressOutcome::Completed(transition) => {
@@ -80,8 +64,11 @@ fn an_adopted_branch_runs_workflows_through_its_new_program_vocabulary() {
         other => panic!("the P1 instance did not complete: {other:?}"),
     }
 
-    expect_stale_definition_vocabulary(publish(first, main, "stale", 84_003));
-    expect_stale_instance_vocabulary(start(first, main, definition, 84_004));
+    // A definition bound to the program the branch left cannot publish there.
+    let absent = WorkflowDefinitionExpectedPredecessor::Absent;
+    let initial_spec = application.workflow_spec();
+    let stale = publish_bound(&application, initial_spec, main, "stale", 84_003, absent);
+    expect_stale_definition_vocabulary(stale);
 }
 
 #[test]
@@ -92,31 +79,59 @@ fn a_sibling_keeps_its_program_vocabulary_after_its_parent_adopts() {
     let sibling = fork_sibling(&application, main);
     adopt_second_program(&application, main);
 
-    let second = application
-        .supported_vocabulary::<DimensionProgramP1>()
-        .expect("the supported vocabulary serves while P1 is rostered");
-    expect_stale_definition_vocabulary(publish(second, sibling, "early", 84_100));
-    expect_published(publish(
-        application.vocabulary(),
-        sibling,
-        "unchanged",
-        84_101,
-    ));
+    let vocabulary = application.vocabulary();
+    assert_eq!(
+        vocabulary.workflow_spec_on(sibling).program_revision(),
+        application.workflow_spec().program_revision(),
+    );
+    let absent = WorkflowDefinitionExpectedPredecessor::Absent;
+    let parent_spec = vocabulary.workflow_spec_on(main);
+    let early = publish_bound(&application, parent_spec, sibling, "early", 84_100, absent);
+    expect_stale_definition_vocabulary(early);
+    expect_published(publish(&application, sibling, "unchanged", 84_101));
+}
+
+#[test]
+fn an_adopted_branch_without_its_program_vocabulary_refuses_workflow_work() {
+    let mut application = publish_workflow_on_first_program();
+    let main = application.current_world();
+    adopt_second_program(&application, main);
+    assert_eq!(
+        application
+            .vocabulary()
+            .workflow_spec_on(main)
+            .program_revision(),
+        application.workflow_spec().program_revision(),
+        "a branch whose program has no installed vocabulary falls back to the initial one",
+    );
+    expect_stale_definition_vocabulary(publish(&application, main, "unserved", 84_150));
+
+    // The refusal claimed nothing: once P1's vocabulary is supported, the
+    // same key publishes through it.
+    support_workflow_program::<DimensionProgramP1>(&mut application);
+    expect_published(publish(&application, main, "unserved", 84_150));
 }
 
 #[test]
 fn sibling_workflow_lineages_stay_on_their_own_branch() {
     let application = publish_workflow_on_first_program();
-    let vocabulary = application.vocabulary();
     let main = application.current_world();
     let sibling = fork_sibling(&application, main);
 
-    let on_sibling = expect_published(publish(vocabulary, sibling, "completed", 84_200));
-    let on_main = expect_published(publish(vocabulary, main, "completed", 84_201));
+    let on_sibling = expect_published(publish(&application, sibling, "completed", 84_200));
+    let on_main = expect_published(publish(&application, main, "completed", 84_201));
     // Each branch's current definition is its own publication.
     let replace = |branch, terminal, idempotency, own| {
         let predecessor = WorkflowDefinitionExpectedPredecessor::Published(own);
-        publish_after(vocabulary, branch, terminal, idempotency, predecessor)
+        let spec = application.vocabulary().workflow_spec_on(branch);
+        publish_bound(
+            &application,
+            spec,
+            branch,
+            terminal,
+            idempotency,
+            predecessor,
+        )
     };
     expect_published(replace(sibling, "settled", 84_202, on_sibling));
     expect_published(replace(main, "settled", 84_203, on_main));
@@ -162,23 +177,10 @@ fn a_supported_vocabulary_names_one_rostered_program_once() {
             .support_workflow_spec(foreign_schema),
         Err(WorthQueryWorkflowRuntimeBindingDenial::ForeignSchema),
     );
-    assert!(application
-        .supported_vocabulary::<DimensionProgramP0>()
-        .is_none());
 }
 
 #[test]
-fn a_retired_program_keeps_no_workflow_vocabulary() {
-    let mut application = publish_workflow_on_first_program();
-    support_workflow_program::<DimensionProgramP1>(&mut application);
-    retire_second_program(&application);
-    assert!(
-        application
-            .supported_vocabulary::<DimensionProgramP1>()
-            .is_none(),
-        "retirement withdraws the vocabulary installed against the program",
-    );
-
+fn a_retired_program_accepts_no_workflow_vocabulary() {
     let mut application = publish_workflow_on_first_program();
     let late = install_workflow_spec(
         application.installed_schema(),
@@ -195,22 +197,29 @@ fn a_retired_program_keeps_no_workflow_vocabulary() {
     );
 }
 
-fn retire_second_program(
-    application: &crate::bounded_dimension_model::host::BoundedDimensionWorkflowRuntime,
-) {
-    let revision = application
+fn second_revision(
+    application: &BoundedDimensionWorkflowRuntime,
+) -> &worth_query_host::facade::declaration::application_program::ApplicationProgramRevision {
+    application
         .supported_program::<DimensionProgramP1>()
         .expect("P1 is rostered")
         .installed_program()
         .revision()
-        .clone();
+}
+
+fn retire_second_program(application: &BoundedDimensionWorkflowRuntime) {
+    let revision = *application
+        .supported_program::<DimensionProgramP1>()
+        .expect("P1 is rostered")
+        .installed_program()
+        .revision();
     application
         .retire_program_support(&revision)
         .expect("an idle rostered program retires");
 }
 
 fn fork_sibling(
-    application: &crate::bounded_dimension_model::host::BoundedDimensionWorkflowRuntime,
+    application: &BoundedDimensionWorkflowRuntime,
     parent: WorthQueryProductBranch,
 ) -> WorthQueryProductBranch {
     application
@@ -223,15 +232,14 @@ fn fork_sibling(
 }
 
 fn adopt_second_program(
-    application: &crate::bounded_dimension_model::host::BoundedDimensionWorkflowRuntime,
+    application: &BoundedDimensionWorkflowRuntime,
     branch: WorthQueryProductBranch,
 ) {
-    let target = application
+    let target = *application
         .supported_program::<DimensionProgramP1>()
         .expect("P1 is rostered")
         .installed_program()
-        .revision()
-        .clone();
+        .revision();
     let runtime = application.runtime();
     let scope = request_scope();
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
@@ -241,8 +249,7 @@ fn adopt_second_program(
         .programs();
     let requirements = programs.compare(&target).expect("P0 to P1 compares");
     let prepared = programs
-        .adopt(&target)
-        .requirements(&requirements)
+        .adopt(&requirements)
         .prepare(64)
         .expect("an idle workflow host adopts P1");
     assert!(matches!(
@@ -251,24 +258,26 @@ fn adopt_second_program(
     ));
 }
 
-fn publish<Program>(
-    vocabulary: Vocabulary<'_, Program>,
+/// Publishes a definition bound to the vocabulary `branch` currently runs.
+fn publish(
+    application: &BoundedDimensionWorkflowRuntime,
     branch: WorthQueryProductBranch,
     terminal: &str,
     idempotency: u64,
 ) -> Result<
     WorkflowDefinitionPublicationOutcome,
     WorthQueryWorkflowDefinitionPublicationPreparationDenial,
->
-where
-    Program: ApplicationProgramDefinition<BoundedDimensionSchema>,
-{
+> {
+    let spec = application.vocabulary().workflow_spec_on(branch);
     let absent = WorkflowDefinitionExpectedPredecessor::Absent;
-    publish_after(vocabulary, branch, terminal, idempotency, absent)
+    publish_bound(application, spec, branch, terminal, idempotency, absent)
 }
 
-fn publish_after<Program>(
-    vocabulary: Vocabulary<'_, Program>,
+/// Publishes a definition bound to `spec` on `branch`, whichever program the
+/// branch runs.
+fn publish_bound(
+    application: &BoundedDimensionWorkflowRuntime,
+    spec: &InstalledSpec,
     branch: WorthQueryProductBranch,
     terminal: &str,
     idempotency: u64,
@@ -276,15 +285,11 @@ fn publish_after<Program>(
 ) -> Result<
     WorkflowDefinitionPublicationOutcome,
     WorthQueryWorkflowDefinitionPublicationPreparationDenial,
->
-where
-    Program: ApplicationProgramDefinition<BoundedDimensionSchema>,
-{
-    let contract = vocabulary
-        .workflow_spec()
+> {
+    let contract = spec
         .bind_definition(terminal_definition(terminal))
         .expect("the definition binds to the vocabulary");
-    let runtime = vocabulary.runtime();
+    let runtime = application.runtime();
     let scope = request_scope();
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
     runtime
@@ -294,58 +299,6 @@ where
         .without_source()
         .idempotency(&idempotency)
         .prepare_workflow_publication(contract, predecessor)
-        .map(|request| request.execute())
-}
-
-fn start<Program>(
-    vocabulary: Vocabulary<'_, Program>,
-    branch: WorthQueryProductBranch,
-    definition: PublishedWorkflowDefinitionRef,
-    idempotency: u64,
-) -> Result<WorkflowInstanceStartOutcome, WorthQueryWorkflowInstancePreparationDenial>
-where
-    Program: ApplicationProgramDefinition<BoundedDimensionSchema>,
-{
-    let runtime = vocabulary.runtime();
-    let scope = request_scope();
-    let principal = authenticate_operator(runtime.installed_schema(), &scope);
-    runtime
-        .request(&principal, &scope)
-        .on_branch(branch)
-        .mutate(WorkflowInstanceStartIntent {
-            input: WorkflowInstanceStartInput {
-                part_identity: PART_IDENTITY.to_owned(),
-            },
-        })
-        .without_source()
-        .idempotency(&idempotency)
-        .prepare_workflow_instance_start(vocabulary, definition)
-        .map(|request| request.execute())
-}
-
-fn advance<Program>(
-    vocabulary: Vocabulary<'_, Program>,
-    branch: WorthQueryProductBranch,
-    instance: PublishedWorkflowInstanceRef,
-    idempotency: u64,
-) -> Result<WorkflowProgressOutcome, WorthQueryWorkflowAdvancePreparationDenial>
-where
-    Program: ApplicationProgramDefinition<BoundedDimensionSchema>,
-{
-    let runtime = vocabulary.runtime();
-    let scope = request_scope();
-    let principal = authenticate_operator(runtime.installed_schema(), &scope);
-    runtime
-        .request(&principal, &scope)
-        .on_branch(branch)
-        .mutate(WorkflowAdvanceIntent {
-            input: WorkflowAdvanceInput {
-                part_identity: PART_IDENTITY.to_owned(),
-            },
-        })
-        .without_source()
-        .idempotency(&idempotency)
-        .prepare_workflow_advance(vocabulary, instance)
         .map(|request| request.execute())
 }
 
@@ -376,18 +329,5 @@ fn expect_stale_definition_vocabulary(
             ),
         )) => {}
         other => panic!("another program's vocabulary must not publish: {other:?}"),
-    }
-}
-
-fn expect_stale_instance_vocabulary(
-    result: Result<WorkflowInstanceStartOutcome, WorthQueryWorkflowInstancePreparationDenial>,
-) {
-    match result {
-        Err(WorthQueryWorkflowInstancePreparationDenial::InstancePreparation(
-            WorkflowInstancePreparationDenial::Binding(
-                WorkflowInstanceBindingDenial::ProgramRevisionChanged,
-            ),
-        )) => {}
-        other => panic!("another program's vocabulary must not start: {other:?}"),
     }
 }

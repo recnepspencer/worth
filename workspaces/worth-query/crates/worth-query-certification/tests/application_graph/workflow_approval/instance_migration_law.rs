@@ -51,7 +51,7 @@ fn a_migrated_source_admits_nothing_but_the_replay_of_its_migration() {
     )
     .expect("a superseded target prepares against the definition it names")
     {
-        WorkflowInstanceStartOutcome::Application(WorthQueryApplicationCommitOutcome::Stale(
+        WorkflowInstanceStartOutcome::Application(WorthQueryApplicationUncommitted::Stale(
             stale,
         )) => assert!(stale.stale_fact_count() > 0),
         other => panic!("a superseded definition is never a migration target: {other:?}"),

@@ -21,7 +21,6 @@ use super::super::{
     dimension_entry::{ReviewedSetPartDimensionBinding, PART_IDENTITY},
     host::BoundedDimensionWorkflowRuntime,
     operator_identity::{authenticate_operator, block_on, request_scope},
-    programs::DimensionProgramP0,
     schema::{BoundedDimensionSchema, PartDimensionConditionQuery, PartDimensionQuery},
 };
 use super::{
@@ -37,8 +36,8 @@ pub use authoring::{authoring_intent, publish_definition, retire_definition};
 #[path = "definition/instance.rs"]
 mod instance;
 pub use instance::{
-    advance_instance, approve_instance, cancel_instance, continue_on_fork, migrate_instance,
-    prepare_cancellation, prepare_cancellation_on, propose_authoring_instance,
+    advance_instance, advance_instance_on, approve_instance, cancel_instance, continue_on_fork,
+    migrate_instance, prepare_cancellation, prepare_cancellation_on, propose_authoring_instance,
     propose_authoring_instance_with_dimension, propose_instance, propose_instance_on_branch,
     start_instance,
 };
@@ -348,11 +347,8 @@ pub fn repeated_proposal_definition() -> ValidatedWorkflowDefinition<ReviewedGeo
 pub fn bind_definition(
     application: &BoundedDimensionWorkflowRuntime,
     definition: ValidatedWorkflowDefinition<ReviewedGeometryWorkflow>,
-) -> WorthQueryInstalledWorkflowDefinitionContract<
-    BoundedDimensionSchema,
-    ReviewedGeometryWorkflow,
-    DimensionProgramP0,
-> {
+) -> WorthQueryInstalledWorkflowDefinitionContract<BoundedDimensionSchema, ReviewedGeometryWorkflow>
+{
     application
         .workflow_spec()
         .bind_definition(definition)

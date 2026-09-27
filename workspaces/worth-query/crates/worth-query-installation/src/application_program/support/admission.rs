@@ -147,14 +147,14 @@ where
         {
             return Err(WorthQueryProgramSupportDenial::DuplicateProgram {
                 program: identity.clone(),
-                revision: program.revision().clone(),
+                revision: *program.revision(),
             });
         }
         require_governed_composition(program)?;
         let rules = self.require_supported_rules(program)?;
         self.require_supported_actions(program)?;
         self.entries.push(WorthQueryProgramSupportEntry::admitted(
-            program.revision().clone(),
+            *program.revision(),
             identity.clone(),
             rules,
             program

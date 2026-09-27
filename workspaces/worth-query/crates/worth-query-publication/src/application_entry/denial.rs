@@ -105,6 +105,7 @@ pub enum WorthQueryApplicationRequestMutationDenialKind {
     Idempotency,
     Handler,
     SourceExpectation,
+    ProgramSelection,
     ApplicationProgramRequired,
     ApplicationProgramMismatch,
     RequiresWorkflowTransition,
@@ -124,6 +125,11 @@ pub enum WorthQueryApplicationRequestMutationDenial {
     Handler(MutationHandlerExecutionDenial),
     SourceExpectation(
         worth_query_execution::facade::primary_graph::WorthQuerySourceExpectationDenial,
+    ),
+    /// The branch's adopted program could not be inspected, so no
+    /// installed owner could be chosen for it.
+    ProgramSelection(
+        worth_query_execution::facade::primary_graph::WorthQuerySelectedProgramInspectionDenial,
     ),
     ApplicationProgramRequired,
     ApplicationProgramMismatch,
@@ -157,6 +163,9 @@ impl WorthQueryApplicationRequestMutationDenial {
             Self::Handler(_) => WorthQueryApplicationRequestMutationDenialKind::Handler,
             Self::SourceExpectation(_) => {
                 WorthQueryApplicationRequestMutationDenialKind::SourceExpectation
+            }
+            Self::ProgramSelection(_) => {
+                WorthQueryApplicationRequestMutationDenialKind::ProgramSelection
             }
             Self::ApplicationProgramRequired => {
                 WorthQueryApplicationRequestMutationDenialKind::ApplicationProgramRequired

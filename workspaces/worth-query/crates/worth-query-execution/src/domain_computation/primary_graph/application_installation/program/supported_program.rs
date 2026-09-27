@@ -43,7 +43,7 @@ impl WorthQuerySupportedProgramRecord {
     {
         Self {
             program_type: TypeId::of::<Program>(),
-            revision: installed.revision().clone(),
+            revision: *installed.revision(),
             action_bindings: installed
                 .actions()
                 .iter()

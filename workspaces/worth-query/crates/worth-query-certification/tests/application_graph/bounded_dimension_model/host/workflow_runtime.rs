@@ -61,12 +61,7 @@ impl std::ops::Deref for BoundedDimensionWorkflowRuntime {
 /// Every workflow entry names its vocabulary; this host's initial one is the
 /// P0 vocabulary its workflow runtime retained at installation.
 impl<'application> From<&'application BoundedDimensionWorkflowRuntime>
-    for WorthQueryWorkflowVocabulary<
-        'application,
-        BoundedDimensionSchema,
-        ReviewedGeometryWorkflow,
-        DimensionProgramP0,
-    >
+    for WorthQueryWorkflowVocabulary<'application, BoundedDimensionSchema, ReviewedGeometryWorkflow>
 {
     fn from(application: &'application BoundedDimensionWorkflowRuntime) -> Self {
         application.workflow.vocabulary()

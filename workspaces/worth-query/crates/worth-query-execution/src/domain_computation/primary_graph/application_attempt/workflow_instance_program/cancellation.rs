@@ -33,8 +33,8 @@ pub use publication::{
 const HISTORY: WorthQueryApplicationAttemptDenialKind =
     WorthQueryApplicationAttemptDenialKind::WorkflowInstanceHistoryUnavailable;
 
-fn maximum_transitions<Schema, Spec, Program>(
-    installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+fn maximum_transitions<Schema, Spec>(
+    installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
 ) -> usize
 where
     Schema: ApplicationSchema,
@@ -63,10 +63,9 @@ where
     pub(in crate::domain_computation::primary_graph) fn materialize_workflow_instance_cancellation<
         Capability,
         Spec,
-        Program,
     >(
         mut self,
-        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         instance: PublishedWorkflowInstanceRef,
         cancel_key_identity: [u8; 32],
     ) -> Result<
@@ -80,7 +79,7 @@ where
         let branch = self.lease.product().product_branch();
         // The start capability authorizes ending what it started, on the
         // branch whose copy the request ends.
-        self.authorize_instance_start::<Capability, Spec, Program>(installed, branch)?;
+        self.authorize_instance_start::<Capability, Spec>(installed, branch)?;
         if instance.branch() != branch {
             return Err(WorthQueryApplicationAttemptDenial::new(
                 WorthQueryApplicationAttemptDenialKind::WorkflowInstanceAffinityMismatch,
@@ -148,7 +147,7 @@ where
         let reservation = admit_platform_effects(&self, demand)?;
         let validator_work_admission = reservation.materialize(&effects)?;
         Ok(PreparedWorkflowInstanceCancellation {
-            program_revision: installed.program_revision().clone(),
+            program_revision: *installed.program_revision(),
             instance,
             cancellation_identity: identity,
             intent_identity,

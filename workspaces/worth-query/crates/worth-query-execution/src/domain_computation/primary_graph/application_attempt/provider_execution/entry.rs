@@ -92,6 +92,7 @@ where
                 WorthQueryApplicationCommitDenial::program_not_active_on_occurrence(
                     presented.identity(),
                     occurrence.entry().identity(),
+                    occurrence.entry().revision(),
                 ),
             ));
         }
@@ -194,6 +195,7 @@ where
                 WorthQueryApplicationCommitDenial::program_not_active_on_occurrence(
                     presented.identity(),
                     occurrence.entry().identity(),
+                    occurrence.entry().revision(),
                 ),
             );
         }

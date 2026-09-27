@@ -210,12 +210,12 @@ fn exact_approval_persists_replays_and_binds_decision_and_instance() {
     )
     .expect("changed approval meaning must resolve through idempotency")
     {
-        WorkflowProgressOutcome::Application(WorthQueryApplicationCommitOutcome::Denied(
-            denial,
-        )) => assert_eq!(
-            denial.kind(),
-            WorthQueryApplicationCommitDenialKind::IdempotencyIntentDrift
-        ),
+        WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::Denied(denial)) => {
+            assert_eq!(
+                denial.kind(),
+                WorthQueryApplicationCommitDenialKind::IdempotencyIntentDrift
+            )
+        }
         other => panic!("expected approval decision intent drift, got {other:?}"),
     }
 

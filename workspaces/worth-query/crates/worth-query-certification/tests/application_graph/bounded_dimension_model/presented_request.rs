@@ -1,15 +1,13 @@
-//! Asking one occurrence to set a dimension while presenting one program.
+//! Asking one occurrence to set a dimension.
 //!
-//! The presented program is the whole point: the same request, the same
-//! occurrence and the same value reach a different answer depending on which
-//! rostered program the caller presents and which one the occurrence runs.
+//! The request never names a program: the same request, value and host reach
+//! a different answer depending on which program the occurrence runs.
 
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationMutationOutcome, WorthQueryApplicationRequestExt,
     WorthQueryApplicationRequestMutationDenial,
 };
 use worth_query_host::facade::application_installation::WorthQueryProgramApplicationRuntime;
-use worth_query_host::facade::application_installation::WorthQueryProgramOwner;
 use worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition;
 use worth_query_host::facade::product::WorthQueryProductBranch;
 
@@ -19,40 +17,13 @@ use super::dimension_entry::{
 use super::operator_identity::{authenticate_operator, request_scope};
 use super::schema::{BoundedDimensionSchema, SetPartDimensionInput};
 
-/// What one presented set-dimension request settled as.
+/// What one set-dimension request settled as.
 pub type DimensionOutcome =
     WorthQueryApplicationMutationOutcome<SetPartDimensionDenial, PartDimensionWritten>;
 
-/// Issues one set-dimension request on one occurrence through one presented
-/// program owner.
-pub fn set_dimension<Owner>(
-    owner: &Owner,
-    branch: WorthQueryProductBranch,
-    dimension: u64,
-    idempotency: u64,
-) -> Result<DimensionOutcome, WorthQueryApplicationRequestMutationDenial>
-where
-    Owner: WorthQueryProgramOwner<BoundedDimensionSchema>,
-{
-    let runtime = owner.runtime();
-    let scope = request_scope();
-    let principal = authenticate_operator(runtime.installed_schema(), &scope);
-    runtime
-        .request(&principal, &scope)
-        .on_branch(branch)
-        .mutate(SetPartDimensionIntent {
-            input: SetPartDimensionInput {
-                identity: PART_IDENTITY.to_owned(),
-                dimension,
-            },
-        })
-        .without_source()
-        .idempotency(&idempotency)
-        .execute_in_program(owner)
-}
-
-/// Issues the same mutation through the branch-selected installed owner.
-pub fn set_dimension_selected<Program>(
+/// Issues one set-dimension request on one occurrence through the installed
+/// owner of the program that occurrence runs.
+pub fn set_dimension<Program>(
     application: &WorthQueryProgramApplicationRuntime<BoundedDimensionSchema, Program>,
     branch: WorthQueryProductBranch,
     dimension: u64,
@@ -75,5 +46,5 @@ where
         })
         .without_source()
         .idempotency(&idempotency)
-        .execute_in_selected_program(application)
+        .execute_in_program(application)
 }

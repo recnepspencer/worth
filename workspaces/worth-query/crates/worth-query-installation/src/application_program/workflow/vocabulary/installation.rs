@@ -324,7 +324,7 @@ where
     pub fn finish(
         self,
     ) -> Result<
-        WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+        WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         WorthQueryApplicationWorkflowInstallationDenial,
     > {
         if self.program.schema_binding() != &self.schema.binding_identity() {
@@ -371,7 +371,7 @@ where
         );
         Ok(WorthQueryInstalledApplicationWorkflowSpec {
             schema_binding: self.schema.binding_identity(),
-            program_revision: self.program.revision().clone(),
+            program_revision: *self.program.revision(),
             support_identity,
             authoring_capability,
             instance_start_capability,

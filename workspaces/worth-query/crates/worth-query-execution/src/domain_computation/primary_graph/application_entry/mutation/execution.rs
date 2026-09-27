@@ -17,6 +17,9 @@ pub enum MutationHandlerExecutionDenial {
     Projection(WorthQueryOperationProjectionDenial),
     Attempt(WorthQueryApplicationAttemptDenial),
     Handler(HandlerExecutionDenial),
+    /// The binding is a workflow control step the workflow kernel records
+    /// itself; no handler serves it, so this lane refuses it before any read.
+    WorkflowControl,
 }
 
 impl std::fmt::Display for MutationHandlerExecutionDenial {
@@ -25,6 +28,9 @@ impl std::fmt::Display for MutationHandlerExecutionDenial {
             Self::Projection(denial) => denial.fmt(formatter),
             Self::Attempt(denial) => denial.fmt(formatter),
             Self::Handler(denial) => denial.fmt(formatter),
+            Self::WorkflowControl => formatter.write_str(
+                "the workflow kernel records this control binding; no mutation handler serves it",
+            ),
         }
     }
 }
@@ -53,7 +59,9 @@ where
     where
         Binding: ApplicationMutationBinding<Schema>,
     {
-        let (handler, installed_ceiling) = self.mutation_handler_for_attempt::<Binding>();
+        let (handler, installed_ceiling) = self
+            .mutation_handler_for_attempt::<Binding>()
+            .ok_or(MutationHandlerExecutionDenial::WorkflowControl)?;
         let request = admission.publication_request();
         let operation_scope_binding = admission.operation_scope_binding().clone();
         let projected = self

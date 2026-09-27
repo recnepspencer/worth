@@ -132,7 +132,7 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
         Ok(match resolution.into_resolution() {
             WorthQueryApplicationIdempotencyResolution::Unseen => None,
             WorthQueryApplicationIdempotencyResolution::IntentDrift => Some(
-                WorkflowProgressOutcome::Application(WorthQueryApplicationCommitOutcome::Denied(
+                WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::Denied(
                     WorthQueryApplicationCommitDenial::idempotency_intent_drift(),
                 )),
             ),

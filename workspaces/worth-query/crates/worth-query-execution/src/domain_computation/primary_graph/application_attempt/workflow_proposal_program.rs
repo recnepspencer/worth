@@ -47,12 +47,9 @@ where
     Schema: ApplicationSchema,
     Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
 {
-    pub(in crate::domain_computation::primary_graph) fn materialize_workflow_proposal<
-        Spec,
-        Program,
-    >(
+    pub(in crate::domain_computation::primary_graph) fn materialize_workflow_proposal<Spec>(
         mut self,
-        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         instance: super::PublishedWorkflowInstanceRef,
         input_identity: [u8; 32],
         source_identity: Option<[u8; 32]>,
@@ -242,7 +239,7 @@ where
                 producer_required_invariants: &[],
                 output_currentness_facts: None,
             },
-            program_revision: compiled.program_revision().clone(),
+            program_revision: *compiled.program_revision(),
             transition_identity_locator: layout.transition.identity.clone(),
             proposal_identity_locator: layout.proposal.identity.clone(),
             proposal_node_path_locator: layout.proposal.node_path.clone(),

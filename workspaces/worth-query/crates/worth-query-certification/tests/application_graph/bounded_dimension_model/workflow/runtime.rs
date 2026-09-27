@@ -57,11 +57,7 @@ pub fn install_workflow_spec<Program>(
     schema: &WorthQueryInstalledApplicationSchema<BoundedDimensionSchema>,
     program: &WorthQueryInstalledApplicationProgram<BoundedDimensionSchema, Program>,
     resources: WorthQueryApplicationWorkflowResourceCeiling,
-) -> WorthQueryInstalledApplicationWorkflowSpec<
-    BoundedDimensionSchema,
-    ReviewedGeometryWorkflow,
-    Program,
->
+) -> WorthQueryInstalledApplicationWorkflowSpec<BoundedDimensionSchema, ReviewedGeometryWorkflow>
 where
     Program: ApplicationProgramDefinition<BoundedDimensionSchema>,
 {

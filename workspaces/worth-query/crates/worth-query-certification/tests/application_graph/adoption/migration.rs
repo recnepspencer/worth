@@ -47,11 +47,10 @@ fn typed_migration_repairs_state_inside_the_adoption_publication() {
         .components(|components| components.fork_relational().reuse_exact_signal_basis())
         .create()
         .expect("the source-program sibling must publish");
-    let target = host
+    let target = *host
         .supported_program::<DimensionProgramP1>()
         .expect("P1 is rostered")
-        .owned_revision()
-        .clone();
+        .owned_revision();
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let migration = match host
@@ -90,8 +89,7 @@ fn typed_migration_repairs_state_inside_the_adoption_publication() {
         .programs();
     let requirements = programs.compare(&target).expect("comparison must succeed");
     let prepared = programs
-        .adopt(&target)
-        .requirements(&requirements)
+        .adopt(&requirements)
         .migration(migration)
         .prepare(64)
         .expect("migration and target validation must prepare atomically");
@@ -122,11 +120,10 @@ fn typed_migration_repairs_state_inside_the_adoption_publication() {
 fn migration_candidate_cannot_cross_the_source_product_head() {
     let host = publish_on_first_program();
     let branch = host.current_world();
-    let target = host
+    let target = *host
         .supported_program::<DimensionProgramP1>()
         .expect("P1 is rostered")
-        .owned_revision()
-        .clone();
+        .owned_revision();
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let migration = match host
@@ -164,8 +161,7 @@ fn migration_candidate_cannot_cross_the_source_product_head() {
         .request(&principal, &scope)
         .on_branch(branch)
         .programs()
-        .adopt(&target)
-        .requirements(&requirements)
+        .adopt(&requirements)
         .migration(migration)
         .prepare(64)
         .err()
@@ -193,11 +189,10 @@ fn unpublished_migration_recovery_never_reruns_candidate_authoring() {
         DimensionVerdict::Performed(P0_ONLY_DIMENSION),
     );
     let branch = host.current_world();
-    let target = host
+    let target = *host
         .supported_program::<DimensionProgramP1>()
         .expect("P1 is rostered")
-        .owned_revision()
-        .clone();
+        .owned_revision();
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     reset_candidate_count(MIGRATION_CANDIDATE_PROBE_DIMENSION);
@@ -227,8 +222,7 @@ fn unpublished_migration_recovery_never_reruns_candidate_authoring() {
         .programs();
     let requirements = programs.compare(&target).expect("comparison succeeds");
     let prepared = programs
-        .adopt(&target)
-        .requirements(&requirements)
+        .adopt(&requirements)
         .migration(migration)
         .prepare(64)
         .expect("migration adoption prepares");

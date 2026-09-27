@@ -47,8 +47,7 @@ fn performed_effect_recovery_survives_removal_from_the_current_program() {
         })
         .expect("removed effectful operation requires exact recovery custody");
     let prepared = programs
-        .adopt(&target)
-        .requirements(&requirements)
+        .adopt(&requirements)
         .prepare(128)
         .expect("Bank P1 adoption prepares");
     assert!(has_exact_recovery(prepared.custody(), recovery));

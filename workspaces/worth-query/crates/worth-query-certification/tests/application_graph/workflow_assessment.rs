@@ -7,8 +7,8 @@ use worth_query_host::facade::application_entry::{
     WorthQueryWorkflowAssessmentAcceptanceDenial,
 };
 use worth_query_host::facade::primary_graph::{
-    WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitOutcome,
-    WorthQueryApplicationOutputRole, WorthQueryOutputDemandDenialKind, WorthQueryPreserveOutput,
+    WorthQueryApplicationCommitDenialKind, WorthQueryApplicationOutputRole,
+    WorthQueryApplicationUncommitted, WorthQueryOutputDemandDenialKind, WorthQueryPreserveOutput,
 };
 use worth_query_replay::facade::WorthQueryCertificationCostRuntimeExt;
 

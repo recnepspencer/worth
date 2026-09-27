@@ -240,7 +240,7 @@ fn overdue_operation(
     assert_eq!(read_dimension(runtime, instance.branch()), SEED_DIMENSION);
     match effect {
         Ok(WorthQueryApplicationMutationOutcome::Commit(
-            WorthQueryApplicationCommitOutcome::Denied(denial),
+            WorthQueryApplicationUncommitted::Denied(denial),
         )) => Ok(denial.kind()),
         Err(WorthQueryApplicationRequestMutationDenial::WorkflowTransitionCurrentness(denial)) => {
             Err(denial.kind())

@@ -5,7 +5,7 @@
 
 use super::super::{
     PublishedWorkflowDefinitionRef, WorthQueryApplicationAttemptDenialKind,
-    WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitOutcome,
+    WorthQueryApplicationCommitDenialKind, WorthQueryApplicationUncommitted,
 };
 use super::publication::WorkflowInstanceStartOutcome;
 use crate::domain_computation::primary_graph::application_discovery::WorkflowDefinitionCurrentness;
@@ -85,16 +85,16 @@ impl WorkflowStartSupersession {
     }
 
     /// The typed outcome for the commit's own refusal of this start. Any
-    /// other outcome, such as a replay, passes through unchanged.
+    /// other terminal that did not land passes through unchanged.
     pub(super) fn outcome(
         self,
-        outcome: WorthQueryApplicationCommitOutcome,
-    ) -> Result<WorkflowInstanceStartOutcome, WorthQueryApplicationCommitOutcome> {
+        outcome: WorthQueryApplicationUncommitted,
+    ) -> Result<WorkflowInstanceStartOutcome, WorthQueryApplicationUncommitted> {
         let refused = WorthQueryApplicationCommitDenialKind::WorkflowSettlementDenied {
             kind: self.denial_kind(),
         };
         match outcome {
-            WorthQueryApplicationCommitOutcome::Denied(denial) if denial.kind() == refused => {
+            WorthQueryApplicationUncommitted::Denied(denial) if denial.kind() == refused => {
                 Ok(match self {
                     Self::Superseded(start) => WorkflowInstanceStartOutcome::Superseded(start),
                     Self::Retired(start) => WorkflowInstanceStartOutcome::Retired(start),

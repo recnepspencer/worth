@@ -57,10 +57,9 @@ where
     pub(in crate::domain_computation::primary_graph) fn materialize_workflow_instance_start<
         Capability,
         Spec,
-        Program,
     >(
         mut self,
-        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         published: PublishedWorkflowDefinitionRef,
         start_key_identity: [u8; 32],
         clock: &WorthQueryRuntimeClock,
@@ -72,7 +71,7 @@ where
         Capability: ApplicationCapabilityMarkerIdentity<Schema = Schema> + 'static,
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
-        self.authorize_instance_start::<Capability, Spec, Program>(installed, published.branch())?;
+        self.authorize_instance_start::<Capability, Spec>(installed, published.branch())?;
         let layout = self.lease.layout.workflow().clone();
         let (compiled, mut compile_facts) = reconstruct_compiled_definition(
             self.lease.handle(),
@@ -220,7 +219,7 @@ where
         let start_path = compiled.start_path().to_owned();
         let definition = compiled.definition();
         let definition_content_identity = compiled.content_identity().clone();
-        let program_revision = compiled.program_revision().clone();
+        let program_revision = *compiled.program_revision();
         let program = WorthQueryApplicationEffectProgram {
             read_set: self,
             effects,
@@ -263,9 +262,9 @@ where
 {
     /// Starting and migrating an instance share one authority: the workflow's
     /// installed start binding, on the branch the request selected.
-    fn authorize_instance_start<Capability, Spec, Program>(
+    fn authorize_instance_start<Capability, Spec>(
         &self,
-        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         branch: crate::basis::WorthQueryProductBranch,
     ) -> Result<(), WorthQueryApplicationAttemptDenial>
     where

@@ -39,10 +39,13 @@ where
     pub(in crate::domain_computation::primary_graph) fn materialize_workflow_approval<
         Capability,
         Spec,
-        Program,
     >(
         mut self,
-        workflow: WorthQueryWorkflowVocabulary<'_, Schema, Spec, Program>,
+        workflow: WorthQueryWorkflowVocabulary<'_, Schema, Spec>,
+        installed: &worth_query_installation::facade::WorthQueryInstalledApplicationWorkflowSpec<
+            Schema,
+            Spec,
+        >,
         instance: super::super::PublishedWorkflowInstanceRef,
         required: &RequiredWorkflowApproval,
         proposal: &super::super::PublishedWorkflowProposalRef,
@@ -56,8 +59,7 @@ where
         Capability: ApplicationCapabilityMarkerIdentity<Schema = Schema> + 'static,
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
-        let installed = workflow.workflow_spec();
-        validate_request_binding::<Schema, Capability, Operation, _, _, _, _>(
+        validate_request_binding::<Schema, Capability, Operation, _, _, _>(
             &self, installed, &instance, required, proposal,
         )?;
         let layout = self.lease.layout.workflow().clone();
@@ -354,7 +356,7 @@ where
         );
         let mut prepared = materialize_decision(
             &layout,
-            compiled.program_revision().clone(),
+            *compiled.program_revision(),
             admitted,
             meaning,
             evidence_currentness,

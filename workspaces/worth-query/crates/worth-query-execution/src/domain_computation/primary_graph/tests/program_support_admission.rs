@@ -98,17 +98,14 @@ fn a_commit_names_why_it_cannot_present_a_retiring_or_unadmitted_revision() {
         .expect("a retiring revision is refused");
     assert_eq!(
         retiring.kind(),
-        WorthQueryApplicationCommitDenialKind::ProgramNotActiveOnOccurrence
+        WorthQueryApplicationCommitDenialKind::ProgramSupportRetired
     );
-    assert!(retiring
-        .detail()
-        .is_some_and(|detail| detail.contains("no longer active on this host")));
     drop(retirement);
     assert!(support.present_for_commit(&revision).is_ok());
 }
 
 #[test]
-fn a_completed_retirement_leaves_the_revision_permanently_not_active() {
+fn a_completed_retirement_leaves_the_revision_permanently_retired() {
     let world = installed_authorization_world(true);
     let revision = rostered_program_revision();
     let support = installed_program_support(&world.application.installed_schema);
@@ -126,7 +123,7 @@ fn a_completed_retirement_leaves_the_revision_permanently_not_active() {
         .expect("a retired revision is refused");
     assert_eq!(
         retired.kind(),
-        WorthQueryApplicationCommitDenialKind::ProgramNotActiveOnOccurrence
+        WorthQueryApplicationCommitDenialKind::ProgramSupportRetired
     );
     assert!(support.retain_interpretation(&revision).is_none());
     assert!(matches!(

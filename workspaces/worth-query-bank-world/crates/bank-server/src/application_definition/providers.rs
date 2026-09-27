@@ -1,7 +1,5 @@
 use bank_domain::schema::{
     ApplyOpeningFundingMutationBinding, ApprovePaymentMutationBinding,
-    ApprovedBusinessPaymentAdvanceBinding, ApprovedBusinessPaymentApprovalBinding,
-    ApprovedBusinessPaymentAuthoringBinding, ApprovedBusinessPaymentInstanceStartBinding,
     ApprovedPaymentAssessmentBinding, ApprovedPaymentAssessmentProducer,
     ApprovedPaymentAssessmentProvider, ApprovedPaymentAssessmentReadiness, BankAccounts,
     BankEstate, BankPayments, BankPostingIntegrity, BankSchema,
@@ -28,9 +26,9 @@ use worth_query_host::facade::{
 };
 
 use crate::mutation_handlers::{
-    ApplyOpeningFundingHandler, ApprovePaymentHandler, ApprovedBusinessPaymentControlHandler,
-    ApprovedPaymentAssessmentHandler, CreateBusinessAccountHandler, CreatePersonalAccountHandler,
-    DepositHandler, DisburseEstateHandler, FreezeEstateAccountHandler, GrantAccountAccessHandler,
+    ApplyOpeningFundingHandler, ApprovePaymentHandler, ApprovedPaymentAssessmentHandler,
+    CreateBusinessAccountHandler, CreatePersonalAccountHandler, DepositHandler,
+    DisburseEstateHandler, FreezeEstateAccountHandler, GrantAccountAccessHandler,
     InitiateBusinessPaymentHandler, NotifyEstateDeathHandler, OpenEstateCaseHandler,
     RecognizeEstateExecutorHandler, RejectPaymentHandler, ReleaseEstateHandler,
     RetransmitEstateDeathNoticeHandler, ReverseJournalHandler, RevokeAccountAccessHandler,
@@ -101,18 +99,6 @@ impl WorthQueryApplicationContribution<BankSchema> for BankPaymentsProvider {
         setup.handler::<SendMoneyMutationBinding, _>(SendMoneyHandler)?;
         setup
             .handler::<InitiateBusinessPaymentMutationBinding, _>(InitiateBusinessPaymentHandler)?;
-        setup.handler::<ApprovedBusinessPaymentAuthoringBinding, _>(
-            ApprovedBusinessPaymentControlHandler,
-        )?;
-        setup.handler::<ApprovedBusinessPaymentApprovalBinding, _>(
-            ApprovedBusinessPaymentControlHandler,
-        )?;
-        setup.handler::<ApprovedBusinessPaymentInstanceStartBinding, _>(
-            ApprovedBusinessPaymentControlHandler,
-        )?;
-        setup.handler::<ApprovedBusinessPaymentAdvanceBinding, _>(
-            ApprovedBusinessPaymentControlHandler,
-        )?;
         setup.handler::<ApprovedPaymentAssessmentBinding, _>(ApprovedPaymentAssessmentHandler)?;
         setup.producer::<ApprovedPaymentAssessmentProducer>(ApprovedPaymentAssessmentProvider)?;
         setup.conditional::<ApprovedPaymentAssessmentReadiness>(())?;

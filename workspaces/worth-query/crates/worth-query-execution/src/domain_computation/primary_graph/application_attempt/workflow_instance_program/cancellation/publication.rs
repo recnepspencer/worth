@@ -3,9 +3,9 @@ use worth_query_declaration::facade::application_program::ApplicationProgramRevi
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::super::super::{
-    WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitOutcome,
-    WorthQueryApplicationCommitReceipt, WorthQueryApplicationEffectProgram,
-    WorthQueryApplicationIdempotencyBinding,
+    WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitReceipt,
+    WorthQueryApplicationEffectProgram, WorthQueryApplicationIdempotencyBinding,
+    WorthQueryApplicationUncommitted,
 };
 use super::super::PublishedWorkflowInstanceRef;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
@@ -54,7 +54,9 @@ impl PerformedWorkflowInstanceCancellation {
 #[derive(Debug)]
 pub enum WorkflowInstanceCancellationOutcome {
     Cancelled(PerformedWorkflowInstanceCancellation),
-    Application(WorthQueryApplicationCommitOutcome),
+    /// The commit did not land. A landed commit, first or replayed, is the
+    /// performed variant.
+    Application(WorthQueryApplicationUncommitted),
     ProjectionDenied(WorthQueryApplicationCommitReceipt),
 }
 
@@ -91,18 +93,22 @@ where
             Ok(presented) => presented,
             Err(denial) => {
                 return WorkflowInstanceCancellationOutcome::Application(
-                    WorthQueryApplicationCommitOutcome::Denied(denial),
+                    WorthQueryApplicationUncommitted::Denied(denial),
                 );
             }
         };
-        let (receipt, replayed) = match self.compare_and_commit_application_for_program_action(
-            &presented,
-            program,
-            idempotency.bind_workflow_instance(&intent_identity),
-        ) {
-            WorthQueryApplicationCommitOutcome::Committed(receipt) => (receipt, false),
-            WorthQueryApplicationCommitOutcome::AlreadyCommitted(receipt) => (receipt, true),
-            other => return WorkflowInstanceCancellationOutcome::Application(other),
+        let (receipt, replayed) = match self
+            .compare_and_commit_application_for_program_action(
+                &presented,
+                program,
+                idempotency.bind_workflow_instance(&intent_identity),
+            )
+            .landed()
+        {
+            Ok(landed) => landed,
+            Err(uncommitted) => {
+                return WorkflowInstanceCancellationOutcome::Application(uncommitted)
+            }
         };
         // The receipt must record this cancellation on this instance.
         let expected = AspectValue::String(InternedString::Raw(cancellation_identity));

@@ -8,7 +8,6 @@ use super::super::bounded_dimension_model::{
     assessment_output::PartAssessmentDemand,
     host::BoundedDimensionWorkflowRuntime,
     operator_identity::{authenticate_operator, request_scope},
-    programs::DimensionProgramP0,
     schema::{BoundedDimensionSchema, PartDimensionQuery},
     workflow::{
         cancel_instance, ReviewedGeometryWorkflow, WorkflowAdvanceInput, WorkflowAdvanceIntent,
@@ -71,7 +70,6 @@ type Observer<'application> = WorthQueryWorkflowAssessmentDemandHandle<
     'application,
     BoundedDimensionSchema,
     ReviewedGeometryWorkflow,
-    DimensionProgramP0,
     PartAssessmentDemand,
 >;
 

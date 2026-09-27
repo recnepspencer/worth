@@ -10,7 +10,6 @@ use super::{fork, target_revision, P0_ONLY_DIMENSION, P1_ONLY_DIMENSION};
 use crate::bounded_dimension_model::host::{publish_on_first_program, SEED_DIMENSION};
 use crate::bounded_dimension_model::operator_identity::{authenticate_operator, request_scope};
 use crate::bounded_dimension_model::presented_request::set_dimension;
-use crate::bounded_dimension_model::programs::DimensionProgramP1;
 use crate::bounded_dimension_model::readback::observe_head;
 use crate::bounded_dimension_model::settled_verdict::{settle, DimensionVerdict};
 
@@ -113,9 +112,8 @@ fn stale_middle_branch_stops_progress_and_cancellation_preserves_the_prefix() {
     assert_eq!(cancelled.cancelled_branch_count(), 2);
     assert_eq!(cancelled.progress().len(), 2);
 
-    let p1 = host.supported_program::<DimensionProgramP1>().unwrap();
     assert_eq!(
-        settle(set_dimension(&p1, a, P1_ONLY_DIMENSION, 0x9175_4031)),
+        settle(set_dimension(&host, a, P1_ONLY_DIMENSION, 0x9175_4031)),
         DimensionVerdict::Performed(P1_ONLY_DIMENSION)
     );
     assert_eq!(

@@ -63,7 +63,7 @@ where
                 fresh_request.branch,
                 disclosure,
                 identity.clone(),
-                revision.clone(),
+                *revision,
             )
         } else {
             self.application.advance_output_demand(

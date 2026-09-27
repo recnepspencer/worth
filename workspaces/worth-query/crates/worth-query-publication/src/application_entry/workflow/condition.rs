@@ -11,14 +11,13 @@ use super::progress::{
     WorthQueryWorkflowAdvanceRequest, WorthQueryWorkflowConditionAcceptanceDenial,
 };
 
-impl<'application, 'principal, 'scope, Schema, Spec, Program, Operation, Input, Scope>
+impl<'application, 'principal, 'scope, Schema, Spec, Operation, Input, Scope>
     WorthQueryWorkflowAdvanceRequest<
         'application,
         'principal,
         'scope,
         Schema,
         Spec,
-        Program,
         Operation,
         Input,
         Scope,
@@ -28,8 +27,6 @@ where
     Spec: worth_query_declaration::facade::application_program::ApplicationWorkflowSpec<
         Schema = Schema,
     >,
-    Program:
-        worth_query_declaration::facade::application_program::ApplicationProgramDefinition<Schema>,
     Operation: 'static,
     Input: Clone + Send + Sync + 'static,
 {

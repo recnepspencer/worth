@@ -110,7 +110,7 @@ impl WorthQueryWorkflowVocabularyCoverage {
     }
 }
 
-impl<Schema, Spec, Program> WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>
+impl<Schema, Spec> WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>
 where
     Schema: ApplicationSchema,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
@@ -175,7 +175,7 @@ where
         nodes.dedup();
         WorthQueryWorkflowVocabularyCoverage {
             schema_binding: self.schema_binding.clone(),
-            program_revision: self.program_revision.clone(),
+            program_revision: self.program_revision,
             spec: Spec::IDENTITY.as_str().to_owned(),
             identity: self.support_identity,
             nodes: nodes.into_boxed_slice(),

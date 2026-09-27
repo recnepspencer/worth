@@ -68,11 +68,10 @@ pub(in crate::domain_computation::primary_graph) fn inspect_selected_program<
                     })
             })
             .ok_or(WorthQuerySelectedProgramInspectionDenial::ProgramActivationUnreadable)?;
-    let revision = support
+    let revision = *support
         .rostered_for_rendering(&rendering)
         .ok_or(WorthQuerySelectedProgramInspectionDenial::ProgramActivationUnrostered)?
-        .revision()
-        .clone();
+        .revision();
     Ok(WorthQuerySelectedProgramInspection { revision })
 }
 

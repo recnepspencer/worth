@@ -281,6 +281,7 @@ exports = [
     "WorthQueryApplicationSettlementNextAction",
     "WorthQueryApplicationSettlementRecoveryError",
     "WorthQueryApplicationStaleAttempt",
+    "WorthQueryApplicationUncommitted",
     "WorthQueryApplicationUnresolvedCommitEvidence",
     "WorthQueryApprovedElevation",
     "WorthQueryAuthenticatedPrincipal",

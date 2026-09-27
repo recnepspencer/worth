@@ -86,9 +86,9 @@ where
             Scope = MutationScope<Schema, IntentBinding<Schema, Intent>>,
         >,
 {
-    pub fn prepare_workflow_publication<Spec, Program>(
+    pub fn prepare_workflow_publication<Spec>(
         mut self,
-        contract: WorthQueryInstalledWorkflowDefinitionContract<Schema, Spec, Program>,
+        contract: WorthQueryInstalledWorkflowDefinitionContract<Schema, Spec>,
         expected_predecessor: WorkflowDefinitionExpectedPredecessor,
     ) -> Result<
         WorthQueryWorkflowDefinitionPublicationRequest<
@@ -121,7 +121,6 @@ where
             MutationInput<Schema, Intent>,
             MutationScope<Schema, IntentBinding<Schema, Intent>>,
             Spec,
-            Program,
         >(
             &selected,
             contract,

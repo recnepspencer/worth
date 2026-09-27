@@ -83,10 +83,7 @@ impl WorthQueryProductActivationRegistry {
             return Err(WorthQueryProductActivationDenial::ProgramSupportUnavailable);
         }
         if let Some(revision) = program {
-            let active = state
-                .in_flight_programs
-                .entry(revision.clone())
-                .or_default();
+            let active = state.in_flight_programs.entry(*revision).or_default();
             *active = active
                 .checked_add(1)
                 .ok_or(WorthQueryProductActivationDenial::CapacityExhausted)?;
@@ -125,12 +122,12 @@ impl WorthQueryProductActivationRegistry {
         {
             return Err(WorthQueryProductActivationDenial::PublicationInProgress);
         }
-        if !state.unavailable_programs.insert(revision.clone()) {
+        if !state.unavailable_programs.insert(*revision) {
             return Err(WorthQueryProductActivationDenial::ProgramSupportUnavailable);
         }
         Ok(WorthQueryProgramRetirementBarrier {
             registry: Arc::clone(self),
-            revision: revision.clone(),
+            revision: *revision,
             committed: false,
         })
     }

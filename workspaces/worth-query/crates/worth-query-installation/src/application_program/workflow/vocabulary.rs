@@ -161,7 +161,7 @@ pub(super) struct InstalledWorkflowApproval {
     pub(super) reference: ApplicationWorkflowApprovalRef,
 }
 
-pub struct WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>
+pub struct WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>
 where
     Schema: ApplicationSchema,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
@@ -177,10 +177,10 @@ where
     pub(super) conditions: Box<[InstalledWorkflowCondition]>,
     pub(super) approvals: Box<[InstalledWorkflowApproval]>,
     pub(super) resources: WorthQueryApplicationWorkflowResourceCeiling,
-    pub(super) marker: PhantomData<fn() -> (Schema, Spec, Program)>,
+    pub(super) marker: PhantomData<fn() -> (Schema, Spec)>,
 }
 
-impl<Schema, Spec, Program> WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>
+impl<Schema, Spec> WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>
 where
     Schema: ApplicationSchema,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
@@ -310,7 +310,7 @@ where
         &self,
         definition: ValidatedWorkflowDefinition<Spec>,
     ) -> Result<
-        super::WorthQueryInstalledWorkflowDefinitionContract<Schema, Spec, Program>,
+        super::WorthQueryInstalledWorkflowDefinitionContract<Schema, Spec>,
         WorthQueryApplicationWorkflowInstallationDenial,
     > {
         super::definition_contract::bind(self, definition)

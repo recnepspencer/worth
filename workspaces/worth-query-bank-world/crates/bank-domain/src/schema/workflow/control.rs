@@ -105,6 +105,7 @@ macro_rules! payment_workflow_control {
             const HANDLER_IDENTITY: &'static str = $handler_identity;
             const IDEMPOTENCY_IDENTITY: &'static str = $command_identity;
             const REQUIRES_APPLICATION_PROGRAM: bool = true;
+            const WORKFLOW_CONTROL: bool = true;
             const CANDIDATES: ApplicationCandidateRequirements =
                 ApplicationCandidateRequirements::fixed_shape(
                     ApplicationCandidateCardinalityCeiling::fixed(64, 0, 128, 2, 512, 0),

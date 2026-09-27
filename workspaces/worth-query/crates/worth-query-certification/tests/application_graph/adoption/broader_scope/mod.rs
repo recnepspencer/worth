@@ -29,8 +29,8 @@ fn fork(
 fn target_revision(
     host: &BoundedDimensionRuntime<DimensionProgramP0>,
 ) -> worth_query_host::facade::declaration::application_program::ApplicationProgramRevision {
-    host.supported_program::<DimensionProgramP1>()
+    *host
+        .supported_program::<DimensionProgramP1>()
         .expect("P1 is rostered")
         .owned_revision()
-        .clone()
 }

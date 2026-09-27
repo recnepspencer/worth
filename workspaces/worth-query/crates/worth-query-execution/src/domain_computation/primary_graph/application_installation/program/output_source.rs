@@ -1,8 +1,5 @@
 use super::WorthQueryProgramApplicationRuntime;
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationDiscoveredOutputConnection, WorthQueryApplicationRequiredOutputConnection,
-    WorthQueryApplicationRequiredOutputSource,
-};
+use crate::domain_computation::primary_graph::WorthQueryApplicationDiscoveredOutputConnection;
 use worth_query_declaration::facade::application_program::{
     ApplicationConnectionShape, ApplicationOutputGraphShape, ApplicationProgramDefinition,
     ApplicationProgramOutputsShape,
@@ -33,81 +30,6 @@ where
     Program: ApplicationProgramDefinition<Schema>,
     Program::Outputs: ApplicationProgramOutputsShape<Schema>,
 {
-    pub fn compare_and_commit_required_output_source<Root, Source>(
-        &self,
-        _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
-        program: crate::domain_computation::primary_graph::WorthQueryApplicationEffectProgram<
-            Schema,
-            Source::Operation,
-            Source::Input,
-            <Source::ScopeBinding as worth_query_declaration::facade::application_operation::ApplicationMutationScopeBinding<Schema>>::Scope,
-        >,
-        idempotency: crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding,
-    ) -> ProgramSourceCommit
-    where
-        Source: worth_query_declaration::facade::application_operation::ApplicationMutationBinding<
-            Schema,
-        >,
-        Root: ApplicationOutputGraphShape<Schema>,
-        RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
-        Source: WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
-        Source::Input: Clone + Send + Sync + 'static,
-    {
-        if !self.contains_output_root::<Root>() {
-            return Ok((
-                crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome::Denied(
-                    crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::application_program_required(),
-                ),
-                None,
-            ));
-        }
-        self.compare_and_commit_output_source::<Source>(
-            self.presented_program_for_source::<Source>(),
-            program,
-            idempotency,
-            crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Required(std::any::TypeId::of::<Root>()),
-            None,
-        )
-    }
-
-    pub fn compare_and_commit_discovered_output_source<Root, Source>(
-        &self,
-        _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
-        program: crate::domain_computation::primary_graph::WorthQueryApplicationEffectProgram<
-            Schema,
-            Source::Operation,
-            Source::Input,
-            <Source::ScopeBinding as worth_query_declaration::facade::application_operation::ApplicationMutationScopeBinding<Schema>>::Scope,
-        >,
-        idempotency: crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding,
-        discovery: <RootConnection<Schema, Root> as WorthQueryApplicationDiscoveredOutputConnection<Schema>>::Discovery,
-    ) -> ProgramSourceCommit
-    where
-        Source: worth_query_declaration::facade::application_operation::ApplicationMutationBinding<
-            Schema,
-        >,
-        Root: ApplicationOutputGraphShape<Schema>,
-        RootConnection<Schema, Root>:
-            WorthQueryApplicationDiscoveredOutputConnection<Schema, Source = Source>,
-        Source::Input: Clone + Send + Sync + 'static,
-    {
-        if !self.contains_output_root::<Root>() {
-            return Ok((
-                crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome::Denied(
-                    crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::application_program_required(),
-                ),
-                None,
-            ));
-        }
-        self.compare_and_commit_output_source::<Source>(
-            self.presented_program_for_source::<Source>(),
-            program,
-            idempotency,
-            crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Discovered(std::any::TypeId::of::<Root>()),
-            Some(std::sync::Arc::new(discovery)),
-        )
-    }
-
     pub fn complete_program_output_source(
         &self,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
@@ -146,20 +68,6 @@ where
         self.runtime.recover_discovered_output_source::<
             <RootConnection<Schema, Root> as WorthQueryApplicationDiscoveredOutputConnection<Schema>>::Discovery,
         >(receipt, std::any::TypeId::of::<Root>())
-    }
-
-    /// The initial program, presented only when it requires `Source`.
-    fn presented_program_for_source<Source: 'static>(
-        &self,
-    ) -> Option<
-        crate::domain_computation::primary_graph::program_occurrence::WorthQueryPresentedProgram<
-            '_,
-        >,
-    > {
-        if !self.requires_output_source(std::any::TypeId::of::<Source>()) {
-            return None;
-        }
-        self.presented_program()
     }
 
     /// Commits one output source under `presented`, the program its caller

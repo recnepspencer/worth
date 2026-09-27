@@ -57,6 +57,9 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     DuplicateMutationHandler,
     ForeignMutationHandler,
     MutationHandlerMeaningMismatch,
+    /// A handler was offered for a workflow control binding, which the workflow
+    /// kernel records itself.
+    WorkflowControlHandler,
     MissingInvariantFactory,
     DuplicateInvariantFactory,
     ForeignInvariantFactory,

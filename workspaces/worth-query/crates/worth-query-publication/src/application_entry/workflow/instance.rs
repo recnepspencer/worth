@@ -120,9 +120,9 @@ where
             Scope = MutationScope<Schema, IntentBinding<Schema, Intent>>,
         >,
 {
-    pub fn prepare_workflow_instance_start<'workflow, Spec, Program: 'workflow>(
+    pub fn prepare_workflow_instance_start<'workflow, Spec>(
         self,
-        workflow: impl Into<WorthQueryWorkflowVocabulary<'workflow, Schema, Spec, Program>>,
+        workflow: impl Into<WorthQueryWorkflowVocabulary<'workflow, Schema, Spec>>,
         definition: PublishedWorkflowDefinitionRef,
     ) -> Result<
         WorthQueryWorkflowInstanceStartRequest<
@@ -145,7 +145,6 @@ where
                 MutationInput<Schema, Intent>,
                 MutationScope<Schema, IntentBinding<Schema, Intent>>,
                 Spec,
-                Program,
             >(selected, installed, definition, key, admission)
         })
     }
@@ -159,9 +158,9 @@ where
     /// run before its consumer. An approval whose operation has not yet run
     /// blocks migration until it settles under the source. The start
     /// capability authorizes migration, and with it ending the source.
-    pub fn prepare_workflow_instance_migration<'workflow, Spec, Program: 'workflow>(
+    pub fn prepare_workflow_instance_migration<'workflow, Spec>(
         self,
-        workflow: impl Into<WorthQueryWorkflowVocabulary<'workflow, Schema, Spec, Program>>,
+        workflow: impl Into<WorthQueryWorkflowVocabulary<'workflow, Schema, Spec>>,
         instance: PublishedWorkflowInstanceRef,
         target: PublishedWorkflowDefinitionRef,
         resume_at: &str,
@@ -186,7 +185,6 @@ where
                 MutationInput<Schema, Intent>,
                 MutationScope<Schema, IntentBinding<Schema, Intent>>,
                 Spec,
-                Program,
             >(selected, installed, instance, target, resume_at, key, admission)
         })
     }
@@ -201,9 +199,9 @@ where
     /// untouched. `target` may be the copied definition itself, named by the
     /// reference issued on the branch the fork was taken from or by its
     /// `held_on(fork)` reference, while the fork holds it current.
-    pub fn prepare_workflow_fork_continuation<'workflow, Spec, Program: 'workflow>(
+    pub fn prepare_workflow_fork_continuation<'workflow, Spec>(
         self,
-        workflow: impl Into<WorthQueryWorkflowVocabulary<'workflow, Schema, Spec, Program>>,
+        workflow: impl Into<WorthQueryWorkflowVocabulary<'workflow, Schema, Spec>>,
         instance: PublishedWorkflowInstanceRef,
         target: PublishedWorkflowDefinitionRef,
         resume_at: &str,
@@ -228,15 +226,14 @@ where
                 MutationInput<Schema, Intent>,
                 MutationScope<Schema, IntentBinding<Schema, Intent>>,
                 Spec,
-                Program,
             >(selected, installed, instance, target, resume_at, key, admission)
         })
     }
 
     #[allow(clippy::type_complexity)]
-    fn prepare_start<'workflow, Spec, Program: 'workflow>(
+    fn prepare_start<'workflow, Spec>(
         self,
-        workflow: impl Into<WorthQueryWorkflowVocabulary<'workflow, Schema, Spec, Program>>,
+        workflow: impl Into<WorthQueryWorkflowVocabulary<'workflow, Schema, Spec>>,
         prepare: impl FnOnce(
             &worth_query_execution::facade::primary_graph::WorthQuerySelectedProductOperation<
                 '_,
@@ -244,9 +241,7 @@ where
             >,
             &worth_query_installation::facade::WorthQueryInstalledApplicationWorkflowSpec<
                 Schema,
-                Spec,
-                Program,
-            >,
+                Spec,>,
             [u8; 32],
             worth_query_execution::facade::primary_graph::WorthQueryAdmittedApplicationOperation<
                 Schema,
@@ -287,9 +282,9 @@ where
     /// Admits the request on its selected branch and prepares one instance
     /// lifecycle action with its key.
     #[allow(clippy::type_complexity)]
-    fn prepare_instance<'workflow, Spec, Program: 'workflow, Prepared>(
+    fn prepare_instance<'workflow, Spec, Prepared>(
         mut self,
-        workflow: impl Into<WorthQueryWorkflowVocabulary<'workflow, Schema, Spec, Program>>,
+        workflow: impl Into<WorthQueryWorkflowVocabulary<'workflow, Schema, Spec>>,
         prepare: impl FnOnce(
             &worth_query_execution::facade::primary_graph::WorthQuerySelectedProductOperation<
                 '_,
@@ -297,9 +292,7 @@ where
             >,
             &worth_query_installation::facade::WorthQueryInstalledApplicationWorkflowSpec<
                 Schema,
-                Spec,
-                Program,
-            >,
+                Spec,>,
             [u8; 32],
             worth_query_execution::facade::primary_graph::WorthQueryAdmittedApplicationOperation<
                 Schema,
@@ -333,7 +326,7 @@ where
             .map_err(WorthQueryWorkflowInstancePreparationDenial::RequestAdmission)?;
         let prepared = prepare(
             &selected,
-            workflow.workflow_spec(),
+            workflow.workflow_spec_for(&selected),
             *mutation.idempotency.key_identity(),
             mutation.admission,
         )

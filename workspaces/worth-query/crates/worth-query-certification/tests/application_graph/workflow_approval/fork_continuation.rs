@@ -165,9 +165,9 @@ fn a_fork_carries_performed_effects_and_never_continues_an_unsettled_approval() 
         "applied",
         88_119,
     ) {
-        Ok(WorkflowInstanceStartOutcome::Application(
-            WorthQueryApplicationCommitOutcome::Stale(_),
-        )) => {}
+        Ok(WorkflowInstanceStartOutcome::Application(WorthQueryApplicationUncommitted::Stale(
+            _,
+        ))) => {}
         other => panic!("a fork continues only under a definition it holds current: {other:?}"),
     }
     assert_eq!(

@@ -132,7 +132,7 @@ where
         };
         Ok(PreparedWorkflowAdvance::Transition {
             program,
-            program_revision: compiled.program_revision().clone(),
+            program_revision: *compiled.program_revision(),
             transition_identity,
             transition_identity_bytes,
             transition_identity_locator: layout.transition.identity.clone(),

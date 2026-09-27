@@ -38,8 +38,12 @@ pub enum WorthQueryApplicationCommitDenialKind {
     CapabilityRevocationRequired,
     ApplicationProgramRequired,
     WorkflowAuthorityRequired,
-    /// The presented program is not the program this occurrence is running.
-    ProgramNotActiveOnOccurrence,
+    /// The presented program is not the one this occurrence runs, which is `active`.
+    ProgramNotActiveOnOccurrence {
+        active: worth_query_declaration::facade::application_program::ApplicationProgramRevision,
+    },
+    /// This host retired, or is retiring, support for the presented revision.
+    ProgramSupportRetired,
     /// This occurrence carries no branch program activation the host can
     /// attribute to an admitted rostered program, so no program-gated commit
     /// can be compared against one.

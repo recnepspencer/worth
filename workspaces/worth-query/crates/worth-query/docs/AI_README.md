@@ -255,8 +255,9 @@ the validated program, configuration, limits, and initial state. It returns a
 execute with `.execute_in_program(&application)`; capability-owned actions use
 `.execute_capability_in_program(&application)`. If an installed action belongs
 to a program, the weaker `.execute()` path returns
-`ApplicationProgramRequired`. A runtime for another installed program returns
-`ApplicationProgramMismatch`.
+`ApplicationProgramRequired`. The lane commits under the program the request's
+branch runs, whichever program the runtime was installed with; a runtime from
+another host returns `ApplicationProgramMismatch`.
 
 One installed host may roster multiple validated program revisions. The
 canonical revision and its versioned codec describe meaning; they do not select

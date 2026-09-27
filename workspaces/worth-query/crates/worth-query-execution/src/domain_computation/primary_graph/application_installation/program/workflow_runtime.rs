@@ -12,7 +12,6 @@ mod authentication;
 mod support;
 mod vocabulary;
 pub(crate) use authentication::workflow_approval_authentication_intent;
-use support::WorthQuerySupportedWorkflowSpec;
 pub use vocabulary::WorthQueryWorkflowVocabulary;
 
 /// Retains the typed workflow vocabulary beside the program runtime that admitted it.
@@ -26,11 +25,11 @@ where
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
 {
     runtime: WorthQueryProgramApplicationRuntime<Schema, Program>,
-    workflow: WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+    workflow: WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
     authentication: WorthQueryAuthenticationEventSigningOwner<Schema>,
     /// The same spec installed against programs this host rostered, one per
     /// program, so adopted branches keep a vocabulary for what they now run.
-    supported: Vec<WorthQuerySupportedWorkflowSpec>,
+    supported: Vec<WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>>,
 }
 
 impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program>
@@ -39,7 +38,7 @@ where
 {
     pub fn retain_workflow_spec<Spec>(
         mut self,
-        workflow: WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+        workflow: WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         authentication: WorthQueryAuthenticationEventSigningOwner<Schema>,
     ) -> Result<
         WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>,
@@ -79,9 +78,7 @@ where
         &self.runtime
     }
 
-    pub const fn workflow_spec(
-        &self,
-    ) -> &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program> {
+    pub const fn workflow_spec(&self) -> &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec> {
         &self.workflow
     }
 
@@ -89,11 +86,13 @@ where
         &self.authentication
     }
 
-    /// The vocabulary installed against this runtime's initial program.
-    pub const fn vocabulary(&self) -> WorthQueryWorkflowVocabulary<'_, Schema, Spec, Program> {
+    /// Every vocabulary this runtime installed. A request prepares against
+    /// the one installed for the program its branch runs.
+    pub fn vocabulary(&self) -> WorthQueryWorkflowVocabulary<'_, Schema, Spec> {
         WorthQueryWorkflowVocabulary::new(
             &self.runtime.runtime,
             &self.workflow,
+            &self.supported,
             &self.authentication,
         )
     }

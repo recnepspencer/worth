@@ -1,4 +1,3 @@
-use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryProgramAdoptionRequirements};
 
 use super::WorthQueryApplicationProgramsRequest;
@@ -22,7 +21,8 @@ pub enum WorthQueryApplicationProgramAdoptionPreparationDenial {
     ),
 }
 
-/// Adoption with owner-computed requirements bound, but no effects performed.
+/// Adoption toward the target its owner-computed requirements name, with no
+/// effects performed.
 /// Only `prepare` can mint the move-only value whose `publish` method exists.
 ///
 /// A branch holding workflow facts needs one explicit decision per current
@@ -43,28 +43,25 @@ pub enum WorthQueryApplicationProgramAdoptionPreparationDenial {
 ///     };
 /// }
 /// ```
-pub struct WorthQueryApplicationProgramAdoptionRequestWithRequirements<
+pub struct WorthQueryApplicationProgramAdoptionRequest<
     'application,
     'principal,
     'scope,
-    'target,
     'requirements,
     Schema,
 > {
     pub(super) programs:
         WorthQueryApplicationProgramsRequest<'application, 'principal, 'scope, Schema>,
-    pub(super) target: &'target ApplicationProgramRevision,
     pub(super) requirements: &'requirements WorthQueryProgramAdoptionRequirements,
     pub(super) migration: Option<WorthQueryPreparedProgramMigration>,
     pub(super) workflow: Option<WorthQueryWorkflowDispositions>,
 }
 
-impl<'application, 'principal, 'scope, 'target, 'requirements, Schema>
-    WorthQueryApplicationProgramAdoptionRequestWithRequirements<
+impl<'application, 'principal, 'scope, 'requirements, Schema>
+    WorthQueryApplicationProgramAdoptionRequest<
         'application,
         'principal,
         'scope,
-        'target,
         'requirements,
         Schema,
     >
@@ -90,7 +87,11 @@ where
             .on_branch(self.programs.branch)
             .select()
             .map_err(WorthQueryApplicationProgramAdoptionPreparationDenial::ProductSelection)?
-            .workflow_adoption_inventory(self.target, self.requirements, maximum_work_units)
+            .workflow_adoption_inventory(
+                self.requirements.target(),
+                self.requirements,
+                maximum_work_units,
+            )
             .map_err(WorthQueryApplicationProgramAdoptionPreparationDenial::Adoption)
     }
 
@@ -114,7 +115,7 @@ where
             .select()
             .map_err(WorthQueryApplicationProgramAdoptionPreparationDenial::ProductSelection)?
             .prepare_branch_adoption_with_choices(
-                self.target,
+                self.requirements.target(),
                 self.requirements,
                 self.migration,
                 self.workflow,

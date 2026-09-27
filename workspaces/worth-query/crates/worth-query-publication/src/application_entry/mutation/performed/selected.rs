@@ -61,7 +61,7 @@ where
     /// after the branch adopts another program. Only a host that does not
     /// roster the branch's current program refuses the retry, at owner
     /// resolution, before the replay is consulted.
-    pub fn execute_performed_in_selected_program<Program, Root>(
+    pub fn execute_performed<Program, Root>(
         self,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
     ) -> Result<

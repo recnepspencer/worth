@@ -333,11 +333,10 @@ fn revision_of<Program>() -> ApplicationProgramRevision
 where
     Program: ApplicationProgramDefinition<RevisionSchema>,
 {
-    ApplicationProgramAuthoring::<RevisionSchema, Program>::begin()
+    *ApplicationProgramAuthoring::<RevisionSchema, Program>::begin()
         .validated_program()
         .expect("the revision fixture programs are declaration-valid")
         .revision()
-        .clone()
 }
 
 fn manifest_of<Program>() -> super::super::ApplicationProgramManifest

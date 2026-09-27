@@ -72,6 +72,11 @@ where
     const IDEMPOTENCY_IDENTITY: &'static str;
     const REQUIRES_APPLICATION_PROGRAM: bool = false;
     const REQUIRES_WORKFLOW_AUTHORITY: bool = false;
+    /// The binding is a workflow control step, such as definition authoring,
+    /// instance start, advance or approval, that the workflow kernel
+    /// authorizes and records itself. No handler serves it: installing one is
+    /// refused, and the ordinary mutation lane refuses the binding.
+    const WORKFLOW_CONTROL: bool = false;
     const CANDIDATES: ApplicationCandidateRequirements;
 
     fn idempotency_key_identity(key: &Self::IdempotencyKey) -> [u8; 32];
@@ -135,6 +140,7 @@ where
             Self::CANDIDATES,
             Self::REQUIRES_APPLICATION_PROGRAM,
             Self::REQUIRES_WORKFLOW_AUTHORITY,
+            Self::WORKFLOW_CONTROL,
         )
     }
 }

@@ -18,7 +18,7 @@ use crate::bounded_dimension_model::programs::DimensionProgramP1;
 #[test]
 fn current_branch_prevents_program_support_retirement() {
     let host = publish_on_first_program();
-    let source = host.owned_revision().clone();
+    let source = *host.owned_revision();
 
     let denial = host
         .retire_program_support(&source)
@@ -38,17 +38,16 @@ fn current_branch_prevents_program_support_retirement() {
 fn retained_interpretation_blocks_retirement_after_the_live_branch_moves_on() {
     let host = publish_on_first_program();
     let branch = host.current_world();
-    let source = host.owned_revision().clone();
+    let source = *host.owned_revision();
     let retained = host
         .runtime()
         .on_branch(branch)
         .select()
         .expect("the exact P0 branch selection is retained");
-    let target = host
+    let target = *host
         .supported_program::<DimensionProgramP1>()
         .expect("P1 is rostered")
-        .owned_revision()
-        .clone();
+        .owned_revision();
     adopt(&host, branch, &target);
 
     let denial = host
@@ -79,11 +78,10 @@ fn retained_interpretation_blocks_retirement_after_the_live_branch_moves_on() {
 fn prepared_adoption_custody_blocks_target_support_retirement() {
     let host = publish_on_first_program();
     let branch = host.current_world();
-    let target = host
+    let target = *host
         .supported_program::<DimensionProgramP1>()
         .expect("P1 is rostered")
-        .owned_revision()
-        .clone();
+        .owned_revision();
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let programs = host
@@ -93,8 +91,7 @@ fn prepared_adoption_custody_blocks_target_support_retirement() {
         .programs();
     let requirements = programs.compare(&target).expect("P0 to P1 compares");
     let prepared = programs
-        .adopt(&target)
-        .requirements(&requirements)
+        .adopt(&requirements)
         .prepare(64)
         .expect("the adoption prepares with exact support custody");
 
@@ -133,11 +130,10 @@ fn prepared_adoption_custody_blocks_target_support_retirement() {
 fn unpublished_adoption_prevents_retirement_until_exact_recovery_is_released() {
     let host = publish_on_first_program();
     let branch = host.current_world();
-    let target = host
+    let target = *host
         .supported_program::<DimensionProgramP1>()
         .expect("P1 is rostered")
-        .owned_revision()
-        .clone();
+        .owned_revision();
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let programs = host
@@ -147,8 +143,7 @@ fn unpublished_adoption_prevents_retirement_until_exact_recovery_is_released() {
         .programs();
     let requirements = programs.compare(&target).expect("P0 to P1 compares");
     let prepared = programs
-        .adopt(&target)
-        .requirements(&requirements)
+        .adopt(&requirements)
         .prepare(64)
         .expect("the adoption prepares with exact support custody");
     host.runtime().fail_next_durable_append_for_test();
@@ -208,11 +203,10 @@ fn unpublished_adoption_prevents_retirement_until_exact_recovery_is_released() {
 fn denied_recovery_release_preserves_support_custody_for_retry() {
     let host = publish_on_first_program();
     let branch = host.current_world();
-    let target = host
+    let target = *host
         .supported_program::<DimensionProgramP1>()
         .expect("P1 is rostered")
-        .owned_revision()
-        .clone();
+        .owned_revision();
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let programs = host
@@ -222,8 +216,7 @@ fn denied_recovery_release_preserves_support_custody_for_retry() {
         .programs();
     let requirements = programs.compare(&target).expect("P0 to P1 compares");
     let prepared = programs
-        .adopt(&target)
-        .requirements(&requirements)
+        .adopt(&requirements)
         .prepare(64)
         .expect("the adoption prepares with exact support custody");
     host.runtime().fail_next_durable_append_for_test();
@@ -296,8 +289,7 @@ pub(super) fn adopt(
         .programs();
     let requirements = programs.compare(target).expect("P0 to P1 compares");
     let prepared = programs
-        .adopt(target)
-        .requirements(&requirements)
+        .adopt(&requirements)
         .prepare(64)
         .expect("the adoption prepares");
     assert!(matches!(

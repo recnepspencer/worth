@@ -2,9 +2,9 @@ use worth_query_declaration::facade::application_program::ApplicationProgramRevi
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::super::super::{
-    WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitOutcome,
-    WorthQueryApplicationCommitReceipt, WorthQueryApplicationEffectProgram,
-    WorthQueryApplicationIdempotencyBinding,
+    WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitReceipt,
+    WorthQueryApplicationEffectProgram, WorthQueryApplicationIdempotencyBinding,
+    WorthQueryApplicationUncommitted,
 };
 use super::PublishedWorkflowDefinitionRef;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
@@ -69,7 +69,9 @@ impl PerformedWorkflowDefinitionRetirement {
 #[derive(Debug)]
 pub enum WorkflowDefinitionRetirementOutcome {
     Retired(PerformedWorkflowDefinitionRetirement),
-    Application(WorthQueryApplicationCommitOutcome),
+    /// The commit did not land. A landed commit, first or replayed, is the
+    /// performed variant.
+    Application(WorthQueryApplicationUncommitted),
 }
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
@@ -102,7 +104,7 @@ where
             Ok(presented) => presented,
             Err(denial) => {
                 return WorkflowDefinitionRetirementOutcome::Application(
-                    WorthQueryApplicationCommitOutcome::Denied(denial),
+                    WorthQueryApplicationUncommitted::Denied(denial),
                 );
             }
         };
@@ -111,10 +113,11 @@ where
             program,
             idempotency.bind_workflow_definition(&workflow_intent_identity),
         );
-        let (receipt, replayed) = match outcome {
-            WorthQueryApplicationCommitOutcome::Committed(receipt) => (receipt, false),
-            WorthQueryApplicationCommitOutcome::AlreadyCommitted(receipt) => (receipt, true),
-            other => return WorkflowDefinitionRetirementOutcome::Application(other),
+        let (receipt, replayed) = match outcome.landed() {
+            Ok(landed) => landed,
+            Err(uncommitted) => {
+                return WorkflowDefinitionRetirementOutcome::Application(uncommitted)
+            }
         };
         WorkflowDefinitionRetirementOutcome::Retired(PerformedWorkflowDefinitionRetirement {
             definition,

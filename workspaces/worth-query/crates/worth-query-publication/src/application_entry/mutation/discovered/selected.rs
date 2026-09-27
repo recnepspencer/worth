@@ -39,9 +39,9 @@ where
         >,
 {
     /// Discovered-output counterpart to
-    /// [`Self::execute_performed_in_selected_program`], with the same
+    /// [`Self::execute_performed`], with the same
     /// selection, declaration, not-active and replay law.
-    pub fn execute_performed_discovered_in_selected_program<Program, Root>(
+    pub fn execute_performed_discovered<Program, Root>(
         self,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
     ) -> Result<

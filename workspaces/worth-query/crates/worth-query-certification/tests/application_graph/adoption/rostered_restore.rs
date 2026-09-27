@@ -14,13 +14,12 @@ use crate::bounded_dimension_model::programs::{validated_second_program, Dimensi
 fn a_restored_host_keeps_each_branch_on_the_program_it_adopted() {
     let host = publish_on_first_program();
     let main = host.current_world();
-    let source = host.installed_program().revision().clone();
-    let target = host
+    let source = *host.installed_program().revision();
+    let target = *host
         .supported_program::<DimensionProgramP1>()
         .expect("P1 is rostered")
         .installed_program()
-        .revision()
-        .clone();
+        .revision();
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let programs = host
@@ -30,8 +29,7 @@ fn a_restored_host_keeps_each_branch_on_the_program_it_adopted() {
         .programs();
     let requirements = programs.compare(&target).expect("P0 to P1 compares");
     match programs
-        .adopt(&target)
-        .requirements(&requirements)
+        .adopt(&requirements)
         .prepare(64)
         .expect("the seed satisfies P1")
         .publish()

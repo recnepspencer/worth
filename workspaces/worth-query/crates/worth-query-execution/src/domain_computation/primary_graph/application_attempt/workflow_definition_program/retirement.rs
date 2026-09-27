@@ -51,10 +51,9 @@ where
     pub(in crate::domain_computation::primary_graph) fn materialize_workflow_definition_retirement<
         Capability,
         Spec,
-        Program,
     >(
         mut self,
-        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         published: PublishedWorkflowDefinitionRef,
         selected_occurrence: &WorthQueryProductBranchReadIdentity,
     ) -> Result<
@@ -65,7 +64,7 @@ where
         Capability: ApplicationCapabilityMarkerIdentity<Schema = Schema> + 'static,
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
-        self.deny_foreign_retirement::<Capability, Spec, Program>(
+        self.deny_foreign_retirement::<Capability, Spec>(
             installed,
             &published,
             selected_occurrence,
@@ -86,7 +85,7 @@ where
             ));
         }
         self.facts.extend(observed.facts);
-        let program_revision = installed.program_revision().clone();
+        let program_revision = *installed.program_revision();
         let workflow_intent_identity = intent_identity::workflow_definition_retirement_identity::<
             Spec,
         >(&published, &program_revision)
@@ -115,9 +114,9 @@ where
     /// The installed revision was checked against the selected occurrence;
     /// the leased read must observe that same occurrence, and the admitted
     /// operation must be the spec's authoring binding.
-    fn deny_foreign_retirement<Capability, Spec, Program>(
+    fn deny_foreign_retirement<Capability, Spec>(
         &self,
-        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         published: &PublishedWorkflowDefinitionRef,
         selected_occurrence: &WorthQueryProductBranchReadIdentity,
     ) -> Result<(), WorthQueryApplicationAttemptDenial>

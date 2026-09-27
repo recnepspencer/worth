@@ -1,6 +1,4 @@
-use worth_query_declaration::facade::application_program::{
-    ApplicationProgramDefinition, ApplicationWorkflowSpec,
-};
+use worth_query_declaration::facade::application_program::ApplicationWorkflowSpec;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::WorthQueryWorkflowVocabulary;
@@ -13,11 +11,10 @@ type SourceBinding<Schema, Family> = <Family as WorthQueryProducerOutputFamily<S
 type SourceQuery<Schema, Family> = <SourceBinding<Schema, Family> as worth_query_declaration::facade::application_query::ApplicationQueryBinding<Schema>>::Query;
 type SourceValue<Schema, Family> = <<SourceBinding<Schema, Family> as worth_query_declaration::facade::application_query::ApplicationQueryBinding<Schema>>::ResultBinding as worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding>::Value;
 
-impl<Schema, Spec, Program> WorthQueryWorkflowVocabulary<'_, Schema, Spec, Program>
+impl<Schema, Spec> WorthQueryWorkflowVocabulary<'_, Schema, Spec>
 where
     Schema: ApplicationSchema + 'static,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
-    Program: ApplicationProgramDefinition<Schema>,
 {
     pub fn admit_workflow_assessment_output<Family>(
         &self,

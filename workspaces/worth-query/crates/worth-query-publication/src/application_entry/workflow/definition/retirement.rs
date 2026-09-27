@@ -97,9 +97,9 @@ where
 {
     /// Retires one exact current definition so its lineage admits no new
     /// starts. History, custody, and instances pinned to it are untouched.
-    pub fn prepare_workflow_definition_retirement<'workflow, Spec, Program: 'workflow>(
+    pub fn prepare_workflow_definition_retirement<'workflow, Spec>(
         mut self,
-        workflow: impl Into<WorthQueryWorkflowVocabulary<'workflow, Schema, Spec, Program>>,
+        workflow: impl Into<WorthQueryWorkflowVocabulary<'workflow, Schema, Spec>>,
         definition: PublishedWorkflowDefinitionRef,
     ) -> Result<
         WorthQueryWorkflowDefinitionRetirementRequest<
@@ -133,10 +133,9 @@ where
             MutationInput<Schema, Intent>,
             MutationScope<Schema, IntentBinding<Schema, Intent>>,
             Spec,
-            Program,
         >(
             &selected,
-            workflow.workflow_spec(),
+            workflow.workflow_spec_for(&selected),
             definition,
             mutation.admission,
         )

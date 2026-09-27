@@ -18,28 +18,20 @@ use super::progress::{
 };
 use crate::application_entry::mutation::WorthQueryApplicationMutationRequestWithIdempotency;
 
-type WorkflowNavigateBackPreparationResult<
-    'application,
-    'principal,
-    'scope,
-    Schema,
-    Spec,
-    Program,
-    Intent,
-> = Result<
-    WorthQueryWorkflowNavigateBackRequest<
-        'application,
-        'principal,
-        'scope,
-        Schema,
-        Spec,
-        Program,
-        MutationOperation<Schema, Intent>,
-        MutationInput<Schema, Intent>,
-        MutationScope<Schema, IntentBinding<Schema, Intent>>,
-    >,
-    WorthQueryWorkflowAdvancePreparationDenial,
->;
+type WorkflowNavigateBackPreparationResult<'application, 'principal, 'scope, Schema, Spec, Intent> =
+    Result<
+        WorthQueryWorkflowNavigateBackRequest<
+            'application,
+            'principal,
+            'scope,
+            Schema,
+            Spec,
+            MutationOperation<Schema, Intent>,
+            MutationInput<Schema, Intent>,
+            MutationScope<Schema, IntentBinding<Schema, Intent>>,
+        >,
+        WorthQueryWorkflowAdvancePreparationDenial,
+    >;
 
 pub struct WorthQueryWorkflowNavigateBackRequest<
     'application,
@@ -47,7 +39,6 @@ pub struct WorthQueryWorkflowNavigateBackRequest<
     'scope,
     Schema,
     Spec,
-    Program,
     Operation,
     Input,
     Scope,
@@ -58,7 +49,6 @@ pub struct WorthQueryWorkflowNavigateBackRequest<
         'scope,
         Schema,
         Spec,
-        Program,
         Operation,
         Input,
         Scope,
@@ -66,18 +56,15 @@ pub struct WorthQueryWorkflowNavigateBackRequest<
 )
 where
     Schema: ApplicationSchema,
-    Spec: ApplicationWorkflowSpec<Schema = Schema>,
-    Program:
-        worth_query_declaration::facade::application_program::ApplicationProgramDefinition<Schema>;
+    Spec: ApplicationWorkflowSpec<Schema = Schema>;
 
-impl<'application, 'principal, 'scope, Schema, Spec, Program, Operation, Input, Scope>
+impl<'application, 'principal, 'scope, Schema, Spec, Operation, Input, Scope>
     WorthQueryWorkflowNavigateBackRequest<
         'application,
         'principal,
         'scope,
         Schema,
         Spec,
-        Program,
         Operation,
         Input,
         Scope,
@@ -85,8 +72,6 @@ impl<'application, 'principal, 'scope, Schema, Spec, Program, Operation, Input, 
 where
     Schema: ApplicationSchema,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
-    Program:
-        worth_query_declaration::facade::application_program::ApplicationProgramDefinition<Schema>,
     Operation: 'static,
     Input: Clone + Send + Sync + 'static,
 {
@@ -120,14 +105,13 @@ where
             Scope = MutationScope<Schema, IntentBinding<Schema, Intent>>,
         >,
 {
-    pub fn prepare_workflow_navigate_back<Spec, Program>(
+    pub fn prepare_workflow_navigate_back<Spec>(
         self,
-        workflow: impl Into<WorthQueryWorkflowVocabulary<'application, Schema, Spec, Program>>,
+        workflow: impl Into<WorthQueryWorkflowVocabulary<'application, Schema, Spec>>,
         instance: PublishedWorkflowInstanceRef,
-    ) -> WorkflowNavigateBackPreparationResult<'application, 'principal, 'scope, Schema, Spec, Program, Intent>
+    ) -> WorkflowNavigateBackPreparationResult<'application, 'principal, 'scope, Schema, Spec, Intent>
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
-        Program: worth_query_declaration::facade::application_program::ApplicationProgramDefinition<Schema>,
     {
         let workflow = workflow.into();
         self.prepare_workflow_request(workflow, instance, WorkflowRequestedAction::NavigateBack)

@@ -27,12 +27,23 @@ pub fn advance_instance(
     instance: worth_query_host::facade::application_entry::PublishedWorkflowInstanceRef,
     idempotency: u64,
 ) -> Result<WorkflowProgressOutcome, WorthQueryWorkflowAdvancePreparationDenial> {
+    advance_instance_on(application, instance.branch(), instance, idempotency)
+}
+
+/// Advances `instance` through a request selected on `branch`, which may be
+/// a branch the instance does not live on.
+pub fn advance_instance_on(
+    application: &BoundedDimensionWorkflowRuntime,
+    branch: worth_query_host::facade::product::WorthQueryProductBranch,
+    instance: worth_query_host::facade::application_entry::PublishedWorkflowInstanceRef,
+    idempotency: u64,
+) -> Result<WorkflowProgressOutcome, WorthQueryWorkflowAdvancePreparationDenial> {
     let runtime = application.runtime();
     let scope = request_scope();
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
     runtime
         .request(&principal, &scope)
-        .on_branch(instance.branch())
+        .on_branch(branch)
         .mutate(WorkflowAdvanceIntent {
             input: WorkflowAdvanceInput {
                 part_identity: PART_IDENTITY.to_owned(),

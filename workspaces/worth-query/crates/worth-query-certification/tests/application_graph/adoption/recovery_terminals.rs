@@ -24,11 +24,10 @@ use crate::bounded_dimension_model::programs::DimensionProgramP1;
 fn cancellation_after_settled_adoption_hands_off_next_custody_and_prior_cleanup() {
     let host = publish_on_first_program();
     let branch = host.current_world();
-    let target = host
+    let target = *host
         .supported_program::<DimensionProgramP1>()
         .expect("P1 is rostered")
-        .owned_revision()
-        .clone();
+        .owned_revision();
     let cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(
         Instant::now() + Duration::from_secs(30),
@@ -42,8 +41,7 @@ fn cancellation_after_settled_adoption_hands_off_next_custody_and_prior_cleanup(
         .programs();
     let requirements = programs.compare(&target).expect("comparison succeeds");
     let prepared = programs
-        .adopt(&target)
-        .requirements(&requirements)
+        .adopt(&requirements)
         .prepare(64)
         .expect("adoption prepares");
     host.runtime().fail_next_durable_append_for_test();
@@ -104,11 +102,10 @@ fn cancellation_after_settled_adoption_hands_off_next_custody_and_prior_cleanup(
 fn unavailable_settlement_evidence_returns_the_same_recovery_for_retry() {
     let host = publish_on_first_program();
     let branch = host.current_world();
-    let target = host
+    let target = *host
         .supported_program::<DimensionProgramP1>()
         .expect("P1 is rostered")
-        .owned_revision()
-        .clone();
+        .owned_revision();
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let programs = host
@@ -118,8 +115,7 @@ fn unavailable_settlement_evidence_returns_the_same_recovery_for_retry() {
         .programs();
     let requirements = programs.compare(&target).expect("comparison succeeds");
     let prepared = programs
-        .adopt(&target)
-        .requirements(&requirements)
+        .adopt(&requirements)
         .prepare(64)
         .expect("adoption prepares");
     host.runtime().fail_next_durable_append_for_test();

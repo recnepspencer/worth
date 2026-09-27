@@ -5,8 +5,8 @@ use worth_query_declaration::facade::application_program::{
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::super::{
-    WorthQueryApplicationCommitOutcome, WorthQueryApplicationEffectProgram,
-    WorthQueryApplicationIdempotencyBinding,
+    WorthQueryApplicationEffectProgram, WorthQueryApplicationIdempotencyBinding,
+    WorthQueryApplicationUncommitted,
 };
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
@@ -162,7 +162,9 @@ impl PerformedWorkflowDefinitionPublication {
 #[derive(Debug)]
 pub enum WorkflowDefinitionPublicationOutcome {
     Published(PerformedWorkflowDefinitionPublication),
-    Application(WorthQueryApplicationCommitOutcome),
+    /// The commit did not land. A landed commit, first or replayed, is the
+    /// performed variant.
+    Application(WorthQueryApplicationUncommitted),
     ProjectionDenied(super::super::WorthQueryApplicationCommitReceipt),
 }
 
@@ -199,7 +201,7 @@ where
             Ok(presented) => presented,
             Err(denial) => {
                 return WorkflowDefinitionPublicationOutcome::Application(
-                    WorthQueryApplicationCommitOutcome::Denied(denial),
+                    WorthQueryApplicationUncommitted::Denied(denial),
                 );
             }
         };
@@ -208,14 +210,14 @@ where
             program,
             idempotency.bind_workflow_definition(&workflow_intent_identity),
         );
-        match outcome {
-            WorthQueryApplicationCommitOutcome::Committed(receipt) => {
-                project_published(receipt, content_identity, &content_identity_locator, false)
-            }
-            WorthQueryApplicationCommitOutcome::AlreadyCommitted(receipt) => {
-                project_published(receipt, content_identity, &content_identity_locator, true)
-            }
-            other => WorkflowDefinitionPublicationOutcome::Application(other),
+        match outcome.landed() {
+            Ok((receipt, replayed)) => project_published(
+                receipt,
+                content_identity,
+                &content_identity_locator,
+                replayed,
+            ),
+            Err(uncommitted) => WorkflowDefinitionPublicationOutcome::Application(uncommitted),
         }
     }
 }

@@ -3,8 +3,8 @@ use worth_query_installation::facade::ApplicationSchema;
 use super::{decode_hex_identity, evidence_meaning, projection_with_locator};
 use crate::domain_computation::primary_graph::{
     PreparedWorkflowAdvance, RequiredWorkflowAssessment, WorkflowProgressOutcome,
-    WorthQueryApplicationCommitOutcome, WorthQueryApplicationIdempotencyBinding,
-    WorthQueryApplicationIdempotencyResolution, WorthQueryApplicationIdempotencyResolutionDenial,
+    WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationIdempotencyResolution,
+    WorthQueryApplicationIdempotencyResolutionDenial, WorthQueryApplicationUncommitted,
     WorthQueryObservedSource, WorthQueryOutputDemandSettlement,
     WorthQueryPrimaryGraphApplicationRuntime, WorthQueryWorkflowAssessmentPosture,
 };
@@ -156,7 +156,7 @@ where
     Ok(match resolution {
         WorthQueryApplicationIdempotencyResolution::Unseen => None,
         WorthQueryApplicationIdempotencyResolution::IntentDrift => Some(
-            WorkflowProgressOutcome::Application(WorthQueryApplicationCommitOutcome::Denied(
+            WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::Denied(
                 super::super::super::WorthQueryApplicationCommitDenial::idempotency_intent_drift(),
             )),
         ),

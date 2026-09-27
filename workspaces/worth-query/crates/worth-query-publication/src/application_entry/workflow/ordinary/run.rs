@@ -6,7 +6,7 @@ use worth_query_declaration::facade::{
         ApplicationMutationIntent, ApplicationMutationScopeBinding,
         ApplicationMutationScopeResolution, NoApplicationMutationSource,
     },
-    application_program::{ApplicationProgramDefinition, ApplicationWorkflowSpec},
+    application_program::ApplicationWorkflowSpec,
 };
 use worth_query_execution::facade::application_installation::WorthQueryWorkflowVocabulary;
 use worth_query_execution::publication_boundary::workflow_advance::{
@@ -31,21 +31,14 @@ type MutationKey<Schema, Intent> =
     <IntentBinding<Schema, Intent> as ApplicationMutationBinding<Schema>>::IdempotencyKey;
 
 /// A finite set of caller-owned keys is the run budget and preserves retry meaning.
-pub struct WorthQueryOrdinaryWorkflowRun<
-    'application,
-    'principal,
-    'scope,
-    Schema,
-    Intent,
-    Spec,
-    Program,
-> where
+pub struct WorthQueryOrdinaryWorkflowRun<'application, 'principal, 'scope, Schema, Intent, Spec>
+where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
 {
     request: WorthQueryApplicationMutationRequest<'application, 'principal, 'scope, Schema, Intent>,
-    workflow: WorthQueryWorkflowVocabulary<'application, Schema, Spec, Program>,
+    workflow: WorthQueryWorkflowVocabulary<'application, Schema, Spec>,
     instance: PublishedWorkflowInstanceRef,
 }
 
@@ -57,21 +50,12 @@ pub struct WorthQueryOrdinaryWorkflowRunWithKeys<
     Schema,
     Intent,
     Spec,
-    Program,
 > where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
 {
-    run: WorthQueryOrdinaryWorkflowRun<
-        'application,
-        'principal,
-        'scope,
-        Schema,
-        Intent,
-        Spec,
-        Program,
-    >,
+    run: WorthQueryOrdinaryWorkflowRun<'application, 'principal, 'scope, Schema, Intent, Spec>,
     keys: &'keys [MutationKey<Schema, Intent>],
 }
 
@@ -116,19 +100,11 @@ where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
 {
-    pub fn run_workflow<Spec, Program>(
+    pub fn run_workflow<Spec>(
         self,
-        workflow: impl Into<WorthQueryWorkflowVocabulary<'application, Schema, Spec, Program>>,
+        workflow: impl Into<WorthQueryWorkflowVocabulary<'application, Schema, Spec>>,
         instance: PublishedWorkflowInstanceRef,
-    ) -> WorthQueryOrdinaryWorkflowRun<
-        'application,
-        'principal,
-        'scope,
-        Schema,
-        Intent,
-        Spec,
-        Program,
-    >
+    ) -> WorthQueryOrdinaryWorkflowRun<'application, 'principal, 'scope, Schema, Intent, Spec>
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
@@ -141,8 +117,8 @@ where
     }
 }
 
-impl<'application, 'principal, 'scope, Schema, Intent, Spec, Program>
-    WorthQueryOrdinaryWorkflowRun<'application, 'principal, 'scope, Schema, Intent, Spec, Program>
+impl<'application, 'principal, 'scope, Schema, Intent, Spec>
+    WorthQueryOrdinaryWorkflowRun<'application, 'principal, 'scope, Schema, Intent, Spec>
 where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
@@ -161,14 +137,13 @@ where
         Schema,
         Intent,
         Spec,
-        Program,
     > {
         WorthQueryOrdinaryWorkflowRunWithKeys { run: self, keys }
     }
 }
 
-impl<Schema, Intent, Spec, Program>
-    WorthQueryOrdinaryWorkflowRunWithKeys<'_, '_, '_, '_, Schema, Intent, Spec, Program>
+impl<Schema, Intent, Spec>
+    WorthQueryOrdinaryWorkflowRunWithKeys<'_, '_, '_, '_, Schema, Intent, Spec>
 where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema> + Clone,
@@ -187,7 +162,6 @@ where
             Scope = MutationScope<Schema, IntentBinding<Schema, Intent>>,
         >,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
-    Program: ApplicationProgramDefinition<Schema>,
 {
     pub fn execute(self) -> WorthQueryOrdinaryWorkflowRunProgress {
         let Self { run, keys } = self;
@@ -197,7 +171,7 @@ where
             instance,
         } = run;
         let maximum = workflow
-            .workflow_spec()
+            .workflow_spec_on(instance.branch())
             .resources()
             .maximum_retained_transitions_per_instance() as usize;
         let mut transitions = Vec::new();

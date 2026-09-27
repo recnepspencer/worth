@@ -91,41 +91,11 @@ where
         )
     }
 
-    pub fn execute_retained_in_program<Owner>(
-        self,
-        application: &'application Owner,
-    ) -> Result<
-        WorthQueryApplicationRetainedMutationOutcome<
-            <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
-            <Intent::Binding as ApplicationMutationBinding<Schema>>::Result,
-        >,
-        WorthQueryApplicationRequestMutationDenial,
-    >
-    where
-        Owner: WorthQueryProgramOwner<Schema>,
-    {
-        if !std::ptr::eq(application.runtime(), self.request.application) {
-            return Err(WorthQueryApplicationRequestMutationDenial::ApplicationProgramMismatch);
-        }
-        if !application.contains_action::<Intent::Binding>() {
-            return Err(WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired);
-        }
-        self.execute_retained_with_commit(
-            super::authorization::prepare,
-            |_, program, idempotency| {
-                application.compare_and_commit_program_action_retained::<Intent::Binding>(
-                    program,
-                    idempotency,
-                )
-            },
-        )
-    }
-
     /// Executes retained work under the branch-selected installed program.
     /// A removed action is presented through the initial owner only so the
     /// occurrence gate can return its inactive-program denial; it cannot
     /// commit or consume the retained work.
-    pub fn execute_retained_in_selected_program<Program>(
+    pub fn execute_retained_in_program<Program>(
         self,
         application: &'application worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime<Schema, Program>,
     ) -> Result<

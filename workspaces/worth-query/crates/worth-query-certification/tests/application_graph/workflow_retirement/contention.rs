@@ -202,10 +202,10 @@ fn a_successor_published_after_prepare_leaves_the_start_stale() {
 }
 
 fn expect_basis_stale<Denial: std::fmt::Debug>(
-    result: Result<WorthQueryApplicationCommitOutcome, Denial>,
+    result: Result<WorthQueryApplicationUncommitted, Denial>,
 ) {
     match result.expect("the losing request prepared before the winner committed") {
-        WorthQueryApplicationCommitOutcome::Denied(denial) => assert_eq!(
+        WorthQueryApplicationUncommitted::Denied(denial) => assert_eq!(
             denial.kind(),
             WorthQueryApplicationCommitDenialKind::ProductBasisStale
         ),

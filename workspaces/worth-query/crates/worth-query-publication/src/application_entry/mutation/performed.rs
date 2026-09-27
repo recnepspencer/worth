@@ -1,9 +1,8 @@
 use worth_query_declaration::facade::application_operation::{
-    ApplicationMutationBinding, ApplicationMutationIntent, ApplicationMutationScopeResolution,
+    ApplicationMutationBinding, ApplicationMutationIntent,
 };
 use worth_query_declaration::facade::application_program::{
     ApplicationConnectionShape, ApplicationOutputGraphShape, ApplicationProgramDefinition,
-    ApplicationProgramOutputsShape,
 };
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryBinding, ApplicationQueryIntent, ApplicationQueryScopeResolution,
@@ -20,10 +19,7 @@ use worth_query_execution::facade::primary_graph::{
 };
 use worth_query_installation::facade::ApplicationSchema;
 
-use super::{
-    WorthQueryApplicationMutationOutcome, WorthQueryApplicationMutationRequestWithIdempotency,
-    WorthQueryMutationSourcePrepared,
-};
+use super::WorthQueryApplicationMutationOutcome;
 
 type MutationResult<Schema, Intent> =
     <<Intent as ApplicationMutationIntent<Schema>>::Binding as ApplicationMutationBinding<
@@ -216,78 +212,6 @@ where
         WorthQueryRequiredOutputPreparationDenial,
     ) {
         (self.performed, self.denial)
-    }
-}
-
-impl<'application, 'principal, 'scope, 'key, Schema, Intent>
-    WorthQueryApplicationMutationRequestWithIdempotency<
-        'application,
-        'principal,
-        'scope,
-        'key,
-        Schema,
-        Intent,
-        WorthQueryMutationSourcePrepared,
-    >
-where
-    Schema: ApplicationSchema + 'static,
-    Intent: ApplicationMutationIntent<Schema> + Clone + Send + Sync,
-    <Intent::Binding as ApplicationMutationBinding<Schema>>::Input: Clone + Send + Sync,
-    <Intent::Binding as ApplicationMutationBinding<Schema>>::ScopeBinding:
-        ApplicationMutationScopeResolution<
-            Schema,
-            <Intent::Binding as ApplicationMutationBinding<Schema>>::PrincipalIdentity,
-        >,
-{
-    pub fn execute_performed<Program, Root>(
-        self,
-        application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
-    ) -> Result<
-        WorthQueryApplicationPerformedMutationOutcome<'application, Schema, Intent, Program, Root>,
-        WorthQueryPerformedMutationExecutionDenial,
-    >
-    where
-        Program: ApplicationProgramDefinition<Schema>,
-        Program::Outputs: ApplicationProgramOutputsShape<Schema>,
-        Root: ApplicationOutputGraphShape<Schema> + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
-        RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
-    Intent::Binding:
-        WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
-        <DemandSource<Schema, Root> as ApplicationQueryBinding<Schema>>::Input:
-            ApplicationQueryIntent<Schema, Binding = DemandSource<Schema, Root>>,
-        <DemandSource<Schema, Root> as ApplicationQueryBinding<Schema>>::ScopeBinding:
-            ApplicationQueryScopeResolution<
-                Schema,
-                <DemandSource<Schema, Root> as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
-            >,
-        <<DemandSource<Schema, Root> as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value:
-            WorthQueryApplicationProjection<
-                    Schema,
-                    <DemandSource<Schema, Root> as ApplicationQueryBinding<Schema>>::Query,
-                > + Clone,
-    {
-        super::performed_source::require_program_output_root::<Schema, Program, Root>(
-            self.request.application,
-            application,
-        )?;
-        let demand = <Intent::Binding as WorthQueryApplicationRequiredOutputSource<
-            Schema,
-            RootConnection<Schema, Root>,
-        >>::demand_from_source(self.request.intent.input())
-        .map_err(WorthQueryPerformedMutationExecutionDenial::Connection)?;
-        let source = super::performed_source::PerformedSourceCommit::default();
-        let outcome = self
-            .execute_with_commit(true, |_, program, idempotency| {
-                source.record(
-                    application.compare_and_commit_required_output_source::<Root, Intent::Binding>(
-                        &worth_query_execution::publication_boundary::program_publication_access(),
-                        program,
-                        idempotency,
-                    ),
-                )
-            })
-            .map_err(WorthQueryPerformedMutationExecutionDenial::Mutation)?;
-        Ok(performed_outcome(application, demand, outcome, source))
     }
 }
 

@@ -32,7 +32,8 @@ pub(in crate::http::server) fn request_mutation_denial(
         | Denial::PrincipalResolution
         | Denial::Idempotency
         | Denial::Handler
-        | Denial::SourceExpectation => {
+        | Denial::SourceExpectation
+        | Denial::ProgramSelection => {
             BankHttpDenial::new(BankHttpDenialKind::Unavailable, BankHttpNextAction::Retry)
         }
     }
