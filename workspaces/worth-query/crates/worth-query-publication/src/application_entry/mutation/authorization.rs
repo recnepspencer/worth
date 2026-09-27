@@ -266,7 +266,7 @@ where
         None => idempotency,
     };
     let idempotency = request.workflow_transition_identity.map_or(idempotency, |identity| {
-        worth_query_execution::facade::workflow_advance::WorthQueryWorkflowAdvanceAdapter::bind_operation_idempotency_raw(
+        worth_query_execution::publication_boundary::workflow_advance::WorthQueryWorkflowAdvanceAdapter::bind_operation_idempotency(
             idempotency,
             &identity,
         )

@@ -11,7 +11,7 @@ use worth_query_execution::facade::primary_graph::{
     WorthQueryRecoveryHandleDenial, WorthQueryRecoveryHandleDenialKind,
     WorthQueryRecoverySafeRetryAdmission,
 };
-use worth_query_execution::facade::workflow_advance::{
+use worth_query_execution::publication_boundary::workflow_advance::{
     RequiredWorkflowOperation, WorthQueryGuardedWorkflowOperationCustody,
     WorthQueryWorkflowAdvanceAdapter,
 };

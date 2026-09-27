@@ -11,11 +11,11 @@ use worth_query_execution::facade::{
     primary_graph::{
         WorthQueryApplicationIdempotencyBinding, WorthQueryPrimaryGraphApplicationRuntime,
     },
-    workflow_definition_retirement::{
-        PreparedWorkflowDefinitionRetirement, PublishedWorkflowDefinitionRef,
-        WorkflowDefinitionPreparationDenial, WorkflowDefinitionRetirementOutcome,
-        WorthQueryWorkflowDefinitionRetirementAdapter,
-    },
+};
+use worth_query_execution::publication_boundary::workflow_definition_retirement::{
+    PreparedWorkflowDefinitionRetirement, PublishedWorkflowDefinitionRef,
+    WorkflowDefinitionPreparationDenial, WorkflowDefinitionRetirementOutcome,
+    WorthQueryWorkflowDefinitionRetirementAdapter,
 };
 use worth_query_installation::facade::ApplicationSchema;
 

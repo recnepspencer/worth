@@ -30,7 +30,7 @@ The [public consumer fixture](../worth-query-certification/fixtures/consumer_ent
 checks separately compiled contributions and static program validation. The
 [ordinary product workflow](../worth-query-certification/examples/ordinary_product_workflow.rs)
 installs a validated program with `application_installation::in_memory_program`,
-admits its exact operation, publishes through `commit_for_program`, reads the
+commits a typed mutation through `execute_in_program`, reads the
 successor, and closes conditional resources. Its source is the executable host
 entry example.
 

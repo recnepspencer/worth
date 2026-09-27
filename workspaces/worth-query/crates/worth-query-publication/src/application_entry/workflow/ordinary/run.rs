@@ -8,11 +8,9 @@ use worth_query_declaration::facade::{
     },
     application_program::{ApplicationProgramDefinition, ApplicationWorkflowSpec},
 };
-use worth_query_execution::facade::{
-    application_installation::WorthQueryWorkflowVocabulary,
-    workflow_advance::{
-        PerformedWorkflowTransition, PublishedWorkflowInstanceRef, WorkflowProgressOutcome,
-    },
+use worth_query_execution::facade::application_installation::WorthQueryWorkflowVocabulary;
+use worth_query_execution::publication_boundary::workflow_advance::{
+    PerformedWorkflowTransition, PublishedWorkflowInstanceRef, WorkflowProgressOutcome,
 };
 use worth_query_installation::facade::ApplicationSchema;
 

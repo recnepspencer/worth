@@ -22,6 +22,8 @@ struct Producer {
     shape: &'static str,
 }
 
+#[path = "producer_inventory/bank_api.rs"]
+mod bank_api;
 #[path = "producer_inventory/court.rs"]
 mod court;
 

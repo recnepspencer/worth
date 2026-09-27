@@ -7,9 +7,9 @@ use worth_query_declaration::facade::{
     },
     application_program::ApplicationWorkflowSpec,
 };
-use worth_query_execution::facade::{
-    application_installation::WorthQueryWorkflowVocabulary,
-    workflow_instance::{PublishedWorkflowDefinitionRef, WorkflowInstanceStartOutcome},
+use worth_query_execution::facade::application_installation::WorthQueryWorkflowVocabulary;
+use worth_query_execution::publication_boundary::workflow_instance::{
+    PublishedWorkflowDefinitionRef, WorkflowInstanceStartOutcome,
 };
 use worth_query_installation::facade::ApplicationSchema;
 

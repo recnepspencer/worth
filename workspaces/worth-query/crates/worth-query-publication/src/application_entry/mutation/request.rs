@@ -74,7 +74,7 @@ pub struct WorthQueryApplicationMutationRequestWithIdempotency<
     pub(super) workflow_transition_identity: Option<[u8; 32]>,
     pub(super) workflow_authority: Option<
         std::sync::Arc<
-            worth_query_execution::facade::workflow_advance::WorkflowOperationAuthoritySlot,
+            worth_query_execution::publication_boundary::workflow_advance::WorkflowOperationAuthoritySlot,
         >,
     >,
 }
@@ -279,7 +279,7 @@ where
         mut self,
         identity: [u8; 32],
         authority: std::sync::Arc<
-            worth_query_execution::facade::workflow_advance::WorkflowOperationAuthoritySlot,
+            worth_query_execution::publication_boundary::workflow_advance::WorkflowOperationAuthoritySlot,
         >,
     ) -> Self {
         self.workflow_transition_identity = Some(identity);

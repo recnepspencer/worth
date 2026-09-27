@@ -1,7 +1,7 @@
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryBinding, ApplicationQueryMarkerIdentity,
 };
-use worth_query_execution::facade::workflow_advance::{
+use worth_query_execution::publication_boundary::workflow_advance::{
     PreparedWorkflowAdvance, RequiredWorkflowCondition, WorkflowProgressOutcome,
     WorthQueryWorkflowAdvanceAdapter,
 };

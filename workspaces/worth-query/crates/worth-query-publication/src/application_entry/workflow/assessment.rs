@@ -16,8 +16,8 @@ use worth_query_execution::facade::{
         WorthQueryAdmittedOutputDemand, WorthQueryApplicationProjection,
         WorthQueryOutputDemandAdvance, WorthQueryOutputDemandNotifications,
     },
-    workflow_advance::RequiredWorkflowAssessment,
 };
+use worth_query_execution::publication_boundary::workflow_advance::RequiredWorkflowAssessment;
 use worth_query_installation::facade::ApplicationSchema;
 
 use crate::application_entry::{

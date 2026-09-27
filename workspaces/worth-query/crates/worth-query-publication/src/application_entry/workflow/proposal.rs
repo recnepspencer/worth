@@ -7,12 +7,10 @@ use worth_query_declaration::facade::{
     },
     application_program::ApplicationWorkflowSpec,
 };
-use worth_query_execution::facade::{
-    application_installation::WorthQueryWorkflowVocabulary,
-    workflow_proposal::{
-        PreparedWorkflowProposal, PublishedWorkflowInstanceRef, WorkflowProposalOutcome,
-        WorkflowProposalPreparationDenial, WorthQueryWorkflowProposalAdapter,
-    },
+use worth_query_execution::facade::application_installation::WorthQueryWorkflowVocabulary;
+use worth_query_execution::publication_boundary::workflow_proposal::{
+    PreparedWorkflowProposal, PublishedWorkflowInstanceRef, WorkflowProposalOutcome,
+    WorkflowProposalPreparationDenial, WorthQueryWorkflowProposalAdapter,
 };
 use worth_query_installation::facade::ApplicationSchema;
 

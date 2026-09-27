@@ -1371,8 +1371,26 @@ canonical text. An initiation that would grant approval to more than eight appro
 refused at runtime with the typed `TooManyPaymentApprovers` denial, before any payment
 exists. Query installs a handler for every mutation binding, but the workflow kernel
 records the approved-payment control steps itself and never calls one, so Bank's
-control handler checks nothing; the payment operation's handler refuses an input
-that names another approver than the authenticated principal.
+control handler refuses with an execution denial should a kernel ever call it; the
+payment operation's handler refuses an input that names another approver than the
+authenticated principal.
+
+Status: the workflow owner vocabulary is no longer on execution's facade. The
+prepared definition, instance, proposal and transition attempts and their adapters
+sit behind execution's `publication_boundary` seam, and `boundary-check` refuses the
+name `publication_boundary` in any Query crate except execution and Publication. The
+one exception is the certification court that forges a second kernel commit under a
+single operation authority, which proves the kernel's own guard below the owner.
+Publication accepts an operation effect through one path. The owner resolves the
+effect's custody, a committed receipt settles directly and a dispatch-pending receipt
+settles only with the recovery admission that releases it, so the acceptance denial
+no longer carries the recovery checks the owner already made. One idempotency helper
+binds a guarded operation to its transition. The Bank API court also refuses a
+public re-export of a program runtime, a public item inside an inline module, and a
+public item that names a runtime through a `use ... as` rename or a type alias.
+`commit_for_program`, a 9.17.4 host
+lane, stays until it is explicitly migrated, and `provisional_aftermath` belongs to
+9.18.
 
 ## Acceptance, Cost And Review
 

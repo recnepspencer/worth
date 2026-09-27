@@ -9,11 +9,9 @@ use worth_query_declaration::facade::{
         ApplicationWorkflowSpec, ApplicationWorkflowValidationDenial, AuthoredWorkflowDefinition,
     },
 };
-use worth_query_execution::facade::{
-    application_installation::WorthQueryWorkflowVocabulary,
-    workflow_definition_publication::{
-        WorkflowDefinitionExpectedPredecessor, WorkflowDefinitionPublicationOutcome,
-    },
+use worth_query_execution::facade::application_installation::WorthQueryWorkflowVocabulary;
+use worth_query_execution::publication_boundary::workflow_definition_publication::{
+    WorkflowDefinitionExpectedPredecessor, WorkflowDefinitionPublicationOutcome,
 };
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryApplicationWorkflowInstallationDenial,

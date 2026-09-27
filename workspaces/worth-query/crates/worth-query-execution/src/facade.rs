@@ -71,67 +71,6 @@ pub mod provider_session {
 
 pub mod primary_graph;
 
-/// Internal bridge used only by the Publication application-entry owner.
-#[doc(hidden)]
-pub mod workflow_definition_publication {
-    pub use crate::domain_computation::primary_graph::{
-        PerformedWorkflowDefinitionPublication, PreparedWorkflowDefinitionPublication,
-        PublishedWorkflowDefinitionRef, WorkflowDefinitionBindingDenial,
-        WorkflowDefinitionExpectedPredecessor, WorkflowDefinitionPreparationDenial,
-        WorkflowDefinitionPublicationOutcome, WorthQueryWorkflowDefinitionPublicationAdapter,
-    };
-}
-
-/// Internal bridge used only by the Publication application-entry owner.
-#[doc(hidden)]
-pub mod workflow_definition_retirement {
-    pub use crate::domain_computation::primary_graph::{
-        PerformedWorkflowDefinitionRetirement, PreparedWorkflowDefinitionRetirement,
-        PublishedWorkflowDefinitionRef, WorkflowDefinitionPreparationDenial,
-        WorkflowDefinitionRetirementOutcome, WorthQueryWorkflowDefinitionRetirementAdapter,
-    };
-}
-
-/// Internal bridge used only by the Publication application-entry owner.
-#[doc(hidden)]
-pub mod workflow_instance {
-    pub use crate::domain_computation::primary_graph::{
-        PerformedWorkflowInstanceCancellation, PerformedWorkflowInstanceStart,
-        PreparedWorkflowInstanceCancellation, PreparedWorkflowInstanceStart,
-        PublishedWorkflowDefinitionRef, PublishedWorkflowInstanceRef,
-        RetiredWorkflowDefinitionStart, SupersededWorkflowDefinitionStart,
-        WorkflowInstanceBindingDenial, WorkflowInstanceCancellationOutcome,
-        WorkflowInstancePreparationDenial, WorkflowInstanceStartOutcome,
-        WorthQueryWorkflowInstanceAdapter,
-    };
-}
-
-/// Internal bridge used only by the Publication application-entry owner.
-#[doc(hidden)]
-pub mod workflow_advance {
-    pub use crate::domain_computation::primary_graph::application_attempt::WorthQueryGuardedWorkflowOperationCustody;
-    pub use crate::domain_computation::primary_graph::{
-        PerformedWorkflowApproval, PerformedWorkflowAssessmentEvidence,
-        PerformedWorkflowTransition, PreparedWorkflowAdvance, PreparedWorkflowAssessment,
-        PreparedWorkflowOperation, PublishedWorkflowInstanceRef, PublishedWorkflowProposalRef,
-        RequiredWorkflowActor, RequiredWorkflowApproval, RequiredWorkflowAssessment,
-        RequiredWorkflowCondition, RequiredWorkflowEvidence, RequiredWorkflowOperation,
-        WorkflowApprovalDecision, WorkflowOperationAuthority, WorkflowOperationAuthoritySlot,
-        WorkflowProgressOutcome, WorkflowTransitionBindingDenial,
-        WorkflowTransitionPreparationDenial, WorthQueryWorkflowAdvanceAdapter,
-    };
-}
-
-/// Internal bridge used only by the Publication application-entry owner.
-#[doc(hidden)]
-pub mod workflow_proposal {
-    pub use crate::domain_computation::primary_graph::{
-        PerformedWorkflowProposal, PreparedWorkflowProposal, PublishedWorkflowInstanceRef,
-        PublishedWorkflowProposalRef, WorkflowProposalBindingDenial, WorkflowProposalOutcome,
-        WorkflowProposalPreparationDenial, WorthQueryWorkflowProposalAdapter,
-    };
-}
-
 /// Compatibility surface for the current undo/redo experiment.
 ///
 /// These types remain compiled but are not accepted Phase 8 product contracts.

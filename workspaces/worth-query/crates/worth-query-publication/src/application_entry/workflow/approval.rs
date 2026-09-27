@@ -8,12 +8,10 @@ use worth_query_declaration::facade::{
     },
     application_program::ApplicationWorkflowSpec,
 };
-use worth_query_execution::facade::{
-    application_installation::WorthQueryWorkflowVocabulary,
-    workflow_advance::{
-        PublishedWorkflowInstanceRef, PublishedWorkflowProposalRef, RequiredWorkflowApproval,
-        WorkflowApprovalDecision, WorthQueryWorkflowAdvanceAdapter,
-    },
+use worth_query_execution::facade::application_installation::WorthQueryWorkflowVocabulary;
+use worth_query_execution::publication_boundary::workflow_advance::{
+    PublishedWorkflowInstanceRef, PublishedWorkflowProposalRef, RequiredWorkflowApproval,
+    WorkflowApprovalDecision, WorthQueryWorkflowAdvanceAdapter,
 };
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -226,7 +224,7 @@ where
     pub fn execute_replay(
         self,
     ) -> Result<
-        worth_query_execution::facade::workflow_advance::WorkflowProgressOutcome,
+        worth_query_execution::publication_boundary::workflow_advance::WorkflowProgressOutcome,
         WorthQueryWorkflowAdvancePreparationDenial,
     >
     where
@@ -235,7 +233,7 @@ where
     {
         if !matches!(
             &self.request.prepared,
-            worth_query_execution::facade::workflow_advance::PreparedWorkflowAdvance::ReplayOnly {
+            worth_query_execution::publication_boundary::workflow_advance::PreparedWorkflowAdvance::ReplayOnly {
                 approval: Some(_),
                 ..
             }

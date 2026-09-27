@@ -111,7 +111,7 @@ fn guarded_action_cannot_commit_through_public_program_owner_without_workflow_au
 
 #[test]
 fn one_approval_transition_cannot_commit_twice_under_different_client_keys() {
-    use worth_query_execution::facade::workflow_advance::WorthQueryWorkflowAdvanceAdapter;
+    use worth_query_execution::publication_boundary::workflow_advance::WorthQueryWorkflowAdvanceAdapter;
 
     let (application, _, instance, proposal, approval, _) = approval_journey("applied", 960);
     assert!(matches!(
@@ -185,7 +185,7 @@ fn one_approval_transition_cannot_commit_twice_under_different_client_keys() {
         .take()
         .expect("the owner issued one operation authority");
     let idempotency = |key: u64| {
-        WorthQueryWorkflowAdvanceAdapter::bind_operation_idempotency_raw(
+        WorthQueryWorkflowAdvanceAdapter::bind_operation_idempotency(
             WorthQueryApplicationIdempotencyBinding::new(
                 ReviewedSetPartDimensionBinding::idempotency_key_identity(&key),
                 ReviewedSetPartDimensionBinding::input_identity(&input),

@@ -7,7 +7,7 @@ use worth_query_declaration::facade::{
     application_program::ApplicationWorkflowSpec,
 };
 use worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
-use worth_query_execution::facade::workflow_definition_publication::{
+use worth_query_execution::publication_boundary::workflow_definition_publication::{
     PreparedWorkflowDefinitionPublication, WorkflowDefinitionExpectedPredecessor,
     WorkflowDefinitionPreparationDenial, WorkflowDefinitionPublicationOutcome,
     WorthQueryWorkflowDefinitionPublicationAdapter,

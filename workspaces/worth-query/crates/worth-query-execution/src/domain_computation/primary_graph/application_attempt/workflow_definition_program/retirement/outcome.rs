@@ -15,7 +15,7 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationR
 /// effects; the owner observes them and rechecks currentness at commit.
 ///
 /// ```compile_fail,E0451
-/// use worth_query_execution::facade::workflow_definition_retirement::PreparedWorkflowDefinitionRetirement;
+/// use worth_query_execution::publication_boundary::workflow_definition_retirement::PreparedWorkflowDefinitionRetirement;
 ///
 /// fn cannot_forge<Schema, Operation, Input, Scope>()
 ///     -> PreparedWorkflowDefinitionRetirement<Schema, Operation, Input, Scope>

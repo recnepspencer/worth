@@ -6,7 +6,7 @@ use worth_query_declaration::facade::application_operation::{
 use worth_query_declaration::facade::application_program::{
     ApplicationProgramDefinition, ApplicationWorkflowSpec,
 };
-use worth_query_execution::facade::workflow_advance::{
+use worth_query_execution::publication_boundary::workflow_advance::{
     RequiredWorkflowOperation, WorkflowProgressOutcome, WorthQueryGuardedWorkflowOperationCustody,
     WorthQueryWorkflowAdvanceAdapter,
 };
@@ -113,9 +113,10 @@ where
         let (prepared, custody) = resolve_owner(&self, required, &mut operation)?;
         match custody {
             WorthQueryGuardedWorkflowOperationCustody::Committed(receipt) => self
-                .accept_operation::<Intent::Binding, _, _, _>(
+                .accept_custody::<Intent::Binding, _, _, _>(
                     required,
                     &receipt,
+                    None,
                     &prepared.admission,
                     prepared.idempotency,
                 )
@@ -158,10 +159,10 @@ where
         let (prepared, custody) = resolve_owner(&self, required, &mut operation)?;
         match custody {
             WorthQueryGuardedWorkflowOperationCustody::DispatchPending(receipt) => self
-                .accept_recovered_operation::<Intent::Binding, _, _, _>(
+                .accept_custody::<Intent::Binding, _, _, _>(
                     required,
                     &receipt,
-                    recovery,
+                    Some(recovery),
                     &prepared.admission,
                     prepared.idempotency,
                 )

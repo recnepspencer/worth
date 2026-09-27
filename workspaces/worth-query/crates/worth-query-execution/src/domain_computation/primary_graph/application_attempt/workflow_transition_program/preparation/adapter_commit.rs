@@ -63,6 +63,9 @@ impl WorthQueryWorkflowAdvanceAdapter {
         effect_admission: &crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<Schema, EffectOperation, EffectInput, EffectScope>,
         effect_idempotency: WorthQueryApplicationIdempotencyBinding,
         required: &RequiredWorkflowOperation,
+        recovery: Option<
+            &crate::domain_computation::application_aftermath::WorthQueryRecoverySafeRetryAdmission,
+        >,
         idempotency: WorthQueryApplicationIdempotencyBinding,
     ) -> Result<
         WorkflowProgressOutcome,
@@ -84,54 +87,16 @@ impl WorthQueryWorkflowAdvanceAdapter {
                 required.transition_identity_bytes(),
             )
             .map_err(|_| owner_custody_denial(required))?;
-        let crate::domain_computation::primary_graph::application_attempt::WorthQueryGuardedWorkflowOperationCustody::Committed(receipt) = custody else {
-            return Err(owner_custody_denial(required));
+        use crate::domain_computation::primary_graph::application_attempt::WorthQueryGuardedWorkflowOperationCustody as Custody;
+        // A committed effect settles directly; a dispatch-pending one settles
+        // only with the recovery admission that owner custody asked for.
+        let prepared = match (custody, recovery) {
+            (Custody::Committed(receipt), None) => prepared.settle::<Binding>(runtime, &receipt)?,
+            (Custody::DispatchPending(receipt), Some(recovery)) => {
+                prepared.settle_recovered::<Binding>(runtime, &receipt, recovery)?
+            }
+            _ => return Err(owner_custody_denial(required)),
         };
-        let prepared = prepared.settle::<Binding>(runtime, &receipt)?;
-        Ok(runtime.compare_and_commit_workflow_advance(prepared, idempotency))
-    }
-
-    pub fn compare_and_commit_recovered_operation<
-        Schema,
-        Operation,
-        Input,
-        Scope,
-        Binding,
-        EffectOperation,
-        EffectInput,
-        EffectScope,
-    >(
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-        prepared: super::super::PreparedWorkflowOperation<Schema, Operation, Input, Scope>,
-        effect_admission: &crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<Schema, EffectOperation, EffectInput, EffectScope>,
-        effect_idempotency: WorthQueryApplicationIdempotencyBinding,
-        required: &RequiredWorkflowOperation,
-        recovery: &crate::domain_computation::application_aftermath::WorthQueryRecoverySafeRetryAdmission,
-        idempotency: WorthQueryApplicationIdempotencyBinding,
-    ) -> Result<
-        WorkflowProgressOutcome,
-        crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
-    >
-    where
-        Schema: ApplicationSchema,
-        Operation: 'static,
-        Input: Clone + Send + Sync + 'static,
-        Binding: worth_query_declaration::facade::application_operation::ApplicationMutationBinding<
-            Schema,
-        >,
-        EffectInput: Clone + Send + Sync + 'static,
-    {
-        let custody = runtime
-            .resolve_admitted_guarded_workflow_operation_custody(
-                effect_admission,
-                effect_idempotency,
-                required.transition_identity_bytes(),
-            )
-            .map_err(|_| owner_custody_denial(required))?;
-        let crate::domain_computation::primary_graph::application_attempt::WorthQueryGuardedWorkflowOperationCustody::DispatchPending(receipt) = custody else {
-            return Err(owner_custody_denial(required));
-        };
-        let prepared = prepared.settle_recovered::<Binding>(runtime, &receipt, recovery)?;
         Ok(runtime.compare_and_commit_workflow_advance(prepared, idempotency))
     }
 

@@ -17,7 +17,7 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationR
 /// relation IDs, effects, or branch affinity.
 ///
 /// ```compile_fail,E0451
-/// use worth_query_execution::facade::workflow_definition_publication::PreparedWorkflowDefinitionPublication;
+/// use worth_query_execution::publication_boundary::workflow_definition_publication::PreparedWorkflowDefinitionPublication;
 ///
 /// fn cannot_forge<Schema, Operation, Input, Scope>()
 ///     -> PreparedWorkflowDefinitionPublication<Schema, Operation, Input, Scope>

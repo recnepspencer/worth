@@ -7,13 +7,10 @@ use worth_query_declaration::facade::{
     },
     application_program::ApplicationWorkflowSpec,
 };
-use worth_query_execution::facade::{
-    application_installation::WorthQueryWorkflowVocabulary,
-    workflow_advance::{
-        PreparedWorkflowAdvance, PublishedWorkflowInstanceRef, RequiredWorkflowAssessment,
-        WorkflowProgressOutcome, WorkflowTransitionPreparationDenial,
-        WorthQueryWorkflowAdvanceAdapter,
-    },
+use worth_query_execution::facade::application_installation::WorthQueryWorkflowVocabulary;
+use worth_query_execution::publication_boundary::workflow_advance::{
+    PreparedWorkflowAdvance, PublishedWorkflowInstanceRef, RequiredWorkflowAssessment,
+    WorkflowProgressOutcome, WorkflowTransitionPreparationDenial, WorthQueryWorkflowAdvanceAdapter,
 };
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -87,7 +84,9 @@ pub enum WorthQueryWorkflowAdvancePreparationDenial {
         worth_query_admission::facade::authentication_event::WorthQueryAuthenticationEventDenial,
     ),
     /// Observation-time readiness; no transition attempt was prepared.
-    AwaitingActor(worth_query_execution::facade::workflow_advance::RequiredWorkflowActor),
+    AwaitingActor(
+        worth_query_execution::publication_boundary::workflow_advance::RequiredWorkflowActor,
+    ),
 }
 
 #[derive(Debug)]

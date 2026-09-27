@@ -3,12 +3,10 @@ use worth_query_declaration::facade::{
     application_program::{ApplicationProgramDefinition, ApplicationWorkflowSpec},
     application_schema::{ApplicationOperationMarkerIdentity, ApplicationStructuredValueBinding},
 };
-use worth_query_execution::facade::{
-    application_installation::WorthQueryWorkflowVocabulary,
-    workflow_advance::{
-        PreparedWorkflowAdvance, RequiredWorkflowOperation, WorkflowProgressOutcome,
-        WorthQueryWorkflowAdvanceAdapter,
-    },
+use worth_query_execution::facade::application_installation::WorthQueryWorkflowVocabulary;
+use worth_query_execution::publication_boundary::workflow_advance::{
+    PreparedWorkflowAdvance, RequiredWorkflowOperation, WorkflowProgressOutcome,
+    WorthQueryWorkflowAdvanceAdapter,
 };
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -46,8 +44,6 @@ impl std::error::Error for WorthQueryWorkflowOperationBindingDenial {}
 pub enum WorthQueryWorkflowOperationAcceptanceDenial {
     NotAwaitingOperation,
     RequirementMismatch,
-    RecoveryRequired,
-    RecoveryNotRequired,
     Replay(
         worth_query_execution::facade::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial,
     ),
@@ -60,12 +56,6 @@ impl std::fmt::Display for WorthQueryWorkflowOperationAcceptanceDenial {
             Self::NotAwaitingOperation => formatter.write_str("workflow is not awaiting operation"),
             Self::RequirementMismatch => {
                 formatter.write_str("operation receipt does not match the workflow requirement")
-            }
-            Self::RecoveryRequired => formatter.write_str(
-                "operation receipt has unresolved external custody and requires recovery",
-            ),
-            Self::RecoveryNotRequired => {
-                formatter.write_str("operation receipt does not require recovery")
             }
             Self::Replay(denial) => denial.fmt(formatter),
             Self::Attempt(denial) => denial.fmt(formatter),
@@ -172,10 +162,16 @@ where
     Operation: 'static,
     Input: Clone + Send + Sync + 'static,
 {
-    fn accept_operation<Binding, EffectOperation, EffectInput, EffectScope>(
+    /// Accepts the operation effect whose custody the owner resolved: a
+    /// committed receipt with no recovery, or a dispatch-pending receipt with
+    /// the recovery admission that releases it.
+    fn accept_custody<Binding, EffectOperation, EffectInput, EffectScope>(
         self,
         required: &RequiredWorkflowOperation,
         receipt: &worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
+        recovery: Option<
+            &worth_query_execution::facade::primary_graph::WorthQueryRecoverySafeRetryAdmission,
+        >,
         effect_admission: &worth_query_execution::facade::primary_graph::WorthQueryAdmittedApplicationOperation<Schema, EffectOperation, EffectInput, EffectScope>,
         effect_idempotency: worth_query_execution::facade::primary_graph::WorthQueryApplicationIdempotencyBinding,
     ) -> Result<WorkflowProgressOutcome, WorthQueryWorkflowOperationAcceptanceDenial>
@@ -189,9 +185,6 @@ where
         {
             return Err(WorthQueryWorkflowOperationAcceptanceDenial::RequirementMismatch);
         }
-        if WorthQueryWorkflowAdvanceAdapter::operation_receipt_requires_recovery(receipt) {
-            return Err(WorthQueryWorkflowOperationAcceptanceDenial::RecoveryRequired);
-        }
         if let Some(replayed) = WorthQueryWorkflowAdvanceAdapter::resolve_operation_replay::<
             Schema,
             Operation,
@@ -203,6 +196,7 @@ where
             &self.prepared,
             required,
             receipt,
+            recovery,
             self.idempotency,
         )
         .map_err(WorthQueryWorkflowOperationAcceptanceDenial::Replay)?
@@ -224,80 +218,6 @@ where
             return Err(WorthQueryWorkflowOperationAcceptanceDenial::RequirementMismatch);
         }
         WorthQueryWorkflowAdvanceAdapter::compare_and_commit_operation::<
-            Schema,
-            Operation,
-            Input,
-            Scope,
-            Binding,
-            EffectOperation,
-            EffectInput,
-            EffectScope,
-        >(
-            self.application,
-            prepared,
-            effect_admission,
-            effect_idempotency,
-            required,
-            self.idempotency,
-        )
-        .map_err(WorthQueryWorkflowOperationAcceptanceDenial::Attempt)
-    }
-
-    fn accept_recovered_operation<Binding, EffectOperation, EffectInput, EffectScope>(
-        self,
-        required: &RequiredWorkflowOperation,
-        receipt: &worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
-        recovery: &worth_query_execution::facade::primary_graph::WorthQueryRecoverySafeRetryAdmission,
-        effect_admission: &worth_query_execution::facade::primary_graph::WorthQueryAdmittedApplicationOperation<Schema, EffectOperation, EffectInput, EffectScope>,
-        effect_idempotency: worth_query_execution::facade::primary_graph::WorthQueryApplicationIdempotencyBinding,
-    ) -> Result<WorkflowProgressOutcome, WorthQueryWorkflowOperationAcceptanceDenial>
-    where
-        Binding: ApplicationMutationBinding<Schema>,
-        EffectInput: Clone + Send + Sync + 'static,
-    {
-        if required.operation() != Binding::Operation::IDENTIFIER
-            || required.binding() != Some(Binding::IDENTITY)
-            || required.input_type() != Binding::InputBinding::IDENTITY.as_str()
-        {
-            return Err(WorthQueryWorkflowOperationAcceptanceDenial::RequirementMismatch);
-        }
-        if !WorthQueryWorkflowAdvanceAdapter::operation_receipt_requires_recovery(receipt) {
-            return Err(WorthQueryWorkflowOperationAcceptanceDenial::RecoveryNotRequired);
-        }
-        if let Some(replayed) =
-            WorthQueryWorkflowAdvanceAdapter::resolve_recovered_operation_replay::<
-                Schema,
-                Operation,
-                Input,
-                Scope,
-                Binding,
-            >(
-                self.application,
-                &self.prepared,
-                required,
-                receipt,
-                recovery,
-                self.idempotency,
-            )
-            .map_err(WorthQueryWorkflowOperationAcceptanceDenial::Replay)?
-        {
-            return Ok(replayed);
-        }
-        let prepared = match self.prepared {
-            PreparedWorkflowAdvance::AwaitingOperation(prepared) => prepared,
-            PreparedWorkflowAdvance::Transition { .. }
-            | PreparedWorkflowAdvance::AwaitingAssessment(_)
-            | PreparedWorkflowAdvance::AwaitingCondition(_)
-            | PreparedWorkflowAdvance::AwaitingEvidence { .. }
-            | PreparedWorkflowAdvance::AwaitingApproval { .. }
-            | PreparedWorkflowAdvance::ReplayOnly { .. } => {
-                return Err(WorthQueryWorkflowOperationAcceptanceDenial::NotAwaitingOperation)
-            }
-        };
-        if !same_requirement(prepared.required(), required) {
-            return Err(WorthQueryWorkflowOperationAcceptanceDenial::RequirementMismatch);
-        }
-        WorthQueryWorkflowAdvanceAdapter::compare_and_commit_recovered_operation::<
             Schema,
             Operation,
             Input,
