@@ -71,6 +71,10 @@ pub enum WorthQueryApplicationAttemptDenialKind {
     WorkflowInstanceCancelled,
     /// The instance completed; nothing is left to cancel.
     WorkflowInstanceCompleted,
+    /// An external operation the instance ran committed into its owner's
+    /// custody and has not settled. The instance cannot be cancelled until
+    /// the owner's receipt is accepted; the cancellation then reports it.
+    WorkflowOperationInOwnerCustody,
     /// The effects the instance, or a source it was migrated from, performed
     /// cannot be read within their retained bounds.
     WorkflowInstanceHistoryUnavailable,

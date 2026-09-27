@@ -9,7 +9,7 @@ use crate::domain_computation::primary_graph::application_attempt::{
     },
     workflow_transition_program::{receipt_identity_from_outcome, transition_entity_in_receipt},
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
-    WorthQueryApplicationCommitOutcomeIdentity,
+    WorthQueryApplicationCommitOutcomeIdentity, WorthQueryApplicationRealizedEffect,
 };
 use crate::domain_computation::primary_graph::workflow::instance::visit_workflow_operation_settlement_facts;
 use crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation;
@@ -58,37 +58,46 @@ impl WorthQueryProviderAttemptPreparation {
         (Self, Option<LocalWorkflowSettlementPublication>),
         WorthQueryApplicationAttemptDenial,
     > {
-        if self.workflow_settlement.is_none() {
+        let Some(binding) = self.workflow_settlement.take() else {
             return Ok((self, None));
-        }
-        if admission
+        };
+        let external = admission
             .allowed_graph_contract()
             .external_effect()
-            .is_declared()
-        {
-            // External custody is not performed at product publication. Its
-            // existing dispatch/recovery owner settles the operation later.
-            return Ok((self, None));
-        }
-        let binding = self
-            .workflow_settlement
-            .take()
-            .expect("the local guarded binding was checked above");
+            .is_declared();
         let receipt_identity = receipt_identity_from_outcome(
             admission.runtime_authority().as_u64(),
             outcome_identity.get(),
             admission.operation_authority_identity_bytes(),
         );
         let mut settlement_effects = Vec::new();
-        visit_workflow_operation_settlement_facts(
-            &binding.workflow_layout,
-            &binding.settlement_basis,
-            &receipt_identity,
-            |effect| {
-                settlement_effects.push(effect);
-                Ok::<(), WorthQueryApplicationAttemptDenial>(())
-            },
-        )?;
+        if external {
+            // External custody is not performed at product publication; its
+            // dispatch/recovery owner settles the operation later. The
+            // instance records that custody so no cancellation disposes it.
+            settlement_effects.push(WorthQueryApplicationRealizedEffect::UpdateEntity {
+                entity: "workflow-instance".to_owned(),
+                entity_id: binding.settlement_basis.instance(),
+                fields: std::collections::BTreeMap::from([(
+                    binding.workflow_layout.instance.owner_custody.clone(),
+                    worth_foundational::facade::AspectValue::String(
+                        worth_foundational::facade::InternedString::Raw(
+                            binding.settlement_basis.identity().to_owned(),
+                        ),
+                    ),
+                )]),
+            });
+        } else {
+            visit_workflow_operation_settlement_facts(
+                &binding.workflow_layout,
+                &binding.settlement_basis,
+                &receipt_identity,
+                |effect| {
+                    settlement_effects.push(effect);
+                    Ok::<(), WorthQueryApplicationAttemptDenial>(())
+                },
+            )?;
+        }
         let mut demand = PlatformEffectDemand::default();
         for effect in &settlement_effects {
             demand.observe(effect)?;
@@ -117,6 +126,9 @@ impl WorthQueryProviderAttemptPreparation {
         self.effects.extend(settlement_effects);
         self.effect_posture =
             crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::ApplicationWithPlatform;
+        if external {
+            return Ok((self, None));
+        }
         let progress_update = binding
             .settlement_basis
             .prepare_progress_update(receipt_identity)?;

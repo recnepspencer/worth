@@ -13,7 +13,7 @@ use worth_query_installation::facade::{
 };
 
 use super::super::super::workflow_instance_observation::{
-    observe_workflow_instance, WorkflowInstanceObservationPurpose,
+    instance_binding::owner_custody, observe_workflow_instance, WorkflowInstanceObservationPurpose,
 };
 use super::super::super::{
     PublishedWorkflowDefinitionRef, WorthQueryApplicationAttemptDenial,
@@ -112,6 +112,21 @@ where
                 &compiled,
             )?;
             facts.append(&mut observed.facts);
+            // An external operation the owner still holds has committed but
+            // not settled. Cancelling now would dispose of that custody.
+            let (custody, custody_fact) = owner_custody(runtime, snapshot, layout, entity)?;
+            if custody.is_some_and(|transition| {
+                !observed
+                    .transitions
+                    .iter()
+                    .any(|settled| settled.identity == transition)
+            }) {
+                return Err(WorthQueryApplicationAttemptDenial::new(
+                    WorthQueryApplicationAttemptDenialKind::WorkflowOperationInOwnerCustody,
+                    self.admission.operation(),
+                ));
+            }
+            facts.push(custody_fact);
             // A live instance never recorded a cancellation; the write below
             // replaces that absence.
             facts.push(WorthQueryApplicationObservedFact::AbsentField {

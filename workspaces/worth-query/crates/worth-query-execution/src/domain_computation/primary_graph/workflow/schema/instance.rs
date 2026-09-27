@@ -33,6 +33,7 @@ pub(super) fn lower_instance(
     let state = planned_field_locator(INSTANCE_ASPECT, "state")?;
     let resume_node_path = planned_field_locator(INSTANCE_ASPECT, "resume-node-path")?;
     let cancellation_identity = planned_field_locator(INSTANCE_ASPECT, "cancellation-identity")?;
+    let owner_custody = planned_field_locator(INSTANCE_ASPECT, "owner-custody")?;
     let inherited_steps = planned_field_locator(INSTANCE_ASPECT, "inherited-steps")?;
     let deadline = planned_field_locator(INSTANCE_ASPECT, "deadline")?;
     let inherited_evidence_bytes =
@@ -50,6 +51,7 @@ pub(super) fn lower_instance(
         .required("state", ScalarAspectType::UInt64)
         .optional("resume-node-path", ScalarAspectType::String)
         .optional("cancellation-identity", ScalarAspectType::String)
+        .optional("owner-custody", ScalarAspectType::String)
         .optional("inherited-steps", ScalarAspectType::UInt64)
         .optional("deadline", ScalarAspectType::UInt64)
         .optional("inherited-evidence-bytes", ScalarAspectType::UInt64)
@@ -80,6 +82,7 @@ pub(super) fn lower_instance(
             state,
             resume_node_path,
             cancellation_identity,
+            owner_custody,
             inherited_steps,
             deadline,
             inherited_evidence_bytes,

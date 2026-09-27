@@ -1,9 +1,13 @@
 use bank_domain::{
     proposals::BankIdempotencyKey,
-    schema::{ApprovePayment, ApprovedBusinessPaymentAdvanceIntent},
+    schema::{
+        ApprovePayment, ApprovedBusinessPaymentAdvanceIntent,
+        ApprovedBusinessPaymentInstanceStartIntent,
+    },
 };
 use worth_query_host::facade::application_entry::{
-    PublishedWorkflowInstanceRef, WorkflowProgressOutcome, WorthQueryOrdinaryWorkflowRunProgress,
+    PublishedWorkflowInstanceRef, WorkflowInstanceCancellationOutcome, WorkflowProgressOutcome,
+    WorthQueryOrdinaryWorkflowRunProgress,
 };
 
 use super::{BankApprovedPaymentWorkflow, BankApprovedPaymentWorkflowError};
@@ -23,6 +27,27 @@ impl BankApprovedPaymentWorkflow<'_, '_, '_> {
             .prepare_workflow_advance(self.runtime.approved_payment_workflow_runtime(), instance)
             .map(|request| request.execute())
             .map_err(BankApprovedPaymentWorkflowError::Advance)
+    }
+
+    /// Ends a live payment workflow where it stands. A payment the rail
+    /// owner still holds must be accepted first; the outcome then names it.
+    pub fn cancel(
+        &self,
+        instance: PublishedWorkflowInstanceRef,
+        authority: ApprovePayment,
+        command_key: &BankIdempotencyKey,
+    ) -> Result<WorkflowInstanceCancellationOutcome, BankApprovedPaymentWorkflowError> {
+        self.runtime
+            .request(self.principal, self.scope)
+            .mutate(ApprovedBusinessPaymentInstanceStartIntent { input: authority })
+            .without_source()
+            .idempotency(command_key)
+            .prepare_workflow_instance_cancellation(
+                self.runtime.approved_payment_workflow_runtime(),
+                instance,
+            )
+            .map(|request| request.execute())
+            .map_err(BankApprovedPaymentWorkflowError::InstanceCancellation)
     }
 
     pub fn run(

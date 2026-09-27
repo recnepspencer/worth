@@ -39,6 +39,40 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn deny_en
     Ok(())
 }
 
+/// The transition whose external operation last committed into its owner's
+/// custody, if any, and the fact that pins that reading. A commit that moves
+/// the custody makes the fact stale.
+pub(in crate::domain_computation::primary_graph::application_attempt) fn owner_custody(
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    layout: &WorthQueryWorkflowLayout,
+    entity_id: EntityId,
+) -> Result<(Option<String>, WorthQueryApplicationObservedFact), WorthQueryApplicationAttemptDenial>
+{
+    let kind = layout.instance.entity_kind;
+    let locator = layout.instance.owner_custody.clone();
+    match observe_field_value(runtime, snapshot, entity_id, kind, &locator) {
+        None => Ok((
+            None,
+            WorthQueryApplicationObservedFact::AbsentField {
+                entity_id,
+                kind,
+                locator,
+            },
+        )),
+        Some(AspectValue::String(InternedString::Raw(transition))) => Ok((
+            Some(transition.clone()),
+            WorthQueryApplicationObservedFact::Field {
+                entity_id,
+                kind,
+                locator,
+                value: AspectValue::String(InternedString::Raw(transition)),
+            },
+        )),
+        Some(_) => Err(denial("workflow instance owner custody is malformed")),
+    }
+}
+
 /// What the instance's migration sources spent before it, steps or evidence
 /// bytes, zero for an instance that began its lineage. It never changes after
 /// the start.

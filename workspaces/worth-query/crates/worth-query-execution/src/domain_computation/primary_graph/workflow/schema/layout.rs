@@ -224,6 +224,10 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowInstanceLayout {
     /// The intent that explicitly cancelled the instance; absent when program
     /// adoption cancelled it or it never ended by cancellation.
     pub(in crate::domain_computation::primary_graph) cancellation_identity: AspectFieldLocator,
+    /// The transition whose external operation last committed into its
+    /// owner's custody. The owner settles it later; until a transition with
+    /// this identity settles, the instance cannot be cancelled.
+    pub(in crate::domain_computation::primary_graph) owner_custody: AspectFieldLocator,
     /// Steps the instance's migration sources took before it; absent when
     /// none. One lineage spends one step budget, so a successor never
     /// starts it afresh.

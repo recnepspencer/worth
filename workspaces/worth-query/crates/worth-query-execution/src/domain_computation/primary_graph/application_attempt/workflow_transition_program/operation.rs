@@ -9,7 +9,9 @@ use super::{
     WorkflowOperationAuthority,
 };
 use crate::domain_computation::primary_graph::{
-    application_attempt::workflow_instance_observation::observe_retained_transition,
+    application_attempt::workflow_instance_observation::{
+        instance_binding, observe_retained_transition,
+    },
     workflow::instance::{visit_workflow_operation_transition_facts, WorkflowInstanceProgress},
     workflow::{
         definition::{CompiledWorkflowDefinition, CompiledWorkflowNodeKind},
@@ -133,6 +135,21 @@ where
         {
             return Err(mismatch(selected.node_path()));
         }
+        // An external operation records its custody on the instance; the
+        // reading it replaces travels with the operation's authority.
+        facts.push(
+            self.lease
+                .handle()
+                .with_runtime(|runtime| {
+                    instance_binding::owner_custody(
+                        runtime,
+                        self.lease.snapshot(),
+                        layout,
+                        instance.entity_id(),
+                    )
+                })?
+                .1,
+        );
         let remaining = self
             .admission
             .allowed_graph_contract()

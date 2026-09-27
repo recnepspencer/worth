@@ -7,12 +7,14 @@ use bank_external_rail::{test_control::FaultScript, LedgerStatus, RailProcessHan
 use bank_server::{BankApprovedPaymentApplyOutcome, BankAuthenticatedPrincipal};
 use worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope;
 use worth_query_host::facade::application_entry::{
-    PublishedWorkflowInstanceRef, RequiredWorkflowOperation, WorkflowProgressOutcome,
-    WorthQueryWorkflowOperationOwnerAcceptanceDenial, WorthQueryWorkflowOperationOwnerPosture,
-    WorthQueryWorkflowOperationRecoveryPreparationDenial,
+    PublishedWorkflowInstanceRef, RequiredWorkflowOperation, WorkflowInstanceCancellationOutcome,
+    WorkflowInstancePreparationDenial, WorkflowProgressOutcome,
+    WorthQueryWorkflowInstancePreparationDenial, WorthQueryWorkflowOperationOwnerAcceptanceDenial,
+    WorthQueryWorkflowOperationOwnerPosture, WorthQueryWorkflowOperationRecoveryPreparationDenial,
 };
 use worth_query_host::facade::primary_graph::{
-    WorthQueryApplicationCommitOutcome, WorthQueryExternalDispatchPostureKind,
+    WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationCommitOutcome,
+    WorthQueryExternalDispatchPostureKind,
 };
 
 use super::assertions::key;
@@ -233,6 +235,68 @@ fn lost_dispatch_before_rail_admission_requires_recovery_before_workflow_complet
         ready.rail.ledger_status(&dispatches[0].correlation),
         LedgerStatus::Completed
     );
+}
+
+#[test]
+fn a_cancellation_waits_for_the_rail_owner_then_reports_the_payment() {
+    let ready = ReadyPaymentWorld::new("cancel-in-owner-custody", FaultScript::Succeed);
+    ready
+        .perform()
+        .into_performed()
+        .expect("the payment commits into rail custody");
+    let workflow = ready
+        .fixture
+        .world
+        .runtime
+        .approved_business_payment(&ready.principal, &ready.scope);
+    match workflow.cancel(
+        ready.instance.clone(),
+        ready.authority.clone(),
+        &key("approved-payment:cancel:in-custody"),
+    ) {
+        Err(bank_server::BankApprovedPaymentWorkflowError::InstanceCancellation(
+            WorthQueryWorkflowInstancePreparationDenial::InstancePreparation(
+                WorkflowInstancePreparationDenial::Attempt(attempt),
+            ),
+        )) => assert_eq!(
+            attempt.kind(),
+            WorthQueryApplicationAttemptDenialKind::WorkflowOperationInOwnerCustody,
+            "cancellation never disposes the custody the rail owner holds",
+        ),
+        other => panic!("a payment in owner custody must refuse cancellation: {other:?}"),
+    }
+    let recovery = workflow
+        .prepare_apply_recovery(
+            &ready.operation,
+            ready.authority.clone(),
+            &key("approved-payment:operation:perform"),
+        )
+        .expect("the refused cancellation left the owner's custody intact")
+        .safe_retry()
+        .expect("the completed rail request replays its proof");
+    let accepted = workflow
+        .accept_recovered_applied(
+            ready.instance.clone(),
+            &ready.operation,
+            ready.authority.clone(),
+            ready.authority.clone(),
+            &key("approved-payment:operation:perform"),
+            &recovery,
+            &key("approved-payment:operation:accept:before-cancel"),
+        )
+        .expect("the owner settles the payment");
+    assert!(matches!(accepted, WorkflowProgressOutcome::Completed(_)));
+    match workflow.cancel(
+        ready.instance.clone(),
+        ready.authority.clone(),
+        &key("approved-payment:cancel:after-acceptance"),
+    ) {
+        Ok(WorkflowInstanceCancellationOutcome::Cancelled(done)) => {
+            assert_eq!(done.performed_node_paths(), ["apply".to_owned()]);
+        }
+        other => panic!("an accepted payment is cancelled and reported: {other:?}"),
+    }
+    assert_eq!(ready.rail.completed_effect_count(), 1);
 }
 
 #[test]
