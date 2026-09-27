@@ -19,6 +19,7 @@ fn capture(complete: bool, refresh_hz: u32) -> CaptureLog {
         frequency: 1000,
         refresh_hz,
         dpi: 96,
+        windows_build: "26200.1".to_owned(),
         samples: Vec::new(),
         complete,
     }

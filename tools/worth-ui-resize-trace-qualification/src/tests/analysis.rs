@@ -10,6 +10,8 @@ pub(crate) fn host(events: &[(i64, HostKind)]) -> HostTrace {
             .iter()
             .map(|&(counter, kind)| HostEvent { counter, kind })
             .collect(),
+        peaks: Vec::new(),
+        adapter: None,
     }
 }
 
@@ -48,6 +50,7 @@ pub(crate) fn capture(trace: &HostTrace, reading: impl Fn(i64) -> Reading) -> Ca
         frequency: FREQUENCY,
         refresh_hz: 60,
         dpi: 96,
+        windows_build: "26200.1".to_owned(),
         samples,
         complete: true,
     }

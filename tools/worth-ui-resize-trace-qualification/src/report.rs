@@ -6,6 +6,7 @@ use std::fmt::Write;
 use crate::analysis::{Analysis, MOVING_PAUSE_MS};
 use crate::coverage::{BREAKPOINT_WIDTH, LARGE_EXTENT, SMALL_EXTENT};
 use crate::logs::CaptureLog;
+use crate::work::{Work, TEXT_WORK};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Verdict {
@@ -188,6 +189,38 @@ fn grade_timing(grades: &mut Grades, analysis: &Analysis) {
     );
 }
 
+fn work(text: &mut String, work: &Work) {
+    let _ = writeln!(
+        text,
+        "text work over {} traced presentation attempts during the drag, {} of them shaping (count: total, most in one attempt):",
+        work.text_attempts, work.shaping_attempts
+    );
+    for (index, name) in TEXT_WORK.iter().enumerate() {
+        let _ = writeln!(
+            text,
+            "  {name}: {}, {}",
+            work.text_total[index], work.text_max[index]
+        );
+    }
+    let _ = writeln!(
+        text,
+        "render targets allocated during the drag: {} {:?}",
+        work.targets.len(),
+        work.targets
+    );
+    if work.peaks.is_empty() {
+        let _ = writeln!(
+            text,
+            "peak retained resources over the whole run: none traced"
+        );
+    } else {
+        let _ = writeln!(text, "peak retained resources over the whole run:");
+    }
+    for (name, count) in &work.peaks {
+        let _ = writeln!(text, "  {name}: {count}");
+    }
+}
+
 fn raw(text: &mut String, analysis: &Analysis) {
     let _ = writeln!(
         text,
@@ -200,6 +233,7 @@ fn raw(text: &mut String, analysis: &Analysis) {
         analysis.stale_submissions
     );
     let _ = writeln!(text, "never presented: {:?}", analysis.never_presented);
+    work(text, &analysis.work);
     let _ = writeln!(
         text,
         "latencies (extent, observed ms, visible ms, latency ms):"
@@ -243,8 +277,15 @@ pub fn render(analysis: &Analysis, capture: &CaptureLog) -> (String, Verdict) {
     );
     let _ = writeln!(
         text,
-        "display: {} Hz, {} DPI",
-        capture.refresh_hz, capture.dpi
+        "system: Windows build {}, Win32 windows composed by DWM",
+        capture.windows_build
+    );
+    let _ = writeln!(
+        text,
+        "hardware: {}, display at {} Hz and {} DPI",
+        analysis.adapter.as_deref().unwrap_or("adapter not traced"),
+        capture.refresh_hz,
+        capture.dpi
     );
     let mut grades = Grades::default();
     grade_run(&mut grades, analysis, capture);

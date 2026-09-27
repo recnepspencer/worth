@@ -37,6 +37,25 @@ fn refresh_hz() -> Result<u32, String> {
     Ok(mode.dmDisplayFrequency)
 }
 
+/// The Windows build and revision, as `<build>.<revision>`.
+fn windows_build() -> Result<String, String> {
+    let read = |name: &str| {
+        w::HKEY::LOCAL_MACHINE
+            .RegGetValue(
+                Some(r"SOFTWARE\Microsoft\Windows NT\CurrentVersion"),
+                Some(name),
+                co::RRF::RT_ANY,
+            )
+            .map_err(failed("reading the Windows build"))
+    };
+    match (read("CurrentBuild")?, read("UBR")?) {
+        (w::RegistryValue::Sz(build), w::RegistryValue::Dword(revision)) => {
+            Ok(format!("{build}.{revision}"))
+        }
+        _ => Err("the Windows build is recorded in an unexpected form".to_owned()),
+    }
+}
+
 fn system_dpi() -> Result<u32, String> {
     let screen = w::HWND::GetDesktopWindow()
         .GetDC()
@@ -120,7 +139,10 @@ pub fn run(out: &std::path::Path, duration: Duration, title: &str) -> Result<(),
     let write = |log: &mut std::io::BufWriter<std::fs::File>, line: String| {
         writeln!(log, "{line}").map_err(|error| format!("writing {}: {error}", out.display()))
     };
-    write(&mut log, capture_header(frequency, refresh_hz()?, dpi))?;
+    write(
+        &mut log,
+        capture_header(frequency, refresh_hz()?, dpi, &windows_build()?),
+    )?;
     let started = Instant::now();
     let mut count = 0_usize;
     while started.elapsed() < duration && window.IsWindow() {

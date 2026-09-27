@@ -15,6 +15,7 @@ mod gaps;
 mod logs;
 mod report;
 mod stamp;
+mod work;
 
 const USAGE: &str = "usage:
   worth-ui-resize-trace-qualification capture <capture-log> [--seconds <n>] [--title <window title>]

@@ -302,7 +302,14 @@ on the same basis. The file starts with
 - `consumed <width> <height>` when the visible surface has been replaced at an
   extent, including one a scale change reads without an observation;
 - `submitted <frame> <width> <height>` when a frame is handed to the surface;
-- `accepted <frame>` when a painted frame's presentation is acknowledged.
+- `accepted <frame>` when a painted frame's presentation is acknowledged;
+- `adapter <name> (<driver>)` when the host chooses its graphics adapter;
+- `target <width> <height>` when a retained render target is allocated;
+- `text <frame> <shaped runs> <shaped scalars> <positioned glyphs> <emitted
+  lines> <rasterized glyphs>` for each mounted frame's text work, its layout
+  counted once per mounted frame and binding; other layout work is not traced;
+- `peak <resource> <count>`, as the host closes, for the most of each native
+  resource it retained at once.
 
 The frame is the presentation attempt identity. The initial surface, a
 minimized or suspended extent, an extent equal to the current one, and an
@@ -351,6 +358,11 @@ sample interval.
   the unchanged extent, before the window reports the extents queued behind it,
   is graded only from that report.
 - The final extent must be shown within 100 ms of release.
+
+The report also names the Windows build, the adapter, the display's refresh and
+DPI, and the clock and capture method, lists every latency and gap interval,
+and reports without grading the drag's text layout and raster work, the render
+targets it allocated, and the host's peak retained resources over the whole run.
 
 Grades that rest on sightings are inconclusive, rather than failed, when the
 capture sampled too coarsely to resolve a 25 ms gap or ended without its

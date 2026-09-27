@@ -8,7 +8,7 @@ publish = false
 
 [target.'cfg(windows)'.dependencies]
 uiautomation = { version = "=0.25.0", default-features = false, features = ["input", "screenshot"] }
-winsafe = { version = "=0.0.28", default-features = false, features = ["gdi", "kernel", "user"] }
+winsafe = { version = "=0.0.28", default-features = false, features = ["advapi", "gdi", "kernel", "user"] }
 
 [lints.rust]
 unsafe_code = "forbid"

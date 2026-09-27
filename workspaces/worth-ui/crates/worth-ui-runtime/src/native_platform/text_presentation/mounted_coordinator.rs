@@ -318,6 +318,7 @@ impl UiNativeMountedTextCoordinator {
         &mut self,
         observation: super::UiNativeTextPresentationWorkObservation,
     ) {
+        observation.trace_resize_work();
         if self.work_observations.len() == TEXT_WORK_OBSERVATION_CAPACITY {
             self.work_observation_overflowed = true;
             return;

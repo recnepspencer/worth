@@ -20,6 +20,7 @@ use crate::coverage::{coverage, Coverage};
 use crate::gaps::{gaps, Gap};
 use crate::logs::{CaptureLog, HostEvent, HostKind, HostTrace, Sample};
 use crate::stamp::Reading;
+use crate::work::{during, Work};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Latency {
@@ -69,6 +70,9 @@ pub struct Analysis {
     pub unreadable_ms: f64,
     /// Intervals between consecutive samples during the drag.
     pub sample_intervals: Vec<f64>,
+    pub work: Work,
+    /// The graphics adapter the host presented with, if it traced one.
+    pub adapter: Option<String>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -190,6 +194,8 @@ pub fn analyze(host: &HostTrace, capture: &CaptureLog) -> Result<Analysis, Strin
         press,
         drag_ms: clock.ms(release),
         moving_ms: moving_ms(samples, [first, released], &clock),
+        work: during(host, [press, release]),
+        adapter: host.adapter.clone(),
         ..Analysis::default()
     };
 
