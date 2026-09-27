@@ -5,6 +5,12 @@ use worth_ui_runtime::facade::application::{
     WorthUiPlanRegionTransition, WorthUiVirtualizedPlanAvailability,
 };
 use worth_ui_test_support::WorthUiActiveSessionCertificationExt;
+#[path = "query_replacement_lifecycle/mixed_real_lifecycle/hostile_mounted_journey.rs"]
+mod hostile_mounted_journey;
+#[path = "query_replacement_lifecycle/mixed_real_lifecycle/mixed_real_world.rs"]
+mod mixed_real_world;
+#[path = "query_replacement_lifecycle/mixed_real_lifecycle/mounted_successor.rs"]
+mod mounted_successor;
 #[path = "query_replacement_lifecycle/precommit_rollback.rs"]
 mod precommit_rollback;
 #[path = "query_replacement_lifecycle/query_patch.rs"]

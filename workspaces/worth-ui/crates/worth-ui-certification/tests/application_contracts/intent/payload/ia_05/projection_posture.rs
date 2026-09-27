@@ -137,14 +137,14 @@ fn assert_collection_text_shape_stops_at_catalog() {
     };
     assert_eq!(
         denial,
-        WorthUiApplicationPreparationDenial::IntentCatalog(
+        WorthUiApplicationPreparationDenial::IntentCatalog(Box::new(
             UiIntentCatalogPreparationDenial::UnknownPayloadProjection {
                 declaration: DECLARATION.into(),
                 field: QUERY_TEXT_FIELD.descriptor().stable_name().into(),
                 projection: projection.as_str().into(),
                 required_shape: "scalar-text",
             }
-        )
+        ))
     );
 }
 
@@ -169,7 +169,7 @@ fn prepare_stop(
     world: &mut super::super::world::PayloadWorld,
 ) -> worth_ui::facade::intent::UiIntentPayloadStop {
     let interaction = super::activation(world, [10, 20]);
-    let route = super::product_route(&world.interaction, interaction);
+    let route = super::product_route(&mut world.interaction, interaction);
     super::expect_payload_stop(
         world.interaction.session.prepare_intent_payload(route),
         "a non-current Query input must not seal a payload",

@@ -18,7 +18,7 @@ use worth_ui_test_support::{
     WorthUiMountedFrameExecutionCertificationExt, WorthUiMountedPublicationCertificationExt,
 };
 
-use super::mounted_successor::{
+use super::mixed_real_world::{
     admit_query_projection, all_lane_request, establish_first_allocation_catalog, mount_all_nodes,
     publish_all_lane_frame,
 };
@@ -237,6 +237,7 @@ fn prove_observation_denials_are_terminal(
         .expect("remounted instance has a current frame receipt")
         .node_receipt_identity();
     let basis = PresentedObservationBasis {
+        host_surface: inspection.surface_bindings()[0].host_surface_identity(),
         frame: publication.frame(),
         epoch: presented_epoch(session, publication.frame(), binding),
         instance,
