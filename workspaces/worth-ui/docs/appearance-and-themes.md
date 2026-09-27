@@ -162,8 +162,9 @@ Rust authors state the same block with
 Mosaic constructors and admits it only where it equals the layout its
 container registered. A disagreement, a duplicate block, or an unregistered
 container is a typed `UiAuthoredLayoutDenial`, and neither source wins.
-Platform Pulse restates its page in
-[`dashboard_layout.wui`](../apps/platform-pulse/app/dashboard_layout.wui).
+Restating is per container and optional: Platform Pulse restates its page in
+[`dashboard_layout.wui`](../apps/platform-pulse/app/dashboard_layout.wui),
+while its metric row keeps only the layout it registers.
 
 A container that owns Scroll lays its members out at their minimums and
 scrolls them when they outgrow its viewport. Height constrains that viewport,

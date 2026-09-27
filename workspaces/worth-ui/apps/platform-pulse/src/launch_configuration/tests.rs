@@ -171,6 +171,46 @@ fn explicit_absolute_installation_reaches_real_application_preparation() {
         .expect("isolated source watcher shuts down");
 }
 
+/// The page layout restated in `.wui` must equal the one the page registers:
+/// a restatement that disagrees by one point stops the source, and neither
+/// layout wins.
+#[test]
+fn a_restated_page_layout_that_disagrees_with_its_registration_is_refused() {
+    use worth_ui::facade::declaration::UiAuthoredLayoutCause;
+    use worth_ui::facade::source::{
+        UiSourceRebindAttemptDenial, UiSourceRebindAttemptFailure,
+        WorthUiSemanticHandoffPreparationStop,
+    };
+
+    let installation = IsolatedInstallation::with_entry();
+    let layout = installation.root.join("dashboard_layout.wui");
+    let source = std::fs::read_to_string(&layout).expect("read restated page layout");
+    assert_eq!(source.matches("flex 1 min 320").count(), 1);
+    std::fs::write(&layout, source.replace("flex 1 min 320", "flex 1 min 321"))
+        .expect("write disagreeing page layout");
+    let admitted = admit_test(
+        [
+            "--source-root".into(),
+            installation.root.clone().into_os_string(),
+        ],
+        PathBuf::from("unused"),
+    )
+    .expect("explicit launch");
+    let Err(crate::application::PlatformPulsePreparationDenial::InitialSourceLowering(
+        UiSourceRebindAttemptFailure::Denied(receipt),
+    )) = crate::application::prepare_composition(&admitted)
+    else {
+        panic!("a disagreeing page layout stops the initial source");
+    };
+    let UiSourceRebindAttemptDenial::RuntimePreparation(denial) = receipt.denial() else {
+        panic!("the runtime handoff refuses the disagreeing layout");
+    };
+    let WorthUiSemanticHandoffPreparationStop::AuthoredLayout(layout) = denial.stop() else {
+        panic!("the handoff names the authored layout: {:?}", denial.stop());
+    };
+    assert_eq!(layout.cause(), UiAuthoredLayoutCause::LayoutDisagreement);
+}
+
 #[test]
 fn intent_source_root_requires_the_exact_versioned_product_input() {
     let installation = IsolatedInstallation::with_entry();

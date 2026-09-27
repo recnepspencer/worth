@@ -3,6 +3,7 @@
 //!
 //! This owns the spelling only. Whether the tracks, cells, and intervals make
 //! a layout is judged where the declaration lowers into Mosaic meaning.
+use super::token_cursor::{Cursor, UiDeclarationWords};
 use crate::source::{
     WorthUiArtifactInputLayoutNode, WorthUiArtifactInputNode, WorthUiArtifactInputProvenance,
     WorthUiDslCompileDiagnostic, WorthUiDslCompileDiagnosticCode, WorthUiDslCompileStopClass,
@@ -28,13 +29,12 @@ pub(super) fn lower_layout(
             ),
         )
     })?;
-    let body = declaration.body();
-    let mut cursor = Cursor {
-        tokens: body.tokens(),
-        spans: body.token_spans(),
-        index: 0,
-        whole: declaration.span(),
-    };
+    let mut cursor = Cursor::new(
+        declaration.body(),
+        declaration.span(),
+        UiDeclarationWords::Identifiers,
+        "layout",
+    );
     let mut fallback = GridStatements::default();
     let mut variants = Vec::new();
     while !cursor.eof() {
@@ -62,24 +62,26 @@ pub(super) fn lower_layout(
 
 fn variant(cursor: &mut Cursor<'_>) -> Lowered<(UiLayoutWidthInterval, UiLayoutGrid)> {
     let start = cursor.span();
-    cursor.expect_word(
+    expect_word(
+        cursor,
         "from",
         "a width variant reads `width from <min> [to <max>] { ... }`",
     )?;
-    let min = cursor.number()?;
+    let min = number(cursor)?;
     let interval = if cursor.take_word("to") {
-        UiLayoutWidthInterval::between(min, cursor.number()?)
+        UiLayoutWidthInterval::between(min, number(cursor)?)
     } else {
         UiLayoutWidthInterval::at_least(min)
     };
-    cursor.expect(
-        &WorthUiSourceTokenKind::LeftBrace,
+    expect(
+        cursor,
+        WorthUiSourceTokenKind::LeftBrace,
         "a width variant opens its grid with '{'",
     )?;
     let mut grid = GridStatements::default();
-    while !cursor.take(&WorthUiSourceTokenKind::RightBrace) {
+    while !cursor.take_symbol(WorthUiSourceTokenKind::RightBrace) {
         if cursor.eof() {
-            return Err(cursor.denial("a width variant closes its grid with '}'"));
+            return Err(refuse(cursor, "a width variant closes its grid with '}'"));
         }
         grid.statement(cursor)?;
     }
@@ -100,7 +102,7 @@ struct GridStatements {
 impl GridStatements {
     fn statement(&mut self, cursor: &mut Cursor<'_>) -> Lowered<()> {
         let span = cursor.span();
-        let word = cursor.word()?.to_owned();
+        let word = word(cursor)?.to_owned();
         cursor.advance();
         match word.as_str() {
             "columns" => once(&mut self.columns, tracks(cursor)?, "columns", span)?,
@@ -124,8 +126,9 @@ impl GridStatements {
                 ))
             }
         }
-        cursor.expect(
-            &WorthUiSourceTokenKind::Semicolon,
+        expect(
+            cursor,
+            WorthUiSourceTokenKind::Semicolon,
             "a layout statement ends with ';'",
         )
     }
@@ -159,7 +162,7 @@ fn once<T>(slot: &mut Option<T>, value: T, clause: &str, span: &WorthUiSourceSpa
 
 fn tracks(cursor: &mut Cursor<'_>) -> Lowered<Vec<UiLayoutTrack>> {
     let mut tracks = vec![track(cursor)?];
-    while cursor.take(&WorthUiSourceTokenKind::Comma) {
+    while cursor.take_symbol(WorthUiSourceTokenKind::Comma) {
         tracks.push(track(cursor)?);
     }
     Ok(tracks)
@@ -168,29 +171,31 @@ fn tracks(cursor: &mut Cursor<'_>) -> Lowered<Vec<UiLayoutTrack>> {
 fn track(cursor: &mut Cursor<'_>) -> Lowered<UiLayoutTrack> {
     if cursor.take_word("fixed") {
         return Ok(UiLayoutTrack::Fixed {
-            extent: cursor.number()?,
+            extent: number(cursor)?,
         });
     }
     if cursor.take_word("flex") {
-        let weight = cursor.number()?;
+        let weight = number(cursor)?;
         let min = if cursor.take_word("min") {
-            cursor.number()?
+            number(cursor)?
         } else {
             0
         };
         let max = if cursor.take_word("max") {
-            Some(cursor.number()?)
+            Some(number(cursor)?)
         } else {
             None
         };
         return Ok(UiLayoutTrack::Flexible { weight, min, max });
     }
-    Err(cursor
-        .denial("a track reads `fixed <extent>` or `flex <weight> [min <extent>] [max <extent>]`"))
+    Err(refuse(
+        cursor,
+        "a track reads `fixed <extent>` or `flex <weight> [min <extent>] [max <extent>]`",
+    ))
 }
 
 fn pair(cursor: &mut Cursor<'_>) -> Lowered<(u16, u16)> {
-    Ok((cursor.number()?, cursor.number()?))
+    Ok((number(cursor)?, number(cursor)?))
 }
 
 fn member(cursor: &mut Cursor<'_>) -> Lowered<(UiDslComponentReference, UiLayoutCell)> {
@@ -198,9 +203,9 @@ fn member(cursor: &mut Cursor<'_>) -> Lowered<(UiDslComponentReference, UiLayout
         "a layout member reads `member <component> at <column> <row> [span <columns> <rows>]`";
     let span = cursor.span();
     let component =
-        UiDslComponentReference::new(cursor.word()?).ok_or_else(|| diagnostic(span, SHAPE))?;
+        UiDslComponentReference::new(word(cursor)?).ok_or_else(|| diagnostic(span, SHAPE))?;
     cursor.advance();
-    cursor.expect_word("at", SHAPE)?;
+    expect_word(cursor, "at", SHAPE)?;
     let (column, row) = pair(cursor)?;
     let (column_span, row_span) = if cursor.take_word("span") {
         pair(cursor)?
@@ -213,83 +218,40 @@ fn member(cursor: &mut Cursor<'_>) -> Lowered<(UiDslComponentReference, UiLayout
     ))
 }
 
-struct Cursor<'a> {
-    tokens: &'a [WorthUiSourceTokenKind],
-    spans: &'a [WorthUiSourceSpan],
-    index: usize,
-    whole: &'a WorthUiSourceSpan,
+fn word<'a>(cursor: &Cursor<'a>) -> Lowered<&'a str> {
+    cursor
+        .word()
+        .map_err(|message| diagnostic(cursor.span(), message))
 }
 
-impl<'a> Cursor<'a> {
-    fn eof(&self) -> bool {
-        self.index >= self.tokens.len()
+fn expect_word(cursor: &mut Cursor<'_>, expected: &str, shape: &str) -> Lowered<()> {
+    if cursor.take_word(expected) {
+        Ok(())
+    } else {
+        Err(refuse(cursor, shape))
     }
+}
 
-    fn advance(&mut self) {
-        self.index += 1;
+fn expect(cursor: &mut Cursor<'_>, expected: WorthUiSourceTokenKind, shape: &str) -> Lowered<()> {
+    if cursor.take_symbol(expected) {
+        Ok(())
+    } else {
+        Err(refuse(cursor, shape))
     }
+}
 
-    /// The current token's span, or the whole declaration's at the end.
-    fn span(&self) -> &'a WorthUiSourceSpan {
-        self.spans.get(self.index).unwrap_or(self.whole)
-    }
+/// A whole number of logical points.
+fn number(cursor: &mut Cursor<'_>) -> Lowered<u16> {
+    cursor.number().ok_or_else(|| {
+        refuse(
+            cursor,
+            "layout expected a whole number of logical points from 0 to 65535",
+        )
+    })
+}
 
-    fn denial(&self, message: &str) -> WorthUiDslCompileDiagnostic {
-        diagnostic(self.span(), message)
-    }
-
-    fn word(&self) -> Lowered<&'a str> {
-        match self.tokens.get(self.index) {
-            Some(WorthUiSourceTokenKind::Identifier(word)) => Ok(word),
-            _ => Err(self.denial("layout expected a word")),
-        }
-    }
-
-    fn take_word(&mut self, expected: &str) -> bool {
-        let found = self.word().is_ok_and(|word| word == expected);
-        if found {
-            self.advance();
-        }
-        found
-    }
-
-    fn expect_word(&mut self, expected: &str, shape: &str) -> Lowered<()> {
-        if self.take_word(expected) {
-            Ok(())
-        } else {
-            Err(self.denial(shape))
-        }
-    }
-
-    fn take(&mut self, expected: &WorthUiSourceTokenKind) -> bool {
-        let found = self.tokens.get(self.index) == Some(expected);
-        if found {
-            self.advance();
-        }
-        found
-    }
-
-    fn expect(&mut self, expected: &WorthUiSourceTokenKind, shape: &str) -> Lowered<()> {
-        if self.take(expected) {
-            Ok(())
-        } else {
-            Err(self.denial(shape))
-        }
-    }
-
-    /// A whole number of logical points: the lexer admits digits only, so a
-    /// sign, a fraction, or a nonfinite value never reaches here as a number.
-    fn number(&mut self) -> Lowered<u16> {
-        let value = match self.tokens.get(self.index) {
-            Some(WorthUiSourceTokenKind::NumberLiteral(text)) => text.parse::<u16>().ok(),
-            _ => None,
-        }
-        .ok_or_else(|| {
-            self.denial("layout expected a whole number of logical points from 0 to 65535")
-        })?;
-        self.advance();
-        Ok(value)
-    }
+fn refuse(cursor: &Cursor<'_>, message: &str) -> WorthUiDslCompileDiagnostic {
+    diagnostic(cursor.span(), message)
 }
 
 fn diagnostic(span: &WorthUiSourceSpan, message: impl Into<String>) -> WorthUiDslCompileDiagnostic {
