@@ -37,6 +37,7 @@ pub use assessment::{
     BankApprovedPaymentAssessmentProgress, BankPaymentAssessmentSettlement,
 };
 pub use error::BankApprovedPaymentWorkflowError;
+pub use progression::BankApprovedPaymentCancellation;
 
 pub type BankApprovedPaymentPreparedRecovery<'runtime> =
     WorthQueryPreparedWorkflowOperationRecovery<

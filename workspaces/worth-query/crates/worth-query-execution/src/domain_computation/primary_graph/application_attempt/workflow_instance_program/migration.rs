@@ -24,6 +24,7 @@ use super::super::effect_program::{admit_platform_effects, PlatformEffectDemand}
 use super::super::workflow_deadline::{
     definition_deadline, ensure_before, instance_deadline, start_deadline,
 };
+use super::super::workflow_instance_observation::instance_binding::fence_owner_custody;
 use super::super::{
     PublishedWorkflowDefinitionRef, WorthQueryApplicationAttemptDenial,
     WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationEffectProgram,
@@ -195,6 +196,16 @@ where
                 maximum_transitions,
                 &from,
             )?;
+            // An external operation its owner still holds would settle into an
+            // ended source. Migration waits for it, as cancellation does.
+            facts.push(fence_owner_custody(
+                runtime,
+                snapshot,
+                &layout,
+                source.entity_id(),
+                &observed.transitions,
+                "an external operation must settle under the source before migration",
+            )?);
             let inherited = performed::inherited_effects(
                 runtime,
                 snapshot,

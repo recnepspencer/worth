@@ -1,94 +1,18 @@
 use std::num::NonZeroUsize;
-use std::sync::Arc;
 use std::time::Duration;
 
-use bank_domain::schema::ApprovePayment;
-use bank_external_rail::{test_control::FaultScript, LedgerStatus, RailProcessHandle};
-use bank_server::{BankApprovedPaymentApplyOutcome, BankAuthenticatedPrincipal};
-use worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope;
+use bank_external_rail::{test_control::FaultScript, LedgerStatus};
+use bank_server::BankApprovedPaymentApplyOutcome;
 use worth_query_host::facade::application_entry::{
-    PublishedWorkflowInstanceRef, RequiredWorkflowOperation, WorkflowInstanceCancellationOutcome,
-    WorkflowInstancePreparationDenial, WorkflowProgressOutcome,
-    WorthQueryWorkflowInstancePreparationDenial, WorthQueryWorkflowOperationOwnerAcceptanceDenial,
+    WorkflowProgressOutcome, WorthQueryWorkflowOperationOwnerAcceptanceDenial,
     WorthQueryWorkflowOperationOwnerPosture, WorthQueryWorkflowOperationRecoveryPreparationDenial,
 };
 use worth_query_host::facade::primary_graph::{
-    WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationCommitOutcome,
-    WorthQueryExternalDispatchPostureKind,
+    WorthQueryApplicationCommitOutcome, WorthQueryExternalDispatchPostureKind,
 };
 
 use super::assertions::key;
-use super::authentication::approval_configuration;
-use super::fixture::{
-    ordinary_read_world_with_approval_authentication, principal_id, OrdinaryReadFixture, APPROVER,
-};
-use super::journey::prepare_approved_payment_operation;
-use super::rail_transport::{spawn_rail, BankEstateRailTransport};
-use super::support::request_scope;
-
-struct ReadyPaymentWorld {
-    fixture: OrdinaryReadFixture,
-    rail: Arc<BankEstateRailTransport>,
-    _rail_process: RailProcessHandle,
-    principal: BankAuthenticatedPrincipal,
-    scope: WorthQueryRequestScope,
-    authority: ApprovePayment,
-    instance: PublishedWorkflowInstanceRef,
-    operation: RequiredWorkflowOperation,
-}
-
-impl ReadyPaymentWorld {
-    fn new(scenario: &str, script: FaultScript) -> Self {
-        let fixture =
-            ordinary_read_world_with_approval_authentication(scenario, approval_configuration());
-        let rail_process = spawn_rail();
-        let rail = Arc::new(BankEstateRailTransport::connected_to(
-            rail_process.local_addr(),
-            rail_process.test_control_addr(),
-        ));
-        rail.under(script, Duration::from_millis(150));
-        fixture
-            .world
-            .runtime
-            .install_external_effect_transport(rail.clone())
-            .expect("the real rail transport installs");
-        let principal = fixture.authenticate(APPROVER);
-        let scope = request_scope();
-        let authority = ApprovePayment {
-            payment: fixture.payment,
-            approver: principal_id(APPROVER),
-        };
-        let workflow = fixture
-            .world
-            .runtime
-            .approved_business_payment(&principal, &scope);
-        let (instance, operation) = prepare_approved_payment_operation(&workflow, &authority);
-        Self {
-            fixture,
-            rail,
-            _rail_process: rail_process,
-            principal,
-            scope,
-            authority,
-            instance,
-            operation,
-        }
-    }
-
-    fn perform(&self) -> BankApprovedPaymentApplyOutcome {
-        self.fixture
-            .world
-            .runtime
-            .approved_business_payment(&self.principal, &self.scope)
-            .perform_apply(
-                self.instance.clone(),
-                &self.operation,
-                self.authority.clone(),
-                &key("approved-payment:operation:perform"),
-            )
-            .expect("the prepared Bank operation reaches Query's owner")
-    }
-}
+use super::ready_payment::ReadyPaymentWorld;
 
 #[test]
 fn pending_rail_dispatch_remains_under_the_committed_outbox_owner() {
@@ -235,68 +159,6 @@ fn lost_dispatch_before_rail_admission_requires_recovery_before_workflow_complet
         ready.rail.ledger_status(&dispatches[0].correlation),
         LedgerStatus::Completed
     );
-}
-
-#[test]
-fn a_cancellation_waits_for_the_rail_owner_then_reports_the_payment() {
-    let ready = ReadyPaymentWorld::new("cancel-in-owner-custody", FaultScript::Succeed);
-    ready
-        .perform()
-        .into_performed()
-        .expect("the payment commits into rail custody");
-    let workflow = ready
-        .fixture
-        .world
-        .runtime
-        .approved_business_payment(&ready.principal, &ready.scope);
-    match workflow.cancel(
-        ready.instance.clone(),
-        ready.authority.clone(),
-        &key("approved-payment:cancel:in-custody"),
-    ) {
-        Err(bank_server::BankApprovedPaymentWorkflowError::InstanceCancellation(
-            WorthQueryWorkflowInstancePreparationDenial::InstancePreparation(
-                WorkflowInstancePreparationDenial::Attempt(attempt),
-            ),
-        )) => assert_eq!(
-            attempt.kind(),
-            WorthQueryApplicationAttemptDenialKind::WorkflowOperationInOwnerCustody,
-            "cancellation never disposes the custody the rail owner holds",
-        ),
-        other => panic!("a payment in owner custody must refuse cancellation: {other:?}"),
-    }
-    let recovery = workflow
-        .prepare_apply_recovery(
-            &ready.operation,
-            ready.authority.clone(),
-            &key("approved-payment:operation:perform"),
-        )
-        .expect("the refused cancellation left the owner's custody intact")
-        .safe_retry()
-        .expect("the completed rail request replays its proof");
-    let accepted = workflow
-        .accept_recovered_applied(
-            ready.instance.clone(),
-            &ready.operation,
-            ready.authority.clone(),
-            ready.authority.clone(),
-            &key("approved-payment:operation:perform"),
-            &recovery,
-            &key("approved-payment:operation:accept:before-cancel"),
-        )
-        .expect("the owner settles the payment");
-    assert!(matches!(accepted, WorkflowProgressOutcome::Completed(_)));
-    match workflow.cancel(
-        ready.instance.clone(),
-        ready.authority.clone(),
-        &key("approved-payment:cancel:after-acceptance"),
-    ) {
-        Ok(WorkflowInstanceCancellationOutcome::Cancelled(done)) => {
-            assert_eq!(done.performed_node_paths(), ["apply".to_owned()]);
-        }
-        other => panic!("an accepted payment is cancelled and reported: {other:?}"),
-    }
-    assert_eq!(ready.rail.completed_effect_count(), 1);
 }
 
 #[test]

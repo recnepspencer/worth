@@ -72,7 +72,7 @@ impl<Schema, Operation, Input, Scope>
                 .allowed_graph_contract()
                 .decision_fact_budget()
         {
-            return Err(denial(
+            return Err(WorthQueryApplicationAttemptDenial::new(
                 WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
                 "workflow operation authority",
             ));

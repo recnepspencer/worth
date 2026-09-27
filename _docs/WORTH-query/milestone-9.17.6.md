@@ -1228,6 +1228,21 @@ no transition, so an instance that has used its whole retained-transition capaci
 and so can take no further step, still cancels, warm or cold. The cancellation reads
 exactly the retained history, and its replay stays within the same bounds.
 
+An external operation's product commit hands the operation to its dispatch or
+recovery owner before any transition settles it, so the same commit writes an
+owner-custody marker on the instance: the identity of the transition that will
+settle it. The operation's authority pins the marker it read, so a lifecycle request
+prepared before the product commit goes stale instead of disposing of the custody.
+While no settled transition carries the marked identity, cancellation and migration,
+including a fork continuation, refuse with `WorkflowOperationInOwnerCustody` without
+claiming their keys, and the adoption inventory reports the instance as
+`OperationInOwnerCustody` with no legal disposition. The owner's settlement releases
+it: a later cancellation reports the operation as performed, and migration carries
+it. A local operation settles in its own commit and never writes the marker; its
+authority still pins the unwritten field, which nothing but an external commit
+changes. The marker is new in this milestone, so no instance persisted before it
+exists to lack one.
+
 One lineage spends one step budget, the installed retained-transition capacity. The
 budget check alone grants the allowance that transition and migration admission each
 require, so no step writer can skip it; a settled or closing observation passes the

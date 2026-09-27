@@ -59,14 +59,20 @@ pub(super) fn definition_compatibility(
     Compatibility::Compatible
 }
 
-/// An approval is outstanding when its latest decision approved and no
-/// operation it authorizes has settled a receipt after that decision. An
-/// instance that inherits effects is performed, whatever its own history.
+/// An operation its owner still holds comes first: it settles under the
+/// source whatever else the history says. An approval is outstanding when its
+/// latest decision approved and no operation it authorizes has settled a
+/// receipt after that decision. An instance that inherits effects is
+/// performed, whatever its own history.
 pub(super) fn instance_custody(
     dependencies: &WorkflowDefinitionDependencies,
     transitions: &[WorkflowInventoriedTransition],
     inherits_effects: bool,
+    owner_custody_pending: bool,
 ) -> Custody {
+    if owner_custody_pending {
+        return Custody::OperationInOwnerCustody;
+    }
     let outstanding = dependencies
         .approval_authorities
         .iter()
@@ -115,7 +121,8 @@ pub(super) fn instance_dispositions(
     custody: &Custody,
 ) -> &'static [InstanceDisposition] {
     match (compatibility.is_compatible(), custody) {
-        (_, Custody::ApprovalOutstanding { .. }) | (false, Custody::Performed) => &[],
+        (_, Custody::ApprovalOutstanding { .. } | Custody::OperationInOwnerCustody)
+        | (false, Custody::Performed) => &[],
         (true, Custody::Unperformed) => &[InstanceDisposition::Carry, InstanceDisposition::Cancel],
         (true, Custody::Performed) => &[InstanceDisposition::Carry],
         (false, Custody::Unperformed) => &[InstanceDisposition::Cancel],

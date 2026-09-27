@@ -85,6 +85,7 @@ pub(in crate::domain_computation::primary_graph) fn inventory_workflows(
                 &definition.dependencies,
                 &live.transitions,
                 live.inherits_effects,
+                live.owner_custody_pending,
             ),
         });
     }
@@ -155,6 +156,7 @@ fn digest(
                 bytes.push(2);
                 push_text(&mut bytes, approval_node_path);
             }
+            WorthQueryWorkflowInstanceCustody::OperationInOwnerCustody => bytes.push(3),
         }
     }
     Sha256::digest(&bytes).into()

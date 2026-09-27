@@ -73,6 +73,28 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn owner_c
     }
 }
 
+/// Refuses to end an instance whose owner still holds an external operation:
+/// the operation committed its product but no transition with its identity
+/// has settled. Otherwise returns the fact that pins the custody reading, so an
+/// external commit landing after this read makes the ending stale.
+pub(in crate::domain_computation::primary_graph::application_attempt) fn fence_owner_custody(
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    layout: &WorthQueryWorkflowLayout,
+    entity_id: EntityId,
+    settled: &[super::ObservedWorkflowTransition],
+    subject: &str,
+) -> Result<WorthQueryApplicationObservedFact, WorthQueryApplicationAttemptDenial> {
+    let (custody, fact) = owner_custody(runtime, snapshot, layout, entity_id)?;
+    if custody.is_some_and(|transition| !settled.iter().any(|done| done.identity == transition)) {
+        return Err(WorthQueryApplicationAttemptDenial::new(
+            WorthQueryApplicationAttemptDenialKind::WorkflowOperationInOwnerCustody,
+            subject,
+        ));
+    }
+    Ok(fact)
+}
+
 /// What the instance's migration sources spent before it, steps or evidence
 /// bytes, zero for an instance that began its lineage. It never changes after
 /// the start.

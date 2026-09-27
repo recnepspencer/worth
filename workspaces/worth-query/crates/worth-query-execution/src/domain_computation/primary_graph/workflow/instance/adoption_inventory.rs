@@ -30,6 +30,9 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowLiveInstance {
     /// A migration successor carries performed effects of an earlier
     /// definition. They make it performed but never settle its approvals.
     pub(in crate::domain_computation::primary_graph) inherits_effects: bool,
+    /// An external operation committed into its owner's custody and no
+    /// transition has settled it yet.
+    pub(in crate::domain_computation::primary_graph) owner_custody_pending: bool,
 }
 
 #[derive(Clone, Copy)]
@@ -39,6 +42,11 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowInventoriedTrans
     pub(in crate::domain_computation::primary_graph) outcome: ApplicationWorkflowControlOutcome,
     /// The transition settles a performed operation under its receipt.
     pub(in crate::domain_computation::primary_graph) receipted: bool,
+}
+
+struct ReadTransition {
+    inventoried: WorkflowInventoriedTransition,
+    identity: String,
 }
 
 pub(in crate::domain_computation::primary_graph) fn read_live_instances(
@@ -62,10 +70,16 @@ pub(in crate::domain_computation::primary_graph) fn read_live_instances(
             return Err(unreadable);
         }
         record.text(&layout.instance.program_revision)?;
+        let owner_custody = record.optional_text(&layout.instance.owner_custody)?;
         let definition = truth.single_target(instance, layout.instance_definition_relation)?;
         let mut transitions = Vec::new();
+        let mut owner_custody_pending = owner_custody.is_some();
         for relation in truth.outgoing(instance, layout.instance_transition_relation)? {
-            transitions.push(read_transition(truth, layout, relation.target)?);
+            let read = read_transition(truth, layout, relation.target)?;
+            if owner_custody.as_deref() == Some(read.identity.as_str()) {
+                owner_custody_pending = false;
+            }
+            transitions.push(read.inventoried);
         }
         let inherits_effects = !truth
             .outgoing(instance, layout.instance_prior_effect_relation)?
@@ -77,6 +91,7 @@ pub(in crate::domain_computation::primary_graph) fn read_live_instances(
             live_membership: membership.relation_id,
             transitions,
             inherits_effects,
+            owner_custody_pending,
         });
     }
     instances.sort_unstable_by_key(|live| live.instance);
@@ -87,12 +102,13 @@ fn read_transition(
     truth: &mut WorkflowAdoptionTruth<'_>,
     layout: &WorthQueryWorkflowLayout,
     transition: EntityId,
-) -> Result<WorkflowInventoriedTransition, WorkflowAdoptionReadDenial> {
+) -> Result<ReadTransition, WorkflowAdoptionReadDenial> {
     let unreadable = WorkflowAdoptionReadDenial::UnreadableEntity { entity: transition };
     let record = truth.entity(transition, layout.transition.entity_kind)?;
     if record.u64(&layout.transition.protocol_version)? != WORKFLOW_FACT_PROTOCOL_VERSION {
         return Err(unreadable);
     }
+    let identity = record.text(&layout.transition.identity)?;
     let occurrence = record.u64(&layout.transition.occurrence)?;
     let outcome = super::decode_transition_outcome(record.u64(&layout.transition.outcome)?)
         .ok_or(unreadable)?;
@@ -100,10 +116,13 @@ fn read_transition(
         .optional_text(&layout.transition.operation_receipt_identity)?
         .is_some();
     let node = truth.single_target(transition, layout.transition_node_relation)?;
-    Ok(WorkflowInventoriedTransition {
-        node,
-        occurrence,
-        outcome,
-        receipted,
+    Ok(ReadTransition {
+        inventoried: WorkflowInventoriedTransition {
+            node,
+            occurrence,
+            outcome,
+            receipted,
+        },
+        identity,
     })
 }

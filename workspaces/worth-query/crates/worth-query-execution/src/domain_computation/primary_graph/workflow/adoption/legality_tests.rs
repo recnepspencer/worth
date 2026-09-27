@@ -61,7 +61,7 @@ const fn transition(
 #[test]
 fn fresh_instance_holds_no_custody() {
     assert_eq!(
-        instance_custody(&approval_gated(), &[], false),
+        instance_custody(&approval_gated(), &[], false, false),
         Custody::Unperformed
     );
 }
@@ -69,12 +69,12 @@ fn fresh_instance_holds_no_custody() {
 #[test]
 fn inherited_effects_perform_but_never_settle_an_approval() {
     assert_eq!(
-        instance_custody(&approval_gated(), &[], true),
+        instance_custody(&approval_gated(), &[], true, false),
         Custody::Performed
     );
     let transitions = [transition(APPROVAL, 1, Outcome::Approved, false)];
     assert!(matches!(
-        instance_custody(&approval_gated(), &transitions, true),
+        instance_custody(&approval_gated(), &transitions, true, false),
         Custody::ApprovalOutstanding { .. }
     ));
 }
@@ -83,7 +83,7 @@ fn inherited_effects_perform_but_never_settle_an_approval() {
 fn approved_operation_awaiting_settlement_is_outstanding() {
     let transitions = [transition(APPROVAL, 1, Outcome::Approved, false)];
     assert_eq!(
-        instance_custody(&approval_gated(), &transitions, false),
+        instance_custody(&approval_gated(), &transitions, false, false),
         Custody::ApprovalOutstanding {
             approval_node_path: "approve".to_owned(),
         }
@@ -98,7 +98,7 @@ fn a_receipt_before_the_latest_approval_does_not_settle_it() {
         transition(APPROVAL, 3, Outcome::Approved, false),
     ];
     assert!(matches!(
-        instance_custody(&approval_gated(), &transitions, false),
+        instance_custody(&approval_gated(), &transitions, false, false),
         Custody::ApprovalOutstanding { .. }
     ));
 }
@@ -110,8 +110,26 @@ fn a_receipted_operation_after_approval_settles_it() {
         transition(OPERATION, 2, Outcome::Completed, true),
     ];
     assert_eq!(
-        instance_custody(&approval_gated(), &transitions, false),
+        instance_custody(&approval_gated(), &transitions, false, false),
         Custody::Performed
+    );
+}
+
+#[test]
+fn an_operation_its_owner_holds_outranks_every_settled_history() {
+    // A retried operation: the first run settled after the approval, the
+    // second committed into its owner's custody and has not settled.
+    let transitions = [
+        transition(APPROVAL, 1, Outcome::Approved, false),
+        transition(OPERATION, 2, Outcome::Completed, true),
+    ];
+    assert_eq!(
+        instance_custody(&approval_gated(), &transitions, false, true),
+        Custody::OperationInOwnerCustody
+    );
+    assert_eq!(
+        instance_custody(&approval_gated(), &[], true, true),
+        Custody::OperationInOwnerCustody
     );
 }
 
@@ -119,7 +137,7 @@ fn a_receipted_operation_after_approval_settles_it() {
 fn a_rejected_approval_is_not_outstanding() {
     let transitions = [transition(APPROVAL, 1, Outcome::Rejected, false)];
     assert_eq!(
-        instance_custody(&approval_gated(), &transitions, false),
+        instance_custody(&approval_gated(), &transitions, false, false),
         Custody::Unperformed
     );
 }
@@ -163,4 +181,7 @@ fn instance_law_covers_every_compatibility_and_custody() {
     );
     assert!(instance_dispositions(&incompatible, &Custody::Performed).is_empty());
     assert!(instance_dispositions(&incompatible, &outstanding).is_empty());
+    for compatibility in [&compatible, &incompatible] {
+        assert!(instance_dispositions(compatibility, &Custody::OperationInOwnerCustody).is_empty());
+    }
 }

@@ -38,6 +38,10 @@ pub enum WorthQueryWorkflowInstanceCustody {
     /// delivery or performed-effect recovery is still pending under the
     /// source program.
     ApprovalOutstanding { approval_node_path: String },
+    /// An external operation committed into its owner's custody and has not
+    /// settled. Its owner settles it under the source program; until then
+    /// the instance can be neither carried nor cancelled.
+    OperationInOwnerCustody,
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]

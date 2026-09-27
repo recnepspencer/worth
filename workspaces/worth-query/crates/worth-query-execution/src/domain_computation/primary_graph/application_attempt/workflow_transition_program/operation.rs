@@ -136,20 +136,19 @@ where
             return Err(mismatch(selected.node_path()));
         }
         // An external operation records its custody on the instance; the
-        // reading it replaces travels with the operation's authority.
-        facts.push(
-            self.lease
-                .handle()
-                .with_runtime(|runtime| {
-                    instance_binding::owner_custody(
-                        runtime,
-                        self.lease.snapshot(),
-                        layout,
-                        instance.entity_id(),
-                    )
-                })?
-                .1,
-        );
+        // reading it replaces travels with the operation's authority. This
+        // advance cannot see the operation's own external posture, so the
+        // reading is pinned for every operation; only an external commit
+        // ever writes the field, so a local operation is never staled by it.
+        let (_, custody) = self.lease.handle().with_runtime(|runtime| {
+            instance_binding::owner_custody(
+                runtime,
+                self.lease.snapshot(),
+                layout,
+                instance.entity_id(),
+            )
+        })?;
+        facts.push(custody);
         let remaining = self
             .admission
             .allowed_graph_contract()
@@ -189,7 +188,7 @@ where
                 .allowed_graph_contract()
                 .decision_fact_budget()
         {
-            return Err(denial(
+            return Err(WorthQueryApplicationAttemptDenial::new(
                 WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
                 self.admission.operation(),
             ));
@@ -382,17 +381,10 @@ where
 }
 
 fn mismatch(subject: impl Into<String>) -> WorthQueryApplicationAttemptDenial {
-    denial(
+    WorthQueryApplicationAttemptDenial::new(
         WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,
         subject,
     )
-}
-
-fn denial(
-    kind: WorthQueryApplicationAttemptDenialKind,
-    subject: impl Into<String>,
-) -> WorthQueryApplicationAttemptDenial {
-    WorthQueryApplicationAttemptDenial::new(kind, subject)
 }
 
 #[cfg(test)]
