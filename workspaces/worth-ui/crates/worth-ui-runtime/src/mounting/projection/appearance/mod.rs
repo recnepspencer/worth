@@ -300,12 +300,8 @@ impl UiMountedAppearanceSidecar {
         input: UiMountedAppearanceLoweringInput,
     ) -> Result<worth_ui_host_contract::UiMountedAppearanceWork, UiMountedAppearanceLoweringDenial>
     {
-        let successor = lowering::lower(input)?;
-        let delta = delta::work(self.current.as_ref(), &successor)?;
-        self.counters.observe(&delta.work, delta.summary);
-        self.last_delta = Some(delta.summary);
-        self.current = Some(successor);
-        Ok(delta.work)
+        let prepared = self.prepare_mount(input)?;
+        Ok(self.commit(prepared))
     }
 
     pub(crate) fn reconstruct(
@@ -313,12 +309,8 @@ impl UiMountedAppearanceSidecar {
         input: UiMountedAppearanceLoweringInput,
     ) -> Result<worth_ui_host_contract::UiMountedAppearanceWork, UiMountedAppearanceLoweringDenial>
     {
-        reconstruction::rebuild(self.current.as_ref(), input).map(|(delta, facts)| {
-            self.counters.observe(&delta.work, delta.summary);
-            self.last_delta = Some(delta.summary);
-            self.current = Some(facts);
-            delta.work
-        })
+        let prepared = self.prepare_reconstruct(input)?;
+        Ok(self.commit(prepared))
     }
 
     #[cfg(test)]

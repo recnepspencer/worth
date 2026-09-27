@@ -1,6 +1,4 @@
 use crate::evidence::UiAllocationNeighborhoodScope;
-use std::collections::BTreeMap;
-
 #[derive(Clone, Debug, PartialEq)]
 pub(super) struct UiAllocationReceiptLedgerState {
     pub(super) committed_by_scope: crate::runtime::persistent_index::UiPersistentOrdMap<
@@ -10,8 +8,12 @@ pub(super) struct UiAllocationReceiptLedgerState {
     pub(super) mounted_projection_catalog: super::UiMountedAllocationProjectionCatalog,
     pub(super) mounted_projection_journal:
         super::mounted_projection_journal::UiMountedAllocationProjectionJournal,
-    pub(super) completed_transactions: BTreeMap<u64, Vec<super::UiCommittedAllocationReplan>>,
-    pub(super) denied_transactions: BTreeMap<
+    /// History every successor forks, so it shares rather than copies.
+    pub(super) completed_transactions: crate::runtime::persistent_index::UiPersistentOrdMap<
+        u64,
+        Vec<super::UiCommittedAllocationReplan>,
+    >,
+    pub(super) denied_transactions: crate::runtime::persistent_index::UiPersistentOrdMap<
         u64,
         Vec<(
             super::UiAllocationReplanTransaction,
@@ -31,8 +33,8 @@ impl UiAllocationReceiptLedgerState {
             committed_by_scope: Default::default(),
             mounted_projection_catalog: Default::default(),
             mounted_projection_journal: Default::default(),
-            completed_transactions: BTreeMap::new(),
-            denied_transactions: BTreeMap::new(),
+            completed_transactions: Default::default(),
+            denied_transactions: Default::default(),
             latest_frame_epoch: None,
             next_transaction_generation: 0,
             runtime_generation,

@@ -361,9 +361,7 @@ impl UiAllocationReceiptLedger {
         }
         successor
             .completed_transactions
-            .entry(replay_key)
-            .or_default()
-            .push(committed.clone());
+            .edit_or_default(replay_key, |bucket| bucket.push(committed.clone()));
         super::UiAllocationLedgerPreparation::Prepared(Box::new(
             super::UiPreparedAllocationLedgerTransition::new(
                 predecessor,

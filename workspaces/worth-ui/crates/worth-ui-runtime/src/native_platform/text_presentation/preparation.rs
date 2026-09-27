@@ -129,7 +129,7 @@ pub(crate) fn prepare_mounted_semantic_text<'work>(
 
 pub(crate) fn prepare_from_foreground_reuse<'work>(
     work: UiMountedPresentationWorkView<'work>,
-    receipts: &[UiMountedTextForegroundReuseReceipt],
+    receipts: &[&UiMountedTextForegroundReuseReceipt],
     basis: UiMountedTextForegroundPresentationBasis,
     resolve: impl Fn(
         worth_ui_host_contract::UiQualifiedTextLayoutIdentity,
@@ -376,3 +376,7 @@ mod retained_demand_tests;
 #[cfg(test)]
 #[path = "preparation/currentness_tests.rs"]
 mod currentness_tests;
+
+#[cfg(test)]
+#[path = "preparation/pin_continuity_tests.rs"]
+mod pin_continuity_tests;

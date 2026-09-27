@@ -218,6 +218,21 @@ impl UiNativeTextAtlas {
         }
     }
 
+    /// Whether the atlas holds `request`'s pin, by its identity alone.
+    pub(crate) fn is_pinned(
+        &self,
+        request: worth_ui_host_contract::UiGlyphRasterPinRequest,
+    ) -> bool {
+        self.core
+            .borrow()
+            .pins
+            .contains_key(&PinIdentity::new(request.layout_identity(), request.key()))
+    }
+
+    pub(crate) fn pin_count(&self) -> usize {
+        self.core.borrow().pins.len()
+    }
+
     pub(crate) fn pin_observations(&self) -> Box<[UiNativeTextPinObservation]> {
         self.core
             .borrow()

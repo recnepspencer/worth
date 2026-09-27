@@ -196,7 +196,8 @@ impl UiMountedCanonicalBoxBasis {
 pub(crate) struct UiMountedTextForegroundReuseReceipt {
     mechanic: UiMountedTextForegroundReuseMechanic,
     demand: worth_ui_text::UiGlyphRasterDemandBatch,
-    binding_pins: Box<[UiGlyphRasterPinRequest]>,
+    /// Shared by every receipt one presentation commits, so it is held once.
+    binding_pins: Arc<[UiGlyphRasterPinRequest]>,
     basis: UiMountedTextForegroundPresentationBasis,
 }
 
@@ -205,13 +206,13 @@ impl UiMountedTextForegroundReuseReceipt {
         command: UiMountedPaintCommandIdentity,
         mechanic: &UiMountedSemanticTextMechanic,
         demand: &worth_ui_text::UiGlyphRasterDemandBatch,
-        binding_pins: &[UiGlyphRasterPinRequest],
+        binding_pins: &Arc<[UiGlyphRasterPinRequest]>,
         basis: UiMountedTextForegroundPresentationBasis,
     ) -> Self {
         Self {
             mechanic: UiMountedTextForegroundReuseMechanic::from_mechanic(command, mechanic),
             demand: demand.clone(),
-            binding_pins: binding_pins.to_vec().into_boxed_slice(),
+            binding_pins: Arc::clone(binding_pins),
             basis,
         }
     }
@@ -256,8 +257,20 @@ impl UiMountedTextForegroundReuseReceipt {
             .all(|record| cache.contains_key(record.key()))
     }
 
-    pub(crate) fn pins_are_continuous(&self, binding_pins: &[UiGlyphRasterPinRequest]) -> bool {
-        same_pin_set(&self.binding_pins, binding_pins)
+    /// Receipts committed together share one pin set, so a receipt holding
+    /// the set its predecessor passed with is not compared again.
+    pub(crate) fn pins_are_continuous<'receipt>(
+        receipts: impl IntoIterator<Item = &'receipt Self>,
+        binding_pins: &[UiGlyphRasterPinRequest],
+    ) -> bool {
+        let mut verified: Option<&Arc<[UiGlyphRasterPinRequest]>> = None;
+        receipts.into_iter().all(|receipt| {
+            let pins = &receipt.binding_pins;
+            let continuous = verified.is_some_and(|prior| Arc::ptr_eq(prior, pins))
+                || same_pin_set(pins, binding_pins);
+            verified = Some(pins);
+            continuous
+        })
     }
 
     pub(crate) fn demand(&self) -> &worth_ui_text::UiGlyphRasterDemandBatch {
@@ -284,5 +297,9 @@ fn same_foreground_shape(
 }
 
 fn same_pin_set(left: &[UiGlyphRasterPinRequest], right: &[UiGlyphRasterPinRequest]) -> bool {
-    left.len() == right.len() && left.iter().all(|pin| right.contains(pin))
+    if left.len() != right.len() {
+        return false;
+    }
+    let right_set = right.iter().collect::<std::collections::HashSet<_>>();
+    left.iter().all(|pin| right_set.contains(pin))
 }

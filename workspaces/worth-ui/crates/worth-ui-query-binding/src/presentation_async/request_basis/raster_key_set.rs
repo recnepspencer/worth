@@ -1,4 +1,3 @@
-use worth_query::facade::foundation::WorthQueryAsyncRequestIdentityPart as Part;
 use worth_ui_host_contract::{UiGlyphRasterKey, UiGlyphRasterSource};
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
@@ -8,7 +7,7 @@ pub struct WorthUiPresentationRasterKeySetBasis {
 
 impl WorthUiPresentationRasterKeySetBasis {
     pub(crate) fn from_runtime(mut keys: Vec<UiGlyphRasterKey>) -> Self {
-        keys.sort_by_cached_key(key_sort_parts);
+        keys.sort_by_cached_key(key_sort_key);
         keys.dedup();
         Self {
             keys: keys.into_boxed_slice(),
@@ -24,37 +23,41 @@ impl WorthUiPresentationRasterKeySetBasis {
     }
 }
 
-pub(super) fn key_sort_parts(key: &UiGlyphRasterKey) -> Vec<Part> {
+type RasterFaceFacts = (u64, [u8; 32], u64, [u8; 32], u32, [u8; 32]);
+type RasterGlyphFacts = (u32, u16, u32, u64, u32, u16, u16);
+pub(super) type RasterKeySortKey = (RasterFaceFacts, RasterGlyphFacts, Vec<([u8; 4], u32)>);
+
+/// Keys order by their fields in identity encoding order, then variation
+/// axes; the key is typed so sorting formats nothing.
+pub(super) fn key_sort_key(key: &UiGlyphRasterKey) -> RasterKeySortKey {
     let face = key.face();
     let origin = key.fractional_origin();
-    let mut parts = vec![
-        Part::unsigned("font-generation", key.font_collection_generation().get()),
-        Part::bytes32("font-lineage", key.font_collection_lineage().digest()),
-        Part::unsigned("profile", key.profile_generation().get()),
-        Part::bytes32("font-bytes", face.font_bytes_digest()),
-        Part::unsigned("face-index", u64::from(face.face_index())),
-        Part::bytes32("selection", face.selection_digest()),
-        Part::unsigned("glyph", u64::from(key.glyph_id())),
-        Part::unsigned("palette", u64::from(key.palette().index())),
-        Part::unsigned("size", u64::from(key.size().millipoints())),
-        Part::unsigned("source", raster_source_ordinal(key.source())),
-        Part::unsigned("dpi", u64::from(key.dpi_milli())),
-        Part::unsigned("origin-x", u64::from(origin.x_over_64() as u16)),
-        Part::unsigned("origin-y", u64::from(origin.y_over_64() as u16)),
-    ];
-    for (index, axis) in key.variations().records().enumerate() {
-        parts.extend([
-            Part::bytes4(format!("axis.{index:02}.tag"), axis.axis()),
-            Part::unsigned(
-                format!("axis.{index:02}.value"),
-                u64::from(axis.value_milli() as u32),
-            ),
-        ]);
-    }
-    parts
+    (
+        (
+            key.font_collection_generation().get(),
+            key.font_collection_lineage().digest(),
+            key.profile_generation().get(),
+            face.font_bytes_digest(),
+            face.face_index(),
+            face.selection_digest(),
+        ),
+        (
+            key.glyph_id(),
+            key.palette().index(),
+            key.size().millipoints(),
+            raster_source_ordinal(key.source()),
+            key.dpi_milli(),
+            origin.x_over_64() as u16,
+            origin.y_over_64() as u16,
+        ),
+        key.variations()
+            .records()
+            .map(|axis| (axis.axis(), axis.value_milli() as u32))
+            .collect(),
+    )
 }
 
-const fn raster_source_ordinal(source: UiGlyphRasterSource) -> u64 {
+pub(super) const fn raster_source_ordinal(source: UiGlyphRasterSource) -> u64 {
     match source {
         UiGlyphRasterSource::ColorOutline => 0,
         UiGlyphRasterSource::ColorBitmap => 1,
@@ -62,3 +65,7 @@ const fn raster_source_ordinal(source: UiGlyphRasterSource) -> u64 {
         UiGlyphRasterSource::LastResort => 3,
     }
 }
+
+#[cfg(test)]
+#[path = "sort_key_tests.rs"]
+mod tests;

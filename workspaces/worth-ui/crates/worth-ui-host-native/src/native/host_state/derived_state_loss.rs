@@ -188,11 +188,10 @@ impl UiNativeHostState {
         let Some(requests) = self.text_pins_by_binding.get(&binding) else {
             return false;
         };
-        let observed = self.text_atlas.pin_observations();
         !requests.is_empty()
             && requests
                 .iter()
-                .all(|request| observed.iter().any(|pin| pin.matches(*request)))
+                .all(|request| self.text_atlas.is_pinned(*request))
     }
 
     fn presentation_affinity_is_live_for(&self, binding: u64) -> bool {

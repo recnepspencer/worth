@@ -203,9 +203,8 @@ impl UiNativeHostState {
             .with_physical_signal(self.physical_signal.observation())
             .with_host_state(self);
         self.peak_census = self.peak_census.max(self.resources.peak()).max(current);
-        let pins = self.text_atlas.pin_observations();
-        if pins.len() > self.peak_text_pins.len() {
-            self.peak_text_pins = pins;
+        if self.text_atlas.pin_count() > self.peak_text_pins.len() {
+            self.peak_text_pins = self.text_atlas.pin_observations();
         }
     }
 

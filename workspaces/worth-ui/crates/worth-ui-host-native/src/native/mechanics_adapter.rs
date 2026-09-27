@@ -214,19 +214,16 @@ impl WorthUiHostMechanicsAdapter for WorthUiNativeMechanicsAdapter {
             );
         }
         let binding_pins = state.text_pins_by_binding.remove(&key).unwrap_or_default();
-        let live_pins = state.text_atlas.pin_observations();
+        let retained = state
+            .text_pins_by_binding
+            .iter()
+            .filter(|(retained_binding, _)| state.registrations.contains_key(retained_binding))
+            .flat_map(|(_, retained)| retained.iter().copied())
+            .collect::<std::collections::HashSet<_>>();
         let releases = binding_pins
             .iter()
             .copied()
-            .filter(|pin| {
-                !state
-                    .text_pins_by_binding
-                    .iter()
-                    .any(|(retained_binding, retained)| {
-                        state.registrations.contains_key(retained_binding) && retained.contains(pin)
-                    })
-            })
-            .filter(|pin| live_pins.iter().any(|live| live.matches(*pin)))
+            .filter(|pin| !retained.contains(pin) && state.text_atlas.is_pinned(*pin))
             .collect::<Vec<_>>();
         if !releases.is_empty() {
             let Ok(attempt) =
