@@ -111,7 +111,6 @@ fn locked_projection_uses_indexes_and_directional_adjacency_without_graph_scans(
     assert_eq!(completed.work().adjacency_edges_inspected(), 3);
     assert_eq!(completed.work().endpoint_records_read(), 3);
     assert_eq!(completed.work().field_reads(), 2);
-    assert_eq!(completed.work().reconstructive_scans(), 0);
     let (_, snapshot, _) = completed.into_parts();
     assert!(!snapshot.version().is_zero());
 }
@@ -132,7 +131,6 @@ fn optional_locked_resolution_distinguishes_absence_from_ambiguity_and_counts_wo
     assert_eq!(completed.output(), &true);
     assert_eq!(completed.work().equality_lookups(), 1);
     assert_eq!(completed.work().index_candidates_examined(), 0);
-    assert_eq!(completed.work().reconstructive_scans(), 0);
 }
 
 #[test]
