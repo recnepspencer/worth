@@ -84,6 +84,7 @@ pub(crate) fn present_sample<Port: UiNativePresentationPort>(
             Port::present(
                 graphics,
                 atlas_gpu,
+                view.attempt(),
                 plan,
                 defer_initial_observation,
                 lifecycle,

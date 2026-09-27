@@ -44,7 +44,9 @@ mod unchanged;
 use initial_validation::{initial_operations, validate_initial};
 #[cfg(test)]
 pub(crate) use pending_wgpu_readback::prove_pending_readback_handoff;
-use pipeline::{draw_presentation_operations, draw_retained_to_surface, retained_transfer};
+use pipeline::{
+    draw_presentation_operations, draw_retained_to_surface, retained_transfer, stamp_transfer,
+};
 pub(crate) use pipeline::{presentation_pipelines, UiNativePresentationPipelines};
 use raster::{rectangle_vertices, GlyphVertex, RasterRect, RasterVertex};
 use retained_evidence_copy::copy_evidence_pixels;
@@ -193,6 +195,7 @@ pub(crate) fn present_initial<Port: UiNativePresentationPort>(
     let result = Port::present(
         graphics,
         atlas_gpu,
+        view.attempt(),
         UiNativePresentationPortPlan {
             clear_retained_target: true,
             operations: operations.into_boxed_slice(),

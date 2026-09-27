@@ -17,6 +17,7 @@ mod presentation;
 mod readiness;
 #[cfg(feature = "certification-support")]
 mod readiness_certification;
+mod resize_trace;
 mod solicited_effect;
 mod text_atlas;
 

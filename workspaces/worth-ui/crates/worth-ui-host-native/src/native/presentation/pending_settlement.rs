@@ -302,6 +302,7 @@ impl UiNativePendingSurfaceSettlement {
             effects.completion(),
             cost,
         );
+        crate::native::resize_trace::accepted(basis.attempt().diagnostic_value());
         #[cfg(feature = "certification-support")]
         state.apply_completed_qualified_derived_state_loss(key);
         #[cfg(feature = "certification-support")]

@@ -290,6 +290,37 @@ past that content would outgrow the window where nothing scrolls it into view.
 Platform Pulse stops at 800 by 600, the smallest extent its dashboard is
 specified at. Its page's columns fit down to 764 points across.
 
+### Resize Timing Trace
+
+Setting `WORTH_UI_RESIZE_TRACE` to a file path makes the host timestamp its
+extent path on the Windows performance counter, which an outside capture reads
+on the same basis. The file starts with
+`worth-ui-resize-trace 1 frequency <counts per second>`, and each later line is
+`<counter> <event> <fields>`:
+
+- `observed <width> <height>` when the window reports an extent;
+- `consumed <width> <height>` when the visible surface has been replaced at an
+  extent, including one a scale change reads without an observation;
+- `submitted <frame> <width> <height>` when a frame is handed to the surface;
+- `accepted <frame>` when a painted frame's presentation is acknowledged.
+
+The frame is the presentation attempt identity. The initial surface, a
+minimized or suspended extent, an extent equal to the current one, and an
+acknowledgement that paints nothing are not traced. A superseded or
+indeterminate completion is not traced either, so a frame can be seen that was
+never accepted. A write failure ends the trace, so a trace is complete up to
+its last line. Without the variable, or off Windows, nothing is traced and
+nothing is drawn.
+
+While tracing, each submitted frame also carries a stamp at the client origin:
+two rows of eighteen 8-pixel cells, 144 by 16 physical pixels. The first row is
+a white then a black sync cell and the low 16 bits of the attempt identity,
+most significant bit first, white for one. The second row is the first
+inverted, so a torn or blended capture fails to decode instead of naming a
+wrong frame. The stamp is drawn after the retained transfer under a scissor,
+so it replaces only its own pixels. The trace is qualification evidence, not a
+product feature; the dashboard's top-left corner is covered while it runs.
+
 ## Presented-Source Readback
 
 The Windows native host records one capture source only after presentation has
