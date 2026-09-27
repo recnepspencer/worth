@@ -66,22 +66,18 @@ impl WorthUiNativeApplicationShell {
             .retry_wake_clearing_answers()
     }
 
-    /// Presents again a frame the host rejected before effects, landing the
-    /// outcome as every shell presentation does.
+    /// Presents again a frame the host rejected before effects, through the
+    /// shell's one prepared-frame path, so a reconstruction the shell still
+    /// owes retries as that reconciliation. Callers retry in the call that
+    /// received the rejection, so no newer replacement can intervene.
     pub(crate) fn retry_rejected_frame_presentation(
         &mut self,
         rejected: crate::mounting::UiMountedRejectedFrame,
         deadline: worth_ui_host_contract::UiPresentationDeadline,
         now_tick: u64,
-    ) -> crate::mounting::UiMountedFrameOutcome {
-        let answers = self.host_retry_wake_clearing_answers();
-        let outcome = self.session.present_prepared_mounted_frame_internal(
-            rejected.into_frame(),
-            deadline,
-            now_tick,
-        );
-        self.land_frame_outcome(&outcome, answers);
-        outcome
+    ) -> Result<crate::mounting::UiMountedFrameOutcome, crate::mounting::UiMountedIdentityDenial>
+    {
+        self.present_prepared_frame(rejected.into_frame(), deadline.tick(), now_tick)
     }
 
     /// Whether the host rejected `outcome` before effects only while it waits

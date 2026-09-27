@@ -65,7 +65,7 @@ fn system_dpi() -> Result<u32, String> {
 }
 
 /// The key of the primary button, which the user may have swapped.
-fn primary_button() -> co::VK {
+pub fn primary_button() -> co::VK {
     if w::GetSystemMetrics(co::SM::SWAPBUTTON) == 0 {
         co::VK::LBUTTON
     } else {

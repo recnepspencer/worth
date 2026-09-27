@@ -371,6 +371,15 @@ capture sampled too coarsely to resolve a 25 ms gap or ended without its
 closing line; every other grade fails outright. Timings from a traced run are
 not comparable with untraced runs.
 
+The tool's `drive` command runs a qualification with no one at the controls.
+It launches the host with the trace, then drags the window's bottom-right
+corner with operating-system input from the launch extent toward 780x580, past
+the 800x600 floor, and back, once every four seconds while capturing. The
+default 12 seconds make three round trips; other lengths round up to whole
+round trips. It drives only a window the launched host owns and presses only
+where that window is on top. It then closes the window and grades the run.
+A host that does not exit cleanly fails the run whatever its timing.
+
 ## Presented-Source Readback
 
 The Windows native host records one capture source only after presentation has

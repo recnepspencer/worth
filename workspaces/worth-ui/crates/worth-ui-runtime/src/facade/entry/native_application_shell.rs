@@ -284,12 +284,16 @@ impl WorthUiNativeApplicationShell {
             )
     }
 
+    /// Presents a prepared frame and lands its outcome. While the shell owes
+    /// a surface reconciliation the frame presents as that reconciliation:
+    /// the binding it replaces stays blocked until a publication proves the
+    /// replacement, so ordinary admission would refuse it.
     pub(crate) fn present_prepared_frame(
         &mut self,
         frame: crate::mounting::UiPreparedMountedFrame,
         deadline_tick: u64,
         now_tick: u64,
-    ) -> Result<UiMountedFrameOutcome, ()> {
+    ) -> Result<UiMountedFrameOutcome, crate::mounting::UiMountedIdentityDenial> {
         self.refresh_native_surface_reconciliation();
         let answers = self.host_retry_wake_clearing_answers();
         let outcome = if let Some(replacement) = self.pending_native_surface_reconciliation() {
@@ -299,8 +303,7 @@ impl WorthUiNativeApplicationShell {
                     &[replacement],
                     UiPresentationDeadline::at_tick(deadline_tick),
                     now_tick,
-                )
-                .map_err(|_| ())?
+                )?
         } else {
             self.session.present_prepared_mounted_frame_internal(
                 frame,

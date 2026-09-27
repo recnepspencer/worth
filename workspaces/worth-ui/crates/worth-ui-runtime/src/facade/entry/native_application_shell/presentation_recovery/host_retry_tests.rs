@@ -106,3 +106,72 @@ fn every_host_answer_but_timeout_or_occlusion_ends_the_host_retry() {
         );
     }
 }
+
+/// A live resize reconstructs onto a replacement binding while the published
+/// one waits to be reconciled. When the host defers that frame's text atlas,
+/// its retry must still be the reconciliation, or admission refuses it.
+#[test]
+fn an_atlas_deferred_reconstruction_retries_as_its_reconciliation() {
+    use crate::certification_support::ScriptedSurfaceCompletion;
+    use crate::facade::mounted::UiHostSurfaceCancellationOutcome;
+
+    for asynchronous in [false, true] {
+        let host = ScriptedPresentationHost::native_display();
+        let mut shell = crate::runtime::tests::active_application_session_test_support::
+            source_backed_component_app_with_host_and_viewport_allocation(host.clone())
+            .launch_native_surface()
+            .expect("native viewport shell launches");
+        crate::facade::entry::native_application_identity_trace_test_support::
+            install_bound_surface_geometry(&mut shell);
+        shell.observe_native_viewport_readiness([800, 600], 1_000, false);
+        host.push_native_display_presented();
+        let Ok(UiMountedFrameOutcome::Published(_)) = shell.present_frame(1, 0) else {
+            panic!("baseline frame publishes");
+        };
+        shell.observe_native_viewport_readiness([820, 600], 1_000, true);
+        host.set_viewport_extent([820.0, 600.0]);
+        let deferred = UiHostSurfacePresentationDenial::TextAtlasPresentationDeferred;
+        if asynchronous {
+            host.push_in_flight(
+                vec![ScriptedSurfaceCompletion::RejectedBeforeEffects(deferred)],
+                UiHostSurfaceCancellationOutcome::CancelledBeforeEffects,
+            );
+        } else {
+            host.push_presentation(ScriptedPresentationOutcome::RejectedBeforeEffects(deferred));
+        }
+        let outcome = shell
+            .reconstruct_native_surface_successor(10_000, 1)
+            .expect("the reconstruction prepares");
+        let outcome = match outcome {
+            UiMountedFrameOutcome::InFlight(pending) if asynchronous => {
+                shell.complete_frame_presentation(pending, 250)
+            }
+            outcome => outcome,
+        };
+        assert!(matches!(
+            outcome,
+            UiMountedFrameOutcome::RejectedBeforeEffects(_)
+        ));
+        assert!(shell.pending_native_surface_reconciliation().is_some());
+
+        host.push_native_display_as_issued();
+        match shell
+            .resume_frame_presentation(outcome, 10_001, 250)
+            .expect("the deferred reconstruction resumes")
+        {
+            UiMountedFrameOutcome::Reconciled(_) => {}
+            UiMountedFrameOutcome::AdmissionDenied(denial) => {
+                panic!("retry admission: {:?}", denial.denial())
+            }
+            UiMountedFrameOutcome::RejectedBeforeEffects(rejected) => {
+                panic!(
+                    "retry rejection ({asynchronous}): {:?}",
+                    rejected.rejections()
+                )
+            }
+            other => panic!("retry outcome: {:?}", std::mem::discriminant(&other)),
+        }
+        assert!(shell.pending_native_surface_reconciliation().is_none());
+        assert!(!shell.native_viewport_presentation_pending());
+    }
+}

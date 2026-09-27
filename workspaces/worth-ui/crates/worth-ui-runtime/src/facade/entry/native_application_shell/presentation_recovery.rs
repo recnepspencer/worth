@@ -13,6 +13,8 @@ pub enum WorthUiNativePresentationRecoveryDenial {
     ViewportSettlementOccurrenceGeometry(crate::mounting::UiMountedOccurrenceGeometryDenial),
     FramePreparationUnavailable,
     FramePresentationUnavailable,
+    /// Admission refused a prepared frame, for the reason it names.
+    FramePresentationDenied(crate::mounting::UiMountedIdentityDenial),
     RasterReconstructionObservationUnavailable,
 }
 
@@ -116,6 +118,7 @@ impl super::WorthUiNativeApplicationShell {
                     worth_ui_host_contract::UiPresentationDeadline::at_tick(deadline_tick),
                     now_tick,
                 )
+                .map_err(WorthUiNativePresentationRecoveryDenial::FramePresentationDenied)?
             } else {
                 crate::mounting::UiMountedFrameOutcome::RejectedBeforeEffects(rejected)
             }
@@ -264,7 +267,7 @@ impl super::WorthUiNativeApplicationShell {
                 worth_ui_host_contract::UiPresentationDeadline::at_tick(deadline_tick),
                 now_tick,
             )
-            .map_err(|_| WorthUiNativePresentationRecoveryDenial::FramePresentationUnavailable)?;
+            .map_err(WorthUiNativePresentationRecoveryDenial::FramePresentationDenied)?;
         let reconstructed_rasters = self.session.mounted.take_reconstructed_raster_cache_items();
         if reconstructed_rasters > 0 {
             self.record_runtime_derived_state_reconstruction(reconstructed_rasters)

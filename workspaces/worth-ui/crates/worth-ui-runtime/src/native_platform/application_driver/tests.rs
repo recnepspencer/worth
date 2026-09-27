@@ -1,4 +1,7 @@
 #[cfg(feature = "certification-support")]
+#[path = "tests/atlas_retry.rs"]
+mod atlas_retry;
+#[cfg(feature = "certification-support")]
 #[path = "tests/input_backpressure.rs"]
 mod input_backpressure;
 #[path = "tests/motion_settlement.rs"]
@@ -367,7 +370,7 @@ fn installed_but_inactive_motion_does_not_arm_native_readiness() {
 }
 
 #[cfg(feature = "certification-support")]
-fn retryable_program() -> (
+pub(super) fn retryable_program() -> (
     crate::certification_support::ScriptedPresentationHost,
     crate::facade::WorthUiNativeApplicationShell,
     super::program_progress::UiNativeApplicationProgramProgress,
