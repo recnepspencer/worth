@@ -261,6 +261,15 @@ declared flow changed; unchanged-width text keeps its shaping through the
 drag, including across height-only changes. Logical sizes of icons, radii, and
 type do not change with the window.
 
+A window spec may name a minimum logical client extent with
+`with_minimum_logical_size`; the drag then stops there. Preparation denies a
+zero minimum and one larger than the initial extent on either axis
+(`WindowMinimumExceedsInitialExtent`). An application whose layout scrolls on
+one axis only names a minimum no narrower than its tracks still fit, since
+past that content would outgrow the window where nothing scrolls it into view.
+Platform Pulse stops at 800 by 600, the smallest extent its dashboard is
+specified at. Its page's columns fit down to 764 points across.
+
 ## Presented-Source Readback
 
 The Windows native host records one capture source only after presentation has

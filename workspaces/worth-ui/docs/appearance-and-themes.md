@@ -343,8 +343,7 @@ A `.wui` layout restates a registered layout; it cannot yet be the sole
 source, because registration checks membership and containment against it.
 Layout tracks are whole logical points. An ellipsis needs a qualified U+2026
 glyph in the font collection; without one, shaping is denied with
-`EllipsisRequiresQualifiedGlyph`. A container's content extent is measured
-when it opens, not again while it stays open.
+`EllipsisRequiresQualifiedGlyph`.
 
 ## Anti-Patterns
 

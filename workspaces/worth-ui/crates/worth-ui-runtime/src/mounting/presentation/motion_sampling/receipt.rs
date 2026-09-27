@@ -215,6 +215,17 @@ impl UiPresentationMotionSampleReceipt {
     pub(crate) const fn geometry(self) -> Option<crate::mounting::presentation::UiAcceptedRect> {
         self.geometry
     }
+    /// How this sample moves what its target's frame laid out in its base
+    /// geometry. `None` without geometry, or when the base has no area to
+    /// carry anything laid out in it.
+    pub(crate) fn base_map(
+        self,
+    ) -> Option<crate::mounting::presentation::UiPublishedToAcceptedMap> {
+        crate::mounting::presentation::UiPublishedToAcceptedMap::of_sample(
+            self.base_geometry?,
+            self.geometry?,
+        )
+    }
     pub(crate) const fn opacity_units(self) -> u16 {
         self.opacity_units
     }

@@ -207,3 +207,101 @@ fn admitted_dismissal_is_bound_to_its_application_generation() {
         .runtime_service_resource_census()
         .is_empty());
 }
+
+fn center([x, y, width, height]: [f32; 4]) -> UiHostSurfacePosition {
+    crate::units::viewport_position_for_test(x + width / 2.0, y + height / 2.0)
+}
+
+/// Press outside at the center of `bounds`, against what is shown now, once
+/// a Motion sample on screen is what places the Portal there.
+fn press_where_sampled(
+    world: &mut World,
+    portal: crate::runtime::portal::UiPortalIdentity,
+    sequence: u64,
+    tick: u64,
+    bounds: [f32; 4],
+) -> Outcome<'_> {
+    let current = world
+        .session
+        .mounted
+        .current_presentation_for_surface(world.surfaces[0])
+        .unwrap()
+        .basis();
+    let target = crate::runtime::motion::UiMotionTargetIdentity::from_portal_owner(
+        world.surfaces[0],
+        portal.owner().mounted_instance_identity(),
+        portal.diagnostic_value(),
+    );
+    assert!(
+        world
+            .session
+            .mounted
+            .committed_motion_geometry_for_target(target, current)
+            .unwrap()
+            .is_some(),
+        "a Motion sample on screen places the popover"
+    );
+    let press = crate::facade::interaction::UiDismissInteraction::outside_press(
+        current,
+        UiHostObservationSequence::new(sequence),
+        UiHostObservationTimeBasis::PresentationRelativeTick(tick),
+        center(bounds),
+    );
+    world.session.publish_portal_dismissal(press, tick)
+}
+
+/// Dismissal reads the placement the accepted frame committed. Once a frame
+/// moves an open popover with its anchor, a press where the popover now
+/// stands is inside it, and a press where it stood before is outside.
+#[test]
+fn a_moved_popover_is_dismissed_where_it_left_and_kept_where_it_stands() {
+    use super::geometry::{install_owner_in_viewport, MOVED_TARGET_BOX, VIEWPORT};
+    use super::portal_placement_succession::committed_bounds;
+
+    let (mut world, portal) = opened();
+    let opened_at = committed_bounds(&world, portal);
+
+    install_owner_in_viewport(
+        &mut world.session,
+        world.surfaces,
+        world.instances,
+        20,
+        MOVED_TARGET_BOX,
+        VIEWPORT,
+    );
+    let moved = world.prepare();
+    world.publish_as_issued(moved, 20);
+    let moved_to = committed_bounds(&world, portal);
+    let [x, y, width, height] = moved_to;
+    let [left_x, left_y] = [
+        opened_at[0] + opened_at[2] / 2.0,
+        opened_at[1] + opened_at[3] / 2.0,
+    ];
+    assert!(
+        !(x..x + width).contains(&left_x) || !(y..y + height).contains(&left_y),
+        "the popover moved off the place it opened"
+    );
+
+    let revision = world.session.portal.as_ref().unwrap().revision();
+    assert!(matches!(
+        press_where_sampled(&mut world, portal, 1, 30, moved_to),
+        Outcome::IgnoredInsideTopmostPortal
+    ));
+    assert_eq!(world.session.portal.as_ref().unwrap().revision(), revision);
+
+    for _ in world.surfaces {
+        world.host.push_native_display_as_issued();
+    }
+    assert!(
+        matches!(
+            press_where_sampled(&mut world, portal, 2, 31, opened_at),
+            Outcome::Published(_)
+        ),
+        "where the popover opened is outside it once it has moved"
+    );
+    assert!(world
+        .session
+        .shutdown()
+        .runtime_service_resource_census()
+        .is_empty());
+}

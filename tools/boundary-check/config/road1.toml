@@ -1035,6 +1035,7 @@ mints = [
     { path = "src/mounting/portal_placement_succession.rs", items = ["viewport_rect"] },
     { path = "src/mounting/projection/frame_storage/portal_child_view.rs", items = ["UiMountedProjectionFrame::portal_child_placement_with_work"] },
     { path = "src/mounting/retention/interaction_basis.rs", items = ["UiPresentedHitTestRow::committed", "UiPresentedHitTestRow::from_mounted"] },
+    { path = "src/mounting/retention/coordinator.rs", items = ["UiMountedFrameRetentionCoordinator::presented_portal_body"] },
     { path = "src/runtime/interaction/targeting/presented_geometry.rs", items = ["UiPresentedInteractionGeometry::for_test_with_components", "UiPresentedViewportGeometry::from_current_interaction", "UiPresentedViewportGeometry::for_test"] },
   ], reason = "committed layout is published where the committed frame is read: a canonical committed box becomes published geometry" },
   { call = "UiPublishedRect::from_committed_components", callers = [
@@ -1064,8 +1065,8 @@ mints = [
     { path = "src/mounting/retention/interaction_basis.rs", items = ["UiPresentedHitTestRow::with_prepared_entrance"] },
   ], reason = "a prepared entrance maps its committed rect onto the entrance start" },
   { call = "UiPublishedToAcceptedMap::of_sample", callers = [
-    { path = "src/mounting/retention/interaction_basis.rs", items = ["UiPresentedHitTestRow::with_motion_sample"] },
-  ], reason = "a hit row maps published geometry through the accepted Motion sample it holds" },
+    { path = "src/mounting/presentation/motion_sampling/receipt.rs", items = ["UiPresentationMotionSampleReceipt::base_map"] },
+  ], reason = "an accepted Motion sample maps the published geometry laid out in its base to where it placed it" },
   { call = "UiAcceptedRect::sampled", callers = [
     { path = "src/mounting/presentation/motion_sampling/track_geometry.rs", items = ["UiTrackSamplePlace::accepted_on"] },
   ], reason = "the Motion sampler yields accepted geometry from a sampled track" },
@@ -1080,7 +1081,7 @@ mints = [
     { path = "src/mounting/presentation/work_producer/scroll_motion_groups/acceptance.rs", items = ["UiScrollGroupMotionUpdate::validate"] },
     { path = "src/mounting/retention/interaction_basis.rs", items = ["UiPresentedHitTestRow::with_motion_sample"] },
     { path = "src/mounting/retention/interaction_basis/ancestor_clip.rs", items = ["UiHitAncestorPlacement::reach"] },
-    { path = "src/mounting/session_state/motion_sampling.rs", items = ["WorthUiMountedSessionState::committed_motion_geometry_for_target"] },
+    { path = "src/mounting/session_state/motion_sampling/portal_dismissal_geometry.rs", items = ["WorthUiMountedSessionState::committed_motion_geometry_for_target"] },
   ], reason = "accepted geometry becomes displayed only against a displayed basis an admitted witness proved" },
   { call = "UiDisplayedScrollOffset::from_rest", callers = [
     { path = "src/facade/entry/active_application_session/scroll_accepted_sample_settlement.rs", items = ["UiScrollSettlementOwner::settle"] },

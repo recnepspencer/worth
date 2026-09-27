@@ -4,6 +4,9 @@ use std::sync::Arc;
 pub struct UiNativeWindowSpec {
     title: Arc<str>,
     initial_logical_size: [u32; 2],
+    /// The smallest client extent the application lays out; `None` leaves
+    /// the window as small as the platform allows.
+    minimum_logical_size: Option<[u32; 2]>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -46,6 +49,7 @@ pub enum UiNativePlatformPreparationDenial {
     WindowTitleCapacityExceeded,
     EmptyWindowExtent,
     WindowExtentCapacityExceeded,
+    WindowMinimumExceedsInitialExtent,
     QualifiedProfileMismatch,
     PreparationIdentityExhausted,
     UnsupportedPlatform,
@@ -57,7 +61,17 @@ impl UiNativeWindowSpec {
         Self {
             title: title.into(),
             initial_logical_size,
+            minimum_logical_size: None,
         }
+    }
+
+    /// Keeps the window's client area at least `minimum` logical points on
+    /// each axis, so a layout never has to hold content below the extent
+    /// its application declares.
+    #[must_use]
+    pub const fn with_minimum_logical_size(mut self, minimum: [u32; 2]) -> Self {
+        self.minimum_logical_size = Some(minimum);
+        self
     }
 
     pub fn title(&self) -> &str {
@@ -66,6 +80,10 @@ impl UiNativeWindowSpec {
 
     pub const fn initial_logical_size(&self) -> [u32; 2] {
         self.initial_logical_size
+    }
+
+    pub const fn minimum_logical_size(&self) -> Option<[u32; 2]> {
+        self.minimum_logical_size
     }
 }
 
@@ -130,6 +148,14 @@ impl UiNativePlatformProfile {
         if width > 16_384 || height > 16_384 {
             return Err(UiNativePlatformPreparationDenial::WindowExtentCapacityExceeded);
         }
+        if let Some([minimum_width, minimum_height]) = self.window.minimum_logical_size {
+            if minimum_width == 0 || minimum_height == 0 {
+                return Err(UiNativePlatformPreparationDenial::EmptyWindowExtent);
+            }
+            if minimum_width > width || minimum_height > height {
+                return Err(UiNativePlatformPreparationDenial::WindowMinimumExceedsInitialExtent);
+            }
+        }
         Ok(())
     }
 }
@@ -164,7 +190,32 @@ fn validate_environment(
 
 #[cfg(test)]
 mod tests {
-    use super::{validate_environment, UiNativePlatformPreparationDenial};
+    use super::{
+        validate_environment, UiNativePlatformPreparationDenial, UiNativePlatformProfile,
+        UiNativeWindowSpec,
+    };
+
+    #[test]
+    fn a_minimum_window_extent_is_admitted_only_inside_the_initial_extent() {
+        let validate = |minimum| {
+            UiNativePlatformProfile::single_window(
+                UiNativeWindowSpec::new("Minimum", [1536, 1024]).with_minimum_logical_size(minimum),
+            )
+            .validate()
+        };
+        assert_eq!(validate([800, 600]), Ok(()));
+        assert_eq!(validate([1536, 1024]), Ok(()));
+        assert_eq!(
+            validate([0, 600]),
+            Err(UiNativePlatformPreparationDenial::EmptyWindowExtent)
+        );
+        for minimum in [[1537, 600], [800, 1025]] {
+            assert_eq!(
+                validate(minimum),
+                Err(UiNativePlatformPreparationDenial::WindowMinimumExceedsInitialExtent)
+            );
+        }
+    }
 
     #[test]
     fn closed_environment_classifier_rejects_each_platform_substitution() {

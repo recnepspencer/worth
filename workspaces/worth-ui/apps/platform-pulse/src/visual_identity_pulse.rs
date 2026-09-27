@@ -2,6 +2,11 @@ pub const PLATFORM_PULSE_IDENTITY_TARGET_AUTHORED_NAME: &str =
     "component:platform.pulse.component.review_target";
 pub const PLATFORM_PULSE_CANONICAL_LOGICAL_EXTENT: [u32; 2] = [1536, 1024];
 pub const PLATFORM_PULSE_PRODUCT_LOGICAL_EXTENT: [u32; 2] = [1536, 1024];
+/// The smallest client extent the product window takes: the narrowest and
+/// shortest extent the dashboard's layout is specified at, at or above the
+/// 764-point width below which the stacked page's column no longer fits
+/// beside the sidebar.
+pub const PLATFORM_PULSE_MINIMUM_LOGICAL_EXTENT: [u32; 2] = [800, 600];
 pub const PLATFORM_PULSE_BACKGROUND_LOGICAL_POINT: [u32; 2] = [250, 80];
 pub const PLATFORM_PULSE_TARGET_LOGICAL_POINT: [u32; 2] = [1404, 809];
 /// The logical client extent every native courtroom world (and the product

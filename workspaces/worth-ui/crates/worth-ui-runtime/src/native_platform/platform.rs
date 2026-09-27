@@ -40,7 +40,8 @@ impl UiPreparedNativePlatform {
         let window = worth_ui_host_native::UiNativeWindowConfiguration::qualified(
             self.profile.window().title(),
             self.profile.window().initial_logical_size(),
-        );
+        )
+        .with_minimum_logical_size(self.profile.window().minimum_logical_size());
         let (adapter, event_loop) = host.into_parts(window);
         let (bound_application, program, application_runtime, native_surface_declaration) =
             prepared.bind_qualified_native(adapter);

@@ -251,6 +251,7 @@ mod tests;
 pub struct UiNativeWindowConfiguration {
     title: Box<str>,
     initial_logical_size: [u32; 2],
+    minimum_logical_size: Option<[u32; 2]>,
 }
 
 impl UiNativeWindowConfiguration {
@@ -258,7 +259,21 @@ impl UiNativeWindowConfiguration {
         Self {
             title: title.into(),
             initial_logical_size,
+            minimum_logical_size: None,
         }
+    }
+
+    /// The smallest client extent the window may take, if the application
+    /// declared one. The runtime's window spec validates it against the
+    /// initial extent; this configuration applies it as given.
+    #[must_use]
+    pub const fn with_minimum_logical_size(mut self, minimum: Option<[u32; 2]>) -> Self {
+        self.minimum_logical_size = minimum;
+        self
+    }
+
+    pub(crate) const fn minimum_logical_size(&self) -> Option<[u32; 2]> {
+        self.minimum_logical_size
     }
 
     pub(crate) fn title(&self) -> &str {

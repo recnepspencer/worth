@@ -152,6 +152,22 @@ impl UiMountedFrameRetentionCoordinator {
         Ok(basis)
     }
 
+    /// The body of the Portal `target` names, as the frame shown at
+    /// `presentation` committed it: the geometry a Motion sample of the
+    /// Portal moves.
+    pub(crate) fn presented_portal_body(
+        &self,
+        presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
+        target: crate::runtime::motion::UiMotionTargetIdentity,
+    ) -> Result<Option<crate::mounting::presentation::UiPublishedRect>, UiPresentedFrameBasisDenial>
+    {
+        Ok(self
+            .presented_portal_overlay(presentation, target)?
+            .map(|portal| {
+                crate::mounting::presentation::UiPublishedRect::from_committed_box(portal.bounds())
+            }))
+    }
+
     pub(crate) fn presented_portal_overlay(
         &self,
         presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,

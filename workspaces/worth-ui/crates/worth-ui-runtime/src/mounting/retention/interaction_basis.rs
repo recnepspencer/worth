@@ -2,8 +2,7 @@ use worth_ui_host_contract::{UiHostObservationPresentationBasis, UiMountedHitTes
 
 use super::UiPresentedFrameBasisRelation;
 use crate::mounting::presentation::{
-    UiDisplayedRect, UiDisplayedSurfaceBasis, UiPublishedMap, UiPublishedRect,
-    UiPublishedToAcceptedMap, UiScrollPoseShift,
+    UiDisplayedRect, UiDisplayedSurfaceBasis, UiPublishedMap, UiPublishedRect, UiScrollPoseShift,
 };
 
 mod ancestor_clip;
@@ -247,7 +246,7 @@ impl UiPresentedHitTestRow {
             // A Portal whose base has no area places nothing laid out in it,
             // and one that carries the row beyond finite geometry places it
             // nowhere.
-            let portal = UiPublishedToAcceptedMap::of_sample(sample.base_geometry()?, sampled)?;
+            let portal = sample.base_map()?;
             (
                 shown(portal.apply(bounds)?),
                 shown(portal.apply(clip)?),
