@@ -341,6 +341,6 @@ fn an_unreadable_trusted_clock_admits_no_step() {
     }
     assert_eq!(
         overdue_operation(93_600, |time| time.set_unavailable(true)),
-        Err(WorthQueryApplicationAttemptDenialKind::WorkflowApprovalAuthorityDenied),
+        Err(WorthQueryApplicationAttemptDenialKind::WorkflowTrustedTimeUnavailable),
     );
 }

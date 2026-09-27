@@ -87,7 +87,7 @@ impl ObservedWorkflowInstance {
                 self.inherited_steps,
             ),
             maximum_transitions,
-            compiled,
+            history::HistoryNodes::Compiled(compiled),
             self.history_budget,
         )?;
         let transition_visits = history.transition_visits;
@@ -337,7 +337,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         entity,
         history_basis(live_membership.is_some(), purpose, inherited_steps),
         maximum_transitions,
-        compiled,
+        history::HistoryNodes::Compiled(compiled),
         history_budget,
     )?;
     let transition_visits = history.transition_visits;

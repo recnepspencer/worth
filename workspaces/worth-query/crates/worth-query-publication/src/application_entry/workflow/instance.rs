@@ -68,15 +68,31 @@ impl WorthQueryWorkflowInstancePreparationDenial {
 
 impl std::fmt::Display for WorthQueryWorkflowInstancePreparationDenial {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            formatter,
-            "workflow instance-start preparation denied: {:?}",
-            self.kind()
-        )
+        match self {
+            Self::RuntimeMismatch => {
+                formatter.write_str("workflow runtime belongs to another application")
+            }
+            Self::RequestAdmission(denial) => write!(
+                formatter,
+                "workflow instance request was not admitted: {denial}"
+            ),
+            Self::InstancePreparation(denial) => write!(
+                formatter,
+                "workflow instance request did not prepare: {denial}"
+            ),
+        }
     }
 }
 
-impl std::error::Error for WorthQueryWorkflowInstancePreparationDenial {}
+impl std::error::Error for WorthQueryWorkflowInstancePreparationDenial {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::RuntimeMismatch => None,
+            Self::RequestAdmission(denial) => Some(denial),
+            Self::InstancePreparation(denial) => Some(denial),
+        }
+    }
+}
 
 impl<'application, 'principal, 'scope, 'key, Schema, Intent, SourcePreparation>
     WorthQueryApplicationMutationRequestWithIdempotency<

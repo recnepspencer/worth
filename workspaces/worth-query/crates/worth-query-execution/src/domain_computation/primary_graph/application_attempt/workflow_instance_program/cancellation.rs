@@ -3,9 +3,10 @@
 //! reports each one. A cancellation prepared before a step settles goes stale,
 //! and a step admitted before the cancellation commits goes stale in turn.
 
+mod close;
 mod publication;
+mod recorded;
 
-use worth_foundational::facade::{AspectValue, InternedString};
 use worth_query_declaration::facade::{
     application_capability::ApplicationCapabilityMarkerIdentity,
     application_program::ApplicationWorkflowSpec,
@@ -16,20 +17,14 @@ use worth_query_installation::facade::{
 };
 
 use super::super::effect_program::{admit_platform_effects, PlatformEffectDemand};
-use super::super::workflow_instance_observation::{
-    observe_ended_history, observe_workflow_instance, WorkflowInstanceObservationPurpose,
-};
+use super::super::workflow_instance_observation::instance_binding::deny_ended;
 use super::super::{
-    observe_field_value, PublishedWorkflowDefinitionRef, WorthQueryApplicationAttemptDenial,
-    WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationEffectProgram,
-    WorthQueryApplicationObservedFact, WorthQueryApplicationRealizedEffect,
-    WorthQueryCompleteApplicationReadSet, WorthQueryProjectedApplicationMutation,
+    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
+    WorthQueryApplicationEffectProgram, WorthQueryCompleteApplicationReadSet,
+    WorthQueryProjectedApplicationMutation,
 };
-use super::{intent_identity, performed, PublishedWorkflowInstanceRef};
-use crate::domain_computation::primary_graph::workflow::{
-    definition::{reconstruct_compiled_definition, WorkflowDefinitionCompilationPosture},
-    instance::WorkflowInstanceState,
-};
+use super::{intent_identity, PublishedWorkflowInstanceRef};
+use close::ClosedWorkflowInstance;
 pub use publication::{
     PerformedWorkflowInstanceCancellation, PreparedWorkflowInstanceCancellation,
     WorkflowInstanceCancellationOutcome,
@@ -37,6 +32,21 @@ pub use publication::{
 
 const HISTORY: WorthQueryApplicationAttemptDenialKind =
     WorthQueryApplicationAttemptDenialKind::WorkflowInstanceHistoryUnavailable;
+
+fn maximum_transitions<Schema, Spec, Program>(
+    installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+) -> usize
+where
+    Schema: ApplicationSchema,
+    Spec: ApplicationWorkflowSpec<Schema = Schema>,
+{
+    usize::try_from(
+        installed
+            .resources()
+            .maximum_retained_transitions_per_instance(),
+    )
+    .unwrap_or(usize::MAX)
+}
 
 impl<Schema, Operation, Input, Scope>
     WorthQueryCompleteApplicationReadSet<
@@ -77,23 +87,6 @@ where
                 self.admission.operation(),
             ));
         }
-        let layout = self.lease.layout.workflow().clone();
-        let (mut compiled, mut facts) = reconstruct_compiled_definition(
-            self.lease.handle(),
-            self.lease.snapshot(),
-            &layout,
-            &PublishedWorkflowDefinitionRef::retained(
-                branch,
-                instance.definition_entity_id(),
-                instance.definition_content_identity().clone(),
-            ),
-            installed.program_revision(),
-            Spec::IDENTITY.as_str(),
-            installed.support_identity_bytes(),
-            usize::from(installed.resources().maximum_definition_nodes()),
-            usize::from(installed.resources().maximum_definition_connections()),
-            WorkflowDefinitionCompilationPosture::Retained,
-        )?;
         let (identity, intent_identity) = intent_identity::cancellation_identity(
             instance.entity_id(),
             branch.occurrence_ordinal(),
@@ -105,131 +98,37 @@ where
                 self.admission.operation(),
             )
         })?;
-        let maximum_transitions = usize::try_from(
-            installed
-                .resources()
-                .maximum_retained_transitions_per_instance(),
-        )
-        .unwrap_or(usize::MAX);
-        let budget = installed.resources().history_reconstruction_budget();
-        let subject = self.admission.scope_entity_id();
-        let entity = instance.entity_id();
-        let operation = self.admission.operation();
-        let handle = self.lease.handle();
+        let layout = self.lease.layout.workflow().clone();
         let snapshot = self.lease.snapshot();
-        let (effects, performed) = handle.with_runtime(|runtime| {
-            let observed = observe_workflow_instance(
-                handle,
+        // The exact replay resolves before the definition is read; any other
+        // request for an ended instance is refused by name.
+        let recorded = self.lease.handle().with_runtime(|runtime| {
+            let recorded = recorded::observe_recorded_cancellation(
                 runtime,
                 snapshot,
                 &layout,
-                &instance,
-                subject,
-                compiled.lineage(),
-                &mut compiled,
-                maximum_transitions,
-                budget,
-                WorkflowInstanceObservationPurpose::Close,
-            );
-            let (transitions, effects) = match observed {
-                // An instance this request already cancelled emits nothing.
-                // Its false readiness fact never becomes true again, so the
-                // program resolves the exact replay; it never commits empty.
-                // Any other request for a cancelled instance is refused.
-                Err(ended)
-                    if ended.kind()
-                        == WorthQueryApplicationAttemptDenialKind::WorkflowInstanceCancelled =>
-                {
-                    let recorded = observe_field_value(
-                        runtime,
-                        snapshot,
-                        entity,
-                        layout.instance.entity_kind,
-                        &layout.instance.cancellation_identity,
-                    );
-                    if recorded != Some(AspectValue::String(InternedString::Raw(identity.clone())))
-                    {
-                        return Err(ended);
-                    }
-                    facts.push(WorthQueryApplicationObservedFact::Field {
-                        entity_id: entity,
-                        kind: layout.instance.entity_kind,
-                        locator: layout.instance.state.clone(),
-                        value: AspectValue::UInt64(WorkflowInstanceState::Ready.persisted_tag()),
-                    });
-                    let (transitions, history_facts) = observe_ended_history(
-                        runtime,
-                        snapshot,
-                        &layout,
-                        entity,
-                        maximum_transitions,
-                        &compiled,
-                        budget,
-                    )?;
-                    facts.extend(history_facts);
-                    (transitions, Vec::new())
-                }
-                Err(denial) => return Err(denial),
-                Ok(mut observed) => {
-                    let Some(live_membership) = observed.live_membership else {
-                        return Err(WorthQueryApplicationAttemptDenial::new(
-                            WorthQueryApplicationAttemptDenialKind::WorkflowInstanceCompleted,
-                            operation,
-                        ));
-                    };
-                    observed.ensure_history(
-                        handle,
-                        runtime,
-                        snapshot,
-                        &layout,
-                        entity,
-                        maximum_transitions,
-                        &compiled,
-                    )?;
-                    facts.append(&mut observed.facts);
-                    // A live instance never recorded a cancellation; the
-                    // write below replaces that absence.
-                    facts.push(WorthQueryApplicationObservedFact::AbsentField {
-                        entity_id: entity,
-                        kind: layout.instance.entity_kind,
-                        locator: layout.instance.cancellation_identity.clone(),
-                    });
-                    let effects = vec![
-                        WorthQueryApplicationRealizedEffect::UpdateEntity {
-                            entity: "workflow-instance".to_owned(),
-                            entity_id: entity,
-                            fields: std::collections::BTreeMap::from([
-                                (
-                                    layout.instance.state.clone(),
-                                    AspectValue::UInt64(
-                                        WorkflowInstanceState::Cancelled.persisted_tag(),
-                                    ),
-                                ),
-                                (
-                                    layout.instance.cancellation_identity.clone(),
-                                    AspectValue::String(InternedString::Raw(identity.clone())),
-                                ),
-                            ]),
-                        },
-                        WorthQueryApplicationRealizedEffect::DeleteRelation {
-                            relation_id: live_membership,
-                        },
-                    ];
-                    (observed.transitions, effects)
-                }
-            };
-            let mut performed = performed::own_effects(&transitions, &compiled, HISTORY)?;
-            performed.extend(performed::inherited_effects(
-                runtime,
-                snapshot,
-                &layout,
-                entity,
-                maximum_transitions,
-                &mut facts,
-                HISTORY,
-            )?);
-            Ok::<_, WorthQueryApplicationAttemptDenial>((effects, performed))
+                instance.entity_id(),
+                &identity,
+                maximum_transitions(installed),
+                installed.resources().history_reconstruction_budget(),
+            )?;
+            if recorded.is_none() {
+                deny_ended(runtime, snapshot, &layout, instance.entity_id())?;
+            }
+            Ok::<_, WorthQueryApplicationAttemptDenial>(recorded)
         })?;
+        let ClosedWorkflowInstance {
+            effects,
+            performed,
+            facts,
+        } = match recorded {
+            Some((performed, facts)) => ClosedWorkflowInstance {
+                effects: Vec::new(),
+                performed,
+                facts,
+            },
+            None => self.close_live_workflow_instance(installed, &layout, &instance, &identity)?,
+        };
         if self.facts.len().saturating_add(facts.len())
             > self
                 .admission

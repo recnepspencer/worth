@@ -4,9 +4,10 @@
 //! cancellation prepared before a step settles goes stale in turn.
 
 use worth_query_host::facade::application_entry::{
-    PerformedWorkflowInstanceCancellation, WorkflowInstanceBindingDenial,
-    WorkflowInstanceCancellationOutcome, WorkflowInstancePreparationDenial,
-    WorthQueryApplicationRequestMutationDenial, WorthQueryWorkflowInstancePreparationDenial,
+    PerformedWorkflowInstanceCancellation, WorkflowDefinitionRetirementOutcome,
+    WorkflowInstanceBindingDenial, WorkflowInstanceCancellationOutcome,
+    WorkflowInstancePreparationDenial, WorthQueryApplicationRequestMutationDenial,
+    WorthQueryWorkflowInstancePreparationDenial,
 };
 use worth_query_host::facade::primary_graph::WorthQueryApplicationCommitDenialStage;
 
@@ -14,7 +15,7 @@ use super::super::bounded_dimension_model::{
     programs::DimensionProgramP1,
     workflow::{
         cancel_instance, cancel_on_second, prepare_cancellation, prepare_second_program_adoption,
-        publish_adoption, support_workflow_program,
+        publish_adoption, retire_definition, support_workflow_program,
     },
 };
 use super::instance_migration::perform_approved_effect;
@@ -192,6 +193,48 @@ fn a_cancellation_replays_exactly_after_its_branch_adopts_a_new_program() {
         cancellation_denial(cancel_on_second(&application, instance, 88_411)),
         WorthQueryApplicationAttemptDenialKind::WorkflowInstanceCancelled,
     );
+}
+
+#[test]
+fn a_cancellation_replays_after_adoption_leaves_its_retired_definition_behind() {
+    let (mut application, definition, instance, proposal, required, _) =
+        approval_journey("applied", 88_500);
+    approve(&application, &instance, &required, &proposal, 88_510);
+    perform_approved_effect(&application, &instance, 88_511);
+    let done = cancelled(cancel_instance(&application, instance.clone(), 88_513));
+    match retire_definition(&application, definition, 88_514).expect("retirement prepares") {
+        WorkflowDefinitionRetirementOutcome::Retired(_) => {}
+        other => panic!("the definition did not retire: {other:?}"),
+    }
+    // Neither a current definition nor a live instance asks adoption to
+    // carry it, so the adopted program cannot run the definition.
+    support_workflow_program::<DimensionProgramP1>(&mut application);
+    let main = application.current_world();
+    publish_adoption(prepare_second_program_adoption(
+        &application,
+        main,
+        Some(&|inventory| inventory.carry_compatible().unwrap()),
+    ));
+
+    let replay = cancelled(cancel_on_second(&application, instance.clone(), 88_513));
+    assert!(replay.replayed(), "the key replays from recorded history");
+    assert_eq!(
+        replay.receipt().outcome_identity(),
+        done.receipt().outcome_identity()
+    );
+    assert_eq!(replay.performed_node_paths(), ["apply".to_owned()]);
+    assert_eq!(
+        cancellation_denial(cancel_on_second(&application, instance.clone(), 88_515)),
+        WorthQueryApplicationAttemptDenialKind::WorkflowInstanceCancelled,
+        "another key is refused as cancelled, not as unsupported",
+    );
+    let stale = cancel_instance(&application, instance, 88_513)
+        .expect_err("the retired program's vocabulary is refused");
+    assert_eq!(
+        stale.to_string(),
+        "workflow instance request did not prepare: workflow instance binding: ProgramRevisionChanged",
+    );
+    assert!(std::error::Error::source(&stale).is_some());
 }
 
 pub(super) fn approve(

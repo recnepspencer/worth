@@ -306,6 +306,9 @@ impl WorkflowOperationAuthority {
                     | WorthQueryOperationAuthorizationDenialKind::DelegationRejected => {
                         WorthQueryApplicationAttemptDenialKind::WorkflowApprovalDelegationChanged
                     }
+                    WorthQueryOperationAuthorizationDenialKind::TrustedTimeUnavailable => {
+                        WorthQueryApplicationAttemptDenialKind::WorkflowTrustedTimeUnavailable
+                    }
                     _ => WorthQueryApplicationAttemptDenialKind::WorkflowApprovalAuthorityDenied,
                 };
                 WorthQueryApplicationAttemptDenial::new(kind, denial.to_string())

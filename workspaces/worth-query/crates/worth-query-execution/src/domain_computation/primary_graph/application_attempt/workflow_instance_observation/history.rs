@@ -4,7 +4,8 @@ use super::{
     WorthQueryApplicationObservedFact,
 };
 use crate::domain_computation::primary_graph::workflow::{
-    definition::CompiledWorkflowDefinition, schema::WorthQueryWorkflowLayout,
+    definition::CompiledWorkflowDefinition, instance::WorkflowPerformedEffect,
+    schema::WorthQueryWorkflowLayout,
 };
 use worth_foundational::facade::{AspectValue, InternedString};
 use worth_query_installation::facade::WorthQueryWorkflowHistoryReconstructionBudget;
@@ -27,26 +28,38 @@ pub(super) enum HistoryBasis {
     Ended,
 }
 
+/// Where a history read finds the nodes its transitions settled.
+#[derive(Clone, Copy)]
+pub(super) enum HistoryNodes<'compiled> {
+    /// A live history runs under the definition compiled for it, and each
+    /// node must be one of that definition's.
+    Compiled(&'compiled CompiledWorkflowDefinition),
+    /// An ended history is read as recorded, from each node's own path, so
+    /// reporting it needs no program that still supports its definition.
+    Recorded,
+}
+
 pub(super) struct ObservedWorkflowHistory {
     pub(super) transitions: Vec<ObservedWorkflowTransition>,
     pub(super) facts: Vec<WorthQueryApplicationObservedFact>,
     pub(super) transition_visits: usize,
     pub(super) charge_bytes: usize,
+    /// Each transition's node path, read only for a recorded history.
+    pub(super) recorded_paths: Vec<String>,
 }
 
-/// The settled history of an instance that has already ended, read only to
-/// report what it performed. It admits no progression.
+/// The effects an instance that has already ended performed through its own
+/// receipted transitions, read as recorded. It admits no progression.
 pub(in crate::domain_computation::primary_graph::application_attempt) fn observe_ended_history(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     layout: &WorthQueryWorkflowLayout,
     instance: EntityId,
     maximum_transitions: usize,
-    compiled: &CompiledWorkflowDefinition,
     history_budget: WorthQueryWorkflowHistoryReconstructionBudget,
 ) -> Result<
     (
-        Vec<ObservedWorkflowTransition>,
+        Vec<WorkflowPerformedEffect>,
         Vec<WorthQueryApplicationObservedFact>,
     ),
     WorthQueryApplicationAttemptDenial,
@@ -58,10 +71,20 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         instance,
         HistoryBasis::Ended,
         maximum_transitions,
-        compiled,
+        HistoryNodes::Recorded,
         history_budget,
     )?;
-    Ok((history.transitions, history.facts))
+    let performed = history
+        .transitions
+        .iter()
+        .zip(history.recorded_paths)
+        .filter(|(transition, _)| transition.settlement.operation_receipt_identity().is_some())
+        .map(|(transition, path)| WorkflowPerformedEffect {
+            transition: transition.entity,
+            path,
+        })
+        .collect();
+    Ok((performed, history.facts))
 }
 
 pub(super) fn observe(
@@ -71,7 +94,7 @@ pub(super) fn observe(
     instance: EntityId,
     basis: HistoryBasis,
     maximum_transitions: usize,
-    compiled: &CompiledWorkflowDefinition,
+    nodes: HistoryNodes<'_>,
     budget: WorthQueryWorkflowHistoryReconstructionBudget,
 ) -> Result<ObservedWorkflowHistory, WorthQueryApplicationAttemptDenial> {
     let mut charge = HistoryReconstructionCharge::new(budget)?;
@@ -93,6 +116,7 @@ pub(super) fn observe(
     let transition_count = transitions.len();
     charge.reserve_inventory(transition_count)?;
     let mut settled = Vec::with_capacity(transition_count);
+    let mut recorded_paths = Vec::new();
     let mut scratch = Vec::new();
     for transition in transitions {
         charge.reserve_record(
@@ -138,10 +162,29 @@ pub(super) fn observe(
             Some(AspectValue::String(InternedString::Raw(identity))) => identity,
             _ => return Err(denial("workflow transition identity is unavailable")),
         };
-        let node = compiled
-            .node(settlement.node())
-            .ok_or_else(|| denial("history node is absent from the compiled definition"))?;
-        charge.reserve_path(node.path())?;
+        match nodes {
+            HistoryNodes::Compiled(compiled) => {
+                let node = compiled
+                    .node(settlement.node())
+                    .ok_or_else(|| denial("history node is absent from the compiled definition"))?;
+                charge.reserve_path(node.path())?;
+            }
+            HistoryNodes::Recorded => {
+                let Some(AspectValue::String(InternedString::Raw(path))) =
+                    super::observe_field_value(
+                        runtime,
+                        snapshot,
+                        settlement.node(),
+                        layout.node.entity_kind,
+                        &layout.node.path,
+                    )
+                else {
+                    return Err(denial("history node path is unavailable"));
+                };
+                charge.reserve_path(&path)?;
+                recorded_paths.push(path);
+            }
+        }
         let assessment_evidence = settlement::observe_assessment_evidence(
             runtime,
             snapshot,
@@ -175,5 +218,6 @@ pub(super) fn observe(
         }],
         transition_visits: transition_count,
         charge_bytes: charge.bytes(),
+        recorded_paths,
     })
 }
