@@ -173,6 +173,9 @@ popovers are placed again from each frame's layout with the fit, flip and
 clamp policy they opened with. A Portal opened fitted to its content fits the
 extent each frame lays that content out at, not the extent it opened at.
 Backdrops cover the current extent.
+The current extent is the one the displayed frame was measured at. Until the
+host accepts a frame at a newer extent, pixels, placement, and owner state all
+stay at the older one.
 
 ## Geometry, Borders, And Text
 

@@ -150,9 +150,10 @@ impl UiNativeEventLoopClient for UiNativeApplicationDriver {
         self.last_ready_generation = grant.generation();
         if self.application_runtime_active
             && (surface_basis_successor
-                || self.shell.as_ref().is_some_and(
-                    WorthUiNativeApplicationShell::native_viewport_presentation_pending,
-                ))
+                || self.shell.as_ref().is_some_and(|shell| {
+                    shell.native_viewport_presentation_pending()
+                        || shell.native_presentation_retry_pending()
+                }))
         {
             return self
                 .progress_application_runtime_viewport(surface_basis_successor)

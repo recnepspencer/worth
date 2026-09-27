@@ -30,7 +30,7 @@ mod theme;
 
 pub(crate) use composition::PlatformPulseApplication;
 
-use frame_presentation::PlatformPulsePendingFramePresentation;
+use frame_presentation::{PlatformPulsePendingFramePresentation, PlatformPulsePresentationRetry};
 use projection::PlatformPulseProjectionRebindDenial;
 use terminal_error::PlatformPulseTerminalError;
 
@@ -60,6 +60,7 @@ pub(crate) struct PlatformPulseApplicationRuntime {
         worth_ui_platform_pulse::observation_contract::PlatformPulseQueryActionPreconditionDenial,
     >,
     pending_frame_presentation: Option<PlatformPulsePendingFramePresentation>,
+    presentation_retry: Option<PlatformPulsePresentationRetry>,
     pending_managed_rebind: Option<PlatformPulsePendingManagedRebind>,
     pending_native_publications:
         std::collections::VecDeque<intent::PlatformPulsePendingNativePublication>,

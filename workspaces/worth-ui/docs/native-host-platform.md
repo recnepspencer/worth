@@ -253,6 +253,26 @@ wake progresses timed work itself. The watch owns no host state and never
 calls into it; in the ordinary loop, `WaitUntil` reaches each deadline first
 and the watch stays silent.
 
+The shell owes the newest observed extent until the host accepts a frame
+measured at it. Each settlement records the extent it measured, and only an
+accepted frame ends the debt of that measurement. A frame rejected before
+effects therefore leaves its extent owed. The same holds for a frame that
+completes late, after a newer extent arrived: the newer extent stays owed and
+the next turn measures it. A timeout or occlusion rejection also owes a host
+retry, reported by `native_presentation_retry_pending`. The driver routes the
+host's retry readiness to the application, and the application presents again
+only at that readiness. A reconstruction retries as a reconstruction. A product
+turn before the retry readiness cannot spend it. Any presentation that begins
+effects ends the retry, whichever owner presents it, because the host drops its
+wake then. While an occlusion retry and a reconstruction are both owed, product
+turns wait for visibility. Shutdown releases an owed extent and a queued retry
+like any other pending work.
+
+A wheel turn that arrives while a resized layout is prepared but not yet
+presented is refused with `PendingGeometryPublication` instead of scrolling
+geometry the display does not show. That wheel step is dropped. The first wheel
+after the layout publishes scrolls normally.
+
 Each prepared frame lays out against one coherent extent. Containers select
 their responsive tracks for that width and allocate against it. Scroll bounds,
 Portal placement, and Backdrop coverage consume the same viewport. Nothing

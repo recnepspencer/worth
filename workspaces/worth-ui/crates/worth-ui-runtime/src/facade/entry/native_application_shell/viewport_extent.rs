@@ -1,10 +1,11 @@
 //! Host viewport evidence and the successor presentation it still owes.
 //!
-//! Every observation records itself here, and a settlement lands only the
-//! extent it was prepared from. An extent observed after that settlement was
-//! prepared stays owed, so its successor presentation still runs.
+//! Every observation records itself here. A settlement measures only the
+//! extent it was prepared from, and only a frame the host accepted after that
+//! measurement ends the extent's debt. A frame rejected before effects, or an
+//! extent observed after the measurement, leaves a successor presentation owed.
 
-use crate::mounting::UiSurfaceBindingGeneration;
+use crate::mounting::{UiMountedFrameOutcome, UiSurfaceBindingGeneration};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(super) struct UiNativeViewportBasis {
@@ -16,6 +17,7 @@ pub(super) struct UiNativeViewportBasis {
 pub(super) struct UiNativeViewportExtent {
     observed: Option<UiNativeViewportBasis>,
     owed: Option<UiNativeViewportBasis>,
+    measured: Option<UiNativeViewportBasis>,
 }
 
 /// The settlement of one owed extent, prepared from the basis it measures.
@@ -28,6 +30,7 @@ impl UiNativeViewportExtent {
         Self {
             observed: None,
             owed: None,
+            measured: None,
         }
     }
 
@@ -54,14 +57,42 @@ impl UiNativeViewportExtent {
         }
     }
 
+    /// The settlement the owed extent still needs. An extent already
+    /// measured awaits only its presentation.
     pub(super) fn prepare(&self) -> Option<UiNativeViewportSettlement> {
-        self.owed.map(|basis| UiNativeViewportSettlement { basis })
+        self.owed
+            .filter(|basis| self.measured != Some(*basis))
+            .map(|basis| UiNativeViewportSettlement { basis })
     }
 
-    /// Lands `settlement`, ending the extent it was prepared from. A newer
-    /// extent observed since then stays owed.
-    pub(super) fn land(&mut self, settlement: UiNativeViewportSettlement) {
-        if self.owed == Some(settlement.basis) {
+    /// Records that the session now measures `settlement`'s extent.
+    pub(super) fn measure(&mut self, settlement: UiNativeViewportSettlement) {
+        self.measured = Some(settlement.basis);
+    }
+
+    /// Lands a frame outcome. Only a frame the host accepted presents the
+    /// measured extent, so only it ends that extent's debt; a newer extent
+    /// observed since the measurement stays owed.
+    pub(super) fn land_outcome(&mut self, outcome: &UiMountedFrameOutcome) {
+        let accepted = match outcome {
+            UiMountedFrameOutcome::Published(_)
+            | UiMountedFrameOutcome::Unchanged(_)
+            | UiMountedFrameOutcome::Reconciled(_) => true,
+            UiMountedFrameOutcome::RejectedBeforeEffects(_)
+            | UiMountedFrameOutcome::InFlight(_)
+            | UiMountedFrameOutcome::PresentationIndeterminate(_)
+            | UiMountedFrameOutcome::Superseded(_)
+            | UiMountedFrameOutcome::RetentionDenied(_)
+            | UiMountedFrameOutcome::AdmissionDenied(_)
+            | UiMountedFrameOutcome::CompletionDenied(_) => false,
+        };
+        if accepted {
+            self.land_presented();
+        }
+    }
+
+    fn land_presented(&mut self) {
+        if self.owed.is_some() && self.owed == self.measured {
             self.owed = None;
         }
     }
@@ -72,8 +103,10 @@ mod tests {
     use super::{UiNativeViewportBasis, UiNativeViewportExtent};
     use crate::mounting::UiSurfaceBindingGeneration;
 
+    // Which outcomes count as presented is covered through the shell in
+    // `viewport_measurement/tests.rs`.
     #[test]
-    fn a_settlement_leaves_an_extent_observed_after_it_owed() {
+    fn only_a_presented_measurement_ends_the_extent_it_measured() {
         let binding = UiSurfaceBindingGeneration::mint_unbound().expect("binding generation");
         let basis = |width| UiNativeViewportBasis {
             client_physical_extent: [width, 600],
@@ -83,12 +116,19 @@ mod tests {
         let mut extent = UiNativeViewportExtent::new();
         extent.observe(basis(800), || true);
         let older = extent.prepare().expect("a changed extent is owed");
+        extent.measure(older);
         extent.observe(basis(960), || true);
 
-        extent.land(older);
+        // The older extent's frame presents after the newer extent arrived.
+        extent.land_presented();
         assert_eq!(extent.owed(), Some(basis(960)));
         let newer = extent.prepare().expect("the newer extent is owed");
-        extent.land(newer);
+        extent.measure(newer);
+
+        // Its frame is rejected before effects: measured, still unpresented.
+        assert!(extent.prepare().is_none());
+        assert_eq!(extent.owed(), Some(basis(960)));
+        extent.land_presented();
         assert_eq!(extent.owed(), None);
         assert_eq!(extent.observed(), Some(basis(960)));
     }

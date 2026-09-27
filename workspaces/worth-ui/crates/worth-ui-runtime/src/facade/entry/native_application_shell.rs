@@ -66,6 +66,7 @@ pub struct WorthUiNativeApplicationShell {
     mounted_row_indices: HashMap<Box<str>, usize>,
     viewport: viewport_extent::UiNativeViewportExtent,
     surface_reconciliation: surface_reconciliation::UiNativeSurfaceReconciliation,
+    presentation_retry: presentation_recovery::UiNativePresentationRetry,
     runtime_derived_state_reconstruction:
         Option<worth_ui_host_native::UiNativeClientDerivedStateReconstructionObservation>,
     pub(super) pending_managed_rebind:
@@ -218,6 +219,8 @@ impl WorthUiNativeApplicationShell {
     ) -> Result<UiMountedFrameOutcome, super::WorthUiMountedFrameExecutionStop<'_>> {
         self.settle_pending_native_viewport_measurements()?;
         self.refresh_native_surface_reconciliation();
+        // A rejection adds no host effect round, so count from before it.
+        let rounds = self.host_effect_rounds();
         if let Some(replacement) = self.pending_native_surface_reconciliation() {
             let replacements = [replacement];
             let outcome = self
@@ -227,9 +230,11 @@ impl WorthUiNativeApplicationShell {
                     UiPresentationDeadline::at_tick(deadline_tick),
                     now_tick,
                 )?;
-            // The stop borrows the session, so the landing borrows only its owner.
+            // The stop borrows the session, so the landing borrows only its owners.
             self.surface_reconciliation
                 .land_outcome(self.binding, &outcome);
+            self.viewport.land_outcome(&outcome);
+            self.presentation_retry.land_outcome(&outcome, rounds);
             return Ok(outcome);
         }
         let outcome = self
@@ -238,6 +243,8 @@ impl WorthUiNativeApplicationShell {
                 UiPresentationDeadline::at_tick(deadline_tick),
                 now_tick,
             )?;
+        self.viewport.land_outcome(&outcome);
+        self.presentation_retry.land_outcome(&outcome, rounds);
         Ok(outcome)
     }
 
@@ -301,7 +308,7 @@ impl WorthUiNativeApplicationShell {
                 now_tick,
             )
         };
-        self.settle_surface_reconciliation(&outcome);
+        self.land_frame_outcome(&outcome);
         Ok(outcome)
     }
 
@@ -320,7 +327,7 @@ impl WorthUiNativeApplicationShell {
                 UiPresentationDeadline::at_tick(deadline_tick),
                 now_tick,
             );
-        self.settle_surface_reconciliation(&outcome);
+        self.land_frame_outcome(&outcome);
         outcome
     }
 
@@ -347,7 +354,7 @@ impl WorthUiNativeApplicationShell {
         let outcome = self
             .session
             .complete_mounted_presentation(in_flight, now_tick);
-        self.settle_surface_reconciliation(&outcome);
+        self.land_frame_outcome(&outcome);
         outcome
     }
 
@@ -370,14 +377,18 @@ impl WorthUiNativeApplicationShell {
             deadline,
             now_tick,
         );
-        self.settle_surface_reconciliation(&outcome);
+        self.land_frame_outcome(&outcome);
         outcome
     }
 
-    /// Lands `outcome` on the replacement binding still owed a publication.
-    pub(super) fn settle_surface_reconciliation(&mut self, outcome: &UiMountedFrameOutcome) {
+    /// Lands `outcome` on the replacement binding, viewport extent, and host
+    /// retry still owed a presentation.
+    pub(super) fn land_frame_outcome(&mut self, outcome: &UiMountedFrameOutcome) {
         self.surface_reconciliation
             .land_outcome(self.binding, outcome);
+        self.viewport.land_outcome(outcome);
+        let effect_rounds = self.host_effect_rounds();
+        self.presentation_retry.land_outcome(outcome, effect_rounds);
     }
 
     pub fn generation_identity(

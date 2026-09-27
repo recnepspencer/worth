@@ -313,3 +313,88 @@ fn indeterminate_recovery_reconciles_an_uncertain_surface_deregistration() {
     assert_eq!(host.native_registration_count(), 1);
     assert_eq!(host.presentation_calls(), 3);
 }
+
+#[test]
+fn a_timed_out_reconstruction_reconciles_when_reentered() {
+    let host = crate::certification_support::ScriptedPresentationHost::native_display();
+    let mut shell = crate::runtime::tests::active_application_session_test_support::
+        source_backed_component_app_with_host_and_viewport_allocation(host.clone())
+        .launch_native_surface()
+        .expect("native viewport shell launches");
+    crate::facade::entry::native_application_identity_trace_test_support::
+        install_bound_surface_geometry(&mut shell);
+    shell.observe_native_viewport_readiness([800, 600], 1_000, false);
+    host.push_native_display_presented();
+    let Ok(UiMountedFrameOutcome::Published(_)) = shell.present_frame(1, 0) else {
+        panic!("baseline frame publishes");
+    };
+    host.set_viewport_extent([400.0, 300.0]);
+    shell
+        .rebind_native_surface_scale(2_000)
+        .expect("scale successor rebinds the native surface");
+    crate::facade::entry::native_application_identity_trace_test_support::
+        install_bound_surface_geometry(&mut shell);
+    shell.observe_native_viewport_readiness([800, 600], 2_000, true);
+    host.push_presentation(ScriptedPresentationOutcome::RejectedBeforeEffects(
+        UiHostSurfacePresentationDenial::ExternalTimeout,
+    ));
+
+    let rejected = shell
+        .reconstruct_native_surface_successor(2, 1)
+        .expect("the reconstruction prepares");
+    assert!(matches!(
+        rejected,
+        UiMountedFrameOutcome::RejectedBeforeEffects(_)
+    ));
+    assert!(shell.native_presentation_retry_pending());
+    assert!(shell.native_viewport_presentation_pending());
+    assert!(shell.pending_native_surface_reconciliation().is_some());
+
+    host.push_native_display_as_issued();
+    let retried = shell
+        .reconstruct_native_surface_successor(3, 2)
+        .expect("the retry reconstructs");
+    assert!(matches!(retried, UiMountedFrameOutcome::Reconciled(_)));
+    assert!(!shell.native_presentation_retry_pending());
+    assert!(!shell.native_viewport_presentation_pending());
+    assert!(shell.pending_native_surface_reconciliation().is_none());
+}
+
+#[test]
+fn any_presentation_that_begins_effects_ends_the_host_retry() {
+    let host = crate::certification_support::ScriptedPresentationHost::native_display();
+    let mut shell = crate::runtime::tests::active_application_session_test_support::
+        source_backed_component_app_with_host_and_viewport_allocation(host.clone())
+        .launch_native_surface()
+        .expect("native viewport shell launches");
+    crate::facade::entry::native_application_identity_trace_test_support::
+        install_bound_surface_geometry(&mut shell);
+    shell.observe_native_viewport_readiness([800, 600], 1_000, false);
+    host.push_native_display_presented();
+    let Ok(UiMountedFrameOutcome::Published(_)) = shell.present_frame(1, 0) else {
+        panic!("baseline frame publishes");
+    };
+    shell.observe_native_viewport_readiness([960, 600], 1_000, true);
+    host.set_viewport_extent([960.0, 600.0]);
+    host.push_presentation(ScriptedPresentationOutcome::RejectedBeforeEffects(
+        UiHostSurfacePresentationDenial::ExternalTimeout,
+    ));
+    let Ok(UiMountedFrameOutcome::RejectedBeforeEffects(_)) = shell.present_frame(2, 1) else {
+        panic!("the host times the frame out before effects");
+    };
+    assert!(shell.native_presentation_retry_pending());
+
+    // Motion, managed rebinds, and intent completions present through the
+    // session without landing on the shell, and the host still drops its wake.
+    host.push_native_display_as_issued();
+    let Ok(UiMountedFrameOutcome::Published(_)) = shell
+        .session
+        .execute_mounted_frame_with_application_presentation(
+            worth_ui_host_contract::UiPresentationDeadline::at_tick(3),
+            2,
+        )
+    else {
+        panic!("another owner's frame publishes");
+    };
+    assert!(!shell.native_presentation_retry_pending());
+}

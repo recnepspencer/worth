@@ -159,6 +159,7 @@ impl WorthUiApp {
             viewport: super::viewport_extent::UiNativeViewportExtent::new(),
             surface_reconciliation:
                 super::surface_reconciliation::UiNativeSurfaceReconciliation::new(),
+            presentation_retry: super::presentation_recovery::UiNativePresentationRetry::new(),
             runtime_derived_state_reconstruction: None,
             pending_managed_rebind: None,
             retained_portal_dismissal: None,

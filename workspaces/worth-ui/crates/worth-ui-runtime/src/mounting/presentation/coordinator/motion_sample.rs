@@ -138,6 +138,7 @@ impl UiMountedPresentationCoordinator {
         let outcome = host
             .adapter()
             .present_mounted_surface(host.authority(), &view);
+        host.authority().record_surface_presentation(&outcome);
         self.settle_initial_motion_sample(
             host.authority(),
             prepared,

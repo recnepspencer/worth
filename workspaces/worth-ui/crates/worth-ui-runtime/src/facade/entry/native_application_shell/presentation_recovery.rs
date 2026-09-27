@@ -103,25 +103,29 @@ impl super::WorthUiNativeApplicationShell {
         now_tick: u64,
     ) -> Result<crate::mounting::UiMountedFrameOutcome, WorthUiNativePresentationRecoveryDenial>
     {
-        let mut outcome = outcome;
-        if let crate::mounting::UiMountedFrameOutcome::RejectedBeforeEffects(rejected) = &outcome {
-            if !rejected.rejections().is_empty() && rejected.rejections().iter().all(|rejection| {
-                rejection.denial() == worth_ui_host_contract::UiHostSurfacePresentationDenial::TextAtlasPresentationDeferred
+        use worth_ui_host_contract::UiHostSurfacePresentationDenial as Denial;
+        let outcome = if let crate::mounting::UiMountedFrameOutcome::RejectedBeforeEffects(
+            rejected,
+        ) = outcome
+        {
+            if rejected_only_by(&rejected, |denial| {
+                denial == Denial::TextAtlasPresentationDeferred
             }) {
-                let crate::mounting::UiMountedFrameOutcome::RejectedBeforeEffects(rejected) = outcome else { unreachable!() };
-                outcome = self.retry_rejected_frame_presentation(
-                    rejected, worth_ui_host_contract::UiPresentationDeadline::at_tick(deadline_tick), now_tick,
-                );
+                self.retry_rejected_frame_presentation(
+                    rejected,
+                    worth_ui_host_contract::UiPresentationDeadline::at_tick(deadline_tick),
+                    now_tick,
+                )
+            } else {
+                crate::mounting::UiMountedFrameOutcome::RejectedBeforeEffects(rejected)
             }
-        }
+        } else {
+            outcome
+        };
         let requires_reconstruction = matches!(
             &outcome,
             crate::mounting::UiMountedFrameOutcome::RejectedBeforeEffects(rejected)
-                if !rejected.rejections().is_empty()
-                    && rejected.rejections().iter().all(|rejection| {
-                        rejection.denial()
-                            == worth_ui_host_contract::UiHostSurfacePresentationDenial::ReconstructionRequired
-                    })
+                if rejected_only_by(rejected, |denial| denial == Denial::ReconstructionRequired)
         );
         if !requires_reconstruction {
             return Ok(outcome);
@@ -267,7 +271,7 @@ impl super::WorthUiNativeApplicationShell {
                     WorthUiNativePresentationRecoveryDenial::RasterReconstructionObservationUnavailable
                 })?;
         }
-        self.settle_surface_reconciliation(&outcome);
+        self.land_frame_outcome(&outcome);
         Ok(outcome)
     }
 
@@ -339,6 +343,22 @@ impl super::WorthUiNativeApplicationShell {
     ) -> Option<worth_ui_host_native::UiNativeClientDerivedStateReconstructionObservation> {
         self.runtime_derived_state_reconstruction
     }
+}
+
+#[path = "presentation_recovery/host_retry.rs"]
+mod host_retry;
+pub(super) use host_retry::UiNativePresentationRetry;
+
+/// Whether every surface rejected `rejected` for a denial `admits`.
+fn rejected_only_by(
+    rejected: &crate::mounting::UiMountedRejectedFrame,
+    admits: impl Fn(worth_ui_host_contract::UiHostSurfacePresentationDenial) -> bool,
+) -> bool {
+    !rejected.rejections().is_empty()
+        && rejected
+            .rejections()
+            .iter()
+            .all(|rejection| admits(rejection.denial()))
 }
 
 #[cfg(test)]

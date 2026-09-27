@@ -10,6 +10,7 @@ pub struct UiHostAdapterSessionAuthority {
     host_session_identity: u64,
     _authority: worth_proof::AuthorityWitness<UiHostAdapterSessionGrant>,
     presentation_lease_gate: crate::mounting::presentation::UiMountedPresentationLeaseGate,
+    surface_effect_rounds: std::cell::Cell<u64>,
 }
 
 impl UiHostAdapterSessionAuthority {
@@ -20,7 +21,27 @@ impl UiHostAdapterSessionAuthority {
                 UiHostAdapterSessionGrant,
             ),
             presentation_lease_gate: Default::default(),
+            surface_effect_rounds: std::cell::Cell::new(0),
         }
+    }
+
+    /// Records the host's answer to one surface presentation. A presented or
+    /// in-flight answer began effects, and the host drops any retry wake it
+    /// held for an earlier frame it rejected before effects.
+    pub(crate) fn record_surface_presentation(
+        &self,
+        outcome: &crate::facade::mounted::UiHostSurfacePresentationOutcome,
+    ) {
+        use crate::facade::mounted::UiHostSurfacePresentationOutcome as Outcome;
+        if matches!(outcome, Outcome::Presented(_) | Outcome::InFlight(_)) {
+            self.surface_effect_rounds
+                .set(self.surface_effect_rounds.get().wrapping_add(1));
+        }
+    }
+
+    /// How many surface presentations the host has begun effects for.
+    pub(crate) fn surface_effect_rounds(&self) -> u64 {
+        self.surface_effect_rounds.get()
     }
 
     pub fn host_session_identity(&self) -> u64 {
