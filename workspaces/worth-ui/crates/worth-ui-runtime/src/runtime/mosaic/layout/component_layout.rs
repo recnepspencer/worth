@@ -298,36 +298,15 @@ fn viewport_box(
     }
 }
 
-/// The span one placement takes along an axis `available` points long.
+/// The span one placement takes along an axis `available` points long, held
+/// inside the axis where the axis is too short for it: a start that would
+/// precede the axis start stands at it, and an extent the insets would leave
+/// negative is zero.
 fn resolve_axis(axis: ComponentViewportAxisPlacement, available: f32) -> UiMosaicAxisSpan {
-    match axis {
-        ComponentViewportAxisPlacement::FixedFromStart {
-            start_logical_points,
-            extent_logical_points,
-        } => UiMosaicAxisSpan {
-            start: f32::from(start_logical_points),
-            extent: f32::from(extent_logical_points),
-        },
-        ComponentViewportAxisPlacement::StretchBetween {
-            start_logical_points,
-            end_logical_points,
-        } => {
-            let start = f32::from(start_logical_points);
-            UiMosaicAxisSpan {
-                start,
-                extent: (available - start - f32::from(end_logical_points)).max(0.0),
-            }
-        }
-        ComponentViewportAxisPlacement::FixedFromEnd {
-            end_logical_points,
-            extent_logical_points,
-        } => {
-            let extent = f32::from(extent_logical_points);
-            UiMosaicAxisSpan {
-                start: (available - f32::from(end_logical_points) - extent).max(0.0),
-                extent,
-            }
-        }
+    let span = axis.span(available);
+    UiMosaicAxisSpan {
+        start: span.start.max(0.0),
+        extent: span.extent.max(0.0),
     }
 }
 

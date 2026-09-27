@@ -94,7 +94,9 @@ impl UiPointerAffordanceProjection {
                 operability: Ok(observation),
                 ..
             } if observation.is_operable() => crate::declaration::UiPointerAffordance::Activation,
-            _ => crate::declaration::UiPointerAffordance::Default,
+            PointerTarget::Outside | PointerTarget::Inside { .. } => {
+                crate::declaration::UiPointerAffordance::Default
+            }
         }
     }
     /// The affordance this observation decided for its target, or `None`

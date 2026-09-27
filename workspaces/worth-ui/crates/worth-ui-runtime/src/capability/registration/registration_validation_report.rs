@@ -36,6 +36,24 @@ impl RegistrationValidationReport {
         &self.diagnostics
     }
 
+    pub(crate) fn accepts(&self, family_name: &'static str, identity_text: &str) -> bool {
+        self.accepted_registration_keys
+            .contains(&(family_name, identity_text.to_owned()))
+    }
+
+    /// The diagnostics validation recorded against `identity_text` in
+    /// `family_name`.
+    pub(crate) fn diagnostics_of<'report>(
+        &'report self,
+        family_name: &'static str,
+        identity_text: &'report str,
+    ) -> impl Iterator<Item = &'report CapabilityRegistrationDiagnostic> {
+        self.diagnostics.iter().filter(move |diagnostic| {
+            diagnostic.family_name() == Some(family_name)
+                && diagnostic.identity_text() == Some(identity_text)
+        })
+    }
+
     pub(crate) fn accepted_identity_texts_for_family(
         &self,
         family_name: &'static str,

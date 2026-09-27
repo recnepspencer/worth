@@ -203,7 +203,9 @@ fn record_artifact_link_for_binding(
                 accumulator.record_bound_view_binding(view_binding);
             }
         }
-        _ => {}
+        WorthUiArtifactNode::Import(_)
+        | WorthUiArtifactNode::Component(_)
+        | WorthUiArtifactNode::Token(_) => {}
     }
 }
 
@@ -245,7 +247,9 @@ fn record_artifact_links(
                             .record_bound_view_binding(view_binding);
                     }
                 }
-                _ => {}
+                WorthUiArtifactNode::Import(_)
+                | WorthUiArtifactNode::Component(_)
+                | WorthUiArtifactNode::Token(_) => {}
             }
         }
     }

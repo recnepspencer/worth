@@ -81,8 +81,12 @@ impl UiMountedMotionSampler {
 /// departing from the earlier sample would pull the content back by a frame's
 /// worth of motion. The departure is that presented frame, so the track is
 /// recorded as on screen there; left unpresented, it hid the frame from the
-/// Scroll settle and the displayed pose fell behind the host. A track already
-/// sampled, rebased or accepted since its installation keeps the start it has.
+/// Scroll settle and the displayed pose fell behind the host. A sample the
+/// tick drew as its track arrived is on screen as surely as one it drew
+/// mid-flight, so the departure rests there; departing from the track's
+/// published predecessor instead pulled the content back to where it was
+/// before the arrival. A track already sampled, rebased or accepted since its
+/// installation keeps the start it has.
 fn departing_from_presented(
     live: UiPresentationTrackState,
     sampled: &UiPresentationTrackState,
@@ -92,14 +96,15 @@ fn departing_from_presented(
     if !live.is_unstarted() || live.track.identity() == sampled.track.identity() {
         return live;
     }
-    let presented = sampled
-        .is_running()
-        .then(|| UiPresentationInterruptedSample {
-            tick,
-            geometry: sampled.current_geometry(),
-            opacity_units: sampled.current_opacity_units,
-            outgoing: sampled.outgoing_curve(tick),
-        });
+    let drawn = sampled
+        .on_screen()
+        .is_some_and(|sample| sample.tick() == tick);
+    let presented = (sampled.is_running() || drawn).then(|| UiPresentationInterruptedSample {
+        tick,
+        geometry: sampled.current_geometry(),
+        opacity_units: sampled.current_opacity_units,
+        outgoing: sampled.outgoing_curve(tick),
+    });
     match resolve(live.track, presented, reduced_motion) {
         UiPresentationMotionInstallation::Install {
             geometry,

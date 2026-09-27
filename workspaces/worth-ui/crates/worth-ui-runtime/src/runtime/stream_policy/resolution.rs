@@ -265,12 +265,16 @@ fn resolve_frame(
         }
     };
     let counters = UiAllocationFrameResolutionCounters {
-        entry_visits: families.len() as u16,
+        entry_visits: u16::try_from(families.len())
+            .expect("a frame carries at most ALLOCATION_FRAME_SOURCE_COUNT ingress"),
         gap_checks,
-        policy_family_count: receipt.families().len() as u8,
-        invalidation_count: invalidations.len() as u16,
+        policy_family_count: u8::try_from(receipt.families().len())
+            .expect("a frame composes at most the eight stream families"),
+        invalidation_count: u16::try_from(invalidations.len())
+            .expect("a frame carries at most ALLOCATION_FRAME_SOURCE_COUNT ingress"),
         order_ledger_scans: ledger_scans,
-        order_ledger_writes: families.len() as u16,
+        order_ledger_writes: u16::try_from(families.len())
+            .expect("a frame carries at most ALLOCATION_FRAME_SOURCE_COUNT ingress"),
     };
     let invalidations = into_counted_box(invalidations, &mut payload_counters);
     let (policy, intermediate_policy_verdicts, policy_branches, composition_counters) =
@@ -356,7 +360,14 @@ fn classify(fact: &UiAllocationFrameSourceFact) -> Result<(UiAllocationStreamFam
                 (UiAllocationStreamFamily::TextInput, UiAllocationInvalidationFamily::TextContentChange),
             WorthUiTransientInteractionState::ResizePreview =>
                 (UiAllocationStreamFamily::ResizePreview, UiAllocationInvalidationFamily::ResizePreviewDelta),
-            _ => return Err(UiAllocationFrameResolutionDenial::UnsupportedSourcePosture),
+            WorthUiTransientInteractionState::Hover
+            | WorthUiTransientInteractionState::Pressed
+            | WorthUiTransientInteractionState::DragCapture
+            | WorthUiTransientInteractionState::PointerCapture
+            | WorthUiTransientInteractionState::AnimationTick
+            | WorthUiTransientInteractionState::InFlightGesture => {
+                return Err(UiAllocationFrameResolutionDenial::UnsupportedSourcePosture)
+            }
         },
         UiAllocationFrameSourceFact::HostMeasurement(value) => match value.result().value() {
             UiMeasurementValue::ViewportExtent(_) =>
@@ -365,7 +376,12 @@ fn classify(fact: &UiAllocationFrameSourceFact) -> Result<(UiAllocationStreamFam
                 (UiAllocationStreamFamily::ScrollExtentObservation, UiAllocationInvalidationFamily::ScrollExtentObservation),
             UiMeasurementValue::PortalAnchorRect(_) =>
                 (UiAllocationStreamFamily::PortalAnchorObservation, UiAllocationInvalidationFamily::PortalAnchorMovement),
-            _ => (UiAllocationStreamFamily::HostMeasurementReplacement, UiAllocationInvalidationFamily::HostMeasurementResultReplacement),
+            UiMeasurementValue::TextIntrinsicSize(_)
+            | UiMeasurementValue::TextBaselineMetrics(_)
+            | UiMeasurementValue::FontMetrics(_)
+            | UiMeasurementValue::NativeControlIntrinsicSize(_)
+            | UiMeasurementValue::DpiScaleFactor(_) =>
+                (UiAllocationStreamFamily::HostMeasurementReplacement, UiAllocationInvalidationFamily::HostMeasurementResultReplacement),
         },
     })
 }

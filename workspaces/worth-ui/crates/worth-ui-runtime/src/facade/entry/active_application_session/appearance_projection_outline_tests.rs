@@ -162,8 +162,14 @@ fn assert_outline(
     let expansion = 750 + i32::try_from(fringe).unwrap();
     assert_eq!(visual.x(), allocation.x() - expansion);
     assert_eq!(visual.y(), allocation.y() - expansion);
-    assert_eq!(visual.width(), allocation.width() + 2 * expansion as u32);
-    assert_eq!(visual.height(), allocation.height() + 2 * expansion as u32);
+    assert_eq!(
+        visual.width(),
+        allocation.width() + 2 * u32::try_from(expansion).unwrap()
+    );
+    assert_eq!(
+        visual.height(),
+        allocation.height() + 2 * u32::try_from(expansion).unwrap()
+    );
     if work.posture() == worth_ui_host_contract::UiMountedAppearanceWorkPosture::Initial {
         assert_eq!(work.damage().len(), 1);
         let damage = &work.damage()[0];

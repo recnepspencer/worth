@@ -73,13 +73,14 @@ pub use identity_view::{
     UiSurfaceBindingIdentityView,
 };
 pub(crate) use occurrence_geometry::UiMountedOccurrenceGeometryState;
+pub(crate) use occurrence_geometry::{
+    UiAddressedScrollOwner, UiMountedMosaicClipBinding, UiMountedScrollClipBinding,
+    UiMountedSurfacePaintPosture,
+};
 pub use occurrence_geometry::{
     UiMountedLayoutBasis, UiMountedLayoutCompletionReceipt, UiMountedLayoutRevision,
     UiMountedMosaicRegionGeometry, UiMountedOccurrenceGeometry, UiMountedOccurrenceGeometryDenial,
     UiMountedOccurrencePlacement, UiMountedSurfaceGeometryBatch,
-};
-pub(crate) use occurrence_geometry::{
-    UiMountedMosaicClipBinding, UiMountedScrollClipBinding, UiMountedSurfacePaintPosture,
 };
 pub(crate) use portal_overlay::UiMountedPortalOverlayProjectionInput;
 pub use presentation::motion_sampling::UiPresentationMotionSamplingCost;
@@ -110,7 +111,6 @@ pub(crate) use projection::UiMountedAppearanceClip;
 pub(crate) use projection::UiMountedAppearanceClipDenial;
 pub(crate) use projection::UiMountedAppearanceProjectionSelection;
 pub(crate) use projection::UiMountedFocusScope;
-pub(crate) use projection::UiMountedRegionPlacement;
 pub(crate) use projection::{
     lower_scroll_chrome, UiMountedScrollChromeNode, UiScrollChromeLoweringDenial,
     UiScrollChromeLoweringInput,
@@ -119,6 +119,9 @@ pub(crate) use projection::{
     prepare_projection, UiIntentPostureCommit, UiIntentPostureObservation, UiIntentPostureTable,
     UiMountedPresentationDeltaSource, UiMountedPreviewProjectionInput, UiMountedProjectionInput,
     UiPreparedMountedProjection,
+};
+pub(crate) use projection::{
+    UiLaidOut, UiMountedPlacement, UiMountedScrollRegionBoxes, UiPresented,
 };
 pub(crate) use projection::{
     UiMountedAppearanceDerivedInput, UiMountedAppearanceGeometryInput,
@@ -147,6 +150,10 @@ pub(crate) use publication::{
 };
 pub(crate) use receipt_basis::UiMountedNodeReceiptBasis;
 pub(crate) use retention::{
+    UiHitAncestorClip, UiHitAncestorReach, UiHitScrollMove, UiPresentedHitRect,
+    UiPresentedHitTestRow,
+};
+pub(crate) use retention::{
     UiMountedDiagnosticInspectionBasis, UiMountedDiagnosticInspectionDenial,
     UiMountedDiagnosticRetentionLease, UiMountedFrameInspectionBasis,
     UiMountedFrameInspectionDenial, UiMountedFrameInspectionSelection,
@@ -162,7 +169,6 @@ pub use retention::{
     UiMountedFrameRetentionDenial, UiMountedFrameRetentionRejection, UiMountedRetentionClass,
     UiMountedRetentionClassBudget, UiMountedRetentionLease,
 };
-pub(crate) use retention::{UiPresentedHitRect, UiPresentedHitTestRow};
 pub(crate) use reuse::UiMountedFrameReuseExternalBasis;
 pub use reuse::{
     UiMountedFrameExecutionPosture, UiMountedFrameReuse, UiMountedFrameReuseComparator,

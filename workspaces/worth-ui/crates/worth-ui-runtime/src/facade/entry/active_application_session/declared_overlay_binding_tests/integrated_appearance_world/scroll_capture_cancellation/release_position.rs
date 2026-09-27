@@ -98,8 +98,12 @@ fn a_release_on_a_basis_chrome_cannot_read_still_ends_the_drag() {
             UiHostSurfaceCoordinateSpace::Window,
             UiHostSurfaceCoordinateUnit::LogicalPoint,
         ),
-        (grabbed[0] * 1000.0).round() as i64,
-        ((grabbed[1] + 2.0) * 1000.0).round() as i64,
+        crate::units::UiSubpixels::nearest(grabbed[0])
+            .unwrap()
+            .count(),
+        crate::units::UiSubpixels::nearest(grabbed[1] + 2.0)
+            .unwrap()
+            .count(),
     );
     let released = button_at(
         &mut scroll,
@@ -196,10 +200,7 @@ fn button(
     point: [f32; 2],
     transition: UiHostPointerButtonTransition,
 ) -> UiScrollChromeIngressOutcome {
-    let position = UiHostSurfacePosition::viewport_logical(
-        (point[0] * 1000.0).round() as i64,
-        (point[1] * 1000.0).round() as i64,
-    );
+    let position = crate::units::viewport_position_for_test(point[0], point[1]);
     button_at(scroll, number, position, transition)
 }
 

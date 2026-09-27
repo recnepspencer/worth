@@ -185,33 +185,117 @@ impl UiMountedFrameRetentionCoordinator {
         ))
     }
 
-    /// Apply one settled scroll pose's translations to the current retained
-    /// frame for its surface, and report the hit transition that crossing
-    /// leaves behind.
-    ///
-    /// The predecessor is taken before the refresh and the successor after it,
-    /// so the two name the same frame with the rows in the positions they held
-    /// on either side of the pose. That pair is what tells interaction which
-    /// rows moved under a pointer that did not.
+    /// Apply one committed scroll pose's translations to the current
+    /// retained frame for its surface, and report the hit transition that
+    /// crossing leaves behind. A pose that moves nothing still retires the
+    /// leads an earlier displayed pose left.
     pub(in crate::mounting) fn refresh_presented_hit_scroll(
         &mut self,
         surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
         translations: &[(
             worth_ui_host_contract::UiMountedInstanceIdentity,
-            crate::mounting::presentation::UiScrollPoseShift,
+            crate::mounting::UiHitScrollMove,
         )],
     ) -> (
         Option<super::super::UiCommittedPresentedHitTransition>,
         UiHitTestSpatialWork,
     ) {
-        let mut work = UiHitTestSpatialWork::default();
-        if translations.is_empty() {
-            return (None, work);
-        }
         let frame = {
             let authority = self.authority.borrow();
             authority.frames.surface_frames.get(&surface).copied()
         };
+        self.move_presented_hit_scroll(
+            frame,
+            surface,
+            translations,
+            crate::mounting::presented_hit_index::UiHitScrollStanding::Committed,
+        )
+    }
+
+    /// Lead the frame a witness displays to a pose mounted geometry has yet
+    /// to commit, and report the hit transition that crossing leaves behind.
+    /// While a presentation is in flight the surface's current frame is the
+    /// one it presents, not the one the host shows, so the lead names the
+    /// displayed frame itself.
+    pub(in crate::mounting) fn lead_presented_hit_scroll(
+        &mut self,
+        displayed: crate::mounting::presentation::UiDisplayedSurfaceBasis,
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+        translations: &[(
+            worth_ui_host_contract::UiMountedInstanceIdentity,
+            crate::mounting::UiHitScrollMove,
+        )],
+    ) -> (
+        Option<super::super::UiCommittedPresentedHitTransition>,
+        UiHitTestSpatialWork,
+    ) {
+        self.move_presented_hit_scroll(
+            Some(displayed.basis().frame()),
+            surface,
+            translations,
+            crate::mounting::presented_hit_index::UiHitScrollStanding::Leading,
+        )
+    }
+
+    /// Retire every lead the rows of `surface` hold, in its current frame and
+    /// in `displayed`, the frame its witness shows, and report the hit
+    /// transitions that leaves behind. A frame holding no lead is left
+    /// untouched, so retiring costs nothing while no settle is owed.
+    pub(in crate::mounting) fn retire_presented_hit_scroll_leads(
+        &mut self,
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+        displayed: UiMountedFrameIdentity,
+    ) -> Vec<super::super::UiCommittedPresentedHitTransition> {
+        let frames = {
+            let authority = self.authority.borrow();
+            authority
+                .frames
+                .surface_frames
+                .get(&surface)
+                .copied()
+                .into_iter()
+                .chain(std::iter::once(displayed))
+                .collect::<std::collections::BTreeSet<_>>()
+                .into_iter()
+                .filter(|frame| {
+                    authority
+                        .evidence_rc(*frame)
+                        .is_some_and(|evidence| evidence.holds_hit_scroll_leads(surface))
+                })
+                .collect::<Vec<_>>()
+        };
+        frames
+            .into_iter()
+            .filter_map(|frame| {
+                self.move_presented_hit_scroll(
+                    Some(frame),
+                    surface,
+                    &[],
+                    crate::mounting::presented_hit_index::UiHitScrollStanding::Leading,
+                )
+                .0
+            })
+            .collect()
+    }
+
+    /// The predecessor is taken before the move and the successor after it,
+    /// so the two name the same frame with the rows in the positions they held
+    /// on either side of the pose. That pair is what tells interaction which
+    /// rows moved under a pointer that did not.
+    fn move_presented_hit_scroll(
+        &mut self,
+        frame: Option<UiMountedFrameIdentity>,
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+        translations: &[(
+            worth_ui_host_contract::UiMountedInstanceIdentity,
+            crate::mounting::UiHitScrollMove,
+        )],
+        standing: crate::mounting::presented_hit_index::UiHitScrollStanding,
+    ) -> (
+        Option<super::super::UiCommittedPresentedHitTransition>,
+        UiHitTestSpatialWork,
+    ) {
+        let mut work = UiHitTestSpatialWork::default();
         let Some(frame) = frame else {
             return (None, work);
         };
@@ -221,7 +305,11 @@ impl UiMountedFrameRetentionCoordinator {
             let Some(mut evidence) = authority.evidence_rc(frame) else {
                 return (None, work);
             };
-            work.merge(Rc::make_mut(&mut evidence).refresh_hit_scroll(surface, translations));
+            work.merge(Rc::make_mut(&mut evidence).refresh_hit_scroll(
+                surface,
+                translations,
+                standing,
+            ));
             authority.replace_evidence(evidence);
         }
         (self.committed_hit_transition(predecessor, frame), work)

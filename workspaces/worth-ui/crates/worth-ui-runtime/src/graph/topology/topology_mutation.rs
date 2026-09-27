@@ -103,14 +103,24 @@ fn membership_facts(
         UiGraphContainmentClaim::Region { region_name } => {
             Some(UiGraphRegionMembership::new(region_name.clone()))
         }
-        _ => None,
+        UiGraphContainmentClaim::RootPage
+        | UiGraphContainmentClaim::PageSet { .. }
+        | UiGraphContainmentClaim::Mosaic { .. }
+        | UiGraphContainmentClaim::LocalComposition { .. }
+        | UiGraphContainmentClaim::Control { .. }
+        | UiGraphContainmentClaim::DiagnosticSurface { .. } => None,
     };
 
     let mosaic_membership = match containment_claim {
         UiGraphContainmentClaim::Mosaic { mosaic_name, .. } => {
             Some(UiGraphMosaicMembership::new(mosaic_name.clone()))
         }
-        _ => None,
+        UiGraphContainmentClaim::RootPage
+        | UiGraphContainmentClaim::PageSet { .. }
+        | UiGraphContainmentClaim::Region { .. }
+        | UiGraphContainmentClaim::LocalComposition { .. }
+        | UiGraphContainmentClaim::Control { .. }
+        | UiGraphContainmentClaim::DiagnosticSurface { .. } => None,
     };
 
     UiGraphMembershipFacts::new(page_membership, region_membership, mosaic_membership)

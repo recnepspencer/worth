@@ -93,9 +93,8 @@ impl UiScrollBounds {
         viewport: worth_ui_host_contract::UiMountedCanonicalBox,
     ) -> Option<Self> {
         let extent = |content: f32, viewport: f32| {
-            let value = f64::from((content - viewport).max(0.0))
-                * worth_ui_host_contract::UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f64;
-            (value.is_finite() && value < i64::MAX as f64).then(|| value.round() as i64)
+            crate::units::UiSubpixels::nearest_distance((content - viewport).max(0.0))
+                .map(crate::units::UiSubpixels::count)
         };
         Self::new(
             extent(content.width(), viewport.width())?,

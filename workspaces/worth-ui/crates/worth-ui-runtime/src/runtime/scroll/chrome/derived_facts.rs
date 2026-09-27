@@ -141,7 +141,7 @@ impl UiScrollChromeFacts {
             super::page_step_subpixels(
                 facts.viewport_extent_logical_points,
                 line_extent_logical_points,
-            ),
+            )?,
             facts.max_offset_subpixels,
         )?;
         facts.offset_with_axis_replaced(axis, paged, offset)

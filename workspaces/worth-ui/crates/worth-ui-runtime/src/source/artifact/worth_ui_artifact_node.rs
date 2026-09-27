@@ -127,14 +127,14 @@ impl WorthUiArtifactNode {
     pub(crate) fn component_capability_identity(&self) -> Option<&str> {
         match self {
             Self::Component(node) => Some(node.component().id().as_str()),
-            _ => None,
+            Self::Import(_) | Self::Surface(_) | Self::Binding(_) | Self::Token(_) => None,
         }
     }
 
     pub(crate) fn theme_token_capability_identity(&self) -> Option<&str> {
         match self {
             Self::Token(node) => Some(node.theme_token().id().as_str()),
-            _ => None,
+            Self::Import(_) | Self::Component(_) | Self::Surface(_) | Self::Binding(_) => None,
         }
     }
 

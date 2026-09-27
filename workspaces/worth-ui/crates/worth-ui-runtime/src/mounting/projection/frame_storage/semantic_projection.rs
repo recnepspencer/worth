@@ -19,7 +19,12 @@ pub(in crate::mounting) struct UiMountedProjectionNodeRecord {
         super::super::appearance::UiMountedAppearanceClip,
     pub(in crate::mounting::projection) appearance_geometry: super::UiMountedAppearanceGeometry,
     pub(in crate::mounting::projection) occurrence_allocation:
-        worth_ui_host_contract::UiMountedAllocationProjection,
+        crate::mounting::UiLaidOut<worth_ui_host_contract::UiMountedAllocationProjection>,
+    /// The box on record, where hit testing reads the occurrence, when the
+    /// device grid painted it elsewhere; absent when the painted allocation is
+    /// the box on record.
+    pub(in crate::mounting::projection) recorded_bounds:
+        Option<worth_ui_host_contract::UiMountedCanonicalBox>,
     pub(in crate::mounting::projection) semantic_text:
         Option<super::super::semantic_text::UiMountedSemanticTextSeed>,
     pub(in crate::mounting::projection) hit_test:
@@ -34,12 +39,6 @@ pub(in crate::mounting) struct UiMountedProjectionNodeRecord {
 impl UiMountedProjectionNodeRecord {
     pub(in crate::mounting) const fn receipt(&self) -> &UiMountedNodeReceipt {
         &self.receipt
-    }
-
-    pub(in crate::mounting::projection) fn presentation_allocation(
-        &self,
-    ) -> worth_ui_host_contract::UiMountedAllocationProjection {
-        self.occurrence_allocation
     }
 }
 

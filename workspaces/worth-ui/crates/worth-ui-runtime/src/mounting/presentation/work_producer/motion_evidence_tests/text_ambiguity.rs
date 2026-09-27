@@ -114,7 +114,9 @@ fn text_command(
     let foreground = UiMountedTextForegroundSpan::from_runtime_mounting(
         UiTextOriginalRange::from_text_mechanics(0, 5).unwrap(),
         UiMountedRgba8::new(color[0], color[1], color[2], color[3]),
-        UiMountedTextPaintSpanIdentity::from_runtime_mounting([slot_ordinal(slot) as u8; 32]),
+        UiMountedTextPaintSpanIdentity::from_runtime_mounting(std::array::from_fn(|index| {
+            slot_ordinal(slot).to_le_bytes()[index % 2]
+        })),
     );
     let replacement = UiMountedSemanticTextMechanic::complete_from_runtime_mounting(
         UiMountedSemanticTextCompletionInput {

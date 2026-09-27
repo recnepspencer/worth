@@ -1,5 +1,5 @@
 mod appearance;
-pub(crate) use appearance::ancestor_clips_suppress;
+pub(crate) use appearance::ancestor_clip;
 #[cfg(test)]
 pub(crate) use appearance::derive_unbound_ancestry;
 mod appearance_selection;
@@ -14,6 +14,7 @@ mod lowering;
 mod mechanical_role;
 mod node_receipt;
 mod participation;
+mod placement;
 mod pointer_affordance;
 mod pointer_affordance_work;
 mod prepared_projection;
@@ -50,7 +51,6 @@ pub(crate) use frame_storage::UiMountedAppearanceOutputDenial;
 pub(crate) use frame_storage::UiMountedAppearanceSurfaceSampleGeometry;
 pub(in crate::mounting) use frame_storage::UiMountedHitMechanicSource;
 pub use frame_storage::UiMountedProjectionFrame;
-pub(crate) use frame_storage::UiMountedRegionPlacement;
 pub(in crate::mounting) use frame_storage::UiMountedSemanticMechanicSource;
 pub(in crate::mounting) use frame_storage::UiMountedSemanticProjection;
 pub(crate) use frame_storage::{
@@ -59,6 +59,9 @@ pub(crate) use frame_storage::{
 };
 pub(in crate::mounting) use hit_test::{reattribute_hit_test, reattribute_hit_test_with_probes};
 pub use node_receipt::UiMountedNodeReceipt;
+pub(crate) use placement::{
+    UiLaidOut, UiMountedPlacement, UiMountedScrollRegionBoxes, UiPresented,
+};
 pub(crate) use pointer_affordance::UiMountedPointerAffordanceState;
 pub use pointer_affordance::UiMountedPointerAffordanceWork;
 pub use prepared_projection::UiProjectedMountedFrameCandidate;

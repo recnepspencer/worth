@@ -100,7 +100,10 @@ impl UiIntentConfirmationState {
                 inspected,
             );
         };
-        let slot_identity = UiIntentConfirmationSlotIdentity::new(slot as u8, generation);
+        let slot_identity = UiIntentConfirmationSlotIdentity::new(
+            u8::try_from(slot).expect("UI_PENDING_INTENT_CONFIRMATION_LIMIT slots fit u8"),
+            generation,
+        );
         let (challenge, pending) = prepared.seal(lineage, slot_identity);
         self.slots[slot].generation = generation;
         self.slots[slot].state = UiIntentConfirmationSlotState::Pending(challenge);

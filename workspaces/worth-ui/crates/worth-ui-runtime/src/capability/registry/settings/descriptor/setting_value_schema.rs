@@ -53,7 +53,7 @@ impl SettingValueSchema {
                     sorted.len() == options.len()
                 }
             }
-            _ => true,
+            Self::Boolean | Self::Integer | Self::Decimal | Self::Text => true,
         }
     }
 

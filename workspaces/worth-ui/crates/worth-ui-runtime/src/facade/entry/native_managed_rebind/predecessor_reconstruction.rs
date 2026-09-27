@@ -20,15 +20,6 @@ pub(super) fn reconstruction_matches_progress(
         })
 }
 
-pub(super) fn reconstruction_settled(outcome: &crate::mounting::UiMountedFrameOutcome) -> bool {
-    matches!(
-        outcome,
-        crate::mounting::UiMountedFrameOutcome::Published(_)
-            | crate::mounting::UiMountedFrameOutcome::Unchanged(_)
-            | crate::mounting::UiMountedFrameOutcome::Reconciled(_)
-    )
-}
-
 impl super::WorthUiNativeApplicationShell {
     pub(in crate::facade::entry::native_managed_rebind) fn begin_predecessor_reconstruction(
         &mut self,
@@ -50,7 +41,9 @@ impl super::WorthUiNativeApplicationShell {
                 );
                 Ok(WorthUiNativeManagedRebindProgress::AwaitingProgress)
             }
-            outcome if reconstruction_settled(&outcome) => {
+            crate::mounting::UiMountedFrameOutcome::Published(_)
+            | crate::mounting::UiMountedFrameOutcome::Unchanged(_)
+            | crate::mounting::UiMountedFrameOutcome::Reconciled(_) => {
                 let outcome = retry
                     .rebase_content_and_retry(
                         &mut self.session,
@@ -62,9 +55,16 @@ impl super::WorthUiNativeApplicationShell {
                     outcome,
                 ))
             }
-            _ => Ok(WorthUiNativeManagedRebindProgress::Stopped(
-                WorthUiNativeManagedRebindStop::PredecessorReconstructionFailed,
-            )),
+            crate::mounting::UiMountedFrameOutcome::RejectedBeforeEffects(_)
+            | crate::mounting::UiMountedFrameOutcome::PresentationIndeterminate(_)
+            | crate::mounting::UiMountedFrameOutcome::Superseded(_)
+            | crate::mounting::UiMountedFrameOutcome::RetentionDenied(_)
+            | crate::mounting::UiMountedFrameOutcome::AdmissionDenied(_)
+            | crate::mounting::UiMountedFrameOutcome::CompletionDenied(_) => {
+                Ok(WorthUiNativeManagedRebindProgress::Stopped(
+                    WorthUiNativeManagedRebindStop::PredecessorReconstructionFailed,
+                ))
+            }
         }
     }
 }

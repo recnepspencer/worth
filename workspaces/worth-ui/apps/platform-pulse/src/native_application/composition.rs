@@ -99,6 +99,7 @@ impl super::PlatformPulseApplicationRuntime {
             pending_query_actions: Vec::new(),
             pending_query_denial_story: None,
             pending_frame_presentation: None,
+            presentation_retry: None,
             pending_managed_rebind: None,
             pending_native_publications: std::collections::VecDeque::new(),
             pending_native_observations: std::collections::VecDeque::new(),

@@ -67,7 +67,7 @@ impl UiNativeApplicationProgramProgress {
             ) {
             shell.reconstruct_current_presentation(deadline.tick(), self.next_completion_tick)?
         } else {
-            retry_text_atlas_deferred(shell, outcome, deadline, self.next_completion_tick)
+            retry_text_atlas_deferred(shell, outcome, deadline, self.next_completion_tick)?
         };
         let progress = self.retain_or_attribute(
             shell,

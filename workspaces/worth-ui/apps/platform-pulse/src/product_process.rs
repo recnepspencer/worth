@@ -38,10 +38,16 @@ fn run_worth_native(
     use worth_ui_native_platform::{
         UiNativePlatformOutcome, UiNativePlatformProfile, UiNativeWindowSpec, WorthUiNativePlatform,
     };
-    let profile = UiNativePlatformProfile::single_window(UiNativeWindowSpec::new(
-        "WORTH UI Platform Pulse",
-        worth_ui_platform_pulse::visual_identity_pulse::PLATFORM_PULSE_PRODUCT_LOGICAL_EXTENT,
-    ));
+    use worth_ui_platform_pulse::visual_identity_pulse::{
+        PLATFORM_PULSE_MINIMUM_LOGICAL_EXTENT, PLATFORM_PULSE_PRODUCT_LOGICAL_EXTENT,
+    };
+    let profile = UiNativePlatformProfile::single_window(
+        UiNativeWindowSpec::new(
+            "WORTH UI Platform Pulse",
+            PLATFORM_PULSE_PRODUCT_LOGICAL_EXTENT,
+        )
+        .with_minimum_logical_size(PLATFORM_PULSE_MINIMUM_LOGICAL_EXTENT),
+    );
     let platform = match WorthUiNativePlatform::prepare(profile) {
         Ok(platform) => platform,
         Err(denial) => {

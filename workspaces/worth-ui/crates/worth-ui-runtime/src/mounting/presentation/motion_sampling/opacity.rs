@@ -3,7 +3,8 @@
 pub(super) fn interpolate_units(start: u16, end: u16, progress: f32) -> u16 {
     let start = f64::from(start);
     let sampled = start + (f64::from(end) - start) * f64::from(progress);
-    sampled.round_ties_even().clamp(0.0, f64::from(u16::MAX)) as u16
+    crate::whole_number::whole_u16(sampled.round_ties_even().clamp(0.0, f64::from(u16::MAX)))
+        .expect("finite progress between two opacities samples an opacity")
 }
 
 #[cfg(test)]

@@ -89,10 +89,10 @@ fn canonical(
 ) -> worth_ui_host_contract::UiMountedCanonicalBox {
     worth_ui_host_contract::UiMountedCanonicalBox::canonicalize(
         worth_ui_host_contract::UiMountedCanonicalBoxInput {
-            x: x as f32,
-            y: y as f32,
-            width: width as f32,
-            height: height as f32,
+            x: crate::units::layout_points(x),
+            y: crate::units::layout_points(y),
+            width: crate::units::layout_points(width),
+            height: crate::units::layout_points(height),
             coordinate_space: worth_ui_host_contract::UiMountedCoordinateSpace::Viewport,
         },
     )
@@ -117,18 +117,21 @@ fn admitted_chrome() -> crate::runtime::scroll::chrome::UiScrollAdmittedChrome {
 
 fn bounds(content_width: f64, content_height: f64) -> crate::runtime::scroll::UiScrollBounds {
     crate::runtime::scroll::UiScrollBounds::new(
-        ((content_width - VIEWPORT_WIDTH) * SUBPIXELS_PER_POINT) as i64,
-        ((content_height - VIEWPORT_HEIGHT) * SUBPIXELS_PER_POINT) as i64,
+        subpixels(content_width - VIEWPORT_WIDTH),
+        subpixels(content_height - VIEWPORT_HEIGHT),
     )
     .expect("non-negative overflow")
 }
 
+/// `points` in the nearest whole subpixels.
+fn subpixels(points: f64) -> i64 {
+    crate::whole_number::whole_i64((points * SUBPIXELS_PER_POINT).round())
+        .expect("a fixture length within i64 subpixels")
+}
+
 fn offset(inline_points: f64, block_points: f64) -> crate::runtime::scroll::UiScrollOffset {
-    crate::runtime::scroll::UiScrollOffset::new(
-        (inline_points * SUBPIXELS_PER_POINT) as i64,
-        (block_points * SUBPIXELS_PER_POINT) as i64,
-    )
-    .expect("non-negative offset")
+    crate::runtime::scroll::UiScrollOffset::new(subpixels(inline_points), subpixels(block_points))
+        .expect("non-negative offset")
 }
 
 fn facts_at(inline_points: f64, block_points: f64) -> UiScrollChromeFacts {
@@ -220,12 +223,12 @@ fn a_drag_moves_the_offset_by_the_compressed_travel_ratio() {
     let placed = facts
         .offset_for_thumb_position(
             axis,
-            point(762.0, (grab + dragged_points) as f32),
-            grab as f32,
+            point(762.0, crate::units::layout_points(grab + dragged_points)),
+            crate::units::layout_points(grab),
             offset(0.0, 0.0),
         )
         .expect("the block axis presents chrome");
-    let expected = (max_points * dragged_points / travel * SUBPIXELS_PER_POINT).round() as i64;
+    let expected = subpixels(max_points * dragged_points / travel);
     assert!(
         (placed.block_subpixels() - expected).abs() <= 1,
         "a {dragged_points} point drag placed {} rather than {expected}",
@@ -240,7 +243,7 @@ fn a_drag_moves_the_offset_by_the_compressed_travel_ratio() {
 fn a_track_press_pages_one_viewport_minus_one_line_toward_the_pointer() {
     let axis = UiScrollChromeAxis::Block;
     let line: u16 = 24;
-    let page = ((VIEWPORT_HEIGHT - f64::from(line)) * SUBPIXELS_PER_POINT).round() as i64;
+    let page = subpixels(VIEWPORT_HEIGHT - f64::from(line));
     let (length, _) = oracle_length_and_travel(axis);
     let start_offset = 200.0;
     let facts = facts_at(0.0, start_offset);
@@ -249,28 +252,30 @@ fn a_track_press_pages_one_viewport_minus_one_line_toward_the_pointer() {
     let forward = facts
         .offset_for_track_click(
             axis,
-            point(762.0, (thumb_start + length + 4.0) as f32),
+            point(
+                762.0,
+                crate::units::layout_points(thumb_start + length + 4.0),
+            ),
             offset(0.0, start_offset),
             line,
         )
         .expect("a press past the thumb pages");
     assert_eq!(
         forward.block_subpixels(),
-        ((start_offset * SUBPIXELS_PER_POINT) as i64 + page)
-            .min((oracle_max_offset_points(axis) * SUBPIXELS_PER_POINT) as i64)
+        (subpixels(start_offset) + page).min(subpixels(oracle_max_offset_points(axis)))
     );
 
     let back = facts
         .offset_for_track_click(
             axis,
-            point(762.0, (thumb_start - 4.0) as f32),
+            point(762.0, crate::units::layout_points(thumb_start - 4.0)),
             offset(0.0, start_offset),
             line,
         )
         .expect("a press before the thumb pages");
     assert_eq!(
         back.block_subpixels(),
-        ((start_offset * SUBPIXELS_PER_POINT) as i64 - page).max(0)
+        (subpixels(start_offset) - page).max(0)
     );
 }
 

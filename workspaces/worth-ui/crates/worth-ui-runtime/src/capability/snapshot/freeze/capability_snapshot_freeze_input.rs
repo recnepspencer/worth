@@ -1,7 +1,8 @@
 use crate::capability::{
-    CapabilitySupportCatalog, FrozenAppearanceRoleCapabilities, FrozenAppearanceThemeCapabilities,
-    FrozenCommandCapabilities, FrozenCommandProjectionCapabilities, FrozenComponentCapabilities,
-    FrozenIconCapabilities, FrozenIntentDefinitionCapabilities, FrozenMosaicPlacementCapabilities,
+    CapabilityRegistrationRejections, CapabilitySupportCatalog, FrozenAppearanceRoleCapabilities,
+    FrozenAppearanceThemeCapabilities, FrozenCommandCapabilities,
+    FrozenCommandProjectionCapabilities, FrozenComponentCapabilities, FrozenIconCapabilities,
+    FrozenIntentDefinitionCapabilities, FrozenMosaicPlacementCapabilities,
     FrozenMosaicRegionCapabilities, FrozenMosaicSizingCapabilities, FrozenMosaicStateCapabilities,
     FrozenNativeCapabilities, FrozenPluginSlotCapabilities,
     FrozenRuntimeOutcomeProjectionCapabilities, FrozenSettingCapabilities,
@@ -31,4 +32,5 @@ pub(crate) struct CapabilitySnapshotFreezeInput {
     pub(crate) task_presentations: FrozenTaskPresentationCapabilities,
     pub(crate) theme_tokens: FrozenThemeTokenCapabilities,
     pub(crate) support_catalog: CapabilitySupportCatalog,
+    pub(crate) registration_rejections: CapabilityRegistrationRejections,
 }

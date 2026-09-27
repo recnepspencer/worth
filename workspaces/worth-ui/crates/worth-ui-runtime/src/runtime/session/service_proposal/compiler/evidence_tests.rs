@@ -60,7 +60,7 @@ fn sixty_four_independent_neighborhoods_have_linear_local_work_and_zero_residue(
             super::UiServiceProposalReservationOutcome::Coalesced { .. } => unreachable!(),
         };
         reservations.push(reservation);
-        let expected = reservations.len() as u16;
+        let expected = u16::try_from(reservations.len()).unwrap();
         assert_eq!(
             compiler.census().entries(),
             [

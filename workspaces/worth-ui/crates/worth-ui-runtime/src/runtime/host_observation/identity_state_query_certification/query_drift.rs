@@ -16,7 +16,9 @@ impl WorthUiQueryDriftCertification {
             .flat_map(|plan| plan.entries())
             .filter_map(|entry| match entry.outcome() {
                 WorthUiQueryLiveRebindOutcome::Deny(denial) => Some(denial.clone()),
-                _ => None,
+                WorthUiQueryLiveRebindOutcome::Preserve(_)
+                | WorthUiQueryLiveRebindOutcome::Rebind(_)
+                | WorthUiQueryLiveRebindOutcome::Retire(_) => None,
             })
             .collect::<Vec<_>>();
         Self {

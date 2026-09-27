@@ -55,34 +55,10 @@ impl UiMountedAppearanceScrollChromeInput {
         ),
         (),
     > {
-        use worth_ui_host_contract::{
-            UiMountedCanonicalBox, UiMountedCanonicalBoxInput, UiMountedCoordinateSpace,
-        };
-        let unit = worth_ui_host_contract::UI_APPEARANCE_LOGICAL_SUBPIXELS_PER_POINT as f32;
-        let bounds = |x: i32, y: i32, width: u32, height: u32| {
-            UiMountedCanonicalBox::canonicalize(UiMountedCanonicalBoxInput {
-                x: x as f32 / unit,
-                y: y as f32 / unit,
-                width: width as f32 / unit,
-                height: height as f32 / unit,
-                coordinate_space: UiMountedCoordinateSpace::Viewport,
-            })
-            .map_err(|_| ())
-        };
         Ok((
             self.identity,
-            bounds(
-                self.rect.x(),
-                self.rect.y(),
-                self.rect.width(),
-                self.rect.height(),
-            )?,
-            bounds(
-                self.clip.x(),
-                self.clip.y(),
-                self.clip.width(),
-                self.clip.height(),
-            )?,
+            self.rect.canonical_box().ok_or(())?,
+            self.clip.canonical_box().ok_or(())?,
             self.appearance_opacity,
         ))
     }

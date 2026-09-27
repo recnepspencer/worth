@@ -13,7 +13,7 @@ use crate::mounting::presentation::{
 
 // expect: compiles
 #[cfg(worth_ui_compile_probe = "published-map-published")]
-fn published_map_published(map: UiPublishedMap, rect: UiPublishedRect) -> UiPublishedRect {
+fn published_map_published(map: UiPublishedMap, rect: UiPublishedRect) -> Option<UiPublishedRect> {
     map.apply(rect)
 }
 
@@ -22,7 +22,7 @@ fn published_map_published(map: UiPublishedMap, rect: UiPublishedRect) -> UiPubl
 fn published_map_displayed(
     map: UiPublishedMap,
     rect: crate::mounting::presentation::UiDisplayedRect,
-) -> UiPublishedRect {
+) -> Option<UiPublishedRect> {
     map.apply(rect)
 }
 

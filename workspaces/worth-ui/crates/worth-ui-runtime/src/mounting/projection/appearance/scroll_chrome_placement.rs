@@ -7,20 +7,16 @@
 
 use super::portal_geometry::{portal_coverage, portal_step, step_coordinate};
 use super::{UiMountedAppearanceGeometryDenial as Denial, UiMountedAppearanceScrollChromeInput};
-use worth_ui_host_contract::{
-    UiAppearanceAllocationBounds, UiAppearanceClip, UiMountedCanonicalBox,
-    UiMountedPortalOverlayMechanic,
-};
+use crate::mounting::projection::placement::{UiPortalMove, UiPortalPresentable};
+use worth_ui_host_contract::{UiAppearanceAllocationBounds, UiAppearanceClip};
 
-impl UiMountedAppearanceScrollChromeInput {
-    /// This chrome where `portal` presents its region: `None` when none of it
-    /// shows within what the Portal covers.
-    pub(in crate::mounting::projection) fn through_portal(
-        mut self,
-        portal: UiMountedPortalOverlayMechanic,
-        source_anchor: UiMountedCanonicalBox,
-    ) -> Result<Option<Self>, Denial> {
-        let [x, y] = portal_step(portal, source_anchor)?;
+/// Chrome where a Portal presents its region: `None` when none of it shows
+/// within what the Portal covers.
+impl UiPortalPresentable for UiMountedAppearanceScrollChromeInput {
+    type Denial = Denial;
+
+    fn moved(mut self, by: &UiPortalMove) -> Result<Option<Self>, Denial> {
+        let [x, y] = portal_step(by)?;
         self.rect = UiAppearanceAllocationBounds::new(
             step_coordinate(self.rect.x(), x)?,
             step_coordinate(self.rect.y(), y)?,
@@ -35,7 +31,7 @@ impl UiMountedAppearanceScrollChromeInput {
             self.clip.height(),
         )
         .map_err(|_| Denial::EmptyAtCanonicalPrecision)?;
-        let Some(clip) = portal_coverage(portal)?
+        let Some(clip) = portal_coverage(by.portal())?
             .and_then(|coverage| super::clip::intersect_clips(coverage, clip))
         else {
             return Ok(None);

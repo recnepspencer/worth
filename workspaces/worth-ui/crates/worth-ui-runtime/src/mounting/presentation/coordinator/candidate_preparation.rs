@@ -3,7 +3,9 @@ use worth_ui_host_contract::{
     UiMountedProjectionView, UiSurfaceBindingGeneration,
 };
 
-use super::super::work_producer::{UiMountedPresentationCandidates, UiMountedPresentationState};
+use super::super::work_producer::{
+    UiIssuedCommandMotion, UiMountedPresentationCandidates, UiMountedPresentationState,
+};
 /// One structural inheritance decision, retained from admission through issuance.
 /// Unchanged command records keep their live acceptance slots, not copied samples.
 pub(in crate::mounting::presentation) struct UiPreparedFrameCandidates {
@@ -83,6 +85,9 @@ pub(super) struct UiPreparedSurfaceCandidate {
     pub(super) predecessor: Option<UiMountedFrameIdentity>,
     pub(super) reconstruction_required: bool,
     pub(super) origin: CandidateOrigin,
+    /// What a tick in flight on this binding displays once it lands, ahead
+    /// of this frame.
+    issued: UiIssuedCommandMotion,
 }
 
 pub(super) enum CandidateOrigin {
@@ -105,7 +110,9 @@ impl UiPreparedFrameCandidates {
         &mut self,
         frame: &crate::mounting::UiPreparedMountedFrame,
         derived: &crate::mounting::UiMountedAppearanceDerivedInput,
-        placed_chrome: &[crate::mounting::UiMountedAppearanceScrollChromeInput],
+        placed_chrome: &[crate::mounting::UiPresented<
+            crate::mounting::UiMountedAppearanceScrollChromeInput,
+        >],
     ) -> Result<(), ()> {
         for surface in &mut self.surfaces {
             surface
@@ -124,7 +131,9 @@ impl UiPreparedFrameCandidates {
         )],
     ) {
         for surface in &mut self.surfaces {
-            surface.state.bind_appearance_sample_targets(frame, targets);
+            surface
+                .state
+                .bind_appearance_sample_targets(frame, targets, &surface.issued);
         }
     }
 
@@ -146,6 +155,7 @@ impl UiPreparedFrameCandidates {
                 predecessor: None,
                 reconstruction_required: false,
                 origin: CandidateOrigin::Initial,
+                issued: UiIssuedCommandMotion::default(),
                 state,
             }],
         }
@@ -209,6 +219,7 @@ impl UiPreparedFrameCandidates {
         frame: &crate::mounting::UiPreparedMountedFrame,
         retained: &UiMountedPresentationCandidates,
         reconstruction_bindings: &std::collections::BTreeSet<UiSurfaceBindingGeneration>,
+        sample_in_flight: Option<&super::motion_sample::UiPendingMotionSamplePresentation>,
     ) -> Result<Self, UiHostSurfacePresentationDenial> {
         let source = frame.presentation_delta_source();
         let mut surfaces = Vec::with_capacity(frame.surfaces().len());
@@ -216,11 +227,18 @@ impl UiPreparedFrameCandidates {
             let predecessor = retained.get(&surface.requirement().binding());
             let reconstruction_required =
                 reconstruction_bindings.contains(&surface.requirement().binding());
-            let (state, origin) = match (source.predecessor(), predecessor) {
+            // A binding awaiting reconstruction accepts no tick in flight.
+            let issued = sample_in_flight
+                .zip(predecessor)
+                .filter(|_| !reconstruction_required)
+                .map_or_else(UiIssuedCommandMotion::default, |(pending, previous)| {
+                    pending.issued_motion(surface.requirement().binding(), previous.frame())
+                });
+            let (mut state, origin) = match (source.predecessor(), predecessor) {
                 (Some(source_frame), Some(previous))
                     if reconstruction_required && source_frame == previous.frame() =>
                 {
-                    reconstruct(surface, source, source_frame, Some(previous))?
+                    reconstruct(surface, source, source_frame, Some(previous), &issued)?
                 }
                 (Some(source_frame), Some(previous)) if source_frame == previous.frame() => {
                     let projection = UiMountedPresentationState::successor_projection_required(
@@ -235,6 +253,7 @@ impl UiPreparedFrameCandidates {
                             source,
                             projection,
                             surface.requirement(),
+                            &issued,
                         ),
                         CandidateOrigin::Successor,
                     )
@@ -250,16 +269,20 @@ impl UiPreparedFrameCandidates {
                 ),
                 (Some(source_frame), Some(previous)) if source_frame > previous.frame() => {
                     // A partially advanced frame reconstructs this exact older surface.
-                    reconstruct(surface, source, previous.frame(), Some(previous))?
+                    reconstruct(surface, source, previous.frame(), Some(previous), &issued)?
                 }
-                (Some(source_frame), None) => reconstruct(surface, source, source_frame, None)?,
+                (Some(source_frame), None) => {
+                    reconstruct(surface, source, source_frame, None, &issued)?
+                }
                 _ => return Err(UiHostSurfacePresentationDenial::StalePredecessor),
             };
+            state.hold_issued_motion(&issued);
             surfaces.push(UiPreparedSurfaceCandidate {
                 state,
                 predecessor: predecessor.map(UiMountedPresentationState::frame),
                 reconstruction_required,
                 origin,
+                issued,
             });
         }
         Ok(Self { surfaces })
@@ -286,6 +309,7 @@ fn reconstruct(
     source: crate::mounting::UiMountedPresentationDeltaSource<'_>,
     predecessor: UiMountedFrameIdentity,
     retained: Option<&UiMountedPresentationState>,
+    issued: &UiIssuedCommandMotion,
 ) -> Result<(UiMountedPresentationState, CandidateOrigin), UiHostSurfacePresentationDenial> {
     let projection =
         worth_ui_host_contract::UiMountedPresentationAuxiliaryState::from_runtime_mounting(
@@ -300,7 +324,7 @@ fn reconstruct(
         source.frame().presentation_authored_order(),
     );
     if let Some(retained) = retained {
-        state.inherit_reconstruction_motion(retained);
+        state.inherit_reconstruction_motion(retained, issued);
     }
     Ok((
         state,

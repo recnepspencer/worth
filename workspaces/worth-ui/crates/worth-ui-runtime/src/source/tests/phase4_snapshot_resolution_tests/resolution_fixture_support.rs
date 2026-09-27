@@ -1,11 +1,11 @@
 use crate::capability::{
-    CapabilitySnapshot, CapabilitySnapshotFreezeInput, CapabilitySupportCatalog,
-    ComponentChildPolicy, ComponentDescriptor, ComponentId, ComponentPropSchema,
-    ComponentStateOwnership, RegisteredCapabilitySet, RegistrationCandidate, SurfaceDescriptor,
-    SurfaceId, SurfaceKind, SurfacePlacementClass, SurfaceStateClass, ThemeTokenAlias,
-    ThemeTokenDescriptor, ThemeTokenFamily, ThemeTokenId, ThemeTokenSource, ThemeTokenValue,
-    UiThemeColor, ViewBindingDescriptor, ViewBindingFamily, ViewBindingId, COMPONENT_FAMILY_NAME,
-    SURFACE_FAMILY_NAME, THEME_TOKEN_FAMILY_NAME, VIEW_BINDING_FAMILY_NAME,
+    CapabilityRegistrationRejections, CapabilitySnapshot, CapabilitySnapshotFreezeInput,
+    CapabilitySupportCatalog, ComponentChildPolicy, ComponentDescriptor, ComponentId,
+    ComponentPropSchema, ComponentStateOwnership, RegisteredCapabilitySet, RegistrationCandidate,
+    SurfaceDescriptor, SurfaceId, SurfaceKind, SurfacePlacementClass, SurfaceStateClass,
+    ThemeTokenAlias, ThemeTokenDescriptor, ThemeTokenFamily, ThemeTokenId, ThemeTokenSource,
+    ThemeTokenValue, UiThemeColor, ViewBindingDescriptor, ViewBindingFamily, ViewBindingId,
+    COMPONENT_FAMILY_NAME, SURFACE_FAMILY_NAME, THEME_TOKEN_FAMILY_NAME, VIEW_BINDING_FAMILY_NAME,
 };
 use crate::facade::{WorthUi, WorthUiApp};
 use crate::source::{WorthUiResolutionDiagnosticCode, WorthUiResolutionReport};
@@ -92,6 +92,18 @@ pub(in crate::source::tests) fn snapshot_with_support_catalog(
     base: &CapabilitySnapshot,
     support_catalog: CapabilitySupportCatalog,
 ) -> CapabilitySnapshot {
+    snapshot_with_registration_rejections(
+        base,
+        support_catalog,
+        base.registration_rejections().clone(),
+    )
+}
+
+pub(in crate::source::tests) fn snapshot_with_registration_rejections(
+    base: &CapabilitySnapshot,
+    support_catalog: CapabilitySupportCatalog,
+    registration_rejections: CapabilityRegistrationRejections,
+) -> CapabilitySnapshot {
     CapabilitySnapshot::from_freeze_input(CapabilitySnapshotFreezeInput {
         registered_capabilities: clone_registered_capabilities(base),
         appearance_roles: base.appearance_roles().clone(),
@@ -114,6 +126,7 @@ pub(in crate::source::tests) fn snapshot_with_support_catalog(
         task_presentations: base.task_presentations().clone(),
         theme_tokens: base.theme_tokens().clone(),
         support_catalog,
+        registration_rejections,
     })
 }
 

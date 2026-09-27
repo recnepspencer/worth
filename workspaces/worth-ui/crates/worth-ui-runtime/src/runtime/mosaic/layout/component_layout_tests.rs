@@ -30,7 +30,7 @@ fn card_row(members: &[ComponentId]) -> MosaicResponsiveLayout {
             .iter()
             .enumerate()
             .fold(layout, |layout, (index, member)| {
-                let index = index as u16;
+                let index = u16::try_from(index).unwrap();
                 let cell = MosaicLayoutCell::at(index % per_row, index / per_row);
                 layout.with_member(member.clone(), cell).unwrap()
             })

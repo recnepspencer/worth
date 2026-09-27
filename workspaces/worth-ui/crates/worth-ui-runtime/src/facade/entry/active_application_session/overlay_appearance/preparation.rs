@@ -103,7 +103,7 @@ impl crate::facade::WorthUiActiveApplicationSession {
                     worth_ui_dsl::UiBackdropExtentBasis::PresentedMosaicRegion {
                         region, ..
                     } => Some(region),
-                    _ => None,
+                    worth_ui_dsl::UiBackdropExtentBasis::SurfaceViewport(_) => None,
                 })
                 .collect::<std::collections::BTreeSet<_>>();
             let extent =

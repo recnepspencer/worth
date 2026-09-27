@@ -127,6 +127,35 @@ fn the_page_travels_exactly_as_far_as_its_rows_outgrow_the_stage() {
     assert_near(page, [236.0, 57.0, 1300.0, 967.0], "the concept page fits");
 }
 
+/// The page scrolls only down, so the window stops at the smallest extent
+/// the layout is specified at, which is at or above the 764-point floor where
+/// the stage still holds the page's columns. Below that floor the page would
+/// outgrow the stage sideways, where nothing scrolls it into view.
+#[test]
+fn the_window_minimum_holds_the_page_across_its_stage() {
+    let [width, height] = crate::visual_identity_pulse::PLATFORM_PULSE_MINIMUM_LOGICAL_EXTENT
+        .map(|extent| f32::from(u16::try_from(extent).expect("the minimum is a window extent")));
+    assert!(
+        EXTENTS.contains(&(width, height)),
+        "the layout is specified at the window minimum"
+    );
+    let fills_across = |width: f32, at: &str| {
+        let page = Declared::at(width, height).container("page");
+        assert!((page[0] - 236.0).abs() < 1e-3, "page left {at}");
+        assert!((page[2] - (width - 236.0)).abs() < 1e-3, "page width {at}");
+    };
+    fills_across(width, "at the window minimum");
+    // The stacked page needs its 480-point column and two 24-point gutters.
+    let narrowest = 236.0 + 480.0 + 48.0;
+    assert!(narrowest <= width);
+    fills_across(narrowest, "at the floor");
+    let narrower = Declared::at(narrowest - 1.0, height).container("page");
+    assert!(
+        narrower[2] > narrowest - 1.0 - 236.0,
+        "one point narrower, the page outgrows its stage"
+    );
+}
+
 #[test]
 fn the_sidebar_and_masthead_keep_their_edges() {
     for (width, height) in EXTENTS {

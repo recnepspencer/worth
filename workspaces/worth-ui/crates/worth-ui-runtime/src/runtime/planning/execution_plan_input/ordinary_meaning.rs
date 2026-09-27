@@ -54,14 +54,18 @@ impl WorthUiPlanOrdinaryMeaning {
         match self {
             Self::Component(value) => value.child_range_identity(),
             Self::Layout(value) => value.child_range_identity(),
-            _ => None,
+            Self::ChildRange(_) | Self::Command(_) | Self::Token(_) | Self::StateSlot(_) => None,
         }
     }
 
     pub(crate) fn child_range(&self) -> Option<&WorthUiChildRangePlanMeaning> {
         match self {
             Self::ChildRange(value) => Some(value),
-            _ => None,
+            Self::Component(_)
+            | Self::Layout(_)
+            | Self::Command(_)
+            | Self::Token(_)
+            | Self::StateSlot(_) => None,
         }
     }
 

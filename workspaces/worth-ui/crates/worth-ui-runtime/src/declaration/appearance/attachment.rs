@@ -78,7 +78,10 @@ fn admit_role_target(
         {
             Ok(())
         }
-        _ => Err(UiAppearanceRoleAttachmentDenial::RoleTargetMismatch),
+        worth_ui_dsl::UiAppearanceRoleApplicability::Component(_)
+        | worth_ui_dsl::UiAppearanceRoleApplicability::Backdrop => {
+            Err(UiAppearanceRoleAttachmentDenial::RoleTargetMismatch)
+        }
     }
 }
 

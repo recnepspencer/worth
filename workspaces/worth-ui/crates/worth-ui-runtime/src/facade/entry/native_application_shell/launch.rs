@@ -7,6 +7,7 @@ use crate::facade::mounted::{
     UiHostSurfacePresentationMode, UiSurfaceBindingCoordinatePosture, UiSurfaceBindingGeneration,
     UiSurfaceBindingProfile,
 };
+use crate::runtime::WorthUiRuntimeLaunchDenial;
 use std::collections::HashMap;
 
 struct ConfiguredNativeSurface {
@@ -51,13 +52,42 @@ impl WorthUiApp {
         native_surface_declaration: Option<&str>,
     ) -> Result<WorthUiNativeApplicationShell, WorthUiNativeApplicationShellLaunchDenial> {
         let mut session = self.launch().map_err(|denial| match denial {
-            crate::runtime::WorthUiRuntimeLaunchDenial::HostSessionReleaseIndeterminate {
-                ..
-            }
-            | crate::runtime::WorthUiRuntimeLaunchDenial::HostSessionReleaseMismatch { .. } => {
+            WorthUiRuntimeLaunchDenial::HostSessionReleaseIndeterminate { .. }
+            | WorthUiRuntimeLaunchDenial::HostSessionReleaseMismatch { .. } => {
                 WorthUiNativeApplicationShellLaunchDenial::RuntimeLaunchCleanup(Box::new(denial))
             }
-            _ => WorthUiNativeApplicationShellLaunchDenial::RuntimeLaunch,
+            WorthUiRuntimeLaunchDenial::HostSessionIdentityExhausted
+            | WorthUiRuntimeLaunchDenial::HostProtocol(_)
+            | WorthUiRuntimeLaunchDenial::HostMountedPresentationLease
+            | WorthUiRuntimeLaunchDenial::HostObservationSession(_)
+            | WorthUiRuntimeLaunchDenial::MountedIdentityExhausted
+            | WorthUiRuntimeLaunchDenial::AppearanceThemeAdmission(_)
+            | WorthUiRuntimeLaunchDenial::AppearanceOwnerUnavailable(_)
+            | WorthUiRuntimeLaunchDenial::InitialAppearanceObservationTurn(_)
+            | WorthUiRuntimeLaunchDenial::InitialAppearanceObservationClose(_)
+            | WorthUiRuntimeLaunchDenial::InitialAppearanceObservationClassification
+            | WorthUiRuntimeLaunchDenial::InitialAllocationGraphAuthorityMismatch
+            | WorthUiRuntimeLaunchDenial::InitialAllocationObligationsUnsettled { .. }
+            | WorthUiRuntimeLaunchDenial::CandidateGraphAuthorityMismatch
+            | WorthUiRuntimeLaunchDenial::CandidateArtifactAuthorityMismatch
+            | WorthUiRuntimeLaunchDenial::ForeignAllocationProjection
+            | WorthUiRuntimeLaunchDenial::MissingQueryPosture
+            | WorthUiRuntimeLaunchDenial::UnexpectedQueryPosture
+            | WorthUiRuntimeLaunchDenial::QueryDefinitionNotInstalled
+            | WorthUiRuntimeLaunchDenial::ForeignQueryInstalledAuthority
+            | WorthUiRuntimeLaunchDenial::RegionalDeltaDuplicateCandidateRegion
+            | WorthUiRuntimeLaunchDenial::PlanInput(_)
+            | WorthUiRuntimeLaunchDenial::HandleAllocation(_)
+            | WorthUiRuntimeLaunchDenial::TopologyAssembly(_)
+            | WorthUiRuntimeLaunchDenial::ExecutionPlanAuthorityMismatch
+            | WorthUiRuntimeLaunchDenial::OrdinaryPlan(_)
+            | WorthUiRuntimeLaunchDenial::VirtualizedPlan(_)
+            | WorthUiRuntimeLaunchDenial::CanvasSpatialPlan(_)
+            | WorthUiRuntimeLaunchDenial::RealtimeOverlayPlan(_)
+            | WorthUiRuntimeLaunchDenial::StalePendingActivation { .. }
+            | WorthUiRuntimeLaunchDenial::CandidateSnapshotMismatch { .. } => {
+                WorthUiNativeApplicationShellLaunchDenial::RuntimeLaunch
+            }
         })?;
         let configured = match configure_native_surface(
             &mut session,
@@ -129,6 +159,7 @@ impl WorthUiApp {
             viewport: super::viewport_extent::UiNativeViewportExtent::new(),
             surface_reconciliation:
                 super::surface_reconciliation::UiNativeSurfaceReconciliation::new(),
+            presentation_retry: super::presentation_recovery::UiNativePresentationRetry::new(),
             runtime_derived_state_reconstruction: None,
             pending_managed_rebind: None,
             retained_portal_dismissal: None,

@@ -61,6 +61,15 @@ impl UiCommandMotionLayer {
             motion_units,
         }
     }
+
+    /// Whether the layer neither moves nor fades what it carries; it may
+    /// still clip it.
+    pub(super) fn moves_nothing(self) -> bool {
+        self.motion_units == u16::MAX
+            && self
+                .transform
+                .is_none_or(|transform| transform.source() == transform.sampled())
+    }
 }
 
 /// The layers the host shows one command through.
@@ -81,12 +90,15 @@ impl UiCommandMotionLayers {
     }
 
     /// Records the layer one tick sampled. Two Motions of one kind cannot
-    /// both move one command in one tick.
+    /// both move one command in one tick, and only Scroll clips.
     pub(super) fn sample(
         &mut self,
         kind: UiCommandMotionLayerKind,
         layer: UiCommandMotionLayer,
     ) -> Result<(), Denial> {
+        if kind != UiCommandMotionLayerKind::Scroll && layer.clip.is_some() {
+            return Err(Denial::InvalidGeometry);
+        }
         let slot = self.slot(kind);
         if slot.is_some() {
             return Err(Denial::AmbiguousTargetCommands);
@@ -103,6 +115,25 @@ impl UiCommandMotionLayers {
             scroll: self.scroll.or(held.scroll),
             portal: self.portal.or(held.portal),
         }
+    }
+
+    /// The Portal layer alone: what a command the Portal presents keeps
+    /// showing through when a frame replaces it.
+    pub(super) fn portal_only(self) -> Option<UiPortalMotionLayer> {
+        self.portal.map(|portal| UiPortalMotionLayer {
+            transform: portal.transform,
+            motion_units: portal.motion_units,
+        })
+    }
+
+    /// The Scroll layer, when the host shows the command's regions moving it.
+    pub(super) const fn scroll_layer(self) -> Option<UiCommandMotionLayer> {
+        self.scroll
+    }
+
+    /// These layers with `scroll` as the Scroll one.
+    pub(super) const fn with_scroll(self, scroll: Option<UiCommandMotionLayer>) -> Self {
+        Self { scroll, ..self }
     }
 
     /// The Scroll layer's transform: how far the host shows the command's
@@ -186,3 +217,38 @@ impl UiCommandMotionLayers {
 #[cfg(test)]
 #[path = "command_motion_layers_tests.rs"]
 pub(super) mod tests;
+
+/// A Portal layer alone. Only Scroll clips, so it moves and fades what it
+/// carries, and composing it with nothing else cannot fail.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(super) struct UiPortalMotionLayer {
+    transform: Option<UiMountedPresentationTransform>,
+    motion_units: u16,
+}
+
+impl UiPortalMotionLayer {
+    /// The layers the host shows a command through this layer alone.
+    pub(super) fn layers(self) -> UiCommandMotionLayers {
+        UiCommandMotionLayers {
+            portal: Some(UiCommandMotionLayer::moved(
+                self.transform,
+                self.motion_units,
+            )),
+            ..UiCommandMotionLayers::default()
+        }
+    }
+
+    /// The change that shows `command`, at resting opacity `resting`,
+    /// through this layer alone.
+    pub(super) fn change(
+        self,
+        command: UiMountedPaintCommandIdentity,
+        resting: UiMountedAppearanceOpacity,
+    ) -> UiMountedPresentationSampleChange {
+        UiMountedPresentationSampleChange::from_runtime_sampling(
+            command,
+            self.transform,
+            compose_opacity(resting, self.motion_units),
+        )
+    }
+}

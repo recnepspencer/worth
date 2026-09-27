@@ -157,9 +157,8 @@ where
 }
 
 fn mounted_origin_millipoints(value: f32) -> i64 {
-    let scaled = f64::from(value) * 1_000.0;
-    debug_assert!(scaled.is_finite());
-    scaled.round() as i64
+    crate::whole_number::whole_i64((f64::from(value) * 1_000.0).round())
+        .expect("a completed text origin is finite, and far inside what i64 millipoints count")
 }
 
 fn validate_mounted_layout(

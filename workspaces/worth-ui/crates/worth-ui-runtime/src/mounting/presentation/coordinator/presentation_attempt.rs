@@ -102,6 +102,7 @@ pub(super) fn present_one_surface(
         .host
         .adapter()
         .present_mounted_surface(start.host.authority(), &view);
+    start.host.authority().record_surface_presentation(&outcome);
     super::presentation_outcome::record(
         start,
         surface,

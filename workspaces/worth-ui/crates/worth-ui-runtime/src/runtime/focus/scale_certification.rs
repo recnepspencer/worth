@@ -4,7 +4,7 @@ pub(crate) fn focus_scale_evidence() -> (u64, u64, bool) {
     let issuer = worth_ui_host_contract::UiMountedNodeReceiptIssuer::mint_for(frame).unwrap();
     let mut identities = Vec::new();
     let mut participants = Vec::new();
-    for index in 0..128_u64 {
+    for index in 0..128_u32 {
         let mounted = worth_ui_host_contract::UiMountedInstanceIdentity::mint_unbound().unwrap();
         let incarnation = worth_ui_host_contract::UiMountIncarnation::mint_unbound().unwrap();
         identities.push((
@@ -12,14 +12,14 @@ pub(crate) fn focus_scale_evidence() -> (u64, u64, bool) {
             incarnation,
         ));
         participants.push(crate::mounting::UiMountedFocusParticipant::new(
-            crate::graph::UiGraphNodeIdentity::new(index + 1),
+            crate::graph::UiGraphNodeIdentity::new(u64::from(index) + 1),
             surface,
             mounted,
             incarnation,
             issuer.receipt_for(mounted),
             crate::capability::ComponentFocusSupport::focusable(),
             crate::mounting::UiMountedFocusScope::ActiveSurface,
-            index as u32,
+            index,
         ));
     }
     let snapshot = crate::mounting::UiMountedFocusParticipationSnapshot::new(

@@ -106,15 +106,15 @@ fn prepare_successor_ownership(
         for (slot, owner) in chain.owners().iter().copied().enumerate() {
             let (bounds, incarnation) = match owner {
                 crate::runtime::scroll::UiScrollOwnerIdentity::Region { .. } => {
-                    let Some((mounted_owner, content, viewport)) = successor
-                        .scroll_region_geometry(owner.semantic_surface(), next.identity(), slot)
-                    else {
+                    let Some((mounted_owner, region)) = successor.scroll_region_geometry(
+                        owner.semantic_surface(),
+                        next.identity(),
+                        slot,
+                    ) else {
                         registrations.clear();
                         break;
                     };
-                    let Some(bounds) = crate::runtime::scroll::UiScrollBounds::from_mounted_region(
-                        content, viewport,
-                    ) else {
+                    let Some(bounds) = region.in_layout_space().bounds() else {
                         registrations.clear();
                         break;
                     };
@@ -213,14 +213,11 @@ fn published_anchor(
     crate::runtime::scroll::UiScrollAnchor::new(
         crate::runtime::scroll::UiScrollAnchorIdentity::mounted(instance),
         presentation.binding(),
-        signed_subpixels(x)?.max(0),
-        signed_subpixels(y)?.max(0),
+        // Where the row is published in the viewport. A row scrolled above
+        // or before it is no distance into the content, so the anchor
+        // refuses it and the row anchors nothing, rather than being read as
+        // sitting at the edge and rebasing by a distance it never moved.
+        crate::units::UiSubpixels::nearest(x)?.count(),
+        crate::units::UiSubpixels::nearest(y)?.count(),
     )
-}
-
-fn signed_subpixels(value: f32) -> Option<i64> {
-    let scaled = f64::from(value)
-        * worth_ui_host_contract::UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f64;
-    (scaled.is_finite() && scaled >= i64::MIN as f64 && scaled <= i64::MAX as f64)
-        .then(|| scaled.round() as i64)
 }

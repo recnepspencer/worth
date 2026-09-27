@@ -11,7 +11,10 @@ use crate::capability::{
 use crate::facade::entry::WorthUiHostNeutralApp;
 use crate::facade::WorthUi;
 
-use super::{prepare_semantic_handoff, WorthUiSemanticHandoffPreparationStop};
+use super::{
+    prepare_semantic_handoff, WorthUiSemanticHandoffPreparationReport,
+    WorthUiSemanticHandoffPreparationStop,
+};
 
 const ROW: &str = "test.component.row";
 const LABEL: &str = "test.component.label";
@@ -203,6 +206,55 @@ fn refused(package: WorthUiSealedSemanticPackage, index: usize) -> UiAuthoredLay
     };
     assert_eq!(refusal.declaration_index(), index);
     refusal.cause()
+}
+
+/// A component validation refused at freeze, here a layout cell no container
+/// holds, is named by the denial with the diagnostic that refused it, not
+/// reported missing.
+#[test]
+fn a_reference_to_a_refused_registration_names_its_refusal() {
+    const ORPHAN: &str = "test.component.orphan";
+    let app = WorthUi::app()
+        .with_change_profile(crate::runtime::rebind::UiChangeProfile::platform_pulse())
+        .register_component(component(
+            ORPHAN,
+            ComponentAllocationMeasurementContract::fill_layout_cell(),
+        ))
+        .freeze()
+        .expect("freeze leaves the refused component out");
+    let package = compile(format!("component {ORPHAN} {{}}"));
+    let Err(denial) = prepare_semantic_handoff(package, app.capabilities()) else {
+        panic!("a reference to a refused component is denied");
+    };
+
+    assert_eq!(
+        denial.stop(),
+        WorthUiSemanticHandoffPreparationStop::CapabilityResolution
+    );
+    let Some(WorthUiSemanticHandoffPreparationReport::CapabilityResolution(report)) =
+        denial.cause().map(|cause| cause.report())
+    else {
+        panic!("the denial carries the resolution report");
+    };
+    let [diagnostic] = report.diagnostics() else {
+        panic!("the one reference is refused");
+    };
+    assert_eq!(
+        diagnostic.code(),
+        crate::source::WorthUiResolutionDiagnosticCode::RejectedComponentReference
+    );
+    let refusal: Vec<_> = diagnostic
+        .registration()
+        .iter()
+        .map(|refusal| (refusal.code(), refusal.identity_text()))
+        .collect();
+    assert_eq!(
+        refusal,
+        [(
+            crate::capability::CapabilityDiagnosticCode::InvalidComponentLayoutMembership,
+            Some(ORPHAN)
+        )]
+    );
 }
 
 fn layout_package(container: &str, body: &str) -> WorthUiSealedSemanticPackage {

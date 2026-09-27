@@ -316,7 +316,8 @@ impl UiAppearanceInvalidationBatch {
                 .all(|&(node, instance)| self.requires_semantic_resolution(node, instance))
     }
 
-    pub(crate) const fn selected_count(&self) -> u32 {
-        (self.graph_consumers.len() + self.mounted_consumers.len()) as u32
+    /// How many consumers the batch selects, saturating at `u32::MAX`.
+    pub(crate) fn selected_count(&self) -> u32 {
+        u32::try_from(self.graph_consumers.len() + self.mounted_consumers.len()).unwrap_or(u32::MAX)
     }
 }

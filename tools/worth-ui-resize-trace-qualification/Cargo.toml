@@ -1,0 +1,14 @@
+[package]
+name = "worth-ui-resize-trace-qualification"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[workspace]
+
+[target.'cfg(windows)'.dependencies]
+uiautomation = { version = "=0.25.0", default-features = false, features = ["input", "screenshot"] }
+winsafe = { version = "=0.0.28", default-features = false, features = ["advapi", "gdi", "kernel", "user"] }
+
+[lints.rust]
+unsafe_code = "forbid"

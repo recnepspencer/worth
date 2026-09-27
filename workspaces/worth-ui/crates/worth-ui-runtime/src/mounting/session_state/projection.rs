@@ -211,7 +211,10 @@ impl WorthUiMountedSessionState {
             .current_projection()
             .ok_or(crate::mounting::UiMountedProjectionDenial::PortalOverlayOwnerMissing)?
             .semantic_projection()
-            .portal_content_extent(owner)
+            .portal_content_extent(owner, |surface, child| {
+                self.occurrence_geometry
+                    .portal_content_clip(surface, owner, child)
+            })
     }
 
     pub(crate) fn native_observed_paint_attribution(

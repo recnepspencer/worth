@@ -103,7 +103,13 @@ impl super::WorthUiNativeApplicationShell {
                     Some(WorthUiNativePendingManagedRebind::Indeterminate { recovery, frame });
                 WorthUiNativeManagedRebindProgress::AwaitingProgress
             }
-            _ => {
+            crate::mounting::UiMountedFrameOutcome::Published(_)
+            | crate::mounting::UiMountedFrameOutcome::Unchanged(_)
+            | crate::mounting::UiMountedFrameOutcome::RejectedBeforeEffects(_)
+            | crate::mounting::UiMountedFrameOutcome::Superseded(_)
+            | crate::mounting::UiMountedFrameOutcome::RetentionDenied(_)
+            | crate::mounting::UiMountedFrameOutcome::AdmissionDenied(_)
+            | crate::mounting::UiMountedFrameOutcome::CompletionDenied(_) => {
                 self.pending_managed_rebind = Some(
                     WorthUiNativePendingManagedRebind::RecoveryReconstructionDeferred(recovery),
                 );

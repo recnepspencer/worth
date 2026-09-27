@@ -7,6 +7,9 @@ component platform.pulse.component.health_content {
 component platform.pulse.component.activity_content {
   region platform.pulse.mosaic.region.activity_list { sizing platform.pulse.mosaic.sizing.dashboard_list; }
 }
+component platform.pulse.component.review_list {
+  region platform.pulse.mosaic.region.review_list { sizing platform.pulse.mosaic.sizing.dashboard_list; }
+}
 scroll platform.pulse.mosaic.region.page {
   nested
   anchor stable_key
@@ -31,6 +34,15 @@ scroll platform.pulse.mosaic.region.activity_list {
   line_extent 20
   wheel smooth 120
   chrome both
+  track platform.pulse.appearance.scroll_track
+  thumb platform.pulse.appearance.scroll_thumb
+}
+scroll platform.pulse.mosaic.region.review_list {
+  nested
+  anchor stable_key
+  line_extent 20
+  wheel smooth 120
+  chrome block
   track platform.pulse.appearance.scroll_track
   thumb platform.pulse.appearance.scroll_thumb
 }

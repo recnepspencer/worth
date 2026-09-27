@@ -272,6 +272,11 @@ impl ScriptedPresentationHost {
         self.state.lock().unwrap().presentations.len()
     }
 
+    /// Withdraw every scripted presentation no call has taken.
+    pub fn withdraw_untaken_presentations(&self) {
+        self.state.lock().unwrap().presentations.clear();
+    }
+
     pub fn last_presentation_correlation(
         &self,
     ) -> Option<worth_ui_host_native::UiNativePhysicalPresentationCorrelation> {

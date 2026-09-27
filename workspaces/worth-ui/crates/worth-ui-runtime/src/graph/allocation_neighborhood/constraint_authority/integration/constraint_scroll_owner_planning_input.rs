@@ -206,7 +206,11 @@ fn scroll_owner_source(
             {
                 Some(result)
             }
-            _ => None,
+            MeasurementEvidenceInput::SettledQueryFact(_)
+            | MeasurementEvidenceInput::HostMeasurementResult(_)
+            | MeasurementEvidenceInput::HostCapabilityReport(_)
+            | MeasurementEvidenceInput::ChildIntrinsicMeasurement(_)
+            | MeasurementEvidenceInput::SiblingResizeSupport(_) => None,
         })?;
     Some((
         source.identity_digest(),

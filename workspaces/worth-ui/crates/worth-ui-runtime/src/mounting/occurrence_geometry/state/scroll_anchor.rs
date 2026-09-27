@@ -101,8 +101,8 @@ impl UiMountedOccurrenceGeometryState {
             .filter_map(|(instance, row)| {
                 Some((
                     *instance,
-                    content_subpixels(row.bounds.x() - origin.x())?,
-                    content_subpixels(row.bounds.y() - origin.y())?,
+                    content_distance(row.bounds.x() - origin.x())?,
+                    content_distance(row.bounds.y() - origin.y())?,
                 ))
             })
             .collect::<Vec<_>>();
@@ -135,9 +135,7 @@ fn anchor_at(
 /// only its candidacy: the region anchors to another occurrence, or to none
 /// and clamps, which is the answer it already has for content it cannot
 /// measure.
-fn content_subpixels(logical_points: f32) -> Option<i64> {
-    let scaled = f64::from(logical_points)
-        * worth_ui_host_contract::UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f64;
-    (scaled.is_finite() && scaled >= 0.0 && scaled <= i64::MAX as f64)
-        .then(|| scaled.round() as i64)
+fn content_distance(logical_points: f32) -> Option<i64> {
+    crate::units::UiSubpixels::nearest_distance(logical_points)
+        .map(crate::units::UiSubpixels::count)
 }

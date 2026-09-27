@@ -41,7 +41,9 @@ impl UiMountedProjectionFrameOwner {
         profile: Option<&worth_ui_host_contract::UiHostAppearanceProfileContract>,
         motion: crate::mounting::presentation::UiAcceptedAppearanceMotion,
         overlays: &[crate::mounting::UiMountedAppearanceSurfaceOverlayInput],
-        scroll_chrome: &[crate::mounting::UiMountedAppearanceScrollChromeInput],
+        scroll_chrome: &[crate::mounting::UiPresented<
+            crate::mounting::UiMountedAppearanceScrollChromeInput,
+        >],
     ) -> Vec<crate::runtime::appearance::UiAppearanceInspectionRecord> {
         let mut candidate = self.appearance.clone();
         if let Err(_denial) =

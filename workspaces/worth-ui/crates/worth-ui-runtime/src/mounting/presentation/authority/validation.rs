@@ -49,7 +49,9 @@ pub(super) fn validate_delta(input: &UiMountedPresentationDeltaInput) {
                 predecessor,
                 successor,
             } if *predecessor != successor.identity() => 2,
-            _ => 1,
+            UiMountedPaintCommandChange::Insert(_)
+            | UiMountedPaintCommandChange::Replace { .. }
+            | UiMountedPaintCommandChange::Remove(_) => 1,
         })
         .sum::<usize>();
     assert_eq!(change_identities.len(), expected_change_identities);

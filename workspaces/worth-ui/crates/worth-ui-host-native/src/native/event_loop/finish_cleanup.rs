@@ -27,6 +27,7 @@ pub(super) fn close<Client: UiNativeEventLoopClient>(
     let peak_census = client_shutdown.as_ref().map_or(host_peak_census, |client| {
         host_peak_census.with_client_peak(client.resources())
     });
+    crate::native::resize_trace::peaks(peak_census);
     let mut expected_readiness = vec![
         application.readiness_owner,
         application.physical_readiness_owner,

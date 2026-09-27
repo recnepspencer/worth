@@ -49,7 +49,16 @@ impl UiGraphTouchAuthority<'_> {
                 view_binding_id.clone(),
                 binding_reference.clone(),
             )),
-            _ => Err(UiGraphTouchDenial::QueryBindingChangeUnavailableInCurrentWorld),
+            UiGraphWorldProfile::Authoritative
+            | UiGraphWorldProfile::PreviewSessionLabel { .. }
+            | UiGraphWorldProfile::PreviewSessionIdentity { .. }
+            | UiGraphWorldProfile::BranchSessionLabel { .. }
+            | UiGraphWorldProfile::HotReloadCandidate { .. }
+            | UiGraphWorldProfile::Diagnostic { .. }
+            | UiGraphWorldProfile::HostObservation { .. }
+            | UiGraphWorldProfile::TestCertification { .. } => {
+                Err(UiGraphTouchDenial::QueryBindingChangeUnavailableInCurrentWorld)
+            }
         }
     }
 

@@ -13,7 +13,8 @@ The Scroll regression proofs are a separate phase.
 ## The model
 
 `interleaving_model.rs` sits beside the other integrated appearance World
-tests. It runs eight fixed seeds of 64 steps each. A 64-bit linear
+tests. It runs 21 fixed seeds of 64 steps each: the first eight, and the
+seeds a scan of 512 found failing or reaching a rare state. A 64-bit linear
 congruential generator makes every choice, so a failure names the seed and
 step that reproduce it.
 
@@ -68,6 +69,12 @@ projection replaces commands and samples. A delta retires the samples of every
 command it touches. A re-issued sample replaces its predecessor. Each text
 command is drawn at its committed bounds, moved by the transform of the sample
 it is shown with.
+
+Each run then comes to rest. The attempt the host holds completes, the held
+tick presents, and frames run until nothing is left to settle. Every settle
+Scroll holds must land, and the pose must rest where Scroll holds it. A
+transition nothing drives, or a settle owed with nothing to pay it, fails the
+run.
 
 The runs must also reach every state the witness tells apart: a sample on
 screen, an owed settle, a staged resize, and the pointer over the nested
@@ -156,6 +163,43 @@ staging it is: Scroll and mounted geometry must agree again once the layout is
 published. An owed settle defers with `DeferredPendingGeometry` while the
 layout is staged.
 
+### A frame bound in flight missed the samples shown beside it
+
+A frame binds its Scroll groups when its attempt is prepared, and a group
+reads its standing from the group it rebinds. Samples the host displays while
+the attempt is in flight land on the displayed frame. Its commands' motion
+slots are shared with the frame in flight, so the next bind read each
+command's displayed base from the latest sample. The group's displayed sample
+was not shared, so its standing still said the published offset. Seed 3 at
+rest: the base showed the group at 0, the standing said 5, and the text was
+drawn at 67 while hit testing read it at 62. A group the frame does not place
+now shares its displayed sample with the group it rebinds, as its unchanged
+commands share their slots.
+
+### A frame in flight displaced the samples shown beside it
+
+When a frame's work lands, the host retires the sample of every command its
+delta touches. It then applies each sample the work re-issues, sampled when
+the frame was prepared. Both override any sample a tick showed beside the
+frame while it was in flight. A group the frame places lands where the frame
+publishes it, and its placement reconciles that. Any other command was drawn
+where the frame was prepared, while its group and hit testing stood where the
+tick put them. Seed 0xe8: the frame re-issued an appearance sample over the
+settle's. Seed 0x1e3: an unplaced relayout's delta retired it. A tick now
+waits, refused before any effect, while a frame in flight on its binding
+displaces a sample the tick would show. The frame records what it displaces
+when its work is prepared.
+
+### A retarget carried the content past rest
+
+A retarget departs at the rate of the curve it displaces. The successor's
+target can be nearer than that rate can stop in. Seed 0x1f5: a notch
+retargeted a settle moving at 2.8 points a tick with 1.5 points left, and the
+next sample showed the content 0.85 points before rest. The settle then
+refused the sample. A curve's start velocity is now bounded by its own span
+when the track is installed, as an extent rebase already bounded it, so no
+sample leaves the interval between departure and target.
+
 ### Each fix is load-bearing
 
 Reverting any one fix makes the model fail. A failure the debug invariant
@@ -168,6 +212,8 @@ catches inside a step stops the run before the witness checks that step:
 | Settle basis is the displayed offset | seed 5, step 55: the host draws at 32, Motion shows 46 |
 | Rebind pays the owed settle | seed 6, step 44: the host draws at 45, Motion shows 54 |
 | Retarget departs on screen | seed 5, step 55: the host draws at 32, Motion shows 46 |
+| A tick waits for a frame that displaces its samples | seed 0xe8, step 38: the host draws at 50, Motion shows 47 |
+| A retarget's velocity is bounded by its span | seed 0x1f5, step 57: Motion shows -0.85 while Scroll settled 20 |
 
 ## The debug invariant
 
@@ -288,3 +334,9 @@ Scroll and mounted geometry part.
   from the drawn text until the next publication measures them from the drawn
   commands. The witness accepts either position exactly. Making settles land
   hit rows on the drawn grid would close the gap.
+- **A carried Portal layer can trail by one tick.** A successor frame copies
+  the Portal layer its replaced commands showed when the frame is built. A
+  Portal tick the host accepts on the predecessor after that, and before the
+  successor is presented, is not in the copy. The successor then shows the
+  Portal one tick behind until its next tick moves it. The fix is to read the
+  carried layer when the successor is presented, not when it is built.

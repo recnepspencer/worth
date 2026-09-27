@@ -17,12 +17,16 @@ mod projection;
 #[path = "state/resolution.rs"]
 mod resolution;
 mod retirement;
+mod sample_carry;
 mod scroll;
 #[path = "state/scroll_anchor.rs"]
 mod scroll_anchor;
 mod scroll_index;
+mod scroll_pose;
+pub(crate) use scroll_pose::UiPreparedMountedScrollPose;
 #[path = "state/scroll_presentation.rs"]
 mod scroll_presentation;
+mod scroll_rest;
 mod succession;
 
 use resolution::{
@@ -74,6 +78,8 @@ struct UiMountedSurfaceGeometry {
 pub(crate) struct UiMountedOccurrenceGeometryState {
     surfaces: BTreeMap<UiSemanticSurfaceIdentity, UiMountedSurfaceGeometry>,
     reservations: scroll_index::UiScrollReservationMemo,
+    /// The rows on each surface a settle moved without lowering them anew.
+    sample_carried: BTreeMap<UiSemanticSurfaceIdentity, BTreeSet<UiMountedInstanceIdentity>>,
 }
 
 impl UiMountedOccurrenceGeometryState {
@@ -237,8 +243,16 @@ impl UiMountedOccurrenceGeometryState {
                 },
             );
         }
-        let changed =
+        let mut changed =
             changed_instances(self.surfaces.get(&batch.surface()), batch.viewport(), &rows);
+        // The frame lowering this layout lowers every row a settle carried.
+        changed.extend(
+            self.sample_carried
+                .remove(&batch.surface())
+                .into_iter()
+                .flatten()
+                .filter(|instance| rows.contains_key(instance)),
+        );
         let mut children = BTreeMap::<_, Vec<_>>::new();
         for (instance, row) in &rows {
             if let Some(parent) = row.parent {

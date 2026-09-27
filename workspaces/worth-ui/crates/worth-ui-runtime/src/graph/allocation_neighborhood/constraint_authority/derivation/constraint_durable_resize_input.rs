@@ -64,7 +64,11 @@ fn admitted_runtime_resize_support<'a>(
         {
             Some(support)
         }
-        _ => None,
+        MeasurementEvidenceInput::SettledQueryFact(_)
+        | MeasurementEvidenceInput::HostMeasurementResult(_)
+        | MeasurementEvidenceInput::HostCapabilityReport(_)
+        | MeasurementEvidenceInput::ChildIntrinsicMeasurement(_)
+        | MeasurementEvidenceInput::SiblingResizeSupport(_) => None,
     })
 }
 
@@ -76,6 +80,17 @@ fn resize_contract_matches_operator(
     match operator_kind {
         UiDeclarationPlanningOperatorKind::Split => support.sizing_contract_id().is_none(),
         UiDeclarationPlanningOperatorKind::Mosaic => support.sizing_contract_id() == contract_id,
-        _ => false,
+        UiDeclarationPlanningOperatorKind::PageRoot
+        | UiDeclarationPlanningOperatorKind::PageSet
+        | UiDeclarationPlanningOperatorKind::Region
+        | UiDeclarationPlanningOperatorKind::LocalComposition
+        | UiDeclarationPlanningOperatorKind::Control
+        | UiDeclarationPlanningOperatorKind::DiagnosticSurface
+        | UiDeclarationPlanningOperatorKind::Stack
+        | UiDeclarationPlanningOperatorKind::Row
+        | UiDeclarationPlanningOperatorKind::Grid
+        | UiDeclarationPlanningOperatorKind::Overlay
+        | UiDeclarationPlanningOperatorKind::Scroll
+        | UiDeclarationPlanningOperatorKind::PortalAnchor => false,
     }
 }

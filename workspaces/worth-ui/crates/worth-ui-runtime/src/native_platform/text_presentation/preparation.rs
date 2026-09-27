@@ -318,6 +318,12 @@ fn paint_span_count(mechanics: &[MountedSemanticTextCommand<'_>]) -> usize {
         .sum()
 }
 
+/// Where [`layout_work_counts`] places the counts the resize trace reports.
+pub(super) const SHAPED_RUNS: usize = 9;
+pub(super) const SHAPED_SCALARS: usize = 10;
+pub(super) const EMITTED_LINES: usize = 13;
+pub(super) const POSITIONED_GLYPHS: usize = 15;
+
 fn layout_work_counts(mechanics: &[MountedSemanticTextCommand<'_>]) -> [u64; 17] {
     mechanics
         .iter()

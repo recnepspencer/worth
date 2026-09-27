@@ -264,23 +264,13 @@ impl UiAppearanceFrameProjection<'_> {
                 ) {
                     Ok(vector) => vector,
                     Err(denial) => {
-                        let inspection_denial = match denial {
-                            crate::runtime::appearance::UiAppearanceStateVectorDenial::Adapter(
-                                crate::runtime::appearance::UiAppearanceStateAdapterDenial::MissingSource(
-                                    worth_ui_dsl::UiAppearanceStateAxis::Operability,
-                                ),
-                            ) => crate::runtime::appearance::UiAppearanceInspectionDenial::OperabilitySourceUnavailable,
-                            crate::runtime::appearance::UiAppearanceStateVectorDenial::Adapter(
-                                crate::runtime::appearance::UiAppearanceStateAdapterDenial::MissingSource(axis)
-                                | crate::runtime::appearance::UiAppearanceStateAdapterDenial::AmbiguousSource(axis),
-                            ) if matches!(
-                                axis,
-                                worth_ui_dsl::UiAppearanceStateAxis::Hover
-                                    | worth_ui_dsl::UiAppearanceStateAxis::Pressed
-                            ) => crate::runtime::appearance::UiAppearanceInspectionDenial::InteractionSourceUnavailable(axis),
-                            _ => crate::runtime::appearance::UiAppearanceInspectionDenial::Basis,
-                        };
-                        stage_denial(frame, context, inspection_denial)?;
+                        stage_denial(
+                            frame,
+                            context,
+                            crate::runtime::appearance::UiAppearanceInspectionDenial::from_state_vector(
+                                denial,
+                            ),
+                        )?;
                         continue;
                     }
                 };

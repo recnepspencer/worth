@@ -92,10 +92,16 @@ fn scroll_route_candidate_copies_only_the_chain_and_merges_without_losing_unrela
         candidate.state_mut().retire_transition(selected);
         state.commit_routed_candidate(candidate);
         assert_eq!(STATE_CLONES.with(|count| count.get()), 0);
-        assert_eq!(state.owner_count(), unrelated as usize + 1);
+        assert_eq!(state.owner_count(), usize::try_from(unrelated).unwrap() + 1);
         assert_eq!(state.ownership_catalog, original_catalog);
-        assert_eq!(state.ownership_references.len(), unrelated as usize + 1);
-        assert_eq!(state.pending_transition_count(), unrelated as usize);
+        assert_eq!(
+            state.ownership_references.len(),
+            usize::try_from(unrelated).unwrap() + 1
+        );
+        assert_eq!(
+            state.pending_transition_count(),
+            usize::try_from(unrelated).unwrap()
+        );
         for (owner, target) in original_targets.pending_owners() {
             if owner == selected {
                 assert_eq!(state.transition_target(owner, incarnation), None);

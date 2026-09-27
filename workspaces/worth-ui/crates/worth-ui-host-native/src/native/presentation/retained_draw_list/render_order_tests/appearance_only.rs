@@ -282,10 +282,10 @@ pub(super) fn surface_outline_pair_in_group(
     let issuer = UiMountedNodeReceiptIssuer::mint_for(frame).unwrap();
     let bounds = source.bounds();
     let allocation = UiAppearanceAllocationBounds::new(
-        (bounds.x() * 1_000.0) as i32,
-        (bounds.y() * 1_000.0) as i32,
-        (bounds.width() * 1_000.0) as u32,
-        (bounds.height() * 1_000.0) as u32,
+        worth_ui_host_contract::appearance_coordinate_nearest(bounds.x()).unwrap(),
+        worth_ui_host_contract::appearance_coordinate_nearest(bounds.y()).unwrap(),
+        worth_ui_host_contract::appearance_extent_nearest(bounds.width()).unwrap(),
+        worth_ui_host_contract::appearance_extent_nearest(bounds.height()).unwrap(),
     )
     .unwrap();
     let radii = UiAppearanceNormalizedLogicalRadii::normalize(

@@ -91,7 +91,13 @@ impl UiMountedPresentationEffectSource {
             .filter(|family| match family {
                 UiMountedEffectFamily::CanvasSpatial => self.canvas,
                 UiMountedEffectFamily::Realtime => self.realtime,
-                family => self.counts.get(&(binding, *family)).is_some(),
+                family @ (UiMountedEffectFamily::RecordedProjection
+                | UiMountedEffectFamily::NativePaint
+                | UiMountedEffectFamily::Accessibility
+                | UiMountedEffectFamily::Diagnostic
+                | UiMountedEffectFamily::IdentityOverlay) => {
+                    self.counts.get(&(binding, *family)).is_some()
+                }
             })
             .collect()
     }

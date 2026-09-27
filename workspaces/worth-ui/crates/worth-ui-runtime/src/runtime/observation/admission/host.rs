@@ -153,7 +153,19 @@ fn seal_supported_observations(
                     batch.canonical_core().host_session(),
                     owner_order,
                 ),
-                _ => unreachable!("host admission maps only host-owned semantic families"),
+                UiObservationFamily::AuthoredSource
+                | UiObservationFamily::PointerPresenceTarget
+                | UiObservationFamily::Measurement
+                | UiObservationFamily::Query
+                | UiObservationFamily::IntentPosture
+                | UiObservationFamily::CommittedScrollExtent
+                | UiObservationFamily::CommittedPortalAnchor
+                | UiObservationFamily::CommittedFocus
+                | UiObservationFamily::CommittedSelection
+                | UiObservationFamily::CommittedMotionTrack
+                | UiObservationFamily::CommittedCommandRoute => {
+                    unreachable!("host admission maps only host-owned semantic families")
+                }
             };
             UiAdmittedObservation::seal(UiAdmittedObservationSeal {
                 family: semantic,

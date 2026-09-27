@@ -114,14 +114,13 @@ fn clipped(
     if right <= i64::from(x) || bottom <= i64::from(y) {
         return Ok(None);
     }
-    UiAppearanceDamageRegion::new(
-        x,
-        y,
-        (right - i64::from(x)) as u32,
-        (bottom - i64::from(y)) as u32,
-    )
-    .map(Some)
-    .map_err(|_| UiMountedAppearanceLoweringDenial::WorkConstruction)
+    let extent = |far: i64, near: i32| {
+        u32::try_from(far - i64::from(near))
+            .map_err(|_| UiMountedAppearanceLoweringDenial::WorkConstruction)
+    };
+    UiAppearanceDamageRegion::new(x, y, extent(right, x)?, extent(bottom, y)?)
+        .map(Some)
+        .map_err(|_| UiMountedAppearanceLoweringDenial::WorkConstruction)
 }
 
 fn participant_fact<'a>(

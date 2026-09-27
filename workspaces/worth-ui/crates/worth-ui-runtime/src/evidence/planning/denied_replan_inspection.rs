@@ -47,11 +47,14 @@ pub(crate) fn project_denied_replan_inspection(
                 })
                 .collect::<Vec<_>>()
                 .into_boxed_slice(),
-            selection
-                .ordered_neighborhoods()
-                .iter()
-                .filter(|neighborhood| neighborhood.widen_reason().is_some())
-                .count() as u16,
+            u16::try_from(
+                selection
+                    .ordered_neighborhoods()
+                    .iter()
+                    .filter(|neighborhood| neighborhood.widen_reason().is_some())
+                    .count(),
+            )
+            .expect("a neighborhood selection counts its neighborhoods in u16"),
             EvidenceRef::diagnostic(
                 EvidenceFamily::NeighborhoodSelectionArtifact,
                 selection_identity,

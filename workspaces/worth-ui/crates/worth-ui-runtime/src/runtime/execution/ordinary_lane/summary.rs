@@ -1,5 +1,6 @@
 use std::rc::Rc;
 
+use crate::runtime::planning::execution_plan_input::WorthUiPlanOrdinaryMeaning;
 use crate::runtime::{
     WorthUiChildRangeHandle, WorthUiCommandHandle, WorthUiComponentHandle, WorthUiStateSlotHandle,
     WorthUiTokenHandle,
@@ -49,8 +50,7 @@ impl WorthUiOrdinarySummaryTarget {
 pub struct WorthUiOrdinaryPlanSummary {
     request: WorthUiOrdinaryPlanSummaryRequest,
     target: Option<WorthUiOrdinarySummaryTarget>,
-    exact_meaning:
-        Option<Rc<crate::runtime::planning::execution_plan_input::WorthUiPlanOrdinaryMeaning>>,
+    exact_meaning: Option<Rc<WorthUiPlanOrdinaryMeaning>>,
     family_row_count: usize,
     target_semantic_digest: Option<u64>,
     family_index_lookup_count: usize,
@@ -118,67 +118,83 @@ impl WorthUiOrdinaryPlanSummary {
 
     pub fn component_descriptor(&self) -> Option<&crate::capability::ComponentDescriptor> {
         match self.exact_meaning.as_deref()? {
-            crate::runtime::planning::execution_plan_input::WorthUiPlanOrdinaryMeaning::Component(value) => {
-                Some(value.descriptor())
-            }
-            _ => None,
+            WorthUiPlanOrdinaryMeaning::Component(value) => Some(value.descriptor()),
+            WorthUiPlanOrdinaryMeaning::Layout(_)
+            | WorthUiPlanOrdinaryMeaning::ChildRange(_)
+            | WorthUiPlanOrdinaryMeaning::Command(_)
+            | WorthUiPlanOrdinaryMeaning::Token(_)
+            | WorthUiPlanOrdinaryMeaning::StateSlot(_) => None,
         }
     }
 
     pub fn child_target_count(&self) -> Option<usize> {
         match self.exact_meaning.as_deref()? {
-            crate::runtime::planning::execution_plan_input::WorthUiPlanOrdinaryMeaning::ChildRange(value) => {
-                Some(value.child_identities().len())
-            }
-            _ => None,
+            WorthUiPlanOrdinaryMeaning::ChildRange(value) => Some(value.child_identities().len()),
+            WorthUiPlanOrdinaryMeaning::Component(_)
+            | WorthUiPlanOrdinaryMeaning::Layout(_)
+            | WorthUiPlanOrdinaryMeaning::Command(_)
+            | WorthUiPlanOrdinaryMeaning::Token(_)
+            | WorthUiPlanOrdinaryMeaning::StateSlot(_) => None,
         }
     }
 
     pub fn command_descriptor(&self) -> Option<&crate::capability::CommandDescriptor> {
         match self.exact_meaning.as_deref()? {
-            crate::runtime::planning::execution_plan_input::WorthUiPlanOrdinaryMeaning::Command(
-                value,
-            ) => Some(value.reference().descriptor()),
-            _ => None,
+            WorthUiPlanOrdinaryMeaning::Command(value) => Some(value.reference().descriptor()),
+            WorthUiPlanOrdinaryMeaning::Component(_)
+            | WorthUiPlanOrdinaryMeaning::Layout(_)
+            | WorthUiPlanOrdinaryMeaning::ChildRange(_)
+            | WorthUiPlanOrdinaryMeaning::Token(_)
+            | WorthUiPlanOrdinaryMeaning::StateSlot(_) => None,
         }
     }
 
     pub fn token_entry(&self) -> Option<&crate::capability::FrozenThemeTokenEntry> {
         match self.exact_meaning.as_deref()? {
-            crate::runtime::planning::execution_plan_input::WorthUiPlanOrdinaryMeaning::Token(
-                value,
-            ) => Some(value.entry()),
-            _ => None,
+            WorthUiPlanOrdinaryMeaning::Token(value) => Some(value.entry()),
+            WorthUiPlanOrdinaryMeaning::Component(_)
+            | WorthUiPlanOrdinaryMeaning::Layout(_)
+            | WorthUiPlanOrdinaryMeaning::ChildRange(_)
+            | WorthUiPlanOrdinaryMeaning::Command(_)
+            | WorthUiPlanOrdinaryMeaning::StateSlot(_) => None,
         }
     }
 
     pub fn resolved_token_entry(&self) -> Option<&crate::capability::FrozenThemeTokenEntry> {
         match self.exact_meaning.as_deref()? {
-            crate::runtime::planning::execution_plan_input::WorthUiPlanOrdinaryMeaning::Token(
-                value,
-            ) => Some(value.semantics().resolved_target_entry()),
-            _ => None,
+            WorthUiPlanOrdinaryMeaning::Token(value) => {
+                Some(value.semantics().resolved_target_entry())
+            }
+            WorthUiPlanOrdinaryMeaning::Component(_)
+            | WorthUiPlanOrdinaryMeaning::Layout(_)
+            | WorthUiPlanOrdinaryMeaning::ChildRange(_)
+            | WorthUiPlanOrdinaryMeaning::Command(_)
+            | WorthUiPlanOrdinaryMeaning::StateSlot(_) => None,
         }
     }
 
     pub fn state_slot_descriptor(&self) -> Option<&crate::capability::MosaicStateSlotDescriptor> {
         match self.exact_meaning.as_deref()? {
-            crate::runtime::planning::execution_plan_input::WorthUiPlanOrdinaryMeaning::StateSlot(value) => {
-                Some(value.descriptor())
-            }
-            _ => None,
+            WorthUiPlanOrdinaryMeaning::StateSlot(value) => Some(value.descriptor()),
+            WorthUiPlanOrdinaryMeaning::Component(_)
+            | WorthUiPlanOrdinaryMeaning::Layout(_)
+            | WorthUiPlanOrdinaryMeaning::ChildRange(_)
+            | WorthUiPlanOrdinaryMeaning::Command(_)
+            | WorthUiPlanOrdinaryMeaning::Token(_) => None,
         }
     }
 
     pub fn state_succession_is_launch(&self) -> Option<bool> {
         match self.exact_meaning.as_deref()? {
-            crate::runtime::planning::execution_plan_input::WorthUiPlanOrdinaryMeaning::StateSlot(value) => {
-                Some(matches!(
-                    value.succession(),
-                    crate::runtime::planning::execution_plan_input::WorthUiStateSlotSuccession::Launch
-                ))
-            }
-            _ => None,
+            WorthUiPlanOrdinaryMeaning::StateSlot(value) => Some(matches!(
+                value.succession(),
+                crate::runtime::planning::execution_plan_input::WorthUiStateSlotSuccession::Launch
+            )),
+            WorthUiPlanOrdinaryMeaning::Component(_)
+            | WorthUiPlanOrdinaryMeaning::Layout(_)
+            | WorthUiPlanOrdinaryMeaning::ChildRange(_)
+            | WorthUiPlanOrdinaryMeaning::Command(_)
+            | WorthUiPlanOrdinaryMeaning::Token(_) => None,
         }
     }
 
@@ -186,7 +202,7 @@ impl WorthUiOrdinaryPlanSummary {
         &self,
     ) -> Option<&crate::runtime::WorthUiDurableStateReconciliationReceipt> {
         match self.exact_meaning.as_deref()? {
-            crate::runtime::planning::execution_plan_input::WorthUiPlanOrdinaryMeaning::StateSlot(value) => {
+            WorthUiPlanOrdinaryMeaning::StateSlot(value) => {
                 match value.succession() {
                     crate::runtime::planning::execution_plan_input::WorthUiStateSlotSuccession::Launch => {
                         None
@@ -196,7 +212,11 @@ impl WorthUiOrdinaryPlanSummary {
                     ) => Some(receipt),
                 }
             }
-            _ => None,
+            WorthUiPlanOrdinaryMeaning::Component(_)
+            | WorthUiPlanOrdinaryMeaning::Layout(_)
+            | WorthUiPlanOrdinaryMeaning::ChildRange(_)
+            | WorthUiPlanOrdinaryMeaning::Command(_)
+            | WorthUiPlanOrdinaryMeaning::Token(_) => None,
         }
     }
 }

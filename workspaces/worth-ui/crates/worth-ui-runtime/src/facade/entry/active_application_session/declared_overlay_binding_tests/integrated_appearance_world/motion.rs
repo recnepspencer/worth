@@ -140,13 +140,17 @@ fn composed(
                             let [x, y, width, height] = super::geometry::BOXES[index];
                             let bounds = surface.bounds();
                             assert_eq!(
-                                [
-                                    bounds.x() as f32,
-                                    bounds.y() as f32,
-                                    bounds.width() as f32,
-                                    bounds.height() as f32
-                                ],
-                                [x, y, width, height].map(|value| value * 1_000.0),
+                                (bounds.x(), bounds.y(), bounds.width(), bounds.height()),
+                                (
+                                    worth_ui_host_contract::appearance_coordinate_nearest(x)
+                                        .unwrap(),
+                                    worth_ui_host_contract::appearance_coordinate_nearest(y)
+                                        .unwrap(),
+                                    worth_ui_host_contract::appearance_extent_nearest(width)
+                                        .unwrap(),
+                                    worth_ui_host_contract::appearance_extent_nearest(height)
+                                        .unwrap(),
+                                ),
                                 "Portal Motion cannot move or erase its ordinary anchor surface"
                             );
                             assert_eq!(surface.portal_group(), None);
@@ -211,7 +215,7 @@ fn composed(
                         ][index]
                     };
                     assert_eq!(
-                        [bounds.x(), bounds.y(), bounds.width() as i32, bounds.height() as i32],
+                        [bounds.x(), bounds.y(), i32::try_from(bounds.width()).unwrap(), i32::try_from(bounds.height()).unwrap()],
                         expected,
                         "the Portal uses its owner-issued placement rather than the anchor allocation"
                     );
@@ -278,6 +282,9 @@ fn opacity(appearance: u16, motion: u16) -> u16 {
     let product = u64::from(appearance) * u64::from(motion);
     let quotient = product / 65_535;
     let remainder = product % 65_535;
-    (quotient + u64::from(remainder * 2 > 65_535 || (remainder * 2 == 65_535 && quotient % 2 != 0)))
-        as u16
+    u16::try_from(
+        quotient
+            + u64::from(remainder * 2 > 65_535 || (remainder * 2 == 65_535 && quotient % 2 != 0)),
+    )
+    .expect("a composed opacity is at most either factor")
 }

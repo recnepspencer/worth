@@ -1,7 +1,10 @@
 //! A Portal that opened fitted to its content is placed again at the extent
 //! each successor layout gives that content, so a modal whose content a resize
 //! lays out taller or shorter takes that extent rather than the one it opened
-//! at. A Portal opened at its declared extent keeps it.
+//! at. A Portal opened at its declared extent keeps it. Regions the owner
+//! lays its content out in clip where the Portal opens from, not the content,
+//! so they leave the fitted extent whole.
+use super::geometry::scrollable::{install_scrollable_primary, SCROLLABLE_PRIMARY_REGION};
 use super::geometry::{install_child_in_viewport, BOXES, VIEWPORT};
 use super::portal_placement_succession::committed_bounds;
 use super::session::World;
@@ -76,4 +79,23 @@ fn a_modal_at_its_declared_extent_keeps_it_when_its_content_grows() {
     let declared = committed_bounds(&world, portal);
     lay_out(&mut world, 20, [8.0, 12.0, 300.0, 90.0], VIEWPORT);
     assert_eq!(committed_bounds(&world, portal), declared);
+}
+
+#[test]
+fn a_region_the_owner_lays_its_content_out_in_leaves_the_fitted_modal_whole() {
+    let mut world = World::launch();
+    install_scrollable_primary(&mut world.session, world.surfaces, world.instances);
+    let [_, top, _, height] = BOXES[4];
+    assert!(
+        top + height > SCROLLABLE_PRIMARY_REGION[3],
+        "the owner's region is shorter than the content it lays out"
+    );
+    let initial = world.prepare();
+    world.publish(initial, 1, true);
+    let portal = world.open_fitted(0, "overlay.child", 10);
+    assert_eq!(
+        committed_bounds(&world, portal),
+        centered(VIEWPORT, BOXES[4]),
+        "the modal opens at its whole content's extent"
+    );
 }

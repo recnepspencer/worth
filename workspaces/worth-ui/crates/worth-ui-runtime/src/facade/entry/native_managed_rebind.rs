@@ -38,7 +38,7 @@ pub(super) use normalization::{
 pub use portal_dismissal::{
     WorthUiNativeManagedPortalDismissalOutcome, WorthUiNativePortalDismissalStop,
 };
-use predecessor_reconstruction::{reconstruction_matches_progress, reconstruction_settled};
+use predecessor_reconstruction::reconstruction_matches_progress;
 pub(super) use reconstruction::{
     detach_required_surface_reconstruction, RequiredSurfaceReconstruction,
 };
@@ -268,7 +268,9 @@ impl WorthUiNativeApplicationShell {
                         );
                         Ok(WorthUiNativeManagedRebindProgress::AwaitingProgress)
                     }
-                    outcome if reconstruction_settled(&outcome) => {
+                    crate::mounting::UiMountedFrameOutcome::Published(_)
+                    | crate::mounting::UiMountedFrameOutcome::Unchanged(_)
+                    | crate::mounting::UiMountedFrameOutcome::Reconciled(_) => {
                         let outcome = retry
                             .rebase_content_and_retry(
                                 &mut self.session,
@@ -280,9 +282,16 @@ impl WorthUiNativeApplicationShell {
                             outcome,
                         ))
                     }
-                    _ => Ok(WorthUiNativeManagedRebindProgress::Stopped(
-                        WorthUiNativeManagedRebindStop::PredecessorReconstructionFailed,
-                    )),
+                    crate::mounting::UiMountedFrameOutcome::RejectedBeforeEffects(_)
+                    | crate::mounting::UiMountedFrameOutcome::PresentationIndeterminate(_)
+                    | crate::mounting::UiMountedFrameOutcome::Superseded(_)
+                    | crate::mounting::UiMountedFrameOutcome::RetentionDenied(_)
+                    | crate::mounting::UiMountedFrameOutcome::AdmissionDenied(_)
+                    | crate::mounting::UiMountedFrameOutcome::CompletionDenied(_) => {
+                        Ok(WorthUiNativeManagedRebindProgress::Stopped(
+                            WorthUiNativeManagedRebindStop::PredecessorReconstructionFailed,
+                        ))
+                    }
                 }
             }
         }

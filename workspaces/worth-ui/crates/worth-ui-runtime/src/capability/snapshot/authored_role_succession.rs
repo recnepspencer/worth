@@ -37,6 +37,7 @@ impl CapabilitySnapshot {
                 task_presentations: self.task_presentations.clone(),
                 theme_tokens: self.theme_tokens.clone(),
                 support_catalog: self.support_catalog.clone(),
+                registration_rejections: self.registration_rejections.clone(),
             })
             .freeze(),
         ))

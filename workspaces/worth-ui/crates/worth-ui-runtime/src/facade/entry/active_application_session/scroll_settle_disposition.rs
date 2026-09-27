@@ -58,6 +58,9 @@ pub enum UiAcceptedScrollSettlementDenial {
     /// The sample sits before the content's rest position, which no
     /// non-negative offset describes.
     SampleBeforeRest,
+    /// The sample stands farther from the content's rest position than an
+    /// offset can count.
+    SampleOutOfRange,
     /// The sample is measured in a different coordinate space than the
     /// content's rest box.
     SampleOutsideRestSpace,

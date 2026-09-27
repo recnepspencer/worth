@@ -98,8 +98,9 @@ impl UiMountedTextQualification {
 
 fn logical_millipoints(value: f32) -> Result<u32, UiMountedProjectionDenial> {
     let scaled = f64::from(value) * 1_000.0;
-    if !scaled.is_finite() || scaled <= 0.0 || scaled > f64::from(u32::MAX) {
+    if !scaled.is_finite() || scaled <= 0.0 {
         return Err(UiMountedProjectionDenial::SemanticTextShapeMismatch);
     }
-    Ok(scaled.ceil() as u32)
+    crate::whole_number::whole_u32(scaled.ceil())
+        .ok_or(UiMountedProjectionDenial::SemanticTextShapeMismatch)
 }

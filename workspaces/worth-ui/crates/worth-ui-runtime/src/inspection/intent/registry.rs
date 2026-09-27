@@ -60,7 +60,10 @@ impl UiIntentEvidenceRegistry {
                 crate::runtime::interaction::UiInteractionTransition::Semantic(interaction) => {
                     Some(interaction)
                 }
-                _ => None,
+                crate::runtime::interaction::UiInteractionTransition::PointerPressed(_)
+                | crate::runtime::interaction::UiInteractionTransition::DraftMutation(_)
+                | crate::runtime::interaction::UiInteractionTransition::DismissRequested(_)
+                | crate::runtime::interaction::UiInteractionTransition::Stopped(_) => None,
             })
         {
             let input = crate::runtime::interaction::semantic_evidence_input(interaction);
@@ -237,7 +240,8 @@ impl UiIntentEvidenceRegistry {
 
         let slot = self.next_slot;
         self.next_slot =
-            ((usize::from(slot) + 1) % UI_INTENT_INTERACTION_EVIDENCE_ENTRY_CAPACITY) as u8;
+            u8::try_from((usize::from(slot) + 1) % UI_INTENT_INTERACTION_EVIDENCE_ENTRY_CAPACITY)
+                .expect("the evidence ring holds fewer than 256 entries");
         let reference =
             UiIntentEvidenceReference::from_diagnostic_parts(self.session, slot, generation);
         let evidence = UiIntentCausalTraceEvidence::from_interaction(reference, input);

@@ -224,9 +224,12 @@ fn resolve_extent(
                     region,
                 })
         }
-        _ => Err(UiOverlayCompositionDenial::ForeignSurfaceExtent {
-            backdrop: declaration.identity(),
-        }),
+        UiBackdropExtentBasis::SurfaceViewport(_)
+        | UiBackdropExtentBasis::PresentedMosaicRegion { .. } => {
+            Err(UiOverlayCompositionDenial::ForeignSurfaceExtent {
+                backdrop: declaration.identity(),
+            })
+        }
     }
 }
 

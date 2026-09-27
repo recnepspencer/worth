@@ -6,7 +6,10 @@ use worth_ui_host_contract::{
 };
 
 use super::{MountedInstanceRecord, UiMountedIdentityState};
-use crate::mounting::{UiMountedGraphNodeHandle, UiMountedIdentityBasis, UiMountedIdentityDenial};
+use crate::mounting::{
+    UiMountedGraphNodeHandle, UiMountedIdentityBasis, UiMountedIdentityDenial,
+    UiMountedOccurrenceGeometryDenial,
+};
 
 const MOUNTED_CLOSURE_LIMIT: usize = 4_097;
 const GRAPH_NODE_MOUNT_LIMIT: usize = 1_024;
@@ -15,14 +18,15 @@ impl UiMountedIdentityState {
     pub(crate) fn mark_occurrence_geometry_changed(
         &mut self,
         instances: &[UiMountedInstanceIdentity],
-    ) -> Result<(), UiMountedIdentityDenial> {
+    ) -> Result<(), UiMountedOccurrenceGeometryDenial> {
         if instances
             .iter()
             .any(|instance| !self.instances.contains_key(instance))
         {
-            return Err(UiMountedIdentityDenial::UnknownMountedInstance);
+            return Err(UiMountedOccurrenceGeometryDenial::UnknownMountedInstance);
         }
-        let semantic_revision = super::next(&super::NEXT_STATE_REVISION)?;
+        let semantic_revision = super::next(&super::NEXT_STATE_REVISION)
+            .map_err(|_| UiMountedOccurrenceGeometryDenial::StateRevisionExhausted)?;
         for instance in instances {
             self.pending_projection_changes
                 .mark_changed_instance(*instance);

@@ -26,7 +26,7 @@ pub struct WorthUiSettledSourceSnapshot {
 impl WorthUiReloadDebounce {
     pub fn stable_window(window: Duration) -> Self {
         Self {
-            stable_window_millis: window.as_millis().min(u128::from(u64::MAX)) as u64,
+            stable_window_millis: u64::try_from(window.as_millis()).unwrap_or(u64::MAX),
         }
     }
 

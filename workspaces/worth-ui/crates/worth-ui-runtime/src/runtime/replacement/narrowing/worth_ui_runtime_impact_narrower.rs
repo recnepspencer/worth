@@ -262,7 +262,10 @@ fn lane_impact(
 ) -> Option<WorthUiLaneImpactClassification> {
     match classification.impact() {
         WorthUiReplacementImpact::LaneAffecting { lane_impact, .. } => Some(lane_impact.clone()),
-        _ => None,
+        WorthUiReplacementImpact::NoOp
+        | WorthUiReplacementImpact::LocalSubtree(_)
+        | WorthUiReplacementImpact::StructuralReplacement(_)
+        | WorthUiReplacementImpact::BroadReplacement(_) => None,
     }
 }
 

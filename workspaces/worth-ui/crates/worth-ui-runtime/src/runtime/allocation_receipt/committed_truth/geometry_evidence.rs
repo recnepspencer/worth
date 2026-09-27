@@ -172,40 +172,11 @@ fn resolve_viewport_axis(
     placement: crate::capability::ComponentViewportAxisPlacement,
     viewport_extent: f32,
 ) -> Option<(f32, f32)> {
-    use crate::capability::ComponentViewportAxisPlacement as Placement;
-
     if !viewport_extent.is_finite() || viewport_extent <= 0.0 {
         return None;
     }
-    let (origin, extent) = match placement {
-        Placement::FixedFromStart {
-            start_logical_points,
-            extent_logical_points,
-        } => (
-            f32::from(start_logical_points),
-            f32::from(extent_logical_points),
-        ),
-        Placement::StretchBetween {
-            start_logical_points,
-            end_logical_points,
-        } => {
-            let origin = f32::from(start_logical_points);
-            (
-                origin,
-                viewport_extent - origin - f32::from(end_logical_points),
-            )
-        }
-        Placement::FixedFromEnd {
-            end_logical_points,
-            extent_logical_points,
-        } => {
-            let extent = f32::from(extent_logical_points);
-            (
-                viewport_extent - f32::from(end_logical_points) - extent,
-                extent,
-            )
-        }
-    };
+    let span = placement.span(viewport_extent);
+    let (origin, extent) = (span.start, span.extent);
     (origin >= 0.0 && extent > 0.0 && origin + extent <= viewport_extent)
         .then_some((origin, extent))
 }
@@ -317,6 +288,14 @@ mod viewport_region_tests {
         assert_eq!(
             resolve_viewport_axis(Placement::fixed_from_end(24, 24).unwrap(), 600.0),
             Some((552.0, 24.0)),
+        );
+        assert_eq!(
+            resolve_viewport_axis(Placement::bounded_stretch(36, 36, 444).unwrap(), 600.0),
+            Some((36.0, 444.0)),
+        );
+        assert_eq!(
+            resolve_viewport_axis(Placement::bounded_stretch(36, 36, 444).unwrap(), 400.0),
+            Some((36.0, 328.0)),
         );
     }
 

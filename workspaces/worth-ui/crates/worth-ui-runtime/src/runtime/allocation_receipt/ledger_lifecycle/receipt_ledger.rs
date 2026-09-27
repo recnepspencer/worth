@@ -125,18 +125,15 @@ impl UiAllocationReceiptLedger {
                 UiAllocationReplanTransactionCommitDenial::EvidenceCounterExhausted,
             );
         };
-        for (ordinal, (selected, candidate)) in selection
-            .ordered_neighborhoods()
-            .iter()
-            .zip(candidates.iter())
-            .enumerate()
+        for ((ordinal, selected), candidate) in
+            selection.ordinal_neighborhoods().zip(candidates.iter())
         {
             if selected.identity() != candidate.allocation_neighborhood().identity() {
                 return retain_denial(
                     &mut state,
                     &transaction,
                     UiAllocationReplanTransactionCommitDenial::CandidateNeighborhoodMismatch {
-                        ordinal: ordinal as u16,
+                        ordinal,
                     },
                 );
             }
@@ -144,9 +141,7 @@ impl UiAllocationReceiptLedger {
                 return retain_denial(
                     &mut state,
                     &transaction,
-                    UiAllocationReplanTransactionCommitDenial::CandidatePlanningDenied {
-                        ordinal: ordinal as u16,
-                    },
+                    UiAllocationReplanTransactionCommitDenial::CandidatePlanningDenied { ordinal },
                 );
             }
             let scope = UiAllocationNeighborhoodScope::from_neighborhood(
@@ -163,7 +158,7 @@ impl UiAllocationReceiptLedger {
                         &mut state,
                         &transaction,
                         UiAllocationReplanTransactionCommitDenial::PortalPriorReceiptMismatch {
-                            ordinal: ordinal as u16,
+                            ordinal,
                         },
                     );
                 }
@@ -213,19 +208,14 @@ impl UiAllocationReceiptLedger {
                     return retain_denial(
                         &mut state,
                         &transaction,
-                        UiAllocationReplanTransactionCommitDenial::ReuseDenied {
-                            ordinal: ordinal as u16,
-                            reason,
-                        },
+                        UiAllocationReplanTransactionCommitDenial::ReuseDenied { ordinal, reason },
                     )
                 }
                 UiAllocationReuseVerdict::StructureReuseLeafRemeasure(_) => {
                     return retain_denial(
                         &mut state,
                         &transaction,
-                        UiAllocationReplanTransactionCommitDenial::RecomputePending {
-                            ordinal: ordinal as u16,
-                        },
+                        UiAllocationReplanTransactionCommitDenial::RecomputePending { ordinal },
                     )
                 }
                 UiAllocationReuseVerdict::FullReuse => counters.reused(),
@@ -293,7 +283,10 @@ impl UiAllocationReceiptLedger {
             super::replan_commit_mode::UiAllocationReplanCommitMode::Viewport(basis) => {
                 super::viewport_inspection::attach_viewport_inspection(committed, basis)
             }
-            _ => committed,
+            super::replan_commit_mode::UiAllocationReplanCommitMode::Ordinary(_)
+            | super::replan_commit_mode::UiAllocationReplanCommitMode::DurableResize { .. } => {
+                committed
+            }
         };
         Ok((committed, catalog_candidates))
     }

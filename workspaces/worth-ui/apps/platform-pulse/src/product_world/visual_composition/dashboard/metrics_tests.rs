@@ -120,7 +120,7 @@ fn card_content_keeps_its_concept_padding() {
             };
             match element.placement.layout_cell().unwrap().region.horizontal() {
                 Axis::FixedFromEnd { .. } => end(),
-                Axis::StretchBetween { .. } => {
+                Axis::StretchBetween { .. } | Axis::BoundedStretch { .. } => {
                     start();
                     end();
                 }

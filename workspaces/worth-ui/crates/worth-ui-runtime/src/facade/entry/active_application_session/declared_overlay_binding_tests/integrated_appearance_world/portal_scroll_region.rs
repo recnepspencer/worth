@@ -24,13 +24,22 @@ const THUMB_INSET: f32 = 6.0;
 fn open() -> (World, UiPortalIdentity) {
     let declared = WorldScroll::default();
     let region = declared.region.clone().with_scroll_chrome(contract());
-    open_with(WorldScroll { region, ..declared })
+    open_installed(WorldScroll { region, ..declared }, install_scrollable_child)
 }
 
-/// [`open`] with the Scroll service `declared` declares.
-pub(super) fn open_with(declared: WorldScroll) -> (World, UiPortalIdentity) {
+/// The World with the Scroll service `declared` declares and the geometry
+/// `install` lays out, one frame published while the Portal is closed, and
+/// then the Portal opened fitted to its child.
+pub(super) fn open_installed(
+    declared: WorldScroll,
+    install: fn(
+        &mut crate::facade::WorthUiActiveApplicationSession,
+        [UiSemanticSurfaceIdentity; 2],
+        [UiMountedInstanceIdentity; 5],
+    ),
+) -> (World, UiPortalIdentity) {
     let mut world = World::launch_with_scroll(declared);
-    install_scrollable_child(&mut world.session, world.surfaces, world.instances);
+    install(&mut world.session, world.surfaces, world.instances);
     let frame = world.prepare();
     world.publish(frame, 1, true);
     assert!(
@@ -73,11 +82,11 @@ fn region_at([x, y]: [f32; 2]) -> [f32; 4] {
 
 /// Logical points of a mechanic coordinate.
 fn points(subpixels: i64) -> f32 {
-    subpixels as f32 / UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f32
+    crate::units::UiSubpixels::new(subpixels).to_points_f32()
 }
 
 pub(super) fn subpixels(points: f32) -> i64 {
-    (points * UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f32) as i64
+    crate::units::UiSubpixels::nearest(points).unwrap().count()
 }
 
 /// Bars paint at the Portal's resting presentation, which is where the

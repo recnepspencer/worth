@@ -1,8 +1,9 @@
 use crate::capability::{
-    CapabilitySnapshotFreezeInput, CapabilitySnapshotIndex, CapabilitySnapshotIndexParts,
-    CapabilitySupportCatalog, FrozenAppearanceRoleCapabilities, FrozenAppearanceThemeCapabilities,
-    FrozenCommandCapabilities, FrozenCommandProjectionCapabilities, FrozenComponentCapabilities,
-    FrozenIconCapabilities, FrozenIntentDefinitionCapabilities, FrozenMosaicPlacementCapabilities,
+    CapabilityRegistrationRejections, CapabilitySnapshotFreezeInput, CapabilitySnapshotIndex,
+    CapabilitySnapshotIndexParts, CapabilitySupportCatalog, FrozenAppearanceRoleCapabilities,
+    FrozenAppearanceThemeCapabilities, FrozenCommandCapabilities,
+    FrozenCommandProjectionCapabilities, FrozenComponentCapabilities, FrozenIconCapabilities,
+    FrozenIntentDefinitionCapabilities, FrozenMosaicPlacementCapabilities,
     FrozenMosaicRegionCapabilities, FrozenMosaicSizingCapabilities, FrozenMosaicStateCapabilities,
     FrozenNativeCapabilities, FrozenPluginSlotCapabilities,
     FrozenRuntimeOutcomeProjectionCapabilities, FrozenSettingCapabilities,
@@ -43,6 +44,7 @@ pub struct CapabilitySnapshot {
     task_presentations: FrozenTaskPresentationCapabilities,
     theme_tokens: FrozenThemeTokenCapabilities,
     support_catalog: CapabilitySupportCatalog,
+    registration_rejections: CapabilityRegistrationRejections,
     digest: CapabilitySnapshotDigest,
     metrics: SnapshotMetrics,
     freeze_report: SnapshotFreezeReport,
@@ -79,6 +81,7 @@ impl CapabilitySnapshot {
             task_presentations: input.task_presentations,
             theme_tokens: input.theme_tokens,
             support_catalog: input.support_catalog,
+            registration_rejections: input.registration_rejections,
             digest,
             metrics,
             freeze_report,
@@ -183,6 +186,10 @@ impl CapabilitySnapshot {
 
     pub(crate) fn support_catalog(&self) -> &CapabilitySupportCatalog {
         &self.support_catalog
+    }
+
+    pub(crate) fn registration_rejections(&self) -> &CapabilityRegistrationRejections {
+        &self.registration_rejections
     }
 
     /// Deterministic digest for this frozen capability meaning.

@@ -130,6 +130,10 @@ impl UiPresentationTrackState {
                 start.map(UiTrackSamplePlace::damage_components),
             ),
         )?;
+        // A retarget departs at the displaced curve's rate, which can carry
+        // the successor past a nearer target: its span bounds it.
+        let start_velocity = UiTrackCurveSpan::new(current.geometry(), track.successor_geometry())
+            .bounded_velocity(start_velocity, duration_ticks);
         Ok(Self {
             track,
             motion: UiTrackMotion::Running(UiTrackCurve {
@@ -230,6 +234,10 @@ impl UiPresentationTrackState {
             return (0.0, super::UiPresentationMotionSamplePosture::Delayed);
         };
         let duration = u64::from(curve.duration_ticks.max(1));
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "a progress in the unit interval, at the precision easing samples in"
+        )]
         let normalized = (active_elapsed as f64 / duration as f64).min(1.0) as f32;
         let posture = if normalized >= 1.0 {
             super::UiPresentationMotionSamplePosture::Terminal

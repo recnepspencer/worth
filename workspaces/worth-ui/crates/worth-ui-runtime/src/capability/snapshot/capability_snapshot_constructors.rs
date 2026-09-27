@@ -40,6 +40,7 @@ impl CapabilitySnapshot {
             task_presentations: FrozenTaskPresentationCapabilities::empty(),
             theme_tokens: FrozenThemeTokenCapabilities::empty(),
             support_catalog: CapabilitySupportCatalog::empty(),
+            registration_rejections: Default::default(),
         })
     }
 

@@ -177,6 +177,10 @@ impl UiScrollRuntimeState {
         ))
     }
 
+    /// On the installed state, where the host last accepted this incarnation
+    /// of `owner`; offsets staged past that frame read as
+    /// `UiStagedScrollOffset` instead. A route or restore candidate answers
+    /// its own working fork.
     pub(crate) fn offset(
         &self,
         owner: super::UiScrollOwnerIdentity,

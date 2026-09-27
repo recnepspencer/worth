@@ -138,7 +138,11 @@ fn host_focus_navigation(
     if modifiers.shift() {
         return None;
     }
-    Some(UiHostFocusNavigation::Container(match logical_key {
+    #[expect(
+        clippy::wildcard_enum_match_arm,
+        reason = "only the four arrows move within a container; no other host key navigates"
+    )]
+    let key = match logical_key {
         worth_ui_host_contract::UiHostKey::ArrowLeft => {
             crate::runtime::focus::UiFocusContainerNavigationKey::Left
         }
@@ -152,7 +156,8 @@ fn host_focus_navigation(
             crate::runtime::focus::UiFocusContainerNavigationKey::Down
         }
         _ => return None,
-    }))
+    };
+    Some(UiHostFocusNavigation::Container(key))
 }
 
 #[cfg(test)]

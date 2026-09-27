@@ -20,7 +20,12 @@ pub(crate) fn expand_evidence_ref(
             .retained_allocation_planning_registry()
             .current_generation_for(evidence_ref.handle().handle_digest())
             .unwrap_or_else(|| evidence_ref.authority_generation()),
-        _ => worth_ui_inspection::UiEvidenceAuthorityGeneration::new(
+        UiEvidenceFamily::Declaration
+        | UiEvidenceFamily::Admission
+        | UiEvidenceFamily::Graph
+        | UiEvidenceFamily::Aspect
+        | UiEvidenceFamily::Obligation
+        | _ => worth_ui_inspection::UiEvidenceAuthorityGeneration::new(
             app.graph().generation().as_u64(),
         ),
     };
@@ -58,7 +63,11 @@ pub(crate) fn expand_evidence_ref(
         UiEvidenceFamily::Obligation => {
             expand_retained_obligation_ref(app, evidence_ref, requested_richness)
         }
-        _ => UiEvidenceExpansion::new(
+        UiEvidenceFamily::Declaration
+        | UiEvidenceFamily::Admission
+        | UiEvidenceFamily::Graph
+        | UiEvidenceFamily::Aspect
+        | _ => UiEvidenceExpansion::new(
             evidence_ref,
             requested_richness,
             UiEvidenceExpansionOutcome::Unsupported,
@@ -113,7 +122,10 @@ fn followup_query_for_ref(
         UiEvidenceFamily::Aspect => app
             .graph_aspect_evidence_indexes()
             .lookup_ref_target(evidence_ref.identity().digest())?,
-        _ => return None,
+        UiEvidenceFamily::Admission
+        | UiEvidenceFamily::Planning
+        | UiEvidenceFamily::Obligation
+        | _ => return None,
     };
 
     Some(

@@ -238,7 +238,7 @@ pub(in crate::mounting::projection) fn rebind_semantic_text(
         let node = semantic
             .node(row.mounted_instance())
             .ok_or(UiMountedProjectionDenial::UnknownGraphNode)?;
-        let allocation_basis = match node.presentation_allocation() {
+        let allocation_basis = match *node.occurrence_allocation.in_layout_space() {
             worth_ui_host_contract::UiMountedAllocationProjection::Known { basis, .. }
             | worth_ui_host_contract::UiMountedAllocationProjection::PortalAnchorObservation {
                 basis,

@@ -238,7 +238,17 @@ fn finish_first<'session>(
                 },
             )
         }
-        outcome => finish_terminal(admitted, outcome),
+        outcome @ (crate::mounting::UiMountedFrameOutcome::Published(_)
+        | crate::mounting::UiMountedFrameOutcome::Unchanged(_)
+        | crate::mounting::UiMountedFrameOutcome::Reconciled(_)
+        | crate::mounting::UiMountedFrameOutcome::RejectedBeforeEffects(_)
+        | crate::mounting::UiMountedFrameOutcome::PresentationIndeterminate(_)
+        | crate::mounting::UiMountedFrameOutcome::Superseded(_)
+        | crate::mounting::UiMountedFrameOutcome::RetentionDenied(_)
+        | crate::mounting::UiMountedFrameOutcome::AdmissionDenied(_)
+        | crate::mounting::UiMountedFrameOutcome::CompletionDenied(_)) => {
+            finish_terminal(admitted, outcome)
+        }
     }
 }
 
@@ -254,7 +264,17 @@ fn finish_completion<'session>(
                 },
             )
         }
-        outcome => finish_terminal(admitted, outcome),
+        outcome @ (crate::mounting::UiMountedFrameOutcome::Published(_)
+        | crate::mounting::UiMountedFrameOutcome::Unchanged(_)
+        | crate::mounting::UiMountedFrameOutcome::Reconciled(_)
+        | crate::mounting::UiMountedFrameOutcome::RejectedBeforeEffects(_)
+        | crate::mounting::UiMountedFrameOutcome::PresentationIndeterminate(_)
+        | crate::mounting::UiMountedFrameOutcome::Superseded(_)
+        | crate::mounting::UiMountedFrameOutcome::RetentionDenied(_)
+        | crate::mounting::UiMountedFrameOutcome::AdmissionDenied(_)
+        | crate::mounting::UiMountedFrameOutcome::CompletionDenied(_)) => {
+            finish_terminal(admitted, outcome)
+        }
     }
 }
 

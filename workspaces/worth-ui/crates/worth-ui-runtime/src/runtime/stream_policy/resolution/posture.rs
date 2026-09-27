@@ -13,6 +13,11 @@ pub(super) fn resolve_ingress_policy_verdict(
                 max_lag_frames: policy.budget().max_lag_frames(),
             }
         }
-        _ => UiAllocationIngressPolicyVerdict::Current,
+        UiAllocationFrameSourceFact::HostMeasurement(_)
+        | UiAllocationFrameSourceFact::QuerySettledFact { .. }
+        | UiAllocationFrameSourceFact::Interaction(_)
+        | UiAllocationFrameSourceFact::DurableResize(_) => {
+            UiAllocationIngressPolicyVerdict::Current
+        }
     }
 }

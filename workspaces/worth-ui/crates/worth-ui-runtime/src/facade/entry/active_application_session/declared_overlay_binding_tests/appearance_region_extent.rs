@@ -164,10 +164,10 @@ fn authored_region_backdrop_uses_completed_occurrence_and_tracks_resize() {
         assert_eq!(
             (extent.x(), extent.y(), extent.width(), extent.height()),
             (
-                (expected[0] * 1000.) as i32,
-                (expected[1] * 1000.) as i32,
-                (expected[2] * 1000.) as u32,
-                (expected[3] * 1000.) as u32
+                worth_ui_host_contract::appearance_coordinate_nearest(expected[0]).unwrap(),
+                worth_ui_host_contract::appearance_coordinate_nearest(expected[1]).unwrap(),
+                worth_ui_host_contract::appearance_extent_nearest(expected[2]).unwrap(),
+                worth_ui_host_contract::appearance_extent_nearest(expected[3]).unwrap()
             )
         );
         assert!(overlay

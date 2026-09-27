@@ -58,7 +58,12 @@ impl UiIntentExecutionState {
             UiManagedIntentSettlement::Indeterminate { detail, recovery } => {
                 recoverable_indeterminate(context, detail, recovery)
             }
-            terminal => before_effect(context, terminal),
+            terminal @ (UiManagedIntentSettlement::RejectedBeforeEffect(_)
+            | UiManagedIntentSettlement::FailedBeforeEffect(_)
+            | UiManagedIntentSettlement::CancelledBeforeEffect(_)
+            | UiManagedIntentSettlement::TimedOutBeforeEffect(_)) => {
+                before_effect(context, terminal)
+            }
         };
         if let Some(reservation) = disposition.release {
             self.release_reservation(reservation);
@@ -173,7 +178,11 @@ fn before_effect(
         UiManagedIntentSettlement::TimedOutBeforeEffect(detail) => {
             UiIntentExecutionTransitionPosture::TimedOutBeforeEffect { detail }
         }
-        _ => unreachable!("completed and recovery settlements are handled before pre-effect"),
+        UiManagedIntentSettlement::Completed(_)
+        | UiManagedIntentSettlement::Partial { .. }
+        | UiManagedIntentSettlement::Indeterminate { .. } => {
+            unreachable!("completed and recovery settlements are handled before pre-effect")
+        }
     };
     UiIntentSettlementDisposition {
         phase: None,

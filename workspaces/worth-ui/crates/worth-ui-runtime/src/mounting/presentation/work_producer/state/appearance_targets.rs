@@ -36,6 +36,7 @@ impl UiMountedPresentationState {
             worth_ui_host_contract::UiSemanticSurfaceIdentity,
             UiMountedInstanceIdentity,
         )],
+        issued: &super::super::command_motion_slot::UiIssuedCommandMotion,
     ) {
         for &(surface, instance) in targets {
             if surface != self.requirement.semantic_surface() {
@@ -47,7 +48,8 @@ impl UiMountedPresentationState {
             } else {
                 self.appearance_opacity_by_instance.remove(&instance);
             }
-            self.bind_appearance_surface_target(
+            let shown = self.shown_portal_motions(instance, issued);
+            let rebound = self.bind_appearance_surface_target(
                 instance,
                 frame.appearance_surface_sample_geometry(instance),
             );
@@ -66,6 +68,9 @@ impl UiMountedPresentationState {
                 surface,
                 self.appearance_surfaces.get(&instance).is_some(),
             );
+            if rebound {
+                self.carry_surface_portal_motion(instance, &shown, issued);
+            }
         }
         for instance in frame.retired_appearance_instances() {
             self.appearance_opacity_by_instance.remove(instance);
@@ -82,22 +87,23 @@ impl UiMountedPresentationState {
         }
     }
 
-    /// Unchanged geometry keeps its live slot; changed geometry starts unsampled.
-    fn bind_appearance_surface_target(
+    /// Unchanged geometry keeps its live slot; changed geometry starts
+    /// unsampled in a new one, and answers `true`.
+    pub(in crate::mounting::presentation::work_producer) fn bind_appearance_surface_target(
         &mut self,
         instance: UiMountedInstanceIdentity,
         geometry: Option<UiMountedAppearanceSurfaceSampleGeometry>,
-    ) {
+    ) -> bool {
         let Some(geometry) = geometry.filter(|_| !self.has_paint_commands(instance)) else {
             self.appearance_surfaces.remove(&instance);
-            return;
+            return false;
         };
         if self
             .appearance_surfaces
             .get(&instance)
             .is_some_and(|target| target.geometry == geometry)
         {
-            return;
+            return false;
         }
         self.appearance_surfaces.insert(
             instance,
@@ -106,6 +112,7 @@ impl UiMountedPresentationState {
                 motion: UiCommandMotionAcceptance::default(),
             },
         );
+        true
     }
 
     pub(in crate::mounting::presentation::work_producer) fn appearance_opacity_for_command(
@@ -127,6 +134,24 @@ impl UiMountedPresentationState {
             return None;
         }
         self.appearance_surfaces.get(&instance)
+    }
+
+    /// Give `instance`'s bound surface a live slot no other version of it
+    /// shares, holding nothing yet, and return it.
+    pub(in crate::mounting::presentation::work_producer) fn own_appearance_surface_slot(
+        &mut self,
+        instance: UiMountedInstanceIdentity,
+    ) -> Option<UiCommandMotionAcceptance> {
+        let geometry = self.appearance_surface_sample_target(instance)?.geometry;
+        let motion = UiCommandMotionAcceptance::default();
+        self.appearance_surfaces.insert(
+            instance,
+            UiMountedAppearanceSurfaceSampleTarget {
+                geometry,
+                motion: motion.clone(),
+            },
+        );
+        Some(motion)
     }
 
     fn has_paint_commands(&self, instance: UiMountedInstanceIdentity) -> bool {

@@ -16,14 +16,12 @@
 use super::scroll_pose_authority::{block, ScrollWorld};
 use super::scroll_settle_commit::{one_notch_up, smooth_world, ONE_NOTCH, SETTLE_TICKS};
 use crate::runtime::scroll::{UiHostScrollObservationDenial, UiHostScrollObservationOutcome};
-use worth_ui_host_contract::{
-    UiHostScrollDeltaPhase, UiHostScrollDeltaPrecision, UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
-};
+use worth_ui_host_contract::{UiHostScrollDeltaPhase, UiHostScrollDeltaPrecision};
 
 /// A host block delta that scrolls content toward the top of the viewport by
 /// `points`, which moves the offset the other way.
 fn pixels(points: i64) -> i64 {
-    -points * UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT
+    -crate::units::host_count_of(points)
 }
 
 /// Whether a wheel naming only the presented surface reaches an owner. It does

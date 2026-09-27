@@ -43,13 +43,15 @@ pub(super) fn derive(
         work.map_key_probes += probes;
         let mounted = mounted.ok_or(Denial::MountedGeometryUnavailable)?;
         let geometry = mounted.completed_appearance_geometry();
-        let space = match geometry.allocation {
+        let space = match geometry.allocation.into_shown() {
             worth_ui_host_contract::UiMountedAllocationProjection::Known { bounds, .. }
             | worth_ui_host_contract::UiMountedAllocationProjection::PortalAnchorObservation {
                 bounds,
                 ..
             } => bounds.coordinate_space() as u8,
-            _ => return Err(Denial::MountedGeometryUnavailable),
+            worth_ui_host_contract::UiMountedAllocationProjection::Omitted(_) => {
+                return Err(Denial::MountedGeometryUnavailable)
+            }
         };
         let (mounted_surface, probes) = frame.semantic.surface_for_with_probes(surface);
         work.map_key_probes += probes;
@@ -63,14 +65,14 @@ pub(super) fn derive(
                     0,
                     m.visual_bounds(),
                     m.clip(),
-                    geometry.portal_group,
+                    geometry.portal_group(),
                 ),
                 Mechanic::Outline(m) => (
                     m.surface_paint_order(),
                     1,
                     m.visual_bounds(),
                     m.clip(),
-                    geometry.portal_group,
+                    geometry.portal_group(),
                 ),
                 Mechanic::PortalSurface(m) => (
                     m.surface().surface_paint_order(),
@@ -79,7 +81,10 @@ pub(super) fn derive(
                     m.surface().clip(),
                     Some(m.portal_instance()),
                 ),
-                _ => continue,
+                Mechanic::TextForeground(_)
+                | Mechanic::Pointer(_)
+                | Mechanic::Backdrop(_)
+                | Mechanic::ScrollChrome(_) => continue,
             };
             if let Some(bounds) = clipped(bounds, clip) {
                 rows.push(Row {

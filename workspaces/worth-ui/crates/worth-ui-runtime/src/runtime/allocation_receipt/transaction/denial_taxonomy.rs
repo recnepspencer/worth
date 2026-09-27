@@ -170,7 +170,18 @@ impl crate::graph::UiReplanLocalityDenial {
             Self::EmptyScrollConsequence | Self::ContradictoryScrollConsequence => {
                 UiAllocationDenialFamily::ContradictoryScrollOwnership
             }
-            _ => UiAllocationDenialFamily::NeighborhoodLocality,
+            Self::EmptyInvalidationSet
+            | Self::ConflictingNeighborhoodForTarget
+            | Self::ForbiddenRootFallback
+            | Self::UnsupportedWideningFamily
+            | Self::MissingAdmittedCandidate
+            | Self::IncompleteReplacementLineage
+            | Self::OverlappingNeighborhoods { .. }
+            | Self::OverlappingNeighborhoodSupersessionRequired
+            | Self::QueryMeasurementSuccessorDenied
+            | Self::HostMeasurementSuccessorDenied => {
+                UiAllocationDenialFamily::NeighborhoodLocality
+            }
         };
         evidence(0x15, family, None, None, None, None)
     }

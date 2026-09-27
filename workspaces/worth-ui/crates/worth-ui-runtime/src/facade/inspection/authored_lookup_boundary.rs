@@ -36,7 +36,15 @@ impl<'a> WorthUiAuthoredInspectionBoundary<'a> {
             UiInspectionTarget::AuthoredSourceProvenance { provenance } => self
                 .authored_evidence_index
                 .lookup_authored_provenance(provenance),
-            _ => return None,
+            UiInspectionTarget::ProductRoot
+            | UiInspectionTarget::DeclaredSurface { .. }
+            | UiInspectionTarget::GraphNodeIdentity { .. }
+            | UiInspectionTarget::PublishedAspect { .. }
+            | UiInspectionTarget::ConsumedAspect { .. }
+            | UiInspectionTarget::ObligationGraphNode { .. }
+            | UiInspectionTarget::ObligationTouch { .. }
+            | UiInspectionTarget::ObligationEvidenceHandle { .. }
+            | _ => return None,
         }?;
         let neighborhood = lookup.neighborhood();
         let refs = filter_refs_for_query(neighborhood.refs(), &query);
@@ -75,7 +83,15 @@ impl<'a> WorthUiAuthoredInspectionBoundary<'a> {
                 .lookup_authored_provenance(provenance)?
                 .neighborhood()
                 .declaration_artifact_index(),
-            _ => return None,
+            UiInspectionTarget::ProductRoot
+            | UiInspectionTarget::DeclaredSurface { .. }
+            | UiInspectionTarget::GraphNodeIdentity { .. }
+            | UiInspectionTarget::PublishedAspect { .. }
+            | UiInspectionTarget::ConsumedAspect { .. }
+            | UiInspectionTarget::ObligationGraphNode { .. }
+            | UiInspectionTarget::ObligationTouch { .. }
+            | UiInspectionTarget::ObligationEvidenceHandle { .. }
+            | _ => return None,
         };
         Some(declared_surface_support_report(
             &self.declaration_artifacts[artifact_index],

@@ -16,7 +16,9 @@ pub(super) fn prepare(
     let policy = request
         .placement_geometry()
         .ok_or(super::UiPortalPlacementDenial::MissingPresentedAnchor)?;
-    // The Portal commits its placement from where the host showed the anchor.
+    // The open places the Portal from where the host showed the anchor. The
+    // frame carrying the open places it again from the owner's layout, as
+    // every later frame does, and commits that unless it cannot place it.
     let anchor_rect = anchor.bounds().adopted();
     let viewport = request
         .presented_viewport()

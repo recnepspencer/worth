@@ -1,5 +1,7 @@
+mod addressed_scroll_owner;
 mod region;
 mod state;
+pub(crate) use addressed_scroll_owner::UiAddressedScrollOwner;
 pub use region::UiMountedMosaicRegionGeometry;
 mod receipt;
 pub use receipt::UiMountedLayoutCompletionReceipt;
@@ -11,9 +13,11 @@ pub(crate) use surface_paint_posture::{
 mod clip_binding;
 pub(crate) use clip_binding::{UiMountedMosaicClipBinding, UiMountedScrollClipBinding};
 mod basis;
+mod grid_correction;
 pub use basis::UiMountedLayoutBasis;
+use grid_correction::UiDeviceGridCorrection;
 
-pub(crate) use state::UiMountedOccurrenceGeometryState;
+pub(crate) use state::{UiMountedOccurrenceGeometryState, UiPreparedMountedScrollPose};
 
 use worth_ui_host_contract::{
     UiMountedCanonicalBox, UiMountedInstanceIdentity, UiSemanticSurfaceIdentity,
@@ -102,6 +106,9 @@ pub enum UiMountedOccurrenceGeometryDenial {
     /// The surface is bound at a scale that names no device pixel grid, so
     /// nothing presented on it could be placed on one.
     UnusableDeviceScale,
+    /// A box placed within its parent, or moved onto the device grid, is
+    /// not finite or has a negative extent.
+    UnrepresentableBox(worth_ui_host_contract::UiMountedGeometryDenial),
 }
 
 impl UiMountedOccurrenceGeometry {

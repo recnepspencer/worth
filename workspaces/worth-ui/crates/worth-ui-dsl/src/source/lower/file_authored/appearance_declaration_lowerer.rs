@@ -18,9 +18,7 @@ mod appearance_value_lowerer;
 use appearance_diagnostic::AppearanceLoweringError;
 use appearance_value_lowerer::transparent_value;
 
-#[path = "appearance_cursor.rs"]
-mod appearance_cursor;
-use appearance_cursor::Cursor;
+use super::token_cursor::{Cursor, UiDeclarationWords};
 
 pub(super) fn lower_role(
     declaration: &WorthUiParsedAppearanceRoleDeclaration,
@@ -55,9 +53,11 @@ fn parse_role(
                 .ok_or_else(|| "appearance role component target is invalid".to_owned())?,
         )
     };
-    let mut cursor = Cursor::with_spans(
-        declaration.body().tokens(),
-        declaration.body().token_spans(),
+    let mut cursor = Cursor::new(
+        declaration.body(),
+        declaration.span(),
+        UiDeclarationWords::Values,
+        "appearance declaration",
     );
     let mut partitions = Vec::new();
     while !cursor.eof() {
@@ -65,7 +65,7 @@ fn parse_role(
         if cursor.eof() {
             break;
         }
-        let aspect_span = cursor.current_span().cloned();
+        let aspect_span = cursor.span().clone();
         let aspect = parse_aspect(cursor.word()?)?;
         cursor.advance();
         let partition = if cursor.take_word("use") {
@@ -107,7 +107,7 @@ fn simple_partition(
     aspect: UiAppearanceAspect,
     role: &UiAppearanceRoleIdentity,
     value: UiAppearanceCellValue,
-    aspect_span: Option<WorthUiSourceSpan>,
+    aspect_span: WorthUiSourceSpan,
     reference_span: Option<WorthUiSourceSpan>,
 ) -> Result<crate::UiAppearanceDecisionPartition, AppearanceLoweringError> {
     UiAppearancePartitionAuthoring::new([])
@@ -128,7 +128,7 @@ fn parse_table(
     cursor: &mut Cursor<'_>,
     aspect: UiAppearanceAspect,
     role: &UiAppearanceRoleIdentity,
-    aspect_span: Option<WorthUiSourceSpan>,
+    aspect_span: WorthUiSourceSpan,
 ) -> Result<crate::UiAppearanceDecisionPartition, AppearanceLoweringError> {
     cursor.expect_symbol(WorthUiSourceTokenKind::LeftBracket)?;
     let mut domains = Vec::new();
@@ -148,16 +148,14 @@ fn parse_table(
         cursor.skip(WorthUiSourceTokenKind::Semicolon);
         if cursor.take_word("otherwise") {
             authoring = if cursor.take_word("same_as") {
-                let reference_span = cursor.current_span().cloned();
+                let reference_span = cursor.span().clone();
                 let name = cursor.word()?.to_owned();
                 cursor.advance();
-                if let Some(span) = reference_span {
-                    reference_spans.push((
-                        name.clone(),
-                        UiAppearanceCellReferenceOrigin::OtherwiseClause,
-                        span,
-                    ));
-                }
+                reference_spans.push((
+                    name.clone(),
+                    UiAppearanceCellReferenceOrigin::OtherwiseClause,
+                    reference_span,
+                ));
                 authoring.otherwise_same_as(name)
             } else {
                 cursor.expect_word("use")?;
@@ -234,7 +232,7 @@ fn parse_value(
 ) -> Result<ParsedValue, AppearanceLoweringError> {
     if cursor.take_word("same_as") {
         let parenthesized = cursor.take_symbol(WorthUiSourceTokenKind::LeftParen);
-        let reference_span = cursor.current_span().cloned();
+        let reference_span = Some(cursor.span().clone());
         let name = cursor.word()?.to_owned();
         cursor.advance();
         if parenthesized {

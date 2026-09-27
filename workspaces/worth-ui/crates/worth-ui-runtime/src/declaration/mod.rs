@@ -91,7 +91,7 @@ pub(crate) use intent::{
     UiResolvedIntentMutabilitySource, UiResolvedIntentPayloadBinding,
     UiResolvedIntentPayloadSource, UiResolvedIntentProjectionSource,
     UiResolvedIntentReadinessSource, WorthUiAuthoredIntentDeclaration,
-    WorthUiAuthoredIntentMaterial, WorthUiAuthoredIntentRoute,
+    WorthUiAuthoredIntentMaterial, WorthUiAuthoredIntentMaterialDenial, WorthUiAuthoredIntentRoute,
 };
 pub use intent::{
     UiIntentApplicationFact, UiIntentApplicationFactIdentityError,

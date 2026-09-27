@@ -173,6 +173,7 @@ pub(super) fn containers() -> Vec<ContainerTracks> {
             cell: stacked_cell,
         }),
         scroll_owner: Some(DashboardScrollOwner::Page),
+        portal_owner: None,
     };
     let panels = Panel::ALL.map(|panel| ContainerTracks {
         id: panel.container(),
@@ -184,6 +185,7 @@ pub(super) fn containers() -> Vec<ContainerTracks> {
         tracks: MosaicLayoutContract::frame().expect("a panel frames its content"),
         stacked: None,
         scroll_owner: None,
+        portal_owner: None,
     });
     std::iter::once(page).chain(panels).collect()
 }

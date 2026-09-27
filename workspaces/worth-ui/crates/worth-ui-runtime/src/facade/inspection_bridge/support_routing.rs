@@ -27,7 +27,15 @@ pub(crate) fn inspection_support_report_for(
                 *declaration_index,
                 query.scope(),
             ),
-            _ => unsupported_support_report(query.scope()),
+            UiInspectionTarget::GraphNodeIdentity { .. }
+            | UiInspectionTarget::PublishedAspect { .. }
+            | UiInspectionTarget::ConsumedAspect { .. }
+            | UiInspectionTarget::DeclarationIdentity { .. }
+            | UiInspectionTarget::AuthoredSourceProvenance { .. }
+            | UiInspectionTarget::ObligationGraphNode { .. }
+            | UiInspectionTarget::ObligationTouch { .. }
+            | UiInspectionTarget::ObligationEvidenceHandle { .. }
+            | _ => unsupported_support_report(query.scope()),
         },
         InspectionDispatchLane::AuthoredLookup => authored_inspection_boundary(app)
             .support_report_for(query)
@@ -41,7 +49,9 @@ pub(crate) fn inspection_support_report_for(
         InspectionDispatchLane::PlanningScope | InspectionDispatchLane::MeasurementScope => {
             app.inspection_support_report(query.scope())
         }
-        _ => unsupported_support_report(query.scope()),
+        InspectionDispatchLane::RetainedObligation | InspectionDispatchLane::UnsupportedTarget => {
+            unsupported_support_report(query.scope())
+        }
     }
 }
 

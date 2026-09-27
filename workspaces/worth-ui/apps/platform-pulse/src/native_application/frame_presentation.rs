@@ -7,19 +7,38 @@ use crate::native_application::terminal_error::PlatformPulseTerminalError;
 #[path = "frame_timing.rs"]
 mod frame_timing;
 
+/// A presentation still owed its host outcome. `reconstruction` is the
+/// frame's purpose, which a retry after rejection re-enters.
 pub(super) enum PlatformPulsePendingFramePresentation {
     InFlight {
         presentation: worth_ui::facade::app::UiMountedPresentationInFlight,
-        viewport_successor: bool,
+        reconstruction: bool,
     },
     PhysicalRecovery {
         frame: worth_ui::facade::app::UiMountedIndeterminateFrame,
-        viewport_successor: bool,
+        reconstruction: bool,
     },
+}
+
+/// A frame the host rejected before effects while it waits for readiness it
+/// schedules itself. The next presentation re-enters preparation with the
+/// rejected frame's purpose instead of ending the runtime.
+#[derive(Clone, Copy)]
+pub(super) struct PlatformPulsePresentationRetry {
+    reconstruction: bool,
 }
 
 impl PlatformPulseApplicationRuntime {
     pub(super) fn present(&mut self) {
+        // A host-rejected frame retries only at the readiness the host
+        // schedules, so a product turn before it cannot spend the retry.
+        if self
+            .shell
+            .as_ref()
+            .is_some_and(|shell| shell.native_presentation_retry_pending())
+        {
+            return;
+        }
         self.present_for_surface_basis(false);
     }
 
@@ -38,9 +57,13 @@ impl PlatformPulseApplicationRuntime {
         }
         let first_frame = self.initial_source.is_some();
         let viewport_successor = shell.native_viewport_presentation_pending();
-        let reconstruction_required = surface_basis_successor;
+        let retry = self.presentation_retry;
+        let reconstruction_required =
+            surface_basis_successor || retry.is_some_and(|retry| retry.reconstruction);
         if !first_frame
             && !reconstruction_required
+            && retry.is_none()
+            && !shell.native_presentation_retry_pending()
             && !viewport_successor
             && !shell.native_pointer_presentation_pending()
             && !shell.native_application_presentation_pending()
@@ -61,12 +84,14 @@ impl PlatformPulseApplicationRuntime {
         let Some((now, deadline)) = self.sample_frame_time() else {
             return;
         };
+        self.presentation_retry = None;
         let shell = self
             .shell
             .as_mut()
             .expect("frame preparation retains the runtime shell");
         self.presentation_tick = self.presentation_tick.saturating_add(1);
-        let outcome = if reconstruction_required && !first_frame {
+        let reconstruction = reconstruction_required && !first_frame;
+        let outcome = if reconstruction {
             match shell.reconstruct_native_surface_successor(deadline, now) {
                 Ok(outcome) => outcome,
                 Err(denial) => {
@@ -107,10 +132,10 @@ impl PlatformPulseApplicationRuntime {
                 return;
             }
         };
-        self.settle_frame_outcome(outcome, viewport_successor);
+        self.settle_frame_outcome(outcome, reconstruction);
     }
 
-    fn settle_frame_outcome(&mut self, outcome: UiMountedFrameOutcome, viewport_successor: bool) {
+    fn settle_frame_outcome(&mut self, outcome: UiMountedFrameOutcome, reconstruction: bool) {
         match outcome {
             UiMountedFrameOutcome::Published(publication)
             | UiMountedFrameOutcome::Reconciled(publication) => {
@@ -163,7 +188,7 @@ impl PlatformPulseApplicationRuntime {
                 self.pending_frame_presentation =
                     Some(PlatformPulsePendingFramePresentation::InFlight {
                         presentation,
-                        viewport_successor,
+                        reconstruction,
                     });
             }
             UiMountedFrameOutcome::PresentationIndeterminate(frame)
@@ -172,8 +197,14 @@ impl PlatformPulseApplicationRuntime {
                 self.pending_frame_presentation =
                     Some(PlatformPulsePendingFramePresentation::PhysicalRecovery {
                         frame,
-                        viewport_successor,
+                        reconstruction,
                     });
+            }
+            outcome
+                if worth_ui::facade::app::WorthUiNativeApplicationShell::
+                    frame_presentation_awaits_host_readiness(&outcome) =>
+            {
+                self.presentation_retry = Some(PlatformPulsePresentationRetry { reconstruction });
             }
             outcome => {
                 let observation = self.publisher.frame_outcome_failure(&outcome);
@@ -201,31 +232,28 @@ impl PlatformPulseApplicationRuntime {
             return false;
         };
         self.presentation_tick = self.presentation_tick.saturating_add(1);
-        let (outcome, viewport_successor) = match pending {
+        let (outcome, reconstruction) = match pending {
             PlatformPulsePendingFramePresentation::InFlight {
                 presentation,
-                viewport_successor,
+                reconstruction,
             } => {
                 let outcome = self
                     .shell
                     .as_mut()
                     .expect("pending presentation retains the runtime shell")
                     .complete_frame_presentation(presentation, now);
-                (outcome, viewport_successor)
+                (outcome, reconstruction)
             }
             PlatformPulsePendingFramePresentation::PhysicalRecovery {
                 frame,
-                viewport_successor,
+                reconstruction,
             } => {
-                let Some(outcome) = self.recover_physical_frame(
-                    frame,
-                    progress,
-                    viewport_successor,
-                    (now, deadline),
-                ) else {
+                let Some(outcome) =
+                    self.recover_physical_frame(frame, progress, reconstruction, (now, deadline))
+                else {
                     return true;
                 };
-                (outcome, viewport_successor)
+                (outcome, reconstruction)
             }
         };
         self.presentation_tick = self.presentation_tick.saturating_add(1);
@@ -238,16 +266,13 @@ impl PlatformPulseApplicationRuntime {
             Ok(UiMountedFrameOutcome::PresentationIndeterminate(frame))
                 if frame.report().awaits_physical_recovery() =>
             {
-                if let Some(outcome) = self.recover_physical_frame(
-                    frame,
-                    progress,
-                    viewport_successor,
-                    (now, deadline),
-                ) {
-                    self.settle_frame_outcome(outcome, viewport_successor);
+                if let Some(outcome) =
+                    self.recover_physical_frame(frame, progress, reconstruction, (now, deadline))
+                {
+                    self.settle_frame_outcome(outcome, reconstruction);
                 }
             }
-            Ok(outcome) => self.settle_frame_outcome(outcome, viewport_successor),
+            Ok(outcome) => self.settle_frame_outcome(outcome, reconstruction),
             Err(denial) => self.fail(
                 PlatformPulseTerminalError::FrameExecution(format!(
                     "host-required-reconstruction-unavailable:{denial:?}"
@@ -262,7 +287,7 @@ impl PlatformPulseApplicationRuntime {
         &mut self,
         frame: worth_ui::facade::app::UiMountedIndeterminateFrame,
         progress: &worth_ui_native_platform::UiNativeApplicationPhysicalProgress,
-        viewport_successor: bool,
+        reconstruction: bool,
         (now, deadline): (u64, u64),
     ) -> Option<UiMountedFrameOutcome> {
         let recovery = self
@@ -275,7 +300,7 @@ impl PlatformPulseApplicationRuntime {
                 self.pending_frame_presentation =
                     Some(PlatformPulsePendingFramePresentation::PhysicalRecovery {
                         frame,
-                        viewport_successor,
+                        reconstruction,
                     });
                 None
             }
@@ -286,7 +311,7 @@ impl PlatformPulseApplicationRuntime {
                 self.pending_frame_presentation =
                     Some(PlatformPulsePendingFramePresentation::PhysicalRecovery {
                         frame,
-                        viewport_successor,
+                        reconstruction,
                     });
                 None
             }

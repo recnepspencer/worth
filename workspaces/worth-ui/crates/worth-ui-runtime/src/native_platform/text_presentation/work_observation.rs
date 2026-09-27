@@ -93,6 +93,23 @@ impl UiNativeTextPresentationWorkObservation {
         }
     }
 
+    /// Writes this frame's text work to the resize qualification trace, when
+    /// the host writes one.
+    pub(super) fn trace_resize_work(&self) {
+        use super::preparation::{EMITTED_LINES, POSITIONED_GLYPHS, SHAPED_RUNS, SHAPED_SCALARS};
+        let layout = &self.performed_layout_work;
+        worth_ui_host_native::trace_resize_text_work(
+            self.attempt,
+            worth_ui_host_native::UiNativeResizeTraceTextWork {
+                shaped_runs: layout[SHAPED_RUNS],
+                shaped_scalars: layout[SHAPED_SCALARS],
+                positioned_glyphs: layout[POSITIONED_GLYPHS],
+                emitted_lines: layout[EMITTED_LINES],
+                rasterized_glyphs: u64::from(self.rasterized_glyphs),
+            },
+        );
+    }
+
     pub(crate) const fn identity(&self) -> [u64; 4] {
         [
             self.attempt,

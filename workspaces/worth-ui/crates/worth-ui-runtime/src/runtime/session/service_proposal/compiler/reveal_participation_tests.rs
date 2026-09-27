@@ -43,8 +43,8 @@ fn portal_reveal_candidate(
         UiServiceProposalDemand::recorded_fixture(
             UiServiceFamilyParticipation::from_families(families)
                 .expect("distinct portal-shaped families"),
-            count as u8,
-            count as u16,
+            u8::try_from(count).unwrap(),
+            u16::try_from(count).unwrap(),
             0,
         ),
         coherence.clone(),

@@ -93,5 +93,5 @@ fn rebased_offset(
 }
 
 fn clamp_nonnegative(value: i128) -> i64 {
-    value.clamp(0, i128::from(i64::MAX)) as i64
+    i64::try_from(value.clamp(0, i128::from(i64::MAX))).expect("clamped into i64")
 }

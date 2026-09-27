@@ -182,7 +182,8 @@ impl UiAllocationFrameSubmissionOutcome {
             | UiAllocationFrameSubmissionRepresentation::LateIngress { retry_epoch: epoch } => {
                 Some(epoch)
             }
-            _ => None,
+            UiAllocationFrameSubmissionRepresentation::Backpressured { .. }
+            | UiAllocationFrameSubmissionRepresentation::Denied(_) => None,
         }
     }
 
@@ -191,7 +192,11 @@ impl UiAllocationFrameSubmissionOutcome {
             UiAllocationFrameSubmissionRepresentation::DuplicateAssigned { sequence, .. } => {
                 Some(sequence)
             }
-            _ => None,
+            UiAllocationFrameSubmissionRepresentation::Queued { .. }
+            | UiAllocationFrameSubmissionRepresentation::DuplicatePending { .. }
+            | UiAllocationFrameSubmissionRepresentation::LateIngress { .. }
+            | UiAllocationFrameSubmissionRepresentation::Backpressured { .. }
+            | UiAllocationFrameSubmissionRepresentation::Denied(_) => None,
         }
     }
 
@@ -201,7 +206,10 @@ impl UiAllocationFrameSubmissionOutcome {
             | UiAllocationFrameSubmissionRepresentation::Backpressured { retry_epoch, .. } => {
                 Some(retry_epoch)
             }
-            _ => None,
+            UiAllocationFrameSubmissionRepresentation::Queued { .. }
+            | UiAllocationFrameSubmissionRepresentation::DuplicatePending { .. }
+            | UiAllocationFrameSubmissionRepresentation::DuplicateAssigned { .. }
+            | UiAllocationFrameSubmissionRepresentation::Denied(_) => None,
         }
     }
 
@@ -210,14 +218,22 @@ impl UiAllocationFrameSubmissionOutcome {
             UiAllocationFrameSubmissionRepresentation::Backpressured { watermark, .. } => {
                 Some(watermark)
             }
-            _ => None,
+            UiAllocationFrameSubmissionRepresentation::Queued { .. }
+            | UiAllocationFrameSubmissionRepresentation::DuplicatePending { .. }
+            | UiAllocationFrameSubmissionRepresentation::DuplicateAssigned { .. }
+            | UiAllocationFrameSubmissionRepresentation::LateIngress { .. }
+            | UiAllocationFrameSubmissionRepresentation::Denied(_) => None,
         }
     }
 
     pub fn denial(&self) -> Option<UiAllocationFrameSubmissionDenial> {
         match self.representation {
             UiAllocationFrameSubmissionRepresentation::Denied(denial) => Some(denial),
-            _ => None,
+            UiAllocationFrameSubmissionRepresentation::Queued { .. }
+            | UiAllocationFrameSubmissionRepresentation::DuplicatePending { .. }
+            | UiAllocationFrameSubmissionRepresentation::DuplicateAssigned { .. }
+            | UiAllocationFrameSubmissionRepresentation::LateIngress { .. }
+            | UiAllocationFrameSubmissionRepresentation::Backpressured { .. } => None,
         }
     }
 }

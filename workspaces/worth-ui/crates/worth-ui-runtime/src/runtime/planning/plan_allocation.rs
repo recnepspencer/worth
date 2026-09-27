@@ -191,10 +191,8 @@ pub(crate) fn replan_selected_candidates(
     selection: &crate::graph::UiAdmittedReplanNeighborhoodSet,
 ) -> Result<Vec<UiAllocationCandidate>, u16> {
     selection
-        .ordered_neighborhoods()
-        .iter()
-        .enumerate()
-        .map(|(ordinal, selected)| replan_admitted_candidate(selected).map_err(|_| ordinal as u16))
+        .ordinal_neighborhoods()
+        .map(|(ordinal, selected)| replan_admitted_candidate(selected).map_err(|_| ordinal))
         .collect()
 }
 
@@ -203,9 +201,7 @@ pub(crate) fn replan_selected_candidates_with_portal(
 ) -> Result<Vec<UiAllocationCandidate>, u16> {
     let consequences = selection.transaction_basis().consequences();
     selection
-        .ordered_neighborhoods()
-        .iter()
-        .enumerate()
+        .ordinal_neighborhoods()
         .map(|(ordinal, selected)| {
             let mut matching = consequences.portal_anchors().iter().filter(|consequence| {
                 consequence
@@ -217,7 +213,7 @@ pub(crate) fn replan_selected_candidates_with_portal(
             });
             let first = matching.next();
             if matching.next().is_some() {
-                return Err(ordinal as u16);
+                return Err(ordinal);
             }
             let portal = first
                 .map(|consequence| {
@@ -225,7 +221,7 @@ pub(crate) fn replan_selected_candidates_with_portal(
                         consequence.movement(),
                         selected.identity(),
                     )
-                    .ok_or(ordinal as u16)
+                    .ok_or(ordinal)
                 })
                 .transpose()?;
             let mut matching_query =
@@ -238,7 +234,7 @@ pub(crate) fn replan_selected_candidates_with_portal(
                     });
             let query = matching_query.next();
             if query.is_some() && matching_query.next().is_some() {
-                return Err(ordinal as u16);
+                return Err(ordinal);
             }
             let mut matching_host = consequences
                 .host_measurements()
@@ -249,10 +245,10 @@ pub(crate) fn replan_selected_candidates_with_portal(
                 });
             let host = matching_host.next();
             if host.is_some() && matching_host.next().is_some() {
-                return Err(ordinal as u16);
+                return Err(ordinal);
             }
             replan_admitted_candidate_with_sources(selected, portal, query, host)
-                .map_err(|_| ordinal as u16)
+                .map_err(|_| ordinal)
         })
         .collect()
 }

@@ -73,8 +73,8 @@ impl super::UiMountedVisualRegionBasis {
         // surface paint rank, opacity, or the location of the pointer.
         self.portal_children
             .get(&instance)
-            .and_then(|member| member.as_ref())
-            .is_some_and(|(portal, _)| {
+            .and_then(|placement| placement.portal())
+            .is_some_and(|portal| {
                 portal.lifecycle() == UiMountedPortalOverlayLifecyclePosture::Visible
                     && self
                         .portal_input_order

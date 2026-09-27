@@ -26,8 +26,8 @@ impl UiScrollPoseShift {
 
     /// How far committing `next` over `previous` moves the content they scroll.
     pub(in crate::mounting) fn between(previous: UiScrollOffset, next: UiScrollOffset) -> Self {
-        let unit = worth_ui_host_contract::UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f64;
-        let points = |from: i64, to: i64| ((from - to) as f64 / unit) as f32;
+        // Offsets are never negative, so their difference is representable.
+        let points = |from: i64, to: i64| crate::units::UiSubpixels::new(from - to).to_points_f32();
         Self([
             points(previous.inline_subpixels(), next.inline_subpixels()),
             points(previous.block_subpixels(), next.block_subpixels()),

@@ -122,7 +122,8 @@ impl UiQueryChangedFact {
             UiQueryChangedFactPayload::Projection(
                 worth_ui_query_binding::UiProjectionObservation::ApplicationScalar(observation),
             ) => Some(observation.fact()),
-            _ => None,
+            UiQueryChangedFactPayload::OperationLive(_)
+            | UiQueryChangedFactPayload::Projection(_) => None,
         }
     }
 
@@ -150,7 +151,8 @@ impl UiQueryChangedFact {
             UiQueryChangedFactPayload::Projection(
                 worth_ui_query_binding::UiProjectionObservation::ApplicationScalar(observation),
             ) => Ok(observation.into_fact()),
-            payload => Err(Box::new(Self {
+            payload @ (UiQueryChangedFactPayload::OperationLive(_)
+            | UiQueryChangedFactPayload::Projection(_)) => Err(Box::new(Self {
                 kind: self.kind,
                 payload,
             })),
@@ -164,7 +166,8 @@ impl UiQueryChangedFact {
             UiQueryChangedFactPayload::Projection(
                 worth_ui_query_binding::UiProjectionObservation::Scalar(observation),
             ) => Ok(observation.into_fact()),
-            payload => Err(Box::new(Self {
+            payload @ (UiQueryChangedFactPayload::OperationLive(_)
+            | UiQueryChangedFactPayload::Projection(_)) => Err(Box::new(Self {
                 kind: self.kind,
                 payload,
             })),
@@ -176,7 +179,7 @@ impl UiQueryChangedFact {
     ) -> Result<worth_ui_query_binding::WorthUiCollectionChangeConsequence, Box<Self>> {
         match self.payload {
             UiQueryChangedFactPayload::OperationLive(consequence) => Ok(consequence),
-            payload => Err(Box::new(Self {
+            payload @ UiQueryChangedFactPayload::Projection(_) => Err(Box::new(Self {
                 kind: self.kind,
                 payload,
             })),
@@ -188,7 +191,7 @@ impl UiQueryChangedFact {
     ) -> Result<worth_ui_query_binding::UiProjectionObservation, Box<Self>> {
         match self.payload {
             UiQueryChangedFactPayload::Projection(observation) => Ok(observation),
-            payload => Err(Box::new(Self {
+            payload @ UiQueryChangedFactPayload::OperationLive(_) => Err(Box::new(Self {
                 kind: self.kind,
                 payload,
             })),

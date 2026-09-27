@@ -143,6 +143,32 @@ impl UiMountedPresentationCommandBundle {
         (record.command.identity() == identity).then_some(&record.motion)
     }
 
+    /// Give `identity` a live slot no other version of the command shares,
+    /// holding nothing yet, and return it.
+    pub(super) fn own_motion_slot(
+        &mut self,
+        identity: UiMountedPaintCommandIdentity,
+    ) -> Option<super::motion_evidence::UiCommandMotionAcceptance> {
+        let key = *self
+            .identities
+            .get(&UiMountedPresentationIdentityKey::for_identity(identity))?;
+        let command = self
+            .commands
+            .get(&key)
+            .filter(|record| record.command.identity() == identity)?
+            .command
+            .clone();
+        let motion = super::motion_evidence::UiCommandMotionAcceptance::default();
+        self.commands.insert(
+            key,
+            CommandRecord {
+                command,
+                motion: motion.clone(),
+            },
+        );
+        Some(motion)
+    }
+
     pub(super) fn inherit_unchanged_motion(&mut self, predecessor: &Self) {
         let inherited = self
             .commands
@@ -264,8 +290,11 @@ impl UiMountedPresentationCommandKey {
 
 fn portal_identity_digest(identity: u64) -> [u8; 32] {
     let mut digest = [0_u8; 32];
-    for (index, chunk) in digest.as_chunks_mut::<8>().0.iter_mut().enumerate() {
-        chunk.copy_from_slice(&identity.rotate_left((index * 13) as u32).to_le_bytes());
+    for (rotation, chunk) in (0..)
+        .step_by(13)
+        .zip(digest.as_chunks_mut::<8>().0.iter_mut())
+    {
+        chunk.copy_from_slice(&identity.rotate_left(rotation).to_le_bytes());
     }
     digest
 }

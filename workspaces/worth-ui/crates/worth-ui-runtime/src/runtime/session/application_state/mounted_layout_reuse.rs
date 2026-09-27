@@ -31,22 +31,46 @@ impl super::WorthUiApplicationSessionState {
         use crate::runtime::planning::execution_plan_input::WorthUiPlanOrdinaryMeaning as Meaning;
 
         let previous = self.runtime.active.active_plan_ref();
+        // `Ok(None)` names a node whose plan row carries no ordinary meaning,
+        // such as a Canvas-spatial or Realtime component.
         let root = |plan: &crate::runtime::WorthUiActiveExecutionPlan,
-                    graph: crate::graph::UiGraphAuthority<'_>| {
+                    graph: crate::graph::UiGraphAuthority<'_>|
+         -> Result<Option<String>, ()> {
             let digest = graph
                 .lookup()
-                .graph_node(node)?
+                .graph_node(node)
+                .ok_or(())?
                 .value()
                 .authored_provenance_digest();
-            let index = plan.mounted_projection_plan_index(digest).ok()??;
-            plan.mounted_projection_ordinary_meaning_with_identity(index)
-                .map(|(identity, _)| identity)
+            let Some(index) = plan.mounted_projection_plan_index(digest)? else {
+                return Ok(None);
+            };
+            Ok(plan
+                .mounted_projection_ordinary_meaning_with_identity(index)
+                .map(|(identity, _)| identity))
         };
-        let previous_root = root(previous, self.app.graph())?;
+        let Some(previous_root) = root(previous, self.app.graph()).ok()? else {
+            // The host lays an unprojected node out as a leaf box sized by its
+            // declaration and containment claim, so its box stands while the
+            // successor declares and contains it the same way, unprojected.
+            let declared = |graph: crate::graph::UiGraphAuthority<'_>| {
+                let record = graph.lookup().graph_node(node)?.value();
+                let topology = graph.lookup().topology_node(node)?;
+                Some((
+                    record.declaration_identity().clone(),
+                    record.measurement_constraint_modifier(),
+                    record.measurement_basis_source(),
+                    topology.value_ref().containment_claim().clone(),
+                ))
+            };
+            return (root(candidate, candidate_graph) == Ok(None)
+                && declared(self.app.graph()) == declared(candidate_graph))
+            .then_some(UiMountedLayoutSuccession::Exact);
+        };
         let successor_root = candidate
             .mounted_projection_ordinary_meaning_for_identity(&previous_root)
             .map(|_| previous_root.clone())
-            .or_else(|| root(candidate, candidate_graph))?;
+            .or_else(|| root(candidate, candidate_graph).ok().flatten())?;
         let mut pending = vec![(previous_root.clone(), successor_root, 0_usize)];
         let mut visited = std::collections::BTreeSet::new();
         let mut minimum_region_depth = None;

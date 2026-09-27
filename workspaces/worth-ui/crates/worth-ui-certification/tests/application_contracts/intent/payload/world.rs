@@ -111,6 +111,22 @@ pub(in crate::intent) fn launch<I: UiIntent>(
     launch_prepared(application, projection_slot)
 }
 
+pub(super) fn launch_with_host<I, Host>(
+    input: WorthUiRustAuthoredArtifactInput,
+    projection: PayloadProjectionRegistration,
+    facts: PayloadApplicationFacts,
+    host: Host,
+) -> PayloadWorld
+where
+    I: UiIntent,
+    Host: FixedCertificationHostBinding + 'static,
+{
+    let projection_slot = projection_slot(&projection);
+    let application = prepare_with_host::<I, _>(input, projection, facts, host)
+        .expect("payload world compiles through production application preparation");
+    launch_prepared(application, projection_slot)
+}
+
 pub(super) fn prepare<I: UiIntent>(
     input: WorthUiRustAuthoredArtifactInput,
     projection: PayloadProjectionRegistration,

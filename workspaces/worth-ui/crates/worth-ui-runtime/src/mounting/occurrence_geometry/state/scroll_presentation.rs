@@ -51,9 +51,15 @@ impl UiMountedOccurrenceGeometryState {
             }
             members.push(UiMountedScrollMotionMember {
                 instance: *instance,
-                clips: clips.into(),
+                clips: clips
+                    .into_iter()
+                    .map(crate::mounting::UiLaidOut::from_layout)
+                    .collect(),
             });
         }
+        // Layout visits members in its own order; groups find them by
+        // instance.
+        members.sort_unstable_by_key(|member| member.instance);
         Some(members.into())
     }
 }

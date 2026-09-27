@@ -245,7 +245,12 @@ fn narrow_source(
                     },
                 )
         }
-        _ => Err(UiAllocationInvalidationNarrowingDenial::SourceFamilyMismatch { ordinal }),
+        UiAllocationFrameSourceFact::HostMeasurement(_)
+        | UiAllocationFrameSourceFact::QuerySettledFact { .. }
+        | UiAllocationFrameSourceFact::Interaction(_)
+        | UiAllocationFrameSourceFact::DurableResize(_) => {
+            Err(UiAllocationInvalidationNarrowingDenial::SourceFamilyMismatch { ordinal })
+        }
     }
 }
 

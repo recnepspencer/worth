@@ -98,11 +98,16 @@ fn a_pose_that_moves_a_hidden_row_still_moves_it_once_revealed() {
     let pose = |units| {
         crate::runtime::scroll::UiScrollOffset::new(
             0,
-            units * worth_ui_host_contract::UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
+            crate::units::UiSubpixels::whole_points(units)
+                .unwrap()
+                .count(),
         )
         .unwrap()
     };
-    let shift = crate::mounting::presentation::UiScrollPoseShift::between(pose(0), pose(5));
+    let shift = crate::mounting::UiHitScrollMove::new(
+        crate::mounting::presentation::UiScrollPoseShift::between(pose(0), pose(5)),
+        crate::mounting::UiHitAncestorClip::Unclipped,
+    );
     let binding = world.presentation.binding();
     let mut hidden = UiPresentedHitIndex::default();
     hidden.replace_base(base.mounted_instance(), Some(base));
@@ -169,8 +174,8 @@ fn at(
         .at_point(
             world.presentation.binding(),
             crate::mounting::presentation::platform_point_for_test(
-                point[0] as f32,
-                point[1] as f32,
+                crate::units::layout_points(point[0]),
+                crate::units::layout_points(point[1]),
             ),
             UiMountedSpatialBudget {
                 node_visits: 64,

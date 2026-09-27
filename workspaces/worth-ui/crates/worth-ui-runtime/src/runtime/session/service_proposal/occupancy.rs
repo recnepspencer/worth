@@ -249,11 +249,14 @@ impl UiServiceProposalOccupancyTable {
         let displacement = conflict.map(|proposal| UiServiceProposalDisplacement {
             proposal,
             disposition: disposition.expect("conflict disposition accompanies proposal"),
-            released_leases: neighborhood
-                .into_iter()
-                .flat_map(|neighborhood| &neighborhood.records)
-                .filter(|record| record.proposal == proposal)
-                .count() as u16,
+            released_leases: u16::try_from(
+                neighborhood
+                    .into_iter()
+                    .flat_map(|neighborhood| &neighborhood.records)
+                    .filter(|record| record.proposal == proposal)
+                    .count(),
+            )
+            .expect("occupancy holds at most OCCUPANCY_LIMIT leases"),
         });
         #[cfg(not(test))]
         let displacement: Option<UiServiceProposalDisplacement> = None;

@@ -8,7 +8,15 @@ pub(super) fn admit(
     let pointer = match report.payload() {
         UiHostObservationPayload::PointerMotion { pointer, .. }
         | UiHostObservationPayload::PointerButton { pointer, .. } => *pointer,
-        _ => return Ok(None),
+        UiHostObservationPayload::Viewport { .. }
+        | UiHostObservationPayload::DeviceScale { .. }
+        | UiHostObservationPayload::Keyboard { .. }
+        | UiHostObservationPayload::WindowFocus { .. }
+        | UiHostObservationPayload::ScrollDelta { .. }
+        | UiHostObservationPayload::Clock { .. }
+        | UiHostObservationPayload::Tick { .. }
+        | UiHostObservationPayload::TextInput { .. }
+        | UiHostObservationPayload::ImeComposition { .. } => return Ok(None),
     };
     report
         .admit_pointer_device_kind()

@@ -209,7 +209,14 @@ impl UiConstraintPropagationEdgePayload {
     pub const fn parent_available_space(self) -> Option<UiConstraintParentAvailableSpace> {
         match self {
             Self::ParentAvailableSpace(parent_available_space) => Some(parent_available_space),
-            _ => None,
+            Self::ChildIntrinsicContribution(_)
+            | Self::SiblingNegotiation { .. }
+            | Self::EqualShareDistribution { .. }
+            | Self::BoundedReconciliation { .. }
+            | Self::ViewportInput { .. }
+            | Self::ScrollViewportInput { .. }
+            | Self::PortalAnchorInput { .. }
+            | Self::DurableResizeInput { .. } => None,
         }
     }
 
@@ -218,7 +225,14 @@ impl UiConstraintPropagationEdgePayload {
     ) -> Option<UiConstraintChildIntrinsicContribution> {
         match self {
             Self::ChildIntrinsicContribution(contribution) => Some(contribution),
-            _ => None,
+            Self::ParentAvailableSpace(_)
+            | Self::SiblingNegotiation { .. }
+            | Self::EqualShareDistribution { .. }
+            | Self::BoundedReconciliation { .. }
+            | Self::ViewportInput { .. }
+            | Self::ScrollViewportInput { .. }
+            | Self::PortalAnchorInput { .. }
+            | Self::DurableResizeInput { .. } => None,
         }
     }
 }

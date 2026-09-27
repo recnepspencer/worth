@@ -24,18 +24,19 @@ pub(super) fn fold_theme_value(digest: u64, value: worth_ui_dsl::UiThemeValue) -
             .into_iter()
             .fold(digest, |d, v| fold(d, u64::from(v))),
         UiThemeValue::Opacity(opacity) => fold(digest, u64::from(opacity.units())),
-        UiThemeValue::LogicalLength(length) => fold(digest, length.subpixels() as u64),
-        UiThemeValue::CornerRadii(radii) => radii
-            .corners()
-            .into_iter()
-            .fold(digest, |d, v| fold(d, v.subpixels() as u64)),
+        UiThemeValue::LogicalLength(length) => {
+            fold(digest, i64::from(length.subpixels()).cast_unsigned())
+        }
+        UiThemeValue::CornerRadii(radii) => radii.corners().into_iter().fold(digest, |d, v| {
+            fold(d, i64::from(v.subpixels()).cast_unsigned())
+        }),
         UiThemeValue::SolidStroke(stroke) => {
             let color = stroke
                 .color()
                 .channels()
                 .into_iter()
                 .fold(digest, |d, v| fold(d, u64::from(v)));
-            fold(color, stroke.width().subpixels() as u64)
+            fold(color, i64::from(stroke.width().subpixels()).cast_unsigned())
         }
         UiThemeValue::SolidOutline(outline) => {
             let stroke = outline.stroke();
@@ -45,8 +46,8 @@ pub(super) fn fold_theme_value(digest: u64, value: worth_ui_dsl::UiThemeValue) -
                 .into_iter()
                 .fold(digest, |d, v| fold(d, u64::from(v)));
             fold(
-                fold(color, stroke.width().subpixels() as u64),
-                outline.offset().subpixels() as u64,
+                fold(color, i64::from(stroke.width().subpixels()).cast_unsigned()),
+                i64::from(outline.offset().subpixels()).cast_unsigned(),
             )
         }
     }

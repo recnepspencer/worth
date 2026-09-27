@@ -14,6 +14,10 @@
 //! the wheel counts a thousand thousandths to the line, so a notch would still
 //! move, just one point per line instead of the extent the author declared.
 //!
+//! A host set to scroll a screen at a time reports pages, at the same scale.
+//! A page is the viewport the owner shows, less one line, so it is measured
+//! against the owner too -- read as a distance it would move one point.
+//!
 //! The pixel path is the control. A host that measured in pixels already
 //! reported a distance, and nothing here may touch it.
 
@@ -21,10 +25,7 @@ use super::scroll_pose_authority::{block, ScrollWorld};
 use super::scroll_settle_commit::{scroll_region, LINE_EXTENT_POINTS};
 use super::session::{World, WorldScroll};
 use crate::runtime::scroll::{UiHostScrollObservationDenial, UiHostScrollObservationOutcome};
-use worth_ui_host_contract::{
-    UiHostScrollDeltaPrecision, UiHostScrollLineCountBasis,
-    UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
-};
+use worth_ui_host_contract::{UiHostScrollDeltaPrecision, UiHostScrollLineCountBasis};
 
 /// The platform's lines-per-notch, as the host reports having applied it. Two,
 /// so a notch against the shared ten-point line extent travels twenty points
@@ -38,7 +39,7 @@ pub(super) const ONE_NOTCH: UiHostScrollDeltaPrecision = UiHostScrollDeltaPrecis
 /// One notch toward the end of the content, as the host reports it: a count of
 /// lines in host sign, with the platform's multiplier already in it.
 pub(super) fn one_notch_down() -> i64 {
-    -i64::from(LINES_PER_NOTCH) * UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT
+    -crate::units::host_count_of(i64::from(LINES_PER_NOTCH))
 }
 
 /// The World with a wheel that moves the offset as it arrives, and a primary
@@ -122,7 +123,7 @@ fn a_pixel_delta_is_the_distance_the_host_reported() {
 
     let outcome = scroll.wheel(
         UiHostScrollDeltaPrecision::Pixel,
-        -TRAVEL_POINTS * UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
+        -crate::units::host_count_of(TRAVEL_POINTS),
         5,
     );
     assert!(
@@ -136,6 +137,38 @@ fn a_pixel_delta_is_the_distance_the_host_reported() {
         "the pixels the host measured, untouched by the declared line extent"
     );
     let _ = scroll.world.session.shutdown();
+}
+
+/// A page notch pages the region: its thirty-point viewport less one ten-point
+/// line, so the line the reader was on stays in view. A region that declares
+/// no line extent still pages, by its whole viewport, because a page is
+/// measured by what the owner shows, not by how tall its lines are; that is
+/// also all the travel this content has, so only the first case tells the step
+/// from the end. Neither lands one point down, where a page read as a distance
+/// would.
+#[test]
+fn a_page_notch_travels_a_page_not_a_point() {
+    const VIEWPORT_POINTS: i64 = 30;
+    let line = i64::from(LINE_EXTENT_POINTS);
+    for (line_extent, paged) in [(true, VIEWPORT_POINTS - line), (false, VIEWPORT_POINTS)] {
+        let mut scroll = immediate_world(line_extent);
+        let outcome = scroll.wheel(
+            UiHostScrollDeltaPrecision::Page,
+            -crate::units::host_count_of(1),
+            5,
+        );
+        assert!(
+            matches!(outcome, UiHostScrollObservationOutcome::Applied(_)),
+            "a page wheel applies (line extent {line_extent}): {outcome:?}"
+        );
+        scroll.publish_direct(6);
+        assert_eq!(
+            scroll.accepted_offset(),
+            block(paged),
+            "one page, less a line when the region declares one (line extent {line_extent})"
+        );
+        let _ = scroll.world.session.shutdown();
+    }
 }
 
 /// A notch no owner in the chain can take is not refused for a declaration it

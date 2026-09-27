@@ -92,7 +92,15 @@ pub(crate) fn prepare_authored_intent_material(
                             .collect::<Result<Vec<_>, _>>()?,
                     );
                 }
-                _ => {}
+                WorthUiSemanticDeclaration::Import(_)
+                | WorthUiSemanticDeclaration::Surface(_)
+                | WorthUiSemanticDeclaration::Binding(_)
+                | WorthUiSemanticDeclaration::Projection(_)
+                | WorthUiSemanticDeclaration::Token(_)
+                | WorthUiSemanticDeclaration::SemanticArtifact(_)
+                | WorthUiSemanticDeclaration::AppearanceRole(_)
+                | WorthUiSemanticDeclaration::Backdrop(_)
+                | WorthUiSemanticDeclaration::Layout(_) => {}
             }
         }
     }

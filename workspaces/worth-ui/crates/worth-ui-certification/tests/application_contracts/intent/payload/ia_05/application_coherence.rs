@@ -133,7 +133,7 @@ fn route(
     world: &mut super::super::world::PayloadWorld,
 ) -> worth_ui::facade::intent::UiResolvedProductIntentRoute {
     let interaction = super::activation(world, [10, 20]);
-    super::product_route(&world.interaction, interaction)
+    super::product_route(&mut world.interaction, interaction)
 }
 
 fn assert_revision(prepared: &worth_ui::facade::intent::UiPreparedIntentPayload, expected: u64) {

@@ -51,8 +51,12 @@ mod portal_dismissal_epoch;
 mod portal_exit_retention;
 #[path = "integrated_appearance_world/portal_lifecycle.rs"]
 mod portal_lifecycle;
+#[path = "integrated_appearance_world/portal_outer_settle.rs"]
+mod portal_outer_settle;
 #[path = "integrated_appearance_world/portal_placement_succession.rs"]
 mod portal_placement_succession;
+#[path = "integrated_appearance_world/portal_scroll_grab.rs"]
+mod portal_scroll_grab;
 #[path = "integrated_appearance_world/portal_scroll_region.rs"]
 mod portal_scroll_region;
 #[path = "integrated_appearance_world/portal_scroll_settle.rs"]
@@ -93,6 +97,8 @@ mod scroll_input_burst;
 mod scroll_locality_narrowing;
 #[path = "integrated_appearance_world/scroll_modality_cancellation.rs"]
 mod scroll_modality_cancellation;
+#[path = "integrated_appearance_world/scroll_nested_settle.rs"]
+mod scroll_nested_settle;
 #[path = "integrated_appearance_world/scroll_pose_authority.rs"]
 mod scroll_pose_authority;
 #[path = "integrated_appearance_world/scroll_presentation_snapping.rs"]
@@ -103,16 +109,24 @@ mod scroll_reconstruction;
 mod scroll_reduced_motion;
 #[path = "integrated_appearance_world/scroll_sample_acceptance.rs"]
 mod scroll_sample_acceptance;
+#[path = "integrated_appearance_world/scroll_settle_beside_attempt.rs"]
+mod scroll_settle_beside_attempt;
 #[path = "integrated_appearance_world/scroll_settle_commit.rs"]
 mod scroll_settle_commit;
+#[path = "integrated_appearance_world/scroll_settle_displacement.rs"]
+mod scroll_settle_displacement;
 #[path = "integrated_appearance_world/scroll_settle_frame.rs"]
 mod scroll_settle_frame;
+#[path = "integrated_appearance_world/scroll_settle_hit_lead.rs"]
+mod scroll_settle_hit_lead;
 #[path = "integrated_appearance_world/scroll_settle_over_open_attempt.rs"]
 mod scroll_settle_over_open_attempt;
 #[path = "integrated_appearance_world/scroll_settle_rebind.rs"]
 mod scroll_settle_rebind;
 #[path = "integrated_appearance_world/scroll_settlement_lifecycle.rs"]
 mod scroll_settlement_lifecycle;
+#[path = "integrated_appearance_world/scroll_settlement_rest.rs"]
+mod scroll_settlement_rest;
 #[path = "integrated_appearance_world/seam.rs"]
 mod seam;
 #[path = "integrated_appearance_world/services.rs"]

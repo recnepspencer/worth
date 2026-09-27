@@ -64,7 +64,20 @@ impl WorthUiMeasurementBoundary {
             Self::PlanAssembly | Self::PlanLowering | Self::LaneAdmission => {
                 FoundationalPerformanceBoundary::MaintenanceExecution
             }
-            _ => FoundationalPerformanceBoundary::AuthoritativeExecution,
+            Self::ReloadCandidateAdmission
+            | Self::SourceIngress
+            | Self::ArtifactComparison
+            | Self::ImpactNarrowing
+            | Self::IdentityReplacement
+            | Self::DurableStateReconciliation
+            | Self::QueryRebindPlanning
+            | Self::OrdinaryLaneExecution
+            | Self::VirtualizedDataExecution
+            | Self::CanvasSpatialExecution
+            | Self::RealtimeOverlayExecution
+            | Self::Activation
+            | Self::CommittedAllocationActivation
+            | Self::SteadyFrameRendering => FoundationalPerformanceBoundary::AuthoritativeExecution,
         }
     }
 }

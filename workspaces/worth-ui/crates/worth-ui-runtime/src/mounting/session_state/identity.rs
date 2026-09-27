@@ -86,18 +86,20 @@ impl WorthUiMountedSessionState {
         mode: UiHostSurfacePresentationMode,
         profile: UiSurfaceBindingProfile,
     ) -> Result<UiSurfaceBindingIdentityView, UiMountedIdentityDenial> {
-        self.ensure_identity_mutation_available()?;
-        let candidate = match self.identity.prepare_surface_rebind_registration(
-            host.protocol(),
-            host.capability_report(),
-            semantic_surface,
-            host_surface,
-            mode,
-            profile,
-        ) {
+        let prepared = self.ensure_identity_mutation_available().and_then(|()| {
+            self.identity.prepare_surface_rebind_registration(
+                host.protocol(),
+                host.capability_report(),
+                semantic_surface,
+                host_surface,
+                mode,
+                profile,
+            )
+        });
+        let candidate = match prepared {
             Ok(candidate) => candidate,
             Err(denial) => {
-                self.presentation.abandon_surface_rebind(prior_binding);
+                self.abandon_surface_rebind(prior_binding, semantic_surface);
                 return Err(denial);
             }
         };
@@ -108,7 +110,7 @@ impl WorthUiMountedSessionState {
         {
             Ok(baseline) => baseline,
             Err(denial) => {
-                self.presentation.abandon_surface_rebind(prior_binding);
+                self.abandon_surface_rebind(prior_binding, semantic_surface);
                 return Err(denial);
             }
         };
@@ -160,11 +162,9 @@ impl WorthUiMountedSessionState {
             preserve_for_rebind,
         );
         let semantic_surface = self.identity.commit_surface_deregistration(candidate);
-        self.retire_direct_scroll_surface(semantic_surface);
         self.retention.retire_surface(semantic_surface);
         if !preserve_for_rebind {
-            self.selection_bindings.retire_surface(semantic_surface);
-            self.occurrence_geometry.retire_surface(semantic_surface);
+            self.retire_rebind_carry(semantic_surface);
         }
         if has_published_predecessor && requires_reconciliation && !required_by_current {
             self.presentation
@@ -236,21 +236,7 @@ impl WorthUiMountedSessionState {
         changed.sort_unstable();
         changed.dedup();
         if !changed.is_empty() {
-            self.identity
-                .mark_occurrence_geometry_changed(&changed)
-                .map_err(|denial| match denial {
-                    super::super::UiMountedIdentityDenial::UnknownMountedInstance => {
-                        super::super::UiMountedOccurrenceGeometryDenial::UnknownMountedInstance
-                    }
-                    super::super::UiMountedIdentityDenial::IdentityExhausted => {
-                        super::super::UiMountedOccurrenceGeometryDenial::StateRevisionExhausted
-                    }
-                    _ => {
-                        unreachable!(
-                            "occurrence change validates membership before revision minting"
-                        )
-                    }
-                })?;
+            self.identity.mark_occurrence_geometry_changed(&changed)?;
         }
         self.occurrence_geometry = successor;
         Ok(super::super::UiMountedLayoutCompletionReceipt::new(

@@ -293,7 +293,13 @@ fn containment_intent_for_family(
         UiDeclarationFamilyKind::QueryBinding | UiDeclarationFamilyKind::Intent => {
             unreachable!("non-structural families do not admit structural semantics")
         }
-        _ => None,
+        UiDeclarationFamilyKind::Page
+        | UiDeclarationFamilyKind::PageSet
+        | UiDeclarationFamilyKind::Region
+        | UiDeclarationFamilyKind::Mosaic
+        | UiDeclarationFamilyKind::LocalComposition
+        | UiDeclarationFamilyKind::Control
+        | UiDeclarationFamilyKind::DiagnosticSurface => None,
     }
 }
 

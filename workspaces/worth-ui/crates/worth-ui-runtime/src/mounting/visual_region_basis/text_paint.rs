@@ -18,13 +18,12 @@ impl UiMountedVisualRegionBasis {
             .visual_mechanics()
             .filter(|row| self.binding.is_none_or(|binding| row.binding() == binding))
             .filter_map(|row| {
-                let presented = match self.portal_children.get(&row.mounted_instance()) {
-                    None => Some(row.clone()),
-                    Some(None) => None,
-                    Some(Some((portal, source_anchor))) => row
-                        .presented_within_portal(*portal, *source_anchor)
-                        .expect("validated Portal-relative text remains canonical"),
-                }?;
+                // The mechanic source holds each row where layout put it.
+                let presented = self
+                    .placement_of(row.mounted_instance())
+                    .present(crate::mounting::UiLaidOut::from_layout(row.clone()))
+                    .expect("validated Portal-relative text remains canonical")?
+                    .into_shown();
                 let presented = match self.text_clips.get(&presented.mounted_instance()) {
                     None | Some(Clip::Unclipped) => Some(presented),
                     Some(Clip::Suppressed) => None,

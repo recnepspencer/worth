@@ -102,7 +102,11 @@ impl UiObligationEvidenceQuery {
                 evidence_query = evidence_query.for_handle_digest(*handle_digest);
             }
             UiInspectionTarget::ProductRoot | UiInspectionTarget::DeclaredSurface { .. } => {}
-            _ => {}
+            UiInspectionTarget::PublishedAspect { .. }
+            | UiInspectionTarget::ConsumedAspect { .. }
+            | UiInspectionTarget::DeclarationIdentity { .. }
+            | UiInspectionTarget::AuthoredSourceProvenance { .. }
+            | _ => {}
         }
 
         if let Some(obligation_detail) = query.relevance().obligation_detail() {

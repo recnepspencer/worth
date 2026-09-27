@@ -3,7 +3,14 @@ use crate::runtime::scroll::UiPreparedScrollDirectSuccession;
 use worth_ui_host_contract::UiSemanticSurfaceIdentity;
 
 impl super::WorthUiMountedSessionState {
-    pub(super) fn retire_direct_scroll_surface(&mut self, surface: UiSemanticSurfaceIdentity) {
+    /// Forget `surface`'s occurrence geometry with the direct input staged
+    /// in it. The two live and die together: a rebind keeps both, so the
+    /// rebound surface publishes a staged page with its evidence.
+    pub(super) fn retire_occurrence_geometry_surface(
+        &mut self,
+        surface: UiSemanticSurfaceIdentity,
+    ) {
+        self.occurrence_geometry.retire_surface(surface);
         self.pending_direct_scroll
             .retain(|_, prepared| prepared.surface() != surface);
     }
@@ -33,41 +40,15 @@ impl super::WorthUiMountedSessionState {
         &mut self,
         prepared: &[UiPreparedScrollDirectSuccession],
     ) -> Result<(), crate::mounting::UiMountedOccurrenceGeometryDenial> {
-        use crate::mounting::UiMountedOccurrenceGeometryDenial as Denial;
-        if self.has_active_presentation_attempt() {
-            return Err(Denial::PresentationInFlight);
-        }
-        let mut surfaces = std::collections::BTreeMap::<_, Vec<_>>::new();
-        for (surface, owner, offset) in prepared.iter().filter_map(|record| record.pose()) {
-            surfaces.entry(surface).or_default().push((owner, offset));
-        }
-        let poses = surfaces
-            .into_iter()
-            .map(|(surface, poses)| {
-                self.occurrence_geometry
-                    .prepare_scroll_pose(surface, &poses)
-            })
-            .collect::<Result<Vec<_>, _>>()?;
         // Even two inputs with equal geometry have distinct consequences. An
         // older prepared frame must never acknowledge the newer pending one.
-        let mut changed = poses
-            .iter()
-            .flat_map(|pose| pose.changed_instances().into_vec())
-            .collect::<Vec<_>>();
-        if changed.is_empty() {
-            // A chrome-only or equal-pose succession still needs an ordinary
-            // attempt to acknowledge its exact cause. Moving content otherwise
-            // invalidates only its descendants, never the stationary owner.
-            changed.extend(prepared.iter().map(|record| record.occurrence()));
-        }
-        changed.sort_unstable();
-        changed.dedup();
-        self.identity
-            .mark_occurrence_geometry_changed(&changed)
-            .map_err(|_| Denial::StateRevisionExhausted)?;
-        for pose in poses {
-            self.occurrence_geometry.apply_scroll_pose(pose);
-        }
+        // A chrome-only or equal-pose succession still needs an ordinary
+        // attempt to acknowledge its exact cause. Moving content otherwise
+        // invalidates only its descendants, never the stationary owner.
+        self.stage_scroll_poses(
+            prepared.iter().filter_map(|record| record.pose()),
+            prepared.iter().map(|record| record.occurrence()),
+        )?;
         let identity = &self.identity;
         self.pending_direct_scroll
             .retain(|_, record| identity.projection_instance(record.occurrence()).is_some());

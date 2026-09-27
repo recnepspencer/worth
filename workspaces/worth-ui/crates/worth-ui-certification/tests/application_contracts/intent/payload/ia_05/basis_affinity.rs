@@ -95,7 +95,7 @@ fn assert_retired_target_stops() {
     );
     let interaction = super::activation(&mut world, [10, 20]);
     let mounted = interaction.target().mounted_instance();
-    let route = super::product_route(&world.interaction, interaction);
+    let route = super::product_route(&mut world.interaction, interaction);
     world
         .interaction
         .session
@@ -132,5 +132,5 @@ fn current_route(
     world: &mut super::super::world::PayloadWorld,
 ) -> worth_ui::facade::intent::UiResolvedProductIntentRoute {
     let interaction = super::activation(world, [10, 20]);
-    super::product_route(&world.interaction, interaction)
+    super::product_route(&mut world.interaction, interaction)
 }

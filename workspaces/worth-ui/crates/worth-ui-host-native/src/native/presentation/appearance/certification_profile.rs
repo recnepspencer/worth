@@ -4,12 +4,11 @@ fn geometry_qualification() -> worth_ui_host_contract::UiHostAppearanceGeometryQ
     let rows = APPEARANCE_PROFILE.scales_milli.iter().map(|scale| {
         let scale_milli = u32::from(*scale);
         let scale = u64::from(scale_milli);
-        let numerator = u64::from(APPEARANCE_PROFILE.anti_alias_fringe_physical_pixels)
-            .checked_mul(u64::from(
-                worth_ui_host_contract::UI_APPEARANCE_LOGICAL_SUBPIXELS_PER_POINT,
-            ))
-            .and_then(|value| value.checked_mul(1_000))
-            .expect("the geometry qualification numerator must fit");
+        let numerator = worth_ui_host_contract::UiAppearanceLogicalLength::whole_points(u32::from(
+            APPEARANCE_PROFILE.anti_alias_fringe_physical_pixels,
+        ))
+        .and_then(|fringe| u64::from(fringe.subpixels()).checked_mul(1_000))
+        .expect("the geometry qualification numerator must fit");
         let logical_subpixels = numerator
             .checked_add(scale - 1)
             .expect("the geometry qualification ceiling must fit")

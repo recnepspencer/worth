@@ -65,6 +65,7 @@ struct UiMountedProjectionNodeDraft {
     participation: worth_ui_host_contract::UiMountedParticipation,
     allocation: worth_ui_host_contract::UiMountedAllocationProjection,
     appearance_allocation: worth_ui_host_contract::UiMountedAllocationProjection,
+    recorded_bounds: Option<worth_ui_host_contract::UiMountedCanonicalBox>,
     appearance_clip: super::appearance::UiMountedAppearanceClip,
     surface_paint_posture: super::super::UiMountedSurfacePaintPosture,
     surface_paint_order: Option<u32>,

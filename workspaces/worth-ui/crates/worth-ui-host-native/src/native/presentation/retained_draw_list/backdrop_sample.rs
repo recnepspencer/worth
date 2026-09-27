@@ -44,9 +44,8 @@ impl UiNativeRetainedDrawList {
             ),
             _ => None,
         }).flat_map(|target| appearance.backdrops_for_motion(target)).filter_map(|backdrop| {
-            let extent = backdrop.extent();
-            super::appearance_regions::canonical(extent.x(), extent.y(), extent.width(), extent.height())
-                .and_then(|bounds| super::appearance_regions::canonical_clip(backdrop.clip()).and_then(|clip| bounds.intersection(clip)))
+            backdrop.extent().canonical_box()
+                .and_then(|bounds| backdrop.clip().canonical_box().and_then(|clip| bounds.intersection(clip)))
                 .map(worth_ui_host_contract::UiMountedLogicalDamage::from_runtime_mounting)
         }).collect()
     }

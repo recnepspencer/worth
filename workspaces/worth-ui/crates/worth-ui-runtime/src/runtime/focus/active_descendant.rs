@@ -52,7 +52,12 @@ impl super::UiFocusRuntimeState {
                 super::UiFocusRoutingDenial::UnknownParticipant => {
                     UiActiveDescendantDenial::UnknownDescendant
                 }
-                _ => UiActiveDescendantDenial::ForeignScope,
+                super::UiFocusRoutingDenial::UnknownScope
+                | super::UiFocusRoutingDenial::StalePlan
+                | super::UiFocusRoutingDenial::RevisionExhausted
+                | super::UiFocusRoutingDenial::VisitCounterOverflow => {
+                    UiActiveDescendantDenial::ForeignScope
+                }
             })?;
         if descendant.scope() != current.scope() {
             return Err(UiActiveDescendantDenial::ForeignScope);

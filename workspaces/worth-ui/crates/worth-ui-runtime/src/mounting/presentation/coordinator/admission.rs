@@ -141,6 +141,7 @@ impl UiMountedPresentationCoordinator {
             frame.frame(),
             &self.presentation_states,
             &self.reconstruction_bindings,
+            self.motion_sample_in_flight.as_ref(),
         ) {
             Ok(candidates) => candidates,
             Err(denial) => {

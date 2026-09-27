@@ -8,6 +8,8 @@ use super::session::World;
 /// The dropdown's declared box: 280 by 320, 8 points from its anchor and 16
 /// inside the viewport.
 const OPENED: [f32; 4] = [40.0, 118.0, 280.0, 320.0];
+/// Where a submenu opens from its owner's layout.
+const SUBMENU_OPENED: [f32; 4] = [48.0, 174.0, 280.0, 320.0];
 
 pub(super) fn committed_bounds(
     world: &World,
@@ -210,7 +212,7 @@ fn a_nested_popover_follows_its_owner_through_its_parents_new_placement() {
     let child = world.open_where_presented(4, "overlay.menu", Some(parent), 11);
     // The owner's box inside the parent, [8, 12, 140, 36], sits at [48, 130]
     // under the parent placed at [40, 118]; the submenu opens 8 below it.
-    assert_eq!(committed_bounds(&world, child), [48.0, 174.0, 280.0, 320.0]);
+    assert_eq!(committed_bounds(&world, child), SUBMENU_OPENED);
 
     // The parent flips above its moved anchor and clamps to the right margin,
     // carrying the owner to [512, 104]; the submenu follows and clamps too.
@@ -234,6 +236,31 @@ fn a_nested_popover_follows_its_owner_through_its_parents_new_placement() {
     );
 }
 
+/// The frame that opens a Portal places it from its owner's layout, as every
+/// later frame does. An owner still carried by its parent's entrance Motion
+/// opens its submenu where the owner is laid out, not where the Motion shows
+/// it, so a frame that changes nothing after the open keeps the placement.
+#[test]
+fn a_submenu_opens_where_its_owner_is_laid_out_and_an_unchanged_frame_keeps_it() {
+    let mut world = World::launch();
+    let initial = world.prepare();
+    world.publish(initial, 1, true);
+    let parent = world.open(0, "overlay.menu", None, 10);
+    let [x, y, _, _] = presented_child(&world);
+    assert_ne!(
+        [x, y],
+        [48.0, 130.0],
+        "the parent's entrance Motion shows the owner away from its layout"
+    );
+    let child = world.open_where_presented(4, "overlay.menu", Some(parent), 11);
+    assert_eq!(committed_bounds(&world, child), SUBMENU_OPENED);
+
+    let unchanged = world.prepare();
+    world.publish(unchanged, 20, false);
+    assert_eq!(committed_bounds(&world, parent), OPENED);
+    assert_eq!(committed_bounds(&world, child), SUBMENU_OPENED);
+}
+
 /// Content inside a scrolled region is laid out where the accepted offset put
 /// it, and a popover anchored there follows it by the same distance.
 #[test]
@@ -254,7 +281,7 @@ fn a_popover_on_scrolled_content_follows_the_scroll() {
     assert!(matches!(
         scroll.wheel(
             UiHostScrollDeltaPrecision::Pixel,
-            -5 * worth_ui_host_contract::UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
+            -crate::units::host_count_of(5),
             11,
         ),
         crate::runtime::scroll::UiHostScrollObservationOutcome::Applied(_)

@@ -62,6 +62,11 @@ impl UiScrollPresentationDeviceScale {
         f64::from(self.device_scale_milli) / f64::from(Self::UNSCALED_MILLI)
     }
 
+    /// One device pixel, in logical points.
+    pub(crate) fn pixel_in_points(self) -> f64 {
+        1.0 / self.pixels_per_point()
+    }
+
     /// The nearest grid line to one logical coordinate, back in logical points.
     fn snap_edge(self, logical_points: f32) -> f64 {
         let pixels_per_point = self.pixels_per_point();
@@ -105,10 +110,10 @@ pub(crate) fn snap_to_device_grid(
     let height = (bottom - top).max(minimum);
     worth_ui_host_contract::UiMountedCanonicalBox::canonicalize(
         worth_ui_host_contract::UiMountedCanonicalBoxInput {
-            x: left as f32,
-            y: top as f32,
-            width: width as f32,
-            height: height as f32,
+            x: crate::units::layout_points(left),
+            y: crate::units::layout_points(top),
+            width: crate::units::layout_points(width),
+            height: crate::units::layout_points(height),
             coordinate_space: rect.coordinate_space(),
         },
     )

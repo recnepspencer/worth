@@ -2,6 +2,8 @@ use super::{
     WorthUiActiveApplicationSession, WorthUiMountedReplacementPreparationOutcome,
     WorthUiPreparedApplicationReplacement,
 };
+use crate::facade::WorthUiApplicationCutoverDenial;
+use crate::runtime::rebind::UiRebindPreparationDenial;
 
 mod evidence_only;
 pub(crate) use evidence_only::WorthUiPreparedEvidenceOnlyApplicationRebind;
@@ -11,10 +13,7 @@ impl WorthUiActiveApplicationSession {
         &mut self,
         plan: crate::runtime::rebind::UiRebindPlan,
         request: crate::runtime::rebind::UiRebindExecutionRequest,
-    ) -> Result<
-        crate::runtime::rebind::UiPreparedRebind<'_>,
-        crate::runtime::rebind::UiRebindPreparationDenial,
-    > {
+    ) -> Result<crate::runtime::rebind::UiPreparedRebind<'_>, UiRebindPreparationDenial> {
         self.prepare_rebind_with_inputs(plan, request, &[], None, None, None)
     }
 
@@ -25,10 +24,7 @@ impl WorthUiActiveApplicationSession {
         surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
         viewport: Option<worth_ui_host_contract::UiMountedCanonicalBox>,
         layout: Option<&mut super::application_replacement::UiNativeReplacementLayoutSupplier<'_>>,
-    ) -> Result<
-        crate::runtime::rebind::UiPreparedRebind<'_>,
-        crate::runtime::rebind::UiRebindPreparationDenial,
-    > {
+    ) -> Result<crate::runtime::rebind::UiPreparedRebind<'_>, UiRebindPreparationDenial> {
         self.prepare_rebind_with_inputs(plan, request, &[], Some(surface), viewport, layout)
     }
 
@@ -37,10 +33,7 @@ impl WorthUiActiveApplicationSession {
         plan: crate::runtime::rebind::UiRebindPlan,
         request: crate::runtime::rebind::UiRebindExecutionRequest,
         reconciliation: &[crate::mounting::UiMountedSurfaceReconciliationBinding],
-    ) -> Result<
-        crate::runtime::rebind::UiPreparedRebind<'_>,
-        crate::runtime::rebind::UiRebindPreparationDenial,
-    > {
+    ) -> Result<crate::runtime::rebind::UiPreparedRebind<'_>, UiRebindPreparationDenial> {
         self.prepare_rebind_with_inputs(plan, request, reconciliation, None, None, None)
     }
 
@@ -54,10 +47,7 @@ impl WorthUiActiveApplicationSession {
         native_layout: Option<
             &mut super::application_replacement::UiNativeReplacementLayoutSupplier<'_>,
         >,
-    ) -> Result<
-        crate::runtime::rebind::UiPreparedRebind<'_>,
-        crate::runtime::rebind::UiRebindPreparationDenial,
-    > {
+    ) -> Result<crate::runtime::rebind::UiPreparedRebind<'_>, UiRebindPreparationDenial> {
         let pointer_succession = plan
             .retained_successor_authority()
             .map(|authority| self.prepare_pointer_generation_succession(authority))
@@ -88,7 +78,7 @@ impl WorthUiActiveApplicationSession {
                 crate::runtime::rebind::UiRebindSemanticProof::ThemeSwitch(_)
             )
         {
-            return Err(crate::runtime::rebind::UiRebindPreparationDenial::InvalidSemanticProof);
+            return Err(UiRebindPreparationDenial::InvalidSemanticProof);
         }
         match semantic_proof {
             crate::runtime::rebind::UiRebindSemanticProof::Changed(changed) => self
@@ -156,7 +146,7 @@ impl WorthUiActiveApplicationSession {
                 self.prepare_content_rebind(plan, reservation)
             }
             crate::runtime::rebind::UiRebindSemanticProof::Transferred => {
-                Err(crate::runtime::rebind::UiRebindPreparationDenial::InvalidSemanticProof)
+                Err(UiRebindPreparationDenial::InvalidSemanticProof)
             }
         }
     }
@@ -165,10 +155,7 @@ impl WorthUiActiveApplicationSession {
         &mut self,
         plan: crate::runtime::rebind::UiRebindPlan,
         reservation: crate::runtime::rebind::UiRebindReservation,
-    ) -> Result<
-        crate::runtime::rebind::UiPreparedRebind<'_>,
-        crate::runtime::rebind::UiRebindPreparationDenial,
-    > {
+    ) -> Result<crate::runtime::rebind::UiPreparedRebind<'_>, UiRebindPreparationDenial> {
         let content = Box::new(
             crate::facade::entry::WorthUiPreparedMountedContentRebind::prepare(
                 self,
@@ -188,10 +175,7 @@ impl WorthUiActiveApplicationSession {
         reservation: crate::runtime::rebind::UiRebindReservation,
         content: crate::runtime::rebind::UiAuthoredContentRebindSemanticProof,
         pointer_succession: crate::runtime::pointer_affordance::UiPreparedPointerAffordanceGenerationSuccession,
-    ) -> Result<
-        crate::runtime::rebind::UiPreparedRebind<'_>,
-        crate::runtime::rebind::UiRebindPreparationDenial,
-    > {
+    ) -> Result<crate::runtime::rebind::UiPreparedRebind<'_>, UiRebindPreparationDenial> {
         let semantic_content = plan.content().clone();
         let overlay_bindings = self
             .authored_overlay_bindings
@@ -200,9 +184,7 @@ impl WorthUiActiveApplicationSession {
                 &content.successor_authority,
                 &[],
             )
-            .map_err(|_| {
-                crate::runtime::rebind::UiRebindPreparationDenial::CandidateCutoverPreparation
-            })?;
+            .map_err(|_| UiRebindPreparationDenial::CandidateCutoverPreparation)?;
         let occurrence_geometry = self
             .application
             .prepare_retained_layout_succession(
@@ -210,9 +192,7 @@ impl WorthUiActiveApplicationSession {
                 &content.successor_authority,
                 &overlay_bindings,
             )
-            .map_err(
-                crate::runtime::rebind::UiRebindPreparationDenial::CandidateOccurrenceGeometry,
-            )?;
+            .map_err(UiRebindPreparationDenial::CandidateOccurrenceGeometry)?;
         let predecessor = self.active_generation_identity();
         let successor = crate::runtime::WorthUiActiveApplicationGenerationIdentity::current(
             self.session_identity(),
@@ -225,18 +205,13 @@ impl WorthUiActiveApplicationSession {
             );
         let appearance_succession = self
             .prepare_appearance_generation_succession(&generation_succession)
-            .map_err(|denial| {
-                match denial {
+            .map_err(|denial| match denial {
                 super::UiAppearanceGenerationSuccessionDenial::Theme(denial) => {
-                    crate::runtime::rebind::UiRebindPreparationDenial::AppearanceThemeSuccession(
-                        denial,
-                    )
+                    UiRebindPreparationDenial::AppearanceThemeSuccession(denial)
                 }
                 super::UiAppearanceGenerationSuccessionDenial::Inspection(denial) => {
-                    crate::runtime::rebind::UiRebindPreparationDenial::
-                        AppearanceInspectionSuccession(denial)
+                    UiRebindPreparationDenial::AppearanceInspectionSuccession(denial)
                 }
-            }
             })?;
         let owners = self.prepare_retained_appearance_owners(
             &content.successor_authority,
@@ -269,10 +244,7 @@ impl WorthUiActiveApplicationSession {
         native_layout: Option<
             &mut super::application_replacement::UiNativeReplacementLayoutSupplier<'_>,
         >,
-    ) -> Result<
-        crate::runtime::rebind::UiPreparedRebind<'_>,
-        crate::runtime::rebind::UiRebindPreparationDenial,
-    > {
+    ) -> Result<crate::runtime::rebind::UiPreparedRebind<'_>, UiRebindPreparationDenial> {
         let native_component_candidates = native_surface
             .map(|_| {
                 plan.identity_decisions()
@@ -297,26 +269,22 @@ impl WorthUiActiveApplicationSession {
             std::sync::Arc::clone(self.application.font_collection()),
             *changed,
         )
-        .ok_or(crate::runtime::rebind::UiRebindPreparationDenial::CandidateBindingMismatch)?;
+        .ok_or(UiRebindPreparationDenial::CandidateBindingMismatch)?;
         let catalog = self
             .admit_native_replacement_allocation_catalog(&mut prepared)
-            .map_err(|_| crate::runtime::rebind::UiRebindPreparationDenial::CandidateAllocation)?;
+            .map_err(|_| UiRebindPreparationDenial::CandidateAllocation)?;
         let lowered = self
             .lower_prepared_replacement(prepared)
-            .map_err(|_| crate::runtime::rebind::UiRebindPreparationDenial::CandidateLowering)?;
+            .map_err(|_| UiRebindPreparationDenial::CandidateLowering)?;
         let pending = self
             .stage_prepared_replacement(lowered)
-            .map_err(|_| crate::runtime::rebind::UiRebindPreparationDenial::CandidateStaging)?;
+            .map_err(|_| UiRebindPreparationDenial::CandidateStaging)?;
         let boundary = self
             .execute_framework_turn(|_| {})
-            .map_err(|_| {
-                crate::runtime::rebind::UiRebindPreparationDenial::FrameBoundaryUnavailable
-            })?
+            .map_err(|_| UiRebindPreparationDenial::FrameBoundaryUnavailable)?
             .into_completion()
             .into_execution()
-            .map_err(|_| {
-                crate::runtime::rebind::UiRebindPreparationDenial::FrameBoundaryUnavailable
-            })?
+            .map_err(|_| UiRebindPreparationDenial::FrameBoundaryUnavailable)?
             .into_activation_boundary();
         let replacement = self
             .prepare_mounted_replacement_with_content(
@@ -332,23 +300,37 @@ impl WorthUiActiveApplicationSession {
                 native_layout,
             )
             .map_err(|denial| match denial {
-                crate::facade::WorthUiApplicationCutoverDenial::MountedFrame(denial) => {
-                    crate::runtime::rebind::UiRebindPreparationDenial::CandidateMountedPreparation(
-                        Box::new(denial),
-                    )
+                WorthUiApplicationCutoverDenial::MountedFrame(denial) => {
+                    UiRebindPreparationDenial::CandidateMountedPreparation(Box::new(denial))
                 }
-                crate::facade::WorthUiApplicationCutoverDenial::OccurrenceGeometry(denial) => {
-                    crate::runtime::rebind::UiRebindPreparationDenial::CandidateOccurrenceGeometry(
-                        denial,
-                    )
+                WorthUiApplicationCutoverDenial::OccurrenceGeometry(denial) => {
+                    UiRebindPreparationDenial::CandidateOccurrenceGeometry(denial)
                 }
-                _ => crate::runtime::rebind::UiRebindPreparationDenial::CandidateCutoverPreparation,
+                WorthUiApplicationCutoverDenial::MountedPresentationInFlight
+                | WorthUiApplicationCutoverDenial::IncompleteMountedSurfaceScope
+                | WorthUiApplicationCutoverDenial::ForeignActiveApplicationSession
+                | WorthUiApplicationCutoverDenial::AppearanceOwnerUnavailable(_)
+                | WorthUiApplicationCutoverDenial::AppearanceOwnerSuccessionUnavailable
+                | WorthUiApplicationCutoverDenial::OverlayBindingSuccessionUnavailable
+                | WorthUiApplicationCutoverDenial::AppearanceThemeAdmission(_)
+                | WorthUiApplicationCutoverDenial::AppearanceThemeSuccession(_)
+                | WorthUiApplicationCutoverDenial::AppearanceInspectionSuccession(_)
+                | WorthUiApplicationCutoverDenial::PreparedApplicationGraphMismatch
+                | WorthUiApplicationCutoverDenial::PreparedApplicationAuthorityMismatch
+                | WorthUiApplicationCutoverDenial::FrameBoundaryUnavailable { .. }
+                | WorthUiApplicationCutoverDenial::MountedIdentity(_)
+                | WorthUiApplicationCutoverDenial::MountedPresentationRequired { .. }
+                | WorthUiApplicationCutoverDenial::PortalExitRetentionPending { .. }
+                | WorthUiApplicationCutoverDenial::MissingAllocationCatalogSuccessorReceipt
+                | WorthUiApplicationCutoverDenial::Activation(_) => {
+                    UiRebindPreparationDenial::CandidateCutoverPreparation
+                }
             })?;
         let replacement = match replacement {
             WorthUiMountedReplacementPreparationOutcome::Prepared(replacement) => replacement,
-            WorthUiMountedReplacementPreparationOutcome::SemanticNoOp(_) => return Err(
-                crate::runtime::rebind::UiRebindPreparationDenial::PlannedChangeBecameSemanticNoOp,
-            ),
+            WorthUiMountedReplacementPreparationOutcome::SemanticNoOp(_) => {
+                return Err(UiRebindPreparationDenial::PlannedChangeBecameSemanticNoOp)
+            }
         };
         Ok(crate::runtime::rebind::UiPreparedRebind::changed(
             plan,

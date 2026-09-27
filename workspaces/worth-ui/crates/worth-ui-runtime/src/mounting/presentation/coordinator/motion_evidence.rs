@@ -11,8 +11,7 @@ impl UiMountedPresentationCoordinator {
         presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
         target: crate::runtime::motion::UiMotionTargetIdentity,
     ) -> Option<(
-        worth_ui_host_contract::UiMountedCanonicalBox,
-        worth_ui_host_contract::UiMountedCanonicalBox,
+        crate::mounting::UiMountedScrollRegionBoxes,
         worth_ui_host_contract::UiMountedCanonicalBox,
     )> {
         let state = self.presentation_states.get(&presentation.binding())?;
@@ -99,7 +98,9 @@ impl UiMountedPresentationCoordinator {
                         .is_none_or(|state| acceptance.accept(state, witness).is_err())
             }
             UiMotionSamplePresentationOutcome::PresentationIndeterminate => true,
-            _ => false,
+            UiMotionSamplePresentationOutcome::RejectedBeforeEffects
+            | UiMotionSamplePresentationOutcome::InFlight
+            | UiMotionSamplePresentationOutcome::Superseded => false,
         };
         if failed {
             self.reconstruction_bindings.insert(binding);

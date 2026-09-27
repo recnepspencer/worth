@@ -187,3 +187,4 @@ appearance role platform.pulse.appearance.review_primary_label applies_to platfo
 component platform.pulse.component.review_primary_label {
   appearance { role platform.pulse.appearance.review_primary_label }
 }
+component platform.pulse.component.review_card {}

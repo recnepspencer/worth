@@ -1,3 +1,4 @@
+mod hit_test_presentation;
 mod input_shielding;
 pub(in crate::mounting) use input_shielding::UiModalInputAdmission;
 mod text_paint;
@@ -11,13 +12,12 @@ pub(crate) struct UiMountedVisualRegionBasis {
     portal_overlays: std::rc::Rc<[worth_ui_host_contract::UiMountedPortalOverlayMechanic]>,
     portal_input_order:
         std::rc::Rc<std::collections::BTreeMap<u64, crate::runtime::portal::UiPortalStackOrdinal>>,
+    /// Where the frame presents each Portal child it does not present in
+    /// place.
     portal_children: std::rc::Rc<
         std::collections::BTreeMap<
             worth_ui_host_contract::UiMountedInstanceIdentity,
-            Option<(
-                worth_ui_host_contract::UiMountedPortalOverlayMechanic,
-                worth_ui_host_contract::UiMountedCanonicalBox,
-            )>,
+            super::UiMountedPlacement,
         >,
     >,
     text_clips: std::rc::Rc<
@@ -39,6 +39,7 @@ pub(crate) struct UiMountedHitTestPresentation {
     mechanic: worth_ui_host_contract::UiMountedHitTestMechanic,
     portal: Option<worth_ui_host_contract::UiMountedPortalOverlayMechanic>,
     owns_presented_portal: bool,
+    ancestor_clip: crate::mounting::UiHitAncestorClip,
 }
 
 #[cfg(test)]
@@ -152,11 +153,7 @@ impl UiMountedVisualRegionBasis {
                 .hit_test
                 .iter()
                 .copied()
-                .map(|mechanic| UiMountedHitTestPresentation {
-                    mechanic,
-                    portal: None,
-                    owns_presented_portal: false,
-                })
+                .map(UiMountedHitTestPresentation::for_test)
                 .collect();
         }
         let mut portal_owners = std::collections::BTreeSet::new();
@@ -176,19 +173,23 @@ impl UiMountedVisualRegionBasis {
                     )
                     .expect("retained hit rows belong to the presented receipt basis")
                 });
-                let (mechanic, portal) = match self.portal_children.get(&row.mounted_instance()) {
-                    None => Some((row, None)),
-                    Some(None) => None,
-                    Some(Some((portal, source_anchor))) => Some((
-                        row.presented_within_portal(*portal, *source_anchor)
-                            .expect("validated Portal-relative hit region remains canonical")?,
-                        Some(*portal),
-                    )),
-                }?;
+                let placement = self.placement_of(row.mounted_instance());
+                // The mechanic source holds each row where layout put it.
+                let mechanic = placement
+                    .present(super::UiLaidOut::from_layout(row))
+                    .expect("validated Portal-relative hit region remains canonical")?
+                    .into_shown();
+                let portal = placement.portal();
+                // The frame published each row with the ancestor clips it sits
+                // inside; a row it did not publish is not presented.
+                let ancestor_clip = self
+                    .presented_hits
+                    .published_ancestor_clip(mechanic.mounted_instance())?;
                 Some(UiMountedHitTestPresentation {
                     mechanic,
                     portal,
                     owns_presented_portal: portal_owners.contains(&mechanic.mounted_instance()),
+                    ancestor_clip,
                 })
             })
             .collect()
@@ -245,14 +246,22 @@ impl UiMountedVisualRegionBasis {
         mut self,
         portal_children: std::collections::BTreeMap<
             worth_ui_host_contract::UiMountedInstanceIdentity,
-            Option<(
-                worth_ui_host_contract::UiMountedPortalOverlayMechanic,
-                worth_ui_host_contract::UiMountedCanonicalBox,
-            )>,
+            super::UiMountedPlacement,
         >,
     ) -> Self {
         self.portal_children = std::rc::Rc::new(portal_children);
         self
+    }
+
+    /// Where the frame presents `instance`.
+    fn placement_of(
+        &self,
+        instance: worth_ui_host_contract::UiMountedInstanceIdentity,
+    ) -> super::UiMountedPlacement {
+        self.portal_children
+            .get(&instance)
+            .copied()
+            .unwrap_or(super::UiMountedPlacement::InPlace)
     }
 
     /// Admission ceiling includes commands later suppressed by Portal clipping.
@@ -316,47 +325,9 @@ impl UiMountedVisualRegionBasis {
                     .len()
                     .checked_mul(std::mem::size_of::<(
                         worth_ui_host_contract::UiMountedInstanceIdentity,
-                        Option<worth_ui_host_contract::UiMountedPortalOverlayMechanic>,
+                        super::UiMountedPlacement,
                     )>())?,
             )
-    }
-}
-
-impl UiMountedHitTestPresentation {
-    pub(in crate::mounting) fn completed(
-        mechanic: worth_ui_host_contract::UiMountedHitTestMechanic,
-        portal: Option<worth_ui_host_contract::UiMountedPortalOverlayMechanic>,
-        owns_presented_portal: bool,
-    ) -> Self {
-        Self {
-            mechanic,
-            portal,
-            owns_presented_portal,
-        }
-    }
-    pub(crate) const fn mechanic(&self) -> worth_ui_host_contract::UiMountedHitTestMechanic {
-        self.mechanic
-    }
-
-    pub(crate) const fn portal(
-        &self,
-    ) -> Option<worth_ui_host_contract::UiMountedPortalOverlayMechanic> {
-        self.portal
-    }
-
-    pub(crate) const fn owns_presented_portal(&self) -> bool {
-        self.owns_presented_portal
-    }
-
-    #[cfg(test)]
-    pub(crate) const fn for_test(
-        mechanic: worth_ui_host_contract::UiMountedHitTestMechanic,
-    ) -> Self {
-        Self {
-            mechanic,
-            portal: None,
-            owns_presented_portal: false,
-        }
     }
 }
 

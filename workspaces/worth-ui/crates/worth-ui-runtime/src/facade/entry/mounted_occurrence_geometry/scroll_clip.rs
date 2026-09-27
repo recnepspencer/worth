@@ -102,7 +102,7 @@ impl super::UiMountedOccurrenceGeometryValidationAuthority<'_> {
                     },
                 )
             }
-            _ => None,
+            Owner::Region { .. } | Owner::Surface(_) | Owner::Viewport(_) => None,
         }
     }
 

@@ -36,8 +36,7 @@ pub struct UiAllocationFrameDuplicateWitness {
 #[derive(Debug, Eq, PartialEq)]
 pub(in crate::runtime::allocation_frame_dispatch) struct UiAllocationFrameSubmissionAssignmentBatch
 {
-    sequences: [UiAllocationFrameIngressSequence;
-        super::super::mailbox::ALLOCATION_FRAME_MAILBOX_MAX_CAPACITY],
+    sequences: [UiAllocationFrameIngressSequence; super::super::ALLOCATION_FRAME_SOURCE_CAPACITY],
 }
 
 /// Canonical epoch/sequence proof minted while the dispatcher seals a frame.
@@ -121,10 +120,11 @@ impl UiAllocationFrameSubmissionAssignmentBatch {
         ingress: &UiAllocationFrameMailboxDrain,
     ) -> Self {
         let mut sequences = [UiAllocationFrameIngressSequence::assign(authority, epoch, 0);
-            super::super::mailbox::ALLOCATION_FRAME_MAILBOX_MAX_CAPACITY];
-        for (index, sequence) in sequences.iter_mut().take(ingress.iter().len()).enumerate() {
-            *sequence =
-                UiAllocationFrameIngressSequence::assign(authority, epoch, index as u16 + 1);
+            super::super::ALLOCATION_FRAME_SOURCE_CAPACITY];
+        for (ordinal, sequence) in
+            (1..=u16::MAX).zip(sequences.iter_mut().take(ingress.iter().len()))
+        {
+            *sequence = UiAllocationFrameIngressSequence::assign(authority, epoch, ordinal);
         }
         Self { sequences }
     }

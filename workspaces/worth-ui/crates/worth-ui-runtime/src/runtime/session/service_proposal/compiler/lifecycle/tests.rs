@@ -327,9 +327,9 @@ fn reserved(
         identity,
         super::super::UiServiceProposalDemand::recorded_fixture(
             participation,
-            families.len() as u8,
-            families.len() as u16,
-            families.len() as u16,
+            u8::try_from(families.len()).unwrap(),
+            u16::try_from(families.len()).unwrap(),
+            u16::try_from(families.len()).unwrap(),
         ),
         coherence.clone(),
         proposals,

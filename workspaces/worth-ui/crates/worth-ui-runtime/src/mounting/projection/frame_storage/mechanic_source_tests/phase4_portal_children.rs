@@ -160,14 +160,22 @@ fn node(
                 ),
             },
         }),
-        plan_index: Some((graph - 4_151) as u32),
-        occurrence_allocation: UiMountedAllocationProjection::Known {
-            bounds: allocation,
-            basis: UiMountedAllocationBasis::new(1, 2, 3, UiMountedTransformProjection::Identity),
-        },
+        plan_index: Some(u32::try_from(graph - 4_151).unwrap()),
+        recorded_bounds: None,
+        occurrence_allocation: crate::mounting::UiLaidOut::from_layout(
+            UiMountedAllocationProjection::Known {
+                bounds: allocation,
+                basis: UiMountedAllocationBasis::new(
+                    1,
+                    2,
+                    3,
+                    UiMountedTransformProjection::Identity,
+                ),
+            },
+        ),
         appearance_geometry:
-            crate::mounting::projection::frame_storage::UiMountedAppearanceGeometry::from_occurrence(
-                UiMountedAllocationProjection::Known {
+            crate::mounting::projection::frame_storage::UiMountedAppearanceGeometry::in_place(
+                crate::mounting::UiLaidOut::from_layout(UiMountedAllocationProjection::Known {
                     bounds: allocation,
                     basis: UiMountedAllocationBasis::new(
                         1,
@@ -175,7 +183,7 @@ fn node(
                         3,
                         UiMountedTransformProjection::Identity,
                     ),
-                },
+                }),
                 crate::mounting::projection::appearance::UiMountedAppearanceClip::Unclipped,
             ),
         surface_paint_order: Some(0),
@@ -184,7 +192,9 @@ fn node(
         appearance_clip:
             crate::mounting::projection::appearance::UiMountedAppearanceClip::Unclipped,
         semantic_text: semantic_text.then(UiMountedSemanticTextSeed::scalar_for_test),
-        hit_test: Some(UiMountedHitTestSeed::for_test((graph - 4_151) as u32)),
+        hit_test: Some(UiMountedHitTestSeed::for_test(
+            u32::try_from(graph - 4_151).unwrap(),
+        )),
         focus_support: crate::capability::ComponentFocusSupport::not_focusable(),
         focus_scope: None,
         focus_container_owner: None,

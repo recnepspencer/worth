@@ -99,7 +99,9 @@ impl UiMountedAppearanceStateMembers {
         let key = self.reverse.get(&instance)?;
         match self.primary.get(key)? {
             UiMountedAppearanceStateMembership::Retained(entry) => Some(&entry.projection),
-            _ => None,
+            UiMountedAppearanceStateMembership::PhysicalOnly(_)
+            | UiMountedAppearanceStateMembership::Reserved
+            | UiMountedAppearanceStateMembership::Staged { .. } => None,
         }
     }
 

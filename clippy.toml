@@ -11,6 +11,8 @@ type-complexity-threshold = 512
 # at the callers road1.toml [[truth_type_denials]] declares.
 disallowed-methods = [
   { path = "worth_ui_runtime::mounting::presentation::truth_geometry::published::UiPublishedRect::translated", reason = "published geometry is shifted only for a Portal entrance start, a Portal's content anchor, or a nested Portal's anchor; construct published truth through truth_geometry" },
+  { path = "worth_ui_runtime::mounting::projection::placement::spaces::UiLaidOut::in_place", reason = "only an occurrence no Portal presents is shown where it is laid out; present laid-out geometry through its UiMountedPlacement" },
+  { path = "worth_ui_runtime::mounting::projection::placement::spaces::UiPresented::map", reason = "presented geometry changes only where the change cannot move it; present laid-out geometry through its UiMountedPlacement" },
   { path = "worth_ui_host_contract::mounted_frame::presentation::UiMountedFrameConsumptionView::acknowledge_presented", reason = "only a presentation host acknowledges presented work; the runtime admits it as the presented-frame witness" },
   { path = "worth_ui_host_contract::mounted_frame::presentation::UiHostPresentationCompletionToken::acknowledge_presented", reason = "only a presentation host acknowledges presented work; the runtime admits it as the presented-frame witness" },
 ]

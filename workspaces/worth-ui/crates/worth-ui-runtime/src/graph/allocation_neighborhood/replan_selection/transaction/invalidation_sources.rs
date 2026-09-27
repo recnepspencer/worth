@@ -17,7 +17,12 @@ pub(super) fn query_source_of(
             fact,
             ..
         } => Some((view_binding_id, fact)),
-        _ => None,
+        crate::runtime::UiAllocationInvalidationTarget::Graph(_)
+        | crate::runtime::UiAllocationInvalidationTarget::ResizePreview { .. }
+        | crate::runtime::UiAllocationInvalidationTarget::HostMeasurement { .. }
+        | crate::runtime::UiAllocationInvalidationTarget::PortalAnchor { .. }
+        | crate::runtime::UiAllocationInvalidationTarget::ScrollOwnedExtent { .. }
+        | crate::runtime::UiAllocationInvalidationTarget::DurableResize { .. } => None,
     }
 }
 
@@ -32,7 +37,12 @@ pub(super) fn scroll_bindings_of(
         | crate::runtime::UiAllocationInvalidationTarget::ScrollOwnedExtent { bindings, .. } => {
             bindings
         }
-        _ => &[],
+        crate::runtime::UiAllocationInvalidationTarget::Graph(_)
+        | crate::runtime::UiAllocationInvalidationTarget::ResizePreview { .. }
+        | crate::runtime::UiAllocationInvalidationTarget::SettledQueryFact { .. }
+        | crate::runtime::UiAllocationInvalidationTarget::HostMeasurement { .. }
+        | crate::runtime::UiAllocationInvalidationTarget::PortalAnchor { .. }
+        | crate::runtime::UiAllocationInvalidationTarget::DurableResize { .. } => &[],
     }
 }
 

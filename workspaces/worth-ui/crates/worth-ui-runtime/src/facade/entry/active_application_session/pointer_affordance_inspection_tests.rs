@@ -273,9 +273,9 @@ pub(super) fn current_target(
         panic!("one mounted target")
     };
     let bounds = row.bounds().platform_box();
-    let position = UiHostSurfacePosition::viewport_logical(
-        ((bounds.x() + bounds.width() / 2.0) * 1_000.0) as i64,
-        ((bounds.y() + bounds.height() / 2.0) * 1_000.0) as i64,
+    let position = crate::units::viewport_position_for_test(
+        bounds.x() + bounds.width() / 2.0,
+        bounds.y() + bounds.height() / 2.0,
     );
     crate::runtime::interaction::targeting::resolve_presented_target(
         &session.mounted,

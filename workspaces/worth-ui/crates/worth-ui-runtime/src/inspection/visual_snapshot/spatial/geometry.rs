@@ -95,14 +95,15 @@ fn project_edge(
     rounding: worth_ui_host_contract::UiHostCoordinateRounding,
 ) -> Result<u32, UiSpatialProjectionDenial> {
     let physical = logical * scale;
-    if !physical.is_finite() || physical < 0.0 || physical > u32::MAX as f32 {
+    if !physical.is_finite() || physical < 0.0 {
         return Err(UiSpatialProjectionDenial::InvalidGeometry);
     }
     let rounded = match rounding {
         worth_ui_host_contract::UiHostCoordinateRounding::PixelCenterNearest => physical.round(),
         worth_ui_host_contract::UiHostCoordinateRounding::FloorEdges => physical.floor(),
     };
-    Ok(rounded as u32)
+    crate::whole_number::whole_u32(f64::from(rounded))
+        .ok_or(UiSpatialProjectionDenial::InvalidGeometry)
 }
 
 fn box_edges(bounds: worth_ui_host_contract::UiMountedCanonicalBox) -> [f32; 4] {

@@ -132,7 +132,9 @@ fn add_plugin_contribution_kind_diagnostic(
     let mismatch = match descriptor.source() {
         ThemeTokenSource::PluginCustom => descriptor.value().is_none(),
         ThemeTokenSource::PluginAlias => descriptor.alias_definition().is_none(),
-        _ => false,
+        ThemeTokenSource::Platform
+        | ThemeTokenSource::Application
+        | ThemeTokenSource::PluginPlatformOverride => false,
     };
 
     if mismatch {

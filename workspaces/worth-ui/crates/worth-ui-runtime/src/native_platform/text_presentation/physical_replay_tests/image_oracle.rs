@@ -39,13 +39,16 @@ pub(super) fn images(world: &CoverageWorld) -> Vec<[f32; 4]> {
                 .find(|image| image.key() == record.key())
                 .unwrap();
             Some([
-                ((f64::from(text.origin_x()) * 1_000.0 + positioned.origin_x_millipoints() as f64)
-                    * 1.25
-                    / 1_000.0)
-                    .floor() as f32
-                    + image.bearing().x_over_64() as f32 / 64.0,
-                (positioned.origin_y_millipoints() as f64 * 1.25 / 1_000.0).floor() as f32
-                    - image.bearing().y_over_64() as f32 / 64.0,
+                super::device_pixels(
+                    ((f64::from(text.origin_x()) * 1_000.0
+                        + positioned.origin_x_millipoints() as f64)
+                        * 1.25
+                        / 1_000.0)
+                        .floor(),
+                ) + image.bearing().x_over_64() as f32 / 64.0,
+                super::device_pixels(
+                    (positioned.origin_y_millipoints() as f64 * 1.25 / 1_000.0).floor(),
+                ) - image.bearing().y_over_64() as f32 / 64.0,
                 image.extent().width() as f32,
                 image.extent().height() as f32,
             ])

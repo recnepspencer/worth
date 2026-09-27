@@ -86,13 +86,15 @@ pub struct DashboardLayoutCell {
 }
 
 /// A component that paints nothing and lays its members out in flexible
-/// tracks. A scroll owner is one: its members travel with it.
+/// tracks. A scroll owner is one: its members travel with it. A container a
+/// Portal presents names the Portal's owner, as its members do.
 #[derive(Clone, Debug)]
 pub struct DashboardContainer {
     pub id: &'static str,
     pub placement: DashboardPlacement,
     pub layout: MosaicResponsiveLayout,
     pub scroll_owner: Option<DashboardScrollOwner>,
+    pub portal_owner: Option<&'static str>,
 }
 
 impl DashboardContainer {
@@ -118,6 +120,7 @@ struct ContainerTracks {
     tracks: MosaicLayoutContract,
     stacked: Option<StackedTracks>,
     scroll_owner: Option<DashboardScrollOwner>,
+    portal_owner: Option<&'static str>,
 }
 
 /// The tracks a container lays its members out in below the dashboard's
@@ -179,6 +182,7 @@ pub fn dashboard_containers() -> Vec<DashboardContainer> {
     containers.push(metrics::container());
     containers.extend(traffic::containers());
     containers.extend(DashboardScrollPanel::ALL.map(DashboardScrollPanel::container));
+    containers.extend(review::containers());
     let members = dashboard_elements()
         .into_iter()
         .map(|element| (element.component(), element.placement))
@@ -220,6 +224,7 @@ pub fn dashboard_containers() -> Vec<DashboardContainer> {
                 placement: container.placement,
                 layout,
                 scroll_owner: container.scroll_owner,
+                portal_owner: container.portal_owner,
             }
         })
         .collect()

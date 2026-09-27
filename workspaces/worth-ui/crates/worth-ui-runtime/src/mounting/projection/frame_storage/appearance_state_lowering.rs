@@ -52,7 +52,7 @@ impl UiMountedAppearanceFrameState {
                 UiAppearanceInspectionRecord::Denial {
                     context, denial, ..
                 } => Some((context.mounted_instance(), denial)),
-                _ => None,
+                UiAppearanceInspectionRecord::Projection { .. } => None,
             })
             .collect::<std::collections::BTreeMap<_, _>>();
         let denial_for = |context: &crate::runtime::appearance::UiAppearanceAttemptContext| {
@@ -243,7 +243,9 @@ impl UiMountedAppearanceFrameState {
             AppearanceLoweringPosture::Reconstruction if predecessor_receipt.is_some() => {
                 sidecar.reconstruct(input)
             }
-            _ => sidecar.mount(input),
+            AppearanceLoweringPosture::Delta | AppearanceLoweringPosture::Reconstruction => {
+                sidecar.mount(input)
+            }
         };
         let work = match lowering {
             Ok(work) => work,
@@ -350,6 +352,37 @@ pub(super) fn geometry_output_denial(
         Lowering::HostGeometryScale(scale) => {
             Some(UiMountedAppearanceOutputDenial::HostGeometryScale(scale))
         }
-        _ => None,
+        Lowering::NodeSessionMismatch
+        | Lowering::NodeAllocationUnavailable
+        | Lowering::BorderWidthInvalid
+        | Lowering::RadiusInvalid
+        | Lowering::OutlineWidthInvalid
+        | Lowering::OutlineOffsetInvalid
+        | Lowering::OutlineGeometry(_)
+        | Lowering::SurfacePaintOrderUnavailable
+        | Lowering::Geometry(_)
+        | Lowering::NodeProjectionUnavailable
+        | Lowering::NodeReceiptFrameMismatch
+        | Lowering::NodeProjectionIssuerMismatch
+        | Lowering::NodeSurfaceMismatch
+        | Lowering::PortalSurfaceMissing
+        | Lowering::PortalTargetMismatch
+        | Lowering::OutlineAllocationMismatch
+        | Lowering::BackdropPlacementMismatch
+        | Lowering::OverlayRevisionMissing
+        | Lowering::OrderParticipantMissing
+        | Lowering::Surface(_)
+        | Lowering::PortalSurface(_)
+        | Lowering::Outline(_)
+        | Lowering::TextForeground(_)
+        | Lowering::Backdrop(_)
+        | Lowering::ScrollChrome(_)
+        | Lowering::ScrollChromeOwnerMissing
+        | Lowering::ScrollChromeAttributionUnavailable
+        | Lowering::ScrollChromeBackgroundMissing
+        | Lowering::OverlayOrder(_)
+        | Lowering::Frame(_)
+        | Lowering::WorkConstruction
+        | Lowering::AmbiguousMotionOpacity => None,
     }
 }

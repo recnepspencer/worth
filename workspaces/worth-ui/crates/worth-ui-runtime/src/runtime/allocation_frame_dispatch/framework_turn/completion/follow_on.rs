@@ -15,7 +15,9 @@ impl WorthUiMountedPreviewFollowOn {
     ) -> Option<&crate::runtime::UiDurableResizeCommitDenialReport> {
         match self {
             Self::DurableResizeDenied { report, .. } => Some(report.as_ref()),
-            _ => None,
+            Self::PreviewOnly
+            | Self::DurableResizeCommitted { .. }
+            | Self::DurableResizeSuppressedByPreviewIsolation { .. } => None,
         }
     }
 

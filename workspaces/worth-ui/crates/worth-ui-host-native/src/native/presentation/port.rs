@@ -19,6 +19,7 @@ pub(crate) trait UiNativePresentationPort {
     fn present(
         graphics: &mut UiNativePresentationAccess,
         atlas: Option<&crate::native::text_atlas::UiNativeTextAtlasGpuPages>,
+        attempt: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
         plan: UiNativePresentationPortPlan,
         defer_initial_observation: bool,
         lifecycle: &mut crate::native::lifecycle::UiNativeLifecycleOrchestrator,
@@ -85,10 +86,18 @@ impl UiNativePresentationPort for UiWgpuNativePresentationPort {
     fn present(
         graphics: &mut UiNativePresentationAccess,
         atlas: Option<&crate::native::text_atlas::UiNativeTextAtlasGpuPages>,
+        attempt: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
         plan: UiNativePresentationPortPlan,
         defer_initial_observation: bool,
         lifecycle: &mut crate::native::lifecycle::UiNativeLifecycleOrchestrator,
     ) -> Result<UiNativePresentationPortObservation, UiNativePresentationPortFailure> {
-        transaction::present(graphics, atlas, plan, defer_initial_observation, lifecycle)
+        transaction::present(
+            graphics,
+            atlas,
+            attempt,
+            plan,
+            defer_initial_observation,
+            lifecycle,
+        )
     }
 }

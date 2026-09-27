@@ -7,11 +7,11 @@ impl UiMountedPresentationState {
         &self,
         target: UiMotionTargetIdentity,
     ) -> Option<(
-        UiMountedCanonicalBox,
-        UiMountedCanonicalBox,
+        crate::mounting::UiMountedScrollRegionBoxes,
         UiMountedCanonicalBox,
     )> {
-        let input = &self.scroll_motion_groups.groups.get(&target)?.input;
+        let group = self.scroll_motion_groups.groups.get(&target)?;
+        let input = &group.input;
         let identity = [
             UiMountedScrollChromeAxis::Block,
             UiMountedScrollChromeAxis::Inline,
@@ -53,8 +53,10 @@ impl UiMountedPresentationState {
             .ok()
         };
         Some((
-            translated(input.content)?,
-            translated(input.viewport)?,
+            crate::mounting::UiMountedScrollRegionBoxes::new(
+                translated(group.shown.region().content())?,
+                translated(group.shown.region().viewport())?,
+            ),
             accepted.scroll_clip().unwrap_or(track.clip),
         ))
     }

@@ -45,16 +45,15 @@ fn rounded_and_border_coverage_cannot_claim_uniform_rectangular_opacity() {
     assert!(paint_basis(UiMountedSurfacePaint::Fill(clear.into()), 0).is_none());
 }
 
-fn length(points: i32) -> UiAppearanceLogicalLength {
-    UiAppearanceLogicalLength::new(points * UI_APPEARANCE_LOGICAL_SUBPIXELS_PER_POINT as i32)
-        .unwrap()
+fn length(points: u32) -> UiAppearanceLogicalLength {
+    UiAppearanceLogicalLength::whole_points(points).unwrap()
 }
 
-fn paint_basis(paint: UiMountedSurfacePaint, radius: i32) -> Option<UiMountedAppearancePaintBasis> {
+fn paint_basis(paint: UiMountedSurfacePaint, radius: u32) -> Option<UiMountedAppearancePaintBasis> {
     let frame = UiMountedFrameIdentity::mint_unbound().unwrap();
     let issuer = UiMountedNodeReceiptIssuer::mint_for(frame).unwrap();
     let instance = UiMountedInstanceIdentity::mint_unbound().unwrap();
-    let extent = 32 * UI_APPEARANCE_LOGICAL_SUBPIXELS_PER_POINT;
+    let extent = length(32).subpixels();
     let bounds = UiAppearanceAllocationBounds::new(0, 0, extent, extent).unwrap();
     let surface = UiMountedSurfaceAppearanceMechanic::complete_from_runtime_mounting(
         UiMountedSurfaceAppearanceCompletionInput {

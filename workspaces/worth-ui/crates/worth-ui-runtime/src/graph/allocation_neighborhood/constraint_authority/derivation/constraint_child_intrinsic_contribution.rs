@@ -13,6 +13,7 @@ use crate::evidence::{
 use worth_foundational::CanonicalF32;
 
 use super::constraint_summary::intrinsic_contribution_scope;
+use crate::evidence::UiMeasurementEvidenceCategory;
 
 #[derive(Clone, Copy)]
 struct AdmittedIntrinsicValue {
@@ -112,8 +113,8 @@ fn contains_anonymous_intrinsic_evidence(measurement_basis: &UiMeasurementBasis)
             MeasurementEvidenceInput::SettledQueryFact(_) => true,
             MeasurementEvidenceInput::HostMeasurementResult(result) => matches!(
                 result.evidence_category(),
-                crate::evidence::UiMeasurementEvidenceCategory::TextIntrinsicSize
-                    | crate::evidence::UiMeasurementEvidenceCategory::NativeControlIntrinsicSize
+                UiMeasurementEvidenceCategory::TextIntrinsicSize
+                    | UiMeasurementEvidenceCategory::NativeControlIntrinsicSize
             ),
             MeasurementEvidenceInput::HostCapabilityReport(_)
             | MeasurementEvidenceInput::ChildIntrinsicMeasurement(_)
@@ -146,8 +147,8 @@ fn admit_member_intrinsic_contribution_witness(
             }
             if let Some(result) = evidence.host_measurement_result() {
                 match result.evidence_category() {
-                    crate::evidence::UiMeasurementEvidenceCategory::TextIntrinsicSize
-                    | crate::evidence::UiMeasurementEvidenceCategory::NativeControlIntrinsicSize => {
+                    UiMeasurementEvidenceCategory::TextIntrinsicSize
+                    | UiMeasurementEvidenceCategory::NativeControlIntrinsicSize => {
                         saw_host_intrinsic = true;
                         host_intrinsic =
                             merge_host_intrinsic(host_intrinsic, result, axis_scope, primary_axis)
@@ -155,7 +156,12 @@ fn admit_member_intrinsic_contribution_witness(
                                     intrinsic_denial(reason, neighborhood, measurement_basis)
                                 })?;
                     }
-                    _ => {}
+                    UiMeasurementEvidenceCategory::TextBaselineMetrics
+                    | UiMeasurementEvidenceCategory::FontMetrics
+                    | UiMeasurementEvidenceCategory::ViewportExtent
+                    | UiMeasurementEvidenceCategory::DpiScaleFactor
+                    | UiMeasurementEvidenceCategory::PortalAnchorRect
+                    | UiMeasurementEvidenceCategory::ScrollContainerViewport => {}
                 }
             }
         }
@@ -278,7 +284,14 @@ fn admitted_host_intrinsic(
             value.height,
             UiConstraintHostIntrinsicKind::NativeControl,
         ),
-        _ => return Err(UiConstraintPropagationDenialReason::MissingRequiredIntrinsicContribution),
+        UiMeasurementValue::TextBaselineMetrics(_)
+        | UiMeasurementValue::FontMetrics(_)
+        | UiMeasurementValue::ViewportExtent(_)
+        | UiMeasurementValue::DpiScaleFactor(_)
+        | UiMeasurementValue::PortalAnchorRect(_)
+        | UiMeasurementValue::ScrollContainerViewport(_) => {
+            return Err(UiConstraintPropagationDenialReason::MissingRequiredIntrinsicContribution)
+        }
     };
     let (primary_extent, cross_extent) =
         extents_for_axis_scope(width, height, axis_scope, primary_axis)?;

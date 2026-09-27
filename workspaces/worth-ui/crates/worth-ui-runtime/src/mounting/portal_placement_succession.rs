@@ -43,7 +43,13 @@ pub(in crate::mounting) fn succeed_portal_placements(
                 |&(_, parent_owner, parent_paint)| nested_anchor(owner, parent_owner, parent_paint),
             ),
         };
-        let content = || semantic.portal_content_extent(input.owner()).ok()?;
+        let content = || {
+            semantic
+                .portal_content_extent(input.owner(), |surface, child| {
+                    geometry.portal_content_clip(surface, input.owner(), child)
+                })
+                .ok()?
+        };
         let successor = anchor
             .zip(portal_viewport(state, geometry, input.surface()))
             .and_then(|(anchor, viewport)| {

@@ -51,6 +51,21 @@ impl UiAppearanceLogicalRect {
         }
     }
 
+    /// This rectangle in viewport points: the one reading paint and hit both
+    /// take. Hosts interpret appearance geometry in viewport coordinates,
+    /// Portal children included. `None` when points cannot hold it.
+    fn canonical_box(self) -> Option<crate::UiMountedCanonicalBox> {
+        let points = super::appearance_points_f32;
+        crate::UiMountedCanonicalBox::canonicalize(crate::UiMountedCanonicalBoxInput {
+            x: points(i64::from(self.x)),
+            y: points(i64::from(self.y)),
+            width: points(i64::from(self.width)),
+            height: points(i64::from(self.height)),
+            coordinate_space: crate::UiMountedCoordinateSpace::Viewport,
+        })
+        .ok()
+    }
+
     pub(crate) fn expanded(self, amount: u32) -> Result<Self, UiAppearanceGeometryOverflow> {
         let amount_i64 = i64::from(amount);
         let x = i64::from(self.x) - amount_i64;
@@ -93,6 +108,11 @@ macro_rules! logical_rect_contract {
             pub const fn height(self) -> u32 {
                 self.0.height
             }
+
+            /// This region in viewport points, as paint and hit both read it.
+            pub fn canonical_box(self) -> Option<crate::UiMountedCanonicalBox> {
+                self.0.canonical_box()
+            }
         }
     };
 }
@@ -119,6 +139,11 @@ impl UiAppearanceVisualBounds {
     pub const fn height(self) -> u32 {
         self.0.height
     }
+
+    /// These bounds in viewport points, as paint and hit both read them.
+    pub fn canonical_box(self) -> Option<crate::UiMountedCanonicalBox> {
+        self.0.canonical_box()
+    }
 }
 
 #[cfg(test)]
@@ -142,6 +167,29 @@ mod tests {
         assert_eq!(
             UiAppearanceClip::new(0, 0, 0, 0),
             Err(UiAppearanceEmptyRegion)
+        );
+    }
+
+    /// Paint and hit read a region's points from this one conversion.
+    #[test]
+    fn a_region_reads_as_viewport_points() {
+        let expected =
+            crate::UiMountedCanonicalBox::canonicalize(crate::UiMountedCanonicalBoxInput {
+                x: -10.25,
+                y: 20.5,
+                width: 100.125,
+                height: 32.0,
+                coordinate_space: crate::UiMountedCoordinateSpace::Viewport,
+            })
+            .ok();
+        let clip = UiAppearanceClip::new(-10_250, 20_500, 100_125, 32_000).unwrap();
+        assert_eq!(clip.canonical_box(), expected);
+        let allocation =
+            UiAppearanceAllocationBounds::new(-10_250, 20_500, 100_125, 32_000).unwrap();
+        assert_eq!(allocation.canonical_box(), expected);
+        assert_eq!(
+            UiAppearanceVisualBounds::from_surface_allocation(allocation).canonical_box(),
+            expected
         );
     }
 }

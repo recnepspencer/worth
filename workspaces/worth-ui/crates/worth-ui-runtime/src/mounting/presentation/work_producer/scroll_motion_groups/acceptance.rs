@@ -6,16 +6,23 @@ use crate::mounting::presentation::motion_sampling::UiPresentationMotionSampleRe
 use crate::mounting::presentation::{UiDisplayedRect, UiDisplayedSurfaceBasis};
 use std::{cell::Cell, rc::Rc};
 
+/// The sample a witness displayed a group at, and where it put the group.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(in crate::mounting::presentation::work_producer) struct UiDisplayedGroupSample {
+    pub(super) rect: UiDisplayedRect,
+    pub(super) sample: UiPresentationMotionSampleReceipt,
+}
+
 pub(in crate::mounting::presentation::work_producer) struct UiScrollGroupMotionUpdate {
     target: UiMotionTargetIdentity,
-    slot: Rc<Cell<Option<UiDisplayedRect>>>,
+    slot: Rc<Cell<Option<UiDisplayedGroupSample>>>,
     sample: UiPresentationMotionSampleReceipt,
 }
 
 /// A group update the admitted witness displayed, ready to commit.
 pub(in crate::mounting::presentation::work_producer) struct UiDisplayedScrollGroupMotion {
-    slot: Rc<Cell<Option<UiDisplayedRect>>>,
-    displayed: UiDisplayedRect,
+    slot: Rc<Cell<Option<UiDisplayedGroupSample>>>,
+    displayed: UiDisplayedGroupSample,
 }
 
 impl UiScrollGroupMotionUpdate {
@@ -57,8 +64,11 @@ impl UiScrollGroupMotionUpdate {
         let geometry = sample.geometry().ok_or(Denial::SampleBasis)?;
         Ok(UiDisplayedScrollGroupMotion {
             slot: self.slot.clone(),
-            displayed: UiDisplayedRect::displayed(geometry, displayed)
-                .map_err(|_| Denial::SampleBasis)?,
+            displayed: UiDisplayedGroupSample {
+                rect: UiDisplayedRect::displayed(geometry, displayed)
+                    .map_err(|_| Denial::SampleBasis)?,
+                sample,
+            },
         })
     }
 }

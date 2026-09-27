@@ -16,13 +16,22 @@ use super::super::scroll_settle_commit::{
 use crate::certification_support::ScriptedPresentationHost;
 use crate::mounting::presentation::motion_sampling::UiPreparedMotionSampling;
 use crate::mounting::presentation::UiDisplayedSurfaceBasis;
-use crate::mounting::{UiMountedFrameOutcome, UiMountedPresentationInFlight};
-use crate::runtime::scroll::{UiHostScrollObservationOutcome, UiScrollDeltaCause};
-use worth_ui_host_contract::UiPresentationDeadline;
+use crate::mounting::UiMountedPresentationInFlight;
+use crate::runtime::scroll::{UiHostScrollObservationOutcome, UiScrollDeltaCause, UiScrollOffset};
+
+#[path = "intent.rs"]
+mod intent;
+#[path = "publication.rs"]
+mod publication;
+#[path = "tick.rs"]
+mod tick;
 
 /// Full block travel of the scrollable region, and the travel left once its
 /// content is resized shorter.
-const TRAVELS: [f32; 2] = [30.0, 5.0];
+const TRAVELS: [u16; 2] = [30, 5];
+
+/// Frames a run gets to come to rest in: far more than any settle lasts.
+const REST_FRAMES: usize = 64;
 
 /// One kind of operation. `Retarget` is never chosen; it is what a notch is
 /// when it lands while a settle is still in flight.
@@ -35,6 +44,7 @@ pub(super) enum Step {
     Notch,
     Retarget,
     OwnerEdit,
+    StageEdit,
     Resize,
     Publish,
     RejectPublication,
@@ -46,7 +56,7 @@ pub(super) enum Step {
 impl Step {
     /// What a run chooses from. Frames and notches are listed more than once,
     /// so settles run long enough to be caught mid-flight by everything else.
-    pub(super) const CHOICES: [Self; 18] = [
+    pub(super) const CHOICES: [Self; 19] = [
         Self::Frame,
         Self::Frame,
         Self::Frame,
@@ -59,6 +69,7 @@ impl Step {
         Self::Notch,
         Self::Notch,
         Self::OwnerEdit,
+        Self::StageEdit,
         Self::Resize,
         Self::Publish,
         Self::RejectPublication,
@@ -67,7 +78,7 @@ impl Step {
         Self::Rebind,
     ];
 
-    pub(super) const EVERY: [Self; 13] = [
+    pub(super) const EVERY: [Self; 14] = [
         Self::Frame,
         Self::Prepare,
         Self::Commit,
@@ -75,6 +86,7 @@ impl Step {
         Self::Notch,
         Self::Retarget,
         Self::OwnerEdit,
+        Self::StageEdit,
         Self::Resize,
         Self::Publish,
         Self::RejectPublication,
@@ -95,6 +107,11 @@ pub(super) struct Model {
     /// A resize installed but not yet published: the layout the next frame
     /// prepares, which no witness has shown.
     pub(super) staged: bool,
+    /// A page placed but not yet published: the offset the next frame
+    /// prepares, which no witness has shown.
+    pub(super) direct: Option<UiScrollOffset>,
+    /// Where the last intent put the content: where it must come to rest.
+    rests_at: UiScrollOffset,
 }
 
 impl Model {
@@ -110,19 +127,23 @@ impl Model {
             travel: 0,
             pointer: 1,
             staged: false,
+            direct: None,
+            rests_at: block(0),
         }
     }
 
     /// Run one operation; `Some` names what took effect.
     pub(super) fn apply(&mut self, step: Step, roll: u64) -> Option<Step> {
         self.tick += 1;
+        let staged = self.staged;
         let effect = match step {
             Step::Frame => self.frame(),
             Step::Prepare => self.prepare(),
             Step::Commit => self.present_held(false),
             Step::RejectTick => self.present_held(true),
             Step::Notch | Step::Retarget => self.notch(roll),
-            Step::OwnerEdit => self.owner_edit(roll),
+            Step::OwnerEdit => self.owner_edit(roll, true),
+            Step::StageEdit => self.owner_edit(roll, false),
             Step::Resize => self.resize(),
             Step::Publish => self.publish(),
             Step::RejectPublication => self.reject_publication(),
@@ -131,15 +152,60 @@ impl Model {
             Step::Rebind => self.rebind(),
         };
         self.resolve_owner();
+        let surface = self.scroll.surface();
+        let session = &self.scroll.world.session;
+        if !session
+            .scroll
+            .as_ref()
+            .is_some_and(|scroll| scroll.has_pending_direct(surface))
+        {
+            self.direct = None;
+        }
+        self.follow_intent(effect, staged && !self.staged);
         effect
     }
 
-    pub(super) fn finish(mut self) {
-        if let Some(pending) = self.in_flight.take() {
-            self.tick += 1;
-            self.scroll.complete(pending, self.tick);
+    /// Bring the World to rest: the attempt the host holds open completes,
+    /// the held tick presents, and frames run until nothing is left to
+    /// settle or publish. Every settle Scroll holds must land: a transition nothing
+    /// drives any more, or a settle owed with nothing to pay it, never
+    /// comes to rest, and the pose rests where Scroll holds it, which is
+    /// where the last intent put the content.
+    pub(super) fn rest(&mut self, label: &str) {
+        let _ = self.apply(Step::CompleteInFlight, 0);
+        let _ = self.apply(Step::Commit, 0);
+        for _ in 0..REST_FRAMES {
+            if self.at_rest() {
+                break;
+            }
+            let _ = self.apply(Step::Frame, 0);
         }
-        let _ = self.present_held(false);
+        assert!(
+            self.at_rest(),
+            "{label}: {} Scroll settles never land, and a settle is owed: {}",
+            pending_transitions(&self.scroll),
+            self.scroll.world.session.awaits_scroll_settle_retry()
+        );
+        assert_eq!(
+            self.scroll.mounted_offset(),
+            Some(self.scroll.accepted_offset()),
+            "{label}: the pose rests where Scroll holds it"
+        );
+        assert_eq!(
+            self.scroll.accepted_offset(),
+            self.rests_at,
+            "{label}: the content rests where the last intent put it"
+        );
+    }
+
+    fn at_rest(&self) -> bool {
+        let session = &self.scroll.world.session;
+        pending_transitions(&self.scroll) == 0
+            && !session.awaits_scroll_settle_retry()
+            && !session.mounted.projection_changes_pending()
+    }
+
+    pub(super) fn finish(self) {
         let _ = self.scroll.world.session.shutdown();
     }
 
@@ -150,17 +216,6 @@ impl Model {
             .mounted
             .current_displayed_presentation(self.scroll.presentation())
             .expect("the retained record displays the current basis")
-    }
-
-    /// Whether the host is owed this tick: it moves something, on the basis
-    /// the host still displays. A publication the host holds open does not
-    /// stop a sample; the sample presents beside it.
-    fn host_takes(
-        &self,
-        prepared: &UiPreparedMotionSampling,
-        displayed: UiDisplayedSurfaceBasis,
-    ) -> bool {
-        !prepared.receipt().samples().is_empty() && self.displayed() == displayed
     }
 
     fn frame(&mut self) -> Option<Step> {
@@ -174,15 +229,11 @@ impl Model {
             .session
             .prepare_motion_tick(self.tick, displayed)
         {
-            Ok(prepared) => {
-                if self.host_takes(&prepared, displayed) {
-                    self.scroll.world.host.push_native_display_as_issued();
-                }
-                self.scroll
-                    .world
-                    .session
-                    .present_prepared_motion_tick(prepared, displayed);
-            }
+            Ok(prepared) => self.present_tick(
+                prepared,
+                displayed,
+                ScriptedPresentationHost::push_native_display_as_issued,
+            ),
             Err(_) => {
                 self.scroll.world.session.settle_owed_scroll_samples();
             }
@@ -217,15 +268,12 @@ impl Model {
             return None;
         }
         let (prepared, displayed) = self.held.take()?;
-        match (takes, reject) {
-            (true, true) => self.scroll.world.host.push_rejected(),
-            (true, false) => self.scroll.world.host.push_native_display_as_issued(),
-            (false, _) => {}
-        }
-        self.scroll
-            .world
-            .session
-            .present_prepared_motion_tick(prepared, displayed);
+        let outcome = if reject {
+            ScriptedPresentationHost::push_rejected
+        } else {
+            ScriptedPresentationHost::push_native_display_as_issued
+        };
+        self.present_tick(prepared, displayed, outcome);
         self.publish_owed();
         Some(if reject {
             Step::RejectTick
@@ -249,12 +297,13 @@ impl Model {
         })
     }
 
-    /// A track page the owner places directly, published at once.
-    fn owner_edit(&mut self, roll: u64) -> Option<Step> {
+    /// A track page the owner places directly, published at once or left
+    /// staged for a later publication to land.
+    fn owner_edit(&mut self, roll: u64, publish: bool) -> Option<Step> {
         if self.in_flight.is_some() {
             return None;
         }
-        let points = (roll % (TRAVELS[self.travel] as u64 + 1)) as i64;
+        let points = i64::try_from(roll % (u64::from(TRAVELS[self.travel]) + 1)).ok()?;
         let scroll = &mut self.scroll;
         scroll
             .world
@@ -268,8 +317,12 @@ impl Model {
                 UiScrollDeltaCause::ChromeTrackPage,
             )
             .ok()?;
-        self.publish_as_issued();
-        Some(Step::OwnerEdit)
+        if publish {
+            self.publish_as_issued();
+            return Some(Step::OwnerEdit);
+        }
+        self.direct = Some(block(points));
+        Some(Step::StageEdit)
     }
 
     /// Stage the region's content at the other length; a later publication
@@ -286,86 +339,10 @@ impl Model {
             world.surfaces,
             world.instances,
             self.revision,
-            TRAVELS[self.travel],
+            f32::from(TRAVELS[self.travel]),
         );
         self.staged = true;
         Some(Step::Resize)
-    }
-
-    fn publish(&mut self) -> Option<Step> {
-        if self.in_flight.is_some() {
-            return None;
-        }
-        self.publish_as_issued();
-        Some(Step::Publish)
-    }
-
-    /// What the shell does once presentation is pending: a settle that
-    /// changed what the host must hold, or a staged layout, wakes it.
-    fn publish_owed(&mut self) {
-        if self.in_flight.is_none()
-            && self
-                .scroll
-                .world
-                .session
-                .mounted
-                .projection_changes_pending()
-        {
-            self.publish_as_issued();
-        }
-    }
-
-    /// Publish the surface; the host paints exactly what the frame carries.
-    fn publish_as_issued(&mut self) {
-        let outcome = self.present_surface(ScriptedPresentationHost::push_native_display_as_issued);
-        assert!(
-            matches!(outcome, UiMountedFrameOutcome::Published(_)),
-            "the host takes the publication as issued"
-        );
-        self.staged = false;
-    }
-
-    /// Prepare the surface's frame and present it, the host answering each
-    /// surface it carries with `answer`.
-    fn present_surface(&mut self, answer: fn(&ScriptedPresentationHost)) -> UiMountedFrameOutcome {
-        let surface = self.scroll.surface();
-        let world = &mut self.scroll.world;
-        let frame = world.prepare_surface(surface);
-        for _ in frame.surfaces() {
-            answer(&world.host);
-        }
-        world.session.present_prepared_mounted_frame_internal(
-            frame,
-            UiPresentationDeadline::at_tick(u64::MAX),
-            self.tick,
-        )
-    }
-
-    fn reject_publication(&mut self) -> Option<Step> {
-        if self.in_flight.is_some() {
-            return None;
-        }
-        let outcome = self.present_surface(ScriptedPresentationHost::push_rejected);
-        assert!(
-            matches!(outcome, UiMountedFrameOutcome::RejectedBeforeEffects(_)),
-            "a host refusal before effects is reported as one"
-        );
-        Some(Step::RejectPublication)
-    }
-
-    fn begin_in_flight(&mut self) -> Option<Step> {
-        if self.in_flight.is_some() {
-            return None;
-        }
-        self.in_flight = Some(self.scroll.hold_presentation_open(self.tick));
-        Some(Step::BeginInFlight)
-    }
-
-    fn complete_in_flight(&mut self) -> Option<Step> {
-        let pending = self.in_flight.take()?;
-        self.scroll.complete(pending, self.tick);
-        self.staged = false;
-        Some(Step::CompleteInFlight)
     }
 
     /// Rebind the surface to a new host generation. The host forgets the

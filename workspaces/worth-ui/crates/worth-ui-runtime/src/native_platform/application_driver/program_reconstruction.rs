@@ -75,14 +75,25 @@ pub(super) fn retry_text_atlas_deferred(
     outcome: crate::mounting::UiMountedFrameOutcome,
     deadline: worth_ui_host_contract::UiPresentationDeadline,
     now_tick: u64,
-) -> crate::mounting::UiMountedFrameOutcome {
+) -> Result<crate::mounting::UiMountedFrameOutcome, ()> {
     match outcome {
         crate::mounting::UiMountedFrameOutcome::RejectedBeforeEffects(rejected)
             if is_text_atlas_rejection(&rejected) =>
         {
-            shell.retry_rejected_frame_presentation(rejected, deadline, now_tick)
+            shell
+                .retry_rejected_frame_presentation(rejected, deadline, now_tick)
+                .map_err(|_| ())
         }
-        outcome => outcome,
+        outcome @ (crate::mounting::UiMountedFrameOutcome::Published(_)
+        | crate::mounting::UiMountedFrameOutcome::Unchanged(_)
+        | crate::mounting::UiMountedFrameOutcome::Reconciled(_)
+        | crate::mounting::UiMountedFrameOutcome::RejectedBeforeEffects(_)
+        | crate::mounting::UiMountedFrameOutcome::InFlight(_)
+        | crate::mounting::UiMountedFrameOutcome::PresentationIndeterminate(_)
+        | crate::mounting::UiMountedFrameOutcome::Superseded(_)
+        | crate::mounting::UiMountedFrameOutcome::RetentionDenied(_)
+        | crate::mounting::UiMountedFrameOutcome::AdmissionDenied(_)
+        | crate::mounting::UiMountedFrameOutcome::CompletionDenied(_)) => Ok(outcome),
     }
 }
 

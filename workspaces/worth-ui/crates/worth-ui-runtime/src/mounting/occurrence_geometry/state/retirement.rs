@@ -39,5 +39,6 @@ impl UiMountedOccurrenceGeometryState {
 
     pub(crate) fn retire_surface(&mut self, surface: UiSemanticSurfaceIdentity) {
         self.surfaces.remove(&surface);
+        self.sample_carried.remove(&surface);
     }
 }

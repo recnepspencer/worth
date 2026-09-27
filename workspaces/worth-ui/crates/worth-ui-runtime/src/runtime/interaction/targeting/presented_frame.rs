@@ -63,6 +63,7 @@ pub(crate) fn resolve_presented_target(
         }
         if !row.bounds().admits_platform_point(point)
             || !row.clip_bounds().admits_platform_point(point)
+            || !row.ancestor_reach().admits_platform_point(point)
         {
             continue;
         }

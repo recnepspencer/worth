@@ -5,7 +5,7 @@ use worth_ui_host_contract::{
 
 use super::UiMountedMechanicSource;
 use crate::mounting::projection::frame_storage::UiMountedSemanticProjection;
-use crate::mounting::{UiMountedNodeReceiptBasis, UiMountedProjectionDenial};
+use crate::mounting::{UiLaidOut, UiMountedNodeReceiptBasis, UiMountedProjectionDenial};
 
 impl UiMountedMechanicSource {
     #[cfg(test)]
@@ -28,7 +28,7 @@ impl UiMountedMechanicSource {
         content: worth_ui_host_contract::UiMountedContentGeneration,
         frame: UiMountedFrameIdentity,
         receipts: &UiMountedNodeReceiptBasis,
-    ) -> Result<Vec<UiMountedSemanticTextMechanic>, UiMountedProjectionDenial> {
+    ) -> Result<Vec<UiLaidOut<UiMountedSemanticTextMechanic>>, UiMountedProjectionDenial> {
         let receipt = receipt_for(
             receipts,
             instance,
@@ -36,7 +36,10 @@ impl UiMountedMechanicSource {
         )?;
         self.semantic_text
             .retained_rows_for_instance(instance)
-            .map(|row| row.reattributed_mechanic(content, frame, receipt))
+            .map(|row| {
+                row.reattributed_mechanic(content, frame, receipt)
+                    .map(UiLaidOut::from_layout)
+            })
             .collect()
     }
 
@@ -64,7 +67,7 @@ impl UiMountedMechanicSource {
         content: worth_ui_host_contract::UiMountedContentGeneration,
         frame: UiMountedFrameIdentity,
         receipts: &UiMountedNodeReceiptBasis,
-    ) -> Result<Vec<UiMountedSemanticTextMechanic>, UiMountedProjectionDenial> {
+    ) -> Result<Vec<UiLaidOut<UiMountedSemanticTextMechanic>>, UiMountedProjectionDenial> {
         semantic
             .order
             .iter()
@@ -77,6 +80,7 @@ impl UiMountedMechanicSource {
                     UiMountedProjectionDenial::SemanticTextNodeReceiptMismatch,
                 )?;
                 row.reattributed_mechanic(content, frame, receipt)
+                    .map(UiLaidOut::from_layout)
             })
             .collect()
     }
@@ -88,7 +92,7 @@ impl UiMountedMechanicSource {
         binding: UiSurfaceBindingGeneration,
         frame: UiMountedFrameIdentity,
         receipts: &UiMountedNodeReceiptBasis,
-    ) -> Result<Vec<UiMountedHitTestMechanic>, UiMountedProjectionDenial> {
+    ) -> Result<Vec<UiLaidOut<UiMountedHitTestMechanic>>, UiMountedProjectionDenial> {
         semantic
             .order
             .iter()
@@ -96,6 +100,7 @@ impl UiMountedMechanicSource {
             .filter(|row| row.surface() == surface && row.binding() == binding)
             .map(|row| {
                 crate::mounting::projection::hit_test::reattribute_hit_test(row, frame, receipts)
+                    .map(UiLaidOut::from_layout)
             })
             .collect()
     }
@@ -107,13 +112,14 @@ impl UiMountedMechanicSource {
         binding: UiSurfaceBindingGeneration,
         frame: UiMountedFrameIdentity,
         receipts: &UiMountedNodeReceiptBasis,
-    ) -> Result<Option<UiMountedHitTestMechanic>, UiMountedProjectionDenial> {
+    ) -> Result<Option<UiLaidOut<UiMountedHitTestMechanic>>, UiMountedProjectionDenial> {
         self.hit_tests
             .get(&instance)
             .copied()
             .filter(|row| row.surface() == surface && row.binding() == binding)
             .map(|row| {
                 crate::mounting::projection::hit_test::reattribute_hit_test(row, frame, receipts)
+                    .map(UiLaidOut::from_layout)
             })
             .transpose()
     }

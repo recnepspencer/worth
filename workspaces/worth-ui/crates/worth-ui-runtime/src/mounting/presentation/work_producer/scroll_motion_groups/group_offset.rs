@@ -49,8 +49,8 @@ pub(super) struct UiAcceptedGroupOffset {
 pub(super) enum UiGroupStanding {
     /// No witness has displayed the group; it stands where it was published.
     Published(UiPublishedGroupOffset),
-    /// A witness displayed the group here.
-    Displayed(UiDisplayedGroupOffset),
+    /// A witness displayed the group here, showing `sample`.
+    Displayed(UiDisplayedGroupOffset, UiPresentationMotionSampleReceipt),
 }
 
 /// Where a group stood when `bound_in` bound it.
@@ -95,10 +95,10 @@ impl UiScrollGroupBind {
 
 impl UiPublishedGroupOffset {
     pub(super) fn of(offset: UiScrollOffset) -> Self {
-        let unit = worth_ui_host_contract::UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f64;
+        let points = |subpixels: i64| crate::units::UiSubpixels::new(subpixels).to_points();
         Self([
-            offset.inline_subpixels() as f64 / unit,
-            offset.block_subpixels() as f64 / unit,
+            points(offset.inline_subpixels()),
+            points(offset.block_subpixels()),
         ])
     }
 
@@ -140,12 +140,8 @@ impl UiAcceptedGroupOffset {
         tick: &UiPresentationMotionSampleReceipt,
         standing: UiGroupStanding,
     ) -> Self {
-        let points = match standing {
-            UiGroupStanding::Published(UiPublishedGroupOffset(points))
-            | UiGroupStanding::Displayed(UiDisplayedGroupOffset(points)) => points,
-        };
         Self {
-            points,
+            points: standing.points(),
             accepted_on: tick.presentation_basis(),
         }
     }
@@ -162,11 +158,12 @@ impl UiAcceptedGroupOffset {
     /// is geometry only: the thumb it yields is issued in the same candidate,
     /// so it is accepted too, never published.
     pub(super) fn chrome_derivation_offset(self) -> Option<UiScrollOffset> {
-        let unit = worth_ui_host_contract::UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f64;
-        UiScrollOffset::new(
-            (self.points[0].max(0.0) * unit).round() as i64,
-            (self.points[1].max(0.0) * unit).round() as i64,
-        )
+        // Content pulled past its rest shows the thumb at the start.
+        let at = |points: f64| {
+            crate::units::UiSubpixels::nearest_distance(points.max(0.0))
+                .map(crate::units::UiSubpixels::count)
+        };
+        UiScrollOffset::new(at(self.points[0])?, at(self.points[1])?)
     }
 }
 
@@ -190,21 +187,24 @@ impl UiBoundGroupStanding {
         if base.bound_in != self.bound_in {
             return Err(Denial::DisplayedBaseFromAnotherBind);
         }
-        Ok(match self.standing {
-            UiGroupStanding::Published(UiPublishedGroupOffset(points)) => {
-                UiDisplayedGroupOffset(points)
-            }
-            UiGroupStanding::Displayed(displayed) => displayed,
-        })
+        Ok(UiDisplayedGroupOffset(self.standing.points()))
     }
 }
 
 impl UiGroupStanding {
-    #[cfg(test)]
-    pub(super) fn points(self) -> [f64; 2] {
+    /// The sample a witness displayed the group at, if one did.
+    pub(super) const fn displayed_by(self) -> Option<UiPresentationMotionSampleReceipt> {
+        match self {
+            Self::Published(_) => None,
+            Self::Displayed(_, sample) => Some(sample),
+        }
+    }
+
+    /// The offset the group stands at, in logical points.
+    pub(super) const fn points(self) -> [f64; 2] {
         match self {
             Self::Published(UiPublishedGroupOffset(points))
-            | Self::Displayed(UiDisplayedGroupOffset(points)) => points,
+            | Self::Displayed(UiDisplayedGroupOffset(points), _) => points,
         }
     }
 }
@@ -310,8 +310,8 @@ fn offset_from_rest(content: UiMountedCanonicalBox, sampled: [f32; 4]) -> [f64; 
 fn snapped_move(from: [f64; 2], to: [f64; 2], scale: UiScrollPresentationDeviceScale) -> [f32; 2] {
     let snap = |value| value - scale.grid_residue(value);
     [
-        (snap(from[0]) - snap(to[0])) as f32,
-        (snap(from[1]) - snap(to[1])) as f32,
+        crate::units::layout_points(snap(from[0]) - snap(to[0])),
+        crate::units::layout_points(snap(from[1]) - snap(to[1])),
     ]
 }
 

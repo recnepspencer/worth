@@ -16,7 +16,13 @@
 //!
 //! The walk collects every scrolled ancestor rather than the nearest one,
 //! because a region inside a region moves its content by both offsets and a box
-//! corrected for one of them would still be off the grid by the other. Clip
+//! corrected for one of them would still be off the grid by the other. Each
+//! offset is rounded on its own rather than their sum, as each region's Motion
+//! samples are: content then keeps its place against the edges of the region
+//! holding it while an outer region moves, where rounding the sum would step
+//! it a device pixel against those edges each time the outer offset crossed a
+//! half pixel. Hit testing reads the exact box, so nested content is drawn up
+//! to half a device pixel per scrolled ancestor from where it is hit. Clip
 //! rectangles are left alone: a clip is the edge of the region itself, which is
 //! at rest, and a region whose edge moved every time the content behind it
 //! rounded would open and close a hairline at its own boundary.
@@ -43,7 +49,8 @@ impl UiMountedOccurrenceGeometryState {
         &self,
         surface: UiSemanticSurfaceIdentity,
         instance: UiMountedInstanceIdentity,
-    ) -> Result<Option<(f32, f32)>, UiMountedOccurrenceGeometryDenial> {
+    ) -> Result<Option<super::super::UiDeviceGridCorrection>, UiMountedOccurrenceGeometryDenial>
+    {
         let geometry = self
             .surfaces
             .get(&surface)
@@ -52,18 +59,20 @@ impl UiMountedOccurrenceGeometryState {
             return Ok(None);
         }
         let scale = geometry.device_scale;
-        let subpixels = worth_ui_host_contract::UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f64;
+        let points = |subpixels: i64| crate::units::UiSubpixels::new(subpixels).to_points();
         let mut inline = 0.0;
         let mut block = 0.0;
         let mut cursor = self.parent_of(geometry, instance)?;
         while let Some(ancestor) = cursor {
             if let Some(offset) = geometry.scroll_poses.get(&ancestor) {
-                inline += scale.grid_residue(offset.inline_subpixels() as f64 / subpixels);
-                block += scale.grid_residue(offset.block_subpixels() as f64 / subpixels);
+                inline += scale.grid_residue(points(offset.inline_subpixels()));
+                block += scale.grid_residue(points(offset.block_subpixels()));
             }
             cursor = self.parent_of(geometry, ancestor)?;
         }
-        Ok((inline != 0.0 || block != 0.0).then_some((inline as f32, block as f32)))
+        Ok(super::super::UiDeviceGridCorrection::from_residues(
+            inline, block,
+        ))
     }
 
     /// The occurrence one occurrence was laid out inside, on a surface that has

@@ -263,6 +263,12 @@ direct input still awaits its frame lays out from where that input put each
 region, clamped to the new travel, and the one frame that presents the layout
 acknowledges the input with it.
 
+The native shell's viewport extent follows the same rule. A settlement records
+the extent it measured, and only a host-accepted frame at that measurement ends
+the extent's debt. A pre-effect rejection or a late completion leaves the newest
+extent owed, and timeout or occlusion owes a retry at the host's readiness; see
+[Native Host Platform](native-host-platform.md#live-resize).
+
 Empty paint groups still cross ordinary host completion: an accepted semantic
 Scroll sample can change geometry without inventing a paint command. No-host
 acknowledgement is not a substitute. Stationary-pointer hover re-resolves from

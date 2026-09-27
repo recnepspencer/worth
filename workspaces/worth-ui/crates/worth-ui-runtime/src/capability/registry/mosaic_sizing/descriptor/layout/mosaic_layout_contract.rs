@@ -246,10 +246,14 @@ impl MosaicLayoutContract {
 fn minimum_extent(tracks: &[MosaicTrack], gap: u16, padding: u16) -> u32 {
     let tracks_extent = tracks
         .iter()
-        .map(|track| u32::from(track.base_logical_points()))
-        .sum::<u32>();
-    let gaps = u32::from(gap) * (tracks.len() as u32).saturating_sub(1);
-    tracks_extent + gaps + 2 * u32::from(padding)
+        .map(|track| u64::from(track.base_logical_points()))
+        .sum::<u64>();
+    // A `u16` gap after each of fewer than 2^48 tracks, which no memory holds,
+    // stays inside `u64`.
+    let gaps = u64::from(gap)
+        * u64::try_from(tracks.len().saturating_sub(1)).expect("a track count fits u64");
+    // An extent past `u32::MAX` fits no box, so it reads as the widest one.
+    u32::try_from(tracks_extent + gaps + 2 * u64::from(padding)).unwrap_or(u32::MAX)
 }
 
 #[cfg(test)]

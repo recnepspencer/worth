@@ -180,7 +180,8 @@ struct PreparedDelta {
 impl PreparedDelta {
     fn new(issue: &SuccessorIssue<'_>) -> Self {
         let affected = affected_commands(issue);
-        let (changes, mut damage, order) = changed_content(issue, &affected);
+        let (mut changes, mut damage, order) = changed_content(issue, &affected);
+        let reissued = reissue_placed_commands(issue, &mut changes, &mut damage);
         append_order_damage(issue.successor, &changes, &order, &mut damage);
         let auxiliary_changed = issue.surface_changed
             || !issue
@@ -188,7 +189,7 @@ impl PreparedDelta {
                 .auxiliary
                 .same_presentation_meaning(&issue.successor.auxiliary);
         Self {
-            affected_count: affected.len(),
+            affected_count: affected.len().saturating_add(reissued),
             changes,
             damage,
             order,
@@ -234,6 +235,44 @@ fn changed_content(
         let damage = precise_damage(issue.predecessor, &changes);
         (changes, damage, Vec::new())
     }
+}
+
+/// Re-issue each command of a group the successor places that `changes` does
+/// not already touch, so the host retires any Scroll sample it shows the
+/// command through. Returns how many were re-issued.
+fn reissue_placed_commands(
+    issue: &SuccessorIssue<'_>,
+    changes: &mut Vec<UiMountedPaintCommandChange>,
+    damage: &mut Vec<UiMountedLogicalDamage>,
+) -> usize {
+    let mut touched = changes
+        .iter()
+        .map(command_change_identity)
+        .collect::<HashSet<_>>();
+    let mut reissued = 0_usize;
+    for identity in issue.successor.placed_scroll_commands() {
+        let (Some(before), Some(after)) = (
+            issue.predecessor.command_option(identity),
+            issue.successor.command_option(identity),
+        ) else {
+            continue;
+        };
+        if !touched.insert(identity) {
+            continue;
+        }
+        changes.push(UiMountedPaintCommandChange::replacement(
+            before.identity(),
+            after.clone(),
+        ));
+        damage.extend(
+            [before, after]
+                .into_iter()
+                .filter_map(command_visible_bounds)
+                .map(UiMountedLogicalDamage::from_runtime_mounting),
+        );
+        reissued = reissued.saturating_add(1);
+    }
+    reissued
 }
 
 fn append_order_damage(
