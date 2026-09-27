@@ -303,11 +303,13 @@ on the same basis. The file starts with
   extent, including one a scale change reads without an observation;
 - `submitted <frame> <width> <height>` when a frame is handed to the surface;
 - `accepted <frame>` when a painted frame's presentation is acknowledged;
-- `adapter <name> (<driver>)` when the host chooses its graphics adapter;
+- `adapter <name> (<driver>)` when the host chooses its graphics adapter, the
+  driver only when the adapter reports one;
 - `target <width> <height>` when a retained render target is allocated;
 - `text <frame> <shaped runs> <shaped scalars> <positioned glyphs> <emitted
   lines> <rasterized glyphs>` for each mounted frame's text work, its layout
-  counted once per mounted frame and binding; other layout work is not traced;
+  counted once per mounted frame and binding, and layout the qualification
+  cache already held counted as none; other layout work is not traced;
 - `peak <resource> <count>`, as the host closes, for the most of each native
   resource it retained at once.
 

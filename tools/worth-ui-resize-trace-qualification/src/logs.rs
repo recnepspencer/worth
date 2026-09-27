@@ -312,6 +312,9 @@ mod tests {
         );
         assert_eq!(trace.peaks, [("textures".to_owned(), 3)]);
         assert_eq!(trace.adapter.as_deref(), Some("NVIDIA GeForce (driver 1)"));
+        let bare = parse_host("worth-ui-resize-trace 1 frequency 1\n5 adapter NVIDIA GeForce\n")
+            .expect("an adapter with no driver parses");
+        assert_eq!(bare.adapter.as_deref(), Some("NVIDIA GeForce"));
         assert!(parse_host("5 observed 1 1").is_err());
         assert!(parse_host("worth-ui-resize-trace 1 frequency 1\n5 moved 1 1").is_err());
     }

@@ -17,7 +17,7 @@
 //! - `consumed <width> <height>`
 //! - `submitted <frame> <width> <height>`
 //! - `accepted <frame>`
-//! - `adapter <name> (<driver>)`
+//! - `adapter <name> (<driver>)`, the driver only when the adapter reports one
 //! - `target <width> <height>`
 //! - `text <frame> <shaped runs> <shaped scalars> <positioned glyphs>
 //!   <emitted lines> <rasterized glyphs>`
@@ -99,7 +99,11 @@ pub(crate) fn accepted(frame: u64) {
 
 /// The host chose the graphics adapter it presents with.
 pub(crate) fn adapter(name: &str, driver: &str) {
-    record(format_args!("adapter {name} ({driver})"));
+    if driver.is_empty() {
+        record(format_args!("adapter {name}"));
+    } else {
+        record(format_args!("adapter {name} ({driver})"));
+    }
 }
 
 /// The host allocated a render target of `extent`.
