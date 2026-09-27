@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 
-DEFAULT_MATRIX = Path("_docs/migration/worth-token-replacement-matrix.csv")
+DEFAULT_MATRIX = Path("plans/migration/worth-token-replacement-matrix.csv")
 
 
 @dataclass(frozen=True)

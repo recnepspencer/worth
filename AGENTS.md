@@ -6,7 +6,7 @@ This repository builds the WORTH platform under a strict,
 mechanically-enforced constitution. These laws bind all code implementation
 and review work.
 
-Before editing code, read every document under `_docs/coding_guidelines/` in
+Before editing code, read every document under `docs/coding-guidelines/` in
 full.
 
 ### Governing Laws

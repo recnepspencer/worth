@@ -197,12 +197,12 @@ The default path does not silently fall back to the main thread.
 | [`apps`](./apps) and [`packages`](./packages) | Demonstrations and packaged delivery surfaces |
 | [`tools`](./tools) and [`scripts`](./scripts) | Boundary enforcement, generated context, release checks, and workspace tooling |
 | [`automation`](./automation) | Milestone and task orchestration support |
-| [`_docs`](./_docs) | Architecture, specifications, roadmaps, and engineering laws |
+| [`plans`](./plans) | Architecture, specifications, roadmaps, and engineering laws |
 
 ## Engineering model
 
 The repository is governed by [AGENTS.md](./AGENTS.md) and the documents under
-[`_docs/coding_guidelines`](./_docs/coding_guidelines). The important themes are:
+[`docs/coding-guidelines`](./docs/coding-guidelines). The important themes are:
 
 - one authoritative owner for each decision and truth source;
 - compiler-visible phase and authority progression;

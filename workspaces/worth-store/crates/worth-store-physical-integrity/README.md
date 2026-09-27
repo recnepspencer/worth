@@ -29,5 +29,5 @@ imports format declarations, never this implementation. Runtime/recovery owners
 consume sealed validation through their own source-bound admission; serialized
 foundational projections cannot be promoted back into that authority.
 
-See the [caller/operator guide](../../../../_docs/worth-store/physical-integrity-and-offline-verification.md)
+See the [caller/operator guide](../../../../plans/worth-store/physical-integrity-and-offline-verification.md)
 for the actual managed API, source-change behavior, protocol, and boundaries.

@@ -383,7 +383,7 @@ is replaced by typed shortcut identity; and window-focus observations and
 semantic-focus placement are distinct host meanings. The exact deletion
 inventory, baseline evidence, pending-lane boundaries, and existing roadmap
 handoff are recorded in
-[Milestone 3.15 documentation closeout](../../../_docs/worth-ui/milestone-3.15-documentation-closeout.md).
+[Milestone 3.15 documentation closeout](../../../plans/worth-ui/milestone-3.15-documentation-closeout.md).
 
 ## Related Docs
 
@@ -393,4 +393,4 @@ handoff are recorded in
 - [Application lifecycle and Platform Pulse](./application-lifecycle.md)
 - [Application inspection](./inspection.md)
 - [Worth UI architecture](./architecture.md)
-- [Milestone 3.15 documentation closeout](../../../_docs/worth-ui/milestone-3.15-documentation-closeout.md)
+- [Milestone 3.15 documentation closeout](../../../plans/worth-ui/milestone-3.15-documentation-closeout.md)

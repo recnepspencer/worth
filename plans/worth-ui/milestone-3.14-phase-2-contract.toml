@@ -1,0 +1,84 @@
+schema = "worth-ui.milestone-3.14.phase-2-contract.v1"
+milestone = "3.14"
+phase = 2
+status = "closed"
+ledger = "plans/worth-ui/milestone-3.14-phase-2-proof-ledger.csv"
+predecessor_contract = "plans/worth-ui/milestone-3.14-phase-1-contract.toml"
+closure_claim = "real native input becomes a bounded presentation-derived semantic interaction without gaining intent, admission, execution, or effect authority"
+
+[native_substrate]
+eframe_version = "0.35.0"
+egui_version = "0.35.0"
+egui_winit_version = "0.35.0"
+egui_wgpu_version = "0.35.0"
+egui_glow_version = "0.35.0"
+egui_extras_version = "0.35.0"
+winit_version = "0.30.13"
+minimum_rust_version = "1.92"
+application_entry = "eframe::App::ui"
+raw_input_seam = "eframe::App::raw_input_hook"
+ime_preedit_range = "unicode-scalar-index"
+canonical_ime_range = "utf-8-byte-offset"
+empty_preedit_is_cancel = true
+single_egui_version = true
+observation_schema_version = 6
+pointer_position_basis = "typed coordinate space and unit carried by every exact position"
+
+[evidence_topology]
+new_test_target = false
+application_contract_module = "intent"
+warm_focused_target_ceiling_seconds = 10
+cold_dependency_build_is_journey_cost = false
+
+[known_broad_topology_debt]
+failures = [
+    "milestone_3101_inventory_audit::milestone_3101_phase1_inventories_are_exhaustive_and_adjudicated",
+    "milestone_3102_pulse_seed_audit::milestone_3102_phase1_freezes_the_source_to_pixel_courtroom",
+    "milestone_3103_external_world_audit::milestone_3103_phase3_proves_the_real_external_world_and_native_boundary",
+    "milestone_3103_product_contract_audit::milestone_3103_phase2_freezes_the_live_product_contract_without_workflow_authority",
+    "milestone_3103_watched_replacement_audit::milestone_3103_phase4_proves_watched_replacement_preservation_and_recovery",
+    "query_reporting_projection_boundary::query_reporting_projections_stay_out_of_operational_code",
+    "topology_audit::public_surfaces_do_not_recreate_query_owned_lanes",
+]
+
+[[phase_gate]]
+id = "P2-01"
+owner = "native substrate"
+claim = "one egui 0.35 stack preserves IME active-range input at the production raw-input seam and all existing WORTH UI targets compile"
+command = "cargo check --manifest-path workspaces/worth-ui/Cargo.toml --workspace --all-targets"
+
+[[phase_gate]]
+id = "P2-02"
+owner = "host observation protocol"
+claim = "a negotiated successor schema carries exact event coordinates, key meaning, text, and IME phases before adapter retention"
+command = "cargo test --manifest-path workspaces/worth-ui/Cargo.toml -p worth-ui-host-contract observation_report -- --nocapture"
+
+[[phase_gate]]
+id = "P2-03"
+owner = "egui translators"
+claim = "installed production translators alone advertise and emit pointer, keyboard, text, and IME observations"
+command = "cargo test --manifest-path workspaces/worth-ui/Cargo.toml -p worth-ui-host-egui input_observation -- --nocapture"
+
+[[phase_gate]]
+id = "P2-04"
+owner = "interaction targeting and gesture"
+claim = "exact presented-frame evidence and owner-issued continuity produce or stop bounded gestures without proxy retargeting"
+command = "cargo test --manifest-path workspaces/worth-ui/Cargo.toml -p worth-ui-certification --test application_contracts intent::gesture::ia_02 -- --nocapture"
+
+[[phase_gate]]
+id = "P2-05"
+owner = "draft and semantic interaction"
+claim = "runtime-owned local recipients and bounded draft sessions are the only path to sealed semantic interactions"
+command = "cargo test --manifest-path workspaces/worth-ui/Cargo.toml -p worth-ui-runtime interaction -- --nocapture"
+
+[[phase_gate]]
+id = "P2-06"
+owner = "Phase 2 certification"
+claim = "installed translators and an independent gesture model close IA-02, IA-03, and the interaction half of IA-11"
+command = "cargo test --manifest-path workspaces/worth-ui/Cargo.toml -p worth-ui-certification --test application_contracts intent::observation::ia_03 -- --nocapture"
+
+[[phase_gate]]
+id = "P2-07"
+owner = "Phase 2 closure"
+claim = "focused, broad, topology, boundary, context, composition, warning, and ledger evidence is green on exact final source"
+command = "cargo run --manifest-path tools/boundary-check/Cargo.toml -- --root ."

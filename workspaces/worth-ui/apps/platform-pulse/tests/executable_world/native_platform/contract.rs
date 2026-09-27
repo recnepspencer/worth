@@ -163,7 +163,7 @@ impl fmt::Display for NativePlatformFailure {
 /// every binding registered at that moment, so the census a lane expects
 /// follows from this declaration rather than from a vendor's measurement.
 ///
-/// The Windows lane records one (`_docs/worth-ui/milestone-3.14.1-evidence/
+/// The Windows lane records one (`plans/worth-ui/milestone-3.14.1-evidence/
 /// p2-world-01.json` peaks `retained_targets` at 2 with a single frame); the
 /// X11 lane maps the window at its final basis and records none (Xvfb, 144
 /// dpi, 2026-09-22).

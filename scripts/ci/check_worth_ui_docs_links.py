@@ -21,15 +21,15 @@ EXPECTED_CONTINUING_DOCUMENTS = [
     "workspaces/worth-ui/docs/visual-inspection.md",
     "workspaces/worth-ui/docs/appearance-and-themes.md",
     "workspaces/worth-ui/AI_README.md",
-    "_docs/worth-ui/worth_ui_roadmap.md",
-    "_docs/worth-ui/milestone-3.16.md",
+    "plans/worth-ui/worth_ui_roadmap.md",
+    "plans/worth-ui/milestone-3.16.md",
 ]
 EXPECTED_PLANNED_DOCUMENTS: list[str] = []
 
 
 def validate(root: Path, manifest: Path | None = None) -> None:
     if manifest is None:
-        documents = sorted((root / "_docs/worth-ui").glob("**/*.md"))
+        documents = sorted((root / "plans/worth-ui").glob("**/*.md"))
         documents += sorted((root / "workspaces/worth-ui").glob("**/*.md"))
     else:
         contract = json.loads(manifest.read_text(encoding="utf-8"))

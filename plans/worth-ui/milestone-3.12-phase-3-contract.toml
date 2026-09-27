@@ -1,0 +1,102 @@
+schema = "worth-ui.milestone-3.12.phase-3-contract.v1"
+milestone = "3.12"
+phase = 3
+status = "closed"
+ledger = "plans/worth-ui/milestone-3.12-phase-3-proof-ledger.csv"
+closure_claim = "one exact owner-issued change classification resolves through basis-bound disposable indexes into one immutable complete rebind plan, without scans, proxy identity, executor rediscovery, or competing planning authority"
+
+[[phase_gate]]
+id = "P3-01"
+owner = "change profile typestate and carriage"
+claim = "application freeze requires one validated exact change profile, and that profile participates in prepared-generation identity, successor preparation, launch, observation, and planning"
+command = "cargo test --manifest-path workspaces/worth-ui/Cargo.toml -p worth-ui-runtime change_profile -- --nocapture"
+
+[[phase_gate]]
+id = "P3-02"
+owner = "produced fact ownership"
+claim = "each observation owner can produce only its sealed fact family and only Query can issue an explicit reset"
+command = "cargo test --manifest-path workspaces/worth-ui/Cargo.toml -p worth-ui-runtime fact_contract::produced -- --nocapture"
+
+[[phase_gate]]
+id = "P3-03"
+owner = "change classification lattice"
+claim = "one admitted set classifies exactly as observed no change, evidence only, changed, or owner-issued reset without pixel or positional inference"
+command = "cargo test --manifest-path workspaces/worth-ui/Cargo.toml -p worth-ui-runtime runtime::observation::classification -- --nocapture"
+
+[[phase_gate]]
+id = "P3-04"
+owner = "authored semantic comparison"
+claim = "authored comparison enumerates every bounded semantic difference and keeps same-semantics new-source evidence distinct from an exact repeated observation"
+command = "cargo test --manifest-path workspaces/worth-ui/Cargo.toml -p worth-ui-certification --test application_contracts authored_change_classification_is_exact_and_evidence_aware -- --nocapture"
+
+[[phase_gate]]
+id = "P3-05"
+owner = "consumed fact contracts"
+claim = "declarations, component capability descriptors, and subsystem owners remain the truth sources for consumed facts while indexes are disposable projections"
+command = "cargo test --manifest-path workspaces/worth-ui/Cargo.toml -p worth-ui-runtime fact_contract::consumed -- --nocapture"
+
+[[phase_gate]]
+id = "P3-06"
+owner = "fact and aspect indexes"
+claim = "predecessor and candidate indexes provide exact sorted deduplicated consumer receipts with counted probes and no global fallback"
+command = "cargo test --manifest-path workspaces/worth-ui/Cargo.toml -p worth-ui-certification --test application_contracts fact_indexes_join_real_consumption_authority -- --nocapture"
+
+[[phase_gate]]
+id = "P3-07"
+owner = "disposable index currentness"
+claim = "fact and aspect indexes rebuild deterministically from owned authority and reject stale or mismatched bases"
+command = "cargo test --manifest-path workspaces/worth-ui/Cargo.toml -p worth-ui-runtime graph::indexes -- --nocapture"
+
+[[phase_gate]]
+id = "P3-08"
+owner = "dual-generation affected scope"
+claim = "changed facts intersect both predecessor and candidate consumers into one exact bounded scope, and an index miss denies without scanning"
+command = "cargo test --manifest-path workspaces/worth-ui/Cargo.toml -p worth-ui-certification --test application_contracts affected_scope_uses_both_generations_without_widening -- --nocapture"
+
+[[phase_gate]]
+id = "P3-09"
+owner = "identity lifecycle model"
+claim = "the independent model and production scope agree on preserve, create, retire, rebind, move, remount, and unaffected decisions for repeated and nested identities"
+command = "cargo test --manifest-path workspaces/worth-ui/Cargo.toml -p worth-ui-certification --test application_contracts rebind_identity_model_matches_production_scope -- --nocapture"
+
+[[phase_gate]]
+id = "P3-10"
+owner = "immutable complete rebind plan"
+claim = "only resolved scope or evidence-only source change constructs one move-only immutable plan containing every required lifecycle, subsystem, effect, conflict, and parallel-admission subplan"
+command = "cargo test --manifest-path workspaces/worth-ui/Cargo.toml -p worth-ui-runtime runtime::rebind::planning -- --nocapture"
+
+[[phase_gate]]
+id = "P3-11"
+owner = "caller execution policy"
+claim = "deadline, cancellation, idempotency, retry tolerance, artifact disclosure, and safe-point policy are consumed into the plan without accepting executor mechanics"
+command = "cargo test --manifest-path workspaces/worth-ui/Cargo.toml -p worth-ui-runtime rebind_execution_policy_is_complete_and_mechanism_free -- --nocapture"
+
+[[phase_gate]]
+id = "P3-12"
+owner = "planning budgets and currentness"
+claim = "classification, scope, and planning reject exact budget exhaustion or stale predecessor/candidate/session basis before effects or oversized retention"
+command = "cargo test --manifest-path workspaces/worth-ui/Cargo.toml -p worth-ui-certification --test application_contracts rebind_planning_denies_exhaustion_and_stale_basis -- --nocapture"
+
+[[phase_gate]]
+id = "P3-13"
+owner = "post-classification complexity"
+claim = "the same semantic delta has identical relevant O+F+A+C+R+G+M+B counters when unrelated graph width grows"
+command = "cargo test --manifest-path workspaces/worth-ui/Cargo.toml -p worth-ui-certification --test application_contracts rebind_post_classification_cost_is_independent_of_unrelated_width -- --nocapture"
+
+[[phase_gate]]
+id = "P3-14"
+owner = "R-12 canonical planning cutover"
+claim = "allocation narrowing and replacement proof producers feed the canonical rebind planner and no competing ordinary planning authority remains"
+command = "cargo test --manifest-path workspaces/worth-ui/Cargo.toml -p worth-ui-certification --test topology_contracts milestone_312_phase3 -- --nocapture"
+
+[[phase_gate]]
+id = "P3-15"
+owner = "Phase 3 compile authority"
+claim = "missing profiles, forged facts, wrong-phase values, raw scopes, mutable plans, and executor-bearing requests are rejected at compile time"
+command = "python scripts/ci/run_worth_ui_compile_contracts.py"
+
+[[phase_gate]]
+id = "P3-16"
+owner = "Phase 3 final closure"
+claim = "focused and broad tests, warnings, composition, ledger hostility, compile, boundary, and agent-context gates are green on final source"
+command = "cargo run --manifest-path tools/boundary-check/Cargo.toml -- --root . && cargo run --manifest-path tools/agent-context/Cargo.toml -- check"

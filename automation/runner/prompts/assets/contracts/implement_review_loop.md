@@ -14,11 +14,11 @@ this phase's scope paths, the relevant public APIs, and the project laws/context
 
 {project.context_files}
 
-Read `_docs\coding_guidelines\MENTALITY.md`,
-`_docs\coding_guidelines\arch_laws.md`,
-`_docs\coding_guidelines\composition_laws.md`,
-`_docs\coding_guidelines\domain_structure_laws.md`, and
-`_docs\coding_guidelines\perf_laws.md` with special attention on every turn.
+Read `docs\coding-guidelines\MENTALITY.md`,
+`docs\coding-guidelines\arch_laws.md`,
+`docs\coding-guidelines\composition_laws.md`,
+`docs\coding-guidelines\domain_structure_laws.md`, and
+`docs\coding-guidelines\perf_laws.md` with special attention on every turn.
 
 ## Authority and cursor recovery
 

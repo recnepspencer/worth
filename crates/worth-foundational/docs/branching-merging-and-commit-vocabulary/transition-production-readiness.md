@@ -278,5 +278,5 @@ Milestone 9 scoped merge debt is also explicit:
 
 - [Committed Authority Transitions](./committed-authority-transitions.md)
 - [Scoped Merge And Cherry-Pick Vocabulary](../scoped-merge-adoption.md)
-- [_docs/worth-foundational/milestone-5-closeout.md](../../../../_docs/worth-foundational/milestone-5-closeout.md)
-- [_docs/worth-foundational/milestone-9.md](../../../../_docs/worth-foundational/milestone-9.md)
+- [plans/worth-foundational/milestone-5-closeout.md](../../../../plans/worth-foundational/milestone-5-closeout.md)
+- [plans/worth-foundational/milestone-9.md](../../../../plans/worth-foundational/milestone-9.md)

@@ -1,7 +1,7 @@
 use super::{milestone_314_ledger, repository_document};
 
-const CONTRACT: &str = "_docs/worth-ui/milestone-3.14-phase-3-contract.toml";
-const LEDGER: &str = "_docs/worth-ui/milestone-3.14-phase-3-proof-ledger.csv";
+const CONTRACT: &str = "plans/worth-ui/milestone-3.14-phase-3-contract.toml";
+const LEDGER: &str = "plans/worth-ui/milestone-3.14-phase-3-proof-ledger.csv";
 const IDS: [&str; 7] = [
     "P3-01", "P3-02", "P3-03", "P3-04", "P3-05", "P3-06", "P3-07",
 ];
@@ -27,7 +27,7 @@ fn validate_identity(contract: &toml::Value) -> Result<(), String> {
         || contract["phase"].as_integer() != Some(3)
         || contract["ledger"].as_str() != Some(LEDGER)
         || contract["predecessor_contract"].as_str()
-            != Some("_docs/worth-ui/milestone-3.14-phase-2-contract.toml")
+            != Some("plans/worth-ui/milestone-3.14-phase-2-contract.toml")
     {
         return Err("Phase 3 contract identity drifted".to_owned());
     }
@@ -173,7 +173,7 @@ fn milestone_314_phase3_contract_freezes_the_next_authority_progression() {
     let (contract, ledger) = inputs();
     validate(&contract, &ledger).expect("Phase 3 contract and ledger should agree");
     let predecessor: toml::Value = toml::from_str(&repository_document(
-        "_docs/worth-ui/milestone-3.14-phase-2-contract.toml",
+        "plans/worth-ui/milestone-3.14-phase-2-contract.toml",
     ))
     .expect("Phase 2 contract should parse");
     assert_eq!(predecessor["status"].as_str(), Some("closed"));
@@ -199,7 +199,7 @@ fn milestone_314_phase3_contract_rejects_hostile_drift() {
 fn hostile_contract_mutations(contract: &toml::Value) -> Vec<(&'static str, toml::Value)> {
     let mut predecessor = contract.clone();
     predecessor["predecessor_contract"] =
-        toml::Value::String("_docs/worth-ui/milestone-3.14-phase-1-contract.toml".to_owned());
+        toml::Value::String("plans/worth-ui/milestone-3.14-phase-1-contract.toml".to_owned());
     let mut route_source = contract.clone();
     route_source["authority"]["route_source"] =
         toml::Value::String("raw host observation".to_owned());

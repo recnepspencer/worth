@@ -212,5 +212,5 @@ are lower mechanism inputs to that facade, not application authority.
 Applications and successor features should not depend on this crate directly.
 Use `worth_store::physical_runtime` for admitted policy construction, record
 reads, bounded copies, pressure handling, and observation. See
-[`bounded-physical-record-access.md`](../../../../_docs/worth-store/bounded-physical-record-access.md)
+[`bounded-physical-record-access.md`](../../../../plans/worth-store/bounded-physical-record-access.md)
 for the current Store-facing contract.

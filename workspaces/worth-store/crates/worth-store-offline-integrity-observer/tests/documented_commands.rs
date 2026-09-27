@@ -6,7 +6,7 @@ fn operator_guide_observe_command_executes_verbatim_with_only_path_substitution(
     let fixture = clean_store("documented-command");
     let guide = include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/../../../../_docs/worth-store/physical-integrity-and-offline-verification.md"
+        "/../../../../plans/worth-store/physical-integrity-and-offline-verification.md"
     ));
     let line = guide
         .lines()

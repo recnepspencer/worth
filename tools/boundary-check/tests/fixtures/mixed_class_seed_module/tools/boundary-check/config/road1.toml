@@ -3,7 +3,7 @@ forbidden_root_prefixes = ["cad/workspaces/"]
 
 [machine_authority]
 canonical_config = "tools/boundary-check/config/road1.toml"
-mirrored_docs = ["_docs/worthy/NAMING.md"]
+mirrored_docs = ["plans/worthy/NAMING.md"]
 
 
 [naming]

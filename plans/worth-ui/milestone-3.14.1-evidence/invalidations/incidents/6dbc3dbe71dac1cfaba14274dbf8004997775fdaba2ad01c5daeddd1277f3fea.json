@@ -1,0 +1,249 @@
+{
+  "schema": "worth-ui-ledger-artifact-drift-inventory-v1",
+  "incident_artifact_sha256": "6dbc3dbe71dac1cfaba14274dbf8004997775fdaba2ad01c5daeddd1277f3fea",
+  "parent_invalidation": "plans/worth-ui/milestone-3.14.1-evidence/invalidations/p6/6dbc3dbe71dac1cfaba14274dbf8004997775fdaba2ad01c5daeddd1277f3fea.json",
+  "parent_invalidation_sha256": "79c0af6cb6724bee35578820b594c18175385342cb431dc912f34e743aa13f6c",
+  "observed_drift_count": 30,
+  "rows": [
+    {
+      "phase": 1,
+      "requirement": "P1-AFFINITY-01",
+      "ledger_artifact_sha256": "da3754fccc39d124f1ac44adcb1ba540d6abaf157b78033650da86704735ed0d",
+      "observed_artifact_sha256": "c2e1e2603883120022b9e166c6cbecd58610acc61fa5492de254bc34f08cb8f7",
+      "observed_source_state_digest": "93d0560e6db40eafd27820e0c4081b15197da5fababba39908bfdb15de935f68",
+      "retained_observation": "plans/worth-ui/milestone-3.14.1-evidence/invalidations/observed-row-evidence/c2e1e2603883120022b9e166c6cbecd58610acc61fa5492de254bc34f08cb8f7.json"
+    },
+    {
+      "phase": 1,
+      "requirement": "P1-AUTHORITY-01",
+      "ledger_artifact_sha256": "07f2f2c1df3484a6e95f7abe884ae80e0439f985f61f16b23fc7979a17f0375d",
+      "observed_artifact_sha256": "0e8fab47e7340fa1b1275aea23fab3da9720537220964f24f29be286c81b60fc",
+      "observed_source_state_digest": "93d0560e6db40eafd27820e0c4081b15197da5fababba39908bfdb15de935f68",
+      "retained_observation": "plans/worth-ui/milestone-3.14.1-evidence/invalidations/observed-row-evidence/0e8fab47e7340fa1b1275aea23fab3da9720537220964f24f29be286c81b60fc.json"
+    },
+    {
+      "phase": 1,
+      "requirement": "P1-BACKEND-FEATURES-01",
+      "ledger_artifact_sha256": "112ea66b64f38256164ebbdf78e23be5ea9a5ef2cd4ca718e165bc2d66ee3764",
+      "observed_artifact_sha256": "eca19b9bf8a910c40ab55fe744ee8b6afbcb4a72a5233e50ccdee722e6840abb",
+      "observed_source_state_digest": "93d0560e6db40eafd27820e0c4081b15197da5fababba39908bfdb15de935f68",
+      "retained_observation": "plans/worth-ui/milestone-3.14.1-evidence/invalidations/observed-row-evidence/eca19b9bf8a910c40ab55fe744ee8b6afbcb4a72a5233e50ccdee722e6840abb.json"
+    },
+    {
+      "phase": 1,
+      "requirement": "P1-BASELINE-01",
+      "ledger_artifact_sha256": "6ef026c8327d4746a542a94e25300bcfdcb6f4454440c488308a5e063ae46f12",
+      "observed_artifact_sha256": "d3571529dbc1d4893c26061a38346492ce45c42984fb799ce6f2dfbf902b5e35",
+      "observed_source_state_digest": "93d0560e6db40eafd27820e0c4081b15197da5fababba39908bfdb15de935f68",
+      "retained_observation": "plans/worth-ui/milestone-3.14.1-evidence/invalidations/observed-row-evidence/d3571529dbc1d4893c26061a38346492ce45c42984fb799ce6f2dfbf902b5e35.json"
+    },
+    {
+      "phase": 1,
+      "requirement": "P1-CLOSE-01",
+      "ledger_artifact_sha256": "d48951fcd35b25b9cc09ecbe5cae06efd8fc33f41c016265c7ad51fcf0e0c616",
+      "observed_artifact_sha256": "b26368007d3474ac42b38ba237b16042de7a6e1d01982cd83a1dbbdef3db87d6",
+      "observed_source_state_digest": "93d0560e6db40eafd27820e0c4081b15197da5fababba39908bfdb15de935f68",
+      "retained_observation": "plans/worth-ui/milestone-3.14.1-evidence/invalidations/observed-row-evidence/b26368007d3474ac42b38ba237b16042de7a6e1d01982cd83a1dbbdef3db87d6.json"
+    },
+    {
+      "phase": 1,
+      "requirement": "P1-CONSUMERS-01",
+      "ledger_artifact_sha256": "516381b2812d2c6ef6f7982ae9e8773c42a9c8814ff4c5494fda7eb81538ff70",
+      "observed_artifact_sha256": "09d3190b9afd44aef07a39e6894e8bc66cb7296eeb6e4eeccbd0808c9a36813f",
+      "observed_source_state_digest": "93d0560e6db40eafd27820e0c4081b15197da5fababba39908bfdb15de935f68",
+      "retained_observation": "plans/worth-ui/milestone-3.14.1-evidence/invalidations/observed-row-evidence/09d3190b9afd44aef07a39e6894e8bc66cb7296eeb6e4eeccbd0808c9a36813f.json"
+    },
+    {
+      "phase": 1,
+      "requirement": "P1-DAMAGE-01",
+      "ledger_artifact_sha256": "70193ebf1d5b4ff5ce29d5b930ae39e5d5e816532c2d509433e9e295973bae2a",
+      "observed_artifact_sha256": "11c305e90abec6ba8f69bc9699645f5344b2ddd67b7fdd9909e2164d9d0c8b0f",
+      "observed_source_state_digest": "93d0560e6db40eafd27820e0c4081b15197da5fababba39908bfdb15de935f68",
+      "retained_observation": "plans/worth-ui/milestone-3.14.1-evidence/invalidations/observed-row-evidence/11c305e90abec6ba8f69bc9699645f5344b2ddd67b7fdd9909e2164d9d0c8b0f.json"
+    },
+    {
+      "phase": 1,
+      "requirement": "P1-HEADLESS-01",
+      "ledger_artifact_sha256": "55400719bbdc349896ee51a8639c0fba09c3d34f9eef3da8f95c08710f9b7895",
+      "observed_artifact_sha256": "08fb32505e6ec6bd1b6d7a787fa636bd45ffac8ede1b155b422ba7b811138f69",
+      "observed_source_state_digest": "93d0560e6db40eafd27820e0c4081b15197da5fababba39908bfdb15de935f68",
+      "retained_observation": "plans/worth-ui/milestone-3.14.1-evidence/invalidations/observed-row-evidence/08fb32505e6ec6bd1b6d7a787fa636bd45ffac8ede1b155b422ba7b811138f69.json"
+    },
+    {
+      "phase": 1,
+      "requirement": "P1-HEADLESS-COST-01",
+      "ledger_artifact_sha256": "b4d7a865565cf56184e323232f7c0453a7b65f2214838c8af89d30bbe757d31b",
+      "observed_artifact_sha256": "c1b1e73d684a1510a4020b2c7c2850b093e0d5553ed1b8c1fe0dc345c21bab67",
+      "observed_source_state_digest": "93d0560e6db40eafd27820e0c4081b15197da5fababba39908bfdb15de935f68",
+      "retained_observation": "plans/worth-ui/milestone-3.14.1-evidence/invalidations/observed-row-evidence/c1b1e73d684a1510a4020b2c7c2850b093e0d5553ed1b8c1fe0dc345c21bab67.json"
+    },
+    {
+      "phase": 1,
+      "requirement": "P1-ORDER-01",
+      "ledger_artifact_sha256": "c90b04ea44eeb0df63e38f6bda0fa3ce356cf01ca7870a4f09cdef74b3c3cc84",
+      "observed_artifact_sha256": "6697e8b8c2b6823474b7d18478d166b9f95519e388cbe339864d0c17f8915f4b",
+      "observed_source_state_digest": "93d0560e6db40eafd27820e0c4081b15197da5fababba39908bfdb15de935f68",
+      "retained_observation": "plans/worth-ui/milestone-3.14.1-evidence/invalidations/observed-row-evidence/6697e8b8c2b6823474b7d18478d166b9f95519e388cbe339864d0c17f8915f4b.json"
+    },
+    {
+      "phase": 1,
+      "requirement": "P1-ORDER-SOURCE-01",
+      "ledger_artifact_sha256": "617ca9559af1fd5164f2201284c4eb1fa30e1cf416c31e4f9a8e5ae7307df067",
+      "observed_artifact_sha256": "1280dd1b9f9cc6870553bb816c8ac807bc416ff4f2d67af30f4aaa1d6a40f535",
+      "observed_source_state_digest": "93d0560e6db40eafd27820e0c4081b15197da5fababba39908bfdb15de935f68",
+      "retained_observation": "plans/worth-ui/milestone-3.14.1-evidence/invalidations/observed-row-evidence/1280dd1b9f9cc6870553bb816c8ac807bc416ff4f2d67af30f4aaa1d6a40f535.json"
+    },
+    {
+      "phase": 1,
+      "requirement": "P1-PLATFORM-AUTHORITY-01",
+      "ledger_artifact_sha256": "7c1f5b51553bb101037b5d5652b56589059582b3291b75cbe074136c8cd1651f",
+      "observed_artifact_sha256": "6820d4254cbae7a370a40601ea5f1026c0d7d0c7117b2779325ed81ea1db6eff",
+      "observed_source_state_digest": "93d0560e6db40eafd27820e0c4081b15197da5fababba39908bfdb15de935f68",
+      "retained_observation": "plans/worth-ui/milestone-3.14.1-evidence/invalidations/observed-row-evidence/6820d4254cbae7a370a40601ea5f1026c0d7d0c7117b2779325ed81ea1db6eff.json"
+    },
+    {
+      "phase": 1,
+      "requirement": "P1-PREPARATION-LIFECYCLE-01",
+      "ledger_artifact_sha256": "5bd0851d5b741b58cbf4bf611f0bbb5951159c4763a7e39150db6723cfcc01dd",
+      "observed_artifact_sha256": "3ba0cc93b9af8c49b7fb3f71b9ae796839e0fa264b65f3bbd03689a6cb634b5a",
+      "observed_source_state_digest": "93d0560e6db40eafd27820e0c4081b15197da5fababba39908bfdb15de935f68",
+      "retained_observation": "plans/worth-ui/milestone-3.14.1-evidence/invalidations/observed-row-evidence/3ba0cc93b9af8c49b7fb3f71b9ae796839e0fa264b65f3bbd03689a6cb634b5a.json"
+    },
+    {
+      "phase": 1,
+      "requirement": "P1-PRESENTATION-AUTHORITY-01",
+      "ledger_artifact_sha256": "ff08fff3ac5ec58e9689a68330bacc5a057494e9a83c836bf515d1ede82d940a",
+      "observed_artifact_sha256": "f0ee9dad957a9b8b823a328a8165e6c78b0bb04e2f1bb208e383bd941e908e12",
+      "observed_source_state_digest": "93d0560e6db40eafd27820e0c4081b15197da5fababba39908bfdb15de935f68",
+      "retained_observation": "plans/worth-ui/milestone-3.14.1-evidence/invalidations/observed-row-evidence/f0ee9dad957a9b8b823a328a8165e6c78b0bb04e2f1bb208e383bd941e908e12.json"
+    },
+    {
+      "phase": 1,
+      "requirement": "P1-PRODUCER-01",
+      "ledger_artifact_sha256": "afbdfbf82c0df6fdcc7d87de242c8e72af4b6f37912cdec4d5a3690782f5ee97",
+      "observed_artifact_sha256": "695d921b3386fffba937645d20c78dd91a1d82575470aad67c4fed67422dc9d4",
+      "observed_source_state_digest": "93d0560e6db40eafd27820e0c4081b15197da5fababba39908bfdb15de935f68",
+      "retained_observation": "plans/worth-ui/milestone-3.14.1-evidence/invalidations/observed-row-evidence/695d921b3386fffba937645d20c78dd91a1d82575470aad67c4fed67422dc9d4.json"
+    },
+    {
+      "phase": 1,
+      "requirement": "P1-PRODUCER-COST-01",
+      "ledger_artifact_sha256": "a218563c44f4f9a7b4b2c83c758738a73a33c719e36f48eff1e261885e7d3072",
+      "observed_artifact_sha256": "0063ce893ad56297b2ffd8a3e06db03de94e1e9f8c7eb92d095db797df21571a",
+      "observed_source_state_digest": "93d0560e6db40eafd27820e0c4081b15197da5fababba39908bfdb15de935f68",
+      "retained_observation": "plans/worth-ui/milestone-3.14.1-evidence/invalidations/observed-row-evidence/0063ce893ad56297b2ffd8a3e06db03de94e1e9f8c7eb92d095db797df21571a.json"
+    },
+    {
+      "phase": 1,
+      "requirement": "P1-PROFILE-01",
+      "ledger_artifact_sha256": "c1cda5107df99afb9a537169d3c84ceb4f4772cfd6c13e4321cdf4d1b908f503",
+      "observed_artifact_sha256": "aa05281bd2270feda3710acd84fe8f50822165969bab3035ee699b7a936d9613",
+      "observed_source_state_digest": "93d0560e6db40eafd27820e0c4081b15197da5fababba39908bfdb15de935f68",
+      "retained_observation": "plans/worth-ui/milestone-3.14.1-evidence/invalidations/observed-row-evidence/aa05281bd2270feda3710acd84fe8f50822165969bab3035ee699b7a936d9613.json"
+    },
+    {
+      "phase": 1,
+      "requirement": "P1-PROTOCOL-01",
+      "ledger_artifact_sha256": "2b1c25bfc0ec4f7bed01f0f421aa66115f940bcc9da70b0fb2e2c2ff1459aa88",
+      "observed_artifact_sha256": "3f44732d1c2debcda0720412115a9b105592e1f20fd87d771dde8b4001f4bbf3",
+      "observed_source_state_digest": "93d0560e6db40eafd27820e0c4081b15197da5fababba39908bfdb15de935f68",
+      "retained_observation": "plans/worth-ui/milestone-3.14.1-evidence/invalidations/observed-row-evidence/3f44732d1c2debcda0720412115a9b105592e1f20fd87d771dde8b4001f4bbf3.json"
+    },
+    {
+      "phase": 1,
+      "requirement": "P1-TOPOLOGY-01",
+      "ledger_artifact_sha256": "c762ff705576f902ad99cc9bf876c476c22cc1b339a0d80542d1ab9709ff5324",
+      "observed_artifact_sha256": "c0193a349d43faa0b4647f6296328a66fae712331d34a60bc1cdea865a38a7c7",
+      "observed_source_state_digest": "93d0560e6db40eafd27820e0c4081b15197da5fababba39908bfdb15de935f68",
+      "retained_observation": "plans/worth-ui/milestone-3.14.1-evidence/invalidations/observed-row-evidence/c0193a349d43faa0b4647f6296328a66fae712331d34a60bc1cdea865a38a7c7.json"
+    },
+    {
+      "phase": 1,
+      "requirement": "P1-WORLDS-01",
+      "ledger_artifact_sha256": "dda75ba09e8054ea1f6cc3532815db1083b86dc67d65acc29ad3041da5f74483",
+      "observed_artifact_sha256": "2fc346e14c2d36004a7dafcff1a22c96523c214a2598038f99672b8968c6117d",
+      "observed_source_state_digest": "93d0560e6db40eafd27820e0c4081b15197da5fababba39908bfdb15de935f68",
+      "retained_observation": "plans/worth-ui/milestone-3.14.1-evidence/invalidations/observed-row-evidence/2fc346e14c2d36004a7dafcff1a22c96523c214a2598038f99672b8968c6117d.json"
+    },
+    {
+      "phase": 2,
+      "requirement": "P2-APPLICATION-01",
+      "ledger_artifact_sha256": "20fe529ec419f905164760bc59acf21e33c36d8c851ae3c338717389d0ec68fd",
+      "observed_artifact_sha256": "580adffda614abb23b2831426958c7be699c69c5b1b47ad779b6f5cabe3682f5",
+      "observed_source_state_digest": "93d0560e6db40eafd27820e0c4081b15197da5fababba39908bfdb15de935f68",
+      "retained_observation": "plans/worth-ui/milestone-3.14.1-evidence/invalidations/observed-row-evidence/580adffda614abb23b2831426958c7be699c69c5b1b47ad779b6f5cabe3682f5.json"
+    },
+    {
+      "phase": 2,
+      "requirement": "P2-CLOSE-01",
+      "ledger_artifact_sha256": "edc8069327b48b9850d7be0b68f10d01097dccf602081a953cc5ff959104bf7f",
+      "observed_artifact_sha256": "75e7446363a1a931fb769ec11409f18fe68a4e44c0a5f511a32edb639031a8df",
+      "observed_source_state_digest": "93d0560e6db40eafd27820e0c4081b15197da5fababba39908bfdb15de935f68",
+      "retained_observation": "plans/worth-ui/milestone-3.14.1-evidence/invalidations/observed-row-evidence/75e7446363a1a931fb769ec11409f18fe68a4e44c0a5f511a32edb639031a8df.json"
+    },
+    {
+      "phase": 2,
+      "requirement": "P2-EVENT-LOOP-01",
+      "ledger_artifact_sha256": "4f9be931d4dddc9b04c81e09b9213c5ebe683bf7e6ae18235940b0b19b2ac694",
+      "observed_artifact_sha256": "2ed3a8cb9da25afa8165c6f80588f6975301c6fec3fd215d50ad3c69b3aff68e",
+      "observed_source_state_digest": "93d0560e6db40eafd27820e0c4081b15197da5fababba39908bfdb15de935f68",
+      "retained_observation": "plans/worth-ui/milestone-3.14.1-evidence/invalidations/observed-row-evidence/2ed3a8cb9da25afa8165c6f80588f6975301c6fec3fd215d50ad3c69b3aff68e.json"
+    },
+    {
+      "phase": 2,
+      "requirement": "P2-GRAPHICS-01",
+      "ledger_artifact_sha256": "7e51878895293ca5006b158f54f38f1c8d708e527a8438c5e5b3ddde4114f720",
+      "observed_artifact_sha256": "6598e0d641e2cf7b1a9cb3613f47017ebf3731217079ae166a91c950eafb4475",
+      "observed_source_state_digest": "93d0560e6db40eafd27820e0c4081b15197da5fababba39908bfdb15de935f68",
+      "retained_observation": "plans/worth-ui/milestone-3.14.1-evidence/invalidations/observed-row-evidence/6598e0d641e2cf7b1a9cb3613f47017ebf3731217079ae166a91c950eafb4475.json"
+    },
+    {
+      "phase": 2,
+      "requirement": "P2-PIXELS-01",
+      "ledger_artifact_sha256": "8cca1261e11f993ed084c66a091dffaba9d64ba84a683b49ddb3f7fdf4487673",
+      "observed_artifact_sha256": "bced44d7921e0fc04d1232a1bf2c25f013f0d37f4ce8f6c003d1a688afbaa89f",
+      "observed_source_state_digest": "93d0560e6db40eafd27820e0c4081b15197da5fababba39908bfdb15de935f68",
+      "retained_observation": "plans/worth-ui/milestone-3.14.1-evidence/invalidations/observed-row-evidence/bced44d7921e0fc04d1232a1bf2c25f013f0d37f4ce8f6c003d1a688afbaa89f.json"
+    },
+    {
+      "phase": 2,
+      "requirement": "P2-PORTS-01",
+      "ledger_artifact_sha256": "8771fcc9664a3c0276ba866602057446ddad403a9488ad775ce4daa07d51dc71",
+      "observed_artifact_sha256": "8e665daf6000b1b133a776b59752eb8ee449ee64ba568f6b64b42dfcb89e8bf1",
+      "observed_source_state_digest": "93d0560e6db40eafd27820e0c4081b15197da5fababba39908bfdb15de935f68",
+      "retained_observation": "plans/worth-ui/milestone-3.14.1-evidence/invalidations/observed-row-evidence/8e665daf6000b1b133a776b59752eb8ee449ee64ba568f6b64b42dfcb89e8bf1.json"
+    },
+    {
+      "phase": 2,
+      "requirement": "P2-PRESENT-01",
+      "ledger_artifact_sha256": "83c334efa391cd3847622c27462a073681a23c2658247618f03ebaa48861a739",
+      "observed_artifact_sha256": "ddd007cf8bc308e76a289da5947ad074ca5a7a04e81330b5d0a36538e1e2d669",
+      "observed_source_state_digest": "93d0560e6db40eafd27820e0c4081b15197da5fababba39908bfdb15de935f68",
+      "retained_observation": "plans/worth-ui/milestone-3.14.1-evidence/invalidations/observed-row-evidence/ddd007cf8bc308e76a289da5947ad074ca5a7a04e81330b5d0a36538e1e2d669.json"
+    },
+    {
+      "phase": 2,
+      "requirement": "P2-READINESS-01",
+      "ledger_artifact_sha256": "530dc51fadd0549b42a993142fef125b25944a1363b47d76ee83bddd13d78430",
+      "observed_artifact_sha256": "dcf9035ad8d49b00c6b5ecc1e6ff09460183176baf7c60776f676a05edf3bce3",
+      "observed_source_state_digest": "93d0560e6db40eafd27820e0c4081b15197da5fababba39908bfdb15de935f68",
+      "retained_observation": "plans/worth-ui/milestone-3.14.1-evidence/invalidations/observed-row-evidence/dcf9035ad8d49b00c6b5ecc1e6ff09460183176baf7c60776f676a05edf3bce3.json"
+    },
+    {
+      "phase": 2,
+      "requirement": "P2-WINDOW-01",
+      "ledger_artifact_sha256": "088cb6bcaf72b77b388ab48625a07cbed614466f321ee08d6544bd78faf8d665",
+      "observed_artifact_sha256": "1aeae03a58989c04c725e72f55cbcb10dfb3d84a75fd854cb2c8b6d8c3a811a1",
+      "observed_source_state_digest": "93d0560e6db40eafd27820e0c4081b15197da5fababba39908bfdb15de935f68",
+      "retained_observation": "plans/worth-ui/milestone-3.14.1-evidence/invalidations/observed-row-evidence/1aeae03a58989c04c725e72f55cbcb10dfb3d84a75fd854cb2c8b6d8c3a811a1.json"
+    },
+    {
+      "phase": 2,
+      "requirement": "P2-WORLD-01",
+      "ledger_artifact_sha256": "d49fe08720d1636a5b3c4c9814acd88d62f986d2aa75f4ff7da06292f0119609",
+      "observed_artifact_sha256": "3443cbe27d7d47406bd1a35acf2c07a8d458daa50506e873481709d298ea2652",
+      "observed_source_state_digest": "93d0560e6db40eafd27820e0c4081b15197da5fababba39908bfdb15de935f68",
+      "retained_observation": "plans/worth-ui/milestone-3.14.1-evidence/invalidations/observed-row-evidence/3443cbe27d7d47406bd1a35acf2c07a8d458daa50506e873481709d298ea2652.json"
+    }
+  ]
+}

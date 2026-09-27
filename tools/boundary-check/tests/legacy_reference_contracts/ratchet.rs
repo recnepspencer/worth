@@ -55,7 +55,7 @@ fn docs_outside_governed_roots_are_ignored() {
     let mut body = String::from("# history mentions ");
     body.push_str(&retired_query_token());
     body.push('\n');
-    repo.write_file("_docs/history.md", &body);
+    repo.write_file("plans/history.md", &body);
     repo.write_file(
         "cad/workspaces/worth-contracts/crates/demo/src/lib.rs",
         "pub fn ok() {}\n",
@@ -65,7 +65,7 @@ fn docs_outside_governed_roots_are_ignored() {
     repo.cleanup();
     assert!(
         ok,
-        "retired spelling under _docs/ must be out of scope, got:\n{output}"
+        "retired spelling under plans/ must be out of scope, got:\n{output}"
     );
 }
 

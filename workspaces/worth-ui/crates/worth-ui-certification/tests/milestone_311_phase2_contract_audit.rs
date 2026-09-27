@@ -36,7 +36,7 @@ fn phase_2_scenario_contracts_have_every_required_evidence_field() {
 
 #[test]
 fn phase_2_ledger_rows_are_unique_and_status_evidence_agree() {
-    let ledger = repository_document("_docs/worth-ui/milestone-3.11-phase-2-proof-ledger.csv");
+    let ledger = repository_document("plans/worth-ui/milestone-3.11-phase-2-proof-ledger.csv");
     let mut ids = BTreeSet::new();
     let mut rows = 0;
     for line in ledger.lines().skip(1) {
@@ -66,7 +66,7 @@ fn phase_2_ledger_rows_are_unique_and_status_evidence_agree() {
 }
 
 fn phase_2_contract() -> toml::Value {
-    let text = repository_document("_docs/worth-ui/milestone-3.11-phase-2-contract.toml");
+    let text = repository_document("plans/worth-ui/milestone-3.11-phase-2-contract.toml");
     toml::from_str(&text).expect("Phase 2 contract is TOML")
 }
 

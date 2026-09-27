@@ -1,12 +1,12 @@
 param(
-    [string]$OutputPath = "_docs/platform-migrations/store-platform-rename-inventory.csv"
+    [string]$OutputPath = "plans/platform-migrations/store-platform-rename-inventory.csv"
 )
 
 $ErrorActionPreference = "Stop"
 
 $storeRoots = @(
     "workspaces/forge-store/",
-    "_docs/forge-store/"
+    "plans/forge-store/"
 )
 $storeReference = [regex]::new(
     "(?i)(forge[-_ ]store|forgestore)",

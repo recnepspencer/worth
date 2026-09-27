@@ -10,7 +10,7 @@ PERF_LOG_PATH="${RELATIONAL_PERF_LOG_PATH:-${RUNNER_TEMP:-/tmp}/relational-perf.
 PERF_REPORT_PATH="${RELATIONAL_PERF_REPORT_PATH:-${RUNNER_TEMP:-/tmp}/relational-perf-report.jsonl}"
 PERF_SUMMARY_PATH="${RELATIONAL_PERF_SUMMARY_PATH:-${RUNNER_TEMP:-/tmp}/relational-perf-summary.jsonl}"
 PERF_MARKDOWN_PATH="${RELATIONAL_PERF_MARKDOWN_PATH:-${RUNNER_TEMP:-/tmp}/relational-perf-summary.md}"
-PERF_BASELINE_PATH="${RELATIONAL_PERF_BASELINE_PATH:-$ROOT_DIR/_docs/engineering/worth_relational_performance_baseline.jsonl}"
+PERF_BASELINE_PATH="${RELATIONAL_PERF_BASELINE_PATH:-$ROOT_DIR/plans/engineering/worth_relational_performance_baseline.jsonl}"
 PERF_COMPARE_PATH="${RELATIONAL_PERF_COMPARE_PATH:-}"
 PERF_ARCHIVE_DIR="${RELATIONAL_PERF_ARCHIVE_DIR:-}"
 

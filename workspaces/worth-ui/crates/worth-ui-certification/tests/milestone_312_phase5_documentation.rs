@@ -1,6 +1,6 @@
 use crate::repository_document;
 
-const CONTRACT: &str = "_docs/worth-ui/milestone-3.12-phase-5-contract.toml";
+const CONTRACT: &str = "plans/worth-ui/milestone-3.12-phase-5-contract.toml";
 const LIFECYCLE: &str = "workspaces/worth-ui/docs/application-lifecycle.md";
 const HOT_REBIND: &str = "workspaces/worth-ui/docs/hot-rebind.md";
 const INSPECTION: &str = "workspaces/worth-ui/docs/inspection.md";

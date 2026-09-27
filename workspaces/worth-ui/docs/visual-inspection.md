@@ -526,4 +526,4 @@ platform adapters do not inherit that certification from a successful compile.
 - [Hot rebind](./hot-rebind.md)
 - [Application inspection](./inspection.md)
 - [Worth UI architecture](./architecture.md)
-- [AI diagnostics architecture](../../../_docs/worth-ui/ai-diagnostics.md)
+- [AI diagnostics architecture](../../../plans/worth-ui/ai-diagnostics.md)

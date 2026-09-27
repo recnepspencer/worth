@@ -1,9 +1,9 @@
 param(
-    [string]$InventoryPath = "_docs/platform-migrations/store-platform-rename-inventory.csv"
+    [string]$InventoryPath = "plans/platform-migrations/store-platform-rename-inventory.csv"
 )
 
 $ErrorActionPreference = "Stop"
-$protectedRoots = @("workspaces/forge-store/", "_docs/forge-store/")
+$protectedRoots = @("workspaces/forge-store/", "plans/forge-store/")
 $rows = @(Import-Csv -LiteralPath $InventoryPath | Where-Object {
     if ($_.occurrence_kind -ne "content") { return $false }
     foreach ($root in $protectedRoots) {

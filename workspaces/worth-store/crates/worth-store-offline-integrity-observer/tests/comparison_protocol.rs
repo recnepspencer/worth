@@ -193,7 +193,7 @@ fn real_compare_binary_preserves_inputs_and_rejects_alias_output_and_repair_flag
     std::fs::write(&offline_path, offline.to_string()).unwrap();
     let guide = include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/../../../../_docs/worth-store/physical-integrity-and-offline-verification.md"
+        "/../../../../plans/worth-store/physical-integrity-and-offline-verification.md"
     ));
     let line = guide
         .lines()

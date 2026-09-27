@@ -7,10 +7,10 @@ const LIFECYCLE: &str = "workspaces/worth-ui/docs/application-lifecycle.md";
 const ARCHITECTURE: &str = "workspaces/worth-ui/docs/architecture.md";
 const SUBSYSTEMS: &str = "workspaces/worth-ui/docs/runtime-subsystems.md";
 const INSPECTION: &str = "workspaces/worth-ui/docs/inspection.md";
-const DSL_VISION: &str = "_docs/worth-ui/worth-ui-dsl-vision.md";
-const DIAGNOSTICS: &str = "_docs/worth-ui/ai-diagnostics.md";
+const DSL_VISION: &str = "plans/worth-ui/worth-ui-dsl-vision.md";
+const DIAGNOSTICS: &str = "plans/worth-ui/ai-diagnostics.md";
 const ADVANCED: &str = "workspaces/worth-ui/docs/worth-ui-readme.md";
-const MILESTONE: &str = "_docs/worth-ui/milestone-3.13.md";
+const MILESTONE: &str = "plans/worth-ui/milestone-3.13.md";
 const PROJECTION_PASS: &str =
     "workspaces/worth-ui/crates/worth-ui/tests/ui/facade/query_binding/pass/projection_contract_is_shape_specific.rs";
 const EXECUTION_INVENTORY: &str =

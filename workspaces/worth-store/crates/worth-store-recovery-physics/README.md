@@ -13,7 +13,7 @@ the recovery runtime, Store, offline verifier, Foundational protocol
 vocabulary, and C.4 backend respectively.
 
 The C.7 boundary and C.8 handoff are documented in
-[_docs/worth-store/physical-durability-and-checkpoints.md](../../../../_docs/worth-store/physical-durability-and-checkpoints.md).
+[plans/worth-store/physical-durability-and-checkpoints.md](../../../../plans/worth-store/physical-durability-and-checkpoints.md).
 
 For C.8, this crate remains pure meaning only. Its public laws decide
 current/previous source precedence, WAL-prefix continuity, checkpoint-covered
