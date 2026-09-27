@@ -321,6 +321,42 @@ wrong frame. The stamp is drawn after the retained transfer under a scissor,
 so it replaces only its own pixels. The trace is qualification evidence, not a
 product feature; the dashboard's top-left corner is covered while it runs.
 
+`tools/worth-ui-resize-trace-qualification` reads the stamp. Its `capture`
+command samples the traced window's client origin through GDI as fast as the
+compositor allows, bracketing each copy with the counter and recording the
+client extent, the primary button, and the cursor. The window must stay on a
+monitor at the system DPI, since the tool is aware of the system DPI only; a
+DPI change ends the capture. The display's refresh rate is read once, when the
+capture starts. Its `analyze` command correlates the capture with the host
+trace over the longest held press and grades it against the live-resize
+thresholds on a 60 Hz display. GDI shows what the compositor composed but is
+not a vertical-blank clock, so every visible time is an upper bound within one
+sample interval.
+
+- The cursor must be moving with the button held for at least 10 s, pauses
+  over 250 ms excluded. In logical points at the capture's DPI, the drag must
+  reach 800x600 and 1536x1024, reverse at least twice, and cross Platform
+  Pulse's breakpoint both ways: from 1200 wide or more to narrower, and back.
+- Latency runs from the first report of a consumed extent to the first sighting
+  of an accepted frame drawn at it and submitted before the next consume. A
+  consumed extent with no such frame accepted was prepared for nothing and
+  counts as a miss; one whose frame was accepted but never caught by a sample
+  is excluded and reported.
+- A gap runs between first sightings of new accepted frames; the gap open at
+  release ends at the next new frame or the end of the capture. It is active
+  from when the window was first owed a frame: at its start if the latest
+  observed extent is not the one shown, at a new extent observed inside it, or
+  at the first held cursor movement inside it when a new extent was observed
+  there. A gap owing nothing is idle and ungraded. A stall ended by a frame at
+  the unchanged extent, before the window reports the extents queued behind it,
+  is graded only from that report.
+- The final extent must be shown within 100 ms of release.
+
+Grades that rest on sightings are inconclusive, rather than failed, when the
+capture sampled too coarsely to resolve a 25 ms gap or ended without its
+closing line; every other grade fails outright. Timings from a traced run are
+not comparable with untraced runs.
+
 ## Presented-Source Readback
 
 The Windows native host records one capture source only after presentation has
