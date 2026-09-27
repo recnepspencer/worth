@@ -119,6 +119,25 @@ impl UiPreparedCommandMotionAcceptance {
         self
     }
 
+    /// What this tick displays each command it moves once it lands.
+    pub(in crate::mounting::presentation) fn issued_motion(
+        &self,
+    ) -> super::command_motion_slot::UiIssuedCommandMotion {
+        super::command_motion_slot::UiIssuedCommandMotion::landing(self.updates.iter().map(
+            |update| {
+                (
+                    update.command,
+                    update.slot.clone(),
+                    UiDisplayedCommandMotion {
+                        sample: update.sample,
+                        change: update.change,
+                        layers: update.layers,
+                    },
+                )
+            },
+        ))
+    }
+
     pub(in crate::mounting::presentation) fn accept(
         self,
         current: &UiMountedPresentationState,
@@ -305,6 +324,7 @@ impl UiMountedPresentationState {
     pub(in crate::mounting::presentation) fn inherit_reconstruction_motion(
         &mut self,
         predecessor: &Self,
+        issued: &super::command_motion_slot::UiIssuedCommandMotion,
     ) {
         if self.requirement.semantic_surface() != predecessor.requirement.semantic_surface() {
             return;
@@ -323,7 +343,7 @@ impl UiMountedPresentationState {
         if affected == replacement {
             self.inherit_unchanged_motion(predecessor, &instances);
             for instance in instances {
-                self.carry_portal_motion(predecessor, instance);
+                self.carry_portal_motion(predecessor, instance, issued);
             }
             return;
         }

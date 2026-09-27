@@ -36,6 +36,7 @@ impl UiMountedPresentationState {
             worth_ui_host_contract::UiSemanticSurfaceIdentity,
             UiMountedInstanceIdentity,
         )],
+        issued: &super::super::command_motion_slot::UiIssuedCommandMotion,
     ) {
         for &(surface, instance) in targets {
             if surface != self.requirement.semantic_surface() {
@@ -47,7 +48,7 @@ impl UiMountedPresentationState {
             } else {
                 self.appearance_opacity_by_instance.remove(&instance);
             }
-            let shown = self.shown_portal_motions(instance);
+            let shown = self.shown_portal_motions(instance, issued);
             let rebound = self.bind_appearance_surface_target(
                 instance,
                 frame.appearance_surface_sample_geometry(instance),
@@ -68,7 +69,7 @@ impl UiMountedPresentationState {
                 self.appearance_surfaces.get(&instance).is_some(),
             );
             if rebound {
-                self.carry_surface_portal_motion(instance, &shown);
+                self.carry_surface_portal_motion(instance, &shown, issued);
             }
         }
         for instance in frame.retired_appearance_instances() {

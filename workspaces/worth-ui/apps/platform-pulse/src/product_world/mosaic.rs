@@ -12,8 +12,6 @@ pub enum PlatformPulseMosaicRegion {
     EvidenceRail,
     ServiceStage,
     StatusBand,
-    ServiceTile,
-    NativeTile,
     ServiceList,
     ActivityList,
     ReviewList,
@@ -40,14 +38,12 @@ pub enum PlatformPulseMosaicSizing {
 }
 
 impl PlatformPulseMosaicRegion {
-    pub const ALL: [Self; 11] = [
+    pub const ALL: [Self; 9] = [
         Self::Viewport,
         Self::Masthead,
         Self::EvidenceRail,
         Self::ServiceStage,
         Self::StatusBand,
-        Self::ServiceTile,
-        Self::NativeTile,
         Self::ServiceList,
         Self::ActivityList,
         Self::ReviewList,
@@ -91,12 +87,7 @@ impl PlatformPulseMosaicRegion {
                 ComponentViewportAxisPlacement::fixed_from_end(0, STATUS_BAND_HEIGHT)
                     .expect("the status band has height"),
             ),
-            Self::ServiceTile
-            | Self::NativeTile
-            | Self::ServiceList
-            | Self::ActivityList
-            | Self::ReviewList
-            | Self::Page => {
+            Self::ServiceList | Self::ActivityList | Self::ReviewList | Self::Page => {
                 return None;
             }
         };
@@ -110,11 +101,9 @@ impl PlatformPulseMosaicRegion {
             Self::EvidenceRail => "platform.pulse.mosaic.region.evidence_rail",
             Self::ServiceStage => "platform.pulse.mosaic.region.service_stage",
             Self::StatusBand => "platform.pulse.mosaic.region.status_band",
-            Self::ServiceTile => "platform.pulse.mosaic.region.service_tile",
             Self::ServiceList => "platform.pulse.mosaic.region.service_list",
             Self::ActivityList => "platform.pulse.mosaic.region.activity_list",
             Self::ReviewList => "platform.pulse.mosaic.region.review_list",
-            Self::NativeTile => "platform.pulse.mosaic.region.native_tile",
             Self::Page => "platform.pulse.mosaic.region.page",
         }
     }

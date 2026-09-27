@@ -95,7 +95,7 @@ fn exact_physical_change_survives_acceptance_and_reconstruction_without_semantic
 
     let mut rebuilt =
         UiMountedPresentationState::from_projection(&projection, world.requirement, Some(frame));
-    rebuilt.inherit_reconstruction_motion(&current);
+    rebuilt.inherit_reconstruction_motion(&current, &Default::default());
     assert_eq!(
         rebuilt.reconstruction_motion_overrides(),
         vec![change],

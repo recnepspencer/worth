@@ -114,14 +114,6 @@ fn region_descriptor(region: PlatformPulseMosaicRegion) -> MosaicRegionKindDescr
             MosaicChildRule::leaf_only(),
             None,
         ),
-        PlatformPulseMosaicRegion::ServiceTile | PlatformPulseMosaicRegion::NativeTile => (
-            MosaicRegionRole::auxiliary(),
-            MosaicSizingBehavior::fills_available_space(),
-            MosaicScrollOwnership::no_scrolling(),
-            MosaicFocusScopeKind::region_scope(),
-            MosaicChildRule::leaf_only(),
-            None,
-        ),
     };
     let descriptor = MosaicRegionKindDescriptor::new(region_id(region), role)
         .with_sizing_behavior(sizing)

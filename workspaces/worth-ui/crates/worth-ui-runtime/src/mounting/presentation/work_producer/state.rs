@@ -179,6 +179,7 @@ impl UiMountedPresentationState {
         source: crate::mounting::UiMountedPresentationDeltaSource<'_>,
         projection: Option<&UiMountedProjectionView>,
         requirement: worth_ui_host_contract::UiMountedSurfaceBindingRequirement,
+        issued: &super::command_motion_slot::UiIssuedCommandMotion,
     ) -> Self {
         let mut successor = predecessor.clone();
         successor.entrance_acceptance = None;
@@ -237,7 +238,7 @@ impl UiMountedPresentationState {
             );
         }
         for instance in source.changed_instances().iter().copied() {
-            successor.carry_portal_motion(predecessor, instance);
+            successor.carry_portal_motion(predecessor, instance, issued);
         }
         successor.effects = source
             .frame()

@@ -16,8 +16,6 @@
 
 use std::collections::HashSet;
 
-use worth_ui_host_contract::UiMountedPaintCommandIdentity;
-
 use super::super::command_motion_layers::{UiCommandMotionLayer, UiCommandMotionLayers};
 use super::super::command_motion_slot::UiDisplayedCommandMotion;
 use super::super::motion_evidence::UiCommandMotionAcceptance;
@@ -118,28 +116,6 @@ impl UiMountedPresentationState {
             })
             .ok_or(())?;
         Ok(Some((sample, layer)))
-    }
-
-    /// Give `command` a live slot its predecessors do not share.
-    fn own_motion_slot(
-        &mut self,
-        command: UiMountedPaintCommandIdentity,
-    ) -> Option<UiCommandMotionAcceptance> {
-        if let Some(identity) = command.scroll_chrome_identity() {
-            let motion = UiCommandMotionAcceptance::default();
-            std::rc::Rc::make_mut(&mut self.scroll_motion_groups.chrome)
-                .get_mut(&identity)?
-                .motion = motion.clone();
-            return Some(motion);
-        }
-        if command.is_appearance_surface() {
-            return self.own_appearance_surface_slot(command.mounted_instance());
-        }
-        let instance = command.mounted_instance();
-        let mut bundle = self.commands_by_instance.get(&instance)?.clone();
-        let motion = bundle.own_motion_slot(command)?;
-        self.commands_by_instance.insert(instance, bundle);
-        Some(motion)
     }
 }
 

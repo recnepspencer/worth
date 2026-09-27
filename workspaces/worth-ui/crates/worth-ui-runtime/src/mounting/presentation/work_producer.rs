@@ -22,6 +22,7 @@ mod delta_diff;
 mod effect_expectations;
 #[path = "work_producer/motion_evidence.rs"]
 mod motion_evidence;
+pub(super) use command_motion_slot::UiIssuedCommandMotion;
 pub(in crate::mounting) use motion_evidence::motion_acceptance_reserved_bytes;
 pub(super) use motion_evidence::UiPreparedCommandMotionAcceptance;
 #[path = "work_producer/motion_entrance.rs"]

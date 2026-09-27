@@ -114,6 +114,18 @@ impl UiMountedScrollMotionGroups {
         self.chrome.get(&identity).map(|target| &target.motion)
     }
 
+    /// Give the bar `identity` a live slot its predecessors do not share.
+    pub(super) fn own_motion_slot(
+        &mut self,
+        identity: UiMountedScrollChromeIdentity,
+    ) -> Option<UiCommandMotionAcceptance> {
+        let motion = UiCommandMotionAcceptance::default();
+        std::rc::Rc::make_mut(&mut self.chrome)
+            .get_mut(&identity)?
+            .motion = motion.clone();
+        Some(motion)
+    }
+
     pub(super) fn chrome_identities(
         &self,
     ) -> impl Iterator<Item = UiMountedPaintCommandIdentity> + '_ {

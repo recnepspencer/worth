@@ -8,6 +8,9 @@
 //! through. Without the Portal's layer the host would show it at rest while
 //! the rest of the Portal, and interaction reading the Portal's sample, stand
 //! where the Portal's Motion puts them.
+//!
+//! A frame issued while a Portal's tick is still in flight shows after the
+//! tick lands, so what it carries stands at the tick's layer.
 
 use worth_ui_host_contract::{
     UiMountedInstanceIdentity, UiMountedPaintCommandIdentity, UiMountedPresentationSampleChange,
@@ -15,7 +18,7 @@ use worth_ui_host_contract::{
 
 use super::super::motion_sampling::UiPresentationMotionSampleReceipt;
 use super::command_motion_layers::UiPortalMotionLayer;
-use super::command_motion_slot::UiDisplayedCommandMotion;
+use super::command_motion_slot::{UiDisplayedCommandMotion, UiIssuedCommandMotion};
 use super::UiMountedPresentationState;
 use crate::runtime::motion::UiMotionTargetIdentity;
 
@@ -31,12 +34,28 @@ pub(super) struct UiShownPortalMotion {
     layer: UiPortalMotionLayer,
 }
 
+impl UiIssuedCommandMotion {
+    /// The Portal layer the tick shows the Portal `target` through once it
+    /// lands, read from what it displays a command of its group at.
+    fn portal(&self, target: UiMotionTargetIdentity) -> Option<UiShownPortalMotion> {
+        self.displayed()
+            .filter(|displayed| displayed.sample.target() == target)
+            .find_map(|displayed| {
+                Some(UiShownPortalMotion {
+                    sample: displayed.sample,
+                    layer: displayed.layers.portal_only()?,
+                })
+            })
+    }
+}
+
 impl UiMountedPresentationState {
-    /// How the host shows what the Portal `target` presents, read from the
-    /// command of its group the latest tick placed.
+    /// How the host shows what the Portal `target` presents once `issued`
+    /// lands, read from the command of its group the latest tick placed.
     pub(super) fn shown_portal_motion(
         &self,
         target: UiMotionTargetIdentity,
+        issued: &UiIssuedCommandMotion,
     ) -> Option<UiShownPortalMotion> {
         self.portal_motion_group(target)?
             .commands()
@@ -47,34 +66,38 @@ impl UiMountedPresentationState {
                     layer: displayed.layers.portal_only()?,
                 })
             })
+            .chain(issued.portal(target))
             .max_by_key(|shown| shown.sample.tick())
     }
 
     /// Each Portal presenting a command of `instance`, with how the host shows
-    /// it now.
+    /// it once `issued` lands.
     pub(super) fn shown_portal_motions(
         &self,
         instance: UiMountedInstanceIdentity,
+        issued: &UiIssuedCommandMotion,
     ) -> Vec<(UiMotionTargetIdentity, UiShownPortalMotion)> {
         self.portal_motion_groups
             .targets_of(instance)
-            .filter_map(|target| Some((target, self.shown_portal_motion(target)?)))
+            .filter_map(|target| Some((target, self.shown_portal_motion(target, issued)?)))
             .collect()
     }
 
     /// Show each command of `instance` that a Portal presents, and that this
     /// successor gave a live slot of its own, through the Portal layer
-    /// `predecessor` shows that Portal through. A slot the successor shares
-    /// with `predecessor` is what the host already shows, never the frame's.
+    /// `predecessor` shows that Portal through once `issued` lands. A slot the
+    /// successor shares with `predecessor` is what the host already shows,
+    /// never the frame's.
     pub(super) fn carry_portal_motion(
         &mut self,
         predecessor: &Self,
         instance: UiMountedInstanceIdentity,
+        issued: &UiIssuedCommandMotion,
     ) {
         let carried = self
             .portal_motion_groups
             .targets_of(instance)
-            .filter_map(|target| Some((target, predecessor.shown_portal_motion(target)?)))
+            .filter_map(|target| Some((target, predecessor.shown_portal_motion(target, issued)?)))
             .flat_map(|(target, shown)| {
                 self.portal_commands_of(target, instance)
                     .into_iter()
@@ -96,11 +119,12 @@ impl UiMountedPresentationState {
     /// Show `instance`'s appearance surface, whose geometry this frame
     /// rebound to a new live slot, through the Portal presenting it: as
     /// `before` showed that Portal before the rebind, or else as its group
-    /// shows it now.
+    /// shows it once `issued` lands.
     pub(super) fn carry_surface_portal_motion(
         &mut self,
         instance: UiMountedInstanceIdentity,
         before: &[(UiMotionTargetIdentity, UiShownPortalMotion)],
+        issued: &UiIssuedCommandMotion,
     ) {
         let surface = UiMountedPaintCommandIdentity::appearance_surface(instance);
         let shown = self
@@ -115,7 +139,7 @@ impl UiMountedPresentationState {
                     .iter()
                     .find(|(shown, _)| *shown == target)
                     .map(|(_, shown)| *shown)
-                    .or_else(|| self.shown_portal_motion(target))
+                    .or_else(|| self.shown_portal_motion(target, issued))
             });
         if let Some(shown) = shown {
             self.show_through_portal(surface, shown);

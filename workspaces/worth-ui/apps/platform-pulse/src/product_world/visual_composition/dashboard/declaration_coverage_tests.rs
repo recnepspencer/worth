@@ -133,3 +133,19 @@ fn every_mounted_region_has_a_placement_from_its_owner() {
     }
     assert_eq!(mounted_regions(), placed);
 }
+
+/// A region kind no component mounts is registered with Mosaic but never laid
+/// out, so every product region is mounted somewhere under `app/`.
+#[test]
+fn every_product_region_is_mounted_by_a_component() {
+    let mounted: BTreeSet<String> = mounted_regions()
+        .into_iter()
+        .map(|(_, region)| region)
+        .collect();
+    for region in PlatformPulseMosaicRegion::ALL {
+        assert!(
+            mounted.contains(region.id()),
+            "{region:?} is a product region but no app/*.wui component mounts it"
+        );
+    }
+}
