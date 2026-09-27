@@ -7,7 +7,8 @@
 //! moving them, and once the Portal presents the child nowhere, each tick of
 //! the settle still presents and the settle lands its offset.
 use super::admitted_dismissal::advance_motion;
-use super::portal_scroll_region::{open_with, presented_region, subpixels};
+use super::geometry::scrollable::install_scrollable_child;
+use super::portal_scroll_region::{open_installed, presented_region, subpixels};
 use super::scroll_chrome_fixture::contract;
 use super::scroll_pose_authority::block;
 use super::scroll_settle_commit::{one_notch_up, scroll_region, LINE_EXTENT_POINTS, ONE_NOTCH};
@@ -23,20 +24,26 @@ use worth_ui_host_contract::*;
 /// around a settle still under way.
 const SETTLE_TICKS: u32 = 400;
 
-/// The World with a smooth wheel over its Portal child's region, its Portal
-/// open and entering.
-fn opened() -> (World, UiPortalIdentity) {
+/// A smooth wheel over a region with bars, settling longer than the
+/// Portal's exit.
+pub(super) fn settling_scroll() -> WorldScroll {
     let region = scroll_region(true).with_scroll_chrome(contract());
     let policy = crate::declaration::UiScrollPolicy::nested_region().with_wheel_behavior(
         crate::declaration::UiScrollWheelBehavior::smooth(SETTLE_TICKS)
             .expect("a nonzero settle horizon"),
     );
-    open_with(WorldScroll { policy, region })
+    WorldScroll { policy, region }
+}
+
+/// The World with a smooth wheel over its Portal child's region, its Portal
+/// open and entering.
+fn opened() -> (World, UiPortalIdentity) {
+    open_installed(settling_scroll(), install_scrollable_child)
 }
 
 /// One notch wheeled over the middle of where the Portal child's region
 /// shows.
-fn wheel(world: &mut World, now: u64) {
+pub(super) fn wheel(world: &mut World, now: u64) {
     let region = presented_region(world);
     let presentation = world
         .session
@@ -66,7 +73,8 @@ fn wheel(world: &mut World, now: u64) {
     ));
 }
 
-fn child_offset(world: &World) -> UiScrollOffset {
+/// The offset Scroll holds for the Portal child's region.
+pub(super) fn child_offset(world: &World) -> UiScrollOffset {
     let child = world.instances[4];
     let scroll = world.session.scroll.as_ref().unwrap();
     let owner = scroll.ownership_chain(child).unwrap().owners()[0];
@@ -78,7 +86,7 @@ fn child_offset(world: &World) -> UiScrollOffset {
     scroll.offset(owner, incarnation).unwrap()
 }
 
-fn close(world: &mut World, portal: UiPortalIdentity, now: u64) {
+pub(super) fn close(world: &mut World, portal: UiPortalIdentity, now: u64) {
     world.host.push_native_display_presented();
     world.host.push_native_display_settled_without_effects();
     assert!(matches!(

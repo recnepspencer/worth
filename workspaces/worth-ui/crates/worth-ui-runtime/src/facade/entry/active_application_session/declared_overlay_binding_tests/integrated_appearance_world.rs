@@ -55,6 +55,8 @@ mod portal_lifecycle;
 mod portal_outer_settle;
 #[path = "integrated_appearance_world/portal_placement_succession.rs"]
 mod portal_placement_succession;
+#[path = "integrated_appearance_world/portal_scroll_grab.rs"]
+mod portal_scroll_grab;
 #[path = "integrated_appearance_world/portal_scroll_region.rs"]
 mod portal_scroll_region;
 #[path = "integrated_appearance_world/portal_scroll_settle.rs"]

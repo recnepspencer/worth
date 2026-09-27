@@ -188,6 +188,39 @@ pub(in super::super) fn install_scrollable_primary_with_shorter_content(
 /// block travel.
 pub(in super::super) const SCROLLABLE_CHILD_REGION: [f32; 4] = [0.0, 0.0, 140.0, 18.0];
 
+/// A Portal child 120 points tall rather than the 36 [`BOXES`] gives it, and
+/// its region in the child's own local space: half the child, so the region's
+/// track is long enough for a thumb shorter than it, and that thumb travels.
+pub(in super::super) const TALL_CHILD_BOX: [f32; 4] = [8.0, 12.0, 140.0, 120.0];
+pub(in super::super) const TALL_CHILD_REGION: [f32; 4] = [0.0, 0.0, 140.0, 60.0];
+
+/// Reinstall the launched geometry with the Portal child tall and its region
+/// half of it, so a settle there moves the region's thumb.
+pub(in super::super) fn install_scrollable_tall_child(
+    session: &mut WorthUiActiveApplicationSession,
+    surfaces: [UiSemanticSurfaceIdentity; 2],
+    instances: [UiMountedInstanceIdentity; 5],
+) {
+    let mut boxes = BOXES;
+    boxes[4] = TALL_CHILD_BOX;
+    install_with_child_region(
+        session,
+        surfaces,
+        instances,
+        20,
+        boxes,
+        RegionOverrides {
+            child: Some(TALL_CHILD_REGION),
+            primary: None,
+            nested: None,
+            inner: None,
+            detach_child: false,
+        },
+        None,
+        super::VIEWPORT,
+    );
+}
+
 /// Reinstall the launched geometry with the Portal child's region smaller than
 /// the child, so the content a modal presents has somewhere to scroll.
 pub(in super::super) fn install_scrollable_child(
