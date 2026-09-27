@@ -139,7 +139,9 @@ struct ForbiddenIdentifierVisitor<'a> {
 
 impl Visit<'_> for ForbiddenIdentifierVisitor<'_> {
     fn visit_ident(&mut self, identifier: &proc_macro2::Ident) {
-        let identifier = identifier.to_string();
+        // `r#name` names the same item as `name`, so match the bare spelling.
+        let spelled = identifier.to_string();
+        let identifier = spelled.strip_prefix("r#").unwrap_or(&spelled).to_owned();
         if self.forbidden.iter().any(|denied| denied == &identifier)
             || self
                 .forbidden_fragments
@@ -241,6 +243,21 @@ mod tests {
             )
             .len(),
             1
+        );
+    }
+
+    #[test]
+    fn raw_identifiers_are_rejected_like_their_bare_spelling() {
+        let mut rule = rule();
+        rule.forbidden_identifier_fragments = vec!["BranchWriter".into()];
+        assert_eq!(
+            diagnostics_for_source(
+                "physical_runtime/work/raw_shortcut.rs",
+                "use r#serde_json::Value; struct r#StoreBranchWriterLease;",
+                &rule,
+            )
+            .len(),
+            2
         );
     }
 

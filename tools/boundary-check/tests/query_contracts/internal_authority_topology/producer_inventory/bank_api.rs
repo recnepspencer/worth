@@ -38,15 +38,18 @@ fn names_raw_query_elevation(tokens: impl ToTokens, aliases: &BTreeSet<String>) 
 
 /// Local names Bank gives a protected type, through `use ... as` or a type
 /// alias of any visibility, so a public item cannot hide one behind a rename.
-fn raw_query_elevation_aliases(source: &str) -> BTreeSet<String> {
+/// A name for a name counts too, so aliases are followed until none is new.
+fn raw_query_elevation_aliases(sources: &[&str]) -> BTreeSet<String> {
     fn renames(tree: &UseTree, aliases: &mut BTreeSet<String>) {
         match tree {
             UseTree::Path(path) => renames(&path.tree, aliases),
             UseTree::Group(group) => group.items.iter().for_each(|tree| renames(tree, aliases)),
-            UseTree::Rename(rename)
-                if RAW_QUERY_ELEVATION_TYPES.contains(&rename.ident.to_string().as_str()) =>
-            {
-                aliases.insert(rename.rename.to_string());
+            UseTree::Rename(rename) => {
+                let target = rename.ident.to_string();
+                if RAW_QUERY_ELEVATION_TYPES.contains(&target.as_str()) || aliases.contains(&target)
+                {
+                    aliases.insert(rename.rename.to_string());
+                }
             }
             _ => {}
         }
@@ -55,7 +58,7 @@ fn raw_query_elevation_aliases(source: &str) -> BTreeSet<String> {
         for item in items {
             match item {
                 Item::Use(item) => renames(&item.tree, aliases),
-                Item::Type(item) if names_raw_query_elevation(&item.ty, &BTreeSet::new()) => {
+                Item::Type(item) if names_raw_query_elevation(&item.ty, aliases) => {
                     aliases.insert(item.ident.to_string());
                 }
                 Item::Mod(module) => {
@@ -67,10 +70,20 @@ fn raw_query_elevation_aliases(source: &str) -> BTreeSet<String> {
             }
         }
     }
-    let syntax = syn::parse_file(source).expect("Bank source must parse");
+    let files = sources
+        .iter()
+        .map(|source| syn::parse_file(source).expect("Bank source must parse"))
+        .collect::<Vec<_>>();
     let mut aliases = BTreeSet::new();
-    visit(&syntax.items, &mut aliases);
-    aliases
+    loop {
+        let known = aliases.len();
+        for file in &files {
+            visit(&file.items, &mut aliases);
+        }
+        if aliases.len() == known {
+            return aliases;
+        }
+    }
 }
 
 fn public_bank_items_naming_raw_query_elevation(
@@ -97,6 +110,22 @@ fn public_items_naming_raw_query_elevation(
                     escaped.push(function.sig.ident.to_string());
                 }
             }
+            // A trait impl's members are as visible as the trait, and its
+            // header or an associated type (`Deref::Target`) can hand out a
+            // runtime a Bank value holds.
+            Item::Impl(implementation) if implementation.trait_.is_some() => {
+                let (_, path, _) = implementation.trait_.as_ref().expect("trait impl");
+                if names(path)
+                    || implementation.items.iter().any(|member| match member {
+                        ImplItem::Type(item) => names(&item.ty),
+                        ImplItem::Fn(function) => names(&function.sig),
+                        ImplItem::Const(item) => names(&item.ty),
+                        _ => false,
+                    })
+                {
+                    escaped.push(format!("impl {}", path.to_token_stream()));
+                }
+            }
             Item::Impl(implementation) => {
                 for member in &implementation.items {
                     let ImplItem::Fn(function) = member else {
@@ -105,6 +134,16 @@ fn public_items_naming_raw_query_elevation(
                     if matches!(function.vis, Visibility::Public(_)) && names(&function.sig) {
                         escaped.push(function.sig.ident.to_string());
                     }
+                }
+            }
+            Item::Static(item) if matches!(item.vis, Visibility::Public(_)) => {
+                if names(&item.ty) {
+                    escaped.push(item.ident.to_string());
+                }
+            }
+            Item::Const(item) if matches!(item.vis, Visibility::Public(_)) => {
+                if names(&item.ty) {
+                    escaped.push(item.ident.to_string());
                 }
             }
             Item::Struct(item) if matches!(item.vis, Visibility::Public(_)) => {
@@ -175,10 +214,12 @@ fn public_bank_api_never_exposes_raw_query_elevation_authority() {
         })
         .collect::<Vec<_>>();
     // A crate-level alias can be named from any Bank file.
-    let aliases = sources
-        .iter()
-        .flat_map(|(_, source)| raw_query_elevation_aliases(source))
-        .collect::<BTreeSet<_>>();
+    let aliases = raw_query_elevation_aliases(
+        &sources
+            .iter()
+            .map(|(_, source)| source.as_str())
+            .collect::<Vec<_>>(),
+    );
     let escaped = sources
         .iter()
         .flat_map(|(relative, source)| {
@@ -202,12 +243,18 @@ fn public_bank_api_never_exposes_raw_query_elevation_authority() {
         "pub mod leak { pub fn runtime() -> WorthQueryProgramApplicationRuntime { todo!() } }",
         "use host::WorthQueryWorkflowApplicationRuntime as Hidden; pub fn leak() -> Hidden { todo!() }",
         "type Hidden = WorthQueryPrimaryGraphApplicationRuntime; pub fn leak() -> Hidden { todo!() }",
+        "impl Deref for Bank { type Target = WorthQueryProgramApplicationRuntime; fn deref(&self) -> &Self::Target { todo!() } }",
+        "impl AsRef<WorthQueryWorkflowApplicationRuntime> for Bank { fn as_ref(&self) -> &Self { self } }",
+        "use host::WorthQueryProgramApplicationRuntime as First; type Second = First; pub fn leak() -> Second { todo!() }",
+        "type First = WorthQueryProgramApplicationRuntime; use self::First as Second; pub fn leak() -> Second { todo!() }",
+        "pub static LEAKED: OnceLock<WorthQueryPrimaryGraphApplicationRuntime> = OnceLock::new();",
+        "pub const LEAKED: Option<WorthQueryRequestedElevation> = None;",
     ];
     for (index, mutant) in mutants.into_iter().enumerate() {
         assert_eq!(
             public_bank_items_naming_raw_query_elevation(
                 mutant,
-                &raw_query_elevation_aliases(mutant)
+                &raw_query_elevation_aliases(&[mutant])
             )
             .len(),
             1,

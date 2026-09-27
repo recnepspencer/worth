@@ -1382,15 +1382,25 @@ name `publication_boundary` in any Query crate except execution and Publication.
 one exception is the certification court that forges a second kernel commit under a
 single operation authority, which proves the kernel's own guard below the owner.
 Publication accepts an operation effect through one path. The owner resolves the
-effect's custody, a committed receipt settles directly and a dispatch-pending receipt
-settles only with the recovery admission that releases it, so the acceptance denial
-no longer carries the recovery checks the owner already made. One idempotency helper
-binds a guarded operation to its transition. The Bank API court also refuses a
-public re-export of a program runtime, a public item inside an inline module, and a
-public item that names a runtime through a `use ... as` rename or a type alias.
-`commit_for_program`, a 9.17.4 host
-lane, stays until it is explicitly migrated, and `provisional_aftermath` belongs to
-9.18.
+effect's custody, a committed receipt settles directly and a dispatch-pending
+receipt settles only with the recovery admission that releases it, so the acceptance
+denial no longer carries the recovery checks the owner already made. One idempotency
+helper binds a guarded operation to its transition. The Bank API court also refuses
+a public re-export of a program runtime, a public item inside an inline module, a
+public item that names a runtime through a `use ... as` rename or a type alias,
+followed through chains of them, a public static or constant, and a trait impl whose
+header, associated type or method names one, such as `Deref::Target`.
+`commit_for_program`, a 9.17.4 host lane, stays until it is explicitly migrated, and
+`provisional_aftermath` belongs to 9.18.
+
+Status: Phase 5 is closed. The identifier denials and owner isolations in
+`boundary-check` match a raw identifier (`r#name`) as its bare spelling, so the
+`publication_boundary` denial cannot be written around. House pins this branch at
+`34ae2b8e80`. A House workspace saved after its world branch adopted the successor
+reopens on the successor under the v3 compatibility identity and keeps editing
+there. House workflow commands and adoption refuse a branch another host owns with
+`ForeignOwner` before any effect, and the successor revision is a typed denial
+rather than an expect.
 
 ## Acceptance, Cost And Review
 

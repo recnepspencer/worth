@@ -58,6 +58,18 @@ fn a_path_through_the_isolated_owner_is_refused_in_every_position() {
 }
 
 #[test]
+fn raw_identifiers_reach_exactly_what_their_bare_spelling_reaches() {
+    for source in [
+        "use crate::r#primary_graph::r#workflow::definition;",
+        "fn f() { crate::primary_graph::r#workflow::start(); }",
+        "use crate::primary_graph::r#PublishedWorkflowDefinitionRef;",
+        "use crate::primary_graph::r#advance_workflow_instance as advance;",
+    ] {
+        assert_eq!(findings(source).len(), 1, "{source}");
+    }
+}
+
+#[test]
 fn an_owned_type_reexported_through_a_parent_is_still_refused() {
     let found = findings("use crate::primary_graph::PublishedWorkflowDefinitionRef;");
     assert_eq!(found.len(), 1);
