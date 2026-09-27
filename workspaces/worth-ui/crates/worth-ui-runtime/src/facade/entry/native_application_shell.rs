@@ -219,8 +219,7 @@ impl WorthUiNativeApplicationShell {
     ) -> Result<UiMountedFrameOutcome, super::WorthUiMountedFrameExecutionStop<'_>> {
         self.settle_pending_native_viewport_measurements()?;
         self.refresh_native_surface_reconciliation();
-        // A rejection adds no host effect round, so count from before it.
-        let rounds = self.host_effect_rounds();
+        let answers = self.host_retry_wake_clearing_answers();
         if let Some(replacement) = self.pending_native_surface_reconciliation() {
             let replacements = [replacement];
             let outcome = self
@@ -234,7 +233,7 @@ impl WorthUiNativeApplicationShell {
             self.surface_reconciliation
                 .land_outcome(self.binding, &outcome);
             self.viewport.land_outcome(&outcome);
-            self.presentation_retry.land_outcome(&outcome, rounds);
+            self.presentation_retry.land_outcome(&outcome, answers);
             return Ok(outcome);
         }
         let outcome = self
@@ -244,7 +243,7 @@ impl WorthUiNativeApplicationShell {
                 now_tick,
             )?;
         self.viewport.land_outcome(&outcome);
-        self.presentation_retry.land_outcome(&outcome, rounds);
+        self.presentation_retry.land_outcome(&outcome, answers);
         Ok(outcome)
     }
 
@@ -292,6 +291,7 @@ impl WorthUiNativeApplicationShell {
         now_tick: u64,
     ) -> Result<UiMountedFrameOutcome, ()> {
         self.refresh_native_surface_reconciliation();
+        let answers = self.host_retry_wake_clearing_answers();
         let outcome = if let Some(replacement) = self.pending_native_surface_reconciliation() {
             self.session
                 .present_prepared_mounted_frame_for_reconciliation(
@@ -308,7 +308,7 @@ impl WorthUiNativeApplicationShell {
                 now_tick,
             )
         };
-        self.land_frame_outcome(&outcome);
+        self.land_frame_outcome(&outcome, answers);
         Ok(outcome)
     }
 
@@ -319,6 +319,7 @@ impl WorthUiNativeApplicationShell {
         deadline_tick: u64,
         now_tick: u64,
     ) -> UiMountedFrameOutcome {
+        let answers = self.host_retry_wake_clearing_answers();
         let outcome = self
             .session
             .present_prepared_superseding_mounted_frame_internal(
@@ -327,7 +328,7 @@ impl WorthUiNativeApplicationShell {
                 UiPresentationDeadline::at_tick(deadline_tick),
                 now_tick,
             );
-        self.land_frame_outcome(&outcome);
+        self.land_frame_outcome(&outcome, answers);
         outcome
     }
 
@@ -351,10 +352,11 @@ impl WorthUiNativeApplicationShell {
         in_flight: crate::mounting::UiMountedPresentationInFlight,
         now_tick: u64,
     ) -> UiMountedFrameOutcome {
+        let answers = self.host_retry_wake_clearing_answers();
         let outcome = self
             .session
             .complete_mounted_presentation(in_flight, now_tick);
-        self.land_frame_outcome(&outcome);
+        self.land_frame_outcome(&outcome, answers);
         outcome
     }
 
@@ -366,29 +368,16 @@ impl WorthUiNativeApplicationShell {
             .admit_duplicate_native_presentation_observation(presentation)
     }
 
-    pub(crate) fn retry_rejected_frame_presentation(
-        &mut self,
-        rejected: crate::mounting::UiMountedRejectedFrame,
-        deadline: UiPresentationDeadline,
-        now_tick: u64,
-    ) -> UiMountedFrameOutcome {
-        let outcome = self.session.present_prepared_mounted_frame_internal(
-            rejected.into_frame(),
-            deadline,
-            now_tick,
-        );
-        self.land_frame_outcome(&outcome);
-        outcome
-    }
-
     /// Lands `outcome` on the replacement binding, viewport extent, and host
-    /// retry still owed a presentation.
-    pub(super) fn land_frame_outcome(&mut self, outcome: &UiMountedFrameOutcome) {
+    /// retry still owed a presentation. `answers` is the host's count of
+    /// retry-wake-clearing answers from before the attempt, as every landing
+    /// takes it; see
+    /// [`presentation_recovery::UiNativePresentationRetry::land_outcome`].
+    pub(super) fn land_frame_outcome(&mut self, outcome: &UiMountedFrameOutcome, answers: u64) {
         self.surface_reconciliation
             .land_outcome(self.binding, outcome);
         self.viewport.land_outcome(outcome);
-        let effect_rounds = self.host_effect_rounds();
-        self.presentation_retry.land_outcome(outcome, effect_rounds);
+        self.presentation_retry.land_outcome(outcome, answers);
     }
 
     pub fn generation_identity(

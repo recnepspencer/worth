@@ -255,6 +255,7 @@ impl super::WorthUiNativeApplicationShell {
                 |_| {},
             )
             .map_err(|_| WorthUiNativePresentationRecoveryDenial::FramePreparationUnavailable)?;
+        let answers = self.host_retry_wake_clearing_answers();
         let outcome = self
             .session
             .present_prepared_mounted_reconstruction_frame(
@@ -271,7 +272,7 @@ impl super::WorthUiNativeApplicationShell {
                     WorthUiNativePresentationRecoveryDenial::RasterReconstructionObservationUnavailable
                 })?;
         }
-        self.land_frame_outcome(&outcome);
+        self.land_frame_outcome(&outcome, answers);
         Ok(outcome)
     }
 
