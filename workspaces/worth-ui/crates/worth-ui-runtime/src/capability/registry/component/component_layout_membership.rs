@@ -9,10 +9,11 @@ use super::{ComponentDescriptor, ComponentRegistry};
 
 impl ComponentRegistry {
     /// Layout facts no single descriptor can check: every layout-cell
-    /// component belongs to exactly one container and is placed by nothing
-    /// else, every member is a registered component that places itself
-    /// within its cell, every container declares its own allocation, and no
-    /// container is laid out inside itself.
+    /// component belongs to exactly one container, is placed by nothing else,
+    /// and is presented by the Portal that presents its container; every
+    /// member is a registered component that places itself within its cell;
+    /// every container declares its own allocation; and no container is laid
+    /// out inside itself.
     pub(crate) fn layout_membership_diagnostics(
         &self,
     ) -> Vec<(ComponentId, RegistrationCandidateDiagnostic)> {
@@ -36,12 +37,21 @@ fn layout_membership_diagnostics(
                 ),
             ));
         }
-        if is_layout_cell(descriptor) && descriptor.portal_child_contract().is_some() {
+        let presented_apart = match containers.get(descriptor.id()).map(Vec::as_slice) {
+            Some([container]) if is_layout_cell(descriptor) => descriptors
+                .iter()
+                .find(|candidate| candidate.id() == *container)
+                .is_some_and(|container| {
+                    presenting_owner(container) != presenting_owner(descriptor)
+                }),
+            _ => false,
+        };
+        if presented_apart {
             diagnostics.push((
                 descriptor.id().clone(),
                 RegistrationCandidateDiagnostic::new(
                     CapabilityDiagnosticCode::InvalidComponentLayoutMembership,
-                    "a layout-cell component is placed by its container, not a Portal owner",
+                    "a layout-cell component is presented by the Portal that presents its container",
                 ),
             ));
         }
@@ -97,6 +107,15 @@ fn containers_by_member(
         }
     }
     containers
+}
+
+/// The owner whose Portal presents `descriptor`, if one does. A cell is laid
+/// out where its container stands, so both are presented by the same Portal
+/// or neither is.
+fn presenting_owner(descriptor: &ComponentDescriptor) -> Option<&ComponentId> {
+    descriptor
+        .portal_child_contract()
+        .map(super::ComponentPortalChildContract::owner)
 }
 
 fn is_layout_cell(descriptor: &ComponentDescriptor) -> bool {
@@ -236,13 +255,39 @@ mod tests {
         );
     }
 
+    fn presented_by(descriptor: ComponentDescriptor, owner: &str) -> ComponentDescriptor {
+        descriptor.with_portal_child(crate::capability::ComponentPortalChildContract::new(id(
+            owner,
+        )))
+    }
+
     #[test]
-    fn portal_placed_members_and_unallocated_containers_are_rejected() {
+    fn containers_and_their_cells_presented_by_one_portal_are_admitted() {
+        let descriptors = [
+            presented_by(
+                page("demo.component.card", &["demo.component.row"]),
+                "demo.component.owner",
+            ),
+            presented_by(cell("demo.component.row"), "demo.component.owner"),
+        ];
+        assert!(codes(&descriptors).is_empty());
+    }
+
+    #[test]
+    fn cells_presented_apart_from_their_containers_and_unallocated_containers_are_rejected() {
         let descriptors = [
             container("demo.component.unallocated", &["demo.component.anchored"]),
-            cell("demo.component.anchored").with_portal_child(
-                crate::capability::ComponentPortalChildContract::new(id("demo.component.owner")),
+            presented_by(cell("demo.component.anchored"), "demo.component.owner"),
+            presented_by(
+                page("demo.component.card", &["demo.component.stranded"]),
+                "demo.component.owner",
             ),
+            cell("demo.component.stranded"),
+            presented_by(
+                page("demo.component.sheet", &["demo.component.elsewhere"]),
+                "demo.component.owner",
+            ),
+            presented_by(cell("demo.component.elsewhere"), "demo.component.other"),
         ];
         assert_eq!(
             codes(&descriptors),
@@ -253,6 +298,14 @@ mod tests {
                 ),
                 (
                     "demo.component.anchored".to_owned(),
+                    CapabilityDiagnosticCode::InvalidComponentLayoutMembership
+                ),
+                (
+                    "demo.component.stranded".to_owned(),
+                    CapabilityDiagnosticCode::InvalidComponentLayoutMembership
+                ),
+                (
+                    "demo.component.elsewhere".to_owned(),
                     CapabilityDiagnosticCode::InvalidComponentLayoutMembership
                 ),
             ]

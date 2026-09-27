@@ -147,11 +147,7 @@ pub(in crate::application) fn register_structure(
                 );
             }
         }
-        if let Some(owner) = element.portal_owner {
-            descriptor = descriptor.with_portal_child(ComponentPortalChildContract::new(
-                ComponentId::new(format!("platform.pulse.component.{owner}")).unwrap(),
-            ));
-        }
+        descriptor = presented_by(descriptor, element.portal_owner);
         builder = builder.register_component(descriptor);
     }
     builder = builder.register_component(
@@ -172,7 +168,7 @@ pub(in crate::application) fn register_structure(
     for container in dashboard_containers() {
         let id = container.component();
         let allocation = container.allocation();
-        let descriptor = ComponentDescriptor::new(
+        let mut descriptor = ComponentDescriptor::new(
             id.clone(),
             ComponentPropSchema::named(format!("{}.props", id.as_str())),
             ComponentChildPolicy::no_children(),
@@ -180,10 +176,21 @@ pub(in crate::application) fn register_structure(
         )
         .with_allocation_measurement_contract(allocation)
         .with_layout(container.layout);
+        descriptor = presented_by(descriptor, container.portal_owner);
         builder = builder.register_component(match container.scroll_owner {
             Some(owner) => scrolling::scroll_owner(descriptor, owner, allocation),
             None => descriptor,
         });
     }
     surfaces::register(builder)
+}
+
+/// `descriptor`, presented by the Portal its `owner` opens, if it has one.
+fn presented_by(descriptor: ComponentDescriptor, owner: Option<&str>) -> ComponentDescriptor {
+    match owner {
+        Some(owner) => descriptor.with_portal_child(ComponentPortalChildContract::new(
+            ComponentId::new(format!("platform.pulse.component.{owner}")).unwrap(),
+        )),
+        None => descriptor,
+    }
 }

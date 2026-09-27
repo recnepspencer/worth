@@ -66,8 +66,19 @@ impl Declared {
         let placed = self
             .resolve(&element.component(), element.placement, Some(element.rect))
             .0;
-        match element.portal_owner {
-            Some(owner) => {
+        self.placed_from_owner(element.portal_owner, element.placement, placed)
+    }
+
+    /// A Portal child placed outside any container stands from its owner's
+    /// origin; one placed in a cell already stands where its container does.
+    fn placed_from_owner(
+        &self,
+        owner: Option<&str>,
+        placement: DashboardPlacement,
+        placed: Rect,
+    ) -> Rect {
+        match (owner, placement) {
+            (Some(owner), DashboardPlacement::Authored | DashboardPlacement::Viewport(_)) => {
                 let owner = self.element(owner);
                 [
                     owner[0] + placed[0],
@@ -76,7 +87,7 @@ impl Declared {
                     placed[3],
                 ]
             }
-            None => placed,
+            (None, _) | (Some(_), DashboardPlacement::Cell(_)) => placed,
         }
     }
 
@@ -84,9 +95,11 @@ impl Declared {
     /// to hold its tracks' minimums, gaps, and padding.
     pub(super) fn container(&self, id: &str) -> Rect {
         let container = &self.containers[id];
-        let [x, y, width, height] = self
+        let placed = self
             .resolve(&container.component(), container.placement, None)
             .0;
+        let [x, y, width, height] =
+            self.placed_from_owner(container.portal_owner, container.placement, placed);
         let layout = container.layout.select(self.viewport[2]);
         let across = minimum(
             layout.column_tracks(),
@@ -254,6 +267,19 @@ fn axis(axis: Axis, available: f32) -> (f32, f32) {
             (
                 start,
                 (available - start - f32::from(end_logical_points)).max(0.0),
+            )
+        }
+        Axis::BoundedStretch {
+            start_logical_points,
+            end_logical_points,
+            maximum_logical_points,
+        } => {
+            let start = f32::from(start_logical_points);
+            (
+                start,
+                (available - start - f32::from(end_logical_points))
+                    .min(f32::from(maximum_logical_points))
+                    .max(0.0),
             )
         }
         Axis::FixedFromEnd {

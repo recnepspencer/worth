@@ -105,7 +105,8 @@ fn region_descriptor(region: PlatformPulseMosaicRegion) -> MosaicRegionKindDescr
         ),
         PlatformPulseMosaicRegion::Page
         | PlatformPulseMosaicRegion::ServiceList
-        | PlatformPulseMosaicRegion::ActivityList => (
+        | PlatformPulseMosaicRegion::ActivityList
+        | PlatformPulseMosaicRegion::ReviewList => (
             MosaicRegionRole::auxiliary(),
             MosaicSizingBehavior::fills_available_space(),
             MosaicScrollOwnership::region_owned(),
@@ -160,11 +161,13 @@ fn line_extent(owner: DashboardScrollOwner) -> UiScrollLineExtent {
 /// Track and thumb for the axes this owner really overflows on. Service health
 /// is as wide as its region and only travels in block, so declaring inline
 /// chrome for it would reserve a gutter for a bar that can never move. The
-/// page grows only downward past the stage at supported widths.
+/// page grows only downward past the stage at supported widths, and the
+/// review's changes only when a short viewport shortens the modal.
 fn chrome_contract(owner: DashboardScrollOwner) -> UiScrollChromeContract {
     let axes = match owner {
         DashboardScrollOwner::List(DashboardScrollPanel::ServiceHealth)
-        | DashboardScrollOwner::Page => UiScrollAxisSupport::Block,
+        | DashboardScrollOwner::Page
+        | DashboardScrollOwner::Review => UiScrollAxisSupport::Block,
         DashboardScrollOwner::List(DashboardScrollPanel::RecentActivity) => {
             UiScrollAxisSupport::Both
         }
@@ -252,7 +255,7 @@ fn sizing_id(sizing: PlatformPulseMosaicSizing) -> MosaicSizingContractId {
 mod tests {
     use super::*;
 
-    /// Only the page and the two lists, which really overflow, carry chrome.
+    /// Only the page and the three lists, which really overflow, carry chrome.
     /// A fixed region with a declared track would reserve a gutter for a bar
     /// that cannot move.
     #[test]

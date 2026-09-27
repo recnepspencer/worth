@@ -16,6 +16,7 @@ pub enum PlatformPulseMosaicRegion {
     NativeTile,
     ServiceList,
     ActivityList,
+    ReviewList,
     Page,
 }
 
@@ -39,7 +40,7 @@ pub enum PlatformPulseMosaicSizing {
 }
 
 impl PlatformPulseMosaicRegion {
-    pub const ALL: [Self; 10] = [
+    pub const ALL: [Self; 11] = [
         Self::Viewport,
         Self::Masthead,
         Self::EvidenceRail,
@@ -49,6 +50,7 @@ impl PlatformPulseMosaicRegion {
         Self::NativeTile,
         Self::ServiceList,
         Self::ActivityList,
+        Self::ReviewList,
         Self::Page,
     ];
 
@@ -93,6 +95,7 @@ impl PlatformPulseMosaicRegion {
             | Self::NativeTile
             | Self::ServiceList
             | Self::ActivityList
+            | Self::ReviewList
             | Self::Page => {
                 return None;
             }
@@ -110,6 +113,7 @@ impl PlatformPulseMosaicRegion {
             Self::ServiceTile => "platform.pulse.mosaic.region.service_tile",
             Self::ServiceList => "platform.pulse.mosaic.region.service_list",
             Self::ActivityList => "platform.pulse.mosaic.region.activity_list",
+            Self::ReviewList => "platform.pulse.mosaic.region.review_list",
             Self::NativeTile => "platform.pulse.mosaic.region.native_tile",
             Self::Page => "platform.pulse.mosaic.region.page",
         }
