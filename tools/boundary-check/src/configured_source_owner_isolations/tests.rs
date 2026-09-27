@@ -132,7 +132,7 @@ fn collected(owner_source: &str) -> OwnedItems {
         methods: &mut methods,
         module: vec!["owner".into(), "lane".into()],
     }
-    .visit_file(&syn::parse_file(owner_source).unwrap());
+    .visit_file(&crate::source_syntax::parse_file(owner_source).unwrap());
     owned.add_foreign_type_methods(methods, &declared);
     owned
 }

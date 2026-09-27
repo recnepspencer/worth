@@ -102,7 +102,7 @@ fn diagnostics_for_source(
     source: &str,
     rule: &SourceIdentifierDenialConfig,
 ) -> Vec<Diagnostic> {
-    let Ok(file) = syn::parse_file(source) else {
+    let Ok(file) = crate::source_syntax::parse_file(source) else {
         return vec![Diagnostic::new(
             DiagnosticCode::Bc2001BandDependencyViolation,
             path,
@@ -139,9 +139,7 @@ struct ForbiddenIdentifierVisitor<'a> {
 
 impl Visit<'_> for ForbiddenIdentifierVisitor<'_> {
     fn visit_ident(&mut self, identifier: &proc_macro2::Ident) {
-        // `r#name` names the same item as `name`, so match the bare spelling.
-        let spelled = identifier.to_string();
-        let identifier = spelled.strip_prefix("r#").unwrap_or(&spelled).to_owned();
+        let identifier = identifier.to_string();
         if self.forbidden.iter().any(|denied| denied == &identifier)
             || self
                 .forbidden_fragments

@@ -8,8 +8,8 @@ pub(super) fn validate_exact_public_reexport(
 ) -> Result<(), String> {
     let text = std::fs::read_to_string(path)
         .map_err(|error| format!("read {}: {error}", path.display()))?;
-    let syntax =
-        syn::parse_file(&text).map_err(|error| format!("parse {}: {error}", path.display()))?;
+    let syntax = crate::source_syntax::parse_file(&text)
+        .map_err(|error| format!("parse {}: {error}", path.display()))?;
     let mut routes = Vec::new();
     for item in syntax.items {
         if let Item::Use(item_use) = item {

@@ -214,8 +214,8 @@ fn parse_module_tree(
 ) -> Result<(), String> {
     let text = fs::read_to_string(source_path)
         .map_err(|e| format!("read {}: {e}", source_path.display()))?;
-    let file: File =
-        syn::parse_file(&text).map_err(|e| format!("parse {}: {e}", source_path.display()))?;
+    let file: File = crate::source_syntax::parse_file(&text)
+        .map_err(|e| format!("parse {}: {e}", source_path.display()))?;
     let relative_source = relative_under_crate(crate_root, source_path)?;
 
     let mut child_mods = Vec::new();

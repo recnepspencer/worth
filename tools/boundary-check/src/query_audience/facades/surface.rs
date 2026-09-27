@@ -8,7 +8,8 @@ pub(super) fn validate_facade_only_lib(
     relative: &str,
 ) -> Result<Vec<Diagnostic>, String> {
     let text = fs::read_to_string(path).map_err(|e| format!("read {}: {e}", path.display()))?;
-    let syntax = syn::parse_file(&text).map_err(|e| format!("parse {}: {e}", path.display()))?;
+    let syntax = crate::source_syntax::parse_file(&text)
+        .map_err(|e| format!("parse {}: {e}", path.display()))?;
     let mut diagnostics = Vec::new();
     let mut facade_exports = 0usize;
 
@@ -63,7 +64,8 @@ pub(super) fn validate_reexport_only_facade(
     audience_packages: &[&str],
 ) -> Result<Vec<Diagnostic>, String> {
     let text = fs::read_to_string(path).map_err(|e| format!("read {}: {e}", path.display()))?;
-    let syntax = syn::parse_file(&text).map_err(|e| format!("parse {}: {e}", path.display()))?;
+    let syntax = crate::source_syntax::parse_file(&text)
+        .map_err(|e| format!("parse {}: {e}", path.display()))?;
     let mut diagnostics = Vec::new();
     let authority_crates = authority_packages
         .iter()

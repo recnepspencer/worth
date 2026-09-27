@@ -4,7 +4,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use syn::{ext::IdentExt, visit::Visit};
+use syn::visit::Visit;
 
 use super::test_sources::is_test_only;
 
@@ -86,11 +86,11 @@ impl OwnedItemCollector<'_> {
             Some(Some(scope)) => self
                 .owned
                 .scoped_values
-                .entry(identifier.unraw().to_string())
+                .entry(identifier.to_string())
                 .or_default()
                 .push(scope),
             Some(None) => {
-                self.owned.values.insert(identifier.unraw().to_string());
+                self.owned.values.insert(identifier.to_string());
             }
         }
     }
@@ -110,7 +110,7 @@ impl OwnedItemCollector<'_> {
         let segments = path
             .segments
             .iter()
-            .map(|segment| segment.ident.unraw().to_string())
+            .map(|segment| segment.ident.to_string())
             .collect::<Vec<_>>();
         let scope = match segments.first().map(String::as_str) {
             Some("crate") => segments[1..].to_vec(),
@@ -126,9 +126,9 @@ impl OwnedItemCollector<'_> {
     }
 
     fn owned_type(&mut self, visibility: &syn::Visibility, identifier: &proc_macro2::Ident) {
-        self.declared.insert(identifier.unraw().to_string());
+        self.declared.insert(identifier.to_string());
         if !matches!(visibility, syn::Visibility::Inherited) {
-            self.owned.types.insert(identifier.unraw().to_string());
+            self.owned.types.insert(identifier.to_string());
         }
     }
 }
@@ -161,7 +161,7 @@ impl Visit<'_> for OwnedItemCollector<'_> {
     fn visit_item_mod(&mut self, item: &syn::ItemMod) {
         let inline = item.content.is_some();
         if inline {
-            self.module.push(item.ident.unraw().to_string());
+            self.module.push(item.ident.to_string());
         }
         syn::visit::visit_item_mod(self, item);
         if inline {
@@ -203,8 +203,8 @@ impl Visit<'_> for OwnedItemCollector<'_> {
                 }
                 if let Some(scope) = self.visible_in(&method.vis) {
                     self.methods.push((
-                        receiver.ident.unraw().to_string(),
-                        method.sig.ident.unraw().to_string(),
+                        receiver.ident.to_string(),
+                        method.sig.ident.to_string(),
                         scope,
                     ));
                 }
@@ -230,7 +230,7 @@ impl Visit<'_> for OwnedItemCollector<'_> {
             .iter()
             .any(|attribute| attribute.path().is_ident("macro_export"));
         if let (true, Some(identifier)) = (exported, &item.ident) {
-            self.owned.values.insert(identifier.unraw().to_string());
+            self.owned.values.insert(identifier.to_string());
         }
     }
 }

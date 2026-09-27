@@ -222,7 +222,7 @@ fn validate_crate_query_source_edge(
             }
             let text = std::fs::read_to_string(&path)
                 .map_err(|error| format!("failed to read {}: {error}", path.display()))?;
-            let syntax = syn::parse_file(&text)
+            let syntax = crate::source_syntax::parse_file(&text)
                 .map_err(|error| format!("failed to parse {}: {error}", path.display()))?;
             let mut visitor = WorthQueryPathVisitor::default();
             syn::visit::Visit::visit_file(&mut visitor, &syntax);

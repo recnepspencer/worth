@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 
 use quote::ToTokens;
-use syn::{Fields, ImplItem, Item, TraitItem, UseTree, Visibility};
+use syn::{ext::IdentExt, Fields, ImplItem, Item, TraitItem, UseTree, Visibility};
 
 use super::{rust_files, source_roots};
 
@@ -45,10 +45,10 @@ fn raw_query_elevation_aliases(sources: &[&str]) -> BTreeSet<String> {
             UseTree::Path(path) => renames(&path.tree, aliases),
             UseTree::Group(group) => group.items.iter().for_each(|tree| renames(tree, aliases)),
             UseTree::Rename(rename) => {
-                let target = rename.ident.to_string();
+                let target = rename.ident.unraw().to_string();
                 if RAW_QUERY_ELEVATION_TYPES.contains(&target.as_str()) || aliases.contains(&target)
                 {
-                    aliases.insert(rename.rename.to_string());
+                    aliases.insert(rename.rename.unraw().to_string());
                 }
             }
             _ => {}
@@ -59,7 +59,7 @@ fn raw_query_elevation_aliases(sources: &[&str]) -> BTreeSet<String> {
             match item {
                 Item::Use(item) => renames(&item.tree, aliases),
                 Item::Type(item) if names_raw_query_elevation(&item.ty, aliases) => {
-                    aliases.insert(item.ident.to_string());
+                    aliases.insert(item.ident.unraw().to_string());
                 }
                 Item::Mod(module) => {
                     if let Some((_, content)) = &module.content {
@@ -111,11 +111,12 @@ fn public_items_naming_raw_query_elevation(
                 }
             }
             // A trait impl's members are as visible as the trait, and its
-            // header or an associated type (`Deref::Target`) can hand out a
-            // runtime a Bank value holds.
+            // header, self type (`From<Bank> for Runtime`) or an associated
+            // type (`Deref::Target`) can hand out a runtime a Bank value holds.
             Item::Impl(implementation) if implementation.trait_.is_some() => {
                 let (_, path, _) = implementation.trait_.as_ref().expect("trait impl");
                 if names(path)
+                    || names(&implementation.self_ty)
                     || implementation.items.iter().any(|member| match member {
                         ImplItem::Type(item) => names(&item.ty),
                         ImplItem::Fn(function) => names(&function.sig),
@@ -249,6 +250,9 @@ fn public_bank_api_never_exposes_raw_query_elevation_authority() {
         "type First = WorthQueryProgramApplicationRuntime; use self::First as Second; pub fn leak() -> Second { todo!() }",
         "pub static LEAKED: OnceLock<WorthQueryPrimaryGraphApplicationRuntime> = OnceLock::new();",
         "pub const LEAKED: Option<WorthQueryRequestedElevation> = None;",
+        "impl From<Bank> for WorthQueryProgramApplicationRuntime { fn from(bank: Bank) -> Self { todo!() } }",
+        "use host::WorthQueryProgramApplicationRuntime as r#Hidden; pub fn leak() -> Hidden { todo!() }",
+        "type r#Hidden = WorthQueryPrimaryGraphApplicationRuntime; pub fn leak() -> Hidden { todo!() }",
     ];
     for (index, mutant) in mutants.into_iter().enumerate() {
         assert_eq!(

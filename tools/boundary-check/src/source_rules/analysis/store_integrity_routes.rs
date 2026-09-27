@@ -82,7 +82,7 @@ fn test_only(attributes: &[syn::Attribute]) -> bool {
 
 #[cfg(test)]
 fn check_source(path: &str, source: &str) -> Vec<String> {
-    let file = match syn::parse_file(source) {
+    let file = match crate::source_syntax::parse_file(source) {
         Ok(file) => file,
         Err(error) => return vec![format!("cannot parse governed source: {error}")],
     };

@@ -1393,14 +1393,16 @@ header, associated type or method names one, such as `Deref::Target`.
 `commit_for_program`, a 9.17.4 host lane, stays until it is explicitly migrated, and
 `provisional_aftermath` belongs to 9.18.
 
-Status: Phase 5 is closed. The identifier denials and owner isolations in
-`boundary-check` match a raw identifier (`r#name`) as its bare spelling, so the
-`publication_boundary` denial cannot be written around. House pins this branch at
-`34ae2b8e80`. A House workspace saved after its world branch adopted the successor
-reopens on the successor under the v3 compatibility identity and keeps editing
-there. House workflow commands and adoption refuse a branch another host owns with
-`ForeignOwner` before any effect, and the successor revision is a typed denial
-rather than an expect.
+Status: Phase 5 is closed. Every `boundary-check` source analysis reads Rust through
+one parser that spells a raw identifier (`r#name`) as its bare name, macro and
+attribute tokens included, so no source rule can be written around with a raw
+spelling. The Bank API court also refuses a trait impl whose self type names a
+runtime, and follows raw renames. House pins this branch at `34ae2b8e80`. A House
+workspace saved after its world branch adopted the successor reopens on the
+successor under the v3 compatibility identity and keeps editing there. House
+workflow commands and adoption refuse a branch another host owns with `ForeignOwner`
+before any effect, and the successor revision is a typed denial rather than an
+expect.
 
 ## Acceptance, Cost And Review
 

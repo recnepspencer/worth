@@ -6,7 +6,7 @@
 
 use std::collections::BTreeMap;
 
-use syn::{ext::IdentExt, visit::Visit};
+use syn::visit::Visit;
 
 #[derive(Default)]
 pub(super) struct UseBindings {
@@ -59,12 +59,12 @@ impl Collector {
     fn tree(&mut self, tree: &syn::UseTree, prefix: &mut Vec<String>) {
         match tree {
             syn::UseTree::Path(path) => {
-                prefix.push(path.ident.unraw().to_string());
+                prefix.push(path.ident.to_string());
                 self.tree(&path.tree, prefix);
                 prefix.pop();
             }
             syn::UseTree::Name(name) => {
-                let name = name.ident.unraw().to_string();
+                let name = name.ident.to_string();
                 if name == "self" {
                     if let Some(last) = prefix.last() {
                         self.bindings
@@ -79,10 +79,10 @@ impl Collector {
             syn::UseTree::Rename(rename) => {
                 let mut target = prefix.clone();
                 if rename.ident != "self" {
-                    target.push(rename.ident.unraw().to_string());
+                    target.push(rename.ident.to_string());
                 }
                 self.bindings
-                    .bind(&self.module, rename.rename.unraw().to_string(), target);
+                    .bind(&self.module, rename.rename.to_string(), target);
             }
             syn::UseTree::Glob(_) => {}
             syn::UseTree::Group(group) => {
@@ -98,7 +98,7 @@ impl Visit<'_> for Collector {
     fn visit_item_mod(&mut self, item: &syn::ItemMod) {
         let inline = item.content.is_some();
         if inline {
-            self.module.push(item.ident.unraw().to_string());
+            self.module.push(item.ident.to_string());
         }
         syn::visit::visit_item_mod(self, item);
         if inline {

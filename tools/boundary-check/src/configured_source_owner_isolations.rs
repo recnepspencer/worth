@@ -12,7 +12,7 @@
 
 use std::{collections::BTreeSet, fs, path::Path};
 
-use syn::{ext::IdentExt, visit::Visit};
+use syn::visit::Visit;
 
 use crate::config::SourceOwnerIsolationConfig;
 use crate::diagnostics::{Diagnostic, DiagnosticCode};
@@ -39,7 +39,7 @@ pub(crate) fn validate_source_owner_isolations(
         let mut methods = Vec::new();
         let mut parsed = Vec::new();
         for (path, source) in rust_sources(workspace, &rule.owner_roots, &mut diagnostics) {
-            match syn::parse_file(&source) {
+            match crate::source_syntax::parse_file(&source) {
                 Ok(file) => parsed.push((path, file)),
                 Err(_) => diagnostics.push(unparsable(&path)),
             }
@@ -70,7 +70,7 @@ fn diagnostics_for_source(
     owned: &OwnedItems,
     rule: &SourceOwnerIsolationConfig,
 ) -> Vec<Diagnostic> {
-    let Ok(file) = syn::parse_file(source) else {
+    let Ok(file) = crate::source_syntax::parse_file(source) else {
         return vec![unparsable(path)];
     };
     let module = module_path(path);
@@ -251,7 +251,7 @@ impl IsolationVisitor<'_> {
             match token {
                 proc_macro2::TokenTree::Ident(identifier) => {
                     self.visit_ident(&identifier);
-                    segments.push(identifier.unraw().to_string());
+                    segments.push(identifier.to_string());
                 }
                 proc_macro2::TokenTree::Punct(punct) if punct.as_char() == ':' => {}
                 proc_macro2::TokenTree::Group(group) => {
@@ -267,7 +267,7 @@ impl IsolationVisitor<'_> {
     fn visit_use_tree_segments(&mut self, tree: &syn::UseTree, prefix: &mut Vec<String>) {
         match tree {
             syn::UseTree::Path(path) => {
-                prefix.push(path.ident.unraw().to_string());
+                prefix.push(path.ident.to_string());
                 self.visit_use_tree_segments(&path.tree, prefix);
                 prefix.pop();
             }
@@ -301,14 +301,14 @@ impl IsolationVisitor<'_> {
 
     fn check_leaf(&mut self, prefix: &[String], leaf: &proc_macro2::Ident) {
         let mut segments = prefix.to_vec();
-        segments.push(leaf.unraw().to_string());
+        segments.push(leaf.to_string());
         self.check_segments(&segments);
     }
 }
 
 impl Visit<'_> for IsolationVisitor<'_> {
     fn visit_ident(&mut self, identifier: &proc_macro2::Ident) {
-        let identifier = identifier.unraw().to_string();
+        let identifier = identifier.to_string();
         if self.owned.types.contains(&identifier) {
             self.found.insert(identifier);
         }
@@ -318,14 +318,14 @@ impl Visit<'_> for IsolationVisitor<'_> {
         let segments = path
             .segments
             .iter()
-            .map(|segment| segment.ident.unraw().to_string())
+            .map(|segment| segment.ident.to_string())
             .collect::<Vec<_>>();
         self.check_segments(&segments);
         syn::visit::visit_path(self, path);
     }
 
     fn visit_expr_method_call(&mut self, call: &syn::ExprMethodCall) {
-        let method = call.method.unraw().to_string();
+        let method = call.method.to_string();
         if self.owned.reaches_method(&method, &self.module) {
             self.found.insert(method);
         }
@@ -336,7 +336,7 @@ impl Visit<'_> for IsolationVisitor<'_> {
     fn visit_item_mod(&mut self, item: &syn::ItemMod) {
         let inline = item.content.is_some();
         if inline {
-            self.module.push(item.ident.unraw().to_string());
+            self.module.push(item.ident.to_string());
         }
         syn::visit::visit_item_mod(self, item);
         if inline {

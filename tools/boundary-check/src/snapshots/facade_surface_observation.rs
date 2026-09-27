@@ -83,8 +83,8 @@ pub(super) fn observe_facade_document(
 fn extract_namespace_exports(path: &Path, namespace: Option<&str>) -> Result<Vec<String>, String> {
     let text =
         fs::read_to_string(path).map_err(|error| format!("read {}: {error}", path.display()))?;
-    let syntax =
-        syn::parse_file(&text).map_err(|error| format!("parse {}: {error}", path.display()))?;
+    let syntax = crate::source_syntax::parse_file(&text)
+        .map_err(|error| format!("parse {}: {error}", path.display()))?;
     let mut exports = BTreeSet::new();
     let items = match namespace {
         Some(namespace) => selected_namespace_items(&syntax.items, namespace, path)?,
@@ -176,8 +176,8 @@ fn qualify(prefix: &str, name: &str) -> String {
 fn extract_exports(path: &Path) -> Result<Vec<String>, String> {
     let text =
         fs::read_to_string(path).map_err(|e| format!("read facade {}: {e}", path.display()))?;
-    let syntax =
-        syn::parse_file(&text).map_err(|e| format!("parse facade {}: {e}", path.display()))?;
+    let syntax = crate::source_syntax::parse_file(&text)
+        .map_err(|e| format!("parse facade {}: {e}", path.display()))?;
     let mut exports = BTreeSet::new();
     for item in syntax.items {
         match item {
@@ -248,7 +248,8 @@ mod tests {
 
     #[test]
     fn direct_grouped_and_renamed_exports_are_exact() {
-        let syntax = syn::parse_file("pub use x::{A, B as C};\nuse x::Private;").unwrap();
+        let syntax =
+            crate::source_syntax::parse_file("pub use x::{A, B as C};\nuse x::Private;").unwrap();
         let mut exports = BTreeSet::new();
         for item in syntax.items {
             if let Item::Use(item) = item {

@@ -5,7 +5,12 @@ use super::TestSources;
 fn sources(files: &[(&str, &str)]) -> TestSources {
     let parsed = files
         .iter()
-        .map(|(path, source)| ((*path).to_owned(), syn::parse_file(source).unwrap()))
+        .map(|(path, source)| {
+            (
+                (*path).to_owned(),
+                crate::source_syntax::parse_file(source).unwrap(),
+            )
+        })
         .collect::<Vec<_>>();
     TestSources::new(&parsed)
 }

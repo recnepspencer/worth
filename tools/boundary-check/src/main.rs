@@ -15,6 +15,7 @@ mod query_audience;
 mod seed_contracts;
 mod snapshots;
 mod source_rules;
+mod source_syntax;
 mod subworkspace_rules;
 
 use crate::cargo_graph::discover_road1_packages;
