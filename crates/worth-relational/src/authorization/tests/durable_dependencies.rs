@@ -107,7 +107,9 @@ fn pinned_stamp_does_not_depend_on_which_snapshot_is_latest() {
             .capture_authorization_durable_dependencies(&evidence)
             .expect("the pinned exact root has native provenance")
     };
-    let while_latest = stamp(observe_pinned());
+    let first = observe_pinned();
+    let first_counters = first.counters();
+    let while_latest = stamp(first);
 
     let later = create_entity(&fixture.runtime, "later");
     let later_other = create_entity(&fixture.runtime, "later-other");
@@ -116,7 +118,7 @@ fn pinned_stamp_does_not_depend_on_which_snapshot_is_latest() {
     // The same basis answers the same dependencies once a later publication
     // exists: evaluation reads the basis's own root, not the latest edition.
     let after_later = observe_pinned();
-    assert_eq!(after_later.counters().reconstructive_graph_scans, 0);
+    assert_eq!(after_later.counters(), first_counters);
     assert_eq!(after_later.paths()[0].relations().len(), 2);
     assert!(stamp(after_later).matches(&while_latest));
 }

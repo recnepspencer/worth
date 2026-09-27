@@ -38,8 +38,6 @@ pub struct RelationalAuthorizationObservationCounters {
     pub relation_join_index_lookups: usize,
     pub relation_join_candidates_inspected: usize,
     pub maximum_frontier_width: usize,
-    pub reconstructive_graph_scans: usize,
-    pub reconstructive_relation_records_scanned: usize,
 }
 
 #[derive(Debug, Eq, PartialEq)]

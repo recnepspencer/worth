@@ -114,9 +114,6 @@ impl WorthQueryRetainedAuthorizationDecisionFacts {
                 total.maximum_frontier_width = total
                     .maximum_frontier_width
                     .max(counters.maximum_frontier_width);
-                total.reconstructive_graph_scans += counters.reconstructive_graph_scans;
-                total.reconstructive_relation_records_scanned +=
-                    counters.reconstructive_relation_records_scanned;
                 total
             },
         )

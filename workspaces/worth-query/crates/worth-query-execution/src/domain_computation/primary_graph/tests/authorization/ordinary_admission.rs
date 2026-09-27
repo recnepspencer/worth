@@ -101,7 +101,6 @@ fn current_installed_membership_mints_exact_operation_admission() {
     assert!(admitted.graph_work_runtime_ordinal() > 0);
     assert!(!admitted.graph_work_provider().is_empty());
     assert_eq!(admitted.allowed_graph_contract(), operation.contracts());
-    assert_eq!(admitted.relational_counters().reconstructive_graph_scans, 0);
     assert!(admitted.signal_dependency_count() >= 2);
     assert_eq!(
         admitted.operation_scope_binding(),

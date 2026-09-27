@@ -12,8 +12,6 @@ pub struct WorthQueryApplicationAuthorizationWorkEvidence {
     entity_records_inspected: usize,
     predicate_fields_inspected: usize,
     maximum_frontier_width: usize,
-    reconstructive_graph_scans: usize,
-    reconstructive_relation_records_scanned: usize,
     signal_dependency_count: usize,
     admission_security_product_resolutions: usize,
     execution_security_product_resolutions: usize,
@@ -67,12 +65,6 @@ impl WorthQueryApplicationAuthorizationWorkEvidence {
                 total.maximum_frontier_width = total
                     .maximum_frontier_width
                     .max(relational.maximum_frontier_width);
-                total.reconstructive_graph_scans = total
-                    .reconstructive_graph_scans
-                    .saturating_add(relational.reconstructive_graph_scans);
-                total.reconstructive_relation_records_scanned = total
-                    .reconstructive_relation_records_scanned
-                    .saturating_add(relational.reconstructive_relation_records_scanned);
                 let signal_dependencies = dependency.signal_dependency_count();
                 total.signal_dependency_count = total
                     .signal_dependency_count
@@ -113,12 +105,6 @@ impl WorthQueryApplicationAuthorizationWorkEvidence {
             self.maximum_frontier_width = self
                 .maximum_frontier_width
                 .max(relational.maximum_frontier_width);
-            self.reconstructive_graph_scans = self
-                .reconstructive_graph_scans
-                .saturating_add(relational.reconstructive_graph_scans);
-            self.reconstructive_relation_records_scanned = self
-                .reconstructive_relation_records_scanned
-                .saturating_add(relational.reconstructive_relation_records_scanned);
             self.signal_dependency_count = self
                 .signal_dependency_count
                 .saturating_add(authorization.signal_dependency_count());
@@ -159,14 +145,6 @@ impl WorthQueryApplicationAuthorizationWorkEvidence {
         self.maximum_frontier_width
     }
 
-    pub const fn reconstructive_graph_scans(self) -> usize {
-        self.reconstructive_graph_scans
-    }
-
-    pub const fn reconstructive_relation_records_scanned(self) -> usize {
-        self.reconstructive_relation_records_scanned
-    }
-
     pub const fn signal_dependency_count(self) -> usize {
         self.signal_dependency_count
     }
@@ -182,7 +160,5 @@ impl WorthQueryApplicationAuthorizationWorkEvidence {
             .saturating_add(self.relation_records_inspected)
             .saturating_add(self.entity_records_inspected)
             .saturating_add(self.predicate_fields_inspected)
-            .saturating_add(self.reconstructive_graph_scans)
-            .saturating_add(self.reconstructive_relation_records_scanned)
     }
 }

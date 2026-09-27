@@ -35,8 +35,6 @@ fn warm_work_has_an_exact_per_link_slope() {
             relation_join_index_lookups: 1,
             relation_join_candidates_inspected: 1,
             maximum_frontier_width: 1,
-            reconstructive_graph_scans: 0,
-            reconstructive_relation_records_scanned: 0,
         }
     );
     assert_eq!(one_link.relational.paths_evaluated, 13);
@@ -53,8 +51,6 @@ fn warm_work_has_an_exact_per_link_slope() {
     for work in [root, one_link, two_links] {
         assert_eq!(work.relational.relation_join_index_lookups, 1);
         assert_eq!(work.relational.relation_join_candidates_inspected, 1);
-        assert_eq!(work.relational.reconstructive_graph_scans, 0);
-        assert_eq!(work.relational.reconstructive_relation_records_scanned, 0);
         assert_eq!(work.canonical, WorthQueryCanonicalWorkEvidence::zero());
     }
 }
@@ -123,7 +119,7 @@ fn assert_same_link_delta(
 fn additive_delta(
     greater: RelationalAuthorizationObservationCounters,
     lesser: RelationalAuthorizationObservationCounters,
-) -> [usize; 10] {
+) -> [usize; 8] {
     [
         greater.paths_evaluated - lesser.paths_evaluated,
         greater.adjacency_lists_read - lesser.adjacency_lists_read,
@@ -133,8 +129,5 @@ fn additive_delta(
         greater.predicate_fields_inspected - lesser.predicate_fields_inspected,
         greater.relation_join_index_lookups - lesser.relation_join_index_lookups,
         greater.relation_join_candidates_inspected - lesser.relation_join_candidates_inspected,
-        greater.reconstructive_graph_scans - lesser.reconstructive_graph_scans,
-        greater.reconstructive_relation_records_scanned
-            - lesser.reconstructive_relation_records_scanned,
     ]
 }

@@ -267,8 +267,6 @@ fn predicate_counters(matched: bool) -> RelationalAuthorizationObservationCounte
         relation_join_index_lookups: 0,
         relation_join_candidates_inspected: 0,
         maximum_frontier_width: 1,
-        reconstructive_graph_scans: 0,
-        reconstructive_relation_records_scanned: 0,
     }
 }
 
@@ -283,7 +281,5 @@ fn field_constraint_counters() -> RelationalAuthorizationObservationCounters {
         relation_join_index_lookups: 0,
         relation_join_candidates_inspected: 0,
         maximum_frontier_width: 1,
-        reconstructive_graph_scans: 0,
-        reconstructive_relation_records_scanned: 0,
     }
 }
