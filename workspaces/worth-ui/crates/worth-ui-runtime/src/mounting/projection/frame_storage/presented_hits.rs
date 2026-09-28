@@ -1,4 +1,3 @@
-use super::portal_child_view::UiMountedPortalChildPresentation;
 use super::{UiMountedProjectionDenial, UiMountedProjectionFrame};
 
 impl UiMountedProjectionFrame {
@@ -33,7 +32,7 @@ impl UiMountedProjectionFrame {
         let Some(surface) = self.semantic.surface_for(node.receipt.semantic_surface()) else {
             return Ok(None);
         };
-        let Some(row) = self.mechanics.hit_test_for_instance(
+        let Some(laid_out) = self.mechanics.hit_test_for_instance(
             instance,
             surface.surface,
             surface.binding,
@@ -43,27 +42,26 @@ impl UiMountedProjectionFrame {
         else {
             return Ok(None);
         };
-        let (row, portal) =
-            match self.portal_child_presentation(instance, surface.surface, surface.binding)? {
-                UiMountedPortalChildPresentation::Ordinary => (row, None),
-                UiMountedPortalChildPresentation::Suppressed => return Ok(None),
-                UiMountedPortalChildPresentation::Presented(portal, source_anchor) => {
-                    let Some(row) = row
-                        .presented_within_portal(portal, source_anchor)
-                        .map_err(UiMountedProjectionDenial::HitTestCompletion)?
-                    else {
-                        return Ok(None);
-                    };
-                    (row, Some(portal))
-                }
-            };
+        let placement = self.portal_child_placement(instance, surface.surface, surface.binding)?;
+        let Some(row) = placement
+            .present(laid_out)
+            .map_err(UiMountedProjectionDenial::HitTestCompletion)?
+        else {
+            return Ok(None);
+        };
         Ok(Some(crate::mounting::UiPresentedHitTestRow::from_mounted(
             crate::mounting::UiMountedHitTestPresentation::completed(
-                row,
-                portal,
+                row.into_shown(),
+                placement.portal(),
                 self.portal_overlays
                     .iter()
                     .any(|portal| portal.owner() == instance),
+                // Ancestor clips are laid out with the row, before any Portal
+                // presents it.
+                crate::mounting::UiHitAncestorClip::relative_to(
+                    node.appearance_clip,
+                    laid_out.in_layout_space().bounds(),
+                ),
             ),
         )))
     }

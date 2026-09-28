@@ -1,7 +1,9 @@
 //! Direct input is a bounded pending Scroll result until its exact frame is
 //! accepted. Copies carried by mounted publication are evidence, not writers.
 use super::{UiScrollOwnerRecord, UiScrollRuntimeState};
-use crate::runtime::scroll::{UiScrollDeltaCause, UiScrollOwnerIdentity, UiScrollRouteReceipt};
+use crate::runtime::scroll::{
+    UiScrollDeltaCause, UiScrollOwnerIdentity, UiScrollRouteReceipt, UiStagedScrollOffset,
+};
 use worth_ui_host_contract::{UiMountedInstanceIdentity, UiSemanticSurfaceIdentity};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -35,15 +37,22 @@ impl UiPreparedScrollDirectSuccession {
     pub(crate) const fn surface(self) -> UiSemanticSurfaceIdentity {
         self.owner.semantic_surface()
     }
+    /// Where this input poses its geometry owner: an offset staged past the
+    /// frame the host shows, never the accepted one.
     pub(crate) fn pose(
         self,
     ) -> Option<(
         UiSemanticSurfaceIdentity,
         UiMountedInstanceIdentity,
-        crate::runtime::scroll::UiScrollOffset,
+        UiStagedScrollOffset,
     )> {
-        self.geometry_owner
-            .map(|owner| (self.surface(), owner, self.record.offset))
+        self.geometry_owner.map(|owner| {
+            (
+                self.surface(),
+                owner,
+                UiStagedScrollOffset::staged(self.record.offset),
+            )
+        })
     }
 }
 
@@ -124,6 +133,38 @@ impl UiScrollRuntimeState {
                 self.owners.insert(*owner, prepared.record);
             }
         }
+    }
+
+    /// The accepted offset of each owner that direct input on `surface` has
+    /// staged past, keyed by the mounted owner its pose moves: where the
+    /// frame the host shows still stands that owner.
+    pub(crate) fn accepted_offsets_under_direct(
+        &self,
+        surface: UiSemanticSurfaceIdentity,
+    ) -> impl Iterator<
+        Item = (
+            UiMountedInstanceIdentity,
+            crate::runtime::scroll::UiScrollOffset,
+        ),
+    > + '_ {
+        self.pending_direct
+            .iter()
+            .filter(move |(owner, _)| owner.semantic_surface() == surface)
+            .filter_map(|(owner, prepared)| {
+                let (_, geometry_owner, _) = prepared.pose()?;
+                self.owners
+                    .get(owner)
+                    .filter(|accepted| accepted.incarnation == prepared.record.incarnation)
+                    .map(|accepted| (geometry_owner, accepted.offset))
+            })
+    }
+
+    /// Forget the direct input staged on `surface` for a frame no binding
+    /// will present. A surface that ends with no successor carries none of it
+    /// to a later registration.
+    pub(crate) fn retire_surface_direct_successions(&mut self, surface: UiSemanticSurfaceIdentity) {
+        self.pending_direct
+            .retain(|owner, _| owner.semantic_surface() != surface);
     }
 
     pub(crate) fn has_pending_direct(&self, surface: UiSemanticSurfaceIdentity) -> bool {

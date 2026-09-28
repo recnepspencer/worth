@@ -1,9 +1,0 @@
-error[E0451]: fields `request` and `receipt_bundle` of struct `SupportTrustRequestAdmitted` are private
-  --> tests/ui/subscription_support_trust_admitted_request_constructor_private.rs:9:9
-   |
- 8 |     let _ = SupportTrustRequestAdmitted {
-   |             --------------------------- in this type
- 9 |         request: unsafe { std::mem::zeroed::<RawSupportTrustRequest>() },
-   |         ^^^^^^^ private field
-10 |         receipt_bundle: unsafe { std::mem::zeroed::<SupportTrustReceiptBundle>() },
-   |         ^^^^^^^^^^^^^^ private field

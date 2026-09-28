@@ -9,7 +9,69 @@ pub(super) fn instance_identity(
     subject: EntityId,
     start_key_identity: [u8; 32],
 ) -> Result<(String, [u8; 32]), ()> {
-    let material = canonical_operation_material(vec![
+    identity(compiled, subject, start_key_identity, Vec::new())
+}
+
+/// A successor's identity also names the instance its migration ends, so
+/// two sources never mint the same successor. A fork continuation names the
+/// fork too, so the same source continued on two forks mints two successors.
+pub(super) fn migration_identity(
+    resumed: &CompiledWorkflowDefinition,
+    source: EntityId,
+    fork: Option<u64>,
+    subject: EntityId,
+    start_key_identity: [u8; 32],
+) -> Result<(String, [u8; 32]), ()> {
+    let mut material = vec![
+        (
+            "migration.source.partition",
+            source.partition_value().to_string(),
+        ),
+        (
+            "migration.source.slot",
+            source.local_slot_value().to_string(),
+        ),
+        (
+            "migration.source.generation",
+            source.generation_value().to_string(),
+        ),
+    ];
+    material.extend(fork.map(|occurrence| ("continuation.fork", occurrence.to_string())));
+    identity(resumed, subject, start_key_identity, material)
+}
+
+/// A cancellation names the one instance it ends, on the branch whose copy
+/// it ends, so the same key never cancels two instances as one intent.
+pub(super) fn cancellation_identity(
+    instance: EntityId,
+    branch_occurrence: u64,
+    cancel_key_identity: [u8; 32],
+) -> Result<(String, [u8; 32]), ()> {
+    digest(vec![
+        (
+            "cancellation.instance.partition",
+            instance.partition_value().to_string(),
+        ),
+        (
+            "cancellation.instance.slot",
+            instance.local_slot_value().to_string(),
+        ),
+        (
+            "cancellation.instance.generation",
+            instance.generation_value().to_string(),
+        ),
+        ("cancellation.branch", branch_occurrence.to_string()),
+        ("cancellation.key", encode(cancel_key_identity)),
+    ])
+}
+
+fn identity(
+    compiled: &CompiledWorkflowDefinition,
+    subject: EntityId,
+    start_key_identity: [u8; 32],
+    migration: Vec<(&'static str, String)>,
+) -> Result<(String, [u8; 32]), ()> {
+    let mut material = vec![
         (
             "workflow.definition.partition",
             compiled.definition().partition_value().to_string(),
@@ -35,7 +97,13 @@ pub(super) fn instance_identity(
         ("subject.slot", subject.local_slot_value().to_string()),
         ("subject.generation", subject.generation_value().to_string()),
         ("start.key", encode(start_key_identity)),
-    ]);
+    ];
+    material.extend(migration);
+    digest(material)
+}
+
+fn digest(material: Vec<(&'static str, String)>) -> Result<(String, [u8; 32]), ()> {
+    let material = canonical_operation_material(material);
     let identity: [u8; 32] = Sha256::digest(material.as_bytes()).into();
     let mut text = String::with_capacity(64);
     for byte in identity {

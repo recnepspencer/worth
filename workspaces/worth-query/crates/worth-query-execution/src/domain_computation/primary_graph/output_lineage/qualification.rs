@@ -46,6 +46,7 @@ impl WorthQueryApplicationOutputLineage {
                     .as_ref()
                     .filter(|facts| !facts.is_empty())?,
             ),
+            resources: recorded.resources,
         })
     }
 

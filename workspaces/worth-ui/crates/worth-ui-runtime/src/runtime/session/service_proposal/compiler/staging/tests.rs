@@ -296,9 +296,9 @@ pub(super) fn reserved_staging(
         .collect::<Vec<_>>();
     let demand = super::super::UiServiceProposalDemand::recorded_fixture(
         super::super::super::UiServiceFamilyParticipation::from_families(families).unwrap(),
-        families.len() as u8,
-        families.len() as u16,
-        families.len() as u16,
+        u8::try_from(families.len()).unwrap(),
+        u16::try_from(families.len()).unwrap(),
+        u16::try_from(families.len()).unwrap(),
     );
     let candidate = super::super::UiServiceProposalCandidate::for_test(
         identity,

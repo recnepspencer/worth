@@ -65,13 +65,49 @@ impl WorkflowTransitionProgressBasis {
             source: self.progress.clone(),
             advanced,
             settlement,
+            evidence_bytes: 0,
             replay: WorkflowTransitionReplayProjection {
                 identity: transition_identity,
                 identity_bytes: transition_identity_bytes,
                 node_path,
                 // Terminal settlement has no successor and bypasses progress updates.
                 terminal: false,
+                navigation_back: outcome == ApplicationWorkflowControlOutcome::NavigatedBack,
                 operation_receipt_identity,
+            },
+        })
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn prepare_assessment_collection(
+        &self,
+        node: EntityId,
+        occurrence: u64,
+        transition_identity: String,
+        transition_identity_bytes: [u8; 32],
+        node_path: String,
+    ) -> Result<PreparedWorkflowProgressUpdate, WorthQueryApplicationAttemptDenial> {
+        let settlement = SettledWorkflowTransition::new(
+            node,
+            occurrence,
+            ApplicationWorkflowControlOutcome::Completed,
+            None,
+        );
+        let mut advanced = self.progress.clone();
+        advanced.collect_assessment(&self.compiled, settlement)?;
+        Ok(PreparedWorkflowProgressUpdate {
+            key: self.key,
+            source_revision: self.revision,
+            source: self.progress.clone(),
+            advanced,
+            settlement,
+            evidence_bytes: 0,
+            replay: WorkflowTransitionReplayProjection {
+                identity: transition_identity,
+                identity_bytes: transition_identity_bytes,
+                node_path,
+                terminal: false,
+                navigation_back: false,
+                operation_receipt_identity: None,
             },
         })
     }
@@ -85,6 +121,7 @@ pub struct PreparedWorkflowProgressUpdate {
     source: WorkflowInstanceProgress,
     advanced: WorkflowInstanceProgress,
     settlement: SettledWorkflowTransition,
+    evidence_bytes: u64,
     replay: WorkflowTransitionReplayProjection,
 }
 
@@ -93,6 +130,16 @@ impl PreparedWorkflowProgressUpdate {
         &self,
     ) -> WorkflowInstanceProgressKey {
         self.key
+    }
+
+    /// Charges the assessment evidence this step writes to the progress it
+    /// commits.
+    pub(in crate::domain_computation::primary_graph) const fn charging_evidence(
+        mut self,
+        bytes: u64,
+    ) -> Self {
+        self.evidence_bytes = bytes;
+        self
     }
 
     pub(in crate::domain_computation::primary_graph) fn apply(
@@ -108,12 +155,21 @@ impl PreparedWorkflowProgressUpdate {
             source,
             mut advanced,
             settlement,
+            evidence_bytes,
             replay,
         } = self;
-        advanced.retain_observation(WorkflowTransitionProgressObservation::new(
-            WorkflowTransitionLocator::new(transition, settlement),
-            assessment_evidence,
-        ));
+        advanced.retain_transition_identity(
+            settlement.node(),
+            settlement.occurrence(),
+            replay.identity.clone(),
+        );
+        advanced.retain_observation(
+            WorkflowTransitionProgressObservation::new(
+                WorkflowTransitionLocator::new(transition, settlement),
+                assessment_evidence,
+            )
+            .retaining_evidence_bytes(evidence_bytes),
+        );
         retention.advance(
             key,
             source_revision,

@@ -7,7 +7,6 @@ fn complexity_contract_invariant_materialization_is_declared_and_measured() {
         registrations: vec![InvariantRegistration::commit_boundary_blocking(
             InvariantRule::unique_entity_aspect_field(aspect_key("name"), field_key("name")),
         )],
-        ..InvariantCatalog::default()
     });
     let entity = create_entity(&runtime, "a");
 
@@ -28,7 +27,6 @@ fn complexity_budget_snapshot_entity_limit_uses_live_bitsets_for_current_version
         registrations: vec![InvariantRegistration::snapshot_publication_blocking(
             InvariantRule::MaxSnapshotEntities(1),
         )],
-        ..InvariantCatalog::default()
     });
     let _ = create_entity(&runtime, "visible");
 

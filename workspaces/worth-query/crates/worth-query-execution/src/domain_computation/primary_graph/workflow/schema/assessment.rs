@@ -40,6 +40,8 @@ pub(super) fn lower_assessment_evidence(
         passing: planned_field_locator(EVIDENCE_ASPECT, "passing")?,
         publication_identity: planned_field_locator(EVIDENCE_ASPECT, "publication-identity")?,
         output_content_identity: planned_field_locator(EVIDENCE_ASPECT, "output-content-identity")?,
+        program_revision: planned_field_locator(EVIDENCE_ASPECT, "program-revision")?,
+        retained_bytes: planned_field_locator(EVIDENCE_ASPECT, "retained-bytes")?,
     };
     let shape = aspects()
         .struct_fields()
@@ -60,6 +62,8 @@ pub(super) fn lower_assessment_evidence(
         .required("passing", ScalarAspectType::Bool)
         .required("publication-identity", ScalarAspectType::String)
         .required("output-content-identity", ScalarAspectType::String)
+        .optional("program-revision", ScalarAspectType::String)
+        .required("retained-bytes", ScalarAspectType::UInt64)
         .finish()
         .map_err(|_| invalid_member(EVIDENCE_ASPECT))?;
     let registry = register_platform_entity(

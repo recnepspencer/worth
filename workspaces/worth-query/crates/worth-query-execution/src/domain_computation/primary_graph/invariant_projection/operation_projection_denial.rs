@@ -2,13 +2,23 @@ use super::super::{
     WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
 };
 
+/// Why an invariant projection for an admitted operation was refused.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryOperationProjectionDenialKind {
+    /// The admission does not authorize this projection; the full denial is
+    /// attached.
     Authorization(WorthQueryOperationAuthorizationDenialKind),
+    /// The projection snapshot could not be taken.
     InvariantAdmission(super::WorthQueryInvariantProjectionDenialKind),
+    /// The projection exceeded the operation's projection work budget.
     WorkBudgetExceeded,
 }
 
+/// Refusal to run an invariant projection for an admitted operation. No output
+/// or snapshot is returned.
+///
+/// [`Self::kind`] says why; for authorization causes,
+/// [`Self::authorization_denial`] carries the full denial.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryOperationProjectionDenial {
     kind: WorthQueryOperationProjectionDenialKind,

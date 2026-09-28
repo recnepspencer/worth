@@ -16,8 +16,9 @@ pub use projection::{
 pub use reader::{
     AdjacencyTruthReadLimitExceeded, BoundedAdjacencyTruthRead, BoundedEntityKindTruthRead,
     BoundedFrontierAdjacencyTruthRead, BoundedFrontierFieldEqualityTruthRead,
-    EntityKindTruthReadLimitExceeded, FrontierAdjacencyTruthReadLimitExceeded,
-    FrontierFieldEqualityTruthReadLimitExceeded, VisibilityReadContext,
+    BoundedRelationKindTruthRead, EntityKindTruthReadLimitExceeded,
+    FrontierAdjacencyTruthReadLimitExceeded, FrontierFieldEqualityTruthReadLimitExceeded,
+    RelationKindTruthReadDenial, RelationKindTruthReadLimitExceeded, VisibilityReadContext,
 };
 
 use crate::runtime::RelationalRuntime;

@@ -10,8 +10,8 @@ protect. Test adequacy is a code-review judgment; tests do not need a second
 evidence system that certifies their adequacy.
 
 Read the governing specification, relevant production code,
-`_docs/coding_guidelines/testing_laws.md`, and
-`_docs/coding_guidelines/qa_review_guide.md`. Trace setup, action, observation,
+`docs/coding-guidelines/testing_laws.md`, and
+`docs/coding-guidelines/qa_review_guide.md`. Trace setup, action, observation,
 and teardown rather than trusting test names.
 
 ## Choose the execution lane

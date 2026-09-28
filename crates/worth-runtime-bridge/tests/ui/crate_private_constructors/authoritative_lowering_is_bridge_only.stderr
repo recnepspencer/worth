@@ -1,0 +1,44 @@
+error[E0624]: associated function `new_with_authoritative_lowering` is private
+ --> tests/ui/crate_private_constructors/authoritative_lowering_is_bridge_only.rs:7:51
+  |
+7 |       let _envelope = BridgeCommittedPatchEnvelope::new_with_authoritative_lowering(
+  |                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ private associated function
+  |
+ ::: src/input/envelope/canonical.rs
+  |
+  | /     pub(crate) fn new_with_authoritative_lowering(
+  | |         envelope_identity: BridgeCommittedPatchEnvelopeIdentity,
+  | |         patch_items: Vec<BridgeCommittedPatchItem>,
+  | |         record_changes: Vec<BridgeCommittedRecordChange>,
+  | |         counters: BridgeAuthoritativePatchLoweringCounters,
+  | |     ) -> Result<Self, BridgeRouteError> {
+  | |_______________________________________- private associated function defined here
+
+error[E0624]: associated function `with_relational_semantic_change` is private
+  --> tests/ui/crate_private_constructors/authoritative_lowering_is_bridge_only.rs:13:43
+   |
+13 |       let _item = BridgeCommittedPatchItem::with_relational_semantic_change(
+   |                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ private associated function
+   |
+  ::: src/relational_source/identity_parts.rs
+   |
+   | /     pub(crate) fn with_relational_semantic_change(
+   | |         record_identity: RelationalBridgeRecordIdentityParts,
+   | |         target: BridgeCommittedPatchTarget,
+   | |         semantic_change: crate::input::envelope::BridgeSemanticAspectChange,
+   | |     ) -> Self {
+   | |_____________- private associated function defined here
+
+error[E0624]: associated function `new` is private
+  --> tests/ui/crate_private_constructors/authoritative_lowering_is_bridge_only.rs:18:44
+   |
+18 |       let _claimed = BridgeProducerMetadata::new(
+   |                                              ^^^ private associated function
+   |
+  ::: src/input/envelope/core.rs
+   |
+   | /     pub(crate) fn new(
+   | |         authority_kind: BridgeProducerAuthorityKind,
+   | |         export_schema_version: impl Into<Arc<str>>,
+   | |     ) -> Self {
+   | |_____________- private associated function defined here

@@ -12,17 +12,17 @@ pub(super) fn retain_denial<T>(
 where
     T: From<super::UiAllocationReplanTransactionOutcome>,
 {
-    let bucket = state
+    state
         .denied_transactions
-        .entry(transaction.idempotency_key())
-        .or_default();
-    if let Some((_, retained)) = bucket
-        .iter_mut()
-        .find(|(item, _)| item.same_idempotency_basis(transaction))
-    {
-        *retained = denial;
-    } else {
-        bucket.push((transaction.clone(), denial));
-    }
+        .edit_or_default(transaction.idempotency_key(), |bucket| {
+            if let Some((_, retained)) = bucket
+                .iter_mut()
+                .find(|(item, _)| item.same_idempotency_basis(transaction))
+            {
+                *retained = denial;
+            } else {
+                bucket.push((transaction.clone(), denial));
+            }
+        });
     super::UiAllocationReplanTransactionOutcome::Denied(denial).into()
 }

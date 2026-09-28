@@ -52,11 +52,9 @@ fn pointer_presentation_refresh_preserves_admitted_surface_and_primary_authority
                 == graph
         })
         .unwrap();
-    let inside = UiHostSurfacePosition::viewport_logical(
-        ((row.bounds().platform_box().x() + row.bounds().platform_box().width() * 0.5) * 1_000.0)
-            as i64,
-        ((row.bounds().platform_box().y() + row.bounds().platform_box().height() * 0.5) * 1_000.0)
-            as i64,
+    let inside = crate::units::viewport_position_for_test(
+        row.bounds().platform_box().x() + row.bounds().platform_box().width() * 0.5,
+        row.bounds().platform_box().y() + row.bounds().platform_box().height() * 0.5,
     );
     let outside = UiHostSurfacePosition::viewport_logical(-1_000, -1_000);
     let traveling = UiHostPointerIdentity::new(9);

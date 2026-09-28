@@ -116,6 +116,15 @@ impl UiPreparedPortalPlacement {
     pub(crate) const fn side(self) -> UiPortalPlacementSide {
         self.arrangement.side
     }
+    /// Whether the Portal stands where it does because of where its anchor
+    /// is: below or above it. A centered or viewport-fitted Portal stands in
+    /// the same place wherever its anchor is.
+    pub(crate) const fn follows_anchor(self) -> bool {
+        match self.arrangement.side {
+            UiPortalPlacementSide::Below | UiPortalPlacementSide::Above => true,
+            UiPortalPlacementSide::ViewportFit | UiPortalPlacementSide::Centered => false,
+        }
+    }
     pub(crate) const fn layer(self) -> UiPortalLayerIdentity {
         self.layer
     }

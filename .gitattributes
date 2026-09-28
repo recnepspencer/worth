@@ -3,6 +3,7 @@ workspaces/worth-ui/crates/worth-ui-host-native/assets/fonts/*.ttf -text
 workspaces/worth-ui/crates/worth-ui-host-native/profiles/*.toml text eol=lf
 workspaces/worth-ui/crates/worth-ui-certification/tests/application_contracts/host_platform/control_points.toml text eol=lf
 tools/worth-ui-text-profile-qualification/Cargo.lock text eol=lf
+tools/worth-ui-resize-trace-qualification/Cargo.lock text eol=lf
 workspaces/worth-ui/profiles/worth-ui-global-text-v2/**/*.toml text eol=lf -whitespace
 workspaces/worth-ui/profiles/worth-ui-global-text-v2/**/*.json text eol=lf -whitespace
 workspaces/worth-ui/profiles/worth-ui-global-text-v2/**/*.txt text eol=lf -whitespace

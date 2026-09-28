@@ -283,7 +283,11 @@ impl UiMountedFrameRetentionAuthority {
             UiMountedRetentionClass::Diagnostic => &mut self.diagnostic_usage,
             UiMountedRetentionClass::VisualSnapshot => &mut self.visual_snapshot_usage,
             UiMountedRetentionClass::VisualOverlay => &mut self.visual_overlay_usage,
-            _ => unreachable!("only lease-backed retention classes own usage"),
+            UiMountedRetentionClass::Current
+            | UiMountedRetentionClass::InFlight
+            | UiMountedRetentionClass::Quarantine => {
+                unreachable!("only lease-backed retention classes own usage")
+            }
         }
     }
 
@@ -294,7 +298,11 @@ impl UiMountedFrameRetentionAuthority {
             UiMountedRetentionClass::Diagnostic => self.diagnostic_usage,
             UiMountedRetentionClass::VisualSnapshot => self.visual_snapshot_usage,
             UiMountedRetentionClass::VisualOverlay => self.visual_overlay_usage,
-            _ => unreachable!("only lease-backed retention classes own usage"),
+            UiMountedRetentionClass::Current
+            | UiMountedRetentionClass::InFlight
+            | UiMountedRetentionClass::Quarantine => {
+                unreachable!("only lease-backed retention classes own usage")
+            }
         }
     }
 
@@ -305,7 +313,11 @@ impl UiMountedFrameRetentionAuthority {
             UiMountedRetentionClass::Diagnostic => self.budget.diagnostic(),
             UiMountedRetentionClass::VisualSnapshot => self.budget.visual_snapshot(),
             UiMountedRetentionClass::VisualOverlay => self.budget.visual_overlay(),
-            _ => unreachable!("only lease-backed retention classes own budgets"),
+            UiMountedRetentionClass::Current
+            | UiMountedRetentionClass::InFlight
+            | UiMountedRetentionClass::Quarantine => {
+                unreachable!("only lease-backed retention classes own budgets")
+            }
         }
     }
 

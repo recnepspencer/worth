@@ -3,7 +3,7 @@
 Branch from `origin/master` (0111969816). Each entry records a call made
 without asking, why, and how it is enforced.
 
-## Field issues from Hearth (`_docs/worth-signals-wasm-issues.md`)
+## Field issues from Hearth (`plans/worth-signals-wasm-issues.md`)
 
 1. **Mutation response digest no longer throws on `Date`.** Line values are
    JSON values, so a loaded or mutation-response value is canonicalized once to

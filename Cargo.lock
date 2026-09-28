@@ -1536,6 +1536,7 @@ dependencies = [
 name = "worth-query-admission"
 version = "0.1.0"
 dependencies = [
+ "getrandom 0.3.4",
  "serde_json",
  "sha2",
  "worth-foundational",
@@ -1563,6 +1564,7 @@ name = "worth-query-execution"
 version = "0.1.0"
 dependencies = [
  "im",
+ "serde",
  "serde_json",
  "sha2",
  "stats_alloc",
@@ -1630,6 +1632,7 @@ dependencies = [
  "rayon",
  "rmp-serde",
  "serde",
+ "serde_json",
  "sha2",
  "smallvec",
  "stats_alloc",
@@ -1637,19 +1640,20 @@ dependencies = [
  "worth-foundational",
  "worth-harness",
  "worth-proof",
- "worth-runtime-bridge",
 ]
 
 [[package]]
 name = "worth-runtime-bridge"
 version = "0.1.0"
 dependencies = [
+ "serde",
  "serde_json",
  "sha2",
  "trybuild",
  "worth-foundational",
  "worth-harness",
  "worth-proof",
+ "worth-relational",
  "worth-signal",
 ]
 

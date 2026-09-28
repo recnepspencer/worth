@@ -163,6 +163,11 @@ where
     ) -> Result<Vec<Self::Demand>, WorthQueryRequiredOutputConnectionDenial>;
 }
 
+/// Refusal, from an application's output connection, to derive a discovery
+/// query or output demands from its input.
+///
+/// Application code returns this from its connection functions; `subject`
+/// names what could not be connected.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryRequiredOutputConnectionDenial {
     subject: String,

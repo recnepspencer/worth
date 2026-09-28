@@ -162,8 +162,9 @@ Rust authors state the same block with
 Mosaic constructors and admits it only where it equals the layout its
 container registered. A disagreement, a duplicate block, or an unregistered
 container is a typed `UiAuthoredLayoutDenial`, and neither source wins.
-Platform Pulse restates its page in
-[`dashboard_layout.wui`](../apps/platform-pulse/app/dashboard_layout.wui).
+Restating is per container and optional: Platform Pulse restates its page in
+[`dashboard_layout.wui`](../apps/platform-pulse/app/dashboard_layout.wui),
+while its metric row keeps only the layout it registers.
 
 A container that owns Scroll lays its members out at their minimums and
 scrolls them when they outgrow its viewport. Height constrains that viewport,
@@ -172,6 +173,9 @@ popovers are placed again from each frame's layout with the fit, flip and
 clamp policy they opened with. A Portal opened fitted to its content fits the
 extent each frame lays that content out at, not the extent it opened at.
 Backdrops cover the current extent.
+The current extent is the one the displayed frame was measured at. Until the
+host accepts a frame at a newer extent, pixels, placement, and owner state all
+stay at the older one.
 
 ## Geometry, Borders, And Text
 
@@ -343,8 +347,7 @@ A `.wui` layout restates a registered layout; it cannot yet be the sole
 source, because registration checks membership and containment against it.
 Layout tracks are whole logical points. An ellipsis needs a qualified U+2026
 glyph in the font collection; without one, shaping is denied with
-`EllipsisRequiresQualifiedGlyph`. A container's content extent is measured
-when it opens, not again while it stays open.
+`EllipsisRequiresQualifiedGlyph`.
 
 ## Anti-Patterns
 

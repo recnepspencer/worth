@@ -12,8 +12,8 @@
     "workspaces/worth-ui/docs/visual-inspection.md",
     "workspaces/worth-ui/docs/appearance-and-themes.md",
     "workspaces/worth-ui/AI_README.md",
-    "_docs/worth-ui/worth_ui_roadmap.md",
-    "_docs/worth-ui/milestone-3.16.md"
+    "plans/worth-ui/worth_ui_roadmap.md",
+    "plans/worth-ui/milestone-3.16.md"
   ],
   "planned_documents": []
 }

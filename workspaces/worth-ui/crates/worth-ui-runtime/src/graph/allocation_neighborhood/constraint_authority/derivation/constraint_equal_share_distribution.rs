@@ -8,8 +8,12 @@ use crate::evidence::{
     UiConstraintPropagationDenialReason, UiConstraintPropagationEdge,
     UiConstraintPropagationEdgeFamily, UiConstraintPropagationEdgePayload,
     UiConstraintSiblingNegotiationFixedPointPolicy, UiConstraintSiblingNegotiationResult,
-    UiMeasurementBasis, UiMeasurementValue,
+    UiMeasurementBasis,
 };
+
+#[path = "constraint_equal_share_extent_units.rs"]
+mod extent_units;
+use extent_units::fractional_remainder_required;
 
 pub(super) struct UiAdmittedEqualShareDistribution {
     result: Option<UiConstraintEqualShareDistributionResult>,
@@ -82,13 +86,22 @@ pub(super) fn admit_equal_share_distribution(
         .iter()
         .enumerate()
         .map(|(index, member)| {
-            UiConstraintEqualShareMember::new(
-                member.identity_digest(),
-                remainder_rank_for(policy, peers.len(), index),
-                member.measurement_constraint_modifier(),
-            )
+            remainder_rank_for(policy, peers.len(), index).map(|rank| {
+                UiConstraintEqualShareMember::new(
+                    member.identity_digest(),
+                    rank,
+                    member.measurement_constraint_modifier(),
+                )
+            })
         })
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|_| {
+            equal_share_denial(
+                UiConstraintPropagationDenialReason::EqualShareRankExhausted,
+                rank_exhaustion_witness(summary, peers.len()),
+                neighborhood,
+            )
+        })?;
     let result = UiConstraintEqualShareDistributionResult::new(
         neighborhood.identity().identity_digest(),
         summary.equal_share_group(),
@@ -239,20 +252,22 @@ fn denies_non_integral_distribution(
     }
 }
 
+/// The rank the remainder reaches the peer at `index` in, or no rank under a
+/// policy that leaves no remainder. An error when the rank does not fit.
 fn remainder_rank_for(
     policy: UiConstraintEqualShareDistributionPolicy,
     peer_count: usize,
     index: usize,
-) -> Option<u16> {
+) -> Result<Option<u16>, std::num::TryFromIntError> {
     match policy {
         UiConstraintEqualShareDistributionPolicy::DeterministicRemainderLeftToRightByStablePeerIdentity => {
-            Some(index as u16)
+            u16::try_from(index).map(Some)
         }
         UiConstraintEqualShareDistributionPolicy::DeterministicRemainderCenterOutByStablePeerIdentity => {
-            Some(center_out_rank(peer_count, index))
+            u16::try_from(center_out_rank(peer_count, index)).map(Some)
         }
         UiConstraintEqualShareDistributionPolicy::ExactFractional
-        | UiConstraintEqualShareDistributionPolicy::DenyIfNonIntegralRequired => None,
+        | UiConstraintEqualShareDistributionPolicy::DenyIfNonIntegralRequired => Ok(None),
     }
 }
 
@@ -281,23 +296,6 @@ fn integral_distribution_required(
         member.measurement_constraint_modifier()
             == Some(UiDeclaredMeasurementConstraintModifier::Bounded)
     })
-}
-
-fn fractional_remainder_required(
-    measurement_basis: &UiMeasurementBasis,
-    axis_scope: UiConstraintAxisScope,
-    primary_axis: crate::evidence::UiLayoutOperatorPrimaryAxis,
-    peer_count: usize,
-) -> bool {
-    if peer_count == 0 {
-        return false;
-    }
-    measurement_basis
-        .evidence_inputs()
-        .iter()
-        .filter_map(|input| input.as_host_measurement_result())
-        .find_map(|result| extent_units_for(result.value(), axis_scope, primary_axis))
-        .is_none_or(|units| units % peer_count != 0)
 }
 
 fn non_integral_requirement_witness(
@@ -331,56 +329,19 @@ fn available_space_posture_tag(posture: UiConstraintAvailableSpacePosture) -> u6
     })
 }
 
-fn center_out_rank(peer_count: usize, index: usize) -> u16 {
-    let center = (peer_count.saturating_sub(1)) as i32 / 2;
-    let distance = (index as i32 - center).unsigned_abs();
-    ((distance as usize * peer_count) + index) as u16
+/// Peers nearer the middle rank first, ties broken left to right.
+fn center_out_rank(peer_count: usize, index: usize) -> usize {
+    let center = peer_count.saturating_sub(1) / 2;
+    index
+        .abs_diff(center)
+        .saturating_mul(peer_count)
+        .saturating_add(index)
 }
 
-fn extent_units_for(
-    value: &UiMeasurementValue,
-    axis_scope: UiConstraintAxisScope,
-    primary_axis: crate::evidence::UiLayoutOperatorPrimaryAxis,
-) -> Option<usize> {
-    let (width, height) = match value {
-        UiMeasurementValue::ViewportExtent(value) => (value.width, value.height),
-        UiMeasurementValue::ScrollContainerViewport(value) => (value.width, value.height),
-        _ => return None,
-    };
-    let units = match axis_scope {
-        UiConstraintAxisScope::Primary => primary_extent_units(width, height, primary_axis),
-        UiConstraintAxisScope::Cross => cross_extent_units(width, height, primary_axis)?,
-        UiConstraintAxisScope::Both => width.min(height) as usize,
-    };
-    Some(units)
-}
-
-fn primary_extent_units(
-    width: f32,
-    height: f32,
-    primary_axis: crate::evidence::UiLayoutOperatorPrimaryAxis,
-) -> usize {
-    match primary_axis {
-        crate::evidence::UiLayoutOperatorPrimaryAxis::Horizontal => width as usize,
-        crate::evidence::UiLayoutOperatorPrimaryAxis::Vertical
-        | crate::evidence::UiLayoutOperatorPrimaryAxis::TwoDimensional
-        | crate::evidence::UiLayoutOperatorPrimaryAxis::Layered
-        | crate::evidence::UiLayoutOperatorPrimaryAxis::None => height as usize,
-    }
-}
-
-fn cross_extent_units(
-    width: f32,
-    height: f32,
-    primary_axis: crate::evidence::UiLayoutOperatorPrimaryAxis,
-) -> Option<usize> {
-    Some(match primary_axis {
-        crate::evidence::UiLayoutOperatorPrimaryAxis::Horizontal => height as usize,
-        crate::evidence::UiLayoutOperatorPrimaryAxis::Vertical => width as usize,
-        crate::evidence::UiLayoutOperatorPrimaryAxis::TwoDimensional
-        | crate::evidence::UiLayoutOperatorPrimaryAxis::Layered => width.min(height) as usize,
-        crate::evidence::UiLayoutOperatorPrimaryAxis::None => return None,
-    })
+fn rank_exhaustion_witness(summary: UiAllocationConstraintSummary, peer_count: usize) -> u64 {
+    stable_text_digest("worth-ui.constraint-equal-share.rank-exhausted")
+        ^ axis_scope_tag(equal_share_axis_scope(summary.equal_share_group())).rotate_left(7)
+        ^ (peer_count as u64).rotate_left(13)
 }
 
 fn axis_scope_tag(axis_scope: Option<UiConstraintAxisScope>) -> u64 {

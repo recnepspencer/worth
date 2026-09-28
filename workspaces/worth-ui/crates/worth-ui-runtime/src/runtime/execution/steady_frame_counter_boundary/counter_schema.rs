@@ -171,7 +171,19 @@ fn expected_names_for_family(family: WorthUiRuntimeCounterFamily) -> &'static [&
         WorthUiRuntimeCounterFamily::CanvasSpatialExecution => CANVAS_NAMES,
         WorthUiRuntimeCounterFamily::RealtimeOverlayExecution => REALTIME_NAMES,
         WorthUiRuntimeCounterFamily::SteadyFrameRendering => STEADY_NAMES,
-        _ => &[],
+        WorthUiRuntimeCounterFamily::ReloadCandidateAdmission
+        | WorthUiRuntimeCounterFamily::SourceIngress
+        | WorthUiRuntimeCounterFamily::ArtifactComparison
+        | WorthUiRuntimeCounterFamily::ImpactNarrowing
+        | WorthUiRuntimeCounterFamily::IdentityReplacement
+        | WorthUiRuntimeCounterFamily::DurableStateReconciliation
+        | WorthUiRuntimeCounterFamily::QueryRebindPlanning
+        | WorthUiRuntimeCounterFamily::PlanAssembly
+        | WorthUiRuntimeCounterFamily::PlanLowering
+        | WorthUiRuntimeCounterFamily::LaneAdmission
+        | WorthUiRuntimeCounterFamily::Activation
+        | WorthUiRuntimeCounterFamily::CommittedAllocationActivation
+        | WorthUiRuntimeCounterFamily::DiagnosticsProjection => &[],
     }
 }
 

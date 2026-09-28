@@ -278,7 +278,10 @@ fn activate_catalog(
         crate::runtime::UiScrollCatalogSwapEvidence::Prepared(receipt)
             if receipt == scroll_catalog
     ));
-    assert_eq!(scroll_catalog.counters().context_reads(), count as u16);
+    assert_eq!(
+        scroll_catalog.counters().context_reads(),
+        u16::try_from(count).unwrap()
+    );
     assert_eq!(
         scroll_catalog.identity().activation_keys().len(),
         scroll_catalog.owner_count() as usize

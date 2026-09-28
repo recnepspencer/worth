@@ -3,7 +3,8 @@ pub(super) fn consume_axis(current: i64, maximum: i64, delta: i64, accepts: bool
         return (current, 0);
     }
     let desired = i128::from(current) + i128::from(delta);
-    let next = desired.clamp(0, i128::from(maximum)) as i64;
+    let next = i64::try_from(desired.clamp(0, i128::from(maximum)))
+        .expect("clamped between zero and an i64 maximum");
     (next, next - current)
 }
 

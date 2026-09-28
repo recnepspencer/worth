@@ -83,11 +83,11 @@ impl UiAllocationReceiptLedger {
         }
         successor.next_transaction_generation = transaction.transaction_generation();
         successor.latest_frame_epoch = Some(frame_epoch);
-        successor.completed_transactions.clear();
+        successor.completed_transactions = Default::default();
         successor
             .completed_transactions
             .insert(transaction.idempotency_key(), vec![outcome.clone()]);
-        successor.denied_transactions.clear();
+        successor.denied_transactions = Default::default();
         drop(state);
         Ok(crate::runtime::UiCommittedAllocationActivationAttempt::new(
             catalog,

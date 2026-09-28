@@ -24,6 +24,8 @@ mod decision_manifest_ceiling;
 mod effect_authority;
 #[path = "application_attempt/emitted_effects.rs"]
 mod emitted_effects;
+#[path = "application_attempt/guarded_operation_custody.rs"]
+mod guarded_operation_custody;
 #[path = "application_attempt/idempotency_behavior.rs"]
 mod idempotency_behavior;
 #[path = "application_attempt/index_budget.rs"]

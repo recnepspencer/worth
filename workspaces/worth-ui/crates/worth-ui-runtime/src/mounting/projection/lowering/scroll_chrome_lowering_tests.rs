@@ -45,19 +45,22 @@ fn role(name: &str) -> worth_ui_dsl::UiAppearanceRoleIdentity {
     worth_ui_dsl::UiAppearanceRoleIdentity::new(name).expect("declared Pulse chrome role")
 }
 
+/// `points` in the nearest whole subpixels.
+fn subpixels(points: f32) -> i64 {
+    crate::whole_number::whole_i64((f64::from(points) * f64::from(SUBPIXELS_PER_POINT)).round())
+        .expect("a fixture length within i64 subpixels")
+}
+
 fn facts(block_offset_points: f32) -> UiScrollChromeFacts {
     UiScrollChromeFacts::derive(
         canonical(0.0, 0.0, VIEWPORT_WIDTH, VIEWPORT_HEIGHT),
         crate::runtime::scroll::UiScrollBounds::new(
-            ((CONTENT_WIDTH - VIEWPORT_WIDTH) * SUBPIXELS_PER_POINT) as i64,
-            ((CONTENT_HEIGHT - VIEWPORT_HEIGHT) * SUBPIXELS_PER_POINT) as i64,
+            subpixels(CONTENT_WIDTH - VIEWPORT_WIDTH),
+            subpixels(CONTENT_HEIGHT - VIEWPORT_HEIGHT),
         )
         .expect("both axes overflow"),
-        crate::runtime::scroll::UiScrollOffset::new(
-            0,
-            (block_offset_points * SUBPIXELS_PER_POINT) as i64,
-        )
-        .expect("non-negative offset"),
+        crate::runtime::scroll::UiScrollOffset::new(0, subpixels(block_offset_points))
+            .expect("non-negative offset"),
         &crate::runtime::scroll::chrome::UiScrollAdmittedChrome::admit_declared_chrome(
             UiScrollChromeAxisSupport::Both,
             role(TRACK_ROLE),

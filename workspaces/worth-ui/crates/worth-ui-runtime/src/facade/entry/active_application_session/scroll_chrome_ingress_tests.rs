@@ -14,7 +14,7 @@ use super::scroll_chrome_ingress::{
 use worth_ui_host_contract::{
     UiHostObservationPayload, UiHostPointerButton, UiHostPointerButtonTransition,
     UiHostPointerCaptureEpoch, UiHostPointerIdentity, UiHostPressedPointerButtons,
-    UiHostSurfacePosition, UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
+    UiHostSurfacePosition,
 };
 
 fn pointer(value: u64) -> UiHostPointerIdentity {
@@ -26,8 +26,7 @@ fn epoch(value: u64) -> UiHostPointerCaptureEpoch {
 }
 
 fn at(x_points: f64, y_points: f64) -> UiHostSurfacePosition {
-    let scale = UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f64;
-    UiHostSurfacePosition::viewport_logical((x_points * scale) as i64, (y_points * scale) as i64)
+    crate::units::viewport_position_for_test(x_points, y_points)
 }
 
 fn button(

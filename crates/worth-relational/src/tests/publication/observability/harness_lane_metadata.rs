@@ -222,7 +222,6 @@ fn harness_phase8_serial_strategy_selection_is_harness_visible_and_still_parity_
         registrations: vec![InvariantRegistration::commit_boundary_blocking(
             InvariantRule::MaxMergedIntents(16),
         )],
-        ..InvariantCatalog::default()
     });
     let (fixture, batch, request) = harness_phase8_fixture_batch_request();
 
@@ -245,7 +244,6 @@ fn harness_phase8_serial_strategy_selection_is_harness_visible_and_still_parity_
         registrations: vec![InvariantRegistration::commit_boundary_blocking(
             InvariantRule::MaxMergedIntents(16),
         )],
-        ..InvariantCatalog::default()
     });
     let (fixture, batch, request) = harness_phase8_fixture_batch_request();
     let bundles = worth_harness::facade::run_matrix(adapter, fixture, request)

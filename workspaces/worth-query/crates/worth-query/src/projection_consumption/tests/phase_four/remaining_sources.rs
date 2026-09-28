@@ -1,6 +1,6 @@
 use worth_foundational::facade::AspectKey;
-use worth_relational::facade::grouped_truth::{
-    project_relational_grouped_truth, GroupedProjectionContract,
+use worth_runtime_bridge::facade::{
+    project_relational_grouped_truth, RelationalGroupedProjectionContract,
 };
 
 use super::super::super::{
@@ -199,8 +199,8 @@ fn grouped_projection_contract(
     grouping_aspect: &str,
     identity_binding_aspect: &str,
     grouping_binding_aspect: &str,
-) -> GroupedProjectionContract {
-    GroupedProjectionContract::new(
+) -> RelationalGroupedProjectionContract {
+    RelationalGroupedProjectionContract::new(
         aspect_key(grouping_aspect),
         aspect_key(identity_binding_aspect),
         aspect_key(grouping_binding_aspect),

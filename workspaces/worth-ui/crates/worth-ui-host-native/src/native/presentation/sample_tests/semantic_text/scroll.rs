@@ -30,7 +30,13 @@ fn assert_reveal(viewport_y: f32, delta: f32, initial: Option<[f32; 4]>, reveale
     // The A image covers y=18..22. The viewport can hide part or all of it.
     let mechanic = mechanic
         .clipped_to_appearance_ancestor(
-            UiAppearanceClip::new(10_000, (viewport_y * 1_000.0) as i32, 40_000, 9_000).unwrap(),
+            UiAppearanceClip::new(
+                10_000,
+                worth_ui_host_contract::appearance_coordinate_nearest(viewport_y).unwrap(),
+                40_000,
+                9_000,
+            )
+            .unwrap(),
         )
         .unwrap()
         .unwrap();

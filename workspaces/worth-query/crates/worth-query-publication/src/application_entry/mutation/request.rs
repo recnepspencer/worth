@@ -12,6 +12,7 @@ use worth_query_installation::facade::ApplicationSchema;
 #[doc(hidden)]
 pub struct WorthQueryMutationSourceUnprepared;
 
+/// Marks a mutation request whose source expectation is settled.
 #[doc(hidden)]
 pub struct WorthQueryMutationSourcePrepared;
 
@@ -20,6 +21,8 @@ pub(super) enum WorthQueryMutationExpectedSource<Query> {
     ResultSet(worth_query_execution::facade::primary_graph::WorthQueryObservedResultSet<Query>),
 }
 
+/// A mutation request under construction. State its source expectation and preconditions,
+/// then bind an idempotency key.
 pub struct WorthQueryApplicationMutationRequest<
     'application,
     'principal,
@@ -50,6 +53,7 @@ where
     source_preparation: std::marker::PhantomData<SourcePreparation>,
 }
 
+/// A mutation request bound to its idempotency key, ready to execute.
 pub struct WorthQueryApplicationMutationRequestWithIdempotency<
     'application,
     'principal,
@@ -72,6 +76,11 @@ pub struct WorthQueryApplicationMutationRequestWithIdempotency<
     >,
     pub(super) key: &'key <Intent::Binding as ApplicationMutationBinding<Schema>>::IdempotencyKey,
     pub(super) workflow_transition_identity: Option<[u8; 32]>,
+    pub(super) workflow_authority: Option<
+        std::sync::Arc<
+            worth_query_execution::publication_boundary::workflow_advance::WorkflowOperationAuthoritySlot,
+        >,
+    >,
 }
 
 impl<'application, 'principal, 'scope, Schema, Intent>
@@ -251,6 +260,7 @@ where
             request: self,
             key,
             workflow_transition_identity: None,
+            workflow_authority: None,
         }
     }
 }
@@ -270,6 +280,18 @@ where
     Intent: ApplicationMutationIntent<Schema>,
 {
     pub(in crate::application_entry) fn bind_workflow_transition(
+        mut self,
+        identity: [u8; 32],
+        authority: std::sync::Arc<
+            worth_query_execution::publication_boundary::workflow_advance::WorkflowOperationAuthoritySlot,
+        >,
+    ) -> Self {
+        self.workflow_transition_identity = Some(identity);
+        self.workflow_authority = Some(authority);
+        self
+    }
+
+    pub(in crate::application_entry) fn bind_workflow_recovery_transition(
         mut self,
         identity: [u8; 32],
     ) -> Self {

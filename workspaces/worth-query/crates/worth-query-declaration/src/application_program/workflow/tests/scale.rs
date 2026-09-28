@@ -17,7 +17,7 @@ fn ten_thousand_node_sparse_definition_has_indexed_validation_work(
         LARGE_CANONICAL_BYTE_LIMIT,
     )
     .unwrap();
-    let mut builder = ApplicationWorkflowDefinitionBuilder::<ReviewedGeometry>::new(
+    let mut builder = ApplicationWorkflowDefinitionBuilder::<ReviewedChange>::new(
         "ten-thousand-node-chain",
         limits,
     )?;
@@ -79,7 +79,7 @@ fn ten_thousand_node_data_chain_exercises_logarithmic_dominance_work(
         LARGE_CANONICAL_BYTE_LIMIT,
     )
     .unwrap();
-    let mut builder = ApplicationWorkflowDefinitionBuilder::<ReviewedGeometry>::new(
+    let mut builder = ApplicationWorkflowDefinitionBuilder::<ReviewedChange>::new(
         "ten-thousand-node-data-chain",
         limits,
     )?;
@@ -129,7 +129,7 @@ fn retry_rich_validation_reports_its_separate_sparse_traversal_lane(
         RETRY_RICH_CANONICAL_BYTE_LIMIT,
     )
     .unwrap();
-    let mut builder = ApplicationWorkflowDefinitionBuilder::<ReviewedGeometry>::new(
+    let mut builder = ApplicationWorkflowDefinitionBuilder::<ReviewedChange>::new(
         "retry-rich-validation",
         limits,
     )?;
@@ -172,7 +172,9 @@ fn retry_rich_validation_reports_its_separate_sparse_traversal_lane(
         work.retry_complexity_contract(),
         ApplicationWorkflowRetryValidationComplexityContract::PerRetrySparseControlTraversal
     );
-    assert_eq!(work.retry_reachability(), 20_100);
+    // Each retry stops once its source is found; unrelated downstream nodes
+    // are no longer included in the reachability traversal.
+    assert_eq!(work.retry_reachability(), 9_901);
     assert!(work.peak_index_bytes() <= RETRY_RICH_INDEX_BYTE_ENVELOPE);
     Ok(())
 }

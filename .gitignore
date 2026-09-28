@@ -58,7 +58,7 @@ mb_n4_log.txt
 /workspaces/worth-store/p8m/
 
 # Cross-process Worth UI ledger settlement lock
-_docs/worth-ui/milestone-3.14.1-proof-ledger.lock
+plans/worth-ui/milestone-3.14.1-proof-ledger.lock
 
 # Claude Code personal overrides
 .claude/settings.local.json

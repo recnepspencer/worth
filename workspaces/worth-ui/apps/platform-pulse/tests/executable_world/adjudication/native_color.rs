@@ -1,20 +1,17 @@
 use std::fmt;
 
-use crate::external_observation::{NativeClientPixelCapture, NativeClientPixelPoint};
+use crate::external_observation::NativeClientPixelCapture;
 
 use super::dashboard_visual_oracle as oracle;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum ExpectedNativeColor {
     Blue,
-    Green,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct NativeColorVerdict {
-    expected: ExpectedNativeColor,
-    matching_samples: usize,
-    sampled_pixels: usize,
+    _private: (),
 }
 
 #[derive(Debug)]
@@ -32,7 +29,6 @@ pub(crate) enum NativeColorFailure {
         matching_target_pixels: usize,
         target_pixel_bounds: Option<([u32; 2], [u32; 2])>,
     },
-    BackgroundPointMissing(ExpectedNativeColor),
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -81,44 +77,7 @@ pub(crate) fn adjudicate_native_color(
             target_pixel_bounds: target_summary.bounds,
         });
     }
-    Ok(NativeColorVerdict {
-        expected,
-        matching_samples,
-        sampled_pixels,
-    })
-}
-
-pub(crate) fn adjudicate_native_background_point(
-    pixels: &NativeClientPixelCapture,
-    expected: ExpectedNativeColor,
-) -> Result<NativeClientPixelPoint, NativeColorFailure> {
-    let expected_rgb = expected.rgb();
-    let mut interior = Vec::new();
-    for y in 1..pixels.height().saturating_sub(1) {
-        for x in 1..pixels.width().saturating_sub(1) {
-            let matches = ((y - 1)..=(y + 1)).all(|sample_y| {
-                ((x - 1)..=(x + 1)).all(|sample_x| {
-                    pixel_at(pixels, [sample_x, sample_y]).is_some_and(|rgba| {
-                        rgba[..3]
-                            .iter()
-                            .zip(expected_rgb)
-                            .all(|(&observed, expected)| {
-                                observed.abs_diff(expected) <= oracle::CHANNEL_TOLERANCE
-                            })
-                    })
-                })
-            });
-            if matches {
-                interior.push((x, y));
-            }
-        }
-    }
-    let (x, y) = interior
-        .get(interior.len() / 2)
-        .copied()
-        .ok_or(NativeColorFailure::BackgroundPointMissing(expected))?;
-    NativeClientPixelPoint::interior(pixels, x, y, 1)
-        .ok_or(NativeColorFailure::BackgroundPointMissing(expected))
+    Ok(NativeColorVerdict { _private: () })
 }
 
 struct TargetPixelSummary {
@@ -214,25 +173,10 @@ fn pixel_at(pixels: &NativeClientPixelCapture, point: [u32; 2]) -> Option<[u8; 4
     Some([pixel[0], pixel[1], pixel[2], pixel[3]])
 }
 
-impl NativeColorVerdict {
-    pub(crate) fn expected(self) -> ExpectedNativeColor {
-        self.expected
-    }
-
-    pub(crate) fn matching_samples(self) -> usize {
-        self.matching_samples
-    }
-
-    pub(crate) fn sampled_pixels(self) -> usize {
-        self.sampled_pixels
-    }
-}
-
 impl ExpectedNativeColor {
     fn rgb(self) -> [u8; 3] {
         match self {
             Self::Blue => oracle::POSITIVE_RGB,
-            Self::Green => oracle::CAUTION_RGB,
         }
     }
 }
@@ -277,10 +221,6 @@ impl fmt::Display for NativeColorFailure {
                     point[0], point[1], capture_extent[0], capture_extent[1]
                 )
             }
-            Self::BackgroundPointMissing(expected) => write!(
-                formatter,
-                "native client capture had no interior {expected:?} background point"
-            ),
         }
     }
 }

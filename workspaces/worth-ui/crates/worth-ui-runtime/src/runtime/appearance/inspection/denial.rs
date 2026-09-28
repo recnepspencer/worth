@@ -65,7 +65,8 @@ pub(super) fn record_attempt_denial(
                 owner_revisions,
             ),
             worth_ui_inspection::UiAppearanceInspectionCost::new(
-                state_classes.len() as u8,
+                u8::try_from(state_classes.len())
+                    .expect("a state vector holds at most one class per state axis"),
                 0,
                 0,
                 context.theme_slots_compared(),

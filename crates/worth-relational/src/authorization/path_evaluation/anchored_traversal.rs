@@ -21,7 +21,7 @@ pub(super) fn unique_anchor_at(
 }
 
 pub(super) fn relation_ids_for_anchored_step(
-    context: &PathReadContext<'_, '_, '_, '_>,
+    context: &PathReadContext<'_, '_, '_>,
     anchor: EntityId,
     traversal: &RelationalAuthorizationTraversal,
     state: &mut PathEvaluationState<'_>,

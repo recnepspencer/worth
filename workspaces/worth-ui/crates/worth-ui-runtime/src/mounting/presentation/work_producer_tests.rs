@@ -16,6 +16,8 @@ mod producer_slope;
 mod rect_node;
 #[path = "work_producer_tests/replacement_damage.rs"]
 mod replacement_damage;
+#[path = "work_producer_tests/sample_displacement.rs"]
+mod sample_displacement;
 #[path = "work_producer_tests/text_node.rs"]
 mod text_node;
 #[path = "work_producer_tests/total_order.rs"]

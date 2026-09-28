@@ -106,9 +106,9 @@ use worth_proof::TransitionOutcome;
 
 let outcome = candidate.admit_as_conflict(vec![
     FoundationalMergeConflictLocus::new(
-        "geometry-face",
-        "source:face-7",
-        "target:face-7",
+        "document-section",
+        "source:section-7",
+        "target:section-7",
     ),
 ]);
 

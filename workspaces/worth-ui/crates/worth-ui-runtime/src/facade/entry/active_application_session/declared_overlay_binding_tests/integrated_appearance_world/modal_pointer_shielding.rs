@@ -24,9 +24,9 @@ fn accepted_sibling_modal_blocks_older_portal_content_and_queued_clicks() {
         .find(|row| row.mounted_instance() == world.instances[4])
         .unwrap();
     let bounds = content.bounds().platform_box();
-    let position = UiHostSurfacePosition::viewport_logical(
-        ((bounds.x() + bounds.width() / 2.0) * 1_000.0) as i64,
-        ((bounds.y() + bounds.height() / 2.0) * 1_000.0) as i64,
+    let position = crate::units::viewport_position_for_test(
+        bounds.x() + bounds.width() / 2.0,
+        bounds.y() + bounds.height() / 2.0,
     );
     assert!(click(&mut world, before.basis(), 1, position)
         .iter()
@@ -126,9 +126,9 @@ fn accepted_modal_blocks_background_activation_but_keeps_content_and_dismiss_inp
         .find(|row| row.mounted_instance() == world.instances[4])
         .unwrap();
     let bounds = content.bounds().platform_box();
-    let inside = UiHostSurfacePosition::viewport_logical(
-        ((bounds.x() + bounds.width() / 2.0) * 1_000.0) as i64,
-        ((bounds.y() + bounds.height() / 2.0) * 1_000.0) as i64,
+    let inside = crate::units::viewport_position_for_test(
+        bounds.x() + bounds.width() / 2.0,
+        bounds.y() + bounds.height() / 2.0,
     );
     let admitted = click(&mut world, current.basis(), 7, inside);
     assert!(admitted

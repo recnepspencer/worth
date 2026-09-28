@@ -4,6 +4,9 @@ use crate::scenario::{
 };
 use std::collections::BTreeSet;
 
+/// The certified result of one scenario in a provider-pair run: its identity,
+/// kind, required journey checkpoints, and the counters both providers
+/// observed.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryCertificationScenarioReport {
     scenario_identity: String,
@@ -46,6 +49,9 @@ impl WorthQueryCertificationScenarioReport {
     }
 }
 
+/// The report from a successful `certify_provider_pair` run: the two
+/// provider identities and one scenario report per suite scenario, in suite
+/// order. It is evidence of parity, not authority.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryCertificationReport {
     provider_identities: [String; 2],
@@ -72,6 +78,9 @@ impl WorthQueryCertificationReport {
     }
 }
 
+/// The report from a successful `certify_hostile_provider` run: the provider
+/// identity and how many hostile cases it answered with the expected denial
+/// evidence.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryHostileCertificationReport {
     provider_identity: String,

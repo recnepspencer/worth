@@ -5,9 +5,9 @@ mod compile_residue;
 #[path = "milestone_314_phase5_documentation.rs"]
 mod documentation;
 
-const CONTRACT: &str = "_docs/worth-ui/milestone-3.14-phase-5-contract.toml";
-const LEDGER: &str = "_docs/worth-ui/milestone-3.14-phase-5-proof-ledger.csv";
-const MAIN_LEDGER: &str = "_docs/worth-ui/milestone-3.14-proof-ledger.csv";
+const CONTRACT: &str = "plans/worth-ui/milestone-3.14-phase-5-contract.toml";
+const LEDGER: &str = "plans/worth-ui/milestone-3.14-phase-5-proof-ledger.csv";
+const MAIN_LEDGER: &str = "plans/worth-ui/milestone-3.14-proof-ledger.csv";
 const IDS: [&str; 8] = [
     "P5-01", "P5-02", "P5-03", "P5-04", "P5-05", "P5-06", "P5-07", "P5-08",
 ];
@@ -35,7 +35,7 @@ fn validate_identity(contract: &toml::Value) -> Result<(), String> {
         || contract["ledger"].as_str() != Some(LEDGER)
         || contract["main_ledger"].as_str() != Some(MAIN_LEDGER)
         || contract["predecessor_contract"].as_str()
-            != Some("_docs/worth-ui/milestone-3.14-phase-4-contract.toml")
+            != Some("plans/worth-ui/milestone-3.14-phase-4-contract.toml")
     {
         return Err("Phase 5 contract identity drifted".to_owned());
     }
@@ -189,7 +189,7 @@ fn milestone_314_phase5_contract_freezes_product_world_closure() {
     let (contract, ledger) = inputs();
     validate(&contract, &ledger).expect("Phase 5 contract and ledger should agree");
     let phase_1: toml::Value = toml::from_str(&repository_document(
-        "_docs/worth-ui/milestone-3.14-phase-1-contract.toml",
+        "plans/worth-ui/milestone-3.14-phase-1-contract.toml",
     ))
     .expect("Phase 1 contract should parse");
     milestone_314_ledger::validate_at_phase(
@@ -217,7 +217,7 @@ fn milestone_314_phase5_contract_rejects_hostile_drift() {
 fn hostile_contract_mutations(contract: &toml::Value) -> Vec<(&'static str, toml::Value)> {
     let mut predecessor = contract.clone();
     predecessor["predecessor_contract"] =
-        toml::Value::String("_docs/worth-ui/milestone-3.14-phase-3-contract.toml".to_owned());
+        toml::Value::String("plans/worth-ui/milestone-3.14-phase-3-contract.toml".to_owned());
     let mut authority = contract.clone();
     authority["authority"]["query_truth"] = toml::Value::String("UI mutates Query".to_owned());
     let mut limit = contract.clone();

@@ -4,6 +4,7 @@
 use super::geometry_oracle::*;
 use super::pointer_target::{classify_press, UiScrollChromePress};
 use super::*;
+use crate::units::layout_points;
 
 fn both_axis_facts() -> UiScrollChromeFacts {
     UiScrollChromeFacts::derive(
@@ -55,7 +56,7 @@ fn a_point_across_the_gutter_classifies_to_one_axis_and_the_corner_to_neither() 
     for across in [0.5, 6.0, 11.5] {
         assert_eq!(
             facts.pointer_axis(crate::mounting::presentation::platform_point_for_test(
-                (block_track[0] + across) as f32,
+                layout_points(block_track[0] + across),
                 100.0
             )),
             Some(UiScrollChromeAxis::Block),
@@ -64,22 +65,22 @@ fn a_point_across_the_gutter_classifies_to_one_axis_and_the_corner_to_neither() 
         assert_eq!(
             facts.pointer_axis(crate::mounting::presentation::platform_point_for_test(
                 100.0,
-                (inline_track[1] + across) as f32
+                layout_points(inline_track[1] + across)
             )),
             Some(UiScrollChromeAxis::Inline)
         );
     }
     assert_eq!(
         facts.pointer_axis(crate::mounting::presentation::platform_point_for_test(
-            (block_track[0] - 0.5) as f32,
+            layout_points(block_track[0] - 0.5),
             100.0
         )),
         None
     );
     assert_eq!(
         facts.pointer_axis(crate::mounting::presentation::platform_point_for_test(
-            (block_track[0] + 6.0) as f32,
-            (inline_track[1] + 6.0) as f32
+            layout_points(block_track[0] + 6.0),
+            layout_points(inline_track[1] + 6.0)
         )),
         None,
         "the shared corner belongs to neither track"
@@ -102,7 +103,7 @@ fn the_effective_pointer_rect_fills_the_gutter_across_the_thumb() {
     assert!((f64::from(block.extent().travel_logical_points()) - travel).abs() < 0.01);
     assert_eq!(
         block.max_offset_subpixels(),
-        ((CONTENT_HEIGHT - VIEWPORT_HEIGHT) * SUBPIXELS_PER_POINT) as i64
+        subpixels(CONTENT_HEIGHT - VIEWPORT_HEIGHT)
     );
 
     let pointer = block
@@ -116,15 +117,15 @@ fn the_effective_pointer_rect_fills_the_gutter_across_the_thumb() {
     assert!(rect_contains(
         pointer,
         crate::mounting::presentation::platform_point_for_test(
-            (track[0] + 0.5) as f32,
-            (track[1] + 1.0) as f32
+            layout_points(track[0] + 0.5),
+            layout_points(track[1] + 1.0)
         )
     ));
     assert!(!rect_contains(
         pointer,
         crate::mounting::presentation::platform_point_for_test(
-            (track[0] - 0.5) as f32,
-            (track[1] + 1.0) as f32
+            layout_points(track[0] - 0.5),
+            layout_points(track[1] + 1.0)
         )
     ));
 }
@@ -151,7 +152,10 @@ fn a_track_press_is_classified_against_the_thumb_it_missed() {
         classify_press(
             UiScrollChromeAxis::Block,
             thumb,
-            crate::mounting::presentation::platform_point_for_test(394.0, (start - 5.0) as f32)
+            crate::mounting::presentation::platform_point_for_test(
+                394.0,
+                layout_points(start - 5.0)
+            )
         ),
         UiScrollChromePress::TrackBeforeThumb
     );
@@ -159,7 +163,10 @@ fn a_track_press_is_classified_against_the_thumb_it_missed() {
         classify_press(
             UiScrollChromeAxis::Block,
             thumb,
-            crate::mounting::presentation::platform_point_for_test(394.0, (start + 1.0) as f32)
+            crate::mounting::presentation::platform_point_for_test(
+                394.0,
+                layout_points(start + 1.0)
+            )
         ),
         UiScrollChromePress::Thumb
     );
@@ -167,7 +174,7 @@ fn a_track_press_is_classified_against_the_thumb_it_missed() {
         classify_press(
             UiScrollChromeAxis::Block,
             thumb,
-            crate::mounting::presentation::platform_point_for_test(394.0, (end + 5.0) as f32)
+            crate::mounting::presentation::platform_point_for_test(394.0, layout_points(end + 5.0))
         ),
         UiScrollChromePress::TrackAfterThumb
     );
@@ -199,7 +206,7 @@ fn direct_drag_preserves_the_grab_offset_established_at_the_press() {
         .thumb();
 
     // Grab three quarters of the way down the thumb, off the thumb's centre.
-    let press = [394.0_f32, (thumb_start + length * 0.75) as f32];
+    let press = [394.0_f32, layout_points(thumb_start + length * 0.75)];
     let grab = grab_offset_logical_points(
         UiScrollChromeAxis::Block,
         thumb,
@@ -218,7 +225,7 @@ fn direct_drag_preserves_the_grab_offset_established_at_the_press() {
             )
             .expect("block chrome")
             .block_subpixels(),
-        (pressed_at_points * SUBPIXELS_PER_POINT).round() as i64
+        subpixels(pressed_at_points)
     );
 
     // Dragging 40 points down moves the thumb start 40 points down the
@@ -243,15 +250,33 @@ fn direct_drag_preserves_the_grab_offset_established_at_the_press() {
     assert_eq!(placed.inline_subpixels(), 0, "the other axis must not move");
 }
 
+/// A page never steps less than a line: keeping a line in view in a viewport
+/// barely taller than one would page by a sliver, and in one no taller would
+/// never move. A viewport shorter than a line pages by all of itself.
+#[test]
+fn a_page_never_steps_less_than_a_line() {
+    assert_eq!(page_step_subpixels(20.0, 20), Some(20_000));
+    assert_eq!(page_step_subpixels(12.5, 20), Some(12_500));
+    assert_eq!(page_step_subpixels(20.5, 20), Some(20_000));
+    assert_eq!(page_step_subpixels(30.0, 20), Some(20_000));
+    assert_eq!(page_step_subpixels(45.0, 20), Some(25_000));
+    assert_eq!(
+        page_step_subpixels(0.0, 20),
+        Some(0),
+        "an empty viewport has nothing to page"
+    );
+    assert_eq!(page_step_subpixels(-1.0, 20), None);
+}
+
 /// A track click pages toward the pointer by one viewport minus one line.
 #[test]
 fn a_track_click_pages_one_viewport_minus_one_line_toward_the_pointer() {
     let facts = both_axis_facts();
     let line_extent_points = 20_u16;
-    let expected = ((VIEWPORT_HEIGHT - f64::from(line_extent_points)) * SUBPIXELS_PER_POINT) as i64;
+    let expected = subpixels(VIEWPORT_HEIGHT - f64::from(line_extent_points));
     assert_eq!(
-        page_step_subpixels(VIEWPORT_HEIGHT as f32, line_extent_points),
-        expected
+        page_step_subpixels(layout_points(VIEWPORT_HEIGHT), line_extent_points),
+        Some(expected)
     );
 
     assert_eq!(

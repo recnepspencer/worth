@@ -8,12 +8,12 @@ use crate::domain_computation::primary_graph::workflow::definition::{
     CompiledWorkflowDefinition, CompiledWorkflowNode,
 };
 
-pub(super) fn unique_successor<'compiled>(
-    compiled: &'compiled CompiledWorkflowDefinition,
+pub(super) fn unique_successor(
+    compiled: &CompiledWorkflowDefinition,
     source: EntityId,
     outcome: ApplicationWorkflowControlOutcome,
     retry_attempts: usize,
-) -> Result<&'compiled CompiledWorkflowNode, WorthQueryApplicationAttemptDenial> {
+) -> Result<&CompiledWorkflowNode, WorthQueryApplicationAttemptDenial> {
     let mut retries = compiled.retry_successors(source, outcome);
     let retry = retries.next();
     if retries.next().is_some() {

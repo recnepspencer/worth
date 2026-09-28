@@ -142,7 +142,7 @@ presets and do not independently choose execution strategy.
 
 - [walkthroughs/easy-task-board.md](./walkthroughs/easy-task-board.md)
 - [walkthroughs/compiler-targeted-rebuild.md](./walkthroughs/compiler-targeted-rebuild.md)
-- [walkthroughs/geometry-partial-recompute.md](./walkthroughs/geometry-partial-recompute.md)
+- [walkthroughs/document-partial-recompute.md](./walkthroughs/document-partial-recompute.md)
 
 ## Reference
 

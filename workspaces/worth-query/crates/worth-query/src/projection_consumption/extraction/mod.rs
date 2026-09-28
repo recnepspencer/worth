@@ -15,11 +15,11 @@ use crate::runtime::{
     WorthQueryDerivedArtifactBinding, WorthQueryLiveArtifactBinding, WorthQueryLiveReadResult,
     WorthQueryReadResult, WorthQueryWriteReceipt,
 };
-use worth_relational::facade::grouped_truth::{
-    RelationalAuthoritativeRowSetArtifact, RelationalGroupedProjectionArtifact,
-};
 use worth_runtime_bridge::facade::{
     BridgeGroupedTruthViewArtifact, BridgeMaterializedRowSetArtifact,
+};
+use worth_runtime_bridge::facade::{
+    RelationalAuthoritativeRowSetArtifact, RelationalGroupedProjectionArtifact,
 };
 
 pub use error::ProjectionFactExtractionError;

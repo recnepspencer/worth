@@ -4,16 +4,27 @@ use worth_runtime_world::facade::RuntimeWorldOwnerIdentity;
 
 use crate::basis::WorthQueryProductBranch;
 
+/// Why the runtime would not issue or order program adoption coverage. Nothing
+/// changed.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryProgramAdoptionCoverageDenial {
+    /// No branches were presented.
     EmptyCoverage,
+    /// More branches were presented than the maximum.
     TargetLimitExceeded { maximum: usize, presented: usize },
+    /// Memory for the coverage could not be allocated.
     AllocationRejected,
+    /// A branch was presented more than once.
     DuplicateTarget { branch: WorthQueryProductBranch },
+    /// A branch is foreign to this runtime or retired.
     ForeignOrRetiredTarget { branch: WorthQueryProductBranch },
+    /// The activation registry was unavailable.
     RegistryUnavailable,
+    /// The coverage was issued for another application.
     ForeignApplication,
+    /// The ordering names a different number of branches than the coverage.
     OrderedTargetCountMismatch { covered: usize, ordered: usize },
+    /// The ordering names different branches than the coverage.
     OrderedTargetMismatch,
 }
 

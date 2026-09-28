@@ -15,6 +15,7 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
     /// target for the newest extent observed by then. A zero extent suspends
     /// presentation now.
     pub(super) fn observe_resize(&mut self, event_loop: &ActiveEventLoop, size: [u32; 2]) {
+        crate::native::resize_trace::observed(size);
         match self.pending_resize.observe(size) {
             UiNativeResizeAdmission::Pending => {
                 if let Some(window) = self.shared.borrow().window.as_ref() {
@@ -51,6 +52,7 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
         // The scale transition reads the window's current extent, so it
         // prepares the target any pending extent was waiting for.
         self.pending_resize.supersede();
+        super::window_port::trace_minimum(&self.configuration, scale_factor);
         let physical_size = self
             .shared
             .borrow()
@@ -123,6 +125,7 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
                 let _directive = shared.observe_surface_basis_transition(transition);
                 drop(shared);
                 if !suspended && !minimized {
+                    crate::native::resize_trace::consumed(size);
                     self.commit_visible_surface_readiness(event_loop);
                 }
                 true

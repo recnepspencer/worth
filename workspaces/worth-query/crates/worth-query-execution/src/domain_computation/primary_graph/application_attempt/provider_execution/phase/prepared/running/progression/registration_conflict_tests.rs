@@ -70,6 +70,8 @@ fn reject_occupied_registration(
         mutation_run: unbound_run,
         attempt_basis,
         aftermath_causality,
+        outcome_identity,
+        workflow_settlement_publication: _workflow_settlement_publication,
     } = victim;
     let reservation_basis = WorthQueryApplicationAttemptBasis::capture(
         &world.application,
@@ -111,6 +113,7 @@ fn reject_occupied_registration(
             &world.application.primary_provider,
             &admission,
             idempotency,
+            outcome_identity,
             aftermath_causality.as_ref(),
         ),
     ) {
@@ -137,6 +140,7 @@ fn reject_occupied_registration(
     finish_application_commit(
         &world.application,
         WorthQueryProgressedApplicationCommit {
+            workflow_settlement_publication: None,
             outcome,
             lease,
             running,
@@ -160,6 +164,8 @@ fn while_peer_is_registered(
         mutation_run,
         attempt_basis,
         aftermath_causality,
+        outcome_identity,
+        workflow_settlement_publication: _workflow_settlement_publication,
     } = peer;
     let product = attempt_basis.retained_product();
     let admitted = admit_provider_session(
@@ -178,6 +184,7 @@ fn while_peer_is_registered(
                 &world.application.primary_provider,
                 &admission,
                 idempotency,
+                outcome_identity,
                 aftermath_causality.as_ref(),
             ),
         )
@@ -221,7 +228,7 @@ fn while_peer_is_registered(
     };
     let peer = finish_application_commit(
         &world.application,
-        registered.progress(&authority).finish(lease, running),
+        registered.progress(&authority).finish(lease, running, None),
     );
     assert!(matches!(
         peer,

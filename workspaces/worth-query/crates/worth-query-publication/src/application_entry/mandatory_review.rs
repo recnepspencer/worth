@@ -30,6 +30,8 @@ use worth_query_installation::facade::{
 
 use super::{workflow_key::workflow_idempotency, WorthQueryApplicationRequest};
 
+/// Why `execute_mandatory_review_in_program` refused. `ProgramMismatch` means the program
+/// runtime is not this request's runtime.
 #[derive(Debug)]
 pub enum WorthQueryApplicationMandatoryReviewDenial<DecisionDenial> {
     Program(WorthQueryApplicationCommitDenial),
@@ -48,6 +50,8 @@ pub enum WorthQueryApplicationMandatoryReviewDenial<DecisionDenial> {
     IdempotencyResolution(WorthQueryApplicationIdempotencyResolutionDenial),
 }
 
+/// A refused mandatory review. `into_parts` returns the denial and, when it was not
+/// consumed, the mandatory review so it can be performed again.
 #[derive(Debug)]
 pub struct WorthQueryApplicationMandatoryReviewFailure<DecisionDenial> {
     denial: WorthQueryApplicationMandatoryReviewDenial<DecisionDenial>,

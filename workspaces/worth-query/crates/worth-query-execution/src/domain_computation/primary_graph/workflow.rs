@@ -3,6 +3,7 @@
 //! This owner uses the primary Relational graph and World publication path. It
 //! is intentionally separate from managed provider-read workflows.
 
+pub(in crate::domain_computation::primary_graph) mod adoption;
 mod approval;
 mod assessment;
 pub(in crate::domain_computation::primary_graph) mod definition;
@@ -15,11 +16,19 @@ pub(in crate::domain_computation::primary_graph) use approval::{
     visit_workflow_approval_facts, workflow_approval_fields, WorkflowApprovalMeaning,
 };
 pub(in crate::domain_computation::primary_graph) use assessment::{
-    visit_workflow_assessment_facts, WorkflowAssessmentEvidenceMeaning,
+    visit_workflow_assessment_facts, workflow_evidence_retained_bytes,
+    WorkflowAssessmentEvidenceMeaning,
 };
 
+pub use adoption::{
+    WorthQueryWorkflowAdoptionInventory, WorthQueryWorkflowCompatibility,
+    WorthQueryWorkflowDefinitionDisposition, WorthQueryWorkflowDefinitionOccurrence,
+    WorthQueryWorkflowDispositionDenial, WorthQueryWorkflowDispositions,
+    WorthQueryWorkflowIncompatibility, WorthQueryWorkflowInstanceCustody,
+    WorthQueryWorkflowInstanceDisposition, WorthQueryWorkflowInstanceOccurrence,
+};
 pub use definition::{
     WorkflowDefinitionBindingDenial, WorkflowDefinitionPreparationDenial,
-    WorthQueryWorkflowDefinitionPublicationAdapter,
+    WorthQueryWorkflowDefinitionPublicationAdapter, WorthQueryWorkflowDefinitionRetirementAdapter,
 };
 pub use instance::WorthQueryWorkflowInstanceProgressCounters;

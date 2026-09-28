@@ -31,6 +31,14 @@ pub(super) fn build_plan(
     }
     damage.extend(replay.physical_text_regions.iter().copied());
     damage.extend(staged_clears);
+    if retained.repaint_owed() {
+        // A successor target starts empty: repaint all of it.
+        let [width, height] = basis.extent();
+        damage.extend(super::raster::raster_physical_bounds(
+            [0, 0, width, height],
+            basis.extent(),
+        ));
+    }
     let mut operations = Vec::new();
     let mut cleared_pixels = 0_u64;
     let mut rendered_pixels = 0_u64;
@@ -165,6 +173,29 @@ fn add_pixels(total: u64, rect: super::RasterRect) -> Result<u64, UiHostSurfaceP
     total
         .checked_add(u64::from(rect.physical_width) * u64::from(rect.physical_height))
         .ok_or_else(malformed)
+}
+
+/// Carry `retained` onto the surface's current target before planning
+/// ordinary work into it. A list that cannot follow the target is
+/// reconstructed instead: a scale change, or coverage it cannot carry.
+pub(super) fn prepare_target(
+    graphics: &crate::native::UiNativePresentationAccess,
+    basis: UiNativeRasterBasis,
+    retained: &mut UiNativeRetainedDrawList,
+) -> Result<(), super::UiNativePresentationFailure> {
+    retained
+        .prepare_target(basis, graphics.target_generation())
+        .map_err(
+            |denial| super::UiNativePresentationFailure::RecoveryRequired {
+                denial: UiHostSurfacePresentationDenial::ReconstructionRequired,
+                cause: match denial {
+                    super::retained_draw_list::UiNativeRetainedDrawListDenial::AffinityMismatch => {
+                        crate::native::UiNativeRecoveryCause::Dpi
+                    }
+                    _ => crate::native::UiNativeRecoveryCause::Resize,
+                },
+            },
+        )
 }
 
 fn malformed() -> UiHostSurfacePresentationDenial {

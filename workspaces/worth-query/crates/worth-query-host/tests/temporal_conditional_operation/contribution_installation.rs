@@ -182,7 +182,7 @@ impl WorthQueryApplicationConditionalBinding<TemporalHostSchema> for TemporalCon
                 query.into_query(),
                 ApplicationQueryParameterSet::new(),
                 IntentProjector,
-                domain::WorthQueryTemporalIntentBounds::new(8, 9, 8).unwrap(),
+                domain::WorthQueryTemporalIntentBounds::new(8, 13, 8).unwrap(),
             )
             .unwrap();
         let invariant = Arc::new(installation.retain_invariant_projection_authority());

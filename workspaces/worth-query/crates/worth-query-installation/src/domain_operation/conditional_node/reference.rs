@@ -63,6 +63,15 @@ impl<D, O, F, N> PartialEq for WorthQueryConditionalNodeRef<D, O, F, N> {
 
 impl<D, O, F, N> Eq for WorthQueryConditionalNodeRef<D, O, F, N> {}
 
+/// Declares a typed marker for one conditional node of a graph-read domain
+/// operation, located either in the operation itself or in one workflow stage.
+///
+/// Input: `vis Node in Domain, Operation, Family => operation "node"`, or
+/// `=> workflow_stage "stage", "node"`. It generates a unit struct `Node` with
+/// a `fn reference()` returning its typed `WorthQueryConditionalNodeRef`; that
+/// function panics if an identity literal is not a valid node or stage
+/// identity. The reference is portable meaning; the installed package index
+/// resolves it.
 #[macro_export]
 macro_rules! worth_query_conditional_node {
     (

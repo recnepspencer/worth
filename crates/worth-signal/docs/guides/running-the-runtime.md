@@ -19,7 +19,7 @@ The same runtime shape also fits worth-native work like:
 
 - a file change and a targeted rebuild
 - a document edit and a search index refresh
-- a local geometry change and a partial recompute
+- a one-sheet spreadsheet edit and a partial recompute
 
 ## 1. Build A Graph
 

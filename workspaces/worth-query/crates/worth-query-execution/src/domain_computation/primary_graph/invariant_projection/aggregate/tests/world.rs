@@ -21,7 +21,6 @@ use worth_query_installation::facade::{
 };
 use worth_relational::facade::transactions::{
     AspectFieldPatch, EntityMutationIntent, MutationIntent, UpdateEntityFieldsIntent,
-    WorkerIntentBatch,
 };
 
 use super::super::{WorthQueryInvariantAggregateDenialKind, WorthQueryInvariantEntityIdentity};
@@ -214,51 +213,32 @@ impl AggregateWorld {
     }
 
     pub(super) fn replace_amount(&self, source: &str, amount: i64) {
-        let source = self
-            .authority
-            .project(|reader| reader.resolve_entity(SourceIdentity::reference(), source.to_owned()))
-            .expect("source projection")
-            .output()
-            .as_ref()
-            .expect("source identity resolves")
-            .clone();
+        self.replace_amount_on(self.main_branch(), self.source(source), amount);
+    }
+
+    /// Commits a new amount for one source already resolved, since a raw
+    /// commit leaves the identity index behind the branch it moved.
+    pub(super) fn replace_amount_on(
+        &self,
+        branch: crate::basis::WorthQueryProductBranch,
+        source: worth_relational::facade::identity::EntityId,
+        amount: i64,
+    ) {
         let locator = self
             .authority
             .layout
             .field_locator("AggregateSource", "SourceFacts", "SourceAmount")
             .expect("amount field is installed")
             .clone();
-        self.authority.graph.with_runtime_mut(|runtime| {
-            let fields =
-                AspectFieldPatch::from(BTreeMap::from([(locator, AspectValue::Int64(amount))]));
-            let intent = MutationIntent::Entity(EntityMutationIntent::UpdateFields(
-                UpdateEntityFieldsIntent {
-                    entity_id: source.entity_id,
-                    fields,
-                },
-            ));
-            let mut transaction = {
-                let transaction_validation_input = runtime
-                    .admit_branch_basis(&runtime.main_branch_identity())
-                    .expect("main branch binding");
-                runtime
-                    .begin_branch_transaction(
-                        &transaction_validation_input,
-                        worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
-                    )
-                    .expect("owner-admitted transaction context")
-            };
-            transaction
-                .push_batch(WorkerIntentBatch::new("aggregate-stale-generation").push(intent))
-                .expect("test staging stays within configured resource budgets");
-            let committed = transaction
-                .commit(runtime)
-                .expect("amount replacement commits");
-            crate::relational_snapshot_release::release_query_snapshot(
-                runtime,
-                &committed.snapshot,
-            );
-        });
+        let fields =
+            AspectFieldPatch::from(BTreeMap::from([(locator, AspectValue::Int64(amount))]));
+        let intent = MutationIntent::Entity(EntityMutationIntent::UpdateFields(
+            UpdateEntityFieldsIntent {
+                entity_id: source,
+                fields,
+            },
+        ));
+        self.commit_on(branch, "aggregate-stale-generation", intent);
     }
 
     fn install(values: Vec<Option<i64>>, ambiguous: bool) -> Self {
@@ -337,6 +317,8 @@ impl AggregateWorld {
     }
 }
 
+#[path = "world/branches.rs"]
+mod branches;
 #[path = "world/population.rs"]
 mod population;
 use population::bind_world;

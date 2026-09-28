@@ -173,7 +173,7 @@ impl UiIntentOccupancyState {
             )
         })?;
         Ok(UiIntentOccupancyPlacement {
-            slot: slot_index as u8,
+            slot: u8::try_from(slot_index).expect("UI_INTENT_OCCUPANCY_CAPACITY slots fit u8"),
             generation,
             slots_inspected: inspected,
         })

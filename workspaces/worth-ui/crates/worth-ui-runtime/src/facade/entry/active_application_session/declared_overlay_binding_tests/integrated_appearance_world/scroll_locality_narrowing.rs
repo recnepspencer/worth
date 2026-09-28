@@ -58,7 +58,7 @@ fn notch(scroll: &mut ScrollWorld) -> UiHostScrollObservationOutcome {
         UiHostScrollDeltaPhase::Updated,
         target,
         UiHostScrollDeltaPrecision::Pixel,
-        -TRAVEL_POINTS * UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
+        -crate::units::host_count_of(TRAVEL_POINTS),
         5,
     )
 }

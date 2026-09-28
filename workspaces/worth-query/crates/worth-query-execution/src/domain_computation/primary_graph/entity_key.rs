@@ -2,6 +2,12 @@ use std::marker::PhantomData;
 
 const MAX_ENTITY_KEY_BYTES: usize = 512;
 
+/// Caller-chosen key for an entity created by an operation or seeded at
+/// bootstrap.
+///
+/// Build with `new`; the key must be non-empty, have no surrounding
+/// whitespace or control characters, and be at most 512 bytes. It names the
+/// entity within its kind and grants nothing.
 pub struct WorthQueryApplicationEntityKey<Schema, Entity> {
     value: String,
     _marker: PhantomData<fn() -> (Schema, Entity)>,
@@ -41,6 +47,8 @@ impl<Schema, Entity> std::fmt::Debug for WorthQueryApplicationEntityKey<Schema, 
     }
 }
 
+/// Refusal to build an entity key because the value is empty, padded, contains
+/// control characters, or is longer than 512 bytes.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationEntityKeyDenial;
 

@@ -1,0 +1,96 @@
+schema = "worth-ui.milestone-3.12.phase-2-contract.v1"
+milestone = "3.12"
+phase = 2
+status = "closed"
+ledger = "plans/worth-ui/milestone-3.12-phase-2-proof-ledger.csv"
+closure_claim = "every Phase 3 planner input is a canonical owner-issued effect-free observation in one exact turn, and no raw or predecessor input route can substitute"
+
+[[phase_gate]]
+id = "P2-01"
+owner = "observation profile and family vocabulary"
+claim = "the runtime installs the exact Platform Pulse observation limits and one closed owner-ranked family vocabulary"
+command = "cargo test --manifest-path workspaces/worth-ui/Cargo.toml -p worth-ui-runtime runtime::observation::tests -- --nocapture"
+
+[[phase_gate]]
+id = "P2-02"
+owner = "observation turn lifecycle"
+claim = "admission is atomic; a duplicate poisons the turn, commits no progress, and a successor turn remains usable"
+command = "cargo test --manifest-path workspaces/worth-ui/Cargo.toml -p worth-ui-certification --test application_contracts duplicate_family_poisons_the_turn_without_committing_owner_progress -- --nocapture"
+
+[[phase_gate]]
+id = "P2-03"
+owner = "source rebind attempt"
+claim = "settled source compilation returns a typed denial with the exact revision, ordering, counters, and capability basis"
+command = "cargo test --manifest-path workspaces/worth-ui/Cargo.toml -p worth-ui-certification --test application_contracts in_process_real_watcher_replaces_green_preserves_malformed_and_recovers_blue -- --nocapture"
+
+[[phase_gate]]
+id = "P2-04"
+owner = "authored source observation"
+claim = "a valid package-bound source candidate retains exact provenance in one effect-free admitted observation"
+command = "cargo test --manifest-path workspaces/worth-ui/Cargo.toml -p worth-ui-certification --test application_contracts package_bound_source_candidate_enters_one_effect_free_observation -- --nocapture"
+
+[[phase_gate]]
+id = "P2-05"
+owner = "host-contract observation retention"
+claim = "adapter-owned raw host retention measures actual bytes, remains bounded, and drains and releases per session"
+command = "cargo test --manifest-path workspaces/worth-ui/Cargo.toml -p worth-ui-host-contract observation_report::drain::tests -- --nocapture"
+
+[[phase_gate]]
+id = "P2-06"
+owner = "egui host observation adapter"
+claim = "releasing one egui host session cannot disable another session's retained observation port"
+command = "cargo test --manifest-path workspaces/worth-ui/Cargo.toml -p worth-ui-host-egui releasing_one_session_keeps_the_adapter_observation_port_reusable -- --nocapture"
+
+[[phase_gate]]
+id = "P2-07"
+owner = "validated host observation admission"
+claim = "viewport and device-scale observations enter one canonical set without scheduling, publication mutation, or host effects"
+command = "cargo test --manifest-path workspaces/worth-ui/Cargo.toml -p worth-ui-certification --test application_contracts validated_host_families_form_one_canonical_effect_free_set -- --nocapture"
+
+[[phase_gate]]
+id = "P2-08"
+owner = "successor host family admission"
+claim = "successor-owned mechanical families return typed unavailable outcomes and cannot enter an admitted set"
+command = "cargo test --manifest-path workspaces/worth-ui/Cargo.toml -p worth-ui-certification --test application_contracts successor_host_families_are_typed_and_cannot_enter_the_set -- --nocapture"
+
+[[phase_gate]]
+id = "P2-09"
+owner = "solicited measurement admission"
+claim = "only a completed owner-issued solicited measurement enters the measurement family with exact source coordinates and no effects"
+command = "cargo test --manifest-path workspaces/worth-ui/Cargo.toml -p worth-ui-certification --test application_contracts solicited_measurement_admission_retains_owner_coordinates_without_effects -- --nocapture"
+
+[[phase_gate]]
+id = "P2-10"
+owner = "Query validation boundary"
+claim = "Query observation validation consumes an owner-issued consequence without staging, publishing, or changing Query truth"
+command = "cargo test --manifest-path workspaces/worth-ui/Cargo.toml -p worth-ui-query-binding collection_change_observation_validation_is_effect_free -- --nocapture"
+
+[[phase_gate]]
+id = "P2-11"
+owner = "Query observation progress"
+claim = "Query owner order is historical per opaque source identity, and rejection leaves the move-only owner handoff retryable"
+command = "cargo test --manifest-path workspaces/worth-ui/Cargo.toml -p worth-ui-runtime admission_is_effect_free_historical_and_leaves_handoff_retryable -- --nocapture"
+
+[[phase_gate]]
+id = "P2-12"
+owner = "committed runtime-state admission"
+claim = "scroll extent and portal anchor observations derive only from committed runtime catalogs and mutate no runtime subsystem"
+command = "cargo test --manifest-path workspaces/worth-ui/Cargo.toml -p worth-ui-runtime enters_observation_without_runtime_effects -- --nocapture"
+
+[[phase_gate]]
+id = "P2-13"
+owner = "observation compile authority"
+claim = "external callers cannot mint admitted observations or pass raw host batches through semantic admission"
+command = "python scripts/ci/run_worth_ui_compile_contracts.py"
+
+[[phase_gate]]
+id = "P2-14"
+owner = "Phase 2 route cutover"
+claim = "the Phase 1 route inventory resolves to the committed Phase 2 successors without an ordinary predecessor source-lowering path"
+command = "cargo test --manifest-path workspaces/worth-ui/Cargo.toml -p worth-ui-certification --test topology_contracts milestone_312_phase1 -- --nocapture"
+
+[[phase_gate]]
+id = "P2-15"
+owner = "Phase 2 final closure"
+claim = "focused and broad tests, warnings, composition, ledger, compile, boundary, and agent-context gates are green on final source"
+command = "cargo run --manifest-path tools/boundary-check/Cargo.toml -- --root . && cargo run --manifest-path tools/agent-context/Cargo.toml -- check"

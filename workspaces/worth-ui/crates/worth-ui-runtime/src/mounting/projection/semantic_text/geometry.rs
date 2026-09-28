@@ -20,7 +20,7 @@ pub(in crate::mounting::projection) fn require_allocation(
     ),
     UiMountedProjectionDenial,
 > {
-    match node.presentation_allocation() {
+    match *node.occurrence_allocation.in_layout_space() {
         UiMountedAllocationProjection::Known { bounds, basis } => {
             let bounds = if node.portal_child_owner.is_none() {
                 super::super::frame_storage::surface_coordinates::viewport_bounds(

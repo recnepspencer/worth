@@ -9,6 +9,7 @@ use worth_query_topology_entry::{
 };
 
 use super::super::super::{authentication, installation, seed::length};
+use crate::application_invariant_acceptance::proof::settle;
 use crate::application_program::ConsumerRequiredSharedRoot;
 use crate::{ConsumerProgram, ConsumerSchema};
 
@@ -53,16 +54,16 @@ pub(super) fn joined_required_root_discovers_at_its_own_publication(
     let mut first = first
         .start_required_outputs(&request, controls)
         .unwrap_or_else(|failure| panic!("the first root starts: {:?}", failure.denial()));
-    let first_settled = loop {
+    let first_settled = settle(|| {
         match first
             .required_output_mut()
             .advance(&request)
             .expect("first program advances")
         {
-            WorthQueryApplicationProgramOutputProgress::Pending => {}
-            WorthQueryApplicationProgramOutputProgress::Settled(settled) => break settled,
+            WorthQueryApplicationProgramOutputProgress::Pending => None,
+            WorthQueryApplicationProgramOutputProgress::Settled(settled) => Some(settled),
         }
-    };
+    });
     assert_eq!(
         first_settled
             .outputs_for::<ConsumerSchema, PlanarOutputToLateFinalConnection>()
@@ -98,16 +99,16 @@ pub(super) fn joined_required_root_discovers_at_its_own_publication(
     let mut second = second
         .start_required_outputs(&request, controls)
         .unwrap_or_else(|failure| panic!("unchanged root joins: {:?}", failure.denial()));
-    let second_settled = loop {
+    let second_settled = settle(|| {
         match second
             .required_output_mut()
             .advance(&request)
             .expect("later program advances")
         {
-            WorthQueryApplicationProgramOutputProgress::Pending => {}
-            WorthQueryApplicationProgramOutputProgress::Settled(settled) => break settled,
+            WorthQueryApplicationProgramOutputProgress::Pending => None,
+            WorthQueryApplicationProgramOutputProgress::Settled(settled) => Some(settled),
         }
-    };
+    });
     assert_eq!(
         first_settled
             .root_receipt()
@@ -166,15 +167,15 @@ pub(super) fn joined_required_root_discovers_at_its_own_publication(
             controls,
         )
         .expect("the exact later source publication recovers");
-    let third_settled = loop {
+    let third_settled = settle(|| {
         match recovered
             .advance(&request)
             .expect("recovered program advances")
         {
-            WorthQueryApplicationProgramOutputProgress::Pending => {}
-            WorthQueryApplicationProgramOutputProgress::Settled(settled) => break settled,
+            WorthQueryApplicationProgramOutputProgress::Pending => None,
+            WorthQueryApplicationProgramOutputProgress::Settled(settled) => Some(settled),
         }
-    };
+    });
     assert_eq!(
         first_settled
             .root_receipt()

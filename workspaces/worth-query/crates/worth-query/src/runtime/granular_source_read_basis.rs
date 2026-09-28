@@ -8,8 +8,7 @@
 pub struct WorthQueryGranularSourceReadBasis {
     snapshot: worth_runtime_bridge::facade::TruthSnapshotIdentity,
     branch: worth_runtime_bridge::facade::TruthBranchIdentity,
-    _observation:
-        std::sync::Arc<worth_relational::facade::bridge::RelationalBridgeObservationLease>,
+    _observation: std::sync::Arc<worth_runtime_bridge::facade::RelationalBridgeObservationLease>,
 }
 
 impl WorthQueryGranularSourceReadBasis {

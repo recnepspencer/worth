@@ -148,6 +148,12 @@ fn map_active_descendant_denial(
         super::active_descendant::UiActiveDescendantDenial::UnknownDescendant => {
             super::UiFocusRoutingDenial::UnknownParticipant
         }
-        _ => super::UiFocusRoutingDenial::UnknownScope,
+        super::active_descendant::UiActiveDescendantDenial::NoSemanticFocus
+        | super::active_descendant::UiActiveDescendantDenial::CompositeMismatch
+        | super::active_descendant::UiActiveDescendantDenial::CompositePolicyMismatch
+        | super::active_descendant::UiActiveDescendantDenial::CompositeCannotBeItsOwnDescendant
+        | super::active_descendant::UiActiveDescendantDenial::ForeignScope => {
+            super::UiFocusRoutingDenial::UnknownScope
+        }
     }
 }

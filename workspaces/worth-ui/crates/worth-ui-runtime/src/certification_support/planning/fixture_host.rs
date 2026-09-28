@@ -160,7 +160,13 @@ fn suite_host_need_from_request(request: &UiHostMeasurementRequest) -> UiHostMea
                     .expect("suite portal request"),
             )
         }
-        other => panic!("suite fixture does not model host need for {other:?}"),
+        other @ (worth_ui_host_contract::UiMeasurementRequestFamily::TextBaselineMetrics
+        | worth_ui_host_contract::UiMeasurementRequestFamily::FontMetrics
+        | worth_ui_host_contract::UiMeasurementRequestFamily::NativeControlIntrinsicSize
+        | worth_ui_host_contract::UiMeasurementRequestFamily::ViewportExtent
+        | worth_ui_host_contract::UiMeasurementRequestFamily::DpiScaleFactor) => {
+            panic!("suite fixture does not model host need for {other:?}")
+        }
     }
 }
 
@@ -185,6 +191,12 @@ fn suite_normalization_context_for_request(
                 assumption_profile,
             )
         }
-        other => panic!("suite fixture does not model normalization for {other:?}"),
+        other @ (worth_ui_host_contract::UiMeasurementRequestFamily::TextBaselineMetrics
+        | worth_ui_host_contract::UiMeasurementRequestFamily::FontMetrics
+        | worth_ui_host_contract::UiMeasurementRequestFamily::NativeControlIntrinsicSize
+        | worth_ui_host_contract::UiMeasurementRequestFamily::ViewportExtent
+        | worth_ui_host_contract::UiMeasurementRequestFamily::DpiScaleFactor) => {
+            panic!("suite fixture does not model normalization for {other:?}")
+        }
     }
 }

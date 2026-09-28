@@ -38,6 +38,10 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryWorkflowLayout
     pub(in crate::domain_computation::primary_graph) approval_proposal_relation: KindId,
     pub(in crate::domain_computation::primary_graph) approval_evidence_relation: KindId,
     pub(in crate::domain_computation::primary_graph) evidence_dependency_relation: KindId,
+    /// Successor instance to the instance its migration ended.
+    pub(in crate::domain_computation::primary_graph) instance_migrated_from_relation: KindId,
+    /// Successor instance to each receipted transition it inherits as history.
+    pub(in crate::domain_computation::primary_graph) instance_prior_effect_relation: KindId,
 }
 
 #[derive(Clone, Debug)]
@@ -90,6 +94,13 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowApprovalLayout {
     pub(in crate::domain_computation::primary_graph) grant_slot: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) grant_generation: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) authorization_decision: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) authorization_request: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) authorization_principal: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) capability_authority_identity:
+        AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) authorization_lineage: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) authorization_support: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) authorization_dependencies: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) action: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) purpose: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) validity_timeline: AspectFieldLocator,
@@ -117,6 +128,13 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowAssessmentEviden
     pub(in crate::domain_computation::primary_graph) passing: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) publication_identity: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) output_content_identity: AspectFieldLocator,
+    /// The program revision the evidence was collected under. Program
+    /// adoption can carry an instance forward; evidence from an earlier
+    /// revision is never reused under a later one.
+    pub(in crate::domain_computation::primary_graph) program_revision: AspectFieldLocator,
+    /// The logical bytes this evidence and its dependency facts retain,
+    /// charged against the lineage's evidence ceiling when it settled.
+    pub(in crate::domain_computation::primary_graph) retained_bytes: AspectFieldLocator,
 }
 
 #[derive(Clone, Debug)]
@@ -132,7 +150,10 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowLineageLayout {
 pub(in crate::domain_computation::primary_graph) struct WorkflowDefinitionLayout {
     pub(in crate::domain_computation::primary_graph) entity_kind: KindId,
     pub(in crate::domain_computation::primary_graph) content_identity: AspectFieldLocator,
+    /// The revision the definition was published under; never rewritten.
     pub(in crate::domain_computation::primary_graph) program_revision: AspectFieldLocator,
+    /// The latest revision adoption carried the definition to, when any.
+    pub(in crate::domain_computation::primary_graph) carried_revision: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) maximum_nodes: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) maximum_connections: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) maximum_effects: AspectFieldLocator,
@@ -144,6 +165,9 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowDefinitionLayout
         AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) maximum_port_provenance: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) maximum_canonical_bytes: AspectFieldLocator,
+    /// The declared total deadline in milliseconds; absent when none.
+    pub(in crate::domain_computation::primary_graph) total_deadline_milliseconds:
+        AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) content_identity_index_id: DerivedIndexId,
 }
 
@@ -154,10 +178,17 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowNodeLayout {
     pub(in crate::domain_computation::primary_graph) kind: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) member: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) input_type: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) operation_binding: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) parameter_type: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) result_type: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) assessment_binding: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) assessment_subject: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) assessment_applicability_relation:
+        AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) assessment_applicability_from:
+        AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) assessment_applicability_to:
+        AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) condition_binding: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) capability_type: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) approval_operation: AspectFieldLocator,
@@ -180,6 +211,7 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowInstanceLayout {
     pub(in crate::domain_computation::primary_graph) entity_kind: KindId,
     pub(in crate::domain_computation::primary_graph) identity: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) protocol_version: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) branch_occurrence: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) program_revision: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) definition_content_identity:
         AspectFieldLocator,
@@ -187,6 +219,25 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowInstanceLayout {
     pub(in crate::domain_computation::primary_graph) subject_slot: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) subject_generation: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) state: AspectFieldLocator,
+    /// Where a migration successor began, when not at its definition's start.
+    pub(in crate::domain_computation::primary_graph) resume_node_path: AspectFieldLocator,
+    /// The intent that explicitly cancelled the instance; absent when program
+    /// adoption cancelled it or it never ended by cancellation.
+    pub(in crate::domain_computation::primary_graph) cancellation_identity: AspectFieldLocator,
+    /// The transition whose external operation last committed into its
+    /// owner's custody. The owner settles it later; until a transition with
+    /// this identity settles, the instance cannot be cancelled.
+    pub(in crate::domain_computation::primary_graph) owner_custody: AspectFieldLocator,
+    /// Steps the instance's migration sources took before it; absent when
+    /// none. One lineage spends one step budget, so a successor never
+    /// starts it afresh.
+    pub(in crate::domain_computation::primary_graph) inherited_steps: AspectFieldLocator,
+    /// The Unix-epoch millisecond at which the lineage's earliest total
+    /// deadline elapses; absent when no definition it ran declared one.
+    pub(in crate::domain_computation::primary_graph) deadline: AspectFieldLocator,
+    /// Assessment evidence bytes the instance's migration sources retained
+    /// before it; absent when none. One lineage retains one evidence budget.
+    pub(in crate::domain_computation::primary_graph) inherited_evidence_bytes: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) identity_index_id: DerivedIndexId,
 }
 

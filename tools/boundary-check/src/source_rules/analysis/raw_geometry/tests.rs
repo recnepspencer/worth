@@ -14,7 +14,7 @@ fn graph(modules: &[(&[&str], &str, &str)]) -> ModuleGraph {
                         relative_source: (*source).to_owned(),
                         public_from_parent: false,
                         attributes: Vec::new(),
-                        items: syn::parse_file(text).unwrap().items,
+                        items: crate::source_syntax::parse_file(text).unwrap().items,
                     },
                 )
             })

@@ -15,6 +15,7 @@ use worth_query_topology_entry::{
 };
 
 use super::super::super::{authentication, installation, seed::length};
+use crate::application_invariant_acceptance::proof::settle;
 use crate::{ConsumerDiscoveredProgramRoot, ConsumerProgram, ConsumerSchema};
 
 pub(super) fn performed_source_discovers_required_root(
@@ -67,16 +68,16 @@ pub(super) fn performed_source_discovers_required_root(
         .unwrap_or_else(|failure| {
             panic!("performed discovered roots start: {:?}", failure.denial())
         });
-    let settled = loop {
+    let settled = settle(|| {
         match started
             .required_output_mut()
             .advance(&request)
             .expect("the discovered roots advance")
         {
-            WorthQueryDiscoveredProgramOutputProgress::Pending => {}
-            WorthQueryDiscoveredProgramOutputProgress::Settled(settled) => break settled,
+            WorthQueryDiscoveredProgramOutputProgress::Pending => None,
+            WorthQueryDiscoveredProgramOutputProgress::Settled(settled) => Some(settled),
         }
-    };
+    });
     let roots = settled.root_outputs().collect::<Vec<_>>();
     assert_eq!(roots.len(), 3);
     assert_eq!(

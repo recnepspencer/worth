@@ -1,11 +1,6 @@
 use std::fmt;
 
-use crate::adjudication::{
-    ExecutableFirstFrameFailure, ExecutableLifecycleCleanupFailure,
-    ExecutableNativeInputReachabilityFailure, ExecutablePredecessorPreservationFailure,
-    ExecutableReplacementFailure, ExecutableSchemaTransitionFailure,
-    ExecutableVisualIdentityFailure,
-};
+use crate::adjudication::{ExecutableFirstFrameFailure, ExecutableLifecycleCleanupFailure};
 use crate::external_observation::{
     PlatformPulseLifecycleStreamFailure, PlatformPulseLifecycleTeardownEvidence,
     PlatformPulseLifecycleTeardownFailure, StableProcessLivenessFailure,
@@ -17,10 +12,8 @@ use crate::native_platform::NativePlatformFailure;
 use crate::product_process::{
     EmergencyPlatformPulseExit, EmergencyPlatformPulseExitFailure,
     PlatformPulseNativeCloseEvidenceFailure, PlatformPulseProcessExitFailure,
-    PlatformPulseProcessLaunchFailure, PlatformPulseQuiescenceFailure,
-    WatchedPulseObservationFailure,
+    PlatformPulseProcessLaunchFailure,
 };
-use crate::source_delta::PulseSourceActionFailure;
 
 use super::retained_artifact::{
     FailureArtifactDiscardEvidence, FailureArtifactFailure, FailureArtifactInputs,
@@ -36,21 +29,10 @@ pub(crate) enum PulseExecutableWorldFailure {
     Liveness(StableProcessLivenessFailure),
     Native(NativePlatformFailure),
     FirstFrame(ExecutableFirstFrameFailure),
-    NativeInputReachability(ExecutableNativeInputReachabilityFailure),
-    QueryCurrent(crate::adjudication::ExecutableQueryCurrentFailure),
-    VisualIdentity(ExecutableVisualIdentityFailure),
-    SourceAction(PulseSourceActionFailure),
-    WatchedObservation(WatchedPulseObservationFailure),
-    Replacement(ExecutableReplacementFailure),
-    SchemaTransition(ExecutableSchemaTransitionFailure),
-    Preservation(ExecutablePredecessorPreservationFailure),
-    IntentJourney(crate::product_process::PlatformPulseIntentJourneyFailure),
-    PortalJourney(crate::product_process::PlatformPulsePortalJourneyFailure),
     ScrollJourney(crate::product_process::PlatformPulseScrollJourneyFailure),
     ProcessExit(PlatformPulseProcessExitFailure),
     NativeCloseEvidence(PlatformPulseNativeCloseEvidenceFailure),
     Cleanup(ExecutableLifecycleCleanupFailure),
-    Quiescence(PlatformPulseQuiescenceFailure),
 }
 
 #[derive(Debug)]
@@ -255,40 +237,12 @@ impl fmt::Display for PulseExecutableWorldFailure {
             Self::FirstFrame(failure) => {
                 write!(formatter, "first-frame adjudication: {failure}")
             }
-            Self::NativeInputReachability(failure) => {
-                write!(
-                    formatter,
-                    "native-input reachability adjudication: {failure}"
-                )
-            }
-            Self::QueryCurrent(failure) => {
-                write!(formatter, "Query-current adjudication: {failure}")
-            }
-            Self::VisualIdentity(failure) => {
-                write!(formatter, "visual-identity adjudication: {failure}")
-            }
-            Self::SourceAction(failure) => write!(formatter, "source action: {failure}"),
-            Self::WatchedObservation(failure) => {
-                write!(formatter, "watched observation: {failure}")
-            }
-            Self::Replacement(failure) => {
-                write!(formatter, "replacement adjudication: {failure}")
-            }
-            Self::SchemaTransition(failure) => {
-                write!(formatter, "schema-transition adjudication: {failure}")
-            }
-            Self::Preservation(failure) => {
-                write!(formatter, "predecessor preservation: {failure}")
-            }
-            Self::IntentJourney(failure) => write!(formatter, "intent journey: {failure}"),
-            Self::PortalJourney(failure) => write!(formatter, "portal journey: {failure}"),
             Self::ScrollJourney(failure) => write!(formatter, "scroll journey: {failure}"),
             Self::ProcessExit(failure) => write!(formatter, "process exit: {failure}"),
             Self::NativeCloseEvidence(failure) => {
                 write!(formatter, "native close evidence: {failure}")
             }
             Self::Cleanup(failure) => write!(formatter, "lifecycle cleanup: {failure}"),
-            Self::Quiescence(failure) => write!(formatter, "product quiescence: {failure}"),
         }
     }
 }

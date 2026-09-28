@@ -29,7 +29,9 @@ impl UiNativeApplicationProgramProgress {
             false,
         )? {
             FrameProgress::Failed => Err(()),
-            _ => Ok(()),
+            FrameProgress::Retained | FrameProgress::Settled | FrameProgress::RetryRequired(_) => {
+                Ok(())
+            }
         }
     }
 }

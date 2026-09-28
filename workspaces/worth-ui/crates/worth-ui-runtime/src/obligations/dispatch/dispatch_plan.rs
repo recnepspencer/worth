@@ -6,6 +6,7 @@ use crate::obligations::verdict::{
 };
 
 use super::{dispatch_execution::UiObligationDispatchExecution, UiObligationDispatchEntry};
+use crate::obligations::catalog::UiObligationFamily;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct UiObligationDispatchPlan {
@@ -101,18 +102,33 @@ impl UiObligationDispatchPlan {
                 } else {
                     match entry.execution() {
                         UiObligationDispatchExecution::ImmediateCheck => match selected.family() {
-                            crate::obligations::catalog::UiObligationFamily::DiagnosticSurfaceRequirement => {
+                            UiObligationFamily::DiagnosticSurfaceRequirement => {
                                 UiObligationVerdict::from_selected(
                                     selected,
                                     UiObligationVerdictClass::Advisory,
                                     UiObligationDispatchStopPosture::DiagnosticOnly,
                                 )
                             }
-                            _ => UiObligationVerdict::from_selected(
-                                selected,
-                                UiObligationVerdictClass::Success,
-                                UiObligationDispatchStopPosture::None,
-                            ),
+                            UiObligationFamily::StructuralLegality
+                            | UiObligationFamily::ParticipationLegality
+                            | UiObligationFamily::SlotContract
+                            | UiObligationFamily::MeasurementRequirement
+                            | UiObligationFamily::QueryBindingRequirement
+                            | UiObligationFamily::IntentOperabilityRequirement
+                            | UiObligationFamily::PortalHostRequirement
+                            | UiObligationFamily::FocusRouteRequirement
+                            | UiObligationFamily::MotionSupportRequirement
+                            | UiObligationFamily::ScrollRoutingRequirement
+                            | UiObligationFamily::SelectionStateRequirement
+                            | UiObligationFamily::CommandRouteRequirement
+                            | UiObligationFamily::AccessibilityRequirement
+                            | UiObligationFamily::HostCapabilityRequirement => {
+                                UiObligationVerdict::from_selected(
+                                    selected,
+                                    UiObligationVerdictClass::Success,
+                                    UiObligationDispatchStopPosture::None,
+                                )
+                            }
                         },
                         UiObligationDispatchExecution::TypedStop(stop_posture) => {
                             UiObligationVerdict::from_selected(

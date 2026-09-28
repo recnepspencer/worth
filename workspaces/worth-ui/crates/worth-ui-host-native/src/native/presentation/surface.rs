@@ -14,6 +14,9 @@ pub(crate) struct UiNativeOwnedPresentationSurface {
     state: Box<UiNativePresentationSurface>,
     owners: UiNativePresentationSurfaceOwners,
     basis_generation: u64,
+    /// Advances whenever the surface drops or replaces its retained target,
+    /// so retained paint can tell which target its pixels are complete in.
+    target_generation: u64,
     occluded: bool,
     surface_suspensions: u64,
     targetless_surface_suspensions: u64,
@@ -33,6 +36,7 @@ impl UiNativeOwnedPresentationSurface {
             state: Box::new(state),
             owners,
             basis_generation: 1,
+            target_generation: 1,
             occluded: false,
             surface_suspensions: 0,
             targetless_surface_suspensions: 0,
@@ -45,6 +49,10 @@ impl UiNativeOwnedPresentationSurface {
 
     pub(crate) const fn basis_generation(&self) -> u64 {
         self.basis_generation
+    }
+
+    pub(crate) const fn target_generation(&self) -> u64 {
+        self.target_generation
     }
 
     pub(crate) fn observe_occlusion(&mut self, occluded: bool) -> Result<bool, ()> {
@@ -78,6 +86,7 @@ impl UiNativeOwnedPresentationSurface {
         successor_owner: crate::native::UiNativeResourceOwner,
         registry: &mut crate::native::UiNativeResourceRegistry,
     ) -> Result<(), ()> {
+        self.target_generation = self.target_generation.checked_add(1).ok_or(())?;
         let predecessor = self.state.replace_target(successor);
         let predecessor_owner = self.owners.retained_target.replace(successor_owner);
         drop(predecessor);
@@ -101,6 +110,7 @@ impl UiNativeOwnedPresentationSurface {
         self.state.scale_factor = scale_factor;
         self.state.extent = extent;
         self.state.suspended = true;
+        self.target_generation = self.target_generation.checked_add(1).ok_or(())?;
         let target = self.state.take_target();
         drop(target);
         if let Some(owner) = self.owners.retained_target.take() {

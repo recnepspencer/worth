@@ -5,6 +5,7 @@ use std::{
 
 use crate::{
     application_capability::ApplicationCapabilityMarkerIdentity,
+    application_operation::ApplicationMutationBinding,
     application_query::ApplicationQueryMarkerIdentity,
     application_schema::ApplicationOperationMarkerIdentity,
 };
@@ -190,6 +191,55 @@ where
             ApplicationWorkflowNodeKind::Assessment(
                 ApplicationWorkflowAssessmentRef::declared_for::<Spec, Query>(subject),
             ),
+        )
+    }
+
+    pub fn assessment_when_related_relation_present<Query, Relation, From, To>(
+        &mut self,
+        identity: impl Into<String>,
+        relation: crate::application_schema::ApplicationRelationRef<
+            Spec::Schema,
+            Relation,
+            From,
+            To,
+        >,
+    ) -> Result<
+        ApplicationWorkflowNodeRef<ApplicationWorkflowAssessmentNode>,
+        ApplicationWorkflowAuthoringDenial,
+    >
+    where
+        Query: ApplicationQueryMarkerIdentity<Spec::Schema> + 'static,
+    {
+        self.push_node(
+            identity,
+            ApplicationWorkflowNodeKind::Assessment(
+                ApplicationWorkflowAssessmentRef::declared_when_related_relation_present::<
+                    Spec,
+                    Query,
+                    Relation,
+                    From,
+                    To,
+                >(relation),
+            ),
+        )
+    }
+
+    pub fn operation_binding<Binding>(
+        &mut self,
+        identity: impl Into<String>,
+    ) -> Result<
+        ApplicationWorkflowNodeRef<ApplicationWorkflowOperationNode>,
+        ApplicationWorkflowAuthoringDenial,
+    >
+    where
+        Binding: ApplicationMutationBinding<Spec::Schema>,
+    {
+        self.push_node(
+            identity,
+            ApplicationWorkflowNodeKind::Operation {
+                operation: ApplicationWorkflowOperationRef::declared_binding::<Spec, Binding>(),
+                requires_workflow_authority: Binding::REQUIRES_WORKFLOW_AUTHORITY,
+            },
         )
     }
 

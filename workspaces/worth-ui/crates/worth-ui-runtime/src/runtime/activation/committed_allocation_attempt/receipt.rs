@@ -145,7 +145,7 @@ impl WorthUiPlanSwapReceipt {
     pub fn scroll_owner_catalog(&self) -> Option<UiScrollOwnerCatalogReceipt> {
         match &self.scroll_catalog_evidence {
             UiScrollCatalogSwapEvidence::Prepared(receipt) => Some(receipt.clone()),
-            _ => None,
+            UiScrollCatalogSwapEvidence::Denied(_) => None,
         }
     }
     pub fn scroll_catalog_evidence(&self) -> UiScrollCatalogSwapEvidence {

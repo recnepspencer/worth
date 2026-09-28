@@ -9,6 +9,7 @@ pub struct WorthQueryWorkflowInstanceProgressCounters {
     pub(super) history_reconstruction_charge_bytes: usize,
     pub(super) peak_history_reconstruction_charge_bytes: usize,
     pub(super) incremental_advances: usize,
+    pub(super) incremental_evidence_bytes: u64,
     pub(super) incremental_replays: usize,
     pub(super) incremental_misses: usize,
     pub(super) evictions: usize,
@@ -47,6 +48,12 @@ impl WorthQueryWorkflowInstanceProgressCounters {
     }
     pub const fn incremental_advances(self) -> usize {
         self.incremental_advances
+    }
+    /// Assessment evidence bytes lineages newly retained through warm,
+    /// incrementally advanced progress. A cold rebuild recounts an instance's
+    /// evidence from its history and adds nothing here.
+    pub const fn incremental_evidence_bytes(self) -> u64 {
+        self.incremental_evidence_bytes
     }
     pub const fn incremental_replays(self) -> usize {
         self.incremental_replays
@@ -93,6 +100,9 @@ impl WorthQueryWorkflowInstanceProgressCounters {
         self.incremental_advances = self
             .incremental_advances
             .saturating_add(shard.incremental_advances);
+        self.incremental_evidence_bytes = self
+            .incremental_evidence_bytes
+            .saturating_add(shard.incremental_evidence_bytes);
         self.incremental_replays = self
             .incremental_replays
             .saturating_add(shard.incremental_replays);

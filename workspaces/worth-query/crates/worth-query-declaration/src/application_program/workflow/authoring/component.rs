@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 use crate::{
     application_capability::ApplicationCapabilityMarkerIdentity,
+    application_operation::ApplicationMutationBinding,
     application_query::ApplicationQueryMarkerIdentity,
     application_schema::ApplicationOperationMarkerIdentity,
 };
@@ -97,6 +98,25 @@ where
         self.require_node_capacity()?;
         self.graph
             .operation::<Operation>(identity, requires_workflow_authority)
+            .map(|inner| ApplicationWorkflowComponentNodeRef {
+                inner,
+                owner: Arc::clone(&self.owner),
+            })
+    }
+
+    pub fn operation_binding<Binding>(
+        &mut self,
+        identity: impl Into<String>,
+    ) -> Result<
+        ApplicationWorkflowComponentNodeRef<ApplicationWorkflowOperationNode>,
+        ApplicationWorkflowAuthoringDenial,
+    >
+    where
+        Binding: ApplicationMutationBinding<Spec::Schema>,
+    {
+        self.require_node_capacity()?;
+        self.graph
+            .operation_binding::<Binding>(identity)
             .map(|inner| ApplicationWorkflowComponentNodeRef {
                 inner,
                 owner: Arc::clone(&self.owner),

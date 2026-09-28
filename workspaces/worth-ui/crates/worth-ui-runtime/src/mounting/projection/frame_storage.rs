@@ -42,10 +42,9 @@ mod presentation_effects;
 pub(crate) mod presentation_sources;
 mod presentation_view;
 mod presented_hits;
-mod region_placement;
-pub(crate) use region_placement::UiMountedRegionPlacement;
 mod projection_owner;
 mod rebind;
+mod region_placement;
 mod semantic_mechanics;
 mod semantic_projection;
 mod semantic_text_view;
@@ -236,7 +235,8 @@ impl UiMountedProjectionFrame {
     ) -> Result<(), UiMountedProjectionDenial> {
         require_once(&mut self.ordinary_recorded)?;
         let batch = self.push_lane_batch(
-            receipt.touch().row_count() as u32,
+            u32::try_from(receipt.touch().row_count())
+                .map_err(|_| UiMountedProjectionDenial::TableCapacityExceeded)?,
             0,
             None,
             UiMountedPaintPrimitiveKind::OrdinaryLaneSummary,

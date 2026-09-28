@@ -46,7 +46,7 @@
 //! - web backends and reactive views
 //! - finance and risk pipelines
 //! - ML feature and scoring flows
-//! - geometry or compiler-style partial recompute
+//! - document indexing or compiler-style partial recompute
 //!
 //! The flagship story looks like this:
 //!
@@ -126,7 +126,6 @@
 //!
 //! - `crates/worth-signal/examples/easy_task_board.rs`
 //! - `crates/worth-signal/examples/compiler_targeted_rebuild.rs`
-//! - `crates/worth-signal/examples/geometry_partial_recompute.rs`
 //! - `crates/worth-signal/examples/branch_bases.rs`
 
 #![forbid(unsafe_code)]

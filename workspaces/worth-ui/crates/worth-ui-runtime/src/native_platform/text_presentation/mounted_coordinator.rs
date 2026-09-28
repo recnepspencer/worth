@@ -1,6 +1,6 @@
 //! Ordinary runtime coordinator for mounted native text pin transactions.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::mounting::presentation::coordinator::{
     UiMountedTextPinCandidate, UiMountedTextPinState,
@@ -74,11 +74,11 @@ impl UiNativeMountedTextCoordinator {
             presentation_damage_digest(work),
         );
         let semantic_work = super::mounted_semantic_text(work);
-        let retained: Option<Vec<UiMountedTextForegroundReuseReceipt>> = semantic_work
+        let retained: Option<Vec<&UiMountedTextForegroundReuseReceipt>> = semantic_work
             .mechanics
             .iter()
-            .map(|(command, _)| self.foreground_receipts.get(command).cloned())
-            .collect::<Option<Vec<UiMountedTextForegroundReuseReceipt>>>();
+            .map(|(command, _)| self.foreground_receipts.get(command))
+            .collect::<Option<Vec<&UiMountedTextForegroundReuseReceipt>>>();
         if let Some(retained) = retained.filter(|receipts| {
             !self.raster_cache_reconstruction_required
                 && receipts
@@ -89,9 +89,10 @@ impl UiNativeMountedTextCoordinator {
             {
                 let candidate = self.pins.candidate(requirement.binding(), &prepared);
                 let pins_continue = candidate.has_no_pin_churn()
-                    && retained.iter().all(|receipt| {
-                        receipt.pins_are_continuous(UiMountedTextPinState::binding_pins(&candidate))
-                    });
+                    && UiMountedTextForegroundReuseReceipt::pins_are_continuous(
+                        retained.iter().copied(),
+                        UiMountedTextPinState::binding_pins(&candidate),
+                    );
                 if pins_continue {
                     return Some(UiNativeTextPresentationPreparation::Prepared(prepared));
                 }
@@ -149,35 +150,15 @@ impl UiNativeMountedTextCoordinator {
                 present,
             );
         drop(transaction);
-        let work_observation = request_bases.first().map(|basis| {
-            let key = [
-                basis.mounted_frame().diagnostic_value(),
-                basis.binding().diagnostic_value(),
-            ];
-            let layout_work = if self.admit_layout_work(key) {
-                prepared.performed_layout_work()
-            } else {
-                [0; 17]
-            };
-            let (active_mechanics, removed_mechanics) = self.advance_mechanic_evidence(basis);
-            super::UiNativeTextPresentationWorkObservation::after_mounted_work(
-                basis,
-                prepared,
-                raster_work,
-                layout_work,
-                active_mechanics,
-                removed_mechanics,
-            )
-        });
+        if let Some(basis) = request_bases.first() {
+            self.observe_work(basis, prepared, raster_work);
+        }
         if reconstruction_required {
             self.raster_cache = reconstructed_cache;
             self.raster_cache_reconstruction_required = false;
         }
         self.peak_raster_cache_entries =
             self.peak_raster_cache_entries.max(self.raster_cache.len());
-        if let Some(observation) = work_observation {
-            self.record_work_observation(observation);
-        }
         let pending_candidate = match &outcome {
             UiHostSurfacePresentationOutcome::Presented(_) => {
                 self.pins.commit_presented(candidate);
@@ -232,17 +213,14 @@ impl UiNativeMountedTextCoordinator {
             host_lineage,
             presentation_damage_digest(work),
         );
+        let pins = std::sync::Arc::from(UiMountedTextPinState::binding_pins(candidate));
         let receipts = semantic_work
             .mechanics
             .iter()
             .zip(prepared.demand_batches())
             .map(|((command, mechanic), demand)| {
                 UiMountedTextForegroundReuseReceipt::from_prepared(
-                    *command,
-                    mechanic,
-                    demand,
-                    UiMountedTextPinState::binding_pins(candidate),
-                    basis,
+                    *command, mechanic, demand, &pins, basis,
                 )
             })
             .collect::<Vec<_>>()
@@ -267,7 +245,7 @@ impl UiNativeMountedTextCoordinator {
                 .receipts
                 .iter()
                 .map(UiMountedTextForegroundReuseReceipt::command)
-                .collect::<Vec<_>>();
+                .collect::<HashSet<_>>();
             self.foreground_receipts.retain(|_, receipt| {
                 receipt.basis().binding() != update.binding || active.contains(&receipt.command())
             });
@@ -304,74 +282,6 @@ impl UiNativeMountedTextCoordinator {
     ) -> UiMountedTextPinCandidate {
         self.pins.deregistration_candidate(binding)
     }
-
-    pub(crate) fn take_work_observations(
-        &mut self,
-    ) -> (Box<[super::UiNativeTextPresentationWorkObservation]>, bool) {
-        (
-            std::mem::take(&mut self.work_observations).into_boxed_slice(),
-            !std::mem::take(&mut self.work_observation_overflowed),
-        )
-    }
-
-    fn record_work_observation(
-        &mut self,
-        observation: super::UiNativeTextPresentationWorkObservation,
-    ) {
-        if self.work_observations.len() == TEXT_WORK_OBSERVATION_CAPACITY {
-            self.work_observation_overflowed = true;
-            return;
-        }
-        self.work_observations.push(observation);
-    }
-
-    fn admit_layout_work(&mut self, key: [u64; 2]) -> bool {
-        if self.reported_layout_work.contains(&key) {
-            return false;
-        }
-        if self.reported_layout_work.len() == TEXT_WORK_OBSERVATION_CAPACITY {
-            self.reported_layout_work.pop_front();
-        }
-        self.reported_layout_work.push_back(key);
-        true
-    }
-
-    fn advance_mechanic_evidence(
-        &mut self,
-        basis: &worth_ui_query_binding::WorthUiPresentationRequestBasis,
-    ) -> (
-        Box<[super::UiNativeTextPresentationMechanicObservation]>,
-        Box<[super::UiNativeTextPresentationMechanicObservation]>,
-    ) {
-        let mut removed = if basis.complete() {
-            std::mem::take(&mut self.retained_mechanics)
-                .into_values()
-                .collect::<Vec<_>>()
-        } else {
-            basis
-                .removed_mechanics()
-                .iter()
-                .filter_map(|identity| self.retained_mechanics.remove(identity))
-                .collect::<Vec<_>>()
-        };
-        let active = basis
-            .mechanics()
-            .iter()
-            .map(super::UiNativeTextPresentationMechanicObservation::from_basis)
-            .collect::<Vec<_>>();
-        for mechanic in &active {
-            self.retained_mechanics
-                .insert(mechanic.mechanic(), *mechanic);
-        }
-        removed.sort_by_key(|mechanic| {
-            let identity = mechanic.mechanic();
-            let (slot, row) = identity
-                .semantic_text_identity_parts()
-                .expect("retained text mechanic preserves semantic-text identity");
-            (identity.mounted_instance().diagnostic_value(), slot, row)
-        });
-        (active.into_boxed_slice(), removed.into_boxed_slice())
-    }
 }
 
 impl UiNativeMountedSurfaceTextObservation {
@@ -393,6 +303,9 @@ impl UiNativeMountedSurfaceTextObservation {
         )
     }
 }
+
+#[path = "mounted_coordinator/work_evidence.rs"]
+mod work_evidence;
 
 #[cfg(test)]
 #[path = "mounted_coordinator_tests.rs"]

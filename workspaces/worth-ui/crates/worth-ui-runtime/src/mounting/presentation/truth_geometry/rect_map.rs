@@ -29,9 +29,12 @@ impl UiPublishedToAcceptedMap {
     }
 
     /// Where the sample put `rect`. The rect must share the source's space.
-    pub(crate) fn apply(self, rect: UiPublishedRect) -> UiAcceptedRect {
-        self.sampled
-            .with_rect(rect.rect().mapped(self.source.rect(), self.sampled.rect()))
+    /// `None` when the sample carries it beyond finite geometry.
+    pub(crate) fn apply(self, rect: UiPublishedRect) -> Option<UiAcceptedRect> {
+        let mapped = rect
+            .rect()
+            .mapped(self.source.rect(), self.sampled.rect())?;
+        Some(self.sampled.with_rect(mapped))
     }
 }
 
@@ -43,8 +46,12 @@ impl UiPublishedMap {
     }
 
     /// Where the entrance puts `rect`. The rect must share the source's space.
-    pub(crate) fn apply(self, rect: UiPublishedRect) -> UiPublishedRect {
-        UiPublishedRect::from_rect(rect.rect().mapped(self.source.rect(), self.initial.rect()))
+    /// `None` when the entrance carries it beyond finite geometry.
+    pub(crate) fn apply(self, rect: UiPublishedRect) -> Option<UiPublishedRect> {
+        let mapped = rect
+            .rect()
+            .mapped(self.source.rect(), self.initial.rect())?;
+        Some(UiPublishedRect::from_rect(mapped))
     }
 }
 
@@ -83,7 +90,15 @@ mod tests {
             .expect("a source with area carries its layout");
         assert_eq!(
             map.apply(rect([5.0, 5.0, 5.0, 5.0])),
-            rect([10.0, 10.0, 10.0, 10.0])
+            Some(rect([10.0, 10.0, 10.0, 10.0]))
         );
+    }
+
+    #[test]
+    fn a_map_carrying_a_rect_beyond_finite_geometry_places_it_nowhere() {
+        let sliver = rect([0.0, 0.0, 1.0e-30, 10.0]);
+        let map = UiPublishedMap::between(sliver, rect([0.0, 0.0, 1.0e10, 10.0]))
+            .expect("a sliver has area");
+        assert_eq!(map.apply(rect([0.0, 0.0, 1.0e30, 10.0])), None);
     }
 }

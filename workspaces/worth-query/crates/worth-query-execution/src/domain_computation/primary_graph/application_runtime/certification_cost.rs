@@ -10,6 +10,11 @@ use worth_relational::facade::inspection::{
 use super::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::primary_graph::provider::WorthQueryApplicationAttemptWorkSnapshot;
 
+/// A baseline of runtime cost counters for one product branch, captured before
+/// the work being measured.
+///
+/// Get it from `capture_certification_cost_scope` and pass it to
+/// `observe_certification_cost` after the work. Capturing it changes nothing.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WorthQueryCertificationCostScope {
     relational: RelationalMvccCostScope,
@@ -19,6 +24,11 @@ pub struct WorthQueryCertificationCostScope {
     world_history: WorthQueryCertificationWorldHistory,
 }
 
+/// The cost of the work done since a [`WorthQueryCertificationCostScope`] was
+/// captured: storage cost, application attempt work, output producer attempts,
+/// and the product world's retention and history before and after.
+///
+/// Read-only evidence for certification; it grants nothing.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WorthQueryCertificationCostObservation {
     relational: RelationalMvccCostObservation,
@@ -31,6 +41,9 @@ pub struct WorthQueryCertificationCostObservation {
     world_reserved_entry_writes: u64,
 }
 
+/// Counts of application attempt work steps done during an observed interval,
+/// from resolutions and session preparations through prepared commits, aborts,
+/// cleanups, and external dispatch admissions.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct WorthQueryCertificationApplicationWork {
     retained_resolutions: u64,
@@ -48,6 +61,9 @@ pub struct WorthQueryCertificationApplicationWork {
     external_dispatch_admissions: u64,
 }
 
+/// A snapshot of what the product world is holding: pins, component
+/// obligations, acquisitions in flight or reserved, observations, and active
+/// publication attempts.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct WorthQueryCertificationWorldRetention {
     unique_pins: usize,
@@ -59,6 +75,8 @@ pub struct WorthQueryCertificationWorldRetention {
     active_publication_attempts: usize,
 }
 
+/// A snapshot of the product world's commit history: installed and reserved
+/// commits, metadata bytes, and reserved entry writes.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct WorthQueryCertificationWorldHistory {
     installed_commits: usize,
@@ -67,7 +85,13 @@ pub struct WorthQueryCertificationWorldHistory {
     reserved_entry_writes: u64,
 }
 
+/// Read-only cost measurement on an application runtime, for certification.
+///
+/// Capture a scope before the work, then observe the cost after it. Neither
+/// call changes runtime state.
 pub trait WorthQueryCertificationCostRuntimeExt<Schema: ApplicationSchema> {
+    /// Captures the cost baseline for a product branch. Refused when the branch
+    /// cannot be admitted.
     fn capture_certification_cost_scope(
         &self,
         branch: crate::basis::WorthQueryProductBranch,
@@ -76,6 +100,8 @@ pub trait WorthQueryCertificationCostRuntimeExt<Schema: ApplicationSchema> {
         crate::basis::WorthQueryProductBranchAdmissionDenial,
     >;
 
+    /// Observes the cost accrued since `scope` was captured. Refused when the
+    /// branch's storage cost cannot be inspected.
     fn observe_certification_cost(
         &self,
         scope: &WorthQueryCertificationCostScope,

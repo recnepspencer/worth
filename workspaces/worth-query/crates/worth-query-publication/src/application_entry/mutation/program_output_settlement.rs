@@ -17,11 +17,14 @@ type Source<Schema, Connection> =
 type Query<Schema, Connection> =
     <Source<Schema, Connection> as ApplicationQueryBinding<Schema>>::Query;
 
+/// Whether a mutation's required program outputs have settled yet.
 pub enum WorthQueryApplicationProgramOutputProgress<RootQuery> {
     Pending,
     Settled(WorthQueryApplicationProgramOutputSettlement<RootQuery>),
 }
 
+/// Settled required program outputs: the root settlement, the outputs produced, and the
+/// work spent.
 pub struct WorthQueryApplicationProgramOutputSettlement<RootQuery> {
     pub(super) root:
         crate::application_entry::WorthQueryApplicationOutputDemandSettlement<RootQuery>,
@@ -100,8 +103,10 @@ impl<RootQuery> WorthQueryApplicationProgramOutputSettlement<RootQuery> {
         Demand<Schema, Connection>: 'static,
         Query<Schema, Connection>: 'static,
     {
-        self.outputs.iter().filter_map(|output| {
-            (output.connection_identity == Connection::IDENTITY).then(|| {
+        self.outputs
+            .iter()
+            .filter(|output| output.connection_identity == Connection::IDENTITY)
+            .map(|output| {
                 (
                     output
                         .demand
@@ -117,7 +122,6 @@ impl<RootQuery> WorthQueryApplicationProgramOutputSettlement<RootQuery> {
                         .expect("a typed program output retains its declared settlement"),
                 )
             })
-        })
     }
 
     pub fn outputs_for_instance<'output, Schema, Connection>(

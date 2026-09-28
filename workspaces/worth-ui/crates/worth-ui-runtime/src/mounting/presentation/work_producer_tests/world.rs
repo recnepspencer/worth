@@ -259,7 +259,8 @@ impl MountedPresentationWorld {
                 bounds,
                 paint_bounds: bounds,
                 color: spec.color,
-                layer_semantic_order: (spec.x as u32) / 40,
+                layer_semantic_order: crate::whole_number::whole_u32(f64::from(spec.x)).unwrap()
+                    / 40,
                 layer_depth: 0,
                 clip_bounds: canonical_box(spec.clip_x, 0.0, spec.clip_width, 24.0),
                 lifecycle: UiMountedPortalOverlayLifecyclePosture::Visible,

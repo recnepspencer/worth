@@ -8,10 +8,12 @@ mod tests;
 
 pub use definition_contract::{
     WorthQueryInstalledWorkflowApprovalBinding, WorthQueryInstalledWorkflowDefinitionContract,
+    WorthQueryInstalledWorkflowDefinitionParts,
 };
 pub use vocabulary::{
     WorthQueryApplicationWorkflowInstallationDenial,
     WorthQueryApplicationWorkflowInstallationDenialKind,
     WorthQueryApplicationWorkflowResourceCeiling, WorthQueryApplicationWorkflowSpecInstallation,
     WorthQueryInstalledApplicationWorkflowSpec, WorthQueryWorkflowHistoryReconstructionBudget,
+    WorthQueryWorkflowNodeDependency, WorthQueryWorkflowVocabularyCoverage,
 };

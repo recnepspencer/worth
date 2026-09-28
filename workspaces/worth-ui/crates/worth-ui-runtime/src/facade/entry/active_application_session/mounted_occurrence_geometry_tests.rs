@@ -134,13 +134,25 @@ fn occurrence_geometry_update_is_local_and_identical_geometry_suppresses_work() 
         let after = shifted.iter().find(|row| row.0 == instance).unwrap().1;
         assert_eq!(fragment.work().damage().len(), 1);
         let damage = fragment.work().damage()[0];
-        assert_eq!(damage.x(), (before.x() * 1_000.0) as i32);
-        assert_eq!(damage.y(), (before.y() * 1_000.0) as i32);
+        assert_eq!(
+            damage.x(),
+            worth_ui_host_contract::appearance_coordinate_nearest(before.x()).unwrap()
+        );
+        assert_eq!(
+            damage.y(),
+            worth_ui_host_contract::appearance_coordinate_nearest(before.y()).unwrap()
+        );
         assert_eq!(
             damage.width(),
-            ((after.x() + after.width() - before.x()) * 1_000.0) as u32
+            worth_ui_host_contract::appearance_extent_nearest(
+                after.x() + after.width() - before.x()
+            )
+            .unwrap()
         );
-        assert_eq!(damage.height(), (before.height() * 1_000.0) as u32);
+        assert_eq!(
+            damage.height(),
+            worth_ui_host_contract::appearance_extent_nearest(before.height()).unwrap()
+        );
     }
     let unchanged = initial
         .iter()

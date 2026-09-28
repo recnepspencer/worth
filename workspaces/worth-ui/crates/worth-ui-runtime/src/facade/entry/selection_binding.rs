@@ -32,7 +32,7 @@ impl WorthUiActiveApplicationSession {
                     matches!(binding.source(), crate::declaration::UiResolvedIntentPayloadSource::ProjectionSelection(source)
                         if source.slot() == option.owner_revision().slot() && source.identity() == projection)
                 }),
-                _ => false,
+                crate::declaration::UiIntentCatalogResolvedRoute::Confirmation { .. } => false,
             });
         if !content_owner && !intent_owner {
             return Err(UiMountedSelectionBindingDenial::OwnerNotDeclared);

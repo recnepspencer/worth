@@ -48,9 +48,16 @@ pub(in crate::domain_computation::authorization) fn observe_upper_bound_policy(
         WorthQueryAuthorizationDecisionFact::from_capability_observation(
             WorthQueryAuthorizationDecisionPermit::new(),
             session_identity,
+            relational,
             evidence,
             bridge_evidence,
         )
+        .map_err(|()| {
+            WorthQueryOperationAuthorizationDenial::new(
+                WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
+                installed.contract().name(),
+            )
+        })?
         .with_preparatory_relational_work(expiry::observation_work()),
         observed_grant,
         std::sync::Arc::clone(installed.capability_authority_identity()),

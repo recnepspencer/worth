@@ -83,7 +83,7 @@ where
 
 fn limits_record(limits: ApplicationWorkflowDefinitionLimits) -> String {
     let components = limits.component_limits();
-    format!(
+    let mut record = format!(
         "nodes={};connections={};effects={};component-occurrences={};component-depth={};node-provenance={};connection-provenance={};port-provenance={};bytes={}",
         limits.maximum_nodes(),
         limits.maximum_connections(),
@@ -94,7 +94,13 @@ fn limits_record(limits: ApplicationWorkflowDefinitionLimits) -> String {
         components.maximum_connection_provenance(),
         components.maximum_port_provenance(),
         limits.maximum_canonical_bytes()
-    )
+    );
+    // Appended only when declared, so every definition without a deadline
+    // keeps the content identity it had before deadlines existed.
+    if let Some(deadline) = limits.total_deadline() {
+        record.push_str(&format!(";total-deadline-ms={}", deadline.as_millis()));
+    }
+    record
 }
 
 fn node_record(node: &ApplicationWorkflowNode) -> String {
@@ -108,6 +114,7 @@ fn node_record(node: &ApplicationWorkflowNode) -> String {
                 node.identity().as_str(),
                 operation.identifier(),
                 operation.input_type().as_str(),
+                operation.binding().map_or("", |(identity, _, _)| identity),
                 if *requires_workflow_authority {
                     "1"
                 } else {
@@ -123,6 +130,7 @@ fn node_record(node: &ApplicationWorkflowNode) -> String {
                 assessment.parameter_type().as_str(),
                 assessment.result_type().as_str(),
                 &subject_selector_record(assessment.subject()),
+                &assessment_applicability_record(assessment.applicability()),
             ],
         ),
         ApplicationWorkflowNodeKind::Condition(condition) => framed_record(
@@ -154,6 +162,22 @@ fn node_record(node: &ApplicationWorkflowNode) -> String {
 
 fn subject_selector_record(selector: &super::ApplicationWorkflowSubjectSelector) -> String {
     selector.persistence_identity()
+}
+
+fn assessment_applicability_record(
+    applicability: &super::ApplicationWorkflowAssessmentApplicability,
+) -> String {
+    match applicability {
+        super::ApplicationWorkflowAssessmentApplicability::Always => "always".to_owned(),
+        super::ApplicationWorkflowAssessmentApplicability::WhenRelatedRelationPresent {
+            relation,
+            from,
+            to,
+        } => framed_record(
+            "related-relation-present",
+            &[relation, from, to].map(String::as_str),
+        ),
+    }
 }
 
 fn connection_record(connection: &ApplicationWorkflowConnection) -> String {
@@ -208,6 +232,7 @@ const fn control_tag(outcome: ApplicationWorkflowControlOutcome) -> u8 {
         ApplicationWorkflowControlOutcome::RetryExhausted => 5,
         ApplicationWorkflowControlOutcome::ConditionSatisfied => 6,
         ApplicationWorkflowControlOutcome::ConditionUnsatisfied => 7,
+        ApplicationWorkflowControlOutcome::NavigatedBack => 8,
     }
 }
 

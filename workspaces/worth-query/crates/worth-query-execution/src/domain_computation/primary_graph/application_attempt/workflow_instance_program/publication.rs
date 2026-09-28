@@ -5,8 +5,8 @@ use worth_query_declaration::facade::application_program::{
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::super::{
-    WorthQueryApplicationCommitOutcome, WorthQueryApplicationEffectProgram,
-    WorthQueryApplicationIdempotencyBinding,
+    WorthQueryApplicationEffectProgram, WorthQueryApplicationIdempotencyBinding,
+    WorthQueryApplicationUncommitted,
 };
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
@@ -20,11 +20,18 @@ pub struct PreparedWorkflowInstanceStart<Schema, Operation, Input, Scope> {
     pub(super) instance_intent_identity: [u8; 32],
     pub(super) instance_identity_locator: worth_foundational::facade::AspectFieldLocator,
     pub(super) start_path: String,
+    pub(super) supersession: Option<super::supersession::WorkflowStartSupersession>,
 }
 
+/// A reference to a started workflow instance: its branch, the branch it was started on,
+/// its entity, the definition content identity and program revision it runs, and its start
+/// node path.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct PublishedWorkflowInstanceRef {
     branch: crate::basis::WorthQueryProductBranch,
+    /// The branch the instance was started on, whose occurrence its facts
+    /// record. Only a fork's copy is read on another branch.
+    started_on: crate::basis::WorthQueryProductBranch,
     entity_id: worth_relational::facade::identity::EntityId,
     definition_content_identity: ApplicationWorkflowDefinitionContentIdentity,
     definition: worth_relational::facade::identity::EntityId,
@@ -41,10 +48,30 @@ impl PublishedWorkflowInstanceRef {
         self.entity_id
     }
 
+    /// The occurrence the instance's own facts record.
+    pub(in crate::domain_computation::primary_graph) const fn started_occurrence(&self) -> u64 {
+        self.started_on.occurrence_ordinal()
+    }
+
+    /// The same instance as `fork` copied it: read on the fork, still
+    /// recording the branch it was started on.
+    pub(in crate::domain_computation::primary_graph) fn copied_onto(
+        &self,
+        fork: crate::basis::WorthQueryProductBranch,
+    ) -> Self {
+        Self {
+            branch: fork,
+            ..self.clone()
+        }
+    }
+
     pub const fn definition_entity_id(&self) -> worth_relational::facade::identity::EntityId {
         self.definition
     }
 
+    /// The revision the instance started under. Program adoption may carry
+    /// the instance to a later revision; advancing reads the revision from
+    /// instance truth and never from this reference.
     pub const fn program_revision(&self) -> &ApplicationProgramRevision {
         &self.program_revision
     }
@@ -55,11 +82,13 @@ impl PublishedWorkflowInstanceRef {
         &self.definition_content_identity
     }
 
-    pub fn current_node_path(&self) -> &str {
+    pub fn start_node_path(&self) -> &str {
         &self.start_path
     }
 }
 
+/// A workflow instance start that landed: the instance, its commit receipt, and whether the
+/// idempotency key replayed an already-landed commit.
 #[derive(Debug)]
 pub struct PerformedWorkflowInstanceStart {
     instance: PublishedWorkflowInstanceRef,
@@ -81,10 +110,18 @@ impl PerformedWorkflowInstanceStart {
     }
 }
 
+/// What executing a workflow instance start produced. `ProjectionDenied` means the commit
+/// landed but its receipt did not record exactly one started instance.
 #[derive(Debug)]
 pub enum WorkflowInstanceStartOutcome {
     Started(PerformedWorkflowInstanceStart),
-    Application(WorthQueryApplicationCommitOutcome),
+    /// The branch holds another definition current. Nothing was written.
+    Superseded(super::supersession::SupersededWorkflowDefinitionStart),
+    /// The definition's lineage is retired. Nothing was written.
+    Retired(super::supersession::RetiredWorkflowDefinitionStart),
+    /// The commit did not land. A landed commit, first or replayed, is the
+    /// performed variant.
+    Application(WorthQueryApplicationUncommitted),
     ProjectionDenied(super::super::WorthQueryApplicationCommitReceipt),
 }
 
@@ -113,34 +150,29 @@ where
             instance_intent_identity,
             instance_identity_locator,
             start_path,
+            supersession,
         } = prepared;
-        let Some(presented) = self
+        let presented = match self
             .installed_program_support()
-            .and_then(|support| support.present(&program_revision))
-        else {
-            return WorkflowInstanceStartOutcome::Application(
-                WorthQueryApplicationCommitOutcome::Denied(
-                    super::super::WorthQueryApplicationCommitDenial::application_program_required(),
-                ),
-            );
+            .ok_or_else(
+                super::super::WorthQueryApplicationCommitDenial::application_program_required,
+            )
+            .and_then(|support| support.present_for_commit(&program_revision))
+        {
+            Ok(presented) => presented,
+            Err(denial) => {
+                return WorkflowInstanceStartOutcome::Application(
+                    WorthQueryApplicationUncommitted::Denied(denial),
+                );
+            }
         };
         let outcome = self.compare_and_commit_application_for_program_action(
             &presented,
             program,
             idempotency.bind_workflow_instance(&instance_intent_identity),
         );
-        match outcome {
-            WorthQueryApplicationCommitOutcome::Committed(receipt) => project(
-                receipt,
-                definition_content_identity,
-                definition,
-                program_revision.clone(),
-                instance_identity,
-                instance_identity_locator,
-                start_path,
-                false,
-            ),
-            WorthQueryApplicationCommitOutcome::AlreadyCommitted(receipt) => project(
+        match outcome.landed() {
+            Ok((receipt, replayed)) => project(
                 receipt,
                 definition_content_identity,
                 definition,
@@ -148,9 +180,14 @@ where
                 instance_identity,
                 instance_identity_locator,
                 start_path,
-                true,
+                replayed,
             ),
-            other => WorkflowInstanceStartOutcome::Application(other),
+            Err(uncommitted) => match supersession {
+                Some(supersession) => supersession
+                    .outcome(uncommitted)
+                    .unwrap_or_else(WorkflowInstanceStartOutcome::Application),
+                None => WorkflowInstanceStartOutcome::Application(uncommitted),
+            },
         }
     }
 }
@@ -187,6 +224,7 @@ fn project(
     WorkflowInstanceStartOutcome::Started(PerformedWorkflowInstanceStart {
         instance: PublishedWorkflowInstanceRef {
             branch: receipt.product_branch(),
+            started_on: receipt.product_branch(),
             entity_id: *entity_id,
             definition_content_identity,
             definition,

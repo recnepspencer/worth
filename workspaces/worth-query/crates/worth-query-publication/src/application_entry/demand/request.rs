@@ -9,6 +9,8 @@ use worth_query_installation::facade::ApplicationSchema;
 
 const DEFAULT_SETTLEMENT_ATTEMPTS: NonZeroUsize = NonZeroUsize::new(64).unwrap();
 
+/// Bounds for settling an output demand: maximum work, maximum retained bytes, and maximum
+/// settlement attempts (64 by default).
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorthQueryOutputDemandControls {
     maximum_work: NonZeroUsize,
@@ -45,6 +47,8 @@ impl WorthQueryOutputDemandControls {
     }
 }
 
+/// Why an output demand did not start or settle. `FreshRequestMismatch` means the fresh
+/// request came from another runtime or carried no observation.
 #[derive(Debug)]
 pub enum WorthQueryApplicationOutputDemandDenial {
     Source(super::super::WorthQueryApplicationRequestQueryDenial),
@@ -64,6 +68,8 @@ impl std::fmt::Display for WorthQueryApplicationOutputDemandDenial {
 
 impl std::error::Error for WorthQueryApplicationOutputDemandDenial {}
 
+/// A request to demand a declared output. `controls` overrides the default settlement
+/// bounds.
 pub struct WorthQueryApplicationOutputDemandRequest<
     'application,
     'principal,

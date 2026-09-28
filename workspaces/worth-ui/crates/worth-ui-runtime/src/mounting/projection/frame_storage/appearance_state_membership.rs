@@ -99,7 +99,9 @@ impl UiMountedAppearanceStateMembers {
         let key = self.reverse.get(&instance)?;
         match self.primary.get(key)? {
             UiMountedAppearanceStateMembership::Retained(entry) => Some(&entry.projection),
-            _ => None,
+            UiMountedAppearanceStateMembership::PhysicalOnly(_)
+            | UiMountedAppearanceStateMembership::Reserved
+            | UiMountedAppearanceStateMembership::Staged { .. } => None,
         }
     }
 
@@ -241,12 +243,12 @@ impl UiMountedAppearanceStateMembers {
         let mut work = UiMountedAppearanceMembershipWork::default();
         let (membership, primary_probes) = self.primary.get_with_probes(key);
         work.add_lookup(primary_probes);
-        let Some(membership) = membership.cloned() else {
+        if membership.is_none() {
             return (None, work);
-        };
-        let (removed, primary_work) = self.primary.remove_with_work(key);
-        debug_assert!(removed);
+        }
+        let (membership, primary_work) = self.primary.take_with_work(key);
         work.add_mutation(primary_work);
+        let membership = membership.expect("a found membership is removable");
         if matches!(
             membership,
             UiMountedAppearanceStateMembership::PhysicalOnly(_)

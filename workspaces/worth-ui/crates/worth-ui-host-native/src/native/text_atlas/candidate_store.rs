@@ -2,7 +2,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use worth_ui_host_contract::UiGlyphRasterKey;
+use worth_ui_host_contract::{UiGlyphRasterKey, UiGlyphRasterKeyEvidence};
 
 use super::entry::UiAtlasEntry;
 use super::key::canonical_raster_key_bytes;
@@ -150,7 +150,10 @@ impl CandidateAtlasStore {
         &self,
         predecessor: &AtlasStore,
         protected: &HashSet<UiGlyphRasterKey>,
-    ) -> (Option<(u64, Vec<u8>, UiGlyphRasterKey)>, usize) {
+    ) -> (
+        Option<(u64, UiGlyphRasterKeyEvidence, UiGlyphRasterKey)>,
+        usize,
+    ) {
         let mut candidates = 0;
         let oldest = predecessor
             .entries

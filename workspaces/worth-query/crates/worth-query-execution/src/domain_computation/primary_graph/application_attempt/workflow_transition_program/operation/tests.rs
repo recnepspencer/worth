@@ -3,8 +3,9 @@ use std::sync::Arc;
 
 use worth_query_declaration::facade::application_schema::TypedMutationPreconditions;
 
-use super::{
-    operation_receipt_requires_recovery, receipt_identity, validate_operation_receipt_custody,
+use super::operation_receipt_requires_recovery;
+use super::receipt::{
+    receipt_identity, receipt_identity_from_outcome, validate_operation_receipt_custody,
 };
 use crate::domain_computation::application_aftermath::{
     safe_retry_recovery_handle, WorthQueryExternalDispatchRequest,
@@ -78,6 +79,17 @@ fn workflow_operation_custody_requires_the_exact_same_runtime_commit_proof() {
         validate_operation_receipt_custody("apply", &first_receipt, Some(&first))
             .expect("the exact recovery proof settles its receipt"),
         receipt_identity(&first_receipt).expect("the committed receipt has an outcome identity")
+    );
+    assert_eq!(
+        receipt_identity_from_outcome(
+            first_receipt.runtime_authority().as_u64(),
+            first_receipt
+                .outcome_identity()
+                .expect("committed outcome identity")
+                .get(),
+            first_receipt.installed_operation(),
+        ),
+        receipt_identity(&first_receipt).expect("the receipt derives the same identity")
     );
 }
 

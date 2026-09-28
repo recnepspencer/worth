@@ -11,8 +11,8 @@ mod native_input_delivery;
 mod process_liveness;
 
 pub(crate) use lifecycle_stream::{
-    LifecycleFailureSnapshot, LifecycleStreamMeasurement, LifecycleTraceEntry,
-    PlatformPulseLifecycleStream, PlatformPulseLifecycleStreamFailure,
+    LifecycleFailureSnapshot, LifecycleTraceEntry, PlatformPulseLifecycleStream,
+    PlatformPulseLifecycleStreamFailure,
 };
 pub(crate) use lifecycle_teardown::{
     PlatformPulseLifecycleTeardownEvidence, PlatformPulseLifecycleTeardownFailure,

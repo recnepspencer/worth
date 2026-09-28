@@ -253,6 +253,26 @@ wake progresses timed work itself. The watch owns no host state and never
 calls into it; in the ordinary loop, `WaitUntil` reaches each deadline first
 and the watch stays silent.
 
+The shell owes the newest observed extent until the host accepts a frame
+measured at it. Each settlement records the extent it measured, and only an
+accepted frame ends the debt of that measurement. A frame rejected before
+effects therefore leaves its extent owed. The same holds for a frame that
+completes late, after a newer extent arrived: the newer extent stays owed and
+the next turn measures it. A timeout or occlusion rejection also owes a host
+retry, reported by `native_presentation_retry_pending`. The driver routes the
+host's retry readiness to the application, and the application presents again
+only at that readiness. A reconstruction retries as a reconstruction. A product
+turn before the retry readiness cannot spend it. Any presentation that begins
+effects ends the retry, whichever owner presents it, because the host drops its
+wake then. While an occlusion retry and a reconstruction are both owed, product
+turns wait for visibility. Shutdown releases an owed extent and a queued retry
+like any other pending work.
+
+A wheel turn that arrives while a resized layout is prepared but not yet
+presented is refused with `PendingGeometryPublication` instead of scrolling
+geometry the display does not show. That wheel step is dropped. The first wheel
+after the layout publishes scrolls normally.
+
 Each prepared frame lays out against one coherent extent. Containers select
 their responsive tracks for that width and allocate against it. Scroll bounds,
 Portal placement, and Backdrop coverage consume the same viewport. Nothing
@@ -260,6 +280,105 @@ eases toward an older size. Text is reshaped only where its allocated width or
 declared flow changed; unchanged-width text keeps its shaping through the
 drag, including across height-only changes. Logical sizes of icons, radii, and
 type do not change with the window.
+
+A window spec may name a minimum logical client extent with
+`with_minimum_logical_size`; the drag then stops there. Preparation denies a
+zero minimum and one larger than the initial extent on either axis
+(`WindowMinimumExceedsInitialExtent`). An application whose layout scrolls on
+one axis only names a minimum no narrower than its tracks still fit, since
+past that content would outgrow the window where nothing scrolls it into view.
+Platform Pulse stops at 800 by 600, the smallest extent its dashboard is
+specified at. Its page's columns fit down to 764 points across.
+
+### Resize Timing Trace
+
+Setting `WORTH_UI_RESIZE_TRACE` to a file path makes the host timestamp its
+extent path on the Windows performance counter, which an outside capture reads
+on the same basis. The file starts with
+`worth-ui-resize-trace 1 frequency <counts per second>`, and each later line is
+`<counter> <event> <fields>`:
+
+- `observed <width> <height>` when the window reports an extent;
+- `consumed <width> <height>` when the visible surface has been replaced at an
+  extent, including one a scale change reads without an observation;
+- `submitted <frame> <width> <height>` when a frame is handed to the surface;
+- `accepted <frame>` when a painted frame's presentation is acknowledged;
+- `adapter <name> (<driver>)` when the host chooses its graphics adapter, the
+  driver only when the adapter reports one;
+- `target <width> <height>` when a retained render target is allocated;
+- `text <frame> <shaped runs> <shaped scalars> <positioned glyphs> <emitted
+  lines> <rasterized glyphs>` for each mounted frame's text work, its layout
+  counted once per mounted frame and binding, and layout the qualification
+  cache already held counted as none; other layout work is not traced;
+- `peak <resource> <count>`, as the host closes, for the most of each native
+  resource it retained at once.
+
+The frame is the presentation attempt identity. The initial surface, a
+minimized or suspended extent, an extent equal to the current one, and an
+acknowledgement that paints nothing are not traced. A superseded or
+indeterminate completion is not traced either, so a frame can be seen that was
+never accepted. A write failure ends the trace, so a trace is complete up to
+its last line. Without the variable, or off Windows, nothing is traced and
+nothing is drawn.
+
+While tracing, each submitted frame also carries a stamp at the client origin:
+two rows of eighteen 8-pixel cells, 144 by 16 physical pixels. The first row is
+a white then a black sync cell and the low 16 bits of the attempt identity,
+most significant bit first, white for one. The second row is the first
+inverted, so a torn or blended capture fails to decode instead of naming a
+wrong frame. The stamp is drawn after the retained transfer under a scissor,
+so it replaces only its own pixels. The trace is qualification evidence, not a
+product feature; the dashboard's top-left corner is covered while it runs.
+
+`tools/worth-ui-resize-trace-qualification` reads the stamp. Its `capture`
+command samples the traced window's client origin through GDI as fast as the
+compositor allows, bracketing each copy with the counter and recording the
+client extent, the primary button, and the cursor. The window must stay on a
+monitor at the system DPI, since the tool is aware of the system DPI only; a
+DPI change ends the capture. The display's refresh rate is read once, when the
+capture starts. Its `analyze` command correlates the capture with the host
+trace over the longest held press and grades it against the live-resize
+thresholds on a 60 Hz display. GDI shows what the compositor composed but is
+not a vertical-blank clock, so every visible time is an upper bound within one
+sample interval.
+
+- The cursor must be moving with the button held for at least 10 s, pauses
+  over 250 ms excluded. In logical points at the capture's DPI, the drag must
+  reach 800x600 and 1536x1024, reverse at least twice, and cross Platform
+  Pulse's breakpoint both ways: from 1200 wide or more to narrower, and back.
+- Latency runs from the first report of a consumed extent to the first sighting
+  of an accepted frame drawn at it and submitted before the next consume. A
+  consumed extent with no such frame accepted was prepared for nothing and
+  counts as a miss; one whose frame was accepted but never caught by a sample
+  is excluded and reported.
+- A gap runs between first sightings of new accepted frames; the gap open at
+  release ends at the next new frame or the end of the capture. It is active
+  from when the window was first owed a frame: at its start if the latest
+  observed extent is not the one shown, at a new extent observed inside it, or
+  at the first held cursor movement inside it when a new extent was observed
+  there. A gap owing nothing is idle and ungraded. A stall ended by a frame at
+  the unchanged extent, before the window reports the extents queued behind it,
+  is graded only from that report.
+- The final extent must be shown within 100 ms of release.
+
+The report also names the Windows build, the adapter, the display's refresh and
+DPI, and the clock and capture method, lists every latency and gap interval,
+and reports without grading the drag's text layout and raster work, the render
+targets it allocated, and the host's peak retained resources over the whole run.
+
+Grades that rest on sightings are inconclusive, rather than failed, when the
+capture sampled too coarsely to resolve a 25 ms gap or ended without its
+closing line; every other grade fails outright. Timings from a traced run are
+not comparable with untraced runs.
+
+The tool's `drive` command runs a qualification with no one at the controls.
+It launches the host with the trace, then drags the window's bottom-right
+corner with operating-system input from the launch extent toward 780x580, past
+the 800x600 floor, and back, once every four seconds while capturing. The
+default 12 seconds make three round trips; other lengths round up to whole
+round trips. It drives only a window the launched host owns and presses only
+where that window is on top. It then closes the window and grades the run.
+A host that does not exit cleanly fails the run whatever its timing.
 
 ## Presented-Source Readback
 

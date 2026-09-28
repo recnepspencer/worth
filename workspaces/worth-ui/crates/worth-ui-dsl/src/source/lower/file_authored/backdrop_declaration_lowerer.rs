@@ -1,3 +1,4 @@
+use super::token_cursor::{Cursor, UiDeclarationWords};
 use crate::source::{
     WorthUiArtifactInputProvenance, WorthUiParsedBlockDeclaration, WorthUiSourceTokenKind,
 };
@@ -111,7 +112,12 @@ pub(super) fn lower_backdrop(
 fn parse_backdrop(
     declaration: &WorthUiParsedBlockDeclaration,
 ) -> Result<WorthUiBackdropSource, BackdropLoweringError> {
-    let mut cursor = Cursor::new(declaration.body().tokens());
+    let mut cursor = Cursor::new(
+        declaration.body(),
+        declaration.span(),
+        UiDeclarationWords::ValuesAndDeclarationKeywords,
+        "backdrop declaration",
+    );
     let mut scope = None;
     let mut extent = None;
     let mut presence = None;
@@ -143,7 +149,7 @@ fn parse_backdrop(
                 role = Some(cursor.word()?.to_owned());
                 cursor.advance();
                 if cursor.take_word("revision") {
-                    revision = cursor.number()?;
+                    revision = cursor.number().ok_or("invalid revision")?;
                 }
                 cursor.expect_symbol(WorthUiSourceTokenKind::RightBrace)?;
             }
@@ -293,77 +299,4 @@ fn set_once<T>(slot: &mut Option<T>, value: T, name: &str) -> Result<(), String>
     }
     *slot = Some(value);
     Ok(())
-}
-
-struct Cursor<'a> {
-    tokens: &'a [WorthUiSourceTokenKind],
-    index: usize,
-}
-
-impl<'a> Cursor<'a> {
-    fn new(tokens: &'a [WorthUiSourceTokenKind]) -> Self {
-        Self { tokens, index: 0 }
-    }
-
-    fn eof(&self) -> bool {
-        self.index == self.tokens.len()
-    }
-
-    fn advance(&mut self) {
-        self.index += 1;
-    }
-
-    fn word(&self) -> Result<&str, String> {
-        match self.tokens.get(self.index) {
-            Some(WorthUiSourceTokenKind::Identifier(value)) => Ok(value),
-            Some(WorthUiSourceTokenKind::KeywordAppearance) => Ok("appearance"),
-            Some(WorthUiSourceTokenKind::KeywordBackdrop) => Ok("backdrop"),
-            Some(WorthUiSourceTokenKind::KeywordToken) => Ok("token"),
-            Some(WorthUiSourceTokenKind::NumberLiteral(value)) => Ok(value),
-            _ => Err("backdrop declaration expected a word".to_owned()),
-        }
-    }
-
-    fn take_word(&mut self, expected: &str) -> bool {
-        if self.word().is_ok_and(|word| word == expected) {
-            self.advance();
-            true
-        } else {
-            false
-        }
-    }
-
-    fn expect_word(&mut self, expected: &str) -> Result<(), String> {
-        self.take_word(expected)
-            .then_some(())
-            .ok_or_else(|| format!("backdrop declaration expected '{expected}'"))
-    }
-
-    fn number(&mut self) -> Result<u64, String> {
-        let value = self
-            .word()?
-            .parse()
-            .map_err(|_| "invalid revision".to_owned())?;
-        self.advance();
-        Ok(value)
-    }
-
-    fn take_symbol(&mut self, expected: WorthUiSourceTokenKind) -> bool {
-        if self.tokens.get(self.index) == Some(&expected) {
-            self.advance();
-            true
-        } else {
-            false
-        }
-    }
-
-    fn expect_symbol(&mut self, expected: WorthUiSourceTokenKind) -> Result<(), String> {
-        self.take_symbol(expected)
-            .then_some(())
-            .ok_or_else(|| "backdrop declaration has malformed punctuation".to_owned())
-    }
-
-    fn skip(&mut self, expected: WorthUiSourceTokenKind) {
-        while self.take_symbol(expected.clone()) {}
-    }
 }

@@ -84,7 +84,7 @@ impl UiNativeEventLoopClient for RefusingClient {
 }
 
 fn readiness_grant() -> UiNativeReadinessGrant {
-    UiNativeReadinessGrant::issued(0, 0, 1_000, [1, 1])
+    UiNativeReadinessGrant::issued(0, 0, false, 1_000, [1, 1])
 }
 
 /// Each wrapper must report the callback it actually invoked. A wrapper

@@ -9,12 +9,15 @@ impl UiMountedSemanticTextMechanic {
         mut self,
         ancestor: crate::UiAppearanceClip,
     ) -> Result<Option<Self>, UiMountedSemanticTextCompletionDenial> {
-        let x = self.clip_bounds.x().max(ancestor.x() as f32 / 1_000.0);
-        let y = self.clip_bounds.y().max(ancestor.y() as f32 / 1_000.0);
-        let right = (self.clip_bounds.x() + self.clip_bounds.width())
-            .min((f64::from(ancestor.x()) + f64::from(ancestor.width())) as f32 / 1_000.0);
-        let bottom = (self.clip_bounds.y() + self.clip_bounds.height())
-            .min((f64::from(ancestor.y()) + f64::from(ancestor.height())) as f32 / 1_000.0);
+        let points = crate::appearance_points_f32;
+        let x = self.clip_bounds.x().max(points(i64::from(ancestor.x())));
+        let y = self.clip_bounds.y().max(points(i64::from(ancestor.y())));
+        let right = (self.clip_bounds.x() + self.clip_bounds.width()).min(points(
+            i64::from(ancestor.x()) + i64::from(ancestor.width()),
+        ));
+        let bottom = (self.clip_bounds.y() + self.clip_bounds.height()).min(points(
+            i64::from(ancestor.y()) + i64::from(ancestor.height()),
+        ));
         self.clip_bounds =
             crate::UiMountedCanonicalBox::canonicalize(crate::UiMountedCanonicalBoxInput {
                 x,

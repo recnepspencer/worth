@@ -29,7 +29,12 @@ use super::world::{
 };
 use crate::projection_lifecycle::support::ScalarLifecycleWorld;
 
+mod application_coherence;
+mod basis_affinity;
+mod dismissal_focus_reveal;
 mod focus_reveal_frame;
+mod projection_posture;
+mod scrolled_selection_portal;
 mod selection_identity;
 mod selection_portal_coordination;
 
@@ -311,6 +316,19 @@ fn activation_interaction(
             _ => None,
         })
         .expect("one press/release pair mints one semantic activation")
+}
+
+fn expect_payload_stop(
+    result: Result<
+        worth_ui::facade::intent::UiPreparedIntentPayload,
+        worth_ui::facade::intent::UiIntentPayloadStop,
+    >,
+    claim: &str,
+) -> worth_ui::facade::intent::UiIntentPayloadStop {
+    match result {
+        Ok(_) => panic!("{claim}"),
+        Err(stop) => stop,
+    }
 }
 
 fn product_route(

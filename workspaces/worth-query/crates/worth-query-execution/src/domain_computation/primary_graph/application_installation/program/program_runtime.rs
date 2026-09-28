@@ -109,10 +109,7 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
         self.runtime
             .installed_program_support()?
             .present(record.revision())?;
-        Some(WorthQuerySupportedProgramHandle::rostered(
-            &self.runtime,
-            record,
-        ))
+        WorthQuerySupportedProgramHandle::rostered(&self.runtime, record)
     }
 
     /// Removes one rostered program from ordinary host service only after
@@ -134,15 +131,14 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
         let support =
             self.runtime
                 .installed_program_support()
-                .ok_or_else(|| Denial::UnrosteredProgram {
-                    revision: revision.clone(),
+                .ok_or(Denial::UnrosteredProgram {
+                    revision: *revision,
                 })?;
-        let entry =
-            support
-                .rostered_for_recovery(revision)
-                .ok_or_else(|| Denial::UnrosteredProgram {
-                    revision: revision.clone(),
-                })?;
+        let entry = support
+            .rostered_for_recovery(revision)
+            .ok_or(Denial::UnrosteredProgram {
+                revision: *revision,
+            })?;
         let retained_program_bytes = entry.retained_bytes();
         let retirement = support.lifecycle().begin_retirement(revision)?;
         let barrier = match self
@@ -173,7 +169,7 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
             };
             let inspection = match crate::domain_computation::primary_graph::product_activation::inspect_selected_program(
                     &self.runtime,
-                    selected.relational_basis().observation().version_id(),
+                    selected.relational_basis(),
                 ) {
                     Ok(inspection) => inspection,
                     Err(_) => return Err(retirement.inventory_unavailable(retained_program_bytes)),

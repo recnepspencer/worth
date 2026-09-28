@@ -1,5 +1,12 @@
 use super::super::WorthUiActiveApplicationSession;
 
+/// The interaction basis of each surface presentation a walk has read, so one
+/// walk builds each at most once.
+type UiPresentedHitTestBases = Vec<(
+    worth_ui_host_contract::UiHostObservationPresentationBasis,
+    Option<crate::mounting::UiPresentedHitTestBasis>,
+)>;
+
 impl WorthUiActiveApplicationSession {
     pub(crate) fn reconcile_service_state_after_mounted_publication(&mut self) {
         if self
@@ -30,6 +37,9 @@ impl WorthUiActiveApplicationSession {
 
     fn reconcile_published_scroll_owners(&mut self) {
         let mut shared_owners = std::collections::BTreeMap::new();
+        // The walk changes Scroll ownership, never the mounted frame the
+        // interaction bases read, so a basis built once holds for the walk.
+        let mut bases = UiPresentedHitTestBases::new();
         let mounted_instances = self
             .scroll
             .as_ref()
@@ -82,7 +92,21 @@ impl WorthUiActiveApplicationSession {
                     chain
                 }
             };
-            let anchor = self.published_mounted_scroll_anchor(mounted_instance, &target);
+            // Only a shared owner reads the anchor; a Region owner rebinds
+            // without one.
+            let anchor = chain
+                .owners()
+                .iter()
+                .any(|owner| {
+                    !matches!(
+                        owner,
+                        crate::runtime::scroll::UiScrollOwnerIdentity::Region { .. }
+                    )
+                })
+                .then(|| {
+                    self.published_mounted_scroll_anchor(mounted_instance, &target, &mut bases)
+                })
+                .flatten();
             let mounted_incarnation =
                 crate::runtime::scroll::UiScrollOwnerIncarnation::from_mount_incarnation(
                     target.mount_incarnation(),
@@ -249,12 +273,21 @@ impl WorthUiActiveApplicationSession {
         &self,
         mounted_instance: worth_ui_host_contract::UiMountedInstanceIdentity,
         target: &crate::mounting::UiMountedIdentityBasis,
+        bases: &mut UiPresentedHitTestBases,
     ) -> Option<crate::runtime::scroll::UiScrollAnchor> {
         let publication = self.mounted.current_publication()?;
         let presentation = publication
             .presentation_for_surface(target.semantic_surface_identity())
             .map(|displayed| displayed.basis())?;
-        let hit_test = self.mounted.interaction_hit_test_basis(presentation).ok()?;
+        let read = match bases.iter().position(|(read, _)| *read == presentation) {
+            Some(read) => read,
+            None => {
+                let basis = self.mounted.interaction_hit_test_basis(presentation).ok();
+                bases.push((presentation, basis));
+                bases.len() - 1
+            }
+        };
+        let hit_test = bases[read].1.as_ref()?;
         let row = hit_test
             .rows()
             .iter()
@@ -263,15 +296,12 @@ impl WorthUiActiveApplicationSession {
         crate::runtime::scroll::UiScrollAnchor::new(
             crate::runtime::scroll::UiScrollAnchorIdentity::mounted(mounted_instance),
             presentation.binding(),
-            signed_subpixels(x)?.max(0),
-            signed_subpixels(y)?.max(0),
+            // Where the row is published in the viewport. A row scrolled above
+            // or before it is no distance into the content, so the anchor
+            // refuses it and the row anchors nothing, rather than being read as
+            // sitting at the edge and rebasing by a distance it never moved.
+            crate::units::UiSubpixels::nearest(x)?.count(),
+            crate::units::UiSubpixels::nearest(y)?.count(),
         )
     }
-}
-
-fn signed_subpixels(value: f32) -> Option<i64> {
-    let scaled = f64::from(value)
-        * worth_ui_host_contract::UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f64;
-    (scaled.is_finite() && scaled >= i64::MIN as f64 && scaled <= i64::MAX as f64)
-        .then(|| scaled.round() as i64)
 }

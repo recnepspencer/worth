@@ -1,5 +1,7 @@
 # Declaration Relational Truth Routing
 
+> **Internal engine surface.** This page documents `WorthQueryWorkspace` (`worth_query::facade`), the engine surface that `worth-ui-query-binding` uses. Application code uses `worth-query-decl` and `worth-query-host`; start with the [application front door](../foundations/ordinary-application-front-door.md).
+
 ## What This Feature Is
 
 Declaration relational truth routing is the Query-owned boundary that turns one
@@ -142,9 +144,9 @@ The advanced lane executes in this order:
    - binds that truth contract to one real lower surface family:
      - `worth_relational::facade::runtime`
      - `worth_relational::facade::history`
-     - `worth_relational::facade::grouped_truth`
+     - `worth_runtime_bridge::facade::RelationalGroupedProjectionArtifact`
      - `worth_relational::facade::commit_strategies`
-     - `worth_relational::facade::bridge::RuntimeBridgeRelationalSource`
+     - `worth_runtime_bridge::facade::RuntimeBridgeRelationalSource`
    - derives one relational-routing digest from retained proof
 4. Query returns a routed, deferred, denied, or failed relational-routing
    artifact

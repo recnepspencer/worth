@@ -30,7 +30,7 @@ pub use authored_declaration::{
 };
 pub(crate) use authored_material::{
     prepare_authored_intent_material, WorthUiAuthoredIntentDeclaration,
-    WorthUiAuthoredIntentMaterial, WorthUiAuthoredIntentRoute,
+    WorthUiAuthoredIntentMaterial, WorthUiAuthoredIntentMaterialDenial, WorthUiAuthoredIntentRoute,
 };
 pub use authored_payload_source::UiIntentPayloadSource;
 pub(crate) use catalog::{

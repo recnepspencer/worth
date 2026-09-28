@@ -12,7 +12,7 @@ fn authored_effect_ceiling_is_enforced_before_graph_execution(
     )
     .expect("the focused limits are nonzero");
     let mut builder =
-        ApplicationWorkflowDefinitionBuilder::<ReviewedGeometry>::new("effect-ceiling", limits)?;
+        ApplicationWorkflowDefinitionBuilder::<ReviewedChange>::new("effect-ceiling", limits)?;
     let first = builder.operation::<ProposeChange>("first", false)?;
     let second = builder.operation::<ApplyChange>("second", false)?;
     let terminal = builder.terminal("terminal")?;
@@ -41,11 +41,11 @@ fn authored_effect_ceiling_is_enforced_before_graph_execution(
 
 fn denial(
     author: impl FnOnce(
-        &mut ApplicationWorkflowDefinitionBuilder<ReviewedGeometry>,
+        &mut ApplicationWorkflowDefinitionBuilder<ReviewedChange>,
     ) -> Result<(), ApplicationWorkflowAuthoringDenial>,
 ) -> ApplicationWorkflowValidationDenialKind {
     let mut builder =
-        ApplicationWorkflowDefinitionBuilder::<ReviewedGeometry>::new("control-denial", limits())
+        ApplicationWorkflowDefinitionBuilder::<ReviewedChange>::new("control-denial", limits())
             .expect("the fixture identity is valid");
     author(&mut builder).expect("the malformed graph remains authorable data");
     match builder
@@ -92,7 +92,7 @@ fn control_outcome_denials_are_distinct() {
     assert_eq!(
         denial(|builder| {
             let start = builder.operation::<ProposeChange>("start", false)?;
-            let assessment = builder.assessment::<StructuralAssessment>("assessment")?;
+            let assessment = builder.assessment::<ConsistencyAssessment>("assessment")?;
             let completed = builder.terminal("completed")?;
             let unexpected = builder.terminal("unexpected")?;
             builder
@@ -144,7 +144,7 @@ fn control_outcome_denials_are_distinct() {
 #[test]
 fn data_producer_must_dominate_its_consumer() -> Result<(), Box<dyn std::error::Error>> {
     let mut builder =
-        ApplicationWorkflowDefinitionBuilder::<ReviewedGeometry>::new("backward-data", limits())?;
+        ApplicationWorkflowDefinitionBuilder::<ReviewedChange>::new("backward-data", limits())?;
     let first = builder.operation::<ProposeChange>("first", false)?;
     let second = builder.operation::<ApplyChange>("second", false)?;
     let terminal = builder.terminal("terminal")?;
@@ -175,7 +175,7 @@ fn data_producer_must_dominate_its_consumer() -> Result<(), Box<dyn std::error::
 #[test]
 fn operation_cannot_supply_its_own_input() -> Result<(), Box<dyn std::error::Error>> {
     let mut builder =
-        ApplicationWorkflowDefinitionBuilder::<ReviewedGeometry>::new("self-data", limits())?;
+        ApplicationWorkflowDefinitionBuilder::<ReviewedChange>::new("self-data", limits())?;
     let operation = builder.operation::<ProposeChange>("operation", false)?;
     let terminal = builder.terminal("terminal")?;
     builder
@@ -200,7 +200,7 @@ fn operation_cannot_supply_its_own_input() -> Result<(), Box<dyn std::error::Err
 #[test]
 fn operation_input_requires_the_exact_portable_input_type() -> Result<(), Box<dyn std::error::Error>>
 {
-    let mut builder = ApplicationWorkflowDefinitionBuilder::<ReviewedGeometry>::new(
+    let mut builder = ApplicationWorkflowDefinitionBuilder::<ReviewedChange>::new(
         "incompatible-operation-input",
         limits(),
     )?;
@@ -233,19 +233,16 @@ fn operation_input_requires_the_exact_portable_input_type() -> Result<(), Box<dy
 
 #[test]
 fn data_cannot_cross_a_mutually_exclusive_control_arm() -> Result<(), Box<dyn std::error::Error>> {
-    let mut builder = ApplicationWorkflowDefinitionBuilder::<ReviewedGeometry>::new(
-        "conditional-data",
-        limits(),
-    )?;
+    let mut builder =
+        ApplicationWorkflowDefinitionBuilder::<ReviewedChange>::new("conditional-data", limits())?;
     let propose = builder.operation::<ProposeChange>("propose", false)?;
-    let structural = builder.assessment::<StructuralAssessment>("structural")?;
-    let manufacturability =
-        builder.assessment::<ManufacturabilityAssessment>("manufacturability")?;
+    let consistency = builder.assessment::<ConsistencyAssessment>("consistency")?;
+    let compliance = builder.assessment::<ComplianceAssessment>("compliance")?;
     let evidence = builder.evidence_join(
         "evidence",
         ApplicationWorkflowEvidenceJoinPolicy::AllRequiredPassing,
     )?;
-    let approval = builder.approval::<GeometryApprover>("approval")?;
+    let approval = builder.approval::<ChangeApprover>("approval")?;
     let approved = builder.operation::<ApplyChange>("approved", true)?;
     let rejected = builder.operation::<ApplyChange>("rejected", false)?;
     let terminal = builder.terminal("terminal")?;
@@ -254,15 +251,15 @@ fn data_cannot_cross_a_mutually_exclusive_control_arm() -> Result<(), Box<dyn st
         .control(
             &propose,
             ApplicationWorkflowControlOutcome::Completed,
-            &structural,
+            &consistency,
         )
         .control(
-            &structural,
+            &consistency,
             ApplicationWorkflowControlOutcome::Completed,
-            &manufacturability,
+            &compliance,
         )
         .control(
-            &manufacturability,
+            &compliance,
             ApplicationWorkflowControlOutcome::Completed,
             &evidence,
         )
@@ -296,10 +293,10 @@ fn data_cannot_cross_a_mutually_exclusive_control_arm() -> Result<(), Box<dyn st
             ApplicationWorkflowControlOutcome::Completed,
             &terminal,
         )
-        .proposal_for_assessment(&propose, &structural)
-        .proposal_for_assessment(&propose, &manufacturability)
-        .assessment_evidence(&structural, &evidence)
-        .assessment_evidence(&manufacturability, &evidence)
+        .proposal_for_assessment(&propose, &consistency)
+        .proposal_for_assessment(&propose, &compliance)
+        .assessment_evidence(&consistency, &evidence)
+        .assessment_evidence(&compliance, &evidence)
         .proposal_for_approval(&propose, &approval)
         .joined_evidence(&evidence, &approval)
         .approval_authority(&approval, &approved)
@@ -318,7 +315,7 @@ fn data_cannot_cross_a_mutually_exclusive_control_arm() -> Result<(), Box<dyn st
 #[test]
 fn guarded_operation_requires_exact_approval_source() -> Result<(), Box<dyn std::error::Error>> {
     let mut builder =
-        ApplicationWorkflowDefinitionBuilder::<ReviewedGeometry>::new("denied", limits())?;
+        ApplicationWorkflowDefinitionBuilder::<ReviewedChange>::new("denied", limits())?;
     let propose = builder.operation::<ProposeChange>("propose", false)?;
     let apply = builder.operation::<ApplyChange>("apply", true)?;
     let terminal = builder.terminal("terminal")?;

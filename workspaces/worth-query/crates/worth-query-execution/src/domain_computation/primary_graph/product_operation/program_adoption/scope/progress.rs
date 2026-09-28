@@ -3,15 +3,20 @@ use worth_runtime_world::facade::NoEffectCompositePublication;
 use super::super::{WorthQueryPerformedBranchAdoption, WorthQueryUnpublishedBranchAdoption};
 use crate::basis::WorthQueryProductBranch;
 
+/// The disposition of one branch already attempted in a branch-set adoption.
 pub enum WorthQueryBranchSetAdoptionProgress {
+    /// The branch's adoption is published.
     Performed {
         branch: WorthQueryProductBranch,
         adoption: WorthQueryPerformedBranchAdoption,
     },
+    /// The branch's publication had no effect: nothing was published.
     NoEffect {
         branch: WorthQueryProductBranch,
         no_effect: NoEffectCompositePublication,
     },
+    /// Some owners moved, but the branch's product head did not. Recover
+    /// publication.
     ProductUnpublished {
         branch: WorthQueryProductBranch,
         adoption: WorthQueryUnpublishedBranchAdoption,

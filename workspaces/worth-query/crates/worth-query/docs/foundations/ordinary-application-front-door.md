@@ -87,17 +87,32 @@ typed declaration
     -> governed publication or legal recovery action
 ```
 
-For a contribution-composed application, install with
-`worth_query_host::facade::application_installation::in_memory` and execute
-through a borrowed typed request:
+For a contribution-composed application, install through
+`worth_query_host::facade::application_installation`:
+
+- `in_memory_program` validates and installs an application program and returns
+  `WorthQueryProgramApplicationRuntime<Schema, Program>`;
+- `in_memory` installs contribution-owned schema meaning without an application
+  program and returns `WorthQueryPrimaryGraphApplicationRuntime<Schema>`.
+
+Execute through a borrowed typed request. A mutation whose action belongs to an
+installed program commits through the branch-resolved program lane:
 
 ```rust,ignore
 use worth_query_host::facade::application_entry::WorthQueryApplicationRequestExt;
 
 let request = application.request(&external_principal, &request_scope);
 let result = request.query(query_intent).execute()?;
-let outcome = request.mutate(mutation_intent).idempotency(command_id).execute();
+let outcome = request
+    .mutate(mutation_intent)
+    .without_source()
+    .idempotency(&command_id)
+    .execute_in_program(&application)?;
 ```
+
+`execute()` without a program serves only mutations that require no
+application program; for a program-owned action it returns
+`WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired`.
 
 The root lists contributions once. Entries own declarations, producer and
 conditional contracts, handler and provider configuration, and invariant
@@ -164,8 +179,20 @@ derived publication rather than source success.
 
 Query results expose bounded `observed_sources()`. A source-bound mutation calls
 `.expect_source(...)`; fresh admission and publication compare the declared native
-source footprint. Unrelated sibling progress is allowed, while missing, foreign,
+source footprint. Sibling edits outside that footprint are allowed; sibling
+membership and selector-field changes may invalidate it. Missing, foreign,
 retired, ABA-changed, or changed source evidence is denied explicitly.
+
+When an input selects subjects within its scope (for example, a copied occurrence
+and its destination parent), its `ApplicationMutationBinding` implements
+`expected_source_parameters(input)` with `Ok(Some(typed_query_parameters))`.
+Query compares those selectors against the observation's exact canonical parameter
+basis before binding source facts or invoking the handler. Row sources, result-set
+sources and framework producers use the same check; a mismatch returns
+`SourceParametersMismatch`. The query's installed canonical-work budget still
+applies. `Ok(None)` means the binding intentionally accepts any parameter selection
+of its declared source query; it must not be used to bypass input-selected subjects.
+Scope/branch affinity and native source currentness remain separate required checks.
 
 `request.retain_read()` captures an exact application occurrence.
 `request.at(&observation).query(intent).execute()` reads it after fresh identity and
@@ -175,7 +202,7 @@ each `next(&fresh_request)` rechecks the application and branch, and `close()`
 releases the lease. Retained requests cannot open live subscriptions.
 
 Host integrations that explicitly own a selected product attempt can use the
-selection and admission surface:
+selection and admission surface for reads:
 
 ```rust,ignore
 let branch = application.current_world();
@@ -187,21 +214,69 @@ let admitted = selected.admit_application_query(
     controls,
 )?;
 let result = application.execute_application_query_one_shot(admitted)?;
-
-let outcome = application
-    .on_branch(branch)
-    .transaction()
-    .apply(admitted_change)
-    .commit_for_program(application.admit_program_operation::<Operation>()?)?;
 ```
 
 `selected` pins the exact composite occurrence. Query carries its World,
 Relational, Signal, and Bridge affinity through admission and execution; later
-phases do not resolve latest product truth again. The complete executable
+phases do not resolve latest product truth again.
+
+### Branch-resolved mutation lanes
+
+A mutation does not name the program that commits it. Each lane selects the
+request's exact branch, resolves the commit owner from the program that branch
+carries, and commits through that installed owner:
+
+```rust,ignore
+let outcome = application
+    .request(&principal, &scope)
+    .on_branch(branch)
+    .mutate(intent)
+    .without_source()
+    .idempotency(&command_id)
+    .execute_in_program(&application)?;
+```
+
+| Lane | Use it for |
+|---|---|
+| `execute_in_program(&runtime)` | An ordinary mutation committed through the branch's program owner. |
+| `execute_capability_in_program(&runtime)` | The same lane for a binding that implements `ApplicationCapabilityMutationBinding`. |
+| `execute_retained_in_program(&runtime)` | A mutation whose committed outcome also returns a retained read observation (`WorthQueryApplicationRetainedMutationOutcome`). |
+| `execute_performed::<Program, Root>(&runtime)` | A source mutation that commits and starts the required outputs declared under `Root`. |
+| `execute_performed_discovered::<Program, Root>(&runtime)` | The discovered-output counterpart of `execute_performed`. |
+
+Each lane takes the `WorthQueryProgramApplicationRuntime` that the request was
+built from. A different runtime returns `ApplicationProgramMismatch`, or
+`WorthQueryPerformedMutationExecutionDenial::ForeignProgram` on the performed
+lanes, which also refuse a `Root` the program does not declare
+(`UndeclaredOutputRoot`) and require the source phase returned by
+`expect_source` or `without_source`. A retried idempotency key replays its recorded outcome before
+any commit, even after the branch adopts another program. If the branch's
+program removed the action, the lane returns the inactive-program denial and
+cannot commit the removed action.
+
+A host integration that already owns an admitted change can use the advanced
+product-transaction lane instead of a request lane. It is not the ordinary path:
+
+```rust,ignore
+let outcome = application
+    .on_branch(branch)
+    .transaction()
+    .apply(WorthQueryAdmittedChange::new(program, idempotency))
+    .commit_for_program(application.admit_program_operation::<Operation>()?)?;
+```
+
+`commit()` serves a change with no application program. Both return
+`WorthQueryProductTransactionCommitError::{ApplicationMismatch, BranchMismatch}`
+for a foreign application or branch, and otherwise a raw
+`WorthQueryApplicationCommitOutcome` that the caller splits with `landed()`.
+`admit_program_operation` refuses an operation guarded by workflow authority;
+such an operation commits only through its typed workflow lane.
+
+The complete executable
 [ordinary product workflow](../../../worth-query-certification/examples/ordinary_product_workflow.rs)
-constructs and installs a validated program, reads the selected branch,
-performs a World publication, delivers the patch, executes its conditional,
-checks the successor and a retained read, and closes runtime resources.
+installs a validated program with `in_memory_program`, retains a read, commits a
+typed mutation through `execute_in_program`, reads the successor and the retained
+occurrence, and closes runtime resources.
 
 ### Branch-local program selection and adoption
 
@@ -215,10 +290,9 @@ let programs = application
     .programs();
 
 let selected = programs.inspect()?;
-let requirements = programs.compare(target_revision)?;
+let requirements = programs.compare(&target_revision)?;
 let prepared = programs
-    .adopt(target_revision)
-    .requirements(&requirements)
+    .adopt(&requirements)
     .prepare(maximum_selection_work)?;
 
 match prepared.publish() {
@@ -249,13 +323,45 @@ Cancellation preserves the performed prefix, and recovery preserves both that
 prefix and the untouched suffix. It never reports rollback of work that an
 owner already performed.
 
-Match every commit terminal. `Committed` and `AlreadyCommitted` carry the
-canonical product receipt. `ProductUnpublished`, `Deferred`,
-`SettlementDeferred`, and `Indeterminate` retain owner-specific recovery
-custody. `NoEffect`, `Stale`, `ProductStale`, `Cancelled`, `TimedOut`, `Denied`,
-and `Aborted` are distinct application decisions. `require_committed()` is a
-convenience: its error is the original typed terminal and must be handled rather
-than erased.
+### Commit terminals: landed or uncommitted
+
+Every commit either landed or did not. The request lanes already report that
+split: `WorthQueryApplicationMutationOutcome::Committed { receipt, result }` and
+`AlreadyCommitted(receipt)` carry the canonical product receipt, and every
+commit terminal that did not land arrives as
+`WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationUncommitted)`.
+
+Host code that receives a raw `WorthQueryApplicationCommitOutcome` splits it with
+`landed()`:
+
+```rust,no_run
+# use worth_query_host::facade::primary_graph::{
+#     WorthQueryApplicationCommitOutcome, WorthQueryApplicationCommitReceipt,
+#     WorthQueryApplicationUncommitted,
+# };
+# fn publish(_: WorthQueryApplicationCommitReceipt, _replayed: bool) {}
+# fn handle_uncommitted(_: WorthQueryApplicationUncommitted) {}
+# fn settle(commit_outcome: WorthQueryApplicationCommitOutcome) {
+match commit_outcome.landed() {
+    Ok((receipt, replayed)) => publish(receipt, replayed),
+    Err(uncommitted) => handle_uncommitted(uncommitted),
+}
+# }
+```
+
+`Ok((receipt, replayed))` is a landed commit; `replayed` is `true` when the
+landing replays an earlier commit of the same idempotency. `Err` carries a
+`WorthQueryApplicationUncommitted`, which holds every commit terminal except a
+landed commit. Match each of its variants:
+
+| `WorthQueryApplicationUncommitted` variant | Meaning |
+|---|---|
+| `ProductUnpublished`, `Deferred`, `SettlementDeferred` | Owner-specific recovery custody is retained. |
+| `Indeterminate` | The landing is unresolved, not failed; do not retry as though it failed. |
+| `NoEffect`, `Stale`, `ProductStale`, `Cancelled`, `TimedOut`, `Denied`, `Aborted` | Distinct application decisions; nothing landed. |
+
+`require_committed()` is the receipt-only convenience: its error is the original
+typed `WorthQueryApplicationCommitOutcome` and must be handled rather than erased.
 
 Every later governed transition rechecks the current evidence it depends on.
 Continuation, live delivery, approval, recovery, and conditional-operation
@@ -328,10 +434,10 @@ than translating every transport success or failure into a business result:
 #     application_entry::{
 #         WorthQueryApplicationMutationOutcome, WorthQueryApplicationRequestMutationDenial,
 #     },
-#     primary_graph::{WorthQueryApplicationCommitOutcome, WorthQueryApplicationCommitReceipt},
+#     primary_graph::{WorthQueryApplicationCommitReceipt, WorthQueryApplicationUncommitted},
 # };
 # fn publish(_: WorthQueryApplicationCommitReceipt) {}
-# fn inspect_commit_outcome(_: WorthQueryApplicationCommitOutcome) {}
+# fn inspect_uncommitted(_: WorthQueryApplicationUncommitted) {}
 # fn explain_domain(_: BankProposalDenial) {}
 # fn explain_request(_: WorthQueryApplicationRequestMutationDenial) {}
 # fn handle_terminal_stop() {}
@@ -354,7 +460,7 @@ let outcome = bank
 match outcome {
     Ok(WorthQueryApplicationMutationOutcome::Committed { receipt, .. })
     | Ok(WorthQueryApplicationMutationOutcome::AlreadyCommitted(receipt)) => publish(receipt),
-    Ok(WorthQueryApplicationMutationOutcome::Commit(commit)) => inspect_commit_outcome(commit),
+    Ok(WorthQueryApplicationMutationOutcome::Commit(uncommitted)) => inspect_uncommitted(uncommitted),
     Ok(WorthQueryApplicationMutationOutcome::DomainDenied(reason)) => explain_domain(reason),
     Err(reason) => explain_request(reason),
     Ok(WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift)
@@ -452,9 +558,16 @@ hardware; an absolute seconds threshold is not a portable Query contract.
 - The synchronous M0 contribution, request, handler, candidate, invariant,
   producer, conditional, bounded output-demand, exact/live read, correspondence,
   discovery, and branch-local program-evolution foundation is certified.
-  Dynamic workflow-definition instances and their adoption dispositions belong
-  to the separately governed successor milestone. Deferred producer completion
-  belongs to the later producer extension.
+  Deferred producer completion belongs to the later producer extension.
+- Authored workflow definitions are available: an application builds a
+  definition with `ApplicationWorkflowDefinitionBuilder`, publishes validated
+  revisions, discovers the current one through
+  `WorthQueryWorkflowDefinitionDiscovery`, and starts and progresses instances
+  through typed proposal, approval, and progress outcomes. The
+  [authored workflow example](../../../worth-query-certification/examples/authored_workflow/main.rs)
+  runs that journey end to end, and the [workflows guide](workflows.md)
+  documents every step, outcome, and denial. The workflow surface exposes no
+  callback, resume-message, or inbound-completion API.
 - Historical, preview, continuation, and live lanes are available only for an
   installed query whose declared support and current admission allow that lane.
 - Conditional providers and managed clocks are stable on the primary-graph

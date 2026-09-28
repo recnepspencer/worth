@@ -108,8 +108,10 @@ impl super::UiServiceProposalCompiler {
         &mut self,
     ) -> Result<UiServiceProposalCompilerShutdownReceipt, UiServiceProposalTeardownDenial> {
         let expected_proposals = self.occupancy.proposal_count();
-        let expected_leases = self.occupancy.live_count() as u16;
-        let expected_cancellations = self.cancellations.live_count() as u16;
+        let expected_leases = u16::try_from(self.occupancy.live_count())
+            .expect("occupancy holds at most OCCUPANCY_LIMIT leases");
+        let expected_cancellations = u16::try_from(self.cancellations.live_count())
+            .expect("cancellation holds at most CANCELLATION_RECORD_LIMIT records");
         if expected_proposals != expected_cancellations
             || !self.census.exactly_tracks_live(
                 expected_proposals,
@@ -127,7 +129,8 @@ impl super::UiServiceProposalCompiler {
                 super::super::UiServiceProposalCancellationDenial::ForeignProposal,
             ));
         }
-        let abandoned_proposals = abandonable.len() as u16;
+        let abandoned_proposals = u16::try_from(abandonable.len())
+            .expect("cancellation holds at most CANCELLATION_RECORD_LIMIT records");
         let next_census = self
             .census
             .with_abandoned_before_effect(abandoned_proposals, abandoned_leases)
@@ -304,10 +307,11 @@ impl super::UiServiceProposalCompiler {
         {
             return Err((parts, UiServiceProposalTeardownDenial::Cancellation(denial)));
         }
-        let next_census = match self
-            .census
-            .with_complete_release(parts.leases.len() as u16, parts.retained_receipts)
-        {
+        let next_census = match self.census.with_complete_release(
+            u16::try_from(parts.leases.len())
+                .expect("occupancy holds at most OCCUPANCY_LIMIT leases"),
+            parts.retained_receipts,
+        ) {
             Ok(census) => census,
             Err(denial) => return Err((parts, UiServiceProposalTeardownDenial::Census(denial))),
         };

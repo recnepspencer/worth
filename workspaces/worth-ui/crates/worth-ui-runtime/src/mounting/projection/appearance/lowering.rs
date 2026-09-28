@@ -178,7 +178,13 @@ fn lower_node(
             UiMountedAppearanceMechanic::PortalSurface(mechanic) => {
                 UiMountedAppearanceVisualBounds::from_visual(mechanic.surface().visual_bounds())
             }
-            _ => unreachable!("surface lowering returns a surface family"),
+            UiMountedAppearanceMechanic::Outline(_)
+            | UiMountedAppearanceMechanic::TextForeground(_)
+            | UiMountedAppearanceMechanic::Pointer(_)
+            | UiMountedAppearanceMechanic::Backdrop(_)
+            | UiMountedAppearanceMechanic::ScrollChrome(_) => {
+                unreachable!("surface lowering returns a surface family")
+            }
         };
         records.push(UiMountedAppearanceFact::node(
             input.semantic_surface,
@@ -198,7 +204,14 @@ fn lower_node(
             UiMountedAppearanceMechanic::Outline(mechanic) => {
                 UiMountedAppearanceVisualBounds::from_visual(mechanic.visual_bounds())
             }
-            _ => unreachable!("outline lowering returns an outline family"),
+            UiMountedAppearanceMechanic::Surface(_)
+            | UiMountedAppearanceMechanic::PortalSurface(_)
+            | UiMountedAppearanceMechanic::TextForeground(_)
+            | UiMountedAppearanceMechanic::Pointer(_)
+            | UiMountedAppearanceMechanic::Backdrop(_)
+            | UiMountedAppearanceMechanic::ScrollChrome(_) => {
+                unreachable!("outline lowering returns an outline family")
+            }
         };
         records.push(UiMountedAppearanceFact::node(
             input.semantic_surface,
@@ -254,7 +267,11 @@ fn require_issued_participants(
         UiMountedAppearanceMechanic::Backdrop(backdrop) => Some(
             UiOverlayParticipantIdentity::Backdrop(backdrop.identity().clone()),
         ),
-        _ => None,
+        UiMountedAppearanceMechanic::Surface(_)
+        | UiMountedAppearanceMechanic::Outline(_)
+        | UiMountedAppearanceMechanic::TextForeground(_)
+        | UiMountedAppearanceMechanic::Pointer(_)
+        | UiMountedAppearanceMechanic::ScrollChrome(_) => None,
     });
     for participant in overlay_mechanics {
         if !ordered.iter().any(|issued| issued == &participant) {

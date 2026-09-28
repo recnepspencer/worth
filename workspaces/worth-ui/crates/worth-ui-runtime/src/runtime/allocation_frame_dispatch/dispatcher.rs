@@ -24,7 +24,7 @@ pub(crate) use epoch_assignment::UiAllocationFrameEpochAssignment;
 pub(crate) use submission_transition::UiAllocationFrameSubmissionTransition;
 
 const ALLOCATION_FRAME_MAILBOX_CAPACITY: NonZeroU16 =
-    NonZeroU16::new(super::ALLOCATION_FRAME_SOURCE_CAPACITY as u16).unwrap();
+    NonZeroU16::new(super::ALLOCATION_FRAME_SOURCE_COUNT).unwrap();
 
 #[derive(Clone, Copy, Debug)]
 struct UiAllocationFrameCloseTrigger;
@@ -114,7 +114,12 @@ impl UiAllocationFrameDispatcher {
             UiAllocationFrameDispatcherState::Paused(
                 UiAllocationFramePauseReason::EpochExhausted,
             ) => return Err(UiAllocationFrameDispatchDenial::EpochExhausted),
-            _ => return Err(UiAllocationFrameDispatchDenial::NoOpenFrame),
+            UiAllocationFrameDispatcherState::Paused(_)
+            | UiAllocationFrameDispatcherState::Closing { .. }
+            | UiAllocationFrameDispatcherState::Sealed(_)
+            | UiAllocationFrameDispatcherState::Dispatched(_) => {
+                return Err(UiAllocationFrameDispatchDenial::NoOpenFrame)
+            }
         };
         let Some(next_epoch) = epoch.checked_next() else {
             self.state = UiAllocationFrameDispatcherState::Paused(

@@ -1,39 +1,7 @@
 use std::fmt;
 use std::fs::{self, OpenOptions};
 use std::io::Write;
-use std::marker::PhantomData;
 use std::path::{Path, PathBuf};
-
-use crate::installation::IsolatedPulseInstallation;
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(crate) enum PulseSourceDeltaIdentity {
-    QueryStatusV1,
-    QueryStatusV2,
-    Green,
-    Malformed,
-    CanonicalBlueRecovery,
-    RevisionSchema,
-    StatusSchemaRecovery,
-    IntentReadyReleased,
-    IntentQueryDenialRequested,
-    PortalFocusFallback,
-    IntentConfirmationHeld,
-    IntentConfirmationReleased,
-    IntentDisabled,
-    IntentDenied,
-    IntentFinalHeld,
-    IntentRouteRemoved,
-}
-
-#[derive(Debug)]
-pub(crate) struct AppliedPulseSourceDelta<Kind> {
-    identity: PulseSourceDeltaIdentity,
-    written_bytes: usize,
-    content_fingerprint: u64,
-    entry_source: PathBuf,
-    _kind: PhantomData<Kind>,
-}
 
 #[derive(Debug)]
 pub(crate) enum PulseSourceActionFailure {
@@ -83,19 +51,11 @@ impl fmt::Display for PulseSourceActionFailure {
     }
 }
 
-pub(super) fn apply<Kind>(
-    installation: &IsolatedPulseInstallation,
-    identity: PulseSourceDeltaIdentity,
-    bytes: &[u8],
-) -> Result<AppliedPulseSourceDelta<Kind>, PulseSourceActionFailure> {
-    apply_path(installation.entry_source(), identity, bytes)
-}
-
-pub(super) fn apply_path<Kind>(
+/// Atomically replaces `destination` with `bytes` and reads the file back.
+pub(super) fn apply_path(
     destination: PathBuf,
-    identity: PulseSourceDeltaIdentity,
     bytes: &[u8],
-) -> Result<AppliedPulseSourceDelta<Kind>, PulseSourceActionFailure> {
+) -> Result<(), PulseSourceActionFailure> {
     let temporary = destination.with_extension("replacement");
     write_temporary(&temporary, bytes)?;
     replace_source(&destination, &temporary)?;
@@ -103,13 +63,7 @@ pub(super) fn apply_path<Kind>(
     if observed != bytes {
         return Err(PulseSourceActionFailure::ReadBackMismatch);
     }
-    Ok(AppliedPulseSourceDelta {
-        identity,
-        written_bytes: bytes.len(),
-        content_fingerprint: fingerprint(bytes),
-        entry_source: destination,
-        _kind: PhantomData,
-    })
+    Ok(())
 }
 
 fn write_temporary(path: &Path, bytes: &[u8]) -> Result<(), PulseSourceActionFailure> {
@@ -160,32 +114,4 @@ fn replace_source(destination: &Path, replacement: &Path) -> Result<(), PulseSou
         primary: error.to_string(),
         temporary_cleanup: fs::remove_file(replacement),
     })
-}
-
-fn fingerprint(bytes: &[u8]) -> u64 {
-    bytes.iter().fold(0xcbf2_9ce4_8422_2325, |digest, byte| {
-        (digest ^ u64::from(*byte)).wrapping_mul(0x0000_0100_0000_01b3)
-    })
-}
-
-impl<Kind> AppliedPulseSourceDelta<Kind> {
-    pub(crate) fn identity(&self) -> PulseSourceDeltaIdentity {
-        self.identity
-    }
-
-    pub(crate) fn action_count(&self) -> u32 {
-        1
-    }
-
-    pub(crate) fn written_bytes(&self) -> usize {
-        self.written_bytes
-    }
-
-    pub(crate) fn content_fingerprint(&self) -> u64 {
-        self.content_fingerprint
-    }
-
-    pub(crate) fn entry_source(&self) -> &Path {
-        &self.entry_source
-    }
 }

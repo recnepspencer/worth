@@ -1,3 +1,23 @@
+// A cast that can drop a value's high bits, its sign, or its fraction reads
+// some other number without saying so. Counts convert with `try_from` against
+// the capacity that bounds them, floats cross `whole_number`, and distances
+// narrow through `units`.
+#![deny(
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::cast_sign_loss
+)]
+// A `_` arm quietly absorbs every variant added later, so a new outcome,
+// denial, or fact takes whatever branch the old catch-all chose. Runtime
+// matches name their variants; tests may still refuse the rest wholesale.
+#![cfg_attr(
+    not(test),
+    deny(
+        clippy::wildcard_enum_match_arm,
+        clippy::match_wildcard_for_single_variants
+    )
+)]
+
 mod admission;
 mod capability;
 #[cfg(worth_ui_compile_probe)]
@@ -16,6 +36,8 @@ pub mod native_platform;
 mod obligations;
 mod runtime;
 mod source;
+mod units;
+mod whole_number;
 
 #[cfg(feature = "certification-support")]
 #[doc(hidden)]

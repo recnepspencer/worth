@@ -22,6 +22,13 @@ impl WorthQueryRecoveryCompensateAdmission {
     }
 }
 
+/// Admits compensation for a recovery handle and consumes the handle.
+///
+/// `authority` must be fresh effect authority minted for this exact handle, and
+/// the operation's installed aftermath must declare a compensation mechanism.
+/// The returned admission is proof to proceed; this call performs no
+/// compensating change itself. On denial the handle is relinquished, not
+/// consumed.
 pub fn compensate_recovery_handle(
     handle: WorthQueryRecoveryHandle,
     authority: &WorthQueryRecoveryEffectAuthority,

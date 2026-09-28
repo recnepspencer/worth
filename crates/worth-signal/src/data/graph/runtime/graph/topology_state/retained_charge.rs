@@ -16,13 +16,13 @@ impl RetainedStorageMeasurement for EdgeTopology {
             pending_revalidation_waiters,
             pending_revalidation_storage_custody: _,
         } = self;
-        Ok(Charge::ZERO
+        Charge::ZERO
             .checked_add(dependency_snapshots.retained_heap_charge(work)?)?
             .checked_add(dependency_snapshot_shapes.retained_heap_charge(work)?)?
             .checked_add(dependency_edges.retained_heap_charge(work)?)?
             .checked_add(subscriber_edges.retained_heap_charge(work)?)?
             .checked_add(reverse_subscriptions.retained_heap_charge(work)?)?
-            .checked_add(pending_revalidation_waiters.retained_heap_charge(work)?)?)
+            .checked_add(pending_revalidation_waiters.retained_heap_charge(work)?)
     }
 }
 
@@ -44,12 +44,12 @@ impl RetainedStorageForkPreparation for EdgeTopology {
             pending_revalidation_waiters,
             pending_revalidation_storage_custody: _,
         } = self;
-        Ok(RetainedStorageForkCharge::unchanged(Charge::ZERO)
+        RetainedStorageForkCharge::unchanged(Charge::ZERO)
             .checked_add(dependency_snapshots.prepare_fork_charge(work)?)?
             .checked_add(dependency_snapshot_shapes.prepare_fork_charge(work)?)?
             .checked_add(dependency_edges.prepare_fork_charge(work)?)?
             .checked_add(subscriber_edges.prepare_fork_charge(work)?)?
             .checked_add(reverse_subscriptions.prepare_fork_charge(work)?)?
-            .checked_add(pending_revalidation_waiters.prepare_fork_charge(work)?)?)
+            .checked_add(pending_revalidation_waiters.prepare_fork_charge(work)?)
     }
 }

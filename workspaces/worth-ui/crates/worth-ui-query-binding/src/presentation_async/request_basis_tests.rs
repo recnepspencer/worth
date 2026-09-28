@@ -3,7 +3,7 @@ use worth_ui_host_contract::{
     UiFontCollectionGeneration, UiFontCollectionLineageIdentity, UiGlyphRasterFractionalOrigin,
     UiGlyphRasterKey, UiGlyphRasterKeyInput, UiGlyphRasterPalette, UiGlyphRasterPinRequest,
     UiGlyphRasterSize, UiGlyphRasterSource, UiGlyphVariationCoordinates,
-    UiQualifiedFontFaceIdentity, UiTextProfileGeneration,
+    UiQualifiedFontFaceIdentity, UiQualifiedTextVariationRecord, UiTextProfileGeneration,
 };
 
 #[test]
@@ -75,6 +75,77 @@ fn whole_binding_pin_inventory_participates_in_query_request_identity() {
         .identity_parts()
         .iter()
         .any(|part| part.key() == "binding-pins-fingerprint"));
+}
+
+/// Every raster key field reaches the request identity on its own: a key that
+/// differs from the base in exactly one field moves the binding pin
+/// fingerprint, and no two such twins collide.
+#[test]
+fn every_raster_key_field_moves_the_binding_pin_fingerprint() {
+    type Twin = fn(&mut UiGlyphRasterKeyInput);
+    let twins: [Twin; 20] = [
+        |key| key.font_collection = UiFontCollectionGeneration::new(2).unwrap(),
+        |key| {
+            key.font_collection_lineage =
+                UiFontCollectionLineageIdentity::from_text_mechanics([5; 32]);
+        },
+        |key| key.profile = UiTextProfileGeneration::new(2).unwrap(),
+        |key| {
+            key.face =
+                UiQualifiedFontFaceIdentity::from_application_text_mechanics([3; 32], 0, [1; 32]);
+        },
+        |key| key.face = UiQualifiedFontFaceIdentity::from_text_mechanics([1; 32], 1),
+        |key| {
+            key.face =
+                UiQualifiedFontFaceIdentity::from_application_text_mechanics([1; 32], 0, [3; 32]);
+        },
+        |key| key.glyph_id = 10,
+        |key| key.palette = UiGlyphRasterPalette::new(1),
+        |key| key.size = UiGlyphRasterSize::from_millipoints(13_000).unwrap(),
+        |key| key.source = UiGlyphRasterSource::ColorOutline,
+        |key| key.dpi_milli = 1_500,
+        |key| key.origin = UiGlyphRasterFractionalOrigin::from_sixty_fourths(16, 0),
+        |key| key.origin = UiGlyphRasterFractionalOrigin::from_sixty_fourths(-16, 0),
+        |key| key.origin = UiGlyphRasterFractionalOrigin::from_sixty_fourths(0, 16),
+        |key| key.origin = UiGlyphRasterFractionalOrigin::from_sixty_fourths(0, -16),
+        |key| key.variations = UiGlyphVariationCoordinates::empty(),
+        |key| key.variations = variations(&[(*b"wght", 400_000), (*b"wdth", 90_000)]),
+        |key| key.variations = variations(&[(*b"wdth", 400_000)]),
+        |key| key.variations = variations(&[(*b"wght", 500_000)]),
+        |key| key.variations = variations(&[(*b"wght", -400_000)]),
+    ];
+    let mechanic = mechanic_input(14, [5; 32], 0, 4, [1, 2, 3, 255]);
+    let input = basis_input(vec![mechanic.clone()]);
+    let fingerprint = |key: UiGlyphRasterKeyInput| {
+        let pin = WorthUiPresentationPinBasis::from_runtime(
+            UiGlyphRasterPinRequest::from_text_mechanics(
+                mechanic.layout,
+                UiGlyphRasterKey::from_text_mechanics(key).unwrap(),
+            ),
+        );
+        WorthUiPresentationRequestBasis::from_runtime_correspondence(
+            WorthUiPresentationRequestBasisInput {
+                binding_pins: vec![pin].into_boxed_slice(),
+                ..input.clone()
+            },
+        )
+        .unwrap()
+        .identity_parts()
+        .into_iter()
+        .find(|part| part.key() == "binding-pins-fingerprint")
+        .unwrap()
+    };
+    let mut fingerprints = vec![fingerprint(base_key_input())];
+    for twin in twins {
+        let mut key = base_key_input();
+        twin(&mut key);
+        fingerprints.push(fingerprint(key));
+    }
+    for (index, left) in fingerprints.iter().enumerate() {
+        for right in &fingerprints[index + 1..] {
+            assert_ne!(left, right);
+        }
+    }
 }
 
 #[test]
@@ -216,6 +287,30 @@ fn raster_key(glyph_id: u32) -> UiGlyphRasterKey {
         origin: UiGlyphRasterFractionalOrigin::from_sixty_fourths(0, 0),
     })
     .unwrap()
+}
+
+fn base_key_input() -> UiGlyphRasterKeyInput {
+    UiGlyphRasterKeyInput {
+        font_collection: UiFontCollectionGeneration::new(1).unwrap(),
+        font_collection_lineage: UiFontCollectionLineageIdentity::from_text_mechanics([4; 32]),
+        profile: UiTextProfileGeneration::new(1).unwrap(),
+        face: UiQualifiedFontFaceIdentity::from_text_mechanics([1; 32], 0),
+        glyph_id: 9,
+        variations: variations(&[(*b"wght", 400_000)]),
+        palette: UiGlyphRasterPalette::new(0),
+        size: UiGlyphRasterSize::from_millipoints(12_000).unwrap(),
+        source: UiGlyphRasterSource::AlphaOutline,
+        dpi_milli: 1_250,
+        origin: UiGlyphRasterFractionalOrigin::from_sixty_fourths(0, 0),
+    }
+}
+
+fn variations(axes: &[([u8; 4], i32)]) -> UiGlyphVariationCoordinates {
+    let records = axes
+        .iter()
+        .map(|(tag, value)| UiQualifiedTextVariationRecord::from_text_mechanics(*tag, *value))
+        .collect::<Vec<_>>();
+    UiGlyphVariationCoordinates::from_records(&records).unwrap()
 }
 
 fn digest(seed: u64) -> [u8; 32] {

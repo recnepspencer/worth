@@ -6,16 +6,16 @@ use worth_query_host::facade::{
         WorkflowDefinitionExpectedPredecessor, WorkflowDefinitionPublicationOutcome,
         WorkflowInstanceStartOutcome, WorkflowProgressOutcome,
         WorthQueryWorkflowDefinitionPublicationPreparationDenial,
-        WorthQueryWorkflowInstanceStartPreparationDenial,
+        WorthQueryWorkflowInstancePreparationDenial,
     },
-    primary_graph::{WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitOutcome},
+    primary_graph::{WorthQueryApplicationCommitDenialKind, WorthQueryApplicationUncommitted},
 };
 
-use super::bounded_dimension_model::{
+use super::document_retention_model::{
     host::publish_workflow_on_first_program,
     workflow::{
-        advance_instance, publish_definition, reviewed_geometry_definition, start_instance,
-        terminal_definition,
+        advance_instance, expect_capacity_refused, expect_superseded_start, publish_definition,
+        reviewed_document_definition, start_instance, terminal_definition,
     },
 };
 
@@ -33,12 +33,12 @@ fn installed_resource_ceiling_rejects_a_definition_declaring_broader_limits() {
             256 * 1024,
         )
         .expect("the constrained workflow resources are nonzero");
-    let application = super::bounded_dimension_model::workflow::retain_workflow_with_resources(
-        super::bounded_dimension_model::host::publish_on_first_program(),
+    let application = super::document_retention_model::workflow::retain_workflow_with_resources(
+        super::document_retention_model::host::publish_on_first_program(),
         resources,
     );
     let denial = match application.workflow_spec().bind_definition(
-        super::bounded_dimension_model::workflow::reviewed_geometry_definition("completed"),
+        super::document_retention_model::workflow::reviewed_document_definition("completed"),
     ) {
         Ok(_) => panic!("definition limits exceeded the installed effect ceiling"),
         Err(denial) => denial,
@@ -63,12 +63,12 @@ fn installed_component_ceiling_rejects_only_the_broader_component_contract() {
             256 * 1024,
         )
         .expect("the constrained workflow resources are nonzero");
-    let application = super::bounded_dimension_model::workflow::retain_workflow_with_resources(
-        super::bounded_dimension_model::host::publish_on_first_program(),
+    let application = super::document_retention_model::workflow::retain_workflow_with_resources(
+        super::document_retention_model::host::publish_on_first_program(),
         resources,
     );
     let denial = match application.workflow_spec().bind_definition(
-        super::bounded_dimension_model::workflow::reviewed_geometry_definition("completed"),
+        super::document_retention_model::workflow::reviewed_document_definition("completed"),
     ) {
         Ok(_) => panic!("definition component limits exceed installed resources"),
         Err(denial) => denial,
@@ -100,7 +100,7 @@ fn public_terminal_workflow_advances_once_through_authenticated_transition_autho
     let after_cold_start = application.runtime().workflow_compilation_reuse_counters();
     assert_eq!(after_cold_start.cold_misses(), before.cold_misses() + 1);
     assert_eq!(after_cold_start.cold_retains(), before.cold_retains() + 1);
-    assert_eq!(started.instance().current_node_path(), "completed");
+    assert_eq!(started.instance().start_node_path(), "completed");
     for key in 100..131 {
         expect_started(start_instance(
             &application,
@@ -117,7 +117,7 @@ fn public_terminal_workflow_advances_once_through_authenticated_transition_autho
         after_warm_starts.warm_hits(),
         after_cold_start.warm_hits() + 31
     );
-    expect_stale_start(start_instance(
+    expect_capacity_refused(start_instance(
         &application,
         definition.definition().clone(),
         131,
@@ -143,7 +143,7 @@ fn public_terminal_workflow_advances_once_through_authenticated_transition_autho
     match advance_instance(&application, started.instance().clone(), 34)
         .expect("a new key must reach transition-head comparison")
     {
-        WorkflowProgressOutcome::Application(WorthQueryApplicationCommitOutcome::Stale(stale)) => {
+        WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::Stale(stale)) => {
             assert!(stale.stale_fact_count() > 0)
         }
         other => panic!("expected a stale second terminal occurrence, got {other:?}"),
@@ -153,7 +153,7 @@ fn public_terminal_workflow_advances_once_through_authenticated_transition_autho
         definition.definition().clone(),
         132,
     ));
-    expect_stale_start(start_instance(
+    expect_capacity_refused(start_instance(
         &application,
         definition.definition().clone(),
         133,
@@ -168,7 +168,7 @@ fn public_authoring_publishes_replays_and_revises_one_branch_lineage() {
         "initial publication",
         publish_definition(
             &application,
-            reviewed_geometry_definition("completed"),
+            reviewed_document_definition("completed"),
             WorkflowDefinitionExpectedPredecessor::Absent,
             1,
         ),
@@ -180,7 +180,7 @@ fn public_authoring_publishes_replays_and_revises_one_branch_lineage() {
         "exact replay",
         publish_definition(
             &application,
-            reviewed_geometry_definition("completed"),
+            reviewed_document_definition("completed"),
             WorkflowDefinitionExpectedPredecessor::Absent,
             1,
         ),
@@ -196,7 +196,7 @@ fn public_authoring_publishes_replays_and_revises_one_branch_lineage() {
         "lawful revision",
         publish_definition(
             &application,
-            reviewed_geometry_definition("settled"),
+            reviewed_document_definition("settled"),
             WorkflowDefinitionExpectedPredecessor::Published(first_definition.clone()),
             2,
         ),
@@ -214,14 +214,14 @@ fn public_authoring_publishes_replays_and_revises_one_branch_lineage() {
 
     expect_stale_predecessor(publish_definition(
         &application,
-        reviewed_geometry_definition("superseded"),
+        reviewed_document_definition("superseded"),
         WorkflowDefinitionExpectedPredecessor::Published(first_definition),
         3,
     ));
 
     expect_intent_drift(publish_definition(
         &application,
-        reviewed_geometry_definition("different-intent"),
+        reviewed_document_definition("different-intent"),
         WorkflowDefinitionExpectedPredecessor::Published(second.definition().clone()),
         1,
     ));
@@ -234,7 +234,7 @@ fn public_instance_start_binds_revisions_replays_and_enforces_lineage_capacity()
         "initial publication",
         publish_definition(
             &application,
-            reviewed_geometry_definition("completed"),
+            reviewed_document_definition("completed"),
             WorkflowDefinitionExpectedPredecessor::Absent,
             11,
         ),
@@ -242,7 +242,7 @@ fn public_instance_start_binds_revisions_replays_and_enforces_lineage_capacity()
     let first_definition = first.definition().clone();
     let started = expect_started(start_instance(&application, first_definition.clone(), 21));
     assert!(!started.replayed());
-    assert_eq!(started.instance().current_node_path(), "propose");
+    assert_eq!(started.instance().start_node_path(), "propose");
     assert_eq!(
         started.instance().definition_content_identity(),
         first_definition.content_identity()
@@ -266,7 +266,7 @@ fn public_instance_start_binds_revisions_replays_and_enforces_lineage_capacity()
         "replacement publication",
         publish_definition(
             &application,
-            reviewed_geometry_definition("settled"),
+            reviewed_document_definition("settled"),
             WorkflowDefinitionExpectedPredecessor::Published(first_definition.clone()),
             12,
         ),
@@ -279,13 +279,15 @@ fn public_instance_start_binds_revisions_replays_and_enforces_lineage_capacity()
         started.instance().entity_id(),
         "definition replacement must not hide an exact retained replay"
     );
-    expect_stale_start(start_instance(&application, first_definition.clone(), 23));
+    let current =
+        expect_superseded_start(start_instance(&application, first_definition.clone(), 23));
+    assert_eq!(&current, second.definition());
 
     let third = expect_published(
         "same-content new revision",
         publish_definition(
             &application,
-            reviewed_geometry_definition("completed"),
+            reviewed_document_definition("completed"),
             WorkflowDefinitionExpectedPredecessor::Published(second.definition().clone()),
             13,
         ),
@@ -310,7 +312,7 @@ fn public_instance_start_binds_revisions_replays_and_enforces_lineage_capacity()
         replay_at_capacity.instance().entity_id(),
         started.instance().entity_id()
     );
-    expect_stale_start(start_instance(
+    expect_capacity_refused(start_instance(
         &application,
         third.definition().clone(),
         1000,
@@ -318,7 +320,7 @@ fn public_instance_start_binds_revisions_replays_and_enforces_lineage_capacity()
 }
 
 fn expect_started(
-    result: Result<WorkflowInstanceStartOutcome, WorthQueryWorkflowInstanceStartPreparationDenial>,
+    result: Result<WorkflowInstanceStartOutcome, WorthQueryWorkflowInstancePreparationDenial>,
 ) -> worth_query_host::facade::application_entry::PerformedWorkflowInstanceStart {
     match result.expect("workflow instance-start preparation must succeed") {
         WorkflowInstanceStartOutcome::Started(started) => started,
@@ -349,28 +351,17 @@ fn expect_stale_predecessor(
 ) {
     match result {
         Ok(WorkflowDefinitionPublicationOutcome::Application(
-            WorthQueryApplicationCommitOutcome::Stale(stale),
+            WorthQueryApplicationUncommitted::Stale(stale),
         )) => assert!(stale.stale_fact_count() > 0),
         unexpected => panic!("expected stale predecessor refusal, got {unexpected:?}"),
     }
 }
 
-fn expect_stale_start(
-    result: Result<WorkflowInstanceStartOutcome, WorthQueryWorkflowInstanceStartPreparationDenial>,
-) {
-    match result.expect("the workflow start must reach commit comparison") {
-        WorkflowInstanceStartOutcome::Application(WorthQueryApplicationCommitOutcome::Stale(
-            stale,
-        )) => assert!(stale.stale_fact_count() > 0),
-        unexpected => panic!("expected stale workflow instance start, got {unexpected:?}"),
-    }
-}
-
 fn expect_start_intent_drift(
-    result: Result<WorkflowInstanceStartOutcome, WorthQueryWorkflowInstanceStartPreparationDenial>,
+    result: Result<WorkflowInstanceStartOutcome, WorthQueryWorkflowInstancePreparationDenial>,
 ) {
     match result.expect("the changed workflow start intent must reach idempotency") {
-        WorkflowInstanceStartOutcome::Application(WorthQueryApplicationCommitOutcome::Denied(
+        WorkflowInstanceStartOutcome::Application(WorthQueryApplicationUncommitted::Denied(
             denial,
         )) => assert_eq!(
             denial.kind(),
@@ -390,7 +381,7 @@ fn expect_intent_drift(
 ) {
     match result.expect("the changed workflow intent must reach idempotency") {
         WorkflowDefinitionPublicationOutcome::Application(
-            WorthQueryApplicationCommitOutcome::Denied(denial),
+            WorthQueryApplicationUncommitted::Denied(denial),
         ) => assert_eq!(
             denial.kind(),
             WorthQueryApplicationCommitDenialKind::IdempotencyIntentDrift

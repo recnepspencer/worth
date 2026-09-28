@@ -35,7 +35,9 @@ impl WorthUiExecutablePlanDecision {
     pub fn denial(self) -> Option<WorthUiExecutablePlanEquivalenceDenial> {
         match self {
             Self::Denied(denial) => Some(denial),
-            _ => None,
+            Self::ExactSemanticNoOp(_)
+            | Self::BoundedChangedRegions(_)
+            | Self::RebuildRequired(_) => None,
         }
     }
 }

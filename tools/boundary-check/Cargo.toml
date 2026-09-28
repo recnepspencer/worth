@@ -13,3 +13,8 @@ proc-macro2 = { version = "1", features = ["span-locations"] }
 quote = "1"
 syn = { version = "2", features = ["full", "visit"] }
 toml = "0.8"
+
+# Parsing every governed crate with syn dominates a run; optimize dependencies
+# even in the dev profile that `make boundary-check` uses.
+[profile.dev.package."*"]
+opt-level = 3

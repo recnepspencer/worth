@@ -6,7 +6,7 @@ use crate::identity_authority::{
     BridgeTruthBoundaryBridgedIdentity,
 };
 use crate::input::envelope::TruthCommitIdentity;
-use crate::relational_identity::RelationalBridgeRecordIdentityParts;
+use crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts;
 use crate::snapshot::TruthSnapshotIdentity;
 
 /// Bridge-owned admission that a commit projection came from the registered

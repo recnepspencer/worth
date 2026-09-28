@@ -1,26 +1,22 @@
 use worth_query_declaration::facade::application_operation::{
-    ApplicationMutationBinding, ApplicationMutationIntent, ApplicationMutationScopeResolution,
+    ApplicationMutationBinding, ApplicationMutationIntent,
 };
 use worth_query_declaration::facade::application_program::{
     ApplicationConnectionShape, ApplicationOutputGraphShape, ApplicationProgramDefinition,
-    ApplicationProgramOutputsShape,
 };
 use worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime;
 use worth_query_execution::facade::primary_graph::{
-    WorthQueryApplicationCommitOutcome, WorthQueryApplicationCommitReceipt,
-    WorthQueryApplicationDiscoveredOutputConnection, WorthQueryPreparedRequiredOutputSource,
+    WorthQueryApplicationCommitReceipt, WorthQueryApplicationDiscoveredOutputConnection,
+    WorthQueryPreparedRequiredOutputSource,
 };
 use worth_query_installation::facade::ApplicationSchema;
 
-use super::{
-    WorthQueryApplicationMutationOutcome, WorthQueryApplicationMutationRequestWithIdempotency,
-    WorthQueryMutationSourcePrepared, WorthQueryPerformedMutationExecutionDenial,
-    WorthQueryRequiredOutputPreparationDenial,
-};
+use super::{WorthQueryApplicationMutationOutcome, WorthQueryRequiredOutputPreparationDenial};
 
 mod outputs;
 mod recovery;
 mod resolve;
+mod selected;
 mod start;
 pub use outputs::{
     WorthQueryDiscoveredProgramOutputHandle, WorthQueryDiscoveredProgramOutputProgress,
@@ -39,6 +35,8 @@ type RootConnection<Schema, Root> =
 type Discovery<Schema, Root> =
     <RootConnection<Schema, Root> as WorthQueryApplicationDiscoveredOutputConnection<Schema>>::Discovery;
 
+/// What a mutation with discovered program outputs produced: performed, performed but its
+/// required outputs could not start, or not performed.
 pub enum WorthQueryApplicationDiscoveredMutationOutcome<'application, Schema, Intent, Program, Root>
 where
     Schema: ApplicationSchema,
@@ -71,6 +69,8 @@ where
     ),
 }
 
+/// A landed mutation whose program outputs are discovered from its result.
+/// `start_required_outputs` begins settling them.
 pub struct WorthQueryPerformedDiscoveredApplicationMutation<
     'application,
     Schema,
@@ -112,6 +112,8 @@ where
     }
 }
 
+/// A landed mutation with its discovered program outputs started. `required_output_mut`
+/// drives them.
 pub struct WorthQueryStartedDiscoveredOutputs<'application, Schema, Intent, Program, Root>
 where
     Schema: ApplicationSchema,
@@ -153,115 +155,45 @@ where
     }
 }
 
-impl<'application, 'principal, 'scope, 'key, Schema, Intent>
-    WorthQueryApplicationMutationRequestWithIdempotency<
-        'application,
-        'principal,
-        'scope,
-        'key,
-        Schema,
-        Intent,
-        WorthQueryMutationSourcePrepared,
-    >
+/// Settles a discovered source's commit into its public outcome.
+fn discovered_outcome<'application, Schema, Intent, Program, Root>(
+    application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+    discovery: Discovery<Schema, Root>,
+    outcome: WorthQueryApplicationMutationOutcome<
+        <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
+        MutationResult<Schema, Intent>,
+    >,
+    source: super::performed_source::PerformedSourceCommit,
+) -> WorthQueryApplicationDiscoveredMutationOutcome<'application, Schema, Intent, Program, Root>
 where
-    Schema: ApplicationSchema + 'static,
-    Intent: ApplicationMutationIntent<Schema> + Clone + Send + Sync,
-    <Intent::Binding as ApplicationMutationBinding<Schema>>::Input: Clone + Send + Sync,
-    <Intent::Binding as ApplicationMutationBinding<Schema>>::ScopeBinding:
-        ApplicationMutationScopeResolution<
-            Schema,
-            <Intent::Binding as ApplicationMutationBinding<Schema>>::PrincipalIdentity,
-        >,
+    Schema: ApplicationSchema,
+    Intent: ApplicationMutationIntent<Schema>,
+    Program: ApplicationProgramDefinition<Schema>,
+    Root: ApplicationOutputGraphShape<Schema>
+        + worth_query_declaration::facade::application_program::ApplicationDiscoveredOutputRoot,
+    RootConnection<Schema, Root>:
+        WorthQueryApplicationDiscoveredOutputConnection<Schema, Source = Intent::Binding>,
 {
-    pub fn execute_performed_discovered<Program, Root>(
-        self,
-        application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
-    ) -> Result<
-        WorthQueryApplicationDiscoveredMutationOutcome<'application, Schema, Intent, Program, Root>,
-        WorthQueryPerformedMutationExecutionDenial,
-    >
-    where
-        Program: ApplicationProgramDefinition<Schema>,
-        Program::Outputs: ApplicationProgramOutputsShape<Schema>,
-        Root: ApplicationOutputGraphShape<Schema>
-            + worth_query_declaration::facade::application_program::ApplicationDiscoveredOutputRoot,
-        RootConnection<Schema, Root>:
-            WorthQueryApplicationDiscoveredOutputConnection<Schema, Source = Intent::Binding>,
-    {
-        if !std::ptr::eq(application.runtime(), self.request.application)
-            || application.installed_program().schema_binding()
-                != &self
-                    .request
-                    .application
-                    .installed_schema()
-                    .binding_identity()
-        {
-            return Err(WorthQueryPerformedMutationExecutionDenial::ForeignProgram);
-        }
-        if !application.contains_output_root::<Root>() {
-            return Err(WorthQueryPerformedMutationExecutionDenial::UndeclaredOutputRoot);
-        }
-        let discovery =
-            RootConnection::<Schema, Root>::discovery_from_source(self.request.intent.input())
-                .map_err(WorthQueryPerformedMutationExecutionDenial::Connection)?;
-        let retained_discovery = discovery.clone();
-        let preparation_failure = std::cell::RefCell::new(None);
-        let prepared_source = std::cell::RefCell::new(None);
-        let outcome = self
-            .execute_with_commit(true, |_, program, idempotency| {
-                match application
-                    .compare_and_commit_discovered_output_source::<Root, Intent::Binding>(
-                        &worth_query_execution::publication_boundary::program_publication_access(),
-                        program,
-                        idempotency,
-                        retained_discovery,
-                    ) {
-                    Ok((outcome, prepared)) => {
-                        if let Some(prepared) = prepared {
-                            prepared_source.replace(Some(prepared));
-                        }
-                        outcome
-                    }
-                    Err(failure) => {
-                        let receipt = failure.receipt().clone();
-                        preparation_failure.replace(Some(failure));
-                        WorthQueryApplicationCommitOutcome::Committed(receipt)
-                    }
-                }
-            })
-            .map_err(WorthQueryPerformedMutationExecutionDenial::Mutation)?;
-        let WorthQueryApplicationMutationOutcome::Committed { receipt, result } = outcome else {
-            return Ok(WorthQueryApplicationDiscoveredMutationOutcome::NotPerformed(outcome));
-        };
-        if let Some(failure) = preparation_failure.into_inner() {
-            return Ok(
-                WorthQueryApplicationDiscoveredMutationOutcome::RequiredOutputDenied {
+    let WorthQueryApplicationMutationOutcome::Committed { receipt, result } = outcome else {
+        return WorthQueryApplicationDiscoveredMutationOutcome::NotPerformed(outcome);
+    };
+    match source.into_custody() {
+        Err(denial) => WorthQueryApplicationDiscoveredMutationOutcome::RequiredOutputDenied {
+            receipt,
+            result,
+            denial,
+        },
+        Ok((prepared, retained_source)) => {
+            WorthQueryApplicationDiscoveredMutationOutcome::Performed(
+                WorthQueryPerformedDiscoveredApplicationMutation {
                     receipt,
                     result,
-                    denial: WorthQueryRequiredOutputPreparationDenial::DemandExecution(
-                        failure.denial().clone(),
-                    ),
+                    application,
+                    discovery,
+                    prepared,
+                    retained_source,
                 },
-            );
+            )
         }
-        let Some((prepared, retained_source)) = prepared_source.into_inner() else {
-            return Ok(
-                WorthQueryApplicationDiscoveredMutationOutcome::RequiredOutputDenied {
-                    receipt,
-                    result,
-                    denial: WorthQueryRequiredOutputPreparationDenial::MissingPerformedDelivery,
-                },
-            );
-        };
-        Ok(WorthQueryApplicationDiscoveredMutationOutcome::Performed(
-            WorthQueryPerformedDiscoveredApplicationMutation {
-                receipt,
-                result,
-                application,
-                discovery,
-                prepared,
-                retained_source,
-            },
-        ))
     }
 }

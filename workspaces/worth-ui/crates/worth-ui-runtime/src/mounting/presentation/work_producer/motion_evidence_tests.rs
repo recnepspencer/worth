@@ -130,7 +130,7 @@ fn exact_command_slots_share_only_unchanged_overrides_and_accept_atomically() {
         world.first_instance,
         UiMountedPresentationCommandBundle::from_commands(&commands),
     );
-    reconstructed.inherit_reconstruction_motion(&current);
+    reconstructed.inherit_reconstruction_motion(&current, &Default::default());
     assert_eq!(
         reconstructed.reconstruction_motion_overrides().len(),
         1,

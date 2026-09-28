@@ -5,21 +5,21 @@ use worth_query_host::facade::application_entry::{
 };
 use worth_query_host::facade::application_installation::WorthQueryProgramOwner;
 
-use crate::bounded_dimension_model::dimension_entry::{
-    PartDimensionWritten, PartDimensionWrittenBinding, SetPartDimensionDenial,
-    SetPartDimensionDenialBinding, PART_IDENTITY,
+use crate::document_retention_model::host::publish_on_first_program;
+use crate::document_retention_model::operator_identity::{authenticate_operator, request_scope};
+use crate::document_retention_model::programs::RetentionProgramP1;
+use crate::document_retention_model::retention_entry::{
+    DocumentRetentionWritten, DocumentRetentionWrittenBinding, SetRetentionDenial,
+    SetRetentionDenialBinding, DOCUMENT_IDENTITY,
 };
-use crate::bounded_dimension_model::host::publish_on_first_program;
-use crate::bounded_dimension_model::operator_identity::{authenticate_operator, request_scope};
-use crate::bounded_dimension_model::programs::DimensionProgramP1;
-use crate::bounded_dimension_model::schema::SetPartDimensionInput;
+use crate::document_retention_model::schema::SetRetentionInput;
 
 type UnownedMigrationScope =
     worth_query_host::facade::declaration::application_operation::ApplicationMutationFieldScope<
-        crate::bounded_dimension_model::schema::BoundedDimensionSchema,
-        crate::bounded_dimension_model::schema::Part,
-        crate::bounded_dimension_model::schema::PartFacts,
-        crate::bounded_dimension_model::schema::PartIdentityField,
+        crate::document_retention_model::schema::DocumentRetentionSchema,
+        crate::document_retention_model::schema::Document,
+        crate::document_retention_model::schema::DocumentFacts,
+        crate::document_retention_model::schema::DocumentIdentityField,
         String,
         worth_query_host::facade::declaration::application_schema::ReadOnly,
         worth_query_host::facade::declaration::application_schema::NoApplicationUnit,
@@ -29,27 +29,27 @@ struct UnownedMigrationBinding;
 
 impl
     worth_query_host::facade::declaration::application_operation::ApplicationMutationBinding<
-        crate::bounded_dimension_model::schema::BoundedDimensionSchema,
+        crate::document_retention_model::schema::DocumentRetentionSchema,
     > for UnownedMigrationBinding
 {
-    type Input = SetPartDimensionInput;
-    type InputBinding = crate::bounded_dimension_model::schema::SetPartDimensionInputBinding;
-    type Result = PartDimensionWritten;
-    type ResultBinding = PartDimensionWrittenBinding;
+    type Input = SetRetentionInput;
+    type InputBinding = crate::document_retention_model::schema::SetRetentionInputBinding;
+    type Result = DocumentRetentionWritten;
+    type ResultBinding = DocumentRetentionWrittenBinding;
     type IdempotencyKey = u64;
-    type Operation = crate::bounded_dimension_model::schema::SetPartDimension;
+    type Operation = crate::document_retention_model::schema::SetRetention;
     type Decision = worth_query_host::facade::primary_graph::WorthQueryInvariantMutationTarget<
-        crate::bounded_dimension_model::schema::BoundedDimensionSchema,
-        crate::bounded_dimension_model::schema::Part,
+        crate::document_retention_model::schema::DocumentRetentionSchema,
+        crate::document_retention_model::schema::Document,
     >;
-    type Denial = SetPartDimensionDenial;
-    type DenialBinding = SetPartDimensionDenialBinding;
+    type Denial = SetRetentionDenial;
+    type DenialBinding = SetRetentionDenialBinding;
     type Output =
         worth_query_host::facade::declaration::application_operation::NoApplicationMutationOutputs;
     type ScopeBinding = UnownedMigrationScope;
-    type PrincipalBinding = crate::bounded_dimension_model::schema::PartPrincipalBinding;
-    type Mapping = crate::bounded_dimension_model::schema::ExternalMapping;
-    type Principal = crate::bounded_dimension_model::schema::Principal;
+    type PrincipalBinding = crate::document_retention_model::schema::DocumentPrincipalBinding;
+    type Mapping = crate::document_retention_model::schema::ExternalMapping;
+    type Principal = crate::document_retention_model::schema::Principal;
     type PrincipalIdentity = u64;
     type PrincipalIdentityBinding =
         worth_query_host::facade::declaration::application_schema::U64ApplicationValueBinding;
@@ -72,57 +72,57 @@ impl
         identity
     }
 
-    fn input_identity(input: &SetPartDimensionInput) -> [u8; 32] {
+    fn input_identity(input: &SetRetentionInput) -> [u8; 32] {
         let mut identity = [0; 32];
-        identity[..8].copy_from_slice(&input.dimension.to_le_bytes());
+        identity[..8].copy_from_slice(&input.retention_days.to_le_bytes());
         identity
     }
 
     fn scope_field(
     ) -> worth_query_host::facade::declaration::application_schema::ApplicationFieldRef<
-        crate::bounded_dimension_model::schema::BoundedDimensionSchema,
-        crate::bounded_dimension_model::schema::Part,
-        crate::bounded_dimension_model::schema::PartFacts,
-        crate::bounded_dimension_model::schema::PartIdentityField,
+        crate::document_retention_model::schema::DocumentRetentionSchema,
+        crate::document_retention_model::schema::Document,
+        crate::document_retention_model::schema::DocumentFacts,
+        crate::document_retention_model::schema::DocumentIdentityField,
         String,
         worth_query_host::facade::declaration::application_schema::ReadOnly,
         worth_query_host::facade::declaration::application_schema::EqualityPredicate,
         worth_query_host::facade::declaration::application_schema::NoApplicationUnit,
     > {
-        crate::bounded_dimension_model::schema::PartIdentityField::reference()
+        crate::document_retention_model::schema::DocumentIdentityField::reference()
     }
 
     fn principal_binding() -> worth_query_host::facade::declaration::application_schema::ApplicationPrincipalBindingRef<
-        crate::bounded_dimension_model::schema::BoundedDimensionSchema,
-        crate::bounded_dimension_model::schema::PartPrincipalBinding,
-        crate::bounded_dimension_model::schema::ExternalMapping,
-        crate::bounded_dimension_model::schema::Principal,
+        crate::document_retention_model::schema::DocumentRetentionSchema,
+        crate::document_retention_model::schema::DocumentPrincipalBinding,
+        crate::document_retention_model::schema::ExternalMapping,
+        crate::document_retention_model::schema::Principal,
         u64,
         worth_query_host::facade::declaration::application_schema::U64ApplicationValueBinding,
     >{
-        crate::bounded_dimension_model::schema::PartPrincipalBinding::reference()
+        crate::document_retention_model::schema::DocumentPrincipalBinding::reference()
     }
 }
 
 #[derive(Clone)]
 struct UnownedMigrationIntent {
-    input: SetPartDimensionInput,
+    input: SetRetentionInput,
 }
 
 impl
     worth_query_host::facade::declaration::application_operation::ApplicationMutationIntent<
-        crate::bounded_dimension_model::schema::BoundedDimensionSchema,
+        crate::document_retention_model::schema::DocumentRetentionSchema,
     > for UnownedMigrationIntent
 {
     type Binding = UnownedMigrationBinding;
 
-    fn input(&self) -> &SetPartDimensionInput {
+    fn input(&self) -> &SetRetentionInput {
         &self.input
     }
 
     fn scope_binding(&self) -> UnownedMigrationScope {
         UnownedMigrationScope::new(
-            crate::bounded_dimension_model::schema::PartIdentityField::reference(),
+            crate::document_retention_model::schema::DocumentIdentityField::reference(),
             self.input.identity.clone(),
         )
     }
@@ -132,11 +132,10 @@ impl
 fn target_program_must_own_the_exact_migration_binding() {
     let host = publish_on_first_program();
     let branch = host.current_world();
-    let target = host
-        .supported_program::<DimensionProgramP1>()
+    let target = *host
+        .supported_program::<RetentionProgramP1>()
         .expect("P1 is rostered")
-        .owned_revision()
-        .clone();
+        .owned_revision();
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let denial = host
@@ -144,9 +143,9 @@ fn target_program_must_own_the_exact_migration_binding() {
         .request(&principal, &scope)
         .on_branch(branch)
         .mutate(UnownedMigrationIntent {
-            input: SetPartDimensionInput {
-                identity: PART_IDENTITY.to_owned(),
-                dimension: 15,
+            input: SetRetentionInput {
+                identity: DOCUMENT_IDENTITY.to_owned(),
+                retention_days: 15,
             },
         })
         .without_source()

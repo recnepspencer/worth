@@ -1,102 +1,106 @@
+use std::collections::{HashMap, HashSet};
+
 use crate::native::presentation::text::mechanic_contains_run;
 use worth_ui_host_contract::{
-    UiGlyphRunView, UiMountedPaintCommand, UiMountedPaintCommandChange,
-    UiMountedPresentationWorkView, UiMountedSemanticTextMechanic, UiMountedTextRasterWork,
+    UiGlyphRasterKey, UiMountedPaintCommand, UiMountedPaintCommandChange,
+    UiMountedPaintCommandIdentity, UiMountedPresentationWorkView, UiMountedSemanticTextMechanic,
+    UiMountedTextRasterWork, UiQualifiedTextLayoutIdentity, UiTextOriginalRange,
 };
 
+/// Every run must answer a demand and a text command, and every demand a run;
+/// each side is indexed once so admission stays linear in the frame's text.
 pub(in crate::native::mechanics_adapter) fn admits(
     view: &worth_ui_host_contract::UiMountedFrameConsumptionView<'_>,
     raster: &UiMountedTextRasterWork<'_>,
 ) -> bool {
-    let shape = demand_shape_admits(
-        raster.glyph_runs().len(),
-        raster
-            .demands()
-            .iter()
-            .map(|batch| batch.records().len())
-            .sum(),
-    );
-    let runs = raster
-        .glyph_runs()
+    let demands = raster
+        .demands()
         .iter()
-        .all(|run| admits_run(view, raster, *run));
-    let demands = raster.demands().iter().all(|batch| {
-        batch.records().iter().all(|record| {
-            raster
-                .glyph_runs()
-                .iter()
-                .any(|run| run.raster_key() == record.key())
+        .flat_map(|batch| {
+            batch.records().iter().map(move |record| {
+                (
+                    batch.layout_identity(),
+                    record.key(),
+                    record.attribution().original_range(),
+                )
+            })
+        })
+        .collect::<HashSet<DemandedRun>>();
+    let demand_records = raster
+        .demands()
+        .iter()
+        .map(|batch| batch.records().len())
+        .sum();
+    if !demand_shape_admits(raster.glyph_runs().len(), demand_records) {
+        return false;
+    }
+    let mechanics = semantic_mechanics(view.presentation_work());
+    let runs_admitted = raster.glyph_runs().iter().all(|run| {
+        demands.contains(&(
+            run.layout_identity(),
+            run.raster_key(),
+            run.original_range(),
+        )) && mechanics.get(&run.mechanic()).is_some_and(|mechanic| {
+            view.qualified_text_layout(mechanic)
+                .is_some_and(|layout| mechanic_contains_run(mechanic, layout, *run))
         })
     });
-    shape && runs && demands
+    let run_keys = raster
+        .glyph_runs()
+        .iter()
+        .map(|run| run.raster_key())
+        .collect::<HashSet<_>>();
+    runs_admitted && demands.iter().all(|(_, key, _)| run_keys.contains(key))
 }
+
+type DemandedRun = (
+    UiQualifiedTextLayoutIdentity,
+    UiGlyphRasterKey,
+    UiTextOriginalRange,
+);
 
 fn demand_shape_admits(glyph_run_count: usize, demand_record_count: usize) -> bool {
     (glyph_run_count == 0) == (demand_record_count == 0)
 }
 
-fn admits_run(
-    view: &worth_ui_host_contract::UiMountedFrameConsumptionView<'_>,
-    raster: &UiMountedTextRasterWork<'_>,
-    run: UiGlyphRunView,
-) -> bool {
-    demand_contains_run(raster, run)
-        && semantic_mechanic(view.presentation_work(), run).is_some_and(|mechanic| {
-            view.qualified_text_layout(mechanic)
-                .is_some_and(|layout| mechanic_contains_run(mechanic, layout, run))
-        })
-}
-
-fn demand_contains_run(raster: &UiMountedTextRasterWork<'_>, run: UiGlyphRunView) -> bool {
-    raster.demands().iter().any(|batch| {
-        batch.layout_identity() == run.layout_identity()
-            && batch.records().iter().any(|record| {
-                record.key() == run.raster_key()
-                    && record.attribution().original_range() == run.original_range()
-            })
-    })
-}
-
-fn semantic_mechanic(
+/// The first text mechanic each command identity names in this work.
+fn semantic_mechanics(
     presentation: UiMountedPresentationWorkView<'_>,
-    run: UiGlyphRunView,
-) -> Option<&UiMountedSemanticTextMechanic> {
-    match presentation {
-        UiMountedPresentationWorkView::Initial(initial) => initial
-            .commands()
-            .iter()
-            .find_map(|command| matching_mechanic(command, run)),
-        UiMountedPresentationWorkView::Reconstruction(reconstruction) => reconstruction
-            .commands()
-            .iter()
-            .find_map(|command| matching_mechanic(command, run)),
+) -> HashMap<UiMountedPaintCommandIdentity, &UiMountedSemanticTextMechanic> {
+    let commands: Box<dyn Iterator<Item = &UiMountedPaintCommand>> = match presentation {
+        UiMountedPresentationWorkView::Initial(initial) => Box::new(initial.commands().iter()),
+        UiMountedPresentationWorkView::Reconstruction(reconstruction) => {
+            Box::new(reconstruction.commands().iter())
+        }
         UiMountedPresentationWorkView::Delta(delta) => {
-            delta.changes().iter().find_map(|change| match change {
+            Box::new(delta.changes().iter().filter_map(|change| match change {
                 UiMountedPaintCommandChange::Insert(command)
                 | UiMountedPaintCommandChange::Replace {
                     successor: command, ..
-                } => matching_mechanic(command, run),
+                } => Some(command),
                 UiMountedPaintCommandChange::Remove(_) => None,
-            })
+            }))
         }
         UiMountedPresentationWorkView::Sample(_) | UiMountedPresentationWorkView::Unchanged(_) => {
-            None
+            Box::new(std::iter::empty())
         }
+    };
+    let mut mechanics = HashMap::new();
+    for (identity, mechanic) in commands.filter_map(text_mechanic) {
+        mechanics.entry(identity).or_insert(mechanic);
     }
+    mechanics
 }
 
-fn matching_mechanic(
+fn text_mechanic(
     command: &UiMountedPaintCommand,
-    run: UiGlyphRunView,
-) -> Option<&UiMountedSemanticTextMechanic> {
+) -> Option<(
+    UiMountedPaintCommandIdentity,
+    &UiMountedSemanticTextMechanic,
+)> {
     match command {
-        UiMountedPaintCommand::SemanticText { identity, mechanic }
-            if *identity == run.mechanic() =>
-        {
-            Some(mechanic)
-        }
-        UiMountedPaintCommand::PortalOverlay { .. }
-        | UiMountedPaintCommand::SemanticText { .. } => None,
+        UiMountedPaintCommand::SemanticText { identity, mechanic } => Some((*identity, mechanic)),
+        UiMountedPaintCommand::PortalOverlay { .. } => None,
     }
 }
 

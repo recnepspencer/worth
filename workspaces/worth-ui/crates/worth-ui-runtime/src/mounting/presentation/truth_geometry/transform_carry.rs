@@ -9,7 +9,8 @@ use super::logical_rect::UiLogicalRect;
 use worth_ui_host_contract::{UiMountedCanonicalBox, UiMountedPresentationTransform};
 
 /// Where `outer` shows `bounds`, drawn in the space `outer` maps. `None`
-/// when `bounds` is drawn in another space.
+/// when `bounds` is drawn in another space, or `outer` carries it beyond
+/// finite geometry.
 pub(in crate::mounting::presentation) fn carried_box(
     bounds: UiMountedCanonicalBox,
     outer: UiMountedPresentationTransform,
@@ -22,11 +23,9 @@ pub(in crate::mounting::presentation) fn carried_box(
         return Some(bounds);
     }
     // A transform's source has area, so the map it makes is defined.
-    Some(
-        UiLogicalRect::from_box(bounds)
-            .mapped(UiLogicalRect::from_box(from), UiLogicalRect::from_box(to))
-            .canonical_box(),
-    )
+    UiLogicalRect::from_box(bounds)
+        .mapped(UiLogicalRect::from_box(from), UiLogicalRect::from_box(to))
+        .map(UiLogicalRect::canonical_box)
 }
 
 /// `inner` and then `outer`: `outer` moves where `inner` puts its source.

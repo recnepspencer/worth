@@ -193,9 +193,16 @@ pub(super) fn observe_capability_policy(
         decision: WorthQueryAuthorizationDecisionFact::from_capability_observation(
             WorthQueryAuthorizationDecisionPermit::new(),
             session_identity,
+            relational,
             evidence,
             bridge_evidence,
         )
+        .map_err(|()| {
+            WorthQueryOperationAuthorizationDenial::new(
+                WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
+                installed.contract().name(),
+            )
+        })?
         .with_preparatory_relational_work(preparatory_relational_work),
         grant,
         capability_authority_identity: std::sync::Arc::clone(

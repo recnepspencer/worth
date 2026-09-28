@@ -117,13 +117,13 @@ use worth_foundational::{
     FoundationalSelectedAspectRequestEntry, FoundationalSelectedNodeLocus,
 };
 
-let gear = FoundationalSelectedNodeLocus::new("gear")?;
-let teeth = FoundationalSelectedAspectLocus::new("teeth")?;
-let thickness = FoundationalSelectedAspectLocus::new("thickness")?;
+let invoice = FoundationalSelectedNodeLocus::new("invoice")?;
+let amount = FoundationalSelectedAspectLocus::new("amount")?;
+let currency = FoundationalSelectedAspectLocus::new("currency")?;
 
 let scope = FoundationalMergeScope::selected_aspects([
-    FoundationalSelectedAspectRequestEntry::new(gear.clone(), teeth),
-    FoundationalSelectedAspectRequestEntry::new(gear, thickness),
+    FoundationalSelectedAspectRequestEntry::new(invoice.clone(), amount),
+    FoundationalSelectedAspectRequestEntry::new(invoice, currency),
 ])?;
 
 assert_eq!(scope.requested_locus_count(), 2);
@@ -147,7 +147,7 @@ use worth_foundational::{
     FoundationalSelectedScopeNoOpEvidence, FoundationalSkippedOutOfScopeEvidence,
 };
 
-let scope = selected_gear_scope()?;
+let scope = selected_invoice_scope()?;
 let skipped_digest = CanonicalDigestId::new([8; 32]);
 
 let admitted_scope = FoundationalAdmittedMergeScopeEvidence::new(
@@ -156,9 +156,9 @@ let admitted_scope = FoundationalAdmittedMergeScopeEvidence::new(
     scope,
     FoundationalScopeAdmissionBasis::IdentityCorresponded,
     [],
-    [selected_aspect("gear", "teeth")?],
+    [selected_aspect("invoice", "amount")?],
     [FoundationalSelectedScopeNoOpEvidence::new(
-        FoundationalSelectedScopeLocus::Aspect(selected_aspect("gear", "thickness")?),
+        FoundationalSelectedScopeLocus::Aspect(selected_aspect("invoice", "currency")?),
         FoundationalSelectedScopeNoOpCause::UnchangedSourceTruth,
     )],
     FoundationalSkippedOutOfScopeEvidence::new(3, Some(skipped_digest)),

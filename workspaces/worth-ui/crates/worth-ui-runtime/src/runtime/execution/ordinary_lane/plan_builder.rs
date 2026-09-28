@@ -112,7 +112,16 @@ fn missing_support_reason(lane: WorthUiExecutionLane) -> WorthUiOrdinaryLanePlan
         WorthUiExecutionLane::StyleToken => {
             WorthUiOrdinaryLanePlanDenialReason::LaneAdmissionMissingStyleTokenSupport
         }
-        _ => WorthUiOrdinaryLanePlanDenialReason::LaneAdmissionMissingOrdinarySupport,
+        WorthUiExecutionLane::VirtualizedData
+        | WorthUiExecutionLane::CanvasSpatial
+        | WorthUiExecutionLane::RealtimeOverlayHud
+        | WorthUiExecutionLane::QueryBound
+        | WorthUiExecutionLane::DiagnosticsProjection
+        | WorthUiExecutionLane::LaneBoundary
+        | WorthUiExecutionLane::RenderResource
+        | WorthUiExecutionLane::SpecialCaseExtension => {
+            WorthUiOrdinaryLanePlanDenialReason::LaneAdmissionMissingOrdinarySupport
+        }
     }
 }
 

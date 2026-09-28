@@ -10,7 +10,7 @@ use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkfl
 
 mod coverage;
 use coverage::observe_coverages;
-pub(in crate::domain_computation::primary_graph) use coverage::observe_workflow_proposal_coverage;
+pub(in crate::domain_computation::primary_graph) use coverage::observe_workflow_proposal_coverages;
 
 pub(in crate::domain_computation::primary_graph) fn observe_workflow_operation_input(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
@@ -118,6 +118,12 @@ pub(in crate::domain_computation::primary_graph) fn observe_workflow_operation_i
         proposal,
         usize::try_from(coverage_count)
             .map_err(|_| denial("workflow proposal coverage count exceeds this host"))?,
+        super::identity::WorkflowProposalCoverageScope::from_identities(
+            &operation,
+            &input_type,
+            input_identity,
+            source_identity,
+        ),
         &mut facts,
     )?;
     let expected = super::derive_workflow_proposal(
@@ -206,6 +212,12 @@ pub(in crate::domain_computation::primary_graph) fn observe_workflow_proposal(
         layout,
         proposal,
         expected.coverages.len(),
+        super::identity::WorkflowProposalCoverageScope::from_encoded(
+            &expected.operation,
+            &expected.input_type,
+            &expected.input_identity,
+            expected.source_identity.as_deref(),
+        ),
         &mut facts,
     )?;
     if coverages.as_slice() != expected.coverages.as_ref() {

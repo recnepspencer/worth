@@ -21,7 +21,7 @@ impl UiNativeTextTranscriptEvidence {
         let mut raster_keys = prepared
             .glyph_runs()
             .iter()
-            .map(|run| run.raster_key().canonical_evidence_bytes())
+            .map(|run| run.raster_key().canonical_evidence_bytes().to_vec())
             .collect::<Vec<_>>();
         let mut glyph_runs = prepared
             .glyph_runs()

@@ -18,7 +18,9 @@ mod terminal_outcome;
 
 pub use control_stopped::*;
 pub use counters::*;
-pub(crate) use declared_closure::WorthQueryProviderPlanDeclarations;
+pub(crate) use declared_closure::{
+    WorthQueryApplicationEffectPosture, WorthQueryProviderPlanDeclarations,
+};
 pub use denial::*;
 pub use execution_plan::*;
 pub use plan_contract::*;

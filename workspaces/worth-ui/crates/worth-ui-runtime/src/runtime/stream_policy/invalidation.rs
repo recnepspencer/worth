@@ -64,7 +64,8 @@ impl UiAllocationFrameIngressRef {
     pub(super) fn mint(epoch: crate::runtime::UiAllocationFrameEpoch, index: usize) -> Self {
         Self {
             epoch,
-            ordinal: index as u16,
+            ordinal: u16::try_from(index)
+                .expect("a frame carries at most ALLOCATION_FRAME_SOURCE_COUNT ingress"),
         }
     }
 

@@ -17,9 +17,10 @@ impl crate::facade::WorthUiActiveApplicationSession {
                 if !matches!(owner, UiScrollOwnerIdentity::Region { .. }) {
                     continue;
                 }
-                let Some((owner_instance, content, viewport)) =
-                    self.mounted.scroll_region_geometry(target, slot)
-                else {
+                let (Some((owner_instance, region)), Some(rest)) = (
+                    self.mounted.scroll_region_geometry(target, slot),
+                    self.mounted.scroll_region_rest(target, slot),
+                ) else {
                     continue;
                 };
                 let surface = owner.semantic_surface();
@@ -37,8 +38,8 @@ impl crate::facade::WorthUiActiveApplicationSession {
                         super::super::scroll_transition_preparation::scroll_motion_owner_key(owner),
                     ),
                     owner: owner_instance,
-                    content,
-                    viewport,
+                    region,
+                    rest,
                     offset,
                     scale,
                     chrome: self.admitted_scroll_chrome(owner).ok(),

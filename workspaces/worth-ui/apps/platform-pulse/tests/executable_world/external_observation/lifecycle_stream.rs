@@ -20,7 +20,6 @@ pub(crate) struct PlatformPulseLifecycleStream {
     accepted_events: usize,
     accepted_bytes: usize,
     accepted_trace: Vec<LifecycleTraceEntry>,
-    accepted_envelopes: Vec<PlatformPulseLifecycleObservationEnvelope>,
     terminal_observed: bool,
 }
 
@@ -56,7 +55,6 @@ pub(crate) enum PlatformPulseLifecycleStreamFailure {
     TrailingAfterTerminal,
     MissingEndOfStream,
     ReaderPanicked,
-    UnexpectedDuringQuiescence,
 }
 
 impl fmt::Display for PlatformPulseLifecycleStreamFailure {
@@ -84,9 +82,6 @@ impl fmt::Display for PlatformPulseLifecycleStreamFailure {
                 formatter.write_str("lifecycle stdout ended before a terminal observation")
             }
             Self::ReaderPanicked => formatter.write_str("lifecycle reader thread panicked"),
-            Self::UnexpectedDuringQuiescence => {
-                formatter.write_str("lifecycle event appeared during the observed idle interval")
-            }
         }
     }
 }
@@ -144,7 +139,6 @@ impl PlatformPulseLifecycleStream {
             accepted_events: 0,
             accepted_bytes: 0,
             accepted_trace: Vec::new(),
-            accepted_envelopes: Vec::new(),
             terminal_observed: false,
         }
     }
@@ -209,36 +203,6 @@ impl PlatformPulseLifecycleStream {
         }
     }
 
-    pub(crate) fn observe_quiescent_until(
-        &mut self,
-        deadline: Instant,
-    ) -> Result<LifecycleStreamMeasurement, PlatformPulseLifecycleStreamFailure> {
-        let remaining = deadline
-            .checked_duration_since(Instant::now())
-            .ok_or(PlatformPulseLifecycleStreamFailure::Deadline)?;
-        match self.receiver.recv_timeout(remaining) {
-            Err(RecvTimeoutError::Timeout) => Ok(self.measurement()),
-            Err(RecvTimeoutError::Disconnected) => {
-                Err(PlatformPulseLifecycleStreamFailure::ReaderDisconnected)
-            }
-            Ok(LifecycleStreamItem::Envelope {
-                envelope,
-                encoded_bytes,
-            }) => {
-                self.accept(&envelope, encoded_bytes)?;
-                Err(PlatformPulseLifecycleStreamFailure::UnexpectedDuringQuiescence)
-            }
-            Ok(LifecycleStreamItem::Failure(failure)) => Err(failure),
-            Ok(LifecycleStreamItem::End) => {
-                Err(PlatformPulseLifecycleStreamFailure::MissingEndOfStream)
-            }
-        }
-    }
-
-    pub(crate) fn accepted_envelopes(&self) -> &[PlatformPulseLifecycleObservationEnvelope] {
-        &self.accepted_envelopes
-    }
-
     fn accept(
         &mut self,
         envelope: &PlatformPulseLifecycleObservationEnvelope,
@@ -275,7 +239,6 @@ impl PlatformPulseLifecycleStream {
         self.accepted_bytes = next_bytes;
         self.accepted_trace
             .push(LifecycleTraceEntry::from_envelope(envelope));
-        self.accepted_envelopes.push(envelope.clone());
         Ok(())
     }
 

@@ -56,12 +56,12 @@ TURNS = {
 }
 
 CONTEXT_FILES = [
-    "_docs/coding_guidelines/MENTALITY.md",
-    "_docs/coding_guidelines/arch_laws.md",
-    "_docs/coding_guidelines/composition_laws.md",
-    "_docs/coding_guidelines/domain_structure_laws.md",
-    "_docs/coding_guidelines/perf_laws.md",
-    "_docs/coding_guidelines/dx_laws.md",
+    "docs/coding-guidelines/MENTALITY.md",
+    "docs/coding-guidelines/arch_laws.md",
+    "docs/coding-guidelines/composition_laws.md",
+    "docs/coding-guidelines/domain_structure_laws.md",
+    "docs/coding-guidelines/perf_laws.md",
+    "docs/coding-guidelines/dx_laws.md",
     "cad/docs/worthy-foundations/ROAD.md",
     "cad/docs/worthy-foundations/ARCHITECTURE.md",
     "cad/docs/worthy-foundations/GLOSSARY.md",
@@ -86,7 +86,7 @@ PHASES = [
             "a committed legacy-references snapshot rejects any new forge_/forge- reference under governed surfaces and may only shrink",
             GREEN,
         ],
-        "qa_focus": "No redesign beyond the named cleanups; the rename ratchet governs only constitutional surfaces, not _docs history or non-governed legacy code.",
+        "qa_focus": "No redesign beyond the named cleanups; the rename ratchet governs only constitutional surfaces, not plans history or non-governed legacy code.",
     },
     {
         "key": "query-audience-facade-topology",

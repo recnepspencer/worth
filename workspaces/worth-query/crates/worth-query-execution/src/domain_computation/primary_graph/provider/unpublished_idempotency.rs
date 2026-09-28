@@ -129,6 +129,20 @@ impl WorthQueryUnpublishedIdempotencyStore {
         })
     }
 
+    fn inspect_exact(
+        &self,
+        product: &WorthQueryProductIdempotencyAffinity,
+        binding: WorthQueryApplicationIdempotencyBinding,
+    ) -> Option<(
+        WorthQueryApplicationIdempotencyBinding,
+        ProductUnpublishedRecoveryHandle,
+    )> {
+        let recorded = self
+            .by_key
+            .get(&(product.clone(), *binding.key_identity()))?;
+        Some((recorded.binding, recorded.recovery_handle.clone()))
+    }
+
     #[cfg(test)]
     fn retained_count(&self) -> usize {
         self.by_key.len()
@@ -185,6 +199,20 @@ impl super::WorthQueryPrimaryGraphProvider {
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .resolve(product, binding)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn inspect_unpublished_application_idempotency(
+        &self,
+        product: &WorthQueryProductIdempotencyAffinity,
+        binding: WorthQueryApplicationIdempotencyBinding,
+    ) -> Option<(
+        WorthQueryApplicationIdempotencyBinding,
+        ProductUnpublishedRecoveryHandle,
+    )> {
+        self.unpublished_idempotency
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .inspect_exact(product, binding)
     }
 
     #[cfg(test)]

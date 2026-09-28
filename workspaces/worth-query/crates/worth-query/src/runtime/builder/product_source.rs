@@ -5,8 +5,7 @@ impl WorthQueryRuntimeBuilder {
         mut self,
         runtime: worth_relational::facade::runtime::RelationalRuntime,
         graph_role: impl Into<std::sync::Arc<str>>,
-    ) -> Result<Self, worth_relational::facade::bridge::RelationalBridgeSourceConfigurationError>
-    {
+    ) -> Result<Self, worth_runtime_bridge::facade::RelationalBridgeSourceConfigurationError> {
         let owner =
             worth_query_execution::facade::integration::WorthQueryRelationalSourceOwner::new(
                 runtime, graph_role,

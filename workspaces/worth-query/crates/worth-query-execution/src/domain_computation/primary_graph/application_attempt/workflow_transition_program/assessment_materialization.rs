@@ -24,55 +24,99 @@ where
         mut facts: Vec<super::super::WorthQueryApplicationObservedFact>,
         assessment: crate::domain_computation::primary_graph::workflow::instance::SelectedWorkflowAssessment,
         progress: &crate::domain_computation::primary_graph::workflow::instance::WorkflowInstanceProgress,
+        evidence_allowance: u64,
+        allowance: crate::domain_computation::primary_graph::application_attempt::WorkflowStepAllowance,
     ) -> Result<
         PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
         WorthQueryApplicationAttemptDenial,
     > {
-        let program_revision = compiled.program_revision().clone();
-        let mut sources = compiled.assessment_subject_sources(selected.node());
-        let source = sources.next().ok_or_else(|| {
+        let node = compiled.node(selected.node()).ok_or_else(|| {
             denial(
                 WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,
-                selected.node_path(),
+                "assessment node is absent from compiled definition",
             )
         })?;
-        if sources.next().is_some() {
+        if !matches!(
+            node.kind(),
+            crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowNodeKind::Assessment {
+                subject,
+                ..
+            } if subject == &assessment.subject
+        ) {
             return Err(denial(
                 WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,
-                selected.node_path(),
+                "selected assessment subject differs from authored requirement",
             ));
         }
-        let source_transition = progress.latest_transition(source.entity()).ok_or_else(|| {
-            denial(
-                WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,
-                selected.node_path(),
-            )
-        })?;
-        let proposal_fact_budget = self
+        let remaining = self
             .admission
             .allowed_graph_contract()
             .decision_fact_budget()
             .saturating_sub(self.facts.len().saturating_add(facts.len()));
-        let (proposal_entity, proposal_identity, proposal_facts) = self.lease.handle().with_runtime(|runtime| {
-            super::super::workflow_instance_observation::observe_retained_workflow_proposal_identity(
+        let subject = super::assessment_coverage::observe_subject(
+            compiled,
+            layout,
+            progress,
+            node,
+            self.admission.scope_entity_id(),
+            self.lease.handle(),
+            self.lease.snapshot(),
+            remaining,
+        )?;
+        let remaining = self
+            .admission
+            .allowed_graph_contract()
+            .decision_fact_budget()
+            .saturating_sub(
+                self.facts
+                    .len()
+                    .saturating_add(facts.len())
+                    .saturating_add(subject.facts.len()),
+            );
+        let applicability = self.lease.handle().with_runtime(|runtime| {
+            super::assessment_applicability::observe(
+                node,
+                &self.lease.layout,
                 runtime,
                 self.lease.snapshot(),
-                layout,
-                source_transition,
-                proposal_fact_budget,
+                subject.resource,
+                subject.related,
+                remaining,
             )
         })?;
-        facts.extend(proposal_facts);
-        let (coverage, coverage_facts) = self.lease.handle().with_runtime(|runtime| {
-            crate::domain_computation::primary_graph::workflow::proposal::observe_workflow_proposal_coverage(
-                runtime,
-                self.lease.snapshot(),
-                layout,
-                proposal_entity,
-                &assessment.subject,
-            )
-        })?;
-        facts.extend(coverage_facts);
+        let applicability_dependencies = applicability
+            .facts
+            .iter()
+            .filter(|fact| {
+                matches!(
+                    fact,
+                    super::super::WorthQueryApplicationObservedFact::SourceAdjacencyRevision { .. }
+                )
+            })
+            .cloned()
+            .collect();
+        facts.extend(subject.facts);
+        facts.extend(applicability.facts);
+        if self.facts.len().saturating_add(facts.len())
+            > self
+                .admission
+                .allowed_graph_contract()
+                .decision_fact_budget()
+        {
+            return Err(denial(
+                WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
+                self.admission.operation(),
+            ));
+        }
+        if !applicability.applicable {
+            return Err(denial(
+                WorthQueryApplicationAttemptDenialKind::WorkflowTransitionNodeUnsupported,
+                "assessment requirement is not currently applicable",
+            ));
+        }
+        let program_revision = *compiled.program_revision();
+        let coverage = subject.coverage;
+        let proposal_identity = subject.proposal_identity;
         if let Some(evidence_locator) = progress.latest_assessment_evidence(selected.node()) {
             let maximum_facts = self
                 .admission
@@ -89,52 +133,42 @@ where
                 )
             })?;
             facts.append(&mut retained_facts);
-            if evidence.query != assessment.query
-                || evidence.parameter_type != assessment.parameter_type
-                || evidence.result_type != assessment.result_type
-                || evidence.binding != assessment.binding
-            {
-                return Err(denial(
-                    WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,
-                    "retained assessment evidence contract differs from its authored requirement",
-                ));
-            }
-            if evidence.coverage_identity == coverage.identity {
-                let maximum_facts = self
-                    .admission
-                    .allowed_graph_contract()
-                    .decision_fact_budget()
-                    .saturating_sub(self.facts.len().saturating_add(facts.len()));
-                let mut evidence_facts = Vec::new();
-                let currentness = self.lease.handle().with_runtime(|runtime| {
-                    super::super::workflow_instance_observation::observe_evidence_dependencies(
-                        runtime,
-                        self.lease.snapshot(),
-                        layout,
-                        evidence.entity,
-                        maximum_facts,
-                        &mut evidence_facts,
-                    )
-                })?;
-                let current = self.lease.handle().with_runtime(|runtime| {
-                    currentness
-                        .iter()
-                        .all(|fact| fact.remains_equal_in(runtime, self.lease.snapshot()))
-                });
-                if current {
-                    facts.extend(evidence_facts);
-                    return self.materialize_reused_assessment_transition(
-                        layout,
-                        program_revision,
-                        instance,
-                        selected,
-                        live_membership,
-                        retire_live_membership,
-                        facts,
-                        currentness,
-                        coverage.subject,
-                    );
+            let maximum_facts = self
+                .admission
+                .allowed_graph_contract()
+                .decision_fact_budget()
+                .saturating_sub(self.facts.len().saturating_add(facts.len()));
+            let coverage_state = super::assessment_coverage::observe(
+                node,
+                &program_revision,
+                &coverage,
+                &evidence,
+                layout,
+                self.lease.handle(),
+                self.lease.snapshot(),
+                maximum_facts,
+            )?;
+            facts.extend(coverage_state.facts);
+            if coverage_state.current {
+                let currentness = coverage_state.dependencies;
+                if selected.node() != progress.head() {
+                    return Err(denial(
+                        WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAlreadySettled,
+                        "compatible assessment evidence is already collected",
+                    ));
                 }
+                return self.materialize_reused_assessment_transition(
+                    layout,
+                    program_revision,
+                    instance,
+                    selected,
+                    live_membership,
+                    retire_live_membership,
+                    facts,
+                    currentness,
+                    coverage.subject,
+                    allowance,
+                );
             }
         }
         if self.facts.len().saturating_add(facts.len())
@@ -157,6 +191,7 @@ where
             subject,
             live_membership,
             retire_live_membership,
+            allowance,
         );
         let required = RequiredWorkflowAssessment::from_selected(
             admitted.instance(),
@@ -166,14 +201,17 @@ where
             assessment,
             proposal_identity,
             coverage.identity,
+            program_revision.to_string(),
         );
         Ok(PreparedWorkflowAdvance::AwaitingAssessment(
             PreparedWorkflowAssessment {
                 admitted,
                 required,
+                applicability_dependencies,
                 layout: layout.clone(),
                 program_revision,
                 replays: Default::default(),
+                evidence_allowance,
             },
         ))
     }
@@ -190,6 +228,7 @@ where
         facts: Vec<super::super::WorthQueryApplicationObservedFact>,
         currentness: Vec<super::super::WorthQueryApplicationObservedFact>,
         subject: worth_relational::facade::identity::EntityId,
+        allowance: crate::domain_computation::primary_graph::application_attempt::WorkflowStepAllowance,
     ) -> Result<
         PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
         WorthQueryApplicationAttemptDenial,
@@ -214,6 +253,7 @@ where
             subject,
             live_membership,
             retire_live_membership,
+            allowance,
         );
         let transition_identity = admitted.identity().to_owned();
         let transition_identity_bytes = *admitted.identity_bytes();
@@ -243,7 +283,7 @@ where
             emission_retained_bytes: 0,
             emission_retained_bytes_ceiling: 0,
             conditional_definition: None,
-            platform_mutation: true,
+            effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Platform,
             validator_work_admission,
             output_correspondence: Default::default(),
             retain_output_demand_observation: false,
@@ -267,6 +307,7 @@ where
             terminal: false,
             approval: None,
             approval_identity: None,
+            approval_authentication: None,
             replays: Default::default(),
         })
     }

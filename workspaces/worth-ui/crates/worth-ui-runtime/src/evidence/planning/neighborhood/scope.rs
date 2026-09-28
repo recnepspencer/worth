@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::declaration::stable_text_digest;
 use crate::evidence::{UiAllocationNeighborhood, UiAllocationNeighborhoodClass};
 use crate::graph::UiGraphNodeIdentity;
@@ -11,7 +13,8 @@ pub struct UiAllocationNeighborhoodScope {
     root_graph_node_identity: UiGraphNodeIdentity,
     layout_operator_contract_identity_digest: u64,
     neighborhood_class: UiAllocationNeighborhoodClass,
-    member_identity_digests: Box<[u64]>,
+    /// Shared, so a scope keying several indexes clones without allocating.
+    member_identity_digests: Arc<[u64]>,
 }
 
 impl UiAllocationNeighborhoodScope {
@@ -35,7 +38,7 @@ impl UiAllocationNeighborhoodScope {
             layout_operator_contract_identity_digest: identity
                 .layout_operator_contract_identity_digest(),
             neighborhood_class: identity.neighborhood_class(),
-            member_identity_digests: member_identity_digests.into_boxed_slice(),
+            member_identity_digests: member_identity_digests.into(),
         }
     }
 

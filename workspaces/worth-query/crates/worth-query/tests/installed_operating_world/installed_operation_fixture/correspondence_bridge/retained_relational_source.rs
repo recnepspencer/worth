@@ -1,12 +1,9 @@
 use worth_relational::facade::branch::AdmittedRelationalBranchBasis;
-use worth_relational::facade::bridge::{
-    RelationalBridgeObservationLease, RuntimeBridgeRelationalSource,
-};
 use worth_runtime_bridge::facade::{
     BridgeAuthoritativeSourceProfile, BridgeCommittedPatchEnvelope, CommittedPatchSource,
-    RelationalBridgeSnapshotIdentityParts, RelationalBridgeSourceError,
-    RelationalCommittedPatchRequest, SnapshotReadSource, TruthSnapshotIdentity,
-    TruthSnapshotReader,
+    RelationalBridgeObservationLease, RelationalBridgeSnapshotIdentityParts,
+    RelationalBridgeSourceError, RelationalCommittedPatchRequest, RuntimeBridgeRelationalSource,
+    SnapshotReadSource, TruthSnapshotIdentity, TruthSnapshotReader,
 };
 
 pub(super) struct RetainedRelationalSource {

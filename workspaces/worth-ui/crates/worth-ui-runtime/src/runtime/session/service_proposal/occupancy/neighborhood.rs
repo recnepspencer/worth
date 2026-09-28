@@ -114,7 +114,7 @@ impl UiServiceProposalOccupancyNeighborhoodIndex {
             self.neighborhoods.remove(&key);
         }
         self.live_records -= released;
-        released as u16
+        u16::try_from(released).expect("occupancy holds at most OCCUPANCY_LIMIT leases")
     }
 
     pub(super) fn all_records(
@@ -133,7 +133,7 @@ impl UiServiceProposalOccupancyNeighborhoodIndex {
                 proposals.push(record.proposal);
             }
         }
-        proposals.len() as u16
+        u16::try_from(proposals.len()).expect("occupancy holds at most OCCUPANCY_LIMIT leases")
     }
 
     pub(super) fn before_effect_summary(
@@ -170,7 +170,7 @@ impl UiServiceProposalOccupancyNeighborhoodIndex {
         self.neighborhoods
             .retain(|_, neighborhood| !neighborhood.records.is_empty());
         self.live_records -= released;
-        released as u16
+        u16::try_from(released).expect("occupancy holds at most OCCUPANCY_LIMIT leases")
     }
 }
 

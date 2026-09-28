@@ -221,7 +221,14 @@ fn recover_batch(
             UiAdmittedObservationPayload::Query(UiAdmittedQueryObservation::Projection(
                 observation,
             )) => projection = Some(observation),
-            _ => unreachable!("intent consequence batch contains only owned consequence families"),
+            UiAdmittedObservationPayload::Source(_)
+            | UiAdmittedObservationPayload::Host(_)
+            | UiAdmittedObservationPayload::PointerPresence(_)
+            | UiAdmittedObservationPayload::Measurement(_)
+            | UiAdmittedObservationPayload::CommittedScrollExtent(_)
+            | UiAdmittedObservationPayload::CommittedPortalAnchor(_) => {
+                unreachable!("intent consequence batch contains only owned consequence families")
+            }
         }
     }
     (posture.zip(posture_commit), query, projection)

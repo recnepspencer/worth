@@ -1,11 +1,15 @@
 use worth_query_host::facade::admission::authenticated_principal::{
     WorthQueryAuthenticationAdapterAdmissionDenial, WorthQueryAuthenticationDenial,
 };
-use worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationDenial;
+use worth_query_host::facade::admission::authentication_event::WorthQueryAuthenticationEventDenial;
+use worth_query_host::facade::application_installation::{
+    WorthQueryInMemoryApplicationDenial, WorthQueryWorkflowRuntimeBindingDenial,
+};
 use worth_query_host::facade::declaration::application_program::ApplicationProgramValidationDenial;
 use worth_query_host::facade::declaration::application_schema::ApplicationSchemaDeclarationDenial;
 use worth_query_host::facade::domain::{
-    WorthQueryApplicationOperationInstallationDenial, WorthQueryInstallationAdmissionDenial,
+    WorthQueryApplicationOperationInstallationDenial,
+    WorthQueryApplicationWorkflowInstallationDenial, WorthQueryInstallationAdmissionDenial,
     WorthQueryInstalledApplicationSchemaDenial, WorthQueryInstalledPackageIndexDenial,
     WorthQueryPortablePackageValidationDenial, WorthQueryPrincipalBindingInstallationDenial,
 };
@@ -30,7 +34,7 @@ impl std::error::Error for BankWorldSeedDenial {}
 #[derive(Debug)]
 pub enum BankIdentityRuntimeBuildError {
     ApplicationProgramValidation(ApplicationProgramValidationDenial),
-    ApplicationInstallation(WorthQueryInMemoryApplicationDenial),
+    ApplicationInstallation(Box<WorthQueryInMemoryApplicationDenial>),
     SchemaDeclaration(ApplicationSchemaDeclarationDenial),
     PrincipalKey(WorthQueryApplicationPrincipalKeyDenial),
     PackageValidation(WorthQueryPortablePackageValidationDenial),
@@ -40,7 +44,9 @@ pub enum BankIdentityRuntimeBuildError {
     InstalledSchema(WorthQueryInstalledApplicationSchemaDenial),
     InstalledOperation(WorthQueryApplicationOperationInstallationDenial),
     InstalledBinding(WorthQueryPrincipalBindingInstallationDenial),
-    WorkflowInstallation(String),
+    WorkflowInstallation(WorthQueryApplicationWorkflowInstallationDenial),
+    WorkflowRuntimeBinding(WorthQueryWorkflowRuntimeBindingDenial),
+    WorkflowAuthenticationInstallation(WorthQueryAuthenticationEventDenial),
 }
 
 impl std::fmt::Display for BankIdentityRuntimeBuildError {
@@ -51,33 +57,54 @@ impl std::fmt::Display for BankIdentityRuntimeBuildError {
             Self::SchemaDeclaration(error) => error.fmt(formatter),
             Self::PrincipalKey(error) => error.fmt(formatter),
             Self::PackageValidation(error) => error.fmt(formatter),
-            Self::PackageAdmission(error) => write!(formatter, "{error:?}"),
-            Self::RuntimeInstallation(error) => write!(formatter, "{error:?}"),
+            Self::PackageAdmission(error) => error.fmt(formatter),
+            Self::RuntimeInstallation(error) => error.fmt(formatter),
             Self::WorldSeed(error) => error.fmt(formatter),
             Self::InstalledSchema(error) => error.fmt(formatter),
             Self::InstalledOperation(error) => error.fmt(formatter),
             Self::InstalledBinding(error) => error.fmt(formatter),
-            Self::WorkflowInstallation(error) => formatter.write_str(error),
+            Self::WorkflowInstallation(error) => error.fmt(formatter),
+            Self::WorkflowRuntimeBinding(error) => error.fmt(formatter),
+            Self::WorkflowAuthenticationInstallation(error) => error.fmt(formatter),
         }
     }
 }
 
-impl std::error::Error for BankIdentityRuntimeBuildError {}
+impl std::error::Error for BankIdentityRuntimeBuildError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        Some(match self {
+            Self::ApplicationProgramValidation(error) => error,
+            Self::ApplicationInstallation(error) => error.as_ref(),
+            Self::SchemaDeclaration(error) => error,
+            Self::PrincipalKey(error) => error,
+            Self::PackageValidation(error) => error,
+            Self::PackageAdmission(error) => error,
+            Self::RuntimeInstallation(error) => error,
+            Self::WorldSeed(error) => error,
+            Self::InstalledSchema(error) => error,
+            Self::InstalledOperation(error) => error,
+            Self::InstalledBinding(error) => error,
+            Self::WorkflowInstallation(error) => error,
+            Self::WorkflowRuntimeBinding(error) => error,
+            Self::WorkflowAuthenticationInstallation(error) => error,
+        })
+    }
+}
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct BankAuthenticationBoundaryBuildError(pub WorthQueryAuthenticationAdapterAdmissionDenial);
 
 impl std::fmt::Display for BankAuthenticationBoundaryBuildError {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            formatter,
-            "bank authentication boundary admission denied: {:?}",
-            self.0
-        )
+        write!(formatter, "bank authentication boundary: {}", self.0)
     }
 }
 
-impl std::error::Error for BankAuthenticationBoundaryBuildError {}
+impl std::error::Error for BankAuthenticationBoundaryBuildError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        Some(&self.0)
+    }
+}
 
 #[derive(Debug)]
 pub enum BankPrincipalAdmissionError {
@@ -90,7 +117,7 @@ impl std::fmt::Display for BankPrincipalAdmissionError {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Authentication(error) => error.fmt(formatter),
-            Self::ProductSelection(error) => write!(formatter, "{error:?}"),
+            Self::ProductSelection(error) => error.fmt(formatter),
             Self::Resolution(error) => error.fmt(formatter),
         }
     }
@@ -100,7 +127,7 @@ impl std::error::Error for BankPrincipalAdmissionError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             Self::Authentication(error) => Some(error),
-            Self::ProductSelection(_) => None,
+            Self::ProductSelection(error) => Some(error),
             Self::Resolution(error) => Some(error),
         }
     }

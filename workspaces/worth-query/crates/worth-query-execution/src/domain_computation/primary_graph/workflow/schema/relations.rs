@@ -7,9 +7,8 @@ use worth_relational::facade::schema::{
 };
 
 use super::{
-    WorkflowConnectionLayout, WorkflowDefinitionLayout, WorkflowInstanceLayout,
-    WorkflowLineageLayout, WorkflowNodeLayout, CONNECTION_ASPECT, CONNECTION_ENTITY,
-    DEFINITION_ASPECT, DEFINITION_ENTITY, INSTANCE_ASPECT, INSTANCE_ENTITY, LINEAGE_ASPECT,
+    WorkflowConnectionLayout, WorkflowDefinitionLayout, WorkflowLineageLayout, WorkflowNodeLayout,
+    CONNECTION_ASPECT, CONNECTION_ENTITY, DEFINITION_ASPECT, DEFINITION_ENTITY, LINEAGE_ASPECT,
     LINEAGE_ENTITY, NODE_ASPECT, NODE_ENTITY,
 };
 use crate::domain_computation::primary_graph::schema_layout::{
@@ -76,6 +75,7 @@ pub(super) fn lower_definition(
 > {
     let content_identity = planned_field_locator(DEFINITION_ASPECT, "content-identity")?;
     let program_revision = planned_field_locator(DEFINITION_ASPECT, "program-revision")?;
+    let carried_revision = planned_field_locator(DEFINITION_ASPECT, "carried-revision")?;
     let maximum_nodes = planned_field_locator(DEFINITION_ASPECT, "maximum-nodes")?;
     let maximum_connections = planned_field_locator(DEFINITION_ASPECT, "maximum-connections")?;
     let maximum_effects = planned_field_locator(DEFINITION_ASPECT, "maximum-effects")?;
@@ -91,10 +91,13 @@ pub(super) fn lower_definition(
         planned_field_locator(DEFINITION_ASPECT, "maximum-port-provenance")?;
     let maximum_canonical_bytes =
         planned_field_locator(DEFINITION_ASPECT, "maximum-canonical-bytes")?;
+    let total_deadline_milliseconds =
+        planned_field_locator(DEFINITION_ASPECT, "total-deadline-milliseconds")?;
     let shape = aspects()
         .struct_fields()
         .required("content-identity", ScalarAspectType::String)
         .required("program-revision", ScalarAspectType::String)
+        .optional("carried-revision", ScalarAspectType::String)
         .required("maximum-nodes", ScalarAspectType::UInt64)
         .required("maximum-connections", ScalarAspectType::UInt64)
         .required("maximum-effects", ScalarAspectType::UInt64)
@@ -104,6 +107,7 @@ pub(super) fn lower_definition(
         .required("maximum-connection-provenance", ScalarAspectType::UInt64)
         .required("maximum-port-provenance", ScalarAspectType::UInt64)
         .required("maximum-canonical-bytes", ScalarAspectType::UInt64)
+        .optional("total-deadline-milliseconds", ScalarAspectType::UInt64)
         .finish()
         .map_err(|_| invalid_member(DEFINITION_ASPECT))?;
     let registry = register_platform_entity(
@@ -122,6 +126,7 @@ pub(super) fn lower_definition(
             entity_kind: kind,
             content_identity,
             program_revision,
+            carried_revision,
             maximum_nodes,
             maximum_connections,
             maximum_effects,
@@ -131,6 +136,7 @@ pub(super) fn lower_definition(
             maximum_connection_provenance,
             maximum_port_provenance,
             maximum_canonical_bytes,
+            total_deadline_milliseconds,
             content_identity_index_id: DerivedIndexId(0),
         },
     ))
@@ -148,10 +154,17 @@ pub(super) fn lower_node(
     let node_kind = planned_field_locator(NODE_ASPECT, "kind")?;
     let member = planned_field_locator(NODE_ASPECT, "member")?;
     let input_type = planned_field_locator(NODE_ASPECT, "input-type")?;
+    let operation_binding = planned_field_locator(NODE_ASPECT, "operation-binding")?;
     let parameter_type = planned_field_locator(NODE_ASPECT, "parameter-type")?;
     let result_type = planned_field_locator(NODE_ASPECT, "result-type")?;
     let assessment_binding = planned_field_locator(NODE_ASPECT, "assessment-binding")?;
     let assessment_subject = planned_field_locator(NODE_ASPECT, "assessment-subject")?;
+    let assessment_applicability_relation =
+        planned_field_locator(NODE_ASPECT, "assessment-applicability-relation")?;
+    let assessment_applicability_from =
+        planned_field_locator(NODE_ASPECT, "assessment-applicability-from")?;
+    let assessment_applicability_to =
+        planned_field_locator(NODE_ASPECT, "assessment-applicability-to")?;
     let condition_binding = planned_field_locator(NODE_ASPECT, "condition-binding")?;
     let capability_type = planned_field_locator(NODE_ASPECT, "capability-type")?;
     let approval_operation = planned_field_locator(NODE_ASPECT, "approval-operation")?;
@@ -164,10 +177,17 @@ pub(super) fn lower_node(
         .required("kind", ScalarAspectType::UInt64)
         .required("member", ScalarAspectType::String)
         .optional("input-type", ScalarAspectType::String)
+        .optional("operation-binding", ScalarAspectType::String)
         .optional("parameter-type", ScalarAspectType::String)
         .optional("result-type", ScalarAspectType::String)
         .optional("assessment-binding", ScalarAspectType::String)
         .optional("assessment-subject", ScalarAspectType::String)
+        .optional(
+            "assessment-applicability-relation",
+            ScalarAspectType::String,
+        )
+        .optional("assessment-applicability-from", ScalarAspectType::String)
+        .optional("assessment-applicability-to", ScalarAspectType::String)
         .optional("condition-binding", ScalarAspectType::String)
         .optional("capability-type", ScalarAspectType::String)
         .optional("approval-operation", ScalarAspectType::String)
@@ -193,10 +213,14 @@ pub(super) fn lower_node(
             kind: node_kind,
             member,
             input_type,
+            operation_binding,
             parameter_type,
             result_type,
             assessment_binding,
             assessment_subject,
+            assessment_applicability_relation,
+            assessment_applicability_from,
+            assessment_applicability_to,
             condition_binding,
             capability_type,
             approval_operation,
@@ -251,64 +275,6 @@ pub(super) fn lower_connection(
     ))
 }
 
-pub(super) fn lower_instance(
-    registry: RelationalSchemaRegistry,
-    schema_id: &SchemaId,
-    version: SchemaVersionId,
-    kind: KindId,
-    identity: AspectIdentity,
-) -> Result<
-    (RelationalSchemaRegistry, WorkflowInstanceLayout),
-    WorthQueryPrimaryGraphInstallationDenial,
-> {
-    let identity_field = planned_field_locator(INSTANCE_ASPECT, "identity")?;
-    let protocol_version = planned_field_locator(INSTANCE_ASPECT, "protocol-version")?;
-    let program_revision = planned_field_locator(INSTANCE_ASPECT, "program-revision")?;
-    let definition_content_identity =
-        planned_field_locator(INSTANCE_ASPECT, "definition-content-identity")?;
-    let subject_partition = planned_field_locator(INSTANCE_ASPECT, "subject-partition")?;
-    let subject_slot = planned_field_locator(INSTANCE_ASPECT, "subject-slot")?;
-    let subject_generation = planned_field_locator(INSTANCE_ASPECT, "subject-generation")?;
-    let state = planned_field_locator(INSTANCE_ASPECT, "state")?;
-    let shape = aspects()
-        .struct_fields()
-        .required("identity", ScalarAspectType::String)
-        .required("protocol-version", ScalarAspectType::UInt64)
-        .required("program-revision", ScalarAspectType::String)
-        .required("definition-content-identity", ScalarAspectType::String)
-        .required("subject-partition", ScalarAspectType::UInt64)
-        .required("subject-slot", ScalarAspectType::UInt64)
-        .required("subject-generation", ScalarAspectType::UInt64)
-        .required("state", ScalarAspectType::UInt64)
-        .finish()
-        .map_err(|_| invalid_member(INSTANCE_ASPECT))?;
-    let registry = register_platform_entity(
-        registry,
-        schema_id,
-        version,
-        INSTANCE_ENTITY,
-        kind,
-        INSTANCE_ASPECT,
-        identity,
-        shape,
-    )?;
-    Ok((
-        registry,
-        WorkflowInstanceLayout {
-            entity_kind: kind,
-            identity: identity_field,
-            protocol_version,
-            program_revision,
-            definition_content_identity,
-            subject_partition,
-            subject_slot,
-            subject_generation,
-            state,
-            identity_index_id: DerivedIndexId(0),
-        },
-    ))
-}
-
 pub(super) fn register_platform_entity(
     registry: RelationalSchemaRegistry,
     schema_id: &SchemaId,
@@ -342,9 +308,9 @@ pub(super) fn register_platform_entity(
 
 pub(super) fn allocate_kinds(
     first: KindId,
-) -> Result<[KindId; 30], WorthQueryPrimaryGraphInstallationDenial> {
+) -> Result<[KindId; 32], WorthQueryPrimaryGraphInstallationDenial> {
     let mut next = first.0;
-    let mut kinds = [first; 30];
+    let mut kinds = [first; 32];
     for kind in kinds.iter_mut().skip(1) {
         next = next.checked_add(1).ok_or_else(kind_space_exhausted)?;
         *kind = KindId(next);

@@ -129,7 +129,12 @@ impl HandleAllocationAccumulator {
                 self.family_widths.record_state_slot_handle();
                 self.counters.record_state_slot_handle();
             }
-            _ => {}
+            WorthUiPlanNodeInputFamily::LayoutRegion
+            | WorthUiPlanNodeInputFamily::Accessibility
+            | WorthUiPlanNodeInputFamily::DiagnosticsRef
+            | WorthUiPlanNodeInputFamily::RenderResourceRef
+            | WorthUiPlanNodeInputFamily::CanvasSpatial
+            | WorthUiPlanNodeInputFamily::RealtimeOverlay => {}
         }
     }
 }

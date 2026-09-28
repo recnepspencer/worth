@@ -1,5 +1,0 @@
-error[E0599]: no method named `absent_mode` found for struct `WORTHStoreBuilder` in the current scope
- --> tests/ui/store_facade_does_not_construct_absent_mode.rs:4:38
-  |
-4 |     let _ = WORTHStoreBuilder::new().absent_mode();
-  |                                      ^^^^^^^^^^^ method not found in `WORTHStoreBuilder`

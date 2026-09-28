@@ -25,6 +25,8 @@ pub struct WorthQueryApplicationRequest<'application, 'principal, 'scope, Schema
     pub(super) branch: worth_query_execution::facade::product::WorthQueryProductBranch,
 }
 
+/// A request pinned to one retained read observation, from `at`, `at_commit` or
+/// `at_approved_elevation`. Its queries and demands read that observation.
 pub struct WorthQueryApplicationRetainedRequest<'application, 'principal, 'scope, Schema> {
     application: &'application WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     principal: &'principal WorthQueryAuthenticatedExternalPrincipal<Schema>,
@@ -35,6 +37,8 @@ pub struct WorthQueryApplicationRetainedRequest<'application, 'principal, 'scope
     >,
 }
 
+/// Why a retained request could not be pinned. `CommitUnavailable` means the commit is not
+/// in the branch history within the work bound.
 #[derive(Debug)]
 pub enum WorthQueryApplicationHistorySelectionDenial {
     ProductSelection(
@@ -43,6 +47,8 @@ pub enum WorthQueryApplicationHistorySelectionDenial {
     CommitUnavailable,
 }
 
+/// Starts an application request. `request` binds a principal and scope to the runtime's
+/// current world.
 pub trait WorthQueryApplicationRequestExt<Schema>
 where
     Schema: ApplicationSchema,

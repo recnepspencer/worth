@@ -3,7 +3,10 @@ use crate::{
     UiUnpublishedAppearanceFragment, UiUnpublishedAppearanceFrameProjection,
 };
 
-/// Appearance mechanics admitted for one surface in one mounted presentation attempt.
+/// Appearance mechanics admitted for one surface in one mounted presentation
+/// attempt, and the Motion samples the attempt reissues there. A frame that
+/// changes no appearance on the surface can still owe the host samples: what
+/// the host shows an unchanged command through ends with the frame.
 pub struct UiMountedAppearancePresentationWork {
     frame: crate::UiMountedFrameIdentity,
     presentation: UiMountedPresentationAttemptIdentity,
@@ -48,10 +51,46 @@ impl UiMountedAppearancePresentationWork {
                 }
             })
             .collect::<Result<Vec<_>, _>>()?;
-        if fragments.is_empty() {
+        Self::admitted(
+            frame,
+            presentation,
+            requirement,
+            fragments,
+            sample_overrides,
+        )
+    }
+
+    /// The samples a frame that changes no appearance reissues on one
+    /// surface; no work when it reissues none.
+    #[doc(hidden)]
+    pub fn from_runtime_sample_overrides(
+        frame: crate::UiMountedFrameIdentity,
+        presentation: UiMountedPresentationAttemptIdentity,
+        requirement: UiMountedSurfaceBindingRequirement,
+        sample_overrides: impl IntoIterator<Item = crate::UiMountedPresentationSampleChange>,
+    ) -> Result<Option<Self>, UiMountedAppearancePresentationWorkDenial> {
+        Self::admitted(
+            frame,
+            presentation,
+            requirement,
+            Vec::new(),
+            sample_overrides,
+        )
+    }
+
+    /// Each command's sample is reissued at most once; work with neither
+    /// fragments nor samples is no work.
+    fn admitted(
+        frame: crate::UiMountedFrameIdentity,
+        presentation: UiMountedPresentationAttemptIdentity,
+        requirement: UiMountedSurfaceBindingRequirement,
+        fragments: Vec<UiUnpublishedAppearanceFragment>,
+        sample_overrides: impl IntoIterator<Item = crate::UiMountedPresentationSampleChange>,
+    ) -> Result<Option<Self>, UiMountedAppearancePresentationWorkDenial> {
+        let sample_overrides = sample_overrides.into_iter().collect::<Vec<_>>();
+        if fragments.is_empty() && sample_overrides.is_empty() {
             return Ok(None);
         }
-        let sample_overrides = sample_overrides.into_iter().collect::<Vec<_>>();
         let unique = sample_overrides
             .iter()
             .map(|change| change.command())
@@ -101,3 +140,7 @@ impl UiMountedAppearancePresentationWork {
         &self.sample_overrides
     }
 }
+
+#[cfg(test)]
+#[path = "appearance_work_tests.rs"]
+mod tests;

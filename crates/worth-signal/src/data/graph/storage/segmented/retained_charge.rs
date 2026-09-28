@@ -35,44 +35,6 @@ impl<T: Clone + RetainedStorageMeasurement, Id: Clone + RetainedStorageMeasureme
         charge.checked_add(interner.prepare_fork_charge(work)?)
     }
 }
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::data::graph::DependencyEdgeStore;
-    use crate::data::{aspect::Aspect, dependency::DependencyEdge, handle::NodeId};
-
-    #[test]
-    fn forked_edge_segments_charge_base_and_appended_scope_payloads() {
-        let mut source = DependencyEdgeStore::default();
-        let base = source.insert_from_slice(&[DependencyEdge::whole_partition(
-            NodeId::new(0, 0),
-            Aspect::new(0),
-            "base".repeat(4_096),
-        )]);
-        let mut retained = source.fork_persistent();
-        let appended = retained.insert_from_slice(&[DependencyEdge::whole_partition(
-            NodeId::new(1, 0),
-            Aspect::new(0),
-            "appended".repeat(4_096),
-        )]);
-        drop(source);
-        assert_eq!(retained.get(base).len(), 1);
-        assert_eq!(retained.get(appended).len(), 1);
-        let mut work = Preparation::new(1_000);
-        let charge = retained.retained_heap_charge(&mut work).unwrap();
-        assert!(charge.bytes() >= 12 * 4_096);
-        assert_eq!(
-            retained
-                .retained_heap_charge(&mut Preparation::new(work.visits()))
-                .unwrap(),
-            charge
-        );
-        assert!(matches!(
-            retained.retained_heap_charge(&mut Preparation::new(work.visits() - 1)),
-            Err(Denial::WorkExhausted { .. })
-        ));
-    }
-}
 use crate::data::retained_storage::{
     RetainedStorageCharge as Charge, RetainedStorageMeasurement,
     RetainedStoragePreparation as Preparation, RetainedStoragePreparationDenial as Denial,
@@ -110,5 +72,44 @@ impl<T: Clone + RetainedStorageMeasurement, Id: Clone + RetainedStorageMeasureme
                 .checked_add(appended.retained_heap_charge(work)?)?,
         };
         charge.checked_add(interner.retained_heap_charge(work)?)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::data::graph::DependencyEdgeStore;
+    use crate::data::{aspect::Aspect, dependency::DependencyEdge, handle::NodeId};
+
+    #[test]
+    fn forked_edge_segments_charge_base_and_appended_scope_payloads() {
+        let mut source = DependencyEdgeStore::default();
+        let base = source.insert_from_slice(&[DependencyEdge::whole_partition(
+            NodeId::new(0, 0),
+            Aspect::new(0),
+            "base".repeat(4_096),
+        )]);
+        let mut retained = source.fork_persistent();
+        let appended = retained.insert_from_slice(&[DependencyEdge::whole_partition(
+            NodeId::new(1, 0),
+            Aspect::new(0),
+            "appended".repeat(4_096),
+        )]);
+        drop(source);
+        assert_eq!(retained.get(base).len(), 1);
+        assert_eq!(retained.get(appended).len(), 1);
+        let mut work = Preparation::new(1_000);
+        let charge = retained.retained_heap_charge(&mut work).unwrap();
+        assert!(charge.bytes() >= 12 * 4_096);
+        assert_eq!(
+            retained
+                .retained_heap_charge(&mut Preparation::new(work.visits()))
+                .unwrap(),
+            charge
+        );
+        assert!(matches!(
+            retained.retained_heap_charge(&mut Preparation::new(work.visits() - 1)),
+            Err(Denial::WorkExhausted { .. })
+        ));
     }
 }

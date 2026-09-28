@@ -38,12 +38,19 @@ impl WorthQueryDeclarationRelationalTruthClaim {
     }
 }
 
+/// The relational authority a declaration's truth routes through.
+///
+/// "Relational" names the truth source, not the owning crate: `GroupedTruth`
+/// and `BridgeSource` classify truth that Relational decides, even though the
+/// surfaces that carry it live in `worth-runtime-bridge`.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryDeclarationRelationalAuthorityFamily {
     Runtime,
     History,
+    /// Grouped projections over Relational snapshot reads.
     GroupedTruth,
     CommitStrategies,
+    /// The Bridge's adapter over Relational committed changes.
     BridgeSource,
 }
 

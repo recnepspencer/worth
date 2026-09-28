@@ -23,7 +23,7 @@ pub(super) fn certify_local_scene_graph_propagation_wave(suite: &'static str) {
                 seeded.propagation_seeds[3],
                 seeded.propagation_seeds[4],
             ]);
-            let mut bridge_runtime = build_mock_bridge_runtime(false, 32);
+            let mut downstream_runtime = build_mock_downstream_runtime(false, 32);
 
             runtime.performance_access().reset_counters();
             let update_started_at = Instant::now();
@@ -86,16 +86,16 @@ pub(super) fn certify_local_scene_graph_propagation_wave(suite: &'static str) {
 
             let affected_sources = (propagation.result.entities.len()
                 + explicit.result.entities.len())
-            .min(bridge_runtime.source_versions.len())
+            .min(downstream_runtime.source_versions.len())
             .max(4);
-            let bridge_before = bridge_runtime.observe();
-            let bridge_started_at = Instant::now();
-            bridge_runtime.apply_changes(affected_sources);
-            let bridge_micros = bridge_started_at.elapsed().as_micros();
-            let bridge_after = bridge_runtime.observe();
+            let downstream_before = downstream_runtime.observe();
+            let downstream_started_at = Instant::now();
+            downstream_runtime.apply_changes(affected_sources);
+            let downstream_micros = downstream_started_at.elapsed().as_micros();
+            let downstream_after = downstream_runtime.observe();
 
             measurement_with_elapsed(
-                update_micros + propagation_micros + explicit_micros + bridge_micros,
+                update_micros + propagation_micros + explicit_micros + downstream_micros,
                 || {
                     perf_metrics!({
                         "region_count": seeded.region_count,
@@ -105,14 +105,14 @@ pub(super) fn certify_local_scene_graph_propagation_wave(suite: &'static str) {
                         "update_micros": update_micros,
                         "propagation_micros": propagation_micros,
                         "explicit_query_micros": explicit_micros,
-                        "bridge_micros": bridge_micros,
+                        "downstream_micros": downstream_micros,
                         "propagation_result_entities": propagation.result.entities.len(),
                         "explicit_result_entities": explicit.result.entities.len(),
-                        "affected_bridge_sources": affected_sources,
-                        "bridge_nodes_recomputed": bridge_after.evaluation.nodes_recomputed
-                            - bridge_before.evaluation.nodes_recomputed,
-                        "bridge_tasks_scheduled": bridge_after.planner.tasks_scheduled
-                            - bridge_before.planner.tasks_scheduled,
+                        "affected_downstream_sources": affected_sources,
+                        "downstream_nodes_recomputed": downstream_after.evaluation.nodes_recomputed
+                            - downstream_before.evaluation.nodes_recomputed,
+                        "downstream_tasks_scheduled": downstream_after.planner.tasks_scheduled
+                            - downstream_before.planner.tasks_scheduled,
                         "counters": runtime.performance_access().counters(),
                     })
                 },
@@ -126,29 +126,34 @@ pub(super) fn certify_local_scene_graph_propagation_wave(suite: &'static str) {
             ("update_micros", &["update_micros"]),
             ("propagation_micros", &["propagation_micros"]),
             ("explicit_query_micros", &["explicit_query_micros"]),
-            ("bridge_micros", &["bridge_micros"]),
+            ("downstream_micros", &["downstream_micros"]),
             (
                 "propagation_result_entities",
                 &["propagation_result_entities"],
             ),
             ("explicit_result_entities", &["explicit_result_entities"]),
-            ("affected_bridge_sources", &["affected_bridge_sources"]),
-            ("bridge_tasks_scheduled", &["bridge_tasks_scheduled"]),
+            (
+                "affected_downstream_sources",
+                &["affected_downstream_sources"],
+            ),
+            (
+                "downstream_tasks_scheduled",
+                &["downstream_tasks_scheduled"],
+            ),
         ],
     );
     assert_budget(
         &local_scene_wave_samples,
         "game-engine local scene waves should keep frame-local propagation and derived work region-bounded",
         |metrics| {
-            let affected = metrics["affected_bridge_sources"].as_u64().unwrap_or(0);
+            let affected = metrics["affected_downstream_sources"].as_u64().unwrap_or(0);
             metrics["region_count"].as_u64() == Some(8)
                 && metrics["resident_entities"].as_u64() == Some(192)
                 && metrics["changed_records"].as_u64() == Some(1)
                 && metrics["propagation_result_entities"].as_u64().unwrap_or(0) >= 8
                 && metrics["explicit_result_entities"].as_u64().unwrap_or(0) == 12
-                && affected >= 8
-                && affected <= 32
-                && metrics["bridge_tasks_scheduled"].as_u64().unwrap_or(0) >= affected
+                && (8..=32).contains(&affected)
+                && metrics["downstream_tasks_scheduled"].as_u64().unwrap_or(0) >= affected
                 && counter_u64(metrics, "full_state_clones") == 0
         },
     );

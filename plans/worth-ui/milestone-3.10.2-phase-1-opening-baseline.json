@@ -1,0 +1,57 @@
+{
+  "schema": "worth-ui.milestone-3.10.2.phase-1-opening-baseline.v1",
+  "milestone": "3.10.2",
+  "phase": 1,
+  "captured_from_commit": "ca50b0b5ed1ce53abf84c0117a3ab47b9db68149",
+  "measurement_provenance": "plans/worth-ui/milestone-3.10-test-cost-evidence.json closing",
+  "methodology": "Reuse the exact final Milestone 3.10 measurements because production runtime, host, and certification source at the 3.10.2 opening is the same commit. Phase 3 must capture the new executable independently; no absent executable is assigned a synthetic opening time.",
+  "topology": {
+    "opening_workspace_members": 11,
+    "maximum_workspace_members": 12,
+    "allowed_workspace_member_increase": 1,
+    "opening_workspace_cargo_targets": 20,
+    "maximum_workspace_cargo_targets": 21,
+    "allowed_cargo_target_increase": 1,
+    "opening_integration_test_targets": 9,
+    "maximum_integration_test_targets": 9,
+    "compile_contract_cargo_sessions": 2,
+    "trybuild_sessions": 0,
+    "flake_retry_budget": 0,
+    "external_fixture_workspaces": 2
+  },
+  "inherited_measurements": {
+    "clean_application_contract_compile_and_link_median_seconds": 89.3,
+    "warm_fast_lane_median_seconds": 7.603,
+    "warm_application_contracts_median_seconds": 15.437,
+    "warm_filesystem_external_boundary_median_seconds": 7.274,
+    "cold_compile_contracts_median_seconds": 58.025,
+    "warm_compile_contracts_median_seconds": 1.532
+  },
+  "pulse_executable_opening": {
+    "package_exists": false,
+    "clean_link_seconds": null,
+    "warm_link_seconds": null,
+    "launch_to_first_presented_frame_milliseconds": null,
+    "reason": "The single allowed executable is intentionally unborn in Phase 1. Phase 3 records its first real clean, warm, link, and launch samples rather than manufacturing a zero baseline."
+  },
+  "closing_budgets": {
+    "pulse_clean_link_max_seconds": 180.0,
+    "pulse_warm_link_max_seconds": 15.0,
+    "pulse_launch_to_first_presented_frame_max_milliseconds": 5000,
+    "maximum_additional_retained_target_bytes": 2000000000,
+    "ordinary_tests_must_not_launch_native_window": true,
+    "new_compiler_contract_sessions_allowed": 0,
+    "new_integration_test_targets_allowed": 0,
+    "new_native_executables_allowed": 1
+  },
+  "required_closing_counters": [
+    "adapter_translated_rows",
+    "adapter_translated_bytes",
+    "native_shapes",
+    "resource_cache_observations",
+    "source_settlement_events",
+    "replacement_publications",
+    "predecessor_preservations"
+  ],
+  "amendment_rule": "Any dependency outside worth-ui, worth-ui-host-egui, and eframe =0.31.1 with default features disabled and exactly default_fonts/glow/wayland/x11, or any budget overrun, requires an explicit closing amendment with measured cause."
+}

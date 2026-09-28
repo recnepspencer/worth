@@ -21,8 +21,8 @@ members = [
 edition = "2021"
 version = "0.1.0"
 license = "BUSL-1.1"
-# The toolchain CI pins (.github/actions/setup-worth-ui). Every member inherits
-# it so `clippy::incompatible_msrv` sees the floor in each crate, not only here.
+# The minimum supported toolchain. Every member inherits it so
+# `clippy::incompatible_msrv` sees the floor in each crate, not only here.
 rust-version = "1.94"
 
 [workspace.dependencies]

@@ -4,7 +4,7 @@ use crate::correspondence::{
     BridgeSemanticLocality,
 };
 use std::{collections::HashMap, mem::size_of, sync::Arc};
-use worth_foundational::facade::{AspectShape, CanonicalFieldPath, FieldDeclaration, FieldKey};
+use worth_foundational::facade::{AspectShape, CanonicalFieldPath, FieldDeclaration};
 
 pub(super) fn expected(set: &BridgeDeliveredCorrespondenceChangeSet) -> u64 {
     // The decision core includes the inline trigger and its guard.
@@ -88,7 +88,7 @@ pub(super) fn expected(set: &BridgeDeliveredCorrespondenceChangeSet) -> u64 {
 }
 
 fn path(path: &CanonicalFieldPath) -> u64 {
-    (size_of::<FieldKey>() * path.fields().len()
+    (size_of_val(path.fields())
         + path
             .fields()
             .iter()

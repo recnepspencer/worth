@@ -102,7 +102,7 @@ where
             emission_retained_bytes: 0,
             emission_retained_bytes_ceiling: 0,
             conditional_definition: None,
-            platform_mutation: true,
+            effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Platform,
             validator_work_admission,
             output_correspondence: Default::default(),
             retain_output_demand_observation: false,
@@ -126,6 +126,7 @@ where
             terminal: false,
             approval: None,
             approval_identity: None,
+            approval_authentication: None,
             replays: self.replays,
         })
     }

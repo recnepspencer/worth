@@ -31,6 +31,8 @@ mod portal_visibility;
 mod sampled_locality;
 #[path = "render_order_tests/scroll_sample.rs"]
 mod scroll_sample;
+#[path = "render_order_tests/successor_target.rs"]
+mod successor_target;
 
 #[test]
 fn complete_and_damage_join_surfaces_at_their_ordinary_text_slots() {
@@ -355,10 +357,10 @@ fn surface_at(
     let issuer = UiMountedNodeReceiptIssuer::mint_for(source.frame()).unwrap();
     let bounds = source.bounds();
     let allocation = UiAppearanceAllocationBounds::new(
-        (bounds.x() * 1_000.0) as i32,
-        (bounds.y() * 1_000.0) as i32,
-        (bounds.width() * 1_000.0) as u32,
-        (bounds.height() * 1_000.0) as u32,
+        worth_ui_host_contract::appearance_coordinate_nearest(bounds.x()).unwrap(),
+        worth_ui_host_contract::appearance_coordinate_nearest(bounds.y()).unwrap(),
+        worth_ui_host_contract::appearance_extent_nearest(bounds.width()).unwrap(),
+        worth_ui_host_contract::appearance_extent_nearest(bounds.height()).unwrap(),
     )
     .unwrap();
     UiMountedSurfaceAppearanceMechanic::complete_from_runtime_mounting(

@@ -59,7 +59,7 @@ fn phase_five_query_async_dependency_direction_is_explicit_and_enforced() {
     }
     if !gate_e_active {
         let plan =
-            repository_document("_docs/worth-ui/milestone-3.14.1-phase-5-implementation-plan.md");
+            repository_document("plans/worth-ui/milestone-3.14.1-phase-5-implementation-plan.md");
         assert!(plan.contains("direct test-only `worth-query-host` installation"));
         assert!(plan.contains("no direct"));
         assert!(plan.contains("runtime imports neither Signal nor Query"));
@@ -82,9 +82,9 @@ fn phase_five_query_async_dependency_direction_is_explicit_and_enforced() {
 
 #[test]
 fn phase_five_query_async_destination_owns_the_missing_substrate_extensions() {
-    let specification = repository_document("_docs/worth-ui/milestone-3.14.1-phase-5.md");
+    let specification = repository_document("plans/worth-ui/milestone-3.14.1-phase-5.md");
     let plan =
-        repository_document("_docs/worth-ui/milestone-3.14.1-phase-5-implementation-plan.md");
+        repository_document("plans/worth-ui/milestone-3.14.1-phase-5-implementation-plan.md");
     for required in [
         "application/declaration/async_resource/request_identity.rs",
         "runtime/async_result_state.rs",

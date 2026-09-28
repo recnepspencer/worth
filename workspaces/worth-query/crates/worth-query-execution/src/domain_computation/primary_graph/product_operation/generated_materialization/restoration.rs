@@ -4,6 +4,7 @@ use worth_runtime_world::facade::RuntimeWorldPublicationOutcome;
 
 mod failure;
 mod invariant_admission;
+mod invariant_denial;
 pub(in crate::domain_computation::primary_graph) use invariant_admission::admit_required_invariants;
 mod no_effect;
 mod receipt;
@@ -12,6 +13,7 @@ mod settlement;
 
 pub use failure::WorthQueryGeneratedOutputRestorationFailureCause;
 use failure::{preparation_failure_cause, restoration_failure};
+pub use invariant_denial::WorthQueryGeneratedOutputInvariantAdmissionDenial;
 
 pub use no_effect::{
     WorthQueryGeneratedOutputPublicationNoEffect, WorthQueryGeneratedOutputPublicationNoEffectCause,
@@ -30,6 +32,12 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphApplicationRuntime,
 };
 
+/// A generated output restored to its product branch, with the restoration
+/// receipt.
+///
+/// Returned by `restore_generated_output`, or by
+/// `continue_generated_output_restoration_recovery` once a recovered
+/// restoration is published.
 pub struct WorthQueryRestoredGeneratedOutput {
     branch: crate::basis::WorthQueryProductBranch,
     commit: WorthQueryGeneratedOutputRestorationReceipt,
@@ -45,11 +53,16 @@ impl WorthQueryRestoredGeneratedOutput {
     }
 }
 
+/// Why restoring a generated output did not complete.
 pub enum WorthQueryGeneratedOutputRestorationFailure {
+    /// Nothing was published. The suspended output is handed back so it can be
+    /// reconstructed again; the cause says why.
     Rejected {
         suspended: WorthQuerySuspendedGeneratedOutput,
         cause: WorthQueryGeneratedOutputRestorationFailureCause,
     },
+    /// Some owners moved, but the product head did not. Continue the recovery
+    /// this carries.
     ProductUnpublished(WorthQueryUnpublishedGeneratedOutputRestoration),
 }
 
@@ -69,6 +82,10 @@ impl WorthQueryGeneratedOutputRestorationFailure {
     }
 }
 
+/// A restoration whose publication moved some owners but not the product head.
+///
+/// Turn it into a recovery with `into_recovery`, then continue with
+/// `continue_generated_output_restoration_recovery`.
 #[must_use = "unpublished restoration custody must remain with its World recovery authority"]
 pub struct WorthQueryUnpublishedGeneratedOutputRestoration {
     product: crate::domain_computation::WorthQueryProductUnpublishedApplication,
@@ -286,7 +303,7 @@ where
                         producer.producer_dependency_identity,
                         producer.idempotency_key_identity,
                         producer.observed_source_facts,
-                        None,
+                        producer.resources,
                     );
                 Ok(WorthQueryRestoredGeneratedOutput {
                     branch,
@@ -359,16 +376,6 @@ where
             self.primary_provider.unpublished_idempotency_disposition(),
         )
     }
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryGeneratedOutputInvariantAdmissionDenial {
-    ForeignBranchEvidence,
-    IncompleteOwnerEvidence,
-    MissingRequiredInvariant,
-    RequiredInvariantVersionMismatch,
-    DuplicateRequiredInvariant,
-    RequiredInvariantDidNotPass,
 }
 
 fn suspended_from_completion(

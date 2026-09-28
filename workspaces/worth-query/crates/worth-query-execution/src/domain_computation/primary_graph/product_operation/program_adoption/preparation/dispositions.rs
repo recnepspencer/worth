@@ -6,6 +6,8 @@ use worth_query_installation::facade::{
     WorthQueryProgramCustodyInventoryRequirement,
 };
 
+/// What a branch adoption does with one piece of custody held under the source
+/// program.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryProgramCustodyDispositionKind {
     /// The operation still exists with changed meaning. A continuation grants
@@ -22,6 +24,8 @@ pub enum WorthQueryProgramCustodyDispositionKind {
     RetainExactSourceReservation,
 }
 
+/// The disposition a branch adoption derived for one custody requirement: the
+/// requirement, and what happens to it.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryProgramCustodyDisposition {
     requirement: WorthQueryProgramCustodyInventoryRequirement,
@@ -38,6 +42,10 @@ impl WorthQueryProgramCustodyDisposition {
     }
 }
 
+/// Every custody disposition a branch adoption derived from its requirements,
+/// one per custody requirement.
+///
+/// Derived by the runtime during preparation, not chosen by the caller.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryProgramCustodyDispositionInventory {
     dispositions: Box<[WorthQueryProgramCustodyDisposition]>,

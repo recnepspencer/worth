@@ -71,7 +71,7 @@ impl BridgeMutationCausalityBundle {
     pub fn retains_mutation_subject(
         &self,
         target_collection: &str,
-        target_record: crate::relational_identity::RelationalBridgeRecordIdentityParts,
+        target_record: crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts,
         mutation_kind: BridgeMutationSubjectKind,
         touches: &[BridgeMutationSubjectTouch],
     ) -> bool {

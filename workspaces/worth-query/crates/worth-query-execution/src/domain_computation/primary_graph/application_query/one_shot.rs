@@ -24,6 +24,10 @@ use crate::domain_computation::primary_graph::{
 };
 use outcome::finalize_one_shot;
 
+/// The complete result of a one-shot query read: projected rows, the observed
+/// sources and result set, and the access receipt.
+///
+/// The observed sources can later be bound as a mutation's source expectation.
 pub struct WorthQueryApplicationOneShotResult<Query, QueryResult> {
     rows: Vec<QueryResult>,
     observed_sources: Vec<super::WorthQueryObservedSource<Query>>,

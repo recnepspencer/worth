@@ -198,7 +198,6 @@ fn snapshot_audit_failure_discards_only_touched_overlay() {
         registrations: vec![InvariantRegistration::snapshot_publication_blocking(
             InvariantRule::MaxSnapshotEntities(1),
         )],
-        ..InvariantCatalog::default()
     });
     let baseline = create_entity_outcome(&runtime, "baseline");
 

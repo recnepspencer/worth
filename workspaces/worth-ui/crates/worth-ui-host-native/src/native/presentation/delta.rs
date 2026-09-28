@@ -6,7 +6,7 @@ use worth_ui_host_contract::{
 use super::port::UiNativePresentationPortObservation;
 use super::raster::UiNativeRasterBasis;
 use super::retained_draw_list::UiNativeRetainedDeltaUndo;
-use super::retained_raster::build_plan;
+use super::retained_raster::{build_plan, prepare_target};
 use super::{
     reserve_presentation_owners, settle_port_result, UiNativePresentationFailure,
     UiNativePresentationPort, UiNativePresentationPortPlan, UiNativeRetainedDrawList,
@@ -50,6 +50,7 @@ pub(crate) fn present_delta<Port: UiNativePresentationPort>(
         ));
     };
     let basis = UiNativeRasterBasis::from_presentation_access(graphics);
+    prepare_target(graphics, basis, retained)?;
     let glyph_runs = view
         .text_raster_work()
         .map(|work| work.glyph_runs())
@@ -67,6 +68,12 @@ pub(crate) fn present_delta<Port: UiNativePresentationPort>(
             effects: effects.without_native_paint(),
         });
     }
+    // A whole repaint of a successor target paints, whatever the delta holds.
+    let effects = if retained.repaint_owed() {
+        effects.with_native_paint()
+    } else {
+        effects
+    };
     let owners = match reserve_presentation_owners(
         resources,
         physical_signal,
@@ -91,6 +98,7 @@ pub(crate) fn present_delta<Port: UiNativePresentationPort>(
             Port::present(
                 graphics,
                 atlas_gpu,
+                view.attempt(),
                 plan,
                 defer_initial_observation,
                 lifecycle,
@@ -279,6 +287,7 @@ pub(crate) fn settle_staged_delta(
 ) -> Result<UiNativeDeltaPresentation, UiNativePresentationFailure> {
     match result {
         Ok(observation) => {
+            retained.settle_target();
             let (pixels, cost, port_crossings) = observation.into_parts();
             Ok(UiNativeDeltaPresentation {
                 cost,
@@ -297,6 +306,7 @@ pub(crate) fn settle_staged_delta(
             Err(failure)
         }
         Err(UiNativePresentationFailure::Pending(pending)) => {
+            retained.settle_target();
             Err(UiNativePresentationFailure::Pending(
                 pending.with_settlement(super::UiNativePendingSurfaceSettlement::Delta(
                     super::UiNativePendingDeltaSettlement::new(undo, effects),

@@ -5,7 +5,8 @@ pub struct UiThemeCapabilityReceipt {
     definition: super::UiThemeDefinitionIdentity,
     definition_revision: u64,
     slot_catalog_revision: u64,
-    required_roles: Box<[UiThemeRequiredRoleBasis]>,
+    /// Theme-wide and carried by every node's appearance, so it is shared.
+    required_roles: std::sync::Arc<[UiThemeRequiredRoleBasis]>,
     surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
     application: crate::runtime::WorthUiActiveApplicationGenerationIdentity,
     host_profile: worth_ui_host_contract::UiHostAppearanceProfileContract,
@@ -16,7 +17,7 @@ pub(crate) struct UiPreparedThemeBindingAdmission {
     definition: super::UiThemeDefinitionIdentity,
     definition_revision: u64,
     slot_catalog_revision: u64,
-    required_roles: Box<[UiThemeRequiredRoleBasis]>,
+    required_roles: std::sync::Arc<[UiThemeRequiredRoleBasis]>,
     application: crate::runtime::WorthUiActiveApplicationGenerationIdentity,
     host_profile: worth_ui_host_contract::UiHostAppearanceProfileContract,
 }
@@ -147,7 +148,7 @@ impl<'basis> UiThemeCapabilityAdmission<'basis> {
             definition: self.definition.identity().clone(),
             definition_revision: self.definition.revision(),
             slot_catalog_revision: self.catalog.revision(),
-            required_roles: roles.into_boxed_slice(),
+            required_roles: roles.into(),
             application,
             host_profile: self.host_profile.clone(),
         })
@@ -283,7 +284,7 @@ impl UiThemeCapabilityReceipt {
                 .expect("test theme definition identity"),
             definition_revision: 1,
             slot_catalog_revision: 1,
-            required_roles: Box::new([]),
+            required_roles: std::sync::Arc::from([]),
             surface,
             application,
             host_profile: worth_ui_host_contract::UiHostAppearanceProfileContract::admit(

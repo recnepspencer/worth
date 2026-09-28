@@ -1,6 +1,7 @@
 use super::WorthUiFrameworkTurnExecution;
 
 mod follow_on;
+mod readout;
 
 #[derive(Debug)]
 #[must_use = "framework turn completion must be executed or explicitly resolved"]
@@ -217,121 +218,6 @@ impl<'runtime> WorthUiPendingDurableResize<'runtime> {
                     selection: Box::new(self.selection),
                 }
             }
-        }
-    }
-}
-
-impl<'runtime> WorthUiFrameworkTurnCompletion<'runtime> {
-    pub fn planning_counters(&self) -> Option<super::UiFrameworkTransitionPlanningCounters> {
-        match self {
-            Self::ReadyToExecute { execution } => Some(execution.planning_counters()),
-            Self::AllocationInvalidationsNarrowed {
-                planning_counters, ..
-            }
-            | Self::ViewportResizeResolved {
-                planning_counters, ..
-            }
-            | Self::ViewportResizeDenied {
-                planning_counters, ..
-            }
-            | Self::ResizePreviewPublished {
-                planning_counters, ..
-            }
-            | Self::DurableResizeCommitted {
-                planning_counters, ..
-            }
-            | Self::DragResizePreviewPending {
-                planning_counters, ..
-            } => Some(*planning_counters),
-            _ => None,
-        }
-    }
-
-    pub fn into_execution(self) -> Result<WorthUiFrameworkTurnExecution<'runtime>, Box<Self>> {
-        match self {
-            Self::ReadyToExecute { execution } => Ok(execution),
-            other => Err(Box::new(other)),
-        }
-    }
-    pub fn narrowed_plan(&self) -> Option<&crate::runtime::UiNarrowedAllocationFramePlan> {
-        match self {
-            Self::AllocationInvalidationsNarrowed { plan, .. } => Some(plan),
-            _ => None,
-        }
-    }
-    pub fn replan_selection(&self) -> Option<&crate::graph::UiAdmittedReplanNeighborhoodSet> {
-        match self {
-            Self::AllocationInvalidationsNarrowed { selection, .. }
-            | Self::DurableResizeCommitted { selection, .. } => Some(selection),
-            Self::DragResizePreviewPending { durable, .. } => Some(&durable.selection),
-            _ => None,
-        }
-    }
-    pub fn replan_transaction(
-        &self,
-    ) -> Option<&crate::runtime::UiAllocationReplanTransactionOutcome> {
-        match self {
-            Self::AllocationInvalidationsNarrowed { transaction, .. } => Some(transaction),
-            _ => None,
-        }
-    }
-    pub fn denied_replan_inspection(
-        &self,
-    ) -> Option<worth_ui_inspection::UiAllocationInspectionDeniedAttempt> {
-        let Self::AllocationInvalidationsNarrowed {
-            plan,
-            selection,
-            transaction: crate::runtime::UiAllocationReplanTransactionOutcome::Denied(denial),
-            ..
-        } = self
-        else {
-            return None;
-        };
-        Some(crate::evidence::project_denied_replan_inspection(
-            plan, selection, denial,
-        ))
-    }
-    pub fn viewport_resize_outcome(&self) -> Option<&crate::runtime::UiViewportResizeOutcome> {
-        match self {
-            Self::ViewportResizeResolved { outcome, .. } => Some(outcome),
-            _ => None,
-        }
-    }
-    pub fn durable_resize_outcome(&self) -> Option<&crate::runtime::UiDurableResizeCommitOutcome> {
-        match self {
-            Self::DurableResizeCommitted { outcome, .. } => Some(outcome),
-            _ => None,
-        }
-    }
-    pub(crate) fn into_pending_mounted_preview(
-        self,
-    ) -> Result<
-        (
-            UiPendingMountedPreviewTransition<'runtime>,
-            super::UiFrameworkTransitionPlanningCounters,
-        ),
-        Box<Self>,
-    > {
-        match self {
-            Self::ResizePreviewPublished {
-                pending,
-                planning_counters,
-            } => Ok((
-                UiPendingMountedPreviewTransition::PreviewOnly { preview: pending },
-                planning_counters,
-            )),
-            Self::DragResizePreviewPending {
-                preview,
-                durable,
-                planning_counters,
-            } => Ok((
-                UiPendingMountedPreviewTransition::DragResize {
-                    preview,
-                    durable: Box::new(durable),
-                },
-                planning_counters,
-            )),
-            other => Err(Box::new(other)),
         }
     }
 }

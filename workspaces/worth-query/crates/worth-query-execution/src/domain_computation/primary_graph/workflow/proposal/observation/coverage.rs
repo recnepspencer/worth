@@ -1,56 +1,114 @@
 use worth_query_declaration::facade::application_program::ApplicationWorkflowSubjectSelector;
 use worth_relational::facade::identity::{EntityId, PartitionId};
 
-use super::{denial, required_text, required_u64};
+use super::{decode_identity, denial, optional_identity, required_text, required_u64};
 use crate::domain_computation::primary_graph::application_attempt::{
     observe_adjacency, WorthQueryApplicationAdjacencyDirection, WorthQueryApplicationAttemptDenial,
-    WorthQueryApplicationObservedFact,
+    WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationObservedFact,
 };
 use crate::domain_computation::primary_graph::workflow::{
-    proposal::WorkflowProposalCoverageMeaning, schema::WorthQueryWorkflowLayout,
+    proposal::{identity::WorkflowProposalCoverageScope, WorkflowProposalCoverageMeaning},
+    schema::WorthQueryWorkflowLayout,
 };
 
-pub(in crate::domain_computation::primary_graph) fn observe_workflow_proposal_coverage(
+pub(in crate::domain_computation::primary_graph) fn observe_workflow_proposal_coverages(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     layout: &WorthQueryWorkflowLayout,
     proposal: EntityId,
-    selector: &ApplicationWorkflowSubjectSelector,
+    maximum_facts: usize,
 ) -> Result<
     (
-        WorkflowProposalCoverageMeaning,
+        Vec<WorkflowProposalCoverageMeaning>,
         Vec<WorthQueryApplicationObservedFact>,
     ),
     WorthQueryApplicationAttemptDenial,
 > {
+    if maximum_facts < 6 {
+        return Err(budget_denial());
+    }
     let mut facts = Vec::new();
+    let scope = observe_proposal_scope(runtime, snapshot, layout, proposal, &mut facts)?;
+    let kind = layout.proposal.entity_kind;
     let count = required_u64(
         runtime,
         snapshot,
         proposal,
-        layout.proposal.entity_kind,
+        kind,
         &layout.proposal.coverage_count,
         &mut facts,
     )?;
+    let count = usize::try_from(count)
+        .map_err(|_| denial("workflow proposal coverage count exceeds this host"))?;
+    // Scope, count, and adjacency cost six facts; each coverage costs an
+    // entity and five fields. Reject before allocating or scanning inventory.
+    if count > maximum_facts.saturating_sub(6) / 6 {
+        return Err(budget_denial());
+    }
     let coverages = observe_coverages(
+        runtime, snapshot, layout, proposal, count, scope, &mut facts,
+    )?;
+    if facts.len() > maximum_facts {
+        return Err(budget_denial());
+    }
+    Ok((coverages, facts))
+}
+
+fn budget_denial() -> WorthQueryApplicationAttemptDenial {
+    WorthQueryApplicationAttemptDenial::new(
+        WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
+        "workflow proposal coverage fact budget",
+    )
+}
+
+fn observe_proposal_scope(
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    layout: &WorthQueryWorkflowLayout,
+    proposal: EntityId,
+    facts: &mut Vec<WorthQueryApplicationObservedFact>,
+) -> Result<WorkflowProposalCoverageScope, WorthQueryApplicationAttemptDenial> {
+    let kind = layout.proposal.entity_kind;
+    let operation = required_text(
         runtime,
         snapshot,
-        layout,
         proposal,
-        usize::try_from(count)
-            .map_err(|_| denial("workflow proposal coverage count exceeds this host"))?,
-        &mut facts,
+        kind,
+        &layout.proposal.operation,
+        facts,
     )?;
-    let matching = coverages
-        .into_iter()
-        .filter(|coverage| &coverage.selector == selector)
-        .collect::<Vec<_>>();
-    match matching.as_slice() {
-        [coverage] => Ok((coverage.clone(), facts)),
-        _ => Err(denial(
-            "workflow proposal does not contain exactly one required coverage",
-        )),
-    }
+    let input_type = required_text(
+        runtime,
+        snapshot,
+        proposal,
+        kind,
+        &layout.proposal.input_type,
+        facts,
+    )?;
+    let input_identity_text = required_text(
+        runtime,
+        snapshot,
+        proposal,
+        kind,
+        &layout.proposal.input_identity,
+        facts,
+    )?;
+    let input_identity = decode_identity(&input_identity_text)
+        .ok_or_else(|| denial("workflow proposal input identity is malformed"))?;
+    let source_identity = optional_identity(
+        runtime,
+        snapshot,
+        proposal,
+        kind,
+        &layout.proposal.source_identity,
+        facts,
+    )?;
+    Ok(WorkflowProposalCoverageScope::from_identities(
+        &operation,
+        &input_type,
+        input_identity,
+        source_identity,
+    ))
 }
 
 pub(super) fn observe_coverages(
@@ -59,6 +117,7 @@ pub(super) fn observe_coverages(
     layout: &WorthQueryWorkflowLayout,
     proposal: EntityId,
     count: usize,
+    scope: WorkflowProposalCoverageScope,
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
 ) -> Result<Vec<WorkflowProposalCoverageMeaning>, WorthQueryApplicationAttemptDenial> {
     let direction = WorthQueryApplicationAdjacencyDirection::Outgoing;
@@ -137,10 +196,11 @@ pub(super) fn observe_coverages(
             .map_err(|_| denial("workflow proposal coverage generation is malformed"))?;
         let partition = u32::try_from(partition)
             .map_err(|_| denial("workflow proposal coverage partition is malformed"))?;
-        let coverage = WorkflowProposalCoverageMeaning::new(
+        let mut coverage = WorkflowProposalCoverageMeaning::new(
             selector,
             EntityId::new(PartitionId::new(partition), slot, generation),
         );
+        coverage.identity = scope.coverage_identity(coverage.local_identity());
         if coverage.identity != identity {
             return Err(denial("workflow proposal coverage identity changed"));
         }

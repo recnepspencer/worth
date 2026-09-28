@@ -19,12 +19,13 @@ mod tables;
 mod view;
 
 pub use appearance::{
-    compose_source_over, UiAppearanceAllocationBounds, UiAppearanceBackdropExtent,
-    UiAppearanceClip, UiAppearanceDamageAttribution, UiAppearanceDamageRegion,
-    UiAppearanceEmptyRegion, UiAppearanceGeometryOverflow, UiAppearanceLogicalLength,
-    UiAppearanceNegativeLength, UiAppearanceNormalizedLogicalRadii, UiAppearanceOutlineGeometry,
-    UiAppearanceOutlineGeometryDenial, UiAppearanceTextDamageRequirement,
-    UiAppearanceTextDamageTransition, UiAppearanceVisualBounds,
+    appearance_coordinate_nearest, appearance_extent_nearest, appearance_points,
+    appearance_points_f32, compose_source_over, UiAppearanceAllocationBounds,
+    UiAppearanceBackdropExtent, UiAppearanceClip, UiAppearanceDamageAttribution,
+    UiAppearanceDamageRegion, UiAppearanceEmptyRegion, UiAppearanceGeometryOverflow,
+    UiAppearanceLogicalLength, UiAppearanceNegativeLength, UiAppearanceNormalizedLogicalRadii,
+    UiAppearanceOutlineGeometry, UiAppearanceOutlineGeometryDenial,
+    UiAppearanceTextDamageRequirement, UiAppearanceTextDamageTransition, UiAppearanceVisualBounds,
     UiHostAppearanceGeometryQualification, UiHostAppearanceGeometryQualificationBasis,
     UiHostAppearanceGeometryQualificationDenial, UiHostAppearanceMechanicFamily,
     UiHostAppearanceProfileContract, UiHostAppearanceProfileDenial, UiHostAppearanceProfilePosture,

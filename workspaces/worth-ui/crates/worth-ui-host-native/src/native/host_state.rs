@@ -203,9 +203,8 @@ impl UiNativeHostState {
             .with_physical_signal(self.physical_signal.observation())
             .with_host_state(self);
         self.peak_census = self.peak_census.max(self.resources.peak()).max(current);
-        let pins = self.text_atlas.pin_observations();
-        if pins.len() > self.peak_text_pins.len() {
-            self.peak_text_pins = pins;
+        if self.text_atlas.pin_count() > self.peak_text_pins.len() {
+            self.peak_text_pins = self.text_atlas.pin_observations();
         }
     }
 
@@ -233,7 +232,12 @@ impl UiNativeHostState {
         }
     }
 
+    /// Frame pin histories are certification evidence. Ordinary builds keep
+    /// none: each frame's pin and atlas digests would cost that frame.
     pub(crate) fn record_text_pin_frame_observation(&mut self) {
+        if !cfg!(feature = "certification-support") {
+            return;
+        }
         let observations = self.text_atlas.pin_observations();
         self.make_observation_history_room();
         self.text_pin_frame_counts
@@ -255,10 +259,15 @@ impl UiNativeHostState {
         self.retained_frame_observations.push(observation);
     }
 
+    /// Atlas plan histories are certification evidence too; ordinary
+    /// builds keep none.
     pub(crate) fn record_text_atlas_plan_observation(
         &mut self,
         observation: super::text_atlas::UiNativeTextAtlasPlanObservation,
     ) {
+        if !cfg!(feature = "certification-support") {
+            return;
+        }
         if self.text_atlas_plan_observations.len() == NATIVE_OBSERVATION_HISTORY_CAPACITY {
             self.text_atlas_plan_observations.remove(0);
             self.observation_history_overflowed = true;

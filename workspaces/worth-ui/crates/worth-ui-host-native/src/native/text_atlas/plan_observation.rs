@@ -12,6 +12,17 @@ pub struct UiNativeTextAtlasPlanObservation {
 }
 
 impl UiNativeTextAtlasPlanObservation {
+    #[cfg(test)]
+    pub(crate) const fn empty() -> Self {
+        Self {
+            host_session: 0,
+            attempt: 0,
+            surface: 0,
+            binding: 0,
+            work: [0; 10],
+        }
+    }
+
     pub(crate) fn from_admitted_plan(
         basis: crate::native::physical_work_signal::UiNativePhysicalPresentationBasis,
         plan: UiNativeTextAtlasTransactionPlanSnapshot,

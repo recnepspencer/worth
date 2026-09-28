@@ -6,13 +6,23 @@ license.workspace = true
 description = "Authoritative bank runtime composition."
 publish = false
 
+[features]
+# Certification-only fault and occupancy controls; see
+# `identity_runtime/certification_controls.rs`.
+test-controls = [
+    "worth-query-host/test-durability-faults",
+    "worth-query-host/test-world-operation-control",
+]
+
 [dependencies]
 bank-domain.workspace = true
+getrandom = "0.3"
 worth-foundational.workspace = true
 worth-query-host.workspace = true
 
 [dev-dependencies]
 bank-external-rail.workspace = true
+bank-server = { path = ".", features = ["test-controls"] }
 tokio.workspace = true
 
 [lints]

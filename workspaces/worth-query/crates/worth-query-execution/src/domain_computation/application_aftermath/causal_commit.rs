@@ -23,9 +23,15 @@ where
         handoff: &WorthQueryUndoProgressionHandoff,
     ) -> WorthQueryApplicationCommitOutcome
     where
+        Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
-        if self.has_installed_application_program() {
+        if self.operation_requires_workflow_authority::<Operation>() {
+            return WorthQueryApplicationCommitOutcome::Denied(
+                WorthQueryApplicationCommitDenial::workflow_authority_required(),
+            );
+        }
+        if self.operation_requires_application_program::<Operation>() {
             return WorthQueryApplicationCommitOutcome::Denied(
                 WorthQueryApplicationCommitDenial::application_program_required(),
             );
@@ -46,9 +52,15 @@ where
         handoff: &WorthQueryRedoProgressionHandoff,
     ) -> WorthQueryApplicationCommitOutcome
     where
+        Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
-        if self.has_installed_application_program() {
+        if self.operation_requires_workflow_authority::<Operation>() {
+            return WorthQueryApplicationCommitOutcome::Denied(
+                WorthQueryApplicationCommitDenial::workflow_authority_required(),
+            );
+        }
+        if self.operation_requires_application_program::<Operation>() {
             return WorthQueryApplicationCommitOutcome::Denied(
                 WorthQueryApplicationCommitDenial::application_program_required(),
             );

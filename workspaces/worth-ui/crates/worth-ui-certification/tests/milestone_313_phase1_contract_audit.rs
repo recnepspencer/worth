@@ -1,9 +1,9 @@
 use super::{milestone_313_ledger, repository_document, workspace_source_inventory};
 
 fn phase_1_inputs() -> (toml::Value, String) {
-    let contract_text = repository_document("_docs/worth-ui/milestone-3.13-phase-1-contract.toml");
+    let contract_text = repository_document("plans/worth-ui/milestone-3.13-phase-1-contract.toml");
     let contract = toml::from_str(&contract_text).expect("Phase 1 contract should parse");
-    let ledger = repository_document("_docs/worth-ui/milestone-3.13-proof-ledger.csv");
+    let ledger = repository_document("plans/worth-ui/milestone-3.13-proof-ledger.csv");
     (contract, ledger)
 }
 

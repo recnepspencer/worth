@@ -1,9 +1,22 @@
 use super::CoverageWorld;
 use worth_ui_host_contract::*;
 
+/// Where the host draws `points` from, read independently of it: the nearest
+/// device pixel at 1.25 device pixels per point, in millipoints.
+fn presented_millipoints(points: f32) -> i64 {
+    let pixels = (f64::from(points) * 1.25).round();
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "fixture origins are a few hundred points, far inside i64 millipoints"
+    )]
+    let millipoints = (pixels / 1.25 * 1_000.0).round() as i64;
+    millipoints
+}
+
 // Independent oracle uses the text owner's raster bearing, extent and positioned outline.
 pub(super) fn images(world: &CoverageWorld) -> Vec<[f32; 4]> {
     let text = &world.fragment.text_candidates()[0];
+    let origin = presented_millipoints(text.origin_x());
     let demand = worth_ui_text::derive_glyph_raster_demand(
         &world.layout,
         worth_ui_text::UiGlyphRasterDemandRequest {
@@ -11,11 +24,7 @@ pub(super) fn images(world: &CoverageWorld) -> Vec<[f32; 4]> {
             selection: worth_ui_text::UiGlyphRasterDemandSelection::CompleteLayout,
             scale: worth_ui_text::UiGlyphRasterScale::new(1_250, text.qualified_layout_scale())
                 .unwrap(),
-            placement: worth_ui_text::UiGlyphRasterPlacement::from_mounted_logical(
-                text.origin_x(),
-                0.0,
-            )
-            .unwrap(),
+            placement: worth_ui_text::UiGlyphRasterPlacement::from_millipoints([origin, 0]),
             lane: UiGlyphRasterLane::Ordinary,
         },
     )
@@ -39,13 +48,12 @@ pub(super) fn images(world: &CoverageWorld) -> Vec<[f32; 4]> {
                 .find(|image| image.key() == record.key())
                 .unwrap();
             Some([
-                ((f64::from(text.origin_x()) * 1_000.0 + positioned.origin_x_millipoints() as f64)
-                    * 1.25
-                    / 1_000.0)
-                    .floor() as f32
-                    + image.bearing().x_over_64() as f32 / 64.0,
-                (positioned.origin_y_millipoints() as f64 * 1.25 / 1_000.0).floor() as f32
-                    - image.bearing().y_over_64() as f32 / 64.0,
+                super::device_pixels(
+                    ((origin + positioned.origin_x_millipoints()) as f64 * 1.25 / 1_000.0).floor(),
+                ) + image.bearing().x_over_64() as f32 / 64.0,
+                super::device_pixels(
+                    (positioned.origin_y_millipoints() as f64 * 1.25 / 1_000.0).floor(),
+                ) - image.bearing().y_over_64() as f32 / 64.0,
                 image.extent().width() as f32,
                 image.extent().height() as f32,
             ])

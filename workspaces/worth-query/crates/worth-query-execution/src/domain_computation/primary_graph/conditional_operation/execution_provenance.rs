@@ -2,46 +2,12 @@ use super::signal_decision_reentry::{
     WorthQueryRetainedConditionalDecision, WorthQueryRetainedConditionalWake,
 };
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryConditionalSignalDecision {
-    Eligible,
-    DependencyUnchanged,
-    RevertedClean,
-    Suppressed,
-    Deferred,
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryConditionalExecutionTerminal {
-    ProductStale,
-    ProductUnpublished,
-    NoEffect,
-    EligibleRetained,
-    SuppressedRetained,
-    DeferredRetained,
-    Retryable,
-    ControlStopped,
-    Indeterminate,
-    Committed,
-    AlreadyCommitted,
-    Failed,
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryConditionalExecutionCause {
-    ProductHeadChanged,
-    NoEffect(crate::domain_computation::primary_graph::WorthQueryApplicationNoEffectCause),
-    ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
-    RetentionCapacityExhausted,
-    RetentionIdentityExhausted,
-    SnapshotIdentityExhausted,
-    PatchPositionReservationContended,
-    CandidateCapacityExhausted { maximum_candidates: usize },
-    PublishedSnapshotCapacityExhausted { maximum_handles: usize },
-    Cancelled,
-    TimedOut,
-    TerminalFailure,
-}
+mod classification;
+pub(in crate::domain_computation::primary_graph::conditional_operation) use classification::signal_decision;
+pub use classification::{
+    WorthQueryConditionalExecutionCause, WorthQueryConditionalExecutionTerminal,
+    WorthQueryConditionalSignalDecision,
+};
 
 /// Descriptive, non-authorizing lineage for one temporal wake processed by an
 /// observed clock reading.
@@ -327,63 +293,6 @@ fn terminal(
         }
         WorthQueryRetainedConditionalDecision::Failed(_) => {
             WorthQueryConditionalExecutionTerminal::Failed
-        }
-    }
-}
-
-pub(super) fn signal_decision(
-    class: worth_signal::facade::SignalConditionalDecisionClass,
-) -> WorthQueryConditionalSignalDecision {
-    use worth_signal::facade::SignalConditionalDecisionClass as Class;
-    match class {
-        Class::ComputedChanged => WorthQueryConditionalSignalDecision::Eligible,
-        Class::DependencyUnchanged => WorthQueryConditionalSignalDecision::DependencyUnchanged,
-        Class::ComputedRevertedClean => WorthQueryConditionalSignalDecision::RevertedClean,
-        Class::SuppressedBeforeCompute => WorthQueryConditionalSignalDecision::Suppressed,
-        Class::DeferredByCondition | Class::DeferredTemporal | Class::DeferredOnDemand => {
-            WorthQueryConditionalSignalDecision::Deferred
-        }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use worth_signal::facade::SignalConditionalDecisionClass as Class;
-
-    #[test]
-    fn query_provenance_preserves_every_signal_decision_class() {
-        for (class, expected) in [
-            (
-                Class::ComputedChanged,
-                WorthQueryConditionalSignalDecision::Eligible,
-            ),
-            (
-                Class::DependencyUnchanged,
-                WorthQueryConditionalSignalDecision::DependencyUnchanged,
-            ),
-            (
-                Class::ComputedRevertedClean,
-                WorthQueryConditionalSignalDecision::RevertedClean,
-            ),
-            (
-                Class::SuppressedBeforeCompute,
-                WorthQueryConditionalSignalDecision::Suppressed,
-            ),
-            (
-                Class::DeferredByCondition,
-                WorthQueryConditionalSignalDecision::Deferred,
-            ),
-            (
-                Class::DeferredTemporal,
-                WorthQueryConditionalSignalDecision::Deferred,
-            ),
-            (
-                Class::DeferredOnDemand,
-                WorthQueryConditionalSignalDecision::Deferred,
-            ),
-        ] {
-            assert_eq!(signal_decision(class), expected);
         }
     }
 }

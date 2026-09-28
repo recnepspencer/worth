@@ -1,5 +1,7 @@
 # Inspection
 
+> **Internal engine surface.** This page documents `WorthQueryWorkspace` (`worth_query::facade`), the engine surface that `worth-ui-query-binding` uses. Application code uses `worth-query-decl` and `worth-query-host`; start with the [application front door](../foundations/ordinary-application-front-door.md).
+
 ## What This Feature Is
 
 Inspection is Worth Query's explanation surface. It lets you ask the runtime
@@ -50,7 +52,7 @@ This includes both:
 - `WorthQueryInspectionTarget`
 - `WorthQueryBasisLifecycleInspection`
 
-The inspection family is part of the stabilized public runtime facade. It is
+The inspection family is part of the Workspace engine surface. It is
 safe to build against now for synchronous runtime-backed surfaces.
 
 ## Core Mental Model

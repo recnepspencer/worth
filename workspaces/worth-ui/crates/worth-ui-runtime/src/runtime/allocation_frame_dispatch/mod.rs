@@ -11,7 +11,10 @@ mod retry_ledger;
 mod runtime_lifecycle;
 mod source_registry;
 
-pub(crate) const ALLOCATION_FRAME_SOURCE_CAPACITY: usize = 64;
+/// How many allocation sources, and so ingress slots, one frame holds.
+pub(crate) const ALLOCATION_FRAME_SOURCE_COUNT: u16 = 64;
+/// `ALLOCATION_FRAME_SOURCE_COUNT` as the length of the arrays that hold them.
+pub(crate) const ALLOCATION_FRAME_SOURCE_CAPACITY: usize = ALLOCATION_FRAME_SOURCE_COUNT as usize;
 
 pub(crate) use dispatcher::{
     UiAllocationFrameDispatcher, UiAllocationFrameEpochAssignment,

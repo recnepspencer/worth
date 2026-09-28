@@ -1,8 +1,6 @@
 use worth_ui_host_contract::{
-    UiMountedAppearanceMechanic, UiMountedCanonicalBox, UiMountedCanonicalBoxInput,
-    UiMountedCoordinateSpace, UiMountedPresentationOpacity, UiMountedSurfacePaint,
-    UiSemanticSurfaceIdentity, UiSurfaceBindingGeneration,
-    UI_APPEARANCE_LOGICAL_SUBPIXELS_PER_POINT,
+    UiMountedAppearanceMechanic, UiMountedCanonicalBox, UiMountedPresentationOpacity,
+    UiMountedSurfacePaint, UiSemanticSurfaceIdentity, UiSurfaceBindingGeneration,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -80,8 +78,8 @@ impl UiMountedRetainedAppearanceVisualMechanic {
         (alpha != 0).then_some(UiMountedAppearancePaintBasis {
             binding,
             node_receipt: surface.node_receipt(),
-            bounds: canonical_visual(surface.visual_bounds())?,
-            clip: canonical_clip(surface.clip())?,
+            bounds: surface.visual_bounds().canonical_box()?,
+            clip: surface.clip().canonical_box()?,
             semantic_order: surface.surface_paint_order(),
             alpha: rectangular_coverage.then_some(alpha),
             source_digest: self.semantic_digest,
@@ -131,31 +129,10 @@ impl UiMountedAppearancePaintBasis {
     }
 }
 
-fn canonical_visual(
-    bounds: worth_ui_host_contract::UiAppearanceVisualBounds,
-) -> Option<UiMountedCanonicalBox> {
-    canonical(bounds.x(), bounds.y(), bounds.width(), bounds.height())
-}
-
-fn canonical_clip(clip: worth_ui_host_contract::UiAppearanceClip) -> Option<UiMountedCanonicalBox> {
-    canonical(clip.x(), clip.y(), clip.width(), clip.height())
-}
-
-fn canonical(x: i32, y: i32, width: u32, height: u32) -> Option<UiMountedCanonicalBox> {
-    let units = UI_APPEARANCE_LOGICAL_SUBPIXELS_PER_POINT as f32;
-    UiMountedCanonicalBox::canonicalize(UiMountedCanonicalBoxInput {
-        x: x as f32 / units,
-        y: y as f32 / units,
-        width: width as f32 / units,
-        height: height as f32 / units,
-        coordinate_space: UiMountedCoordinateSpace::Viewport,
-    })
-    .ok()
-}
-
 fn composed_alpha(color_alpha: u8, opacity: UiMountedPresentationOpacity) -> u8 {
     let product = u32::from(color_alpha) * u32::from(opacity.units());
-    ((product + u32::from(u16::MAX) / 2) / u32::from(u16::MAX)) as u8
+    u8::try_from((product + u32::from(u16::MAX) / 2) / u32::from(u16::MAX))
+        .expect("an alpha scaled by at most one stays an alpha")
 }
 
 #[cfg(test)]

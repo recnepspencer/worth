@@ -19,7 +19,6 @@ use super::World;
 use crate::runtime::scroll::{UiHostScrollObservationOutcome, UiScrollOffset};
 use worth_ui_host_contract::{
     UiHostScrollDeltaPrecision, UiMountedAllocationProjection, UiMountedInstanceIdentity,
-    UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
 };
 
 /// Whole points of travel, chosen to be a whole number of device pixels at
@@ -61,8 +60,8 @@ fn snapped(logical_points: f64, scale_milli: u32) -> f64 {
 /// A quarter of a device pixel: off the grid whichever way it is rounded, and
 /// far enough from the halfway mark that which way is not in question.
 fn quarter_pixel_subpixels(scale_milli: u32) -> i64 {
-    let subpixels_per_pixel =
-        UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT * 1_000 / i64::from(scale_milli);
+    let subpixels_per_pixel = crate::units::UiSubpixels::whole_points(1).unwrap().count() * 1_000
+        / i64::from(scale_milli);
     subpixels_per_pixel / 4
 }
 
@@ -83,7 +82,7 @@ fn a_fractional_offset_paints_on_whole_device_pixels() {
         fraction > 0,
         "the World is bound at a scale whose pixels have a quarter: {scale}"
     );
-    let travel = WHOLE_POINTS * UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT + fraction;
+    let travel = crate::units::host_count_of(WHOLE_POINTS) + fraction;
     let outcome = scroll.wheel(UiHostScrollDeltaPrecision::Pixel, -travel, 5);
     assert!(
         matches!(outcome, UiHostScrollObservationOutcome::Applied(_)),
@@ -104,7 +103,7 @@ fn a_fractional_offset_paints_on_whole_device_pixels() {
     );
 
     let (painted, _) = painted_block_origin_and_scale(&mut scroll, content, 3);
-    let offset_points = travel as f64 / UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f64;
+    let offset_points = crate::units::UiSubpixels::new(travel).to_points();
     let expected = f64::from(rest) - snapped(offset_points, scale);
     assert_eq!(
         f64::from(painted),

@@ -12,6 +12,8 @@ mod provider_commit_authorization;
 pub(in crate::domain_computation) use authorization::WorthQueryAuthorizationDecisionFact;
 pub(in crate::domain_computation::authorization) use authorization::WorthQueryDelegationActivationDecisionFact;
 pub(in crate::domain_computation::authorization) use authorization::WorthQueryDelegationDecisionFact;
+pub(in crate::domain_computation) use authorization::WorthQueryDurableAuthorizationDependencies;
+pub(in crate::domain_computation) use authorization::WorthQueryDurableCapabilityLineage;
 pub(in crate::domain_computation) use principal_currentness::WorthQueryPrincipalCurrentnessDependency;
 pub(in crate::domain_computation) use provider_binding::{
     WorthQueryProviderAuthorizationDecisionFacts, WorthQueryProviderDecisionFactBinding,
@@ -112,9 +114,6 @@ impl WorthQueryRetainedAuthorizationDecisionFacts {
                 total.maximum_frontier_width = total
                     .maximum_frontier_width
                     .max(counters.maximum_frontier_width);
-                total.reconstructive_graph_scans += counters.reconstructive_graph_scans;
-                total.reconstructive_relation_records_scanned +=
-                    counters.reconstructive_relation_records_scanned;
                 total
             },
         )

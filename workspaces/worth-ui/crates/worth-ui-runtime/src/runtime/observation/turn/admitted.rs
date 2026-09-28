@@ -132,7 +132,13 @@ impl UiAdmittedObservation {
     ) -> Option<&crate::runtime::interaction::UiPointerPresenceTargetTransition> {
         match &self.payload {
             UiAdmittedObservationPayload::PointerPresence(transition) => Some(transition),
-            _ => None,
+            UiAdmittedObservationPayload::Source(_)
+            | UiAdmittedObservationPayload::Host(_)
+            | UiAdmittedObservationPayload::Measurement(_)
+            | UiAdmittedObservationPayload::Query(_)
+            | UiAdmittedObservationPayload::IntentPosture(_)
+            | UiAdmittedObservationPayload::CommittedScrollExtent(_)
+            | UiAdmittedObservationPayload::CommittedPortalAnchor(_) => None,
         }
     }
 
@@ -142,7 +148,13 @@ impl UiAdmittedObservation {
     {
         match &self.payload {
             UiAdmittedObservationPayload::Measurement(measurement) => Some(measurement),
-            _ => None,
+            UiAdmittedObservationPayload::Source(_)
+            | UiAdmittedObservationPayload::Host(_)
+            | UiAdmittedObservationPayload::PointerPresence(_)
+            | UiAdmittedObservationPayload::Query(_)
+            | UiAdmittedObservationPayload::IntentPosture(_)
+            | UiAdmittedObservationPayload::CommittedScrollExtent(_)
+            | UiAdmittedObservationPayload::CommittedPortalAnchor(_) => None,
         }
     }
 
@@ -151,7 +163,13 @@ impl UiAdmittedObservation {
     ) -> Option<&super::super::admission::UiCommittedScrollExtentObservation> {
         match &self.payload {
             UiAdmittedObservationPayload::CommittedScrollExtent(observation) => Some(observation),
-            _ => None,
+            UiAdmittedObservationPayload::Source(_)
+            | UiAdmittedObservationPayload::Host(_)
+            | UiAdmittedObservationPayload::PointerPresence(_)
+            | UiAdmittedObservationPayload::Measurement(_)
+            | UiAdmittedObservationPayload::Query(_)
+            | UiAdmittedObservationPayload::IntentPosture(_)
+            | UiAdmittedObservationPayload::CommittedPortalAnchor(_) => None,
         }
     }
 
@@ -160,7 +178,13 @@ impl UiAdmittedObservation {
     ) -> Option<&super::super::admission::UiCommittedPortalAnchorObservation> {
         match &self.payload {
             UiAdmittedObservationPayload::CommittedPortalAnchor(observation) => Some(observation),
-            _ => None,
+            UiAdmittedObservationPayload::Source(_)
+            | UiAdmittedObservationPayload::Host(_)
+            | UiAdmittedObservationPayload::PointerPresence(_)
+            | UiAdmittedObservationPayload::Measurement(_)
+            | UiAdmittedObservationPayload::Query(_)
+            | UiAdmittedObservationPayload::IntentPosture(_)
+            | UiAdmittedObservationPayload::CommittedScrollExtent(_) => None,
         }
     }
 }

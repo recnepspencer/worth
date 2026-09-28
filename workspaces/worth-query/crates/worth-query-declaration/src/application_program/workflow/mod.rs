@@ -7,6 +7,7 @@
 mod authoring;
 mod canonical;
 mod identity;
+mod limits;
 mod model;
 mod provenance;
 mod validation;
@@ -33,10 +34,10 @@ pub use identity::{
     ApplicationWorkflowDefinitionIdentity, ApplicationWorkflowNodeIdentity,
     ApplicationWorkflowSpecIdentity,
 };
+pub use limits::{ApplicationWorkflowComponentLimits, ApplicationWorkflowDefinitionLimits};
 pub use model::{
-    ApplicationWorkflowComponentLimits, ApplicationWorkflowConnection,
-    ApplicationWorkflowConnectionKind, ApplicationWorkflowControlOutcome,
-    ApplicationWorkflowDataFlow, ApplicationWorkflowDefinitionLimits,
+    ApplicationWorkflowConnection, ApplicationWorkflowConnectionKind,
+    ApplicationWorkflowControlOutcome, ApplicationWorkflowDataFlow,
     ApplicationWorkflowEvidenceJoinPolicy, ApplicationWorkflowNode, ApplicationWorkflowNodeKind,
     ApplicationWorkflowRetry, AuthoredWorkflowDefinition, ValidatedWorkflowDefinition,
 };
@@ -51,7 +52,7 @@ pub use validation::{
     ApplicationWorkflowValidationDenialKind, ApplicationWorkflowValidationWork,
 };
 pub use vocabulary::{
-    ApplicationWorkflowApprovalRef, ApplicationWorkflowAssessmentRef,
-    ApplicationWorkflowConditionRef, ApplicationWorkflowOperationRef, ApplicationWorkflowSpec,
-    ApplicationWorkflowSubjectSelector,
+    ApplicationWorkflowApprovalRef, ApplicationWorkflowAssessmentApplicability,
+    ApplicationWorkflowAssessmentRef, ApplicationWorkflowConditionRef,
+    ApplicationWorkflowOperationRef, ApplicationWorkflowSpec, ApplicationWorkflowSubjectSelector,
 };

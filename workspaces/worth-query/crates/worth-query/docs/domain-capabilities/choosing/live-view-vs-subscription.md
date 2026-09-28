@@ -1,5 +1,7 @@
 # Live View Vs Subscription
 
+> **Internal engine surface.** This page documents `WorthQueryWorkspace` (`worth_query::facade`), the engine surface that `worth-ui-query-binding` uses. Application code uses `worth-query-decl` and `worth-query-host`; start with the [application front door](../../foundations/ordinary-application-front-door.md).
+
 ## What This Page Helps You Choose
 
 Use when you need **ongoing updates** but are unsure whether to use the **retained live view surface** or the **subscription declaration family** (sharing, continuation, diagnostics).

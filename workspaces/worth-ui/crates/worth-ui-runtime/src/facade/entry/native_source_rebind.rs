@@ -24,7 +24,15 @@ impl WorthUiNativeSourceRebindDenial {
     pub const fn source_failure(&self) -> Option<&crate::runtime::UiSourceRebindAttemptFailure> {
         match self {
             Self::Source(failure) => Some(failure),
-            _ => None,
+            Self::ObservationTurn(_)
+            | Self::ObservationAdmission(_)
+            | Self::Classification(_)
+            | Self::Scope(_)
+            | Self::Identity(_)
+            | Self::Planning(_)
+            | Self::Preparation(_)
+            | Self::ManagedRebindAlreadyInFlight
+            | Self::ManagedRebindSessionMismatch => None,
         }
     }
 }

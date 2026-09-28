@@ -269,8 +269,8 @@ reclamation are explicit cold paths.
 - Proof carriers encode progression law, while Relational's concrete
   owner-sealed marker types decide which values can open governed operations.
 - Signal owns its independent component basis and graph state.
-- Runtime Bridge may retain and coordinate owner-issued component bases, but
-  it may not mint Relational authority or mutate a Relational branch cell.
+- A consumer runtime may retain and coordinate owner-issued component bases,
+  but it may not mint Relational authority or mutate a Relational branch cell.
 - Query carries component or composite artifacts supplied by their owners; it
   does not become component history authority.
 

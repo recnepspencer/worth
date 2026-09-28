@@ -211,7 +211,9 @@ fn runtime_hooks_for_node(node: &WorthUiArtifactNode) -> Vec<WorthUiRuntimeDepen
             .map(hooks_for_view_binding)
             .unwrap_or_default(),
         WorthUiArtifactNode::Binding(node) => hooks_for_view_binding(node.view_binding_reference()),
-        _ => Vec::new(),
+        WorthUiArtifactNode::Import(_)
+        | WorthUiArtifactNode::Component(_)
+        | WorthUiArtifactNode::Token(_) => Vec::new(),
     }
 }
 

@@ -39,7 +39,7 @@ where
         FamilySourceQuery<Schema, Family>: 'static,
     {
         let selected = self
-            .on_branch(delivery_branch.clone())
+            .on_branch(delivery_branch)
             .select()
             .map_err(|selection| {
                 WorthQueryOutputDemandDenial::product_selection(

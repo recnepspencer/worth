@@ -1,3 +1,13 @@
+/// Declares an aspect marker: a stable, named surface of meaning on one
+/// entity of an application schema, with its portable identity and contract
+/// revision.
+///
+/// Input: `vis Aspect for Schema, Entity;` (or `for Schema: SchemaBinding,
+/// Entity;` to declare it for every schema implementing that trait), then
+/// `identity = AspectIdentity(..)` and `revision = AspectContractRevision(..)`.
+/// It generates a unit struct `Aspect` that implements
+/// `ApplicationAspectMarkerIdentity` and a `const fn reference()` returning its
+/// typed `ApplicationAspectRef`.
 #[macro_export]
 macro_rules! worth_query_aspect {
     (

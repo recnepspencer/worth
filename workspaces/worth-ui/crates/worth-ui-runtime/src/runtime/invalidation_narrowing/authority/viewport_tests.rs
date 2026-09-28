@@ -161,10 +161,13 @@ fn viewport_fanout_remains_complete_across_separate_successor_turns() {
             .expect("each viewport successor must resolve through the ordinary lane");
         assert_eq!(
             outcome.counters().selected_neighborhoods(),
-            expected as u16,
+            u16::try_from(expected).unwrap(),
             "viewport authority succession cannot lose a previously admitted neighborhood"
         );
-        assert_eq!(outcome.counters().committed_receipts(), expected as u16);
+        assert_eq!(
+            outcome.counters().committed_receipts(),
+            u16::try_from(expected).unwrap()
+        );
     }
 }
 

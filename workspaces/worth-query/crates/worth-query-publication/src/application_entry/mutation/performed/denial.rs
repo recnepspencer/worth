@@ -1,3 +1,4 @@
+/// Why a mutation with required program outputs was refused before its commit.
 #[derive(Debug)]
 pub enum WorthQueryPerformedMutationExecutionDenial {
     ForeignProgram,
@@ -9,6 +10,8 @@ pub enum WorthQueryPerformedMutationExecutionDenial {
     Mutation(crate::application_entry::WorthQueryApplicationRequestMutationDenial),
 }
 
+/// Why a landed mutation's required outputs could not start. `recovery_posture` says
+/// whether a fresh request can retry.
 #[derive(Debug)]
 pub enum WorthQueryRequiredOutputPreparationDenial {
     ForeignProgram,

@@ -62,7 +62,7 @@ pub(crate) mod mounted_occurrence_geometry_test_support;
 mod mounted_preview;
 mod mounted_publication;
 #[cfg(test)]
-mod native_application_identity_trace_test_support;
+pub(crate) mod native_application_identity_trace_test_support;
 #[cfg(test)]
 mod native_application_identity_trace_tests;
 mod native_application_program;

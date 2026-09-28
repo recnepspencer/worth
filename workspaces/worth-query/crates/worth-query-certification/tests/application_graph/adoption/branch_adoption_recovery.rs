@@ -7,12 +7,12 @@ use worth_query_host::facade::application_entry::{
 use worth_query_host::facade::application_installation::WorthQueryProgramOwner;
 use worth_query_host::facade::primary_graph::WorthQueryBranchAdoptionRecoveryDenial;
 
-use crate::bounded_dimension_model::host::publish_on_first_program;
-use crate::bounded_dimension_model::operator_identity::{authenticate_operator, request_scope};
-use crate::bounded_dimension_model::presented_request::set_dimension;
-use crate::bounded_dimension_model::programs::DimensionProgramP1;
-use crate::bounded_dimension_model::readback::read_dimension;
-use crate::bounded_dimension_model::settled_verdict::{settle, DimensionVerdict};
+use crate::document_retention_model::host::publish_on_first_program;
+use crate::document_retention_model::operator_identity::{authenticate_operator, request_scope};
+use crate::document_retention_model::presented_request::set_retention;
+use crate::document_retention_model::programs::RetentionProgramP1;
+use crate::document_retention_model::readback::read_retention;
+use crate::document_retention_model::settled_verdict::{settle, RetentionVerdict};
 
 const P1_VALUE: u64 = 15;
 
@@ -20,11 +20,10 @@ const P1_VALUE: u64 = 15;
 fn unpublished_adoption_settles_and_publishes_without_replaying_relational_work() {
     let host = publish_on_first_program();
     let branch = host.current_world();
-    let target = host
-        .supported_program::<DimensionProgramP1>()
+    let target = *host
+        .supported_program::<RetentionProgramP1>()
         .expect("P1 is rostered")
-        .owned_revision()
-        .clone();
+        .owned_revision();
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let programs = host
@@ -34,8 +33,7 @@ fn unpublished_adoption_settles_and_publishes_without_replaying_relational_work(
         .programs();
     let requirements = programs.compare(&target).expect("comparison succeeds");
     let prepared = programs
-        .adopt(&target)
-        .requirements(&requirements)
+        .adopt(&requirements)
         .prepare(64)
         .expect("adoption prepares");
 
@@ -82,14 +80,11 @@ fn unpublished_adoption_settles_and_publishes_without_replaying_relational_work(
     );
 
     let adopted = host.current_world();
-    let p1 = host
-        .supported_program::<DimensionProgramP1>()
-        .expect("P1 remains rostered");
     assert_eq!(
-        settle(set_dimension(&p1, adopted, P1_VALUE, 0x9175_2001)),
-        DimensionVerdict::Performed(P1_VALUE)
+        settle(set_retention(&host, adopted, P1_VALUE, 0x9175_2001)),
+        RetentionVerdict::Performed(P1_VALUE)
     );
-    assert_eq!(read_dimension(host.runtime(), adopted), P1_VALUE);
+    assert_eq!(read_retention(host.runtime(), adopted), P1_VALUE);
 }
 
 #[test]
@@ -103,11 +98,10 @@ fn sibling_branch_cannot_consume_an_unpublished_adoption_recovery() {
         .components(|components| components.fork_relational().reuse_exact_signal_basis())
         .create()
         .expect("sibling branch publishes");
-    let target = host
-        .supported_program::<DimensionProgramP1>()
+    let target = *host
+        .supported_program::<RetentionProgramP1>()
         .expect("P1 is rostered")
-        .owned_revision()
-        .clone();
+        .owned_revision();
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let programs = host
@@ -117,8 +111,7 @@ fn sibling_branch_cannot_consume_an_unpublished_adoption_recovery() {
         .programs();
     let requirements = programs.compare(&target).expect("comparison succeeds");
     let prepared = programs
-        .adopt(&target)
-        .requirements(&requirements)
+        .adopt(&requirements)
         .prepare(64)
         .expect("adoption prepares");
     host.runtime().fail_next_durable_append_for_test();
@@ -163,8 +156,8 @@ fn sibling_branch_cannot_consume_an_unpublished_adoption_recovery() {
     }
 
     assert_eq!(
-        settle(set_dimension(&host, sibling, 3, 0x9175_2011)),
-        DimensionVerdict::Performed(3),
+        settle(set_retention(&host, sibling, 3, 0x9175_2011)),
+        RetentionVerdict::Performed(3),
         "the sibling remains on P0"
     );
 }
@@ -173,11 +166,10 @@ fn sibling_branch_cannot_consume_an_unpublished_adoption_recovery() {
 fn performed_recovery_retains_cleanup_failure_after_the_effect() {
     let host = publish_on_first_program();
     let branch = host.current_world();
-    let target = host
-        .supported_program::<DimensionProgramP1>()
+    let target = *host
+        .supported_program::<RetentionProgramP1>()
         .expect("P1 is rostered")
-        .owned_revision()
-        .clone();
+        .owned_revision();
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let programs = host
@@ -187,8 +179,7 @@ fn performed_recovery_retains_cleanup_failure_after_the_effect() {
         .programs();
     let requirements = programs.compare(&target).expect("comparison succeeds");
     let prepared = programs
-        .adopt(&target)
-        .requirements(&requirements)
+        .adopt(&requirements)
         .prepare(64)
         .expect("adoption prepares");
     host.runtime().fail_next_durable_append_for_test();
@@ -212,9 +203,7 @@ fn performed_recovery_retains_cleanup_failure_after_the_effect() {
     let (adoption, cleanup_failure) = match outcome {
         WorthQueryBranchAdoptionRecoveryOutcome::Performed { adoption, cleanup } => (
             adoption,
-            cleanup
-                .err()
-                .expect("the performed terminal must retain cleanup-capacity failure"),
+            cleanup.expect_err("the performed terminal must retain cleanup-capacity failure"),
         ),
         _ => panic!("cleanup failure occurs after the adoption has performed"),
     };
@@ -236,11 +225,10 @@ fn two_same_head_adoptions_report_one_performed_world_transition() {
         .runtime()
         .program_activation_entity_for_test()
         .expect("the activation record is published once");
-    let target = host
-        .supported_program::<DimensionProgramP1>()
+    let target = *host
+        .supported_program::<RetentionProgramP1>()
         .expect("P1 is rostered")
-        .owned_revision()
-        .clone();
+        .owned_revision();
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let requirements = host
@@ -255,8 +243,7 @@ fn two_same_head_adoptions_report_one_performed_world_transition() {
             .request(&principal, &scope)
             .on_branch(branch)
             .programs()
-            .adopt(&target)
-            .requirements(&requirements)
+            .adopt(&requirements)
             .prepare(64)
             .expect("both attempts prepare against the same head")
     };
@@ -323,16 +310,13 @@ fn two_same_head_adoptions_report_one_performed_world_transition() {
     );
 
     let adopted = host.current_world();
-    let p1 = host
-        .supported_program::<DimensionProgramP1>()
-        .expect("P1 remains rostered after the race");
     assert_eq!(
-        settle(set_dimension(&p1, adopted, P1_VALUE, 0x9175_2021)),
-        DimensionVerdict::Performed(P1_VALUE),
+        settle(set_retention(&host, adopted, P1_VALUE, 0x9175_2021)),
+        RetentionVerdict::Performed(P1_VALUE),
         "the next ordinary call must execute under the performed program"
     );
     assert_eq!(
-        read_dimension(host.runtime(), host.current_world()),
+        read_retention(host.runtime(), host.current_world()),
         P1_VALUE,
         "the post-race World must expose one coherent component combination"
     );

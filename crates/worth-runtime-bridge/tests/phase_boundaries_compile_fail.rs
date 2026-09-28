@@ -14,5 +14,11 @@ fn bridge_phase_boundaries_are_compile_time_private() {
     t.pass("tests/pass/conditional_signal_basis.rs");
     t.compile_fail("tests/ui/causal_envelope/*.rs");
     t.compile_fail("tests/ui/writeback_contract/*.rs");
+    t.compile_fail("tests/ui/relational_identity/*.rs");
+    t.compile_fail("tests/ui/crate_private_constructors/*.rs");
+    #[cfg(not(feature = "certification-construction"))]
+    t.compile_fail("tests/ui/certification_constructors/*.rs");
+    #[cfg(feature = "certification-construction")]
+    t.pass("tests/pass/certification_constructors_with_feature.rs");
     t.compile_fail("tests/ui/*.rs");
 }

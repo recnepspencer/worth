@@ -35,8 +35,8 @@ pub(super) fn is_exact_negative_fixture(relative: &Path) -> bool {
 
 pub(super) fn is_historical_record(relative: &Path) -> bool {
     let normalized = normalize(relative);
-    normalized.starts_with("_docs/worth-ui/milestone-")
-        || normalized == "_docs/worth-ui/milestone-3.14.1-glyph-region-rebaseline.json"
+    normalized.starts_with("plans/worth-ui/milestone-")
+        || normalized == "plans/worth-ui/milestone-3.14.1-glyph-region-rebaseline.json"
 }
 
 pub(super) fn is_detector_source(relative: &Path) -> bool {
@@ -49,7 +49,7 @@ pub(super) fn is_detector_source(relative: &Path) -> bool {
 }
 
 pub(super) fn is_current_native_vision(relative: &Path) -> bool {
-    normalize(relative) == "_docs/worth-ui/worth-ui-vision.md"
+    normalize(relative) == "plans/worth-ui/worth-ui-vision.md"
 }
 
 pub(super) fn normalize(path: &Path) -> String {

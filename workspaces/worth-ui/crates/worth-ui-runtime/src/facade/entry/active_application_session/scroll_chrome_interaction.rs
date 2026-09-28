@@ -346,11 +346,13 @@ impl super::super::WorthUiActiveApplicationSession {
                 .checked_sub(current.block_subpixels())
                 .ok_or(UiScrollChromeInteractionDenial::OffsetInadmissible)?,
         );
-        let (owner_instance, content, viewport) = self
+        let (owner_instance, region) = self
             .mounted
             .scroll_region_geometry(mounted_instance, slot)
             .ok_or(UiScrollChromeInteractionDenial::GeometryUnavailable)?;
-        let bounds = crate::runtime::scroll::UiScrollBounds::from_mounted_region(content, viewport)
+        let bounds = region
+            .in_layout_space()
+            .bounds()
             .ok_or(UiScrollChromeInteractionDenial::GeometryUnavailable)?;
         let request = crate::runtime::scroll::UiScrollDeltaRequest::new(
             vec![crate::runtime::scroll::UiScrollChainEntry::new(

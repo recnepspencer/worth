@@ -40,7 +40,7 @@ fn binding() -> UiScrollMotionBinding {
         1,
         2,
         presentation(),
-        content(),
+        crate::mounting::UiLaidOut::from_layout(content()),
     )
 }
 

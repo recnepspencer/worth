@@ -12,23 +12,20 @@ pub(super) fn certify_merge_execution_vs_persisted_commit_floor(suite: &'static 
                 &merge_runtime,
                 BranchId("feature".to_string()),
             );
-            txn.push_batch(
-                WorkerIntentBatch::new("create-feature-only").push(
-                    MutationIntent::Create(CreateIntent::Entity(
-                        crate::transactions::data::EntitySpec {
-                            partition_id: PartitionId::main(),
-                            kind_id: KindId(1),
-                            client_key: crate::symbols::data::ClientKey::raw("feature-only"),
-                            fields: crate::tests::support::single_string_aspect_field_patch(
-                                crate::tests::support::aspect_key("name"),
-                                crate::tests::support::field_key("name"),
-                                "feature-only",
-                            ),
-                        },
-                    ))
-                    .into(),
-                ),
-            )
+            txn.push_batch(WorkerIntentBatch::new("create-feature-only").push(
+                MutationIntent::Create(CreateIntent::Entity(
+                    crate::transactions::data::EntitySpec {
+                        partition_id: PartitionId::main(),
+                        kind_id: KindId(1),
+                        client_key: crate::symbols::data::ClientKey::raw("feature-only"),
+                        fields: crate::tests::support::single_string_aspect_field_patch(
+                            crate::tests::support::aspect_key("name"),
+                            crate::tests::support::field_key("name"),
+                            "feature-only",
+                        ),
+                    },
+                )),
+            ))
             .expect("test staging stays within configured resource budgets");
             let _feature_only =
                 changed_entities(&txn.commit(&merge_runtime).expect("feature create"))[0];

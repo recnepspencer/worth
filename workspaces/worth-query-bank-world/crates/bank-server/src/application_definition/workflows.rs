@@ -1,6 +1,6 @@
 use bank_domain::queries::PaymentDetailQuery;
 use bank_domain::schema::{
-    ApprovePaymentOperation, ApprovedBusinessPaymentApproval,
+    ApprovePaymentMutationBinding, ApprovedBusinessPaymentApproval,
     ApprovedBusinessPaymentAuthoringOperation, ApprovedBusinessPaymentWorkflow,
 };
 use worth_query_host::facade::declaration::application_program::{
@@ -35,7 +35,7 @@ pub fn approved_business_payment_definition() -> Result<
         ApplicationWorkflowEvidenceJoinPolicy::AllRequiredPassing,
     )?;
     let approval = builder.approval::<ApprovedBusinessPaymentApproval>("approval")?;
-    let apply = builder.operation::<ApprovePaymentOperation>("apply", true)?;
+    let apply = builder.operation_binding::<ApprovePaymentMutationBinding>("apply")?;
     let completed = builder.terminal("completed")?;
     let rejected = builder.terminal("rejected")?;
 
@@ -97,6 +97,24 @@ pub fn approved_business_payment_definition() -> Result<
 pub enum ApprovedBusinessPaymentDefinitionDenial {
     Authoring(ApplicationWorkflowAuthoringDenial),
     Validation(ApplicationWorkflowValidationDenial),
+}
+
+impl std::fmt::Display for ApprovedBusinessPaymentDefinitionDenial {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Authoring(denial) => denial.fmt(formatter),
+            Self::Validation(denial) => denial.fmt(formatter),
+        }
+    }
+}
+
+impl std::error::Error for ApprovedBusinessPaymentDefinitionDenial {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::Authoring(denial) => Some(denial),
+            Self::Validation(denial) => Some(denial),
+        }
+    }
 }
 
 impl From<ApplicationWorkflowAuthoringDenial> for ApprovedBusinessPaymentDefinitionDenial {

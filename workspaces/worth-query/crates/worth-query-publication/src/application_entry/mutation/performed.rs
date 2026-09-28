@@ -1,9 +1,8 @@
 use worth_query_declaration::facade::application_operation::{
-    ApplicationMutationBinding, ApplicationMutationIntent, ApplicationMutationScopeResolution,
+    ApplicationMutationBinding, ApplicationMutationIntent,
 };
 use worth_query_declaration::facade::application_program::{
     ApplicationConnectionShape, ApplicationOutputGraphShape, ApplicationProgramDefinition,
-    ApplicationProgramOutputsShape,
 };
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryBinding, ApplicationQueryIntent, ApplicationQueryScopeResolution,
@@ -14,16 +13,13 @@ use worth_query_execution::facade::application_contribution::{
 };
 use worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime;
 use worth_query_execution::facade::primary_graph::{
-    WorthQueryApplicationCommitOutcome, WorthQueryApplicationCommitReceipt,
-    WorthQueryApplicationProjection, WorthQueryApplicationRequiredOutputConnection,
-    WorthQueryApplicationRequiredOutputSource, WorthQueryPreparedRequiredOutputSource,
+    WorthQueryApplicationCommitReceipt, WorthQueryApplicationProjection,
+    WorthQueryApplicationRequiredOutputConnection, WorthQueryApplicationRequiredOutputSource,
+    WorthQueryPreparedRequiredOutputSource,
 };
 use worth_query_installation::facade::ApplicationSchema;
 
-use super::{
-    WorthQueryApplicationMutationOutcome, WorthQueryApplicationMutationRequestWithIdempotency,
-    WorthQueryMutationSourcePrepared,
-};
+use super::WorthQueryApplicationMutationOutcome;
 
 type MutationResult<Schema, Intent> =
     <<Intent as ApplicationMutationIntent<Schema>>::Binding as ApplicationMutationBinding<
@@ -164,6 +160,8 @@ where
     }
 }
 
+/// A landed mutation whose required outputs could not start. `into_performed` returns the
+/// landed mutation; `into_parts` also returns the denial.
 pub struct WorthQueryRequiredOutputStartFailure<'application, Schema, Intent, Program, Root>
 where
     Schema: ApplicationSchema,
@@ -219,134 +217,53 @@ where
     }
 }
 
-impl<'application, 'principal, 'scope, 'key, Schema, Intent>
-    WorthQueryApplicationMutationRequestWithIdempotency<
-        'application,
-        'principal,
-        'scope,
-        'key,
-        Schema,
-        Intent,
-        WorthQueryMutationSourcePrepared,
-    >
+/// Settles a performed source's commit into its public outcome: not
+/// performed, committed without output custody, or performed with custody.
+fn performed_outcome<'application, Schema, Intent, Program, Root>(
+    application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+    demand: ProgramDemand<Schema, Root>,
+    outcome: WorthQueryApplicationMutationOutcome<
+        <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
+        MutationResult<Schema, Intent>,
+    >,
+    source: super::performed_source::PerformedSourceCommit,
+) -> WorthQueryApplicationPerformedMutationOutcome<'application, Schema, Intent, Program, Root>
 where
-    Schema: ApplicationSchema + 'static,
-    Intent: ApplicationMutationIntent<Schema> + Clone + Send + Sync,
-    <Intent::Binding as ApplicationMutationBinding<Schema>>::Input: Clone + Send + Sync,
-    <Intent::Binding as ApplicationMutationBinding<Schema>>::ScopeBinding:
-        ApplicationMutationScopeResolution<
-            Schema,
-            <Intent::Binding as ApplicationMutationBinding<Schema>>::PrincipalIdentity,
-        >,
-{
-    pub fn execute_performed<Program, Root>(
-        self,
-        application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
-    ) -> Result<
-        WorthQueryApplicationPerformedMutationOutcome<'application, Schema, Intent, Program, Root>,
-        WorthQueryPerformedMutationExecutionDenial,
-    >
-    where
-        Program: ApplicationProgramDefinition<Schema>,
-        Program::Outputs: ApplicationProgramOutputsShape<Schema>,
-        Root: ApplicationOutputGraphShape<Schema> + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
-        RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
+    Schema: ApplicationSchema,
+    Intent: ApplicationMutationIntent<Schema>,
+    Program: ApplicationProgramDefinition<Schema>,
+    Root: ApplicationOutputGraphShape<Schema>
+        + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
+    RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
     Intent::Binding:
         WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
-        <DemandSource<Schema, Root> as ApplicationQueryBinding<Schema>>::Input:
-            ApplicationQueryIntent<Schema, Binding = DemandSource<Schema, Root>>,
-        <DemandSource<Schema, Root> as ApplicationQueryBinding<Schema>>::ScopeBinding:
-            ApplicationQueryScopeResolution<
-                Schema,
-                <DemandSource<Schema, Root> as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
-            >,
-        <<DemandSource<Schema, Root> as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value:
-            WorthQueryApplicationProjection<
-                    Schema,
-                    <DemandSource<Schema, Root> as ApplicationQueryBinding<Schema>>::Query,
-                > + Clone,
-    {
-        if !std::ptr::eq(application.runtime(), self.request.application)
-            || application.installed_program().schema_binding()
-                != &self
-                    .request
-                    .application
-                    .installed_schema()
-                    .binding_identity()
-        {
-            return Err(WorthQueryPerformedMutationExecutionDenial::ForeignProgram);
-        }
-        if !application.contains_output_root::<Root>() {
-            return Err(WorthQueryPerformedMutationExecutionDenial::UndeclaredOutputRoot);
-        }
-        let demand = <Intent::Binding as WorthQueryApplicationRequiredOutputSource<
-            Schema,
-            RootConnection<Schema, Root>,
-        >>::demand_from_source(self.request.intent.input())
-        .map_err(WorthQueryPerformedMutationExecutionDenial::Connection)?;
-        let preparation_failure = std::cell::RefCell::new(None);
-        let prepared_source = std::cell::RefCell::new(None);
-        let outcome = self
-            .execute_with_commit(true, |_, program, idempotency| {
-                match application
-                    .compare_and_commit_required_output_source::<Root, Intent::Binding>(
-                        &worth_query_execution::publication_boundary::program_publication_access(),
-                        program,
-                        idempotency,
-                    ) {
-                    Ok((outcome, prepared)) => {
-                        if let Some(prepared) = prepared {
-                            prepared_source.replace(Some(prepared));
-                        }
-                        outcome
-                    }
-                    Err(failure) => {
-                        let receipt = failure.receipt().clone();
-                        preparation_failure.replace(Some(failure));
-                        WorthQueryApplicationCommitOutcome::Committed(receipt)
-                    }
-                }
-            })
-            .map_err(WorthQueryPerformedMutationExecutionDenial::Mutation)?;
-        let WorthQueryApplicationMutationOutcome::Committed { receipt, result } = outcome else {
-            return Ok(WorthQueryApplicationPerformedMutationOutcome::NotPerformed(
-                outcome,
-            ));
-        };
-        if let Some(failure) = preparation_failure.into_inner() {
-            return Ok(
-                WorthQueryApplicationPerformedMutationOutcome::RequiredOutputDenied {
+{
+    let WorthQueryApplicationMutationOutcome::Committed { receipt, result } = outcome else {
+        return WorthQueryApplicationPerformedMutationOutcome::NotPerformed(outcome);
+    };
+    match source.into_custody() {
+        Err(denial) => WorthQueryApplicationPerformedMutationOutcome::RequiredOutputDenied {
+            receipt,
+            result,
+            denial,
+        },
+        Ok((prepared, retained_source)) => {
+            WorthQueryApplicationPerformedMutationOutcome::Performed(
+                WorthQueryPerformedApplicationMutation {
                     receipt,
                     result,
-                    denial: WorthQueryRequiredOutputPreparationDenial::DemandExecution(
-                        failure.denial().clone(),
-                    ),
+                    application,
+                    demand,
+                    prepared,
+                    retained_source,
+                    source_bound: false,
                 },
-            );
+            )
         }
-        let Some((prepared, retained_source)) = prepared_source.into_inner() else {
-            return Ok(
-                WorthQueryApplicationPerformedMutationOutcome::RequiredOutputDenied {
-                    receipt,
-                    result,
-                    denial: WorthQueryRequiredOutputPreparationDenial::MissingPerformedDelivery,
-                },
-            );
-        };
-        Ok(WorthQueryApplicationPerformedMutationOutcome::Performed(
-            WorthQueryPerformedApplicationMutation {
-                receipt,
-                result,
-                application,
-                demand,
-                prepared,
-                retained_source,
-                source_bound: false,
-            },
-        ))
     }
 }
 
 mod denial;
+mod selected;
 mod start;
 pub use denial::*;

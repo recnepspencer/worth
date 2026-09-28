@@ -145,6 +145,17 @@ impl UiMountedPortalMotionGroups {
             .map(|group| UiMountedPortalMotionGroupView { group })
     }
 
+    /// The Portals presenting a command of `instance`.
+    pub(super) fn targets_of(
+        &self,
+        instance: UiMountedInstanceIdentity,
+    ) -> impl Iterator<Item = UiMotionTargetIdentity> + '_ {
+        self.targets_by_instance
+            .get(&instance)
+            .into_iter()
+            .flat_map(|targets| targets.iter().copied())
+    }
+
     fn remove_instance(&mut self, instance: UiMountedInstanceIdentity) {
         let Some(targets) = self.targets_by_instance.get(&instance).cloned() else {
             return;

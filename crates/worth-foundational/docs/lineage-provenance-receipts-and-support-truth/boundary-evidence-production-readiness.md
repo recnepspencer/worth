@@ -144,4 +144,4 @@ under
 ## Related Docs
 
 - [Grouped Public Lanes And Stronger Readiness](./grouped-public-lanes-and-stronger-readiness.md)
-- [_docs/worth-foundational/milestone-7.md](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/_docs/worth-foundational/milestone-7.md)
+- [plans/worth-foundational/milestone-7.md](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/plans/worth-foundational/milestone-7.md)

@@ -1,7 +1,8 @@
 use crate::model::BankPrincipalId;
 use crate::payments::BusinessPayment;
 use crate::schema::{
-    ApprovePayment, InitiateBusinessPayment, PaymentStatus, PostingPurpose, RejectPayment,
+    ApprovePayment, InitiateBusinessPayment, InitiateBusinessPaymentDecision, PaymentStatus,
+    PostingPurpose, RejectPayment, MAX_PAYMENT_APPROVAL_GRANTEES,
 };
 
 use super::BankProposalEngine;
@@ -44,9 +45,17 @@ impl BankProposalEngine {
         idempotency: BankIdempotencyClaim,
         initiator: BankPrincipalId,
         input: &InitiateBusinessPayment,
-    ) -> Result<BusinessPayment, BankProposalDenial> {
+    ) -> Result<InitiateBusinessPaymentDecision, BankProposalDenial> {
         let destination = validate_business_payment(snapshot, initiator, input)?;
-        Ok(business_payment(idempotency, destination, initiator, input))
+        let payment = business_payment(idempotency, destination, initiator, input);
+        let grantees = snapshot.payment_approval_grantees(&payment);
+        if grantees.len() > MAX_PAYMENT_APPROVAL_GRANTEES {
+            return Err(BankProposalDenial::TooManyPaymentApprovers);
+        }
+        Ok(InitiateBusinessPaymentDecision::new(
+            payment,
+            grantees.into_iter().collect(),
+        ))
     }
 
     pub fn prepare_approve_payment(

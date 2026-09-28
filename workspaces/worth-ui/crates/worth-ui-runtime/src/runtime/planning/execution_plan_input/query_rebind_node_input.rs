@@ -23,6 +23,8 @@ pub(super) fn preservation_receipt(
 ) -> Option<crate::runtime::WorthUiQueryBindingPreservationReceipt> {
     match entry.outcome() {
         WorthUiQueryLiveRebindOutcome::Preserve(value) => Some(value.preservation_receipt()),
-        _ => None,
+        WorthUiQueryLiveRebindOutcome::Rebind(_)
+        | WorthUiQueryLiveRebindOutcome::Retire(_)
+        | WorthUiQueryLiveRebindOutcome::Deny(_) => None,
     }
 }

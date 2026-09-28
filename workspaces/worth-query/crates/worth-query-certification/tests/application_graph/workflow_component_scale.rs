@@ -17,12 +17,12 @@ use worth_query_host::facade::{
 use worth_query_installation::facade::WorthQueryApplicationWorkflowResourceCeiling;
 use worth_query_replay::facade::WorthQueryCertificationCostRuntimeExt;
 
-use super::bounded_dimension_model::{
-    dimension_entry::PART_IDENTITY,
-    host::publish_on_first_program_for_geometry_scale,
+use super::document_retention_model::{
+    host::publish_on_first_program_for_workflow_scale,
     operator_identity::authenticate_operator,
+    retention_entry::DOCUMENT_IDENTITY,
     workflow::{
-        retain_workflow_with_resources, start_instance, ReviewedGeometryWorkflow,
+        retain_workflow_with_resources, start_instance, ReviewedDocumentWorkflow,
         WorkflowDefinitionAuthoringInput, WorkflowDefinitionAuthoringIntent,
         WorkflowDefinitionAuthoringOperation,
     },
@@ -31,7 +31,9 @@ use super::bounded_dimension_model::{
 const FRAGMENT_NODES: u16 = 9;
 const FRAGMENT_CONNECTIONS: u16 = FRAGMENT_NODES - 1;
 
-fn component_definition(occurrences: u16) -> AuthoredWorkflowDefinition<ReviewedGeometryWorkflow> {
+pub(super) fn component_definition(
+    occurrences: u16,
+) -> AuthoredWorkflowDefinition<ReviewedDocumentWorkflow> {
     let nodes = occurrences * FRAGMENT_NODES + 1;
     let connections = nodes - 1;
     let component_limits = component_limits(occurrences);
@@ -44,7 +46,7 @@ fn component_definition(occurrences: u16) -> AuthoredWorkflowDefinition<Reviewed
     )
     .expect("finite repeated component definition limits");
     let mut fragment =
-        ApplicationWorkflowComponentBuilder::<ReviewedGeometryWorkflow>::new("solver-fragment")
+        ApplicationWorkflowComponentBuilder::<ReviewedDocumentWorkflow>::new("solver-fragment")
             .expect("component identity");
     let operations = (0..FRAGMENT_NODES)
         .map(|index| {
@@ -72,7 +74,7 @@ fn component_definition(occurrences: u16) -> AuthoredWorkflowDefinition<Reviewed
         .output_port("output", operations.last().expect("nonempty fragment"))
         .expect("component output");
     let fragment = fragment.finish().expect("component closes");
-    let mut definition = ApplicationWorkflowDefinitionBuilder::<ReviewedGeometryWorkflow>::new(
+    let mut definition = ApplicationWorkflowDefinitionBuilder::<ReviewedDocumentWorkflow>::new(
         "repeated-solver-fragment",
         limits,
     )
@@ -130,7 +132,7 @@ fn qualify(occurrences: u16, key: u64) {
     )
     .expect("finite workflow resources");
     let application =
-        retain_workflow_with_resources(publish_on_first_program_for_geometry_scale(), resources);
+        retain_workflow_with_resources(publish_on_first_program_for_workflow_scale(), resources);
     let runtime = application.runtime();
     let cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(
@@ -162,13 +164,13 @@ fn qualify(occurrences: u16, key: u64) {
     println!("repeated component nodes={nodes} authored_ms={authored_ms} validated_ms={validated_ms} validation_work={work:?}");
     let cost_scope = runtime
         .capture_certification_cost_scope(application.current_world())
-        .expect("geometry branch remains measurable");
+        .expect("component branch remains measurable");
     let draft = runtime
         .request(&principal, &scope)
         .mutate(WorkflowDefinitionAuthoringIntent {
             input: WorkflowDefinitionAuthoringInput {
-                identity: PART_IDENTITY.to_owned(),
-                dimension: 8,
+                identity: DOCUMENT_IDENTITY.to_owned(),
+                retention_days: 8,
             },
         })
         .workflow(&application, component_definition(occurrences))

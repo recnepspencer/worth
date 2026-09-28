@@ -10,40 +10,41 @@ use worth_query_package_archive::facade::{
     WorthQueryPackageArchiveLimits,
 };
 
-use crate::bounded_dimension_model::programs::{DimensionProgramP0, DimensionProgramP1};
-use crate::bounded_dimension_model::schema::BoundedDimensionSchema;
+use crate::document_retention_model::programs::{RetentionProgramP0, RetentionProgramP1};
+use crate::document_retention_model::schema::DocumentRetentionSchema;
 
-struct DimensionProgramP0IdentityWithP1Meaning;
+struct RetentionProgramP0IdentityWithP1Meaning;
 
-impl ApplicationProgramDefinition<BoundedDimensionSchema>
-    for DimensionProgramP0IdentityWithP1Meaning
+impl ApplicationProgramDefinition<DocumentRetentionSchema>
+    for RetentionProgramP0IdentityWithP1Meaning
 {
-    type Contributions =
-        <DimensionProgramP1 as ApplicationProgramDefinition<BoundedDimensionSchema>>::Contributions;
+    type Contributions = <RetentionProgramP1 as ApplicationProgramDefinition<
+        DocumentRetentionSchema,
+    >>::Contributions;
     type Outputs =
-        <DimensionProgramP1 as ApplicationProgramDefinition<BoundedDimensionSchema>>::Outputs;
+        <RetentionProgramP1 as ApplicationProgramDefinition<DocumentRetentionSchema>>::Outputs;
     type Rules =
-        <DimensionProgramP1 as ApplicationProgramDefinition<BoundedDimensionSchema>>::Rules;
+        <RetentionProgramP1 as ApplicationProgramDefinition<DocumentRetentionSchema>>::Rules;
 
     const IDENTITY: ApplicationProgramIdentity =
-        <DimensionProgramP0 as ApplicationProgramDefinition<BoundedDimensionSchema>>::IDENTITY;
+        <RetentionProgramP0 as ApplicationProgramDefinition<DocumentRetentionSchema>>::IDENTITY;
 
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        DimensionProgramP1::feature_specs()
+        RetentionProgramP1::feature_specs()
     }
 }
 
 #[test]
 fn validated_p0_and_p1_have_stable_distinct_bounded_archive_descriptions() {
-    let p0 = ApplicationProgramAuthoring::<BoundedDimensionSchema, DimensionProgramP0>::begin()
+    let p0 = ApplicationProgramAuthoring::<DocumentRetentionSchema, RetentionProgramP0>::begin()
         .validated_program()
         .expect("P0 validates");
-    let p1 = ApplicationProgramAuthoring::<BoundedDimensionSchema, DimensionProgramP1>::begin()
+    let p1 = ApplicationProgramAuthoring::<DocumentRetentionSchema, RetentionProgramP1>::begin()
         .validated_program()
         .expect("P1 validates");
     let p0_changed = ApplicationProgramAuthoring::<
-        BoundedDimensionSchema,
-        DimensionProgramP0IdentityWithP1Meaning,
+        DocumentRetentionSchema,
+        RetentionProgramP0IdentityWithP1Meaning,
     >::begin()
     .validated_program()
     .expect("changed P0 validates");
@@ -91,7 +92,7 @@ fn validated_p0_and_p1_have_stable_distinct_bounded_archive_descriptions() {
 
 #[test]
 fn program_description_decode_is_bounded_and_rejects_trailing_mutation() {
-    let p0 = ApplicationProgramAuthoring::<BoundedDimensionSchema, DimensionProgramP0>::begin()
+    let p0 = ApplicationProgramAuthoring::<DocumentRetentionSchema, RetentionProgramP0>::begin()
         .validated_program()
         .expect("P0 validates");
     let limits = WorthQueryPackageArchiveLimits::DEFAULT;

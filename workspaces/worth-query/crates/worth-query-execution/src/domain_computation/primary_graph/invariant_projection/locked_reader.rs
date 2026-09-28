@@ -27,6 +27,11 @@ pub use traversal_denial::{
     WorthQueryInvariantProjectionTraversalDenial, WorthQueryInvariantProjectionTraversalDenialKind,
 };
 
+/// The reader a projection closure uses to read the main branch at one
+/// snapshot.
+///
+/// It resolves entities by identity field, reads fields, traverses relations,
+/// and summarizes aggregates. Every read is charged to the projection's work.
 pub struct WorthQueryApplicationInvariantProjectionReader<'runtime, Schema> {
     pub(super) runtime: &'runtime mut worth_relational::facade::runtime::RelationalRuntime,
     pub(super) layout: &'runtime super::super::schema_layout::WorthQueryPrimaryGraphLayout,
@@ -58,6 +63,10 @@ pub struct WorthQueryApplicationInvariantProjectionReader<'runtime, Schema> {
     _schema: PhantomData<fn() -> Schema>,
 }
 
+/// The result of an invariant projection: the closure's output, the work it
+/// spent, and the snapshot it read.
+///
+/// `into_parts` hands back the snapshot for further reads at the same version.
 pub struct WorthQueryCompletedInvariantProjection<Schema, Output> {
     output: Output,
     snapshot: WorthQueryApplicationInvariantProjectionSnapshot<Schema>,

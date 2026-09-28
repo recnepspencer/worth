@@ -15,7 +15,7 @@ pub(super) struct BridgeManagedTemporalIntentRecord {
     pub(super) due_coordinate: u64,
     pub(super) idempotency_identity: Arc<str>,
     pub(super) source_record_identity:
-        crate::relational_identity::RelationalBridgeRecordIdentityParts,
+        crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts,
     pub(super) wake_id: TemporalWakeId,
     pub(super) observation_baselines:
         Arc<super::super::observation_retention::BridgeObservationBaselines>,
@@ -109,7 +109,7 @@ impl BridgeManagedClockLane {
         revision: u64,
         due_coordinate: u64,
         idempotency_identity: Arc<str>,
-        source_record_identity: crate::relational_identity::RelationalBridgeRecordIdentityParts,
+        source_record_identity: crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts,
     ) -> Result<BridgeManagedTemporalIntentReconciliation, BridgeManagedTemporalDenial> {
         let Some(existing) = self.intents.get(&identity) else {
             return self.install_new_intent(
@@ -178,7 +178,7 @@ impl BridgeManagedClockLane {
         revision: u64,
         due_coordinate: u64,
         idempotency_identity: Arc<str>,
-        source_record_identity: crate::relational_identity::RelationalBridgeRecordIdentityParts,
+        source_record_identity: crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts,
     ) -> Result<BridgeManagedTemporalIntentReconciliation, BridgeManagedTemporalDenial> {
         if self.intents.len() >= self.maximum_active_intents {
             return Err(BridgeManagedTemporalDenial::new(

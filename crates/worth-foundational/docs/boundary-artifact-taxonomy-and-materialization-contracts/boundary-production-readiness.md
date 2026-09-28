@@ -232,4 +232,4 @@ The current non-assumption boundary is also important:
 ## Related Docs
 
 - [Boundary Canonical Basis And Current-Basis](./boundary-canonical-basis-and-current-basis.md)
-- [_docs/worth-foundational/milestone-4-closeout.md](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/_docs/worth-foundational/milestone-4-closeout.md)
+- [plans/worth-foundational/milestone-4-closeout.md](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/plans/worth-foundational/milestone-4-closeout.md)

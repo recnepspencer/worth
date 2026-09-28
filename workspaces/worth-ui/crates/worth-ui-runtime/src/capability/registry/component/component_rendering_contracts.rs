@@ -251,18 +251,21 @@ impl ComponentRealtimeOverlayContract {
             Some(ComponentRealtimeOverlayContractDenialReason::ZeroDeclaredFrameCost)
         } else if frame_budget_millis == 0 {
             Some(ComponentRealtimeOverlayContractDenialReason::ZeroFrameBudget)
-        } else if frame_budget_millis > u32::from(u16::MAX) {
-            Some(ComponentRealtimeOverlayContractDenialReason::FrameBudgetOverflow)
         } else {
             None
         };
         if let Some(reason) = reason {
             return Err(ComponentRealtimeOverlayContractDenial { reason });
         }
+        let frame_budget_millis = u16::try_from(frame_budget_millis).map_err(|_| {
+            ComponentRealtimeOverlayContractDenial {
+                reason: ComponentRealtimeOverlayContractDenialReason::FrameBudgetOverflow,
+            }
+        })?;
         Ok(Self {
             overlay_row_limit,
             declared_frame_cost_millis,
-            frame_budget_millis: frame_budget_millis as u16,
+            frame_budget_millis,
             priority,
         })
     }

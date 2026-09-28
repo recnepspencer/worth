@@ -15,7 +15,7 @@ use crate::facade::WorthUiPreparedMountedApplicationReplacement;
 
 pub(super) type CandidateProvenanceOracle = Vec<PreparedIdentityTraceOracle>;
 
-pub(super) fn install_bound_surface_geometry(shell: &mut WorthUiNativeApplicationShell) {
+pub(crate) fn install_bound_surface_geometry(shell: &mut WorthUiNativeApplicationShell) {
     let surfaces = shell
         .session
         .mounted

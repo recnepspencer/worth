@@ -5,18 +5,37 @@ use super::*;
 mod tests;
 
 impl Record {
+    /// The record of `base` as its frame publishes it, before any Motion or
+    /// pose moves it.
+    pub(super) fn published(base: UiPresentedHitTestRow) -> Self {
+        Self {
+            base,
+            unscrolled: None,
+            effective: None,
+            scroll_translation: UiHitScrollMove::none(),
+            scroll_lead: UiHitScrollMove::none(),
+        }
+        .projected(Some(base), UiHitScrollMove::none())
+    }
+
     /// This record with its row projected to `unscrolled` and moved by
     /// `scroll_translation`, every Scroll pose committed since it was
-    /// published. The move is one step from the projection, as the
-    /// interaction basis takes it, so both lanes land the row on one rect.
+    /// published, then by any lead it holds. The move is one step from the
+    /// projection, as the interaction basis takes it, so both lanes land the
+    /// row on one rect.
     pub(super) fn projected(
         self,
         unscrolled: Option<UiPresentedHitTestRow>,
-        scroll_translation: super::UiScrollPoseShift,
+        scroll_translation: UiHitScrollMove,
     ) -> Self {
+        let displayed = scroll_translation.then(self.scroll_lead);
         Self {
             unscrolled,
-            effective: unscrolled.map(|row| row.scroll_translated(scroll_translation)),
+            // A pose can leave the row's ancestors sharing no coverage, and
+            // then nothing of it can be reached.
+            effective: unscrolled
+                .map(|row| row.scroll_translated(displayed))
+                .filter(|row| row.ancestor_reach() != crate::mounting::UiHitAncestorReach::Nowhere),
             scroll_translation,
             ..self
         }
@@ -24,19 +43,31 @@ impl Record {
 }
 
 impl UiPresentedHitIndex {
-    /// How far the Scroll poses committed since `instance`'s row was
-    /// published have moved it, in the binding the row belongs to. `None`
-    /// when the index holds no row for `instance` in that binding.
-    pub(in crate::mounting) fn committed_scroll_translation(
+    /// How far the Scroll poses displayed since `instance`'s row was
+    /// published have moved it, in the binding the row belongs to: every
+    /// committed pose and any lead past them. `None` when the index holds no
+    /// row for `instance` in that binding.
+    pub(in crate::mounting) fn displayed_scroll_translation(
         &self,
         binding: UiSurfaceBindingGeneration,
         instance: UiMountedInstanceIdentity,
-    ) -> (Option<super::UiScrollPoseShift>, usize) {
+    ) -> (Option<UiHitScrollMove>, usize) {
         let (record, probes) = self.rows.get_with_probes(&instance);
         let translation = record
             .filter(|record| record.base.mounted().binding() == binding)
-            .map(|record| record.scroll_translation);
+            .map(|record| record.scroll_translation.then(record.scroll_lead));
         (translation, probes)
+    }
+
+    /// The ancestor clips `instance`'s row was published inside. `None`
+    /// when the frame published no row for it.
+    pub(in crate::mounting) fn published_ancestor_clip(
+        &self,
+        instance: UiMountedInstanceIdentity,
+    ) -> Option<crate::mounting::UiHitAncestorClip> {
+        self.rows
+            .get(&instance)
+            .map(|record| record.base.published_ancestor_clip())
     }
 
     pub(in crate::mounting) fn inherit_accepted_scroll(

@@ -25,8 +25,8 @@ url.workspace = true
 worth-query-host.workspace = true
 
 [dev-dependencies]
+bank-server = { workspace = true, features = ["test-controls"] }
 reqwest.workspace = true
-worth-query-host = { workspace = true, features = ["test-world-operation-control"] }
 
 [lints]
 workspace = true

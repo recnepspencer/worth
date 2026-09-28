@@ -1,12 +1,17 @@
+use crate::application_operation::ApplicationMutationBinding;
 use crate::{
     application_capability::ApplicationCapabilityContextEntitySlotBinding,
     application_capability::ApplicationCapabilityMarkerIdentity,
     application_query::ApplicationQueryMarkerIdentity,
-    application_schema::{ApplicationOperationMarkerIdentity, ApplicationSchema},
+    application_schema::{
+        ApplicationOperationMarkerIdentity, ApplicationSchema, ApplicationStructuredValueBinding,
+    },
     portable_identity::WorthQueryPortableTypeIdentity,
 };
 
 use super::ApplicationWorkflowSpecIdentity;
+
+mod draft;
 
 /// Pure marker for one workflow vocabulary family.
 ///
@@ -22,6 +27,7 @@ pub struct ApplicationWorkflowOperationRef {
     identifier: &'static str,
     input_type: WorthQueryPortableTypeIdentity,
     operation_type: std::any::TypeId,
+    binding: Option<(&'static str, std::any::TypeId, bool)>,
 }
 
 impl ApplicationWorkflowOperationRef {
@@ -34,6 +40,24 @@ impl ApplicationWorkflowOperationRef {
             identifier: Operation::IDENTIFIER,
             input_type: <Operation::InputBinding as crate::application_schema::ApplicationStructuredValueBinding>::IDENTITY,
             operation_type: std::any::TypeId::of::<Operation>(),
+            binding: None,
+        }
+    }
+
+    pub fn declared_binding<Spec, Binding>() -> Self
+    where
+        Spec: ApplicationWorkflowSpec,
+        Binding: ApplicationMutationBinding<Spec::Schema>,
+    {
+        Self {
+            identifier: Binding::Operation::IDENTIFIER,
+            input_type: Binding::InputBinding::IDENTITY,
+            operation_type: std::any::TypeId::of::<Binding::Operation>(),
+            binding: Some((
+                Binding::IDENTITY,
+                std::any::TypeId::of::<Binding>(),
+                Binding::REQUIRES_WORKFLOW_AUTHORITY,
+            )),
         }
     }
 
@@ -49,6 +73,10 @@ impl ApplicationWorkflowOperationRef {
     pub const fn operation_type(&self) -> std::any::TypeId {
         self.operation_type
     }
+
+    pub const fn binding(&self) -> Option<(&'static str, std::any::TypeId, bool)> {
+        self.binding
+    }
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -58,6 +86,27 @@ pub struct ApplicationWorkflowAssessmentRef {
     result_type: WorthQueryPortableTypeIdentity,
     query_type: std::any::TypeId,
     subject: ApplicationWorkflowSubjectSelector,
+    applicability: ApplicationWorkflowAssessmentApplicability,
+}
+
+/// Authored membership of one potential assessment in the required inventory.
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub enum ApplicationWorkflowAssessmentApplicability {
+    Always,
+    WhenRelatedRelationPresent {
+        relation: String,
+        from: String,
+        to: String,
+    },
+}
+
+impl ApplicationWorkflowAssessmentApplicability {
+    pub fn relation(&self) -> Option<(&str, &str, &str)> {
+        match self {
+            Self::Always => None,
+            Self::WhenRelatedRelationPresent { relation, from, to } => Some((relation, from, to)),
+        }
+    }
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -214,11 +263,39 @@ impl ApplicationWorkflowAssessmentRef {
             result_type: Query::RESULT_TYPE_IDENTITY,
             query_type: std::any::TypeId::of::<Query>(),
             subject,
+            applicability: ApplicationWorkflowAssessmentApplicability::Always,
         }
+    }
+
+    pub fn declared_when_related_relation_present<Spec, Query, Relation, From, To>(
+        relation: crate::application_schema::ApplicationRelationRef<
+            Spec::Schema,
+            Relation,
+            From,
+            To,
+        >,
+    ) -> Self
+    where
+        Spec: ApplicationWorkflowSpec,
+        Query: ApplicationQueryMarkerIdentity<Spec::Schema> + 'static,
+    {
+        let mut assessment =
+            Self::declared_for::<Spec, Query>(ApplicationWorkflowSubjectSelector::Related);
+        assessment.applicability =
+            ApplicationWorkflowAssessmentApplicability::WhenRelatedRelationPresent {
+                relation: relation.name().to_owned(),
+                from: relation.from().to_owned(),
+                to: relation.to().to_owned(),
+            };
+        assessment
     }
 
     pub const fn subject(&self) -> &ApplicationWorkflowSubjectSelector {
         &self.subject
+    }
+
+    pub const fn applicability(&self) -> &ApplicationWorkflowAssessmentApplicability {
+        &self.applicability
     }
 
     pub const fn identifier(&self) -> &'static str {

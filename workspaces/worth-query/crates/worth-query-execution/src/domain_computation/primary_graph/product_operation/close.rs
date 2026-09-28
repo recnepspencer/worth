@@ -11,10 +11,18 @@ use crate::domain_computation::execution_runtime::product_world::{
     WorthQueryProductBranchCloseScope,
 };
 
+/// Why closing a product branch from an application was refused or left
+/// unfinished.
 #[derive(Debug)]
 pub enum WorthQueryApplicationProductBranchCloseDenial {
+    /// The application's pending publication on the branch could not be
+    /// settled first. The close did not begin.
     ApplicationSettlementPending,
+    /// The product runtime refused to begin the close. Nothing was closed.
     Product(WorthQueryProductBranchCloseDenial),
+    /// The close began and the branch's retention was released, but owner
+    /// cleanup did not finish. Retry the cleanup the failure carries; it is
+    /// also listed by `pending_cleanup`.
     OwnerCleanupPending(WorthQueryApplicationProductBranchCleanupFailure),
 }
 

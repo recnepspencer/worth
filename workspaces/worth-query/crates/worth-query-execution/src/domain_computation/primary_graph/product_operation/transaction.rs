@@ -107,6 +107,14 @@ where
         if self.change.program.product_branch() != self.entry.branch {
             return Err(WorthQueryProductTransactionCommitError::BranchMismatch);
         }
+        // This erased transaction carries no mutation-binding type. If any
+        // binding for the operation is workflow-guarded, the typed program
+        // owner door must adjudicate that binding instead.
+        if application.operation_requires_workflow_authority::<Operation>() {
+            return Ok(WorthQueryApplicationCommitOutcome::Denied(
+                crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::workflow_authority_required(),
+            ));
+        }
         let Some(presented) = admitted.runtime.presented_program() else {
             return Ok(WorthQueryApplicationCommitOutcome::Denied(
                 crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::application_program_required(),

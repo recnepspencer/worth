@@ -3,6 +3,10 @@ use worth_ui_host_contract::{UiSemanticSurfaceIdentity, UiSurfaceBindingGenerati
 use super::UiMountedSemanticProjection;
 
 impl UiMountedSemanticProjection {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "rebinding a surface changes only its allocations' binding, never where they are shown"
+    )]
     pub(in crate::mounting::projection) fn rebind_surface_allocations(
         &mut self,
         surface: UiSemanticSurfaceIdentity,
@@ -23,18 +27,16 @@ impl UiMountedSemanticProjection {
                 continue;
             };
             node.receipt.rebind_allocation(binding);
-            node.occurrence_allocation =
+            let incarnation = node.receipt.incarnation();
+            let rebound = |allocation| {
                 crate::mounting::projection::node_receipt::rebound_allocation(
-                    node.occurrence_allocation,
+                    allocation,
                     binding,
-                    node.receipt.incarnation(),
-                );
-            node.appearance_geometry.allocation =
-                crate::mounting::projection::node_receipt::rebound_allocation(
-                    node.appearance_geometry.allocation,
-                    binding,
-                    node.receipt.incarnation(),
-                );
+                    incarnation,
+                )
+            };
+            node.occurrence_allocation = node.occurrence_allocation.map(rebound);
+            node.appearance_geometry.allocation = node.appearance_geometry.allocation.map(rebound);
             self.nodes.insert(instance, node);
         }
     }

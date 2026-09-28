@@ -3,7 +3,9 @@ use worth_query_declaration::facade::{
     application_program::ApplicationWorkflowSpec,
     application_schema::ApplicationOperationMarkerIdentity,
 };
-use worth_query_installation::facade::ApplicationSchema;
+use worth_query_installation::facade::{
+    ApplicationSchema, WorthQueryInstalledWorkflowDefinitionParts,
+};
 
 use super::effect_program::{admit_platform_effects, PlatformEffectDemand};
 use super::{
@@ -17,12 +19,17 @@ use crate::domain_computation::primary_graph::workflow::definition::{
 mod intent_identity;
 mod lineage;
 mod publication;
+mod retirement;
 
 use lineage::select_lineage;
 pub use publication::{
     PerformedWorkflowDefinitionPublication, PreparedWorkflowDefinitionPublication,
     PublishedWorkflowDefinitionRef, WorkflowDefinitionExpectedPredecessor,
     WorkflowDefinitionPublicationOutcome,
+};
+pub use retirement::{
+    PerformedWorkflowDefinitionRetirement, PreparedWorkflowDefinitionRetirement,
+    WorkflowDefinitionRetirementOutcome,
 };
 
 impl<Schema, Operation, Input, Scope>
@@ -40,10 +47,9 @@ where
     pub(in crate::domain_computation::primary_graph) fn materialize_workflow_definition_publication<
         Capability,
         Spec,
-        Program,
     >(
         mut self,
-        bound: BoundWorkflowDefinitionContract<Schema, Spec, Program>,
+        bound: BoundWorkflowDefinitionContract<Schema, Spec>,
         expected_predecessor: WorkflowDefinitionExpectedPredecessor,
     ) -> Result<
         PreparedWorkflowDefinitionPublication<Schema, Operation, Input, Scope>,
@@ -97,9 +103,13 @@ where
         }
         self.facts.extend(lineage.facts);
 
-        let program_revision = bound.contract.program_revision().clone();
-        let (definition, assessment_bindings, condition_bindings, approval_bindings) =
-            bound.contract.into_definition();
+        let program_revision = *bound.contract.program_revision();
+        let WorthQueryInstalledWorkflowDefinitionParts {
+            definition,
+            assessment_bindings,
+            condition_bindings,
+            approval_bindings,
+        } = bound.contract.into_definition();
         let content_identity = definition.content_identity().clone();
         let workflow_intent_identity =
             intent_identity::workflow_definition_intent_identity::<Spec>(
@@ -151,7 +161,7 @@ where
             emission_retained_bytes: 0,
             emission_retained_bytes_ceiling: 0,
             conditional_definition: None,
-            platform_mutation: true,
+            effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Platform,
             validator_work_admission,
             output_correspondence: Default::default(),
             retain_output_demand_observation: false,

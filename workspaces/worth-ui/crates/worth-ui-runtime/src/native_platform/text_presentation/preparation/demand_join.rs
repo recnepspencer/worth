@@ -80,8 +80,7 @@ pub(super) fn rebuild_glyph_runs<'work>(
                     let positioned = demand
                         .positioned_glyph_for_record(layout, record_index)
                         .expect("retained demand preserves positioned-glyph provenance");
-                    let mounted_x = mounted_origin_millipoints(mechanic.origin_x());
-                    let mounted_y = mounted_origin_millipoints(mechanic.origin_y());
+                    let placement = demand.placement();
                     UiGlyphRunView::from_text_mechanics(UiGlyphRunViewInput {
                         mechanic: *identity,
                         layout: demand.layout_identity(),
@@ -91,11 +90,11 @@ pub(super) fn rebuild_glyph_runs<'work>(
                         raster_key: record.key(),
                         origin_x_millipoints: positioned
                             .origin_x_millipoints()
-                            .checked_add(mounted_x)
+                            .checked_add(placement.origin_x_millipoints())
                             .expect("admitted mounted glyph origin remains bounded"),
                         origin_y_millipoints: positioned
                             .origin_y_millipoints()
-                            .checked_add(mounted_y)
+                            .checked_add(placement.origin_y_millipoints())
                             .expect("admitted mounted glyph origin remains bounded"),
                         line_index: positioned.line_index(),
                         visual_run_index: positioned.visual_run_index(),
@@ -142,24 +141,18 @@ where
                 paint_spans: mechanic.foregrounds(),
                 selection: self.selection,
                 scale,
-                placement: UiGlyphRasterPlacement::from_mounted_logical(
-                    mechanic.origin_x(),
-                    mechanic.origin_y(),
-                )
-                .ok_or(UiNativeTextPresentationReadiness::DemandDenied(
-                    UiGlyphRasterDemandDenial::OriginOverflow,
-                ))?,
+                placement: UiGlyphRasterPlacement::from_millipoints(
+                    mechanic
+                        .presented_origin_millipoints(self.dpi.dpi_milli())
+                        .ok_or(UiNativeTextPresentationReadiness::DemandDenied(
+                            UiGlyphRasterDemandDenial::OriginOverflow,
+                        ))?,
+                ),
                 lane: self.lane,
             },
         )
         .map_err(UiNativeTextPresentationReadiness::DemandDenied)
     }
-}
-
-fn mounted_origin_millipoints(value: f32) -> i64 {
-    let scaled = f64::from(value) * 1_000.0;
-    debug_assert!(scaled.is_finite());
-    scaled.round() as i64
 }
 
 fn validate_mounted_layout(

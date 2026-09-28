@@ -156,8 +156,8 @@ where
     ///
     /// Fresh effect authority is required before any transport call (R8.69). The
     /// outbox is read from the live handle binding — never from a caller-held
-    /// receipt copy. Classification stays inside [`dispatch_external_effect`]
-    /// (R8.67). The returned proof is privately minted.
+    /// receipt copy. Classification stays inside the crate-internal
+    /// `dispatch_external_effect` step (R8.67). The returned proof is privately minted.
     pub fn redispatch_admitted_external_effect<Operation, Input, Scope>(
         &self,
         handle: &WorthQueryRecoveryHandle,

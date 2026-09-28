@@ -4,6 +4,11 @@ use worth_runtime_world::facade::{
     ProductUnpublishedOwnerEffects, RuntimeWorldRecoveryPort,
 };
 
+/// A branch adoption whose publication moved some owners but not the product
+/// head.
+///
+/// Inspect the cause and next actions, then turn it into a recovery with
+/// `into_recovery` and continue with `recover_branch_adoption`.
 #[derive(Debug)]
 pub struct WorthQueryUnpublishedBranchAdoption {
     source: ApplicationProgramRevision,

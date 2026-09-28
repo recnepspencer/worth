@@ -26,6 +26,7 @@ where
         mut facts: Vec<super::super::WorthQueryApplicationObservedFact>,
         progress: &crate::domain_computation::primary_graph::workflow::instance::WorkflowInstanceProgress,
         policy: worth_query_declaration::facade::application_program::ApplicationWorkflowEvidenceJoinPolicy,
+        allowance: crate::domain_computation::primary_graph::application_attempt::WorkflowStepAllowance,
     ) -> Result<
         PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
         WorthQueryApplicationAttemptDenial,
@@ -41,35 +42,87 @@ where
                 self.admission.operation(),
             ));
         }
-        let required = compiled
+        let authored = compiled
             .required_assessments(selected.node())
             .collect::<Vec<_>>();
-        let distinct = required
+        let distinct = authored
             .iter()
             .map(|node| node.entity())
             .collect::<std::collections::BTreeSet<_>>();
-        if required.len() < 2 || distinct.len() != required.len() {
+        if authored.len() < 2 || distinct.len() != authored.len() {
             return Err(denial(
                 WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,
                 "evidence join required inventory is incomplete or duplicated",
             ));
         }
-        let mut completed = 0usize;
-        let mut passing = 0usize;
-        let mut evidence_entities = Vec::with_capacity(required.len());
-        for node in &required {
-            let crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowNodeKind::Assessment {
-            query,
-            parameter_type,
-            result_type,
-            binding,
-            ..
-        } = node.kind() else {
+        let mut required = Vec::new();
+        let mut observed_proposals =
+            super::assessment_coverage::AssessmentProposalObservations::default();
+        for node in authored {
+            let remaining = self
+                .admission
+                .allowed_graph_contract()
+                .decision_fact_budget()
+                .saturating_sub(self.facts.len().saturating_add(facts.len()));
+            let subject = super::assessment_coverage::observe_subject_cached(
+                &compiled,
+                layout,
+                progress,
+                node,
+                self.admission.scope_entity_id(),
+                self.lease.handle(),
+                self.lease.snapshot(),
+                remaining,
+                &mut observed_proposals,
+            )?;
+            let remaining = self
+                .admission
+                .allowed_graph_contract()
+                .decision_fact_budget()
+                .saturating_sub(
+                    self.facts
+                        .len()
+                        .saturating_add(facts.len())
+                        .saturating_add(subject.facts.len()),
+                );
+            let observed = self.lease.handle().with_runtime(|runtime| {
+                super::assessment_applicability::observe(
+                    node,
+                    &self.lease.layout,
+                    runtime,
+                    self.lease.snapshot(),
+                    subject.resource,
+                    subject.related,
+                    remaining,
+                )
+            })?;
+            facts.extend(subject.facts);
+            facts.extend(observed.facts);
+            if observed.applicable {
+                required.push((node, subject.coverage));
+            }
+        }
+        if self.facts.len().saturating_add(facts.len())
+            > self
+                .admission
+                .allowed_graph_contract()
+                .decision_fact_budget()
+        {
+            return Err(denial(
+                WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
+                self.admission.operation(),
+            ));
+        }
+        if required.is_empty() {
             return Err(denial(
                 WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,
-                "evidence join requirement is not an assessment node",
+                "evidence join has no currently applicable authored requirement",
             ));
-        };
+        }
+        let mut completed = 0usize;
+        let mut passing = 0usize;
+        let mut evidence_currentness = Vec::new();
+        for (node, coverage) in &required {
             let Some(evidence_locator) = progress.latest_assessment_evidence(node.entity()) else {
                 continue;
             };
@@ -88,19 +141,28 @@ where
                 )
             })?;
             facts.append(&mut retained_facts);
-            if evidence.query != *query
-                || evidence.parameter_type != *parameter_type
-                || evidence.result_type != *result_type
-                || evidence.binding != *binding
-            {
-                return Err(denial(
-                    WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,
-                    "assessment evidence contract differs from its authored requirement",
-                ));
+            let maximum_facts = self
+                .admission
+                .allowed_graph_contract()
+                .decision_fact_budget()
+                .saturating_sub(self.facts.len().saturating_add(facts.len()));
+            let observed = super::assessment_coverage::observe(
+                node,
+                compiled.program_revision(),
+                coverage,
+                &evidence,
+                layout,
+                self.lease.handle(),
+                self.lease.snapshot(),
+                maximum_facts,
+            )?;
+            facts.extend(observed.facts);
+            if !observed.current {
+                continue;
             }
             completed = completed.saturating_add(1);
             passing = passing.saturating_add(usize::from(evidence.passing));
-            evidence_entities.push(evidence.entity);
+            evidence_currentness.extend(observed.dependencies);
         }
         if completed != required.len() {
             let required = RequiredWorkflowEvidence::new(
@@ -128,28 +190,6 @@ where
         } else {
             worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome::EvidenceFailed
         };
-        let maximum_facts = self
-            .admission
-            .allowed_graph_contract()
-            .decision_fact_budget()
-            .saturating_sub(self.facts.len());
-        let evidence_currentness = self.lease.handle().with_runtime(|runtime| {
-            let mut currentness = Vec::new();
-            for evidence in evidence_entities {
-                let remaining = maximum_facts.saturating_sub(facts.len());
-                currentness.extend(
-                    super::super::workflow_instance_observation::observe_evidence_dependencies(
-                        runtime,
-                        self.lease.snapshot(),
-                        layout,
-                        evidence,
-                        remaining,
-                        &mut facts,
-                    )?,
-                );
-            }
-            Ok::<_, WorthQueryApplicationAttemptDenial>(currentness)
-        })?;
         self.facts.extend(facts);
         super::assessment::bind_currentness_facts(
             &mut self,
@@ -165,6 +205,7 @@ where
             subject,
             live_membership,
             false,
+            allowance,
         );
         let transition_identity = admitted.identity().to_owned();
         let transition_identity_bytes = *admitted.identity_bytes();
@@ -199,7 +240,7 @@ where
             emission_retained_bytes: 0,
             emission_retained_bytes_ceiling: 0,
             conditional_definition: None,
-            platform_mutation: true,
+            effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Platform,
             validator_work_admission,
             output_correspondence: Default::default(),
             retain_output_demand_observation: false,
@@ -209,7 +250,7 @@ where
         };
         Ok(PreparedWorkflowAdvance::Transition {
             program,
-            program_revision: compiled.program_revision().clone(),
+            program_revision: *compiled.program_revision(),
             transition_identity,
             transition_identity_bytes,
             transition_identity_locator: layout.transition.identity.clone(),
@@ -223,6 +264,7 @@ where
             terminal: false,
             approval: None,
             approval_identity: None,
+            approval_authentication: None,
             replays: Default::default(),
         })
     }

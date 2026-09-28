@@ -1,0 +1,90 @@
+{
+  "schema": "worth-ui-ledger-phase-invalidation-v1",
+  "phase": 2,
+  "source_revision": "ef56a3d58523baa15ae4c253455a01ef16623e06",
+  "causes": [
+    "architectural-correction"
+  ],
+  "incident": {
+    "requirement": "P2-EVENT-LOOP-01",
+    "canonical_artifact": "plans/worth-ui/milestone-3.14.1-evidence/p2-event-loop-01.json",
+    "ledger_artifact_sha256": "4f9be931d4dddc9b04c81e09b9213c5ebe683bf7e6ae18235940b0b19b2ac694",
+    "observed_artifact_sha256": "2ed3a8cb9da25afa8165c6f80588f6975301c6fec3fd215d50ad3c69b3aff68e",
+    "observed_artifact_kind": "row-evidence",
+    "observed_schema": "row-schema-version-6",
+    "superseded_artifact": "plans/worth-ui/milestone-3.14.1-evidence/superseded/p2-event-loop-01/2ed3a8cb9da25afa8165c6f80588f6975301c6fec3fd215d50ad3c69b3aff68e.json"
+  },
+  "invalidated_rows": [
+    {
+      "requirement": "P2-APPLICATION-01",
+      "prior_result": "PROVED",
+      "prior_final_source": "true",
+      "prior_result_artifact_digest": "20fe529ec419f905164760bc59acf21e33c36d8c851ae3c338717389d0ec68fd",
+      "prior_reopen_lineage": "none"
+    },
+    {
+      "requirement": "P2-CLOSE-01",
+      "prior_result": "PROVED",
+      "prior_final_source": "true",
+      "prior_result_artifact_digest": "edc8069327b48b9850d7be0b68f10d01097dccf602081a953cc5ff959104bf7f",
+      "prior_reopen_lineage": "none"
+    },
+    {
+      "requirement": "P2-EVENT-LOOP-01",
+      "prior_result": "PROVED",
+      "prior_final_source": "true",
+      "prior_result_artifact_digest": "4f9be931d4dddc9b04c81e09b9213c5ebe683bf7e6ae18235940b0b19b2ac694",
+      "prior_reopen_lineage": "none"
+    },
+    {
+      "requirement": "P2-GRAPHICS-01",
+      "prior_result": "PROVED",
+      "prior_final_source": "true",
+      "prior_result_artifact_digest": "7e51878895293ca5006b158f54f38f1c8d708e527a8438c5e5b3ddde4114f720",
+      "prior_reopen_lineage": "none"
+    },
+    {
+      "requirement": "P2-PIXELS-01",
+      "prior_result": "PROVED",
+      "prior_final_source": "true",
+      "prior_result_artifact_digest": "8cca1261e11f993ed084c66a091dffaba9d64ba84a683b49ddb3f7fdf4487673",
+      "prior_reopen_lineage": "none"
+    },
+    {
+      "requirement": "P2-PORTS-01",
+      "prior_result": "PROVED",
+      "prior_final_source": "true",
+      "prior_result_artifact_digest": "8771fcc9664a3c0276ba866602057446ddad403a9488ad775ce4daa07d51dc71",
+      "prior_reopen_lineage": "none"
+    },
+    {
+      "requirement": "P2-PRESENT-01",
+      "prior_result": "PROVED",
+      "prior_final_source": "true",
+      "prior_result_artifact_digest": "83c334efa391cd3847622c27462a073681a23c2658247618f03ebaa48861a739",
+      "prior_reopen_lineage": "none"
+    },
+    {
+      "requirement": "P2-READINESS-01",
+      "prior_result": "PROVED",
+      "prior_final_source": "true",
+      "prior_result_artifact_digest": "530dc51fadd0549b42a993142fef125b25944a1363b47d76ee83bddd13d78430",
+      "prior_reopen_lineage": "none"
+    },
+    {
+      "requirement": "P2-WINDOW-01",
+      "prior_result": "PROVED",
+      "prior_final_source": "true",
+      "prior_result_artifact_digest": "088cb6bcaf72b77b388ab48625a07cbed614466f321ee08d6544bd78faf8d665",
+      "prior_reopen_lineage": "none"
+    },
+    {
+      "requirement": "P2-WORLD-01",
+      "prior_result": "PROVED",
+      "prior_final_source": "true",
+      "prior_result_artifact_digest": "d49fe08720d1636a5b3c4c9814acd88d62f986d2aa75f4ff7da06292f0119609",
+      "prior_reopen_lineage": "none"
+    }
+  ],
+  "preserved_open_requirements": []
+}

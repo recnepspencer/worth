@@ -142,10 +142,7 @@ pub(super) fn hover(world: &mut World, index: usize, sequence: u64) {
         UiHostObservationPayload::PointerMotion {
             pointer: UiHostPointerIdentity::new(1),
             capture_epoch: UiHostPointerCaptureEpoch::new(1),
-            position: UiHostSurfacePosition::viewport_logical(
-                ((x + width / 2.0) * 1_000.0) as i64,
-                ((y + height / 2.0) * 1_000.0) as i64,
-            ),
+            position: crate::units::viewport_position_for_test(x + width / 2.0, y + height / 2.0),
             pressed_buttons: UiHostPressedPointerButtons::NONE,
         },
     )

@@ -39,7 +39,7 @@ The product center is:
 - `runtime.observe_branch(...)`
 - `runtime.begin_branch_transaction(...)`
 - `tx.push_batch(...)`
-- `tx.commit(&mut runtime)` for the ordinary convenience path
+- `tx.commit(&runtime)` for the ordinary convenience path
 - or `runtime.prepare_branch_transaction(...)` followed by
   `runtime.publication_port().compare_and_publish(...)` and owner settlement
 
@@ -80,9 +80,14 @@ of a committed change. `PublishedAuthoritativeAspectChange` retains aspect
 identity and revision, Relational binding, change kind, optional field path,
 and exact or declared-widening precision.
 
-Runtime Bridge consumes this publication for Query-installed semantic
-correspondence. Downstream callers should not derive their own aspect-change
-taxonomy from raw patch fields.
+Downstream callers should not derive their own aspect-change taxonomy from raw
+patch fields.
+
+#### Who consumes this
+
+The Bridge carries Query-installed semantic correspondence. It reads this
+publication through `facade::change_source`, which checks the publication
+before minting a change receipt.
 
 ### Past truth
 

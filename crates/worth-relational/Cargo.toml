@@ -17,7 +17,6 @@ test-operation-control = ["test-durability-faults"]
 [dependencies]
 worth-foundational = { path = "../worth-foundational" }
 worth-proof = { path = "../worth-proof" }
-worth-runtime-bridge = { path = "../worth-runtime-bridge" }
 serde = { version = "1", features = ["derive", "rc"] }
 rmp-serde = "1.3"
 rayon = "1"
@@ -31,6 +30,7 @@ im = { version = "15.1", features = ["serde"] }
 [dev-dependencies]
 worth-harness.workspace = true
 proptest = "1"
+serde_json = "1"
 stats_alloc = "0.1"
 trybuild = "1"
 

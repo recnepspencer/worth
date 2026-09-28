@@ -11,7 +11,7 @@ the behavior the change necessarily promises. Tests are evidence for those
 requirements; code review decides whether that evidence is adequate.
 
 Read the repository instructions, governing specification, relevant engineering
-laws, and `_docs/coding_guidelines/qa_review_guide.md`. Inspect the task's diff,
+laws, and `docs/coding-guidelines/qa_review_guide.md`. Inspect the task's diff,
 the affected production paths, adjacent owners and consumers, and the tests that
 claim to protect the change.
 

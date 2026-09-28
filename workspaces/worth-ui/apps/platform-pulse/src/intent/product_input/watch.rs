@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{mpsc, Arc, Mutex};
 use std::time::Duration;
@@ -33,43 +33,50 @@ pub(super) fn classify_revision(
     }
 }
 
-pub(super) fn run_watch(
-    root: PathBuf,
-    mut admitted_revision: u64,
-    stop: Arc<AtomicBool>,
-    sender: mpsc::SyncSender<PlatformPulseIntentInputRecord>,
-    terminal: Arc<Mutex<Option<PlatformPulseIntentInputWatchDenial>>>,
-    readiness: Arc<Mutex<Option<crate::PlatformPulseApplicationReadinessSignal>>>,
-) {
-    let target = root.join(INPUT_FILE);
-    let (notification_sender, notification_receiver) = mpsc::sync_channel(CHANNEL_CAPACITY);
-    let notification_overflow = Arc::new(AtomicBool::new(false));
-    let callback_overflow = Arc::clone(&notification_overflow);
-    let watcher = notify::recommended_watcher(move |event: notify::Result<notify::Event>| {
+/// A live watch on the intent input's root and the notifications it has
+/// queued since registration.
+pub(super) struct RegisteredIntentWatch {
+    _watcher: notify::RecommendedWatcher,
+    notifications: mpsc::Receiver<notify::Result<notify::Event>>,
+    overflow: Arc<AtomicBool>,
+}
+
+pub(super) fn register_watch(
+    root: &Path,
+) -> Result<RegisteredIntentWatch, PlatformPulseIntentInputWatchDenial> {
+    let (notification_sender, notifications) = mpsc::sync_channel(CHANNEL_CAPACITY);
+    let overflow = Arc::new(AtomicBool::new(false));
+    let callback_overflow = Arc::clone(&overflow);
+    let mut watcher = notify::recommended_watcher(move |event: notify::Result<notify::Event>| {
         if !bears_on_watched_file(&event, INPUT_FILE) {
             return;
         }
         if notification_sender.try_send(event).is_err() {
             callback_overflow.store(true, Ordering::Release);
         }
-    });
-    let mut watcher = match watcher {
-        Ok(watcher) => watcher,
-        Err(error) => {
-            store_terminal(
-                &terminal,
-                PlatformPulseIntentInputWatchDenial::Watcher(error.to_string()),
-            );
-            return;
-        }
-    };
-    if let Err(error) = watcher.watch(&root, notify::RecursiveMode::NonRecursive) {
-        store_terminal(
-            &terminal,
-            PlatformPulseIntentInputWatchDenial::Watcher(error.to_string()),
-        );
-        return;
-    }
+    })
+    .map_err(|error| PlatformPulseIntentInputWatchDenial::Watcher(error.to_string()))?;
+    watcher
+        .watch(root, notify::RecursiveMode::NonRecursive)
+        .map_err(|error| PlatformPulseIntentInputWatchDenial::Watcher(error.to_string()))?;
+    Ok(RegisteredIntentWatch {
+        _watcher: watcher,
+        notifications,
+        overflow,
+    })
+}
+
+pub(super) fn run_watch(
+    target: PathBuf,
+    registered: RegisteredIntentWatch,
+    mut admitted_revision: u64,
+    stop: Arc<AtomicBool>,
+    sender: mpsc::SyncSender<PlatformPulseIntentInputRecord>,
+    terminal: Arc<Mutex<Option<PlatformPulseIntentInputWatchDenial>>>,
+    readiness: Arc<Mutex<Option<crate::PlatformPulseApplicationReadinessSignal>>>,
+) {
+    let notification_receiver = &registered.notifications;
+    let notification_overflow = &registered.overflow;
     while !stop.load(Ordering::Acquire) {
         if notification_overflow.swap(false, Ordering::AcqRel) {
             store_capacity_stop(&terminal);

@@ -308,6 +308,17 @@ pub(crate) fn posting_key(id: bank_domain::model::PostingId) -> String {
     format!("bank-posting:{}", id.canonical_text())
 }
 
+pub(super) fn payment_workflow_grant_key(
+    payment: bank_domain::model::PaymentId,
+    principal: bank_domain::model::BankPrincipalId,
+) -> String {
+    format!(
+        "approved-payment-workflow-grant:{}:{}",
+        payment.canonical_text(),
+        principal.get()
+    )
+}
+
 pub(super) fn approval_key(payment_id: bank_domain::model::PaymentId) -> String {
     format!("bank-payment-approval:{}", payment_id.canonical_text())
 }

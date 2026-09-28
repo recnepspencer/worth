@@ -1,3 +1,8 @@
+/// Work one invariant projection spent: equality lookups, index candidates,
+/// adjacency and endpoint reads, field reads, aggregate lookups and cache hits,
+/// and output-lineage lookups.
+///
+/// Descriptive evidence for budgeting; it grants nothing.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct WorthQueryInvariantProjectionWork {
     equality_lookups: usize,
@@ -9,7 +14,6 @@ pub struct WorthQueryInvariantProjectionWork {
     aggregate_lookups: usize,
     aggregate_cache_hits: usize,
     aggregate_rebuild_input_rows: usize,
-    reconstructive_scans: usize,
     output_lineage_source_selections: usize,
     output_lineage_role_lookups: usize,
 }
@@ -45,10 +49,6 @@ impl WorthQueryInvariantProjectionWork {
         self.field_reads
     }
 
-    pub const fn reconstructive_scans(self) -> usize {
-        self.reconstructive_scans
-    }
-
     pub const fn aggregate_lookups(self) -> usize {
         self.aggregate_lookups
     }
@@ -77,7 +77,6 @@ impl WorthQueryInvariantProjectionWork {
             + self.endpoint_records_read
             + self.field_reads
             + self.aggregate_lookups
-            + self.reconstructive_scans
             + self.output_lineage_source_selections
             + self.output_lineage_role_lookups
     }

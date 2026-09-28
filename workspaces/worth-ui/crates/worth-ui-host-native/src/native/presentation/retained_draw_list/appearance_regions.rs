@@ -1,8 +1,7 @@
 use worth_ui_host_contract::{
     UiHostRealizedGeometry, UiHostRealizedOrdering, UiHostRealizedRegion,
-    UiHostRealizedRegionParticipation, UiMountedCanonicalBox, UiMountedCanonicalBoxInput,
-    UiMountedCoordinateSpace, UiMountedPaintCommand, UiMountedSurfaceAppearanceMechanic,
-    UiMountedSurfacePaint, UI_APPEARANCE_LOGICAL_SUBPIXELS_PER_POINT,
+    UiHostRealizedRegionParticipation, UiMountedPaintCommand, UiMountedSurfaceAppearanceMechanic,
+    UiMountedSurfacePaint,
 };
 
 use super::super::appearance::{UiNativeAppearanceCommand, UiNativeAppearanceCommandIdentity};
@@ -60,8 +59,8 @@ fn surface_region(
     Some(UiHostRealizedRegion::observed_by_host(
         receipt,
         UiHostRealizedGeometry::observed_by_host(
-            canonical_visual(surface.visual_bounds())?,
-            canonical_clip(surface.clip())?,
+            surface.visual_bounds().canonical_box()?,
+            surface.clip().canonical_box()?,
         ),
         UiHostRealizedOrdering::observed_by_host(
             surface.surface_paint_order(),
@@ -89,28 +88,4 @@ fn surface_paint_alpha(surface: &UiMountedSurfaceAppearanceMechanic) -> u8 {
     };
     let product = u32::from(color_alpha) * u32::from(surface.opacity().units());
     ((product + u32::from(u16::MAX) / 2) / u32::from(u16::MAX)) as u8
-}
-
-pub(super) fn canonical_visual(
-    bounds: worth_ui_host_contract::UiAppearanceVisualBounds,
-) -> Option<UiMountedCanonicalBox> {
-    canonical(bounds.x(), bounds.y(), bounds.width(), bounds.height())
-}
-
-pub(super) fn canonical_clip(
-    clip: worth_ui_host_contract::UiAppearanceClip,
-) -> Option<UiMountedCanonicalBox> {
-    canonical(clip.x(), clip.y(), clip.width(), clip.height())
-}
-
-pub(super) fn canonical(x: i32, y: i32, width: u32, height: u32) -> Option<UiMountedCanonicalBox> {
-    let units = UI_APPEARANCE_LOGICAL_SUBPIXELS_PER_POINT as f32;
-    UiMountedCanonicalBox::canonicalize(UiMountedCanonicalBoxInput {
-        x: x as f32 / units,
-        y: y as f32 / units,
-        width: width as f32 / units,
-        height: height as f32 / units,
-        coordinate_space: UiMountedCoordinateSpace::Viewport,
-    })
-    .ok()
 }

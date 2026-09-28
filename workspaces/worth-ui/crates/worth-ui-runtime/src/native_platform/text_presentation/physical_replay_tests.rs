@@ -7,6 +7,16 @@ mod transition;
 use super::foreground_coverage_test_world::CoverageWorld;
 use worth_ui_host_contract::*;
 
+/// A device-pixel coordinate at the precision the host rasterizes in.
+fn device_pixels(pixels: f64) -> f32 {
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "the fixture's pixel coordinates are whole or quarter pixels under 2^24, which f32 holds exactly"
+    )]
+    let narrowed = pixels as f32;
+    narrowed
+}
+
 #[test]
 fn physical_replay_includes_unchanged_overhanging_text_before_its_occluder() {
     let world = CoverageWorld::with_portal_occluders(
@@ -30,8 +40,7 @@ fn physical_replay_includes_unchanged_overhanging_text_before_its_occluder() {
             selection: worth_ui_text::UiGlyphRasterDemandSelection::CompleteLayout,
             scale: worth_ui_text::UiGlyphRasterScale::new(1_250, text.qualified_layout_scale())
                 .unwrap(),
-            placement: worth_ui_text::UiGlyphRasterPlacement::from_mounted_logical(0.0, 0.0)
-                .unwrap(),
+            placement: worth_ui_text::UiGlyphRasterPlacement::from_millipoints([0, 0]),
             lane: UiGlyphRasterLane::Ordinary,
         },
     )
@@ -61,8 +70,8 @@ fn physical_replay_includes_unchanged_overhanging_text_before_its_occluder() {
     assert!(image.extent().width() > 2 && image.extent().height() > 2);
     assert!(left > f64::from(text.bounds().x() + text.bounds().width()) * 1.25);
     let damage_bounds = bounds([
-        (left + 1.0) as f32 / 1.25,
-        (top + 1.0) as f32 / 1.25,
+        device_pixels(left + 1.0) / 1.25,
+        device_pixels(top + 1.0) / 1.25,
         0.8,
         0.8,
     ]);
@@ -180,10 +189,10 @@ fn physical_replay_includes_unchanged_overhanging_text_before_its_occluder() {
             let y = (positioned.origin_y_millipoints() as f64 * 1.25 / 1_000.0).floor()
                 - f64::from(image.bearing().y_over_64()) / 64.0;
             Some([
-                x.floor() as f32,
-                y.floor() as f32,
-                ((x + f64::from(image.extent().width())).ceil() - x.floor()) as f32,
-                ((y + f64::from(image.extent().height())).ceil() - y.floor()) as f32,
+                device_pixels(x.floor()),
+                device_pixels(y.floor()),
+                device_pixels((x + f64::from(image.extent().width())).ceil() - x.floor()),
+                device_pixels((y + f64::from(image.extent().height())).ceil() - y.floor()),
             ])
         })
         .collect::<Vec<_>>();

@@ -153,7 +153,17 @@ fn semantic_text_projection(
         UiSemanticTextProjectionCertificationMutation::DuplicateReference => {
             vec![text_reference(), text_reference()]
         }
-        _ => vec![text_reference()],
+        UiSemanticTextProjectionCertificationMutation::Exact
+        | UiSemanticTextProjectionCertificationMutation::ForeignFrame
+        | UiSemanticTextProjectionCertificationMutation::ForeignSurface
+        | UiSemanticTextProjectionCertificationMutation::ForeignBinding
+        | UiSemanticTextProjectionCertificationMutation::ForeignContentGeneration
+        | UiSemanticTextProjectionCertificationMutation::ForeignInstance
+        | UiSemanticTextProjectionCertificationMutation::ForeignNodeReceipt
+        | UiSemanticTextProjectionCertificationMutation::ForeignAllocation
+        | UiSemanticTextProjectionCertificationMutation::ForeignCapabilityGeneration
+        | UiSemanticTextProjectionCertificationMutation::ForeignCapabilityProfile
+        | UiSemanticTextProjectionCertificationMutation::WithheldPaint => vec![text_reference()],
     };
     projection(SemanticTextProjectionBasis {
         frame,

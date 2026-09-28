@@ -13,8 +13,8 @@ use worth_query_host::facade::{
     },
 };
 use worth_query_topology_entry::{
-    AlternatePlanarOutputProducer, Body, PlanarFinalOutputProducer, PlanarOutputToFinalConnection,
-    PlanarRead, PlanarSourceAdjustment, PlanarSuccessor, PositionY,
+    AlternatePlanarOutputProducer, Body, PlanarFinalOutputFamily, PlanarFinalOutputProducer,
+    PlanarOutputToFinalConnection, PlanarRead, PlanarSourceAdjustment, PlanarSuccessor, PositionY,
 };
 
 use super::{length, output_correspondence::observed_source, ProgramApplication, Request};
@@ -208,6 +208,27 @@ pub(super) fn typed_reconstruction_preserves_query_authority(
         assert_eq!(restored.body_key, vertex.body_key);
         assert_eq!(restored.y, vertex.y);
     }
+    // Restoration republishes the exact retained output, so exact reuse must
+    // keep the producer resource profile admitted by its original demand.
+    let restored_source = request
+        .query(PlanarRead {
+            body_key: "anchor-b".to_owned(),
+        })
+        .execute()
+        .expect("the restored producer source query is admitted");
+    let selected = application
+        .select_output_producer::<PlanarFinalOutputFamily>(
+            &restored_source.observed_sources()[0],
+            "planar-final",
+            4_096,
+        )
+        .unwrap_or_else(|denial| {
+            panic!("the restored output must keep its exact producer profile: {denial:?}")
+        });
+    assert_eq!(
+        selected.identity(),
+        "worth.query.certification.planar-final-output-producer.v1"
+    );
 }
 
 fn foreign_runtime_rejection(

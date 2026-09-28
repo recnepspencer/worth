@@ -1,7 +1,7 @@
 use super::{milestone_314_ledger, repository_document};
 
-const CONTRACT: &str = "_docs/worth-ui/milestone-3.14-phase-4-contract.toml";
-const LEDGER: &str = "_docs/worth-ui/milestone-3.14-phase-4-proof-ledger.csv";
+const CONTRACT: &str = "plans/worth-ui/milestone-3.14-phase-4-contract.toml";
+const LEDGER: &str = "plans/worth-ui/milestone-3.14-phase-4-proof-ledger.csv";
 const IDS: [&str; 7] = [
     "P4-01", "P4-02", "P4-03", "P4-04", "P4-05", "P4-06", "P4-07",
 ];
@@ -26,7 +26,7 @@ fn validate_identity(contract: &toml::Value) -> Result<(), String> {
         || contract["phase"].as_integer() != Some(4)
         || contract["ledger"].as_str() != Some(LEDGER)
         || contract["predecessor_contract"].as_str()
-            != Some("_docs/worth-ui/milestone-3.14-phase-3-contract.toml")
+            != Some("plans/worth-ui/milestone-3.14-phase-3-contract.toml")
     {
         return Err("Phase 4 contract identity drifted".to_owned());
     }
@@ -154,17 +154,17 @@ fn milestone_314_phase4_contract_freezes_managed_execution_authority() {
     let (contract, ledger) = inputs();
     validate(&contract, &ledger).expect("Phase 4 contract and ledger should agree");
     let predecessor: toml::Value = toml::from_str(&repository_document(
-        "_docs/worth-ui/milestone-3.14-phase-3-contract.toml",
+        "plans/worth-ui/milestone-3.14-phase-3-contract.toml",
     ))
     .expect("Phase 3 contract should parse");
     assert_eq!(predecessor["status"].as_str(), Some("closed"));
     let phase_1: toml::Value = toml::from_str(&repository_document(
-        "_docs/worth-ui/milestone-3.14-phase-1-contract.toml",
+        "plans/worth-ui/milestone-3.14-phase-1-contract.toml",
     ))
     .expect("Phase 1 contract should parse");
     milestone_314_ledger::validate_at_phase(
         &phase_1,
-        &repository_document("_docs/worth-ui/milestone-3.14-proof-ledger.csv"),
+        &repository_document("plans/worth-ui/milestone-3.14-proof-ledger.csv"),
         milestone_314_ledger::CURRENT_IMPLEMENTATION_PHASE,
     )
     .expect("main IA ledger should admit Phase 4 ownership without claiming closure");
@@ -194,7 +194,7 @@ fn milestone_314_phase4_contract_rejects_hostile_drift() {
 fn hostile_contract_mutations(contract: &toml::Value) -> Vec<(&'static str, toml::Value)> {
     let mut predecessor = contract.clone();
     predecessor["predecessor_contract"] =
-        toml::Value::String("_docs/worth-ui/milestone-3.14-phase-2-contract.toml".to_owned());
+        toml::Value::String("plans/worth-ui/milestone-3.14-phase-2-contract.toml".to_owned());
     let mut provider = contract.clone();
     provider["authority"]["provider_truth"] = toml::Value::String("string callback".to_owned());
     let mut capacity = contract.clone();

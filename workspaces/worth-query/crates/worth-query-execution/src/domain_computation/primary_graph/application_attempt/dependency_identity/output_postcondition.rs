@@ -37,49 +37,45 @@ pub(super) fn normalized_output_facts(
 ) -> Vec<WorthQueryApplicationObservedFact> {
     facts
         .iter()
-        .filter_map(|fact| match fact {
+        .map(|fact| match fact {
             WorthQueryApplicationObservedFact::Field {
                 entity_id,
                 kind,
                 locator,
                 value,
-            } => Some(
-                match replacement_field_value(*entity_id, locator, effects) {
-                    Some(Some(replacement)) => WorthQueryApplicationObservedFact::Field {
-                        entity_id: *entity_id,
-                        kind: *kind,
-                        locator: locator.clone(),
-                        value: replacement.clone(),
-                    },
-                    Some(None) => WorthQueryApplicationObservedFact::AbsentField {
-                        entity_id: *entity_id,
-                        kind: *kind,
-                        locator: locator.clone(),
-                    },
-                    None => WorthQueryApplicationObservedFact::Field {
-                        entity_id: *entity_id,
-                        kind: *kind,
-                        locator: locator.clone(),
-                        value: value.clone(),
-                    },
+            } => match replacement_field_value(*entity_id, locator, effects) {
+                Some(Some(replacement)) => WorthQueryApplicationObservedFact::Field {
+                    entity_id: *entity_id,
+                    kind: *kind,
+                    locator: locator.clone(),
+                    value: replacement.clone(),
                 },
-            ),
+                Some(None) => WorthQueryApplicationObservedFact::AbsentField {
+                    entity_id: *entity_id,
+                    kind: *kind,
+                    locator: locator.clone(),
+                },
+                None => WorthQueryApplicationObservedFact::Field {
+                    entity_id: *entity_id,
+                    kind: *kind,
+                    locator: locator.clone(),
+                    value: value.clone(),
+                },
+            },
             WorthQueryApplicationObservedFact::AbsentField {
                 entity_id,
                 kind,
                 locator,
-            } => Some(
-                match replacement_field_value(*entity_id, locator, effects) {
-                    Some(Some(replacement)) => WorthQueryApplicationObservedFact::Field {
-                        entity_id: *entity_id,
-                        kind: *kind,
-                        locator: locator.clone(),
-                        value: replacement.clone(),
-                    },
-                    _ => fact.clone(),
+            } => match replacement_field_value(*entity_id, locator, effects) {
+                Some(Some(replacement)) => WorthQueryApplicationObservedFact::Field {
+                    entity_id: *entity_id,
+                    kind: *kind,
+                    locator: locator.clone(),
+                    value: replacement.clone(),
                 },
-            ),
-            _ => Some(fact.clone()),
+                _ => fact.clone(),
+            },
+            _ => fact.clone(),
         })
         .collect()
 }

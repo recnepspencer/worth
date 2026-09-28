@@ -55,7 +55,9 @@ impl ComponentHitTestContract {
         );
         match self.clip {
             ComponentHitTestClipContract::AllocationBounds => legacy,
-            _ => format!("{legacy}:{}", self.clip.digest_basis()),
+            ComponentHitTestClipContract::Inset(_) => {
+                format!("{legacy}:{}", self.clip.digest_basis())
+            }
         }
     }
 }

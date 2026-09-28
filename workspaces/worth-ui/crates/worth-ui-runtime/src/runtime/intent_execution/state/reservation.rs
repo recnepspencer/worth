@@ -105,7 +105,7 @@ impl UiIntentExecutionState {
             .occupancy
             .commit_candidate_reservation(&candidate, plan.occupancy);
         let slot_identity = UiIntentAdmissionSlotIdentity::new(
-            plan.execution_slot.index as u8,
+            u8::try_from(plan.execution_slot.index).expect("the execution slots fit u8"),
             plan.execution_slot.generation,
         );
         self.slots[plan.execution_slot.index].generation = plan.execution_slot.generation;

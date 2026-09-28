@@ -1,5 +1,5 @@
 use worth_query_declaration::facade::{
-    application_program::{ApplicationProgramDefinition, ApplicationWorkflowSpec},
+    application_program::ApplicationWorkflowSpec,
     application_query::{
         ApplicationQueryBinding, ApplicationQueryIntent, ApplicationQueryMarkerIdentity,
         ApplicationQueryScopeResolution,
@@ -11,13 +11,13 @@ use worth_query_execution::facade::{
         WorthQueryApplicationOutputDemand, WorthQueryProducerOutputFamily,
         WorthQueryWorkflowAssessmentOutputFamily, WorthQueryWorkflowAssessmentPosture,
     },
-    application_installation::WorthQueryWorkflowApplicationRuntime,
+    application_installation::WorthQueryWorkflowVocabulary,
     primary_graph::{
         WorthQueryAdmittedOutputDemand, WorthQueryApplicationProjection,
         WorthQueryOutputDemandAdvance, WorthQueryOutputDemandNotifications,
     },
-    workflow_advance::RequiredWorkflowAssessment,
 };
+use worth_query_execution::publication_boundary::workflow_advance::RequiredWorkflowAssessment;
 use worth_query_installation::facade::ApplicationSchema;
 
 use crate::application_entry::{
@@ -35,12 +35,16 @@ type SourceValue<Schema, Demand> = <<SourceBinding<Schema, Demand> as Applicatio
     Schema,
 >>::ResultBinding as ApplicationStructuredValueBinding>::Value;
 
+/// The kind of a `WorthQueryWorkflowAssessmentDemandPreparationDenial`.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryWorkflowAssessmentDemandPreparationDenialKind {
     NotAwaitingAssessment,
     ContractMismatch,
+    RequirementMismatch,
 }
 
+/// Why an assessment demand did not start: the instance is not awaiting an assessment, the
+/// demand does not match the installed contract, or it does not match the requirement.
 #[derive(Debug)]
 pub struct WorthQueryWorkflowAssessmentDemandPreparationDenial {
     kind: WorthQueryWorkflowAssessmentDemandPreparationDenialKind,
@@ -62,6 +66,12 @@ impl WorthQueryWorkflowAssessmentDemandPreparationDenial {
             kind: WorthQueryWorkflowAssessmentDemandPreparationDenialKind::ContractMismatch,
         }
     }
+
+    pub(super) const fn requirement_mismatch() -> Self {
+        Self {
+            kind: WorthQueryWorkflowAssessmentDemandPreparationDenialKind::RequirementMismatch,
+        }
+    }
 }
 
 impl std::fmt::Display for WorthQueryWorkflowAssessmentDemandPreparationDenial {
@@ -76,40 +86,37 @@ impl std::fmt::Display for WorthQueryWorkflowAssessmentDemandPreparationDenial {
 
 impl std::error::Error for WorthQueryWorkflowAssessmentDemandPreparationDenial {}
 
+/// A demand for the assessment a workflow instance awaits. `start` admits it.
 pub struct WorthQueryWorkflowAssessmentDemandRequest<
     'application,
     'principal,
     'scope,
     Schema,
     Spec,
-    Program,
     Demand,
 > where
     Schema: ApplicationSchema,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
-    Program: ApplicationProgramDefinition<Schema>,
     Demand: WorthQueryApplicationOutputDemand<Schema>,
 {
     required: RequiredWorkflowAssessment,
-    workflow: &'application WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>,
+    workflow: WorthQueryWorkflowVocabulary<'application, Schema, Spec>,
     demand:
         WorthQueryApplicationOutputDemandRequest<'application, 'principal, 'scope, Schema, Demand>,
 }
 
-impl<'application, 'principal, 'scope, Schema, Spec, Program, Demand>
+impl<'application, 'principal, 'scope, Schema, Spec, Demand>
     WorthQueryWorkflowAssessmentDemandRequest<
         'application,
         'principal,
         'scope,
         Schema,
         Spec,
-        Program,
         Demand,
     >
 where
     Schema: ApplicationSchema,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
-    Program: ApplicationProgramDefinition<Schema>,
     Demand: WorthQueryApplicationOutputDemand<Schema>,
 {
     pub(super) fn new(
@@ -117,7 +124,7 @@ where
         principal: &'principal worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal<Schema>,
         scope: &'scope worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
         branch: worth_query_execution::facade::product::WorthQueryProductBranch,
-        workflow: &'application WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>,
+        workflow: WorthQueryWorkflowVocabulary<'application, Schema, Spec>,
         required: RequiredWorkflowAssessment,
         demand: Demand,
     ) -> Result<Self, WorthQueryWorkflowAssessmentDemandPreparationDenial> {
@@ -147,20 +154,18 @@ where
     }
 }
 
-impl<'application, 'principal, 'scope, Schema, Spec, Program, Demand>
+impl<'application, 'principal, 'scope, Schema, Spec, Demand>
     WorthQueryWorkflowAssessmentDemandRequest<
         'application,
         'principal,
         'scope,
         Schema,
         Spec,
-        Program,
         Demand,
     >
 where
     Schema: ApplicationSchema + 'static,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
-    Program: ApplicationProgramDefinition<Schema>,
     Demand: WorthQueryApplicationOutputDemand<Schema>,
     Family<Schema, Demand>: WorthQueryWorkflowAssessmentOutputFamily<Schema>,
     SourceValue<Schema, Demand>:
@@ -176,7 +181,7 @@ where
     pub fn start(
         self,
     ) -> Result<
-        WorthQueryWorkflowAssessmentDemandHandle<'application, Schema, Spec, Program, Demand>,
+        WorthQueryWorkflowAssessmentDemandHandle<'application, Schema, Spec, Demand>,
         WorthQueryApplicationOutputDemandDenial,
     > {
         let (admitted, demand, controls) = self.demand.start_for_workflow(self.workflow)?;
@@ -190,25 +195,28 @@ where
     }
 }
 
-pub struct WorthQueryWorkflowAssessmentDemandHandle<'application, Schema, Spec, Program, Demand>
+/// An admitted assessment demand. `settle` drives it; `close` releases this observer only.
+pub struct WorthQueryWorkflowAssessmentDemandHandle<'application, Schema, Spec, Demand>
 where
     Schema: ApplicationSchema,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
-    Program: ApplicationProgramDefinition<Schema>,
     Demand: WorthQueryApplicationOutputDemand<Schema>,
 {
     required: RequiredWorkflowAssessment,
-    workflow: &'application WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>,
+    workflow: WorthQueryWorkflowVocabulary<'application, Schema, Spec>,
     admitted: WorthQueryAdmittedOutputDemand<Schema, Family<Schema, Demand>>,
     demand: Demand,
     controls: WorthQueryOutputDemandControls,
 }
 
+/// Whether an assessment demand has settled yet.
 pub enum WorthQueryWorkflowAssessmentDemandProgress<Query> {
     Pending,
     Settled(WorthQueryWorkflowAssessmentDemandSettlement<Query>),
 }
 
+/// A settled assessment demand: the requirement, its posture, and the output settlement to
+/// accept with `accept_assessment`.
 pub struct WorthQueryWorkflowAssessmentDemandSettlement<Query> {
     required: RequiredWorkflowAssessment,
     posture: WorthQueryWorkflowAssessmentPosture,
@@ -233,12 +241,10 @@ impl<Query> WorthQueryWorkflowAssessmentDemandSettlement<Query> {
     }
 }
 
-impl<Schema, Spec, Program, Demand>
-    WorthQueryWorkflowAssessmentDemandHandle<'_, Schema, Spec, Program, Demand>
+impl<Schema, Spec, Demand> WorthQueryWorkflowAssessmentDemandHandle<'_, Schema, Spec, Demand>
 where
     Schema: ApplicationSchema + 'static,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
-    Program: ApplicationProgramDefinition<Schema>,
     Demand: WorthQueryApplicationOutputDemand<Schema>,
     Family<Schema, Demand>: WorthQueryWorkflowAssessmentOutputFamily<Schema>,
     SourceValue<Schema, Demand>:

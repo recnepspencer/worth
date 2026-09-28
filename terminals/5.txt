@@ -1,7 +1,0 @@
----
-pid: 28112
-cwd: "C:\Users\Esther\Documents\Programming\WORTH_workspace\WORTH"
-command: "Start-Sleep -Seconds 60"
-started_at: 2026-07-06T21:42:46.585Z
-running_for_ms: 435002   
----

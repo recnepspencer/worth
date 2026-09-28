@@ -32,7 +32,6 @@ pub(super) struct BoundFirstFrameWorld {
     pub(super) pending_published: PlatformPulseLifecycleObservationEnvelope,
     pub(super) platform: CertifiedNativePlatform,
     pub(super) native_client: CertifiedProcessBoundNativeClientArea,
-    pub(super) launch_to_first_publication: Duration,
 }
 
 impl PulseExecutableWorld<AwaitingFirstFrame> {
@@ -45,47 +44,38 @@ impl PulseExecutableWorld<AwaitingFirstFrame> {
             installation,
             mut process,
             mut lifecycle,
-            launch_started,
         } = self.state;
-        let bound =
-            match bind_first_frame_world(&mut process, &mut lifecycle, launch_started, deadline) {
-                Ok(bound) => bound,
-                Err(primary) => {
-                    return Err(teardown_unbound_world(
-                        primary,
-                        UnboundFailureWorldResources::new(installation, process, lifecycle),
-                    ))
-                }
-            };
-        let evidence = match adjudicate_bound_first_frame(
+        let bound = match bind_first_frame_world(&mut process, &mut lifecycle, deadline) {
+            Ok(bound) => bound,
+            Err(primary) => {
+                return Err(teardown_unbound_world(
+                    primary,
+                    UnboundFailureWorldResources::new(installation, process, lifecycle),
+                ))
+            }
+        };
+        if let Err(primary) = adjudicate_bound_first_frame(
             &mut process,
             &bound,
             deadline,
             adjudicate_source_signal_first_frame,
         ) {
-            Ok(evidence) => evidence,
-            Err(primary) => {
-                return Err(teardown_native_bound_world(
-                    primary,
-                    UnboundFailureWorldResources::new(installation, process, lifecycle)
-                        .bind_native(bound.platform, bound.native_client),
-                ))
-            }
-        };
+            return Err(teardown_native_bound_world(
+                primary,
+                UnboundFailureWorldResources::new(installation, process, lifecycle)
+                    .bind_native(bound.platform, bound.native_client),
+            ));
+        }
         Ok(PulseExecutableWorld {
             state: Published {
                 world: NativeBoundExecutableWorld {
                     installation,
                     process,
                     lifecycle,
-                    journey_started: launch_started,
                     platform: bound.platform,
                     native_client: bound.native_client,
                 },
-                stage: InitialBlue {
-                    evidence,
-                    launch_to_first_publication: bound.launch_to_first_publication,
-                },
+                stage: InitialBlue,
             },
         })
     }
@@ -94,7 +84,6 @@ impl PulseExecutableWorld<AwaitingFirstFrame> {
 pub(super) fn bind_first_frame_world(
     process: &mut LivePlatformPulseProcess,
     lifecycle: &mut PlatformPulseLifecycleStream,
-    launch_started: Instant,
     deadline: Instant,
 ) -> Result<BoundFirstFrameWorld, PulseExecutableWorldFailure> {
     let process_started = lifecycle
@@ -109,7 +98,6 @@ pub(super) fn bind_first_frame_world(
     let pending_published = lifecycle
         .next(deadline)
         .map_err(PulseExecutableWorldFailure::Lifecycle)?;
-    let launch_to_first_publication = launch_started.elapsed();
     let platform =
         CertifiedNativePlatform::certified().map_err(PulseExecutableWorldFailure::Native)?;
     let native_client = platform
@@ -122,7 +110,6 @@ pub(super) fn bind_first_frame_world(
         pending_published,
         platform,
         native_client,
-        launch_to_first_publication,
     })
 }
 

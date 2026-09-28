@@ -63,10 +63,10 @@ impl UiMountedProjectionFrame {
             node_receipt,
             issuer: self.receipt_basis.issuer(),
             plan_digest: receipt.plan_digest(),
-            allocation: appearance_geometry.allocation,
+            allocation: appearance_geometry.allocation().into_shown(),
             appearance_clip: appearance_geometry.clip,
             surface_paint_order: node.surface_paint_order,
-            portal_group: appearance_geometry.portal_group,
+            portal_group: appearance_geometry.portal_group(),
             geometry_input: self
                 .semantic
                 .surface_for(receipt.semantic_surface())
@@ -114,12 +114,8 @@ impl UiMountedProjectionFrame {
             bounds: portal.bounds(),
             basis,
         };
-        context.appearance_clip = super::super::appearance::portal_ancestor_clip(
-            super::super::appearance::UiMountedAppearanceClip::Unclipped,
-            portal,
-            portal.anchor_bounds(),
-        )
-        .map_err(|_| super::super::UiMountedProjectionDenial::NonFiniteGeometry)?;
+        context.appearance_clip = super::super::appearance::portal_surface_clip(portal)
+            .map_err(|_| super::super::UiMountedProjectionDenial::NonFiniteGeometry)?;
         context.portal_group = Some(portal.owner());
         // Regional seams and text belong to the anchor occurrence, not this
         // independently placed surface. Overlay retention owns its geometry.

@@ -3,6 +3,7 @@ mod aspect_catalog;
 mod aspect_versions;
 mod context;
 mod diagnostics;
+mod kind_scan_visibility;
 mod query_execution;
 mod query_fragment_scratch;
 mod query_fragment_work;
@@ -18,6 +19,7 @@ mod truth_frontier_adjacency;
 mod truth_frontier_field_equality;
 mod truth_kind_scan;
 mod truth_record_access;
+mod truth_relation_kind_scan;
 
 use crate::authority::commit::preparation::planning::strategy::{
     coarse_preparation_packet_count, PreparationStrategySelection,
@@ -65,6 +67,7 @@ use super::ProjectionAspectFilter;
 
 const TARGET_TRAVERSAL_SEEDS_PER_PACKET: usize = 4;
 pub use context::VisibilityReadContext;
+pub(crate) use kind_scan_visibility::KindScanVisibility;
 use query_fragment_scratch::QueryFragmentScratch;
 pub use truth_adjacency::{AdjacencyTruthReadLimitExceeded, BoundedAdjacencyTruthRead};
 pub use truth_frontier_adjacency::{
@@ -74,3 +77,6 @@ pub use truth_frontier_field_equality::{
     BoundedFrontierFieldEqualityTruthRead, FrontierFieldEqualityTruthReadLimitExceeded,
 };
 pub use truth_kind_scan::{BoundedEntityKindTruthRead, EntityKindTruthReadLimitExceeded};
+pub use truth_relation_kind_scan::{
+    BoundedRelationKindTruthRead, RelationKindTruthReadDenial, RelationKindTruthReadLimitExceeded,
+};

@@ -70,6 +70,7 @@ where
     let request = plan.controls.request_scope();
     let basis_identity = plan.basis.identity().clone();
     let basis_version = plan.basis.version_id();
+    let source_parameters = std::sync::Arc::new(plan.parameters.clone());
     let observed_sources = source_footprints
         .into_iter()
         .map(|footprint| {
@@ -94,6 +95,7 @@ where
                 schema_binding: plan.query.binding_identity().clone(),
                 query_identity: plan.query.identity().clone(),
                 parameter_binding_identity: *plan.parameters.identity(),
+                parameters: std::sync::Arc::clone(&source_parameters),
                 query_identifier: plan.query.name().to_owned(),
                 branch: basis_identity.branch_id().clone(),
                 selection,
@@ -132,6 +134,7 @@ where
             schema_binding: plan.query.binding_identity().clone(),
             query_identity: plan.query.identity().clone(),
             parameter_binding_identity: *plan.parameters.identity(),
+            parameters: source_parameters,
             query_identifier: plan.query.name().to_owned(),
             branch: basis_identity.branch_id().clone(),
             selection: basis_identity.selection().clone(),

@@ -9,7 +9,7 @@ use super::{
 pub struct WorthQueryGranularSourceReadBasis {
     snapshot: worth_runtime_bridge::facade::TruthSnapshotIdentity,
     branch: worth_runtime_bridge::facade::TruthBranchIdentity,
-    observation: std::sync::Arc<worth_relational::facade::bridge::RelationalBridgeObservationLease>,
+    observation: std::sync::Arc<worth_runtime_bridge::facade::RelationalBridgeObservationLease>,
 }
 
 impl PartialEq for WorthQueryGranularSourceReadBasis {
@@ -24,9 +24,7 @@ impl WorthQueryGranularSourceReadBasis {
     pub(in crate::domain_computation::primary_graph) fn new(
         snapshot: worth_runtime_bridge::facade::TruthSnapshotIdentity,
         branch: worth_runtime_bridge::facade::TruthBranchIdentity,
-        observation: std::sync::Arc<
-            worth_relational::facade::bridge::RelationalBridgeObservationLease,
-        >,
+        observation: std::sync::Arc<worth_runtime_bridge::facade::RelationalBridgeObservationLease>,
     ) -> Self {
         Self {
             snapshot,
@@ -46,7 +44,7 @@ impl WorthQueryGranularSourceReadBasis {
     #[doc(hidden)]
     pub fn retain_observation(
         &self,
-    ) -> std::sync::Arc<worth_relational::facade::bridge::RelationalBridgeObservationLease> {
+    ) -> std::sync::Arc<worth_runtime_bridge::facade::RelationalBridgeObservationLease> {
         std::sync::Arc::clone(&self.observation)
     }
 }
@@ -63,9 +61,12 @@ pub struct WorthQueryGranularInvalidationDeliveryBatch {
     source_read_basis: Option<WorthQueryGranularSourceReadBasis>,
 }
 
+/// Why two granular invalidation batches could not be merged.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum WorthQueryGranularTransportMergeDenial {
+    /// The batches come from different installations.
     ForeignInstallation,
+    /// The batches were observed against different source read bases.
     SourceReadBasisMismatch,
 }
 

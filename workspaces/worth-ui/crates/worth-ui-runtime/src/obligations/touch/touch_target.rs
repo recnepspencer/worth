@@ -150,14 +150,22 @@ impl UiGraphTouchTarget {
                 parent_node_identity,
                 ..
             } => Some(*parent_node_identity),
-            _ => None,
+            Self::Node { .. }
+            | Self::PageMembership { .. }
+            | Self::RegionMembership { .. }
+            | Self::MosaicMembership { .. }
+            | Self::AttachmentLane { .. } => None,
         }
     }
 
     pub fn slot_name(&self) -> Option<&str> {
         match self {
             Self::SlotOccupancy { slot_name, .. } => Some(slot_name),
-            _ => None,
+            Self::Node { .. }
+            | Self::PageMembership { .. }
+            | Self::RegionMembership { .. }
+            | Self::MosaicMembership { .. }
+            | Self::AttachmentLane { .. } => None,
         }
     }
 
@@ -166,21 +174,33 @@ impl UiGraphTouchTarget {
             Self::PageMembership {
                 page_node_identity, ..
             } => Some(*page_node_identity),
-            _ => None,
+            Self::Node { .. }
+            | Self::SlotOccupancy { .. }
+            | Self::RegionMembership { .. }
+            | Self::MosaicMembership { .. }
+            | Self::AttachmentLane { .. } => None,
         }
     }
 
     pub fn region_name(&self) -> Option<&str> {
         match self {
             Self::RegionMembership { region_name, .. } => Some(region_name),
-            _ => None,
+            Self::Node { .. }
+            | Self::SlotOccupancy { .. }
+            | Self::PageMembership { .. }
+            | Self::MosaicMembership { .. }
+            | Self::AttachmentLane { .. } => None,
         }
     }
 
     pub fn mosaic_name(&self) -> Option<&str> {
         match self {
             Self::MosaicMembership { mosaic_name, .. } => Some(mosaic_name),
-            _ => None,
+            Self::Node { .. }
+            | Self::SlotOccupancy { .. }
+            | Self::PageMembership { .. }
+            | Self::RegionMembership { .. }
+            | Self::AttachmentLane { .. } => None,
         }
     }
 
@@ -189,7 +209,11 @@ impl UiGraphTouchTarget {
             Self::AttachmentLane {
                 attachment_lane, ..
             } => Some(*attachment_lane),
-            _ => None,
+            Self::Node { .. }
+            | Self::SlotOccupancy { .. }
+            | Self::PageMembership { .. }
+            | Self::RegionMembership { .. }
+            | Self::MosaicMembership { .. } => None,
         }
     }
 
@@ -199,7 +223,11 @@ impl UiGraphTouchTarget {
                 mount_eligibility_identity,
                 ..
             } => Some(*mount_eligibility_identity),
-            _ => None,
+            Self::Node { .. }
+            | Self::SlotOccupancy { .. }
+            | Self::PageMembership { .. }
+            | Self::RegionMembership { .. }
+            | Self::MosaicMembership { .. } => None,
         }
     }
 

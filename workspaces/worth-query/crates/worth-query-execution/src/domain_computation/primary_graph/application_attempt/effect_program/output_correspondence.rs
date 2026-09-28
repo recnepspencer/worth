@@ -329,6 +329,12 @@ impl WorthQueryApplicationOutputCorrespondence {
     }
 }
 
+/// The committed entity behind one declared output role, projected from a
+/// [`WorthQueryApplicationOutputCorrespondence`] with its binding, entity type,
+/// and posture checked.
+///
+/// Get one from the correspondence's `entity`; read the identity with
+/// `entity_id`. It describes what the commit produced and grants nothing.
 pub struct WorthQueryApplicationOutputEntity<Binding, Entity, Action> {
     entity_id: EntityId,
     _marker: PhantomData<fn() -> (Binding, Entity, Action)>,
@@ -340,10 +346,18 @@ impl<Binding, Entity, Action> WorthQueryApplicationOutputEntity<Binding, Entity,
     }
 }
 
+/// Why an output role could not be projected from a committed output
+/// correspondence. Nothing is changed by the refusal.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationOutputProjectionDenial {
+    /// The commit bound no entity to the requested role.
     MissingRole,
+    /// The role belongs to a different mutation binding than the one that
+    /// committed.
     ForeignBinding,
+    /// The role was committed with a different posture (preserve, create, or
+    /// retire) than the one requested.
     ActionMismatch,
+    /// The role was committed for a different entity type than the one requested.
     EntityMismatch,
 }

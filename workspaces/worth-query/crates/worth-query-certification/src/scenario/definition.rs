@@ -31,12 +31,21 @@ impl WorthQueryCertificationScenarioKind {
     ];
 }
 
+/// Why `WorthQueryCertificationScenario::with_oracle` refused a scenario.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryCertificationScenarioDenial {
+    /// The scenario identity was empty or contained characters other than
+    /// ASCII letters, digits, `-`, `.`, and `_`.
     InvalidIdentity,
+    /// The oracle observation was invalid.
     InvalidOracle(WorthQueryCertificationObservationDenial),
 }
 
+/// One certification scenario supplied by a downstream domain: an identity, a
+/// semantic family, and the oracle observation every provider must reproduce.
+///
+/// Build it with `with_oracle`; the required journey checkpoints follow from
+/// the scenario kind.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryCertificationScenario {
     id: String,

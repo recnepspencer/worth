@@ -10,12 +10,15 @@ use worth_query_declaration::facade::application_program::{
 };
 use worth_relational::facade::identity::EntityId;
 
-use super::WorkflowDefinitionExpectedPredecessor;
+use super::{PublishedWorkflowDefinitionRef, WorkflowDefinitionExpectedPredecessor};
 use crate::basis::WorthQueryProductBranch;
 
 const DOMAIN: CanonicalBasisDomain =
     CanonicalBasisDomain::Future("worth-query.workflow-definition-publication-intent");
 const RULE_VERSION: &str = "worth-query-workflow-definition-publication-intent-v2";
+const RETIREMENT_DOMAIN: CanonicalBasisDomain =
+    CanonicalBasisDomain::Future("worth-query.workflow-definition-retirement-intent");
+const RETIREMENT_RULE_VERSION: &str = "worth-query-workflow-definition-retirement-intent-v1";
 const MAXIMUM_CANONICAL_BYTES: usize = 4 * 1_024 * 1_024;
 
 pub(super) fn workflow_definition_intent_identity<Spec: ApplicationWorkflowSpec>(
@@ -123,13 +126,64 @@ pub(super) fn workflow_definition_intent_identity<Spec: ApplicationWorkflowSpec>
             )),
         ));
     }
-    let version = CanonicalizationRuleVersion::new(RULE_VERSION).ok_or(())?;
+    digest(RULE_VERSION, DOMAIN, entries)
+}
+
+/// Exact retirement intent: one published occurrence of one spec lineage,
+/// retired under one installed program revision.
+pub(super) fn workflow_definition_retirement_identity<Spec: ApplicationWorkflowSpec>(
+    definition: &PublishedWorkflowDefinitionRef,
+    program_revision: &ApplicationProgramRevision,
+) -> Result<[u8; 32], ()> {
+    let entries = vec![
+        entry_in(
+            RETIREMENT_DOMAIN,
+            "spec",
+            CanonicalBasisEntryKind::Identity,
+            text(Spec::IDENTITY.as_str()),
+        ),
+        entry_in(
+            RETIREMENT_DOMAIN,
+            "definition",
+            CanonicalBasisEntryKind::Identity,
+            entity(definition.entity_id()),
+        ),
+        entry_in(
+            RETIREMENT_DOMAIN,
+            "content",
+            CanonicalBasisEntryKind::Identity,
+            CanonicalBasisValue::BytesDigest(CanonicalDigestId::new(
+                *definition.content_identity().as_bytes(),
+            )),
+        ),
+        entry_in(
+            RETIREMENT_DOMAIN,
+            "program-revision",
+            CanonicalBasisEntryKind::Identity,
+            CanonicalBasisValue::BytesDigest(CanonicalDigestId::new(*program_revision.as_bytes())),
+        ),
+        entry_in(
+            RETIREMENT_DOMAIN,
+            "branch-occurrence",
+            CanonicalBasisEntryKind::Identity,
+            unsigned(definition.branch().occurrence_ordinal()),
+        ),
+    ];
+    digest(RETIREMENT_RULE_VERSION, RETIREMENT_DOMAIN, entries)
+}
+
+fn digest(
+    rule_version: &str,
+    domain: CanonicalBasisDomain,
+    entries: Vec<CanonicalBasisEntry>,
+) -> Result<[u8; 32], ()> {
+    let version = CanonicalizationRuleVersion::new(rule_version).ok_or(())?;
     let budget = CanonicalDigestWorkBudget::new(
         u32::try_from(entries.len()).map_err(|_| ())?,
         MAXIMUM_CANONICAL_BYTES,
     )
     .ok_or(())?;
-    let basis = prepare_canonical_basis_sequence(version, DOMAIN, entries)
+    let basis = prepare_canonical_basis_sequence(version, domain, entries)
         .into_result()
         .map_err(|_| ())?;
     let ready = canonicalization()
@@ -145,8 +199,17 @@ fn entry(
     kind: CanonicalBasisEntryKind,
     value: CanonicalBasisValue,
 ) -> CanonicalBasisEntry {
+    entry_in(DOMAIN, locus, kind, value)
+}
+
+fn entry_in(
+    domain: CanonicalBasisDomain,
+    locus: impl Into<String>,
+    kind: CanonicalBasisEntryKind,
+    value: CanonicalBasisValue,
+) -> CanonicalBasisEntry {
     CanonicalBasisEntry::new(
-        DOMAIN,
+        domain,
         CanonicalBasisLocus::Named(locus.into().into()),
         kind,
         value,

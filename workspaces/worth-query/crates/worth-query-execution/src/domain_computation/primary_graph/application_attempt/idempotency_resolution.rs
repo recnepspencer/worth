@@ -22,24 +22,60 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphApplicationRuntime,
 };
 
+/// What an idempotency key already means on the current product branch, read
+/// through `resolve_admitted_application_idempotency` without committing
+/// anything.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationIdempotencyResolution {
+    /// No commit is recorded under this key.
     Unseen,
+    /// A commit with the same intent is recorded under this key; its receipt is
+    /// recovered.
     AlreadyCommitted(WorthQueryApplicationCommitReceipt),
+    /// The key was already used for a different intent.
     IntentDrift,
 }
 
+/// Owner custody for one admitted guarded workflow mutation. Only `Committed`
+/// carries authority to settle the workflow's operation transition.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum WorthQueryGuardedWorkflowOperationCustody {
+    Unseen,
+    Committed(WorthQueryApplicationCommitReceipt),
+    DispatchPending(WorthQueryApplicationCommitReceipt),
+    IntentDrift,
+    PublicationPending,
+    ProductUnpublished(worth_runtime_world::facade::ProductUnpublishedRecoveryHandle),
+    Indeterminate(WorthQueryApplicationIdempotencyResolutionDenial),
+}
+
+/// Why an idempotency key could not be resolved. The resolution is a read, so
+/// nothing took effect.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationIdempotencyResolutionDenialKind {
+    /// The admission's current authority no longer holds, or inspecting the key was
+    /// not authorized. The authorization denial has the detail.
     Authorization,
+    /// The admission belongs to another runtime or schema binding, or has no product
+    /// to resolve against.
     ForeignAdmission,
+    /// The provider holds its maximum number of active snapshots.
     ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
+    /// The provider has no retention capacity for the read.
     RetentionCapacityExhausted,
+    /// The provider has run out of retention identities.
     RetentionIdentityExhausted,
+    /// The provider has run out of snapshot identities.
     SnapshotIdentityExhausted,
+    /// The provider could not answer, the product was unpublished, or the recorded
+    /// receipt could not be read back.
     ProviderUnavailable,
 }
 
+/// A refusal to resolve an idempotency key. Nothing took effect.
+///
+/// Match on [`kind`](Self::kind); [`authorization`](Self::authorization) is set
+/// only for an authorization refusal.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationIdempotencyResolutionDenial {
     kind: WorthQueryApplicationIdempotencyResolutionDenialKind,
@@ -109,6 +145,98 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: ApplicationSchema,
 {
+    pub(in crate::domain_computation::primary_graph) fn resolve_admitted_guarded_workflow_operation_custody<
+        Operation,
+        Input,
+        Scope,
+    >(
+        &self,
+        admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+        binding: WorthQueryApplicationIdempotencyBinding,
+        transition_identity: &[u8; 32],
+    ) -> Result<
+        WorthQueryGuardedWorkflowOperationCustody,
+        WorthQueryApplicationIdempotencyResolutionDenial,
+    >
+    where
+        Input: Clone + Send + Sync + 'static,
+    {
+        if !binding.matches_guarded_workflow_effect(transition_identity) {
+            return Err(WorthQueryApplicationIdempotencyResolutionDenial::foreign_admission());
+        }
+        admission
+            .validate_current_authority()
+            .map_err(WorthQueryApplicationIdempotencyResolutionDenial::from_authorization)?;
+        if !admission.belongs_to(
+            self.runtime.authority_identity(),
+            &self.installed_schema.binding_identity(),
+        ) {
+            return Err(WorthQueryApplicationIdempotencyResolutionDenial::foreign_admission());
+        }
+        let bound = binding
+            .bind_operation(admission.operation_authority_identity_bytes())
+            .bind_operation_scope(admission.operation_scope_binding())
+            .bind_preconditions(admission.mutation_preconditions().identity())
+            .bind_governed_input(admission.governed_input_identity())
+            .bind_governed_proposal(admission.governed_proposal_identity());
+        let product = admission
+            .graph_work()
+            .mutation_product()
+            .ok_or_else(WorthQueryApplicationIdempotencyResolutionDenial::foreign_admission)?
+            .publication_binding();
+        let commit_lane = self
+            .primary_provider
+            .application_branch_commit_lane(product.observation());
+        let coordination = commit_lane.enter();
+        let proof = self
+            .authorize_idempotency_inspection(admission, &coordination)
+            .map_err(WorthQueryApplicationIdempotencyResolutionDenial::from_authorization)?;
+        let custody = proof
+            .govern((), |()| {
+                self.primary_provider
+                    .resolve_guarded_workflow_operation_custody(bound, &product)
+            })
+            .map_err(|(_, denial)| {
+                WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(denial)
+            })?;
+        use crate::domain_computation::primary_graph::provider::WorthQueryProviderGuardedWorkflowOperationCustody as Owner;
+        Ok(match custody {
+            Owner::Unseen => WorthQueryGuardedWorkflowOperationCustody::Unseen,
+            Owner::IntentDrift => WorthQueryGuardedWorkflowOperationCustody::IntentDrift,
+            Owner::PublicationPending => {
+                WorthQueryGuardedWorkflowOperationCustody::PublicationPending
+            }
+            Owner::ProductUnpublished(handle) => {
+                WorthQueryGuardedWorkflowOperationCustody::ProductUnpublished(handle)
+            }
+            Owner::Indeterminate(denial) => {
+                WorthQueryGuardedWorkflowOperationCustody::Indeterminate(
+                    WorthQueryApplicationIdempotencyResolutionDenial::from_provider(denial),
+                )
+            }
+            Owner::Committed(provider) => {
+                let Ok(projection) = WorthQueryCommittedReceiptProjection::resolve(provider) else {
+                    return Ok(WorthQueryGuardedWorkflowOperationCustody::Indeterminate(
+                        WorthQueryApplicationIdempotencyResolutionDenial::provider_unavailable(),
+                    ));
+                };
+                let receipt = WorthQueryApplicationCommitReceipt::from_idempotency_read(
+                    WorthQueryIdempotencyReadCommitReceiptPermit::mint(),
+                    projection,
+                    recover_equivalent_commit_evidence(admission.mutation_preconditions()),
+                    admission.canonical_work(),
+                    WorthQueryApplicationCommitAuthorityBinding::from_admission(admission, bound),
+                );
+                if super::workflow_transition_program::operation_receipt_requires_recovery(&receipt)
+                {
+                    WorthQueryGuardedWorkflowOperationCustody::DispatchPending(receipt)
+                } else {
+                    WorthQueryGuardedWorkflowOperationCustody::Committed(receipt)
+                }
+            }
+        })
+    }
+
     pub fn resolve_admitted_application_idempotency<Operation, Input, Scope>(
         &self,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,

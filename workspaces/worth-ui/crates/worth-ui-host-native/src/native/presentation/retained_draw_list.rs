@@ -94,6 +94,11 @@ pub(crate) struct UiNativeRetainedDrawList {
     regions: super::retained_regions::UiNativeRetainedRegions,
     identity_overlay: super::identity_overlay::UiNativeRetainedIdentityOverlay,
     last_paint_attribution: Option<(usize, UiNativeRetainedPresentationAttribution)>,
+    /// The surface target generation this list's pixels are complete in.
+    painted_target: u64,
+    /// A successor target this list owes a whole repaint, until a
+    /// presentation into it is submitted (completed or pending).
+    repaint_target: Option<u64>,
 }
 
 mod sampled_appearance_coverage;

@@ -30,6 +30,7 @@ pub(in crate::domain_computation) use registered::{
 pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) struct WorthQueryProgressedApplicationCommit
 {
     outcome: WorthQueryProviderProgressionOutcome,
+    workflow_settlement_publication: Option<super::LocalWorkflowSettlementPublication>,
     lease: WorthQueryApplicationSnapshotLease,
     running: crate::domain_computation::WorthQueryRunningDirectRun,
     cleanup: WorthQueryApplicationMutationCleanupOwner,
@@ -50,6 +51,7 @@ struct WorthQueryProviderProgression<'a, Schema, Operation, Input, Scope> {
         Scope,
     >,
     prepared: WorthQueryPreparedApplicationProviderAttempt,
+    outcome_identity: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitOutcomeIdentity,
     attempt_basis: WorthQueryApplicationAttemptBasis,
     authorization: crate::domain_computation::authorization::WorthQueryProviderCommitAuthorization,
     idempotency: WorthQueryApplicationIdempotencyBinding,
@@ -68,9 +70,11 @@ impl WorthQueryProviderProgressionCompletion {
         self,
         lease: WorthQueryApplicationSnapshotLease,
         running: crate::domain_computation::WorthQueryRunningDirectRun,
+        workflow_settlement_publication: Option<super::LocalWorkflowSettlementPublication>,
     ) -> WorthQueryProgressedApplicationCommit {
         WorthQueryProgressedApplicationCommit {
             outcome: self.outcome,
+            workflow_settlement_publication,
             lease,
             running,
             cleanup: self.cleanup,
@@ -172,6 +176,8 @@ where
         admission,
         lease,
         provider_attempt,
+        outcome_identity,
+        workflow_settlement_publication,
         authorization,
         idempotency,
         mut running,
@@ -187,6 +193,7 @@ where
             provider: &application.primary_provider,
             admission: &admission,
             prepared: provider_attempt,
+            outcome_identity,
             attempt_basis,
             authorization,
             idempotency,
@@ -194,7 +201,7 @@ where
         },
         mutation_run,
     )
-    .finish(lease, running)
+    .finish(lease, running, workflow_settlement_publication)
 }
 
 fn progress_provider_application<Schema, Operation, Input, Scope>(
@@ -212,6 +219,7 @@ where
         provider,
         admission,
         prepared,
+        outcome_identity,
         attempt_basis,
         mut authorization,
         idempotency,
@@ -231,6 +239,7 @@ where
             provider,
             admission,
             idempotency,
+            outcome_identity,
             aftermath_causality.as_ref(),
         ),
     ) {

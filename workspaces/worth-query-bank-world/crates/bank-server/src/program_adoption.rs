@@ -5,7 +5,9 @@ use worth_query_host::facade::application_entry::{
     WorthQueryApplicationProgramInspectionDenial, WorthQueryPreparedBranchAdoption,
 };
 use worth_query_host::facade::application_installation::WorthQueryProgramOwner;
-use worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition;
+use worth_query_host::facade::declaration::application_program::{
+    ApplicationProgramDefinition, ApplicationProgramRevision,
+};
 use worth_query_host::facade::primary_graph::WorthQuerySelectedProgramInspection;
 use worth_query_host::facade::product::WorthQueryProductBranch;
 
@@ -19,10 +21,31 @@ pub enum BankProgramInspectionDenial {
 #[derive(Debug)]
 pub enum BankProgramAdoptionPreparationDenial {
     TargetUnsupported,
-    Query(WorthQueryApplicationProgramAdoptionPreparationDenial),
+    Query(Box<WorthQueryApplicationProgramAdoptionPreparationDenial>),
 }
 
 impl BankIdentityRuntime {
+    /// The production branch this Bank host serves.
+    pub fn current_branch(&self) -> WorthQueryProductBranch {
+        self.application_program().current_world()
+    }
+
+    /// The revision of the program this Bank host installed.
+    pub fn installed_program_revision(&self) -> &ApplicationProgramRevision {
+        self.application_program().owned_revision()
+    }
+
+    /// The revision of one program this Bank host rosters beside its
+    /// installed program, or `None` when the host does not roster it.
+    pub fn supported_program_revision<Target>(&self) -> Option<ApplicationProgramRevision>
+    where
+        Target: ApplicationProgramDefinition<BankSchema> + 'static,
+    {
+        self.application_program()
+            .supported_program::<Target>()
+            .map(|owner| *owner.owned_revision())
+    }
+
     /// Inspects the program actually carried by one Bank branch through the
     /// ordinary authenticated Query entry.
     pub fn inspect_branch_program(
@@ -51,19 +74,15 @@ impl BankIdentityRuntime {
         Target: ApplicationProgramDefinition<BankSchema> + 'static,
     {
         let target = self
-            .application_program()
-            .supported_program::<Target>()
-            .ok_or(BankProgramAdoptionPreparationDenial::TargetUnsupported)?
-            .owned_revision()
-            .clone();
+            .supported_program_revision::<Target>()
+            .ok_or(BankProgramAdoptionPreparationDenial::TargetUnsupported)?;
         let programs = self.request(principal, scope).on_branch(branch).programs();
         let requirements = programs
             .compare(&target)
-            .map_err(BankProgramAdoptionPreparationDenial::Query)?;
+            .map_err(|denial| BankProgramAdoptionPreparationDenial::Query(Box::new(denial)))?;
         programs
-            .adopt(&target)
-            .requirements(&requirements)
+            .adopt(&requirements)
             .prepare(maximum_selection_work)
-            .map_err(BankProgramAdoptionPreparationDenial::Query)
+            .map_err(|denial| BankProgramAdoptionPreparationDenial::Query(Box::new(denial)))
     }
 }

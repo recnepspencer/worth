@@ -138,7 +138,7 @@ fn observe_candidate(
             owner_path: surface.owner_source.as_ref().map(|path| root.join(path)),
         })
         .collect::<Vec<_>>();
-    ConstitutionSnapshots::observe(&governed_packages, &configured_surfaces)
+    ConstitutionSnapshots::observe(root, &governed_packages, &configured_surfaces)
 }
 
 fn snapshot_observation_diagnostic(message: String) -> Diagnostic {
@@ -146,6 +146,6 @@ fn snapshot_observation_diagnostic(message: String) -> Diagnostic {
         DiagnosticCode::Bc8001SnapshotBaseline,
         "surface-snapshots",
         message,
-        "tools/boundary-check/snapshots/crate-dag.toml and tools/boundary-check/snapshots/facades.toml; regenerate explicitly with boundary-check --update-snapshots",
+        "tools/boundary-check/snapshots/crate-dag.toml, tools/boundary-check/snapshots/facades.toml, and tools/boundary-check/snapshots/facade-doc-debt.toml; regenerate explicitly with boundary-check --update-snapshots",
     )
 }

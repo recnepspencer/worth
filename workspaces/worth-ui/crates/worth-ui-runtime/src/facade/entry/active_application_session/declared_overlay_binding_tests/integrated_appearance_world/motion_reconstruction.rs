@@ -187,7 +187,8 @@ pub(super) fn reject_retry_at_nonterminal_sample(
             // The host receives authored appearance opacity (40_000) composed
             // with the accepted raw Motion sample. The odd denominator cannot
             // tie, so adding half before division gives independent nearest rounding.
-            let composed = ((40_000_u64 * u64::from(*opacity) + 32_767) / 65_535) as u16;
+            let composed = u16::try_from((40_000_u64 * u64::from(*opacity) + 32_767) / 65_535)
+                .expect("a composed opacity is at most either factor");
             assert_eq!(
                 override_change.opacity().units(),
                 composed,

@@ -6,7 +6,7 @@ mod rust_source;
 
 use rust_source::{
     collect_method_names, collect_method_names_for_function, collect_paths_for_function,
-    ends_with_path,
+    ends_with_path, file_accepts_match_variant,
 };
 
 const DECLARATION_SEMANTIC_AUTHORITY_TYPES: &[&str] = &[
@@ -157,7 +157,7 @@ pub fn audit_phase5_graph_lookup_lane_is_indexed_not_scan_first(
             obligation_inspection.display()
         ));
     }
-    if obligation_source.contains("UiInspectionTarget::GraphNodeIdentity") {
+    if file_accepts_match_variant(inventory, &obligation_inspection, "GraphNodeIdentity") {
         violations.push(format!(
             "{} still accepts GraphNodeIdentity in the retained obligation helper instead of keeping ordinary graph-node lookup on the graph evidence index lane",
             obligation_inspection.display()

@@ -15,7 +15,7 @@ use super::UiNativeTextAtlasDemand;
 pub(crate) fn normalize_demands(
     demands: &[UiNativeTextAtlasDemand],
 ) -> Result<Vec<UiNativeTextAtlasDemand>, UiNativeTextAtlasDenial> {
-    let mut by_key = HashMap::new();
+    let mut by_key = HashMap::with_capacity(demands.len());
     for demand in demands.iter().copied() {
         UiNativeValidatedRasterKey::from_native_host(demand.key())?;
         if demand.width() == 0
@@ -54,7 +54,7 @@ pub(crate) fn normalize_demands(
         }
     }
     let mut normalized = by_key.into_values().collect::<Vec<_>>();
-    normalized.sort_by_key(|demand| canonical_raster_key_bytes(demand.key()));
+    normalized.sort_by_cached_key(|demand| canonical_raster_key_bytes(demand.key()));
     Ok(normalized)
 }
 

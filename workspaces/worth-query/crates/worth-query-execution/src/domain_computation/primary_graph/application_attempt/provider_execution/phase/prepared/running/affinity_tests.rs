@@ -49,6 +49,8 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
         mutation_run,
         attempt_basis,
         aftermath_causality: _aftermath_causality,
+        outcome_identity: _outcome_identity,
+        workflow_settlement_publication: _workflow_settlement_publication,
     } = running;
     let staged = real_terminal_session(&world, &mut running, lease.product().retained_clone());
     assert!(staged.bind_application_attempt(attempt_basis).is_ok());
@@ -136,6 +138,8 @@ fn a_real_peer_plan_and_session_cannot_substitute_for_the_captured_attempt() {
         mutation_run: first_mutation_run,
         attempt_basis: first_basis,
         aftermath_causality: _first_aftermath,
+        outcome_identity: _first_outcome_identity,
+        workflow_settlement_publication: _first_workflow_settlement_publication,
     } = first;
     let WorthQueryRunningApplicationCommit {
         admission: _second_admission,
@@ -147,6 +151,8 @@ fn a_real_peer_plan_and_session_cannot_substitute_for_the_captured_attempt() {
         mutation_run: second_mutation_run,
         attempt_basis: second_basis,
         aftermath_causality: _second_aftermath,
+        outcome_identity: _second_outcome_identity,
+        workflow_settlement_publication: _second_workflow_settlement_publication,
     } = second;
     let first_staged = real_terminal_session(
         &world,
@@ -200,6 +206,8 @@ fn an_exact_sibling_product_cannot_substitute_at_provider_plan_binding() {
         mutation_run,
         attempt_basis: _attempt_basis,
         aftermath_causality: _aftermath_causality,
+        outcome_identity: _outcome_identity,
+        workflow_settlement_publication: _workflow_settlement_publication,
     } = running;
     let sibling = fork_product(&world, lease.product());
     let sibling = world
@@ -235,6 +243,8 @@ fn the_exact_selected_product_binds_at_provider_plan_boundary() {
         mutation_run,
         attempt_basis: _attempt_basis,
         aftermath_causality: _aftermath_causality,
+        outcome_identity: _outcome_identity,
+        workflow_settlement_publication: _workflow_settlement_publication,
     } = running;
     let result = direct_run
         .admit_provider_execution_plan(&world.application.primary_graph_authority)

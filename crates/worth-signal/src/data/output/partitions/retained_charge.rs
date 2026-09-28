@@ -29,11 +29,11 @@ impl RetainedStorageMeasurement for PartitionInterner {
             partition_lookup,
             detail_lookup,
         } = self;
-        Ok(Charge::ZERO
+        Charge::ZERO
             .checked_add(partitions.retained_heap_charge(work)?)?
             .checked_add(details.retained_heap_charge(work)?)?
             .checked_add(partition_lookup.retained_heap_charge(work)?)?
-            .checked_add(detail_lookup.retained_heap_charge(work)?)?)
+            .checked_add(detail_lookup.retained_heap_charge(work)?)
     }
 }
 
@@ -51,9 +51,9 @@ impl RetainedStorageMeasurement for PartitionSubscription {
             detail,
             match_mode: _,
         } = self;
-        Ok(Charge::ZERO
+        Charge::ZERO
             .checked_add(partition.retained_heap_charge(work)?)?
-            .checked_add(detail.retained_heap_charge(work)?)?)
+            .checked_add(detail.retained_heap_charge(work)?)
     }
 }
 
@@ -88,10 +88,10 @@ impl RetainedStorageForkPreparation for PartitionInterner {
             partition_lookup,
             detail_lookup,
         } = self;
-        Ok(RetainedStorageForkCharge::unchanged(Charge::ZERO)
+        RetainedStorageForkCharge::unchanged(Charge::ZERO)
             .checked_add(partitions.prepare_fork_charge(work)?)?
             .checked_add(details.prepare_fork_charge(work)?)?
             .checked_add(partition_lookup.prepare_fork_charge(work)?)?
-            .checked_add(detail_lookup.prepare_fork_charge(work)?)?)
+            .checked_add(detail_lookup.prepare_fork_charge(work)?)
     }
 }

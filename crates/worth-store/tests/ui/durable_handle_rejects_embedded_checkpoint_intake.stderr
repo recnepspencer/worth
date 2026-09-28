@@ -1,5 +1,0 @@
-error[E0599]: no method named `persist_external_checkpoint` found for struct `DurableStoreHandle` in the current scope
- --> tests/ui/durable_handle_rejects_embedded_checkpoint_intake.rs:9:21
-  |
-9 |     let _ = durable.persist_external_checkpoint(checkpoint);
-  |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ method not found in `DurableStoreHandle`

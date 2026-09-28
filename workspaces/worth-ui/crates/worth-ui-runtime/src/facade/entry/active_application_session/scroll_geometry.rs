@@ -18,8 +18,10 @@ impl super::super::WorthUiActiveApplicationSession {
                 }
             }
         }
-        if let Some((_, content, viewport)) = self.mounted.scroll_region_geometry(target, slot) {
-            return crate::runtime::scroll::UiScrollBounds::from_mounted_region(content, viewport)
+        if let Some((_, region)) = self.mounted.scroll_region_geometry(target, slot) {
+            return region
+                .in_layout_space()
+                .bounds()
                 .ok_or(crate::runtime::scroll::UiScrollBoundsResolutionDenial::OutOfRange);
         }
         if matches!(
@@ -31,5 +33,29 @@ impl super::super::WorthUiActiveApplicationSession {
             );
         }
         self.application.scroll_bounds_for(owner, graph_node)
+    }
+
+    /// The viewport `owner` shows, as laid out: a Scroll region's own, or the
+    /// viewport a surface or viewport owner is allocated.
+    pub(super) fn scroll_viewport_for_mounted_owner(
+        &self,
+        owner: crate::runtime::scroll::UiScrollOwnerIdentity,
+        target: worth_ui_host_contract::UiMountedInstanceIdentity,
+        graph_node: crate::graph::UiGraphNodeIdentity,
+        slot: usize,
+    ) -> Option<worth_ui_host_contract::UiMountedCanonicalBox> {
+        if let Some((_, region)) = self.mounted.scroll_region_geometry(target, slot) {
+            return Some(region.in_layout_space().viewport());
+        }
+        if matches!(
+            owner,
+            crate::runtime::scroll::UiScrollOwnerIdentity::Region { .. }
+        ) {
+            return None;
+        }
+        self.application
+            .mounted_viewport_bounds_for(owner.allocation_graph_node(graph_node))
+            .ok()?
+            .map(|viewport| viewport.mounted_box())
     }
 }

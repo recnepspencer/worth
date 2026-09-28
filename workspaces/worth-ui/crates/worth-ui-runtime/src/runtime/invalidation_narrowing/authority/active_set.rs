@@ -1,10 +1,32 @@
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum UiAllocationActivationCatalogDenial {
     EmptyCatalog,
-    CandidateNotAdmitted { ordinal: u16 },
-    IncompatibleGraphAuthority { ordinal: u16 },
-    ReplacementLineageMismatch { ordinal: u16 },
-    DuplicateNeighborhood { ordinal: u16 },
+    /// More candidates than a catalog ordinal counts.
+    TooManyCandidates,
+    CandidateNotAdmitted {
+        ordinal: u16,
+    },
+    IncompatibleGraphAuthority {
+        ordinal: u16,
+    },
+    ReplacementLineageMismatch {
+        ordinal: u16,
+    },
+    DuplicateNeighborhood {
+        ordinal: u16,
+    },
+}
+
+/// The most candidates a catalog holds: one for each `u16` ordinal.
+const CATALOG_CAPACITY: usize = u16::MAX as usize + 1;
+
+/// Refuses a catalog with more candidates than its ordinals count, before any
+/// ordinal is read.
+fn admit_candidate_count(count: usize) -> Result<(), UiAllocationActivationCatalogDenial> {
+    if count > CATALOG_CAPACITY {
+        return Err(UiAllocationActivationCatalogDenial::TooManyCandidates);
+    }
+    Ok(())
 }
 
 /// Complete admitted allocation-neighborhood catalog for one active graph lineage.
@@ -48,6 +70,7 @@ impl UiAllocationActivationCatalog {
         let Some(first) = candidates.first() else {
             return Err(UiAllocationActivationCatalogDenial::EmptyCatalog);
         };
+        admit_candidate_count(candidates.len())?;
         let first_identity = first.allocation_neighborhood().identity().identity_digest();
         candidates.sort_by_key(|candidate| {
             candidate
@@ -65,11 +88,9 @@ impl UiAllocationActivationCatalog {
         let snapshot = first
             .allocation_neighborhood()
             .graph_snapshot_authority_digest();
-        for (ordinal, candidate) in candidates.iter().enumerate() {
+        for (ordinal, candidate) in (0..=u16::MAX).zip(candidates.iter()) {
             if !candidate.is_admitted() {
-                return Err(UiAllocationActivationCatalogDenial::CandidateNotAdmitted {
-                    ordinal: ordinal as u16,
-                });
+                return Err(UiAllocationActivationCatalogDenial::CandidateNotAdmitted { ordinal });
             }
             let neighborhood = candidate.allocation_neighborhood();
             if neighborhood.identity().world_identity_digest() != world
@@ -77,9 +98,7 @@ impl UiAllocationActivationCatalog {
                 || neighborhood.graph_snapshot_authority_digest() != snapshot
             {
                 return Err(
-                    UiAllocationActivationCatalogDenial::IncompatibleGraphAuthority {
-                        ordinal: ordinal as u16,
-                    },
+                    UiAllocationActivationCatalogDenial::IncompatibleGraphAuthority { ordinal },
                 );
             }
             if !candidate
@@ -87,19 +106,15 @@ impl UiAllocationActivationCatalog {
                 .same_replacement_lineage(first.replan_admission())
             {
                 return Err(
-                    UiAllocationActivationCatalogDenial::ReplacementLineageMismatch {
-                        ordinal: ordinal as u16,
-                    },
+                    UiAllocationActivationCatalogDenial::ReplacementLineageMismatch { ordinal },
                 );
             }
         }
-        for ordinal in 1..candidates.len() {
-            if candidates[ordinal - 1].allocation_neighborhood().identity()
-                == candidates[ordinal].allocation_neighborhood().identity()
+        for (ordinal, pair) in (1..=u16::MAX).zip(candidates.windows(2)) {
+            if pair[0].allocation_neighborhood().identity()
+                == pair[1].allocation_neighborhood().identity()
             {
-                return Err(UiAllocationActivationCatalogDenial::DuplicateNeighborhood {
-                    ordinal: ordinal as u16,
-                });
+                return Err(UiAllocationActivationCatalogDenial::DuplicateNeighborhood { ordinal });
             }
         }
         let contexts = candidates
@@ -212,5 +227,20 @@ impl UiAllocationNeighborhoodCatalogTransition {
                     )
                     .is_some()
             })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{admit_candidate_count, UiAllocationActivationCatalogDenial, CATALOG_CAPACITY};
+
+    #[test]
+    fn a_catalog_holds_one_candidate_for_each_u16_ordinal_and_no_more() {
+        assert_eq!((0..=u16::MAX).count(), CATALOG_CAPACITY);
+        assert_eq!(admit_candidate_count(65_536), Ok(()));
+        assert_eq!(
+            admit_candidate_count(65_537),
+            Err(UiAllocationActivationCatalogDenial::TooManyCandidates)
+        );
     }
 }

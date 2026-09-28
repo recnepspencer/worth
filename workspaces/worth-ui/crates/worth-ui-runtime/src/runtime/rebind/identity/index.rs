@@ -111,7 +111,11 @@ fn declaration_identities_for_classification(
         WorthUiNodeLifecycleTransition::Create => {
             declaration_identities_for_provenance(candidate.graph_snapshot(), provenance)
         }
-        _ => [
+        WorthUiNodeLifecycleTransition::Preserve
+        | WorthUiNodeLifecycleTransition::Replace
+        | WorthUiNodeLifecycleTransition::Move
+        | WorthUiNodeLifecycleTransition::Rebind
+        | WorthUiNodeLifecycleTransition::LaneChange => [
             declaration_identities_for_provenance(predecessor.graph_snapshot(), provenance),
             declaration_identities_for_provenance(candidate.graph_snapshot(), provenance),
         ]

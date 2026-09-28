@@ -22,14 +22,30 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrimaryGraphLayout,
 };
 
+mod denial;
 mod relations;
 
+use denial::reconstruction_failure;
+pub use denial::{
+    WorthQueryGeneratedOutputReconstructionDenial, WorthQueryGeneratedOutputReconstructionFailure,
+};
+
+/// A handle to one generated entity claimed in a reconstruction, usable only in
+/// that reconstruction.
+///
+/// Get it from the reconstruction's `entity`, then set its fields and claim its
+/// relations.
 pub struct WorthQueryGeneratedEntity<Schema, Entity> {
     identity: EntityId,
     session: Arc<()>,
     _marker: PhantomData<fn() -> (Schema, Entity)>,
 }
 
+/// A handle to an entity outside the generated output that a suspended relation
+/// connects to, usable only in the reconstruction that found it.
+///
+/// Get it from the reconstruction's `retained_relation_source`,
+/// `retained_relation_target`, or their plural forms.
 pub struct WorthQueryRetainedGeneratedOutputEntity<Schema, Entity> {
     identity: EntityId,
     session: Arc<()>,
@@ -46,6 +62,13 @@ impl<Schema, Entity> Clone for WorthQueryGeneratedEntity<Schema, Entity> {
     }
 }
 
+/// An in-progress reconstruction of a suspended generated output, checked step
+/// by step against the suspension's manifest of entities and relations.
+///
+/// Begin with `reconstruct_generated_output`. Claim each generated entity with
+/// `entity`, set its fields with `field`, claim each relation with `relation`
+/// or its retained-endpoint forms, then call `finish`. `abort` hands back the
+/// suspended output unchanged.
 pub struct WorthQueryGeneratedOutputReconstruction<'runtime, Schema, Producer> {
     layout: &'runtime WorthQueryPrimaryGraphLayout,
     suspended: WorthQuerySuspendedGeneratedOutput,
@@ -69,44 +92,9 @@ struct ReconstructionRelation {
     claimed: bool,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryGeneratedOutputReconstructionDenial {
-    ForeignRuntime,
-    ForeignProducer,
-    StaleProducerVersion,
-    StaleOutputLineage,
-    MissingOutputRole,
-    MissingEntity,
-    EntityKindMismatch,
-    DuplicateEntityClaim,
-    ForeignEntityHandle,
-    RetainedEntityKindMismatch,
-    ForeignRetainedEntityHandle,
-    UnknownField,
-    DuplicateField,
-    InvalidFieldValue,
-    MissingRelation,
-    DuplicateRelationClaim,
-    AmbiguousRelation,
-    WrongRelationEndpoint,
-    IncompleteManifest,
-}
-
-pub struct WorthQueryGeneratedOutputReconstructionFailure {
-    denial: WorthQueryGeneratedOutputReconstructionDenial,
-    suspended: WorthQuerySuspendedGeneratedOutput,
-}
-
-impl WorthQueryGeneratedOutputReconstructionFailure {
-    pub const fn denial(&self) -> WorthQueryGeneratedOutputReconstructionDenial {
-        self.denial
-    }
-
-    pub fn into_suspended(self) -> WorthQuerySuspendedGeneratedOutput {
-        self.suspended
-    }
-}
-
+/// A reconstruction that accounts for every entity and relation in the
+/// suspension manifest, ready for `restore_generated_output`. Nothing is
+/// published until it is restored.
 #[must_use = "completed reconstruction must be restored through Query Host"]
 pub struct WorthQueryCompletedGeneratedOutputReconstruction<Schema, Producer> {
     pub(super) suspended: WorthQuerySuspendedGeneratedOutput,
@@ -347,11 +335,4 @@ where
             marker: PhantomData,
         })
     }
-}
-
-fn reconstruction_failure(
-    suspended: WorthQuerySuspendedGeneratedOutput,
-    denial: WorthQueryGeneratedOutputReconstructionDenial,
-) -> WorthQueryGeneratedOutputReconstructionFailure {
-    WorthQueryGeneratedOutputReconstructionFailure { denial, suspended }
 }

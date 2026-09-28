@@ -1,5 +1,12 @@
+use std::rc::Rc;
+
+/// A sealed projection, shared: retained entries, attempts and inspection
+/// records hold it without copying its role, state and aspects.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(crate) struct UiAppearanceProjection {
+pub(crate) struct UiAppearanceProjection(Rc<UiAppearanceProjectionFields>);
+
+#[derive(Debug, Eq, PartialEq)]
+struct UiAppearanceProjectionFields {
     target: super::super::state::UiAppearanceTarget,
     role: worth_ui_dsl::UiAppearanceRoleIdentity,
     role_schema: worth_ui_dsl::UiAppearanceRoleSchemaVersion,
@@ -31,7 +38,7 @@ impl UiAppearanceProjection {
             semantic_digest = fold(semantic_digest, aspect.aspect() as u64 + 1);
             semantic_digest = fold(semantic_digest, aspect.semantic_digest());
         }
-        Self {
+        Self(Rc::new(UiAppearanceProjectionFields {
             target: target.clone(),
             role: role.role().clone(),
             role_schema: role.schema(),
@@ -42,32 +49,32 @@ impl UiAppearanceProjection {
             state,
             aspects,
             semantic_digest,
-        }
+        }))
     }
 
     pub(crate) fn target(&self) -> super::super::state::UiAppearanceTarget {
-        self.target.clone()
+        self.0.target.clone()
     }
     pub(crate) fn role(&self) -> &worth_ui_dsl::UiAppearanceRoleIdentity {
-        &self.role
+        &self.0.role
     }
-    pub(crate) const fn role_revision(&self) -> worth_ui_dsl::UiAppearanceRoleRevision {
-        self.role_revision
+    pub(crate) fn role_revision(&self) -> worth_ui_dsl::UiAppearanceRoleRevision {
+        self.0.role_revision
     }
     pub(crate) fn theme(&self) -> &str {
-        &self.theme
+        &self.0.theme
     }
-    pub(crate) const fn theme_revision(&self) -> u64 {
-        self.theme_revision
+    pub(crate) fn theme_revision(&self) -> u64 {
+        self.0.theme_revision
     }
-    pub(crate) const fn state(&self) -> &super::super::state::UiAppearanceStateVector {
-        &self.state
+    pub(crate) fn state(&self) -> &super::super::state::UiAppearanceStateVector {
+        &self.0.state
     }
     pub(crate) fn aspects(&self) -> &[super::UiResolvedAppearanceAspect] {
-        &self.aspects
+        &self.0.aspects
     }
-    pub(crate) const fn semantic_digest(&self) -> u64 {
-        self.semantic_digest
+    pub(crate) fn semantic_digest(&self) -> u64 {
+        self.0.semantic_digest
     }
 }
 

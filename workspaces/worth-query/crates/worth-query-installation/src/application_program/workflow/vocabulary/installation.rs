@@ -4,7 +4,8 @@ use std::marker::PhantomData;
 
 use worth_query_declaration::facade::{
     application_capability::{ApplicationCapabilityMarkerIdentity, ApplicationCapabilityRef},
-    application_program::ApplicationWorkflowSpec,
+    application_operation::ApplicationMutationBinding,
+    application_program::{ApplicationWorkflowApprovalRef, ApplicationWorkflowSpec},
     application_query::{ApplicationQueryBinding, ApplicationQueryMarkerIdentity},
     application_schema::{
         ApplicationOperationMarkerIdentity, ApplicationOperationRef, ApplicationSchema,
@@ -74,36 +75,34 @@ where
         }
     }
 
-    pub fn operation<Operation, Input>(
+    pub fn operation<Binding>(
         mut self,
     ) -> Result<Self, WorthQueryApplicationWorkflowInstallationDenial>
     where
-        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
-        Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
-        Input: 'static,
+        Binding: ApplicationMutationBinding<Schema>,
     {
-        self.insert_marker(0, TypeId::of::<Operation>(), Operation::IDENTIFIER)?;
-        if !self.program.contains_operation_type::<Operation>() {
+        self.insert_marker(0, TypeId::of::<Binding>(), Binding::IDENTITY)?;
+        if !self
+            .program
+            .actions()
+            .iter()
+            .any(|action| action.mutation_binding_type() == Some(TypeId::of::<Binding>()))
+        {
             return Err(denial(
                 WorthQueryApplicationWorkflowInstallationDenialKind::OperationNotInProgram,
-                Operation::IDENTIFIER,
+                Binding::IDENTITY,
             ));
         }
         self.schema
-            .installed_operation(
-                ApplicationOperationRef::<Schema, Operation, Input>::from_declaration(),
-            )
+            .installed_mutation_binding::<Binding>()
             .map_err(|_| {
                 denial(
                     WorthQueryApplicationWorkflowInstallationDenialKind::OperationNotInstalled,
-                    Operation::IDENTIFIER,
+                    Binding::IDENTITY,
                 )
             })?;
-        self.operations.push(InstalledWorkflowOperation {
-            marker: TypeId::of::<Operation>(),
-            identifier: Operation::IDENTIFIER,
-            input_type: Operation::InputBinding::IDENTITY,
-        });
+        self.operations
+            .push(InstalledWorkflowOperation::declared::<Spec, Binding>());
         Ok(self)
     }
 
@@ -127,13 +126,8 @@ where
                     Binding::IDENTITY,
                 )
             })?;
-        self.assessments.push(InstalledWorkflowAssessment {
-            query_marker: TypeId::of::<Binding::Query>(),
-            query_identifier: Binding::Query::IDENTIFIER,
-            parameter_type: Binding::Query::PARAMETER_TYPE_IDENTITY,
-            result_type: Binding::Query::RESULT_TYPE_IDENTITY,
-            binding_identity: Binding::IDENTITY,
-        });
+        self.assessments
+            .push(InstalledWorkflowAssessment::declared::<Spec, Binding>());
         Ok(self)
     }
 
@@ -159,13 +153,8 @@ where
                     Binding::IDENTITY,
                 )
             })?;
-        self.conditions.push(InstalledWorkflowCondition {
-            query_marker: TypeId::of::<Binding::Query>(),
-            query_identifier: Binding::Query::IDENTIFIER,
-            parameter_type: Binding::Query::PARAMETER_TYPE_IDENTITY,
-            result_type: Binding::Query::RESULT_TYPE_IDENTITY,
-            binding_identity: Binding::IDENTITY,
-        });
+        self.conditions
+            .push(InstalledWorkflowCondition::declared::<Spec, Binding>());
         Ok(self)
     }
 
@@ -182,7 +171,10 @@ where
         let binding = self.bind_capability::<Capability, Operation, Input>(
             WorthQueryApplicationWorkflowInstallationDenialKind::ApprovalNotInstalled,
         )?;
-        self.approvals.push(InstalledWorkflowApproval { binding });
+        self.approvals.push(InstalledWorkflowApproval {
+            binding,
+            reference: ApplicationWorkflowApprovalRef::declared::<Spec, Capability>(),
+        });
         Ok(self)
     }
 
@@ -332,7 +324,7 @@ where
     pub fn finish(
         self,
     ) -> Result<
-        WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+        WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         WorthQueryApplicationWorkflowInstallationDenial,
     > {
         if self.program.schema_binding() != &self.schema.binding_identity() {
@@ -379,7 +371,7 @@ where
         );
         Ok(WorthQueryInstalledApplicationWorkflowSpec {
             schema_binding: self.schema.binding_identity(),
-            program_revision: self.program.revision().clone(),
+            program_revision: *self.program.revision(),
             support_identity,
             authoring_capability,
             instance_start_capability,

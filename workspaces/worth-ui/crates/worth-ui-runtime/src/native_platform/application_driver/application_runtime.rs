@@ -123,7 +123,7 @@ impl UiNativeApplicationDriver {
 
     pub(super) fn progress_application_runtime_viewport(
         &mut self,
-        surface_basis_successor: bool,
+        surface_succession: Option<crate::native_platform::UiNativeSurfaceSuccession>,
     ) -> Result<worth_ui_host_native::UiNativeEventLoopDirective, ()> {
         if !self.application_runtime_active {
             return Err(());
@@ -131,7 +131,7 @@ impl UiNativeApplicationDriver {
         let runtime = self.application_runtime.as_mut().ok_or(())?;
         let shell = self.shell.take().ok_or(())?;
         let result = runtime
-            .native_viewport_ready(shell, surface_basis_successor)
+            .native_viewport_ready(shell, surface_succession)
             .map_err(|stopped| stopped.into_application());
         self.settle_application_callback(result)
     }

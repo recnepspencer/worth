@@ -129,9 +129,13 @@ mod tests {
         for (candidates, expected_state, expected_native, expected_custom) in
             [(1, 4, 8, 11), (32, 32, 64, 39), (128, 128, 256, 135)]
         {
-            let contract =
-                application_invariant_execution_contract(3, 1, candidates, &[custom.clone()])
-                    .unwrap();
+            let contract = application_invariant_execution_contract(
+                3,
+                1,
+                candidates,
+                std::slice::from_ref(&custom),
+            )
+            .unwrap();
             let native = contract
                 .requirements()
                 .iter()

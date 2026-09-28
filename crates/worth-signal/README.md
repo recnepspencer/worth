@@ -129,7 +129,7 @@ it.
 - web backends and reactive views
 - finance and risk pipelines
 - ML feature and scoring flows
-- geometry or compiler-style partial recompute
+- document indexing or compiler-style partial recompute
 
 ## Installed Conditional Nodes
 
@@ -256,13 +256,13 @@ assert_eq!(version.get(TOTAL), 5);
 
 - [`examples/easy_task_board.rs`](./examples/easy_task_board.rs) for the short path
 - [`examples/compiler_targeted_rebuild.rs`](./examples/compiler_targeted_rebuild.rs) for targeted rebuilds, diagnostics, and replay
-- [`examples/geometry_partial_recompute.rs`](./examples/geometry_partial_recompute.rs) for region-aware invalidation
+- [`examples/document_partial_recompute.rs`](./examples/document_partial_recompute.rs) for region-scoped partial recompute
 
 ## Walkthroughs
 
 - [Easy task board](./docs/walkthroughs/easy-task-board.md)
 - [Compiler targeted rebuild](./docs/walkthroughs/compiler-targeted-rebuild.md)
-- [Geometry partial recompute](./docs/walkthroughs/geometry-partial-recompute.md)
+- [Document partial recompute](./docs/walkthroughs/document-partial-recompute.md)
 
 ## Reality check
 

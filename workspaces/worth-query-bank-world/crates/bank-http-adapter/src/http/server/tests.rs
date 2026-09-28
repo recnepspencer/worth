@@ -149,7 +149,6 @@ async fn account_activity_sse_preserves_open_and_deadline_postures() {
     assert_eq!(
         retained_application
             .runtime
-            .application_program()
             .active_live_consumers_for_test(),
         1,
         "the replacement stream must hold a real Query live lease at shutdown"
@@ -162,7 +161,6 @@ async fn account_activity_sse_preserves_open_and_deadline_postures() {
     assert_eq!(
         retained_application
             .runtime
-            .application_program()
             .active_live_consumers_for_test(),
         0,
         "shutdown must close the active Query live lease"

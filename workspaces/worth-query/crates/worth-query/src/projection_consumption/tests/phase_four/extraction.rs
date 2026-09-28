@@ -2,7 +2,7 @@ use worth_foundational::facade::{
     aspects, AspectContract, AspectContractRevision, AspectIdentity, AspectKey, AspectValue,
     FieldKey, ScalarAspectType, StructAspectValue,
 };
-use worth_relational::facade::grouped_truth::{
+use worth_runtime_bridge::facade::{
     encode_snapshot_aspect_read_value, materialize_relational_authoritative_row_set,
 };
 use worth_runtime_bridge::facade::{

@@ -17,7 +17,7 @@ const REPLACEMENT_ORCHESTRATOR: &str =
 fn milestone_312_phase3_r12_has_one_canonical_rebind_planning_authority() {
     let inventory = workspace_source_inventory();
     let phase_1: toml::Value = toml::from_str(&repository_document(
-        "_docs/worth-ui/milestone-3.12-phase-1-contract.toml",
+        "plans/worth-ui/milestone-3.12-phase-1-contract.toml",
     ))
     .expect("Phase 1 contract is TOML");
     let route = phase_1["route"]

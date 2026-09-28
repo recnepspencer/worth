@@ -10,7 +10,7 @@ use worth_relational::facade::{
     schema::RelationalSchemaRegistry,
 };
 
-let mut runtime = RelationalRuntimeApi::builder()
+let runtime = RelationalRuntimeApi::builder()
     .runtime_setup(|runtime| {
         runtime.runtime_name("quickstart");
     })
@@ -43,7 +43,7 @@ let mut tx = runtime.begin_branch_transaction(
     RelationalTransactionIntent::ordinary(),
 )?;
 tx.push_batch(WorkerIntentBatch::new("seed"))?;
-let commit = tx.commit(&mut runtime)?;
+let commit = tx.commit(&runtime)?;
 ```
 
 That is the default write story:

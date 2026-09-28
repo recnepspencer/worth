@@ -36,7 +36,15 @@ impl WorthUiPlanRegionSuccessorBuilder {
                 {
                     return Err(WorthUiPlanRegionSuccessorDenial::MissingPredecessorRegion);
                 }
-                _ => {}
+                WorthUiPlanRegionMutation::Upsert(_)
+                | WorthUiPlanRegionMutation::Insert(_)
+                | WorthUiPlanRegionMutation::Replace(_)
+                | WorthUiPlanRegionMutation::Reparent(_)
+                | WorthUiPlanRegionMutation::Rebind(_)
+                | WorthUiPlanRegionMutation::LaneTransition(_)
+                | WorthUiPlanRegionMutation::Retire(_)
+                | WorthUiPlanRegionMutation::OwnerBundle { .. }
+                | WorthUiPlanRegionMutation::RetireOwner(_) => {}
             }
         }
         let successor = predecessor
@@ -45,7 +53,19 @@ impl WorthUiPlanRegionSuccessorBuilder {
                 super::WorthUiPlanRegionStoreDenial::HandleCapacity(exhaustion) => {
                     WorthUiPlanRegionSuccessorDenial::HandleCapacity(exhaustion)
                 }
-                other => WorthUiPlanRegionSuccessorDenial::RegionalStore(other),
+                other @ (super::WorthUiPlanRegionStoreDenial::MissingLinkedRegion
+                | super::WorthUiPlanRegionStoreDenial::DuplicateRegionIdentity
+                | super::WorthUiPlanRegionStoreDenial::OrdinaryMeaningFamilyMismatch
+                | super::WorthUiPlanRegionStoreDenial::SpatialMeaningFamilyMismatch
+                | super::WorthUiPlanRegionStoreDenial::RealtimeMeaningFamilyMismatch
+                | super::WorthUiPlanRegionStoreDenial::QueryBindingFactsMismatch
+                | super::WorthUiPlanRegionStoreDenial::DuplicateChildTarget
+                | super::WorthUiPlanRegionStoreDenial::OverlappingChildTarget
+                | super::WorthUiPlanRegionStoreDenial::CyclicRegionDependency
+                | super::WorthUiPlanRegionStoreDenial::OwnerManifestMismatch
+                | super::WorthUiPlanRegionStoreDenial::IncompleteSuccessor) => {
+                    WorthUiPlanRegionSuccessorDenial::RegionalStore(other)
+                }
             })?;
         Ok(successor)
     }

@@ -22,25 +22,32 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                 progress_update,
                 approval,
                 approval_identity,
+                mut approval_authentication,
                 ..
-            } => Self::Transition {
-                program,
-                program_revision,
-                transition_identity,
-                transition_identity_bytes,
-                transition_identity_locator,
-                assessment_identity_locator,
-                instance,
-                node_path,
-                terminal,
-                assessment,
-                supporting_identity,
-                operation_receipt_identity,
-                progress_update,
-                approval,
-                approval_identity,
-                replays,
-            },
+            } => {
+                if let Some(authentication) = &mut approval_authentication {
+                    authentication.bind_replays(&replays);
+                }
+                Self::Transition {
+                    program,
+                    program_revision,
+                    transition_identity,
+                    transition_identity_bytes,
+                    transition_identity_locator,
+                    assessment_identity_locator,
+                    instance,
+                    node_path,
+                    terminal,
+                    assessment,
+                    supporting_identity,
+                    operation_receipt_identity,
+                    progress_update,
+                    approval,
+                    approval_identity,
+                    approval_authentication,
+                    replays,
+                }
+            }
             Self::AwaitingAssessment(mut prepared) => {
                 prepared.replays = replays;
                 Self::AwaitingAssessment(prepared)

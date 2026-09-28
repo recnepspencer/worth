@@ -35,7 +35,7 @@ where
         bridge: &worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,
         declaration: &worth_runtime_bridge::facade::LoweredBridgeAsyncSourceDeclaration,
         observation: &ProductBranchObservation,
-        relational_source: &worth_relational::facade::bridge::RelationalBridgeObservationLease,
+        relational_source: &worth_runtime_bridge::facade::RelationalBridgeObservationLease,
     ) -> Result<
         worth_runtime_bridge::facade::BridgeOwnedAsyncRequestAdmission,
         RuntimeWorldOwnedAsyncRequestAdmissionDenial,
@@ -64,7 +64,7 @@ where
         bridge: &worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,
         request: &worth_runtime_bridge::facade::BridgeOwnedAsyncRequestAdmission,
         observation: &ProductBranchObservation,
-        relational_source: &worth_relational::facade::bridge::RelationalBridgeObservationLease,
+        relational_source: &worth_runtime_bridge::facade::RelationalBridgeObservationLease,
     ) -> Result<
         worth_runtime_bridge::facade::BridgeOwnedAsyncRevalidationAdmission,
         RuntimeWorldOwnedAsyncRevalidationDenial,
@@ -91,7 +91,7 @@ where
     fn validate_owned_async_product(
         &self,
         observation: &ProductBranchObservation,
-        relational_source: &worth_relational::facade::bridge::RelationalBridgeObservationLease,
+        relational_source: &worth_runtime_bridge::facade::RelationalBridgeObservationLease,
     ) -> Result<
         worth_runtime_bridge::facade::BridgeAsyncRequestTruthViewBasis,
         RuntimeWorldOwnedAsyncProductValidationDenial,

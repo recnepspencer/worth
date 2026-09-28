@@ -1,0 +1,232 @@
+{
+  "schema": "worth-ui-ledger-phase-invalidation-v2",
+  "phase": 1,
+  "source_revision": "ef56a3d58523baa15ae4c253455a01ef16623e06",
+  "causes": [
+    "architectural-correction"
+  ],
+  "incident": {
+    "requirement": "P1-CLOSE-01",
+    "canonical_artifact": "plans/worth-ui/milestone-3.14.1-evidence/p1-close-01.json",
+    "ledger_artifact_sha256": "d48951fcd35b25b9cc09ecbe5cae06efd8fc33f41c016265c7ad51fcf0e0c616",
+    "observed_artifact_sha256": "df530f6fe7f85d340b242d19b36c43fc561e66a50a865881a08ddcce572e4c2e",
+    "observed_artifact_kind": "row-evidence",
+    "observed_schema": "row-schema-version-5",
+    "superseded_artifact": "plans/worth-ui/milestone-3.14.1-evidence/superseded/p1-close-01/df530f6fe7f85d340b242d19b36c43fc561e66a50a865881a08ddcce572e4c2e.json"
+  },
+  "invalidated_rows": [
+    {
+      "requirement": "P1-AFFINITY-01",
+      "prior_result": "PROVED",
+      "prior_final_source": "true",
+      "prior_result_artifact_digest": "8f35c9d83f78a7e400f218b97e99e1dae7d315dbd84eee74e17f5a7c342178fd",
+      "prior_reopen_lineage": "none"
+    },
+    {
+      "requirement": "P1-AUTHORITY-01",
+      "prior_result": "PROVED",
+      "prior_final_source": "true",
+      "prior_result_artifact_digest": "ca3bd06b43d28a51af0d01de2ed29db1c30f24c858193c0259d185ebd9ae16c6",
+      "prior_reopen_lineage": "none"
+    },
+    {
+      "requirement": "P1-BACKEND-FEATURES-01",
+      "prior_result": "PROVED",
+      "prior_final_source": "true",
+      "prior_result_artifact_digest": "108405ccd75fec768dcc21d19a1d30c62d6737d3aa76f3f7de190dee672e3c33",
+      "prior_reopen_lineage": "none"
+    },
+    {
+      "requirement": "P1-BASELINE-01",
+      "prior_result": "PROVED",
+      "prior_final_source": "true",
+      "prior_result_artifact_digest": "cda9f11ed3afc228bf3611c58a74488b1f9218eb14cdd8c62b20c4704fbc77a3",
+      "prior_reopen_lineage": "none"
+    },
+    {
+      "requirement": "P1-CLOSE-01",
+      "prior_result": "PROVED",
+      "prior_final_source": "true",
+      "prior_result_artifact_digest": "d48951fcd35b25b9cc09ecbe5cae06efd8fc33f41c016265c7ad51fcf0e0c616",
+      "prior_reopen_lineage": "none"
+    },
+    {
+      "requirement": "P1-CONSUMERS-01",
+      "prior_result": "PROVED",
+      "prior_final_source": "true",
+      "prior_result_artifact_digest": "ae820f6ac2ce18c89700b95faf0fcf60150acc30d4f342d9c109f6e7e6eb6b89",
+      "prior_reopen_lineage": "none"
+    },
+    {
+      "requirement": "P1-DAMAGE-01",
+      "prior_result": "PROVED",
+      "prior_final_source": "true",
+      "prior_result_artifact_digest": "88466baaac8375d31b5d7316144944a7bc04ca219a18da564ceb4806c1b2cadf",
+      "prior_reopen_lineage": "none"
+    },
+    {
+      "requirement": "P1-HEADLESS-01",
+      "prior_result": "PROVED",
+      "prior_final_source": "true",
+      "prior_result_artifact_digest": "98055436147c13fc21dc24bc40f0aaaeab9605926580c936c26d31029903f713",
+      "prior_reopen_lineage": "none"
+    },
+    {
+      "requirement": "P1-HEADLESS-COST-01",
+      "prior_result": "PROVED",
+      "prior_final_source": "true",
+      "prior_result_artifact_digest": "2859cdbe4c2697305c8e5e6549b045b5b3a91e7b99da511b0d3dbda887c15a27",
+      "prior_reopen_lineage": "none"
+    },
+    {
+      "requirement": "P1-ORDER-01",
+      "prior_result": "PROVED",
+      "prior_final_source": "true",
+      "prior_result_artifact_digest": "22d78094c4990d6d872a8f1d9f00abdbe6033ad78f36656885f5a2c57cb877f3",
+      "prior_reopen_lineage": "none"
+    },
+    {
+      "requirement": "P1-ORDER-SOURCE-01",
+      "prior_result": "PROVED",
+      "prior_final_source": "true",
+      "prior_result_artifact_digest": "61320d14701082000c7f0cee18b159d4ac49b81a3d625e152292f17649315faf",
+      "prior_reopen_lineage": "none"
+    },
+    {
+      "requirement": "P1-PLATFORM-AUTHORITY-01",
+      "prior_result": "PROVED",
+      "prior_final_source": "true",
+      "prior_result_artifact_digest": "c218ba39037faf6faa6d8d70179abd4bb45994d4ee43d2d70359efc39e350bd5",
+      "prior_reopen_lineage": "none"
+    },
+    {
+      "requirement": "P1-PREPARATION-LIFECYCLE-01",
+      "prior_result": "PROVED",
+      "prior_final_source": "true",
+      "prior_result_artifact_digest": "6b7af255b5c6b2750239ced67bbaa3a943b3c13bf05baff57249df15c7307d46",
+      "prior_reopen_lineage": "none"
+    },
+    {
+      "requirement": "P1-PRESENTATION-AUTHORITY-01",
+      "prior_result": "PROVED",
+      "prior_final_source": "true",
+      "prior_result_artifact_digest": "e61184309407960b4593d01704c0acdb464548bfa1104abc8aafaa1bb2f386b1",
+      "prior_reopen_lineage": "none"
+    },
+    {
+      "requirement": "P1-PRODUCER-01",
+      "prior_result": "PROVED",
+      "prior_final_source": "true",
+      "prior_result_artifact_digest": "1cc86552be2584837ad6a5999a9556c0468a95799e535d16ca62b97096e99205",
+      "prior_reopen_lineage": "none"
+    },
+    {
+      "requirement": "P1-PRODUCER-COST-01",
+      "prior_result": "PROVED",
+      "prior_final_source": "true",
+      "prior_result_artifact_digest": "3912b53ffa8f02cd0363ab174c942c4c47d35a3111fedcf8a376ab2decc0005d",
+      "prior_reopen_lineage": "none"
+    },
+    {
+      "requirement": "P1-PROFILE-01",
+      "prior_result": "PROVED",
+      "prior_final_source": "true",
+      "prior_result_artifact_digest": "4ee35b2f68491188003507fff31b7df1a4ba8a09895d839dae4ce63b968522e6",
+      "prior_reopen_lineage": "none"
+    },
+    {
+      "requirement": "P1-PROTOCOL-01",
+      "prior_result": "PROVED",
+      "prior_final_source": "true",
+      "prior_result_artifact_digest": "18ee7f2f8ba408c73b8512dd938c8c525255ba3ffcac812d5778d4d73fe27c0d",
+      "prior_reopen_lineage": "none"
+    },
+    {
+      "requirement": "P1-TOPOLOGY-01",
+      "prior_result": "PROVED",
+      "prior_final_source": "true",
+      "prior_result_artifact_digest": "6d7d2febf6c04060101dcd2d6699665ca93a6c7a971c1122a6654892b539d93b",
+      "prior_reopen_lineage": "none"
+    },
+    {
+      "requirement": "P1-WORLDS-01",
+      "prior_result": "PROVED",
+      "prior_final_source": "true",
+      "prior_result_artifact_digest": "9d5cab6c512e538bb1b17e3778716c9477665d289ed3d725a0eb79bd87185e4f",
+      "prior_reopen_lineage": "none"
+    }
+  ],
+  "causally_reopened_rows": [],
+  "preserved_open_requirements": [
+    "P2-APPLICATION-01",
+    "P2-CLOSE-01",
+    "P2-EVENT-LOOP-01",
+    "P2-GRAPHICS-01",
+    "P2-PIXELS-01",
+    "P2-PORTS-01",
+    "P2-PRESENT-01",
+    "P2-READINESS-01",
+    "P2-WINDOW-01",
+    "P2-WORLD-01",
+    "P3-BASELINE-REPLAY-01",
+    "P3-CLIPPED-DELTA-01",
+    "P3-CLOSE-01",
+    "P3-DAMAGE-INDEX-01",
+    "P3-DAMAGE-REPLAY-01",
+    "P3-DELTA-SOURCE-01",
+    "P3-DRAW-LIST-01",
+    "P3-HEADLESS-COST-01",
+    "P3-HP02-WORLD-01",
+    "P3-PHYSICAL-AMPLIFICATION-01",
+    "P3-PREDECESSOR-01",
+    "P3-PRODUCER-SLOPE-01",
+    "P3-RECONSTRUCTION-01",
+    "P3-STALE-DELTA-01",
+    "P3-TOTAL-ORDER-01",
+    "P3-TRANSACTION-01",
+    "P3-UNCHANGED-01",
+    "P4-ACCESSIBILITY-GEOMETRY-01",
+    "P4-BIDI-01",
+    "P4-BIDI-INTERACTION-01",
+    "P4-CAPACITY-01",
+    "P4-CLOSE-01",
+    "P4-COLOR-FONT-ADMISSION-01",
+    "P4-EMOJI-SEQUENCE-01",
+    "P4-FALLBACK-01",
+    "P4-FONT-COLLECTION-01",
+    "P4-LINE-LAYOUT-01",
+    "P4-MEASUREMENT-IDENTITY-01",
+    "P4-ORIGINAL-RANGE-01",
+    "P4-PREDECESSOR-01",
+    "P4-SHAPING-01",
+    "P4-TEXT-CONTENT-LOCALITY-01",
+    "P4-TEXT-COST-01",
+    "P4-TEXT-PROFILE-01",
+    "P4-TEXT-RECONSTRUCTION-01",
+    "P4-TEXT-WIDTH-LOCALITY-01",
+    "P4-UNCHANGED-01",
+    "P4-UNICODE-SEGMENTATION-01",
+    "P5-ATLAS-01",
+    "P5-ATLAS-PINNING-01",
+    "P5-CLOSE-01",
+    "P5-COLOR-EMOJI-01",
+    "P5-GLYPH-RASTER-01",
+    "P5-PREDECESSOR-01",
+    "P5-TEXT-ASYNC-PRESENTATION-01",
+    "P5-TEXT-COST-01",
+    "P5-TEXT-DPI-01",
+    "P5-TEXT-PIXELS-01",
+    "P5-TEXT-RECONSTRUCTION-01",
+    "P5-TEXT-SPAN-PAINT-01",
+    "P6-CLOSE-01",
+    "P6-IME-01",
+    "P6-INPUT-AFFINITY-01",
+    "P6-POINTER-TIME-01",
+    "P6-PREDECESSOR-01",
+    "P6-PROFILE-ORDER-01",
+    "P6-PROTOCOL-WORLD-01",
+    "P6-READINESS-01",
+    "P6-SETTLEMENT-01",
+    "P6-WINDOWS-WORLD-01"
+  ]
+}

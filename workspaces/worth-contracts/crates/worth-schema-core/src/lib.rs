@@ -3,7 +3,7 @@
 //! ```rust
 //! use worth_schema_core::facade::{Identity, IdentityName, Tolerance, Unit};
 //!
-//! let identity_name = IdentityName::new("wall_panel").unwrap();
+//! let identity_name = IdentityName::new("customer_record").unwrap();
 //! let identity = Identity::named(identity_name);
 //! let tolerance = Tolerance::microns(50).unwrap();
 //! let unit = Unit::millimeters();

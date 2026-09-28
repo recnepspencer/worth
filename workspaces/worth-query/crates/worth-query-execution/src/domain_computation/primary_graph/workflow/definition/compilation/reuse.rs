@@ -209,6 +209,16 @@ impl WorkflowDefinitionCompilationReuse {
         }
     }
 
+    /// Drops every retained plan and binding. Compiled meaning is rebuildable
+    /// and never a revision pin, so the next use of any revision compiles cold.
+    #[cfg(feature = "test-primary-graph-faults")]
+    pub(in crate::domain_computation::primary_graph) fn release_all(&mut self) {
+        self.evictions = self.evictions.saturating_add(self.publications.len());
+        self.publications.clear();
+        self.semantics.clear();
+        self.retained_bytes = 0;
+    }
+
     fn next_use_sequence(&mut self) -> u64 {
         self.use_sequence = self.use_sequence.saturating_add(1);
         self.use_sequence

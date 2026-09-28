@@ -124,7 +124,12 @@ impl<'a> SelectedEvidence<'a> {
                             UiMeasurementEvidenceSlot::ScrollContainerViewport,
                         );
                     }
-                    _ => {}
+                    UiMeasurementEvidenceCategory::TextBaselineMetrics
+                    | UiMeasurementEvidenceCategory::FontMetrics
+                    | UiMeasurementEvidenceCategory::ViewportExtent
+                    | UiMeasurementEvidenceCategory::DpiScaleFactor
+                    | UiMeasurementEvidenceCategory::PortalAnchorRect
+                    | UiMeasurementEvidenceCategory::ScrollContainerViewport => {}
                 }
                 continue;
             }

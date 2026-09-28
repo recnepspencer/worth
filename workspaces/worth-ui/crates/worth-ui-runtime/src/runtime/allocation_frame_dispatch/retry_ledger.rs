@@ -220,7 +220,8 @@ impl UiAllocationFrameRetryState {
             }
         }
         self.assignments[retained..len].fill(None);
-        self.assignment_len = retained as u16;
+        self.assignment_len = u16::try_from(retained)
+            .expect("the retry ledger holds at most RETRY_LEDGER_CAPACITY entries");
     }
 
     #[cfg(test)]
@@ -237,7 +238,8 @@ impl UiAllocationFrameRetryState {
             }
         }
         self.retired[retained..len].fill(None);
-        self.retired_len = retained as u16;
+        self.retired_len = u16::try_from(retained)
+            .expect("the retry ledger holds at most RETRY_LEDGER_CAPACITY entries");
     }
 
     pub(super) fn record(
@@ -303,7 +305,8 @@ impl UiAllocationFrameRetryState {
             }
         }
         self.assignments[retained..len].fill(None);
-        self.assignment_len = retained as u16;
+        self.assignment_len = u16::try_from(retained)
+            .expect("the retry ledger holds at most RETRY_LEDGER_CAPACITY entries");
         writes += (len - retained) as u64 + 1;
         (comparisons, writes)
     }

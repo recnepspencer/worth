@@ -60,7 +60,7 @@ pub enum WorthUiStatusOwnerError {
 impl WorthUiStatusOwnerError {
     pub const fn commit_outcome(
         &self,
-    ) -> Option<&worth_query_host::facade::primary_graph::WorthQueryApplicationCommitOutcome> {
+    ) -> Option<&worth_query_host::facade::primary_graph::WorthQueryApplicationUncommitted> {
         match self {
             Self::SourceMutationOutcome(outcome) => outcome.commit_outcome(),
             Self::ActionMutationOutcome(outcome) => outcome.commit_outcome(),

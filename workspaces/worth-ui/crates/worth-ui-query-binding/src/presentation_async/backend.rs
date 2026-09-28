@@ -44,7 +44,7 @@ fn presentation_consumer_support(
 }
 
 fn presentation_bridge(
-    source: worth_relational::facade::bridge::RuntimeBridgeRelationalSource,
+    source: worth_runtime_bridge::facade::RuntimeBridgeRelationalSource,
 ) -> Result<RuntimeBridge, worth_runtime_bridge::facade::BridgeBuildError> {
     let builder = RuntimeBridgeBuilder::new()
         .with_relational_source(source)

@@ -27,8 +27,12 @@ pub(in crate::mounting::projection) fn complete_hit_test(
             node.receipt.graph_node(),
         ));
     }
-    let bounds = match node.presentation_allocation() {
-        UiMountedAllocationProjection::Known { bounds, .. } => bounds,
+    // Scrolled content is painted on the device grid, but hit testing reads
+    // it exactly where its offset put it, as every later pose moves it.
+    let bounds = match *node.occurrence_allocation.in_layout_space() {
+        UiMountedAllocationProjection::Known { bounds, .. } => {
+            node.recorded_bounds.unwrap_or(bounds)
+        }
         UiMountedAllocationProjection::PortalAnchorObservation { .. } => {
             return Err(UiMountedProjectionDenial::UnsupportedHitTestAllocation(
                 node.receipt.graph_node(),

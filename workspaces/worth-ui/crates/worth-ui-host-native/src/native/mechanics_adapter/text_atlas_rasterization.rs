@@ -63,7 +63,7 @@ fn miss_groups(
         .into_iter()
         .map(
             |((demand, layout, lane, dpi_milli, text_scale), mut records)| {
-                records.sort_by_key(|record| canonical_raster_key_bytes(record.key()));
+                records.sort_by_cached_key(|record| canonical_raster_key_bytes(record.key()));
                 MissGroup {
                     demand: UiGlyphRasterDemandIdentity::from_text_mechanics(demand),
                     layout:

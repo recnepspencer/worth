@@ -1,11 +1,18 @@
 //! Program runtime paired with one immutable installed workflow vocabulary.
 
+use worth_query_admission::facade::authentication_event::WorthQueryAuthenticationEventSigningOwner;
 use worth_query_declaration::facade::{
     application_program::ApplicationWorkflowSpec, application_schema::ApplicationSchema,
 };
 use worth_query_installation::facade::WorthQueryInstalledApplicationWorkflowSpec;
 
 use super::WorthQueryProgramApplicationRuntime;
+
+mod authentication;
+mod support;
+mod vocabulary;
+pub(crate) use authentication::workflow_approval_authentication_intent;
+pub use vocabulary::WorthQueryWorkflowVocabulary;
 
 /// Retains the typed workflow vocabulary beside the program runtime that admitted it.
 ///
@@ -18,7 +25,11 @@ where
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
 {
     runtime: WorthQueryProgramApplicationRuntime<Schema, Program>,
-    workflow: WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+    workflow: WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
+    authentication: WorthQueryAuthenticationEventSigningOwner<Schema>,
+    /// The same spec installed against programs this host rostered, one per
+    /// program, so adopted branches keep a vocabulary for what they now run.
+    supported: Vec<WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>>,
 }
 
 impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program>
@@ -26,8 +37,9 @@ where
     Schema: ApplicationSchema,
 {
     pub fn retain_workflow_spec<Spec>(
-        self,
-        workflow: WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+        mut self,
+        workflow: WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
+        authentication: WorthQueryAuthenticationEventSigningOwner<Schema>,
     ) -> Result<
         WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>,
         WorthQueryWorkflowRuntimeBindingDenial,
@@ -38,12 +50,21 @@ where
         if workflow.schema_binding() != &self.runtime.installed_schema().binding_identity() {
             return Err(WorthQueryWorkflowRuntimeBindingDenial::ForeignSchema);
         }
+        if authentication.binding_identity() != workflow.schema_binding() {
+            return Err(WorthQueryWorkflowRuntimeBindingDenial::ForeignAuthenticationOwner);
+        }
         if workflow.program_revision() != self.program.revision() {
             return Err(WorthQueryWorkflowRuntimeBindingDenial::ForeignProgram);
         }
+        self.runtime
+            .workflow_coverage
+            .register(workflow.adoption_coverage())
+            .map_err(|_| WorthQueryWorkflowRuntimeBindingDenial::ConflictingVocabularyCoverage)?;
         Ok(WorthQueryWorkflowApplicationRuntime {
             runtime: self,
             workflow,
+            authentication,
+            supported: Vec::new(),
         })
     }
 }
@@ -57,10 +78,23 @@ where
         &self.runtime
     }
 
-    pub const fn workflow_spec(
-        &self,
-    ) -> &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program> {
+    pub const fn workflow_spec(&self) -> &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec> {
         &self.workflow
+    }
+
+    pub const fn authentication_owner(&self) -> &WorthQueryAuthenticationEventSigningOwner<Schema> {
+        &self.authentication
+    }
+
+    /// Every vocabulary this runtime installed. A request prepares against
+    /// the one installed for the program its branch runs.
+    pub fn vocabulary(&self) -> WorthQueryWorkflowVocabulary<'_, Schema, Spec> {
+        WorthQueryWorkflowVocabulary::new(
+            &self.runtime.runtime,
+            &self.workflow,
+            &self.supported,
+            &self.authentication,
+        )
     }
 
     pub fn into_program_runtime(self) -> WorthQueryProgramApplicationRuntime<Schema, Program> {
@@ -85,4 +119,18 @@ where
 pub enum WorthQueryWorkflowRuntimeBindingDenial {
     ForeignSchema,
     ForeignProgram,
+    ForeignAuthenticationOwner,
+    /// The program already has a vocabulary on this runtime.
+    AlreadySupported,
+    /// This spec was already installed for the program with different node
+    /// vocabulary, so adoption could not tell which one the host executes.
+    ConflictingVocabularyCoverage,
 }
+
+impl std::fmt::Display for WorthQueryWorkflowRuntimeBindingDenial {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(formatter, "workflow runtime binding denied: {self:?}")
+    }
+}
+
+impl std::error::Error for WorthQueryWorkflowRuntimeBindingDenial {}

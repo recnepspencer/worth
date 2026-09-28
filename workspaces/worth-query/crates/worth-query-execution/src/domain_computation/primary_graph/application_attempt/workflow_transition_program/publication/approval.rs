@@ -2,6 +2,8 @@ use crate::domain_computation::primary_graph::workflow::instance::{
     SelectedWorkflowApproval, SelectedWorkflowTransition,
 };
 
+/// An approver's decision on a proposal. `Approve` and `Reject` record the approved and
+/// rejected control outcomes.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorkflowApprovalDecision {
     Approve,
@@ -20,6 +22,8 @@ impl WorkflowApprovalDecision {
     }
 }
 
+/// An approval the instance waits on: the capability and operation that must approve, and
+/// the operation the approval authorizes.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct RequiredWorkflowApproval {
     instance: worth_relational::facade::identity::EntityId,

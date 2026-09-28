@@ -35,21 +35,42 @@ impl UiProducedFact {
     pub fn authored_source(&self) -> Option<&UiAuthoredChangedFact> {
         match self {
             Self::AuthoredSource(fact) => Some(fact),
-            _ => None,
+            Self::HostViewport(_)
+            | Self::HostDeviceScale(_)
+            | Self::PointerPresenceTarget(_)
+            | Self::Measurement(_)
+            | Self::Query(_)
+            | Self::IntentPosture(_)
+            | Self::CommittedScrollExtent(_)
+            | Self::CommittedPortalAnchor(_) => None,
         }
     }
 
     pub fn query(&self) -> Option<&UiQueryChangedFact> {
         match self {
             Self::Query(fact) => Some(fact),
-            _ => None,
+            Self::AuthoredSource(_)
+            | Self::HostViewport(_)
+            | Self::HostDeviceScale(_)
+            | Self::PointerPresenceTarget(_)
+            | Self::Measurement(_)
+            | Self::IntentPosture(_)
+            | Self::CommittedScrollExtent(_)
+            | Self::CommittedPortalAnchor(_) => None,
         }
     }
 
     pub fn intent_posture(&self) -> Option<&UiIntentPostureChangedFact> {
         match self {
             Self::IntentPosture(fact) => Some(fact),
-            _ => None,
+            Self::AuthoredSource(_)
+            | Self::HostViewport(_)
+            | Self::HostDeviceScale(_)
+            | Self::PointerPresenceTarget(_)
+            | Self::Measurement(_)
+            | Self::Query(_)
+            | Self::CommittedScrollExtent(_)
+            | Self::CommittedPortalAnchor(_) => None,
         }
     }
 
@@ -60,7 +81,14 @@ impl UiProducedFact {
             Self::Query(fact) => fact
                 .into_scalar_projection()
                 .map_err(|fact| Box::new(Self::Query(*fact))),
-            other => Err(Box::new(other)),
+            other @ (Self::AuthoredSource(_)
+            | Self::HostViewport(_)
+            | Self::HostDeviceScale(_)
+            | Self::PointerPresenceTarget(_)
+            | Self::Measurement(_)
+            | Self::IntentPosture(_)
+            | Self::CommittedScrollExtent(_)
+            | Self::CommittedPortalAnchor(_)) => Err(Box::new(other)),
         }
     }
 
@@ -71,7 +99,14 @@ impl UiProducedFact {
             Self::Query(fact) => fact
                 .into_application_scalar_projection()
                 .map_err(|fact| Box::new(Self::Query(*fact))),
-            other => Err(Box::new(other)),
+            other @ (Self::AuthoredSource(_)
+            | Self::HostViewport(_)
+            | Self::HostDeviceScale(_)
+            | Self::PointerPresenceTarget(_)
+            | Self::Measurement(_)
+            | Self::IntentPosture(_)
+            | Self::CommittedScrollExtent(_)
+            | Self::CommittedPortalAnchor(_)) => Err(Box::new(other)),
         }
     }
 
@@ -82,7 +117,14 @@ impl UiProducedFact {
             Self::Query(fact) => fact
                 .into_owner_consequence()
                 .map_err(|fact| Box::new(Self::Query(*fact))),
-            other => Err(Box::new(other)),
+            other @ (Self::AuthoredSource(_)
+            | Self::HostViewport(_)
+            | Self::HostDeviceScale(_)
+            | Self::PointerPresenceTarget(_)
+            | Self::Measurement(_)
+            | Self::IntentPosture(_)
+            | Self::CommittedScrollExtent(_)
+            | Self::CommittedPortalAnchor(_)) => Err(Box::new(other)),
         }
     }
 
@@ -97,7 +139,16 @@ impl UiProducedFact {
             Self::Query(query) => query
                 .into_projection_observation()
                 .map_err(|query| Box::new(Self::Query(*query))),
-            _ => unreachable!("the boxed fact was checked as query-owned"),
+            Self::AuthoredSource(_)
+            | Self::HostViewport(_)
+            | Self::HostDeviceScale(_)
+            | Self::PointerPresenceTarget(_)
+            | Self::Measurement(_)
+            | Self::IntentPosture(_)
+            | Self::CommittedScrollExtent(_)
+            | Self::CommittedPortalAnchor(_) => {
+                unreachable!("the boxed fact was checked as query-owned")
+            }
         }
     }
 }

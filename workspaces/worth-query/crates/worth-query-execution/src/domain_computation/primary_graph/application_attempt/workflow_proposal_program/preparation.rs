@@ -14,6 +14,10 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphApplicationRuntime, WorthQuerySelectedProductOperation,
 };
 
+/// Why a workflow proposal could not bind to the branch's program: the installed spec
+/// belongs to another schema, the adopted program could not be inspected, the branch runs
+/// another program revision, or the branch advanced between selection and read-set
+/// assembly.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorkflowProposalBindingDenial {
     ForeignSchema,
@@ -22,6 +26,7 @@ pub enum WorkflowProposalBindingDenial {
     SelectedOccurrenceChanged,
 }
 
+/// Why a workflow proposal did not prepare.
 #[derive(Debug)]
 pub enum WorkflowProposalPreparationDenial {
     Binding(WorkflowProposalBindingDenial),
@@ -47,10 +52,9 @@ where
         Input,
         Scope,
         Spec,
-        Program,
     >(
         &self,
-        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         instance: PublishedWorkflowInstanceRef,
         admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         input_identity: [u8; 32],
@@ -104,7 +108,13 @@ where
             ));
         }
         read_set
-            .materialize_workflow_proposal(installed, instance, input_identity, source_identity)
+            .materialize_workflow_proposal(
+                installed,
+                instance,
+                input_identity,
+                source_identity,
+                &self.application().authorization_clock,
+            )
             .map_err(WorkflowProposalPreparationDenial::Attempt)
     }
 }
@@ -138,9 +148,9 @@ impl WorthQueryWorkflowProposalAdapter {
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub fn prepare<Schema, Operation, Input, Scope, Spec, Program>(
+    pub fn prepare<Schema, Operation, Input, Scope, Spec>(
         selected: &WorthQuerySelectedProductOperation<'_, Schema>,
-        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         instance: PublishedWorkflowInstanceRef,
         admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         idempotency: &WorthQueryApplicationIdempotencyBinding,

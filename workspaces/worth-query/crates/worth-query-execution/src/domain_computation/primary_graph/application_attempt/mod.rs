@@ -39,10 +39,12 @@ mod read_scope;
 mod read_set;
 mod retained_commit;
 pub(super) mod snapshot_lease;
+mod workflow_deadline;
 mod workflow_definition_program;
 mod workflow_instance_observation;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use workflow_instance_observation::decode_field_revision_fact;
+pub(in crate::domain_computation::primary_graph) use workflow_instance_observation::WorkflowStepAllowance;
 mod workflow_instance_program;
 mod workflow_proposal_program;
 mod workflow_transition_program;
@@ -65,8 +67,8 @@ pub use compare_and_commit::{
     WorthQueryApplicationCommitRecoveryKind, WorthQueryApplicationCommittedChanges,
     WorthQueryApplicationNoEffect, WorthQueryApplicationNoEffectCause,
     WorthQueryApplicationSettlementDeferred, WorthQueryApplicationSettlementNextAction,
-    WorthQueryApplicationStaleAttempt, WorthQueryApplicationUnresolvedCommitEvidence,
-    WorthQueryCommittedProductPublication,
+    WorthQueryApplicationStaleAttempt, WorthQueryApplicationUncommitted,
+    WorthQueryApplicationUnresolvedCommitEvidence, WorthQueryCommittedProductPublication,
 };
 pub(in crate::domain_computation::primary_graph) use compare_and_commit::{
     WorthQueryCommittedReceiptProjection, WorthQueryPendingApplicationCommitReceipt,
@@ -108,10 +110,11 @@ pub(super) use elevation_request_program::validate_elevation_request_program;
 pub use elevation_request_program::WorthQueryElevationRequestProgram;
 pub(in crate::domain_computation) use fact::WorthQueryApplicationObservedFact;
 pub(in crate::domain_computation::primary_graph) use fact::{
-    observe_adjacency, WorthQueryApplicationAdjacencyDirection, WorthQueryApplicationFactKey,
-    WorthQuerySourceCurrentnessFailure,
+    observe_adjacency, observe_indexed_entity_selection, WorthQueryApplicationAdjacencyDirection,
+    WorthQueryApplicationFactKey, WorthQuerySourceCurrentnessFailure,
 };
 pub use idempotency::WorthQueryApplicationIdempotencyBinding;
+pub use idempotency_resolution::WorthQueryGuardedWorkflowOperationCustody;
 pub use idempotency_resolution::{
     WorthQueryApplicationIdempotencyResolution, WorthQueryApplicationIdempotencyResolutionDenial,
     WorthQueryApplicationIdempotencyResolutionDenialKind,
@@ -143,14 +146,18 @@ pub use read_set::{
 };
 pub use retained_commit::WorthQueryApplicationRetainedCommitOutcome;
 pub use workflow_definition_program::{
-    PerformedWorkflowDefinitionPublication, PreparedWorkflowDefinitionPublication,
+    PerformedWorkflowDefinitionPublication, PerformedWorkflowDefinitionRetirement,
+    PreparedWorkflowDefinitionPublication, PreparedWorkflowDefinitionRetirement,
     PublishedWorkflowDefinitionRef, WorkflowDefinitionExpectedPredecessor,
-    WorkflowDefinitionPublicationOutcome,
+    WorkflowDefinitionPublicationOutcome, WorkflowDefinitionRetirementOutcome,
 };
 pub use workflow_instance_program::{
-    PerformedWorkflowInstanceStart, PreparedWorkflowInstanceStart, PublishedWorkflowInstanceRef,
-    WorkflowInstanceBindingDenial, WorkflowInstancePreparationDenial, WorkflowInstanceStartOutcome,
-    WorthQueryWorkflowInstanceStartAdapter,
+    PerformedWorkflowInstanceCancellation, PerformedWorkflowInstanceStart,
+    PreparedWorkflowInstanceCancellation, PreparedWorkflowInstanceStart,
+    PublishedWorkflowInstanceRef, RetiredWorkflowDefinitionStart,
+    SupersededWorkflowDefinitionStart, WorkflowInstanceBindingDenial,
+    WorkflowInstanceCancellationOutcome, WorkflowInstancePreparationDenial,
+    WorkflowInstanceStartOutcome, WorthQueryWorkflowInstanceAdapter,
 };
 pub use workflow_proposal_program::{
     PerformedWorkflowProposal, PreparedWorkflowProposal, PublishedWorkflowProposalRef,
@@ -160,8 +167,9 @@ pub use workflow_proposal_program::{
 pub use workflow_transition_program::{
     PerformedWorkflowApproval, PerformedWorkflowAssessmentEvidence, PerformedWorkflowTransition,
     PreparedWorkflowAdvance, PreparedWorkflowAssessment, PreparedWorkflowOperation,
-    RequiredWorkflowApproval, RequiredWorkflowAssessment, RequiredWorkflowCondition,
-    RequiredWorkflowEvidence, RequiredWorkflowOperation, WorkflowApprovalDecision,
+    RequiredWorkflowActor, RequiredWorkflowApproval, RequiredWorkflowAssessment,
+    RequiredWorkflowCondition, RequiredWorkflowEvidence, RequiredWorkflowOperation,
+    WorkflowApprovalDecision, WorkflowOperationAuthority, WorkflowOperationAuthoritySlot,
     WorkflowProgressOutcome, WorkflowTransitionBindingDenial, WorkflowTransitionPreparationDenial,
     WorthQueryWorkflowAdvanceAdapter,
 };

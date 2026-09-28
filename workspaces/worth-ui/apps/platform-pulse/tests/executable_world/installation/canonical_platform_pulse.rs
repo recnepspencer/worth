@@ -5,21 +5,6 @@ impl CanonicalPlatformPulse {
     pub(crate) fn checked_in() -> Self {
         Self
     }
-    pub(crate) fn source_bytes(self) -> &'static [u8] {
-        include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/app/main.wui"))
-    }
-    pub(crate) fn signals_source_bytes(self) -> &'static [u8] {
-        include_bytes!(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/app/dashboard_signals.wui"
-        ))
-    }
-    pub(crate) fn review_source_bytes(self) -> &'static [u8] {
-        include_bytes!(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/app/dashboard_review.wui"
-        ))
-    }
     pub(crate) fn navigation_source_bytes(self) -> &'static [u8] {
         include_bytes!(concat!(
             env!("CARGO_MANIFEST_DIR"),

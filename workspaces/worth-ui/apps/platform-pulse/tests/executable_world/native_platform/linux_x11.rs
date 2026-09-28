@@ -14,7 +14,7 @@ use x11rb::protocol::xproto::Window;
 
 use crate::external_observation::{
     NativeClientPixelCapture, NativeClientPixelPoint, NativeInputDeliveryObservation,
-    NativeInputProbeKind, NativeWindowIdentity, NativeWindowVisibilityTransitionMechanism,
+    NativeWindowIdentity, NativeWindowVisibilityTransitionMechanism,
     NativeWindowVisibilityTransitionObservation, NormalNativeCloseRequestObservation,
     ProcessBoundNativeClientAreaObservation,
 };
@@ -185,15 +185,6 @@ impl NativePlatformContract for LinuxX11NativePlatform {
     ) -> Result<NativeWindowVisibilityTransitionObservation, NativePlatformFailure> {
         self.observe_bound_client_area(bound)?;
         window_state::occlude_and_uncover(self.x11, bound, deadline)
-    }
-
-    fn deliver_input_reachability_probe(
-        &self,
-        bound: &Self::BoundClientArea,
-        kind: NativeInputProbeKind,
-    ) -> Result<NativeInputDeliveryObservation, NativePlatformFailure> {
-        let observed = self.observe_bound_client_area(bound)?;
-        input_delivery::deliver(self.x11, bound.window, observed, kind)
     }
 
     fn deliver_pointer_activation(

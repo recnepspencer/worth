@@ -1,3 +1,5 @@
+/// An evidence join the instance waits on: how many assessments it requires, how many
+/// completed, and how many passed.
 #[derive(Clone, Debug)]
 pub struct RequiredWorkflowEvidence {
     instance: worth_relational::facade::identity::EntityId,

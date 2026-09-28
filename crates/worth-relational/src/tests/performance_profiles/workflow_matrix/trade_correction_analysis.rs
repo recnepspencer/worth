@@ -15,109 +15,101 @@ pub(super) fn certify_trade_correction_analysis_round_trip(suite: &'static str) 
                     &runtime,
                     BranchId("analysis".to_string()),
                 );
-                txn.push_batch(
-                    WorkerIntentBatch::new("correct-trade").push(
-                        MutationIntent::Create(CreateIntent::Entity(
-                            crate::transactions::data::EntitySpec {
-                                partition_id: PartitionId(10),
-                                kind_id: KindId(1),
-                                client_key: crate::symbols::data::ClientKey::raw(
-                                    "analysis-trade-correction".to_string(),
+                txn.push_batch(WorkerIntentBatch::new("correct-trade").push(
+                    MutationIntent::Create(CreateIntent::Entity(
+                        crate::transactions::data::EntitySpec {
+                            partition_id: PartitionId(10),
+                            kind_id: KindId(1),
+                            client_key: crate::symbols::data::ClientKey::raw(
+                                "analysis-trade-correction".to_string(),
+                            ),
+                            fields: crate::tests::support::string_aspect_field_patch([
+                                (
+                                    crate::tests::support::aspect_key("entity_type"),
+                                    crate::tests::support::field_key("entity_type"),
+                                    "trade",
                                 ),
-                                fields: crate::tests::support::string_aspect_field_patch([
-                                    (
-                                        crate::tests::support::aspect_key("entity_type"),
-                                        crate::tests::support::field_key("entity_type"),
-                                        "trade",
-                                    ),
-                                    (
-                                        crate::tests::support::aspect_key("case"),
-                                        crate::tests::support::field_key("case"),
-                                        "trade-correction",
-                                    ),
-                                    (
-                                        crate::tests::support::aspect_key("status"),
-                                        crate::tests::support::field_key("status"),
-                                        "corrected",
-                                    ),
-                                    (
-                                        crate::tests::support::aspect_key("account"),
-                                        crate::tests::support::field_key("account"),
-                                        "portfolio-account",
-                                    ),
-                                ]),
-                            },
-                        ))
-                        .into(),
-                    ),
-                )
+                                (
+                                    crate::tests::support::aspect_key("case"),
+                                    crate::tests::support::field_key("case"),
+                                    "trade-correction",
+                                ),
+                                (
+                                    crate::tests::support::aspect_key("status"),
+                                    crate::tests::support::field_key("status"),
+                                    "corrected",
+                                ),
+                                (
+                                    crate::tests::support::aspect_key("account"),
+                                    crate::tests::support::field_key("account"),
+                                    "portfolio-account",
+                                ),
+                            ]),
+                        },
+                    )),
+                ))
+                .expect("test staging stays within configured resource budgets");
+                txn.push_batch(WorkerIntentBatch::new("refresh-risk").push(
+                    MutationIntent::Create(CreateIntent::Entity(
+                        crate::transactions::data::EntitySpec {
+                            partition_id: PartitionId(30),
+                            kind_id: KindId(1),
+                            client_key: crate::symbols::data::ClientKey::raw(
+                                "analysis-risk-refresh".to_string(),
+                            ),
+                            fields: crate::tests::support::string_aspect_field_patch([
+                                (
+                                    crate::tests::support::aspect_key("entity_type"),
+                                    crate::tests::support::field_key("entity_type"),
+                                    "risk_view",
+                                ),
+                                (
+                                    crate::tests::support::aspect_key("case"),
+                                    crate::tests::support::field_key("case"),
+                                    "trade-correction",
+                                ),
+                                (
+                                    crate::tests::support::aspect_key("status"),
+                                    crate::tests::support::field_key("status"),
+                                    "refreshed",
+                                ),
+                                (
+                                    crate::tests::support::aspect_key("severity"),
+                                    crate::tests::support::field_key("severity"),
+                                    "medium",
+                                ),
+                            ]),
+                        },
+                    )),
+                ))
                 .expect("test staging stays within configured resource budgets");
                 txn.push_batch(
-                    WorkerIntentBatch::new("refresh-risk").push(
-                        MutationIntent::Create(CreateIntent::Entity(
-                            crate::transactions::data::EntitySpec {
-                                partition_id: PartitionId(30),
-                                kind_id: KindId(1),
-                                client_key: crate::symbols::data::ClientKey::raw(
-                                    "analysis-risk-refresh".to_string(),
+                    WorkerIntentBatch::new("emit-audit").push(MutationIntent::Create(
+                        CreateIntent::Entity(crate::transactions::data::EntitySpec {
+                            partition_id: PartitionId(40),
+                            kind_id: KindId(1),
+                            client_key: crate::symbols::data::ClientKey::raw(
+                                "analysis-audit-record".to_string(),
+                            ),
+                            fields: crate::tests::support::string_aspect_field_patch([
+                                (
+                                    crate::tests::support::aspect_key("entity_type"),
+                                    crate::tests::support::field_key("entity_type"),
+                                    "audit_record",
                                 ),
-                                fields: crate::tests::support::string_aspect_field_patch([
-                                    (
-                                        crate::tests::support::aspect_key("entity_type"),
-                                        crate::tests::support::field_key("entity_type"),
-                                        "risk_view",
-                                    ),
-                                    (
-                                        crate::tests::support::aspect_key("case"),
-                                        crate::tests::support::field_key("case"),
-                                        "trade-correction",
-                                    ),
-                                    (
-                                        crate::tests::support::aspect_key("status"),
-                                        crate::tests::support::field_key("status"),
-                                        "refreshed",
-                                    ),
-                                    (
-                                        crate::tests::support::aspect_key("severity"),
-                                        crate::tests::support::field_key("severity"),
-                                        "medium",
-                                    ),
-                                ]),
-                            },
-                        ))
-                        .into(),
-                    ),
-                )
-                .expect("test staging stays within configured resource budgets");
-                txn.push_batch(
-                    WorkerIntentBatch::new("emit-audit")
-                        .push(MutationIntent::Create(CreateIntent::Entity(
-                            crate::transactions::data::EntitySpec {
-                                partition_id: PartitionId(40),
-                                kind_id: KindId(1),
-                                client_key: crate::symbols::data::ClientKey::raw(
-                                    "analysis-audit-record".to_string(),
+                                (
+                                    crate::tests::support::aspect_key("case"),
+                                    crate::tests::support::field_key("case"),
+                                    "trade-correction",
                                 ),
-                                fields: crate::tests::support::string_aspect_field_patch([
-                                    (
-                                        crate::tests::support::aspect_key("entity_type"),
-                                        crate::tests::support::field_key("entity_type"),
-                                        "audit_record",
-                                    ),
-                                    (
-                                        crate::tests::support::aspect_key("case"),
-                                        crate::tests::support::field_key("case"),
-                                        "trade-correction",
-                                    ),
-                                    (
-                                        crate::tests::support::aspect_key("event"),
-                                        crate::tests::support::field_key("event"),
-                                        "analysis-reviewed",
-                                    ),
-                                ]),
-                            },
-                        )))
-                        .into(),
+                                (
+                                    crate::tests::support::aspect_key("event"),
+                                    crate::tests::support::field_key("event"),
+                                    "analysis-reviewed",
+                                ),
+                            ]),
+                        }),
+                    )),
                 )
                 .expect("test staging stays within configured resource budgets");
                 txn.commit(&runtime)

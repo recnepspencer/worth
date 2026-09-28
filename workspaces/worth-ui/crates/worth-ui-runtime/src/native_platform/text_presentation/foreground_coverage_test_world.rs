@@ -192,7 +192,8 @@ impl CoverageWorld {
                         collection_row: None,
                         foregrounds: Arc::from([
                             UiMountedTextForegroundSpan::from_runtime_mounting(
-                                UiTextOriginalRange::new(0, source.len() as u32).unwrap(),
+                                UiTextOriginalRange::new(0, u32::try_from(source.len()).unwrap())
+                                    .unwrap(),
                                 UiMountedRgba8::new(255, 255, 255, 255),
                                 span,
                             ),

@@ -56,9 +56,7 @@ fn raw_old_epoch_cannot_classify_inside_or_outside_after_motion_advance() {
         .bounds()
         .rect()
         .canonical_box();
-    let position = |x: f32, y: f32| {
-        UiHostSurfacePosition::viewport_logical((x * 1_000.0) as i64, (y * 1_000.0) as i64)
-    };
+    let position = |x: f32, y: f32| crate::units::viewport_position_for_test(x, y);
     let interaction = |point| {
         crate::facade::interaction::UiDismissInteraction::outside_press(
             observed.basis(),
@@ -144,10 +142,7 @@ fn portal_entrance_dismissal_uses_the_accepted_displaced_body() {
             current.basis(),
             UiHostObservationSequence::new(sequence),
             UiHostObservationTimeBasis::PresentationRelativeTick(sequence),
-            UiHostSurfacePosition::viewport_logical(
-                ((body.x() + body.width() / 2.0) * 1_000.0) as i64,
-                (y * 1_000.0) as i64,
-            ),
+            crate::units::viewport_position_for_test(body.x() + body.width() / 2.0, y),
         )
     };
     // The entrance translates the body down eight points. This lower strip is

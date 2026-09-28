@@ -1,0 +1,16 @@
+# Facade documentation debt for the stable Query audience facades.
+#
+# Each entry is a name listed in facades.toml whose definition still lacks
+# rustdoc. This file may only shrink: boundary-check reports an undocumented
+# name that is absent here (BC8004) and an entry that is already documented or
+# no longer exported (BC8005).
+#
+# To pay an entry down, add a `///` doc comment at the definition boundary-check
+# names, then delete the entry.
+#
+# Regenerating is discouraged. Do it only to defer documentation deliberately,
+# and say why in review:
+#   cargo run --manifest-path tools/boundary-check/Cargo.toml -- --root . --update-snapshots
+
+schema_version = 1
+facades = []

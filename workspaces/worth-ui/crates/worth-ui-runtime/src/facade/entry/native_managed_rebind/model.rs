@@ -114,7 +114,20 @@ impl WorthUiNativePendingManagedRebind {
             Self::IntentConsequenceIndeterminate(pending) => pending.carries_portal_transition(),
             Self::IntentConsequenceReconstruction { portal, .. }
             | Self::IntentConsequenceReconstructionDeferred { portal, .. } => portal.is_some(),
-            _ => false,
+            Self::Indeterminate { .. }
+            | Self::RecoveryReconstruction { .. }
+            | Self::RecoveryReconstructionDeferred(_)
+            | Self::Completion(_)
+            | Self::Retry { .. }
+            | Self::IntentPosture(_)
+            | Self::IntentPosturePredecessorReconstruction { .. }
+            | Self::IntentPosturePredecessorReconstructionDeferred(_)
+            | Self::IntentPosturePredecessorIndeterminate { .. }
+            | Self::PortalDismissal(_)
+            | Self::PortalDismissalIndeterminate(_)
+            | Self::PortalDismissalReconstruction { .. }
+            | Self::PortalDismissalReconstructionDeferred { .. }
+            | Self::PredecessorReconstruction { .. } => false,
         }
     }
 }

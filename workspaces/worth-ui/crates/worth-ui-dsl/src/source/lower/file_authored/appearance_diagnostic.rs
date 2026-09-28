@@ -40,7 +40,7 @@ impl AppearanceLoweringError {
         denial: UiAppearanceDecisionPartitionDenial,
         role: UiAppearanceRoleIdentity,
         aspect: UiAppearanceAspect,
-        aspect_span: Option<crate::WorthUiSourceSpan>,
+        aspect_span: crate::WorthUiSourceSpan,
         reference_span: Option<crate::WorthUiSourceSpan>,
     ) -> Self {
         Self::partition_inner(denial, role, aspect, aspect_span, reference_span)
@@ -50,7 +50,7 @@ impl AppearanceLoweringError {
         denial: UiAppearanceDecisionPartitionDenial,
         role: UiAppearanceRoleIdentity,
         aspect: UiAppearanceAspect,
-        aspect_span: Option<crate::WorthUiSourceSpan>,
+        aspect_span: crate::WorthUiSourceSpan,
         references: &[(
             String,
             UiAppearanceCellReferenceOrigin,
@@ -76,13 +76,13 @@ impl AppearanceLoweringError {
         denial: UiAppearanceDecisionPartitionDenial,
         role: UiAppearanceRoleIdentity,
         aspect: UiAppearanceAspect,
-        aspect_span: Option<crate::WorthUiSourceSpan>,
+        aspect_span: crate::WorthUiSourceSpan,
         reference_span: Option<crate::WorthUiSourceSpan>,
     ) -> Self {
         let expected_kind = aspect.value_kind();
-        let detail_span = reference_span
-            .or(aspect_span)
-            .map(source_to_diagnostic_span);
+        let detail_span = Some(source_to_diagnostic_span(
+            reference_span.unwrap_or(aspect_span),
+        ));
         let (code, message, detail) = match &denial {
             UiAppearanceDecisionPartitionDenial::MissingCell {
                 uncovered_canonical_state_cell,

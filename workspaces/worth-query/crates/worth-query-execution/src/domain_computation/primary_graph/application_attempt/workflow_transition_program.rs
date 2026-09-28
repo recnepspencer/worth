@@ -16,7 +16,8 @@ use super::{
 use crate::domain_computation::primary_graph::workflow::{
     definition::{reconstruct_compiled_definition, WorkflowDefinitionCompilationPosture},
     instance::{
-        admit_workflow_transition, select_current_transition, select_settled_replay_transition,
+        admit_workflow_transition, select_assessment_collection, select_current_transition,
+        select_navigation_back_transition, select_settled_replay_transition,
         select_terminal_transition, visit_terminal_transition_facts,
         visit_workflow_transition_facts, SelectedWorkflowTransitionKind, WorkflowInstanceState,
     },
@@ -25,13 +26,19 @@ use crate::domain_computation::primary_graph::workflow::{
 mod approval;
 mod approval_decision;
 mod assessment;
+mod assessment_applicability;
+mod assessment_coverage;
 mod assessment_materialization;
 mod condition;
 mod condition_materialization;
 mod evidence_join;
+mod navigation;
 mod operation;
+pub(super) use operation::{operation_receipt_requires_recovery, receipt_identity_from_outcome};
 mod preparation;
 mod publication;
+pub(super) use publication::transition_entity_in_receipt;
+mod terminal;
 
 pub use preparation::{
     WorkflowTransitionBindingDenial, WorkflowTransitionPreparationDenial,
@@ -40,10 +47,18 @@ pub use preparation::{
 pub use publication::{
     PerformedWorkflowApproval, PerformedWorkflowAssessmentEvidence, PerformedWorkflowTransition,
     PreparedWorkflowAdvance, PreparedWorkflowAssessment, PreparedWorkflowCondition,
-    PreparedWorkflowOperation, RequiredWorkflowApproval, RequiredWorkflowAssessment,
-    RequiredWorkflowCondition, RequiredWorkflowEvidence, RequiredWorkflowOperation,
-    WorkflowApprovalDecision, WorkflowProgressOutcome,
+    PreparedWorkflowOperation, RequiredWorkflowActor, RequiredWorkflowApproval,
+    RequiredWorkflowAssessment, RequiredWorkflowCondition, RequiredWorkflowEvidence,
+    RequiredWorkflowOperation, WorkflowApprovalDecision, WorkflowOperationAuthority,
+    WorkflowOperationAuthoritySlot, WorkflowProgressOutcome,
 };
+
+#[derive(Clone, Eq, PartialEq)]
+pub(in crate::domain_computation::primary_graph) enum WorkflowTransitionRequestKind {
+    Advance,
+    NavigateBack,
+    CollectAssessment { node_path: String },
+}
 
 impl<Schema, Operation, Input, Scope>
     WorthQueryCompleteApplicationReadSet<
@@ -60,11 +75,12 @@ where
     pub(in crate::domain_computation::primary_graph) fn materialize_workflow_advance<
         Capability,
         Spec,
-        Program,
     >(
-        self,
-        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+        mut self,
+        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         instance: super::PublishedWorkflowInstanceRef,
+        request_kind: WorkflowTransitionRequestKind,
+        clock: &crate::domain_computation::runtime_time::WorthQueryRuntimeClock,
     ) -> Result<
         PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
         WorthQueryApplicationAttemptDenial,
@@ -94,12 +110,12 @@ where
             instance.definition_entity_id(),
             instance.definition_content_identity().clone(),
         );
-        let (compiled, mut facts) = reconstruct_compiled_definition(
+        let (mut compiled, mut facts) = reconstruct_compiled_definition(
             self.lease.handle(),
             self.lease.snapshot(),
             &layout,
             &published,
-            instance.program_revision(),
+            installed.program_revision(),
             Spec::IDENTITY.as_str(),
             installed.support_identity_bytes(),
             usize::from(installed.resources().maximum_definition_nodes()),
@@ -122,14 +138,26 @@ where
                 &instance,
                 subject,
                 compiled.lineage(),
-                &compiled,
+                &mut compiled,
                 maximum_transitions,
                 installed.resources().history_reconstruction_budget(),
+                super::workflow_instance_observation::WorkflowInstanceObservationPurpose::Advance,
             )
         })?;
         let (live_membership, retire_live_membership) = match observed.live_membership {
             Some(membership) => (membership, true),
             None => {
+                if request_kind == WorkflowTransitionRequestKind::NavigateBack {
+                    return Ok(self.navigation_replay_denial(
+                        &layout,
+                        instance.entity_id(),
+                        std::mem::take(&mut observed.replays),
+                        denial(
+                            WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAlreadySettled,
+                            "settled workflow instance cannot navigate Back",
+                        ),
+                    ));
+                }
                 self.lease.handle().with_runtime(|runtime| {
                     observed.ensure_history(
                         self.lease.handle(),
@@ -166,6 +194,8 @@ where
                     ));
                 }
                 let replay_probe_identity = *selected.identity_bytes();
+                // A settled instance holds no live membership, so the check passes.
+                let allowance = observed.ensure_step_left()?;
                 let (membership, mut settlement_facts) =
                     self.lease.handle().with_runtime(|runtime| {
                         super::workflow_instance_observation::recover_settled_live_membership(
@@ -184,36 +214,96 @@ where
                 );
                 return self
                     .materialize_terminal_transition(
-                        &layout, compiled, instance, selected, membership, false, facts,
+                        &layout, compiled, instance, selected, membership, false, facts, allowance,
                     )
                     .map(|prepared| {
                         prepared.with_replays(replays.with_probe_identity(replay_probe_identity))
                     });
             }
         };
-        let selected = match select_current_transition(
-            &compiled,
-            instance.entity_id(),
-            &observed.progress_basis,
-        ) {
+        // A step recorded before the budget is spent or the deadline passes
+        // still replays after it.
+        let allowance = match observed.ensure_step_left().and_then(|allowance| {
+            self.bind_workflow_deadline(clock, &layout, instance.entity_id())
+                .map(|_| allowance)
+        }) {
+            Ok(allowance) => allowance,
+            Err(refused) => {
+                let entity = instance.entity_id();
+                let replays = std::mem::take(&mut observed.replays);
+                return Ok(match request_kind {
+                    WorkflowTransitionRequestKind::NavigateBack => {
+                        self.navigation_replay_denial(&layout, entity, replays, refused)
+                    }
+                    _ => {
+                        let replays =
+                            publication::PreparedWorkflowTransitionReplays::retained(replays);
+                        self.replay_only_denial(&layout, entity, replays, refused)
+                    }
+                });
+            }
+        };
+        if request_kind == WorkflowTransitionRequestKind::NavigateBack {
+            let selected = match select_navigation_back_transition(
+                &compiled,
+                instance.entity_id(),
+                &observed.progress_basis,
+            ) {
+                Ok(selected) => selected,
+                Err(denial) => {
+                    return Ok(self.navigation_replay_denial(
+                        &layout,
+                        instance.entity_id(),
+                        std::mem::take(&mut observed.replays),
+                        denial,
+                    ));
+                }
+            };
+            let replay_probe_identity = *selected.identity_bytes();
+            let replays = publication::PreparedWorkflowTransitionReplays::retained(std::mem::take(
+                &mut observed.replays,
+            ))
+            .for_navigation_back();
+            facts.append(&mut observed.facts);
+            return self
+                .materialize_navigation_back(
+                    &layout,
+                    compiled,
+                    instance,
+                    selected,
+                    live_membership,
+                    facts,
+                    allowance,
+                )
+                .map(|prepared| {
+                    prepared.with_replays(replays.with_probe_identity(replay_probe_identity))
+                });
+        }
+        let selection = match request_kind {
+            WorkflowTransitionRequestKind::Advance => {
+                select_current_transition(&compiled, instance.entity_id(), &observed.progress_basis)
+            }
+            WorkflowTransitionRequestKind::CollectAssessment { ref node_path } => {
+                select_assessment_collection(
+                    &compiled,
+                    instance.entity_id(),
+                    &observed.progress_basis,
+                    node_path,
+                )
+            }
+            WorkflowTransitionRequestKind::NavigateBack => unreachable!("Back returned above"),
+        };
+        let selected = match selection {
             Ok(selected) => selected,
             Err(denial)
                 if denial.kind()
-                    == WorthQueryApplicationAttemptDenialKind::WorkflowTransitionNodeUnsupported =>
+                    == WorthQueryApplicationAttemptDenialKind::WorkflowTransitionNodeUnsupported
+                    && matches!(request_kind, WorkflowTransitionRequestKind::Advance) =>
             {
                 let replays = publication::PreparedWorkflowTransitionReplays::retained(
                     std::mem::take(&mut observed.replays),
                 );
-                return Ok(PreparedWorkflowAdvance::ReplayOnly {
-                    read_set: self,
-                    transition_identity_locator: layout.transition.identity.clone(),
-                    assessment_identity_locator: layout.assessment_evidence.identity.clone(),
-                    instance: instance.entity_id(),
-                    approval: None,
-                    approval_identity: None,
-                    replays,
-                    denial,
-                });
+                return Ok(self.replay_only_denial(&layout, instance.entity_id(), replays, denial));
             }
             Err(denial) => return Err(denial),
         };
@@ -221,6 +311,11 @@ where
         let replays = publication::PreparedWorkflowTransitionReplays::retained(std::mem::take(
             &mut observed.replays,
         ));
+        let handoff_facts = matches!(
+            selected.kind(),
+            SelectedWorkflowTransitionKind::Operation(_)
+        )
+        .then(|| observed.facts[..observed.handoff_fact_count].to_vec());
         facts.append(&mut observed.facts);
         let prepared = match selected.kind().clone() {
             SelectedWorkflowTransitionKind::Assessment(assessment) => self
@@ -234,17 +329,20 @@ where
                     facts,
                     assessment,
                     observed.progress_basis.progress(),
+                    observed.evidence_allowance(installed.resources().maximum_evidence_bytes()),
+                    allowance,
                 ),
             SelectedWorkflowTransitionKind::Condition(condition) => self
                 .materialize_condition_requirement(
                     &layout,
-                    compiled.program_revision().clone(),
+                    *compiled.program_revision(),
                     instance,
                     selected,
                     live_membership,
                     false,
                     facts,
                     condition,
+                    allowance,
                 ),
             SelectedWorkflowTransitionKind::Approval(approval) => {
                 self.materialize_approval_requirement(&layout, instance, selected, facts, approval)
@@ -258,6 +356,7 @@ where
                 facts,
                 observed.progress_basis.progress(),
                 policy,
+                allowance,
             ),
             SelectedWorkflowTransitionKind::Terminal => self.materialize_terminal_transition(
                 &layout,
@@ -267,6 +366,7 @@ where
                 live_membership,
                 retire_live_membership,
                 facts,
+                allowance,
             ),
             SelectedWorkflowTransitionKind::Operation(operation) => self
                 .materialize_operation_requirement(
@@ -277,94 +377,17 @@ where
                     live_membership,
                     false,
                     facts,
+                    handoff_facts.expect("operation handoff facts were selected"),
                     observed.progress_basis.progress(),
                     operation,
+                    allowance,
                 ),
+            SelectedWorkflowTransitionKind::NavigationBack => Err(denial(
+                WorthQueryApplicationAttemptDenialKind::WorkflowTransitionNodeUnsupported,
+                "navigation requires the explicit Back action",
+            )),
         }?;
         Ok(prepared.with_replays(replays.with_probe_identity(replay_probe_identity)))
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    fn materialize_terminal_transition(
-        mut self,
-        layout: &crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
-        compiled: crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowDefinition,
-        instance: super::PublishedWorkflowInstanceRef,
-        selected: crate::domain_computation::primary_graph::workflow::instance::SelectedWorkflowTransition,
-        live_membership: worth_relational::facade::identity::RelationId,
-        retire_live_membership: bool,
-        facts: Vec<super::WorthQueryApplicationObservedFact>,
-    ) -> Result<
-        PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
-        WorthQueryApplicationAttemptDenial,
-    > {
-        if self.facts.len().saturating_add(facts.len())
-            > self
-                .admission
-                .allowed_graph_contract()
-                .decision_fact_budget()
-        {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
-                self.admission.operation(),
-            ));
-        }
-        self.facts.extend(facts);
-        let subject = self.admission.scope_entity_id();
-        let admitted = admit_workflow_transition(
-            self,
-            selected,
-            instance.entity_id(),
-            subject,
-            live_membership,
-            retire_live_membership,
-        );
-        let transition_identity = admitted.identity().to_owned();
-        let transition_identity_bytes = *admitted.identity_bytes();
-        let transition_instance = admitted.instance();
-        let node_path = admitted.node_path().to_owned();
-        let mut demand = PlatformEffectDemand::default();
-        visit_terminal_transition_facts(&layout, &admitted, |effect| demand.observe(&effect))?;
-        let reservation = admit_platform_effects(admitted.read_set(), demand)?;
-        let mut effects = Vec::new();
-        visit_terminal_transition_facts(&layout, &admitted, |effect| {
-            effects.push(effect);
-            Ok::<(), WorthQueryApplicationAttemptDenial>(())
-        })?;
-        let validator_work_admission = reservation.materialize(&effects)?;
-        let read_set = admitted.into_read_set();
-        let program = WorthQueryApplicationEffectProgram {
-            read_set,
-            effects,
-            emission_retained_bytes: 0,
-            emission_retained_bytes_ceiling: 0,
-            conditional_definition: None,
-            platform_mutation: true,
-            validator_work_admission,
-            output_correspondence: Default::default(),
-            retain_output_demand_observation: false,
-            retain_client_observation: false,
-            producer_required_invariants: &[],
-            output_currentness_facts: None,
-        };
-        Ok(PreparedWorkflowAdvance::Transition {
-            program,
-            program_revision: compiled.program_revision().clone(),
-            transition_identity,
-            transition_identity_bytes,
-            transition_identity_locator: layout.transition.identity.clone(),
-            assessment_identity_locator: layout.assessment_evidence.identity.clone(),
-            instance: transition_instance,
-            node_path,
-            assessment: None,
-            supporting_identity: None,
-            operation_receipt_identity: None,
-            progress_update: None,
-            terminal: true,
-            approval: None,
-            approval_identity: None,
-            replays: Default::default(),
-        })
     }
 }
 

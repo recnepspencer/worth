@@ -25,7 +25,7 @@ planning input or invoke raw plan review from application code.
 
 Application authors use:
 
-- typed application-query declarations from `worth_query_declaration`;
+- typed application-query declarations from `worth_query_decl::facade`;
 - installed-query inspection through `worth_query_host::facade::domain`;
 - ordinary host query preparation and execution; and
 - mutation-handler `DecisionReader` field and relation methods for declared,

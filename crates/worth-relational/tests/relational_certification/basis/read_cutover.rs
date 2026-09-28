@@ -1,42 +1,35 @@
 use std::collections::BTreeSet;
-use std::sync::Arc;
 
 use super::world::supply_chain::{
     certified_supply_chain_world, commit_branch_batch, fork_supply_chain_branch_from_main,
     lower_supply_chain_production_delta, observe_supply_chain_observation, DeltaId, EntityRecord,
     SupplyChainScale,
 };
-use worth_foundational::facade::{AspectKey, AspectValue, InternedString, ScalarAspectType};
 use worth_relational::facade::branch::RelationalBranchBasisDenial;
-use worth_relational::facade::bridge::RuntimeBridgeRelationalSource;
 use worth_relational::facade::history::{BranchId, RelationalMergeBranchBasisDenial};
-use worth_runtime_bridge::facade::{
-    RelationalBridgeRecordIdentityParts, SnapshotReadContract, SnapshotReadPacket,
-    SnapshotReadRequest, SnapshotReadSource,
-};
 
 #[test]
-fn history_visibility_and_bridge_read_the_observation_selected_root() {
+fn history_and_visibility_read_the_observation_selected_root() {
     let (world, _) = certified_supply_chain_world(SupplyChainScale::court());
     let branch_id = BranchId("storm".to_owned());
     fork_supply_chain_branch_from_main(&world.runtime, branch_id.clone());
     let identity = world.runtime.branch_identity(&branch_id).unwrap();
     let (_, basis) = world.runtime.observe_branch(&identity).unwrap();
     let observation = basis.observation();
-    let before = observe_supply_chain_observation(
-        &world.program,
-        &world.handles,
-        &world.runtime,
-        &observation,
-    )
-    .unwrap();
-    let EntityRecord::Voyage(voyage_before) =
-        &before.entities[&world.handles.aurora_voyage().semantic]
-    else {
-        panic!("Aurora remains a voyage in the admitted root");
+    let voyage_status = |observed: &_| {
+        let EntityRecord::Voyage(voyage) = &observe_supply_chain_observation(
+            &world.program,
+            &world.handles,
+            &world.runtime,
+            observed,
+        )
+        .unwrap()
+        .entities[&world.handles.aurora_voyage().semantic] else {
+            panic!("Aurora remains a voyage in the admitted root");
+        };
+        voyage.status
     };
-    let expected_status =
-        AspectValue::String(InternedString::Raw(format!("{:?}", voyage_before.status)));
+    let status_before = voyage_status(&observation);
     let original_head = world
         .runtime
         .history()
@@ -56,10 +49,11 @@ fn history_visibility_and_bridge_read_the_observation_selected_root() {
     commit_branch_batch(&world.runtime, branch_id, batch);
 
     let (_, current_basis) = world.runtime.observe_branch(&identity).unwrap();
+    let current_observation = current_basis.observation();
     let current_head = world
         .runtime
         .history()
-        .branch_head_for_observation(&current_basis.observation())
+        .branch_head_for_observation(&current_observation)
         .unwrap()
         .unwrap();
     assert_ne!(current_head.commit_id, original_head.commit_id);
@@ -73,29 +67,8 @@ fn history_visibility_and_bridge_read_the_observation_selected_root() {
             .commit_id,
         original_head.commit_id
     );
-
-    let voyage = world.handles.aurora_voyage().id;
-    let source = RuntimeBridgeRelationalSource::for_graph_role(
-        Arc::new(world.runtime),
-        "phase6-certification",
-    )
-    .unwrap();
-    let lease = source.retain_branch_basis_for_bridge(&basis).unwrap();
-    let reader = source.open_snapshot(lease.snapshot_identity()).unwrap();
-    let packet = SnapshotReadPacket::new(vec![SnapshotReadRequest::for_relational_record(
-        RelationalBridgeRecordIdentityParts::entity(
-            voyage.partition_id.0,
-            voyage.local_slot.0,
-            voyage.generation.0,
-        ),
-        SnapshotReadContract::scalar(AspectKey::new("status").unwrap(), ScalarAspectType::String),
-    )]);
-    let result = reader.read_packet(&packet).unwrap();
-
-    assert_eq!(
-        result.records()[0].scalar_aspect_value(),
-        Some(&expected_status)
-    );
+    assert_eq!(voyage_status(&observation), status_before);
+    assert_ne!(voyage_status(&current_observation), status_before);
 }
 
 #[test]

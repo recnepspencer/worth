@@ -21,7 +21,7 @@ impl UiAllocationReplanCommitMode<'_> {
     ) -> Option<&crate::runtime::UiResizeAllocationPlanningBasis> {
         match self {
             Self::DurableResize { basis, .. } => Some(basis),
-            _ => None,
+            Self::Ordinary(_) | Self::Viewport(_) => None,
         }
     }
 

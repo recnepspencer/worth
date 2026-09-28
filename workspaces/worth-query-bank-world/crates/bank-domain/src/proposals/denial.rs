@@ -25,6 +25,7 @@ pub enum BankProposalDenial {
     InsufficientFunds(AccountId),
     SelfTransfer,
     SelfApproval,
+    TooManyPaymentApprovers,
     PaymentAlreadyDecided(PaymentId),
     JournalAlreadyReversed(JournalEntryId),
     JournalHasTooFewPostings,

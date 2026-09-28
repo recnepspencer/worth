@@ -6,8 +6,7 @@ impl super::UiMountedGraphReplacementSuccessor {
         slot: usize,
     ) -> Option<(
         worth_ui_host_contract::UiMountedInstanceIdentity,
-        worth_ui_host_contract::UiMountedCanonicalBox,
-        worth_ui_host_contract::UiMountedCanonicalBox,
+        crate::mounting::UiLaidOut<crate::mounting::UiMountedScrollRegionBoxes>,
     )> {
         self.occurrence_geometry
             .scroll_region_geometry(surface, target, slot)
@@ -78,11 +77,7 @@ impl super::UiMountedGraphReplacementSuccessor {
         changed.sort_unstable();
         changed.dedup();
         if !changed.is_empty() {
-            self.identity
-                .mark_occurrence_geometry_changed(&changed)
-                .map_err(|_| {
-                    crate::mounting::UiMountedOccurrenceGeometryDenial::UnknownMountedInstance
-                })?;
+            self.identity.mark_occurrence_geometry_changed(&changed)?;
         }
         Ok(crate::mounting::UiMountedLayoutCompletionReceipt::new(
             surface,

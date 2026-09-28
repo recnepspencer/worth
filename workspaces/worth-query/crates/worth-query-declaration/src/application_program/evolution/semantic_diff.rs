@@ -51,17 +51,34 @@ impl ApplicationSemanticChange {
     pub fn migration_assessment_requirement(
         &self,
     ) -> Option<ApplicationProgramMigrationAssessmentRequirement> {
-        let requires_assessment = match (self.family, self.kind) {
-            (ApplicationSemanticFamily::Features, ApplicationSemanticChangeKind::Changed)
-            | (ApplicationSemanticFamily::Features, ApplicationSemanticChangeKind::Removed)
-            | (ApplicationSemanticFamily::Ports, ApplicationSemanticChangeKind::Changed)
-            | (ApplicationSemanticFamily::Ports, ApplicationSemanticChangeKind::Removed)
-            | (ApplicationSemanticFamily::Connections, ApplicationSemanticChangeKind::Changed)
-            | (ApplicationSemanticFamily::Connections, ApplicationSemanticChangeKind::Removed)
-            | (ApplicationSemanticFamily::Outputs, ApplicationSemanticChangeKind::Changed)
-            | (ApplicationSemanticFamily::Outputs, ApplicationSemanticChangeKind::Removed) => true,
-            _ => false,
-        };
+        let requires_assessment = matches!(
+            (self.family, self.kind),
+            (
+                ApplicationSemanticFamily::Features,
+                ApplicationSemanticChangeKind::Changed
+            ) | (
+                ApplicationSemanticFamily::Features,
+                ApplicationSemanticChangeKind::Removed
+            ) | (
+                ApplicationSemanticFamily::Ports,
+                ApplicationSemanticChangeKind::Changed
+            ) | (
+                ApplicationSemanticFamily::Ports,
+                ApplicationSemanticChangeKind::Removed
+            ) | (
+                ApplicationSemanticFamily::Connections,
+                ApplicationSemanticChangeKind::Changed
+            ) | (
+                ApplicationSemanticFamily::Connections,
+                ApplicationSemanticChangeKind::Removed
+            ) | (
+                ApplicationSemanticFamily::Outputs,
+                ApplicationSemanticChangeKind::Changed
+            ) | (
+                ApplicationSemanticFamily::Outputs,
+                ApplicationSemanticChangeKind::Removed
+            )
+        );
         requires_assessment.then(|| ApplicationProgramMigrationAssessmentRequirement {
             family: self.family,
             subject: self.subject.clone(),
@@ -157,8 +174,8 @@ impl ApplicationSemanticDiff {
             .collect::<Vec<_>>()
             .into_boxed_slice();
         Ok(Self {
-            source: source.revision().clone(),
-            target: target.revision().clone(),
+            source: *source.revision(),
+            target: *target.revision(),
             changes: changes.into_boxed_slice(),
             equivalent_families,
             comparison_work_units,

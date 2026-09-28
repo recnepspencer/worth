@@ -3,11 +3,11 @@ use super::*;
 #[test]
 fn evidence_join_policy_changes_canonical_meaning() -> Result<(), Box<dyn std::error::Error>> {
     let passing = primitive_definition_named_with_policy(
-        "reviewed-geometry",
+        "reviewed-change",
         ApplicationWorkflowEvidenceJoinPolicy::AllRequiredPassing,
     )?;
     let completed = primitive_definition_named_with_policy(
-        "reviewed-geometry",
+        "reviewed-change",
         ApplicationWorkflowEvidenceJoinPolicy::AllRequiredCompleted,
     )?;
     assert_ne!(passing.content_identity(), completed.content_identity());
@@ -19,8 +19,8 @@ fn retry_reason_and_bound_change_canonical_meaning() -> Result<(), Box<dyn std::
     fn definition(
         reason: &str,
         maximum_attempts: u16,
-    ) -> Result<ValidatedWorkflowDefinition<ReviewedGeometry>, Box<dyn std::error::Error>> {
-        let mut builder = ApplicationWorkflowDefinitionBuilder::<ReviewedGeometry>::new(
+    ) -> Result<ValidatedWorkflowDefinition<ReviewedChange>, Box<dyn std::error::Error>> {
+        let mut builder = ApplicationWorkflowDefinitionBuilder::<ReviewedChange>::new(
             "canonical-retry",
             limits(),
         )?;
@@ -67,8 +67,8 @@ fn retry_reason_and_bound_change_canonical_meaning() -> Result<(), Box<dyn std::
 #[test]
 fn lineage_identity_is_not_part_of_canonical_content_identity(
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let first = primitive_definition_named("reviewed-geometry-a")?;
-    let second = primitive_definition_named("reviewed-geometry-b")?;
+    let first = primitive_definition_named("reviewed-change-a")?;
+    let second = primitive_definition_named("reviewed-change-b")?;
     assert_ne!(first.identity(), second.identity());
     assert_eq!(first.content_identity(), second.content_identity());
     Ok(())
@@ -79,11 +79,11 @@ fn component_resource_limits_are_part_of_canonical_meaning(
 ) -> Result<(), Box<dyn std::error::Error>> {
     fn definition(
         component_limits: ApplicationWorkflowComponentLimits,
-    ) -> Result<ValidatedWorkflowDefinition<ReviewedGeometry>, Box<dyn std::error::Error>> {
+    ) -> Result<ValidatedWorkflowDefinition<ReviewedChange>, Box<dyn std::error::Error>> {
         let limits =
             ApplicationWorkflowDefinitionLimits::new(4, 4, 1, component_limits, 4_096).unwrap();
         let mut builder =
-            ApplicationWorkflowDefinitionBuilder::<ReviewedGeometry>::new("limits", limits)?;
+            ApplicationWorkflowDefinitionBuilder::<ReviewedChange>::new("limits", limits)?;
         let operation = builder.operation::<ProposeChange>("operation", false)?;
         let terminal = builder.terminal("terminal")?;
         builder.start(&operation).control(
@@ -116,12 +116,12 @@ fn component_resource_limits_are_part_of_canonical_meaning(
 fn canonical_node_fields_are_unambiguously_framed() -> Result<(), Box<dyn std::error::Error>> {
     fn definition<Operation>(
         identity: &str,
-    ) -> Result<ValidatedWorkflowDefinition<ReviewedGeometry>, Box<dyn std::error::Error>>
+    ) -> Result<ValidatedWorkflowDefinition<ReviewedChange>, Box<dyn std::error::Error>>
     where
         Operation: ApplicationOperationMarkerIdentity<TestSchema> + 'static,
     {
         let mut builder =
-            ApplicationWorkflowDefinitionBuilder::<ReviewedGeometry>::new(identity, limits())?;
+            ApplicationWorkflowDefinitionBuilder::<ReviewedChange>::new(identity, limits())?;
         let operation = builder.operation::<Operation>("operation", false)?;
         let terminal = builder.terminal("terminal")?;
         builder.start(&operation).control(
@@ -151,9 +151,9 @@ fn primitive_form_has_the_independently_expected_expanded_graph() {
         [
             "apply",
             "approval",
+            "checks/compliance",
+            "checks/consistency",
             "checks/evidence",
-            "checks/manufacturability",
-            "checks/structural",
             "completed",
             "propose",
             "rejected",
@@ -175,11 +175,11 @@ fn primitive_form_has_the_independently_expected_expanded_graph() {
         }
     ));
     assert!(matches!(
-        kind("checks/structural"),
+        kind("checks/consistency"),
         ApplicationWorkflowNodeKind::Assessment(_)
     ));
     assert!(matches!(
-        kind("checks/manufacturability"),
+        kind("checks/compliance"),
         ApplicationWorkflowNodeKind::Assessment(_)
     ));
     assert!(matches!(
@@ -228,35 +228,27 @@ fn primitive_form_has_the_independently_expected_expanded_graph() {
     assert_eq!(
         connections,
         std::collections::BTreeSet::from([
-            ("propose", Control(Completed), "checks/structural"),
+            ("propose", Control(Completed), "checks/consistency"),
             (
-                "checks/structural",
+                "checks/consistency",
                 Control(Completed),
-                "checks/manufacturability",
+                "checks/compliance",
             ),
-            (
-                "checks/manufacturability",
-                Control(Completed),
-                "checks/evidence",
-            ),
+            ("checks/compliance", Control(Completed), "checks/evidence",),
             ("checks/evidence", Control(EvidenceSatisfied), "approval"),
             ("checks/evidence", Control(EvidenceFailed), "rejected"),
             ("approval", Control(Approved), "apply"),
             ("approval", Control(Rejected), "rejected"),
             ("apply", Control(Completed), "completed"),
-            ("propose", Data(AssessmentSubject), "checks/structural"),
+            ("propose", Data(AssessmentSubject), "checks/consistency"),
+            ("propose", Data(AssessmentSubject), "checks/compliance",),
             (
-                "propose",
-                Data(AssessmentSubject),
-                "checks/manufacturability",
-            ),
-            (
-                "checks/structural",
+                "checks/consistency",
                 Data(AssessmentEvidence),
                 "checks/evidence",
             ),
             (
-                "checks/manufacturability",
+                "checks/compliance",
                 Data(AssessmentEvidence),
                 "checks/evidence",
             ),

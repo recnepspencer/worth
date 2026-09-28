@@ -1,10 +1,19 @@
 use super::super::super::WorthQueryApplicationIdempotencyBinding;
 
+/// What the caller must do next with a deferred settlement.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationSettlementNextAction {
+    /// Recover the settlement through the application runtime's
+    /// `recover_deferred_application_settlement`.
     RecoverDeferredApplicationSettlement,
 }
 
+/// Evidence that a commit was performed but not settled: the branch moved, but
+/// durability or publication did not finish.
+///
+/// Carried by the `SettlementDeferred` commit outcome. The change happened, so do
+/// not redo it. Pass this value to the application runtime's
+/// `recover_deferred_application_settlement` to finish the settlement.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationSettlementDeferred {
     stage: crate::domain_computation::provider_session::WorthQueryProviderSessionProtocolStage,

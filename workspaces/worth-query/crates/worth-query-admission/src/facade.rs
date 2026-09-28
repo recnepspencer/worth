@@ -4,6 +4,10 @@ pub mod authenticated_principal {
     pub use crate::authenticated_principal::*;
 }
 
+pub mod authentication_event {
+    pub use crate::authentication_event::*;
+}
+
 pub mod application_query {
     pub use crate::application_query::*;
 }

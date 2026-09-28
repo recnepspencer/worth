@@ -29,6 +29,12 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowApprovalMeaning 
     pub approver: EntityId,
     pub grant: EntityId,
     pub authorization_decision: [u8; 32],
+    pub authorization_request: String,
+    pub authorization_principal: String,
+    pub capability_authority_identity: String,
+    pub authorization_lineage: String,
+    pub authorization_support: String,
+    pub authorization_dependencies: String,
     pub action: String,
     pub purpose: String,
     pub timeline: &'static str,
@@ -85,6 +91,30 @@ pub(in crate::domain_computation::primary_graph) fn workflow_approval_fields(
         (
             layout.approval.authorization_decision.clone(),
             text(hex(meaning.authorization_decision)),
+        ),
+        (
+            layout.approval.authorization_request.clone(),
+            text(&meaning.authorization_request),
+        ),
+        (
+            layout.approval.authorization_principal.clone(),
+            text(&meaning.authorization_principal),
+        ),
+        (
+            layout.approval.capability_authority_identity.clone(),
+            text(&meaning.capability_authority_identity),
+        ),
+        (
+            layout.approval.authorization_lineage.clone(),
+            text(&meaning.authorization_lineage),
+        ),
+        (
+            layout.approval.authorization_support.clone(),
+            text(&meaning.authorization_support),
+        ),
+        (
+            layout.approval.authorization_dependencies.clone(),
+            text(&meaning.authorization_dependencies),
         ),
         (layout.approval.action.clone(), text(&meaning.action)),
         (layout.approval.purpose.clone(), text(&meaning.purpose)),

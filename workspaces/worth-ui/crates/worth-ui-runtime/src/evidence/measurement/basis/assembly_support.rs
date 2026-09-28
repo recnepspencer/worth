@@ -210,7 +210,12 @@ pub(super) fn push_child_intrinsic_lineage(
             UiMeasurementEvidenceCategory::NativeControlIntrinsicSize => {
                 UiMeasurementDependencyLineageKind::HostNativeControlIntrinsicSize
             }
-            _ => return,
+            UiMeasurementEvidenceCategory::TextBaselineMetrics
+            | UiMeasurementEvidenceCategory::FontMetrics
+            | UiMeasurementEvidenceCategory::ViewportExtent
+            | UiMeasurementEvidenceCategory::DpiScaleFactor
+            | UiMeasurementEvidenceCategory::PortalAnchorRect
+            | UiMeasurementEvidenceCategory::ScrollContainerViewport => return,
         };
         entries.push(UiMeasurementDependencyLineageEntry::new(
             kind,

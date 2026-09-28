@@ -6,6 +6,7 @@
 
 mod application_definition;
 mod application_query;
+mod approval_authentication;
 mod authenticated_principal;
 mod authentication_boundary;
 mod bank_projection;
@@ -52,10 +53,15 @@ pub use application_query::{
     BankEstateEmergencyAccountDetailsResult, BankGraphReadPlanReviewDenialKind, BankPreviewSession,
     BankPreviewSessionDiscardReceipt, BankProductSelectionDenialKind,
 };
+pub use approval_authentication::{
+    BankApprovalAuthenticationConfiguration, BankApprovalCredential,
+};
 pub use approved_payment_workflow::{
     BankApprovedPaymentApplyOutcome, BankApprovedPaymentAssessment,
-    BankApprovedPaymentPerformedOperation, BankApprovedPaymentPreparedRecovery,
-    BankApprovedPaymentWorkflow, BankApprovedPaymentWorkflowError,
+    BankApprovedPaymentAssessmentDemand, BankApprovedPaymentAssessmentProgress,
+    BankApprovedPaymentCancellation, BankApprovedPaymentPerformedOperation,
+    BankApprovedPaymentPreparedRecovery, BankApprovedPaymentWorkflow,
+    BankApprovedPaymentWorkflowError, BankPaymentAssessmentSettlement,
 };
 pub use authenticated_principal::BankAuthenticatedPrincipal;
 pub use authentication_boundary::BankAuthenticationBoundary;
@@ -96,15 +102,14 @@ pub use operation_commit::{
     BankUnresolvedCommitEvidence,
 };
 pub use ordinary::{
-    mutations, queries, BankAccountAccessExecution, BankApprovePendingPayment,
-    BankAuthorizationDenial, BankAuthorizationDenialKind, BankBusinessAccountCreationExecution,
-    BankEntityResolutionDenial, BankEntityResolutionDenialKind, BankMoneyMovementExecution,
-    BankMutation, BankMutationControls, BankMutationForPrincipal, BankOperationInstallationDenial,
-    BankOperationInstallationDenialKind, BankPaymentContinuationDenial,
-    BankPaymentDecisionExecution, BankPaymentInitiationOutcome, BankPendingPaymentContinuation,
-    BankPersonalAccountCreationExecution, BankProgramMutationExecution, BankQuery,
-    BankQueryForPrincipal, BankReadControlDenial, BankReadControls, BankReadyMutation,
-    BankReadyQuery, BankRejectPendingPayment,
+    mutations, queries, BankAccountAccessExecution, BankAuthorizationDenial,
+    BankAuthorizationDenialKind, BankBusinessAccountCreationExecution, BankEntityResolutionDenial,
+    BankEntityResolutionDenialKind, BankMoneyMovementExecution, BankMutation, BankMutationControls,
+    BankMutationForPrincipal, BankOperationInstallationDenial, BankOperationInstallationDenialKind,
+    BankPaymentContinuationDenial, BankPaymentDecisionExecution, BankPaymentInitiationOutcome,
+    BankPendingPaymentContinuation, BankPersonalAccountCreationExecution,
+    BankProgramMutationExecution, BankQuery, BankQueryForPrincipal, BankReadControlDenial,
+    BankReadControls, BankReadyMutation, BankReadyQuery, BankRejectPendingPayment,
 };
 pub use principal_seed::BankPrincipalSeed;
 pub use program_adoption::{BankProgramAdoptionPreparationDenial, BankProgramInspectionDenial};

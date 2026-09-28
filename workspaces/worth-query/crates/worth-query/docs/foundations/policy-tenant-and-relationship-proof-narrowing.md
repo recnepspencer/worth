@@ -1,5 +1,7 @@
 # Policy, Tenant, and Relationship-Proof Narrowing
 
+> **Internal engine surface.** This page documents `WorthQueryWorkspace` (`worth_query::facade`), the engine surface that `worth-ui-query-binding` uses. Application code uses `worth-query-decl` and `worth-query-host`; start with the [application front door](ordinary-application-front-door.md).
+
 ## What This Feature Is
 
 Policy and tenant narrowing **shrinks what a query may see or assert** under declared policy/tenant basis and relationship-proof descriptors—before and during read composition. The shipped path is **runtime-backed descriptor admission and masking validation**, not full policy-aware execution/live/historical parity across every surface.

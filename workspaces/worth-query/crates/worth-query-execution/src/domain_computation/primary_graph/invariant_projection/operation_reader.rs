@@ -38,6 +38,10 @@ use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedApplicationOperation, WorthQueryEntityResolutionDenial,
 };
 
+/// An invariant projection reader restricted to one operation's declared reads.
+///
+/// Decision reads record the facts the operation's outcome depends on. Only a
+/// reader opened for an admitted operation can mint mutation targets.
 pub struct WorthQueryApplicationOperationInvariantProjectionReader<
     'reader,
     'runtime,
@@ -56,6 +60,11 @@ pub struct WorthQueryApplicationOperationInvariantProjectionReader<
     _operation: PhantomData<fn() -> Operation>,
 }
 
+/// The result of projecting for an admitted operation: the output, the work
+/// spent, and a snapshot typed for that operation.
+///
+/// Pass the snapshot from `into_parts` to
+/// `begin_projected_application_read_attempt`.
 pub struct WorthQueryCompletedOperationInvariantProjection<Schema, Operation, Output> {
     completed: WorthQueryCompletedInvariantProjection<
         Schema,
@@ -66,12 +75,19 @@ pub struct WorthQueryCompletedOperationInvariantProjection<Schema, Operation, Ou
     _operation: PhantomData<fn() -> Operation>,
 }
 
+/// The result of an operation-typed inspection: the output and the work spent.
+///
+/// It keeps no snapshot and grants no mutation authority.
 pub struct WorthQueryInspectedOperationInvariantProjection<Operation, Output> {
     output: Output,
     work: WorthQueryInvariantProjectionWork,
     _operation: PhantomData<fn() -> Operation>,
 }
 
+/// A projection snapshot bound to one admitted operation, carrying the decision
+/// facts it read.
+///
+/// Only a read attempt for that same operation accepts it.
 pub struct WorthQueryApplicationOperationInvariantProjectionSnapshot<Schema, Operation> {
     snapshot: WorthQueryApplicationInvariantProjectionSnapshot<Schema>,
     admission_identity: WorthQueryOperationAdmissionIdentity,

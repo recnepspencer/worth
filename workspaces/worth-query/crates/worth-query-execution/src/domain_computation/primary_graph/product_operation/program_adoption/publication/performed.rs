@@ -3,6 +3,11 @@ use worth_runtime_world::facade::{
     CompositeCommitIdentity, ConsumedCompositePublication, ProductBranchIdentity,
 };
 
+/// A published branch adoption: the product branch now runs the target program.
+///
+/// Carries the source and target programs, how many entities were selected for
+/// revalidation, any migration, the custody dispositions, and the product
+/// commit.
 pub struct WorthQueryPerformedBranchAdoption {
     publication: ConsumedCompositePublication,
     source: ApplicationProgramRevision,

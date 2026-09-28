@@ -47,15 +47,13 @@ where
     Schema: ApplicationSchema,
     Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
 {
-    pub(in crate::domain_computation::primary_graph) fn materialize_workflow_proposal<
-        Spec,
-        Program,
-    >(
+    pub(in crate::domain_computation::primary_graph) fn materialize_workflow_proposal<Spec>(
         mut self,
-        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         instance: super::PublishedWorkflowInstanceRef,
         input_identity: [u8; 32],
         source_identity: Option<[u8; 32]>,
+        clock: &crate::domain_computation::runtime_time::WorthQueryRuntimeClock,
     ) -> Result<
         PreparedWorkflowProposal<Schema, Operation, Input, Scope>,
         WorthQueryApplicationAttemptDenial,
@@ -79,12 +77,12 @@ where
             instance.definition_entity_id(),
             instance.definition_content_identity().clone(),
         );
-        let (compiled, mut facts) = reconstruct_compiled_definition(
+        let (mut compiled, mut facts) = reconstruct_compiled_definition(
             self.lease.handle(),
             self.lease.snapshot(),
             &layout,
             &published,
-            instance.program_revision(),
+            installed.program_revision(),
             Spec::IDENTITY.as_str(),
             installed.support_identity_bytes(),
             usize::from(installed.resources().maximum_definition_nodes()),
@@ -107,14 +105,17 @@ where
                 &instance,
                 subject,
                 compiled.lineage(),
-                &compiled,
+                &mut compiled,
                 maximum_transitions,
                 installed.resources().history_reconstruction_budget(),
+                super::workflow_instance_observation::WorkflowInstanceObservationPurpose::Advance,
             )
         })?;
         let Some(live_membership) = observed.live_membership else {
             return Err(denial("workflow proposal instance is already settled"));
         };
+        let allowance = observed.ensure_step_left()?;
+        self.bind_workflow_deadline(clock, &layout, instance.entity_id())?;
         let selection = select_proposal_transition(
             &compiled,
             instance.entity_id(),
@@ -142,7 +143,6 @@ where
                 self.recover_proposal_replay(
                     &layout,
                     &compiled,
-                    &instance,
                     &observed,
                     Operation::IDENTIFIER,
                     input_type.as_str(),
@@ -203,6 +203,7 @@ where
             subject,
             live_membership,
             false,
+            allowance,
         );
         let mut demand = PlatformEffectDemand::default();
         visit_workflow_proposal_facts(&layout, &admitted, &proposal, |effect| {
@@ -230,7 +231,7 @@ where
                 emission_retained_bytes: 0,
                 emission_retained_bytes_ceiling: 0,
                 conditional_definition: None,
-                platform_mutation: true,
+            effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Platform,
                 validator_work_admission,
                 output_correspondence: Default::default(),
                 retain_output_demand_observation: false,
@@ -238,7 +239,7 @@ where
                 producer_required_invariants: &[],
                 output_currentness_facts: None,
             },
-            program_revision: compiled.program_revision().clone(),
+            program_revision: *compiled.program_revision(),
             transition_identity_locator: layout.transition.identity.clone(),
             proposal_identity_locator: layout.proposal.identity.clone(),
             proposal_node_path_locator: layout.proposal.node_path.clone(),
@@ -259,7 +260,6 @@ where
         &self,
         layout: &crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
         compiled: &crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowDefinition,
-        instance: &super::PublishedWorkflowInstanceRef,
         observed: &super::workflow_instance_observation::ObservedWorkflowInstance,
         operation: &str,
         input_type: &str,
@@ -274,13 +274,20 @@ where
     >{
         let mut match_found = None;
         let mut latest_occurrence = None;
+        let replays = observed.replays.materialize();
         for transition in &observed.transitions {
+            let Some(replay) = usize::try_from(transition.settlement.occurrence())
+                .ok()
+                .and_then(|index| replays.get(index))
+            else {
+                continue;
+            };
             let Ok(selected) = select_proposal_replay_transition(
                 compiled,
-                instance.entity_id(),
                 transition.settlement,
                 operation,
                 input_type,
+                replay,
             ) else {
                 continue;
             };

@@ -323,20 +323,21 @@ not on Query guessing what happened.
 
 ## Publication Settlement Recovery
 
-Match the application commit outcome before entering aftermath handling:
+Split the application commit outcome with `landed()` before entering aftermath
+handling. A landed commit returns its receipt; every other terminal arrives as a
+`WorthQueryApplicationUncommitted` variant:
 
 ```rust
 use worth_query_host::facade::primary_graph::{
-    WorthQueryApplicationCommitOutcome,
     WorthQueryApplicationSettlementNextAction,
+    WorthQueryApplicationUncommitted,
 };
 
-match outcome {
-    WorthQueryApplicationCommitOutcome::Committed(receipt)
-    | WorthQueryApplicationCommitOutcome::AlreadyCommitted(receipt) => {
+match outcome.landed() {
+    Ok((receipt, _replayed)) => {
         publish(receipt);
     }
-    WorthQueryApplicationCommitOutcome::SettlementDeferred(deferred) => {
+    Err(WorthQueryApplicationUncommitted::SettlementDeferred(deferred)) => {
         assert_eq!(
             deferred.next_action(),
             WorthQueryApplicationSettlementNextAction::RecoverDeferredApplicationSettlement,
@@ -345,9 +346,13 @@ match outcome {
             .recover_deferred_application_settlement(&deferred)?;
         publish_repaired(receipt);
     }
-    other => handle_unperformed_or_indeterminate(other),
+    Err(other) => handle_unperformed_or_indeterminate(other),
 }
 ```
+
+A request-lane mutation reports the same split directly: its
+`WorthQueryApplicationMutationOutcome::Commit(...)` variant carries the
+`WorthQueryApplicationUncommitted` value, including `SettlementDeferred`.
 
 Recovery runs under the application commit serialization boundary. It repairs
 the exact Relational durability route, refreshes Query's primary indexes,

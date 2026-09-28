@@ -19,7 +19,7 @@ The examples use:
 Other common cases:
 
 - one file changes and you want one rebuild target to rerun
-- one geometry region changes and you do not want to recompute the whole model
+- one section of a long document changes and you do not want to reindex the whole document
 - one source file changes and you want symbol indexing, diagnostics, and one build target to update without touching the rest
 
 ## What You Use

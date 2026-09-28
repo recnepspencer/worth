@@ -20,11 +20,14 @@ type Source<Schema, Connection> =
 type Query<Schema, Connection> =
     <Source<Schema, Connection> as ApplicationQueryBinding<Schema>>::Query;
 
+/// Whether a mutation's discovered program outputs have settled yet.
 pub enum WorthQueryDiscoveredProgramOutputProgress<RootQuery, RootDemand> {
     Pending,
     Settled(WorthQueryDiscoveredProgramOutputSettlement<RootQuery, RootDemand>),
 }
 
+/// Settled discovered program outputs: each root's settlement, the roots superseded
+/// meanwhile, the outputs produced, and the work spent.
 pub struct WorthQueryDiscoveredProgramOutputSettlement<RootQuery, RootDemand> {
     source: WorthQueryApplicationReadObservation,
     roots: Vec<(

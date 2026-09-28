@@ -55,14 +55,22 @@ impl WorthQueryStoppedBranchSetAdoption {
     }
 }
 
+/// Why a stopped branch-set adoption could not be resumed. Nothing was
+/// published.
 #[derive(Debug)]
 pub enum WorthQueryBranchSetAdoptionResumeDenial {
+    /// The ordered coverage is not exactly the remaining branches, in order.
     CoverageMismatch,
+    /// Memory to hold the prepared branches could not be allocated.
     RetentionAllocationRejected,
+    /// Preparing a remaining branch was refused.
     Preparation(WorthQueryBranchSetAdoptionPreparationDenial),
+    /// The total selection work could not be counted without overflow.
     WorkAccountingOverflow,
 }
 
+/// A refused resume, with the stopped branch-set adoption handed back
+/// unchanged.
 pub struct WorthQueryBranchSetAdoptionResumeFailure {
     denial: WorthQueryBranchSetAdoptionResumeDenial,
     adoption: WorthQueryStoppedBranchSetAdoption,

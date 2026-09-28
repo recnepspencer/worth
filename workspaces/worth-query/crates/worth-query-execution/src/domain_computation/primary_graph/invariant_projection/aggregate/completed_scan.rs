@@ -52,19 +52,15 @@ struct AggregateScanReader<'scan, 'work> {
 
 impl AggregateScanReader<'_, '_> {
     fn rebuild(&mut self) -> Result<AggregateScanAccumulator, WorthQueryInvariantAggregateDenial> {
-        let read = self
-            .runtime
-            .read_truth()
-            .bounded_incoming_relations_of_kind_at_version(
-                self.plan.target(),
-                self.plan.key().relation_kind,
-                self.plan.version(),
-                self.accounting.remaining(),
-            )
-            .map_err(|limit| {
-                self.accounting
-                    .reject_initial_adjacency(limit, self.plan.relation_member())
-            })?;
+        let read = self.branch_view()?.bounded_incoming_relations_of_kind(
+            self.plan.target(),
+            self.plan.key().relation_kind,
+            self.accounting.remaining(),
+        );
+        let read = read.map_err(|limit| {
+            self.accounting
+                .reject_initial_adjacency(limit, self.plan.relation_member())
+        })?;
         let row_count = read.relation_records_examined();
         self.accounting.record_cold_lookup(row_count);
         self.accounting.complete_adjacency(
@@ -84,19 +80,15 @@ impl AggregateScanReader<'_, '_> {
         &mut self,
         record: &worth_relational::facade::runtime::RelationReadRecord,
     ) -> Result<Option<AspectValue>, WorthQueryInvariantAggregateDenial> {
-        let relations = self
-            .runtime
-            .read_truth()
-            .bounded_outgoing_relations_of_kind_at_version(
-                record.source,
-                self.plan.key().relation_kind,
-                self.plan.version(),
-                self.accounting.remaining(),
-            )
-            .map_err(|limit| {
-                self.accounting
-                    .reject_bounded_adjacency(limit, self.plan.relation_member())
-            })?;
+        let relations = self.branch_view()?.bounded_outgoing_relations_of_kind(
+            record.source,
+            self.plan.key().relation_kind,
+            self.accounting.remaining(),
+        );
+        let relations = relations.map_err(|limit| {
+            self.accounting
+                .reject_bounded_adjacency(limit, self.plan.relation_member())
+        })?;
         self.accounting.complete_adjacency(
             relations.work_units(),
             relations.relation_records_examined(),
@@ -119,6 +111,26 @@ impl AggregateScanReader<'_, '_> {
                 &self.plan.key().field,
             );
         Ok(value)
+    }
+
+    /// Reads the plan's snapshot on its own branch root, so a sibling branch's
+    /// commits at older versions never contribute. An unprojectable snapshot
+    /// has no readable source field, as `observe_field_value` also reports.
+    fn branch_view(
+        &self,
+    ) -> Result<
+        worth_relational::facade::runtime::VisibilityProjectionView<'_>,
+        WorthQueryInvariantAggregateDenial,
+    > {
+        self.runtime
+            .read_truth()
+            .project_snapshot(self.snapshot)
+            .ok_or_else(|| {
+                denial(
+                    WorthQueryInvariantAggregateDenialKind::InvalidScalar,
+                    self.plan.field_member(),
+                )
+            })
     }
 }
 

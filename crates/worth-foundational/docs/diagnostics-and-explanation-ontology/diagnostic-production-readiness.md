@@ -150,4 +150,4 @@ assumption is not part of the frozen contract yet.
 ## Related Docs
 
 - [Certified Diagnostic Bundles And Attachments](./certified-diagnostic-bundles-and-attachments.md)
-- [_docs/worth-foundational/milestone-6-closeout.md](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/_docs/worth-foundational/milestone-6-closeout.md)
+- [plans/worth-foundational/milestone-6-closeout.md](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/plans/worth-foundational/milestone-6-closeout.md)

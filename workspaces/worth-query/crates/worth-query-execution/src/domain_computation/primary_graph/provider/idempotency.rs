@@ -24,6 +24,16 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryProviderIdempote
     Unpublished,
 }
 
+pub(in crate::domain_computation::primary_graph) enum WorthQueryProviderGuardedWorkflowOperationCustody
+{
+    Unseen,
+    Committed(WorthQueryPrimaryGraphCommittedApplication),
+    IntentDrift,
+    PublicationPending,
+    ProductUnpublished(worth_runtime_world::facade::ProductUnpublishedRecoveryHandle),
+    Indeterminate(WorthQueryProviderIdempotencyResolutionDenial),
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum WorthQueryProviderIdempotencyResolutionDenial
 {
@@ -77,6 +87,55 @@ pub(super) fn idempotency_create_intent(
 }
 
 impl WorthQueryPrimaryGraphProvider {
+    pub(in crate::domain_computation::primary_graph) fn resolve_guarded_workflow_operation_custody(
+        &self,
+        binding: WorthQueryApplicationIdempotencyBinding,
+        product: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
+    ) -> WorthQueryProviderGuardedWorkflowOperationCustody {
+        use WorthQueryProviderGuardedWorkflowOperationCustody as Custody;
+
+        let affinity =
+            WorthQueryProductIdempotencyAffinity::from_observation(product.observation());
+        if let Some(pending) = self.inspect_pending_application_idempotency(affinity.incarnation())
+        {
+            match pending {
+                None => {
+                    return Custody::Indeterminate(
+                        WorthQueryProviderIdempotencyResolutionDenial::Unavailable,
+                    )
+                }
+                Some(recorded) if recorded.key_identity() == binding.key_identity() => {
+                    return if recorded == binding {
+                        Custody::PublicationPending
+                    } else {
+                        Custody::IntentDrift
+                    };
+                }
+                Some(_) => {}
+            }
+        }
+        if let Some((recorded, handle)) =
+            self.inspect_unpublished_application_idempotency(&affinity, binding)
+        {
+            return if recorded == binding {
+                Custody::ProductUnpublished(handle)
+            } else {
+                Custody::IntentDrift
+            };
+        }
+        match self.resolve_idempotency_binding_at_product(binding, product) {
+            Ok(WorthQueryProviderIdempotencyResolution::Absent) => Custody::Unseen,
+            Ok(WorthQueryProviderIdempotencyResolution::Equivalent(committed)) => {
+                Custody::Committed(committed)
+            }
+            Ok(WorthQueryProviderIdempotencyResolution::Drift) => Custody::IntentDrift,
+            Ok(WorthQueryProviderIdempotencyResolution::Unpublished) => {
+                Custody::Indeterminate(WorthQueryProviderIdempotencyResolutionDenial::Unavailable)
+            }
+            Err(denial) => Custody::Indeterminate(denial),
+        }
+    }
+
     pub(in crate::domain_computation::primary_graph) fn resolve_idempotency_binding_at_product(
         &self,
         binding: WorthQueryApplicationIdempotencyBinding,

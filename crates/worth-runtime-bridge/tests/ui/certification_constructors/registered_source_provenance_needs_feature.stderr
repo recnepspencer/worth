@@ -1,0 +1,43 @@
+error[E0624]: associated function `from_owner_publication` is private
+ --> tests/ui/certification_constructors/registered_source_provenance_needs_feature.rs:5:46
+  |
+5 |         BridgeAuthoritativeSourceProvenance::from_owner_publication(1, "model", "adapter", "basis");
+  |                                              ^^^^^^^^^^^^^^^^^^^^^^ private associated function
+  |
+ ::: src/certification_constructor.rs
+  |
+  |         pub(crate) fn $($item)*
+  |         --- private associated function defined here
+
+error[E0624]: associated function `from_owner_partition_publication` is private
+ --> tests/ui/certification_constructors/registered_source_provenance_needs_feature.rs:6:61
+  |
+6 |     let _partitioned = BridgeAuthoritativeSourceProvenance::from_owner_partition_publication(
+  |                                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ private associated function
+  |
+ ::: src/certification_constructor.rs
+  |
+  |         pub(crate) fn $($item)*
+  |         --- private associated function defined here
+
+error[E0624]: associated function `registered_authoritative_source` is private
+  --> tests/ui/certification_constructors/registered_source_provenance_needs_feature.rs:14:33
+   |
+14 |         BridgeProducerMetadata::registered_authoritative_source().with_authoritative_source(provenance);
+   |                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ private associated function
+   |
+  ::: src/certification_constructor.rs
+   |
+   |         pub(crate) fn $($item)*
+   |         --- private associated function defined here
+
+error[E0624]: method `with_authoritative_source` is private
+  --> tests/ui/certification_constructors/registered_source_provenance_needs_feature.rs:14:67
+   |
+14 |         BridgeProducerMetadata::registered_authoritative_source().with_authoritative_source(provenance);
+   |                                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^ private method
+   |
+  ::: src/certification_constructor.rs
+   |
+   |         pub(crate) fn $($item)*
+   |         --- private method defined here

@@ -114,6 +114,9 @@ impl IndexAuthority<'_> {
     ) -> Result<PreparedRefresh, DerivedIndexMaintenanceDenialKind> {
         let root = after.selected_root().expect("validated exact root");
         let schema_version = root.schema_authority().schema_version();
+        let authoring = root
+            .canonical_envelope()
+            .map(|envelope| &envelope.branch_context);
         let mut prepared = Vec::new();
         let mut pending_fields = Vec::new();
         let mut reused = Vec::new();
@@ -128,9 +131,11 @@ impl IndexAuthority<'_> {
             let definition = self.runtime.indexes.definition(index_id).ok_or(
                 DerivedIndexMaintenanceDenialKind::IndexUnavailable(index_id),
             )?;
+            // A global index is current from any branch's generation at this
+            // exact commit and version; a scoped one only from its own.
             if let Some(generation) = self.runtime.indexes.published_generation_for_commit(
                 index_id,
-                Some(&request.branch_id),
+                definition.branch_scoped.then_some(&request.branch_id),
                 request.source_commit_id,
                 after.version_id(),
             ) {
@@ -139,6 +144,17 @@ impl IndexAuthority<'_> {
                     work.counts.reused_generations += 1;
                     continue;
                 }
+            }
+            if let Some(seed) = self.fork_seed(
+                index_id,
+                request,
+                authoring,
+                after.version_id(),
+                schema_version,
+            ) {
+                prepared.push((index_id, seed.entries.clone()));
+                work.counts.seeded_generations += 1;
+                continue;
             }
             let prior = before
                 .filter(|view| {
@@ -229,6 +245,34 @@ impl IndexAuthority<'_> {
             entries: prepared,
             reused,
         })
+    }
+}
+
+impl IndexAuthority<'_> {
+    /// The authoring branch's generation for the exact root a fresh fork
+    /// selects. Entries are a pure function of the root, so the fork publishes
+    /// its own generation from them instead of cold-projecting the graph.
+    fn fork_seed(
+        &self,
+        index_id: DerivedIndexId,
+        request: &DerivedIndexBuildRequest,
+        authoring: Option<&crate::facade::history::BranchId>,
+        version: crate::facade::identity::VersionId,
+        schema_version: crate::facade::schema::SchemaVersionId,
+    ) -> Option<std::sync::Arc<DerivedIndexGeneration>> {
+        let authoring = authoring?;
+        if authoring == &request.branch_id {
+            return None;
+        }
+        self.runtime
+            .indexes
+            .published_generation_for_commit(
+                index_id,
+                Some(authoring),
+                request.source_commit_id,
+                version,
+            )
+            .filter(|generation| generation.applicability.schema_version == schema_version)
     }
 }
 

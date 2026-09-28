@@ -9,7 +9,8 @@ impl UiMountedFrameRetentionAuthority {
     ) -> Option<&UiRetainedPresentedFrame> {
         match self.frame(*self.frames.surface_frames.get(&surface)?) {
             UiMountedRetainedFrameLookup::Found { evidence, .. } => Some(evidence),
-            _ => None,
+            UiMountedRetainedFrameLookup::Expired { .. }
+            | UiMountedRetainedFrameLookup::Unknown { .. } => None,
         }
     }
 

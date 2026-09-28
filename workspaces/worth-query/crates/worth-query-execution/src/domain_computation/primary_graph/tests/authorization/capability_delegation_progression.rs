@@ -51,7 +51,7 @@ fn parent_revocation_denies_idempotency_receipt_inspection() {
     );
 }
 
-fn revoke_parent(world: &super::super::fixture::AuthorizationWorld) {
+pub(super) fn revoke_parent(world: &super::super::fixture::AuthorizationWorld) {
     update_grant_field(
         world,
         "capability-parent",

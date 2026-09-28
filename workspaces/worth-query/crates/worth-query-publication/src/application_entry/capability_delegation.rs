@@ -22,6 +22,9 @@ use worth_query_installation::facade::ApplicationSchema;
 
 use super::{workflow_key::workflow_idempotency, WorthQueryApplicationRequest};
 
+/// Why `execute_capability_delegation_in_program` refused. `ProgramMismatch` means the
+/// program runtime is not this request's runtime; `IdempotencyIntentDrift` means the key
+/// was already recorded with a different intent.
 #[derive(Debug)]
 pub enum WorthQueryApplicationCapabilityDelegationDenial<PreparationDenial> {
     Program(worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitDenial),

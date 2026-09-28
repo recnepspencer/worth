@@ -12,6 +12,9 @@ use crate::domain_computation::primary_graph::{
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     /// Resolve an exact mandatory-review replay before current-state program materialization.
+    ///
+    /// An admission that holds no mandatory review binding has no review replay: this
+    /// returns `None` and the lane refuses it, typed, when it materializes.
     pub fn resolve_admitted_mandatory_review_replay<Operation, Input, Scope>(
         &self,
         admission: &mut WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
@@ -26,12 +29,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     where
         Input: Clone + Send + Sync + 'static,
     {
+        if admission.mandatory_review_binding().is_none() {
+            return Ok(None);
+        }
         let resolution = self
             .resolve_admitted_application_idempotency(admission, idempotency)
             .map_err(|denial| {
                 let mandatory = admission
                     .take_mandatory_review_binding()
-                    .expect("an admitted mandatory review retains its lifecycle binding")
+                    .expect("the mandatory review binding was checked above")
                     .into_mandatory();
                 (denial, mandatory)
             })?
@@ -49,7 +55,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         };
         let binding = admission
             .take_mandatory_review_binding()
-            .expect("an admitted mandatory review retains its lifecycle binding");
+            .expect("the mandatory review binding was checked above");
         Ok(Some(reviewed_outcome(outcome, binding)))
     }
 }

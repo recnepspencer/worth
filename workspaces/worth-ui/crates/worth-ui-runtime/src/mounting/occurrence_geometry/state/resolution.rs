@@ -81,7 +81,7 @@ pub(super) fn resolve_surface_geometry(
                 height: local.height(),
                 coordinate_space: UiMountedCoordinateSpace::HostSurface,
             })
-            .map_err(|_| UiMountedOccurrenceGeometryDenial::ParentCoordinateSpaceMismatch)?;
+            .map_err(UiMountedOccurrenceGeometryDenial::UnrepresentableBox)?;
             pending.push((child, translated));
         }
     }

@@ -1,6 +1,7 @@
 mod constraint;
 mod denial;
 mod dependency_collection;
+mod durable_dependencies;
 mod evaluation;
 mod evidence;
 mod field_observation;
@@ -11,6 +12,10 @@ mod plan;
 mod plan_validation;
 
 pub use denial::{RelationalAuthorizationObservationDenial, RelationalAuthorizationPlanDenial};
+pub use durable_dependencies::{
+    RelationalAuthorizationDependencyDenial, RelationalAuthorizationDurableDependencies,
+    MAXIMUM_AUTHORIZATION_DEPENDENCIES, MAXIMUM_AUTHORIZATION_DEPENDENCY_BYTES,
+};
 pub use evidence::{
     RelationalAuthorizationAdjacencyDependency, RelationalAuthorizationObservationCounters,
     RelationalAuthorizationObservationEvidence, RelationalAuthorizationObservationFreshness,

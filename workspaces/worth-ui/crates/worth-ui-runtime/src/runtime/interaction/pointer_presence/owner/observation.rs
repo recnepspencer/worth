@@ -21,7 +21,15 @@ impl UiPointerPresenceOwner {
             | UiHostObservationPayload::PointerButton {
                 pointer, position, ..
             } => (*pointer, *position),
-            _ => return Ok(None),
+            UiHostObservationPayload::Viewport { .. }
+            | UiHostObservationPayload::DeviceScale { .. }
+            | UiHostObservationPayload::Keyboard { .. }
+            | UiHostObservationPayload::WindowFocus { .. }
+            | UiHostObservationPayload::ScrollDelta { .. }
+            | UiHostObservationPayload::Clock { .. }
+            | UiHostObservationPayload::Tick { .. }
+            | UiHostObservationPayload::TextInput { .. }
+            | UiHostObservationPayload::ImeComposition { .. } => return Ok(None),
         };
         self.admit_pointer(pointer, kind)?;
         let resolved = UiPresentedPointerPosition::resolve_observation(

@@ -13,27 +13,54 @@
 use worth_ui_host_contract::UiMountedInstanceIdentity;
 
 impl super::UiRetainedPresentedFrame {
-    /// Move this frame's presented hit rows by a settled scroll pose's own
-    /// translations, reporting the spatial work that took.
+    /// Move this frame's presented hit rows by a scroll pose's own
+    /// translations, as `standing` says the pose stands, reporting the
+    /// spatial work that took.
     pub(in crate::mounting::retention) fn refresh_hit_scroll(
         &mut self,
         surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
-        translations: &[(
-            UiMountedInstanceIdentity,
-            crate::mounting::presentation::UiScrollPoseShift,
-        )],
+        translations: &[(UiMountedInstanceIdentity, crate::mounting::UiHitScrollMove)],
+        standing: crate::mounting::presented_hit_index::UiHitScrollStanding,
     ) -> crate::mounting::hit_test_work::UiHitTestSpatialWork {
-        let mut work = crate::mounting::hit_test_work::UiHitTestSpatialWork::default();
-        for (candidate, presentation) in self.current_presentations().collect::<Vec<_>>() {
-            if candidate != surface {
-                continue;
-            }
-            work.merge(
-                self.visual_regions
-                    .presented_hits
-                    .apply_scroll_translations(presentation.binding(), translations),
-            );
-        }
-        work
+        let Some(binding) = self
+            .displayed_for_surface(surface)
+            .map(|displayed| displayed.binding())
+        else {
+            return crate::mounting::hit_test_work::UiHitTestSpatialWork::default();
+        };
+        self.visual_regions
+            .presented_hits
+            .move_by_scroll(binding, translations, standing)
+    }
+
+    /// Whether this frame presents `surface` and holds a row that leads past
+    /// its committed pose. The frame's leads are not told apart by surface:
+    /// a frame presenting several surfaces answers for all of its rows.
+    pub(in crate::mounting::retention) fn holds_hit_scroll_leads(
+        &self,
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+    ) -> bool {
+        self.current_presentations()
+            .any(|(candidate, _)| candidate == surface)
+            && self.visual_regions.presented_hits.holds_scroll_leads()
+    }
+
+    /// Take the scroll leads `previous`, the frame the host shows `surface`
+    /// in, holds on the rows this successor reuses, because the successor
+    /// shows the same accepted sample.
+    pub(in crate::mounting::retention) fn inherit_hit_scroll_leads(
+        &mut self,
+        previous: &Self,
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+    ) {
+        let Some(binding) = self
+            .displayed_for_surface(surface)
+            .map(|displayed| displayed.binding())
+        else {
+            return;
+        };
+        self.visual_regions
+            .presented_hits
+            .inherit_scroll_leads(&previous.visual_regions.presented_hits, binding);
     }
 }

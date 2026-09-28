@@ -1,5 +1,7 @@
 # Prepare Preview From An Active Face Selection
 
+> **Internal engine surface.** This page documents `WorthQueryWorkspace` (`worth_query::facade`), the engine surface that `worth-ui-query-binding` uses. Application code uses `worth-query-decl` and `worth-query-host`; start with the [application front door](../../foundations/ordinary-application-front-door.md).
+
 ## What This Recipe Covers
 
 This recipe shows the shortest helper-driven path from one active-face
@@ -10,6 +12,12 @@ face and wants Query to:
 
 1. admit and progress that declaration
 2. classify the preview-facing next step
+
+The geometry family is the one declaration family that ships family-native
+helpers today, so this recipe uses its vocabulary. Any other family reaches
+the same result through the generic
+[Signal Compatibility Orchestration](../signal-compatibility-orchestration.md)
+lane that this helper lowers onto.
 
 ## When To Use It
 

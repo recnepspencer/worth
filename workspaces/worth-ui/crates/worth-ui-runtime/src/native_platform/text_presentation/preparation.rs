@@ -129,7 +129,7 @@ pub(crate) fn prepare_mounted_semantic_text<'work>(
 
 pub(crate) fn prepare_from_foreground_reuse<'work>(
     work: UiMountedPresentationWorkView<'work>,
-    receipts: &[UiMountedTextForegroundReuseReceipt],
+    receipts: &[&UiMountedTextForegroundReuseReceipt],
     basis: UiMountedTextForegroundPresentationBasis,
     resolve: impl Fn(
         worth_ui_host_contract::UiQualifiedTextLayoutIdentity,
@@ -318,6 +318,12 @@ fn paint_span_count(mechanics: &[MountedSemanticTextCommand<'_>]) -> usize {
         .sum()
 }
 
+/// Where [`layout_work_counts`] places the counts the resize trace reports.
+pub(super) const SHAPED_RUNS: usize = 9;
+pub(super) const SHAPED_SCALARS: usize = 10;
+pub(super) const EMITTED_LINES: usize = 13;
+pub(super) const POSITIONED_GLYPHS: usize = 15;
+
 fn layout_work_counts(mechanics: &[MountedSemanticTextCommand<'_>]) -> [u64; 17] {
     mechanics
         .iter()
@@ -370,3 +376,11 @@ mod retained_demand_tests;
 #[cfg(test)]
 #[path = "preparation/currentness_tests.rs"]
 mod currentness_tests;
+
+#[cfg(test)]
+#[path = "preparation/pin_continuity_tests.rs"]
+mod pin_continuity_tests;
+
+#[cfg(test)]
+#[path = "preparation/snapping_tests.rs"]
+mod snapping_tests;

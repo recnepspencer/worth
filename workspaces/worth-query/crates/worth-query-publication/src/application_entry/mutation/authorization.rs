@@ -236,6 +236,7 @@ where
                     .bind_application_source_expectation::<IntentBinding<Schema, Intent>, _>(
                         &mut admission,
                         source,
+                        request.request.intent.input(),
                     ),
                 WorthQueryMutationExpectedSource::ResultSet(source) => request
                     .request
@@ -243,6 +244,7 @@ where
                     .bind_application_result_set_expectation::<IntentBinding<Schema, Intent>, _>(
                         &mut admission,
                         source,
+                        request.request.intent.input(),
                     ),
             }
             .map_err(WorthQueryApplicationRequestMutationDenial::SourceExpectation)?);
@@ -264,7 +266,7 @@ where
         None => idempotency,
     };
     let idempotency = request.workflow_transition_identity.map_or(idempotency, |identity| {
-        worth_query_execution::facade::workflow_advance::WorthQueryWorkflowAdvanceAdapter::bind_operation_idempotency_raw(
+        worth_query_execution::publication_boundary::workflow_advance::WorthQueryWorkflowAdvanceAdapter::bind_operation_idempotency(
             idempotency,
             &identity,
         )
@@ -274,44 +276,4 @@ where
         admission,
         idempotency,
     })
-}
-
-pub(super) fn prepare_capability<Schema, Intent, SourcePreparation>(
-    request: &mut WorthQueryApplicationMutationRequestWithIdempotency<
-        '_,
-        '_,
-        '_,
-        '_,
-        Schema,
-        Intent,
-        SourcePreparation,
-    >,
-) -> Result<PreparedMutation<Schema, IntentBinding<Schema, Intent>>, WorthQueryApplicationRequestMutationDenial>
-where
-    Schema: ApplicationSchema,
-    Intent: ApplicationMutationIntent<Schema> + Clone,
-    IntentBinding<Schema, Intent>: ApplicationCapabilityMutationBinding<Schema>,
-    <IntentBinding<Schema, Intent> as ApplicationMutationBinding<Schema>>::ScopeBinding:
-        ApplicationMutationScopeResolution<
-            Schema,
-            <IntentBinding<Schema, Intent> as ApplicationMutationBinding<Schema>>::PrincipalIdentity,
-        >,
-    <IntentBinding<Schema, Intent> as ApplicationMutationBinding<Schema>>::Input:
-        Clone
-        +
-        worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest<
-            Schema,
-            <IntentBinding<Schema, Intent> as ApplicationCapabilityMutationBinding<
-                Schema,
-            >>::Capability,
-            Scope = MutationScope<Schema, IntentBinding<Schema, Intent>>,
-        >,
-{
-    let selected = request
-        .request
-        .application
-        .on_branch(request.request.branch)
-        .select()
-        .map_err(WorthQueryApplicationRequestMutationDenial::ProductSelection)?;
-    prepare_capability_selected(request, &selected)
 }

@@ -186,3 +186,19 @@ fn assert_repeatable_denial(world: &AggregateWorld, expected: DenialWorkExpectat
         assert_eq!(observed.work.field_reads(), expected.field_reads);
     }
 }
+
+#[test]
+fn a_fork_summarizes_only_its_own_contributions_after_its_parent_moves_on() {
+    let world = AggregateWorld::values([3, 4]);
+    let main = world.main_branch();
+    let (first, second) = (world.source("source-0"), world.source("source-1"));
+    let removed = world.contribution(second);
+    let fork = world.fork(main);
+    // The parent drops a contribution after the fork, then the fork commits
+    // last, so the fork reads at a version newer than the parent's removal.
+    world.remove_relation_on(main, removed);
+    world.replace_amount_on(fork, first, 5);
+
+    assert_eq!(world.observe_on(fork), Ok((9, 2)));
+    assert_eq!(world.observe_on(main), Ok((3, 1)));
+}

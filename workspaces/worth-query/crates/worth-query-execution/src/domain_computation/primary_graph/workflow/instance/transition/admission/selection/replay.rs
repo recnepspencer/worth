@@ -37,6 +37,7 @@ pub(in crate::domain_computation::primary_graph) fn select_settled_replay_transi
     compiled: &CompiledWorkflowDefinition,
     instance: EntityId,
     settled: SettledWorkflowTransition,
+    back_edge_iterations: &im::OrdMap<(EntityId, EntityId), u64>,
 ) -> Result<SelectedWorkflowTransitionReplay, WorthQueryApplicationAttemptDenial> {
     let node = compiled.node(settled.node()).ok_or_else(|| {
         denial(
@@ -45,7 +46,10 @@ pub(in crate::domain_computation::primary_graph) fn select_settled_replay_transi
         )
     })?;
     let (identity, identity_bytes) =
-        transition_identity(compiled, instance, node, settled.occurrence())?;
+        transition_identity(
+            compiled, instance, node, settled.occurrence(), back_edge_iterations,
+            settled.outcome() == worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome::NavigatedBack,
+        )?;
     Ok(SelectedWorkflowTransitionReplay {
         node_path: node.path().to_owned(),
         identity,

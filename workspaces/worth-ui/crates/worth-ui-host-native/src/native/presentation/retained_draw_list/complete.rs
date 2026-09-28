@@ -232,6 +232,8 @@ impl UiNativeRetainedDrawList {
             regions,
             identity_overlay,
             last_paint_attribution: None,
+            painted_target: 0,
+            repaint_target: None,
         };
         // Complete reconstruction starts from semantic command bounds, but the
         // accepted frame may already contain sampled motion. Keep the derived

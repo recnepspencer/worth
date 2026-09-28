@@ -4,8 +4,8 @@ use std::task::{Context, Poll, Waker};
 use std::time::{Duration, Instant, SystemTime};
 
 use bank_server::{
-    BankAuthenticationBoundary, BankAuthenticationConfiguration, BankIdentityRuntime,
-    BankPrincipalSeed, BankWorldSeed,
+    BankApprovalAuthenticationConfiguration, BankAuthenticationBoundary,
+    BankAuthenticationConfiguration, BankIdentityRuntime, BankPrincipalSeed, BankWorldSeed,
 };
 use worth_query_host::facade::admission::authenticated_principal::{
     WorthQueryAuthenticationAdapter, WorthQueryAuthenticationAdapterFailure,
@@ -68,6 +68,26 @@ impl BankTestRuntimeSeed for BankWorldSeed {
 
 pub fn runtime(seed: impl BankTestRuntimeSeed) -> TestIdentityWorld {
     let runtime = seed.install().expect("bank test runtime should install");
+    test_world(runtime)
+}
+
+#[allow(
+    dead_code,
+    reason = "shared support is compiled by test targets without the payment workflow court"
+)]
+pub fn runtime_with_approval_authentication(
+    seed: BankWorldSeed,
+    approval_authentication: BankApprovalAuthenticationConfiguration,
+) -> TestIdentityWorld {
+    let runtime = BankIdentityRuntime::install_world_with_approval_authentication(
+        seed,
+        approval_authentication,
+    )
+    .expect("bank test runtime with approval authentication should install");
+    test_world(runtime)
+}
+
+fn test_world(runtime: BankIdentityRuntime) -> TestIdentityWorld {
     let authentication = runtime
         .admit_authentication_adapter(
             authentication_configuration(),

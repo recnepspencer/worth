@@ -103,6 +103,7 @@ pub(super) fn container() -> ContainerTracks {
             cell: |cell| MosaicLayoutCell::at(cell.column() % 2, cell.column() / 2),
         }),
         scroll_owner: None,
+        portal_owner: None,
     }
 }
 
@@ -122,7 +123,7 @@ fn card_minimum(column: u16) -> u16 {
         match placed.region.horizontal() {
             Axis::FixedFromStart { .. } => from_start = from_start.max(left + extent - x),
             Axis::FixedFromEnd { .. } => from_end = from_end.max(x + width - left),
-            Axis::StretchBetween { .. } => {}
+            Axis::StretchBetween { .. } | Axis::BoundedStretch { .. } => {}
         }
     }
     from_start + CLEARANCE + from_end

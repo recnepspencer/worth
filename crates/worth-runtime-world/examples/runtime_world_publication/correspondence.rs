@@ -1,7 +1,6 @@
 use super::relational::{self, CargoRecords};
 use worth_foundational::facade::*;
 use worth_proof::TransitionOutcome;
-use worth_relational::facade::bridge::RuntimeBridgeRelationalSource;
 use worth_runtime_bridge::facade::*;
 use worth_signal::facade::{Aspect, NodeId, PartitionToken, SignalGraph};
 

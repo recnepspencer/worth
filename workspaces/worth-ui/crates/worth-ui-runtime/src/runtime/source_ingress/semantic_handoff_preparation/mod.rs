@@ -23,10 +23,13 @@ pub use authored_overlay_material::{
     WorthUiAuthoredPortalAnchorBinding,
 };
 pub(in crate::runtime::source_ingress) use declaration_material::prepare_declaration_material;
-pub(crate) use declaration_material::WorthUiPreparedDeclarationMaterial;
+pub(crate) use declaration_material::{
+    WorthUiDeclarationProjectionDenial, WorthUiPreparedDeclarationMaterial,
+};
+pub(crate) use denial::WorthUiSemanticHandoffPreparationReport;
 pub use denial::{
-    WorthUiSemanticHandoffPreparationDenial, WorthUiSemanticHandoffPreparationStop,
-    WorthUiServiceDeclarationAdmissionCause,
+    WorthUiSemanticHandoffPreparationCause, WorthUiSemanticHandoffPreparationDenial,
+    WorthUiSemanticHandoffPreparationStop, WorthUiServiceDeclarationAdmissionCause,
 };
 pub use evidence::{
     WorthUiAuthoredProjectionRequirement, WorthUiAuthoredServiceDeclaration,

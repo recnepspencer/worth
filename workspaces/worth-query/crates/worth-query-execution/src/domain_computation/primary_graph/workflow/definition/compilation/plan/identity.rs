@@ -1,7 +1,7 @@
 use super::super::super::codec::WorkflowNodeTag;
 use super::{
-    CompiledWorkflowConnection, CompiledWorkflowDefinition, CompiledWorkflowNode,
-    CompiledWorkflowNodeKind,
+    CompiledWorkflowAssessmentApplicability, CompiledWorkflowConnection,
+    CompiledWorkflowDefinition, CompiledWorkflowNode, CompiledWorkflowNodeKind,
 };
 
 impl CompiledWorkflowNode {
@@ -15,11 +15,13 @@ impl CompiledWorkflowNode {
             CompiledWorkflowNodeKind::Operation {
                 operation,
                 input_type,
+                binding,
                 requires_workflow_authority,
             } => vec![
                 WorkflowNodeTag::Operation.identity().to_owned(),
                 operation.clone(),
                 input_type.clone(),
+                binding.clone().unwrap_or_default(),
                 requires_workflow_authority.to_string(),
             ],
             CompiledWorkflowNodeKind::Assessment {
@@ -28,6 +30,7 @@ impl CompiledWorkflowNode {
                 result_type,
                 binding,
                 subject,
+                applicability,
             } => vec![
                 WorkflowNodeTag::Assessment.identity().to_owned(),
                 query.clone(),
@@ -35,6 +38,19 @@ impl CompiledWorkflowNode {
                 result_type.clone(),
                 binding.clone(),
                 subject.persistence_identity(),
+                match applicability {
+                    CompiledWorkflowAssessmentApplicability::Always => "always".to_owned(),
+                    CompiledWorkflowAssessmentApplicability::WhenRelatedRelationPresent {
+                        relation,
+                        from,
+                        to,
+                    } => format!(
+                        "related-relation-present:{}:{relation}:{}:{from}:{}:{to}",
+                        relation.len(),
+                        from.len(),
+                        to.len()
+                    ),
+                },
             ],
             CompiledWorkflowNodeKind::Condition {
                 query,

@@ -1,6 +1,8 @@
 //! Reversible text coverage mutations consumed by presentation transaction undo.
 use super::*;
-use crate::native::presentation::appearance::text_foreground::UiNativeFinalizedTextForeground;
+use crate::native::presentation::appearance::text_foreground::{
+    UiNativeFinalizedTextForeground, UiNativeTextForegroundFinalizationDenial,
+};
 use crate::native::presentation::retained_order::UiNativeRetainedOrderSnapshot;
 use crate::native::text_atlas::UiNativeTextAtlas;
 
@@ -150,6 +152,57 @@ impl UiNativeAppearanceRetained {
         let undo = self.command_undo(key)?;
         self.remove(key)?;
         Ok(undo)
+    }
+
+    /// Carry text coverage onto a successor target of `extent`: the same
+    /// paint, clipped anew. Damage bounds and their index follow, and nothing
+    /// is recorded as pending damage because the successor target is
+    /// repainted whole. A refusal leaves the list to reconstruction.
+    pub(crate) fn rebase_text_coverage(
+        &mut self,
+        extent: [u32; 2],
+    ) -> Result<(), UiNativeAppearanceRetainedDenial> {
+        let rebased = self
+            .commands
+            .iter()
+            .filter_map(|(key, command)| match command {
+                UiNativeAppearanceCommand::TextForeground(text) => Some((*key, text)),
+                _ => None,
+            })
+            .map(|(key, text)| {
+                text.coverage_at(extent)
+                    .map(|coverage| (key, coverage))
+                    .map_err(|denial| match denial {
+                        UiNativeTextForegroundFinalizationDenial::CoverageCapacity => {
+                            UiNativeAppearanceRetainedDenial::DamageCapacityExceeded
+                        }
+                        _ => UiNativeAppearanceRetainedDenial::Geometry(
+                            UiNativeGeometryDenial::CoordinateOverflow,
+                        ),
+                    })
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        for (key, coverage) in rebased {
+            let Some(UiNativeAppearanceCommand::TextForeground(text)) = self.commands.get_mut(&key)
+            else {
+                return Err(UiNativeAppearanceRetainedDenial::MissingIdentity);
+            };
+            text.rebase_coverage(coverage);
+            let damage = text
+                .damage_bounds(self.scale)
+                .map_err(UiNativeAppearanceRetainedDenial::Geometry)?;
+            let previous = self.damage_bounds.get(&key).copied();
+            self.replace_damage_index(key, previous, damage)?;
+            match damage {
+                Some(rect) => {
+                    self.damage_bounds.insert(key, rect);
+                }
+                None => {
+                    self.damage_bounds.remove(&key);
+                }
+            }
+        }
+        Ok(())
     }
 
     fn command_undo(

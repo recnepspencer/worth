@@ -37,6 +37,18 @@ pub struct WorthQueryInstalledPackageIndexDenial {
     subject: String,
 }
 
+impl std::fmt::Display for WorthQueryInstalledPackageIndexDenial {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            formatter,
+            "installed package index denied: {:?} ({})",
+            self.kind, self.subject
+        )
+    }
+}
+
+impl std::error::Error for WorthQueryInstalledPackageIndexDenial {}
+
 impl WorthQueryInstalledPackageIndexDenial {
     pub(crate) fn new(
         kind: WorthQueryInstalledPackageIndexDenialKind,

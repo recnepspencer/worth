@@ -23,9 +23,40 @@ integration belongs in the application entry band.
 
 ## Application Program Meaning
 
+**Writing an application?** Start with [Build an Application](../../../../docs/build-an-application.md). Its
+sections 3 and 6 show features, the program, and workflow authoring with real
+code.
+
+A program is built from features. Each `ApplicationFeature` owns actions,
+declared with an `ApplicationFeatureSpec`:
+
+```rust,ignore
+use worth_query_decl::facade::application_program::*;
+
+impl ApplicationProgramDefinition<MySchema> for MyProgram {
+    type Contributions = (MyContribution,);
+    type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
+    type Rules = ApplicationRuleLeaf;
+    const IDENTITY: ApplicationProgramIdentity =
+        ApplicationProgramIdentity::new("example.program.v1");
+
+    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
+        vec![ApplicationFeatureSpec::root::<MySchema, MyFeature>()
+            .mutation::<MyMutationBinding>()
+            .operation::<MyOperation>()
+            .finish()]
+    }
+}
+
+let validated = ApplicationProgramAuthoring::<MySchema, MyProgram>::begin()
+    .validated_program()?;          // ValidatedApplicationProgram<MySchema, MyProgram>
+let revision = validated.revision(); // ApplicationProgramRevision
+```
+
 `ApplicationProgramDefinition<Schema>` owns canonical authored program meaning.
-Validation produces a declaration-owned `ApplicationProgramRevision` and a
-deterministic versioned description. The revision includes feature/composition
+Validation produces a `ValidatedApplicationProgram`, whose `revision()` is the
+declaration-owned `ApplicationProgramRevision`, and a deterministic versioned
+description. The revision includes feature/composition
 identity, ports and connections, action contracts, rule owner/scope/version,
 output lineage, derived-resource posture, and continuation/effect meaning.
 Rust file names, registration order, diagnostics, and generated text do not
@@ -38,10 +69,28 @@ migration preparation, or recovery authority. Installation compares canonical
 meaning and returns typed support, migration, and custody requirements; the
 execution owner decides whether one exact branch can adopt the target.
 
+## Workflow Definitions
+
+`application_program` also declares authored workflow definitions.
+`ApplicationWorkflowDefinitionBuilder` builds a definition from nodes,
+optionally with reusable components (`ApplicationWorkflowComponentBuilder`),
+and validation produces a `ValidatedWorkflowDefinition`. The
+`worth_query_workflow!` macro is shorthand for the same builder. Hosts
+publish, discover, start, and progress those definitions through
+`worth-query-host`; the
+[authored workflow example](../worth-query-certification/examples/authored_workflow/main.rs)
+shows the complete journey, and the
+[workflows guide](../worth-query/docs/foundations/workflows.md) documents it
+step by step.
+
 ## Related Docs
 
+- [Build an Application](../../../../docs/build-an-application.md): the centerpiece guide
+- [Programs And Adoption](../worth-query/docs/foundations/programs-and-adoption.md)
+- [Workflows](../worth-query/docs/foundations/workflows.md)
 - [Ordinary Application Front Door](../worth-query/docs/foundations/ordinary-application-front-door.md)
 - [Branches And Previews](../worth-query/docs/foundations/branches-and-previews.md)
 - [WORTH Query Orientation](../worth-query/docs/AI_README.md)
-- [Declarative Query Experience](../worth-query/docs/capabilities/declarative-query-experience.md)
-- [Query Expressions And Result Shapes](../worth-query/docs/authoring/query-expressions-and-result-shapes.md)
+- [Feature Capsule Authoring](../worth-query/docs/authoring/feature-capsule-authoring.md)
+- [Read Composition](../worth-query/docs/authoring/read-composition.md)
+- [Query Docs Index](../worth-query/docs/README.md)

@@ -28,6 +28,7 @@ pub(in crate::domain_computation::primary_graph) use pending_operation::WorthQue
 mod application_binding_scope;
 mod output_producer_installation;
 mod output_readiness;
+mod temporal_binding_validation;
 type InstalledOutputProducers<Schema> =
     super::super::application_contribution::WorthQueryInstalledApplicationProducerRegistry<Schema>;
 struct ApplicationConditionalBindingScope {
@@ -38,6 +39,10 @@ struct ApplicationConditionalBindingScope {
     initial_readiness_count: usize,
     required_producers: Vec<String>,
 }
+/// Builder for an application runtime with conditional operations.
+///
+/// Bind each temporal operation and output readiness, then `publish` to get
+/// the runtime. Nothing is visible until publication succeeds.
 pub struct WorthQueryConditionalApplicationRuntimeInstallation<Schema> {
     publication: ApplicationRuntimePublication<Schema>,
     output_producers: InstalledOutputProducers<Schema>,
@@ -343,55 +348,5 @@ where
             self.output_readiness,
             &self.output_producers,
         )
-    }
-    fn validate_temporal_binding<
-        ApplicationOperation,
-        Input,
-        D,
-        O,
-        F,
-        Node,
-        Provider,
-        Clock,
-        Source,
-        Query,
-        Parameters,
-        QueryResult,
-        Scope,
-        Projector,
-    >(
-        &self,
-        binding: &WorthQueryInstalledTemporalConditionalOperation<
-            Schema,
-            ApplicationOperation,
-            Input,
-            D,
-            O,
-            F,
-            Node,
-            Provider,
-            Clock,
-            Source,
-            Query,
-            Parameters,
-            QueryResult,
-            Scope,
-            Projector,
-        >,
-    ) -> Result<(), WorthQueryConditionalRuntimeInstallationDenial>
-    where
-        Provider: WorthQueryHostConditionalPredicateProvider<Node>,
-        Clock: WorthQueryNamedClock,
-        Source: WorthQueryNamedClockSource<Clock>,
-        Projector: WorthQueryTemporalIntentProjector<Node, Clock, QueryResult, Input>,
-    {
-        let index = self.publication.runtime.installed_packages();
-        index
-            .validate_conditional_application_node(binding.clocked_node().provider().node())
-            .map_err(|denial| foreign_binding_denial(denial.subject()))?;
-        self.publication
-            .installed_schema
-            .validate_installed_query(binding.query())
-            .map_err(|denial| foreign_binding_denial(denial.subject()))
     }
 }

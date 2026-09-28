@@ -4,6 +4,9 @@ use crate::native::UiNativePresentationAccess;
 mod operation_bindings;
 #[path = "pipeline/shaders.rs"]
 mod shaders;
+#[cfg(test)]
+#[path = "pipeline/stamp_tests.rs"]
+mod stamp_tests;
 use shaders::{
     ALPHA_GLYPH_SHADER, ANALYTIC_SURFACE_SHADER, COLOR_GLYPH_SHADER, RASTER_SHADER,
     RETAINED_TO_SURFACE_SHADER,
@@ -267,11 +270,54 @@ pub(super) fn retained_transfer(
     (pipeline, bind_group)
 }
 
+/// The resize trace's frame stamp for `frame`, bound as a transfer source.
+///
+/// The transfer shader loads its source at each surface pixel, so the stamp
+/// texture drawn under a scissor at the origin lands pixel for pixel.
+pub(super) fn stamp_transfer(
+    device: &wgpu::Device,
+    queue: &wgpu::Queue,
+    pipeline: &wgpu::RenderPipeline,
+    frame: u64,
+) -> wgpu::BindGroup {
+    use wgpu::util::DeviceExt;
+    let [width, height] = crate::native::resize_trace::STAMP_EXTENT;
+    let texture = device.create_texture_with_data(
+        queue,
+        &wgpu::TextureDescriptor {
+            label: Some("worth-ui-resize-trace-stamp"),
+            size: wgpu::Extent3d {
+                width,
+                height,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: crate::native::graphics::qualified_target_format(),
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            view_formats: &[],
+        },
+        wgpu::util::TextureDataOrder::LayerMajor,
+        &crate::native::resize_trace::stamp_texels(frame),
+    );
+    let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+    device.create_bind_group(&wgpu::BindGroupDescriptor {
+        label: Some("worth-ui-resize-trace-stamp-bind-group"),
+        layout: &pipeline.get_bind_group_layout(0),
+        entries: &[wgpu::BindGroupEntry {
+            binding: 0,
+            resource: wgpu::BindingResource::TextureView(&view),
+        }],
+    })
+}
+
 pub(super) fn draw_retained_to_surface(
     encoder: &mut wgpu::CommandEncoder,
     target: &wgpu::TextureView,
     pipeline: &wgpu::RenderPipeline,
     bind_group: &wgpu::BindGroup,
+    stamp: Option<(&wgpu::BindGroup, [u32; 2])>,
 ) {
     let attachments = [Some(wgpu::RenderPassColorAttachment {
         view: target,
@@ -290,4 +336,10 @@ pub(super) fn draw_retained_to_surface(
     pass.set_pipeline(pipeline);
     pass.set_bind_group(0, bind_group, &[]);
     pass.draw(0..3, 0..1);
+    if let Some((stamp, extent)) = stamp {
+        let [width, height] = crate::native::resize_trace::STAMP_EXTENT;
+        pass.set_scissor_rect(0, 0, width.min(extent[0]), height.min(extent[1]));
+        pass.set_bind_group(0, stamp, &[]);
+        pass.draw(0..3, 0..1);
+    }
 }

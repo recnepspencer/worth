@@ -5,20 +5,19 @@ use worth_query_host::facade::application_entry::{
 };
 use worth_query_host::facade::application_installation::WorthQueryProgramOwner;
 
-use crate::bounded_dimension_model::host::{publish_on_first_program, SEED_DIMENSION};
-use crate::bounded_dimension_model::operator_identity::{authenticate_operator, request_scope};
-use crate::bounded_dimension_model::programs::ChangedFeatureDimensionProgram;
-use crate::bounded_dimension_model::readback::read_dimension;
+use crate::document_retention_model::host::{publish_on_first_program, SEED_RETENTION};
+use crate::document_retention_model::operator_identity::{authenticate_operator, request_scope};
+use crate::document_retention_model::programs::ChangedFeatureRetentionProgram;
+use crate::document_retention_model::readback::read_retention;
 
 #[test]
 fn migration_assessment_impact_is_inspectable_and_stops_before_selection() {
     let host = publish_on_first_program();
     let branch = host.current_world();
-    let target = host
-        .supported_program::<ChangedFeatureDimensionProgram>()
+    let target = *host
+        .supported_program::<ChangedFeatureRetentionProgram>()
         .expect("the changed-feature target is rostered")
-        .owned_revision()
-        .clone();
+        .owned_revision();
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let programs = host
@@ -35,11 +34,7 @@ fn migration_assessment_impact_is_inspectable_and_stops_before_selection() {
             == worth_query_host::facade::declaration::application_program::ApplicationSemanticFamily::Features
     }));
 
-    let denial = match programs
-        .adopt(&target)
-        .requirements(&requirements)
-        .prepare(0)
-    {
+    let denial = match programs.adopt(&requirements).prepare(0) {
         Ok(_) => panic!("migration assessment must fail before zero-budget selection"),
         Err(denial) => denial,
     };
@@ -49,5 +44,5 @@ fn migration_assessment_impact_is_inspectable_and_stops_before_selection() {
             worth_query_host::facade::primary_graph::WorthQueryBranchAdoptionPreparationDenial::MigrationAssessmentRequired(_)
         )
     ));
-    assert_eq!(read_dimension(host.runtime(), branch), SEED_DIMENSION);
+    assert_eq!(read_retention(host.runtime(), branch), SEED_RETENTION);
 }

@@ -1,5 +1,7 @@
 # Reads, Observation, and Materialization
 
+> **Internal engine surface.** This page documents `WorthQueryWorkspace` (`worth_query::facade`), the engine surface that `worth-ui-query-binding` uses. Application code uses `worth-query-decl` and `worth-query-host`; start with the [application front door](../foundations/ordinary-application-front-door.md).
+
 ## What This Feature Is
 
 These are the primary data-consumption surfaces for retained runtime handles.

@@ -15,16 +15,6 @@ pub mod config {
         SnapshotReleasePolicy, StorageLayoutConfig, VisibilityCachePolicy,
     };
 }
-pub mod grouped_truth {
-    pub use crate::grouped_truth::{
-        encode_snapshot_aspect_read_value, materialize_relational_authoritative_row_set,
-        project_relational_grouped_truth, GroupedProjectionContract,
-        RelationalAuthoritativeRowArtifact, RelationalAuthoritativeRowSetArtifact,
-        RelationalGroupedMemberRow, RelationalGroupedProjectionArtifact,
-        RelationalGroupedProjectionDigest, RelationalGroupedTruthError,
-        RelationalProjectedAspectValueSet, RelationalRowIdentity, RelationalRowSetDigest,
-    };
-}
 pub mod commit_strategies {
     pub use crate::commit_strategies::data::{
         CanonicalStrategyCommitRequest, CanonicalStrategyInputArtifact,
@@ -61,8 +51,8 @@ pub mod commit_strategies {
     pub use crate::commit_strategies::{FrozenCommitStrategyRegistry, StrategyExecutionError};
 }
 
-#[path = "facade/bridge.rs"]
-pub mod bridge;
+#[path = "facade/change_source.rs"]
+pub mod change_source;
 
 pub mod diagnostics {
     pub use crate::diagnostics::data::RelationalDiagnosticsFacade;
@@ -243,9 +233,10 @@ pub mod runtime {
     pub use crate::visibility::materialization::read_records::{
         AdjacencyTruthReadLimitExceeded, BoundedAdjacencyTruthRead, BoundedEntityKindTruthRead,
         BoundedFrontierAdjacencyTruthRead, BoundedFrontierFieldEqualityTruthRead,
-        EntityKindTruthReadLimitExceeded, FrontierAdjacencyTruthReadLimitExceeded,
-        FrontierFieldEqualityTruthReadLimitExceeded, ProjectionAspectFilter,
-        ProjectionAspectFilterMode, ProjectionAspectRequirement, ProjectionAspectScope,
+        BoundedRelationKindTruthRead, EntityKindTruthReadLimitExceeded,
+        FrontierAdjacencyTruthReadLimitExceeded, FrontierFieldEqualityTruthReadLimitExceeded,
+        ProjectionAspectFilter, ProjectionAspectFilterMode, ProjectionAspectRequirement,
+        ProjectionAspectScope, RelationKindTruthReadDenial, RelationKindTruthReadLimitExceeded,
     };
 }
 

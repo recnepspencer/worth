@@ -312,7 +312,9 @@ impl<'runtime> VisibilityReadContext<'runtime> {
             .expect("internal historical projection requires retained MVCC coverage")
     }
 
-    pub(crate) fn try_project_historical_version(
+    /// Projects the exact state at `version_id` on the branch that committed
+    /// it, so a fork's commit is read from the fork's own root.
+    pub fn try_project_historical_version(
         &self,
         version_id: VersionId,
     ) -> Result<VisibilityProjectionView<'runtime>, crate::branch::RelationalBranchBasisDenial>

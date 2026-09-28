@@ -77,7 +77,15 @@ pub(crate) fn region_state_slot_is_legal(
                 );
             }
         }
-        _ => {
+        MosaicStateSlotKind::SplitterPosition
+        | MosaicStateSlotKind::ActiveStackItem
+        | MosaicStateSlotKind::RegionVisibility
+        | MosaicStateSlotKind::CollapsedPosture
+        | MosaicStateSlotKind::FocusedRegion
+        | MosaicStateSlotKind::ActivePrimarySurface
+        | MosaicStateSlotKind::ActiveAuxiliarySurface
+        | MosaicStateSlotKind::SelectionToken
+        | MosaicStateSlotKind::DraftInputState => {
             if matches!(scroll_ownership, MosaicScrollOwnership::SurfaceOwned)
                 && matches!(state_slot.kind(), MosaicStateSlotKind::FocusedRegion)
             {
@@ -111,7 +119,17 @@ pub(crate) fn mount_state_slot_is_legal(
         {
             Err(WorthUiStructuralLegalityDiagnosticCode::IllegalMountStateSlotKind)
         }
-        _ => Ok(()),
+        MosaicStateSlotKind::SplitterPosition
+        | MosaicStateSlotKind::ActiveStackItem
+        | MosaicStateSlotKind::RegionVisibility
+        | MosaicStateSlotKind::CollapsedPosture
+        | MosaicStateSlotKind::PinnedPosture
+        | MosaicStateSlotKind::ScrollPosition
+        | MosaicStateSlotKind::FocusedRegion
+        | MosaicStateSlotKind::ActivePrimarySurface
+        | MosaicStateSlotKind::ActiveAuxiliarySurface
+        | MosaicStateSlotKind::SelectionToken
+        | MosaicStateSlotKind::DraftInputState => Ok(()),
     }
 }
 
@@ -123,7 +141,9 @@ fn placement_source_matches_surface(
         MosaicPlacementSource::SurfaceClass(surface_class) => {
             surface_class == surface.placement_class()
         }
-        _ => false,
+        MosaicPlacementSource::RegionRole(_)
+        | MosaicPlacementSource::PluginImperativeMutationForDiagnostics
+        | MosaicPlacementSource::MissingForDiagnostics => false,
     }
 }
 
@@ -134,6 +154,7 @@ fn placement_target_matches_region(
     match target {
         MosaicPlacementTarget::RegionRole(target_role)
         | MosaicPlacementTarget::RegionStack(target_role) => target_role == region_role,
-        _ => false,
+        MosaicPlacementTarget::PluginImperativeMutationForDiagnostics
+        | MosaicPlacementTarget::MissingForDiagnostics => false,
     }
 }

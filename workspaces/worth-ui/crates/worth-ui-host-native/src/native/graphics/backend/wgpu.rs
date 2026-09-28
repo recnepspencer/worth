@@ -236,7 +236,10 @@ fn select_adapter(
         })
         .collect::<Vec<_>>();
     adapter_selection::select_eligible_adapter(observed, SURFACE.cpu_adapter)
-        .map(|(_, adapter)| adapter)
+        .map(|(candidate, adapter)| {
+            crate::native::resize_trace::adapter(&candidate.name, &candidate.driver_info);
+            adapter
+        })
         .ok_or(UiNativeGraphicsPortDenial::Adapter)
 }
 
@@ -266,6 +269,7 @@ fn surface_configuration(extent: [u32; 2]) -> wgpu::SurfaceConfiguration {
 }
 
 fn retained_target(device: &wgpu::Device, extent: [u32; 2]) -> wgpu::Texture {
+    crate::native::resize_trace::target(extent);
     device.create_texture(&wgpu::TextureDescriptor {
         label: Some("worth-ui-retained-presentation-target"),
         size: wgpu::Extent3d {

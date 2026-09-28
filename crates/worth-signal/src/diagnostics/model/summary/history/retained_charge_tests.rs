@@ -154,7 +154,7 @@ fn recorded_summary_append_admits_exact_bytes_and_work_then_evicts_with_live_cus
 }
 
 fn two_frame_charge(old_charge: Charge, incoming: &ExecutionHistorySummary) -> Charge {
-    let charge = old_charge
+    old_charge
         .checked_sub(ordered_index_charge::<u64, Arc<ExecutionHistorySummary>>(1).unwrap())
         .unwrap()
         .checked_add(ordered_index_charge::<u64, Arc<ExecutionHistorySummary>>(2).unwrap())
@@ -162,6 +162,5 @@ fn two_frame_charge(old_charge: Charge, incoming: &ExecutionHistorySummary) -> C
         .checked_add(arc_allocation_charge::<ExecutionHistorySummary>().unwrap())
         .unwrap()
         .checked_add(incoming.retained_heap_charge(&mut Work::new(1000)).unwrap())
-        .unwrap();
-    charge
+        .unwrap()
 }

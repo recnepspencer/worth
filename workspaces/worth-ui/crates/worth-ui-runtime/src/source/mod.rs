@@ -105,7 +105,8 @@ pub(crate) use structured::{
     WorthUiLegallyStructuredArtifactInputModule, WorthUiLegallyStructuredArtifactInputNode,
     WorthUiLegallyStructuredArtifactInputSurfaceNode,
     WorthUiLegallyStructuredArtifactInputThemeTokenNode, WorthUiMosaicMountFacts,
-    WorthUiMosaicRegionFacts, WorthUiMosaicStructureFacts,
+    WorthUiMosaicRegionFacts, WorthUiMosaicSizingContractProjectionDenial,
+    WorthUiMosaicStructureFacts,
 };
 
 #[cfg(test)]

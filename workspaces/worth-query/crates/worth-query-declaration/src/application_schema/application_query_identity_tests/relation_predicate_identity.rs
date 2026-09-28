@@ -12,7 +12,7 @@ fn relation_predicate_changes_definition_identity() {
         ForwardResultTraversal,
         ManyResults,
     >::forward_many("related", relation_reference());
-    let unfiltered = relation_definition(relation.clone());
+    let unfiltered = relation_definition(relation);
     let filtered = filtered_relation_definition(relation);
 
     assert_ne!(unfiltered.canonical_basis(), filtered.canonical_basis());

@@ -40,6 +40,7 @@ type Source<Schema, Demand> =
 type Query<Schema, Demand> = <Source<Schema, Demand> as ApplicationQueryBinding<Schema>>::Query;
 type Value<Schema, Demand> = <<Source<Schema, Demand> as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value;
 
+/// Drives a mutation's required program outputs to settlement.
 pub struct WorthQueryApplicationProgramOutputHandle<'application, Schema, Program, Root>
 where
     Schema: ApplicationSchema,

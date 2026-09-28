@@ -7,12 +7,10 @@ use worth_query_declaration::facade::{
     },
     application_program::ApplicationWorkflowSpec,
 };
-use worth_query_execution::facade::{
-    application_installation::WorthQueryWorkflowApplicationRuntime,
-    workflow_proposal::{
-        PreparedWorkflowProposal, PublishedWorkflowInstanceRef, WorkflowProposalOutcome,
-        WorkflowProposalPreparationDenial, WorthQueryWorkflowProposalAdapter,
-    },
+use worth_query_execution::facade::application_installation::WorthQueryWorkflowVocabulary;
+use worth_query_execution::publication_boundary::workflow_proposal::{
+    PreparedWorkflowProposal, PublishedWorkflowInstanceRef, WorkflowProposalOutcome,
+    WorkflowProposalPreparationDenial, WorthQueryWorkflowProposalAdapter,
 };
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -29,6 +27,7 @@ type MutationOperation<Schema, Intent> =
 type MutationInput<Schema, Intent> =
     <IntentBinding<Schema, Intent> as ApplicationMutationBinding<Schema>>::Input;
 
+/// The kind of a `WorthQueryWorkflowProposalPreparationDenial`.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryWorkflowProposalPreparationDenialKind {
     RuntimeMismatch,
@@ -38,6 +37,8 @@ pub enum WorthQueryWorkflowProposalPreparationDenialKind {
     InstanceBranchMismatch,
 }
 
+/// Why `prepare_workflow_proposal` refused. `InstanceBranchMismatch` means the instance is
+/// on another branch than the request.
 #[derive(Debug)]
 pub enum WorthQueryWorkflowProposalPreparationDenial {
     RuntimeMismatch,
@@ -98,17 +99,18 @@ where
             Scope = MutationScope<Schema, IntentBinding<Schema, Intent>>,
         >,
 {
-    pub fn prepare_workflow_proposal<Spec, Program>(
+    pub fn prepare_workflow_proposal<'workflow, Spec>(
         mut self,
-        workflow: &WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>,
+        workflow: impl Into<WorthQueryWorkflowVocabulary<'workflow, Schema, Spec>>,
         instance: PublishedWorkflowInstanceRef,
     ) -> Result<WorthQueryWorkflowProposalRequest<'application, Schema, MutationOperation<Schema, Intent>, MutationInput<Schema, Intent>, MutationScope<Schema, IntentBinding<Schema, Intent>>>, WorthQueryWorkflowProposalPreparationDenial>
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
+        let workflow = workflow.into();
         let application = self.application_runtime();
         let request_branch = self.product_branch();
-        if !std::ptr::eq(application, workflow.program_runtime().runtime()) {
+        if !std::ptr::eq(application, workflow.runtime()) {
             return Err(WorthQueryWorkflowProposalPreparationDenial::RuntimeMismatch);
         }
         let selected = application.on_branch(self.product_branch()).select()
@@ -133,7 +135,7 @@ where
         }
         let prepared = WorthQueryWorkflowProposalAdapter::prepare(
             &selected,
-            workflow.workflow_spec(),
+            workflow.workflow_spec_for(&selected),
             instance,
             mutation.admission,
             &mutation.idempotency,
@@ -148,6 +150,7 @@ where
     }
 }
 
+/// A prepared workflow proposal. `execute` attempts its commit.
 pub struct WorthQueryWorkflowProposalRequest<'application, Schema, Operation, Input, Scope>
 where
     Schema: ApplicationSchema,

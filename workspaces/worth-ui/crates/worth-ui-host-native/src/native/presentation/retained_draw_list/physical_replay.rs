@@ -28,6 +28,109 @@ impl UiNativeRetainedDrawList {
         Ok(())
     }
 
+    /// Record that a complete presentation painted this list into `target`.
+    pub(in crate::native::presentation) fn paint_target(&mut self, target: u64) {
+        self.painted_target = target;
+        self.repaint_target = None;
+    }
+
+    pub(crate) const fn owes_repaint(&self, target: u64) -> bool {
+        self.painted_target != target
+    }
+
+    pub(in crate::native::presentation) const fn repaint_owed(&self) -> bool {
+        self.repaint_target.is_some()
+    }
+
+    /// Carry retained coverage onto the surface's current target. A successor
+    /// target of the same scale starts empty: coverage is clipped anew to its
+    /// extent and the list owes it a whole repaint until a presentation into
+    /// it is submitted. A refusal (a scale change) leaves the list to
+    /// reconstruction, which discards it.
+    pub(in crate::native::presentation) fn prepare_target(
+        &mut self,
+        basis: UiNativeRasterBasis,
+        target: u64,
+    ) -> Result<(), Denial> {
+        if !self.owes_repaint(target) {
+            self.repaint_target = None;
+            return Ok(());
+        }
+        self.rebase_physical_coverage(basis)?;
+        self.repaint_target = Some(target);
+        Ok(())
+    }
+
+    /// A presentation that repainted a successor target was submitted,
+    /// completed or pending. An abandoned pending presentation requires
+    /// recovery, which discards the list.
+    pub(in crate::native::presentation) fn settle_target(&mut self) {
+        if let Some(target) = self.repaint_target.take() {
+            self.painted_target = target;
+        }
+    }
+
+    fn rebase_physical_coverage(&mut self, basis: UiNativeRasterBasis) -> Result<(), Denial> {
+        let coverage = self
+            .physical_coverage
+            .as_ref()
+            .ok_or(Denial::CommandMismatch)?;
+        if coverage.basis == basis {
+            return Ok(());
+        }
+        if coverage.basis.scale_factor() != basis.scale_factor() {
+            return Err(Denial::AffinityMismatch);
+        }
+        self.clip_physical_coverage(basis)
+    }
+
+    /// Clip coverage anew to the extent it is measured in. A superseded
+    /// predecessor staged before the list carried onto a successor target
+    /// rolls back coverage clipped to the earlier target's extent.
+    pub(in crate::native::presentation) fn reclip_physical_coverage(
+        &mut self,
+    ) -> Result<(), Denial> {
+        let basis = self
+            .physical_coverage
+            .as_ref()
+            .ok_or(Denial::CommandMismatch)?
+            .basis;
+        self.clip_physical_coverage(basis)
+    }
+
+    fn clip_physical_coverage(&mut self, basis: UiNativeRasterBasis) -> Result<(), Denial> {
+        let coverage = self
+            .physical_coverage
+            .as_ref()
+            .ok_or(Denial::CommandMismatch)?;
+        let mut rebased = UiNativePhysicalCoverage::new(basis);
+        for command in self.commands.as_map().values() {
+            let identity = command.identity();
+            // Glyph images are placed by the atlas, not the target; every
+            // other command's images are its visible bounds in the target.
+            let base = match command {
+                UiMountedPaintCommand::SemanticText { .. } => coverage
+                    .get(identity)
+                    .ok_or(Denial::CommandMismatch)?
+                    .base
+                    .clone(),
+                _ => sampled_images(command, &[], None, basis)?,
+            };
+            let current = sampled_images(command, &base, self.sample_override(identity), basis)?;
+            rebased.replace(
+                identity,
+                Some(UiNativeCommandImageCoverage { base, current }),
+            )?;
+        }
+        if let Some((_, appearance)) = self.staged_appearance.as_mut() {
+            appearance
+                .rebase_text_coverage(basis.extent())
+                .map_err(|_| Denial::CommandMismatch)?;
+        }
+        self.physical_coverage = Some(rebased);
+        Ok(())
+    }
+
     pub(in crate::native::presentation) fn refresh_physical_delta(
         &mut self,
         delta: &worth_ui_host_contract::UiMountedPresentationDelta,

@@ -93,7 +93,7 @@ mod tests {
     fn raw_string_helpers_expose_raw_value_without_resolution() {
         let value = InternedString::raw("name");
 
-        assert_eq!(value.as_raw_str(), Some("name".into()));
+        assert_eq!(value.as_raw_str(), Some("name"));
         assert_eq!(value.as_symbol(), None);
         assert!(value.raw_equals("name"));
         assert_eq!(value.canonical_text().as_ref(), "name");
@@ -107,13 +107,13 @@ mod tests {
 
         assert_eq!(value.as_raw_str(), None);
         assert_eq!(value.as_symbol(), Some(symbol));
-        assert_eq!(value.resolve_with_interner(&interner), Some("name".into()));
+        assert_eq!(value.resolve_with_interner(&interner), Some("name"));
         assert_eq!(value.canonical_text().as_ref(), "symbol:1");
         assert_eq!(
             value
                 .resolve_text(|candidate| Some(if candidate == symbol { "name" } else { "other" }))
                 .as_deref(),
-            Some("name".into())
+            Some("name")
         );
         assert_eq!(value.intern_with(&mut interner), symbol);
     }
@@ -131,6 +131,6 @@ mod tests {
 
         let symbol = value.intern_with(&mut interner);
 
-        assert_eq!(interner.resolve(symbol), Some("name".into()));
+        assert_eq!(interner.resolve(symbol), Some("name"));
     }
 }

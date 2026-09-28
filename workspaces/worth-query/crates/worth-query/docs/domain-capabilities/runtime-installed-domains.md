@@ -1,5 +1,7 @@
 # Runtime-Installed Domains And Operations
 
+> **Internal engine surface.** This page documents `WorthQueryWorkspace` (`worth_query::facade`), the engine surface that `worth-ui-query-binding` uses. Application code uses `worth-query-decl` and `worth-query-host`; start with the [application front door](../foundations/ordinary-application-front-door.md).
+
 ## What This Feature Is
 
 Runtime-installed domains let a domain declare stable Query operations once
@@ -183,18 +185,18 @@ visible:
 use worth_query::facade::{domain, read};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-struct GeometryDomain;
+struct CatalogDomain;
 
 #[derive(Clone, Copy, Debug)]
-struct ReadVertex;
+struct ReadRecord;
 
 #[derive(Clone, Copy, Debug)]
 struct ReadFamily;
 
-impl domain::WorthQueryExecutableDomainOperation<GeometryDomain, ReadFamily>
-    for ReadVertex
+impl domain::WorthQueryExecutableDomainOperation<CatalogDomain, ReadFamily>
+    for ReadRecord
 {
-    type Input = ReadVertexInput;
+    type Input = ReadRecordInput;
     type Output = read::WorthQueryReadCompletion;
     type Publication = domain::WorthQueryPublishingOperation;
     type Execution = domain::WorthQueryDirectOperation;
@@ -218,16 +220,16 @@ domain package:
 
 ```rust
 let operation = domain::WorthQueryDomainOperationDefinition::<
-    GeometryDomain,
-    ReadVertex,
+    CatalogDomain,
+    ReadRecord,
     ReadFamily,
 >::new(
-    domain::WorthQueryDomainOperationIdentity::new("read-vertex", 1),
+    domain::WorthQueryDomainOperationIdentity::new("read-record", 1),
     semantics,
 );
 
 let package = domain::WorthQueryDomainPackage::declare(
-    GeometryDomain,
+    CatalogDomain,
     domain_identity,
 )
 .operation(operation);
@@ -249,10 +251,10 @@ Register the executor separately during runtime construction:
 let builder = runtime::WorthQueryRuntime::builder()
     .domain_package(package)?
     .domain_operation_executor(
-        GeometryDomain,
-        ReadVertex,
+        CatalogDomain,
+        ReadRecord,
         ReadFamily,
-        ReadVertexExecutor,
+        ReadRecordExecutor,
     );
 ```
 
@@ -260,11 +262,11 @@ An executor implements:
 
 ```rust
 impl domain::WorthQueryDomainOperationExecutor<
-    GeometryDomain,
-    ReadVertex,
+    CatalogDomain,
+    ReadRecord,
     ReadFamily,
-> for ReadVertexExecutor {
-    const LOWERING_FAMILY: &'static str = "read-vertex-v1";
+> for ReadRecordExecutor {
+    const LOWERING_FAMILY: &'static str = "read-record-v1";
     const DETERMINISTIC: bool = true;
     const EXECUTION_COST: domain::WorthQueryOperationCostClass =
         domain::WorthQueryOperationCostClass::DeclaredWidth;
@@ -279,7 +281,7 @@ impl domain::WorthQueryDomainOperationExecutor<
 
     fn execute(
         &self,
-        input: ReadVertexInput,
+        input: ReadRecordInput,
         context: &domain::WorthQueryOperationExecutionContext<'_>,
         workspace: &mut domain::WorthQueryOperationWorkspace<'_>,
     ) -> Result<
@@ -306,11 +308,11 @@ Obtain the installed domain and bind through one operating world:
 ```rust
 use worth_query::facade::{domain, read};
 
-let installed_domain = workspace.domain(GeometryDomain)?;
+let installed_domain = workspace.domain(CatalogDomain)?;
 let world = workspace.observe_operating_world()?;
 let bound = world
     .family(ReadFamily)
-    .bind(&installed_domain, ReadVertex)?;
+    .bind(&installed_domain, ReadRecord)?;
 
 let consumer = bound.consumer_projection_contract()?;
 

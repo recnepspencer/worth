@@ -6,8 +6,22 @@ use worth_ui_host_native::UiNativeTextReplayOperation as Op;
 
 #[test]
 fn overhanging_text_transition_replays_old_and_new_images_after_refusal() {
+    assert_transition(160.0);
+}
+
+/// 160.3 points is 200.375 device pixels at 1.25: the text is drawn from
+/// pixel 200 while its mounted bounds, and so its allocation, start at
+/// 200.375. The images are replayed where they are drawn, and the old ones
+/// are cleared where they were drawn, so the move leaves no trail. A whole
+/// pixel from where it was drawn before, the text reuses its atlas images.
+#[test]
+fn a_fractional_move_replays_images_from_the_device_grid_and_leaves_no_trail() {
+    assert_transition(160.3);
+}
+
+fn assert_transition(to: f32) {
     let first = world(0.0, None);
-    let second = world(160.0, Some(&first));
+    let second = world(to, Some(&first));
     let old = text_command(&first);
     let new = text_command(&second);
     assert_ne!(
@@ -103,7 +117,7 @@ fn overhanging_text_transition_replays_old_and_new_images_after_refusal() {
         0,
         "integral physical translation reuses actual atlas images"
     );
-    let mut expected = vec![[0.0, 0.0, 2.0, 60.0], [200.0, 0.0, 2.0, 60.0]];
+    let mut expected = vec![allocation(&old), allocation(&new)];
     expected.extend(old_images.iter().chain(&new_images).copied().map(clear));
     assert_replay(&moved, &expected, &new_images, new.identity());
 
@@ -124,7 +138,7 @@ fn overhanging_text_transition_replays_old_and_new_images_after_refusal() {
             production_cost: Default::default(),
         });
     let removed = model.certify_ordinary_delta_retry(&removal, &[]).unwrap();
-    let mut expected = vec![[200.0, 0.0, 2.0, 60.0]];
+    let mut expected = vec![allocation(&new)];
     expected.extend(new_images.iter().copied().map(clear));
     assert_replay(&removed, &expected, &[], new.identity());
 }
@@ -140,6 +154,12 @@ fn world(x: f32, previous: Option<&CoverageWorld>) -> CoverageWorld {
         ([0, 255, 0, 128], 20_000),
         (1.0, 1_250),
     )
+}
+
+/// The device pixels a command's mounted bounds touch at 1.25 pixels per point.
+fn allocation(command: &UiMountedPaintCommand) -> [f32; 4] {
+    let bounds = command.bounds();
+    clear([bounds.x(), bounds.y(), bounds.width(), bounds.height()].map(|points| points * 1.25))
 }
 
 fn text_command(world: &CoverageWorld) -> UiMountedPaintCommand {

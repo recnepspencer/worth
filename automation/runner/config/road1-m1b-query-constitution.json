@@ -5,12 +5,12 @@
     "cwd": "C:\\Users\\Esther\\Documents\\Programming\\forge_workspace\\worktree_2",
     "spec_file": "cad/docs/road-1/road-1_milestone-1b.md",
     "context_files": [
-      "_docs/coding_guidelines/MENTALITY.md",
-      "_docs/coding_guidelines/arch_laws.md",
-      "_docs/coding_guidelines/composition_laws.md",
-      "_docs/coding_guidelines/domain_structure_laws.md",
-      "_docs/coding_guidelines/perf_laws.md",
-      "_docs/coding_guidelines/dx_laws.md",
+      "docs/coding-guidelines/MENTALITY.md",
+      "docs/coding-guidelines/arch_laws.md",
+      "docs/coding-guidelines/composition_laws.md",
+      "docs/coding-guidelines/domain_structure_laws.md",
+      "docs/coding-guidelines/perf_laws.md",
+      "docs/coding-guidelines/dx_laws.md",
       "cad/docs/worthy-foundations/ROAD.md",
       "cad/docs/worthy-foundations/ARCHITECTURE.md",
       "cad/docs/worthy-foundations/GLOSSARY.md",
@@ -182,7 +182,7 @@
         "boundary-check and agent-context are green"
       ],
       "instructions": "Implement Milestone 1B phase 'Milestone 1 Residue And Rename Ratchet' exactly as specified in cad/docs/road-1/road-1_milestone-1b.md. Follow the phase's Warnings and Engineering decisions. Do not reach into another phase's scope or into Milestone 3/4 semantics. Prove the phase's adversarial tests and leave the constitution green.",
-      "qa_focus": "No redesign beyond the named cleanups; the rename ratchet governs only constitutional surfaces, not _docs history or non-governed legacy code.",
+      "qa_focus": "No redesign beyond the named cleanups; the rename ratchet governs only constitutional surfaces, not plans history or non-governed legacy code.",
       "program_id": "standard_loop",
       "contract_template": {
         "asset_id": "contracts/m1b_simple"

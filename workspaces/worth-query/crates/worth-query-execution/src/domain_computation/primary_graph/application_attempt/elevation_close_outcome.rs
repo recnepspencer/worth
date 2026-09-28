@@ -8,9 +8,12 @@ use super::{
 };
 use crate::domain_computation::authorization::WorthQueryElevationCloseBinding;
 
+/// Why an approved elevation was closed.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryElevationClosureKind {
+    /// The elevation was revoked before it expired.
     Revoked,
+    /// The elevation reached its expiry.
     Expired,
 }
 
@@ -128,32 +131,51 @@ impl WorthQueryMandatoryReview {
     }
 }
 
+/// Every way committing an elevation close can end.
+///
+/// This mirrors the application commit outcome. `Closed` and `AlreadyClosed`
+/// carry the move-only mandatory-review obligation. Most variants that did not
+/// land hand the consumed approved elevation back, so it can be committed
+/// again.
 #[derive(Debug)]
 pub enum WorthQueryElevationCloseOutcome {
+    /// The product branch moved after the basis. Nothing was committed.
     ProductStale(
         crate::domain_computation::WorthQueryProductStaleApplication,
         WorthQueryApprovedElevation,
     ),
+    /// Some owners moved, but the product head did not. Recover publication.
     ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
+    /// Nothing was written; the cause says why.
     NoEffect(
         super::WorthQueryApplicationNoEffect,
         WorthQueryApprovedElevation,
     ),
+    /// This attempt committed the close.
     Closed(WorthQueryMandatoryReview),
+    /// The idempotency key had already committed this close; nothing was redone.
     AlreadyClosed(WorthQueryMandatoryReview),
+    /// The basis was stale at compare. Nothing was committed; re-read and retry.
     Stale(
         WorthQueryApplicationStaleAttempt,
         WorthQueryApprovedElevation,
     ),
+    /// The attempt was cancelled before it landed.
     Cancelled(WorthQueryApprovedElevation),
+    /// The attempt reached its deadline before it landed.
     TimedOut,
+    /// The commit was refused before publication.
     Denied(
         WorthQueryApplicationCommitDenial,
         WorthQueryApprovedElevation,
     ),
+    /// The commit's answer was lost, and a re-read found it never landed.
     Aborted(WorthQueryApprovedElevation),
+    /// A capacity or lifetime limit stopped the attempt. Retry later.
     Deferred(super::WorthQueryApplicationCommitDeferred),
+    /// The branch moved, but settlement did not finish. Recover the settlement.
     SettlementDeferred(super::WorthQueryApplicationSettlementDeferred),
+    /// Whether the commit landed is unresolved. Do not retry blindly.
     Indeterminate,
 }
 

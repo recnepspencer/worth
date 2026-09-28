@@ -7,27 +7,30 @@ use worth_relational::facade::schema::{RelationalSchemaRegistry, SchemaId, Schem
 mod approval;
 mod assessment;
 mod evidence_dependency;
+mod fact_custody;
 mod indexes;
+mod instance;
 mod layout;
 mod proposal;
 mod proposal_coverage;
-mod publication_immutability;
 mod relations;
 mod transition;
 pub(in crate::domain_computation::primary_graph) mod version;
 
+pub(in crate::domain_computation::primary_graph) use fact_custody::fact_custody_receipt_contract;
+pub(in crate::domain_computation::primary_graph) use fact_custody::fact_custody_registration;
 pub(in crate::domain_computation::primary_graph) use indexes::register_indexes;
 pub(in crate::domain_computation::primary_graph) use layout::*;
-pub(in crate::domain_computation::primary_graph) use publication_immutability::publication_immutability_receipt_contract;
-pub(in crate::domain_computation::primary_graph) use publication_immutability::publication_immutability_registration;
 
 use approval::lower_approval;
 use evidence_dependency::lower_evidence_dependency;
+use instance::lower_instance;
 use proposal::lower_proposal;
 use proposal_coverage::lower_proposal_coverage;
 use relations::{
-    allocate_kinds, connection_endpoint_integrity, current_definition_integrity, lower_connection,
-    lower_definition, lower_instance, lower_lineage, lower_node, owned_fact_integrity,
+    allocate_kinds, connection_endpoint_integrity, current_definition_integrity,
+    definition_start_integrity, lower_connection, lower_definition, lower_lineage, lower_node,
+    owned_fact_integrity,
 };
 use transition::lower_transition;
 
@@ -186,7 +189,7 @@ pub(in crate::domain_computation::primary_graph) fn lower_workflow(
             "worth-query-workflow-definition-start",
             kinds[1],
             kinds[2],
-            current_definition_integrity(),
+            definition_start_integrity(),
         ),
     ];
     for (offset, (name, from, to, integrity)) in relations.into_iter().enumerate() {
@@ -321,6 +324,26 @@ pub(in crate::domain_computation::primary_graph) fn lower_workflow(
         kinds[1],
         connection_endpoint_integrity(),
     )?;
+    registry = register_relation(
+        registry,
+        schema_id,
+        schema_version_id,
+        "worth-query-workflow-instance-migrated-from",
+        kinds[30],
+        kinds[4],
+        kinds[4],
+        relations::migration_successor_integrity(),
+    )?;
+    registry = register_relation(
+        registry,
+        schema_id,
+        schema_version_id,
+        "worth-query-workflow-instance-prior-effect",
+        kinds[31],
+        kinds[4],
+        kinds[14],
+        relations::prior_effect_integrity(),
+    )?;
     Ok((
         registry,
         WorthQueryWorkflowLayout {
@@ -354,6 +377,8 @@ pub(in crate::domain_computation::primary_graph) fn lower_workflow(
             approval_proposal_relation: kinds[24],
             approval_evidence_relation: kinds[25],
             evidence_dependency_relation: kinds[27],
+            instance_migrated_from_relation: kinds[30],
+            instance_prior_effect_relation: kinds[31],
         },
     ))
 }

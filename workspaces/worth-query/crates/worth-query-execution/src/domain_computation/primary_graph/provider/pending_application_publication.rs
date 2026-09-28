@@ -2,6 +2,7 @@
 
 pub(super) mod registry;
 pub(in crate::domain_computation::primary_graph) use registry::WorthQueryApplicationPublicationRecoveryReservation;
+use registry::WorthQueryPendingApplicationIdempotency;
 
 use super::{
     session_commit::{provider_failure, snapshot_admission_failure},
@@ -15,6 +16,7 @@ use crate::domain_computation::{
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryPendingApplicationPublication {
     product_incarnation: worth_runtime_world::facade::ProductBranchIncarnation,
+    idempotency: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding,
     attempt: Option<WorthQueryPrimaryGraphApplicationAttempt>,
     before: Option<worth_relational::facade::snapshots::SnapshotHandle>,
     next_basis: worth_relational::facade::branch::AdmittedRelationalBranchBasis,
@@ -40,8 +42,10 @@ impl WorthQueryPendingApplicationPublication {
         let product_incarnation = application
             .committed_product_publication()
             .product_incarnation();
+        let idempotency = application.commit_evidence().idempotency();
         Self {
             product_incarnation,
+            idempotency,
             attempt: Some(attempt),
             before: Some(before),
             next_basis,
@@ -66,9 +70,31 @@ impl WorthQueryPendingApplicationPublication {
     const fn product_incarnation(&self) -> worth_runtime_world::facade::ProductBranchIncarnation {
         self.product_incarnation
     }
+
+    pub(super) const fn idempotency(
+        &self,
+    ) -> crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding{
+        self.idempotency
+    }
 }
 
 impl WorthQueryPrimaryGraphProvider {
+    pub(in crate::domain_computation::primary_graph) fn inspect_pending_application_idempotency(
+        &self,
+        occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
+    ) -> Option<Option<crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding>>{
+        let pending = self
+            .pending_application_publications
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .slot(occurrence)?
+            .inspect_idempotency()?;
+        Some(match pending {
+            WorthQueryPendingApplicationIdempotency::Reserved => None,
+            WorthQueryPendingApplicationIdempotency::Pending(binding) => Some(binding),
+        })
+    }
+
     #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn has_pending_application_publication_for_test(
         &self,

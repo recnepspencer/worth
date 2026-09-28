@@ -2,6 +2,26 @@
 
 use super::AuthoritySealingTestRepository;
 
+/// A documented engine whose items the audience leaf facades re-export, so
+/// the facade documentation ratchet resolves every leaf name.
+const STUB_ENGINE: &str = r#"//! Stub Query engine.
+
+/// Stub engine facade.
+pub mod facade {
+    /// Stub foundation vocabulary.
+    pub mod foundation {
+        /// Stub canonical artifact.
+        pub struct CanonicalQueryArtifact;
+        /// Stub replay basis.
+        pub struct ScopedReplayBasis;
+    }
+    /// Stub domain namespace.
+    pub mod domain {}
+    /// Stub runtime namespace.
+    pub mod runtime {}
+}
+"#;
+
 impl AuthoritySealingTestRepository {
     pub(super) fn write_worth_proof_stub(&self) {
         self.write_file(
@@ -32,7 +52,7 @@ edition = "2021"
 [workspace]
 "#,
         );
-        self.write_file("crates/worth-query/src/lib.rs", "// stub engine\n");
+        self.write_file("crates/worth-query/src/lib.rs", STUB_ENGINE);
         for (package, export) in [
             (
                 "worth-query-decl",

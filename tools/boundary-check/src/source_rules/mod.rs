@@ -13,6 +13,7 @@ use std::path::Path;
 
 pub(crate) use analysis::{
     enforce_raw_geometry_denials, enforce_truth_type_denials, observe_compiled_library_surface,
+    parse_crate_modules_where, path_backed_dependency_roots, GovernedCrate, ModuleGraph,
 };
 pub(crate) use law_substrates::{illegal_law_substrate_edge, is_legal_law_substrate_edge};
 

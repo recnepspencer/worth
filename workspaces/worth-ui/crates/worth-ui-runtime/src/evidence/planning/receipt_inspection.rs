@@ -117,12 +117,17 @@ fn project_local_explanation(
                     })
                     .collect::<Vec<_>>()
                     .into_boxed_slice(),
-                receipt
-                    .transaction()
-                    .widen_reasons()
-                    .iter()
-                    .filter(|reason| reason.is_some())
-                    .count() as u16,
+                u16::try_from(
+                    receipt
+                        .transaction()
+                        .widen_reasons()
+                        .iter()
+                        .filter(|reason| reason.is_some())
+                        .count(),
+                )
+                .expect(
+                    "one widen reason per selected neighborhood, which a selection counts in u16",
+                ),
                 EvidenceRef::diagnostic(
                     EvidenceFamily::NeighborhoodSelectionArtifact,
                     transaction_identity.rotate_left(11),

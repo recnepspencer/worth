@@ -80,8 +80,9 @@ where
         let installed =
             install_rostered_application_program(self.program, installed_schema, roster)?;
         Ok(WorthQuerySupportedProgramRecord::installed(
-            &installed,
+            installed,
             &output_sources.into_iter().collect::<Vec<TypeId>>(),
+            &Program::Outputs::root_graph_types(),
         ))
     }
 }

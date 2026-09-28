@@ -8,7 +8,7 @@ use super::{
 impl WorthUiPresentationRequestBasis {
     pub(crate) fn identity_parts(&self) -> Vec<Part> {
         vec![
-            Part::unsigned("identity-schema", 3),
+            Part::unsigned("identity-schema", 4),
             Part::unsigned("mounted-frame", self.mounted_frame.diagnostic_value()),
             Part::unsigned("semantic-surface", self.semantic_surface.diagnostic_value()),
             Part::unsigned("host-surface", self.host_surface.diagnostic_value()),
@@ -154,68 +154,14 @@ fn encode_paint_command(
     }
 }
 
-pub(super) fn pin_sort_parts(pin: &WorthUiPresentationPinBasis) -> Vec<Part> {
-    let mut parts = Vec::new();
-    pin_identity_parts(&mut parts, "pin", 0, *pin);
-    parts
-}
+pub(super) type PinSortKey = ([u8; 32], super::raster_key_set::RasterKeySortKey);
 
-fn pin_identity_parts(
-    parts: &mut Vec<Part>,
-    role: &str,
-    index: usize,
-    pin: WorthUiPresentationPinBasis,
-) {
-    let prefix = format!("{role}.{index:04}");
-    let key = pin.key();
-    let face = key.face();
-    let origin = key.fractional_origin();
-    parts.extend([
-        Part::bytes32(format!("{prefix}.layout"), pin.layout().digest()),
-        Part::unsigned(
-            format!("{prefix}.font-generation"),
-            key.font_collection_generation().get(),
-        ),
-        Part::bytes32(
-            format!("{prefix}.font-lineage"),
-            key.font_collection_lineage().digest(),
-        ),
-        Part::unsigned(format!("{prefix}.profile"), key.profile_generation().get()),
-        Part::bytes32(format!("{prefix}.font-bytes"), face.font_bytes_digest()),
-        Part::unsigned(format!("{prefix}.face-index"), u64::from(face.face_index())),
-        Part::bytes32(format!("{prefix}.selection"), face.selection_digest()),
-        Part::unsigned(format!("{prefix}.glyph"), u64::from(key.glyph_id())),
-        Part::unsigned(
-            format!("{prefix}.palette"),
-            u64::from(key.palette().index()),
-        ),
-        Part::unsigned(
-            format!("{prefix}.size"),
-            u64::from(key.size().millipoints()),
-        ),
-        Part::unsigned(
-            format!("{prefix}.source"),
-            raster_source_ordinal(key.source()),
-        ),
-        Part::unsigned(format!("{prefix}.dpi"), u64::from(key.dpi_milli())),
-        Part::unsigned(
-            format!("{prefix}.origin-x"),
-            u64::from(origin.x_over_64() as u16),
-        ),
-        Part::unsigned(
-            format!("{prefix}.origin-y"),
-            u64::from(origin.y_over_64() as u16),
-        ),
-    ]);
-    for (axis_index, axis) in key.variations().records().enumerate() {
-        parts.extend([
-            Part::bytes4(format!("{prefix}.axis.{axis_index:02}.tag"), axis.axis()),
-            Part::unsigned(
-                format!("{prefix}.axis.{axis_index:02}.value"),
-                u64::from(axis.value_milli() as u32),
-            ),
-        ]);
-    }
+/// Pins order by layout, then by their raster key's sort key.
+pub(super) fn pin_sort_key(pin: &WorthUiPresentationPinBasis) -> PinSortKey {
+    (
+        pin.layout().digest(),
+        super::raster_key_set::key_sort_key(&pin.key()),
+    )
 }
 
 fn pins_fingerprint(domain: &[u8], pins: &[WorthUiPresentationPinBasis]) -> [u8; 32] {
@@ -232,51 +178,10 @@ fn encode_pin(digest: &mut Sha256, pin: WorthUiPresentationPinBasis) {
     encode_raster_key(digest, pin.key());
 }
 
+/// A key enters the digest as its canonical evidence: every profile field in
+/// fixed widths plus the axis count, so one length-prefixed field is injective.
 fn encode_raster_key(digest: &mut Sha256, key: worth_ui_host_contract::UiGlyphRasterKey) {
-    let face = key.face();
-    let origin = key.fractional_origin();
-    encode_u64(
-        digest,
-        b"raster-font-generation",
-        key.font_collection_generation().get(),
-    );
-    encode_bytes(
-        digest,
-        b"raster-font-lineage",
-        &key.font_collection_lineage().digest(),
-    );
-    encode_u64(digest, b"raster-profile", key.profile_generation().get());
-    encode_bytes(digest, b"raster-font-bytes", &face.font_bytes_digest());
-    encode_u64(digest, b"raster-face-index", u64::from(face.face_index()));
-    encode_bytes(digest, b"raster-selection", &face.selection_digest());
-    encode_u64(digest, b"raster-glyph", u64::from(key.glyph_id()));
-    encode_u64(digest, b"raster-palette", u64::from(key.palette().index()));
-    encode_u64(digest, b"raster-size", u64::from(key.size().millipoints()));
-    encode_u64(
-        digest,
-        b"raster-source",
-        raster_source_ordinal(key.source()),
-    );
-    encode_u32(digest, b"raster-dpi", key.dpi_milli());
-    encode_u64(
-        digest,
-        b"raster-origin-x",
-        u64::from(origin.x_over_64() as u16),
-    );
-    encode_u64(
-        digest,
-        b"raster-origin-y",
-        u64::from(origin.y_over_64() as u16),
-    );
-    encode_count(digest, key.variations().len());
-    for axis in key.variations().records() {
-        encode_bytes(digest, b"raster-axis-tag", &axis.axis());
-        encode_u64(
-            digest,
-            b"raster-axis-value",
-            u64::from(axis.value_milli() as u32),
-        );
-    }
+    encode_bytes(digest, b"raster-key", &key.canonical_evidence_bytes());
 }
 
 fn fingerprint(domain: &[u8]) -> Sha256 {
@@ -307,13 +212,4 @@ fn encode_bytes(digest: &mut Sha256, field: &[u8], value: &[u8]) {
 
 fn count(value: usize) -> u64 {
     u64::try_from(value).expect("admitted presentation identity length fits u64")
-}
-
-const fn raster_source_ordinal(source: worth_ui_host_contract::UiGlyphRasterSource) -> u64 {
-    match source {
-        worth_ui_host_contract::UiGlyphRasterSource::ColorOutline => 0,
-        worth_ui_host_contract::UiGlyphRasterSource::ColorBitmap => 1,
-        worth_ui_host_contract::UiGlyphRasterSource::AlphaOutline => 2,
-        worth_ui_host_contract::UiGlyphRasterSource::LastResort => 3,
-    }
 }

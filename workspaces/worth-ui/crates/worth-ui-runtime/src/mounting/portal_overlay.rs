@@ -31,6 +31,10 @@ impl UiMountedPortalOverlayProjectionInput {
         self.owner
     }
 
+    pub(crate) const fn portal_identity(self) -> u64 {
+        self.portal_identity
+    }
+
     pub(crate) const fn input_order(self) -> (u64, crate::runtime::portal::UiPortalStackOrdinal) {
         (self.portal_identity, self.stack_ordinal)
     }

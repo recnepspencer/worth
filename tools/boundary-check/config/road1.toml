@@ -106,10 +106,10 @@ guidance = "Runtime World is memory-resident composition authority and cannot de
 
 [[dependency_denials]]
 workspace_manifest = "Cargo.toml"
-sources = ["worth-runtime-bridge"]
-forbidden_targets = ["worth-relational"]
+sources = ["worth-relational"]
+forbidden_targets = ["worth-runtime-bridge"]
 forbidden_target_prefixes = []
-guidance = "Runtime Bridge is the neutral crossing owner and cannot acquire a direct Relational runtime dependency"
+guidance = "The Bridge owns the Relational adapter and depends on Relational; Relational never names the Bridge"
 
 [[source_dependency_allowlists]]
 workspace_manifest = "Cargo.toml"
@@ -370,6 +370,34 @@ forbidden_identifiers = [
   "WorthUiStructuralBodyParser",
 ]
 guidance = "Milestones 3.10.1 and 3.15: runtime may transport sealed source and admit runtime capabilities, but authored text, syntax trees, language normalization, and sealing belong only to worth-ui-dsl; portal-anchor and scroll-allocation imports use their canonical family axes with no legacy module lane"
+
+[[source_identifier_denials]]
+root = "workspaces/worth-ui/crates/worth-ui-runtime/src"
+exclude_paths = [
+  "workspaces/worth-ui/crates/worth-ui-runtime/src/units.rs",
+  "workspaces/worth-ui/crates/worth-ui-runtime/src/facade/observation_report.rs",
+]
+forbidden_identifiers = ["UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT"]
+guidance = "Hardening 3: host subpixels and logical points cross only through crate::units, so every crossing rounds one way and refuses the same values; lines and pages the host encodes at that scale are counts read through units::host_count_thousandths, never distances. observation_report only re-exports the contract constant to hosts"
+
+[[source_identifier_denials]]
+root = "workspaces/worth-ui/crates/worth-ui-runtime/src"
+forbidden_identifiers = ["UI_APPEARANCE_LOGICAL_SUBPIXELS_PER_POINT"]
+guidance = "Hardening 3b: appearance subpixels and logical points cross only through worth_foundational's logical_points (appearance_coordinate_nearest, appearance_extent_nearest, appearance_points) and the appearance regions' canonical_box, so paint and hit read one conversion"
+
+[[source_identifier_denials]]
+root = "workspaces/worth-ui/crates/worth-ui-host-native/src"
+forbidden_identifiers = ["UI_APPEARANCE_LOGICAL_SUBPIXELS_PER_POINT"]
+guidance = "Hardening 3b: appearance subpixels and logical points cross only through worth_foundational's logical_points (appearance_coordinate_nearest, appearance_extent_nearest, appearance_points) and the appearance regions' canonical_box, so paint and hit read one conversion"
+
+[[source_identifier_denials]]
+root = "workspaces/worth-ui/crates/worth-ui-runtime/src"
+exclude_paths = [
+  "workspaces/worth-ui/crates/worth-ui-runtime/src/runtime/scroll/staged_offset.rs",
+  "workspaces/worth-ui/crates/worth-ui-runtime/src/mounting/session_state/scroll_staged_pose.rs",
+]
+forbidden_identifiers = ["staged_pose_offset"]
+guidance = "Hardening 4: an offset Scroll staged past the frame the host shows is a UiStagedScrollOffset, and only mounted pose staging reads the offset inside, so no staged offset stands in for or compares with the accepted one that UiScrollRuntimeState::offset reads"
 
 [[source_identifier_denials]]
 root = "workspaces/worth-ui/crates/worth-ui-runtime/src/runtime/session/service_proposal"
@@ -703,6 +731,23 @@ forbidden_identifiers = ["program_publication_access"]
 forbidden_identifier_fragments = []
 guidance = "Milestone 9.17.4: only worth-query-publication may issue execution's program-output progression access"
 
+[[source_identifier_denials]]
+root = "workspaces/worth-query/crates"
+exclude_paths = [
+  "workspaces/worth-query/crates/worth-query-execution/src",
+  "workspaces/worth-query/crates/worth-query-publication",
+  "workspaces/worth-query/crates/worth-query-certification/tests/application_graph/workflow_approval/commit_boundary.rs",
+]
+forbidden_identifiers = ["publication_boundary"]
+forbidden_identifier_fragments = []
+guidance = "Milestone 9.17.6 slice 5.7: only worth-query-publication drives execution's workflow owner vocabulary; the certification commit-boundary court alone forges a kernel commit below that owner"
+
+[[rule_contracts.query_audience.facade_surfaces]]
+label = "worth-query-host::application_entry"
+source = "workspaces/worth-query/crates/worth-query-host/src/facade.rs"
+reexport = "worth_query_publication::facade::application_entry"
+owner_source = "workspaces/worth-query/crates/worth-query-publication/src/application_entry/mod.rs"
+
 [[rule_contracts.query_audience.facade_surfaces]]
 label = "worth-query-host::provisional_aftermath"
 source = "workspaces/worth-query/crates/worth-query-host/src/facade.rs"
@@ -887,7 +932,7 @@ edges = [
   { path = "src/inspection/visual_snapshot/spatial/geometry.rs", kind = "serialization", reason = "visual snapshot spatial reports are wire data" },
   { path = "src/runtime/motion/scale_certification.rs", items = ["geometry"], kind = "serialization", reason = "Motion scale certification reports sampled geometry as wire data" },
   { path = "src/runtime/interaction/targeting/presented_geometry.rs", items = ["UiPresentedInteractionGeometry::for_test_with_components"], kind = "serialization", reason = "test and certification builds only: scenarios build targeting geometry from projection components" },
-  { path = "src/mounting/presentation/work_producer/motion_sample.rs", items = ["logical_damage", "canonical_box"], kind = "serialization", reason = "a Motion sample becomes host-contract damage and a canonical box" },
+  { path = "src/mounting/presentation/work_producer/motion_sample.rs", items = ["canonical_box"], kind = "serialization", reason = "a Motion sample becomes a host-contract canonical box" },
   { path = "src/mounting/projection/frame_storage/appearance_order/row.rs", kind = "serialization", reason = "appearance rows are ordered by their host-contract projection bounds" },
   { path = "src/native_platform/application_driver/visual_snapshot.rs", items = ["bits"], kind = "serialization", reason = "visual snapshot values are compared as their bit patterns" },
   { path = "src/mounting/presentation/work_producer/scroll_motion_groups/sampling.rs", items = ["translate", "bounds"], kind = "gpu-upload", reason = "the Scroll group clip translate and bounds are uploaded with the sampled command" },
@@ -901,7 +946,6 @@ edges = [
   { path = "src/mounting/presentation/motion_sampling", kind = "sealed-owner", reason = "the Motion sampler mints accepted geometry; its curve, velocity, and damage arithmetic is the mint's inside" },
   { path = "src/mounting/presentation/work_producer/scroll_motion_groups/group_offset.rs", kind = "sealed-owner", reason = "the Scroll group offset and translation status types own their representation" },
   { path = "src/mounting/occurrence_geometry/region_paint.rs", kind = "committed-layout", reason = "paint omission spans derive from committed boxes before any status is assigned" },
-  { path = "src/mounting/occurrence_geometry/state/presented_grid.rs", items = ["UiMountedOccurrenceGeometryState::presented_scroll_grid_correction"], kind = "committed-layout", reason = "the subpixel grid correction applies to committed allocation before any status is assigned" },
   { path = "src/mounting/projection/frame_storage/portal_content_extent.rs", items = ["local_bounds"], kind = "committed-layout", reason = "Portal content extent is measured from committed layout" },
   { path = "src/runtime/allocation_receipt/committed_truth/geometry_evidence.rs", items = ["resolve_viewport_axis"], kind = "committed-layout", reason = "viewport placement resolves committed allocation" },
 ]
@@ -985,6 +1029,9 @@ sealed = [
   { name = "UiPresentationMotionDamageRegion", requirement = 1, owners = ["src/mounting/presentation/motion_sampling"] },
   { name = "UiPresentedHitRect", requirement = 1, owners = ["src/mounting/retention/interaction_basis.rs", "src/mounting/retention/interaction_basis"] },
   { name = "UiPresentedPortalBounds", requirement = 1, owners = ["src/runtime/portal/placement.rs"] },
+  { name = "UiPresented", requirement = 1, owners = ["src/mounting/projection/placement.rs", "src/mounting/projection/placement"] },
+  { name = "UiPortalPresentation", requirement = 1, owners = ["src/mounting/projection/placement.rs", "src/mounting/projection/placement"] },
+  { name = "UiPortalMove", requirement = 1, owners = ["src/mounting/projection/placement.rs", "src/mounting/projection/placement"] },
   { name = "UiScrollGroupBind", requirement = 1, owners = ["src/mounting/presentation/work_producer/scroll_motion_groups.rs", "src/mounting/presentation/work_producer/scroll_motion_groups"] },
   { name = "UiPublishedGroupOffset", requirement = 1, owners = ["src/mounting/presentation/work_producer/scroll_motion_groups.rs", "src/mounting/presentation/work_producer/scroll_motion_groups"] },
   { name = "UiDisplayedGroupOffset", requirement = 1, owners = ["src/mounting/presentation/work_producer/scroll_motion_groups.rs", "src/mounting/presentation/work_producer/scroll_motion_groups"] },
@@ -1003,20 +1050,31 @@ mints = [
     { path = "src/facade/entry/active_application_session/scroll_accepted_sample_settlement.rs", items = ["UiScrollSettlementReading::owner"] },
     { path = "src/mounting/projection/frame_storage/portal_content_extent.rs", items = ["UiMountedSemanticProjection::portal_content_extent"] },
     { path = "src/mounting/portal_placement_succession.rs", items = ["viewport_rect"] },
-    { path = "src/mounting/projection/frame_storage/portal_child_view.rs", items = ["UiMountedProjectionFrame::portal_child_presentation_with_work"] },
+    { path = "src/mounting/projection/frame_storage/portal_child_view.rs", items = ["UiMountedProjectionFrame::portal_child_placement_with_work"] },
     { path = "src/mounting/retention/interaction_basis.rs", items = ["UiPresentedHitTestRow::committed", "UiPresentedHitTestRow::from_mounted"] },
+    { path = "src/mounting/retention/coordinator.rs", items = ["UiMountedFrameRetentionCoordinator::presented_portal_body"] },
     { path = "src/runtime/interaction/targeting/presented_geometry.rs", items = ["UiPresentedInteractionGeometry::for_test_with_components", "UiPresentedViewportGeometry::from_current_interaction", "UiPresentedViewportGeometry::for_test"] },
   ], reason = "committed layout is published where the committed frame is read: a canonical committed box becomes published geometry" },
   { call = "UiPublishedRect::from_committed_components", callers = [
+    { path = "src/mounting/retention/interaction_basis/ancestor_clip.rs", items = ["UiHitAncestorPlacement::reach"] },
     { path = "src/runtime/motion/scale_certification.rs", items = ["geometry"] },
     { path = "src/runtime/portal/placement.rs", items = ["UiPresentedPortalBounds::new"] },
     { path = "src/runtime/scroll/transition/motion_request.rs", items = ["scroll_content_geometry"] },
-  ], reason = "committed layout components are published as Portal bounds, Scroll content, and certification scale geometry" },
+  ], reason = "committed layout components are published as Portal bounds, Scroll content, a hit row's ancestor coverage, and certification scale geometry" },
   { call = "UiPublishedRect::translated", clippy = "worth_ui_runtime::mounting::presentation::truth_geometry::published::UiPublishedRect::translated", callers = [
     { path = "src/facade/entry/active_application_session/portal_motion.rs", items = ["portal_entrance_start_geometry"] },
     { path = "src/mounting/portal_placement_succession.rs", items = ["nested_anchor"] },
     { path = "src/runtime/portal/placement.rs", items = ["UiPreparedPortalPlacement::content_anchor"] },
   ], reason = "a Portal entrance starts at its published rect shifted by the entrance offset, a Portal's content anchor is its owner's layout moved to where the content it was fitted to begins, and a nested Portal's anchor is its owner's layout moved by its parent Portal's placement" },
+  { call = "UiPortalPresentation::fitted_to", callers = [
+    { path = "src/mounting/projection/frame_storage/portal_child_view.rs", items = ["UiMountedProjectionFrame::portal_child_placement_with_work"] },
+  ], reason = "a Portal child is presented through the Portal fitted to the content it belongs to, whose anchor only the child's mounted owner resolves" },
+  { call = "UiLaidOut::in_place", clippy = "worth_ui_runtime::mounting::projection::placement::spaces::UiLaidOut::in_place", callers = [
+    { path = "src/mounting/projection/frame_storage/appearance_geometry.rs", items = ["UiMountedAppearanceGeometry::in_place"] },
+  ], reason = "an occurrence's appearance geometry starts where it is laid out, and its placement then moves or suppresses it" },
+  { call = "UiPresented::map", clippy = "worth_ui_runtime::mounting::projection::placement::spaces::UiPresented::map", callers = [
+    { path = "src/mounting/projection/frame_storage/semantic_projection/surface_rebind.rs", items = ["UiMountedSemanticProjection::rebind_surface_allocations"] },
+  ], reason = "rebinding a surface changes only its allocations' binding generation, never where they are shown" },
   { call = "UiPublishedRect::adopting", callers = [
     { path = "src/mounting/retention/interaction_basis/hit_rect.rs", items = ["UiPresentedHitRect::adopted"] },
   ], reason = "a hit rect adopts the published rect its prepared entrance maps to" },
@@ -1024,8 +1082,8 @@ mints = [
     { path = "src/mounting/retention/interaction_basis.rs", items = ["UiPresentedHitTestRow::with_prepared_entrance"] },
   ], reason = "a prepared entrance maps its committed rect onto the entrance start" },
   { call = "UiPublishedToAcceptedMap::of_sample", callers = [
-    { path = "src/mounting/retention/interaction_basis.rs", items = ["UiPresentedHitTestRow::with_motion_sample"] },
-  ], reason = "a hit row maps published geometry through the accepted Motion sample it holds" },
+    { path = "src/mounting/presentation/motion_sampling/receipt.rs", items = ["UiPresentationMotionSampleReceipt::base_map"] },
+  ], reason = "an accepted Motion sample maps the published geometry laid out in its base to where it placed it" },
   { call = "UiAcceptedRect::sampled", callers = [
     { path = "src/mounting/presentation/motion_sampling/track_geometry.rs", items = ["UiTrackSamplePlace::accepted_on"] },
   ], reason = "the Motion sampler yields accepted geometry from a sampled track" },
@@ -1039,7 +1097,8 @@ mints = [
     { path = "src/facade/entry/active_application_session/scroll_accepted_sample_settlement.rs", items = ["WorthUiActiveApplicationSession::settle_accepted_scroll_sample_inner", "UiScrollSettlementReading::displayed_sample"] },
     { path = "src/mounting/presentation/work_producer/scroll_motion_groups/acceptance.rs", items = ["UiScrollGroupMotionUpdate::validate"] },
     { path = "src/mounting/retention/interaction_basis.rs", items = ["UiPresentedHitTestRow::with_motion_sample"] },
-    { path = "src/mounting/session_state/motion_sampling.rs", items = ["WorthUiMountedSessionState::committed_motion_geometry_for_target"] },
+    { path = "src/mounting/retention/interaction_basis/ancestor_clip.rs", items = ["UiHitAncestorPlacement::reach"] },
+    { path = "src/mounting/session_state/motion_sampling/portal_dismissal_geometry.rs", items = ["WorthUiMountedSessionState::committed_motion_geometry_for_target"] },
   ], reason = "accepted geometry becomes displayed only against a displayed basis an admitted witness proved" },
   { call = "UiDisplayedScrollOffset::from_rest", callers = [
     { path = "src/facade/entry/active_application_session/scroll_accepted_sample_settlement.rs", items = ["UiScrollSettlementOwner::settle"] },
@@ -1052,10 +1111,13 @@ mints = [
   ], reason = "a platform event's host position becomes a platform point where the event is read" },
   { call = "UiScrollPoseShift::between", callers = [
     { path = "src/mounting/occurrence_geometry/state/scroll.rs", items = ["UiMountedOccurrenceGeometryState::prepare_scroll_pose"] },
-  ], reason = "occurrence geometry measures the shift between two Scroll poses it prepared" },
+    { path = "src/mounting/occurrence_geometry/state/scroll_rest.rs", items = ["UiMountedOccurrenceGeometryState::scroll_region_rest"] },
+  ], reason = "occurrence geometry measures the shift between two Scroll poses it prepared or holds" },
   { call = "UiScrollPoseShift::none", callers = [
     { path = "src/mounting/occurrence_geometry/state/scroll.rs", items = ["UiMountedOccurrenceGeometryState::prepare_scroll_pose"] },
-    { path = "src/mounting/presented_hit_index.rs", items = ["UiPresentedHitIndex::replace_base"] },
+    { path = "src/mounting/occurrence_geometry/state/scroll_rest.rs", items = ["UiMountedOccurrenceGeometryState::scroll_region_rest"] },
+    { path = "src/mounting/retention/interaction_basis.rs", items = ["UiPresentedHitTestRow::from_mounted"] },
+    { path = "src/mounting/retention/interaction_basis/ancestor_clip.rs", items = ["UiHitScrollMove::none"] },
     { path = "src/mounting/retention/interaction_basis/hit_rect.rs", items = ["UiPresentedHitRect::displayed"] },
   ], reason = "geometry no Scroll pose moved carries no shift" },
   { call = "UiPresentedPortalBounds::new", callers = [
@@ -1121,3 +1183,26 @@ lifecycle_states = ["OriginalOrderPlacement"]
 crate_root = "workspaces/worth-ui/apps/platform-pulse"
 guidance = "Milestone 3.16.2 requirement 2: name a Pulse lifecycle state's variant where it is built"
 lifecycle_states = ["PlatformPulseNativeInputIngress", "PlatformPulseTerminalPosture", "PlatformPulseVisualIdentityExecution", "PlatformPulseDisabledVisualIdentity", "PlatformPulseQueryOwnerState"]
+
+[[source_owner_isolations]]
+owner_roots = [
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/workflow",
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/workflow.rs",
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow_definition_program",
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow_definition_program.rs",
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow_instance_observation",
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow_instance_observation.rs",
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow_instance_program",
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow_instance_program.rs",
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow_proposal_program",
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow_proposal_program.rs",
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow_transition_program",
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow_transition_program.rs",
+]
+guarded_roots = [
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/managed_run",
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/conditional_operation",
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/conditional_operation.rs",
+]
+forbidden_paths = [["primary_graph", "workflow"]]
+guidance = "9.17.6 Phase 5: provider-read managed runs and conditional operations stay independent of the authored workflow kernel; the kernel composes them, never the reverse"

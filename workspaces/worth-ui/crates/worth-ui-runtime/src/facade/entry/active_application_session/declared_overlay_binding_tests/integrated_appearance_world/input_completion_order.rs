@@ -133,9 +133,9 @@ fn exercise_completion_order(input_before_completion: bool) {
         .bounds()
         .rect()
         .canonical_box();
-    let outside = UiHostSurfacePosition::viewport_logical(
-        ((body.x() + body.width() + 30.0) * 1_000.0) as i64,
-        ((body.y() + body.height() + 30.0) * 1_000.0) as i64,
+    let outside = crate::units::viewport_position_for_test(
+        body.x() + body.width() + 30.0,
+        body.y() + body.height() + 30.0,
     );
     let sample = world.session.prepare_motion_tick(1, observed).unwrap();
     world.host.push_in_flight(

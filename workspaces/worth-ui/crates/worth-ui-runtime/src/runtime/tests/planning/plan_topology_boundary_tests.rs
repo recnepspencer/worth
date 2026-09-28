@@ -144,7 +144,7 @@ fn frame_traversal_uses_plan_topology_without_artifact_tree_scan() {
             assert_eq!(
                 topology_node.child_range().map(|range| range.len()),
                 (region_structure.root_region_count() > 0)
-                    .then_some(region_structure.root_region_count() as u32)
+                    .then_some(u32::try_from(region_structure.root_region_count()).unwrap())
             );
         }
     }

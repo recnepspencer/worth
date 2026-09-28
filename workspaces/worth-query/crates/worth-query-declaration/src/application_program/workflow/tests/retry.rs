@@ -3,7 +3,7 @@ use super::*;
 #[test]
 fn bounded_retry_is_the_only_valid_back_edge() -> Result<(), Box<dyn std::error::Error>> {
     let mut builder =
-        ApplicationWorkflowDefinitionBuilder::<ReviewedGeometry>::new("bounded-retry", limits())?;
+        ApplicationWorkflowDefinitionBuilder::<ReviewedChange>::new("bounded-retry", limits())?;
     let first = builder.operation::<ProposeChange>("first", false)?;
     let revise = builder.operation::<ApplyChange>("revise", false)?;
     let exhausted = builder.terminal("exhausted")?;
@@ -35,6 +35,38 @@ fn bounded_retry_is_the_only_valid_back_edge() -> Result<(), Box<dyn std::error:
 }
 
 #[test]
+fn back_navigation_cannot_be_authored_as_a_control_result() -> Result<(), Box<dyn std::error::Error>>
+{
+    let mut builder = ApplicationWorkflowDefinitionBuilder::<ReviewedChange>::new(
+        "not-an-authored-back-edge",
+        limits(),
+    )?;
+    let proposal = builder.operation::<ProposeChange>("proposal", false)?;
+    let terminal = builder.terminal("completed")?;
+    builder
+        .start(&proposal)
+        .control(
+            &proposal,
+            ApplicationWorkflowControlOutcome::Completed,
+            &terminal,
+        )
+        .control(
+            &proposal,
+            ApplicationWorkflowControlOutcome::NavigatedBack,
+            &terminal,
+        );
+    let denial = match builder.finish()?.validate() {
+        Ok(_) => panic!("Back is an owner action, not an authored control result"),
+        Err(denial) => denial,
+    };
+    assert_eq!(
+        denial.kind(),
+        ApplicationWorkflowValidationDenialKind::UnexpectedControlOutcome
+    );
+    Ok(())
+}
+
+#[test]
 fn retry_requires_a_nonzero_bound_and_reason() {
     assert!(ApplicationWorkflowRetry::new(
         ApplicationWorkflowControlOutcome::Completed,
@@ -51,7 +83,7 @@ fn retry_requires_a_nonzero_bound_and_reason() {
 #[test]
 fn retry_must_point_to_an_upstream_node() -> Result<(), Box<dyn std::error::Error>> {
     let mut builder =
-        ApplicationWorkflowDefinitionBuilder::<ReviewedGeometry>::new("forward-retry", limits())?;
+        ApplicationWorkflowDefinitionBuilder::<ReviewedChange>::new("forward-retry", limits())?;
     let first = builder.operation::<ProposeChange>("first", false)?;
     let later = builder.operation::<ApplyChange>("later", false)?;
     let exhausted = builder.terminal("exhausted")?;
@@ -91,7 +123,7 @@ fn retry_must_point_to_an_upstream_node() -> Result<(), Box<dyn std::error::Erro
 
 #[test]
 fn retry_requires_an_exhaustion_successor() -> Result<(), Box<dyn std::error::Error>> {
-    let mut builder = ApplicationWorkflowDefinitionBuilder::<ReviewedGeometry>::new(
+    let mut builder = ApplicationWorkflowDefinitionBuilder::<ReviewedChange>::new(
         "missing-retry-exhaustion",
         limits(),
     )?;
@@ -131,7 +163,7 @@ fn retry_requires_an_exhaustion_successor() -> Result<(), Box<dyn std::error::Er
 #[test]
 fn terminal_cannot_retry_into_the_control_graph() -> Result<(), Box<dyn std::error::Error>> {
     let mut builder =
-        ApplicationWorkflowDefinitionBuilder::<ReviewedGeometry>::new("terminal-retry", limits())?;
+        ApplicationWorkflowDefinitionBuilder::<ReviewedChange>::new("terminal-retry", limits())?;
     let operation = builder.operation::<ProposeChange>("operation", false)?;
     let terminal = builder.terminal("terminal")?;
     builder

@@ -239,7 +239,12 @@ impl ModelExecution {
                     Some(1),
                 )
             }
-            UiNativeProtocolSurfaceTransition::Resize | UiNativeProtocolSurfaceTransition::Dpi => {
+            // Same-scale resize keeps every retained resource and repaints.
+            UiNativeProtocolSurfaceTransition::Resize => {
+                self.complete_presentation_stages();
+                self.complete(None)
+            }
+            UiNativeProtocolSurfaceTransition::Dpi => {
                 self.terminal.reconstructions = schedule.recovery_bindings().max(1);
                 self.record_peak();
                 self.reconstructed_bindings = self.terminal.reconstructions;

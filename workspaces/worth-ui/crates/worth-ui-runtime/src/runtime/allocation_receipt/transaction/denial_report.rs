@@ -55,7 +55,7 @@ impl UiAllocationReceiptDenialReport {
     pub fn denial(&self) -> Option<UiAllocationReuseDenial> {
         match self.cause {
             UiAllocationReceiptDenialCause::ReuseDenied(denial) => Some(denial),
-            _ => None,
+            UiAllocationReceiptDenialCause::CandidatePlanningDenied => None,
         }
     }
 

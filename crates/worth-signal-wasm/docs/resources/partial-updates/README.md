@@ -33,8 +33,8 @@ change. Worth supports these families of loci when their structure is declared:
 - `summary` — one collection- or page-level summary;
 - `replace` — the whole resource value.
 
-An aspect is a named semantic slice, such as a task's title or a gear's hole
-size. It lets invalidation, effects, and merge reasoning stay focused on the
+An aspect is a named semantic slice, such as a task's title or an invoice's due
+date. It lets invalidation, effects, and merge reasoning stay focused on the
 meaning that changed rather than treating the entire object as one blob.
 
 ## Patch One Item Aspect

@@ -1,6 +1,7 @@
 use crate::facade::{WorthUiActiveApplicationSession, WorthUiHostMeasurementCapability};
 use crate::fact_contract::UiProducedFact;
 use crate::graph::{UiGraphFactLookupDenial, UiGraphFactLookupReceipt};
+use crate::runtime::portal::UiPortalOverlayBindingLifecycleDenial;
 use crate::runtime::{
     WorthUiActiveRuntimeObservation, WorthUiCanvasSpatialInspectionDenial,
     WorthUiCanvasSpatialPlanAvailability, WorthUiCanvasSpatialTargetSummary, WorthUiLaneHandle,
@@ -225,16 +226,28 @@ impl WorthUiActiveSessionCertificationExt for WorthUiActiveApplicationSession {
         worth_ui_host_contract::UiSemanticSurfaceIdentity,
         WorthUiDeclaredSurfaceCertificationDenial,
     > {
-        WorthUiActiveApplicationSession::create_declared_semantic_surface_named(
-            self,
-            authored_name,
-        )
-        .map_err(|denial| match denial {
-            crate::runtime::portal::UiPortalOverlayBindingLifecycleDenial::DeclaredSurfaceUnbound => {
-                WorthUiDeclaredSurfaceCertificationDenial::UnknownDeclaration
-            }
-            _ => WorthUiDeclaredSurfaceCertificationDenial::Admission,
-        })
+        WorthUiActiveApplicationSession::create_declared_semantic_surface_named(self, authored_name)
+            .map_err(|denial| match denial {
+                UiPortalOverlayBindingLifecycleDenial::DeclaredSurfaceUnbound => {
+                    WorthUiDeclaredSurfaceCertificationDenial::UnknownDeclaration
+                }
+                UiPortalOverlayBindingLifecycleDenial::ForeignGeneration
+                | UiPortalOverlayBindingLifecycleDenial::UnknownPortalDeclaration
+                | UiPortalOverlayBindingLifecycleDenial::ForeignSurfaceDeclaration
+                | UiPortalOverlayBindingLifecycleDenial::PortalSurfaceUndeclared
+                | UiPortalOverlayBindingLifecycleDenial::PortalSurfaceMismatch
+                | UiPortalOverlayBindingLifecycleDenial::DeclaredSurfaceAlreadyBound
+                | UiPortalOverlayBindingLifecycleDenial::RuntimeSurfaceConflict
+                | UiPortalOverlayBindingLifecycleDenial::Mounted(_)
+                | UiPortalOverlayBindingLifecycleDenial::PortalDeclarationConflict
+                | UiPortalOverlayBindingLifecycleDenial::PortalAlreadyLiveWithoutBinding
+                | UiPortalOverlayBindingLifecycleDenial::RetiredBinding
+                | UiPortalOverlayBindingLifecycleDenial::TransitionMismatch
+                | UiPortalOverlayBindingLifecycleDenial::SurfaceBindingCapacityExceeded
+                | UiPortalOverlayBindingLifecycleDenial::Owner(_) => {
+                    WorthUiDeclaredSurfaceCertificationDenial::Admission
+                }
+            })
     }
 
     fn declared_region_layout_inputs(

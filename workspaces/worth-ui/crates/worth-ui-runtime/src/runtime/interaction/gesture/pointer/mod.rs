@@ -5,6 +5,7 @@ mod appearance;
 mod model;
 mod presentation;
 mod scroll_chrome_latch;
+mod stop_reason;
 mod transition;
 
 pub(crate) use scroll_chrome_latch::{

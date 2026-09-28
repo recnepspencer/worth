@@ -1,3 +1,12 @@
+/// Declares a capability marker in an application schema: the named, portable
+/// identity of a permission that capability contracts, grants, and operation
+/// requirements refer to.
+///
+/// Input: `vis Capability in Schema`, optionally followed by `, identity
+/// "name"` to set its portable type identity (the default is the type name). It
+/// generates a unit struct `Capability` that implements
+/// `WorthQueryPortableType` and `ApplicationCapabilityMarkerIdentity`, with a
+/// `const fn reference()` returning its typed `ApplicationCapabilityRef`.
 #[macro_export]
 macro_rules! worth_query_capability {
     ($vis:vis $Capability:ident in $Schema:ty) => {
@@ -30,6 +39,14 @@ macro_rules! worth_query_capability {
     };
 }
 
+/// Declares a capability context marker in an application schema: the named
+/// context a capability constraint is evaluated in.
+///
+/// Input: `vis Context in Schema`, optionally followed by `, identity "name"`
+/// to set its portable type identity (the default is the type name). It
+/// generates a unit struct `Context` that implements `WorthQueryPortableType`
+/// and `ApplicationCapabilityContextMarkerIdentity`, with a `const fn
+/// reference()` returning its typed `ApplicationCapabilityContextRef`.
 #[macro_export]
 macro_rules! worth_query_capability_context {
     ($vis:vis $Context:ident in $Schema:ty) => {
@@ -63,6 +80,17 @@ macro_rules! worth_query_capability_context {
     };
 }
 
+/// Declares a named entity slot of a capability context: a position in the
+/// context that holds one entity of the schema, which capability path anchors
+/// bind to.
+///
+/// Input: `vis Slot in Schema, Context => Entity`, optionally followed by `,
+/// identity "name"` to set its portable type identity (the default is the type
+/// name). It generates a unit struct `Slot` that implements
+/// `WorthQueryPortableType` and
+/// `ApplicationCapabilityContextEntitySlotMarkerIdentity`, with a `const fn
+/// reference()` returning its typed
+/// `ApplicationCapabilityContextEntitySlotRef`.
 #[macro_export]
 macro_rules! worth_query_capability_context_entity_slot {
     (
@@ -110,6 +138,15 @@ macro_rules! worth_query_capability_context_entity_slot {
     };
 }
 
+/// Declares a capability provenance marker in an application schema: the named
+/// origin recorded on a capability delegation definition.
+///
+/// Input: `vis Provenance in Schema`, optionally followed by `, identity
+/// "name"` to set its portable type identity (the default is the type name). It
+/// generates a unit struct `Provenance` that implements
+/// `WorthQueryPortableType` and
+/// `ApplicationCapabilityProvenanceMarkerIdentity`, with a `const fn
+/// reference()` returning its typed `ApplicationCapabilityProvenanceRef`.
 #[macro_export]
 macro_rules! worth_query_capability_provenance {
     ($vis:vis $Provenance:ident in $Schema:ty) => {

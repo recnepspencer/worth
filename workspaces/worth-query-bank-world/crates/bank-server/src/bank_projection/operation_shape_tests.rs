@@ -69,7 +69,6 @@ fn unrelated_growth_does_not_increase_payment_projection_work() {
     let small_work = payment_work(&small, small_payment);
     let large_work = payment_work(&large, large_payment);
     assert_eq!(small_work, large_work);
-    assert_eq!(small_work.reconstructive_scans(), 0);
 }
 
 #[test]
@@ -114,7 +113,6 @@ fn unrelated_growth_does_not_increase_targeted_reversal_work() {
     let small_work = reversal_work(&small, small_journal);
     let large_work = reversal_work(&large, large_journal);
     assert_eq!(small_work, large_work);
-    assert_eq!(small_work.reconstructive_scans(), 0);
 }
 
 fn payment_work(

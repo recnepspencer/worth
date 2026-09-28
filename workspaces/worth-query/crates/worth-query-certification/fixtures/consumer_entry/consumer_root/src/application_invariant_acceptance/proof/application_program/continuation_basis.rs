@@ -7,6 +7,7 @@ use worth_query_host::facade::application_entry::{
 use worth_query_topology_entry::{PlanarOutputRead, PlanarRead, PlanarSourceAdjustment};
 
 use super::super::super::{authentication, installation, seed::length};
+use crate::application_invariant_acceptance::proof::settle;
 use crate::{ConsumerProgram, ConsumerProgramRoot, ConsumerSchema};
 
 pub(super) fn revised_parent_publication_is_the_dependent_basis(
@@ -54,17 +55,17 @@ pub(super) fn revised_parent_publication_is_the_dependent_basis(
             .unwrap_or_else(|failure| {
                 panic!("the typed output graph starts: {:?}", failure.denial())
             });
-        let settled = loop {
+        let settled = settle(|| {
             match performed
                 .required_output_mut()
                 .advance(&request)
                 .unwrap_or_else(|denial| {
                     panic!("revision {replacement_y} output graph advances: {denial:?}")
                 }) {
-                WorthQueryApplicationProgramOutputProgress::Pending => {}
-                WorthQueryApplicationProgramOutputProgress::Settled(settled) => break settled,
+                WorthQueryApplicationProgramOutputProgress::Pending => None,
+                WorthQueryApplicationProgramOutputProgress::Settled(settled) => Some(settled),
             }
-        };
+        });
         assert!(
             settled.work().producer_contact_count() <= 5,
             "a changed source settles the finite parent and nested output graph once"

@@ -44,6 +44,17 @@ macro_rules! worth_query_application {
     };
 }
 
+/// Declares one named contribution to an application schema: a group of
+/// schema members registered together, which `worth_query_application!` lists
+/// by name.
+///
+/// Input: `vis contribution Contribution in Schema { identity: "..", members:
+/// |builder| { .. } }`, or `for Schema: SchemaBinding` to contribute to every
+/// schema implementing that trait. The `members` block receives the
+/// schema's `ApplicationSchemaDeclarationBuilder` and returns it with the
+/// members registered. It generates a unit struct `Contribution` that
+/// implements `ApplicationSchemaContribution`, with a `const fn reference()`
+/// returning its typed `ApplicationSchemaContributionRef`.
 #[macro_export]
 macro_rules! worth_query_application_contribution {
     (

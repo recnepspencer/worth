@@ -126,7 +126,8 @@ fn execution(kind: BankApplicationOneShotDenialKind) -> BankHttpDenial {
         | Execution::ActiveSnapshotCapacityExhausted { .. }
         | Execution::RetentionCapacityExhausted
         | Execution::RetentionIdentityExhausted
-        | Execution::SnapshotIdentityExhausted => exhausted(),
+        | Execution::SnapshotIdentityExhausted
+        | Execution::SourceIdentityExhausted => exhausted(),
         Execution::Projection(kind) => projection(kind),
         Execution::BasisUnavailable
         | Execution::ExpiredBasis
@@ -272,7 +273,9 @@ fn output_settlement(kind: BankApplicationOutputSettlementDenialKind) -> BankHtt
         | Settlement::SchedulingDeferred
         | Settlement::NoEffect => unavailable(),
         Settlement::ProductSelection(kind) => product_selection(kind),
-        Settlement::DuplicatePerformedSource => internal_denied(),
+        Settlement::DuplicatePerformedSource | Settlement::IncompleteDependencyCoverage => {
+            internal_denied()
+        }
     }
 }
 

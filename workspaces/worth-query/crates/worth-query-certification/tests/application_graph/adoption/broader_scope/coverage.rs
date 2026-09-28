@@ -1,12 +1,11 @@
 use std::num::NonZeroUsize;
 
-use super::{fork, target_revision, P0_ONLY_DIMENSION, P1_ONLY_DIMENSION};
-use crate::bounded_dimension_model::host::publish_on_first_program;
-use crate::bounded_dimension_model::operator_identity::{authenticate_operator, request_scope};
-use crate::bounded_dimension_model::presented_request::set_dimension;
-use crate::bounded_dimension_model::programs::DimensionProgramP1;
-use crate::bounded_dimension_model::readback::read_dimension;
-use crate::bounded_dimension_model::settled_verdict::{settle, DimensionVerdict};
+use super::{fork, target_revision, P0_ONLY_RETENTION, P1_ONLY_RETENTION};
+use crate::document_retention_model::host::publish_on_first_program;
+use crate::document_retention_model::operator_identity::{authenticate_operator, request_scope};
+use crate::document_retention_model::presented_request::set_retention;
+use crate::document_retention_model::readback::read_retention;
+use crate::document_retention_model::settled_verdict::{settle, RetentionVerdict};
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationRequestExt, WorthQueryBranchSetAdoptionProgress,
     WorthQueryProgramAdoptionCoverageDenial,
@@ -101,24 +100,21 @@ fn covered_branches_advance_in_order_without_absorbing_a_later_branch() {
     };
     assert_eq!(closed.progress().len(), 3);
 
-    let p1 = host
-        .supported_program::<DimensionProgramP1>()
-        .expect("P1 remains rostered");
     for (ordinal, branch) in [a, b, c].into_iter().enumerate() {
         assert_eq!(
-            settle(set_dimension(
-                &p1,
+            settle(set_retention(
+                &host,
                 branch,
-                P1_ONLY_DIMENSION,
+                P1_ONLY_RETENTION,
                 0x9175_4000 + ordinal as u64
             )),
-            DimensionVerdict::Performed(P1_ONLY_DIMENSION)
+            RetentionVerdict::Performed(P1_ONLY_RETENTION)
         );
     }
     assert_eq!(
-        settle(set_dimension(&host, d, P0_ONLY_DIMENSION, 0x9175_4010)),
-        DimensionVerdict::Performed(P0_ONLY_DIMENSION),
+        settle(set_retention(&host, d, P0_ONLY_RETENTION, 0x9175_4010)),
+        RetentionVerdict::Performed(P0_ONLY_RETENTION),
         "D was created after coverage and must remain outside the operation"
     );
-    assert_eq!(read_dimension(host.runtime(), d), P0_ONLY_DIMENSION);
+    assert_eq!(read_retention(host.runtime(), d), P0_ONLY_RETENTION);
 }

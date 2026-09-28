@@ -22,7 +22,7 @@ pub(super) struct IndexedConnection<'a> {
 #[derive(Clone, Default)]
 pub(super) struct NodeConnectionSummary {
     incoming_data: [u32; 7],
-    outgoing_control: [u32; 8],
+    outgoing_control: [u32; 9],
     retry_count: u32,
     retry_trigger: Option<ApplicationWorkflowControlOutcome>,
 }
@@ -292,5 +292,6 @@ const fn control_index(outcome: ApplicationWorkflowControlOutcome) -> usize {
         ApplicationWorkflowControlOutcome::ConditionSatisfied => 5,
         ApplicationWorkflowControlOutcome::ConditionUnsatisfied => 6,
         ApplicationWorkflowControlOutcome::RetryExhausted => 7,
+        ApplicationWorkflowControlOutcome::NavigatedBack => 8,
     }
 }

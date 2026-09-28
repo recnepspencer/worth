@@ -56,17 +56,26 @@ impl UiNarrowedAllocationFramePlan {
                 super::UiAllocationInvalidationTarget::ResizePreview { sample, .. } => {
                     Some(*sample)
                 }
-                _ => None,
+                super::UiAllocationInvalidationTarget::Graph(_)
+                | super::UiAllocationInvalidationTarget::SettledQueryFact { .. }
+                | super::UiAllocationInvalidationTarget::ScrollOwnedContentExtent { .. }
+                | super::UiAllocationInvalidationTarget::HostMeasurement { .. }
+                | super::UiAllocationInvalidationTarget::PortalAnchor { .. }
+                | super::UiAllocationInvalidationTarget::ScrollOwnedExtent { .. }
+                | super::UiAllocationInvalidationTarget::DurableResize { .. } => None,
             })
     }
     pub(crate) fn resize_preview_sample_count(&self) -> u16 {
-        self.frame_identity
-            .invalidations()
-            .iter()
-            .filter(|invalidation| {
-                invalidation.family() == UiAllocationInvalidationFamily::ResizePreviewDelta
-            })
-            .count() as u16
+        u16::try_from(
+            self.frame_identity
+                .invalidations()
+                .iter()
+                .filter(|invalidation| {
+                    invalidation.family() == UiAllocationInvalidationFamily::ResizePreviewDelta
+                })
+                .count(),
+        )
+        .expect("a frame carries at most ALLOCATION_FRAME_SOURCE_COUNT ingress")
     }
     pub(crate) fn durable_resize_extent(&self) -> Option<crate::runtime::UiResizeLogicalExtent> {
         self.invalidations
@@ -75,7 +84,13 @@ impl UiNarrowedAllocationFramePlan {
                 super::UiAllocationInvalidationTarget::DurableResize { extent, .. } => {
                     Some(*extent)
                 }
-                _ => None,
+                super::UiAllocationInvalidationTarget::Graph(_)
+                | super::UiAllocationInvalidationTarget::ResizePreview { .. }
+                | super::UiAllocationInvalidationTarget::SettledQueryFact { .. }
+                | super::UiAllocationInvalidationTarget::ScrollOwnedContentExtent { .. }
+                | super::UiAllocationInvalidationTarget::HostMeasurement { .. }
+                | super::UiAllocationInvalidationTarget::PortalAnchor { .. }
+                | super::UiAllocationInvalidationTarget::ScrollOwnedExtent { .. } => None,
             })
     }
     pub(crate) fn durable_resize_identity_digest(&self) -> Option<u64> {
@@ -85,7 +100,13 @@ impl UiNarrowedAllocationFramePlan {
                 super::UiAllocationInvalidationTarget::DurableResize {
                     identity_digest, ..
                 } => Some(*identity_digest),
-                _ => None,
+                super::UiAllocationInvalidationTarget::Graph(_)
+                | super::UiAllocationInvalidationTarget::ResizePreview { .. }
+                | super::UiAllocationInvalidationTarget::SettledQueryFact { .. }
+                | super::UiAllocationInvalidationTarget::ScrollOwnedContentExtent { .. }
+                | super::UiAllocationInvalidationTarget::HostMeasurement { .. }
+                | super::UiAllocationInvalidationTarget::PortalAnchor { .. }
+                | super::UiAllocationInvalidationTarget::ScrollOwnedExtent { .. } => None,
             })
     }
     pub fn counters(&self) -> UiAllocationInvalidationNarrowingCounters {
@@ -141,7 +162,8 @@ impl UiNarrowedAllocationFramePlan {
         let owned = self.invalidations().get(ordinal).ok_or(
             UiAllocationInvalidationReferenceDenial::MissingCanonicalIngress {
                 ordinal: reference.ordinal(),
-                ingress_count: self.invalidations().len() as u16,
+                ingress_count: u16::try_from(self.invalidations().len())
+                    .expect("a frame carries at most ALLOCATION_FRAME_SOURCE_COUNT ingress"),
             },
         )?;
         if !std::ptr::eq(owned, invalidation) {

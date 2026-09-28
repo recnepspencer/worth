@@ -2,4 +2,3 @@
 # Rust line cap; they are audited facades, not unresolved split debt.
 
 crates/worth-foundational/src/facade.rs
-crates/worth-store/src/lib.rs

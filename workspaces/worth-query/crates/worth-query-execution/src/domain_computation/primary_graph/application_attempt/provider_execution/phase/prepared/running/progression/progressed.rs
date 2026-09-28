@@ -20,6 +20,7 @@ where
 {
     let WorthQueryProgressedApplicationCommit {
         outcome,
+        workflow_settlement_publication,
         lease,
         running,
         cleanup,
@@ -60,6 +61,9 @@ where
         ))
     });
     if let WorthQueryApplicationCommitOutcome::Committed(receipt) = &committed {
+        if let Some(publication) = workflow_settlement_publication {
+            publication.maintain(application, receipt);
+        }
         let touched = receipt
             .mutation_work()
             .into_iter()

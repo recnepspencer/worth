@@ -48,7 +48,13 @@ impl WorthUiPlanLookupIndex {
                 self.render_resource_plan_indexes.push(plan_index);
                 true
             }
-            _ => false,
+            WorthUiPlanNodeInputFamily::ChildRange
+            | WorthUiPlanNodeInputFamily::StateSlot
+            | WorthUiPlanNodeInputFamily::LayoutRegion
+            | WorthUiPlanNodeInputFamily::Accessibility
+            | WorthUiPlanNodeInputFamily::DiagnosticsRef
+            | WorthUiPlanNodeInputFamily::CanvasSpatial
+            | WorthUiPlanNodeInputFamily::RealtimeOverlay => false,
         }
     }
 

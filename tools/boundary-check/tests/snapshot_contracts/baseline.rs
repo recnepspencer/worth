@@ -16,7 +16,7 @@ impl Repository {
         let root = std::env::temp_dir().join(format!("snapshot-contract-{id}"));
         fs::create_dir_all(&root).unwrap();
         write(&root, "Cargo.toml", ROOT_MANIFEST);
-        write(&root, "_docs/worthy/NAMING.md", "fixture authority\n");
+        write(&root, "plans/worthy/NAMING.md", "fixture authority\n");
         write(
             &root,
             "tools/boundary-check/Cargo.toml",
@@ -295,7 +295,7 @@ const CONFIG: &str = r#"root_manifest='Cargo.toml'
 forbidden_root_prefixes=['cad/workspaces/']
 [machine_authority]
 canonical_config='tools/boundary-check/config/road1.toml'
-mirrored_docs=['_docs/worthy/NAMING.md']
+mirrored_docs=['plans/worthy/NAMING.md']
 [naming]
 bands=['schema']
 [[naming.reserved_domains]]

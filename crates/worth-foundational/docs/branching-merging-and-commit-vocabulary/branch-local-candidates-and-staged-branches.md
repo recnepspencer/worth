@@ -93,7 +93,7 @@ use worth_foundational::{
 };
 
 let candidate = foundational_branch_candidate()
-    .on_branch(FoundationalBranchId::new("feature/mesh").expect("branch id"))
+    .on_branch(FoundationalBranchId::new("feature/catalog").expect("branch id"))
     .with_candidate_id(FoundationalBranchCandidateId::new(BoundaryHandle::new(7)))
     .from_fork_basis(FoundationalBranchCandidateForkBasis::new(
         FoundationalBranchId::new("main").expect("branch id"),
@@ -103,7 +103,7 @@ let candidate = foundational_branch_candidate()
         EquivalenceBasisId::new(11),
         BoundaryEpoch::new(402),
     ))
-    .stage("mesh-update")?;
+    .stage("catalog-update")?;
 ```
 
 ## Real Example
@@ -119,7 +119,7 @@ use worth_foundational::{
 };
 
 let staged = foundational_branch_candidate()
-    .on_branch(FoundationalBranchId::new("feature/mesh").expect("branch id"))
+    .on_branch(FoundationalBranchId::new("feature/catalog").expect("branch id"))
     .with_candidate_id(FoundationalBranchCandidateId::new(BoundaryHandle::new(7)))
     .from_fork_basis(FoundationalBranchCandidateForkBasis::new(
         FoundationalBranchId::new("main").expect("branch id"),
@@ -137,7 +137,7 @@ let staged = foundational_branch_candidate()
         EquivalenceBasisId::new(13),
         FoundationalBranchId::new("main").expect("branch id"),
     ))
-    .stage("mesh-update")?
+    .stage("catalog-update")?
     .staged();
 
 let branch = staged.branch_id();

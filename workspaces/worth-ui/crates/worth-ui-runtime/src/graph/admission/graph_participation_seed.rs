@@ -128,7 +128,13 @@ const fn deferred_axis(participation_axis: UiGraphParticipationAxis) -> UiGraphA
         UiGraphParticipationAxis::Input => {
             UiGraphParticipationReasonCode::InputAxisAwaitsRuntimeMutation
         }
-        _ => UiGraphParticipationReasonCode::VisibleAxisAwaitsRuntimeMutation,
+        UiGraphParticipationAxis::Exists
+        | UiGraphParticipationAxis::Mounted
+        | UiGraphParticipationAxis::QueryBound
+        | UiGraphParticipationAxis::ServiceBound
+        | UiGraphParticipationAxis::Diagnostic => {
+            UiGraphParticipationReasonCode::VisibleAxisAwaitsRuntimeMutation
+        }
     };
 
     axis(

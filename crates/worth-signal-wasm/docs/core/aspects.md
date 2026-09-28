@@ -19,7 +19,7 @@ consumer wake up whenever any part of that value changes.
 ## The Opinionated Version
 
 Use aspects when your domain has a stable distinction that matters to
-invalidation: financial terms versus an operator note, geometry versus visual
+invalidation: financial terms versus an operator note, layout versus visual
 style, approval state versus display copy.
 
 Do not create an aspect for every object property. That is property tracking
@@ -182,8 +182,8 @@ storage redesign.
 before recomputation. You may still use selectors or computed nodes to produce
 values; aspects decide which semantic changes can reach them.
 
-**Regions answer where.** Aspects answer what kind. A canvas edit might change
-the `geometry` aspect in two spatial regions. Use
+**Regions answer where.** Aspects answer what kind. A spreadsheet edit might
+change the `values` aspect in two ranges of cells. Use
 `tx.setWithRegionsAndAspects(...)` when both facts matter.
 
 **Local Truth aspects can also be merge loci.** That layer uses semantic

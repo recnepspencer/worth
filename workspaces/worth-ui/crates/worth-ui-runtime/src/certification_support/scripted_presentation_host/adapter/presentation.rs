@@ -20,7 +20,10 @@ impl ScriptedPresentationHost {
                 worth_ui_host_contract::UiMountedPresentationWorkView::Delta(work) => {
                     work.nodes().to_vec()
                 }
-                _ => Vec::new(),
+                worth_ui_host_contract::UiMountedPresentationWorkView::Initial(_)
+                | worth_ui_host_contract::UiMountedPresentationWorkView::Reconstruction(_)
+                | worth_ui_host_contract::UiMountedPresentationWorkView::Sample(_)
+                | worth_ui_host_contract::UiMountedPresentationWorkView::Unchanged(_) => Vec::new(),
             };
             state.last_surface_colors = surface_colors(request.appearance_work());
             if request.appearance_work().is_some() {
@@ -208,7 +211,12 @@ fn scroll_chrome(
             worth_ui_host_contract::UiMountedAppearanceMechanic::ScrollChrome(chrome) => {
                 Some(*chrome)
             }
-            _ => None,
+            worth_ui_host_contract::UiMountedAppearanceMechanic::Surface(_)
+            | worth_ui_host_contract::UiMountedAppearanceMechanic::PortalSurface(_)
+            | worth_ui_host_contract::UiMountedAppearanceMechanic::Outline(_)
+            | worth_ui_host_contract::UiMountedAppearanceMechanic::TextForeground(_)
+            | worth_ui_host_contract::UiMountedAppearanceMechanic::Pointer(_)
+            | worth_ui_host_contract::UiMountedAppearanceMechanic::Backdrop(_) => None,
         })
         .collect()
 }

@@ -66,6 +66,7 @@ pub struct WorthUiNativeApplicationShell {
     mounted_row_indices: HashMap<Box<str>, usize>,
     viewport: viewport_extent::UiNativeViewportExtent,
     surface_reconciliation: surface_reconciliation::UiNativeSurfaceReconciliation,
+    presentation_retry: presentation_recovery::UiNativePresentationRetry,
     runtime_derived_state_reconstruction:
         Option<worth_ui_host_native::UiNativeClientDerivedStateReconstructionObservation>,
     pub(super) pending_managed_rebind:
@@ -218,6 +219,7 @@ impl WorthUiNativeApplicationShell {
     ) -> Result<UiMountedFrameOutcome, super::WorthUiMountedFrameExecutionStop<'_>> {
         self.settle_pending_native_viewport_measurements()?;
         self.refresh_native_surface_reconciliation();
+        let answers = self.host_retry_wake_clearing_answers();
         if let Some(replacement) = self.pending_native_surface_reconciliation() {
             let replacements = [replacement];
             let outcome = self
@@ -227,9 +229,11 @@ impl WorthUiNativeApplicationShell {
                     UiPresentationDeadline::at_tick(deadline_tick),
                     now_tick,
                 )?;
-            // The stop borrows the session, so the landing borrows only its owner.
+            // The stop borrows the session, so the landing borrows only its owners.
             self.surface_reconciliation
                 .land_outcome(self.binding, &outcome);
+            self.viewport.land_outcome(&outcome);
+            self.presentation_retry.land_outcome(&outcome, answers);
             return Ok(outcome);
         }
         let outcome = self
@@ -238,6 +242,8 @@ impl WorthUiNativeApplicationShell {
                 UiPresentationDeadline::at_tick(deadline_tick),
                 now_tick,
             )?;
+        self.viewport.land_outcome(&outcome);
+        self.presentation_retry.land_outcome(&outcome, answers);
         Ok(outcome)
     }
 
@@ -278,13 +284,18 @@ impl WorthUiNativeApplicationShell {
             )
     }
 
+    /// Presents a prepared frame and lands its outcome. While the shell owes
+    /// a surface reconciliation the frame presents as that reconciliation:
+    /// the binding it replaces stays blocked until a publication proves the
+    /// replacement, so ordinary admission would refuse it.
     pub(crate) fn present_prepared_frame(
         &mut self,
         frame: crate::mounting::UiPreparedMountedFrame,
         deadline_tick: u64,
         now_tick: u64,
-    ) -> Result<UiMountedFrameOutcome, ()> {
+    ) -> Result<UiMountedFrameOutcome, crate::mounting::UiMountedIdentityDenial> {
         self.refresh_native_surface_reconciliation();
+        let answers = self.host_retry_wake_clearing_answers();
         let outcome = if let Some(replacement) = self.pending_native_surface_reconciliation() {
             self.session
                 .present_prepared_mounted_frame_for_reconciliation(
@@ -292,8 +303,7 @@ impl WorthUiNativeApplicationShell {
                     &[replacement],
                     UiPresentationDeadline::at_tick(deadline_tick),
                     now_tick,
-                )
-                .map_err(|_| ())?
+                )?
         } else {
             self.session.present_prepared_mounted_frame_internal(
                 frame,
@@ -301,7 +311,7 @@ impl WorthUiNativeApplicationShell {
                 now_tick,
             )
         };
-        self.settle_surface_reconciliation(&outcome);
+        self.land_frame_outcome(&outcome, answers);
         Ok(outcome)
     }
 
@@ -312,6 +322,7 @@ impl WorthUiNativeApplicationShell {
         deadline_tick: u64,
         now_tick: u64,
     ) -> UiMountedFrameOutcome {
+        let answers = self.host_retry_wake_clearing_answers();
         let outcome = self
             .session
             .present_prepared_superseding_mounted_frame_internal(
@@ -320,7 +331,7 @@ impl WorthUiNativeApplicationShell {
                 UiPresentationDeadline::at_tick(deadline_tick),
                 now_tick,
             );
-        self.settle_surface_reconciliation(&outcome);
+        self.land_frame_outcome(&outcome, answers);
         outcome
     }
 
@@ -344,10 +355,11 @@ impl WorthUiNativeApplicationShell {
         in_flight: crate::mounting::UiMountedPresentationInFlight,
         now_tick: u64,
     ) -> UiMountedFrameOutcome {
+        let answers = self.host_retry_wake_clearing_answers();
         let outcome = self
             .session
             .complete_mounted_presentation(in_flight, now_tick);
-        self.settle_surface_reconciliation(&outcome);
+        self.land_frame_outcome(&outcome, answers);
         outcome
     }
 
@@ -359,25 +371,16 @@ impl WorthUiNativeApplicationShell {
             .admit_duplicate_native_presentation_observation(presentation)
     }
 
-    pub(crate) fn retry_rejected_frame_presentation(
-        &mut self,
-        rejected: crate::mounting::UiMountedRejectedFrame,
-        deadline: UiPresentationDeadline,
-        now_tick: u64,
-    ) -> UiMountedFrameOutcome {
-        let outcome = self.session.present_prepared_mounted_frame_internal(
-            rejected.into_frame(),
-            deadline,
-            now_tick,
-        );
-        self.settle_surface_reconciliation(&outcome);
-        outcome
-    }
-
-    /// Lands `outcome` on the replacement binding still owed a publication.
-    pub(super) fn settle_surface_reconciliation(&mut self, outcome: &UiMountedFrameOutcome) {
+    /// Lands `outcome` on the replacement binding, viewport extent, and host
+    /// retry still owed a presentation. `answers` is the host's count of
+    /// retry-wake-clearing answers from before the attempt, as every landing
+    /// takes it; see
+    /// [`presentation_recovery::UiNativePresentationRetry::land_outcome`].
+    pub(super) fn land_frame_outcome(&mut self, outcome: &UiMountedFrameOutcome, answers: u64) {
         self.surface_reconciliation
             .land_outcome(self.binding, outcome);
+        self.viewport.land_outcome(outcome);
+        self.presentation_retry.land_outcome(outcome, answers);
     }
 
     pub fn generation_identity(

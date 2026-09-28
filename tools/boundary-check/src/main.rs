@@ -3,9 +3,11 @@ mod config;
 mod configured_dependency_denials;
 mod configured_source_dependency_allowlists;
 mod configured_source_identifier_denials;
+mod configured_source_owner_isolations;
 mod context_workspace_rules;
 mod dependency_rules;
 mod diagnostics;
+mod facade_docs;
 mod hook_authority;
 mod legacy_references;
 mod manifest_types;
@@ -14,6 +16,7 @@ mod query_audience;
 mod seed_contracts;
 mod snapshots;
 mod source_rules;
+mod source_syntax;
 mod subworkspace_rules;
 
 use crate::cargo_graph::discover_road1_packages;
@@ -23,6 +26,7 @@ use crate::configured_dependency_denials::{
 };
 use crate::configured_source_dependency_allowlists::validate_source_dependency_allowlists;
 use crate::configured_source_identifier_denials::validate_source_identifier_denials;
+use crate::configured_source_owner_isolations::validate_source_owner_isolations;
 use crate::context_workspace_rules::validate_context_workspaces;
 use crate::dependency_rules::{validate_dependency_rules, validate_worth_ui_query_edge};
 use crate::diagnostics::{render_human, render_json, Diagnostic};
@@ -168,6 +172,10 @@ fn run(
     diagnostics.extend(validate_source_identifier_denials(
         &root,
         &config.source_identifier_denials,
+    ));
+    diagnostics.extend(validate_source_owner_isolations(
+        &root,
+        &config.source_owner_isolations,
     ));
     diagnostics.extend(enforce_raw_geometry_denials(
         &root,

@@ -41,6 +41,8 @@ pub enum BankProviderFailureKind {
     TokenNotMintedForPlan,
     EmptyPhysicalSessionIdentity,
     SessionIdentityExhausted,
+    IndexMaintenanceBudgetExceeded,
+    IndexGenerationIdentityExhausted,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -152,6 +154,12 @@ const fn provider_failure_kind(
             BankProviderFailureKind::EmptyPhysicalSessionIdentity
         }
         Query::SessionIdentityExhausted => BankProviderFailureKind::SessionIdentityExhausted,
+        Query::IndexMaintenanceBudgetExceeded => {
+            BankProviderFailureKind::IndexMaintenanceBudgetExceeded
+        }
+        Query::IndexGenerationIdentityExhausted => {
+            BankProviderFailureKind::IndexGenerationIdentityExhausted
+        }
     }
 }
 

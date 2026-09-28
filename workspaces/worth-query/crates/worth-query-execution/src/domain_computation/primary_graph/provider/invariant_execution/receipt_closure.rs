@@ -46,7 +46,7 @@ pub(super) fn validate_receipt_closure(
         .map(requirement_fact)
         .collect::<Vec<_>>();
     let (rule_id, major, minor, maximum_work) =
-        crate::domain_computation::primary_graph::workflow::schema::publication_immutability_receipt_contract();
+        crate::domain_computation::primary_graph::workflow::schema::fact_custody_receipt_contract();
     requirements.push(RequirementFact {
         key: (
             rule_id,

@@ -54,6 +54,8 @@ fn second_real_overlay_is_rejected_without_orphaning_the_first_overlay() {
         mutation_run,
         attempt_basis,
         aftermath_causality,
+        outcome_identity,
+        workflow_settlement_publication: _workflow_settlement_publication,
     } = running;
     let admitted_session = admit_provider_session(
         &mut running,
@@ -71,6 +73,7 @@ fn second_real_overlay_is_rejected_without_orphaning_the_first_overlay() {
                 &world.application.primary_provider,
                 &admission,
                 idempotency,
+                outcome_identity,
                 aftermath_causality.as_ref(),
             ),
         )

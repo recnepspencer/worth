@@ -247,7 +247,7 @@ class WorthUiContractGateTests(unittest.TestCase):
     def test_document_gate_rejects_broken_relative_link(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            document = root / "_docs/worth-ui/readme.md"
+            document = root / "plans/worth-ui/readme.md"
             document.parent.mkdir(parents=True)
             document.write_text("[missing](missing.md)", encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "broken local link"):

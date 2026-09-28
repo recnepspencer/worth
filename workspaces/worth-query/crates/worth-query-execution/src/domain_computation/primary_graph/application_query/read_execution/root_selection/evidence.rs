@@ -81,30 +81,28 @@ impl RootPathSourceBuilder {
             .aspect_contract(entity_name, aspect)
             .ok_or_else(|| source_denial(entity_name))?
             .revision();
-        if !self
-            .aspects
-            .contains_key(&(entity, aspect.clone(), field.clone()))
-        {
-            work.charge_source_observation(entity_name)?;
-            let locator = worth_foundational::facade::AspectFieldLocator::new(
-                worth_foundational::facade::LocatorAuthority::Authoritative,
-                aspect.clone(),
-                worth_foundational::facade::CanonicalFieldPath::single(field.clone()),
-            );
-            let native_revision = projection.entity_field_revision(entity, &locator);
-            self.aspects.insert(
-                (entity, aspect.clone(), field.clone()),
-                WorthQueryObservedFieldRevision {
-                    entity,
-                    entity_name: entity_name.to_owned(),
-                    aspect: aspect.clone(),
-                    field: field.clone(),
-                    contract_revision,
-                    native_revision,
-                },
-            );
+        match self.aspects.entry((entity, aspect.clone(), field.clone())) {
+            std::collections::btree_map::Entry::Occupied(entry) => Ok(entry.get().clone()),
+            std::collections::btree_map::Entry::Vacant(entry) => {
+                work.charge_source_observation(entity_name)?;
+                let locator = worth_foundational::facade::AspectFieldLocator::new(
+                    worth_foundational::facade::LocatorAuthority::Authoritative,
+                    aspect.clone(),
+                    worth_foundational::facade::CanonicalFieldPath::single(field.clone()),
+                );
+                let native_revision = projection.entity_field_revision(entity, &locator);
+                Ok(entry
+                    .insert(WorthQueryObservedFieldRevision {
+                        entity,
+                        entity_name: entity_name.to_owned(),
+                        aspect: aspect.clone(),
+                        field: field.clone(),
+                        contract_revision,
+                        native_revision,
+                    })
+                    .clone())
+            }
         }
-        Ok(self.aspects[&(entity, aspect.clone(), field.clone())].clone())
     }
 
     pub(super) fn observe_adjacencies(
@@ -120,27 +118,28 @@ impl RootPathSourceBuilder {
             RelationalAdjacencyDirection::Outgoing => 0,
             RelationalAdjacencyDirection::Incoming => 1,
         };
-        if !self
+        match self
             .adjacencies
-            .contains_key(&(anchor, relation_kind, direction_key))
+            .entry((anchor, relation_kind, direction_key))
         {
-            work.charge_source_observation(subject)?;
-            let revision = projection
-                .bounded_adjacency_structural_revision(anchor, relation_kind, direction, 1)
-                .map_err(|_| source_denial(subject))?;
-            self.adjacencies.insert(
-                (anchor, relation_kind, direction_key),
-                WorthQueryObservedAdjacencyRevision {
-                    anchor,
-                    relation_kind,
-                    direction,
-                    native_revision: revision.revision(),
-                    comparison_work_limit: revision.work_units(),
-                    endpoints: Vec::new(),
-                },
-            );
+            std::collections::btree_map::Entry::Occupied(entry) => Ok(entry.get().clone()),
+            std::collections::btree_map::Entry::Vacant(entry) => {
+                work.charge_source_observation(subject)?;
+                let revision = projection
+                    .bounded_adjacency_structural_revision(anchor, relation_kind, direction, 1)
+                    .map_err(|_| source_denial(subject))?;
+                Ok(entry
+                    .insert(WorthQueryObservedAdjacencyRevision {
+                        anchor,
+                        relation_kind,
+                        direction,
+                        native_revision: revision.revision(),
+                        comparison_work_limit: revision.work_units(),
+                        endpoints: Vec::new(),
+                    })
+                    .clone())
+            }
         }
-        Ok(self.adjacencies[&(anchor, relation_kind, direction_key)].clone())
     }
 
     pub(super) fn finish(

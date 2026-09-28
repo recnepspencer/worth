@@ -21,7 +21,7 @@ use crate::facade::{
     SignalInvalidationScope, SliceWideningPolicy, SnapshotReadContract, SubscriptionSliceKind,
     TruthDeltaSurfaceKind, TruthPatchScope, TruthPatchTargetSelector,
 };
-use crate::relational_identity::RelationalBridgeRecordIdentityParts;
+use crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts;
 use crate::truth_identity_fixtures::{truth_branch, truth_commit, truth_patch, truth_snapshot};
 
 #[test]

@@ -14,8 +14,9 @@ use worth_query_installation::facade::ApplicationSchema;
 
 use super::{program_required, WorthQueryProgramOwner};
 use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationCommitOutcome, WorthQueryApplicationEffectProgram,
-    WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationRetainedCommitOutcome,
+    WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitOutcome,
+    WorthQueryApplicationEffectProgram, WorthQueryApplicationIdempotencyBinding,
+    WorthQueryApplicationRetainedCommitOutcome,
 };
 
 type ActionProgram<Schema, Binding> = WorthQueryApplicationEffectProgram<
@@ -42,12 +43,18 @@ where
     if !owner.owns_action(binding) || owner.owns_output_source(binding) {
         return WorthQueryApplicationCommitOutcome::Denied(program_required());
     }
+    if !program.matches_workflow_authority_binding::<Binding>(&idempotency) {
+        return WorthQueryApplicationCommitOutcome::Denied(
+            WorthQueryApplicationCommitDenial::workflow_authority_required(),
+        );
+    }
     let runtime = owner.owned_runtime();
     let Some(support) = runtime.installed_program_support() else {
         return WorthQueryApplicationCommitOutcome::Denied(program_required());
     };
-    let Some(presented) = support.present(owner.owned_revision()) else {
-        return WorthQueryApplicationCommitOutcome::Denied(program_required());
+    let presented = match support.present_for_commit(owner.owned_revision()) {
+        Ok(presented) => presented,
+        Err(denial) => return WorthQueryApplicationCommitOutcome::Denied(denial),
     };
     runtime.compare_and_commit_application_for_program_action(&presented, program, idempotency)
 }

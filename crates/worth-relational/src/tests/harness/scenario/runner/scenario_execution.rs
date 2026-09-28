@@ -165,7 +165,7 @@ fn run_periodic_authority_work(
 ) {
     if config
         .durable_checkpoint_every
-        .map(|interval| (step + 1) % interval == 0)
+        .map(|interval| (step + 1).is_multiple_of(interval))
         .unwrap_or(false)
     {
         runtime.durability_authority().checkpoint().unwrap();
@@ -174,7 +174,7 @@ fn run_periodic_authority_work(
 
     if config
         .durable_compact_every
-        .map(|interval| (step + 1) % interval == 0)
+        .map(|interval| (step + 1).is_multiple_of(interval))
         .unwrap_or(false)
     {
         let _ = runtime.durability_authority().compact_store().unwrap();
@@ -183,7 +183,7 @@ fn run_periodic_authority_work(
 
     if config
         .retention_pass_every
-        .map(|interval| (step + 1) % interval == 0)
+        .map(|interval| (step + 1).is_multiple_of(interval))
         .unwrap_or(false)
     {
         let _ = runtime.retention().run_pass();
@@ -203,7 +203,7 @@ fn maybe_record_checkpoint(
         .unwrap()
         .position;
     if latest_position.0 > checkpoints.last().unwrap().position().0
-        && latest_position.0 as usize % config.checkpoint_stride == 0
+        && (latest_position.0 as usize).is_multiple_of(config.checkpoint_stride)
     {
         checkpoints.push(checkpoint_for_schema_version(
             latest_position,

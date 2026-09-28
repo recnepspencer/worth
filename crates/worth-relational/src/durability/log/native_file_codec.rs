@@ -67,7 +67,6 @@ pub(crate) fn encode_checkpoint(
             format!("failed to encode native checkpoint: {error}"),
         )
     })?;
-    drop(writer);
     let sections = recorder.finish(bytes.len()).ok_or_else(|| {
         DurabilityError::new(
             RecoveryFailureClass::DurableIoFailure,

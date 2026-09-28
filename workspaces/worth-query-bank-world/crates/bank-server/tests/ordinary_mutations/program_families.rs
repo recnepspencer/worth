@@ -1,7 +1,7 @@
 use super::*;
 
 #[test]
-fn public_consumer_executes_every_typed_mutation_family() {
+fn public_consumer_executes_ordinary_mutation_families_without_bypassing_workflow_approval() {
     let fixture = ordinary_read_world("ordinary-mutations", 0);
     let owner = fixture.authenticate(OWNER);
     let recipient = fixture.authenticate(RECIPIENT);
@@ -129,20 +129,27 @@ fn public_consumer_executes_every_typed_mutation_family() {
         .map(|item| item.amount().minor_units())
         .sum::<i64>();
     assert!(available >= 900);
-    let approval = execute!(
-        fixture,
-        approver,
-        mutations::approve_payment(ApprovePayment {
+    // The typed ordinary surface offers no approval; a raw request for one
+    // is refused before it can bypass the workflow.
+    let approval_scope = request_scope();
+    let approval = fixture
+        .world
+        .runtime
+        .request(&approver, &approval_scope)
+        .mutate(ApprovePayment {
             payment: fixture.payment,
             approver: principal_id(APPROVER),
-        }),
-        "approve",
-    );
-    assert_program_committed::<ApprovePayment>(approval, true);
+        })
+        .idempotency(&key("approve"))
+        .execute();
+    assert!(matches!(
+        approval,
+        Err(WorthQueryApplicationRequestMutationDenial::RequiresWorkflowTransition)
+    ));
     let pending = pending_payments(&fixture, &approver);
     assert!(pending
         .iter()
-        .all(|payment| payment.id() != fixture.payment));
+        .any(|payment| payment.id() == fixture.payment));
     let pending = pending
         .iter()
         .find(|payment| payment.id() != fixture.payment)

@@ -352,7 +352,7 @@ fn optional_u64(
         entries,
         format!("{prefix}.{field}"),
         CanonicalBasisEntryKind::Value,
-        value.map_or(CanonicalBasisValue::Null, |value| unsigned(value)),
+        value.map_or(CanonicalBasisValue::Null, unsigned),
     );
 }
 

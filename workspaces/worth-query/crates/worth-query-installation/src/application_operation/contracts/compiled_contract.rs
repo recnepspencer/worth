@@ -1,4 +1,5 @@
 use worth_foundational::facade::CanonicalDigestWorkBudget;
+use worth_query_declaration::facade::application_operation::ApplicationCandidateRequirements;
 
 use crate::application_aftermath::{
     InstalledExternalEffectContract, WorthQueryInstalledAftermathContract,
@@ -39,9 +40,23 @@ pub struct WorthQueryCompiledApplicationOperationContracts {
     pub(super) external_effect: InstalledExternalEffectContract,
     pub(super) aftermath: Option<WorthQueryInstalledAftermathContract>,
     pub(super) overlap_index: WorthQueryOperationReadTouchOverlapIndex,
+    pub(super) platform_candidate_ceiling: Option<ApplicationCandidateRequirements>,
+    pub(super) workflow_settlement_ceiling: Option<ApplicationCandidateRequirements>,
 }
 
 impl WorthQueryCompiledApplicationOperationContracts {
+    /// The componentwise maximum declared by installed mutation bindings for
+    /// this operation. Query-owned platform effects cannot exceed these kinds.
+    pub const fn platform_candidate_ceiling(&self) -> Option<ApplicationCandidateRequirements> {
+        self.platform_candidate_ceiling
+    }
+
+    /// Query-owned sidecar capacity for one locally performed workflow step.
+    /// It is separate from the product handler's candidate writer ceiling.
+    pub const fn workflow_settlement_ceiling(&self) -> Option<ApplicationCandidateRequirements> {
+        self.workflow_settlement_ceiling
+    }
+
     pub fn mutation_preconditions(&self) -> &[WorthQueryInstalledMutationPrecondition] {
         &self.mutation_preconditions
     }

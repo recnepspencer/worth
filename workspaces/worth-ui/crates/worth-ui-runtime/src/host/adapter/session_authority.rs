@@ -10,6 +10,7 @@ pub struct UiHostAdapterSessionAuthority {
     host_session_identity: u64,
     _authority: worth_proof::AuthorityWitness<UiHostAdapterSessionGrant>,
     presentation_lease_gate: crate::mounting::presentation::UiMountedPresentationLeaseGate,
+    retry_wake_clearing_answers: std::cell::Cell<u64>,
 }
 
 impl UiHostAdapterSessionAuthority {
@@ -20,7 +21,59 @@ impl UiHostAdapterSessionAuthority {
                 UiHostAdapterSessionGrant,
             ),
             presentation_lease_gate: Default::default(),
+            retry_wake_clearing_answers: std::cell::Cell::new(0),
         }
+    }
+
+    /// Records the host's answer to one surface presentation. The host keeps
+    /// the retry wake it holds for a frame it rejected before effects only
+    /// while every answer since, from any owner, is another external timeout
+    /// or occlusion: presented, in-flight, indeterminate, text-atlas deferred,
+    /// reconstruction-required, and terminal answers all drop it. The host
+    /// ranks the answers of one attempt together, so an occlusion in the same
+    /// attempt as a text-atlas deferral keeps its wake though this counts the
+    /// deferral; answers refused before the host saw them count too. Both err
+    /// toward presenting early, never toward waiting on a wake that is gone.
+    pub(crate) fn record_surface_presentation(
+        &self,
+        outcome: &crate::facade::mounted::UiHostSurfacePresentationOutcome,
+    ) {
+        use crate::facade::mounted::{
+            UiHostSurfacePresentationDenial as Denial, UiHostSurfacePresentationOutcome as Outcome,
+        };
+        let keeps_wake = match outcome {
+            Outcome::RejectedBeforeEffects(denial) => match denial {
+                Denial::ExternalTimeout | Denial::SurfaceOccluded => true,
+                Denial::AdapterDeclined
+                | Denial::ExternalValidationFailed
+                | Denial::TextAtlasPresentationDeferred
+                | Denial::CancelledBeforeEffects
+                | Denial::UnsupportedPresentationMode(_)
+                | Denial::UnsupportedEffect(_)
+                | Denial::Protocol(_)
+                | Denial::ProtocolChanged
+                | Denial::CapabilityGenerationChanged
+                | Denial::CapabilityProfileChanged
+                | Denial::SurfaceBindingChanged
+                | Denial::ReconstructionRequired
+                | Denial::StalePredecessor
+                | Denial::MalformedProjection
+                | Denial::DeadlineExpired
+                | Denial::CapacityExceeded => false,
+            },
+            Outcome::Presented(_) | Outcome::InFlight(_) | Outcome::PresentationIndeterminate => {
+                false
+            }
+        };
+        if !keeps_wake {
+            self.retry_wake_clearing_answers
+                .set(self.retry_wake_clearing_answers.get().wrapping_add(1));
+        }
+    }
+
+    /// How many host answers would have dropped a retry wake the host held.
+    pub(crate) fn retry_wake_clearing_answers(&self) -> u64 {
+        self.retry_wake_clearing_answers.get()
     }
 
     pub fn host_session_identity(&self) -> u64 {

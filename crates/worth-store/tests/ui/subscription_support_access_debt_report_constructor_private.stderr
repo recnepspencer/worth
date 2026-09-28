@@ -1,9 +1,0 @@
-error[E0451]: fields `required` and `debted` of struct `SubscriptionSupportAccessStructureReport` are private
- --> tests/ui/subscription_support_access_debt_report_constructor_private.rs:7:9
-  |
-6 |     let _ = SubscriptionSupportAccessStructureReport {
-  |             ---------------------------------------- in this type
-7 |         required: vec![SubscriptionSupportAccessStructure::FamilyLookup],
-  |         ^^^^^^^^ private field
-8 |         debted: vec![SubscriptionSupportAccessStructure::FamilyLookup],
-  |         ^^^^^^ private field

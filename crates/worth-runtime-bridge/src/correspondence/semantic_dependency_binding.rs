@@ -24,9 +24,10 @@ pub(crate) struct BridgeInstalledBindingKey {
     declared_graph_role: std::sync::Arc<str>,
     graph_participation_identity: std::sync::Arc<str>,
     graph_adapter_identity: std::sync::Arc<str>,
-    source_record_identity: Option<crate::relational_identity::RelationalBridgeRecordIdentityParts>,
+    source_record_identity:
+        Option<crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts>,
     observation_record_identity:
-        Option<crate::relational_identity::RelationalBridgeRecordIdentityParts>,
+        Option<crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts>,
     contract: String,
     projection_mask: String,
     binding: String,

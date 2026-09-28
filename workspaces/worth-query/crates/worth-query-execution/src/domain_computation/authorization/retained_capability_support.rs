@@ -14,7 +14,15 @@ pub(in crate::domain_computation) struct WorthQueryRetainedCapabilitySupport {
     grant: worth_relational::facade::identity::EntityId,
     request: WorthQueryRetainedCapabilityRequest,
     sample: WorthQueryRuntimeTimeSample,
+    expiry: worth_foundational::facade::AspectValue,
     posture: WorthQueryCapabilityObservationPosture,
+    role: WorthQueryCapabilitySupportRole,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(in crate::domain_computation) enum WorthQueryCapabilitySupportRole {
+    DelegationTarget,
+    ElevationUpperBound,
 }
 
 pub(in crate::domain_computation) struct WorthQueryCapabilitySupportCommitBasis {
@@ -32,6 +40,7 @@ impl WorthQueryRetainedCapabilitySupport {
         grant: worth_relational::facade::identity::EntityId,
         request: WorthQueryRetainedCapabilityRequest,
         sample: WorthQueryRuntimeTimeSample,
+        expiry: worth_foundational::facade::AspectValue,
     ) -> Self {
         Self::new(
             decision,
@@ -39,7 +48,9 @@ impl WorthQueryRetainedCapabilitySupport {
             grant,
             request,
             sample,
+            expiry,
             WorthQueryCapabilityObservationPosture::Active,
+            WorthQueryCapabilitySupportRole::DelegationTarget,
         )
     }
 
@@ -49,6 +60,7 @@ impl WorthQueryRetainedCapabilitySupport {
         grant: worth_relational::facade::identity::EntityId,
         request: WorthQueryRetainedCapabilityRequest,
         sample: WorthQueryRuntimeTimeSample,
+        expiry: worth_foundational::facade::AspectValue,
     ) -> Self {
         Self::new(
             decision,
@@ -56,7 +68,9 @@ impl WorthQueryRetainedCapabilitySupport {
             grant,
             request,
             sample,
+            expiry,
             WorthQueryCapabilityObservationPosture::UpperBound,
+            WorthQueryCapabilitySupportRole::ElevationUpperBound,
         )
     }
 
@@ -66,7 +80,9 @@ impl WorthQueryRetainedCapabilitySupport {
         grant: worth_relational::facade::identity::EntityId,
         request: WorthQueryRetainedCapabilityRequest,
         sample: WorthQueryRuntimeTimeSample,
+        expiry: worth_foundational::facade::AspectValue,
         posture: WorthQueryCapabilityObservationPosture,
+        role: WorthQueryCapabilitySupportRole,
     ) -> Self {
         Self {
             decision,
@@ -74,7 +90,9 @@ impl WorthQueryRetainedCapabilitySupport {
             grant,
             request,
             sample,
+            expiry,
             posture,
+            role,
         }
     }
 
@@ -103,7 +121,9 @@ impl WorthQueryRetainedCapabilitySupport {
             grant: self.grant,
             request: self.request.clone(),
             sample: self.sample.clone(),
+            expiry: self.expiry.clone(),
             posture: self.posture,
+            role: self.role,
         }
     }
 
@@ -127,10 +147,18 @@ impl WorthQueryRetainedCapabilitySupport {
         self.posture
     }
 
+    pub(super) const fn role(&self) -> WorthQueryCapabilitySupportRole {
+        self.role
+    }
+
     pub(in crate::domain_computation) const fn timeline(
         &self,
     ) -> ApplicationCapabilityValidityTimeline {
         self.sample.timeline()
+    }
+
+    pub(super) const fn expiry(&self) -> &worth_foundational::facade::AspectValue {
+        &self.expiry
     }
 }
 

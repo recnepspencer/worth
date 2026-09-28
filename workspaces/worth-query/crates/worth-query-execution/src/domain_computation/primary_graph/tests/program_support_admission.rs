@@ -11,6 +11,8 @@ use super::fixture::{
     unadmitted_program_revision,
 };
 use crate::domain_computation::primary_graph::program_occurrence::program_revision_rendering;
+use crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind;
+use worth_query_installation::facade::WorthQueryProgramSupportRetirementDenial;
 
 #[test]
 fn a_host_presents_only_the_program_revisions_it_admitted() {
@@ -72,4 +74,60 @@ fn retained_program_meaning_does_not_authorize_an_inactive_or_replaced_support()
     assert!(support.retain_interpretation(&revision).is_none());
     drop(retirement);
     assert!(support.retain_interpretation(&revision).is_some());
+}
+
+#[test]
+fn a_commit_names_why_it_cannot_present_a_retiring_or_unadmitted_revision() {
+    let world = installed_authorization_world(true);
+    let revision = rostered_program_revision();
+    let support = installed_program_support(&world.application.installed_schema);
+    assert!(support.present_for_commit(&revision).is_ok());
+    let unadmitted = support
+        .present_for_commit(&unadmitted_program_revision())
+        .err()
+        .expect("an unadmitted revision is refused");
+    assert_eq!(
+        unadmitted.kind(),
+        WorthQueryApplicationCommitDenialKind::ApplicationProgramRequired
+    );
+
+    let retirement = support.lifecycle().begin_retirement(&revision).unwrap();
+    let retiring = support
+        .present_for_commit(&revision)
+        .err()
+        .expect("a retiring revision is refused");
+    assert_eq!(
+        retiring.kind(),
+        WorthQueryApplicationCommitDenialKind::ProgramSupportRetired
+    );
+    drop(retirement);
+    assert!(support.present_for_commit(&revision).is_ok());
+}
+
+#[test]
+fn a_completed_retirement_leaves_the_revision_permanently_retired() {
+    let world = installed_authorization_world(true);
+    let revision = rostered_program_revision();
+    let support = installed_program_support(&world.application.installed_schema);
+    let receipt = support
+        .lifecycle()
+        .begin_retirement(&revision)
+        .unwrap()
+        .finish(0, 0)
+        .expect("an unused revision retires");
+    assert!(receipt.inventory().can_retire());
+
+    let retired = support
+        .present_for_commit(&revision)
+        .err()
+        .expect("a retired revision is refused");
+    assert_eq!(
+        retired.kind(),
+        WorthQueryApplicationCommitDenialKind::ProgramSupportRetired
+    );
+    assert!(support.retain_interpretation(&revision).is_none());
+    assert!(matches!(
+        support.lifecycle().begin_retirement(&revision),
+        Err(WorthQueryProgramSupportRetirementDenial::AlreadyRetired { .. })
+    ));
 }

@@ -1,0 +1,7 @@
+error: cannot construct `RelationalChangeReceipt` with struct literal syntax due to private fields
+ --> tests/ui/change_source/receipt_cannot_be_fabricated.rs:4:13
+  |
+4 |     let _ = RelationalChangeReceipt {};
+  |             ^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: private fields `patch`, `records_examined`, `records_filtered_out`, `consistency`, `proof` and `commit_identity` that were not provided

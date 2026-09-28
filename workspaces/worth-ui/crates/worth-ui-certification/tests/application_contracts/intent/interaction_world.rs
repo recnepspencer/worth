@@ -282,7 +282,7 @@ impl InteractionWorld {
         )
     }
 
-    fn admit(
+    pub(super) fn admit(
         &mut self,
         presentation: UiHostObservationPresentationBasis,
         loss: UiHostObservationLoss,

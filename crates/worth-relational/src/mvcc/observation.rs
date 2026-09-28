@@ -31,6 +31,11 @@ impl RelationalBranchObservation {
         }
     }
 
+    /// Whether this observation was issued from `basis`.
+    pub fn issued_from(&self, basis: &AdmittedRelationalBranchBasis) -> bool {
+        self.admitted_basis() == *basis
+    }
+
     pub fn descriptor(&self) -> &RelationalBranchBasisDescriptor {
         &self.inner.descriptor
     }

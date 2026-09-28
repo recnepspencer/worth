@@ -70,7 +70,7 @@ impl BridgeOwnedSignalRuntime {
         signal_basis: &super::BridgeConditionalSignalBasisBinding,
         request: BridgeConditionalExecutionRequest<'_>,
         managed_source_record: Option<
-            crate::relational_identity::RelationalBridgeRecordIdentityParts,
+            crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts,
         >,
         compute_context: &mut dyn std::any::Any,
     ) -> Result<BridgeConditionalDecisionEvidence, BridgeConditionalDenial> {

@@ -81,19 +81,27 @@ fn fold_value(mut digest: u64, value: worth_ui_dsl::UiThemeValue) -> u64 {
             .into_iter()
             .fold(digest, |digest, value| fold(digest, u64::from(value))),
         UiThemeValue::Opacity(opacity) => fold(digest, u64::from(opacity.units())),
-        UiThemeValue::LogicalLength(length) => fold(digest, length.subpixels() as u64),
+        UiThemeValue::LogicalLength(length) => {
+            fold(digest, i64::from(length.subpixels()).cast_unsigned())
+        }
         UiThemeValue::CornerRadii(radii) => {
             radii.corners().into_iter().fold(digest, |digest, value| {
-                fold(digest, value.subpixels() as u64)
+                fold(digest, i64::from(value.subpixels()).cast_unsigned())
             })
         }
         UiThemeValue::SolidStroke(stroke) => {
             digest = fold_value(digest, UiThemeValue::Color(stroke.color()));
-            fold(digest, stroke.width().subpixels() as u64)
+            fold(
+                digest,
+                i64::from(stroke.width().subpixels()).cast_unsigned(),
+            )
         }
         UiThemeValue::SolidOutline(outline) => {
             digest = fold_value(digest, UiThemeValue::SolidStroke(outline.stroke()));
-            fold(digest, outline.offset().subpixels() as u64)
+            fold(
+                digest,
+                i64::from(outline.offset().subpixels()).cast_unsigned(),
+            )
         }
     }
 }

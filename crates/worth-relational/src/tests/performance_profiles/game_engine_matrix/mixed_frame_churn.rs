@@ -12,7 +12,7 @@ pub(super) fn certify_mixed_read_write_frame_churn_window(suite: &'static str) {
                 PerfDiagnosticsPolicy::GeometryOperationalHotPath,
             );
             let seeded = seed_game_engine_frame_world(&runtime, "scene-frame", 8, 24);
-            let mut bridge_runtime = build_mock_bridge_runtime(false, 48);
+            let mut downstream_runtime = build_mock_downstream_runtime(false, 48);
 
             const ITERATIONS: usize = 48;
             const WINDOW: usize = 12;
@@ -20,10 +20,10 @@ pub(super) fn certify_mixed_read_write_frame_churn_window(suite: &'static str) {
             let mut total_update_micros = 0u128;
             let mut total_propagation_micros = 0u128;
             let mut total_explicit_query_micros = 0u128;
-            let mut total_bridge_micros = 0u128;
+            let mut total_downstream_micros = 0u128;
             let mut max_packets_per_iteration = 0usize;
             let mut max_scope_units_per_iteration = 0usize;
-            let mut max_bridge_tasks_scheduled = 0u64;
+            let mut max_downstream_tasks_scheduled = 0u64;
             let mut previous_packets = 0usize;
             let mut previous_scope_units = 0usize;
 
@@ -104,20 +104,21 @@ pub(super) fn certify_mixed_read_write_frame_churn_window(suite: &'static str) {
 
                 let affected_sources = (propagation.result.entities.len()
                     + explicit.result.entities.len())
-                .min(bridge_runtime.source_versions.len())
+                .min(downstream_runtime.source_versions.len())
                 .max(4);
-                let bridge_before = bridge_runtime.observe();
-                let bridge_started_at = Instant::now();
-                bridge_runtime.apply_changes(affected_sources);
-                let bridge_micros = bridge_started_at.elapsed().as_micros();
-                total_bridge_micros += bridge_micros;
-                let bridge_after = bridge_runtime.observe();
-                max_bridge_tasks_scheduled = max_bridge_tasks_scheduled.max(
-                    bridge_after.planner.tasks_scheduled - bridge_before.planner.tasks_scheduled,
+                let downstream_before = downstream_runtime.observe();
+                let downstream_started_at = Instant::now();
+                downstream_runtime.apply_changes(affected_sources);
+                let downstream_micros = downstream_started_at.elapsed().as_micros();
+                total_downstream_micros += downstream_micros;
+                let downstream_after = downstream_runtime.observe();
+                max_downstream_tasks_scheduled = max_downstream_tasks_scheduled.max(
+                    downstream_after.planner.tasks_scheduled
+                        - downstream_before.planner.tasks_scheduled,
                 );
 
                 cycle_samples
-                    .push(update_micros + propagation_micros + explicit_micros + bridge_micros);
+                    .push(update_micros + propagation_micros + explicit_micros + downstream_micros);
                 let counters = runtime.performance_access().counters();
                 max_packets_per_iteration = max_packets_per_iteration
                     .max(counters.query_packet_count.saturating_sub(previous_packets));
@@ -142,7 +143,7 @@ pub(super) fn certify_mixed_read_write_frame_churn_window(suite: &'static str) {
             let elapsed_micros = total_update_micros
                 + total_propagation_micros
                 + total_explicit_query_micros
-                + total_bridge_micros;
+                + total_downstream_micros;
             measurement_with_elapsed(elapsed_micros, || {
                 perf_metrics!({
                     "iterations": ITERATIONS,
@@ -152,12 +153,12 @@ pub(super) fn certify_mixed_read_write_frame_churn_window(suite: &'static str) {
                     "average_update_micros": total_update_micros / ITERATIONS as u128,
                     "average_propagation_micros": total_propagation_micros / ITERATIONS as u128,
                     "average_explicit_query_micros": total_explicit_query_micros / ITERATIONS as u128,
-                    "average_bridge_micros": total_bridge_micros / ITERATIONS as u128,
+                    "average_downstream_micros": total_downstream_micros / ITERATIONS as u128,
                     "first_window_average_cycle_micros": first_window_average_cycle_micros,
                     "last_window_average_cycle_micros": last_window_average_cycle_micros,
                     "max_packets_per_iteration": max_packets_per_iteration,
                     "max_scope_units_per_iteration": max_scope_units_per_iteration,
-                    "max_bridge_tasks_scheduled": max_bridge_tasks_scheduled,
+                    "max_downstream_tasks_scheduled": max_downstream_tasks_scheduled,
                     "counters": runtime.performance_access().counters(),
                 })
             })
@@ -178,7 +179,7 @@ pub(super) fn certify_mixed_read_write_frame_churn_window(suite: &'static str) {
                 "average_explicit_query_micros",
                 &["average_explicit_query_micros"],
             ),
-            ("average_bridge_micros", &["average_bridge_micros"]),
+            ("average_downstream_micros", &["average_downstream_micros"]),
             (
                 "first_window_average_cycle_micros",
                 &["first_window_average_cycle_micros"],
@@ -193,8 +194,8 @@ pub(super) fn certify_mixed_read_write_frame_churn_window(suite: &'static str) {
                 &["max_scope_units_per_iteration"],
             ),
             (
-                "max_bridge_tasks_scheduled",
-                &["max_bridge_tasks_scheduled"],
+                "max_downstream_tasks_scheduled",
+                &["max_downstream_tasks_scheduled"],
             ),
         ],
     );
@@ -213,7 +214,7 @@ pub(super) fn certify_mixed_read_write_frame_churn_window(suite: &'static str) {
                 && metrics["resident_entities"].as_u64() == Some(192)
                 && metrics["max_packets_per_iteration"].as_u64().unwrap_or(0) <= 16
                 && metrics["max_scope_units_per_iteration"].as_u64().unwrap_or(0) <= 16
-                && metrics["max_bridge_tasks_scheduled"].as_u64().unwrap_or(0) <= 64
+                && metrics["max_downstream_tasks_scheduled"].as_u64().unwrap_or(0) <= 64
                 && last_window <= first_window.saturating_mul(2).max(1)
                 && counter_u64(metrics, "full_state_clones") == 0
                 && counter_u64(metrics, "bulk_mutation_batch_count") == 48

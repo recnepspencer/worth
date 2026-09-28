@@ -287,9 +287,9 @@ fn target_at_center(
         .unwrap();
     assert_eq!(hit.rows().len(), 1);
     let bounds = hit.rows()[0].bounds().platform_box();
-    let position = UiHostSurfacePosition::viewport_logical(
-        ((bounds.x() + bounds.width() / 2.0) * 1_000.0) as i64,
-        ((bounds.y() + bounds.height() / 2.0) * 1_000.0) as i64,
+    let position = crate::units::viewport_position_for_test(
+        bounds.x() + bounds.width() / 2.0,
+        bounds.y() + bounds.height() / 2.0,
     );
     crate::runtime::interaction::targeting::resolve_presented_target(
         &session.mounted,

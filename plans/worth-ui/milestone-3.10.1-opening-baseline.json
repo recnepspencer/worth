@@ -1,0 +1,95 @@
+{
+  "schema": "worth-ui.milestone-3.10.1.opening-baseline.v1",
+  "milestone": "3.10.1",
+  "phase": 1,
+  "captured_on": "2026-07-25",
+  "comparison_label": "opening",
+  "comparison_methodology": "Run the named repository lane through scripts/ci/run_worth_ui_test_lane.py from the repository root with the shared warm workspaces/worth-ui/target directory. Phase 7 must use the same lane runner, target posture, machine, and elapsed wall-clock measurement.",
+  "source_state": {
+    "base_commit": "b8003c4bd072d0fae36c9a22d3358aa743713227",
+    "branch": "ui",
+    "measurement_includes_phase_1_inventory_audit": true,
+    "source_semantics_ledger": "plans/worth-ui/milestone-3.10.1-source-semantics-inventory.toml",
+    "facade_runtime_ledger": "plans/worth-ui/milestone-3.10.1-facade-runtime-inventory.toml"
+  },
+  "machine": {
+    "os": "Windows-11-10.0.26200-SP0",
+    "logical_processors": 16,
+    "rustc": "rustc 1.94.0 (4a4ef493e 2026-03-02)",
+    "cargo": "cargo 1.94.0 (85eff7c80 2026-01-15)"
+  },
+  "structural_inventory": {
+    "worth_ui_dsl_production_files": 11,
+    "worth_ui_dsl_production_lines": 656,
+    "runtime_source_production_files": 155,
+    "runtime_source_production_lines": 12810,
+    "runtime_source_ingress_files": 27,
+    "runtime_source_ingress_lines": 2598,
+    "runtime_replacement_production_files": 151,
+    "runtime_replacement_production_lines": 10983,
+    "product_facade_files": 18,
+    "certification_audience_source_files": 66,
+    "worth_ui_integration_targets": 2,
+    "certification_integration_targets": 7,
+    "total_integration_targets": 9,
+    "compile_contract_cargo_sessions": 2,
+    "compile_contract_inventory_cases": 317,
+    "compile_contract_execution_groups": 21
+  },
+  "measurements": [
+    {
+      "name": "focused_phase_1_inventory",
+      "command": "cargo test --manifest-path workspaces/worth-ui/Cargo.toml --all-features -p worth-ui-certification milestone_3101",
+      "target_posture": "warm shared workspace target",
+      "exit_code": 0,
+      "seconds": 1.4,
+      "result": "4 hostile unit fixtures and 1 live exhaustive topology audit passed"
+    },
+    {
+      "name": "fast",
+      "command": "python scripts/ci/run_worth_ui_test_lane.py fast",
+      "target_posture": "warm shared workspace target",
+      "exit_code": 0,
+      "seconds": 56.385,
+      "result": "workspace library tests plus the two worth-ui integration targets passed"
+    },
+    {
+      "name": "hostile-certification",
+      "command": "python scripts/ci/run_worth_ui_test_lane.py hostile-certification",
+      "target_posture": "warm shared workspace target",
+      "exit_code": 0,
+      "seconds": 23.441,
+      "result": "all seven consolidated certification integration targets passed"
+    },
+    {
+      "name": "compile-contracts",
+      "command": "python scripts/ci/run_worth_ui_test_lane.py compile-contracts",
+      "target_posture": "warm shared workspace target with two bounded Cargo sessions",
+      "exit_code": 0,
+      "seconds": 9.334,
+      "result": "all ledger-selected compile-contract groups passed"
+    },
+    {
+      "name": "platform-check",
+      "command": "python scripts/ci/run_worth_ui_test_lane.py platform-check",
+      "target_posture": "warm shared workspace target",
+      "exit_code": 0,
+      "seconds": 9.67,
+      "result": "workspace all-targets all-features check passed"
+    }
+  ],
+  "closing_rules": {
+    "required_measurement_names": [
+      "focused_phase_1_inventory",
+      "fast",
+      "hostile-certification",
+      "compile-contracts",
+      "platform-check"
+    ],
+    "methodology_may_change_to_improve_result": false,
+    "integration_target_count_may_increase": false,
+    "compile_contract_session_count_may_increase": false,
+    "source_scope_definitions_may_change": false,
+    "regressions_require_adjudication": true
+  }
+}

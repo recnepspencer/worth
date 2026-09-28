@@ -6,7 +6,6 @@ pub(crate) const LOGICAL_EXTENT: [u32; 2] = [1536, 1024];
 pub(crate) const SOURCE_SIGNAL_POINT: [u32; 2] = [30, 905];
 pub(crate) const REVIEW_TARGET_POINT: [u32; 2] =
     [QUERY_POSTURE_REGION[0] + 6, QUERY_POSTURE_REGION[1] + 13];
-pub(crate) const STABLE_BRAND_REGION: [u32; 4] = [26, 26, 204, 40];
 /// The deployments panel keeps the 24-point gutter at the viewport's right
 /// edge and starts below the masthead (57), gutter, greeting (66), card row
 /// (98), traffic row (348) and three 20-point gaps. The Query status badge

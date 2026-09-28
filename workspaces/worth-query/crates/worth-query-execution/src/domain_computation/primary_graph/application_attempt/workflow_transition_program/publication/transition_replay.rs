@@ -3,9 +3,9 @@ use super::{
     WorkflowProgressOutcome,
 };
 use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitOutcome,
-    WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationIdempotencyResolution,
-    WorthQueryApplicationIdempotencyResolutionDenial, WorthQueryPrimaryGraphApplicationRuntime,
+    WorthQueryApplicationCommitDenial, WorthQueryApplicationIdempotencyBinding,
+    WorthQueryApplicationIdempotencyResolution, WorthQueryApplicationIdempotencyResolutionDenial,
+    WorthQueryApplicationUncommitted, WorthQueryPrimaryGraphApplicationRuntime,
 };
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -34,6 +34,7 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                 transition_identity_locator,
                 approval,
                 approval_identity,
+                approval_authentication,
                 replays,
                 ..
             } => (
@@ -41,7 +42,10 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                 transition_identity_locator,
                 *approval_identity,
                 approval.as_ref(),
-                replays,
+                approval_authentication
+                    .as_ref()
+                    .and_then(|authentication| authentication.trusted_replays())
+                    .unwrap_or(replays),
             ),
             Self::AwaitingAssessment(prepared) => (
                 &prepared.admitted.read_set().admission,
@@ -151,7 +155,7 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
             }
         }
         Ok(drift.then(|| {
-            WorkflowProgressOutcome::Application(WorthQueryApplicationCommitOutcome::Denied(
+            WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::Denied(
                 WorthQueryApplicationCommitDenial::idempotency_intent_drift(),
             ))
         }))
@@ -278,7 +282,7 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
         Ok(match resolution.into_resolution() {
             WorthQueryApplicationIdempotencyResolution::Unseen => None,
             WorthQueryApplicationIdempotencyResolution::IntentDrift => Some(
-                WorkflowProgressOutcome::Application(WorthQueryApplicationCommitOutcome::Denied(
+                WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::Denied(
                     WorthQueryApplicationCommitDenial::idempotency_intent_drift(),
                 )),
             ),

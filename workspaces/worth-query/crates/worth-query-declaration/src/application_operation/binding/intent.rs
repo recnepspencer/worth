@@ -71,11 +71,32 @@ where
     const HANDLER_IDENTITY: &'static str;
     const IDEMPOTENCY_IDENTITY: &'static str;
     const REQUIRES_APPLICATION_PROGRAM: bool = false;
+    const REQUIRES_WORKFLOW_AUTHORITY: bool = false;
+    /// The binding is a workflow control step, such as definition authoring,
+    /// instance start, advance or approval, that the workflow kernel
+    /// authorizes and records itself. No handler serves it: installing one is
+    /// refused, and the ordinary mutation lane refuses the binding.
+    const WORKFLOW_CONTROL: bool = false;
     const CANDIDATES: ApplicationCandidateRequirements;
 
     fn idempotency_key_identity(key: &Self::IdempotencyKey) -> [u8; 32];
 
     fn input_identity(input: &Self::Input) -> [u8; 32];
+
+    /// Binds input-selected subjects to the exact parameters of retained source evidence.
+    /// Return `None` only when the operation accepts any selection of its source query.
+    fn expected_source_parameters(
+        _input: &Self::Input,
+    ) -> Result<
+        Option<
+            crate::application_query::ApplicationQueryParameterSet<
+                <Self::SourceExpectation as ApplicationMutationSourceExpectation<Schema>>::Query,
+            >,
+        >,
+        crate::application_schema::ApplicationValueEncodeDenial,
+    > {
+        Ok(None)
+    }
 
     fn scope_field() -> MutationScopeFieldRef<Schema, Self::ScopeBinding>;
 
@@ -118,6 +139,8 @@ where
             ApplicationMutationPrincipalBindingContract::from_reference(Self::principal_binding()),
             Self::CANDIDATES,
             Self::REQUIRES_APPLICATION_PROGRAM,
+            Self::REQUIRES_WORKFLOW_AUTHORITY,
+            Self::WORKFLOW_CONTROL,
         )
     }
 }

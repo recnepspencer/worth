@@ -60,17 +60,17 @@ where
                 &mut self.admitted,
                 fresh_request.principal,
                 fresh_request.scope,
-                fresh_request.branch.clone(),
+                fresh_request.branch,
                 disclosure,
                 identity.clone(),
-                revision.clone(),
+                *revision,
             )
         } else {
             self.application.advance_output_demand(
                 &mut self.admitted,
                 fresh_request.principal,
                 fresh_request.scope,
-                fresh_request.branch.clone(),
+                fresh_request.branch,
                 disclosure,
             )
         }

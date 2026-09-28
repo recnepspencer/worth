@@ -131,13 +131,36 @@ pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(super) recovered_outputs: super::application_output_demand::WorthQueryRecoveredOutputs,
     pub(super) program_required_bindings: std::collections::BTreeSet<std::any::TypeId>,
     pub(super) program_required_operations: std::collections::BTreeSet<std::any::TypeId>,
+    pub(super) workflow_guarded_operations: std::collections::BTreeSet<std::any::TypeId>,
     pub(super) program_support:
         Option<super::program_occurrence::WorthQueryInstalledProgramSupport<Schema>>,
     pub(super) installed_conditionals:
         super::application_contribution::WorthQueryInstalledApplicationConditionalRegistry<Schema>,
+    pub(in crate::domain_computation::primary_graph) workflow_coverage:
+        super::workflow::adoption::WorkflowVocabularyCoverageRegistry,
 }
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    pub(in crate::domain_computation) fn operation_requires_application_program<
+        Operation: 'static,
+    >(
+        &self,
+    ) -> bool {
+        self.program_support.is_some()
+            || self
+                .program_required_operations
+                .contains(&std::any::TypeId::of::<Operation>())
+    }
+
+    pub(in crate::domain_computation) fn operation_requires_workflow_authority<
+        Operation: 'static,
+    >(
+        &self,
+    ) -> bool {
+        self.workflow_guarded_operations
+            .contains(&std::any::TypeId::of::<Operation>())
+    }
+
     pub fn requires_application_program<Binding>(&self) -> bool
     where
         Schema: worth_query_installation::facade::ApplicationSchema,
@@ -300,6 +323,10 @@ where
     }
 }
 
+/// Receipt from closing this runtime's live delivery.
+///
+/// Later commits no longer enter live delivery. `owner_terminal()` is true once
+/// no live consumers remain.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationLiveDeliveryCloseReceipt {
     remaining_live_consumers: usize,

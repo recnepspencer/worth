@@ -21,15 +21,22 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
             return;
         };
         self.redraw_turns += 1;
-        let surface_basis_generation = self
-            .shared
-            .borrow()
-            .presentation_surface()
-            .map(|surface| surface.basis_generation())
-            .unwrap_or(0);
+        let (surface_basis_generation, surface_reconstruction_owed) = {
+            let state = self.shared.borrow();
+            let generation = state
+                .presentation_surface()
+                .map(|surface| surface.basis_generation())
+                .unwrap_or(0);
+            let owed = state
+                .registrations
+                .keys()
+                .any(|binding| state.lifecycle.recovery_required(*binding));
+            (generation, owed)
+        };
         let readiness = UiNativeReadinessGrant::issued(
             work.generation,
             surface_basis_generation,
+            surface_reconstruction_owed,
             work.scale_factor_milli,
             work.client_physical_size,
         );

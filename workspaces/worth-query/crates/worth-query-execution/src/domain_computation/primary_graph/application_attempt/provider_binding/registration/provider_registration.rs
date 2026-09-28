@@ -278,6 +278,7 @@ impl WorthQueryPrimaryGraphProvider {
             mut decision_facts,
             effects,
             idempotency,
+            outcome_identity,
             retained_authorization_fact_count,
             external_effect,
             preimage_demand,
@@ -291,8 +292,6 @@ impl WorthQueryPrimaryGraphProvider {
         } = registration;
         let emitted_effect_count = u64::try_from(effects.emissions().len())
             .map_err(|_| "application emission count exceeds provider representation")?;
-        let outcome_identity = WorthQueryApplicationCommitOutcomeIdentity::mint()
-            .ok_or("application outcome identity space is exhausted")?;
         let external_payload = effects.emissions().external_payload(external_effect)?;
         let (effects, dispatch_outbox) = effects.bind_registration_intents(
             self,

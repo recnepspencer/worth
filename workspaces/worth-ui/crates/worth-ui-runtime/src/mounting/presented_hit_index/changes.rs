@@ -95,7 +95,8 @@ impl UiPresentedHitChanges {
                         work.merge(current);
                         UiPresentedHitQueryDenial::CandidateBudget { work }
                     }
-                    other => other,
+                    other @ (UiPresentedHitQueryDenial::IncompatibleCoordinateSpace { .. }
+                    | UiPresentedHitQueryDenial::InvalidPoint { .. }) => other,
                 })?;
             work.merge(query.work);
             if query

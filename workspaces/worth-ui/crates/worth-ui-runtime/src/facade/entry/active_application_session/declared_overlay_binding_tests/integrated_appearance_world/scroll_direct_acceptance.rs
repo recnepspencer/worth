@@ -325,3 +325,25 @@ fn a_direct_region_without_painted_children_accepts_only_its_no_paint_completion
         .has_pending_direct_scroll(scroll.surface()));
     let _ = scroll.world.session.shutdown();
 }
+
+/// A rebind keeps an unpublished page with the staged geometry it laid out,
+/// so the rebound surface publishes both and Scroll accepts what it shows.
+#[test]
+fn a_rebind_publishes_unpublished_direct_intent_with_its_staged_geometry() {
+    let mut scroll = ScrollWorld::publish_with_nested_content(World::launch_without_motion());
+    assert!(matches!(
+        scroll.wheel(UiHostScrollDeltaPrecision::Pixel, -10_000, 5),
+        UiHostScrollObservationOutcome::Applied(_)
+    ));
+    assert_eq!(scroll.accepted_offset(), block(0));
+    assert_eq!(scroll.mounted_offset(), Some(block(10)));
+    super::reconstruction::reconstruct_surface_at(&mut scroll.world, 6);
+    assert_eq!(scroll.accepted_offset(), block(10));
+    assert_eq!(scroll.mounted_offset(), Some(block(10)));
+    assert!(!scroll
+        .world
+        .session
+        .mounted
+        .has_pending_direct_scroll(scroll.surface()));
+    let _ = scroll.world.session.shutdown();
+}

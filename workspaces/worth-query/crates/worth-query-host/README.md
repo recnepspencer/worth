@@ -13,6 +13,13 @@ The host facade exposes the production Query authority graph without exposing
 Query implementation modules, certification-only replay, or raw lower-runtime
 internals.
 
+**Writing an application?** Start with
+[Build an Application](../../../../docs/build-an-application.md). It shows the real calls, in order: install
+the application graph (`application_installation::in_memory_program`), run
+program-owned actions (`execute_in_program`), install a workflow vocabulary
+and publish, start, and advance workflows, and adopt a new program on a
+branch. This README covers the host's deeper contracts.
+
 ## Contribution-Composed Applications
 
 Pure domain value crates own their values and validation without importing Query.
@@ -30,9 +37,15 @@ The [public consumer fixture](../worth-query-certification/fixtures/consumer_ent
 checks separately compiled contributions and static program validation. The
 [ordinary product workflow](../worth-query-certification/examples/ordinary_product_workflow.rs)
 installs a validated program with `application_installation::in_memory_program`,
-admits its exact operation, publishes through `commit_for_program`, reads the
+commits a typed mutation through `execute_in_program`, reads the
 successor, and closes conditional resources. Its source is the executable host
 entry example.
+
+The [authored workflow](../worth-query-certification/examples/authored_workflow/main.rs)
+authors a definition around one reusable review component, publishes and discovers
+it, rejects a proposal so the retry asks for a revision, approves and applies the
+revised effect, then publishes a second revision; a start from the superseded
+revision is refused naming the current one.
 
 `WorthQueryApplicationContributionContracts` and
 `WorthQueryApplicationContributionSetup` resolve installed bindings internally.
@@ -101,9 +114,11 @@ The executable configuration and resource setup live in
 [consumer installation](../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/installation.rs),
 with contribution inventory, ownership, and handler-completeness denials in
 [contribution denials](../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/contribution_denials.rs).
-The synchronous application foundation and branch-local program-evolution path
-are complete. The separately governed dynamic workflow-definition product
-remains outside this surface.
+The synchronous application foundation, branch-local program evolution, and
+authored workflow definitions (see the authored workflow example above and the
+[workflows guide](../worth-query/docs/foundations/workflows.md)) are
+available through this facade. The workflow surface exposes no callback,
+resume-message, or inbound-completion API.
 
 ## Branch-Local Program Evolution
 
@@ -119,11 +134,13 @@ let programs = application
 let inspection = programs.inspect()?;
 let requirements = programs.compare(&target_revision)?;
 let prepared = programs
-    .adopt(&target_revision)
-    .requirements(&requirements)
+    .adopt(&requirements)
     .prepare(maximum_selection_work)?;
 let outcome = prepared.publish();
 ```
+
+Migrations, workflow dispositions, and every outcome are shown with real code
+in [Build an Application §7](../../../../docs/build-an-application.md#7-adopt-a-new-program-on-a-branch).
 
 Inspection and semantic comparison are descriptive. Preparation consumes exact
 branch, source-program, target-support, target-rule, migration, resource, and
@@ -167,7 +184,12 @@ and `close()` releases the lease. Retained requests cannot open live subscriptio
 Published rows expose `observed_sources()`. Mutations whose bindings require exact
 source evidence call `.expect_source(observed_source)` before idempotent execution.
 The source-local comparison rejects missing, foreign, retired, ABA-changed, or
-changed sources without rejecting unrelated sibling progress.
+changed sources while allowing sibling edits outside the recorded footprint.
+Sibling membership and selector-field changes can still invalidate that footprint.
+Bindings with input-selected subjects implement `expected_source_parameters` so
+the same Query boundary rejects mismatched selectors for rows, result sets and
+framework producers. A source query's type alone does not bind its parameters to
+the mutation input.
 
 ## Typed Handler And Invariant Access
 
@@ -313,6 +335,9 @@ admission, and currentness checks.
 
 ## Related Docs
 
+- [Build an Application](../../../../docs/build-an-application.md): the centerpiece guide
+- [Programs And Adoption](../worth-query/docs/foundations/programs-and-adoption.md)
+- [Workflows](../worth-query/docs/foundations/workflows.md)
 - [Ordinary Application Front Door](../worth-query/docs/foundations/ordinary-application-front-door.md)
 - [WORTH Query Orientation](../worth-query/docs/AI_README.md)
 - [Application Authorization And Emergency Elevation](../worth-query/docs/capabilities/application-authorization-and-emergency-elevation.md)

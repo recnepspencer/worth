@@ -104,6 +104,9 @@ impl WorkflowConnectionTag {
             (0, 7) => Some(Self::Control(
                 ApplicationWorkflowControlOutcome::ConditionUnsatisfied,
             )),
+            (0, 8) => Some(Self::Control(
+                ApplicationWorkflowControlOutcome::NavigatedBack,
+            )),
             (1, 0) => Some(Self::Data(ApplicationWorkflowDataFlow::ProposalSubject)),
             (1, 1) => Some(Self::Data(ApplicationWorkflowDataFlow::AssessmentSubject)),
             (1, 2) => Some(Self::Data(ApplicationWorkflowDataFlow::AssessmentEvidence)),
@@ -140,6 +143,7 @@ impl WorkflowConnectionTag {
             Self::Control(ApplicationWorkflowControlOutcome::RetryExhausted) => 5,
             Self::Control(ApplicationWorkflowControlOutcome::ConditionSatisfied) => 6,
             Self::Control(ApplicationWorkflowControlOutcome::ConditionUnsatisfied) => 7,
+            Self::Control(ApplicationWorkflowControlOutcome::NavigatedBack) => 8,
             Self::Data(ApplicationWorkflowDataFlow::ConditionSubject) => 6,
             Self::Retry(outcome) => control_variant(outcome),
         }
@@ -165,6 +169,9 @@ impl WorkflowConnectionTag {
             Self::Control(ApplicationWorkflowControlOutcome::ConditionUnsatisfied) => {
                 "control-condition-unsatisfied"
             }
+            Self::Control(ApplicationWorkflowControlOutcome::NavigatedBack) => {
+                "control-navigated-back"
+            }
             Self::Data(ApplicationWorkflowDataFlow::ProposalSubject) => "data-proposal-subject",
             Self::Data(ApplicationWorkflowDataFlow::AssessmentSubject) => "data-assessment-subject",
             Self::Data(ApplicationWorkflowDataFlow::AssessmentEvidence) => {
@@ -189,6 +196,7 @@ const fn control_variant(outcome: ApplicationWorkflowControlOutcome) -> u64 {
         ApplicationWorkflowControlOutcome::RetryExhausted => 5,
         ApplicationWorkflowControlOutcome::ConditionSatisfied => 6,
         ApplicationWorkflowControlOutcome::ConditionUnsatisfied => 7,
+        ApplicationWorkflowControlOutcome::NavigatedBack => 8,
     }
 }
 
@@ -202,6 +210,7 @@ const fn decode_control(variant: u64) -> Option<ApplicationWorkflowControlOutcom
         5 => Some(ApplicationWorkflowControlOutcome::RetryExhausted),
         6 => Some(ApplicationWorkflowControlOutcome::ConditionSatisfied),
         7 => Some(ApplicationWorkflowControlOutcome::ConditionUnsatisfied),
+        8 => Some(ApplicationWorkflowControlOutcome::NavigatedBack),
         _ => None,
     }
 }

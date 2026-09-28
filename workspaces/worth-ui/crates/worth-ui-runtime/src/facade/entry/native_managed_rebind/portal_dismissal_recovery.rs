@@ -130,7 +130,12 @@ impl crate::facade::entry::WorthUiNativeApplicationShell {
                     );
                 Ok(self.replay_retained_portal_dismissal_after_recovery())
             }
-            _ => {
+            crate::mounting::UiMountedFrameOutcome::RejectedBeforeEffects(_)
+            | crate::mounting::UiMountedFrameOutcome::PresentationIndeterminate(_)
+            | crate::mounting::UiMountedFrameOutcome::Superseded(_)
+            | crate::mounting::UiMountedFrameOutcome::RetentionDenied(_)
+            | crate::mounting::UiMountedFrameOutcome::AdmissionDenied(_)
+            | crate::mounting::UiMountedFrameOutcome::CompletionDenied(_) => {
                 self.pending_managed_rebind = Some(
                     WorthUiNativePendingManagedRebind::PortalDismissalReconstructionDeferred {
                         proposal,

@@ -6,15 +6,15 @@ use crate::lower_runtime_routing::{
     WorthQueryLowerRuntimeRouteKind, WorthQueryLowerRuntimeSeamKey,
 };
 use crate::projection_consumption::ProjectionConsumptionSource;
-use worth_relational::facade::grouped_truth::{
-    materialize_relational_authoritative_row_set, project_relational_grouped_truth,
-};
 use worth_runtime_bridge::facade::{
     materialize_bridge_grouped_truth_view_from_projection, materialize_bridge_row_set,
     AdmittedSourceRegistry, BridgeSourceCapability, BridgeSourceCapabilitySet,
     BridgeTruthViewSelector, RelationalBridgeRecordIdentityParts, SnapshotReadPacket,
     SnapshotReadPacketResult, SourceDeclaration, SourceDeclarationIdentity, TruthBranchIdentity,
     TruthSnapshotIdentity,
+};
+use worth_runtime_bridge::facade::{
+    materialize_relational_authoritative_row_set, project_relational_grouped_truth,
 };
 
 use super::{

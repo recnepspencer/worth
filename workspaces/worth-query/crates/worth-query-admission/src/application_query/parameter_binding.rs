@@ -46,6 +46,7 @@ impl WorthQueryApplicationQueryParameterDenial {
 pub struct WorthQueryAdmittedApplicationQueryParameters {
     canonical: WorthQueryApplicationParameterCanonicalArtifact,
     bindings: Vec<(&'static str, AspectValue)>,
+    budget: worth_foundational::facade::CanonicalDigestWorkBudget,
 }
 
 impl WorthQueryAdmittedApplicationQueryParameters {
@@ -59,6 +60,19 @@ impl WorthQueryAdmittedApplicationQueryParameters {
 
     pub fn bindings(&self) -> &[(&'static str, AspectValue)] {
         &self.bindings
+    }
+
+    /// Compares a mutation's declared selectors with this admitted query's exact
+    /// canonical basis, under the same installed canonicalization budget.
+    pub fn matches_expected<Query>(
+        &self,
+        expected: ApplicationQueryParameterSet<Query>,
+    ) -> Result<bool, WorthQueryApplicationQueryParameterDenial> {
+        let mut bindings = expected.bindings().to_vec();
+        bindings.sort_by_key(|(name, _)| *name);
+        let canonical = prepare_parameter_basis(&bindings, self.budget)
+            .map_err(|denial| canonical_work_denial("mutation-source", denial))?;
+        Ok(self.canonical.is_equivalent_to(&canonical))
     }
 }
 
@@ -94,6 +108,7 @@ pub fn admit_application_query_parameters<Schema, Query, Parameters, QueryResult
     Ok(WorthQueryAdmittedApplicationQueryParameters {
         canonical,
         bindings,
+        budget: query.canonical_work_policy().parameters(),
     })
 }
 

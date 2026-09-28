@@ -124,7 +124,8 @@ impl UiServiceProposalCompiler {
         let next_census = self
             .census
             .with_reservation(
-                preflighted.candidate().family_proposals().len() as u16,
+                u16::try_from(preflighted.candidate().family_proposals().len())
+                    .expect("preflight admits at most PARTICIPATING_FAMILY_LIMIT families"),
                 displaced.map_or(0, super::UiServiceProposalDisplacement::released_leases),
                 displaced.is_some(),
             )
@@ -158,7 +159,10 @@ impl UiServiceProposalCompiler {
             .map_err(UiServiceProposalReservationDenial::Cancellation)?;
         let next_census = self
             .census
-            .with_terminal_release(reservation.leases().len() as u16)
+            .with_terminal_release(
+                u16::try_from(reservation.leases().len())
+                    .expect("occupancy holds at most OCCUPANCY_LIMIT leases"),
+            )
             .map_err(UiServiceProposalReservationDenial::Census)?;
         let released_leases = self.occupancy.release(proposal, reservation.leases());
         self.cancellations.release(proposal);

@@ -329,7 +329,7 @@ impl BridgeSealedRuntimeAssembly {
         &self,
         signal_basis: &super::BridgeConditionalSignalBasisBinding,
         request: super::BridgeConditionalExecutionRequest<'_>,
-        source_record: crate::relational_identity::RelationalBridgeRecordIdentityParts,
+        source_record: crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts,
         compute_context: &mut dyn std::any::Any,
     ) -> Result<super::BridgeConditionalDecisionEvidence, BridgeConditionalDenial> {
         self.runtime.execute_with_managed_source_record(

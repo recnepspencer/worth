@@ -7,18 +7,24 @@ use worth_query_admission::facade::{
     authenticated_principal::WorthQueryRequestScope,
 };
 
+/// Where an admitted query read takes its basis from.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationQueryBasisPosture {
+    /// The basis selected on the product branch at admission.
     SelectedProduct,
 }
 
+/// The consistency an admitted query read guarantees.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationQueryConsistency {
+    /// Every row comes from the one product-branch snapshot selected at admission.
     SelectedProductSnapshot,
 }
 
+/// How fresh an admitted query read's basis is.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationQueryFreshness {
+    /// Current as of admission; later commits are not reflected.
     SelectedAtAdmission,
 }
 
@@ -33,12 +39,18 @@ pub struct WorthQueryApplicationQueryControls<'a, Schema> {
     _schema: PhantomData<fn() -> Schema>,
 }
 
+/// Caller-chosen bounds for resuming a query continuation: page width, work
+/// limit, and the request scope to re-resolve.
 pub struct WorthQueryApplicationQueryResumeControls<'a> {
     maximum_page_width: NonZeroUsize,
     maximum_work: NonZeroUsize,
     request_scope: &'a WorthQueryRequestScope,
 }
 
+/// The bounds and basis posture an admitted query plan will run under.
+///
+/// Read-only view of what admission fixed: lane, basis posture, consistency,
+/// freshness, basis deadline, result and work limits, and request scope.
 pub struct WorthQueryAdmittedApplicationQueryControls<'a> {
     basis: WorthQueryApplicationQueryBasisPosture,
     consistency: WorthQueryApplicationQueryConsistency,

@@ -25,6 +25,9 @@ pub(super) fn completed(
         effects.completion(),
         cost,
     ));
+    if painted {
+        crate::native::resize_trace::accepted(view.attempt().diagnostic_value());
+    }
     let _input_settlement = state.lifecycle.record_completed_presentation(
         view.protocol(),
         view.host_session_identity(),

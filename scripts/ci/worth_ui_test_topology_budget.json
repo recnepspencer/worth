@@ -1,60 +1,6 @@
 {
   "workspace_manifest": "workspaces/worth-ui/Cargo.toml",
   "lane_runner": "scripts/ci/run_worth_ui_test_lane.py",
-  "ci_contract": {
-    "workflow": ".github/workflows/ci.yml",
-    "setup_action": ".github/actions/setup-worth-ui/action.yml",
-    "required_workflow_fragments": [
-      "concurrency:",
-      "cancel-in-progress:",
-      "worth_ui_quality:",
-      "worth_ui_fast:",
-      "worth_ui_compile_contracts:",
-      "worth_ui_hostile_certification:",
-      "worth_ui_dependency_contract:",
-      "worth_ui_windows_check:",
-      "worth_ui_proof:",
-      "timeout-minutes:",
-      "WORTH_UI_LANE_REPORT_DIR:",
-      "uses: ./.github/actions/setup-worth-ui",
-      "python3 scripts/ci/test_worth_ui_test_topology.py",
-      "python3 scripts/ci/test_worth_ui_test_lane.py",
-      "python3 scripts/ci/test_worth_ui_native_platform_lane.py",
-      "python3 scripts/ci/test_worth_ui_native_features.py",
-      "python3 scripts/ci/check_worth_ui_test_topology.py",
-      "python3 scripts/ci/run_worth_ui_test_lane.py fast",
-      "python3 scripts/ci/run_worth_ui_test_lane.py documentation",
-      "python3 scripts/ci/run_worth_ui_test_lane.py compile-contracts",
-      "python3 scripts/ci/run_worth_ui_test_lane.py hostile-certification",
-      "python3 scripts/ci/run_worth_ui_test_lane.py dependency-contract",
-      "python3 scripts/ci/run_worth_ui_test_lane.py native-platform",
-      "python scripts/ci/run_worth_ui_test_lane.py platform-check",
-      "cargo fmt --all --manifest-path workspaces/worth-ui/Cargo.toml -- --check",
-      "cargo clippy --workspace --all-targets --all-features --manifest-path workspaces/worth-ui/Cargo.toml -- -D warnings",
-      "actions/upload-artifact@v4",
-      "name: WORTH UI Proof Closure",
-      "needs:",
-      "if: always()"
-    ],
-    "forbidden_workflow_fragments": [
-      "run_worth_ui_test_lane.py full",
-      "workspaces/worth-ui/target"
-    ],
-    "required_setup_fragments": [
-      "dtolnay/rust-toolchain@1.94.0",
-      "components: clippy, rustfmt",
-      "mozilla-actions/sccache-action@v0.0.10",
-      "version: \"v0.15.0\"",
-      "~/.cargo/registry",
-      "~/.cargo/git",
-      "CARGO_INCREMENTAL=0",
-      "SCCACHE_GHA_ENABLED=true",
-      "RUSTC_WRAPPER=sccache"
-    ],
-    "forbidden_setup_fragments": [
-      "workspaces/worth-ui/target"
-    ]
-  },
   "proof_lanes": {
     "fast": [
       "worth-ui:capability_contracts",

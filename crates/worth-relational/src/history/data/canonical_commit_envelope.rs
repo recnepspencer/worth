@@ -324,8 +324,7 @@ mod tests {
                         entity_id: update_target,
                         fields: AspectFieldPatch::default(),
                     },
-                ))]
-                .into(),
+                ))],
             },
             CanonicalAuthoritativePatch {
                 ordering: PatchOrdering::CanonicalCommitOrder,
@@ -338,8 +337,7 @@ mod tests {
                     semantic_changes: Vec::new(),
                     contains_opaque_aspect: false,
                     detail: PatchDetail::DenseBitset(vec![1]),
-                }]
-                .into(),
+                }],
             },
             RelationalDiagnosticArtifact::new(
                 DiagnosticsScope::Replay,

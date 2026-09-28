@@ -38,7 +38,7 @@ where
         emission_retained_bytes,
         emission_retained_bytes_ceiling: _,
         conditional_definition,
-        platform_mutation,
+        effect_posture,
         // Sealing consumes the candidate reservation here; adoption admits and
         // accounts its complete target-rule validation as transaction work.
         validator_work_admission: _candidate_validator_work_admission,
@@ -71,7 +71,7 @@ where
             ),
         );
     }
-    if platform_mutation {
+    if effect_posture.includes_platform() {
         return Err(
             WorthQueryProgramMigrationPreparationDenial::UnsupportedPosture(
                 "program migration cannot author platform effects",

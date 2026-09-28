@@ -15,7 +15,7 @@ pub use commit_outcome::{
     WorthQueryApplicationCommitRecoveryKind, WorthQueryApplicationNoEffect,
     WorthQueryApplicationNoEffectCause, WorthQueryApplicationSettlementDeferred,
     WorthQueryApplicationSettlementNextAction, WorthQueryApplicationStaleAttempt,
-    WorthQueryApplicationUnresolvedCommitEvidence,
+    WorthQueryApplicationUncommitted, WorthQueryApplicationUnresolvedCommitEvidence,
 };
 pub use commit_receipt::{
     WorthQueryApplicationCommitPublicationSource, WorthQueryApplicationCommitReceipt,

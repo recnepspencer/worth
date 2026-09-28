@@ -2,6 +2,7 @@ use std::rc::Rc;
 
 const RADIX_BITS: usize = 4;
 const RADIX: usize = 1 << RADIX_BITS;
+const RADIX_MASK: u32 = (1 << RADIX_BITS) - 1;
 const LEVELS: usize = u32::BITS as usize / RADIX_BITS;
 
 pub(crate) struct UiPersistentSlotTrie<V> {
@@ -108,7 +109,7 @@ fn insert_branch<V>(
 }
 
 const fn nibble(slot: u32, level: usize) -> usize {
-    ((slot >> (level * RADIX_BITS)) & (RADIX as u32 - 1)) as usize
+    ((slot >> (level * RADIX_BITS)) & RADIX_MASK) as usize
 }
 
 #[cfg(test)]

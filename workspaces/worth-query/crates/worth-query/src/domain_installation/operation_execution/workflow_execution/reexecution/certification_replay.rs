@@ -21,13 +21,23 @@ pub struct WorthQueryCertificationReplayCapability {
     _private: (),
 }
 
+/// Issues the certification replay capability that `replay_installed_workflow`
+/// and historical replay admission require.
+///
+/// It is exported on the certification replay facade, not on the ordinary
+/// host and declaration facades.
 pub fn issue_query_certification_replay_capability() -> WorthQueryCertificationReplayCapability {
     WorthQueryCertificationReplayCapability { _private: () }
 }
 
+/// How a replay's execution basis relates to the basis of the original run,
+/// as recorded in a `WorthQueryCertificationReplayResult`.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryReplayBasisRelationship {
+    /// The replay ran on the same admitted basis capability as the original.
     ExactAdmittedBasis,
+    /// The replay ran on a historical basis admitted through
+    /// `admit_installed_historical_replay_basis`.
     AdmittedHistoricalBasis {
         correspondence: WorthQueryHistoricalBasisCorrespondence,
     },
@@ -38,6 +48,12 @@ pub enum WorthQueryHistoricalBasisCorrespondence {
     RetainedSnapshotIdentity,
 }
 
+/// Admission to replay a completed workflow trace on a retained historical
+/// snapshot, returned by `admit_installed_historical_replay_basis`.
+///
+/// Pass it to `replay_installed_workflow_historical` with the same original
+/// trace and bound operation, in the workspace it names; any mismatch is
+/// denied.
 pub struct WorthQueryHistoricalReplayAdmission {
     pub(super) original_operation_identity: String,
     pub(super) replay_operation_identity: String,
@@ -64,16 +80,28 @@ impl WorthQueryHistoricalReplayAdmission {
     }
 }
 
+/// Why `admit_installed_historical_replay_basis` refused historical replay.
+/// Nothing is executed in any case.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryHistoricalReplayAdmissionDenial {
+    /// The bound operation is not the operation that produced the trace.
     ForeignOperation,
+    /// The bound operation belongs to a different runtime.
     ForeignRuntime,
+    /// The operation's installation generation changed since the trace.
     StaleInstallationGeneration,
+    /// The bound operation's basis capability differs from the original's.
     ReplayBasisCapabilityMismatch,
+    /// The requested replay path is not available; only the retained-snapshot
+    /// path is supported.
     HistoricalExecutionSubstrateUnavailable,
+    /// The trace has no stage receipts, or the historical context does not
+    /// admit the snapshot of every stage.
     HistoricalSnapshotDoesNotBindOriginalTrace,
 }
 
+/// Exact counts of the checks a certification replay performed, reported in
+/// its result so certification can assert the work done.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct WorthQueryCertificationReplayCounters {
     pub authority_checks: usize,
@@ -85,27 +113,49 @@ pub struct WorthQueryCertificationReplayCounters {
     pub unrelated_trace_scans: usize,
 }
 
+/// Why a certification replay was refused before re-execution. Nothing ran.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryCertificationReplayAdmissionDenial {
+    /// The operation was not installed as certification-replayable.
     ReplayNotInstalled,
+    /// The bound operation is not the operation that produced the trace.
     ForeignOperation,
+    /// The bound operation belongs to a different runtime.
     ForeignRuntime,
+    /// The operation's installation generation changed since the trace.
     StaleInstallationGeneration,
+    /// The replay basis capability differs from the original's.
     UnsupportedBasisRelationship,
+    /// The intent's stages or inputs do not match the original trace.
     IntentDoesNotMatchOriginalTrace,
+    /// The historical admission was issued for a different trace or operation.
     HistoricalAdmissionMismatch,
+    /// The workspace is not the historical snapshot the admission named.
     HistoricalExecutionBasisDrift,
+    /// The operation has no installed replay comparator.
     ReplayComparatorUnavailable,
 }
 
+/// Why a certification replay stopped without a result. It is carried in the
+/// non-success arms of `WorthQueryCertificationReplayOutcome`.
 #[derive(Debug)]
 pub enum WorthQueryCertificationReplayStop {
+    /// Replay admission was refused; nothing ran.
     Admission(WorthQueryCertificationReplayAdmissionDenial),
+    /// Execution resources were not admitted; nothing ran.
     ResourceAdmission(super::WorthQueryExecutionResourceAdmissionDenial),
+    /// Re-execution of the workflow stopped.
     Execution(WorthQueryWorkflowReexecutionStop),
+    /// Re-execution deferred at a conditional node, so its path diverged.
     SemanticDivergence(WorthQueryReplayDivergence),
 }
 
+/// A completed certification replay: the original and replay trace
+/// identities and semantics, their comparison, the basis relationship, and
+/// exact execution and check counters.
+///
+/// A result is returned even when the traces diverged; read `comparison` for
+/// the verdict. It is evidence, not authority.
 pub struct WorthQueryCertificationReplayResult<D, O, F, L: BasisOperationLane> {
     original_trace_identity: String,
     replay_trace_identity: String,
@@ -157,6 +207,9 @@ impl<D, O, F, L: BasisOperationLane> WorthQueryCertificationReplayResult<D, O, F
     }
 }
 
+/// The outcome of a certification replay: a `WorthQueryCertificationReplayResult`
+/// on success, otherwise a `WorthQueryCertificationReplayStop` in the denied,
+/// deferred, stale, rebind-required, or failed arm.
 pub type WorthQueryCertificationReplayOutcome<D, O, F, L> = TransitionOutcome<
     WorthQueryCertificationReplayResult<D, O, F, L>,
     WorthQueryCertificationReplayStop,
@@ -166,6 +219,15 @@ pub type WorthQueryCertificationReplayOutcome<D, O, F, L> = TransitionOutcome<
     WorthQueryCertificationReplayStop,
 >;
 
+/// Re-executes a completed workflow trace on the same admitted basis and
+/// compares the replay with the original.
+///
+/// Requires the certification replay capability. The bound operation must be
+/// the same installed operation, runtime, installation generation, and basis
+/// capability as the original, installed as certification-replayable with a
+/// replay comparator, and the intent must match the original trace.
+/// Query's own comparison runs first; the operation's comparator is consulted
+/// only when Query finds the traces equivalent.
 pub fn replay_installed_workflow<
     D: 'static,
     O,

@@ -28,7 +28,7 @@ pub(crate) fn worth_query_lower_relational_binding<
         }
         WorthQueryDeclarationRelationalAuthorityFamily::GroupedTruth => {
             WorthQueryDeclarationRelationalBinding::GroupedTruth(
-                "worth_relational::facade::grouped_truth",
+                "worth_runtime_bridge::facade::RelationalGroupedProjectionArtifact",
             )
         }
         WorthQueryDeclarationRelationalAuthorityFamily::CommitStrategies => {
@@ -38,7 +38,7 @@ pub(crate) fn worth_query_lower_relational_binding<
         }
         WorthQueryDeclarationRelationalAuthorityFamily::BridgeSource => {
             WorthQueryDeclarationRelationalBinding::BridgeSource(
-                "worth_relational::facade::bridge::RuntimeBridgeRelationalSource",
+                "worth_runtime_bridge::facade::RuntimeBridgeRelationalSource",
             )
         }
     };

@@ -1,9 +1,9 @@
 //! # worth-relational
 //!
 //! Deterministic truth-state runtime infrastructure for high-consequence graph
-//! domains such as geometry kernels, chip-design systems, and other workloads
-//! that require durable identity, transactional mutation, replay, lineage, and
-//! audit-grade diagnostics.
+//! domains such as order and inventory systems, account ledgers, document
+//! approval workflows, and other workloads that require durable identity,
+//! transactional mutation, replay, lineage, and audit-grade diagnostics.
 //!
 //! The crate is intentionally shaped around the Worth domain standards:
 //!
@@ -28,12 +28,12 @@ mod authorization;
 mod branch;
 mod canonical_basis_ready_sequence;
 mod capabilities;
+mod change_source;
 mod commit_strategies;
 mod config;
 mod diagnostics;
 mod durability;
 mod errors;
-mod grouped_truth;
 mod history;
 mod identity;
 mod identity_authority;

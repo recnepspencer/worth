@@ -265,6 +265,18 @@ pub struct WorthQueryInstallationAdmissionDenial {
     subject: String,
 }
 
+impl std::fmt::Display for WorthQueryInstallationAdmissionDenial {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            formatter,
+            "package installation admission denied: {:?} ({})",
+            self.kind, self.subject
+        )
+    }
+}
+
+impl std::error::Error for WorthQueryInstallationAdmissionDenial {}
+
 impl WorthQueryInstallationAdmissionDenial {
     pub fn kind(&self) -> WorthQueryInstallationAdmissionDenialKind {
         self.kind

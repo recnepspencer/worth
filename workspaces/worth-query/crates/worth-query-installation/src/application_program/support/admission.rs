@@ -12,7 +12,10 @@ use super::compatibility::{
     declared_rule_keys, first_rule_outside_catalog, first_unowned_installed_rule,
     installed_rule_keys, WorthQueryProgramRuleKey,
 };
-use super::{WorthQueryProgramSupportEntry, WorthQueryProgramSupportRoster};
+use super::{
+    WorthQueryProgramActionDependency, WorthQueryProgramSupportEntry,
+    WorthQueryProgramSupportRoster,
+};
 use crate::facade::WorthQueryInstalledApplicationSchema;
 
 /// Refusal to support authored program meaning on one installed schema.
@@ -144,14 +147,14 @@ where
         {
             return Err(WorthQueryProgramSupportDenial::DuplicateProgram {
                 program: identity.clone(),
-                revision: program.revision().clone(),
+                revision: *program.revision(),
             });
         }
         require_governed_composition(program)?;
         let rules = self.require_supported_rules(program)?;
         self.require_supported_actions(program)?;
         self.entries.push(WorthQueryProgramSupportEntry::admitted(
-            program.revision().clone(),
+            *program.revision(),
             identity.clone(),
             rules,
             program
@@ -166,6 +169,7 @@ where
                 .collect(),
             program.semantic_description().clone(),
             effectful_action_subjects(self.installed_schema, program),
+            action_dependencies(self.installed_schema, program),
         ));
         Ok(self)
     }
@@ -272,6 +276,38 @@ where
         })
         .map(|action| action.semantic_subject())
         .collect()
+}
+
+fn action_dependencies<Schema, Program>(
+    installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
+    program: &ValidatedApplicationProgram<Schema, Program>,
+) -> BTreeSet<WorthQueryProgramActionDependency>
+where
+    Schema: ApplicationSchema,
+    Program: ApplicationProgramDefinition<Schema>,
+{
+    let mut dependencies = BTreeSet::new();
+    for action in program.actions() {
+        let subject = action.semantic_subject();
+        dependencies.insert(WorthQueryProgramActionDependency {
+            identity: action.binding().to_owned(),
+            subject: subject.clone(),
+        });
+        let operation = action.mutation_binding_type().and_then(|binding_type| {
+            installed_schema
+                .installed_mutation_binding_inventory()
+                .find(|binding| {
+                    binding.binding_type() == binding_type && binding.identity() == action.binding()
+                })
+        });
+        if let Some(binding) = operation {
+            dependencies.insert(WorthQueryProgramActionDependency {
+                identity: binding.operation_name().to_owned(),
+                subject,
+            });
+        }
+    }
+    dependencies
 }
 
 fn require_governed_composition<Schema, Program>(

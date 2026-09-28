@@ -188,7 +188,7 @@ fn storage_inconsistency_fields_use_typed_labels_and_preserve_field_context() {
             assert_eq!(partition_id, Some(PartitionId::new(7)));
             assert_eq!(slot, Some(42));
             assert_eq!(field.as_ref(), Some(&expected_field));
-            assert_eq!(missing_label.as_deref(), Some("kind_sidecar".into()));
+            assert_eq!(missing_label.as_deref(), Some("kind_sidecar"));
             assert_eq!(
                 scan,
                 Some(StorageInconsistencyScan::HistoricalUniqueEntityAspectField)

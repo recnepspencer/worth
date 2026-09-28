@@ -21,7 +21,7 @@ fn shared_versions_bound_local_comparison_work_at_multiple_scales() {
         let (changed, work) = current.changed_keys_with_work(&previous);
         assert_eq!(changed, [size / 2, size / 2 + 1, size]);
         assert!(work.shared_subtrees_skipped() > 0);
-        assert!(work.cursor_steps() < 32 * (size as usize).ilog2() as usize);
+        assert!(work.cursor_steps() < 32 * usize::try_from(size).unwrap().ilog2() as usize);
         assert_eq!(previous.get(&(size / 2)), Some(&(size / 2)));
     }
 }

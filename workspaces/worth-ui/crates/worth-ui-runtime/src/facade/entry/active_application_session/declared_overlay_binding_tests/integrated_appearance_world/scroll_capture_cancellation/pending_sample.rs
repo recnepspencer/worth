@@ -52,10 +52,7 @@ pub(super) fn old_epoch_press_batch(
 }
 
 pub(super) fn viewport(point: [f32; 2]) -> UiHostSurfacePosition {
-    UiHostSurfacePosition::viewport_logical(
-        (point[0] * 1000.0).round() as i64,
-        (point[1] * 1000.0).round() as i64,
-    )
+    crate::units::viewport_position_for_test(point[0], point[1])
 }
 
 pub(super) fn old_epoch_button_batch(

@@ -236,7 +236,10 @@ impl UiRebindPlan {
             UiRebindSemanticProof::EvidenceOnly(succession) => {
                 Some(succession.successor_authority())
             }
-            _ => None,
+            UiRebindSemanticProof::Changed(_)
+            | UiRebindSemanticProof::ThemeSwitch(_)
+            | UiRebindSemanticProof::NonSource
+            | UiRebindSemanticProof::Transferred => None,
         }
     }
 

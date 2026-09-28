@@ -17,7 +17,20 @@ pub(crate) fn collect_planning_measurement_basis(
         crate::declaration::UiDeclarationPlanningOperatorKind::Mosaic => {
             crate::evidence::UiConstraintAxisScope::Both
         }
-        _ => return measurement_basis.clone(),
+        crate::declaration::UiDeclarationPlanningOperatorKind::PageRoot
+        | crate::declaration::UiDeclarationPlanningOperatorKind::PageSet
+        | crate::declaration::UiDeclarationPlanningOperatorKind::Region
+        | crate::declaration::UiDeclarationPlanningOperatorKind::LocalComposition
+        | crate::declaration::UiDeclarationPlanningOperatorKind::Control
+        | crate::declaration::UiDeclarationPlanningOperatorKind::DiagnosticSurface
+        | crate::declaration::UiDeclarationPlanningOperatorKind::Stack
+        | crate::declaration::UiDeclarationPlanningOperatorKind::Row
+        | crate::declaration::UiDeclarationPlanningOperatorKind::Grid
+        | crate::declaration::UiDeclarationPlanningOperatorKind::Overlay
+        | crate::declaration::UiDeclarationPlanningOperatorKind::Scroll
+        | crate::declaration::UiDeclarationPlanningOperatorKind::PortalAnchor => {
+            return measurement_basis.clone()
+        }
     };
     let root_provenance_digest = allocation_neighborhood
         .members()

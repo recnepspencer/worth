@@ -53,7 +53,12 @@ fn mint(call: &str, clippy: Option<&str>, path: &str, items: &[&str]) -> SealedM
 fn parsed(sources: &[(&str, &str)]) -> Vec<(String, syn::File)> {
     sources
         .iter()
-        .map(|(path, text)| ((*path).to_owned(), syn::parse_file(text).unwrap()))
+        .map(|(path, text)| {
+            (
+                (*path).to_owned(),
+                crate::source_syntax::parse_file(text).unwrap(),
+            )
+        })
         .collect()
 }
 

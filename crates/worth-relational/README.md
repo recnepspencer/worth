@@ -3,12 +3,13 @@
 `worth-relational` is a standalone truth runtime for graph-shaped state.
 
 It is for systems that need state to be authoritative, transactional,
-inspectable, replayable, and durable instead of just "some mutable data
-structure plus vibes."
+inspectable, replayable, and durable, rather than a mutable data structure
+whose correctness rests on convention.
 
-It is meant for more than CRUD apps. The target is stuff like chip simulators,
-geometry kernels, planning systems, and other runtimes where history,
-determinism, replay, validation, branching, and durable recovery are first-class.
+It is meant for more than CRUD apps. The target is systems like order and
+inventory management, account ledgers, document approval workflows, planning
+systems, and other runtimes where history, determinism, replay, validation,
+branching, and durable recovery are first-class.
 
 The library is built around a few obvious jobs:
 
@@ -49,7 +50,7 @@ use worth_relational::facade::{
     transactions::WorkerIntentBatch,
 };
 
-let mut runtime = RelationalRuntimeApi::builder()
+let runtime = RelationalRuntimeApi::builder()
     .schema_registry(RelationalSchemaRegistry::new())
     .build();
 
@@ -60,7 +61,7 @@ let mut tx = runtime.begin_branch_transaction(
     RelationalTransactionIntent::ordinary(),
 )?;
 tx.push_batch(WorkerIntentBatch::new("example"))?;
-let _outcome = tx.commit(&mut runtime)?;
+let _outcome = tx.commit(&runtime)?;
 
 let _truth = runtime.read_truth();
 let _snapshots = runtime.snapshots();
@@ -100,21 +101,27 @@ cross a runtime boundary. The publication facade exposes
 - an optional canonical field path
 - `Exact` or explicitly declared widening precision
 
-This is the authoritative change meaning consumed by Runtime Bridge. Relational
-does not allocate Signal aspects, and downstream callers must not reinterpret
-raw patch fields into their own change taxonomy.
-
-For Query-installed conditional operations, the flow is:
-
-```text
-Relational commit
-  -> aspect-precise authoritative publication
-  -> Runtime Bridge installed correspondence
-  -> Signal invalidation and decision
-  -> Query consequence
-```
+This is the authoritative change meaning. Relational does not allocate Signal
+aspects, and downstream callers must not reinterpret raw patch fields into
+their own change taxonomy.
 
 Use `worth_relational::facade::publication` and
 `worth_relational::facade::schema`. Equal labels or diagnostic digests do not
 replace the typed aspect identity and binding.
+
+#### Who consumes this
+
+The Bridge reads committed changes through
+`worth_relational::facade::change_source`. It selects a commit, has Relational
+mint a change receipt, which proves the publication is consistent, and lowers
+that receipt into its own envelope. Relational does not depend on the Bridge.
+For Query-installed conditional operations, the flow is:
+
+```text
+Relational commit
+  -> aspect-precise authoritative publication and change receipt
+  -> Bridge installed correspondence
+  -> Signal invalidation and decision
+  -> Query consequence
+```
 

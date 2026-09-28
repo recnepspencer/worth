@@ -48,7 +48,10 @@ impl UiIntentExecutionState {
                     census.consequence_pending_attempts += 1;
                     continue;
                 }
-                _ => {}
+                UiIntentExecutionSlotPhase::Admitted(_)
+                | UiIntentExecutionSlotPhase::AttemptPrepared(_)
+                | UiIntentExecutionSlotPhase::Running(_)
+                | UiIntentExecutionSlotPhase::Recovery(_) => {}
             }
             let Some(reservation) = phase.reservation() else {
                 continue;

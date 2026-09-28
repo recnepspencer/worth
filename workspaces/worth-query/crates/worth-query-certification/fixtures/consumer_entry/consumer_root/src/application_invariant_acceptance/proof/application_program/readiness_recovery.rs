@@ -13,6 +13,7 @@ use worth_query_topology_entry::{
 use super::super::super::{authentication, installation, seed::length};
 use super::super::adjust;
 use super::lifecycle::{controls, perform};
+use crate::application_invariant_acceptance::proof::settle;
 use crate::ConsumerSchema;
 
 mod already_committed;
@@ -183,12 +184,10 @@ pub(super) fn readiness_failure_recovers_exact_pending_output(
             controls(),
         )
         .expect("owner-held readiness custody is recoverable");
-    let settled = loop {
-        match recovered.advance(&request).unwrap() {
-            WorthQueryApplicationProgramOutputProgress::Pending => {}
-            WorthQueryApplicationProgramOutputProgress::Settled(settled) => break settled,
-        }
-    };
+    let settled = settle(|| match recovered.advance(&request).unwrap() {
+        WorthQueryApplicationProgramOutputProgress::Pending => None,
+        WorthQueryApplicationProgramOutputProgress::Settled(settled) => Some(settled),
+    });
     assert_eq!(
         request
             .at(settled.observation())

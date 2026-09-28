@@ -111,6 +111,17 @@ impl UiAssembledMountedFrame {
         self.candidate.frame().semantic_projection()
     }
 
+    pub(in crate::mounting) fn scrolls_with_region(
+        &self,
+        region: worth_ui_host_contract::UiMountedInstanceIdentity,
+        instance: worth_ui_host_contract::UiMountedInstanceIdentity,
+        opened: Option<worth_ui_host_contract::UiMountedPortalOverlayMechanic>,
+    ) -> bool {
+        self.candidate
+            .frame()
+            .scrolls_with_region(region, instance, opened)
+    }
+
     pub(crate) fn appearance_attempt_inputs(
         &mut self,
         batch: &crate::runtime::appearance::UiAppearanceInvalidationBatch,
@@ -253,7 +264,9 @@ impl UiAssembledMountedFrame {
         profile: Option<&worth_ui_host_contract::UiHostAppearanceProfileContract>,
         motion: crate::mounting::presentation::UiAcceptedAppearanceMotion,
         overlays: &[crate::mounting::UiMountedAppearanceSurfaceOverlayInput],
-        scroll_chrome: &[crate::mounting::UiMountedAppearanceScrollChromeInput],
+        scroll_chrome: &[crate::mounting::UiPresented<
+            crate::mounting::UiMountedAppearanceScrollChromeInput,
+        >],
     ) -> crate::runtime::appearance::UiAppearanceInspectionAttemptBatch {
         let invalidation = self.appearance_invalidation_batch();
         let records = self.candidate.lower_appearance_with_motion_and_overlays(

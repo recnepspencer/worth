@@ -1,5 +1,7 @@
 # Grouped Support And Readiness
 
+> **Internal engine surface.** This page documents `WorthQueryWorkspace` (`worth_query::facade`), the engine surface that `worth-ui-query-binding` uses. Application code uses `worth-query-decl` and `worth-query-host`; start with the [application front door](../foundations/ordinary-application-front-door.md).
+
 Grouped support/readiness tells you whether an admitted grouped claim is
 supportable before you treat it as a later execution or projection fact.
 

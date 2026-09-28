@@ -9,6 +9,7 @@ use worth_relational::facade::identity::EntityId;
 mod coverage;
 mod dispatch;
 mod identity;
+mod resume;
 mod retained_bytes;
 
 pub(super) use dispatch::CompiledWorkflowDispatch;
@@ -22,6 +23,8 @@ pub(in crate::domain_computation::primary_graph) struct CompiledWorkflowDefiniti
     pub(super) publication: Arc<CompiledWorkflowPublicationPlan>,
     pub(super) content_identity: ApplicationWorkflowDefinitionContentIdentity,
     pub(super) program_revision: ApplicationProgramRevision,
+    /// A migration successor's first node; see [`Self::resumed_at`].
+    pub(super) resume: Option<usize>,
 }
 
 pub(super) struct CompiledWorkflowPublicationPlan {
@@ -50,6 +53,7 @@ pub(in crate::domain_computation::primary_graph) enum CompiledWorkflowNodeKind {
     Operation {
         operation: String,
         input_type: String,
+        binding: Option<String>,
         requires_workflow_authority: bool,
     },
     Assessment {
@@ -58,6 +62,7 @@ pub(in crate::domain_computation::primary_graph) enum CompiledWorkflowNodeKind {
         result_type: String,
         binding: String,
         subject: worth_query_declaration::facade::application_program::ApplicationWorkflowSubjectSelector,
+        applicability: CompiledWorkflowAssessmentApplicability,
     },
     Condition {
         query: String,
@@ -75,6 +80,16 @@ pub(in crate::domain_computation::primary_graph) enum CompiledWorkflowNodeKind {
         policy: worth_query_declaration::facade::application_program::ApplicationWorkflowEvidenceJoinPolicy,
     },
     Terminal,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(in crate::domain_computation::primary_graph) enum CompiledWorkflowAssessmentApplicability {
+    Always,
+    WhenRelatedRelationPresent {
+        relation: String,
+        from: String,
+        to: String,
+    },
 }
 
 pub(in crate::domain_computation::primary_graph) struct CompiledWorkflowConnection {
@@ -155,7 +170,7 @@ impl CompiledWorkflowDefinition {
     }
 
     pub(in crate::domain_computation::primary_graph) fn start(&self) -> &CompiledWorkflowNode {
-        &self.publication.nodes[self.publication.start]
+        &self.publication.nodes[self.resume.unwrap_or(self.publication.start)]
     }
 
     pub(in crate::domain_computation::primary_graph) fn node(
@@ -238,6 +253,13 @@ impl CompiledWorkflowDefinition {
         approval: EntityId,
     ) -> impl Iterator<Item = &CompiledWorkflowNode> {
         self.data_targets(approval, ApplicationWorkflowDataFlow::ApprovalAuthority)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn approval_authority_sources(
+        &self,
+        operation: EntityId,
+    ) -> impl Iterator<Item = &CompiledWorkflowNode> {
+        self.data_sources(operation, ApplicationWorkflowDataFlow::ApprovalAuthority)
     }
 
     fn data_targets(

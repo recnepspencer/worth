@@ -134,9 +134,9 @@ impl SignalConditionalTemporalState {
         let current_tick = self.temporal.clock_basis().current_tick();
         while prepared.ready.len() < prepared.maximum.get() {
             let frontier = self.temporal.frontier_snapshot();
-            if !frontier
+            if frontier
                 .next_due_tick()
-                .is_some_and(|tick| tick <= current_tick)
+                .is_none_or(|tick| tick > current_tick)
             {
                 break;
             }

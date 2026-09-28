@@ -34,6 +34,33 @@ pub(in crate::domain_computation::primary_graph) fn admit_platform_effects<
     >,
     demand: PlatformEffectDemand,
 ) -> Result<PlatformEffectReservation, WorthQueryApplicationAttemptDenial> {
+    let contracts = read_set.admission.allowed_graph_contract();
+    admit_query_owned_effects(contracts, contracts.platform_candidate_ceiling(), demand)
+}
+
+pub(in crate::domain_computation::primary_graph) fn admit_workflow_settlement_effects<
+    Schema,
+    Operation,
+    Input,
+    Scope,
+>(
+    admission: &crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<
+        Schema,
+        Operation,
+        Input,
+        Scope,
+    >,
+    demand: PlatformEffectDemand,
+) -> Result<PlatformEffectReservation, WorthQueryApplicationAttemptDenial> {
+    let contracts = admission.allowed_graph_contract();
+    admit_query_owned_effects(contracts, contracts.workflow_settlement_ceiling(), demand)
+}
+
+fn admit_query_owned_effects(
+    contracts: &worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts,
+    declared: Option<ApplicationCandidateRequirements>,
+    demand: PlatformEffectDemand,
+) -> Result<PlatformEffectReservation, WorthQueryApplicationAttemptDenial> {
     let validator_work = demand.validator_work()?;
     let requirements = ApplicationCandidateRequirements::fixed_shape(
         ApplicationCandidateCardinalityCeiling::fixed(
@@ -46,15 +73,19 @@ pub(in crate::domain_computation::primary_graph) fn admit_platform_effects<
         ),
         ApplicationCandidateResourceCeiling::bounded(demand.retained_bytes, validator_work),
     );
-    let envelope = read_set
-        .admission
-        .allowed_graph_contract()
+    let envelope = contracts
         .execution_strategy()
         .expect("installed application operation has exactly one execution strategy")
         .envelope();
+    let declared = declared.ok_or_else(|| {
+        WorthQueryApplicationAttemptDenial::new(
+            WorthQueryApplicationAttemptDenialKind::CandidateCapacityExceeded,
+            "platform effect operation has no installed candidate contract",
+        )
+    })?;
     let reservation = WorthQueryCandidateReservation::admit(
         requirements,
-        requirements,
+        declared,
         envelope.scale_ceiling(WorthQuerySemanticScaleAxis::CandidateItems),
         envelope
             .resource_ceiling(WorthQueryResourceDimension::CandidateRetainedRepresentationBytes),

@@ -207,9 +207,9 @@ fn motion(
     let position = if outside {
         UiHostSurfacePosition::viewport_logical(-1_000, -1_000)
     } else {
-        UiHostSurfacePosition::viewport_logical(
-            ((bounds.x() + bounds.width() / 2.0) * 1_000.0) as i64,
-            ((bounds.y() + bounds.height() / 2.0) * 1_000.0) as i64,
+        crate::units::viewport_position_for_test(
+            bounds.x() + bounds.width() / 2.0,
+            bounds.y() + bounds.height() / 2.0,
         )
     };
     let UiHostProtocolNegotiation::Compatible(protocol) =

@@ -3,6 +3,7 @@ mod anchor;
 pub(crate) mod chrome;
 mod gesture_latch;
 mod host_observation;
+mod host_travel;
 mod identity;
 mod inspection;
 mod model;
@@ -19,6 +20,7 @@ mod settle_proposal;
 mod settle_stop;
 mod settle_transition;
 mod shared_owner_reconciliation;
+mod staged_offset;
 mod state;
 pub(crate) mod transition;
 
@@ -33,6 +35,7 @@ pub(crate) use gesture_latch::{
 pub(crate) use host_observation::{
     UiHostScrollObservationDenial, UiHostScrollObservationOutcome, UiScrollBoundsResolutionDenial,
 };
+pub(crate) use host_travel::{page_travel, UiScrollHeading, UiScrollHostTravel};
 pub(crate) use identity::{
     UiScrollOwnerIdentity, UiScrollOwnerIncarnation, UiScrollOwnerRegistration,
 };
@@ -61,6 +64,7 @@ pub(crate) use settle_transition::{
     UiPreparedScrollSettleTransition, UiScrollSettleTransitionDenial,
 };
 pub(crate) use shared_owner_reconciliation::UiSharedScrollOwnerReconciliation;
+pub(crate) use staged_offset::UiStagedScrollOffset;
 pub(crate) use state::UiPreparedScrollDirectSuccession;
 pub(crate) use state::UiScrollRuntimeState;
 

@@ -45,7 +45,7 @@ impl PublishedRestorationSettlement {
                 retry.producer.producer_dependency_identity,
                 retry.producer.idempotency_key_identity,
                 retry.producer.observed_source_facts,
-                None,
+                retry.producer.resources,
             );
         super::WorthQueryRestoredGeneratedOutput {
             branch: retry.branch,

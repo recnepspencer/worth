@@ -29,7 +29,7 @@ pub(in crate::domain_computation::authorization) struct WorthQueryResolvedCapabi
     context: BTreeMap<WorthQueryCapabilityContextKey, EntityId>,
 }
 
-#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd, serde::Serialize, serde::Deserialize)]
 pub(in crate::domain_computation::authorization) struct WorthQueryCapabilityContextKey {
     context: String,
     context_type: String,

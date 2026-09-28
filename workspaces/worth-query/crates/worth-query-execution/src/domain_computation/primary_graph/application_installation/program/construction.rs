@@ -282,7 +282,7 @@ where
     let supported = roster
         .install_all(installed_schema, &closed)
         .map_err(program_support_denied)?;
-    let initial_revision = program.revision().clone();
+    let initial_revision = *program.revision();
     let installed = install_rostered_application_program(program, installed_schema, &closed)
         .map_err(program_support_denied)?;
     Ok((

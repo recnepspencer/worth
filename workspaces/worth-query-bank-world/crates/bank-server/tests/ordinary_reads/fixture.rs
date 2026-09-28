@@ -1,21 +1,24 @@
 use bank_domain::model::{
-    AccountAuthorizationId, AccountId, AccountName, BankPrincipalId, BankSnapshotVersion,
-    BusinessId, CustomerRole, EmployeeAssignmentId, EmployeeRole, InstitutionId, Money, PaymentId,
+    AccountId, AccountName, BankPrincipalId, BankSnapshotVersion, BusinessId, CustomerRole,
+    EmployeeAssignmentId, EmployeeRole, InstitutionId, Money, PaymentId,
 };
 use bank_domain::proposals::{
-    BankAccountAuthorization, BankIdempotencyKey, BankOperationScopeBinding, BankProposalEngine,
-    BankSnapshot, BankSnapshotBuilder,
+    BankIdempotencyKey, BankOperationScopeBinding, BankProposalEngine, BankSnapshot,
+    BankSnapshotBuilder,
 };
 use bank_domain::schema::{
-    AccountStatus, ApplyOpeningFunding, CreateBusinessAccount, CreatePersonalAccount,
-    GrantAccountAuthorization, InitiateBusinessPayment, SendMoney,
+    ApplyOpeningFunding, CreateBusinessAccount, CreatePersonalAccount, GrantAccountAuthorization,
+    InitiateBusinessPayment, SendMoney,
 };
 use bank_server::{
-    BankAuthenticatedPrincipal, BankBusinessOwnerSeed, BankEmployeeAssignmentSeed,
-    BankPrincipalSeed, BankWorldSeed,
+    BankApprovalAuthenticationConfiguration, BankAuthenticatedPrincipal, BankBusinessOwnerSeed,
+    BankEmployeeAssignmentSeed, BankPrincipalSeed, BankWorldSeed,
 };
 
-use crate::support::{block_on, runtime, CausalCredential, DynamicIdentity, TestIdentityWorld};
+use crate::support::{
+    block_on, runtime, runtime_with_approval_authentication, CausalCredential, DynamicIdentity,
+    TestIdentityWorld,
+};
 
 pub(super) const OWNER: usize = 0;
 pub(super) const RECIPIENT: usize = 1;
@@ -24,6 +27,16 @@ pub(super) const VIEWER: usize = 3;
 pub(super) const STRANGER: usize = 4;
 pub(super) const AUDITOR: usize = 5;
 pub(super) const TELLER: usize = 6;
+
+#[path = "fixture/discovery.rs"]
+mod discovery;
+#[allow(
+    unused_imports,
+    reason = "the shared fixture's discovery court is a separate test target"
+)]
+pub(super) use discovery::{
+    over_budget_discovery_world, over_budget_discovery_world_with_role, AccountDiscoveryFixture,
+};
 
 pub(super) struct OrdinaryReadFixture {
     pub world: TestIdentityWorld,
@@ -34,23 +47,6 @@ pub(super) struct OrdinaryReadFixture {
     pub institution: InstitutionId,
     pub payment: PaymentId,
     pub payments: Vec<PaymentId>,
-}
-
-pub(super) struct AccountDiscoveryFixture {
-    pub world: TestIdentityWorld,
-    actor: DynamicIdentity,
-}
-
-impl AccountDiscoveryFixture {
-    pub fn authenticate(&self) -> BankAuthenticatedPrincipal {
-        let request = crate::support::request_scope();
-        block_on(self.world.runtime.authenticate_with(
-            &self.world.authentication,
-            CausalCredential::for_identity(&self.actor),
-            &request,
-        ))
-        .expect("discovery actor should authenticate")
-    }
 }
 
 impl OrdinaryReadFixture {
@@ -72,10 +68,48 @@ pub(super) fn ordinary_read_world(
     ordinary_read_world_with_pending_payments(scenario, unrelated_accounts, 1)
 }
 
+#[allow(
+    dead_code,
+    reason = "this shared fixture also compiles in the ordinary-reads test target"
+)]
+pub(super) fn ordinary_read_world_with_approval_authentication(
+    scenario: &str,
+    approval_authentication: BankApprovalAuthenticationConfiguration,
+) -> OrdinaryReadFixture {
+    build_ordinary_read_world(scenario, 0, 1, Some(approval_authentication), false)
+}
+
+#[allow(
+    dead_code,
+    reason = "the shared fixture also compiles in targets without the actor-handoff court"
+)]
+pub(super) fn ordinary_read_world_with_two_approvers(
+    scenario: &str,
+    approval_authentication: BankApprovalAuthenticationConfiguration,
+) -> OrdinaryReadFixture {
+    build_ordinary_read_world(scenario, 0, 1, Some(approval_authentication), true)
+}
+
 pub(super) fn ordinary_read_world_with_pending_payments(
     scenario: &str,
     unrelated_accounts: usize,
     pending_payment_count: usize,
+) -> OrdinaryReadFixture {
+    build_ordinary_read_world(
+        scenario,
+        unrelated_accounts,
+        pending_payment_count,
+        None,
+        false,
+    )
+}
+
+fn build_ordinary_read_world(
+    scenario: &str,
+    unrelated_accounts: usize,
+    pending_payment_count: usize,
+    approval_authentication: Option<BankApprovalAuthenticationConfiguration>,
+    second_approver: bool,
 ) -> OrdinaryReadFixture {
     assert!(pending_payment_count > 0);
     let mut identities = (0..(7 + unrelated_accounts))
@@ -140,6 +174,15 @@ pub(super) fn ordinary_read_world_with_pending_payments(
         CustomerRole::Approver,
         "approver",
     );
+    if second_approver {
+        snapshot = grant(
+            snapshot,
+            business_account,
+            principal_id(STRANGER),
+            CustomerRole::Approver,
+            "second-approver",
+        );
+    }
     for ordinal in 0..pending_payment_count {
         let payment_proposal = BankProposalEngine::prepare_initiate_business_payment(
             &snapshot,
@@ -191,7 +234,10 @@ pub(super) fn ordinary_read_world_with_pending_payments(
         ));
     }
     OrdinaryReadFixture {
-        world: runtime(seed),
+        world: match approval_authentication {
+            Some(configuration) => runtime_with_approval_authentication(seed, configuration),
+            None => runtime(seed),
+        },
         identities,
         personal_account,
         recipient_account,
@@ -199,64 +245,6 @@ pub(super) fn ordinary_read_world_with_pending_payments(
         institution,
         payment,
         payments,
-    }
-}
-
-pub(super) fn over_budget_discovery_world(
-    scenario: &str,
-    authorized_accounts: usize,
-) -> AccountDiscoveryFixture {
-    over_budget_discovery_world_with_role(scenario, authorized_accounts, CustomerRole::Viewer)
-}
-
-pub(super) fn over_budget_discovery_world_with_role(
-    scenario: &str,
-    authorized_accounts: usize,
-    role: CustomerRole,
-) -> AccountDiscoveryFixture {
-    let actor = DynamicIdentity::new(&format!("{scenario}-actor"));
-    let owner_identities = (0..authorized_accounts)
-        .map(|ordinal| DynamicIdentity::new(&format!("{scenario}-owner-{ordinal}")))
-        .collect::<Vec<_>>();
-    let institution = id(InstitutionId::new, 1);
-    let actor_id = id(BankPrincipalId::new, 1);
-    let mut builder = BankSnapshotBuilder::new(id(BankSnapshotVersion::new, 1))
-        .institution(institution)
-        .principal(actor_id)
-        .institution_cash_account(id(AccountId::new, 100), institution);
-    for ordinal in 0..authorized_accounts {
-        let owner = id(BankPrincipalId::new, u64::try_from(ordinal).unwrap() + 2);
-        let account = id(AccountId::new, u64::try_from(ordinal).unwrap() + 1_000);
-        builder = builder
-            .principal(owner)
-            .personal_account(
-                account,
-                institution,
-                owner,
-                AccountName::new(format!("Authorized {ordinal}")).unwrap(),
-                AccountStatus::Open,
-            )
-            .projected_authorization(BankAccountAuthorization::from_projection(
-                id(
-                    AccountAuthorizationId::new,
-                    u64::try_from(ordinal).unwrap() + 1,
-                ),
-                account,
-                actor_id,
-                role,
-            ));
-    }
-    let mut seed = BankWorldSeed::new(builder.build().expect("discovery world should build"))
-        .principal(BankPrincipalSeed::enabled(actor_id, actor.external()));
-    for (ordinal, identity) in owner_identities.iter().enumerate() {
-        seed = seed.principal(BankPrincipalSeed::enabled(
-            id(BankPrincipalId::new, u64::try_from(ordinal).unwrap() + 2),
-            identity.external(),
-        ));
-    }
-    AccountDiscoveryFixture {
-        world: runtime(seed),
-        actor,
     }
 }
 

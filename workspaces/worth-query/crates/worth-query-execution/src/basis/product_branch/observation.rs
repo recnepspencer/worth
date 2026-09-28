@@ -6,7 +6,7 @@ pub struct WorthQueryProductBranchLease {
     publication: crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
     read: WorthQueryProductObservationLease,
     bridge_source: std::sync::Arc<
-        worth_relational::facade::bridge::RelationalBridgeObservationLease,
+        worth_runtime_bridge::facade::RelationalBridgeObservationLease,
     >,
 }
 
@@ -102,7 +102,7 @@ impl WorthQueryProductBranchLease {
 
     pub(crate) fn new(
         publication: crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
-        bridge_source: worth_relational::facade::bridge::RelationalBridgeObservationLease,
+        bridge_source: worth_runtime_bridge::facade::RelationalBridgeObservationLease,
     ) -> Self {
         let read = WorthQueryProductObservationLease::new(publication.observation().clone());
         Self {
@@ -147,13 +147,13 @@ impl WorthQueryProductBranchLease {
 
     pub(crate) fn bridge_source(
         &self,
-    ) -> std::sync::Arc<worth_relational::facade::bridge::RelationalBridgeObservationLease> {
+    ) -> std::sync::Arc<worth_runtime_bridge::facade::RelationalBridgeObservationLease> {
         std::sync::Arc::clone(&self.bridge_source)
     }
 
     pub(crate) fn bridge_source_observation(
         &self,
-    ) -> &worth_relational::facade::bridge::RelationalBridgeObservationLease {
+    ) -> &worth_runtime_bridge::facade::RelationalBridgeObservationLease {
         &self.bridge_source
     }
 

@@ -42,7 +42,17 @@ impl super::UiFocusRuntimeState {
                 transition: worth_ui_host_contract::UiHostPointerButtonTransition::Pressed,
                 ..
             } => self.observe_pointer_modality(),
-            _ => {}
+            worth_ui_host_contract::UiHostObservationPayload::Viewport { .. }
+            | worth_ui_host_contract::UiHostObservationPayload::DeviceScale { .. }
+            | worth_ui_host_contract::UiHostObservationPayload::PointerMotion { .. }
+            | worth_ui_host_contract::UiHostObservationPayload::PointerButton { .. }
+            | worth_ui_host_contract::UiHostObservationPayload::Keyboard { .. }
+            | worth_ui_host_contract::UiHostObservationPayload::WindowFocus { .. }
+            | worth_ui_host_contract::UiHostObservationPayload::ScrollDelta { .. }
+            | worth_ui_host_contract::UiHostObservationPayload::Clock { .. }
+            | worth_ui_host_contract::UiHostObservationPayload::Tick { .. }
+            | worth_ui_host_contract::UiHostObservationPayload::TextInput { .. }
+            | worth_ui_host_contract::UiHostObservationPayload::ImeComposition { .. } => {}
         }
     }
 

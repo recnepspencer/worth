@@ -298,7 +298,13 @@ impl<'a> WorthUiMeasurementInspectionBoundary<'a> {
                     ),
                 ))
             }
-            _ => None,
+            UiInspectionTarget::ProductRoot
+            | UiInspectionTarget::PublishedAspect { .. }
+            | UiInspectionTarget::ConsumedAspect { .. }
+            | UiInspectionTarget::ObligationGraphNode { .. }
+            | UiInspectionTarget::ObligationTouch { .. }
+            | UiInspectionTarget::ObligationEvidenceHandle { .. }
+            | _ => None,
         }
     }
 }

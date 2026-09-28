@@ -35,18 +35,16 @@ impl PulseExecutableWorld<AwaitingFirstFrame> {
             installation,
             mut process,
             mut lifecycle,
-            launch_started,
         } = self.state;
-        let bound =
-            match bind_first_frame_world(&mut process, &mut lifecycle, launch_started, deadline) {
-                Ok(bound) => bound,
-                Err(primary) => {
-                    return Err(teardown_unbound_world(
-                        primary,
-                        UnboundFailureWorldResources::new(installation, process, lifecycle),
-                    ))
-                }
-            };
+        let bound = match bind_first_frame_world(&mut process, &mut lifecycle, deadline) {
+            Ok(bound) => bound,
+            Err(primary) => {
+                return Err(teardown_unbound_world(
+                    primary,
+                    UnboundFailureWorldResources::new(installation, process, lifecycle),
+                ))
+            }
+        };
         let evidence = match adjudicate_bound_first_frame(
             &mut process,
             &bound,
@@ -68,7 +66,6 @@ impl PulseExecutableWorld<AwaitingFirstFrame> {
                     installation,
                     process,
                     lifecycle,
-                    journey_started: launch_started,
                     platform: bound.platform,
                     native_client: bound.native_client,
                 },

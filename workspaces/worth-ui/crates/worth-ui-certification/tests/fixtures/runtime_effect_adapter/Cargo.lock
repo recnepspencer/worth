@@ -732,7 +732,6 @@ dependencies = [
  "smallvec",
  "worth-foundational",
  "worth-proof",
- "worth-runtime-bridge",
 ]
 
 [[package]]
@@ -745,6 +744,7 @@ dependencies = [
  "worth-harness",
  "worth-proof",
  "worth-query-installation",
+ "worth-relational",
  "worth-signal",
 ]
 

@@ -1,0 +1,7 @@
+error: cannot construct `RelationalSelectedCommit` with struct literal syntax due to private fields
+ --> tests/ui/change_source/selected_commit_cannot_be_fabricated.rs:4:13
+  |
+4 |     let _ = RelationalSelectedCommit {};
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: private fields `runtime_instance_id`, `commit_id` and `observation` that were not provided

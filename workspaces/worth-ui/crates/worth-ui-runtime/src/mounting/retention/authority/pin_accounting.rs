@@ -54,7 +54,11 @@ impl UiMountedFramePinCounts {
             UiMountedRetentionClass::Diagnostic => self.diagnostic,
             UiMountedRetentionClass::VisualSnapshot => self.visual_snapshot,
             UiMountedRetentionClass::VisualOverlay => self.visual_overlay,
-            _ => unreachable!("only lease-backed retention classes own counts"),
+            UiMountedRetentionClass::Current
+            | UiMountedRetentionClass::InFlight
+            | UiMountedRetentionClass::Quarantine => {
+                unreachable!("only lease-backed retention classes own counts")
+            }
         }
     }
 
@@ -65,7 +69,11 @@ impl UiMountedFramePinCounts {
             UiMountedRetentionClass::Diagnostic => self.diagnostic = count,
             UiMountedRetentionClass::VisualSnapshot => self.visual_snapshot = count,
             UiMountedRetentionClass::VisualOverlay => self.visual_overlay = count,
-            _ => unreachable!("only lease-backed retention classes own counts"),
+            UiMountedRetentionClass::Current
+            | UiMountedRetentionClass::InFlight
+            | UiMountedRetentionClass::Quarantine => {
+                unreachable!("only lease-backed retention classes own counts")
+            }
         }
     }
 

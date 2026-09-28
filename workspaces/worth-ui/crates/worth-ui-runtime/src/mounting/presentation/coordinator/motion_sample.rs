@@ -23,6 +23,21 @@ pub(super) struct UiPendingMotionSamplePresentation {
     acceptance: super::super::work_producer::UiPreparedCommandMotionAcceptance,
 }
 
+impl UiPendingMotionSamplePresentation {
+    /// What this tick displays once it lands, for a frame issued after it on
+    /// `binding` whose predecessor is the frame it samples.
+    pub(super) fn issued_motion(
+        &self,
+        binding: worth_ui_host_contract::UiSurfaceBindingGeneration,
+        predecessor: worth_ui_host_contract::UiMountedFrameIdentity,
+    ) -> super::super::work_producer::UiIssuedCommandMotion {
+        if self.requirement.binding() != binding || self.presentation.frame() != predecessor {
+            return super::super::work_producer::UiIssuedCommandMotion::default();
+        }
+        self.acceptance.issued_motion()
+    }
+}
+
 pub(crate) enum UiMotionSamplePresentationOutcome {
     Presented {
         prepared: super::super::motion_sampling::UiPreparedMotionSampling,
@@ -94,6 +109,9 @@ impl UiMountedPresentationCoordinator {
             Ok(work) => work,
             Err(_) => return UiMotionSamplePresentationOutcome::RejectedBeforeEffects,
         };
+        if self.frame_in_flight_displaces(requirement.binding(), &work) {
+            return UiMotionSamplePresentationOutcome::RejectedBeforeEffects;
+        }
         let expected_effects = state
             .expected_completion_effects(Some(state), &work, requirement.presentation_mode())
             .into_boxed_slice();
@@ -120,6 +138,7 @@ impl UiMountedPresentationCoordinator {
         let outcome = host
             .adapter()
             .present_mounted_surface(host.authority(), &view);
+        host.authority().record_surface_presentation(&outcome);
         self.settle_initial_motion_sample(
             host.authority(),
             prepared,

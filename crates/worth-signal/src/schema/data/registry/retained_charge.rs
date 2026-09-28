@@ -14,10 +14,10 @@ impl RetainedStorageMeasurement for SignalSchemaRegistry {
             index_by_name,
             registry_digest,
         } = self;
-        Ok(Charge::ZERO
+        Charge::ZERO
             .checked_add(registrations.retained_heap_charge(work)?)?
             .checked_add(index_by_id.retained_heap_charge(work)?)?
             .checked_add(index_by_name.retained_heap_charge(work)?)?
-            .checked_add(registry_digest.retained_heap_charge(work)?)?)
+            .checked_add(registry_digest.retained_heap_charge(work)?)
     }
 }

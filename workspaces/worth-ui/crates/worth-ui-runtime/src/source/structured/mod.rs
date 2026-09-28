@@ -16,5 +16,6 @@ pub(crate) use worth_ui_legally_structured_artifact_input_node::{
     WorthUiLegallyStructuredArtifactInputThemeTokenNode,
 };
 pub(crate) use worth_ui_mosaic_structure_facts::{
-    WorthUiMosaicMountFacts, WorthUiMosaicRegionFacts, WorthUiMosaicStructureFacts,
+    WorthUiMosaicMountFacts, WorthUiMosaicRegionFacts, WorthUiMosaicSizingContractProjectionDenial,
+    WorthUiMosaicStructureFacts,
 };

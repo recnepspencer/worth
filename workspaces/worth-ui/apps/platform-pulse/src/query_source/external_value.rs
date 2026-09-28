@@ -153,12 +153,12 @@ fn run_watch(
         .watch(&root, notify::RecursiveMode::NonRecursive)
         .map_err(|error| PlatformPulseExternalValueWatchDenial::Watcher(error.to_string()))?;
     let mut admitted_revision = None;
-    publish_exact_target(&target, &mut admitted_revision, &sender);
+    publish_exact_target(&target, &mut admitted_revision, &sender, settlement_pause);
     signal_readiness(&readiness);
     while !stop.load(Ordering::Acquire) {
         match notification_receiver.recv_timeout(WORKER_SETTLE_INTERVAL) {
             Ok(Ok(_)) => {
-                publish_exact_target(&target, &mut admitted_revision, &sender);
+                publish_exact_target(&target, &mut admitted_revision, &sender, settlement_pause);
                 signal_readiness(&readiness);
             }
             Ok(Err(error)) => {
@@ -190,8 +190,9 @@ fn publish_exact_target(
     target: &Path,
     admitted_revision: &mut Option<u64>,
     sender: &mpsc::Sender<PlatformPulseExternalValueEvent>,
+    pause: impl FnMut(),
 ) {
-    let Some(bytes) = settle_exact_target_read(target, sender) else {
+    let Some(bytes) = settle_exact_target_read(target, sender, pause) else {
         return;
     };
     let value: PlatformPulseExternalValue = match serde_json::from_slice(&bytes) {
@@ -220,33 +221,39 @@ fn publish_exact_target(
     }
 }
 
+/// Waits between reads of a value file another process is still replacing.
+fn settlement_pause() {
+    thread::sleep(READ_SETTLEMENT_INTERVAL);
+}
+
+/// Reads the value file, pausing between attempts while it is missing or
+/// locked by a writer. A missing file after the last attempt is no value yet;
+/// any other failure is reported.
 fn settle_exact_target_read(
     target: &Path,
     sender: &mpsc::Sender<PlatformPulseExternalValueEvent>,
+    mut pause: impl FnMut(),
 ) -> Option<Vec<u8>> {
-    for attempt in 0..MAXIMUM_READ_SETTLEMENT_ATTEMPTS {
+    let mut attempts = 1;
+    loop {
         match std::fs::read(target) {
             Ok(bytes) => return Some(bytes),
-            Err(error) if transient_read_error(&error) => {
-                if attempt + 1 == MAXIMUM_READ_SETTLEMENT_ATTEMPTS {
-                    if error.kind() != std::io::ErrorKind::NotFound {
-                        let _ = sender.send(PlatformPulseExternalValueEvent::Failed(
-                            PlatformPulseExternalValueWatchDenial::Read(error.to_string()),
-                        ));
-                    }
-                    return None;
-                }
-                thread::sleep(READ_SETTLEMENT_INTERVAL);
+            Err(error)
+                if transient_read_error(&error) && attempts < MAXIMUM_READ_SETTLEMENT_ATTEMPTS =>
+            {
+                pause();
+                attempts += 1;
             }
             Err(error) => {
-                let _ = sender.send(PlatformPulseExternalValueEvent::Failed(
-                    PlatformPulseExternalValueWatchDenial::Read(error.to_string()),
-                ));
+                if error.kind() != std::io::ErrorKind::NotFound {
+                    let _ = sender.send(PlatformPulseExternalValueEvent::Failed(
+                        PlatformPulseExternalValueWatchDenial::Read(error.to_string()),
+                    ));
+                }
                 return None;
             }
         }
     }
-    unreachable!("the bounded read-settlement loop always returns")
 }
 
 fn transient_read_error(error: &std::io::Error) -> bool {
@@ -266,15 +273,18 @@ fn transient_read_error(error: &std::io::Error) -> bool {
 #[cfg(all(test, windows))]
 mod tests {
     use std::os::windows::fs::OpenOptionsExt;
+    use std::path::{Path, PathBuf};
     use std::sync::atomic::{AtomicU64, Ordering};
-    use std::time::{Duration, Instant};
+    use std::sync::mpsc;
 
-    use super::{publish_exact_target, PlatformPulseExternalValueEvent};
+    use super::{
+        publish_exact_target, PlatformPulseExternalValueEvent,
+        PlatformPulseExternalValueWatchDenial, MAXIMUM_READ_SETTLEMENT_ATTEMPTS,
+    };
 
     static NEXT_LOCKED_VALUE: AtomicU64 = AtomicU64::new(1);
 
-    #[test]
-    fn windows_atomic_replacement_lock_settles_within_the_bounded_read_budget() {
+    fn value_fixture() -> (PathBuf, PathBuf) {
         let ordinal = NEXT_LOCKED_VALUE.fetch_add(1, Ordering::Relaxed);
         let root = std::env::temp_dir().join(format!(
             "worth-ui-platform-pulse-locked-query-{}-{ordinal}",
@@ -284,26 +294,68 @@ mod tests {
         let target = root.join("platform-pulse-value.json");
         std::fs::write(&target, br#"{"status":"ONLINE","revision":1}"#)
             .expect("write valid Query value");
+        (root, target)
+    }
+
+    /// Holds the value file the way a writer replacing it does.
+    fn exclusive_lock(target: &Path) -> std::fs::File {
         let mut options = std::fs::OpenOptions::new();
         options.read(true);
         std::fs::OpenOptions::write(&mut options, true);
-        let lock = options
+        options
             .share_mode(0)
-            .open(&target)
-            .expect("hold an exclusive Windows file lock");
-        let release = std::thread::spawn(move || {
-            std::thread::sleep(Duration::from_millis(15));
-            drop(lock);
+            .open(target)
+            .expect("hold an exclusive Windows file lock")
+    }
+
+    #[test]
+    fn a_value_locked_by_its_writer_is_read_once_the_writer_releases_it() {
+        let (root, target) = value_fixture();
+        let mut lock = Some(exclusive_lock(&target));
+        let mut pauses = 0;
+        let (sender, receiver) = mpsc::channel();
+        publish_exact_target(&target, &mut None, &sender, || {
+            pauses += 1;
+            if pauses == 2 {
+                lock = None;
+            }
         });
-        let (sender, receiver) = std::sync::mpsc::channel();
-        let started = Instant::now();
-        publish_exact_target(&target, &mut None, &sender);
-        release.join().expect("release lock worker");
-        assert!(started.elapsed() <= Duration::from_millis(100));
+        assert_eq!(pauses, 2);
+        assert!(lock.is_none());
         assert!(matches!(
-            receiver.recv_timeout(Duration::from_millis(20)),
+            receiver.try_recv(),
             Ok(PlatformPulseExternalValueEvent::Record(_))
         ));
         std::fs::remove_dir_all(root).expect("remove locked-value fixture");
+    }
+
+    #[test]
+    fn a_value_locked_past_the_settlement_budget_is_a_read_failure() {
+        let (root, target) = value_fixture();
+        let lock = exclusive_lock(&target);
+        let mut pauses = 0;
+        let (sender, receiver) = mpsc::channel();
+        publish_exact_target(&target, &mut None, &sender, || pauses += 1);
+        drop(lock);
+        assert_eq!(pauses, MAXIMUM_READ_SETTLEMENT_ATTEMPTS - 1);
+        assert!(matches!(
+            receiver.try_recv(),
+            Ok(PlatformPulseExternalValueEvent::Failed(
+                PlatformPulseExternalValueWatchDenial::Read(_)
+            ))
+        ));
+        std::fs::remove_dir_all(root).expect("remove locked-value fixture");
+    }
+
+    #[test]
+    fn a_value_file_still_missing_after_settlement_is_no_value_yet() {
+        let (root, target) = value_fixture();
+        std::fs::remove_file(&target).expect("remove the value file");
+        let mut pauses = 0;
+        let (sender, receiver) = mpsc::channel();
+        publish_exact_target(&target, &mut None, &sender, || pauses += 1);
+        assert_eq!(pauses, MAXIMUM_READ_SETTLEMENT_ATTEMPTS - 1);
+        assert!(receiver.try_recv().is_err());
+        std::fs::remove_dir_all(root).expect("remove missing-value fixture");
     }
 }

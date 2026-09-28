@@ -15,9 +15,9 @@ where
             <SourceBinding<Schema, Demand> as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
         >,
 {
-    pub(in crate::application_entry) fn start_for_workflow<Spec, Program>(
+    pub(in crate::application_entry) fn start_for_workflow<Spec>(
         self,
-        workflow: &'application worth_query_execution::facade::application_installation::WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>,
+        workflow: worth_query_execution::facade::application_installation::WorthQueryWorkflowVocabulary<'application, Schema, Spec>,
     ) -> Result<
         (
             WorthQueryAdmittedOutputDemand<Schema, Family<Schema, Demand>>,
@@ -30,11 +30,8 @@ where
         Spec: worth_query_declaration::facade::application_program::ApplicationWorkflowSpec<
             Schema = Schema,
         >,
-        Program: worth_query_declaration::facade::application_program::ApplicationProgramDefinition<
-            Schema,
-        >,
     {
-        if !std::ptr::eq(self.application, workflow.program_runtime().runtime()) {
+        if !std::ptr::eq(self.application, workflow.runtime()) {
             return Err(WorthQueryApplicationOutputDemandDenial::FreshRequestMismatch);
         }
         let source = self.query_source()?.into_output_demand_source();

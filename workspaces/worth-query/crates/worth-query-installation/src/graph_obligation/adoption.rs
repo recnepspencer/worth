@@ -4,12 +4,19 @@ use super::{
     WorthQueryInstalledGraphObligationTerminalRequirement,
 };
 
+/// Why `inspect_installed_graph_obligations` refused to produce adoption
+/// evidence. Nothing is registered either way; inspection is read-only.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryGraphObligationAdoptionDenialKind {
+    /// The consumer name was empty or only whitespace.
     BlankConsumerName,
+    /// The inspected obligation rows no longer match the row count recorded in
+    /// the installation evidence.
     InstallationEvidenceDrift,
 }
 
+/// A typed refusal from `inspect_installed_graph_obligations`: the denial kind
+/// to match on and a human-readable message.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryGraphObligationAdoptionDenial {
     kind: WorthQueryGraphObligationAdoptionDenialKind,
@@ -26,6 +33,11 @@ impl WorthQueryGraphObligationAdoptionDenial {
     }
 }
 
+/// One installed graph obligation as seen by an adopting consumer: its slot,
+/// kind, required owners, and terminal requirement.
+///
+/// Read from `WorthQueryGraphObligationAdoptionProof::rows`; it is descriptive
+/// and grants nothing.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryGraphObligationAdoptionRow {
     slot: u32,
@@ -101,6 +113,13 @@ impl WorthQueryGraphObligationAdoptionProof {
     }
 }
 
+/// Produces read-only evidence that a named consumer adopted the installed
+/// graph obligations of one operation or query.
+///
+/// Pass the inspection from the installed contract's `graph_obligations()`.
+/// Refuses a blank consumer name, and refuses when the inspected rows drifted
+/// from the installation evidence. The returned proof carries no registration,
+/// planning, or execution authority.
 pub fn inspect_installed_graph_obligations(
     consumer_name: impl Into<String>,
     inspection: WorthQueryInstalledGraphObligationInspection<'_>,

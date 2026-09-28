@@ -118,6 +118,7 @@ pub(super) fn present(
                 .host
                 .adapter()
                 .present_mounted_surface(start.host.authority(), &view);
+            start.host.authority().record_surface_presentation(&outcome);
             (outcome, request_bases, pending_receipts.into_boxed_slice())
         },
     )

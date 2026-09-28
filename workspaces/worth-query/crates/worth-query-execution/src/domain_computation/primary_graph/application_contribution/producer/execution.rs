@@ -268,6 +268,7 @@ where
         .bind_application_source_expectation::<Operation<Schema, Binding>, _>(
             &mut admission,
             observed_source,
+            input.input(),
         )
         .map_err(|error| failed(Binding::IDENTITY, error))?;
     let completed = match runtime

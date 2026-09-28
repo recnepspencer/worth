@@ -28,13 +28,16 @@ impl UiViewportResizeEvidence {
                 plan.policy(),
             ),
             maximum_committed_receipts: plan.policy().budget().max_committed_receipts(),
-            admitted_observations: plan
-                .narrowed_families()
-                .filter(|family| {
-                    *family == crate::runtime::UiAllocationInvalidationFamily::ViewportExtentChange
-                })
-                .count() as u16,
-            selected_neighborhoods: selection.ordered_neighborhoods().len() as u16,
+            admitted_observations: u16::try_from(
+                plan.narrowed_families()
+                    .filter(|family| {
+                        *family
+                            == crate::runtime::UiAllocationInvalidationFamily::ViewportExtentChange
+                    })
+                    .count(),
+            )
+            .expect("a frame plan counts its invalidations in u16"),
+            selected_neighborhoods: selection.neighborhood_count(),
             committed_receipts: committed.counters().committed_receipts(),
             durable_mutations: 0,
             authority_probes: plan.counters().authority_probes(),

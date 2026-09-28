@@ -7,6 +7,7 @@ use crate::application_program::WORTH_QUERY_APPLICATION_PROGRAM_ARCHIVE_PROTOCOL
 use crate::envelope::WORTH_QUERY_PACKAGE_RELEASE_ENVELOPE_PROTOCOL_VERSION;
 use crate::protocol::WORTH_QUERY_PACKAGE_ARCHIVE_PROTOCOL_VERSION;
 use crate::record::WORTH_QUERY_PACKAGE_ARCHIVE_RECORD_PROTOCOL_VERSION;
+use crate::workflow_definition::WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION;
 
 use super::WorthQueryPackageArchiveCompatibilityDenial;
 
@@ -17,6 +18,7 @@ pub enum WorthQueryPackageArchiveProtocolLayer {
     Manifest,
     RecordFrame,
     ApplicationProgramDescription,
+    WorkflowDefinitionDraft,
 }
 
 /// Reader support windows for the independently versioned archive layers.
@@ -31,6 +33,7 @@ pub struct WorthQueryPackageArchiveCompatibilityProfile {
     manifest: BoundaryProtocolCompatibilityWindow,
     record_frame: BoundaryProtocolCompatibilityWindow,
     application_program_description: BoundaryProtocolCompatibilityWindow,
+    workflow_definition_draft: BoundaryProtocolCompatibilityWindow,
 }
 
 impl WorthQueryPackageArchiveCompatibilityProfile {
@@ -41,6 +44,9 @@ impl WorthQueryPackageArchiveCompatibilityProfile {
         record_frame: exact_window(WORTH_QUERY_PACKAGE_ARCHIVE_RECORD_PROTOCOL_VERSION),
         application_program_description: exact_window(
             WORTH_QUERY_APPLICATION_PROGRAM_ARCHIVE_PROTOCOL_VERSION,
+        ),
+        workflow_definition_draft: exact_window(
+            WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION,
         ),
     };
 
@@ -64,6 +70,10 @@ impl WorthQueryPackageArchiveCompatibilityProfile {
         self,
     ) -> BoundaryProtocolCompatibilityWindow {
         self.application_program_description
+    }
+
+    pub const fn workflow_definition_draft_window(self) -> BoundaryProtocolCompatibilityWindow {
+        self.workflow_definition_draft
     }
 
     pub(crate) fn admit(
@@ -98,6 +108,9 @@ impl WorthQueryPackageArchiveCompatibilityProfile {
             WorthQueryPackageArchiveProtocolLayer::RecordFrame => self.record_frame,
             WorthQueryPackageArchiveProtocolLayer::ApplicationProgramDescription => {
                 self.application_program_description
+            }
+            WorthQueryPackageArchiveProtocolLayer::WorkflowDefinitionDraft => {
+                self.workflow_definition_draft
             }
         }
     }

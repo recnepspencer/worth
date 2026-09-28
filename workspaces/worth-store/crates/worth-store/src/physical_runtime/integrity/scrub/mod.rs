@@ -1,4 +1,4 @@
-#![doc = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../../_docs/worth-store/physical-integrity-and-offline-verification.md"))]
+#![doc = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../../plans/worth-store/physical-integrity-and-offline-verification.md"))]
 
 mod cancellation;
 mod handle;

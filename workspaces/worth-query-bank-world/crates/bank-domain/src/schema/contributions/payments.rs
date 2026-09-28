@@ -21,6 +21,7 @@ use super::super::{
     fields::*,
     governance::{AccountActivityEffect, DistinctApproverPolicy, UsdCurrency},
     install_approved_business_payment_authority, install_approved_payment_assessment,
+    install_payment_approval_grant_minting,
     operations::*,
     posting_integrity::posting_integrity_invariant,
     precondition_manifest::install_payment_preconditions,
@@ -83,6 +84,7 @@ worth_query_application_contribution! {
             let schema = install_approved_payment_assessment(schema);
             let schema = install_money_programs(schema);
             let schema = install_payment_program(schema);
+            let schema = install_payment_approval_grant_minting(schema);
             let schema = install_payment_preconditions(schema);
             let schema = install_payment_decision_reads(schema)
                 .invariant(posting_integrity_invariant())

@@ -3,7 +3,7 @@ use wgpu::util::DeviceExt;
 
 use super::super::{
     copy_evidence_pixels, draw_presentation_operations, draw_retained_to_surface,
-    rectangle_vertices, retained_transfer, GlyphVertex, RasterVertex,
+    rectangle_vertices, retained_transfer, stamp_transfer, GlyphVertex, RasterVertex,
     UiNativePendingWgpuObligation, UiNativePresentationPipelines, UiNativeWgpuReadbackPoll,
 };
 use super::orchestrator::UiNativePresentationStagePort;
@@ -19,6 +19,7 @@ use super::{
 pub(super) fn present(
     graphics: &mut UiNativePresentationAccess,
     atlas: Option<&crate::native::text_atlas::UiNativeTextAtlasGpuPages>,
+    attempt: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
     plan: UiNativePresentationPortPlan,
     defer_initial_observation: bool,
     lifecycle: &mut crate::native::lifecycle::UiNativeLifecycleOrchestrator,
@@ -26,6 +27,7 @@ pub(super) fn present(
     let mut transaction = UiWgpuPresentationTransaction {
         graphics,
         atlas,
+        frame: attempt.diagnostic_value(),
         plan: Some(plan),
         defer_initial_observation,
     };
@@ -35,6 +37,8 @@ pub(super) fn present(
 struct UiWgpuPresentationTransaction<'transaction, 'owners> {
     graphics: &'transaction mut UiNativePresentationAccess<'owners>,
     atlas: Option<&'transaction crate::native::text_atlas::UiNativeTextAtlasGpuPages>,
+    /// The attempt a resize trace names this frame by.
+    frame: u64,
     plan: Option<UiNativePresentationPortPlan>,
     defer_initial_observation: bool,
 }
@@ -65,7 +69,7 @@ impl UiNativePresentationStagePort for UiWgpuPresentationTransaction<'_, '_> {
             .take()
             .expect("prepared presentation owns its plan");
         Ok(acquired.encode_with(|surface_texture| {
-            encode_acquired(self.graphics, self.atlas, surface_texture, plan)
+            encode_acquired(self.graphics, self.atlas, surface_texture, self.frame, plan)
         }))
     }
 
@@ -77,7 +81,9 @@ impl UiNativePresentationStagePort for UiWgpuPresentationTransaction<'_, '_> {
         &mut self,
         submitted: Self::Submitted,
     ) -> Result<Self::PresentHandoff, Self::Failure> {
-        Ok(submitted.hand_off())
+        let handoff = submitted.hand_off();
+        crate::native::resize_trace::submitted(self.frame, self.graphics.extent());
+        Ok(handoff)
     }
 
     fn observe(
@@ -92,11 +98,20 @@ fn encode_acquired(
     graphics: &UiNativePresentationAccess,
     atlas: Option<&crate::native::text_atlas::UiNativeTextAtlasGpuPages>,
     surface_texture: &wgpu::Texture,
+    frame: u64,
     plan: UiNativePresentationPortPlan,
 ) -> (wgpu::CommandBuffer, wgpu::Buffer) {
     let generation = graphics.device_generation();
     let pipelines = generation.presentation_pipelines();
     let (surface_pipeline, surface_bind_group) = retained_transfer(graphics, pipelines);
+    let stamp = crate::native::resize_trace::enabled().then(|| {
+        stamp_transfer(
+            graphics.device(),
+            graphics.queue(),
+            &surface_pipeline,
+            frame,
+        )
+    });
     let retained_view = graphics
         .retained_target()
         .create_view(&wgpu::TextureViewDescriptor::default());
@@ -120,6 +135,7 @@ fn encode_acquired(
         surface_view,
         surface_pipeline,
         surface_bind_group,
+        stamp.as_ref(),
         &readback,
         raster_vertex_buffer.as_ref(),
         glyph_vertex_buffer.as_ref(),
@@ -180,13 +196,13 @@ fn evidence_buffer(device: &wgpu::Device) -> wgpu::Buffer {
     })
 }
 
-#[allow(clippy::too_many_arguments)]
 fn encode(
     graphics: &UiNativePresentationAccess,
     retained_view: wgpu::TextureView,
     surface_view: wgpu::TextureView,
     surface_pipeline: wgpu::RenderPipeline,
     surface_bind_group: wgpu::BindGroup,
+    stamp: Option<&wgpu::BindGroup>,
     readback: &wgpu::Buffer,
     raster_vertex_buffer: Option<&wgpu::Buffer>,
     glyph_vertex_buffer: Option<&wgpu::Buffer>,
@@ -215,6 +231,7 @@ fn encode(
         &surface_view,
         &surface_pipeline,
         &surface_bind_group,
+        stamp.map(|stamp| (stamp, graphics.extent())),
     );
     copy_evidence_pixels(
         &mut encoder,

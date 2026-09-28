@@ -217,6 +217,9 @@ impl WorkflowInstanceProgressRetention {
             self.counters.denials = self.counters.denials.saturating_add(1);
             return Err(WorkflowInstanceProgressRetentionDenial::RevisionCollision);
         }
+        let evidence_bytes = advanced
+            .retained_evidence_bytes()
+            .saturating_sub(source.retained_evidence_bytes());
         let advanced_replays = retained.replays.append(replay);
         let advanced_charge = retained_charge_bytes(&advanced, &advanced_replays);
         if advanced_charge > self.maximum_retained_charge_bytes {
@@ -233,6 +236,10 @@ impl WorkflowInstanceProgressRetention {
             .saturating_sub(retained.retained_charge_bytes);
         self.store(key, committed_revision, advanced, advanced_replays)?;
         self.counters.incremental_advances = self.counters.incremental_advances.saturating_add(1);
+        self.counters.incremental_evidence_bytes = self
+            .counters
+            .incremental_evidence_bytes
+            .saturating_add(evidence_bytes);
         Ok(())
     }
 

@@ -1,6 +1,7 @@
 pub const BRIDGE_PRODUCER_EXPORT_SCHEMA_V1: &str = "worth-runtime-bridge.producer-envelope.v1";
 
 use super::*;
+use crate::certification_constructor::certification_constructor;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum BridgeProducerAuthorityKind {
@@ -29,14 +30,17 @@ pub struct BridgeProducerMetadata {
 }
 
 impl BridgeProducerMetadata {
-    /// Describes an envelope returned by the runtime's registered authoritative
-    /// source. This is deliberately not a Relational proof: the stronger
-    /// owner-specific publication artifact remains in `worth-relational`.
-    pub fn registered_authoritative_source() -> Self {
-        Self::new(
-            BridgeProducerAuthorityKind::RegisteredAuthoritativeSource,
-            BRIDGE_PRODUCER_EXPORT_SCHEMA_V1,
-        )
+    certification_constructor! {
+        /// Describes an envelope returned by the runtime's registered
+        /// authoritative source. This is deliberately not a Relational proof:
+        /// the stronger owner-specific publication artifact remains in
+        /// `worth-relational`.
+        fn registered_authoritative_source() -> Self {
+            Self::new(
+                BridgeProducerAuthorityKind::RegisteredAuthoritativeSource,
+                BRIDGE_PRODUCER_EXPORT_SCHEMA_V1,
+            )
+        }
     }
 
     pub fn bridge_harness_fixture() -> Self {
@@ -46,7 +50,7 @@ impl BridgeProducerMetadata {
         )
     }
 
-    pub fn new(
+    pub(crate) fn new(
         authority_kind: BridgeProducerAuthorityKind,
         export_schema_version: impl Into<Arc<str>>,
     ) -> Self {
@@ -67,12 +71,16 @@ impl BridgeProducerMetadata {
         self
     }
 
-    pub fn with_authoritative_source(
-        mut self,
-        source: BridgeAuthoritativeSourceProvenance,
-    ) -> Self {
-        self.authoritative_source = Some(source);
-        self
+    certification_constructor! {
+        /// Binds the provenance of the registered source that published the
+        /// envelope.
+        fn with_authoritative_source(
+            mut self,
+            source: BridgeAuthoritativeSourceProvenance,
+        ) -> Self {
+            self.authoritative_source = Some(source);
+            self
+        }
     }
 
     pub fn authoritative_source(&self) -> Option<&BridgeAuthoritativeSourceProvenance> {

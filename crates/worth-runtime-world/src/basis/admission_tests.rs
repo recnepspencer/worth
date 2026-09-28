@@ -4,18 +4,16 @@ use worth_foundational::facade::{
     AspectBinding, AspectKey, AspectMask, AuthoritativeAspectChangeKind, FieldKey, ProjectionMask,
     ScalarAspectType,
 };
-use worth_relational::facade::{
-    bridge::RuntimeBridgeRelationalSource, runtime::RelationalRuntimeApi,
-};
+use worth_relational::facade::runtime::RelationalRuntimeApi;
 use worth_runtime_bridge::facade::{
     AdmittedRuntimeWorldCorrespondenceBasis, BridgeAspectRegistration, BridgeAspectRegistrationId,
     BridgeDeliveryReceipt, BridgeMappingId, BridgeMappingRegistration,
     BridgeSemanticCorrespondenceRegistration, BridgeSemanticDependencyCandidate,
     BridgeSemanticDependencyCandidateParts, BridgeSemanticLocality,
     BridgeSignalAspectTargetDeclaration, CoarseRoutingMode, InvalidationSink, MappingSelector,
-    RuntimeBridgeBuilder, SignalBridgeSinkError, SignalInvalidationScope, SliceWideningPolicy,
-    SnapshotReadContract, SubscriptionSliceKind, TruthDeltaSurfaceKind, TruthPatchScope,
-    TruthPatchTargetSelector,
+    RuntimeBridgeBuilder, RuntimeBridgeRelationalSource, SignalBridgeSinkError,
+    SignalInvalidationScope, SliceWideningPolicy, SnapshotReadContract, SubscriptionSliceKind,
+    TruthDeltaSurfaceKind, TruthPatchScope, TruthPatchTargetSelector,
 };
 use worth_signal::facade::{SignalGraph, SignalRuntime};
 

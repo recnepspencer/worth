@@ -59,6 +59,7 @@ impl WorkflowAssessmentEvidenceLocator {
 pub(in crate::domain_computation::primary_graph) struct WorkflowTransitionProgressObservation {
     transition: WorkflowTransitionLocator,
     assessment_evidence: Option<EntityId>,
+    evidence_bytes: u64,
 }
 
 impl WorkflowTransitionProgressObservation {
@@ -69,13 +70,29 @@ impl WorkflowTransitionProgressObservation {
         Self {
             transition,
             assessment_evidence,
+            evidence_bytes: 0,
         }
+    }
+
+    /// The bytes its assessment evidence retains, recorded on the evidence.
+    pub(in crate::domain_computation::primary_graph) const fn retaining_evidence_bytes(
+        mut self,
+        bytes: u64,
+    ) -> Self {
+        self.evidence_bytes = bytes;
+        self
     }
 
     pub(in crate::domain_computation::primary_graph) const fn transition(
         self,
     ) -> WorkflowTransitionLocator {
         self.transition
+    }
+
+    pub(in crate::domain_computation::primary_graph) const fn assessment_evidence(
+        self,
+    ) -> Option<EntityId> {
+        self.assessment_evidence
     }
 }
 
@@ -100,6 +117,9 @@ impl WorkflowInstanceProgress {
     ) {
         let locator = observation.transition;
         let node = locator.settlement().node();
+        self.retained_evidence_bytes = self
+            .retained_evidence_bytes
+            .saturating_add(observation.evidence_bytes);
         retain_latest(&mut self.latest_transitions, node, locator, |value| {
             value.settlement().occurrence()
         });

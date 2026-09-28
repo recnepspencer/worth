@@ -1,10 +1,10 @@
 use std::collections::BTreeSet;
 
-use crate::identity::data::{EntityId, KindId, RelationId, VersionId};
+use crate::identity::data::{EntityId, RelationId, VersionId};
 use crate::runtime::{PartitionEdition, RelationalRuntime};
 use crate::storage::overlay::PartitionAccess;
 
-use super::{AdjacencyDirection, AdjacencyKindBasis};
+use super::AdjacencyDirection;
 
 pub(crate) fn outgoing_relation_candidates_from_state(
     state: &dyn PartitionAccess,
@@ -44,36 +44,6 @@ pub(crate) fn incoming_relations_for_entity(
     whole_neighborhood(runtime, entity_id, version_id, AdjacencyDirection::Incoming)
 }
 
-pub(crate) fn outgoing_relations_for_entity_kind(
-    runtime: &RelationalRuntime,
-    entity_id: EntityId,
-    kind_id: KindId,
-    version_id: VersionId,
-) -> Vec<RelationId> {
-    kind_neighborhood(
-        runtime,
-        entity_id,
-        kind_id,
-        version_id,
-        AdjacencyDirection::Outgoing,
-    )
-}
-
-pub(crate) fn incoming_relations_for_entity_kind(
-    runtime: &RelationalRuntime,
-    entity_id: EntityId,
-    kind_id: KindId,
-    version_id: VersionId,
-) -> Vec<RelationId> {
-    kind_neighborhood(
-        runtime,
-        entity_id,
-        kind_id,
-        version_id,
-        AdjacencyDirection::Incoming,
-    )
-}
-
 pub(crate) fn all_relations_for_entity(
     runtime: &RelationalRuntime,
     entity_id: EntityId,
@@ -110,28 +80,6 @@ fn whole_neighborhood(
         .partition(entity_id.partition_id)
         .and_then(|partition| direction.table(partition).get(slot))
         .map(|relations| relations.current_ids().to_vec())
-        .unwrap_or_default();
-    charge_copied_ids(runtime, candidates.len());
-    retain_visible(runtime, &edition, candidates, version_id)
-}
-
-fn kind_neighborhood(
-    runtime: &RelationalRuntime,
-    entity_id: EntityId,
-    kind_id: KindId,
-    version_id: VersionId,
-    direction: AdjacencyDirection,
-) -> Vec<RelationId> {
-    let slot = entity_id.slot_index();
-    let edition = runtime.acquire_partition_edition();
-    let candidates = edition
-        .partition(entity_id.partition_id)
-        .and_then(|partition| direction.table(partition).get(slot))
-        .map(|relations| {
-            relations
-                .kind_ids(AdjacencyKindBasis::Current, kind_id)
-                .to_vec()
-        })
         .unwrap_or_default();
     charge_copied_ids(runtime, candidates.len());
     retain_visible(runtime, &edition, candidates, version_id)

@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_installation::WorthQueryWorkflowVocabulary;
 use worth_query_declaration::facade::{
     application_capability::ApplicationCapabilityMarkerIdentity,
     application_program::ApplicationWorkflowSpec,
@@ -8,8 +9,8 @@ use worth_query_installation::facade::{
 };
 
 use super::{
-    PreparedWorkflowAdvance, RequiredWorkflowApproval, WorkflowApprovalDecision,
-    WorkflowProgressOutcome,
+    PreparedWorkflowAdvance, RequiredWorkflowApproval, RequiredWorkflowOperation,
+    WorkflowApprovalDecision, WorkflowProgressOutcome, WorkflowTransitionRequestKind,
 };
 use crate::domain_computation::primary_graph::{
     PublishedWorkflowInstanceRef, PublishedWorkflowProposalRef,
@@ -18,9 +19,21 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphApplicationRuntime, WorthQuerySelectedProductOperation,
 };
 
+#[path = "preparation/actor_denial.rs"]
+mod actor_denial;
 #[path = "preparation/adapter_commit.rs"]
 mod adapter_commit;
+#[path = "preparation/adapter_owner.rs"]
+mod adapter_owner;
+#[path = "preparation/adapter_preparation.rs"]
+mod adapter_preparation;
+#[path = "preparation/adapter_replay.rs"]
+mod adapter_replay;
 
+/// Why a workflow transition could not bind to the branch's program: the installed spec
+/// belongs to another schema, the adopted program could not be inspected, the branch runs
+/// another program revision, or the branch advanced between selection and read-set
+/// assembly.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorkflowTransitionBindingDenial {
     ForeignSchema,
@@ -29,6 +42,7 @@ pub enum WorkflowTransitionBindingDenial {
     SelectedOccurrenceChanged,
 }
 
+/// Why a workflow transition did not prepare.
 #[derive(Debug)]
 pub enum WorkflowTransitionPreparationDenial {
     Binding(WorkflowTransitionBindingDenial),
@@ -58,12 +72,91 @@ where
         Input,
         Scope,
         Spec,
-        Program,
     >(
         &self,
-        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         instance: PublishedWorkflowInstanceRef,
         admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+    ) -> Result<
+        PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
+        WorkflowTransitionPreparationDenial,
+    >
+    where
+        Capability: ApplicationCapabilityMarkerIdentity<Schema = Schema> + 'static,
+        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
+        Spec: ApplicationWorkflowSpec<Schema = Schema>,
+    {
+        self.prepare_workflow_transition::<Capability, Operation, Input, Scope, Spec>(
+            installed,
+            instance,
+            admission,
+            WorkflowTransitionRequestKind::Advance,
+        )
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn prepare_workflow_navigate_back<
+        Capability,
+        Operation,
+        Input,
+        Scope,
+        Spec,
+    >(
+        &self,
+        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
+        instance: PublishedWorkflowInstanceRef,
+        admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+    ) -> Result<
+        PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
+        WorkflowTransitionPreparationDenial,
+    >
+    where
+        Capability: ApplicationCapabilityMarkerIdentity<Schema = Schema> + 'static,
+        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
+        Spec: ApplicationWorkflowSpec<Schema = Schema>,
+    {
+        self.prepare_workflow_transition::<Capability, Operation, Input, Scope, Spec>(
+            installed,
+            instance,
+            admission,
+            WorkflowTransitionRequestKind::NavigateBack,
+        )
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn prepare_workflow_collect_assessment<
+        Capability,
+        Operation,
+        Input,
+        Scope,
+        Spec,
+    >(
+        &self,
+        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
+        instance: PublishedWorkflowInstanceRef,
+        node_path: String,
+        admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+    ) -> Result<
+        PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
+        WorkflowTransitionPreparationDenial,
+    >
+    where
+        Capability: ApplicationCapabilityMarkerIdentity<Schema = Schema> + 'static,
+        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
+        Spec: ApplicationWorkflowSpec<Schema = Schema>,
+    {
+        self.prepare_workflow_transition::<Capability, Operation, Input, Scope, Spec>(
+            installed,
+            instance,
+            admission,
+            WorkflowTransitionRequestKind::CollectAssessment { node_path },
+        )
+    }
+
+    fn prepare_workflow_transition<Capability, Operation, Input, Scope, Spec>(
+        &self,
+        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
+        instance: PublishedWorkflowInstanceRef,
+        admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+        request_kind: WorkflowTransitionRequestKind,
     ) -> Result<
         PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
         WorkflowTransitionPreparationDenial,
@@ -114,7 +207,12 @@ where
             ));
         }
         read_set
-            .materialize_workflow_advance::<Capability, Spec, Program>(installed, instance)
+            .materialize_workflow_advance::<Capability, Spec>(
+                installed,
+                instance,
+                request_kind,
+                &self.application().authorization_clock,
+            )
             .map_err(WorkflowTransitionPreparationDenial::Attempt)
     }
 
@@ -125,10 +223,9 @@ where
         Input,
         Scope,
         Spec,
-        Program,
     >(
         &self,
-        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+        workflow: WorthQueryWorkflowVocabulary<'_, Schema, Spec>,
         instance: PublishedWorkflowInstanceRef,
         required: &RequiredWorkflowApproval,
         proposal: &PublishedWorkflowProposalRef,
@@ -143,6 +240,7 @@ where
         Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
+        let installed = workflow.workflow_spec_for(self);
         if installed.schema_binding() != &self.application().installed_schema().binding_identity() {
             return Err(WorkflowTransitionPreparationDenial::Binding(
                 WorkflowTransitionBindingDenial::ForeignSchema,
@@ -184,8 +282,14 @@ where
             ));
         }
         read_set
-            .materialize_workflow_approval::<Capability, Spec, Program>(
-                installed, instance, required, proposal, decision,
+            .materialize_workflow_approval::<Capability, Spec>(
+                workflow,
+                installed,
+                instance,
+                required,
+                proposal,
+                decision,
+                &self.application().authorization_clock,
             )
             .map_err(WorkflowTransitionPreparationDenial::Attempt)
     }
@@ -193,186 +297,3 @@ where
 
 #[doc(hidden)]
 pub struct WorthQueryWorkflowAdvanceAdapter;
-
-impl WorthQueryWorkflowAdvanceAdapter {
-    pub fn requested_instance<Schema, Operation, Input, Scope>(
-        prepared: &PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
-    ) -> worth_relational::facade::identity::EntityId
-    where
-        Schema: ApplicationSchema,
-        Operation: 'static,
-    {
-        prepared.requested_instance()
-    }
-
-    pub fn resolve_assessment_replay<Schema, Operation, Input, Scope, Query>(
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-        prepared: &PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
-        required: &super::RequiredWorkflowAssessment,
-        settlement: &crate::domain_computation::primary_graph::WorthQueryOutputDemandSettlement,
-        source: &crate::domain_computation::primary_graph::WorthQueryObservedSource<Query>,
-        posture: crate::domain_computation::primary_graph::WorthQueryWorkflowAssessmentPosture,
-        idempotency: WorthQueryApplicationIdempotencyBinding,
-    ) -> Result<
-        Option<WorkflowProgressOutcome>,
-        crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial,
-    >
-    where
-        Schema: ApplicationSchema,
-        Operation: 'static,
-        Input: Clone + Send + Sync + 'static,
-    {
-        prepared.resolve_assessment_replay(
-            runtime,
-            required,
-            settlement,
-            source,
-            posture,
-            idempotency,
-        )
-    }
-
-    #[doc(hidden)]
-    pub fn bind_operation_idempotency(
-        idempotency: WorthQueryApplicationIdempotencyBinding,
-        required: &super::RequiredWorkflowOperation,
-    ) -> WorthQueryApplicationIdempotencyBinding {
-        idempotency.bind_workflow_operation(required.transition_identity_bytes())
-    }
-
-    #[doc(hidden)]
-    pub fn bind_operation_idempotency_raw(
-        idempotency: WorthQueryApplicationIdempotencyBinding,
-        transition_identity: &[u8; 32],
-    ) -> WorthQueryApplicationIdempotencyBinding {
-        idempotency.bind_workflow_operation(transition_identity)
-    }
-
-    pub fn resolve_condition_replay<Schema, Operation, Input, Scope, Query>(
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-        prepared: &PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
-        required: &super::RequiredWorkflowCondition,
-        source: &crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource<
-            Query,
-            bool,
-        >,
-        idempotency: WorthQueryApplicationIdempotencyBinding,
-    ) -> Result<
-        Option<WorkflowProgressOutcome>,
-        crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial,
-    >
-    where
-        Schema: ApplicationSchema,
-        Operation: 'static,
-        Input: Clone + Send + Sync + 'static,
-    {
-        prepared.resolve_condition_replay(runtime, required, source, idempotency)
-    }
-
-    pub fn resolve_operation_replay<Schema, Operation, Input, Scope, Binding>(
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-        prepared: &PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
-        required: &super::RequiredWorkflowOperation,
-        receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
-        idempotency: WorthQueryApplicationIdempotencyBinding,
-    ) -> Result<
-        Option<WorkflowProgressOutcome>,
-        crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial,
-    >
-    where
-        Schema: ApplicationSchema,
-        Operation: 'static,
-        Input: Clone + Send + Sync + 'static,
-        Binding: worth_query_declaration::facade::application_operation::ApplicationMutationBinding<
-            Schema,
-        >,
-    {
-        prepared.resolve_operation_replay::<Binding>(runtime, required, receipt, idempotency, None)
-    }
-
-    pub fn resolve_recovered_operation_replay<Schema, Operation, Input, Scope, Binding>(
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-        prepared: &PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
-        required: &super::RequiredWorkflowOperation,
-        receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
-        recovery: &crate::domain_computation::application_aftermath::WorthQueryRecoverySafeRetryAdmission,
-        idempotency: WorthQueryApplicationIdempotencyBinding,
-    ) -> Result<
-        Option<WorkflowProgressOutcome>,
-        crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial,
-    >
-    where
-        Schema: ApplicationSchema,
-        Operation: 'static,
-        Input: Clone + Send + Sync + 'static,
-        Binding: worth_query_declaration::facade::application_operation::ApplicationMutationBinding<
-            Schema,
-        >,
-    {
-        prepared.resolve_operation_replay::<Binding>(
-            runtime,
-            required,
-            receipt,
-            idempotency,
-            Some(recovery),
-        )
-    }
-
-    pub fn operation_receipt_requires_recovery(
-        receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
-    ) -> bool {
-        super::operation::operation_receipt_requires_recovery(receipt)
-    }
-
-    #[doc(hidden)]
-    pub fn recovery_request_matches_receipt(
-        request: WorthQueryApplicationIdempotencyBinding,
-        receipt: WorthQueryApplicationIdempotencyBinding,
-    ) -> bool {
-        receipt.matches_recovery_request(&request)
-    }
-
-    pub fn prepare<Schema, Capability, Operation, Input, Scope, Spec, Program>(
-        selected: &WorthQuerySelectedProductOperation<'_, Schema>,
-        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
-        instance: PublishedWorkflowInstanceRef,
-        admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
-    ) -> Result<
-        PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
-        WorkflowTransitionPreparationDenial,
-    >
-    where
-        Schema: ApplicationSchema,
-        Capability: ApplicationCapabilityMarkerIdentity<Schema = Schema> + 'static,
-        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
-        Spec: ApplicationWorkflowSpec<Schema = Schema>,
-    {
-        selected.prepare_workflow_advance::<Capability, Operation, Input, Scope, Spec, Program>(
-            installed, instance, admission,
-        )
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    pub fn prepare_approval<Schema, Capability, Operation, Input, Scope, Spec, Program>(
-        selected: &WorthQuerySelectedProductOperation<'_, Schema>,
-        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
-        instance: PublishedWorkflowInstanceRef,
-        required: &RequiredWorkflowApproval,
-        proposal: &PublishedWorkflowProposalRef,
-        decision: WorkflowApprovalDecision,
-        admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
-    ) -> Result<
-        PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
-        WorkflowTransitionPreparationDenial,
-    >
-    where
-        Schema: ApplicationSchema,
-        Capability: ApplicationCapabilityMarkerIdentity<Schema = Schema> + 'static,
-        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
-        Spec: ApplicationWorkflowSpec<Schema = Schema>,
-    {
-        selected.prepare_workflow_approval::<Capability, Operation, Input, Scope, Spec, Program>(
-            installed, instance, required, proposal, decision, admission,
-        )
-    }
-}

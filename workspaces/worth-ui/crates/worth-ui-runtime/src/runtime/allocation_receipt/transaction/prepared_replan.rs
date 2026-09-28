@@ -48,14 +48,22 @@ impl UiPreparedAllocationLedgerTransition {
         committed: super::UiCommittedAllocationReplan,
     ) -> Self {
         let key = committed.transaction().idempotency_key();
-        if let Some(bucket) = self.successor.completed_transactions.get_mut(&key) {
-            if let Some(retained) = bucket.iter_mut().find(|retained| {
-                retained
-                    .transaction()
-                    .same_idempotency_basis(committed.transaction())
-            }) {
-                *retained = committed.clone();
-            }
+        let replaced = self
+            .successor
+            .completed_transactions
+            .get(&key)
+            .and_then(|bucket| {
+                let at = bucket.iter().position(|retained| {
+                    retained
+                        .transaction()
+                        .same_idempotency_basis(committed.transaction())
+                })?;
+                let mut bucket = bucket.clone();
+                bucket[at] = committed.clone();
+                Some(bucket)
+            });
+        if let Some(bucket) = replaced {
+            self.successor.completed_transactions.insert(key, bucket);
         }
         self.committed = committed;
         self

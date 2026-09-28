@@ -90,6 +90,7 @@ worth_query_mutation_binding!(
     denial PaymentDecisionDenialBinding,
     handler identity "bank.operation.approve-payment.handler.v1",
     program required,
+    workflow_authority required,
     outputs PaymentDecisionOutputs,
     principal BankPrincipalBinding,
         mapping ExternalPrincipalMapping,
@@ -105,7 +106,7 @@ worth_query_mutation_binding!(
     field PaymentIdentityField::reference(),
     value payment_scope_from_approval,
     candidates creates 4, deletes 0, links 6, unlinks 0, writes 13, emits 3,
-    resources retained_representation_bytes 32768, validator_work 16655
+    resources retained_representation_bytes 32768, validator_work 17423
 );
 
 worth_query_mutation_binding!(

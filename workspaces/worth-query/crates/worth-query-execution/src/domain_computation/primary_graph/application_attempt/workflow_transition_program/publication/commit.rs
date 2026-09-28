@@ -1,4 +1,7 @@
 use worth_foundational::facade::{AspectValue, InternedString};
+#[path = "commit/transition_lookup.rs"]
+mod transition_lookup;
+pub(in crate::domain_computation::primary_graph::application_attempt) use transition_lookup::transition_entity_in_receipt;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::*;
@@ -20,6 +23,9 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
+        if let Err(denial) = prepared.validate_approval_descriptor() {
+            return WorkflowProgressOutcome::AuthenticationDenied(denial);
+        }
         match prepared.resolve_transition_replay(self, idempotency) {
             Ok(Some(outcome)) => return outcome,
             Ok(None) => {}
@@ -39,6 +45,7 @@ where
             progress_update,
             approval,
             approval_identity,
+            approval_authentication,
         ) = match prepared {
             PreparedWorkflowAdvance::Transition {
                 program,
@@ -54,6 +61,7 @@ where
                 progress_update,
                 approval,
                 approval_identity,
+                approval_authentication,
                 ..
             } => (
                 program,
@@ -69,6 +77,7 @@ where
                 progress_update,
                 approval,
                 approval_identity,
+                approval_authentication,
             ),
             PreparedWorkflowAdvance::AwaitingAssessment(prepared) => {
                 return WorkflowProgressOutcome::AwaitingAssessment(prepared.into_required())
@@ -89,15 +98,39 @@ where
                 return WorkflowProgressOutcome::PreparationDenied(denial)
             }
         };
-        let Some(presented) = self
+        let progress_update = approval_authentication
+            .as_ref()
+            .map(|authentication| authentication.trusted_progress_update())
+            .or(progress_update);
+        match (approval.is_some(), approval_authentication) {
+            (true, Some(authentication)) => {
+                if !authentication.matches_basis(program.output_currentness_facts.as_ref()) {
+                    return WorkflowProgressOutcome::AuthenticationDenied(
+                        worth_query_admission::facade::authentication_event::WorthQueryAuthenticationEventDenial::WrongOwner,
+                    );
+                }
+                if let Err(denial) = authentication.readmit() {
+                    return WorkflowProgressOutcome::AuthenticationDenied(denial);
+                }
+            }
+            (true, None) | (false, Some(_)) => {
+                return WorkflowProgressOutcome::AuthenticationDenied(
+                    worth_query_admission::facade::authentication_event::WorthQueryAuthenticationEventDenial::MissingSigningProof,
+                );
+            }
+            (false, None) => {}
+        }
+        let presented = match self
             .installed_program_support()
-            .and_then(|support| support.present(&program_revision))
-        else {
-            return WorkflowProgressOutcome::Application(
-                super::super::super::WorthQueryApplicationCommitOutcome::Denied(
-                    super::super::super::WorthQueryApplicationCommitDenial::application_program_required(),
-                ),
-            );
+            .ok_or_else(super::super::super::WorthQueryApplicationCommitDenial::application_program_required)
+            .and_then(|support| support.present_for_commit(&program_revision))
+        {
+            Ok(presented) => presented,
+            Err(denial) => {
+                return WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::Denied(
+                    denial,
+                ));
+            }
         };
         let idempotency = match &assessment {
             Some(assessment) => idempotency
@@ -118,40 +151,22 @@ where
             program,
             idempotency,
         );
-        let projected = match outcome {
-            super::super::super::WorthQueryApplicationCommitOutcome::Committed(receipt) => {
-                self.primary_provider.graph.with_runtime(|runtime| {
-                    project(
-                        runtime,
-                        receipt,
-                        transition_identity,
-                        transition_identity_locator,
-                        node_path,
-                        terminal,
-                        assessment,
-                        approval,
-                        operation_receipt_identity,
-                        false,
-                    )
-                })
-            }
-            super::super::super::WorthQueryApplicationCommitOutcome::AlreadyCommitted(receipt) => {
-                self.primary_provider.graph.with_runtime(|runtime| {
-                    project(
-                        runtime,
-                        receipt,
-                        transition_identity,
-                        transition_identity_locator,
-                        node_path,
-                        terminal,
-                        assessment,
-                        approval,
-                        operation_receipt_identity,
-                        true,
-                    )
-                })
-            }
-            other => WorkflowProgressOutcome::Application(other),
+        let projected = match outcome.landed() {
+            Ok((receipt, replayed)) => self.primary_provider.graph.with_runtime(|runtime| {
+                project(
+                    runtime,
+                    receipt,
+                    transition_identity,
+                    transition_identity_locator,
+                    node_path,
+                    terminal,
+                    assessment,
+                    approval,
+                    operation_receipt_identity,
+                    replayed,
+                )
+            }),
+            Err(uncommitted) => WorkflowProgressOutcome::Application(uncommitted),
         };
         if let (Some(progress_update), WorkflowProgressOutcome::Completed(performed)) =
             (progress_update, &projected)
@@ -188,22 +203,9 @@ pub(in crate::domain_computation::primary_graph::application_attempt::workflow_t
     operation_receipt_identity: Option<[u8; 32]>,
     replayed: bool,
 ) -> WorkflowProgressOutcome {
-    let expected = AspectValue::String(InternedString::Raw(transition_identity));
-    let candidates = receipt
-        .committed_changes()
-        .entity_changes()
-        .filter(|(_, change)| {
-            *change == worth_relational::facade::publication::RecordStructuralChange::Created
-        })
-        .filter_map(|(entity, _)| {
-            (receipt
-                .committed_changes()
-                .committed_field_values(entity, &[&transition_identity_locator])
-                == Some(vec![expected.clone()]))
-            .then_some(entity)
-        })
-        .collect::<Vec<_>>();
-    let [transition] = candidates.as_slice() else {
+    let Some(transition) =
+        transition_entity_in_receipt(&receipt, &transition_identity, &transition_identity_locator)
+    else {
         return WorkflowProgressOutcome::ProjectionDenied(receipt);
     };
     let assessment_evidence = match assessment {
@@ -248,14 +250,14 @@ pub(in crate::domain_computation::primary_graph::application_attempt::workflow_t
         None => None,
     };
     let approval = match approval {
-        Some(approval) => match project_approval(runtime, &receipt, *transition, approval) {
+        Some(approval) => match project_approval(runtime, &receipt, transition, approval) {
             Some(approval) => Some(approval),
             None => return WorkflowProgressOutcome::ProjectionDenied(receipt),
         },
         None => None,
     };
     WorkflowProgressOutcome::Completed(PerformedWorkflowTransition {
-        transition: *transition,
+        transition,
         node_path,
         terminal,
         receipt,
@@ -308,18 +310,24 @@ fn project_approval(
         return None;
     }
     let required = approval.required_fields.iter().collect::<Vec<_>>();
-    if receipt
+    receipt
         .committed_changes()
-        .committed_field_values(*entity, &required)
-        .is_none()
-    {
-        return None;
-    }
-    let version = receipt.committed_changes().commit_reference().version_id;
-    let exact_targets = |kind, from, maximum_work_units| {
-        runtime
-            .read_truth()
-            .bounded_outgoing_relations_of_kind_at_version(from, kind, version, maximum_work_units)
+        .committed_field_values(*entity, &required)?;
+    // The committing branch's own state: a fork's approval never lands in
+    // main's edition.
+    let committed = runtime
+        .read_truth()
+        .try_project_historical_version(receipt.committed_changes().commit_reference().version_id)
+        .ok()?;
+    // One unit for the adjacency list and two per expected relation: an
+    // unexpected extra relation exhausts the bound and fails closed.
+    let exact_targets = |kind, from, expected: usize| {
+        committed
+            .bounded_outgoing_relations_for_frontier(
+                &std::collections::BTreeSet::from([from]),
+                kind,
+                expected.saturating_mul(2).saturating_add(1),
+            )
             .ok()
             .map(|read| {
                 read.into_records()
@@ -328,21 +336,16 @@ fn project_approval(
                     .collect::<Vec<_>>()
             })
     };
-    if exact_targets(approval.transition_relation, transition, 2).as_deref() != Some(&[*entity])
-        || exact_targets(approval.proposal_relation, *entity, 2).as_deref()
+    if exact_targets(approval.transition_relation, transition, 1).as_deref() != Some(&[*entity])
+        || exact_targets(approval.proposal_relation, *entity, 1).as_deref()
             != Some(&[approval.proposal])
     {
         return None;
     }
     let mut expected_evidence = approval.evidence.to_vec();
     expected_evidence.sort_unstable();
-    let Some(mut actual_evidence) = exact_targets(
-        approval.evidence_relation,
-        *entity,
-        expected_evidence.len().saturating_mul(2).saturating_add(1),
-    ) else {
-        return None;
-    };
+    let mut actual_evidence =
+        exact_targets(approval.evidence_relation, *entity, expected_evidence.len())?;
     actual_evidence.sort_unstable();
     if actual_evidence != expected_evidence {
         return None;

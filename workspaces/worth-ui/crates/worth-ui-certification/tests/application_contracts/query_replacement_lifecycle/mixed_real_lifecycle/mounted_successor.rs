@@ -2,35 +2,31 @@ use std::time::Duration;
 use worth_ui_test_support::WorthUiMountedIdentityCertificationExt;
 use worth_ui_test_support::{
     WorthUiActiveSessionCertificationExt, WorthUiFrameworkTurnCertificationExt,
+    WorthUiMountedPublicationCertificationExt,
 };
 
 use worth_ui::facade::app::{
     WorthUiMountedApplicationReplacementOutcome, WorthUiMountedReplacementPreparationOutcome,
-    WorthUiVisibleRange,
 };
-use worth_ui::facade::measurement_exchange::{
-    UiMeasurementEvidenceFamily, UiViewportExtentObservation, UiViewportExtentRequest,
-};
+use worth_ui::facade::measurement_exchange::UiViewportExtentObservation;
 use worth_ui::facade::source::{WorthUiFilesystemSourceProvider, WorthUiFilesystemSourceWatcher};
 use worth_ui_certification::scenario::application_authority_closure::candidate_catalog::admit_candidate_catalog;
 use worth_ui_certification::scenario::filesystem_application_lifecycle::FilesystemApplicationLifecycleScenario;
 use worth_ui_host_headless::{UiHeadlessRecorderCapacity, WorthUiHeadlessRecorder};
-use worth_ui_runtime::facade::entry::UiMountedAllocationMeasurementRequest;
-use worth_ui_runtime::facade::host::{
-    UiHostMeasurementAssumptionProfile, UiHostMeasurementNeed,
-    UiHostMeasurementNormalizationContext, WorthUiHostCapability,
-};
 use worth_ui_runtime::facade::mounted::{
-    UiHostSurfacePresentationMode, UiMountedFrameOutcome, UiMountedFrameRequest,
-    UiMountedLaneParticipation, UiPresentationDeadline, UiRequiredLaneContributionStatus,
+    UiMountedFrameOutcome, UiMountedLaneParticipation, UiPresentationDeadline,
+    UiRequiredLaneContributionStatus,
 };
 use worth_ui_runtime::facade::{WorthUiMountedPreviewDisposition, WorthUiMountedPreviewOutcome};
 
+use super::mixed_real_world::{
+    admit_query_projection, all_lane_request, establish_first_allocation_catalog, mount_all_nodes,
+    publish_all_lane_frame,
+};
 use crate::filesystem_contract_workspace::FilesystemContractWorkspace;
 use crate::mounted_application_lifecycle::adapter_projection_world::{
-    preview_target, retire_query, submit_preview,
+    retire_query, submit_preview,
 };
-use crate::mounted_application_lifecycle::known_empty_surface_world::profile;
 
 const SETTLEMENT_TIMEOUT: Duration = Duration::from_secs(5);
 const SOURCE: &str = "app/main.wui";
@@ -74,8 +70,8 @@ fn real_file_mount_measure_preview_and_watcher_edit_publish_one_mounted_successo
 
     let (preview_target, preview_instance) = mount_all_nodes(&mut session);
     establish_first_allocation_catalog(&mut session);
-    let preview = publish_preview(&mut session, preview_target, preview_instance);
     admit_query_projection(&mut scenario, &mut session);
+    let preview = publish_preview(&mut session, preview_target, preview_instance);
     let ordinary = publish_all_lane_frame(&mut session);
     assert_eq!(ordinary.predecessor(), Some(preview.frame()));
     assert_translated_cross_lane_frame(&recorder, ordinary.frame());
@@ -160,6 +156,7 @@ fn publish_equivalent_rust_authored_successor(
     session: &mut worth_ui::facade::app::WorthUiActiveApplicationSession,
     predecessor: &worth_ui_runtime::facade::mounted::UiMountedFramePublicationReceipt,
 ) -> worth_ui_runtime::facade::mounted::UiMountedFramePublicationReceipt {
+    crate::mounted_geometry_fixture::install_current_occurrence_geometry(session);
     let submission = FilesystemApplicationLifecycleScenario::preview_cross_lane_rust_submission(
         session.capabilities(),
     );
@@ -216,74 +213,23 @@ fn publish_equivalent_rust_authored_successor(
     mounted
 }
 
-pub(super) fn mount_all_nodes(
-    session: &mut worth_ui::facade::app::WorthUiActiveApplicationSession,
-) -> (
-    worth_ui::facade::graph::UiGraphNodeIdentity,
-    worth_ui_runtime::facade::mounted::UiMountedInstanceIdentity,
-) {
-    let surface = session.create_semantic_surface().unwrap();
-    session
-        .register_host_surface(
-            surface,
-            UiHostSurfacePresentationMode::RecordOnly,
-            profile(1),
-        )
-        .unwrap();
-    let target = preview_target(session);
-    let nodes = session.graph().node_identities().collect::<Vec<_>>();
-    let mut preview_instance = None;
-    for node in nodes {
-        let handle = session.mounted_graph_node(node).unwrap();
-        let instance = session.mount_instance(handle, surface).unwrap();
-        if node == target {
-            preview_instance = Some(instance);
-        }
-    }
-    (
-        target,
-        preview_instance.expect("file-authored splitter node is mounted"),
-    )
-}
-
-pub(super) fn establish_first_allocation_catalog(
-    session: &mut worth_ui::facade::app::WorthUiActiveApplicationSession,
-) {
-    let capability = session.host_measurement_capability();
-    assert!(capability
-        .capability_report()
-        .supports(WorthUiHostCapability::ViewportObservation));
-    let assumptions = UiHostMeasurementAssumptionProfile::from_capability_report(
-        capability.capability_report(),
-        1,
-        2,
-        3,
-        4,
-    );
-    let input = UiMountedAllocationMeasurementRequest::new(
-        UiMeasurementEvidenceFamily::ViewportExtent,
-        UiHostMeasurementNeed::ViewportExtent(UiViewportExtentRequest),
-        UiHostMeasurementNormalizationContext::viewport_logical_exact(assumptions),
-    );
-    let receipt = session
-        .establish_mounted_allocation_catalog(1, [input])
-        .expect("mounted graph and real host measurement establish the first catalog");
-    let committed = receipt.committed();
-    assert!(!committed.receipts().is_empty());
-    assert_eq!(
-        usize::from(committed.counters().committed_receipts()),
-        committed.receipts().len()
-    );
-}
-
 fn publish_preview(
     session: &mut worth_ui::facade::app::WorthUiActiveApplicationSession,
     target: worth_ui::facade::graph::UiGraphNodeIdentity,
     instance: worth_ui_runtime::facade::mounted::UiMountedInstanceIdentity,
 ) -> worth_ui_runtime::facade::mounted::UiMountedFramePublicationReceipt {
+    crate::mounted_geometry_fixture::install_current_occurrence_geometry(session);
+    // A preview paints over accepted layout, so the host shows it first.
+    let layout = session
+        .prepare_application_presentation_frame(all_lane_request())
+        .expect("the installed layout prepares an ordinary frame");
+    assert!(matches!(
+        session.present_prepared_mounted_frame(layout, UiPresentationDeadline::at_tick(5), 0),
+        UiMountedFrameOutcome::Published(_)
+    ));
     let prepared = submit_preview(session, target, 320.0)
         .prepare(instance)
-        .unwrap_or_else(|_| panic!("mounted splitter prepares preview"));
+        .unwrap_or_else(|e| panic!("mounted splitter prepares preview: {:?}", e.denial()));
     let resolved = match prepared.present(UiPresentationDeadline::at_tick(10), 0) {
         WorthUiMountedPreviewOutcome::Resolved(resolved) => resolved,
         _ => panic!("headless preview resolves synchronously"),
@@ -292,71 +238,6 @@ fn publish_preview(
         WorthUiMountedPreviewDisposition::Published(publication) => publication.clone(),
         _ => panic!("mounted preview publishes before the first edit"),
     }
-}
-
-pub(super) fn admit_query_projection(
-    scenario: &mut FilesystemApplicationLifecycleScenario,
-    session: &mut worth_ui::facade::app::WorthUiActiveApplicationSession,
-) {
-    let projection = scenario.settled_query_projection();
-    let link = session
-        .query_fact_link("inspector.measurements")
-        .expect("file-authored binding resolves");
-    drop(
-        session
-            .execute_framework_turn(|turn| {
-                turn.query_projection(|source| {
-                    source.admit_settled(projection).unwrap();
-                    source.submit_settled(&link).unwrap();
-                });
-            })
-            .expect("query projection enters outside mounted presentation")
-            .into_completion(),
-    );
-}
-
-pub(super) fn publish_all_lane_frame(
-    session: &mut worth_ui::facade::app::WorthUiActiveApplicationSession,
-) -> worth_ui_runtime::facade::mounted::UiMountedFramePublicationReceipt {
-    let outcome = session
-        .execute_mounted_frame(
-            all_lane_request(),
-            UiPresentationDeadline::at_tick(20),
-            1,
-            |_| {},
-        )
-        .unwrap_or_else(|_| panic!("public mounted facade executes the all-lane frame"));
-    match outcome {
-        UiMountedFrameOutcome::Published(publication) => {
-            assert_all_execution_lanes_from_publication(session, &publication);
-            publication
-        }
-        UiMountedFrameOutcome::Unchanged(_) => panic!("all-lane frame was unchanged"),
-        UiMountedFrameOutcome::Reconciled(_) => panic!("all-lane frame only reconciled"),
-        UiMountedFrameOutcome::RejectedBeforeEffects(rejected) => panic!(
-            "all-lane frame was rejected before effects: {:?}",
-            rejected.rejections()
-        ),
-        UiMountedFrameOutcome::InFlight(_) => panic!("all-lane frame remained in flight"),
-        UiMountedFrameOutcome::PresentationIndeterminate(_) => {
-            panic!("all-lane frame became indeterminate")
-        }
-        UiMountedFrameOutcome::Superseded(_) => panic!("all-lane frame was superseded"),
-        UiMountedFrameOutcome::RetentionDenied(rejection) => {
-            panic!("all-lane frame retention denied: {:?}", rejection.denial())
-        }
-        UiMountedFrameOutcome::AdmissionDenied(rejection) => {
-            panic!("all-lane frame admission denied: {:?}", rejection.denial())
-        }
-        UiMountedFrameOutcome::CompletionDenied(denial) => {
-            panic!("all-lane frame completion denied: {denial:?}")
-        }
-    }
-}
-
-pub(super) fn all_lane_request() -> UiMountedFrameRequest {
-    UiMountedFrameRequest::all_bound_surfaces()
-        .with_virtualized_range(WorthUiVisibleRange::rows(0, 1).unwrap())
 }
 
 fn assert_all_execution_lanes(frame: &worth_ui_runtime::facade::mounted::UiPreparedMountedFrame) {
@@ -371,18 +252,3 @@ fn assert_all_execution_lanes(frame: &worth_ui_runtime::facade::mounted::UiPrepa
         }));
     }
 }
-
-fn assert_all_execution_lanes_from_publication(
-    session: &worth_ui::facade::app::WorthUiActiveApplicationSession,
-    publication: &worth_ui_runtime::facade::mounted::UiMountedFramePublicationReceipt,
-) {
-    let inspection = session.inspect_mounted_identity();
-    let frame = inspection
-        .frame_receipts()
-        .iter()
-        .find(|receipt| receipt.frame_identity() == publication.frame())
-        .expect("published frame remains inspectable");
-    assert_eq!(frame.frame_identity(), publication.frame());
-}
-
-use worth_ui_test_support::WorthUiMountedAllocationCertificationExt;

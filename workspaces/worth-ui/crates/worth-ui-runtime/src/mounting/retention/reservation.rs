@@ -108,8 +108,29 @@ impl UiMountedRetentionReservation {
                     "accepted surface ownership was reserved before host effects"
                 );
             }
+            // Only a surface whose shown frame holds leads has any to carry,
+            // so a commit that carries none allocates nothing for them.
+            let led = presentation
+                .surfaces()
+                .iter()
+                .map(|surface| surface.semantic_surface())
+                .filter(|surface| {
+                    authority
+                        .surface_evidence(*surface)
+                        .is_some_and(|previous| previous.holds_hit_scroll_leads(*surface))
+                })
+                .collect::<Vec<_>>();
             current.set_mount_cost(mount_cost);
             current.set_presentation_receipt(presentation);
+            // The receipt names the bindings the successor presents, so the
+            // leads of the frame it replaces are carried only once it is set.
+            // A reconciled commit carries them too: the successor was copied
+            // before the flight that led the frame the host still shows.
+            for surface in led {
+                if let Some(previous) = authority.surface_evidence(surface) {
+                    current.inherit_hit_scroll_leads(previous, surface);
+                }
+            }
         }
         authority.frames = std::mem::take(&mut self.successor);
         authority.revision = self.successor_revision;

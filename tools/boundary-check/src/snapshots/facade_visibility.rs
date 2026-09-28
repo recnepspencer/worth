@@ -52,7 +52,8 @@ fn validate_lib(path: &Path) -> Result<(), String> {
 fn parse(path: &Path) -> Result<syn::File, String> {
     let text =
         fs::read_to_string(path).map_err(|error| format!("read {}: {error}", path.display()))?;
-    syn::parse_file(&text).map_err(|error| format!("parse {}: {error}", path.display()))
+    crate::source_syntax::parse_file(&text)
+        .map_err(|error| format!("parse {}: {error}", path.display()))
 }
 
 fn item_is_public(item: &Item) -> bool {

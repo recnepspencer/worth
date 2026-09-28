@@ -255,7 +255,13 @@ fn replacement_outcome(
         WorthUiDurableStateFamilyId::Custom(_) => {
             custom_replacement_outcome(classification, family)
         }
-        _ => platform_replacement_outcome(classification, family),
+        WorthUiDurableStateFamilyId::FocusChain
+        | WorthUiDurableStateFamilyId::ScrollAnchor
+        | WorthUiDurableStateFamilyId::SplitterPosition
+        | WorthUiDurableStateFamilyId::TabState
+        | WorthUiDurableStateFamilyId::PanelVisibility => {
+            platform_replacement_outcome(classification, family)
+        }
     }
 }
 

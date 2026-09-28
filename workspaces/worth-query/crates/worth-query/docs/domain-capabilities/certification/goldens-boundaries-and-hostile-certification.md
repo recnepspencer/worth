@@ -1,5 +1,7 @@
 # Goldens, Boundaries, And Hostile Certification
 
+> **Internal engine surface.** This page documents `WorthQueryWorkspace` (`worth_query::facade`), the engine surface that `worth-ui-query-binding` uses. Application code uses `worth-query-decl` and `worth-query-host`; start with the [application front door](../../foundations/ordinary-application-front-door.md).
+
 ## What This Feature Is
 
 This doc explains the evidence surfaces that keep the domain-capability seam
@@ -12,8 +14,8 @@ honest:
 
 - you want to know which proof surface should catch a regression
 - you need to extend the seam without weakening its public-lane guarantees
-- you want confidence that geometry-kernel usage is protected against pseudo-
-  Query shortcuts
+- you want confidence that domain-package code cannot bypass Query through
+  pseudo-Query shortcuts
 
 ## Stable Entry Points
 

@@ -260,4 +260,32 @@ mod tests {
             assert_eq!(diagnostics.len(), 1, "missing fence for {dependency}");
         }
     }
+
+    #[test]
+    fn configured_fence_keeps_relational_off_the_bridge_and_lets_the_bridge_read_relational() {
+        let config: crate::config::Road1Config =
+            toml::from_str(include_str!("../config/road1.toml")).unwrap();
+        let denials_for = |package: &str, dependency: &str| {
+            config
+                .dependency_denials
+                .iter()
+                .filter(|rule| rule.workspace_manifest == "Cargo.toml")
+                .flat_map(|rule| {
+                    diagnostics_for_package(
+                        package,
+                        &format!("crates/{package}/Cargo.toml"),
+                        [dependency],
+                        rule,
+                    )
+                })
+                .collect::<Vec<_>>()
+        };
+
+        let reversed = denials_for("worth-relational", "worth-runtime-bridge");
+        assert_eq!(reversed.len(), 1);
+        assert!(reversed[0]
+            .message()
+            .contains("worth-relational must not depend on worth-runtime-bridge:"));
+        assert!(denials_for("worth-runtime-bridge", "worth-relational").is_empty());
+    }
 }

@@ -32,6 +32,14 @@ where
         WorthQueryAdmittedProgramOperation<'_, Schema, Program, Operation>,
         WorthQueryApplicationCommitDenial,
     > {
+        // This token names an operation, not a mutation binding. It cannot
+        // distinguish an ordinary sibling from a guarded one at commit time.
+        if self
+            .runtime
+            .operation_requires_workflow_authority::<Operation>()
+        {
+            return Err(WorthQueryApplicationCommitDenial::workflow_authority_required());
+        }
         let operation = std::any::TypeId::of::<Operation>();
         let required_output_source = self.program.actions().iter().any(|action| {
             action.operation_type() == operation
@@ -83,7 +91,7 @@ where
     {
         self.runtime
             .runtime
-            .compare_and_commit_elevation_approval_for_program(program, idempotency, true)
+            .compare_and_commit_elevation_approval_for_program(program, idempotency, None)
     }
 
     pub fn compare_and_commit_elevation_close<Input, Scope>(
@@ -96,7 +104,7 @@ where
     {
         self.runtime
             .runtime
-            .compare_and_commit_elevation_close_for_program(program, idempotency, true)
+            .compare_and_commit_elevation_close_for_program(program, idempotency, None)
     }
 
     pub fn compare_and_commit_mandatory_review<Input, Scope>(
@@ -109,7 +117,7 @@ where
     {
         self.runtime
             .runtime
-            .compare_and_commit_mandatory_review_for_program(program, idempotency, true)
+            .compare_and_commit_mandatory_review_for_program(program, idempotency, None)
     }
 
     pub fn compare_and_commit_capability_delegation<Input, Scope>(

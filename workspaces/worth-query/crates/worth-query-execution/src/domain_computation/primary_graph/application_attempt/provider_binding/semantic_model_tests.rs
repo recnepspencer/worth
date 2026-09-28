@@ -17,6 +17,7 @@ fn mixed_effects_lower_to_the_exact_independent_semantic_model() {
     let world = mixed_effect_world();
     let prepared = prepare_provider_attempt(
         PartitionId::main(),
+        world.effects.len(),
         Vec::new(),
         world.facts,
         world.effects,
@@ -41,6 +42,7 @@ fn alternate_effect_insertion_preserves_each_exact_association_and_order() {
     let world = mixed_effect_world();
     let prepared = prepare_provider_attempt(
         PartitionId::main(),
+        world.alternate_effects.len(),
         Vec::new(),
         world.facts,
         world.alternate_effects,
@@ -64,6 +66,7 @@ fn created_records_and_symbolic_endpoints_use_the_issued_mutation_partition() {
     let world = mixed_effect_world();
     let prepared = prepare_provider_attempt(
         PartitionId(7),
+        world.effects.len(),
         Vec::new(),
         world.facts,
         world.effects,
@@ -119,6 +122,7 @@ fn two_relation_deletes_from_one_adjacency_share_one_provisional_retirement() {
     ];
     let prepared = prepare_provider_attempt(
         PartitionId::main(),
+        effects.len(),
         Vec::new(),
         facts,
         effects,

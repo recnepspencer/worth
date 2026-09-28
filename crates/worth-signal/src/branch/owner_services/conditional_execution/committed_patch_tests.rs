@@ -278,7 +278,6 @@ fn successor_retention_denial_publishes_neither_patch_nor_basis() {
         2 * std::mem::size_of::<SignalConditionalRetentionReservation>() as u64;
     let exact_initial_bytes =
         charges.retained.bytes() + charges.source_growth.bytes() + reservation_handles;
-    drop(prepared);
 
     let (graph, claimant, [contract, _], source_owner) = installed_graph();
     let mut runtime = SignalRuntime::build_for::<()>(graph);

@@ -22,6 +22,12 @@ impl WorthQueryRecoveryReconcileAdmission {
     }
 }
 
+/// Admits reconciliation for a recovery handle and consumes the handle.
+///
+/// `authority` must be fresh effect authority minted for this exact handle, and
+/// the installed aftermath must name an external owner as a correction
+/// authority. The returned admission is proof to proceed; this call changes
+/// nothing itself. On denial the handle is relinquished, not consumed.
 pub fn reconcile_recovery_handle(
     handle: WorthQueryRecoveryHandle,
     authority: &WorthQueryRecoveryEffectAuthority,

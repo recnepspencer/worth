@@ -39,8 +39,8 @@ impl WorthUiApplicationSessionState {
             declared_extent.map_or(content.width(), |extent| content.width().max(extent));
         let content_block =
             declared_extent.map_or(content.height(), |extent| content.height().max(extent));
-        let inline = logical_extent_to_subpixels((content_inline - viewport.width()).max(0.0))?;
-        let block = logical_extent_to_subpixels((content_block - viewport.height()).max(0.0))?;
+        let inline = overflow_extent(content_inline - viewport.width())?;
+        let block = overflow_extent(content_block - viewport.height())?;
         crate::runtime::scroll::UiScrollBounds::new(inline, block)
             .ok_or(crate::runtime::scroll::UiScrollBoundsResolutionDenial::OutOfRange)
     }
@@ -147,13 +147,11 @@ impl WorthUiApplicationSessionState {
     }
 }
 
-fn logical_extent_to_subpixels(
-    value: f32,
+/// How far content overflows its viewport, in subpixels: none when it fits.
+fn overflow_extent(
+    overflow_logical_points: f32,
 ) -> Result<i64, crate::runtime::scroll::UiScrollBoundsResolutionDenial> {
-    let scaled = f64::from(value)
-        * worth_ui_host_contract::UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f64;
-    if !scaled.is_finite() || scaled < 0.0 || scaled > i64::MAX as f64 {
-        return Err(crate::runtime::scroll::UiScrollBoundsResolutionDenial::OutOfRange);
-    }
-    Ok(scaled.round() as i64)
+    crate::units::UiSubpixels::nearest_distance(overflow_logical_points.max(0.0))
+        .map(crate::units::UiSubpixels::count)
+        .ok_or(crate::runtime::scroll::UiScrollBoundsResolutionDenial::OutOfRange)
 }

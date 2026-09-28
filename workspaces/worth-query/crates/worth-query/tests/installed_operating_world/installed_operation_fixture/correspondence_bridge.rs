@@ -4,7 +4,6 @@ use worth_foundational::facade::{
     AspectBinding, AspectContract, AspectFieldLocator, AspectValue, CanonicalFieldPath, FieldKey,
     LocatorAuthority,
 };
-use worth_relational::facade::bridge::RuntimeBridgeRelationalSource;
 use worth_relational::facade::identity::{KindId, PartitionId};
 use worth_relational::facade::mvcc::{
     BranchBoundRelationalTransaction, RelationalTransactionIntent,
@@ -23,9 +22,10 @@ use worth_runtime_bridge::facade::{
     AspectKeySelector, BridgeAspectRegistration, BridgeAspectRegistrationId, BridgeDeliveryReceipt,
     BridgeMappingId, BridgeMappingRegistration, BridgeSemanticCorrespondenceRegistration,
     BridgeSemanticLocality, CoarseRoutingMode, InvalidationSink, MappingSelector,
-    RelationalCommittedPatchRequest, RuntimeBridge, RuntimeBridgeBuilder, SignalBridgeSinkError,
-    SignalInvalidationScope, SliceWideningPolicy, SnapshotReadContract, SubscriptionSliceKind,
-    TruthCommitIdentity, TruthDeltaSurfaceKind, TruthPatchScope, TruthPatchTargetSelector,
+    RelationalCommittedPatchRequest, RuntimeBridge, RuntimeBridgeBuilder,
+    RuntimeBridgeRelationalSource, SignalBridgeSinkError, SignalInvalidationScope,
+    SliceWideningPolicy, SnapshotReadContract, SubscriptionSliceKind, TruthCommitIdentity,
+    TruthDeltaSurfaceKind, TruthPatchScope, TruthPatchTargetSelector,
 };
 
 mod commit_snapshot_closeout;

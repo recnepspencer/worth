@@ -23,8 +23,6 @@ Implementation rules:
 - Keep JSON out of production authority, evidence, digest, handoff, recovery,
   certification, and ordinary harness paths except explicitly named terminal
   projection or hostile/readmission test boundaries.
-- Treat legacy `crates/worth-store` JSON/serde as residue inventory unless this
-  phase explicitly readmits or quarantines it.
 - Prefer principled production surfaces over adapters, shims, fixture-only
   proof, renamed debt, or compatibility facades.
 - Make invalid states unrepresentable where the codebase gives you a

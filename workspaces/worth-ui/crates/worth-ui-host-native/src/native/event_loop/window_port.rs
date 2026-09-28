@@ -75,20 +75,38 @@ impl UiNativeWindowPort for UiWinitNativeWindowPort {
         configuration: &UiNativeWindowConfiguration,
     ) -> Result<UiNativeOpenedWindow, UiNativeWindowPortDenial> {
         let [width, height] = configuration.initial_logical_size();
-        let attributes = WindowAttributes::default()
+        let mut attributes = WindowAttributes::default()
             .with_title(configuration.title())
             .with_transparent(
                 crate::native_profile::WORTH_UI_NATIVE_CLIENT_BACKGROUND
                     .requests_transparent_window(),
             )
             .with_inner_size(LogicalSize::new(f64::from(width), f64::from(height)));
+        let minimum = configuration
+            .minimum_logical_size()
+            .map(|[width, height]| LogicalSize::new(f64::from(width), f64::from(height)));
+        if let Some(minimum) = minimum {
+            attributes = attributes.with_min_inner_size(minimum);
+        }
         event_loop
             .create_window(attributes)
+            .inspect(|window| trace_minimum(configuration, window.scale_factor()))
             .map(Arc::new)
             .map(|window| UiNativeOpenedWindow {
                 window,
                 crossing_count: 1,
             })
             .map_err(|_| UiNativeWindowPortDenial::Creation)
+    }
+}
+
+/// Traces the least client extent the window allows at `scale_factor`, if
+/// the configuration sets one. The window keeps its minimum in logical size,
+/// so the traced extent changes with the scale.
+pub(super) fn trace_minimum(configuration: &UiNativeWindowConfiguration, scale_factor: f64) {
+    if let Some([width, height]) = configuration.minimum_logical_size() {
+        let least =
+            LogicalSize::new(f64::from(width), f64::from(height)).to_physical::<u32>(scale_factor);
+        crate::native::resize_trace::minimum([least.width, least.height]);
     }
 }

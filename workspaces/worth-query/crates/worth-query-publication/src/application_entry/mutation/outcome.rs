@@ -1,8 +1,10 @@
 use worth_query_execution::facade::primary_graph::{
-    WorthQueryApplicationCommitOutcome, WorthQueryApplicationCommitReceipt,
-    WorthQueryApplicationOutputCorrespondence,
+    WorthQueryApplicationCommitReceipt, WorthQueryApplicationOutputCorrespondence,
+    WorthQueryApplicationUncommitted,
 };
 
+/// What executing an application mutation produced. `Committed` and `AlreadyCommitted` are
+/// landed commits; every other variant means nothing landed.
 #[derive(Debug)]
 pub enum WorthQueryApplicationMutationOutcome<Denial, Result> {
     Committed {
@@ -14,11 +16,13 @@ pub enum WorthQueryApplicationMutationOutcome<Denial, Result> {
     DomainDenied(Denial),
     Cancelled,
     DeadlineExceeded,
-    Commit(WorthQueryApplicationCommitOutcome),
+    /// The commit did not land. A landed commit is `Committed` or
+    /// `AlreadyCommitted`.
+    Commit(WorthQueryApplicationUncommitted),
 }
 
 impl<Denial, Result> WorthQueryApplicationMutationOutcome<Denial, Result> {
-    pub const fn commit_outcome(&self) -> Option<&WorthQueryApplicationCommitOutcome> {
+    pub const fn commit_outcome(&self) -> Option<&WorthQueryApplicationUncommitted> {
         match self {
             Self::Commit(outcome) => Some(outcome),
             _ => None,
@@ -28,10 +32,6 @@ impl<Denial, Result> WorthQueryApplicationMutationOutcome<Denial, Result> {
     pub const fn receipt(&self) -> Option<&WorthQueryApplicationCommitReceipt> {
         match self {
             Self::Committed { receipt, .. } | Self::AlreadyCommitted(receipt) => Some(receipt),
-            Self::Commit(WorthQueryApplicationCommitOutcome::Committed(receipt))
-            | Self::Commit(WorthQueryApplicationCommitOutcome::AlreadyCommitted(receipt)) => {
-                Some(receipt)
-            }
             _ => None,
         }
     }

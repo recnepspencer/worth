@@ -27,7 +27,10 @@ impl UiMountedAppearanceGeometryInput {
             instance: node.receipt().mounted_instance(),
             plan_digest: node.receipt().plan_digest(),
             layout_allocation: node.receipt().allocation(),
-            allocation: node.completed_appearance_geometry().allocation(),
+            allocation: node
+                .completed_appearance_geometry()
+                .allocation()
+                .into_shown(),
             clip: node.appearance_clip,
             order: node.surface_paint_order,
             surface_geometry: node.surface_geometry.clone(),

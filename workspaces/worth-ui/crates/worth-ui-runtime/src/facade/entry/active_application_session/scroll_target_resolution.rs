@@ -44,9 +44,14 @@ impl WorthUiActiveApplicationSession {
                 // Content that travels with a Scroll region is laid out relative
                 // to the region owner, not mounted beneath it, so a wheel over
                 // that content addresses the region that scrolls it. A region
-                // owner that is itself such content keeps the wheel.
+                // owner that is itself such content keeps the wheel. Either
+                // way the wheel targets the owner named; one that neither owns
+                // a region nor travels with one keeps it itself.
                 let hit = target.view().mounted_instance();
-                let mounted = self.mounted.addressed_scroll_owner(hit).unwrap_or(hit);
+                let mounted = self
+                    .mounted
+                    .addressed_scroll_owner(hit)
+                    .map_or(hit, crate::mounting::UiAddressedScrollOwner::owner);
                 self.mounted
                     .current_mounted_identity_basis(mounted)
                     .map(|basis| (mounted, basis))

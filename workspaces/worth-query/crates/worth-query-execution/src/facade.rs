@@ -14,6 +14,9 @@ pub mod domain_computation {
     };
 }
 
+/// The execution runtime: product world and branch setup, performed-change
+/// delivery, direct and workflow runs with their cleanup, and Runtime World
+/// budgets and cancellation.
 pub mod runtime {
     pub use crate::domain_computation::execution_runtime::product_world::{
         WorthQueryPerformedRelationalProductChange,
@@ -71,52 +74,6 @@ pub mod provider_session {
 
 pub mod primary_graph;
 
-/// Internal bridge used only by the Publication application-entry owner.
-#[doc(hidden)]
-pub mod workflow_definition_publication {
-    pub use crate::domain_computation::primary_graph::{
-        PerformedWorkflowDefinitionPublication, PreparedWorkflowDefinitionPublication,
-        PublishedWorkflowDefinitionRef, WorkflowDefinitionBindingDenial,
-        WorkflowDefinitionExpectedPredecessor, WorkflowDefinitionPreparationDenial,
-        WorkflowDefinitionPublicationOutcome, WorthQueryWorkflowDefinitionPublicationAdapter,
-    };
-}
-
-/// Internal bridge used only by the Publication application-entry owner.
-#[doc(hidden)]
-pub mod workflow_instance_start {
-    pub use crate::domain_computation::primary_graph::{
-        PerformedWorkflowInstanceStart, PreparedWorkflowInstanceStart,
-        PublishedWorkflowDefinitionRef, PublishedWorkflowInstanceRef,
-        WorkflowInstanceBindingDenial, WorkflowInstancePreparationDenial,
-        WorkflowInstanceStartOutcome, WorthQueryWorkflowInstanceStartAdapter,
-    };
-}
-
-/// Internal bridge used only by the Publication application-entry owner.
-#[doc(hidden)]
-pub mod workflow_advance {
-    pub use crate::domain_computation::primary_graph::{
-        PerformedWorkflowApproval, PerformedWorkflowAssessmentEvidence,
-        PerformedWorkflowTransition, PreparedWorkflowAdvance, PreparedWorkflowAssessment,
-        PreparedWorkflowOperation, PublishedWorkflowInstanceRef, PublishedWorkflowProposalRef,
-        RequiredWorkflowApproval, RequiredWorkflowAssessment, RequiredWorkflowCondition,
-        RequiredWorkflowEvidence, RequiredWorkflowOperation, WorkflowApprovalDecision,
-        WorkflowProgressOutcome, WorkflowTransitionBindingDenial,
-        WorkflowTransitionPreparationDenial, WorthQueryWorkflowAdvanceAdapter,
-    };
-}
-
-/// Internal bridge used only by the Publication application-entry owner.
-#[doc(hidden)]
-pub mod workflow_proposal {
-    pub use crate::domain_computation::primary_graph::{
-        PerformedWorkflowProposal, PreparedWorkflowProposal, PublishedWorkflowInstanceRef,
-        PublishedWorkflowProposalRef, WorkflowProposalBindingDenial, WorkflowProposalOutcome,
-        WorkflowProposalPreparationDenial, WorthQueryWorkflowProposalAdapter,
-    };
-}
-
 /// Compatibility surface for the current undo/redo experiment.
 ///
 /// These types remain compiled but are not accepted Phase 8 product contracts.
@@ -134,10 +91,15 @@ pub mod provisional_aftermath {
     };
 }
 
+/// Convergence epochs: bounded iteration of a run toward a stable result, with
+/// domain providers that compare, measure progress, and detect repeated
+/// states, plus terminal reports.
 pub mod convergence_epoch {
     pub use crate::domain_computation::convergence_epoch::*;
 }
 
+/// The installed-runtime surface in one place: `runtime`, `domain_computation`,
+/// `provider_session`, and `convergence_epoch`.
 pub mod installed {
     pub use super::{convergence_epoch, domain_computation, provider_session, runtime};
 }

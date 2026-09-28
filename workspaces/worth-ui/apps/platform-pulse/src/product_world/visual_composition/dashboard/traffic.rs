@@ -68,6 +68,7 @@ pub(super) fn containers() -> [ContainerTracks; 2] {
             .expect("the time axis declares its columns"),
             stacked: None,
             scroll_owner: None,
+            portal_owner: None,
         },
         ContainerTracks {
             id: Y_AXIS,
@@ -88,6 +89,7 @@ pub(super) fn containers() -> [ContainerTracks; 2] {
             .expect("the volume axis declares its rows"),
             stacked: None,
             scroll_owner: None,
+            portal_owner: None,
         },
     ]
 }

@@ -93,6 +93,7 @@ impl DashboardScrollPanel {
             tracks: MosaicLayoutContract::frame().expect("scrolled content frames its members"),
             stacked: None,
             scroll_owner: Some(DashboardScrollOwner::List(self)),
+            portal_owner: None,
         }
     }
     /// Makes `element`, authored from the content origin, travel with this

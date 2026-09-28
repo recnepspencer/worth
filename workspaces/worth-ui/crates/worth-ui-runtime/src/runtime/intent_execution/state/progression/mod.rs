@@ -53,7 +53,13 @@ impl UiIntentExecutionState {
                     pass.metrics.active_slots_visited += 1;
                     self.advance_running(index, tick, running, &mut pass);
                 }
-                retained => self.slots[index].phase = Some(retained),
+                retained @ (UiIntentExecutionSlotPhase::Admitted(_)
+                | UiIntentExecutionSlotPhase::Recovery(_)
+                | UiIntentExecutionSlotPhase::ConsequencePending(_)
+                | UiIntentExecutionSlotPhase::ConsequenceReady(_)
+                | UiIntentExecutionSlotPhase::ConsequenceHandoff(_)) => {
+                    self.slots[index].phase = Some(retained)
+                }
             }
         }
         UiIntentExecutionAdvanceOutcome::Advanced(UiIntentExecutionAdvanceReport::new(

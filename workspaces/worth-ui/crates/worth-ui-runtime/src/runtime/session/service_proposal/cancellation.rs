@@ -98,7 +98,8 @@ impl UiServiceProposalCancellationRegistry {
         let before = self.records.len();
         self.records
             .retain(|record| !proposals.contains(&record.proposal));
-        (before - self.records.len()) as u16
+        u16::try_from(before - self.records.len())
+            .expect("cancellation holds at most CANCELLATION_RECORD_LIMIT records")
     }
 }
 

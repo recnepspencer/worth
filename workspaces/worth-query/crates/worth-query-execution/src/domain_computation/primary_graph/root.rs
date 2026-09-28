@@ -331,7 +331,7 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
     #[doc(hidden)]
     pub fn relational_bridge_source(
         &self,
-    ) -> worth_relational::facade::bridge::RuntimeBridgeRelationalSource {
+    ) -> worth_runtime_bridge::facade::RuntimeBridgeRelationalSource {
         self.source_owner.bridge_source()
     }
 

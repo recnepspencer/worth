@@ -12,34 +12,25 @@ use super::connection::{input_failure, X11Observation};
 
 // X11/keysymdef.h values; stable protocol constants, not a vendor table.
 pub(super) const XK_ESCAPE: Keysym = 0xff1b;
-pub(super) const XK_TAB: Keysym = 0xff09;
 pub(super) const XK_SHIFT_L: Keysym = 0xffe1;
-pub(super) const XK_CONTROL_L: Keysym = 0xffe3;
 pub(super) const XK_A: Keysym = 0x61;
-pub(super) const XK_P: Keysym = 0x70;
 
-/// What the observer presses: one key, or the product's primary chord.
-/// On Linux the product's primary modifier is Control (`keyboard.rs`
-/// renders `super` as a separate modifier off macOS).
+/// What the observer presses: one key, pressed and released.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(super) enum NativeKeyboardInput {
     Single(Keysym),
-    PrimaryShiftP,
 }
 
 impl NativeKeyboardInput {
     pub(super) const fn expected_event_count(self) -> u32 {
         match self {
             Self::Single(_) => 2,
-            Self::PrimaryShiftP => 6,
         }
     }
 
     pub(super) const fn for_command(command: NativeKeyboardCommand) -> Self {
         match command {
             NativeKeyboardCommand::Escape => Self::Single(XK_ESCAPE),
-            NativeKeyboardCommand::Tab => Self::Single(XK_TAB),
-            NativeKeyboardCommand::PrimaryShiftP => Self::PrimaryShiftP,
         }
     }
 
@@ -52,19 +43,6 @@ impl NativeKeyboardInput {
             Self::Single(keysym) => {
                 let code = map.keycode(keysym)?;
                 vec![(code, true), (code, false)]
-            }
-            Self::PrimaryShiftP => {
-                let control = map.keycode(XK_CONTROL_L)?;
-                let shift = map.keycode(XK_SHIFT_L)?;
-                let p = map.keycode(XK_P)?;
-                vec![
-                    (control, true),
-                    (shift, true),
-                    (p, true),
-                    (p, false),
-                    (shift, false),
-                    (control, false),
-                ]
             }
         })
     }
@@ -146,11 +124,6 @@ mod tests {
         assert_eq!(
             NativeKeyboardInput::for_command(NativeKeyboardCommand::Escape).expected_event_count(),
             2
-        );
-        assert_eq!(
-            NativeKeyboardInput::for_command(NativeKeyboardCommand::PrimaryShiftP)
-                .expected_event_count(),
-            6
         );
     }
 }

@@ -26,9 +26,7 @@ use super::geometry::scrollable::{
 use super::scroll_pose_authority::{block, ScrollWorld};
 use super::World;
 use crate::runtime::scroll::UiHostScrollObservationOutcome;
-use worth_ui_host_contract::{
-    UiHostScrollDeltaPrecision, UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
-};
+use worth_ui_host_contract::UiHostScrollDeltaPrecision;
 
 /// How far the reader has scrolled before the layout is replaced under them.
 const TRAVEL_POINTS: i64 = 10;
@@ -36,7 +34,8 @@ const TRAVEL_POINTS: i64 = 10;
 /// How far the content moves, as an offset distance. The installers state the
 /// same move in layout points.
 fn inserted() -> i64 {
-    INSERTED_POINTS as i64
+    crate::whole_number::whole_i64(f64::from(INSERTED_POINTS))
+        .expect("the content moves by whole points")
 }
 
 /// The nested World with the reader ten points into the content.
@@ -54,7 +53,7 @@ fn scrolled_world() -> ScrollWorld {
     scroll.world.publish(frame, 2, false);
     let outcome = scroll.wheel(
         UiHostScrollDeltaPrecision::Pixel,
-        -TRAVEL_POINTS * UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
+        -crate::units::host_count_of(TRAVEL_POINTS),
         5,
     );
     assert!(

@@ -162,11 +162,15 @@ impl UiNativePlatformCloseReceipt {
         self.report.physical_signal_lifecycle()
     }
 
+    /// Recorded only when certification-support is compiled in; ordinary
+    /// builds report none.
     #[doc(hidden)]
     pub fn text_pin_frame_counts(&self) -> &[u32] {
         self.report.text_pin_frame_counts()
     }
 
+    /// Recorded only when certification-support is compiled in; ordinary
+    /// builds report none.
     #[doc(hidden)]
     pub fn text_pin_frame_observations(
         &self,
@@ -174,6 +178,8 @@ impl UiNativePlatformCloseReceipt {
         self.report.text_pin_frame_observations()
     }
 
+    /// Recorded only when certification-support is compiled in; ordinary
+    /// builds report none.
     #[doc(hidden)]
     pub fn text_atlas_model_frame_digests(&self) -> &[[u8; 32]] {
         self.report.text_atlas_model_frame_digests()

@@ -152,7 +152,9 @@ impl super::WorthUiActiveApplicationSession {
                 let outcome = normalize(completion.complete(self, now_tick));
                 self.settle_portal_exit_terminal_outcome(track, outcome)
             }
-            pending => {
+            pending @ (UiPortalExitTerminalPending::Retry(_)
+            | UiPortalExitTerminalPending::Indeterminate { .. }
+            | UiPortalExitTerminalPending::Reconstruction { .. }) => {
                 self.portal_exit_retention.retain_pending(pending);
                 UiPortalExitTerminalProgress::AwaitingPhysical
             }

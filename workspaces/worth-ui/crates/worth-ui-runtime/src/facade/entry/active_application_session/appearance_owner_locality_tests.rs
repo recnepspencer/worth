@@ -279,11 +279,20 @@ fn scoped_frame(
 fn interior(row: crate::mounting::UiPresentedHitTestRow) -> UiHostSurfacePosition {
     let bounds = row.bounds().platform_box();
     let clip = row.clip_bounds().platform_box();
+    // Halfway between the two edges, in thousandths of a point.
+    let middle = |near: f32, far: f32| {
+        crate::whole_number::whole_i64((f64::from(near + far) * 500.0).round())
+            .expect("a presented row's middle is within i64 subpixels")
+    };
     UiHostSurfacePosition::viewport_logical(
-        ((bounds.x().max(clip.x()) + (bounds.x() + bounds.width()).min(clip.x() + clip.width()))
-            * 500.0) as i64,
-        ((bounds.y().max(clip.y()) + (bounds.y() + bounds.height()).min(clip.y() + clip.height()))
-            * 500.0) as i64,
+        middle(
+            bounds.x().max(clip.x()),
+            (bounds.x() + bounds.width()).min(clip.x() + clip.width()),
+        ),
+        middle(
+            bounds.y().max(clip.y()),
+            (bounds.y() + bounds.height()).min(clip.y() + clip.height()),
+        ),
     )
 }
 

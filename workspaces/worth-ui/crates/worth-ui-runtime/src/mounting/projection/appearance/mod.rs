@@ -30,8 +30,7 @@ mod text_geometry;
 pub(crate) use text_geometry::{UiMountedAppearanceTextGeometry, UiMountedAppearanceTextSpanInput};
 
 pub(crate) use clip::{
-    ancestor_clips_suppress, derive_unbound_ancestry, UiMountedAppearanceClip,
-    UiMountedAppearanceClipDenial,
+    ancestor_clip, derive_unbound_ancestry, UiMountedAppearanceClip, UiMountedAppearanceClipDenial,
 };
 pub(crate) use delta::UiMountedAppearanceDeltaSummary;
 pub(crate) use fact::{
@@ -41,7 +40,7 @@ pub(crate) use fact::{
 pub(crate) use geometry::UiMountedAppearanceGeometryDenial;
 pub(crate) use geometry_scope::UiMountedAppearanceGeometryScope;
 pub(in crate::mounting::projection) use portal_geometry::{
-    portal_ancestor_clip, portal_coverage_box, portal_presented_allocation, translate_box,
+    portal_coverage_box, portal_surface_clip,
 };
 pub(crate) use resolved_node_source::UiResolvedAppearanceNodeSource;
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -301,12 +300,8 @@ impl UiMountedAppearanceSidecar {
         input: UiMountedAppearanceLoweringInput,
     ) -> Result<worth_ui_host_contract::UiMountedAppearanceWork, UiMountedAppearanceLoweringDenial>
     {
-        let successor = lowering::lower(input)?;
-        let delta = delta::work(self.current.as_ref(), &successor)?;
-        self.counters.observe(&delta.work, delta.summary);
-        self.last_delta = Some(delta.summary);
-        self.current = Some(successor);
-        Ok(delta.work)
+        let prepared = self.prepare_mount(input)?;
+        Ok(self.commit(prepared))
     }
 
     pub(crate) fn reconstruct(
@@ -314,12 +309,8 @@ impl UiMountedAppearanceSidecar {
         input: UiMountedAppearanceLoweringInput,
     ) -> Result<worth_ui_host_contract::UiMountedAppearanceWork, UiMountedAppearanceLoweringDenial>
     {
-        reconstruction::rebuild(self.current.as_ref(), input).map(|(delta, facts)| {
-            self.counters.observe(&delta.work, delta.summary);
-            self.last_delta = Some(delta.summary);
-            self.current = Some(facts);
-            delta.work
-        })
+        let prepared = self.prepare_reconstruct(input)?;
+        Ok(self.commit(prepared))
     }
 
     #[cfg(test)]

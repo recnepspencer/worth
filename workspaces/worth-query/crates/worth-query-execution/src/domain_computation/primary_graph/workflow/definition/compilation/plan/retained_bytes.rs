@@ -1,4 +1,7 @@
-use super::{CompiledWorkflowConnectionKind, CompiledWorkflowNodeKind};
+use super::{
+    CompiledWorkflowAssessmentApplicability, CompiledWorkflowConnectionKind,
+    CompiledWorkflowNodeKind,
+};
 use crate::domain_computation::primary_graph::workflow::definition::codec::WorkflowConnectionTag;
 
 impl CompiledWorkflowNodeKind {
@@ -17,12 +20,24 @@ impl CompiledWorkflowNodeKind {
                 result_type,
                 binding,
                 subject,
+                applicability,
             } => query
                 .len()
                 .saturating_add(parameter_type.len())
                 .saturating_add(result_type.len())
                 .saturating_add(binding.len())
-                .saturating_add(subject.persistence_identity().len()),
+                .saturating_add(subject.persistence_identity().len())
+                .saturating_add(match applicability {
+                    CompiledWorkflowAssessmentApplicability::Always => 0,
+                    CompiledWorkflowAssessmentApplicability::WhenRelatedRelationPresent {
+                        relation,
+                        from,
+                        to,
+                    } => relation
+                        .len()
+                        .saturating_add(from.len())
+                        .saturating_add(to.len()),
+                }),
             Self::Condition {
                 query,
                 parameter_type,

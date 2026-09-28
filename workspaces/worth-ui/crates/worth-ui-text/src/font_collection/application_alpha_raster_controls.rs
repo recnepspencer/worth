@@ -33,20 +33,15 @@ struct AlphaOracle {
 #[test]
 pub(super) fn public_alpha_raster_matches_exact_oracle_across_fractional_origins() {
     let layout = profile_layout("A");
-    for (origin_x, origin_y, expected_x, expected_y) in [
-        (0.0, 0.0, 0, 28),
-        (0.25, 0.5, 16, 60),
-        (0.75, 0.125, 48, 36),
-        (-0.75, -20.0, -48, -36),
-        (0.999, 0.0, 63, 28),
-        (-0.999, -20.0, -63, -36),
+    for (origin, expected_x, expected_y) in [
+        ([0, 0], 0, 28),
+        ([250, 500], 16, 60),
+        ([750, 125], 48, 36),
+        ([-750, -20_000], -48, -36),
+        ([999, 0], 63, 28),
+        ([-999, -20_000], -63, -36),
     ] {
-        assert_matches_pinned_swash_oracle(
-            &layout,
-            "A",
-            (origin_x, origin_y),
-            (expected_x, expected_y),
-        );
+        assert_matches_pinned_swash_oracle(&layout, "A", origin, (expected_x, expected_y));
     }
 }
 
@@ -54,15 +49,16 @@ pub(super) fn public_alpha_raster_matches_exact_oracle_across_fractional_origins
 pub(super) fn public_alpha_raster_matches_exact_variable_and_last_resort_oracle() {
     let (light, heavy) = variable_layouts();
     let last_resort = profile_layout("\u{0378}");
-    assert_matches_pinned_swash_oracle(&light, "W", (0.0, 0.0), (0, 28));
-    assert_matches_pinned_swash_oracle(&heavy, "W", (0.0, 0.0), (0, 28));
-    assert_matches_pinned_swash_oracle(&last_resort, "\u{0378}", (0.0, 0.0), (0, 5));
+    assert_matches_pinned_swash_oracle(&light, "W", [0, 0], (0, 28));
+    assert_matches_pinned_swash_oracle(&heavy, "W", [0, 0], (0, 28));
+    assert_matches_pinned_swash_oracle(&last_resort, "\u{0378}", [0, 0], (0, 5));
 }
 
 fn assert_matches_pinned_swash_oracle(
     layout: &UiQualifiedTextLayout,
     source: &str,
-    origin: (f32, f32),
+    // In millipoints: thousandths of a point.
+    origin: [i64; 2],
     expected_origin_over_64: (i16, i16),
 ) {
     let damage = full_damage();
@@ -73,7 +69,7 @@ fn assert_matches_pinned_swash_oracle(
             paint_spans: &[paint],
             selection: crate::UiGlyphRasterDemandSelection::LogicalDamage(&[damage]),
             scale: UiGlyphRasterScale::new(1_000, layout.view().text_scale_generation()).unwrap(),
-            placement: UiGlyphRasterPlacement::from_mounted_logical(origin.0, origin.1).unwrap(),
+            placement: UiGlyphRasterPlacement::from_millipoints(origin),
             lane: UiGlyphRasterLane::Ordinary,
         },
     )

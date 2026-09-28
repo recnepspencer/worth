@@ -3,7 +3,7 @@ use crate::{repository_document, workspace_source_inventory};
 
 fn phase_4_contract() -> toml::Value {
     toml::from_str(&repository_document(
-        "_docs/worth-ui/milestone-3.12-phase-4-contract.toml",
+        "plans/worth-ui/milestone-3.12-phase-4-contract.toml",
     ))
     .expect("Milestone 3.12 Phase 4 contract is TOML")
 }
@@ -21,7 +21,7 @@ fn milestone_312_phase4_contract_and_ledger_are_exact() {
         contract["status"].as_str(),
         Some("implementation" | "closed")
     ));
-    let ledger_text = repository_document("_docs/worth-ui/milestone-3.12-phase-4-proof-ledger.csv");
+    let ledger_text = repository_document("plans/worth-ui/milestone-3.12-phase-4-proof-ledger.csv");
     ledger::validate_phase_4(&contract, &ledger_text)
         .unwrap_or_else(|failure| panic!("Phase 4 ledger is invalid: {failure}"));
 }

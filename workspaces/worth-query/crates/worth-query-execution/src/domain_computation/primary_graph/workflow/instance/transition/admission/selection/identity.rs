@@ -1,3 +1,4 @@
+use im::OrdMap;
 use sha2::{Digest, Sha256};
 use worth_relational::facade::identity::EntityId;
 
@@ -12,8 +13,10 @@ pub(super) fn transition_identity(
     instance: EntityId,
     node: &CompiledWorkflowNode,
     occurrence: u64,
+    back_edge_iterations: &OrdMap<(EntityId, EntityId), u64>,
+    navigation_back: bool,
 ) -> Result<(String, [u8; 32]), WorthQueryApplicationAttemptDenial> {
-    let material = canonical_operation_material(vec![
+    let mut fields = vec![
         (
             "workflow.instance.partition",
             instance.partition_value().to_string(),
@@ -51,7 +54,30 @@ pub(super) fn transition_identity(
             node.entity().generation_value().to_string(),
         ),
         ("workflow.occurrence", occurrence.to_string()),
-    ]);
+    ];
+    if !back_edge_iterations.is_empty() {
+        let mut vector = String::new();
+        for ((source, target), iterations) in back_edge_iterations {
+            use std::fmt::Write;
+            write!(
+                &mut vector,
+                "{}:{}:{}>{}:{}:{}={iterations};",
+                source.partition_value(),
+                source.local_slot_value(),
+                source.generation_value(),
+                target.partition_value(),
+                target.local_slot_value(),
+                target.generation_value(),
+            )
+            .expect("writing a workflow iteration vector to String cannot fail");
+        }
+        fields.push(("workflow.node.path", node.path().to_owned()));
+        fields.push(("workflow.back-edge-iterations", vector));
+    }
+    if navigation_back {
+        fields.push(("workflow.navigation", "back".to_owned()));
+    }
+    let material = canonical_operation_material(fields);
     let identity_bytes: [u8; 32] = Sha256::digest(material.as_bytes()).into();
     let identity = encode(identity_bytes)?;
     Ok((identity, identity_bytes))

@@ -79,6 +79,51 @@ fn queued_host_readiness_overlaps_real_application_driver_shutdown() {
     assert_eq!(host.native_in_flight_count(), 0);
 }
 
+#[cfg(feature = "certification-support")]
+#[test]
+fn shutdown_releases_an_owed_extent_whose_host_retry_is_still_queued() {
+    use crate::certification_support::{ScriptedPresentationHost, ScriptedPresentationOutcome};
+    use crate::facade::mounted::UiMountedFrameOutcome;
+    use crate::runtime::tests::active_application_session_test_support::source_backed_component_app_with_host_and_viewport_allocation;
+    use worth_ui_host_contract::UiHostSurfacePresentationDenial;
+
+    let host = ScriptedPresentationHost::native_display();
+    let mut shell = source_backed_component_app_with_host_and_viewport_allocation(host.clone())
+        .launch_native_surface()
+        .expect("native certification shell should launch");
+    shell.observe_native_viewport_readiness([800, 600], 1_000, false);
+    super::super::program_progress::layout::complete_program_layout(&mut shell).unwrap();
+    host.push_native_display_as_issued();
+    let Ok(UiMountedFrameOutcome::Published(_)) = shell.present_frame(2, 0) else {
+        panic!("baseline frame should publish")
+    };
+    shell.observe_native_viewport_readiness([960, 600], 1_000, true);
+    host.set_viewport_extent([960.0, 600.0]);
+    host.push_presentation(ScriptedPresentationOutcome::RejectedBeforeEffects(
+        UiHostSurfacePresentationDenial::ExternalTimeout,
+    ));
+    let Ok(UiMountedFrameOutcome::RejectedBeforeEffects(_)) = shell.present_frame(3, 1) else {
+        panic!("the host times the resized frame out before effects")
+    };
+    assert!(shell.native_viewport_presentation_pending());
+    assert!(shell.native_presentation_retry_pending());
+
+    let driver = super::super::UiNativeApplicationDriver::from_launched_shell_for_test(shell);
+    let certification = worth_ui_host_native::certify_client_close_with_queued_readiness(driver);
+
+    assert!(certification.client_cleanup_complete());
+    assert!(certification.readiness_closure_complete());
+    let shutdown = certification
+        .client_shutdown()
+        .expect("application driver shutdown must report real client evidence");
+    assert!(shutdown.shutdown_attempts().is_empty());
+    assert!(shutdown.managed_semantic_resources_complete());
+    assert!(shutdown.intent_resources_empty());
+    assert_eq!(shutdown.resources().terminal_mounted_layouts(), 0);
+    assert_eq!(shutdown.resources().terminal_raster_cache_entries(), 0);
+    assert_eq!(host.native_in_flight_count(), 0);
+}
+
 fn shutdown_evidence() -> UiNativeDriverShutdownEvidence {
     UiNativeDriverShutdownEvidence::captured(
         Some(

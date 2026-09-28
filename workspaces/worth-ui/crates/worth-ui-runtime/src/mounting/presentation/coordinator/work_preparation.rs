@@ -66,6 +66,7 @@ pub(super) fn issue(
         work.bind_layout_owner(surface.projection_owner());
         let mut appearance_sample_overrides =
             candidate.appearance_motion_overrides(frame.appearance_changed_instances());
+        candidate.add_carried_motion_overrides(&mut appearance_sample_overrides);
         if let Some(entrance) = frame.motion_entrance() {
             let initial = candidate.prepare_motion_entrance(entrance)?;
             appearance_sample_overrides.retain(|sample| {
@@ -75,6 +76,7 @@ pub(super) fn issue(
             });
             appearance_sample_overrides.extend(initial);
         }
+        candidate.displace_samples(&work, &appearance_sample_overrides);
         work.bind_appearance(
             frame.appearance_projection(),
             presentation,

@@ -268,7 +268,13 @@ fn assert_geometry(
     assert_eq!(
         context.appearance_clip,
         Clip::Ancestor(
-            UiAppearanceClip::new(clip[0], clip[1], clip[2] as u32, clip[3] as u32,).unwrap()
+            UiAppearanceClip::new(
+                clip[0],
+                clip[1],
+                u32::try_from(clip[2]).unwrap(),
+                u32::try_from(clip[3]).unwrap(),
+            )
+            .unwrap()
         )
     );
 }

@@ -7,7 +7,6 @@ pub struct RelationalSnapshotIdentityKind;
 pub struct RelationalVersionIdentityKind;
 pub struct RelationalBranchIdentityKind;
 pub struct RelationalWorkspaceIdentityKind;
-pub struct RelationalBridgePresentationExportIdentityKind;
 
 impl FoundationalIdentityKind for RelationalCommitIdentityKind {}
 impl FoundationalIdentityKind for RelationalEntityIdentityKind {}
@@ -16,10 +15,7 @@ impl FoundationalIdentityKind for RelationalSnapshotIdentityKind {}
 impl FoundationalIdentityKind for RelationalVersionIdentityKind {}
 impl FoundationalIdentityKind for RelationalBranchIdentityKind {}
 impl FoundationalIdentityKind for RelationalWorkspaceIdentityKind {}
-impl FoundationalIdentityKind for RelationalBridgePresentationExportIdentityKind {}
 
 pub struct RelationalCanonicalDigestIdentityBasis;
-pub struct RelationalBridgePresentationDigestIdentityBasis;
 
 impl FoundationalIdentityBasis for RelationalCanonicalDigestIdentityBasis {}
-impl FoundationalIdentityBasis for RelationalBridgePresentationDigestIdentityBasis {}

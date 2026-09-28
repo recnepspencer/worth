@@ -16,11 +16,13 @@ use super::dependency::ViewDependency;
 use super::publication::DependencyIndex;
 use super::registry::ManagedDerivedViewRegistry;
 
+mod denial;
 mod member_token;
 mod publication;
 mod reconcile;
 mod refresh;
 
+pub use denial::WorthQueryManagedDerivedViewDenial;
 pub use member_token::WorthQueryManagedDerivedMemberToken;
 pub(in crate::domain_computation::primary_graph::application_query::derived_view) use member_token::RetainedMemberToken;
 use member_token::token_charge;
@@ -29,27 +31,6 @@ use member_token::token_charge;
 /// entry and source-provenance overhead in addition to this payload.
 pub trait WorthQueryManagedDerivedValue: Send + Sync + 'static {
     fn retained_bytes(&self) -> usize;
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryManagedDerivedViewDenial {
-    InvalidLimits,
-    ViewCapacityExceeded,
-    EntryCapacityExceeded,
-    RetainedBytesExceeded,
-    ForeignApplication,
-    ForeignInstallation,
-    ForeignQuery,
-    AuthorizationRequired,
-    ForeignBranch,
-    StaleSource,
-    IncompleteDependencies,
-    ColdReconstructionRequired,
-    MembershipReconciliationRequired,
-    EntryRefreshRequired,
-    QueryExecutionDenied,
-    ViewRevisionExhausted,
-    Disposed,
 }
 
 struct RetainedEntry<Value> {

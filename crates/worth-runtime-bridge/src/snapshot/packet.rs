@@ -8,7 +8,7 @@ use worth_foundational::facade::{
 use worth_proof::TransitionOutcome;
 
 use crate::mapping::SubscriptionSliceKind;
-use crate::relational_identity::RelationalBridgeRecordIdentityParts;
+use crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts;
 use crate::snapshot::{
     BridgeSnapshotReadError, SnapshotReadContract, SnapshotReadCorrelationId,
     SnapshotReadPacketResult, SnapshotReadRecord, SnapshotReadTarget,

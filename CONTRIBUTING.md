@@ -4,7 +4,7 @@ Issues, design criticism, reproductions, documentation improvements, and code
 contributions are welcome.
 
 Before working on code, read [AGENTS.md](./AGENTS.md) and every document under
-[`_docs/coding_guidelines`](./_docs/coding_guidelines). WORTH treats authority,
+[`docs/coding-guidelines`](./docs/coding-guidelines). WORTH treats authority,
 truth ownership, phase progression, physical placement, performance, and test
 evidence as mechanically enforced architecture rather than local convention.
 

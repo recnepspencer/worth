@@ -6,7 +6,7 @@ use worth_relational::facade::symbols::ClientKey;
 use worth_relational::facade::transactions::{
     AspectFieldPatch, CreateIntent, DeleteRelationIntent, EntityMutationIntent, EntityReference,
     MutationIntent, RelationMutationIntent, RelationSpec, UpdateEntityFieldsIntent,
-    WorkerIntentBatch,
+    UpdateRelationEndpointsIntent, WorkerIntentBatch,
 };
 
 use super::super::fixture::capability::CapabilityParent;
@@ -178,6 +178,25 @@ pub(super) fn replace_relation_target(
 ) {
     let relation = current_relation(world, kind, source, old_target);
     replace_relation(world, relation, kind, source, new_target, key);
+}
+
+pub(super) fn retarget_relation_without_replacing_id(
+    world: &AuthorizationWorld,
+    relation: RelationId,
+    kind: KindId,
+    source: EntityId,
+    target: EntityId,
+) {
+    mutate(world, |batch| {
+        batch.push(MutationIntent::Relation(
+            RelationMutationIntent::UpdateEndpoints(UpdateRelationEndpointsIntent {
+                relation_id: relation,
+                kind_id: kind,
+                source: EntityReference::Existing(source),
+                target: EntityReference::Existing(target),
+            }),
+        ))
+    });
 }
 
 pub(super) fn replace_relation_kind(

@@ -8,7 +8,7 @@ operation. Query installs that meaning into the runtime’s actual Bridge-owned
 Signal graph and preserves Signal’s decision through execution and workflow
 progression.
 
-Use this for incremental geometry, derived values, guarded workflow stages,
+Use this for incremental indexes, derived values, guarded workflow stages,
 threshold-sensitive recomputation, time-driven evaluation, and explicit
 on-demand work.
 
@@ -129,12 +129,12 @@ The builder requires every executable semantic dimension:
 
 ```rust
 let node = domain::WorthQueryPortableConditionalNodeDeclaration::declare(
-    "rebuild-face-mesh",
+    "rebuild-search-index",
     domain::WorthQueryConditionalNodeRole::Computed,
 )
 .dependencies([dependency.clone()])
 .outputs([domain::WorthQueryConditionalNodeOutput::OperationOutput {
-    projection_role: domain::WorthQueryOperationProjectionRole::new("mesh")?,
+    projection_role: domain::WorthQueryOperationProjectionRole::new("index")?,
 }])
 .required_context([domain::WorthQueryConditionalNodeContext::Snapshot])
 .evaluation(
@@ -177,10 +177,10 @@ The unit is a marker implementing `WorthQueryQuantityUnit`, and its portable
 identity and value family participate in canonical meaning.
 
 ```rust
-struct Millimeters;
+struct Kilograms;
 
-impl domain::WorthQueryQuantityUnit for Millimeters {
-    const PORTABLE_IDENTITY: &'static str = "geometry.units.millimeters";
+impl domain::WorthQueryQuantityUnit for Kilograms {
+    const PORTABLE_IDENTITY: &'static str = "inventory.units.kilograms";
     const VALUE_FAMILY: domain::WorthQueryQuantityValueFamily =
         domain::WorthQueryQuantityValueFamily::Float64;
 }
@@ -246,16 +246,16 @@ Define a marker implementing `WorthQueryDomainConditionFamily` and supply
 portable typed parameters:
 
 ```rust
-struct TopologyReady;
+struct QuorumReached;
 
-impl domain::WorthQueryDomainConditionFamily for TopologyReady {
-    const PORTABLE_IDENTITY: &'static str = "geometry.conditions.topology-ready";
+impl domain::WorthQueryDomainConditionFamily for QuorumReached {
+    const PORTABLE_IDENTITY: &'static str = "replication.conditions.quorum-reached";
 }
 
 let condition = domain::WorthQueryConditionalEvaluationCondition::domain_specific::<
-    TopologyReady,
+    QuorumReached,
 >([
-    domain::WorthQueryPortableConditionParameter::u64("minimum-shells", 1)?,
+    domain::WorthQueryPortableConditionParameter::u64("minimum-replicas", 1)?,
 ])?;
 ```
 
@@ -326,13 +326,15 @@ unrelated.
 
 ## Execute And Observe The Decision
 
+> **Internal engine surface.** This section uses `WorthQueryWorkspace` (`worth_query::facade`), the engine surface that `worth-ui-query-binding` uses. Application code uses `worth-query-decl` and `worth-query-host`; start with the [application front door](../foundations/ordinary-application-front-door.md).
+
 Execution uses the same bound operation journey:
 
 ```rust
 let world = workspace.observe_operating_world()?;
 let bound = world
-    .family(GeometryFamily)
-    .bind(&installed_domain, RebuildFaceMesh)?;
+    .family(IndexFamily)
+    .bind(&installed_domain, RebuildSearchIndex)?;
 
 let executed = bound.execute(input, &mut workspace).unwrap();
 
@@ -372,6 +374,8 @@ deferred, and reverted-clean stages cannot be advanced by manufacturing a
 stage receipt.
 
 ## Inspection And Debugging
+
+> **Internal engine surface.** This section uses `WorthQueryWorkspace` (`worth_query::facade`), the engine surface that `worth-ui-query-binding` uses. Application code uses `worth-query-decl` and `worth-query-host`; start with the [application front door](../foundations/ordinary-application-front-door.md).
 
 Inspect:
 

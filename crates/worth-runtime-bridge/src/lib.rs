@@ -39,9 +39,9 @@
 //!         .with_truth_branch_head_source(branch_heads)
 //!         .with_compute_sink(compute_sink)
 //!         .register_mapping(BridgeMappingRegistration::new(
-//!             BridgeMappingId::from_stable_name("pricing:steel"),
+//!             BridgeMappingId::from_stable_name("pricing:catalog"),
 //!             TruthPatchScope::for_entity_field(
-//!                 MappingSelector::exact("component:steel"),
+//!                 MappingSelector::exact("item:widget"),
 //!                 AspectKey::new("cost").expect("valid aspect key"),
 //!                 FieldKey::new("usd".to_owned()).expect("valid field key"),
 //!             ),
@@ -49,7 +49,7 @@
 //!                 AspectKey::new("cost").expect("valid aspect key"),
 //!                 ScalarAspectType::String,
 //!             ),
-//!             SignalInvalidationScope::from_stable_name("price:bicycle"),
+//!             SignalInvalidationScope::from_stable_name("order:total"),
 //!             CoarseRoutingMode::Direct,
 //!         ))
 //!         .build()?;
@@ -72,6 +72,7 @@ mod builder;
 mod canonical_basis;
 #[cfg(feature = "certification-construction")]
 pub mod certification;
+mod certification_constructor;
 mod clone_budget;
 mod conditional_execution;
 mod continuity;
@@ -88,7 +89,8 @@ mod input;
 mod mapping;
 mod merge;
 mod policy;
-mod relational_identity;
+mod relational_grouped_truth;
+mod relational_source;
 mod routing;
 mod snapshot;
 mod source;
