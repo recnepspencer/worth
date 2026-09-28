@@ -51,7 +51,10 @@ fn real_whole_and_field_set_clear_operations_keep_their_exact_publication_meanin
             value: ContractValidationInput::Struct(initial_summary),
         },
     ]);
-    let mut create = crate::presentation::bridge::relational_test_support::test_owner_begin_transaction_for_main(&runtime);
+    let mut create =
+        crate::presentation::bridge::relational_test_support::test_owner_begin_transaction_for_main(
+            &runtime,
+        );
     create
         .push_batch(
             WorkerIntentBatch::new("publication-set-whole").push(MutationIntent::Create(
@@ -79,7 +82,10 @@ fn real_whole_and_field_set_clear_operations_keep_their_exact_publication_meanin
             field_clears: vec![field_key("status")],
         },
     ]);
-    let mut transaction = crate::presentation::bridge::relational_test_support::test_owner_begin_transaction_for_main(&runtime);
+    let mut transaction =
+        crate::presentation::bridge::relational_test_support::test_owner_begin_transaction_for_main(
+            &runtime,
+        );
     transaction
         .push_batch(WorkerIntentBatch::new("publication-clear-parity").push(
             MutationIntent::Entity(EntityMutationIntent::ApplyAspectPatch(

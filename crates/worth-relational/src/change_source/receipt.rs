@@ -2,7 +2,9 @@ use super::consistency::{RelationalChangeConsistencyDenial, RelationalChangeCons
 use super::receipt_witness::ChangeReceiptProof;
 use crate::history::data::{BranchId, CommitId};
 use crate::identity::data::{PartitionId, VersionId};
-use crate::identity_authority::{RelationalCommitIdentityKind, RelationalSourceTruthAuthorityIdentity};
+use crate::identity_authority::{
+    RelationalCommitIdentityKind, RelationalSourceTruthAuthorityIdentity,
+};
 use crate::publication::patch::data::PublishedAuthoritativePatchEnvelope;
 
 /// What minting a change receipt can come to.

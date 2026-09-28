@@ -3,6 +3,8 @@ mod bridge_snapshot_reader_tests;
 #[cfg(test)]
 mod bridge_source_tests;
 mod change_publication;
+#[cfg(test)]
+mod consistency_lowering_tests;
 mod identities;
 mod lowering_precision;
 pub(crate) mod patch_envelopes;

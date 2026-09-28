@@ -4,7 +4,6 @@ use worth_foundational::facade::{
     AuthoritativeAspectChangeKind, CanonicalFieldPath, FieldKey,
 };
 
-use super::consistency::check_change_consistency;
 use super::RelationalChangeConsistencyDenialKind as Kind;
 use crate::identity::data::{EntityId, PartitionId};
 use crate::publication::patch::data::{
@@ -18,7 +17,8 @@ use crate::transactions::data::RecordRef;
 
 #[test]
 fn a_consistent_change_reports_the_work_it_checked() {
-    let work = check_change_consistency(&field_patch_with(vec![exact_name_change()], false))
+    let work = field_patch_with(vec![exact_name_change()], false)
+        .check_change_consistency()
         .expect("the canonical semantic change is consistent");
 
     assert_eq!(work.records_checked(), 1);
@@ -72,7 +72,8 @@ fn copied_semantic_metadata_cannot_override_the_canonical_patch() {
     ];
 
     for semantic_change in cases {
-        let denial = check_change_consistency(&field_patch_with(vec![semantic_change], false))
+        let denial = field_patch_with(vec![semantic_change], false)
+            .check_change_consistency()
             .expect_err("drifted semantic metadata must be refused");
         assert_eq!(denial.kind(), Kind::UnjustifiedSemanticChange);
         assert_eq!(denial.work().semantic_changes_matched(), 1);
@@ -81,7 +82,8 @@ fn copied_semantic_metadata_cannot_override_the_canonical_patch() {
 
 #[test]
 fn a_missing_semantic_change_is_a_count_mismatch() {
-    let denial = check_change_consistency(&field_patch_with(Vec::new(), false))
+    let denial = field_patch_with(Vec::new(), false)
+        .check_change_consistency()
         .expect_err("an operation without its semantic change must be refused");
 
     assert_eq!(denial.kind(), Kind::SemanticChangeCountMismatch);
@@ -95,7 +97,8 @@ fn a_missing_semantic_change_is_a_count_mismatch() {
 
 #[test]
 fn a_published_change_cannot_claim_widened_precision() {
-    let denial = check_change_consistency(&field_patch_with(vec![widened_name_change()], false))
+    let denial = field_patch_with(vec![widened_name_change()], false)
+        .check_change_consistency()
         .expect_err("widening belongs to the consumer, not the publication");
 
     assert_eq!(denial.kind(), Kind::WidenedPrecisionClaimed);
@@ -103,7 +106,8 @@ fn a_published_change_cannot_claim_widened_precision() {
 
 #[test]
 fn the_opaque_flag_must_match_the_semantic_changes() {
-    let denial = check_change_consistency(&field_patch_with(vec![exact_name_change()], true))
+    let denial = field_patch_with(vec![exact_name_change()], true)
+        .check_change_consistency()
         .expect_err("a record claiming an opaque aspect it lacks must be refused");
 
     assert_eq!(denial.kind(), Kind::OpaquePostureMismatch);
@@ -135,7 +139,8 @@ fn a_derived_endpoint_label_cannot_reclassify_an_entity_field_operation() {
         None,
     )];
 
-    let denial = check_change_consistency(&patch)
+    let denial = patch
+        .check_change_consistency()
         .expect_err("an endpoint label cannot describe an entity field write");
 
     assert_eq!(denial.kind(), Kind::UnjustifiedSemanticChange);

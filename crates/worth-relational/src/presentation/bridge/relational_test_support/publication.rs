@@ -54,6 +54,17 @@ pub(crate) fn published_patch(operations: Vec<WireOperation>) -> PublishedAuthor
     decode(&WirePatch { operations })
 }
 
+#[derive(Serialize)]
+struct WireChange {
+    aspect_key: AspectKey,
+    aspect_identity: AspectIdentity,
+    contract_revision: AspectContractRevision,
+    binding: AspectBinding,
+    kind: AuthoritativeAspectChangeKind,
+    field_path: Option<CanonicalFieldPath>,
+    precision: PublishedAspectChangePrecision,
+}
+
 /// A semantic change published at exact precision.
 pub(crate) fn exact_change(
     aspect_key: AspectKey,
@@ -63,16 +74,6 @@ pub(crate) fn exact_change(
     kind: AuthoritativeAspectChangeKind,
     field_path: Option<CanonicalFieldPath>,
 ) -> PublishedAuthoritativeAspectChange {
-    #[derive(Serialize)]
-    struct WireChange {
-        aspect_key: AspectKey,
-        aspect_identity: AspectIdentity,
-        contract_revision: AspectContractRevision,
-        binding: AspectBinding,
-        kind: AuthoritativeAspectChangeKind,
-        field_path: Option<CanonicalFieldPath>,
-        precision: PublishedAspectChangePrecision,
-    }
     decode(&WireChange {
         aspect_key,
         aspect_identity,
@@ -81,6 +82,22 @@ pub(crate) fn exact_change(
         kind,
         field_path,
         precision: PublishedAspectChangePrecision::Exact,
+    })
+}
+
+/// `change`, claiming a widened precision that only a consumer's admission
+/// may grant. No Relational commit publishes one.
+pub(crate) fn widened_change(
+    change: PublishedAuthoritativeAspectChange,
+) -> PublishedAuthoritativeAspectChange {
+    decode(&WireChange {
+        aspect_key: change.aspect_key().clone(),
+        aspect_identity: change.aspect_identity(),
+        contract_revision: change.contract_revision(),
+        binding: change.binding().clone(),
+        kind: change.kind(),
+        field_path: change.field_path().cloned(),
+        precision: PublishedAspectChangePrecision::DeclaredWidening,
     })
 }
 

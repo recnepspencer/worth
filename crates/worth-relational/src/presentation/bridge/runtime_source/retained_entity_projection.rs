@@ -39,10 +39,15 @@ impl RuntimeBridgeRelationalSource {
             ));
         };
 
-        Ok(self.runtime.with_runtime(|runtime| {
-            runtime
-                .entity_record_at_observation(observation.observation(), entity_id)
-                .and_then(|record| record.authoritative_aspect_state)
-        }))
+        self.runtime
+            .with_runtime(|runtime| {
+                runtime.entity_record_at_observation(observation.observation(), entity_id)
+            })
+            .map(|record| record.and_then(|record| record.authoritative_aspect_state))
+            .map_err(|denial| {
+                RelationalBridgeSourceError::new(format!(
+                    "retained relational entity projection read an observation from another runtime: {denial:?}"
+                ))
+            })
     }
 }

@@ -84,7 +84,9 @@ fn receipt_narrows_to_one_partition_and_counts_what_it_filtered() {
 #[test]
 fn a_fork_receipt_names_the_selected_and_the_authoring_branch() {
     let runtime = runtime_with_test_schema();
-    let inherited = create_entity_outcome(&runtime, "inherited").commit.commit_id;
+    let inherited = create_entity_outcome(&runtime, "inherited")
+        .commit
+        .commit_id;
     let feature = BranchId("feature".to_owned());
     runtime
         .history_authority()

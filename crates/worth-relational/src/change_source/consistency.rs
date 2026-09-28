@@ -23,10 +23,10 @@ pub enum RelationalChangeConsistencyDenialKind {
     /// A semantic change claims a precision other than exact. Only a
     /// consumer's own admission can widen a change.
     WidenedPrecisionClaimed,
-    /// A semantic change matches no remaining canonical operation.
+    /// A semantic change matches no remaining canonical operation. With the
+    /// counts equal, this is also how an uncovered operation shows: some
+    /// other change failed to match it.
     UnjustifiedSemanticChange,
-    /// A canonical operation has no semantic change.
-    UncoveredOperation,
     /// A record's opaque-aspect flag disagrees with its semantic changes.
     OpaquePostureMismatch,
 }
@@ -106,9 +106,27 @@ impl std::error::Error for RelationalChangeConsistencyDenial {}
 
 type RuleBreach = (RelationalChangeConsistencyDenialKind, String);
 
-/// Check that every record's semantic changes describe exactly its canonical
-/// patch operations.
-pub(crate) fn check_change_consistency(
+impl PublishedAuthoritativePatchEnvelope {
+    /// Check that every record's semantic changes describe exactly its
+    /// canonical patch operations: the rules
+    /// [`RelationalRuntime::mint_change_receipt`](crate::runtime::RelationalRuntime::mint_change_receipt)
+    /// applies before it mints.
+    ///
+    /// A receipt's patch has already passed. A consumer that holds a patch by
+    /// any other route, decoded from storage for instance, checks it here.
+    ///
+    /// # Errors
+    ///
+    /// The first rule a record breaks, with the work done up to and including
+    /// that record.
+    pub fn check_change_consistency(
+        &self,
+    ) -> Result<RelationalChangeConsistencyWork, RelationalChangeConsistencyDenial> {
+        check_change_consistency(self)
+    }
+}
+
+fn check_change_consistency(
     patch: &PublishedAuthoritativePatchEnvelope,
 ) -> Result<RelationalChangeConsistencyWork, RelationalChangeConsistencyDenial> {
     let mut work = RelationalChangeConsistencyWork::default();
@@ -141,13 +159,9 @@ fn check_record(
             *counts.entry(change).or_insert(0_usize) += 1;
             counts
         });
+    // Equal counts and one expected change consumed per match leave nothing
+    // uncovered once every change matches.
     match_semantic_changes(record, &mut remaining, work)?;
-    if !remaining.is_empty() {
-        return Err((
-            RelationalChangeConsistencyDenialKind::UncoveredOperation,
-            "canonical authoritative patch operation had no semantic change".to_owned(),
-        ));
-    }
     if contains_opaque != record.contains_opaque_aspect {
         return Err((
             RelationalChangeConsistencyDenialKind::OpaquePostureMismatch,

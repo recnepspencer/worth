@@ -4,14 +4,14 @@ use worth_runtime_bridge::facade::{
 };
 
 use super::identities::record_ref_from_identity_parts;
-use crate::facade::change_source::RelationalRuntimeHandle;
+use super::snapshot_values::{
+    export_entity_aspect_snapshot_value, export_relation_aspect_snapshot_value,
+};
+use crate::facade::change_source::{RelationalObservationReadDenial, RelationalRuntimeHandle};
 use crate::facade::identity::PartitionId;
 use crate::facade::mvcc::RelationalBranchObservation;
 use crate::facade::runtime::RelationalRuntime;
 use crate::facade::transactions::RecordRef;
-use super::snapshot_values::{
-    export_entity_aspect_snapshot_value, export_relation_aspect_snapshot_value,
-};
 
 /// Shares the admitted observation's bounded owner retention obligation.
 /// Reader clones neither reacquire a head nor create another obligation; the
@@ -81,7 +81,10 @@ fn read_packet(
         let aspect = read.aspect_key();
         let aspect_value = match record_ref {
             RecordRef::Entity(entity_id) => {
-                match runtime.entity_record_at_observation(observation, entity_id) {
+                match runtime
+                    .entity_record_at_observation(observation, entity_id)
+                    .map_err(foreign_snapshot_observation)?
+                {
                     Some(record) => {
                         require_declared_aspect(
                             observation.entity_kind_declares_aspect(record.kind.kind_id, aspect),
@@ -93,7 +96,10 @@ fn read_packet(
                 }
             }
             RecordRef::Relation(relation_id) => {
-                match runtime.relation_record_at_observation(observation, relation_id) {
+                match runtime
+                    .relation_record_at_observation(observation, relation_id)
+                    .map_err(foreign_snapshot_observation)?
+                {
                     Some(record) => {
                         require_declared_aspect(
                             observation.relation_kind_declares_aspect(record.kind.kind_id, aspect),
@@ -111,6 +117,14 @@ fn read_packet(
         });
     }
     Ok(records)
+}
+
+fn foreign_snapshot_observation(
+    denial: RelationalObservationReadDenial,
+) -> BridgeSnapshotReadError {
+    BridgeSnapshotReadError::new(format!(
+        "relational bridge snapshot reader read an observation from another runtime: {denial:?}"
+    ))
 }
 
 /// Relation endpoints and lifecycle are readable on every record; any other

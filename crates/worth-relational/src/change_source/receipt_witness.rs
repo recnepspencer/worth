@@ -26,11 +26,14 @@ pub(super) struct ChangeReceiptBasis {
 
 pub(super) type ChangeReceiptUnresolved = Recipe<Unresolved, ChangeReceiptRequest>;
 
-type ChangeReceiptEvidence = FreshnessScopedBasis<CurrentValidity, AssumptionBasis<ChangeReceiptBasis>>;
+type ChangeReceiptEvidence =
+    FreshnessScopedBasis<CurrentValidity, AssumptionBasis<ChangeReceiptBasis>>;
 
-pub(super) type ChangeReceiptResolved = Recipe<Resolved, ChangeReceiptRequest, ChangeReceiptEvidence>;
+pub(super) type ChangeReceiptResolved =
+    Recipe<Resolved, ChangeReceiptRequest, ChangeReceiptEvidence>;
 
-pub(super) type ChangeReceiptProof = ExecutionReadyRecipe<ChangeReceiptRequest, ChangeReceiptEvidence>;
+pub(super) type ChangeReceiptProof =
+    ExecutionReadyRecipe<ChangeReceiptRequest, ChangeReceiptEvidence>;
 
 struct ChangeReceiptResolutionAuthority {
     _private: (),

@@ -3,7 +3,9 @@ use std::sync::Arc;
 use worth_runtime_bridge::facade::{RelationalBridgeRecordIdentityParts, TruthBranchIdentity};
 
 use crate::facade::identity::PartitionId;
-use crate::presentation::bridge::relational_test_support::{changed_entities, create_entity_in_partition, create_entity_outcome};
+use crate::presentation::bridge::relational_test_support::{
+    changed_entities, create_entity_in_partition, create_entity_outcome,
+};
 
 use super::super::RuntimeBridgeRelationalSource;
 use super::support::runtime_with_test_schema;

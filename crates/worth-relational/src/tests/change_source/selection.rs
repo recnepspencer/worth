@@ -1,10 +1,12 @@
-use crate::facade::change_source::{RelationalCommitSelectionDenial, RelationalCommitSelectionWork};
+use crate::facade::change_source::{
+    RelationalCommitSelectionDenial, RelationalCommitSelectionWork,
+};
 use crate::facade::history::BranchId;
 use crate::tests::support::{
     create_entity_outcome, create_entity_outcome_on_branch, runtime_with_test_schema,
 };
 
-use super::observe;
+use super::{linear_ancestry_work, observe};
 
 #[test]
 fn reachable_selection_reports_exactly_the_ancestry_work_it_did() {
@@ -12,10 +14,7 @@ fn reachable_selection_reports_exactly_the_ancestry_work_it_did() {
     let ancestor = create_entity_outcome(&runtime, "ancestor").commit.commit_id;
     let head = create_entity_outcome(&runtime, "head").commit.commit_id;
     let observation = observe(&runtime, "main").observation();
-    let expected_visits = runtime
-        .history()
-        .classify_commit_in_ancestry(&runtime.history().inspect_commit_ancestry(head), ancestor)
-        .traversal_work();
+    let expected_visits = linear_ancestry_work(&runtime, head);
 
     runtime.performance_access().reset_counters();
     let selection = runtime.select_reachable_commit(&observation, ancestor);
@@ -23,16 +22,15 @@ fn reachable_selection_reports_exactly_the_ancestry_work_it_did() {
     let selected = selection.into_outcome().expect("ancestor is reachable");
 
     assert_eq!(selected.commit_id(), ancestor);
-    assert_eq!(selected.runtime_instance_id(), runtime.runtime_instance_id());
+    assert_eq!(
+        selected.runtime_instance_id(),
+        runtime.runtime_instance_id()
+    );
     assert_eq!(work.selections(), 1);
     assert_eq!(work.ancestry_visits(), expected_visits);
-    assert!(work.ancestry_visits() > 0);
     let counters = runtime.performance_access().counters();
     assert_eq!(counters.observation_commit_selections, 1);
-    assert_eq!(
-        counters.observation_commit_ancestry_visits,
-        expected_visits
-    );
+    assert_eq!(counters.observation_commit_ancestry_visits, expected_visits);
 }
 
 #[test]
@@ -61,7 +59,9 @@ fn exact_selection_costs_one_selection_and_no_ancestry() {
 #[test]
 fn fork_sees_inherited_ancestor_but_not_post_fork_sibling_at_equal_cost_class() {
     let runtime = runtime_with_test_schema();
-    let inherited = create_entity_outcome(&runtime, "inherited").commit.commit_id;
+    let inherited = create_entity_outcome(&runtime, "inherited")
+        .commit
+        .commit_id;
     let feature = BranchId("feature".to_owned());
     runtime
         .history_authority()
@@ -76,8 +76,10 @@ fn fork_sees_inherited_ancestor_but_not_post_fork_sibling_at_equal_cost_class() 
     let reachable = runtime.select_reachable_commit(&observation, inherited);
     let unreachable = runtime.select_reachable_commit(&observation, sibling);
 
-    assert!(reachable.work().ancestry_visits() > 0);
-    assert!(unreachable.work().ancestry_visits() > 0);
+    // Both walk the whole feature-head ancestry, whatever the answer.
+    let full_walk = linear_ancestry_work(&runtime, feature_head);
+    assert_eq!(reachable.work().ancestry_visits(), full_walk);
+    assert_eq!(unreachable.work(), reachable.work());
     assert_eq!(reachable.into_outcome().unwrap().commit_id(), inherited);
     assert_eq!(
         unreachable.into_outcome().unwrap_err(),

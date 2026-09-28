@@ -31,8 +31,8 @@ const RELATIONAL_SOURCE_TRUTH_IDENTITY_PHASE_ONE_ROOT_BREAK_TARGETS:
         "mint bridge snapshot identity from relational source-truth authority only",
     ),
     RelationalSourceTruthIdentityPhaseOneRootBreakTarget::new(
-        "runtime::RelationalRuntime::publish_commit_for_bridge",
-        "admit Bridge publication only from a commit owned by the live Relational runtime",
+        "runtime::RelationalRuntime::mint_change_receipt",
+        "mint a change receipt only from a commit the live Relational runtime selected",
     ),
     RelationalSourceTruthIdentityPhaseOneRootBreakTarget::new(
         "presentation::bridge::RuntimeBridgeRelationalSource",

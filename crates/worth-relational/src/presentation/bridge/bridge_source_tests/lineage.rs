@@ -31,14 +31,15 @@ fn runtime_bridge_lineage_source_resolves_real_relational_history() {
     let branch_identity = runtime
         .branch_identity(&latest_bundle.commit.branch_id)
         .expect("lineage branch identity");
-    let expected_successor_record_identities =
-        vec![BridgeHistoricalResolvedRecordIdentity::from_relational_record(
+    let expected_successor_record_identities = vec![
+        BridgeHistoricalResolvedRecordIdentity::from_relational_record(
             super::super::identities::record_ref_identity(
                 &crate::facade::transactions::RecordRef::Entity(replacement_successor(
                     &replaced, entity,
                 )),
             ),
-        )];
+        ),
+    ];
 
     let runtime = Arc::new(runtime);
     let source = RuntimeBridgeRelationalSource::for_graph_role(Arc::clone(&runtime), "model")

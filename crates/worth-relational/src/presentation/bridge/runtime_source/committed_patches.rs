@@ -4,7 +4,6 @@ use worth_runtime_bridge::facade::{
     RelationalCommittedPatchRequest, TruthBranchIdentity, TruthSnapshotIdentity,
 };
 
-use super::selected_commit_resolution::SourceCommitSelection;
 use super::{
     RelationalBridgeSelectedCommitObservation, RelationalBridgeSelectedObservation,
     RuntimeBridgeRelationalSource,
@@ -31,10 +30,12 @@ impl RuntimeBridgeRelationalSource {
     /// when the graph role contains whitespace.
     pub fn admit_opaque_aspect_widening(
         &self,
-    ) -> Result<RelationalOpaqueAspectWideningAdmission, RelationalOpaqueAspectWideningAdmissionDenial>
-    {
+    ) -> Result<
+        RelationalOpaqueAspectWideningAdmission,
+        RelationalOpaqueAspectWideningAdmissionDenial,
+    > {
         RelationalOpaqueAspectWideningAdmission::admit(
-            self.runtime_instance_id,
+            self.runtime.runtime_instance_id(),
             self.graph_role.clone(),
         )
     }
@@ -49,10 +50,8 @@ impl RuntimeBridgeRelationalSource {
         admission: &RelationalOpaqueAspectWideningAdmission,
     ) -> Result<RelationalBridgePublicationOutcome, RelationalBridgeSourceError> {
         let observation = self.observation_bindings.resolve(snapshot_identity)?;
-        let selected_commit = self
-            .select_commit_for_observation(commit_id, observation)
-            .into_result()?;
-        if admission.runtime_instance_id() != self.runtime_instance_id {
+        let selected_commit = self.select_commit_for_observation(commit_id, observation)?;
+        if admission.runtime_instance_id() != self.runtime.runtime_instance_id() {
             return Ok(TransitionOutcome::Stale(
                 RelationalBridgePublicationStale::RuntimeAuthority,
             ));
@@ -118,9 +117,7 @@ impl RuntimeBridgeRelationalSource {
                 .snapshot_identity_for_commit(commit_id)?,
         };
         let observation = self.observation_bindings.resolve(&snapshot_identity)?;
-        let selected_commit = self
-            .select_commit_for_observation(commit_id, observation)
-            .into_result()?;
+        let selected_commit = self.select_commit_for_observation(commit_id, observation)?;
         Ok(self.publish_commit_for_selected_observation(selected_commit))
     }
 
@@ -129,9 +126,7 @@ impl RuntimeBridgeRelationalSource {
         commit_id: CommitId,
         branch_identity: &TruthBranchIdentity,
     ) -> Result<RelationalBridgePublicationOutcome, RelationalBridgeSourceError> {
-        let selected_commit = self
-            .select_commit_on_branch(commit_id, branch_identity)?
-            .into_result()?;
+        let selected_commit = self.select_commit_on_branch(commit_id, branch_identity)?;
         Ok(self.publish_commit_for_selected_observation(selected_commit))
     }
 
@@ -141,15 +136,15 @@ impl RuntimeBridgeRelationalSource {
         &self,
         commit_id: CommitId,
         branch_identity: &TruthBranchIdentity,
-    ) -> Result<SourceCommitSelection, RelationalBridgeSourceError> {
+    ) -> Result<RelationalBridgeSelectedCommitObservation, RelationalBridgeSourceError> {
         let (head_commit_id, snapshot_identity) =
             self.branch_head_bindings.resolve(branch_identity)?;
         let observation = self.observation_bindings.resolve(&snapshot_identity)?;
-        Ok(if head_commit_id == commit_id {
+        if head_commit_id == commit_id {
             self.select_exact_commit_for_observation(commit_id, observation)
         } else {
             self.select_commit_for_observation(commit_id, observation)
-        })
+        }
     }
 
     /// Select `commit_id` through the ancestry of one retained snapshot.
@@ -157,27 +152,29 @@ impl RuntimeBridgeRelationalSource {
         &self,
         commit_id: CommitId,
         snapshot_identity: &TruthSnapshotIdentity,
-    ) -> Result<SourceCommitSelection, RelationalBridgeSourceError> {
+    ) -> Result<RelationalBridgeSelectedCommitObservation, RelationalBridgeSourceError> {
         let observation = self.observation_bindings.resolve(snapshot_identity)?;
-        Ok(self.select_commit_for_observation(commit_id, observation))
+        self.select_commit_for_observation(commit_id, observation)
     }
 
     fn select_commit_for_observation(
         &self,
         commit_id: CommitId,
         observation: RelationalBridgeSelectedObservation,
-    ) -> SourceCommitSelection {
-        self.runtime
-            .with_runtime(|runtime| observation.select_reachable_commit(runtime, commit_id))
+    ) -> Result<RelationalBridgeSelectedCommitObservation, RelationalBridgeSourceError> {
+        self.runtime.with_runtime(|runtime| {
+            observation.select_reachable_commit(runtime, commit_id, &self.selection_work)
+        })
     }
 
     pub(super) fn select_exact_commit_for_observation(
         &self,
         commit_id: CommitId,
         observation: RelationalBridgeSelectedObservation,
-    ) -> SourceCommitSelection {
-        self.runtime
-            .with_runtime(|runtime| observation.select_exact_selected_commit(runtime, commit_id))
+    ) -> Result<RelationalBridgeSelectedCommitObservation, RelationalBridgeSourceError> {
+        self.runtime.with_runtime(|runtime| {
+            observation.select_exact_selected_commit(runtime, commit_id, &self.selection_work)
+        })
     }
 }
 
@@ -197,9 +194,7 @@ impl CommittedPatchSource for RuntimeBridgeRelationalSource {
         let commit_id = parse_bridge_commit_identity(request.commit_identity())?;
         let publication = match request.snapshot_identity() {
             Some(snapshot) => {
-                let selected_commit = self
-                    .select_commit_at_snapshot(commit_id, snapshot)?
-                    .into_result()?;
+                let selected_commit = self.select_commit_at_snapshot(commit_id, snapshot)?;
                 self.publish_commit_for_selected_observation(selected_commit)
             }
             None => match request.branch_identity() {

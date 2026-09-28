@@ -1,7 +1,7 @@
+use crate::facade::config::CascadeDeletePolicy;
 use crate::facade::history::BranchId;
 use crate::facade::identity::{EntityId, PartitionId};
 use crate::facade::lineage::HistoricalLineageResolution;
-use crate::facade::config::CascadeDeletePolicy;
 use crate::facade::transactions::{
     CreateIntent, EntityMutationIntent, EntitySpec, MutationIntent, ReplaceEntityIntent,
     WorkerIntentBatch,
@@ -167,8 +167,7 @@ fn create_entity_on_branch(
     ordinal: usize,
 ) {
     let key = format!("owner-scale-entity-{ordinal}");
-    let mut transaction =
-        test_owner_begin_transaction_for_branch(runtime, branch);
+    let mut transaction = test_owner_begin_transaction_for_branch(runtime, branch);
     transaction
         .push_batch(
             WorkerIntentBatch::new(key.clone()).push(MutationIntent::Create(CreateIntent::Entity(

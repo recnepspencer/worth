@@ -24,16 +24,17 @@ fn live_runtime_mints_publication_provenance_and_rejects_foreign_widening_author
     let source = RuntimeBridgeRelationalSource::for_graph_role(owner.clone(), "model")
         .expect("owner graph source");
     let admission = source.admit_opaque_aspect_widening().unwrap();
-    let wrong_role_admission =
-        RuntimeBridgeRelationalSource::for_graph_role(owner, "analysis")
-            .expect("owner analysis source")
-            .admit_opaque_aspect_widening()
-            .unwrap();
-    let foreign_admission =
-        RuntimeBridgeRelationalSource::for_graph_role(Arc::new(runtime_with_test_schema()), "model")
-            .expect("foreign graph source")
-            .admit_opaque_aspect_widening()
-            .unwrap();
+    let wrong_role_admission = RuntimeBridgeRelationalSource::for_graph_role(owner, "analysis")
+        .expect("owner analysis source")
+        .admit_opaque_aspect_widening()
+        .unwrap();
+    let foreign_admission = RuntimeBridgeRelationalSource::for_graph_role(
+        Arc::new(runtime_with_test_schema()),
+        "model",
+    )
+    .expect("foreign graph source")
+    .admit_opaque_aspect_widening()
+    .unwrap();
     let (_, basis) = source
         .observe_branch_basis(&branch_identity)
         .expect("owner exact basis");
@@ -95,4 +96,16 @@ fn live_runtime_mints_publication_provenance_and_rejects_foreign_widening_author
         publication.adapter_semantic_identity()
     );
     assert_eq!(provenance.source_basis(), publication.source_basis());
+}
+
+#[test]
+fn a_source_role_with_inner_whitespace_cannot_admit_a_widening() {
+    let source =
+        RuntimeBridgeRelationalSource::for_graph_role(Arc::new(runtime_with_test_schema()), "a b")
+            .expect("a role without surrounding whitespace names a source");
+
+    assert_eq!(
+        source.admit_opaque_aspect_widening().err(),
+        Some(crate::presentation::bridge::RelationalOpaqueAspectWideningAdmissionDenial::InvalidGraphRole)
+    );
 }

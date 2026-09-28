@@ -11,6 +11,7 @@ mod consistency_expectations;
 mod consistency_tests;
 mod exact_reads;
 mod lineage_at_observation;
+mod observation_read;
 mod partition_projection;
 mod receipt;
 mod receipt_minting;
@@ -26,6 +27,7 @@ pub use consistency::{
     RelationalChangeConsistencyDenial, RelationalChangeConsistencyDenialKind,
     RelationalChangeConsistencyWork,
 };
+pub use observation_read::RelationalObservationReadDenial;
 pub use receipt::{
     RelationalChangeReceipt, RelationalChangeReceiptDeferred, RelationalChangeReceiptOutcome,
     RelationalChangeReceiptStale,

@@ -1,3 +1,4 @@
+use super::RelationalObservationReadDenial;
 use crate::history::data::CommitId;
 use crate::history::CommitAncestryPosture;
 use crate::mvcc::RelationalBranchObservation;
@@ -122,10 +123,12 @@ impl RelationalRuntime {
             CommitAncestryPosture::RequestedCommitUnavailable => {
                 Err(RelationalCommitSelectionDenial::RequestedCommitUnavailable { requested })
             }
-            CommitAncestryPosture::Unreachable => Err(RelationalCommitSelectionDenial::Unreachable {
-                selected,
-                requested,
-            }),
+            CommitAncestryPosture::Unreachable => {
+                Err(RelationalCommitSelectionDenial::Unreachable {
+                    selected,
+                    requested,
+                })
+            }
             CommitAncestryPosture::Reachable => Ok(self.selected(requested, observation)),
         };
         RelationalCommitSelection { outcome, work }
@@ -158,9 +161,11 @@ impl RelationalRuntime {
         &self,
         observation: &RelationalBranchObservation,
     ) -> Result<CommitId, RelationalCommitSelectionDenial> {
-        if observation.identity().runtime_instance_id() != self.runtime_instance_id() {
-            return Err(RelationalCommitSelectionDenial::ForeignObservation);
-        }
+        self.admit_observation_read(observation).map_err(
+            |RelationalObservationReadDenial::ForeignObservation| {
+                RelationalCommitSelectionDenial::ForeignObservation
+            },
+        )?;
         observation
             .commit_id()
             .ok_or(RelationalCommitSelectionDenial::NoSelectedCommit)

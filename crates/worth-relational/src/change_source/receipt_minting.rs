@@ -2,7 +2,6 @@ use worth_foundational::facade::admit_foundational_authority_identity;
 use worth_proof::TransitionOutcome;
 
 use super::commit_selection::RelationalSelectedCommit;
-use super::consistency::check_change_consistency;
 use super::partition_projection::project_patch_partition;
 use super::receipt::{
     RelationalChangeReceipt, RelationalChangeReceiptDeferred, RelationalChangeReceiptOutcome,
@@ -50,7 +49,9 @@ impl RelationalRuntime {
         });
         let Some(envelope) = self.commit_envelope(commit_id) else {
             return if commit_id >= self.history().next_commit_id() {
-                TransitionOutcome::Deferred(RelationalChangeReceiptDeferred::CommitVisibilityPending)
+                TransitionOutcome::Deferred(
+                    RelationalChangeReceiptDeferred::CommitVisibilityPending,
+                )
             } else {
                 TransitionOutcome::Stale(RelationalChangeReceiptStale::CommitNotRetained)
             };
@@ -76,7 +77,7 @@ impl RelationalRuntime {
             partition_id,
         );
         let patch = projection.patch.canonicalized();
-        let consistency = match check_change_consistency(&patch) {
+        let consistency = match patch.check_change_consistency() {
             Ok(work) => work,
             Err(denial) => return TransitionOutcome::Denied(denial),
         };

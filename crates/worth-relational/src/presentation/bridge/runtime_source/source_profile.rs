@@ -9,7 +9,7 @@ impl RuntimeBridgeRelationalSource {
     /// still require owner-minted handles or leases.
     pub fn authoritative_source_profile(&self) -> BridgeAuthoritativeSourceProfile {
         BridgeAuthoritativeSourceProfile::new(
-            self.runtime_instance_id,
+            self.runtime.runtime_instance_id(),
             super::super::identities::relational_bridge_adapter_semantic_identity(),
         )
         .expect("Relational runtime authority always yields a valid Bridge source profile")

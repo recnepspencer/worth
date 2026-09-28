@@ -852,7 +852,7 @@ Phase 3 is complete.
 - The adapter uses only the Relational facade, the Bridge facade,
   `worth_foundational::facade`, and `worth_proof`. The probe crate
   `tools/relational-adapter-probe` compiles the adapter and its tests as an
-  outside crate, and all 39 adapter tests pass there.
+  outside crate, and all 46 adapter tests pass there.
 - Compile-fail tests in `tests/ui/change_source` prove that a raw
   `CommitId` or a fork basis cannot mint a receipt (E0308), and that the
   receipt, the selected commit, and the retained observation have no
@@ -872,8 +872,11 @@ terms: `RelationalRuntimeHandle`; `select_reachable_commit` and
 `RelationalSelectedCommit` or a `RelationalCommitSelectionDenial`, plus a
 `RelationalCommitSelectionWork`; `mint_change_receipt`, which returns a
 `RelationalChangeReceiptOutcome`; `RelationalChangeConsistencyDenial` and
-`RelationalChangeConsistencyWork`; and `retain_observation_snapshot`, which
-returns a `RelationalRetainedObservation`. The Bridge-side path is the flat
+`RelationalChangeConsistencyWork`; `retain_observation_snapshot`, which
+returns a `RelationalRetainedObservation`; and the four runtime reads at an
+observation, which refuse a foreign observation with
+`RelationalObservationReadDenial`. The facade module's doc lists these entry
+points in the order a consumer uses them. The Bridge-side path is the flat
 facade export described above. `bridge_snapshot_identity_for_commit` and
 `bridge_snapshot_identity_for_handle` keep their names: their parameters are
 Relational types, and Query callers already use them.
@@ -902,12 +905,38 @@ Deviations from the plan:
   so a fork publication keeps the branch it was selected on.
 - `RelationalCommitSelectionDenial::ForeignObservation` is new. Commit
   selection refuses an observation another runtime issued, before it reads
-  any history.
+  any history. The exact reads and the lineage reads do the same with
+  `RelationalObservationReadDenial::ForeignObservation`; before, they resolved
+  a foreign commit against this runtime's lineage and ancestry and answered
+  wrongly. The two `*_kind_declares_aspect` reads take no runtime; they read
+  the observation's own retained schema.
+- The receipt carries commit, version, and branch ids but not the snapshot
+  id. The snapshot id belongs to the retained observation, and the adapter
+  carries it beside the receipt in `RelationalBridgeSelectedCommitObservation`.
 - The adapter mints the receipt under the runtime lock and lowers it
   outside the lock.
-- The consistency checks all run at receipt minting, before any lowering
-  check, so a patch that fails both reports the Relational denial rather
-  than a lowering denial.
+- The consistency checks all run at receipt minting, over every record,
+  before any lowering check. The old per-record order was count, opaque
+  gate, match and widened claim, coverage, posture. Two cases now report
+  `InvalidAuthoritativePatchSemantics` with Relational's work where they
+  reported `UnsupportedAuthoritativePatchPrecision` with lowering's: one
+  record with an unadmitted opaque change and any later breach, and an
+  unadmitted opaque record followed by an inconsistent one. A count mismatch
+  still wins, as before. `consistency_lowering_tests.rs` pins both cases and
+  one mapping per rule.
+- `PublishedAuthoritativePatchEnvelope::check_change_consistency` is public,
+  so a patch held by another route is checked by the same rules. The
+  adapter's decoded-publication lowering applies them first, as receipt
+  minting does.
+- `UncoveredOperation` is gone. Equal counts and one expected change
+  consumed per matched change leave nothing uncovered, so it could not
+  fire; an uncovered operation shows as an unjustified change.
+- The adapter source sums its commit selections' work across clones. The
+  cost tests assert those sums after each real `load_*` call, against the
+  3N - 1 work of one walk down an N-commit linear history.
+- `RelationalRuntimeHandle` reads the runtime instance id once when it is
+  made, so the id and `Debug` take no lock. The source no longer keeps its
+  own copy.
 - `RecordStructuralChange` is non-exhaustive outside Relational, so lowering
   denies an unknown structural change with `InvalidLoweringContract` instead
   of guessing. Inside Relational that arm is unreachable and carries

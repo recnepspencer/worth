@@ -19,7 +19,9 @@ use crate::facade::transactions::{
     ReplaceEntityIntent, WorkerIntentBatch,
 };
 
-pub(crate) use publication::{exact_change, published_patch, WireOperation, WireValue};
+pub(crate) use publication::{
+    exact_change, published_patch, widened_change, WireOperation, WireValue,
+};
 pub(crate) use schema::{
     entity_summary_struct_aspect, runtime_with_declared_aspect_schema, AspectSchemaFixture,
 };

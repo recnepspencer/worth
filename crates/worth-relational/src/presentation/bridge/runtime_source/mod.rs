@@ -30,11 +30,11 @@ pub use retained_snapshot::RelationalBridgeRetainedSnapshot;
 #[derive(Debug, Clone)]
 pub struct RuntimeBridgeRelationalSource {
     runtime: RelationalRuntimeHandle,
-    runtime_instance_id: u64,
     observation_bindings: Arc<observation_bindings::RelationalBridgeObservationBindings>,
     branch_head_bindings: Arc<branch_head_bindings::RelationalBridgeBranchHeadBindings>,
     graph_role: Arc<str>,
     partition: Option<RelationalBridgePartitionBinding>,
+    selection_work: Arc<selected_commit_resolution::SourceSelectionWork>,
 }
 
 #[derive(Debug, Clone)]
@@ -54,17 +54,14 @@ impl RuntimeBridgeRelationalSource {
         graph_role: impl Into<Arc<str>>,
     ) -> Result<Self, RelationalBridgeSourceConfigurationError> {
         let graph_role = graph_role.into();
-        if graph_role.trim().is_empty() || graph_role.trim() != graph_role.as_ref() {
-            return Err(RelationalBridgeSourceConfigurationError::InvalidGraphRole);
-        }
-        let runtime_instance_id = runtime.runtime_instance_id();
+        validate_graph_role(&graph_role)?;
         Ok(Self {
             runtime: RelationalRuntimeHandle::immutable(runtime),
-            runtime_instance_id,
             observation_bindings: observation_bindings::RelationalBridgeObservationBindings::new(),
             branch_head_bindings: branch_head_bindings::RelationalBridgeBranchHeadBindings::new(),
             graph_role,
             partition: None,
+            selection_work: Arc::default(),
         })
     }
 
@@ -74,17 +71,13 @@ impl RuntimeBridgeRelationalSource {
     ) -> Result<Self, RelationalBridgeSourceConfigurationError> {
         let graph_role = graph_role.into();
         validate_graph_role(&graph_role)?;
-        let runtime_instance_id = runtime
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .runtime_instance_id();
         Ok(Self {
             runtime: RelationalRuntimeHandle::shared(runtime),
-            runtime_instance_id,
             observation_bindings: observation_bindings::RelationalBridgeObservationBindings::new(),
             branch_head_bindings: branch_head_bindings::RelationalBridgeBranchHeadBindings::new(),
             graph_role,
             partition: None,
+            selection_work: Arc::default(),
         })
     }
 

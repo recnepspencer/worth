@@ -174,7 +174,10 @@ fn replace_entity_after_snapshot(
     runtime: &mut crate::facade::runtime::RelationalRuntime,
     created: &crate::facade::transactions::CommitResult,
 ) {
-    let mut txn = crate::presentation::bridge::relational_test_support::test_owner_begin_transaction_for_main(runtime);
+    let mut txn =
+        crate::presentation::bridge::relational_test_support::test_owner_begin_transaction_for_main(
+            runtime,
+        );
     txn.push_batch(
         WorkerIntentBatch::new("update").push(MutationIntent::Entity(
             EntityMutationIntent::Replace(ReplaceEntityIntent {

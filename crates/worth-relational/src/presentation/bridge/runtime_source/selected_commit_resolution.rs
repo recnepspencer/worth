@@ -1,3 +1,5 @@
+use std::sync::atomic::{AtomicUsize, Ordering};
+
 use worth_runtime_bridge::facade::{RelationalBridgeSourceError, TruthSnapshotIdentity};
 
 use crate::facade::change_source::{
@@ -6,27 +8,37 @@ use crate::facade::change_source::{
 use crate::facade::history::CommitId;
 use crate::facade::runtime::RelationalRuntime;
 
-use super::{RelationalBridgeSelectedCommitObservation, RelationalBridgeSelectedObservation};
+use super::{
+    RelationalBridgeSelectedCommitObservation, RelationalBridgeSelectedObservation,
+    RuntimeBridgeRelationalSource,
+};
 
-/// One adapter commit selection and the Relational work it did.
-pub(in crate::presentation::bridge) struct SourceCommitSelection {
-    outcome: Result<RelationalBridgeSelectedCommitObservation, RelationalBridgeSourceError>,
-    /// Read by the adapter's cost tests. Production callers need only the
-    /// outcome; the runtime's own counters record the same work.
-    #[cfg_attr(not(test), allow(dead_code))]
-    work: RelationalCommitSelectionWork,
+/// The commit selections one source and its clones have made, and the
+/// Relational ancestry work they did, summed over every publication path.
+#[derive(Debug, Default)]
+pub(super) struct SourceSelectionWork {
+    selections: AtomicUsize,
+    ancestry_visits: AtomicUsize,
 }
 
-impl SourceCommitSelection {
-    #[cfg(test)]
-    pub(in crate::presentation::bridge) fn work(&self) -> RelationalCommitSelectionWork {
-        self.work
+impl SourceSelectionWork {
+    fn record(&self, work: RelationalCommitSelectionWork) {
+        self.selections
+            .fetch_add(work.selections(), Ordering::Relaxed);
+        self.ancestry_visits
+            .fetch_add(work.ancestry_visits(), Ordering::Relaxed);
     }
+}
 
-    pub(in crate::presentation::bridge) fn into_result(
-        self,
-    ) -> Result<RelationalBridgeSelectedCommitObservation, RelationalBridgeSourceError> {
-        self.outcome
+impl RuntimeBridgeRelationalSource {
+    /// Commit selections this source and its clones have made so far, and the
+    /// ancestry visits those selections did.
+    #[cfg(test)]
+    pub(in crate::presentation::bridge) fn selection_work_totals(&self) -> (usize, usize) {
+        (
+            self.selection_work.selections.load(Ordering::Relaxed),
+            self.selection_work.ancestry_visits.load(Ordering::Relaxed),
+        )
     }
 }
 
@@ -35,35 +47,41 @@ impl RelationalBridgeSelectedObservation {
         self,
         runtime: &RelationalRuntime,
         commit_id: CommitId,
-    ) -> SourceCommitSelection {
+        work: &SourceSelectionWork,
+    ) -> Result<RelationalBridgeSelectedCommitObservation, RelationalBridgeSourceError> {
         let selection = runtime.select_reachable_commit(&self.observation, commit_id);
-        self.into_source_selection(selection, "has no committed selected root")
+        self.into_source_selection(selection, work, "has no committed selected root")
     }
 
     pub(super) fn select_exact_selected_commit(
         self,
         runtime: &RelationalRuntime,
         commit_id: CommitId,
-    ) -> SourceCommitSelection {
+        work: &SourceSelectionWork,
+    ) -> Result<RelationalBridgeSelectedCommitObservation, RelationalBridgeSourceError> {
         let selection = runtime.select_exact_commit(&self.observation, commit_id);
-        self.into_source_selection(selection, "has no selected commit")
+        self.into_source_selection(selection, work, "has no selected commit")
     }
 
     fn into_source_selection(
         self,
         selection: RelationalCommitSelection,
+        work: &SourceSelectionWork,
         no_commit_detail: &str,
-    ) -> SourceCommitSelection {
-        let work = selection.work();
+    ) -> Result<RelationalBridgeSelectedCommitObservation, RelationalBridgeSourceError> {
+        work.record(selection.work());
         let snapshot_identity = self.snapshot_identity;
-        let outcome = match selection.into_outcome() {
+        match selection.into_outcome() {
             Ok(selected) => Ok(RelationalBridgeSelectedCommitObservation {
                 selected,
                 snapshot_identity,
             }),
-            Err(denial) => Err(selection_error(&snapshot_identity, denial, no_commit_detail)),
-        };
-        SourceCommitSelection { outcome, work }
+            Err(denial) => Err(selection_error(
+                &snapshot_identity,
+                denial,
+                no_commit_detail,
+            )),
+        }
     }
 }
 

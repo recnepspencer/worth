@@ -1,8 +1,8 @@
-use worth_foundational::facade::AuthoritativeAspectChangeKind;
 use crate::facade::change_source::{
     RelationalChangeConsistencyDenial, RelationalChangeConsistencyDenialKind,
 };
 use crate::facade::publication::PublishedAuthoritativePatchEnvelope;
+use worth_foundational::facade::AuthoritativeAspectChangeKind;
 use worth_runtime_bridge::facade::{
     BridgeAspectChangeWideningCause, BridgeAuthoritativePatchLoweringCounters, BridgeRouteError,
     BridgeRouteErrorKind,
@@ -60,7 +60,6 @@ pub(super) fn consistency_denial(
         }
         RelationalChangeConsistencyDenialKind::SemanticChangeCountMismatch
         | RelationalChangeConsistencyDenialKind::UnjustifiedSemanticChange
-        | RelationalChangeConsistencyDenialKind::UncoveredOperation
         | RelationalChangeConsistencyDenialKind::OpaquePostureMismatch => {
             denial.detail().to_owned()
         }

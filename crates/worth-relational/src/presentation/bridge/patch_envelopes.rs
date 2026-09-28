@@ -20,6 +20,8 @@ use super::RelationalBridgePublicationDenial;
 /// Lower a patch directly, without a receipt, so lowering tests can feed it
 /// patches Relational never mints. Relational's consistency checks do not
 /// run; receipt minting owns them.
+/// Lower a decoded publication the way a receipt is lowered: Relational's
+/// consistency rules first, then the Bridge's own gates.
 #[cfg(test)]
 pub(crate) fn publication_patch_to_bridge_envelope(
     commit_id: CommitId,
@@ -27,11 +29,15 @@ pub(crate) fn publication_patch_to_bridge_envelope(
     snapshot_identity: TruthSnapshotIdentity,
     patch: &PublishedAuthoritativePatchEnvelope,
 ) -> TransitionOutcome<BridgeCommittedPatchEnvelope, RelationalBridgePublicationDenial> {
+    let patch = patch.canonicalized();
+    if let Err(denial) = patch.check_change_consistency() {
+        return TransitionOutcome::Denied(super::lowering_precision::consistency_denial(&denial));
+    }
     lower_canonical_patch(RelationalBridgePatchPublicationRequest {
         commit_id,
         branch_id,
         snapshot_identity,
-        patch: &patch.canonicalized(),
+        patch: &patch,
         admitted_widening: None,
         producer_metadata: BridgeProducerMetadata::bridge_harness_fixture(),
         source_record_patches_examined: patch.authoritative_record_patches.len() as u64,

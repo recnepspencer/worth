@@ -7,6 +7,7 @@ use worth_runtime_bridge::facade::{
 use super::{
     observation_bindings::RelationalBridgeSelectedObservation, RuntimeBridgeRelationalSource,
 };
+use crate::facade::change_source::RelationalObservationReadDenial;
 use crate::facade::identity::EntityId;
 use crate::facade::lineage::HistoricalLineageResolution;
 use crate::facade::transactions::RecordRef;
@@ -91,17 +92,18 @@ fn resolve_exact_lineage(
         admitted.entity_id.generation.0
     );
     let (resolution, visible_entities) = source.runtime.with_runtime(|runtime| {
+        let observation = admitted.observation.observation();
         let resolution = runtime
-            .record_history_at_observation(admitted.observation.observation(), admitted.entity_id)
+            .record_history_at_observation(observation, admitted.entity_id)
+            .map_err(foreign_lineage_observation)?
             .ok_or_else(|| {
                 lineage_error(format!(
                     "bridge continuity lineage adapter could not resolve record history for `{entity_label}`"
                 ))
             })?;
-        let visible_entities = runtime.visible_entities_for_lineages_at_observation(
-            admitted.observation.observation(),
-            &resolution.resolved,
-        );
+        let visible_entities = runtime
+            .visible_entities_for_lineages_at_observation(observation, &resolution.resolved)
+            .map_err(foreign_lineage_observation)?;
         Ok((resolution, visible_entities))
     })?;
     Ok(ResolvedLineageRequest {
@@ -109,6 +111,14 @@ fn resolve_exact_lineage(
         resolution,
         visible_entities,
     })
+}
+
+fn foreign_lineage_observation(
+    denial: RelationalObservationReadDenial,
+) -> BridgeLineageSourceError {
+    lineage_error(format!(
+        "bridge continuity lineage adapter read a retained observation from another runtime: {denial:?}"
+    ))
 }
 
 fn project_lineage_authority(

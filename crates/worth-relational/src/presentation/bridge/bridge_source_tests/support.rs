@@ -197,3 +197,19 @@ pub(super) fn runtime_with_test_schema() -> crate::facade::runtime::RelationalRu
         CascadeDeletePolicy::CascadeDeleteRelations,
     )
 }
+
+/// The ancestry work of one full walk from `head` down a linear history of
+/// `N` commits: `N` node visits, `N` catalog probes, and `N - 1` parent edges.
+///
+/// Counted from the head's ancestor closure, not from Relational's own
+/// selection, so an adapter that walks twice or walks less is caught.
+pub(super) fn linear_ancestry_work(
+    runtime: &crate::facade::runtime::RelationalRuntime,
+    head: crate::facade::history::CommitId,
+) -> usize {
+    let commits = runtime
+        .history()
+        .ancestor_closure_by_commit_id_order(head)
+        .len();
+    3 * commits - 1
+}

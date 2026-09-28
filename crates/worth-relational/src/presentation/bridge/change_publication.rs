@@ -81,7 +81,9 @@ pub(super) fn lower_change_receipt_outcome(
         }
         TransitionOutcome::Denied(denial) => TransitionOutcome::Denied(consistency_denial(&denial)),
         TransitionOutcome::Deferred(RelationalChangeReceiptDeferred::CommitVisibilityPending) => {
-            TransitionOutcome::Deferred(RelationalBridgePublicationDeferred::CommitVisibilityPending)
+            TransitionOutcome::Deferred(
+                RelationalBridgePublicationDeferred::CommitVisibilityPending,
+            )
         }
         TransitionOutcome::Stale(RelationalChangeReceiptStale::RuntimeAuthority) => {
             TransitionOutcome::Stale(RelationalBridgePublicationStale::RuntimeAuthority)
@@ -102,7 +104,8 @@ fn lower_change_receipt(
     context: &ChangeLoweringContext<'_>,
 ) -> RelationalBridgePublicationOutcome {
     let source_basis = change_source_basis(&receipt, context);
-    let adapter_semantic_identity = super::identities::relational_bridge_adapter_semantic_identity();
+    let adapter_semantic_identity =
+        super::identities::relational_bridge_adapter_semantic_identity();
     let provenance = source_provenance(
         receipt.runtime_instance_id(),
         context,
@@ -163,13 +166,15 @@ fn source_provenance(
     source_basis: Arc<str>,
 ) -> BridgeAuthoritativeSourceProvenance {
     match context.partition_role {
-        Some(partition_role) => BridgeAuthoritativeSourceProvenance::from_owner_partition_publication(
-            runtime_instance_id,
-            context.graph_role.clone(),
-            adapter_semantic_identity,
-            source_basis,
-            partition_role.clone(),
-        ),
+        Some(partition_role) => {
+            BridgeAuthoritativeSourceProvenance::from_owner_partition_publication(
+                runtime_instance_id,
+                context.graph_role.clone(),
+                adapter_semantic_identity,
+                source_basis,
+                partition_role.clone(),
+            )
+        }
         None => BridgeAuthoritativeSourceProvenance::from_owner_publication(
             runtime_instance_id,
             context.graph_role.clone(),

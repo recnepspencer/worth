@@ -251,9 +251,7 @@ impl RelationalBridgeObservationReleaseReceipt {
         self.component_release.is_some()
     }
 
-    pub fn component_release(
-        &self,
-    ) -> Option<&RelationalBranchRetentionReleaseReceipt> {
+    pub fn component_release(&self) -> Option<&RelationalBranchRetentionReleaseReceipt> {
         self.component_release.as_ref()
     }
 }

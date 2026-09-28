@@ -6,7 +6,9 @@ use worth_runtime_bridge::facade::{
 };
 
 use crate::facade::history::BranchId;
-use crate::presentation::bridge::relational_test_support::{create_entity_outcome, create_entity_outcome_on_branch, fork_branch};
+use crate::presentation::bridge::relational_test_support::{
+    create_entity_outcome, create_entity_outcome_on_branch, fork_branch,
+};
 
 use super::super::RuntimeBridgeRelationalSource;
 use super::support::{runtime_bridge_for_envelope, runtime_with_test_schema};
@@ -36,8 +38,16 @@ fn sibling_heads_sharing_a_commit_keep_exact_branch_snapshot_bindings() {
     let (storm_identity, maintenance_identity) = {
         let runtime = runtime.lock().unwrap();
         create_entity_outcome(&runtime, "shared-sibling-root");
-        fork_branch(&runtime, BranchId("storm".to_owned()), &BranchId("main".to_owned()));
-        fork_branch(&runtime, BranchId("maintenance".to_owned()), &BranchId("main".to_owned()));
+        fork_branch(
+            &runtime,
+            BranchId("storm".to_owned()),
+            &BranchId("main".to_owned()),
+        );
+        fork_branch(
+            &runtime,
+            BranchId("maintenance".to_owned()),
+            &BranchId("main".to_owned()),
+        );
         (
             runtime
                 .branch_identity(&BranchId("storm".to_owned()))
@@ -188,7 +198,11 @@ fn explicit_snapshot_request_rejects_an_earlier_sibling_commit() {
     let runtime = Arc::new(Mutex::new(runtime_with_test_schema()));
     let ancestor = create_entity_outcome(&runtime.lock().unwrap(), "shared-ancestor");
     let feature = BranchId("feature".to_owned());
-    fork_branch(&runtime.lock().unwrap(), feature.clone(), &BranchId("main".to_owned()));
+    fork_branch(
+        &runtime.lock().unwrap(),
+        feature.clone(),
+        &BranchId("main".to_owned()),
+    );
     let sibling =
         create_entity_outcome_on_branch(&runtime.lock().unwrap(), "feature-only", feature);
     let main_head = create_entity_outcome(&runtime.lock().unwrap(), "main-head");

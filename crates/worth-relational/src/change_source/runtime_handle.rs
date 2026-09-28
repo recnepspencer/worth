@@ -21,6 +21,7 @@ use crate::runtime::RelationalRuntime;
 #[derive(Clone)]
 pub struct RelationalRuntimeHandle {
     ownership: RuntimeOwnership,
+    runtime_instance_id: u64,
 }
 
 #[derive(Clone)]
@@ -33,14 +34,20 @@ impl RelationalRuntimeHandle {
     /// Handle a runtime that no writer mutates through a lock.
     pub fn immutable(runtime: Arc<RelationalRuntime>) -> Self {
         Self {
+            runtime_instance_id: runtime.runtime_instance_id(),
             ownership: RuntimeOwnership::Immutable(runtime),
         }
     }
 
     /// Handle a runtime shared with writers behind a mutex.
     pub fn shared(runtime: Arc<Mutex<RelationalRuntime>>) -> Self {
+        let runtime_instance_id = runtime
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .runtime_instance_id();
         Self {
             ownership: RuntimeOwnership::Shared(runtime),
+            runtime_instance_id,
         }
     }
 
@@ -58,9 +65,11 @@ impl RelationalRuntimeHandle {
         }
     }
 
-    /// The instance id of the handled runtime.
-    pub fn runtime_instance_id(&self) -> u64 {
-        self.with_runtime(RelationalRuntime::runtime_instance_id)
+    /// The instance id of the handled runtime. Read once when the handle is
+    /// made, so it takes no lock and is safe inside
+    /// [`with_runtime`](Self::with_runtime).
+    pub const fn runtime_instance_id(&self) -> u64 {
+        self.runtime_instance_id
     }
 }
 
@@ -68,7 +77,7 @@ impl std::fmt::Debug for RelationalRuntimeHandle {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         formatter
             .debug_struct("RelationalRuntimeHandle")
-            .field("runtime_instance_id", &self.runtime_instance_id())
+            .field("runtime_instance_id", &self.runtime_instance_id)
             .field(
                 "ownership",
                 &match self.ownership {

@@ -1,5 +1,6 @@
 use worth_foundational::facade::AspectKey;
 
+use super::RelationalObservationReadDenial;
 use crate::identity::data::{EntityId, KindId, RelationId};
 use crate::mvcc::RelationalBranchObservation;
 use crate::runtime::RelationalRuntime;
@@ -10,36 +11,50 @@ impl RelationalRuntime {
     ///
     /// Returns `None` when the root has no such entity, or holds a different
     /// generation of its slot. Later commits never change the answer.
+    ///
+    /// # Errors
+    ///
+    /// [`RelationalObservationReadDenial::ForeignObservation`] when another
+    /// runtime issued `observation`.
     pub fn entity_record_at_observation(
         &self,
         observation: &RelationalBranchObservation,
         entity_id: EntityId,
-    ) -> Option<EntityReadRecord> {
+    ) -> Result<Option<EntityReadRecord>, RelationalObservationReadDenial> {
+        self.admit_observation_read(observation)?;
         let root = observation.selected_root();
-        self.read_truth()
+        Ok(self
+            .read_truth()
             .authoritative_entity_record_for_id_from_exact_state(
                 root.as_ref(),
                 root.schema_authority().registry(),
                 entity_id,
-            )
+            ))
     }
 
     /// Read one relation exactly as `observation`'s retained root holds it.
     ///
     /// Returns `None` when the root has no such relation. Later commits never
     /// change the answer.
+    ///
+    /// # Errors
+    ///
+    /// [`RelationalObservationReadDenial::ForeignObservation`] when another
+    /// runtime issued `observation`.
     pub fn relation_record_at_observation(
         &self,
         observation: &RelationalBranchObservation,
         relation_id: RelationId,
-    ) -> Option<RelationReadRecord> {
+    ) -> Result<Option<RelationReadRecord>, RelationalObservationReadDenial> {
+        self.admit_observation_read(observation)?;
         let root = observation.selected_root();
-        self.read_truth()
+        Ok(self
+            .read_truth()
             .authoritative_relation_record_for_id_from_exact_state(
                 root.as_ref(),
                 root.schema_authority().registry(),
                 relation_id,
-            )
+            ))
     }
 }
 

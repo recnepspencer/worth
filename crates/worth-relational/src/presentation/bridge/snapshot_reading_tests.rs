@@ -95,7 +95,8 @@ fn snapshot_reader_rejects_undeclared_dotted_document_paths() {
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
     let created = create_entity_outcome(&runtime, "visible");
     let published_snapshot = created.snapshot.clone();
-    let published_entity = crate::presentation::bridge::relational_test_support::changed_entities(&created)[0];
+    let published_entity =
+        crate::presentation::bridge::relational_test_support::changed_entities(&created)[0];
 
     let snapshot_identity = bridge_snapshot_identity_for_handle(&published_snapshot);
     let reader = reader_for_current(
@@ -189,9 +190,7 @@ fn reader_for_current(
     let observation = basis.observation();
     assert_eq!(observation.version_id(), expected_version);
     RuntimePublicationSnapshotReader::for_observation_authority(
-        crate::facade::change_source::RelationalRuntimeHandle::immutable(
-            Arc::new(runtime),
-        ),
+        crate::facade::change_source::RelationalRuntimeHandle::immutable(Arc::new(runtime)),
         snapshot_identity,
         observation,
         None,
