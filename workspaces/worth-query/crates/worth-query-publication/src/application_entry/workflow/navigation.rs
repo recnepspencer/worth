@@ -33,6 +33,8 @@ type WorkflowNavigateBackPreparationResult<'application, 'principal, 'scope, Sch
         WorthQueryWorkflowAdvancePreparationDenial,
     >;
 
+/// A prepared backward navigation. `execute` returns the landed transition, or the progress
+/// outcome when none landed.
 pub struct WorthQueryWorkflowNavigateBackRequest<
     'application,
     'principal,

@@ -53,6 +53,9 @@ where
     }
 }
 
+/// Why a workflow definition request could not bind to the branch's program: the installed
+/// spec belongs to another schema, the adopted program could not be inspected, or the
+/// branch runs another program revision.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorkflowDefinitionBindingDenial {
     ForeignSchema,
@@ -60,6 +63,7 @@ pub enum WorkflowDefinitionBindingDenial {
     ProgramRevisionChanged,
 }
 
+/// Why a workflow definition publication or retirement did not prepare.
 #[derive(Debug)]
 pub enum WorkflowDefinitionPreparationDenial {
     ProductSelection(crate::basis::WorthQueryProductBranchAdmissionDenial),

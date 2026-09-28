@@ -1000,25 +1000,37 @@ let outcome      = prepared.publish();                  // Performed | NoEffect 
 Full guide:
 [Workflows](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md).
 
-A workflow is a branch-local, versioned graph of steps: operations, reads,
-assessments, conditions, evidence joins, approvals, and terminals. It is
-authored against an installed vocabulary. A purchase request, for example,
-goes from draft, through budget and vendor checks, to a manager's approval,
-and then to placing the order.
+A workflow is a branch-local, versioned graph of steps: operations,
+assessments, conditions, approvals, evidence joins, and terminals. There is no
+read-only node kind; a read that feeds a decision is an assessment or a
+condition. A workflow is authored against an installed vocabulary. A purchase
+request, for example, goes from draft, through budget and vendor checks, to a
+manager's approval, and then to placing the order.
 
-Design choices in the workflow runtime:
+Design choices in the workflow kernel (the part of Query that authorizes,
+adjudicates, and records workflow steps; applications reach it through the
+workflow runtime value, `WorthQueryWorkflowApplicationRuntime`):
 
-- **Every workflow action is a governed mutation.** Starting, advancing,
-  approving, and canceling are declared mutation intents, gated by installed
-  capabilities. Their bindings set `WORKFLOW_CONTROL`. The workflow runtime authorizes
-  and records these control steps itself. No handler may serve one:
-  registering a handler for one is refused.
+- **Every workflow action is a governed mutation.** Each control step is a
+  declared mutation intent whose binding sets `WORKFLOW_CONTROL`, gated by
+  one installed control capability. The authoring capability publishes and
+  retires definitions. The instance-start capability starts, cancels,
+  migrates, and continues instances on a fork. The advance capability
+  advances and navigates back. An approval's own capability authorizes it,
+  and a fresh authentication event signs it. The
+  kernel authorizes and records these control steps itself. No handler may
+  serve one: registering a handler for one is refused.
 - **Progress is caller-pumped.** There is no background scheduler, no callback,
   and no inbound-completion API. Each advance is one request. An unauthorized
   caller sees `AwaitingActor`.
 - **Advance names what it waits for.** `WorkflowProgressOutcome` returns
-  `AwaitingActor`, `AwaitingAssessment`, `AwaitingCondition`,
-  `AwaitingOperation`, `AwaitingEvidence`, `AwaitingApproval`, or `Completed`.
+  `Completed` when a step was recorded, or one of `AwaitingActor`,
+  `AwaitingAssessment`, `AwaitingCondition`, `AwaitingOperation`,
+  `AwaitingEvidence`, and `AwaitingApproval` for what the instance needs next.
+  A request that recorded no step says why: `Application` (the commit did not
+  land), `PreparationDenied`, `AuthenticationDenied`, or `IdempotencyDenied`.
+  `ProjectionDenied` is different: the commit landed, carries its receipt,
+  and only its projection was refused.
 - **Approvals need fresh authentication and a signature.** Replaying a
   recorded key is the only exception.
 - **Definitions have explicit predecessors.** Publishing names the revision it
@@ -1029,8 +1041,10 @@ Design choices in the workflow runtime:
   stands, and the outcome names every step whose effect was performed.
 - **Owner custody blocks unsafe moves.** While an external operation is
   unsettled, cancellation, migration, and fork continuation are refused.
-- **Everything is bounded:** steps, evidence bytes, live instances per
-  lineage, and an optional total deadline on the trusted clock.
+- **Everything is bounded:** steps and evidence bytes per instance lineage (an
+  instance and the instances it was migrated or continued from), live
+  instances per definition lineage, and an optional total deadline on the
+  trusted clock.
 
 ---
 

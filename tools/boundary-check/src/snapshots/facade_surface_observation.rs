@@ -154,6 +154,9 @@ fn collect_namespace_items(
                 };
                 collect_namespace_items(nested, &name, exports, path)?;
             }
+            // A module root declares its private submodules beside the
+            // re-exports; those declarations export nothing.
+            Item::Mod(module) if module.content.is_none() && is_private(&module.vis) => {}
             _ => {
                 return Err(format!(
                     "configured facade surface must contain only public re-exports or inline namespaces in {}",
@@ -163,6 +166,10 @@ fn collect_namespace_items(
         }
     }
     Ok(())
+}
+
+fn is_private(visibility: &Visibility) -> bool {
+    matches!(visibility, Visibility::Inherited)
 }
 
 fn qualify(prefix: &str, name: &str) -> String {
@@ -308,6 +315,22 @@ mod tests {
     #[test]
     fn configured_namespace_surface_rejects_behavior_items() {
         let path = temporary_facade("namespace-behavior", "pub fn bypass() {}\n");
+        let error = extract_namespace_exports(&path, None).unwrap_err();
+        fs::remove_file(&path).unwrap();
+        assert!(error.contains("only public re-exports or inline namespaces"));
+    }
+
+    #[test]
+    fn module_root_surface_skips_private_submodule_declarations() {
+        let path = temporary_facade("module-root", "mod inner;\npub use inner::Exported;\n");
+        let exports = extract_namespace_exports(&path, None).unwrap();
+        fs::remove_file(&path).unwrap();
+        assert_eq!(exports, ["Exported"]);
+    }
+
+    #[test]
+    fn module_root_surface_rejects_widened_submodule_declarations() {
+        let path = temporary_facade("module-root-widened", "pub(crate) mod inner;\n");
         let error = extract_namespace_exports(&path, None).unwrap_err();
         fs::remove_file(&path).unwrap();
         assert!(error.contains("only public re-exports or inline namespaces"));

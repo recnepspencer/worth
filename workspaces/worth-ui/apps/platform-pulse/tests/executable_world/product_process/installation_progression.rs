@@ -2,9 +2,7 @@ use crate::failure_teardown::{
     report_without_owned_resources, teardown_installed_world, PulseExecutableWorldFailure,
     PulseExecutableWorldFailureReport,
 };
-use crate::installation::{
-    CanonicalPlatformPulse, IsolatedPulseInstallation, PulseInstallationPath,
-};
+use crate::installation::{CanonicalPlatformPulse, IsolatedPulseInstallation};
 
 use super::{AwaitingFirstFrame, CargoBuiltPlatformPulse, Installed, PulseExecutableWorld};
 
@@ -15,19 +13,6 @@ impl PulseExecutableWorld<Installed> {
         let installation = IsolatedPulseInstallation::install(canonical).map_err(|failure| {
             report_without_owned_resources(PulseExecutableWorldFailure::Installation(failure))
         })?;
-        Ok(Self {
-            state: Installed { installation },
-        })
-    }
-
-    pub(crate) fn install_at(
-        canonical: CanonicalPlatformPulse,
-        path: &PulseInstallationPath,
-    ) -> Result<Self, PulseExecutableWorldFailureReport> {
-        let installation =
-            IsolatedPulseInstallation::install_at(canonical, path).map_err(|failure| {
-                report_without_owned_resources(PulseExecutableWorldFailure::Installation(failure))
-            })?;
         Ok(Self {
             state: Installed { installation },
         })
@@ -56,7 +41,6 @@ impl PulseExecutableWorld<Installed> {
                 installation,
                 process: launch.process,
                 lifecycle: launch.lifecycle,
-                launch_started: launch.launch_started,
             },
         })
     }

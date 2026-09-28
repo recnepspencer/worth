@@ -51,6 +51,8 @@ impl PerformedWorkflowInstanceCancellation {
     }
 }
 
+/// What executing a workflow instance cancellation produced. `ProjectionDenied` means the
+/// commit landed but its receipt does not record this cancellation on the instance.
 #[derive(Debug)]
 pub enum WorkflowInstanceCancellationOutcome {
     Cancelled(PerformedWorkflowInstanceCancellation),

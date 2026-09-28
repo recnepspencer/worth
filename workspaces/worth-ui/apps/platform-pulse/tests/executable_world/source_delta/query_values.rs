@@ -1,7 +1,6 @@
 use crate::installation::IsolatedPulseInstallation;
 
-use super::atomic_replacement::{self, AppliedPulseSourceDelta, PulseSourceActionFailure};
-use super::PulseSourceDeltaIdentity;
+use super::atomic_replacement::{self, PulseSourceActionFailure};
 
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct QueryStatusV1;
@@ -15,10 +14,9 @@ impl QueryStatusV1 {
     pub(crate) fn apply(
         self,
         installation: &IsolatedPulseInstallation,
-    ) -> Result<AppliedPulseSourceDelta<Self>, PulseSourceActionFailure> {
+    ) -> Result<(), PulseSourceActionFailure> {
         atomic_replacement::apply_path(
             installation.source_root().join("platform-pulse-value.json"),
-            PulseSourceDeltaIdentity::QueryStatusV1,
             include_bytes!("../../../query_samples/status-v1.json"),
         )
     }
@@ -30,10 +28,9 @@ impl QueryStatusV2 {
     pub(crate) fn apply(
         self,
         installation: &IsolatedPulseInstallation,
-    ) -> Result<AppliedPulseSourceDelta<Self>, PulseSourceActionFailure> {
+    ) -> Result<(), PulseSourceActionFailure> {
         atomic_replacement::apply_path(
             installation.source_root().join("platform-pulse-value.json"),
-            PulseSourceDeltaIdentity::QueryStatusV2,
             include_bytes!("../../../query_samples/status-v2.json"),
         )
     }

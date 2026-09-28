@@ -2,7 +2,9 @@
 
 > **Internal engine surface.** This page documents `WorthQueryWorkspace` (`worth_query::facade`), the engine surface that `worth-ui-query-binding` uses. Application code uses `worth-query-decl` and `worth-query-host`; start with the [application front door](ordinary-application-front-door.md).
 
-This reference is generated from the hard prohibition registry. Do not edit it without updating the registry-owned projection test.
+Each row names a seam Query deliberately does not offer, and the lane to use instead. The compiler enforces every row: the method or type is private to the crate, or it is absent altogether. `WorthQueryWorkspace` has no `write`, `batch` or existing-truth methods, and the raw digest, basis and lifecycle entry points were deleted. Code that reaches for one of them does not build.
+
+This table is maintained by hand. It was once generated from a hard-prohibition registry, which was removed with the rest of the consumer boundary audit on 2026-08-23. When you seal, open or delete one of these seams, update its row in the same change. Application code reaches Query only through `worth-query-decl` and `worth-query-host`, whose exports boundary-check snapshots in `tools/boundary-check/snapshots/facades.toml`, so reopening a seam to applications also shows up there in review. This engine facade (`worth_query::facade`) has no such snapshot; this table and code review are its guard.
 
 | Seam | Forbidden symbol | Enforcement | Replacement lane | Rationale |
 | --- | --- | --- | --- | --- |

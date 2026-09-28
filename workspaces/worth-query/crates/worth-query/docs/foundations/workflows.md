@@ -15,9 +15,9 @@ and publishes it on one branch with an explicit expected predecessor. An
 instance is one run of one pinned definition revision on one branch. Nothing
 moves on its own: the caller pumps every step with an ordinary Query request,
 and each request returns a typed outcome that says what the instance now needs.
-The kernel authorizes and records its own control steps. It enforces step,
-evidence, lineage, and deadline budgets, and it keeps performed effects when an
-instance is cancelled, migrated, or continued on a fork.
+The workflow kernel authorizes and records its own control steps. It enforces
+step, evidence, live-instance, and deadline budgets, and it keeps performed
+effects when an instance is canceled, migrated, or continued on a fork.
 
 ## Contents
 
@@ -61,24 +61,36 @@ instance is cancelled, migrated, or continued on a fork.
 | Workflow spec | A pure marker type that implements `ApplicationWorkflowSpec`. It names a workflow vocabulary and its schema. Declaring it installs and authorizes nothing. |
 | Vocabulary | The operations, assessments, conditions, approvals, and control capabilities a spec may use, installed against one installed program. |
 | Definition | A validated, bound, published workflow graph with an identity (`ApplicationWorkflowDefinitionIdentity`). It lives on one branch. |
-| Lineage | The chain of definition revisions that share one identity. A new revision names its predecessor. |
+| Lineage (definition lineage) | The chain of definition revisions that share one identity. A new revision names its predecessor. Live-instance budgets and retirement apply per definition lineage. |
 | Instance | One run of one pinned definition revision on one branch. |
+| Instance lineage | An instance together with the instances it was migrated or continued from. The step and evidence budgets and the deadline belong to the instance lineage, so a successor inherits what its sources spent. |
 | Node | One step in a definition. Each node has a kind (see [Node kinds](#node-kinds)). |
 | Node path | The string that names a node inside a definition, for example `approval` or `checks/budget`. Nodes inside an expanded component are prefixed with the component occurrence. |
-| Control step | A workflow action that the kernel authorizes and records itself: definition authoring, instance start, advance, or approval. |
+| Transition | One recorded step of an instance: the node it settled and the control outcome it took. `PerformedWorkflowTransition` is its public receipt. |
+| Control step | A workflow action that the kernel authorizes and records itself, with no application handler: publishing or retiring a definition, starting, canceling, migrating, or continuing an instance, advancing, and approving. Its binding sets `WORKFLOW_CONTROL`. See [Control steps](#control-steps-and-workflow_control). |
 | Pump | One caller request that asks the kernel to take the next step. |
+| Workflow kernel | The part of Query that authorizes, adjudicates, and records workflow steps. Application code reaches it only through the workflow runtime. |
+| Workflow runtime | `WorthQueryWorkflowApplicationRuntime`: the host value that carries the installed vocabularies. Instance requests take it (`&workflow` in the examples); definition publication does not. |
 | Owner custody | The state of an external operation that committed but whose settlement the owner has not yet accepted. |
+
+Two older `worth-query` modules also use the word *workflow*, and neither is
+this kernel. `worth_query::facade::workflow` declares preview, promotion,
+writeback, and branch merge. `worth_query::facade::installed::workflow`
+traces staged runs of installed domain operations and compares their replays.
+The audience facades re-export neither, and neither can start, advance, or
+read a workflow instance.
 
 ## Where the names live
 
 | Facade module | What it holds |
 |---|---|
 | `worth_query_decl::facade::application_program` and `worth_query_host::facade::declaration::application_program` | `ApplicationWorkflowSpec`, builders, node kinds, control outcomes, limits, retry |
+| `worth_query_decl::facade` and `worth_query_host::facade` (crate root) | The `worth_query_workflow!` authoring macro |
 | `worth_query_host::facade::domain` | `WorthQueryApplicationWorkflowSpecInstallation`, `WorthQueryApplicationWorkflowResourceCeiling`, `WorthQueryInstalledApplicationWorkflowSpec`, `WorthQueryInstalledWorkflowDefinitionContract`, installation denials |
 | `worth_query_host::facade::application_installation` | `WorthQueryProgramApplicationRuntime`, `WorthQueryWorkflowApplicationRuntime`, `WorthQueryWorkflowRuntimeBindingDenial`, `WorthQueryWorkflowVocabulary` |
 | `worth_query_host::facade::application_discovery` | `WorthQueryWorkflowDefinitionDiscovery` |
-| `worth_query_host::facade::application_entry` | Every workflow request, outcome, and preparation denial |
-| `worth_query_host::facade::primary_graph` | `RequiredWorkflowActor`, `WorthQueryApplicationAttemptDenialKind`, adoption inventory types |
+| `worth_query_host::facade::application_entry` | Every workflow request, outcome, and preparation denial, and every `Required*` value an outcome carries (`RequiredWorkflowActor`, `RequiredWorkflowApproval`, and the rest) |
+| `worth_query_host::facade::primary_graph` | `WorthQueryApplicationAttemptDenialKind`, adoption inventory types |
 
 ## Lifecycle at a glance
 
@@ -125,7 +137,16 @@ Every workflow action is a declared application mutation intent. Its binding
 |---|---|---|
 | `REQUIRES_APPLICATION_PROGRAM` | `false` | The mutation must commit under the program the branch runs. |
 | `REQUIRES_WORKFLOW_AUTHORITY` | `false` | The mutation is a guarded effect. It runs only with authority issued by a workflow operation step. |
-| `WORKFLOW_CONTROL` | `false` | The mutation is a workflow control step: definition authoring, instance start, advance, or approval. |
+| `WORKFLOW_CONTROL` | `false` | The mutation is a workflow control step (see the table below). |
+
+Each control step is authorized by one installed control capability:
+
+| Control step | Request method | Authorizing capability |
+|---|---|---|
+| Publish or retire a definition | `prepare_workflow_publication`, `prepare_workflow_definition_retirement` | `authoring_capability` |
+| Start, cancel, migrate, or continue an instance on a fork | `prepare_workflow_instance_start`, `prepare_workflow_instance_cancellation`, `prepare_workflow_instance_migration`, `prepare_workflow_fork_continuation` | `instance_start_capability` |
+| Advance, navigate back | `prepare_workflow_advance`, `prepare_workflow_navigate_back` | `advance_capability` |
+| Approve or reject | `prepare_workflow_approval` | the approval's own capability (`.approval::<Capability, ..>()`) |
 
 Why no handler serves a control step:
 
@@ -143,14 +164,14 @@ Install the spec against one installed schema and one installed program:
 
 ```rust,ignore
 let resources = WorthQueryApplicationWorkflowResourceCeiling::new(
-    32,                                          // max_definition_nodes
-    64,                                          // max_definition_connections
-    4,                                           // max_definition_effects
+    32,                  // maximum_definition_nodes
+    64,                  // maximum_definition_connections
+    4,                   // maximum_definition_effects
     ApplicationWorkflowComponentLimits::new(32, 4, 128, 256, 256).unwrap(),
-    64 * 1024,                                   // max_canonical_bytes
-    32,                                          // max_live_instances (per lineage)
-    128,                                         // max_retained_transitions_per_instance
-    256 * 1024,                                  // max_evidence_bytes
+    64 * 1024,           // maximum_canonical_bytes
+    32,                  // maximum_live_instances (per definition lineage)
+    128,                 // maximum_retained_transitions_per_instance (per instance lineage)
+    256 * 1024,          // maximum_evidence_bytes (per instance lineage)
 )
 .expect("every ceiling is nonzero");
 
@@ -183,7 +204,7 @@ read through `kind()` and `subject()`:
 | Kind | Cause |
 |---|---|
 | `OperationNotInProgram` | A member's or control capability's operation is not in the named program. |
-| `OperationNotInstalled`, `AssessmentNotInstalled`, `ApprovalNotInstalled` | The member was not installed. |
+| `OperationNotInstalled`, `AssessmentNotInstalled`, `ApprovalNotInstalled` | The member was not installed. A condition is an installed query like an assessment, so an uninstalled condition member is also `AssessmentNotInstalled`. |
 | `AuthoringCapabilityNotInstalled`, `InstanceStartCapabilityNotInstalled`, `AdvanceCapabilityNotInstalled` | The control capability was not installed. |
 | `MissingAuthoringCapability`, `MissingInstanceStartCapability`, `MissingAdvanceCapability` | `finish()` ran without that control capability. |
 | `DuplicateVocabularyMember` | A member was added twice. |
@@ -199,8 +220,8 @@ selected branch runs and uses the vocabulary installed for that program.
 
 - `WorthQueryProgramApplicationRuntime::retain_workflow_spec(installed, signing_owner)` consumes the program runtime and returns `WorthQueryWorkflowApplicationRuntime`. The second argument is the signing owner of the installed authentication event owner (`WorthQueryInstalledAuthenticationEventOwner::signing_owner`). Approvals are signed through it.
 - `WorthQueryWorkflowApplicationRuntime::support_workflow_spec(installed)` adds the same spec installed against another rostered program. Use it so a branch keeps a vocabulary after it adopts that program.
-- `supported_program::<Program>()` returns a `WorthQuerySupportedProgramHandle`; its `installed_program()` is what you install the extra vocabulary against.
-- `program_runtime()` returns the underlying program runtime, which guarded effects execute through.
+- `program_runtime()` returns the underlying `WorthQueryProgramApplicationRuntime`, which guarded effects execute through.
+- `WorthQueryProgramApplicationRuntime::supported_program::<Program>()` (reach it as `workflow.program_runtime().supported_program::<Program>()`) returns `Option<WorthQuerySupportedProgramHandle>`. It is `None` unless this host rostered that program and still supports it. The handle's `installed_program()` is what you install the extra vocabulary against.
 
 `WorthQueryWorkflowRuntimeBindingDenial`:
 
@@ -246,8 +267,9 @@ assessment or a condition.
 
 ### Limits
 
-`ApplicationWorkflowDefinitionLimits::new(max_nodes, max_connections, max_effects,
-component_limits, max_canonical_bytes)` returns `None` when a limit is zero.
+`ApplicationWorkflowDefinitionLimits::new(maximum_nodes, maximum_connections,
+maximum_effects, component_limits, maximum_canonical_bytes)` returns `None` when
+a limit is zero.
 `ApplicationWorkflowComponentLimits::new(..)` takes five limits for expanded
 components. `with_total_deadline(Duration)` adds a total deadline (see
 [Budgets and deadlines](#budgets-and-deadlines)).
@@ -276,9 +298,29 @@ Connection methods return `&mut Self` and chain:
 | `approval_authority(&approval, &operation)` | The approval authorizes that operation. |
 | `operation_input(&operation, &operation)` | One operation's input comes from another's proposal. |
 
-`finish()` returns `AuthoredWorkflowDefinition<Spec>`. `validate()` checks the
-whole graph and returns `ValidatedWorkflowDefinition<Spec>` (with `identity()`
-and `component_expansions()`).
+`finish()` returns `Result<AuthoredWorkflowDefinition<Spec>,
+ApplicationWorkflowAuthoringDenial>`. `validate()` checks the whole graph and
+returns `ValidatedWorkflowDefinition<Spec>` (with `identity()` and
+`component_expansions()`).
+
+The `worth_query_workflow!` macro is shorthand for the same builder, not a
+second grammar. It creates the builder, runs your block, and evaluates to the
+`finish()` result. Use it inside a function that returns
+`Result<_, ApplicationWorkflowAuthoringDenial>`, because it applies `?` to
+`new`:
+
+```rust,ignore
+let authored = worth_query_workflow! {
+    spec: PurchaseWorkflowSpec;
+    identity: identity;
+    limits: limits;
+    build: |builder| {
+        let draft = builder.operation_binding::<DraftRequestBinding>("draft")?;
+        let done = builder.terminal("done")?;
+        builder.start(&draft).control(&draft, ApplicationWorkflowControlOutcome::Completed, &done);
+    }
+}?;
+```
 
 ### Bounded retry
 
@@ -412,7 +454,7 @@ or `ProjectionDenied(..)`.
 | Variant | What the instance needs next |
 |---|---|
 | `Completed(PerformedWorkflowTransition)` | Nothing; a step was recorded. `node_path()` names it; `terminal()` says whether the instance ended. |
-| `AwaitingActor(RequiredWorkflowActor)` | The pumping principal is not authorized for this step. `denial()` explains why. |
+| `AwaitingActor(RequiredWorkflowActor)` | The pumping principal is not authorized for this step. `instance()` names the instance; `denial()` says why. A principal authorized for the step pumps the same instance again. |
 | `AwaitingAssessment(RequiredWorkflowAssessment)` | Evidence from an assessment. `node_path()` names it. |
 | `AwaitingCondition(RequiredWorkflowCondition)` | A condition result. |
 | `AwaitingOperation(RequiredWorkflowOperation)` | A guarded effect under the issued authority. |
@@ -529,7 +571,8 @@ let committed = runtime
 - `for_workflow_operation` returns `WorthQueryWorkflowOperationBindingDenial` if the intent does not match the requirement or no authority was issued (`AuthorityUnavailable`).
 - `execute_in_program` resolves the program from the request's branch and returns `WorthQueryApplicationMutationOutcome` (for example `Committed { .. }`).
 - After the effect commits, advance again. The kernel records the step and follows `Completed`.
-- For an external effect whose owner holds custody, `accept_operation_from_owner` accepts the owner-resolved receipt; `WorthQueryWorkflowOperationOwnerPosture` reports what the owner saw. `for_workflow_operation_recovery` and `prepare_workflow_operation_recovery_from_owner` bind only the exact performed operation for recovery; they do not issue authority for a new effect.
+- For an external effect whose owner holds custody, `accept_operation_from_owner` accepts the owner-resolved receipt and returns `WorkflowProgressOutcome`, or `WorthQueryWorkflowOperationOwnerAcceptanceDenial`. `WorthQueryWorkflowOperationOwnerPosture` reports what the owner saw.
+- Recovery of an owner operation binds only the exact performed operation. It never issues authority for a new effect. First bind the request with `for_workflow_operation_recovery(&workflow, &required)`, which returns `WorthQueryWorkflowOperationBindingDenial` if the intent does not match. Without that binding, recovery preparation is refused with `NotWorkflowBound`. `prepare_workflow_operation_recovery_from_owner` returns a `WorthQueryPreparedWorkflowOperationRecovery` or `WorthQueryWorkflowOperationRecoveryPreparationDenial`. Its `safe_retry()` returns the safe-retry admission or `WorthQueryWorkflowOperationRecoveryDenial`, which hands the prepared recovery back through `into_recovery()` when it can be tried again. `accept_recovered_operation_from_owner` then accepts the recovered receipt, with the same outcome and denial as `accept_operation_from_owner`.
 
 ## Navigate back
 
@@ -582,7 +625,7 @@ instance where it stands, on the request's branch.
 
 - Cancellation is not rollback. Every effect the instance performed remains, and the outcome names each one.
 - The start capability authorizes cancellation.
-- The same key replays exactly. Any other request for a cancelled instance is refused with `WorkflowInstanceCancelled`.
+- The same key replays exactly. Any other request for a canceled instance is refused with `WorkflowInstanceCancelled`.
 - A step admitted before the cancellation commits goes stale before its effect. A cancellation prepared before a step settles goes stale in turn.
 - Other instances keep running.
 - Cancellation still works when the instance has spent its step budget or passed its deadline.
@@ -606,16 +649,16 @@ Accept the owner's receipt (see [Operations](#operations)), then retry.
 
 | Budget | Where it is set | Refusal |
 |---|---|---|
-| Steps per lineage | `max_retained_transitions_per_instance` in the resource ceiling | `WorkflowInstanceCapacityUnavailable` |
-| Evidence bytes per lineage | `max_evidence_bytes` in the resource ceiling | `WorkflowInstanceEvidenceCapacityUnavailable` |
-| Live instances per lineage | `max_live_instances` in the resource ceiling | `WorkflowLineageCapacityUnavailable` |
+| Steps per instance lineage | `maximum_retained_transitions_per_instance` in the resource ceiling | `WorkflowInstanceCapacityUnavailable` |
+| Evidence bytes per instance lineage | `maximum_evidence_bytes` in the resource ceiling | `WorkflowInstanceEvidenceCapacityUnavailable` |
+| Live instances per definition lineage | `maximum_live_instances` in the resource ceiling | `WorkflowLineageCapacityUnavailable` |
 | Total deadline | `ApplicationWorkflowDefinitionLimits::with_total_deadline` | `WorkflowInstanceDeadlineElapsed`, `WorkflowTrustedTimeUnavailable` |
 | History reconstruction | `with_history_reconstruction_budget` in the resource ceiling | `WorkflowHistoryReconstructionBudgetExceeded` |
 
-- **Steps.** An instance's lineage (the instance and any successors) shares one step budget. Recorded steps still replay and the instance can still be cancelled after the budget is spent. Ending other instances frees nothing for it.
-- **Evidence.** When accepting evidence would exceed the ceiling, the instance stays awaiting. It can still be cancelled or navigate without new evidence.
-- **Live instances.** A new start is refused when the lineage already holds the maximum. A retry of a recorded start still replays. Cancelling or completing an instance frees room.
-- **Deadline.** The deadline is whole, nonzero milliseconds of trusted time from the start, measured on the installed clock. A successor keeps the earlier of its source's deadline and its own. After it elapses, the instance takes no further step, migration, or fork continuation; it can still be cancelled. If the clock cannot be read, the step is refused with `WorkflowTrustedTimeUnavailable`. A late step that reaches commit after the deadline surfaces as the commit denial kind `WorkflowSettlementDenied { kind }`.
+- **Steps.** One instance lineage shares one step budget, despite the `_per_instance` in the ceiling's name: a successor counts the steps its sources took. Recorded steps still replay and the instance can still be canceled after the budget is spent. Ending other instances frees nothing for it.
+- **Evidence.** When accepting evidence would exceed the ceiling, the instance stays awaiting. It can still be canceled or navigate without new evidence.
+- **Live instances.** A new start is refused when the definition lineage already holds the maximum. A retry of a recorded start still replays. Canceling or completing an instance frees room.
+- **Deadline.** The deadline is whole, nonzero milliseconds of trusted time from the start, measured on the installed clock. A successor keeps the earlier of its source's deadline and its own. After it elapses, the instance takes no further step, migration, or fork continuation; it can still be canceled. If the clock cannot be read, the step is refused with `WorkflowTrustedTimeUnavailable`. A late step that reaches commit after the deadline surfaces as the commit denial kind `WorkflowSettlementDenied { kind }`.
 
 ## Observations and notifications
 
@@ -717,8 +760,11 @@ Read with `WorthQueryApplicationAttemptDenial::kind()` and `subject()`.
 | `WorthQueryWorkflowRuntimeBindingDenial` | `retain_workflow_spec`, `support_workflow_spec` |
 | `WorthQueryWorkflowDefinitionDiscoveryDenial` | Discovery |
 | `WorthQueryWorkflowAdvancePreparationDenial` | `prepare_workflow_advance` |
-| `WorthQueryWorkflowAssessmentAcceptanceDenial`, `WorthQueryWorkflowConditionAcceptanceDenial`, `WorthQueryWorkflowOperationAcceptanceDenial` | Accepting evidence, conditions, owner receipts |
-| `WorthQueryWorkflowOperationBindingDenial` | `for_workflow_operation` |
+| `WorthQueryWorkflowAssessmentAcceptanceDenial`, `WorthQueryWorkflowConditionAcceptanceDenial` | Accepting assessment evidence and condition results |
+| `WorthQueryWorkflowOperationOwnerAcceptanceDenial` | `accept_operation_from_owner`, `accept_recovered_operation_from_owner`. Variants: `Binding`, `Request`, `Inspection`, `Owner`, `RecoveryNotRequired`, and `Acceptance(WorthQueryWorkflowOperationAcceptanceDenial)` |
+| `WorthQueryWorkflowOperationRecoveryPreparationDenial` | `prepare_workflow_operation_recovery_from_owner` |
+| `WorthQueryWorkflowOperationRecoveryDenial` | `safe_retry()` on a prepared operation recovery |
+| `WorthQueryWorkflowOperationBindingDenial` | `for_workflow_operation`, `for_workflow_operation_recovery` |
 | `WorthQueryOrdinaryWorkflowPublicationDenial` | Ordinary lane publication |
 
 ## You can
@@ -740,7 +786,7 @@ Read with `WorthQueryApplicationAttemptDenial::kind()` and `subject()`.
 - Approve without a fresh authentication event, except when replaying a recorded key.
 - Run a guarded effect without the authority its workflow step issued.
 - Act on an instance from another branch.
-- Undo a performed effect by cancelling.
+- Undo a performed effect by canceling.
 - Cancel, migrate, or continue on a fork while an owner operation is unsettled.
 - Exceed the step, evidence, or live-instance budgets by retrying.
 - Hold or construct compiled definitions. `CompiledWorkflowDefinition` is internal.
@@ -886,9 +932,9 @@ chooses the next request.
 
 - **Caller-pumped progress.** Nothing happens between rows unless a caller sends the next request.
 - **Bounded retry.** A third rejection takes `RetryExhausted` to `declined`.
-- **Evidence budget.** Each accepted check charges the lineage's evidence budget.
-- **Owner custody.** If `PlaceOrder` is an external effect, the request cannot be cancelled or migrated until its owner receipt is accepted.
-- **Cancellation.** Cancelling after step 12 leaves the placed order recorded; the outcome names it.
+- **Evidence budget.** Each accepted check charges the instance lineage's evidence budget.
+- **Owner custody.** If `PlaceOrder` is an external effect, the request cannot be canceled or migrated until its owner receipt is accepted.
+- **Cancellation.** Canceling after step 12 leaves the placed order recorded; the outcome names it.
 - **Deadline.** After seven days of trusted time, no further step runs; cancellation still works.
 - **Revisions.** Publishing a successor with `Published(first)` makes new starts on the first revision return `Superseded`. Running instances stay pinned.
 - **Adoption.** If a new program revision changes `VendorApproved`, the definition becomes incompatible. See [programs-and-adoption.md](programs-and-adoption.md) for what each instance may do.

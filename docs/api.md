@@ -389,7 +389,7 @@ Use `--document-private-items` only when you are maintaining the platform.
 | You want to... | Import | Start at |
 |---|---|---|
 | Build an application with governed reads and writes | `worth-query-decl` + `worth-query-host` | [§3](#3-application-api), then the `ordinary_product_workflow` example |
-| Add a multi-step process with human decisions | the same two | [authored_workflow](../workspaces/worth-query/crates/worth-query-certification/examples/authored_workflow/main.rs), [How WORTH Works §13](how-it-works.md#13-workflows) |
+| Add a multi-step process with human decisions | the same two | [Workflows guide](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md), [authored_workflow](../workspaces/worth-query/crates/worth-query-certification/examples/authored_workflow/main.rs), [How WORTH Works §13](how-it-works.md#13-workflows) |
 | Evolve your application's program on a branch, then adopt it | the same two | [How WORTH Works §12](how-it-works.md#12-branches-programs-and-adoption), [host README](../workspaces/worth-query/crates/worth-query-host/README.md) |
 | Write pure, reusable schema meaning | `worth-schema-core` / `worth-schema-graph` | [§5](#5-schema-contracts) |
 | Prove that an execution replays exactly | `worth-query-replay` (cert crates only) | [§4](#4-certification-api) |

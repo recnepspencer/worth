@@ -38,6 +38,8 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowOperation<Schema, Operatio
     }
 }
 
+/// A guarded operation the instance waits on: the operation and input it expects, and the
+/// authority slot that lets exactly one matching effect run.
 #[derive(Clone, Debug)]
 pub struct RequiredWorkflowOperation {
     pub(super) branch: crate::basis::WorthQueryProductBranch,

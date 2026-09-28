@@ -30,6 +30,8 @@ pub struct PreparedWorkflowProposal<Schema, Operation, Input, Scope> {
     >,
 }
 
+/// A reference to a published workflow proposal: its identity, the operation and input it
+/// proposes, and the node path it was proposed at.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct PublishedWorkflowProposalRef {
     branch: crate::basis::WorthQueryProductBranch,
@@ -77,6 +79,8 @@ impl PublishedWorkflowProposalRef {
     }
 }
 
+/// A workflow proposal that landed: the proposal, the transition it opened, its commit
+/// receipt, and whether the idempotency key replayed an already-landed commit.
 #[derive(Debug)]
 pub struct PerformedWorkflowProposal {
     proposal: PublishedWorkflowProposalRef,
@@ -103,6 +107,8 @@ impl PerformedWorkflowProposal {
     }
 }
 
+/// What executing a workflow proposal produced. `ProjectionDenied` means the commit landed
+/// but its receipt did not record this proposal on the instance's branch.
 #[derive(Debug)]
 pub enum WorkflowProposalOutcome {
     Published(PerformedWorkflowProposal),

@@ -12,6 +12,7 @@ use worth_query_installation::facade::ApplicationSchema;
 #[doc(hidden)]
 pub struct WorthQueryMutationSourceUnprepared;
 
+/// Marks a mutation request whose source expectation is settled.
 #[doc(hidden)]
 pub struct WorthQueryMutationSourcePrepared;
 
@@ -20,6 +21,8 @@ pub(super) enum WorthQueryMutationExpectedSource<Query> {
     ResultSet(worth_query_execution::facade::primary_graph::WorthQueryObservedResultSet<Query>),
 }
 
+/// A mutation request under construction. State its source expectation and preconditions,
+/// then bind an idempotency key.
 pub struct WorthQueryApplicationMutationRequest<
     'application,
     'principal,
@@ -50,6 +53,7 @@ where
     source_preparation: std::marker::PhantomData<SourcePreparation>,
 }
 
+/// A mutation request bound to its idempotency key, ready to execute.
 pub struct WorthQueryApplicationMutationRequestWithIdempotency<
     'application,
     'principal,

@@ -9,6 +9,7 @@ use super::{
     WorthQueryApplicationProgramAdoptionRequest,
 };
 
+/// Program operations on one branch: compare, inspect, adopt and recover.
 pub struct WorthQueryApplicationProgramsRequest<'application, 'principal, 'scope, Schema> {
     pub(super) application: &'application worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     // Principal-specific adoption authorization enters with Batch 3 custody.
@@ -18,6 +19,8 @@ pub struct WorthQueryApplicationProgramsRequest<'application, 'principal, 'scope
     pub(super) branch: worth_query_execution::facade::product::WorthQueryProductBranch,
 }
 
+/// Why recovering an interrupted program adoption failed. `into_recovery` returns the
+/// recovery so it can be tried again.
 pub enum WorthQueryApplicationProgramAdoptionRecoveryFailure {
     ProductSelection {
         denial:
@@ -27,6 +30,7 @@ pub enum WorthQueryApplicationProgramAdoptionRecoveryFailure {
     Recovery(worth_query_execution::facade::primary_graph::WorthQueryBranchAdoptionRecoveryFailure),
 }
 
+/// Why the branch's adopted program could not be inspected.
 #[derive(Debug)]
 pub enum WorthQueryApplicationProgramInspectionDenial {
     ProductSelection(

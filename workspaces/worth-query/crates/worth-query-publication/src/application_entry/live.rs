@@ -36,6 +36,8 @@ type LiveLease<'application, Schema, Intent> = WorthQueryApplicationLiveLease<
     <Intent as ApplicationLiveQueryIntent<Schema>>::LiveCause,
 >;
 
+/// Bounds for a live query subscription: its buffer capacity, maximum results and maximum
+/// work. Build them with `bounded`.
 pub struct WorthQueryApplicationLiveLimits {
     pub(super) buffer_capacity: usize,
     pub(super) maximum_results: usize,
@@ -56,6 +58,8 @@ impl WorthQueryApplicationLiveLimits {
     }
 }
 
+/// Why a live query subscription did not open. `RetainedBasis` means `subscribe` was called
+/// on a request pinned to a retained observation.
 #[derive(Debug)]
 pub enum WorthQueryApplicationLiveOpenRequestDenial {
     RetainedBasis,
@@ -80,6 +84,8 @@ pub enum WorthQueryApplicationLiveOpenRequestDenial {
     Open(worth_query_execution::facade::primary_graph::WorthQueryApplicationLiveOpenDenial),
 }
 
+/// Why a live subscription could not take its next result. `ForeignApplication` and
+/// `ForeignBranch` mean the fresh request came from another runtime or branch.
 #[derive(Debug)]
 pub enum WorthQueryApplicationLiveNextDenial {
     ForeignApplication,
@@ -95,6 +101,8 @@ pub enum WorthQueryApplicationLiveNextDenial {
     ),
 }
 
+/// An open live query subscription. `next` takes the next result against a fresh request;
+/// `close` ends it.
 pub struct WorthQueryApplicationLiveSubscription<'application, Schema, Intent>
 where
     Schema: ApplicationSchema,

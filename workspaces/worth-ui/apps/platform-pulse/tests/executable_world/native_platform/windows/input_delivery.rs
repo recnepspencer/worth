@@ -10,30 +10,6 @@ use crate::external_observation::{
 
 use super::NativePlatformFailure;
 
-pub(super) fn deliver(
-    window: &HWND,
-    observed: ProcessBoundNativeClientAreaObservation,
-    kind: NativeInputProbeKind,
-) -> Result<NativeInputDeliveryObservation, NativePlatformFailure> {
-    let bounds = observed.bounds();
-    let screen_x = bounds
-        .left()
-        .checked_add_unsigned(bounds.width() / 2)
-        .ok_or(NativePlatformFailure::InvalidCaptureWindowBounds)?;
-    let screen_y = bounds
-        .top()
-        .checked_add_unsigned(bounds.height() / 2)
-        .ok_or(NativePlatformFailure::InvalidCaptureWindowBounds)?;
-    deliver_at(
-        window,
-        observed,
-        kind,
-        (screen_x, screen_y),
-        None,
-        NativeKeyboardInput::Single(co::VK::CHAR_A),
-    )
-}
-
 pub(super) fn deliver_keyboard_command(
     window: &HWND,
     observed: ProcessBoundNativeClientAreaObservation,
@@ -46,8 +22,6 @@ pub(super) fn deliver_keyboard_command(
     );
     let input = match command {
         NativeKeyboardCommand::Escape => NativeKeyboardInput::Single(co::VK::ESCAPE),
-        NativeKeyboardCommand::Tab => NativeKeyboardInput::Single(co::VK::TAB),
-        NativeKeyboardCommand::PrimaryShiftP => NativeKeyboardInput::PrimaryShiftP,
     };
     deliver_at(
         window,
@@ -252,14 +226,12 @@ fn require_complete_delivery(
 #[derive(Clone, Copy)]
 enum NativeKeyboardInput {
     Single(co::VK),
-    PrimaryShiftP,
 }
 
 impl NativeKeyboardInput {
     const fn expected_event_count(self) -> u32 {
         match self {
             Self::Single(_) => 2,
-            Self::PrimaryShiftP => 6,
         }
     }
 }
@@ -271,17 +243,6 @@ fn deliver_keyboard_events(
     match input {
         NativeKeyboardInput::Single(key) => {
             send_keyboard_batch(kind, &[key_down(key), key_up(key)])
-        }
-        NativeKeyboardInput::PrimaryShiftP => {
-            let pressed =
-                send_keyboard_batch(kind, &[key_down(co::VK::CONTROL), key_down(co::VK::SHIFT)])?;
-            std::thread::sleep(std::time::Duration::from_millis(10));
-            let invoked =
-                send_keyboard_batch(kind, &[key_down(co::VK::CHAR_P), key_up(co::VK::CHAR_P)])?;
-            std::thread::sleep(std::time::Duration::from_millis(10));
-            let released =
-                send_keyboard_batch(kind, &[key_up(co::VK::SHIFT), key_up(co::VK::CONTROL)])?;
-            Ok(pressed + invoked + released)
         }
     }
 }

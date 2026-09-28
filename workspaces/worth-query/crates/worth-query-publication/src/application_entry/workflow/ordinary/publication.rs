@@ -36,6 +36,8 @@ type MutationInput<Schema, Intent> =
 type MutationOperation<Schema, Intent> =
     <IntentBinding<Schema, Intent> as ApplicationMutationBinding<Schema>>::Operation;
 
+/// Why an ordinary workflow publication was refused: the workflow belongs to another
+/// runtime, the definition is invalid or unsupported, or preparation was denied.
 #[derive(Debug)]
 pub enum WorthQueryOrdinaryWorkflowPublicationDenial {
     RuntimeMismatch,
@@ -76,6 +78,7 @@ impl std::error::Error for WorthQueryOrdinaryWorkflowPublicationDenial {
     }
 }
 
+/// A workflow definition ready to publish. `publish` names its expected predecessor.
 pub struct WorthQueryOrdinaryWorkflowDraft<'application, 'principal, 'scope, Schema, Intent, Spec>
 where
     Schema: ApplicationSchema,
@@ -86,6 +89,7 @@ where
     contract: WorthQueryInstalledWorkflowDefinitionContract<Schema, Spec>,
 }
 
+/// A workflow publication with its expected predecessor. `idempotency` binds its key.
 pub struct WorthQueryOrdinaryWorkflowPublication<
     'application,
     'principal,
@@ -102,6 +106,7 @@ pub struct WorthQueryOrdinaryWorkflowPublication<
     expected_predecessor: WorkflowDefinitionExpectedPredecessor,
 }
 
+/// A workflow publication bound to its idempotency key. `execute` attempts its commit.
 pub struct WorthQueryOrdinaryWorkflowPublicationWithIdempotency<
     'application,
     'principal,

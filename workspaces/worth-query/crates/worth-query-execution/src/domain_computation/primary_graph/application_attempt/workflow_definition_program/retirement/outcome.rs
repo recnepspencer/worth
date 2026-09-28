@@ -66,6 +66,7 @@ impl PerformedWorkflowDefinitionRetirement {
     }
 }
 
+/// What executing a workflow definition retirement produced.
 #[derive(Debug)]
 pub enum WorkflowDefinitionRetirementOutcome {
     Retired(PerformedWorkflowDefinitionRetirement),

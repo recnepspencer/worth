@@ -44,6 +44,8 @@ type RootSourceValue<Schema, Root> = <<RootSource<Schema, Root> as ApplicationQu
     Schema,
 >>::ResultBinding as ApplicationStructuredValueBinding>::Value;
 
+/// A landed mutation whose discovered outputs could not start. `performed` returns the
+/// landed mutation.
 pub struct WorthQueryDiscoveredOutputStartFailure<'application, Schema, Intent, Program, Root>
 where
     Schema: ApplicationSchema,

@@ -24,15 +24,13 @@ use super::request::{
     WorthQueryApplicationOutputDemandDenial, WorthQueryApplicationOutputDemandRequest,
     WorthQueryOutputDemandControls,
 };
-use super::settlement::WorthQueryApplicationOutputDemandSettlement;
+use super::settlement::{
+    WorthQueryApplicationOutputDemandProgress, WorthQueryApplicationOutputDemandSettlement,
+};
 
 use types::{ConnectionBinding, Family, RootConnection, SourceBinding, SourceQuery, SourceValue};
 
-pub enum WorthQueryApplicationOutputDemandProgress<Query> {
-    Pending,
-    Settled(WorthQueryApplicationOutputDemandSettlement<Query>),
-}
-
+/// An admitted output demand. `settle` drives it toward a settlement within its controls.
 pub struct WorthQueryApplicationOutputDemandHandle<'application, Schema, Demand>
 where
     Schema: ApplicationSchema,

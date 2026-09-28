@@ -1,3 +1,5 @@
+/// An assessment the instance waits on: the query, binding, proposal and coverage it must
+/// be computed for, at the program revision the instance runs.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct RequiredWorkflowAssessment {
     pub(super) instance: worth_relational::facade::identity::EntityId,

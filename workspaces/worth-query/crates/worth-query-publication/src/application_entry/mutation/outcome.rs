@@ -3,6 +3,8 @@ use worth_query_execution::facade::primary_graph::{
     WorthQueryApplicationUncommitted,
 };
 
+/// What executing an application mutation produced. `Committed` and `AlreadyCommitted` are
+/// landed commits; every other variant means nothing landed.
 #[derive(Debug)]
 pub enum WorthQueryApplicationMutationOutcome<Denial, Result> {
     Committed {

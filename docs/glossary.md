@@ -139,8 +139,11 @@ explained). Rust names are given where a type embodies the term.
 **Custody**
 : Responsibility, held by the runtime, for work that is still owed: a pending
   effect recovery, a source reservation, or an external workflow operation
-  whose settlement is outstanding. Custody must be disposed of explicitly
-  before certain moves (adoption, cancellation, migration).
+  whose settlement is outstanding. A workflow operation in owner custody must
+  be settled or recovered before its instance can be canceled, migrated, or
+  continued on a fork. During program adoption, the host derives a
+  disposition for each in-flight custody item; you do not choose it, and an
+  item it cannot carry refuses the adoption.
 
 ## D
 
@@ -388,13 +391,19 @@ explained). Rust names are given where a type embodies the term.
   instance.
 
 **Workflow**
-: A branch-local, versioned graph of steps (operations, reads, assessments,
-  conditions, evidence joins, approvals, terminals), authored against an
+: A branch-local, versioned graph of steps (operations, assessments,
+  conditions, approvals, evidence joins, terminals), authored against an
   installed vocabulary (*spec*). A *definition* is one published revision. An
   *instance* is one run of a pinned definition revision. *Control steps*
-  (start, advance, approve, cancel) are governed mutations whose bindings set
-  `WORKFLOW_CONTROL`. Query's workflow runtime serves them, never a handler. Progress is
-  caller-pumped.
+  (publish or retire a definition; start, cancel, migrate, or continue an
+  instance on a fork; advance or navigate back; approve) are governed
+  mutations whose bindings set `WORKFLOW_CONTROL`. Query's workflow kernel
+  authorizes and records them, never a handler. Applications reach the kernel
+  through the workflow runtime (`WorthQueryWorkflowApplicationRuntime`).
+  Progress is caller-pumped.
+  **Not** `worth_query::facade::workflow` (preview, promotion, writeback, and
+  branch merge) or `worth_query::facade::installed::workflow` (staged runs of
+  installed domain operations).
   **See** [How WORTH Works §13](how-it-works.md#13-workflows).
 
 **World (Runtime World)**

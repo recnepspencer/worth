@@ -132,7 +132,7 @@ exposes it. Read the linked section for the behavior; change the owner crate.
 | Resources and budgets | [§9.9](../../../../../docs/how-it-works.md#99-resources-and-budgets) | Each owner enforces its own bounds | All |
 | Outcomes | [§11](../../../../../docs/how-it-works.md#11-outcomes-every-way-a-request-can-end) | `worth-query-publication` (`WorthQueryApplicationMutationOutcome`); `worth-query-execution` (`WorthQueryApplicationCommitOutcome`) | `application_entry`, `primary_graph` |
 | Branches, programs, adoption | [§12](../../../../../docs/how-it-works.md#12-branches-programs-and-adoption) | `worth-query-execution` | `product`, `primary_graph` |
-| Workflows | [§13](../../../../../docs/how-it-works.md#13-workflows) | `worth-query-execution` | `primary_graph` |
+| Workflows | [§13](../../../../../docs/how-it-works.md#13-workflows); full guide [foundations/workflows.md](foundations/workflows.md) | `worth-query-declaration` for specs, builders, and node kinds; `worth-query-installation` for vocabulary installation and resource ceilings; `worth-query-execution` for the workflow kernel, runtime, outcomes, discovery, and adoption inventory; `worth-query-publication` for workflow requests and their preparation denials | `application_program`, `domain`, `application_installation`, `application_discovery`, `application_entry`, `primary_graph` |
 | Aftermath and recovery | [§14](../../../../../docs/how-it-works.md#14-aftermath-and-recovery) | `worth-query-execution` for recovery and provisional aftermath; `worth-query-publication` for published aftermath | `primary_graph`, `publication`, `provisional_aftermath` |
 
 ## Engine Laws
@@ -843,7 +843,8 @@ and [Signal Orchestration](./domain-capabilities/signal-compatibility-orchestrat
 ### Continuations and managed runs
 
 Application workflows are in How WORTH Works
-[§13](../../../../../docs/how-it-works.md#13-workflows). Underneath, a
+[§13](../../../../../docs/how-it-works.md#13-workflows) and the full
+[workflows guide](foundations/workflows.md). Underneath, a
 continuation retains unfinished work together with the basis, workspace,
 runtime, query, request, and execution posture needed to resume it. Resumption
 is a new checked transition, not a callback that inherits ambient authority. The

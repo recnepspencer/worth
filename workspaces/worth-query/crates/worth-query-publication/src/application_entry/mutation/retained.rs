@@ -29,6 +29,8 @@ type Outcome<Schema, Intent> = WorthQueryApplicationMutationOutcome<
     <Binding<Schema, Intent> as ApplicationMutationBinding<Schema>>::Result,
 >;
 
+/// What `execute_retained` or `execute_retained_in_program` produced: a landed commit with
+/// its retained read observation, or any other mutation outcome.
 pub enum WorthQueryApplicationRetainedMutationOutcome<Denial, Result> {
     Committed {
         receipt: WorthQueryApplicationCommitReceipt,

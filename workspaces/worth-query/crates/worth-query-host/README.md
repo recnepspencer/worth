@@ -108,7 +108,8 @@ The executable configuration and resource setup live in
 with contribution inventory, ownership, and handler-completeness denials in
 [contribution denials](../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/contribution_denials.rs).
 The synchronous application foundation, branch-local program evolution, and
-authored workflow definitions (see the authored workflow example above) are
+authored workflow definitions (see the authored workflow example above and the
+[workflows guide](../worth-query/docs/foundations/workflows.md)) are
 available through this facade. The workflow surface exposes no callback,
 resume-message, or inbound-completion API.
 

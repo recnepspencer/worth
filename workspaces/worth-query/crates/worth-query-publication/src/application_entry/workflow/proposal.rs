@@ -27,6 +27,7 @@ type MutationOperation<Schema, Intent> =
 type MutationInput<Schema, Intent> =
     <IntentBinding<Schema, Intent> as ApplicationMutationBinding<Schema>>::Input;
 
+/// The kind of a `WorthQueryWorkflowProposalPreparationDenial`.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryWorkflowProposalPreparationDenialKind {
     RuntimeMismatch,
@@ -36,6 +37,8 @@ pub enum WorthQueryWorkflowProposalPreparationDenialKind {
     InstanceBranchMismatch,
 }
 
+/// Why `prepare_workflow_proposal` refused. `InstanceBranchMismatch` means the instance is
+/// on another branch than the request.
 #[derive(Debug)]
 pub enum WorthQueryWorkflowProposalPreparationDenial {
     RuntimeMismatch,
@@ -147,6 +150,7 @@ where
     }
 }
 
+/// A prepared workflow proposal. `execute` attempts its commit.
 pub struct WorthQueryWorkflowProposalRequest<'application, Schema, Operation, Input, Scope>
 where
     Schema: ApplicationSchema,

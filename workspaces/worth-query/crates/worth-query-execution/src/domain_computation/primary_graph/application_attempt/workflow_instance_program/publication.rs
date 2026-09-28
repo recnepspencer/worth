@@ -23,6 +23,9 @@ pub struct PreparedWorkflowInstanceStart<Schema, Operation, Input, Scope> {
     pub(super) supersession: Option<super::supersession::WorkflowStartSupersession>,
 }
 
+/// A reference to a started workflow instance: its branch, the branch it was started on,
+/// its entity, the definition content identity and program revision it runs, and its start
+/// node path.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct PublishedWorkflowInstanceRef {
     branch: crate::basis::WorthQueryProductBranch,
@@ -84,6 +87,8 @@ impl PublishedWorkflowInstanceRef {
     }
 }
 
+/// A workflow instance start that landed: the instance, its commit receipt, and whether the
+/// idempotency key replayed an already-landed commit.
 #[derive(Debug)]
 pub struct PerformedWorkflowInstanceStart {
     instance: PublishedWorkflowInstanceRef,
@@ -105,6 +110,8 @@ impl PerformedWorkflowInstanceStart {
     }
 }
 
+/// What executing a workflow instance start produced. `ProjectionDenied` means the commit
+/// landed but its receipt did not record exactly one started instance.
 #[derive(Debug)]
 pub enum WorkflowInstanceStartOutcome {
     Started(PerformedWorkflowInstanceStart),

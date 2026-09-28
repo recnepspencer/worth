@@ -11,6 +11,7 @@ pub use worth_query_execution::facade::primary_graph::{
     WorthQueryWorkflowInstanceDisposition, WorthQueryWorkflowInstanceOccurrence,
 };
 
+/// Why a program adoption did not prepare.
 #[derive(Debug)]
 pub enum WorthQueryApplicationProgramAdoptionPreparationDenial {
     ProductSelection(

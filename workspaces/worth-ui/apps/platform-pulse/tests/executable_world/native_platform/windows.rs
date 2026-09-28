@@ -10,7 +10,7 @@ use xcap::Window;
 
 use crate::external_observation::{
     NativeClientPixelCapture, NativeClientPixelPoint, NativeInputDeliveryObservation,
-    NativeInputProbeKind, NativeWindowIdentity, NativeWindowVisibilityTransitionMechanism,
+    NativeWindowIdentity, NativeWindowVisibilityTransitionMechanism,
     NativeWindowVisibilityTransitionObservation, NormalNativeCloseRequestObservation,
     ProcessBoundNativeClientAreaObservation,
 };
@@ -294,15 +294,6 @@ impl NativePlatformContract for WindowsNativePlatform {
     ) -> Result<NativeWindowVisibilityTransitionObservation, NativePlatformFailure> {
         self.observe_bound_client_area(bound)?;
         window_state::minimize_and_restore(bound, deadline)
-    }
-
-    fn deliver_input_reachability_probe(
-        &self,
-        bound: &Self::BoundClientArea,
-        kind: NativeInputProbeKind,
-    ) -> Result<NativeInputDeliveryObservation, NativePlatformFailure> {
-        let observed = self.observe_bound_client_area(bound)?;
-        input_delivery::deliver(&bound.window, observed, kind)
     }
 
     fn deliver_pointer_activation(

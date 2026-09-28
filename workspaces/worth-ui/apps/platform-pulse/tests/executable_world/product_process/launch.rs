@@ -28,7 +28,6 @@ pub(crate) struct CargoBuiltPlatformPulse {
 pub(crate) struct PlatformPulseProcessLaunch {
     pub(crate) process: LivePlatformPulseProcess,
     pub(crate) lifecycle: PlatformPulseLifecycleStream,
-    pub(crate) launch_started: Instant,
 }
 
 pub(crate) struct NativePhase2ProcessLaunch {
@@ -105,7 +104,6 @@ impl CargoBuiltPlatformPulse {
             ))?;
         let native_desktop_lease = NativeDesktopLease::acquire(desktop_deadline)
             .map_err(PlatformPulseProcessLaunchFailure::NativeDesktopLease)?;
-        let launch_started = Instant::now();
         let native_close_evidence_path = source_root.join(super::NATIVE_CLOSE_EVIDENCE_FILE_NAME);
         let mut command = Command::new(&self.executable);
         let child = command
@@ -147,7 +145,6 @@ impl CargoBuiltPlatformPulse {
         Ok(PlatformPulseProcessLaunch {
             process,
             lifecycle: PlatformPulseLifecycleStream::read(stdout),
-            launch_started,
         })
     }
 

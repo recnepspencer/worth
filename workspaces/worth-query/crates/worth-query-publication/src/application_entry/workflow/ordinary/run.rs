@@ -42,6 +42,8 @@ where
     instance: PublishedWorkflowInstanceRef,
 }
 
+/// A workflow run with one idempotency key per step. `execute` advances until the run
+/// stops.
 pub struct WorthQueryOrdinaryWorkflowRunWithKeys<
     'application,
     'principal,
@@ -59,6 +61,7 @@ pub struct WorthQueryOrdinaryWorkflowRunWithKeys<
     keys: &'keys [MutationKey<Schema, Intent>],
 }
 
+/// Why a workflow run stopped.
 #[derive(Debug)]
 pub enum WorthQueryOrdinaryWorkflowRunStop {
     Terminal,
@@ -71,6 +74,8 @@ pub enum WorthQueryOrdinaryWorkflowRunStop {
     Outcome(WorkflowProgressOutcome),
 }
 
+/// What a workflow run did: the transitions that landed, the steps it attempted, and why it
+/// stopped.
 #[derive(Debug)]
 pub struct WorthQueryOrdinaryWorkflowRunProgress {
     transitions: Vec<PerformedWorkflowTransition>,

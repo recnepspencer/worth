@@ -13,6 +13,7 @@ use worth_query_installation::facade::{
     WorthQueryApplicationQueryLimitDenial,
 };
 
+/// The kind of a `WorthQueryApplicationRequestQueryDenial`, without its detail.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationRequestQueryDenialKind {
     BindingInstallation,
@@ -29,6 +30,7 @@ pub enum WorthQueryApplicationRequestQueryDenialKind {
     CapabilityAdmission,
 }
 
+/// Why an application query request was refused before or during execution.
 #[derive(Debug)]
 pub enum WorthQueryApplicationRequestQueryDenial {
     BindingInstallation(WorthQueryApplicationQueryInstallationDenial),
@@ -94,6 +96,7 @@ impl std::fmt::Display for WorthQueryApplicationRequestQueryDenial {
 
 impl std::error::Error for WorthQueryApplicationRequestQueryDenial {}
 
+/// The kind of a `WorthQueryApplicationRequestMutationDenial`, without its detail.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationRequestMutationDenialKind {
     BindingInstallation,
@@ -113,6 +116,7 @@ pub enum WorthQueryApplicationRequestMutationDenialKind {
     WorkflowTransitionCurrentness,
 }
 
+/// Why an application mutation request was refused before its commit was attempted.
 #[derive(Debug)]
 pub enum WorthQueryApplicationRequestMutationDenial {
     BindingInstallation(WorthQueryApplicationOperationInstallationDenial),

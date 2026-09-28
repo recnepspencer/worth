@@ -35,6 +35,8 @@ type RootConnection<Schema, Root> =
 type Discovery<Schema, Root> =
     <RootConnection<Schema, Root> as WorthQueryApplicationDiscoveredOutputConnection<Schema>>::Discovery;
 
+/// What a mutation with discovered program outputs produced: performed, performed but its
+/// required outputs could not start, or not performed.
 pub enum WorthQueryApplicationDiscoveredMutationOutcome<'application, Schema, Intent, Program, Root>
 where
     Schema: ApplicationSchema,
@@ -67,6 +69,8 @@ where
     ),
 }
 
+/// A landed mutation whose program outputs are discovered from its result.
+/// `start_required_outputs` begins settling them.
 pub struct WorthQueryPerformedDiscoveredApplicationMutation<
     'application,
     Schema,
@@ -108,6 +112,8 @@ where
     }
 }
 
+/// A landed mutation with its discovered program outputs started. `required_output_mut`
+/// drives them.
 pub struct WorthQueryStartedDiscoveredOutputs<'application, Schema, Intent, Program, Root>
 where
     Schema: ApplicationSchema,

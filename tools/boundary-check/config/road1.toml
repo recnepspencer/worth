@@ -743,6 +743,12 @@ forbidden_identifier_fragments = []
 guidance = "Milestone 9.17.6 slice 5.7: only worth-query-publication drives execution's workflow owner vocabulary; the certification commit-boundary court alone forges a kernel commit below that owner"
 
 [[rule_contracts.query_audience.facade_surfaces]]
+label = "worth-query-host::application_entry"
+source = "workspaces/worth-query/crates/worth-query-host/src/facade.rs"
+reexport = "worth_query_publication::facade::application_entry"
+owner_source = "workspaces/worth-query/crates/worth-query-publication/src/application_entry/mod.rs"
+
+[[rule_contracts.query_audience.facade_surfaces]]
 label = "worth-query-host::provisional_aftermath"
 source = "workspaces/worth-query/crates/worth-query-host/src/facade.rs"
 reexport = "worth_query_execution::facade::provisional_aftermath"

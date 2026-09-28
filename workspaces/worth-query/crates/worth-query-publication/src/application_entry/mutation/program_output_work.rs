@@ -25,6 +25,9 @@ impl ProgramOutputTraversalWork {
     }
 }
 
+/// Work spent settling program outputs: discovery queries and rows, gathered demands,
+/// producer and delivery contacts, invariant facts, units and executions, and derived
+/// publications.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationProgramWork {
     discovery_queries: usize,

@@ -4,6 +4,14 @@ use worth_query_execution::facade::primary_graph::{
     WorthQueryApplicationCommitReceipt, WorthQueryObservedSource, WorthQueryOutputDemandSettlement,
 };
 
+/// Whether an output demand has settled yet.
+pub enum WorthQueryApplicationOutputDemandProgress<Query> {
+    Pending,
+    Settled(WorthQueryApplicationOutputDemandSettlement<Query>),
+}
+
+/// A settled output demand: the commit it settled at, the output correspondence, the
+/// readiness delivery, and how many producers this demand contacted.
 pub struct WorthQueryApplicationOutputDemandSettlement<Query> {
     retained: Arc<WorthQueryOutputDemandSettlement>,
     observation: super::super::WorthQueryApplicationReadObservation,

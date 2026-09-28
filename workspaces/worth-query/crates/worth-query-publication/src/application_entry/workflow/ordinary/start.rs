@@ -31,6 +31,7 @@ type MutationOperation<Schema, Intent> =
 type MutationInput<Schema, Intent> =
     <IntentBinding<Schema, Intent> as ApplicationMutationBinding<Schema>>::Input;
 
+/// A workflow instance start from a published definition. `idempotency` binds its key.
 pub struct WorthQueryOrdinaryWorkflowStart<'application, 'principal, 'scope, Schema, Intent, Spec>
 where
     Schema: ApplicationSchema,
@@ -42,6 +43,7 @@ where
     definition: PublishedWorkflowDefinitionRef,
 }
 
+/// A workflow instance start bound to its idempotency key. `execute` attempts its commit.
 pub struct WorthQueryOrdinaryWorkflowStartWithIdempotency<
     'application,
     'principal,

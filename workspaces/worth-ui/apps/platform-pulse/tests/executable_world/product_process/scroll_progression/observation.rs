@@ -14,7 +14,6 @@ use crate::external_observation::{
     PlatformPulseLifecycleStreamFailure,
 };
 use crate::native_platform::NativePlatformContract;
-use crate::product_process::WatchedPulseObservationFailure;
 
 use super::{
     NativeBoundExecutableWorld, PlatformPulseScrollJourneyFailure, LIFECYCLE_IDLE_SLICE,
@@ -129,11 +128,7 @@ pub(super) fn await_unrouted_hit(
             Err(PlatformPulseLifecycleStreamFailure::Deadline) => {
                 return Err(PlatformPulseScrollJourneyFailure::HitWitnessAbsent)
             }
-            Err(failure) => {
-                return Err(PlatformPulseScrollJourneyFailure::Observation(
-                    WatchedPulseObservationFailure::Lifecycle(failure),
-                ))
-            }
+            Err(failure) => return Err(PlatformPulseScrollJourneyFailure::Observation(failure)),
         }
     }
 }
@@ -148,11 +143,7 @@ pub(super) fn drain_until_idle(
             Err(PlatformPulseLifecycleStreamFailure::Deadline) => {
                 return Ok(world.lifecycle.measurement().accepted_events() as u64 + 1)
             }
-            Err(failure) => {
-                return Err(PlatformPulseScrollJourneyFailure::Observation(
-                    WatchedPulseObservationFailure::Lifecycle(failure),
-                ))
-            }
+            Err(failure) => return Err(PlatformPulseScrollJourneyFailure::Observation(failure)),
         }
     }
 }

@@ -30,6 +30,10 @@ mod adapter_preparation;
 #[path = "preparation/adapter_replay.rs"]
 mod adapter_replay;
 
+/// Why a workflow transition could not bind to the branch's program: the installed spec
+/// belongs to another schema, the adopted program could not be inspected, the branch runs
+/// another program revision, or the branch advanced between selection and read-set
+/// assembly.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorkflowTransitionBindingDenial {
     ForeignSchema,
@@ -38,6 +42,7 @@ pub enum WorkflowTransitionBindingDenial {
     SelectedOccurrenceChanged,
 }
 
+/// Why a workflow transition did not prepare.
 #[derive(Debug)]
 pub enum WorkflowTransitionPreparationDenial {
     Binding(WorkflowTransitionBindingDenial),

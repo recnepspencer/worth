@@ -14,6 +14,10 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphApplicationRuntime, WorthQuerySelectedProductOperation,
 };
 
+/// Why a workflow proposal could not bind to the branch's program: the installed spec
+/// belongs to another schema, the adopted program could not be inspected, the branch runs
+/// another program revision, or the branch advanced between selection and read-set
+/// assembly.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorkflowProposalBindingDenial {
     ForeignSchema,
@@ -22,6 +26,7 @@ pub enum WorkflowProposalBindingDenial {
     SelectedOccurrenceChanged,
 }
 
+/// Why a workflow proposal did not prepare.
 #[derive(Debug)]
 pub enum WorkflowProposalPreparationDenial {
     Binding(WorkflowProposalBindingDenial),

@@ -64,6 +64,7 @@ pub(super) enum WorkflowRequestedAction {
     CollectAssessment { node_path: String },
 }
 
+/// The kind of a `WorthQueryWorkflowAdvancePreparationDenial`.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryWorkflowAdvancePreparationDenialKind {
     RuntimeMismatch,
@@ -73,6 +74,8 @@ pub enum WorthQueryWorkflowAdvancePreparationDenialKind {
     AwaitingActor,
 }
 
+/// Why a workflow advance did not prepare. `RuntimeMismatch` means the workflow belongs to
+/// another runtime.
 #[derive(Debug)]
 pub enum WorthQueryWorkflowAdvancePreparationDenial {
     RuntimeMismatch,
@@ -87,6 +90,7 @@ pub enum WorthQueryWorkflowAdvancePreparationDenial {
     ),
 }
 
+/// Why `accept_assessment` refused a settled assessment.
 #[derive(Debug)]
 pub enum WorthQueryWorkflowAssessmentAcceptanceDenial {
     NotAwaitingAssessment,
@@ -97,6 +101,7 @@ pub enum WorthQueryWorkflowAssessmentAcceptanceDenial {
     Attempt(worth_query_execution::facade::primary_graph::WorthQueryApplicationAttemptDenial),
 }
 
+/// Why `accept_condition` refused a published condition result.
 #[derive(Debug)]
 pub enum WorthQueryWorkflowConditionAcceptanceDenial {
     NotAwaitingCondition,
@@ -287,6 +292,8 @@ where
     }
 }
 
+/// A prepared workflow advance. `execute` attempts the transition and reports what the
+/// instance needs next.
 pub struct WorthQueryWorkflowAdvanceRequest<
     'application,
     'principal,

@@ -21,6 +21,8 @@ use super::{
     WorthQueryWorkflowOperationAcceptanceDenial, WorthQueryWorkflowOperationBindingDenial,
 };
 
+/// Where the owner of a workflow operation's idempotency key stands when it has not
+/// committed the operation.
 #[derive(Debug)]
 pub enum WorthQueryWorkflowOperationOwnerPosture {
     Unseen,
@@ -33,6 +35,8 @@ pub enum WorthQueryWorkflowOperationOwnerPosture {
     ),
 }
 
+/// Why an operation recovered from its owner was not accepted. `RecoveryNotRequired` means
+/// the owner already committed it.
 #[derive(Debug)]
 pub enum WorthQueryWorkflowOperationOwnerAcceptanceDenial {
     Binding(WorthQueryWorkflowOperationBindingDenial),

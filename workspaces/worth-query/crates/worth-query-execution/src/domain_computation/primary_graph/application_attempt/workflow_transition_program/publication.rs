@@ -201,6 +201,8 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAssessment<Schema, Operati
     }
 }
 
+/// A condition the instance waits on: the installed query, its parameter and result types,
+/// and the binding whose published boolean result decides the transition.
 #[derive(Clone, Debug)]
 pub struct RequiredWorkflowCondition {
     pub(super) instance: worth_relational::facade::identity::EntityId,
@@ -259,6 +261,9 @@ impl RequiredWorkflowCondition {
     }
 }
 
+/// A workflow transition that landed: the node it reached, whether that node is terminal,
+/// its commit receipt, whether it replayed, and the assessment evidence, approval or
+/// operation receipt it consumed.
 #[derive(Debug)]
 pub struct PerformedWorkflowTransition {
     transition: worth_relational::facade::identity::EntityId,
@@ -271,6 +276,8 @@ pub struct PerformedWorkflowTransition {
     operation_receipt_identity: Option<[u8; 32]>,
 }
 
+/// An approval recorded by a transition: its decision, the proposal and evidence it
+/// covered, the approver, its purpose and its expiry.
 #[derive(Debug)]
 pub struct PerformedWorkflowApproval {
     entity: worth_relational::facade::identity::EntityId,
@@ -344,6 +351,9 @@ impl PerformedWorkflowTransition {
     }
 }
 
+/// What advancing a workflow instance produced. The `Awaiting*` variants name what the
+/// instance needs next; `Completed` is a landed transition. The remaining variants say why
+/// nothing landed, or why a landed commit could not be projected.
 #[derive(Debug)]
 pub enum WorkflowProgressOutcome {
     AwaitingActor(RequiredWorkflowActor),

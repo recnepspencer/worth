@@ -25,6 +25,7 @@ use crate::application_entry::{
     WorthQueryApplicationRequestMutationDenial,
 };
 
+/// The kind of a `WorthQueryWorkflowDefinitionRetirementPreparationDenial`.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryWorkflowDefinitionRetirementPreparationDenialKind {
     RuntimeMismatch,
@@ -32,6 +33,8 @@ pub enum WorthQueryWorkflowDefinitionRetirementPreparationDenialKind {
     DefinitionPreparation,
 }
 
+/// Why `prepare_workflow_definition_retirement` refused. `RuntimeMismatch` means the
+/// workflow belongs to another runtime.
 #[derive(Debug)]
 pub enum WorthQueryWorkflowDefinitionRetirementPreparationDenial {
     RuntimeMismatch,
@@ -148,6 +151,7 @@ where
     }
 }
 
+/// A prepared workflow definition retirement. `execute` attempts its commit.
 pub struct WorthQueryWorkflowDefinitionRetirementRequest<
     'application,
     Schema,

@@ -160,6 +160,8 @@ where
     }
 }
 
+/// A landed mutation whose required outputs could not start. `into_performed` returns the
+/// landed mutation; `into_parts` also returns the denial.
 pub struct WorthQueryRequiredOutputStartFailure<'application, Schema, Intent, Program, Root>
 where
     Schema: ApplicationSchema,

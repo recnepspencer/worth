@@ -41,12 +41,16 @@ execution owner decides whether one exact branch can adopt the target.
 ## Workflow Definitions
 
 `application_program` also declares authored workflow definitions.
-`ApplicationWorkflowDefinitionBuilder` builds a definition from reusable
-components, and validation produces a `ValidatedWorkflowDefinition`. Hosts
+`ApplicationWorkflowDefinitionBuilder` builds a definition from nodes,
+optionally with reusable components (`ApplicationWorkflowComponentBuilder`),
+and validation produces a `ValidatedWorkflowDefinition`. The
+`worth_query_workflow!` macro is shorthand for the same builder. Hosts
 publish, discover, start, and progress those definitions through
 `worth-query-host`; the
 [authored workflow example](../worth-query-certification/examples/authored_workflow/main.rs)
-shows the complete journey.
+shows the complete journey, and the
+[workflows guide](../worth-query/docs/foundations/workflows.md) documents it
+step by step.
 
 ## Related Docs
 

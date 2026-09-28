@@ -17,11 +17,14 @@ type Source<Schema, Connection> =
 type Query<Schema, Connection> =
     <Source<Schema, Connection> as ApplicationQueryBinding<Schema>>::Query;
 
+/// Whether a mutation's required program outputs have settled yet.
 pub enum WorthQueryApplicationProgramOutputProgress<RootQuery> {
     Pending,
     Settled(WorthQueryApplicationProgramOutputSettlement<RootQuery>),
 }
 
+/// Settled required program outputs: the root settlement, the outputs produced, and the
+/// work spent.
 pub struct WorthQueryApplicationProgramOutputSettlement<RootQuery> {
     pub(super) root:
         crate::application_entry::WorthQueryApplicationOutputDemandSettlement<RootQuery>,

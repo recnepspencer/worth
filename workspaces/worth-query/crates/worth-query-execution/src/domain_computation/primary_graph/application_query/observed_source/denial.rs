@@ -14,8 +14,6 @@ pub enum WorthQuerySourceExpectationDenialKind {
     ForeignModel,
     /// The source was not observed on the admitted product branch.
     ForeignBranch,
-    /// The observed source has been retired.
-    SourceRetired,
     /// The same source was observed with conflicting revisions.
     SourceChanged,
     /// The observation did not record a complete read footprint.

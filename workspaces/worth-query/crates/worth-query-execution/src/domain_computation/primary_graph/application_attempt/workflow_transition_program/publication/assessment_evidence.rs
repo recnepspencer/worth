@@ -1,3 +1,6 @@
+/// Assessment evidence a transition consumed: the producer, family and query that computed
+/// it, the proposal and coverage it assessed, whether it passed, and the publication it
+/// came from.
 #[derive(Debug)]
 pub struct PerformedWorkflowAssessmentEvidence {
     pub(super) evidence: worth_relational::facade::identity::EntityId,

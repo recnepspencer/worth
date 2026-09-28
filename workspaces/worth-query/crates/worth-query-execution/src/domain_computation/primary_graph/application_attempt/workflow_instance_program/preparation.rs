@@ -22,6 +22,10 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphApplicationRuntime, WorthQuerySelectedProductOperation,
 };
 
+/// Why a workflow instance request could not bind to the branch's program: the installed
+/// spec belongs to another schema, the adopted program could not be inspected, the branch
+/// runs another program revision, or the branch advanced between selection and read-set
+/// assembly.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorkflowInstanceBindingDenial {
     ForeignSchema,
@@ -30,6 +34,8 @@ pub enum WorkflowInstanceBindingDenial {
     SelectedOccurrenceChanged,
 }
 
+/// Why a workflow instance start, migration, fork continuation or cancellation did not
+/// prepare.
 #[derive(Debug)]
 pub enum WorkflowInstancePreparationDenial {
     Binding(WorkflowInstanceBindingDenial),

@@ -25,6 +25,8 @@ mod governed_continuation;
 mod governed_retained;
 mod live_approved;
 
+/// A query request. `execute` runs it once; `subscribe` opens it live; `limits` bounds its
+/// results and work.
 pub struct WorthQueryApplicationQueryRequest<'application, 'principal, 'scope, Schema, Intent> {
     application: &'application WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     principal: &'principal WorthQueryAuthenticatedExternalPrincipal<Schema>,

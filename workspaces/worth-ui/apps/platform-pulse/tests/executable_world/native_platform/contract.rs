@@ -272,12 +272,6 @@ pub(crate) trait NativePlatformContract: sealed::Sealed {
         deadline: Instant,
     ) -> Result<NativeWindowVisibilityTransitionObservation, NativePlatformFailure>;
 
-    fn deliver_input_reachability_probe(
-        &self,
-        bound: &Self::BoundClientArea,
-        kind: NativeInputProbeKind,
-    ) -> Result<NativeInputDeliveryObservation, NativePlatformFailure>;
-
     fn deliver_pointer_activation(
         &self,
         bound: &Self::BoundClientArea,

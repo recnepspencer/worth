@@ -80,6 +80,19 @@ Later-created branches never enter previously issued coverage. This is program
 adoption, not merge or rebase; multi-parent reconciliation remains a separate
 roadmap product.
 
+### Workflows on a forked branch
+
+A fork copies the source branch's workflow definitions and instances as
+history, not execution. A copied instance cannot act on the fork: its
+approvals and receipts open nothing there. To keep that work going on the
+fork, issue `prepare_workflow_fork_continuation(&workflow, instance, target,
+resume_at)` on the fork. It ends the fork's copy and starts a successor on the
+fork's current `target` definition, under the same law as migration. The
+instance on its own branch is untouched. The instance-start capability
+authorizes it. It is refused while an owner operation is unsettled and after
+the instance's deadline. See
+[Migration and fork continuation](workflows.md#migration-and-fork-continuation).
+
 For the request lanes that run against a selected branch, see
 [Branch-resolved mutation lanes](ordinary-application-front-door.md#branch-resolved-mutation-lanes).
 

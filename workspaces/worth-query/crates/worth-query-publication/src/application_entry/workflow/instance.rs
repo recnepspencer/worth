@@ -34,6 +34,7 @@ type MutationOperation<Schema, Intent> =
 type MutationInput<Schema, Intent> =
     <IntentBinding<Schema, Intent> as ApplicationMutationBinding<Schema>>::Input;
 
+/// The kind of a `WorthQueryWorkflowInstancePreparationDenial`.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryWorkflowInstancePreparationDenialKind {
     RuntimeMismatch,
@@ -335,6 +336,8 @@ where
     }
 }
 
+/// A prepared workflow instance start, migration or fork continuation. `execute` attempts
+/// its commit.
 pub struct WorthQueryWorkflowInstanceStartRequest<'application, Schema, Operation, Input, Scope>
 where
     Schema: ApplicationSchema,

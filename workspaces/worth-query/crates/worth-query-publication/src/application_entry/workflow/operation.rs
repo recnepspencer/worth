@@ -25,6 +25,9 @@ pub use recovery::{
     WorthQueryWorkflowOperationRecoveryPreparationDenial,
 };
 
+/// Why a request could not bind to the operation a workflow awaits: the workflow belongs to
+/// another runtime, the request does not match the requirement, or no authority was issued
+/// for it.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryWorkflowOperationBindingDenial {
     RuntimeMismatch,
@@ -40,6 +43,7 @@ impl std::fmt::Display for WorthQueryWorkflowOperationBindingDenial {
 
 impl std::error::Error for WorthQueryWorkflowOperationBindingDenial {}
 
+/// Why a performed operation was not accepted as the effect the instance awaits.
 #[derive(Debug)]
 pub enum WorthQueryWorkflowOperationAcceptanceDenial {
     NotAwaitingOperation,

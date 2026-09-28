@@ -1,14 +1,14 @@
 use std::fmt;
 
 use crate::adjudication::ScrollChromePixelFailure;
+use crate::external_observation::PlatformPulseLifecycleStreamFailure;
 use crate::native_platform::NativePlatformFailure;
-use crate::product_process::WatchedPulseObservationFailure;
 
 #[derive(Debug)]
 pub(crate) enum PlatformPulseScrollJourneyFailure {
     Native(NativePlatformFailure),
     Pixels(ScrollChromePixelFailure),
-    Observation(WatchedPulseObservationFailure),
+    Observation(PlatformPulseLifecycleStreamFailure),
     UnexpectedObservation(String),
     InputDelivery(&'static str),
     /// The product reported that native input ingress stopped while the click
@@ -31,7 +31,7 @@ impl fmt::Display for PlatformPulseScrollJourneyFailure {
         match self {
             Self::Native(failure) => write!(formatter, "native platform: {failure:?}"),
             Self::Pixels(failure) => write!(formatter, "scroll pixels: {failure}"),
-            Self::Observation(failure) => write!(formatter, "observation: {failure:?}"),
+            Self::Observation(failure) => write!(formatter, "lifecycle observation: {failure:?}"),
             Self::UnexpectedObservation(observation) => {
                 write!(formatter, "unexpected observation: {observation}")
             }

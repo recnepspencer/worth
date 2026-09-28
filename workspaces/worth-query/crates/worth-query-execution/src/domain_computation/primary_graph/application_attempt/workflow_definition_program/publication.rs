@@ -138,6 +138,8 @@ impl PublishedWorkflowDefinitionRef {
     }
 }
 
+/// A workflow definition publication that landed: the published definition, its commit
+/// receipt, and whether the idempotency key replayed an already-landed commit.
 #[derive(Debug)]
 pub struct PerformedWorkflowDefinitionPublication {
     definition: PublishedWorkflowDefinitionRef,
@@ -159,6 +161,9 @@ impl PerformedWorkflowDefinitionPublication {
     }
 }
 
+/// What executing a workflow definition publication produced. `ProjectionDenied` means the
+/// commit landed but its receipt did not record exactly one created definition with the
+/// published content identity, so no reference was projected.
 #[derive(Debug)]
 pub enum WorkflowDefinitionPublicationOutcome {
     Published(PerformedWorkflowDefinitionPublication),

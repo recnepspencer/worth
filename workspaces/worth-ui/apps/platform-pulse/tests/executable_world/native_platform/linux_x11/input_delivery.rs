@@ -28,23 +28,6 @@ const WHEEL_UP: u8 = 4;
 const WHEEL_RIGHT: u8 = 7;
 const CHORD_STEP: Duration = Duration::from_millis(10);
 
-pub(super) fn deliver(
-    x11: &X11Observation,
-    window: Window,
-    observed: ProcessBoundNativeClientAreaObservation,
-    kind: NativeInputProbeKind,
-) -> Result<NativeInputDeliveryObservation, NativePlatformFailure> {
-    deliver_at(
-        x11,
-        window,
-        observed,
-        kind,
-        client_center(observed)?,
-        None,
-        NativeKeyboardInput::Single(XK_A),
-    )
-}
-
 pub(super) fn deliver_keyboard_command(
     x11: &X11Observation,
     window: Window,

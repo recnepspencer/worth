@@ -15,6 +15,7 @@ use super::{
 };
 use crate::application_entry::WorthQueryApplicationRequestMutationDenial;
 
+/// Why a program migration request was refused before its handler ran.
 #[derive(Debug)]
 pub enum WorthQueryApplicationProgramMigrationPreparationDenial {
     Request(WorthQueryApplicationRequestMutationDenial),
@@ -23,6 +24,8 @@ pub enum WorthQueryApplicationProgramMigrationPreparationDenial {
     ),
 }
 
+/// What `prepare_program_migration` produced. The handler runs as a candidate for atomic
+/// branch adoption; it commits nothing and registers no idempotency record.
 pub enum WorthQueryApplicationProgramMigrationPreparationOutcome<DomainDenial> {
     Prepared(worth_query_execution::facade::primary_graph::WorthQueryPreparedProgramMigration),
     DomainDenied(DomainDenial),

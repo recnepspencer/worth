@@ -28,6 +28,8 @@ use worth_query_installation::facade::{
 
 use super::{workflow_key::workflow_idempotency, WorthQueryApplicationRequest};
 
+/// Why `execute_elevation_request_in_program` refused. `ProgramMismatch` means the program
+/// runtime is not this request's runtime.
 #[derive(Debug)]
 pub enum WorthQueryApplicationElevationRequestDenial<DecisionDenial> {
     Program(WorthQueryApplicationCommitDenial),

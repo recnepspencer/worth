@@ -55,9 +55,10 @@ pub use proposal::{
 };
 pub use worth_query_execution::publication_boundary::workflow_advance::{
     PerformedWorkflowApproval, PerformedWorkflowAssessmentEvidence, PerformedWorkflowTransition,
-    RequiredWorkflowApproval, RequiredWorkflowAssessment, RequiredWorkflowCondition,
-    RequiredWorkflowEvidence, RequiredWorkflowOperation, WorkflowApprovalDecision,
-    WorkflowProgressOutcome, WorkflowTransitionBindingDenial, WorkflowTransitionPreparationDenial,
+    RequiredWorkflowActor, RequiredWorkflowApproval, RequiredWorkflowAssessment,
+    RequiredWorkflowCondition, RequiredWorkflowEvidence, RequiredWorkflowOperation,
+    WorkflowApprovalDecision, WorkflowProgressOutcome, WorkflowTransitionBindingDenial,
+    WorkflowTransitionPreparationDenial,
 };
 pub use worth_query_execution::publication_boundary::workflow_definition_publication::{
     PerformedWorkflowDefinitionPublication, PreparedWorkflowDefinitionPublication,

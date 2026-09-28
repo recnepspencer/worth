@@ -92,6 +92,7 @@ where
     }
 }
 
+/// A prepared workflow instance cancellation. `execute` attempts its commit.
 pub struct WorthQueryWorkflowInstanceCancellationRequest<
     'application,
     Schema,

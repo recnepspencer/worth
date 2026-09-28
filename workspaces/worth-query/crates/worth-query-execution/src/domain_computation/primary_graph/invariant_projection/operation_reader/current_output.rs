@@ -49,15 +49,17 @@ pub enum WorthQueryCurrentOutputSelection<Schema, Entity> {
 /// Why the current output for a producer could not be selected.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryCurrentOutputDenialKind {
-    /// The output family is not installed, or the projection has no selected
-    /// product.
+    /// The projection has no selected product, or the output family is not
+    /// installed for this operation's binding.
     FamilyUnavailable,
-    /// The recorded outputs were produced from source state that has since
-    /// changed.
+    /// No recorded output is current: each was produced from source state that
+    /// has since changed. A change to the producer itself reports
+    /// `OutputUnavailable` instead.
     StaleSource,
     /// A recorded output entity is not of the role's entity kind.
     EntityMismatch,
-    /// A recorded output entity is no longer live.
+    /// A recorded output entity is no longer live, the producer changed after
+    /// its outputs were recorded, or a recorded source fact could not be read.
     OutputUnavailable,
     /// The operation does not declare the role's entity or the producer as a
     /// decision read.

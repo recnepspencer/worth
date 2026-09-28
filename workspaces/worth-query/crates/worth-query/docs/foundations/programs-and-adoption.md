@@ -18,7 +18,7 @@ the program the request's branch carries. Moving a branch to another program
 is **adoption**. For one branch, you compare the source and target, supply any
 migration and workflow decisions the comparison demands, prepare, and publish
 in one atomic step. For a set of branches, adoption is explicitly non-atomic:
-each branch publishes separately, and a stopped set can be resumed, cancelled,
+each branch publishes separately, and a stopped set can be resumed, canceled,
 or recovered. A host can stop supporting a program with
 `retire_program_support` only after nothing still depends on it.
 
@@ -366,14 +366,16 @@ The host computes legality. You cannot widen it.
 | Instance | any | `ApprovalOutstanding { approval_node_path }` | none |
 | Instance | any | `OperationInOwnerCustody` | none |
 
-- An instance that has performed an effect cannot be cancelled by adoption.
-- An incompatible performed instance is refused with
-  `MigrationRequired { instance }`. Settle or recover it under the source
-  program, or migrate it with `prepare_workflow_instance_migration` (see
+- An instance that has performed an effect cannot be canceled by adoption.
+- Every row with no legal disposition is refused the same way, with
+  `MigrationRequired { instance }` (`requires_migration()` is true exactly when
+  `legal_dispositions()` is empty). That covers an incompatible performed
+  instance, an instance with an approval whose operation has not settled
+  (`ApprovalOutstanding`), and an instance with an operation in owner custody
+  (`OperationInOwnerCustody`).
+- To clear it, settle or recover the instance under the source program, or
+  migrate it with `prepare_workflow_instance_migration` (see
   [Workflows](workflows.md)), then take a fresh inventory.
-- An instance with an approval whose operation has not settled, or with an
-  operation in owner custody, has no legal disposition. Settle or recover it
-  first, then take a fresh inventory.
 
 ## Custody dispositions
 
@@ -571,7 +573,7 @@ While a retirement runs, adoption to that revision is refused with
 |---|---|
 | `IllegalDefinitionDisposition { definition, disposition }` | Not in the definition's `legal_dispositions()`. |
 | `IllegalInstanceDisposition { .. }` | Not in the instance's `legal_dispositions()`. |
-| `MigrationRequired { instance }` | Incompatible and performed. Settle, recover, or migrate it, then re-inventory. |
+| `MigrationRequired { instance }` | The instance has no legal disposition: incompatible and performed, `ApprovalOutstanding`, or `OperationInOwnerCustody`. Settle, recover, or migrate it, then re-inventory. |
 | `UnknownDefinition { definition }`, `UnknownInstance { instance }` | The occurrence is not in this inventory. |
 | `DefinitionUndecided { definition }`, `InstanceUndecided { instance }` | A required decision is missing. |
 

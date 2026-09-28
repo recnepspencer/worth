@@ -23,12 +23,14 @@ use crate::application_entry::{
 
 use super::{IntentBinding, MutationInput, MutationOperation, MutationScope};
 
+/// The kind of a `WorthQueryWorkflowDefinitionPublicationPreparationDenial`.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryWorkflowDefinitionPublicationPreparationDenialKind {
     RequestAdmission,
     DefinitionPreparation,
 }
 
+/// Why `prepare_workflow_publication` refused.
 #[derive(Debug)]
 pub enum WorthQueryWorkflowDefinitionPublicationPreparationDenial {
     RequestAdmission(WorthQueryApplicationRequestMutationDenial),
@@ -138,6 +140,7 @@ where
     }
 }
 
+/// A prepared workflow definition publication. `execute` attempts its commit.
 pub struct WorthQueryWorkflowDefinitionPublicationRequest<
     'application,
     Schema,

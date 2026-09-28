@@ -565,8 +565,9 @@ hardware; an absolute seconds threshold is not a portable Query contract.
   `WorthQueryWorkflowDefinitionDiscovery`, and starts and progresses instances
   through typed proposal, approval, and progress outcomes. The
   [authored workflow example](../../../worth-query-certification/examples/authored_workflow/main.rs)
-  runs that journey end to end. The workflow surface exposes no callback,
-  resume-message, or inbound-completion API.
+  runs that journey end to end, and the [workflows guide](workflows.md)
+  documents every step, outcome, and denial. The workflow surface exposes no
+  callback, resume-message, or inbound-completion API.
 - Historical, preview, continuation, and live lanes are available only for an
   installed query whose declared support and current admission allow that lane.
 - Conditional providers and managed clocks are stable on the primary-graph
