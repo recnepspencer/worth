@@ -1,6 +1,6 @@
 use worth_foundational::facade::{AspectKey, AspectValue};
-use worth_relational::facade::grouped_truth::RelationalGroupedProjectionArtifact;
 use worth_runtime_bridge::facade::BridgeGroupedTruthViewArtifact;
+use worth_runtime_bridge::facade::RelationalGroupedProjectionArtifact;
 
 use super::super::consumed::{
     ConsumedMembershipFact, ConsumedProjectionContractProvenance, ConsumedProjectionFactInventory,

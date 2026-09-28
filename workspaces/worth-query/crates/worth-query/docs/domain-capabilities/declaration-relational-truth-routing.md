@@ -144,7 +144,7 @@ The advanced lane executes in this order:
    - binds that truth contract to one real lower surface family:
      - `worth_relational::facade::runtime`
      - `worth_relational::facade::history`
-     - `worth_relational::facade::grouped_truth`
+     - `worth_runtime_bridge::facade::RelationalGroupedProjectionArtifact`
      - `worth_relational::facade::commit_strategies`
      - `worth_relational::facade::bridge::RuntimeBridgeRelationalSource`
    - derives one relational-routing digest from retained proof

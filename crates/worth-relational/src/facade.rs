@@ -15,16 +15,6 @@ pub mod config {
         SnapshotReleasePolicy, StorageLayoutConfig, VisibilityCachePolicy,
     };
 }
-pub mod grouped_truth {
-    pub use crate::grouped_truth::{
-        encode_snapshot_aspect_read_value, materialize_relational_authoritative_row_set,
-        project_relational_grouped_truth, GroupedProjectionContract,
-        RelationalAuthoritativeRowArtifact, RelationalAuthoritativeRowSetArtifact,
-        RelationalGroupedMemberRow, RelationalGroupedProjectionArtifact,
-        RelationalGroupedProjectionDigest, RelationalGroupedTruthError,
-        RelationalProjectedAspectValueSet, RelationalRowIdentity, RelationalRowSetDigest,
-    };
-}
 pub mod commit_strategies {
     pub use crate::commit_strategies::data::{
         CanonicalStrategyCommitRequest, CanonicalStrategyInputArtifact,

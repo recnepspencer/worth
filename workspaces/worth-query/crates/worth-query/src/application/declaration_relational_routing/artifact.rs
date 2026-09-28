@@ -19,6 +19,9 @@ pub enum WorthQueryDeclarationRelationalRoutingClass {
     MixedAuthorityRelationalTruth,
 }
 
+/// The lower surface a relational truth contract binds to. As with
+/// `WorthQueryDeclarationRelationalAuthorityFamily`, "relational" names the
+/// truth source, not the crate that owns the surface.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryDeclarationRelationalBinding {
     Runtime(&'static str),

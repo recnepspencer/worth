@@ -1,16 +1,16 @@
+use crate::relational_identity::{
+    RelationalBridgeRecordIdentityKind, RelationalBridgeRecordIdentityParts,
+};
+use crate::snapshot::{SnapshotReadValue, TruthSnapshotIdentity};
 use sha2::{Digest, Sha256};
 use worth_foundational::facade::{
     prepare_aspect_value_identity_basis, prepare_struct_aspect_value_identity_basis, AspectKey,
     AspectValue,
 };
-use worth_runtime_bridge::facade::{
-    RelationalBridgeRecordIdentityKind, RelationalBridgeRecordIdentityParts, SnapshotReadValue,
-    TruthSnapshotIdentity,
-};
 
 use super::grouped_projection::{
-    GroupedProjectionContract, RelationalGroupedMemberRow, RelationalGroupedProjectionDigest,
-    RelationalGroupedTruthError,
+    RelationalGroupedMemberRow, RelationalGroupedProjectionContract,
+    RelationalGroupedProjectionDigest, RelationalGroupedTruthError,
 };
 use super::row_set::{RelationalAuthoritativeRowArtifact, RelationalRowSetDigest};
 
@@ -34,7 +34,7 @@ pub(super) fn row_set_digest(
 pub(super) fn grouped_projection_digest(
     row_set_digest: &RelationalRowSetDigest,
     snapshot_identity: &TruthSnapshotIdentity,
-    contract: &GroupedProjectionContract,
+    contract: &RelationalGroupedProjectionContract,
     members: &[RelationalGroupedMemberRow],
 ) -> Result<RelationalGroupedProjectionDigest, RelationalGroupedTruthError> {
     let mut bytes = Vec::new();
@@ -111,7 +111,7 @@ fn encode_string(bytes: &mut Vec<u8>, value: &str) {
 }
 
 fn encode_length_prefixed_bytes(bytes: &mut Vec<u8>, value: &[u8]) {
-    crate::aspect_wire::encode_u32(bytes, value.len() as u32);
+    encode_u32(bytes, value.len() as u32);
     bytes.extend_from_slice(value);
 }
 

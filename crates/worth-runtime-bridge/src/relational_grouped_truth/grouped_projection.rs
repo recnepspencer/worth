@@ -1,7 +1,6 @@
+use crate::snapshot::TruthSnapshotIdentity;
+use crate::source::{GroupedProjectionMemberSource, GroupedProjectionSource};
 use worth_foundational::facade::{AspectKey, AspectValue};
-use worth_runtime_bridge::facade::{
-    GroupedProjectionMemberSource, GroupedProjectionSource, TruthSnapshotIdentity,
-};
 
 use super::canonical_digest::grouped_projection_digest;
 
@@ -10,13 +9,13 @@ use super::row_set::{
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct GroupedProjectionContract {
+pub struct RelationalGroupedProjectionContract {
     grouping_aspect: AspectKey,
     identity_binding_aspect_key: AspectKey,
     grouping_binding_aspect_key: AspectKey,
 }
 
-impl GroupedProjectionContract {
+impl RelationalGroupedProjectionContract {
     pub fn new(
         grouping_aspect: AspectKey,
         identity_binding_aspect_key: AspectKey,
@@ -97,7 +96,7 @@ impl RelationalGroupedProjectionDigest {
 pub struct RelationalGroupedProjectionArtifact {
     row_set_digest: RelationalRowSetDigest,
     snapshot_identity: TruthSnapshotIdentity,
-    contract: GroupedProjectionContract,
+    contract: RelationalGroupedProjectionContract,
     members: Vec<RelationalGroupedMemberRow>,
     digest: RelationalGroupedProjectionDigest,
 }
@@ -111,7 +110,7 @@ impl RelationalGroupedProjectionArtifact {
         &self.snapshot_identity
     }
 
-    pub fn contract(&self) -> &GroupedProjectionContract {
+    pub fn contract(&self) -> &RelationalGroupedProjectionContract {
         &self.contract
     }
 
@@ -170,7 +169,7 @@ pub enum RelationalGroupedTruthError {
 
 pub fn project_relational_grouped_truth(
     row_set: &RelationalAuthoritativeRowSetArtifact,
-    contract: GroupedProjectionContract,
+    contract: RelationalGroupedProjectionContract,
 ) -> Result<RelationalGroupedProjectionArtifact, RelationalGroupedTruthError> {
     let identity_aspect = contract.identity_binding_aspect_key();
     let grouping_aspect = contract.grouping_binding_aspect_key();
@@ -225,15 +224,15 @@ pub fn project_relational_grouped_truth(
 
 #[cfg(test)]
 mod tests {
-    use worth_foundational::facade::{AspectKey, AspectValue, ScalarAspectType};
-    use worth_runtime_bridge::facade::{
+    use crate::facade::{
         RelationalBridgeRecordIdentityParts, RelationalBridgeSnapshotIdentityParts,
         SnapshotReadContract, SnapshotReadPacket, SnapshotReadPacketResult, SnapshotReadRecord,
         SnapshotReadRequest, TruthSnapshotIdentity,
     };
+    use worth_foundational::facade::{AspectKey, AspectValue, ScalarAspectType};
 
-    use super::{project_relational_grouped_truth, GroupedProjectionContract};
-    use crate::grouped_truth::materialize_relational_authoritative_row_set;
+    use super::{project_relational_grouped_truth, RelationalGroupedProjectionContract};
+    use crate::relational_grouped_truth::materialize_relational_authoritative_row_set;
 
     #[test]
     fn relational_grouped_projection_preserves_member_and_grouping_pairing() {
@@ -268,7 +267,7 @@ mod tests {
 
         let grouped = project_relational_grouped_truth(
             &row_set,
-            GroupedProjectionContract::new(
+            RelationalGroupedProjectionContract::new(
                 AspectKey::new("status").unwrap(),
                 AspectKey::new("identity.id").unwrap(),
                 AspectKey::new("status.lane").unwrap(),
@@ -301,7 +300,7 @@ mod tests {
 
         let error = project_relational_grouped_truth(
             &row_set,
-            GroupedProjectionContract::new(
+            RelationalGroupedProjectionContract::new(
                 AspectKey::new("status").unwrap(),
                 AspectKey::new("identity.id").unwrap(),
                 AspectKey::new("status.lane").unwrap(),
@@ -327,7 +326,7 @@ mod tests {
     fn read_record(
         packet: &SnapshotReadPacket,
         index: usize,
-        value: impl Into<worth_runtime_bridge::facade::SnapshotReadValue>,
+        value: impl Into<crate::facade::SnapshotReadValue>,
     ) -> SnapshotReadRecord {
         SnapshotReadRecord::for_request(&packet.reads()[index], value)
     }

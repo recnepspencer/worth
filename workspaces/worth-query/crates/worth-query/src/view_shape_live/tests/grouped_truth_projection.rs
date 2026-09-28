@@ -1,9 +1,8 @@
 use crate::view_shape::ViewShapePlanArtifact;
 use worth_foundational::facade::{AspectKey, AspectValue, FieldKey, ScalarAspectType};
-use worth_relational::facade::grouped_truth::{
+use worth_runtime_bridge::facade::{
     encode_snapshot_aspect_read_value, materialize_relational_authoritative_row_set,
-    project_relational_grouped_truth,
-    GroupedProjectionContract as RelationalGroupedProjectionContract,
+    project_relational_grouped_truth, RelationalGroupedProjectionContract,
 };
 use worth_runtime_bridge::facade::{
     materialize_bridge_grouped_truth_view_from_projection, materialize_bridge_row_set,

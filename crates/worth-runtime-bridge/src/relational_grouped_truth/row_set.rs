@@ -1,10 +1,12 @@
 use std::collections::BTreeMap;
 
-use worth_foundational::facade::AspectKey;
-use worth_runtime_bridge::facade::{
-    RelationalBridgeRecordIdentityKind, RelationalBridgeRecordIdentityParts, SnapshotReadPacket,
-    SnapshotReadPacketResult, SnapshotReadValue, TruthSnapshotIdentity,
+use crate::relational_identity::{
+    RelationalBridgeRecordIdentityKind, RelationalBridgeRecordIdentityParts,
 };
+use crate::snapshot::{
+    SnapshotReadPacket, SnapshotReadPacketResult, SnapshotReadValue, TruthSnapshotIdentity,
+};
+use worth_foundational::facade::AspectKey;
 
 use super::canonical_digest::row_set_digest;
 use super::grouped_projection::RelationalGroupedTruthError;
@@ -176,14 +178,14 @@ fn row_identity_label(parts: RelationalBridgeRecordIdentityParts) -> String {
 
 #[cfg(test)]
 mod tests {
-    use worth_foundational::facade::{
-        AspectKey, AspectValue, FieldKey, InternedString, ScalarAspectType, StructAspectValue,
-        Symbol,
-    };
-    use worth_runtime_bridge::facade::{
+    use crate::facade::{
         RelationalBridgeRecordIdentityParts, RelationalBridgeSnapshotIdentityParts,
         SnapshotReadContract, SnapshotReadPacket, SnapshotReadPacketResult, SnapshotReadRecord,
         SnapshotReadRequest, TruthSnapshotIdentity,
+    };
+    use worth_foundational::facade::{
+        AspectKey, AspectValue, FieldKey, InternedString, ScalarAspectType, StructAspectValue,
+        Symbol,
     };
 
     use super::materialize_relational_authoritative_row_set;
@@ -232,7 +234,7 @@ mod tests {
             row_set.rows()[0]
                 .projected_aspect_values()
                 .get(&AspectKey::new("identity.id").unwrap()),
-            Some(&worth_runtime_bridge::facade::SnapshotReadValue::Scalar(
+            Some(&crate::facade::SnapshotReadValue::Scalar(
                 AspectValue::String("task-1".into())
             ))
         );
@@ -263,7 +265,7 @@ mod tests {
             row_set.rows()[0]
                 .projected_aspect_values()
                 .get(&AspectKey::new("identity.id").unwrap()),
-            Some(worth_runtime_bridge::facade::SnapshotReadValue::Struct(_))
+            Some(crate::facade::SnapshotReadValue::Struct(_))
         ));
     }
 
@@ -354,7 +356,7 @@ mod tests {
     fn read_record(
         packet: &SnapshotReadPacket,
         index: usize,
-        value: impl Into<worth_runtime_bridge::facade::SnapshotReadValue>,
+        value: impl Into<crate::facade::SnapshotReadValue>,
     ) -> SnapshotReadRecord {
         SnapshotReadRecord::for_request(&packet.reads()[index], value)
     }

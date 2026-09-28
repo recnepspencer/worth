@@ -88,6 +88,7 @@ mod input;
 mod mapping;
 mod merge;
 mod policy;
+mod relational_grouped_truth;
 mod relational_identity;
 mod routing;
 mod snapshot;

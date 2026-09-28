@@ -1,6 +1,6 @@
 use worth_foundational::facade::ContractValidatedAspectValueView;
-use worth_relational::facade::grouped_truth::RelationalAuthoritativeRowSetArtifact;
 use worth_runtime_bridge::facade::BridgeMaterializedRowSetArtifact;
+use worth_runtime_bridge::facade::RelationalAuthoritativeRowSetArtifact;
 
 use super::super::super::consumed::ConsumedNativeValue;
 use super::super::super::consumed::ConsumedProjectionFactSet;

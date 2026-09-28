@@ -33,7 +33,6 @@ mod config;
 mod diagnostics;
 mod durability;
 mod errors;
-mod grouped_truth;
 mod history;
 mod identity;
 mod identity_authority;

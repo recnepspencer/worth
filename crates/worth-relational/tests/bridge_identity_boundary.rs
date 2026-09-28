@@ -4,10 +4,7 @@ use std::path::{Path, PathBuf};
 #[test]
 fn bridge_phase_three_sources_do_not_reintroduce_erased_identity_minting() {
     let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let roots = [
-        manifest_dir.join("src/presentation/bridge"),
-        manifest_dir.join("src/grouped_truth"),
-    ];
+    let roots = [manifest_dir.join("src/presentation/bridge")];
     let banned_patterns = [
         "TruthCommitIdentity::new",
         "TruthPatchIdentity::new",

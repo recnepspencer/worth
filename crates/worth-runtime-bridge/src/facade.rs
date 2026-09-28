@@ -89,6 +89,14 @@ pub use crate::correspondence::{
     RuntimeWorldCorrespondenceAdmissionDenial,
 };
 pub use crate::identity_authority::*;
+pub use crate::relational_grouped_truth::{
+    encode_snapshot_aspect_read_value, materialize_relational_authoritative_row_set,
+    project_relational_grouped_truth, RelationalAuthoritativeRowArtifact,
+    RelationalAuthoritativeRowSetArtifact, RelationalGroupedMemberRow,
+    RelationalGroupedProjectionArtifact, RelationalGroupedProjectionContract,
+    RelationalGroupedProjectionDigest, RelationalGroupedTruthError,
+    RelationalProjectedAspectValueSet, RelationalRowIdentity, RelationalRowSetDigest,
+};
 pub use exports_core::*;
 pub use exports_subscription::*;
 pub use preview_session_liveness::{

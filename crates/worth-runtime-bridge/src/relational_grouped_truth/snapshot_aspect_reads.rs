@@ -1,5 +1,5 @@
+use crate::snapshot::{SnapshotReadRecord, SnapshotReadValue};
 use worth_foundational::facade::AspectValue;
-use worth_runtime_bridge::facade::{SnapshotReadRecord, SnapshotReadValue};
 
 use super::grouped_projection::RelationalGroupedTruthError;
 

@@ -12,7 +12,7 @@ use crate::projection_consumption::{
     ProjectionConsumptionEligibility, ProjectionConsumptionSource,
 };
 use worth_foundational::facade::{AspectKey, AspectValue, FieldKey, ScalarAspectType};
-use worth_relational::facade::grouped_truth::{
+use worth_runtime_bridge::facade::{
     encode_snapshot_aspect_read_value, materialize_relational_authoritative_row_set,
     project_relational_grouped_truth, RelationalAuthoritativeRowSetArtifact,
     RelationalGroupedProjectionArtifact,

@@ -1,18 +1,18 @@
 //! Pins the canonical row-set and grouped-projection digests to fixed bytes, so
 //! a move or refactor of grouped truth cannot change what a digest certifies.
 
-use worth_foundational::facade::{
-    AspectKey, AspectValue, FieldKey, ScalarAspectType, StructAspectValue,
-};
-use worth_runtime_bridge::facade::{
+use crate::facade::{
     RelationalBridgeRecordIdentityParts, RelationalBridgeSnapshotIdentityParts,
     SnapshotReadContract, SnapshotReadPacket, SnapshotReadPacketResult, SnapshotReadRecord,
     SnapshotReadRequest, SnapshotReadValue, TruthSnapshotIdentity,
 };
+use worth_foundational::facade::{
+    AspectKey, AspectValue, FieldKey, ScalarAspectType, StructAspectValue,
+};
 
 use super::{
     materialize_relational_authoritative_row_set, project_relational_grouped_truth,
-    GroupedProjectionContract,
+    RelationalGroupedProjectionContract,
 };
 
 const ROW_SET_DIGEST: &str =
@@ -57,7 +57,7 @@ fn canonical_digests_match_the_pinned_bytes() {
     let row_set = materialize_relational_authoritative_row_set(&packet, &result).unwrap();
     let grouped = project_relational_grouped_truth(
         &row_set,
-        GroupedProjectionContract::new(
+        RelationalGroupedProjectionContract::new(
             aspect_key("status"),
             aspect_key("identity.id"),
             aspect_key("status.lane"),
