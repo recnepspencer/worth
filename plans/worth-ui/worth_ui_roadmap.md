@@ -2403,7 +2403,8 @@ interpreter or renderer evaluation substitutes for that kernel. 9.17.6.1 phases 
 are deferred (see [deferred work](../deferred-work.md)), so 3.17 itself delivers the
 real source/rebind pulse and all five evaluation-use integrations below over the
 shared kernel. The language milestone's own closure courts stay deferred with it.
-3.18 extends its source/expansion map.
+3.18 extends its source/expansion map. The phased plan is
+[milestone 3.17](./milestone-3.17.md).
 
 **Platform pulse**
 
@@ -2472,6 +2473,12 @@ second module-only harness cannot close product composition.
 - module and import boundaries for authored DSL source
 - symbol resolution for declarations, fragments, roles, tokens, and bindings
 - parameterized composition or fragment expansion with typed inputs
+- keyed repetition over a Query collection: one mounted fragment instance per
+  row, keyed by Query-authorized row identity with no author-chosen key, so
+  reorder moves instances and insert or remove mounts or retires only the
+  affected rows
+- row-scoped expression operands, so a repeated fragment's 3.17 conditions and
+  derived values read its own row's typed fields
 - canonical source-span and expansion provenance for lowered artifacts
 - duplicate-name, unresolved-symbol, and import-conflict diagnostics
 - lowering-equivalence proof for semantic sugar and fragment expansion

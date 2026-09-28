@@ -49,6 +49,22 @@ OS-neutral functional gate. Qualification on real precision scrolling hardware
 remains unverified until that hardware is available; no display-cadence or
 latency claim is made.
 
+### 3.17 dimensional operands and bulk expression inputs
+
+Spec: [milestone-3.17.md](worth-ui/milestone-3.17.md), out of scope.
+
+3.17 expressions read text, boolean, integer, and decimal facts, one value per
+operand. Two things wait:
+
+- Quantity operands with dimensions, such as `quantity(900.0, mm)`. These need
+  Query projections that carry units.
+- Column or bulk inputs for evaluating one program over many rows. These need
+  the kernel's Phase 5 input API, deferred with 9.17.6.1 below.
+
+Keyed repetition and row-scoped operands are scheduled in 3.18, not deferred.
+Bring this back when an authored UI needs a dimensional comparison or a
+per-row evaluation cost shows up in a budget test.
+
 ## WORTH Query
 
 ### 9.17.6.1 phases 4 and 5: the shared expression language's closure
