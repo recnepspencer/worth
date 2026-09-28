@@ -37,6 +37,17 @@ pub enum WorthQueryAuthenticationAdapterAdmissionDenial {
     CanonicalDigestSlotRejected,
 }
 
+impl std::fmt::Display for WorthQueryAuthenticationAdapterAdmissionDenial {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            formatter,
+            "authentication adapter admission denied: {self:?}"
+        )
+    }
+}
+
+impl std::error::Error for WorthQueryAuthenticationAdapterAdmissionDenial {}
+
 pub fn admit_authentication_adapter<Schema, Adapter>(
     schema: &WorthQueryInstalledApplicationSchema<Schema>,
     admission: WorthQueryAuthenticationAdapterAdmission,

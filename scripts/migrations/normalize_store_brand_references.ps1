@@ -1,7 +1,7 @@
 $ErrorActionPreference = "Stop"
 
 $excludedPaths = @(
-    "_docs/platform-migrations/store-platform-rename-inventory.csv",
+    "plans/platform-migrations/store-platform-rename-inventory.csv",
     "scripts/migrations/inventory_store_platform_rename.ps1",
     "scripts/migrations/apply_store_platform_rename.ps1",
     "scripts/migrations/normalize_store_brand_references.ps1"

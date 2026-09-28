@@ -224,12 +224,12 @@ impl<T: Clone> SharedColumn<T> {
             let node_bytes = Arc::<ColumnNode<T>>::layout_bytes();
             let value_bytes = Arc::<T>::layout_bytes();
             (root.node_count as u64)
-                .saturating_mul(node_bytes as u64)
+                .saturating_mul(node_bytes)
                 .saturating_add(
                     (root.page_count as u64)
                         .saturating_mul((PAGE_LEN * std::mem::size_of::<Arc<T>>()) as u64),
                 )
-                .saturating_add((root.value_count as u64).saturating_mul(value_bytes as u64))
+                .saturating_add((root.value_count as u64).saturating_mul(value_bytes))
                 .saturating_add(default_bytes)
         })
     }

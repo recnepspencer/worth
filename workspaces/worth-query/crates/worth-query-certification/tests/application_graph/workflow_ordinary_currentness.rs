@@ -6,11 +6,11 @@ use worth_query_host::facade::application_entry::{
     WorthQueryOrdinaryWorkflowRunStop,
 };
 
-use super::bounded_dimension_model::{
-    dimension_entry::PART_IDENTITY,
-    host::{publish_workflow_on_first_program, SEED_DIMENSION},
-    presented_request::set_dimension,
-    settled_verdict::{settle, DimensionVerdict},
+use super::document_retention_model::{
+    host::{publish_workflow_on_first_program, SEED_RETENTION},
+    presented_request::set_retention,
+    retention_entry::DOCUMENT_IDENTITY,
+    settled_verdict::{settle, RetentionVerdict},
     workflow::{
         accept_assessment, accept_early_assessment, advance_instance,
         assessment_join_terminal_definition, propose_instance, publish_definition, run_instance,
@@ -56,15 +56,15 @@ fn ordinary_and_advanced_require_fresh_evidence_after_native_aba() {
             ));
         }
     }
-    for (dimension, key) in [(SEED_DIMENSION + 1, 919_430), (SEED_DIMENSION, 919_431)] {
+    for (retention_days, key) in [(SEED_RETENTION + 1, 919_430), (SEED_RETENTION, 919_431)] {
         assert_eq!(
-            settle(set_dimension(
+            settle(set_retention(
                 application.program_runtime(),
                 application.current_world(),
-                dimension,
+                retention_days,
                 key,
             )),
-            DimensionVerdict::Performed(dimension)
+            RetentionVerdict::Performed(retention_days)
         );
     }
 
@@ -104,7 +104,7 @@ fn ordinary_and_advanced_require_fresh_evidence_after_native_aba() {
                 instance.clone(),
                 path,
                 settle_key,
-                PART_IDENTITY,
+                DOCUMENT_IDENTITY,
             );
             assert!(matches!(
                 accept_early_assessment(

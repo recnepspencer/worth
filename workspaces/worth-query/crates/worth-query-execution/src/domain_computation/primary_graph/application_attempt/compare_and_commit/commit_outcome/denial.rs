@@ -1,45 +1,89 @@
 //! Pre-publication application denial categories and owner evidence.
 
+mod capacity;
 mod program_binding;
 mod workflow;
 
+/// Why a commit was refused before publication.
+///
+/// Every kind is a refusal before the branch moved: nothing was committed.
+/// Capacity and identity kinds call for a later retry; binding and lane kinds
+/// mean the attempt went through the wrong lane or program and will not succeed
+/// as presented.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationCommitDenialKind {
+    /// The owner refused the attempt at the denial's stage; `detail()` may say why.
     ProviderRejected,
+    /// An installed custom invariant refused the candidate; see
+    /// `custom_invariant_denial()`.
     CustomInvariantDenied,
+    /// Validating the candidate needed more work than its budget allows.
     CandidateValidatorWorkExceeded {
         maximum_work: usize,
         required_work: usize,
     },
+    /// The workflow step this commit carries could not be settled; `kind` says why.
     WorkflowSettlementDenied {
         kind: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenialKind,
     },
+    /// The product basis the attempt relied on was no longer current.
     ProductBasisStale,
+    /// The owner already held its maximum number of active snapshots.
     ActiveSnapshotCapacityExhausted {
         maximum_active_snapshots: usize,
     },
+    /// The owner had no room to retain another basis.
     RetentionCapacityExhausted,
+    /// The owner ran out of identities for retained bases.
     RetentionIdentityExhausted,
+    /// The owner ran out of snapshot identities.
     SnapshotIdentityExhausted,
+    /// The owner ran out of candidate identities.
     CandidateIdentityExhausted,
+    /// The prepared candidate would exceed its byte budget.
     PreparedRootBudgetExhausted {
         maximum_bytes: u64,
         required_bytes: u64,
     },
+    /// Maintaining indexes for the candidate exceeded its work budget.
     IndexMaintenanceBudgetExceeded,
+    /// The owner ran out of index generation identities.
     IndexGenerationIdentityExhausted,
+    /// The idempotency key is already bound to a different intent. New intent needs
+    /// a new key.
     IdempotencyIntentDrift,
+    /// The operation is bound to an elevation lifecycle and must be committed
+    /// through its elevation lane, not as a plain commit.
     ElevationTransitionRequired,
+    /// The effect program presented as an elevation request does not carry the
+    /// effects its elevation binding requires.
     ElevationRequestProgramMismatch,
+    /// The effect program presented as an elevation approval does not carry the
+    /// effects its elevation binding requires.
     ElevationApprovalProgramMismatch,
+    /// The effect program presented as an elevation close does not carry the effects
+    /// its elevation binding requires.
     ElevationCloseProgramMismatch,
+    /// The effect program presented as a mandatory review does not carry the effects
+    /// its binding requires.
     MandatoryReviewProgramMismatch,
+    /// The operation's execution posture requires delegation activation, which a
+    /// plain commit cannot perform.
     DelegationActivationRequired,
+    /// The operation's execution posture requires capability revocation, which a
+    /// plain commit cannot perform.
     CapabilityRevocationRequired,
+    /// The operation must run under the branch's program; use a program lane.
     ApplicationProgramRequired,
+    /// The operation is guarded by a workflow, so only the workflow runtime may
+    /// commit it.
     WorkflowAuthorityRequired,
-    /// The presented program is not the program this occurrence is running.
-    ProgramNotActiveOnOccurrence,
+    /// The presented program is not the one this occurrence runs, which is `active`.
+    ProgramNotActiveOnOccurrence {
+        active: worth_query_declaration::facade::application_program::ApplicationProgramRevision,
+    },
+    /// This host retired, or is retiring, support for the presented revision.
+    ProgramSupportRetired,
     /// This occurrence carries no branch program activation the host can
     /// attribute to an admitted rostered program, so no program-gated commit
     /// can be compared against one.
@@ -72,6 +116,9 @@ impl WorthQueryProgramActivationUnresolved {
     }
 }
 
+/// The commit stage at which a denial was decided, for diagnostics.
+///
+/// The stage locates the refusal; the denial kind says what it was.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationCommitDenialStage {
     ProposalBinding,
@@ -90,6 +137,12 @@ pub enum WorthQueryApplicationCommitDenialStage {
     ProviderCommit,
 }
 
+/// A typed refusal of a commit before publication, carried by the `Denied`
+/// commit outcome.
+///
+/// Nothing was committed. Match on [`kind`](Self::kind); the stage and detail
+/// locate the refusal, and the custom-invariant accessors explain a
+/// `CustomInvariantDenied` kind.
 #[derive(Debug)]
 pub struct WorthQueryApplicationCommitDenial {
     kind: WorthQueryApplicationCommitDenialKind,
@@ -183,123 +236,11 @@ impl WorthQueryApplicationCommitDenial {
         }
     }
 
-    pub(in crate::domain_computation::primary_graph::application_attempt) const fn candidate_validator_work_exceeded(
-        stage: WorthQueryApplicationCommitDenialStage,
-        maximum_work: usize,
-        required_work: usize,
-    ) -> Self {
-        Self {
-            kind: WorthQueryApplicationCommitDenialKind::CandidateValidatorWorkExceeded {
-                maximum_work,
-                required_work,
-            },
-            stage,
-            detail: None,
-            custom_invariant: None,
-        }
-    }
-
     pub(in crate::domain_computation::primary_graph::application_attempt) const fn product_basis_stale(
         stage: WorthQueryApplicationCommitDenialStage,
     ) -> Self {
         Self {
             kind: WorthQueryApplicationCommitDenialKind::ProductBasisStale,
-            stage,
-            detail: None,
-            custom_invariant: None,
-        }
-    }
-
-    pub(in crate::domain_computation::primary_graph::application_attempt) const fn active_snapshot_capacity_exhausted(
-        stage: WorthQueryApplicationCommitDenialStage,
-        maximum_active_snapshots: usize,
-    ) -> Self {
-        Self {
-            kind: WorthQueryApplicationCommitDenialKind::ActiveSnapshotCapacityExhausted {
-                maximum_active_snapshots,
-            },
-            stage,
-            detail: None,
-            custom_invariant: None,
-        }
-    }
-
-    pub(in crate::domain_computation::primary_graph::application_attempt) const fn retention_capacity_exhausted(
-        stage: WorthQueryApplicationCommitDenialStage,
-    ) -> Self {
-        Self {
-            kind: WorthQueryApplicationCommitDenialKind::RetentionCapacityExhausted,
-            stage,
-            detail: None,
-            custom_invariant: None,
-        }
-    }
-
-    pub(in crate::domain_computation::primary_graph::application_attempt) const fn snapshot_identity_exhausted(
-        stage: WorthQueryApplicationCommitDenialStage,
-    ) -> Self {
-        Self {
-            kind: WorthQueryApplicationCommitDenialKind::SnapshotIdentityExhausted,
-            stage,
-            detail: None,
-            custom_invariant: None,
-        }
-    }
-
-    pub(in crate::domain_computation::primary_graph::application_attempt) const fn retention_identity_exhausted(
-        stage: WorthQueryApplicationCommitDenialStage,
-    ) -> Self {
-        Self {
-            kind: WorthQueryApplicationCommitDenialKind::RetentionIdentityExhausted,
-            stage,
-            detail: None,
-            custom_invariant: None,
-        }
-    }
-
-    pub(in crate::domain_computation::primary_graph::application_attempt) const fn candidate_identity_exhausted(
-        stage: WorthQueryApplicationCommitDenialStage,
-    ) -> Self {
-        Self {
-            kind: WorthQueryApplicationCommitDenialKind::CandidateIdentityExhausted,
-            stage,
-            detail: None,
-            custom_invariant: None,
-        }
-    }
-
-    pub(in crate::domain_computation::primary_graph::application_attempt) const fn prepared_root_budget_exhausted(
-        stage: WorthQueryApplicationCommitDenialStage,
-        maximum_bytes: u64,
-        required_bytes: u64,
-    ) -> Self {
-        Self {
-            kind: WorthQueryApplicationCommitDenialKind::PreparedRootBudgetExhausted {
-                maximum_bytes,
-                required_bytes,
-            },
-            stage,
-            detail: None,
-            custom_invariant: None,
-        }
-    }
-
-    pub(in crate::domain_computation::primary_graph::application_attempt) const fn index_maintenance_budget_exceeded(
-        stage: WorthQueryApplicationCommitDenialStage,
-    ) -> Self {
-        Self {
-            kind: WorthQueryApplicationCommitDenialKind::IndexMaintenanceBudgetExceeded,
-            stage,
-            detail: None,
-            custom_invariant: None,
-        }
-    }
-
-    pub(in crate::domain_computation::primary_graph::application_attempt) const fn index_generation_identity_exhausted(
-        stage: WorthQueryApplicationCommitDenialStage,
-    ) -> Self {
-        Self {
-            kind: WorthQueryApplicationCommitDenialKind::IndexGenerationIdentityExhausted,
             stage,
             detail: None,
             custom_invariant: None,

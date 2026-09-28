@@ -2,8 +2,9 @@
 
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationCommitDeferred, WorthQueryApplicationCommitOutcome,
-    WorthQueryApplicationSettlementDeferred, WorthQueryCustomInvariantDenial,
-    WorthQueryProductStaleApplication, WorthQueryProductUnpublishedApplication,
+    WorthQueryApplicationSettlementDeferred, WorthQueryApplicationUncommitted,
+    WorthQueryCustomInvariantDenial, WorthQueryProductStaleApplication,
+    WorthQueryProductUnpublishedApplication,
 };
 use worth_query_host::facade::product::WorthQueryApplicationNoEffectCause;
 
@@ -99,5 +100,11 @@ impl From<WorthQueryApplicationCommitOutcome> for BankMutationCommitOutcome {
                 Self::Indeterminate(BankUnresolvedCommitEvidence::from_execution(evidence))
             }
         }
+    }
+}
+
+impl From<WorthQueryApplicationUncommitted> for BankMutationCommitOutcome {
+    fn from(uncommitted: WorthQueryApplicationUncommitted) -> Self {
+        WorthQueryApplicationCommitOutcome::from(uncommitted).into()
     }
 }

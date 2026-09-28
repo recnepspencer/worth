@@ -4,12 +4,12 @@ use super::*;
 
 #[test]
 fn invariant_rejection_after_handler_stages_neither_mutation_nor_transition() {
-    const REJECTED_DIMENSION: u64 = 21;
+    const REJECTED_RETENTION: u64 = 21;
     let application =
-        super::super::bounded_dimension_model::host::publish_workflow_on_first_program();
+        super::super::document_retention_model::host::publish_workflow_on_first_program();
     let definition = match publish_definition(
         &application,
-        reviewed_geometry_definition("applied"),
+        reviewed_document_definition("applied"),
         WorkflowDefinitionExpectedPredecessor::Absent,
         2_100,
     )
@@ -24,11 +24,11 @@ fn invariant_rejection_after_handler_stages_neither_mutation_nor_transition() {
         WorkflowInstanceStartOutcome::Started(performed) => performed.instance().clone(),
         other => panic!("expected a started instance, got {other:?}"),
     };
-    let proposal = match super::super::bounded_dimension_model::workflow::propose_authoring_instance_with_dimension(
+    let proposal = match super::super::document_retention_model::workflow::propose_authoring_instance_with_retention(
         &application,
         instance.clone(),
         2_102,
-        REJECTED_DIMENSION,
+        REJECTED_RETENTION,
     )
     .unwrap()
     {
@@ -68,14 +68,14 @@ fn invariant_rejection_after_handler_stages_neither_mutation_nor_transition() {
     let runtime = application.runtime();
     let scope = request_scope();
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
-    reset_candidate_count(REJECTED_DIMENSION);
+    reset_candidate_count(REJECTED_RETENTION);
     let result = runtime
         .request(&principal, &scope)
         .on_branch(instance.branch())
-        .mutate(ReviewedSetPartDimensionIntent {
-            input: super::super::bounded_dimension_model::schema::SetPartDimensionInput {
-                identity: PART_IDENTITY.to_owned(),
-                dimension: REJECTED_DIMENSION,
+        .mutate(ReviewedSetRetentionIntent {
+            input: super::super::document_retention_model::schema::SetRetentionInput {
+                identity: DOCUMENT_IDENTITY.to_owned(),
+                retention_days: REJECTED_RETENTION,
             },
         })
         .without_source()
@@ -86,15 +86,15 @@ fn invariant_rejection_after_handler_stages_neither_mutation_nor_transition() {
         .expect("the handler must reach the commit boundary");
     assert!(matches!(
         result,
-        WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationCommitOutcome::Denied(denial))
+        WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationUncommitted::Denied(denial))
             if denial.kind() == WorthQueryApplicationCommitDenialKind::CustomInvariantDenied
     ));
     assert_eq!(
-        candidate_count(REJECTED_DIMENSION),
+        candidate_count(REJECTED_RETENTION),
         1,
         "the handler staged its write before commit refusal"
     );
-    assert_eq!(read_dimension(runtime, instance.branch()), SEED_DIMENSION);
+    assert_eq!(read_retention(runtime, instance.branch()), SEED_RETENTION);
     assert!(matches!(
         advance_instance(&application, instance, 2_112),
         Ok(WorkflowProgressOutcome::AwaitingOperation(_))

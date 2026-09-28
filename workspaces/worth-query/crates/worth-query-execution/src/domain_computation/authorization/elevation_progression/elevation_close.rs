@@ -51,6 +51,10 @@ pub(in crate::domain_computation) struct WorthQueryElevationCloseDraft {
     lifecycle_effect: Option<worth_query_declaration::lifecycle_effect_derivation_authority::DerivedApplicationCapabilityLifecycleEffect>,
 }
 
+/// Refusal to authorize closing an approved elevation.
+///
+/// The elevation was not closed. [`Self::denial`] says why, and
+/// [`Self::into_approved`] returns the approved elevation unchanged.
 #[derive(Debug)]
 pub struct WorthQueryElevationCloseAuthorizationDenial {
     denial: WorthQueryOperationAuthorizationDenial,

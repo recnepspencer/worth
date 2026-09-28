@@ -1,32 +1,58 @@
 use worth_query_installation::facade::WorthQueryPrincipalBindingInstallationDenialKind;
 use worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind;
 
+/// Why an authenticated principal could not be resolved to its principal
+/// entity.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[non_exhaustive]
 pub enum WorthQueryPrincipalResolutionDenialKind {
+    /// The primary graph is not installed.
     PrimaryGraphNotInstalled,
+    /// The principal binding is not installed.
     BindingNotInstalled,
+    /// The principal proof belongs to a different runtime.
     ForeignRuntime,
+    /// The installed schema changed since the proof was issued.
     StaleInstalledSchema,
+    /// The authentication has expired.
     ExpiredAuthentication,
+    /// Resolution was cancelled.
     Cancelled,
+    /// Resolution reached its deadline.
     DeadlineExceeded,
+    /// The branch's materialization is suspended.
     BranchMaterializationSuspended,
+    /// The principal identity index is unavailable.
     IdentityIndexUnavailable,
+    /// The identity index disagrees with stored records.
     CorruptIdentityIndex,
+    /// No principal has this identity.
     UnknownPrincipal,
+    /// The principal is disabled.
     DisabledPrincipal,
+    /// More than one principal has this identity.
     AmbiguousPrincipal,
+    /// The principal's target entity is missing.
     MissingPrincipalTarget,
+    /// The principal has more than one target entity.
     AmbiguousPrincipalTarget,
+    /// The principal's target is not the expected entity kind.
     WrongPrincipalTargetKind,
+    /// The principal proof no longer matches current state; resolve again.
     StalePrincipalProof,
+    /// The installed limit on concurrently active snapshots was reached.
     ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
+    /// The runtime ran out of snapshot identities.
     SnapshotIdentityExhausted,
+    /// No capacity remains to retain a basis.
     RetentionCapacityExhausted,
+    /// The runtime ran out of basis-retention identities.
     RetentionIdentityExhausted,
 }
 
+/// Refusal to resolve an authenticated principal.
+///
+/// [`Self::kind`] says why and [`Self::binding`] names the principal binding.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryPrincipalResolutionDenial {
     kind: WorthQueryPrincipalResolutionDenialKind,

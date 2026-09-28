@@ -62,7 +62,7 @@ const REVISION_WORK_BUDGET: CanonicalDigestWorkBudget =
 /// use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
 /// let forged = ApplicationProgramRevision::from([0_u8; 32]);
 /// ```
-#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct ApplicationProgramRevision([u8; 32]);
 
 impl ApplicationProgramRevision {

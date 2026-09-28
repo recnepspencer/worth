@@ -192,8 +192,6 @@ pub(super) fn two_forks_preserve_predecessor_output(
     drop(right_settled);
     drop(left_output);
     drop(right_output);
-    drop(left_request);
-    drop(right_request);
     world.application.on_branch(left).close().unwrap();
     world.application.on_branch(right).close().unwrap();
 }
@@ -231,7 +229,6 @@ pub(super) fn branch_close_wakes_live_required_output(
     };
     assert!(notifications.generation() > before);
     drop(output);
-    drop(request);
     if let Some(cleanup) = pending_cleanup {
         cleanup.retry().unwrap();
     }
@@ -329,12 +326,11 @@ fn settle<'a>(
 ) -> worth_query_host::facade::application_entry::WorthQueryApplicationProgramOutputSettlement<
     <worth_query_topology_entry::PlanarReadBinding<ConsumerSchema> as worth_query_decl::facade::application_query::ApplicationQueryBinding<ConsumerSchema>>::Query,
 >{
-    loop {
-        match performed.required_output_mut().advance(request).unwrap() {
-            WorthQueryApplicationProgramOutputProgress::Pending => {}
-            WorthQueryApplicationProgramOutputProgress::Settled(settled) => return settled,
-        }
-    }
+    crate::application_invariant_acceptance::proof::settle(|| {
+        crate::application_invariant_acceptance::proof::settled(
+            performed.required_output_mut().advance(request).unwrap(),
+        )
+    })
 }
 
 fn read_at(

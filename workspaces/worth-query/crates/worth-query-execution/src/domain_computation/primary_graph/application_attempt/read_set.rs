@@ -30,8 +30,17 @@ mod relation_observation;
 mod source_facts;
 
 pub(super) use binding_proof::{MutationHandlerBindingProof, WorkflowOperationBindingProof};
+pub use relation_observation::WorthQueryObservedApplicationRelation;
 use source_facts::{merge_source_facts, validate_source_facts};
 
+/// An in-progress decision read for one admitted operation, begun on a leased
+/// snapshot of the branch.
+///
+/// Get one from the application runtime's `begin_application_read_attempt` (or
+/// its projected form). Observe the entities, fields, and relations the operation
+/// declares it reads, then call `complete` to seal them into a
+/// [`WorthQueryCompleteApplicationReadSet`]. Every read is checked against the
+/// operation's installed reads and its admitted scope.
 pub struct WorthQueryApplicationReadAttempt<
     Schema,
     Operation,
@@ -52,6 +61,13 @@ pub struct WorthQueryApplicationReadAttempt<
     _phase: PhantomData<fn() -> Phase>,
 }
 
+/// The sealed decision read set of one admitted operation: exactly the facts its
+/// installed reads cover, observed on one snapshot.
+///
+/// Sealing checked the fact budget, that the facts cover the declared reads, and
+/// the operation's mutation preconditions. In the projected-mutation phase it
+/// begins the effect program that authors the candidate; an ordinary read-phase
+/// set cannot author effects.
 pub struct WorthQueryCompleteApplicationReadSet<
     Schema,
     Operation,
@@ -65,23 +81,12 @@ pub struct WorthQueryCompleteApplicationReadSet<
     pub(super) facts: Vec<WorthQueryApplicationObservedFact>,
     pub(super) workflow_authority_binding: Option<WorkflowOperationBindingProof>,
     pub(super) mutation_handler_binding: Option<MutationHandlerBindingProof>,
+    /// The Unix-epoch millisecond the workflow instance this attempt steps
+    /// must commit before; the provider checks it again at commit.
+    pub(super) workflow_deadline: Option<u64>,
+    /// A refusal for a new commit only: a retry of a recorded outcome replays.
+    pub(super) new_commit_refusal: Option<WorthQueryApplicationAttemptDenial>,
     pub(super) _phase: PhantomData<fn() -> Phase>,
-}
-
-pub struct WorthQueryObservedApplicationRelation<Schema, Relation, From, To> {
-    count: usize,
-    pub(super) matching_relations: Vec<worth_relational::facade::identity::RelationId>,
-    _marker: PhantomData<fn() -> (Schema, Relation, From, To)>,
-}
-
-impl<Schema, Relation, From, To> WorthQueryObservedApplicationRelation<Schema, Relation, From, To> {
-    pub const fn count(&self) -> usize {
-        self.count
-    }
-
-    pub const fn is_absent(&self) -> bool {
-        self.count == 0
-    }
 }
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
@@ -377,6 +382,8 @@ impl<Schema, Operation, Input, Scope, Phase>
             facts: self.facts.into_values().chain(self.source_facts).collect(),
             workflow_authority_binding: None,
             mutation_handler_binding: None,
+            workflow_deadline: None,
+            new_commit_refusal: None,
             _phase: PhantomData,
         })
     }

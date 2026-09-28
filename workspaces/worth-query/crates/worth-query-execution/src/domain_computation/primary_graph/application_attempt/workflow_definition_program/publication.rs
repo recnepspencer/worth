@@ -5,8 +5,8 @@ use worth_query_declaration::facade::application_program::{
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::super::{
-    WorthQueryApplicationCommitOutcome, WorthQueryApplicationEffectProgram,
-    WorthQueryApplicationIdempotencyBinding,
+    WorthQueryApplicationEffectProgram, WorthQueryApplicationIdempotencyBinding,
+    WorthQueryApplicationUncommitted,
 };
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
@@ -16,15 +16,18 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationR
 /// definition contract. Callers cannot provide lineage IDs, current-pointer
 /// relation IDs, effects, or branch affinity.
 ///
-/// ```compile_fail
-/// use worth_query_execution::facade::workflow_definition_publication::PreparedWorkflowDefinitionPublication;
+/// ```compile_fail,E0451
+/// use worth_query_execution::publication_boundary::workflow_definition_publication::PreparedWorkflowDefinitionPublication;
 ///
 /// fn cannot_forge<Schema, Operation, Input, Scope>()
 ///     -> PreparedWorkflowDefinitionPublication<Schema, Operation, Input, Scope>
 /// {
 ///     PreparedWorkflowDefinitionPublication {
 ///         program: unsafe { std::mem::zeroed() },
+///         program_revision: unsafe { std::mem::zeroed() },
 ///         content_identity: unsafe { std::mem::zeroed() },
+///         content_identity_locator: unsafe { std::mem::zeroed() },
+///         workflow_intent_identity: [0; 32],
 ///     }
 /// }
 /// ```
@@ -112,6 +115,20 @@ impl PublishedWorkflowDefinitionRef {
         self.branch
     }
 
+    /// The same definition as `branch` holds it. A fork copies definitions
+    /// under their own identity, so this is the canonical name for the copy
+    /// in requests on the fork, including fork continuation targets.
+    /// It grants nothing: `branch`'s own truth decides every start, successor
+    /// and retirement, and a definition `branch` does not hold current, such
+    /// as one on a branch it was never forked from, is refused or stale there.
+    #[must_use]
+    pub fn held_on(&self, branch: crate::basis::WorthQueryProductBranch) -> Self {
+        Self {
+            branch,
+            ..self.clone()
+        }
+    }
+
     pub const fn entity_id(&self) -> worth_relational::facade::identity::EntityId {
         self.entity_id
     }
@@ -121,6 +138,8 @@ impl PublishedWorkflowDefinitionRef {
     }
 }
 
+/// A workflow definition publication that landed: the published definition, its commit
+/// receipt, and whether the idempotency key replayed an already-landed commit.
 #[derive(Debug)]
 pub struct PerformedWorkflowDefinitionPublication {
     definition: PublishedWorkflowDefinitionRef,
@@ -142,10 +161,15 @@ impl PerformedWorkflowDefinitionPublication {
     }
 }
 
+/// What executing a workflow definition publication produced. `ProjectionDenied` means the
+/// commit landed but its receipt did not record exactly one created definition with the
+/// published content identity, so no reference was projected.
 #[derive(Debug)]
 pub enum WorkflowDefinitionPublicationOutcome {
     Published(PerformedWorkflowDefinitionPublication),
-    Application(WorthQueryApplicationCommitOutcome),
+    /// The commit did not land. A landed commit, first or replayed, is the
+    /// performed variant.
+    Application(WorthQueryApplicationUncommitted),
     ProjectionDenied(super::super::WorthQueryApplicationCommitReceipt),
 }
 
@@ -172,29 +196,33 @@ where
             content_identity_locator,
             workflow_intent_identity,
         ) = prepared.into_parts();
-        let Some(presented) = self
+        let presented = match self
             .installed_program_support()
-            .and_then(|support| support.present(&program_revision))
-        else {
-            return WorkflowDefinitionPublicationOutcome::Application(
-                WorthQueryApplicationCommitOutcome::Denied(
-                    super::super::WorthQueryApplicationCommitDenial::application_program_required(),
-                ),
-            );
+            .ok_or_else(
+                super::super::WorthQueryApplicationCommitDenial::application_program_required,
+            )
+            .and_then(|support| support.present_for_commit(&program_revision))
+        {
+            Ok(presented) => presented,
+            Err(denial) => {
+                return WorkflowDefinitionPublicationOutcome::Application(
+                    WorthQueryApplicationUncommitted::Denied(denial),
+                );
+            }
         };
         let outcome = self.compare_and_commit_application_for_program_action(
             &presented,
             program,
             idempotency.bind_workflow_definition(&workflow_intent_identity),
         );
-        match outcome {
-            WorthQueryApplicationCommitOutcome::Committed(receipt) => {
-                project_published(receipt, content_identity, &content_identity_locator, false)
-            }
-            WorthQueryApplicationCommitOutcome::AlreadyCommitted(receipt) => {
-                project_published(receipt, content_identity, &content_identity_locator, true)
-            }
-            other => WorkflowDefinitionPublicationOutcome::Application(other),
+        match outcome.landed() {
+            Ok((receipt, replayed)) => project_published(
+                receipt,
+                content_identity,
+                &content_identity_locator,
+                replayed,
+            ),
+            Err(uncommitted) => WorkflowDefinitionPublicationOutcome::Application(uncommitted),
         }
     }
 }

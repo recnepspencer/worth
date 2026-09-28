@@ -22,18 +22,17 @@ use crate::domain_computation::primary_graph::{
 pub(in crate::domain_computation::primary_graph) struct BoundWorkflowDefinitionContract<
     Schema,
     Spec,
-    Program,
 > where
     Schema: ApplicationSchema,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
 {
     pub(in crate::domain_computation::primary_graph) contract:
-        WorthQueryInstalledWorkflowDefinitionContract<Schema, Spec, Program>,
+        WorthQueryInstalledWorkflowDefinitionContract<Schema, Spec>,
     branch: WorthQueryProductBranch,
     occurrence: WorthQueryProductBranchReadIdentity,
 }
 
-impl<Schema, Spec, Program> BoundWorkflowDefinitionContract<Schema, Spec, Program>
+impl<Schema, Spec> BoundWorkflowDefinitionContract<Schema, Spec>
 where
     Schema: ApplicationSchema,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
@@ -54,6 +53,9 @@ where
     }
 }
 
+/// Why a workflow definition request could not bind to the branch's program: the installed
+/// spec belongs to another schema, the adopted program could not be inspected, or the
+/// branch runs another program revision.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorkflowDefinitionBindingDenial {
     ForeignSchema,
@@ -61,6 +63,7 @@ pub enum WorkflowDefinitionBindingDenial {
     ProgramRevisionChanged,
 }
 
+/// Why a workflow definition publication or retirement did not prepare.
 #[derive(Debug)]
 pub enum WorkflowDefinitionPreparationDenial {
     ProductSelection(crate::basis::WorthQueryProductBranchAdmissionDenial),
@@ -88,16 +91,10 @@ impl<Schema> WorthQuerySelectedProductOperation<'_, Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub(in crate::domain_computation::primary_graph) fn bind_workflow_definition_contract<
-        Spec,
-        Program,
-    >(
+    pub(in crate::domain_computation::primary_graph) fn bind_workflow_definition_contract<Spec>(
         &self,
-        contract: WorthQueryInstalledWorkflowDefinitionContract<Schema, Spec, Program>,
-    ) -> Result<
-        BoundWorkflowDefinitionContract<Schema, Spec, Program>,
-        WorkflowDefinitionBindingDenial,
-    >
+        contract: WorthQueryInstalledWorkflowDefinitionContract<Schema, Spec>,
+    ) -> Result<BoundWorkflowDefinitionContract<Schema, Spec>, WorkflowDefinitionBindingDenial>
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
@@ -125,10 +122,9 @@ where
         Input,
         Scope,
         Spec,
-        Program,
     >(
         &self,
-        contract: WorthQueryInstalledWorkflowDefinitionContract<Schema, Spec, Program>,
+        contract: WorthQueryInstalledWorkflowDefinitionContract<Schema, Spec>,
         expected_predecessor: crate::domain_computation::primary_graph::WorkflowDefinitionExpectedPredecessor,
         admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     ) -> Result<
@@ -156,7 +152,7 @@ where
             .complete_projected_dependencies()
             .map_err(WorkflowDefinitionPreparationDenial::Attempt)?;
         read_set
-            .materialize_workflow_definition_publication::<Capability, Spec, Program>(
+            .materialize_workflow_definition_publication::<Capability, Spec>(
                 bound,
                 expected_predecessor,
             )

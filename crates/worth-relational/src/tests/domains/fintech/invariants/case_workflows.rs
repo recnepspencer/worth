@@ -122,7 +122,7 @@ pub(crate) fn assert_merge_metadata_preserved(
     merge_branch: &BranchId,
     expected_parents: usize,
 ) {
-    assert_eq!(merge_parent_branches, &[merge_branch.clone()]);
+    assert_eq!(merge_parent_branches, std::slice::from_ref(merge_branch));
     assert_eq!(merge_base_count, 1);
     assert_eq!(parent_count, expected_parents);
 }

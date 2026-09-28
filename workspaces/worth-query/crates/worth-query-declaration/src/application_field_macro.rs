@@ -1,3 +1,15 @@
+/// Declares a typed field marker on one aspect of one entity in an application
+/// schema, with its value type, value binding, write posture, and equality
+/// posture.
+///
+/// Input: `vis Field for Schema, Entity, Aspect: Value => ValueBinding, write,
+/// equality` (or `for Schema: SchemaBinding, ..` to declare it for every
+/// schema implementing that trait). Prefix the value with `optional` for an
+/// optional field, and add `unit Unit,` before the postures to declare its
+/// unit. `write` is `read_only` or `read_write`; `equality` is `equality` or
+/// `no_equality`. It generates a unit struct `Field` that implements
+/// `DeclaredApplicationFieldValue` and `ApplicationFieldMarkerIdentity`, with a
+/// `const fn reference()` returning its typed `ApplicationFieldRef`.
 #[macro_export]
 macro_rules! worth_query_field {
     (

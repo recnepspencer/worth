@@ -5,8 +5,7 @@
 //! here so a caller can name a rostered program by its authoring Rust type
 //! without the host keeping a mutable table of who may act.
 
-use std::any::TypeId;
-use std::marker::PhantomData;
+use std::any::{Any, TypeId};
 
 use worth_query_declaration::facade::application_program::{
     ApplicationProgramDefinition, ApplicationProgramRevision,
@@ -24,14 +23,19 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationR
 pub(in crate::domain_computation::primary_graph) struct WorthQuerySupportedProgramRecord {
     program_type: TypeId,
     revision: ApplicationProgramRevision,
+    /// The typed installed program, so owners that install against program
+    /// vocabulary (such as a workflow spec) can name it by its authoring type.
+    installed: Box<dyn Any + Send + Sync>,
     pub(in crate::domain_computation::primary_graph) action_bindings: Box<[TypeId]>,
     pub(in crate::domain_computation::primary_graph) output_source_bindings: Box<[TypeId]>,
+    pub(in crate::domain_computation::primary_graph) root_graph_types: Box<[TypeId]>,
 }
 
 impl WorthQuerySupportedProgramRecord {
     pub(in crate::domain_computation::primary_graph) fn installed<Schema, Program>(
-        installed: &WorthQueryInstalledApplicationProgram<Schema, Program>,
+        installed: WorthQueryInstalledApplicationProgram<Schema, Program>,
         output_source_bindings: &[TypeId],
+        root_graph_types: &[TypeId],
     ) -> Self
     where
         Schema: ApplicationSchema,
@@ -39,14 +43,27 @@ impl WorthQuerySupportedProgramRecord {
     {
         Self {
             program_type: TypeId::of::<Program>(),
-            revision: installed.revision().clone(),
+            revision: *installed.revision(),
             action_bindings: installed
                 .actions()
                 .iter()
                 .filter_map(|action| action.mutation_binding_type())
                 .collect(),
             output_source_bindings: output_source_bindings.into(),
+            root_graph_types: root_graph_types.into(),
+            installed: Box::new(installed),
         }
+    }
+
+    /// The typed installed program, when this record was minted for `Program`.
+    fn installed_program<Schema, Program>(
+        &self,
+    ) -> Option<&WorthQueryInstalledApplicationProgram<Schema, Program>>
+    where
+        Schema: 'static,
+        Program: 'static,
+    {
+        self.installed.downcast_ref()
     }
 
     pub(in crate::domain_computation::primary_graph) fn answers_to(&self, program: TypeId) -> bool {
@@ -84,19 +101,33 @@ impl WorthQuerySupportedProgramRecord {
 pub struct WorthQuerySupportedProgramHandle<'support, Schema, Program> {
     runtime: &'support WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     record: &'support WorthQuerySupportedProgramRecord,
-    marker: PhantomData<fn() -> Program>,
+    installed: &'support WorthQueryInstalledApplicationProgram<Schema, Program>,
 }
 
 impl<'support, Schema, Program> WorthQuerySupportedProgramHandle<'support, Schema, Program> {
-    pub(in crate::domain_computation::primary_graph) const fn rostered(
+    /// Names `record` as `Program`; a record minted for another program
+    /// yields no handle.
+    pub(in crate::domain_computation::primary_graph) fn rostered(
         runtime: &'support WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         record: &'support WorthQuerySupportedProgramRecord,
-    ) -> Self {
-        Self {
+    ) -> Option<Self>
+    where
+        Schema: 'static,
+        Program: 'static,
+    {
+        Some(Self {
             runtime,
             record,
-            marker: PhantomData,
-        }
+            installed: record.installed_program()?,
+        })
+    }
+
+    /// The rostered program's installed meaning, for owners that install
+    /// vocabulary against it.
+    pub const fn installed_program(
+        &self,
+    ) -> &'support WorthQueryInstalledApplicationProgram<Schema, Program> {
+        self.installed
     }
 
     pub const fn runtime(&self) -> &'support WorthQueryPrimaryGraphApplicationRuntime<Schema> {

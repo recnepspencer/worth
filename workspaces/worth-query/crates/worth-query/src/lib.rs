@@ -1,12 +1,11 @@
-//! `worth-query` owns the typed query facade and canonical query artifact
-//! authority.
+//! `worth-query` is the internal Query engine crate. Its `facade` module is the
+//! Workspace engine surface (`WorthQueryWorkspace`), and the crate owns typed
+//! query authoring and proof-carrying canonical query artifacts.
 //!
-//! Milestone 1 establishes:
-//!
-//! - raw authored query and result-shape forms
-//! - proof-carrying canonical query and result-shape artifacts
-//! - canonical bundle construction with explicit compatibility checks
-//! - a single public facade for ordinary consumers
+//! `worth-ui-query-binding`, `worth-query-replay`, and Query certification use
+//! this surface. It is not an application API: application declarations use
+//! `worth-query-decl`, application hosts use `worth-query-host`, and
+//! certification code uses `worth-query-replay`.
 
 #![forbid(unsafe_code)]
 

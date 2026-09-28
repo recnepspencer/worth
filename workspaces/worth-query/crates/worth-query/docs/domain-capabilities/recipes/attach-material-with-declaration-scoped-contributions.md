@@ -1,5 +1,7 @@
 # Attach Material With Declaration-Scoped Contributions
 
+> **Internal engine surface.** This page documents `WorthQueryWorkspace` (`worth_query::facade`), the engine surface that `worth-ui-query-binding` uses. Application code uses `worth-query-decl` and `worth-query-host`; start with the [application front door](../../foundations/ordinary-application-front-door.md).
+
 ## What This Recipe Covers
 
 This recipe shows how to attach material to an active-face selection while also
@@ -7,6 +9,12 @@ keeping declaration-scoped support, explanation, or workflow meaning on the
 same Query run.
 
 Use it when one declaration and its contribution posture belong together.
+
+The geometry family is the one declaration family that ships family-native
+helpers today, so this recipe uses its vocabulary. Any other family reaches
+the same result through the generic
+[Contribution-Composed Orchestration](../contribution-composed-orchestration.md)
+lane that this helper lowers onto.
 
 ## When To Use It
 

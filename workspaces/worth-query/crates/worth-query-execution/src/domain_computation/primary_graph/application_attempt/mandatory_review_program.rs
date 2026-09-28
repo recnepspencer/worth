@@ -21,6 +21,13 @@ use crate::domain_computation::application_contract_admission::{
 };
 use crate::domain_computation::authorization::WorthQueryMandatoryReviewBinding;
 
+/// The exact effect program that records the mandatory review owed after an
+/// elevation closes, ready to commit through the mandatory review lane.
+///
+/// Built by a projected read set's `materialize_mandatory_review_program`, which
+/// derives the review effects from the review binding and checks the read facts,
+/// rather than taking effects from the caller. Commit it with
+/// `compare_and_commit_mandatory_review`.
 pub struct WorthQueryMandatoryReviewProgram<Schema, Operation, Input, Scope> {
     program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
 }

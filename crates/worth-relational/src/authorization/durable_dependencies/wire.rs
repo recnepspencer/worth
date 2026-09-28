@@ -22,7 +22,7 @@ impl RelationalAuthorizationDurableDependencies {
         if wire.len() > MAXIMUM_AUTHORIZATION_DEPENDENCY_BYTES * 2 {
             return Err(Denial::ByteBudgetExceeded);
         }
-        if wire.len() % 2 != 0 || wire.is_empty() {
+        if !wire.len().is_multiple_of(2) || wire.is_empty() {
             return Err(Denial::MalformedWire);
         }
         let mut bytes = Vec::with_capacity(wire.len() / 2);

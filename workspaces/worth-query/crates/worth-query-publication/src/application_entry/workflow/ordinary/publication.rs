@@ -9,11 +9,9 @@ use worth_query_declaration::facade::{
         ApplicationWorkflowSpec, ApplicationWorkflowValidationDenial, AuthoredWorkflowDefinition,
     },
 };
-use worth_query_execution::facade::{
-    application_installation::WorthQueryWorkflowApplicationRuntime,
-    workflow_definition_publication::{
-        WorkflowDefinitionExpectedPredecessor, WorkflowDefinitionPublicationOutcome,
-    },
+use worth_query_execution::facade::application_installation::WorthQueryWorkflowVocabulary;
+use worth_query_execution::publication_boundary::workflow_definition_publication::{
+    WorkflowDefinitionExpectedPredecessor, WorkflowDefinitionPublicationOutcome,
 };
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryApplicationWorkflowInstallationDenial,
@@ -38,6 +36,8 @@ type MutationInput<Schema, Intent> =
 type MutationOperation<Schema, Intent> =
     <IntentBinding<Schema, Intent> as ApplicationMutationBinding<Schema>>::Operation;
 
+/// Why an ordinary workflow publication was refused: the workflow belongs to another
+/// runtime, the definition is invalid or unsupported, or preparation was denied.
 #[derive(Debug)]
 pub enum WorthQueryOrdinaryWorkflowPublicationDenial {
     RuntimeMismatch,
@@ -78,23 +78,18 @@ impl std::error::Error for WorthQueryOrdinaryWorkflowPublicationDenial {
     }
 }
 
-pub struct WorthQueryOrdinaryWorkflowDraft<
-    'application,
-    'principal,
-    'scope,
-    Schema,
-    Intent,
-    Spec,
-    Program,
-> where
+/// A workflow definition ready to publish. `publish` names its expected predecessor.
+pub struct WorthQueryOrdinaryWorkflowDraft<'application, 'principal, 'scope, Schema, Intent, Spec>
+where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
 {
     request: WorthQueryApplicationMutationRequest<'application, 'principal, 'scope, Schema, Intent>,
-    contract: WorthQueryInstalledWorkflowDefinitionContract<Schema, Spec, Program>,
+    contract: WorthQueryInstalledWorkflowDefinitionContract<Schema, Spec>,
 }
 
+/// A workflow publication with its expected predecessor. `idempotency` binds its key.
 pub struct WorthQueryOrdinaryWorkflowPublication<
     'application,
     'principal,
@@ -102,24 +97,16 @@ pub struct WorthQueryOrdinaryWorkflowPublication<
     Schema,
     Intent,
     Spec,
-    Program,
 > where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
 {
-    draft: WorthQueryOrdinaryWorkflowDraft<
-        'application,
-        'principal,
-        'scope,
-        Schema,
-        Intent,
-        Spec,
-        Program,
-    >,
+    draft: WorthQueryOrdinaryWorkflowDraft<'application, 'principal, 'scope, Schema, Intent, Spec>,
     expected_predecessor: WorkflowDefinitionExpectedPredecessor,
 }
 
+/// A workflow publication bound to its idempotency key. `execute` attempts its commit.
 pub struct WorthQueryOrdinaryWorkflowPublicationWithIdempotency<
     'application,
     'principal,
@@ -128,7 +115,6 @@ pub struct WorthQueryOrdinaryWorkflowPublicationWithIdempotency<
     Schema,
     Intent,
     Spec,
-    Program,
 > where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
@@ -143,7 +129,7 @@ pub struct WorthQueryOrdinaryWorkflowPublicationWithIdempotency<
         Intent,
         WorthQueryMutationSourcePrepared,
     >,
-    contract: WorthQueryInstalledWorkflowDefinitionContract<Schema, Spec, Program>,
+    contract: WorthQueryInstalledWorkflowDefinitionContract<Schema, Spec>,
     expected_predecessor: WorkflowDefinitionExpectedPredecessor,
 }
 
@@ -154,36 +140,26 @@ where
     Intent: ApplicationMutationIntent<Schema>,
 {
     /// Pure admission and installed-vocabulary binding; no product selection or permission is retained.
-    pub fn workflow<Spec, Program>(
+    pub fn workflow<'workflow, Spec>(
         self,
-        workflow: &WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>,
+        workflow: impl Into<WorthQueryWorkflowVocabulary<'workflow, Schema, Spec>>,
         authored: AuthoredWorkflowDefinition<Spec>,
     ) -> Result<
-        WorthQueryOrdinaryWorkflowDraft<
-            'application,
-            'principal,
-            'scope,
-            Schema,
-            Intent,
-            Spec,
-            Program,
-        >,
+        WorthQueryOrdinaryWorkflowDraft<'application, 'principal, 'scope, Schema, Intent, Spec>,
         WorthQueryOrdinaryWorkflowPublicationDenial,
     >
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
-        if !std::ptr::eq(
-            self.application_runtime(),
-            workflow.program_runtime().runtime(),
-        ) {
+        let workflow = workflow.into();
+        if !std::ptr::eq(self.application_runtime(), workflow.runtime()) {
             return Err(WorthQueryOrdinaryWorkflowPublicationDenial::RuntimeMismatch);
         }
         let validated = authored
             .validate()
             .map_err(WorthQueryOrdinaryWorkflowPublicationDenial::InvalidDefinition)?;
         let contract = workflow
-            .workflow_spec()
+            .workflow_spec_on(self.product_branch())
             .bind_definition(validated)
             .map_err(WorthQueryOrdinaryWorkflowPublicationDenial::UnsupportedDefinition)?;
         Ok(WorthQueryOrdinaryWorkflowDraft {
@@ -193,8 +169,8 @@ where
     }
 }
 
-impl<'application, 'principal, 'scope, Schema, Intent, Spec, Program>
-    WorthQueryOrdinaryWorkflowDraft<'application, 'principal, 'scope, Schema, Intent, Spec, Program>
+impl<'application, 'principal, 'scope, Schema, Intent, Spec>
+    WorthQueryOrdinaryWorkflowDraft<'application, 'principal, 'scope, Schema, Intent, Spec>
 where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
@@ -203,15 +179,8 @@ where
     pub fn publish(
         self,
         expected_predecessor: WorkflowDefinitionExpectedPredecessor,
-    ) -> WorthQueryOrdinaryWorkflowPublication<
-        'application,
-        'principal,
-        'scope,
-        Schema,
-        Intent,
-        Spec,
-        Program,
-    > {
+    ) -> WorthQueryOrdinaryWorkflowPublication<'application, 'principal, 'scope, Schema, Intent, Spec>
+    {
         WorthQueryOrdinaryWorkflowPublication {
             draft: self,
             expected_predecessor,
@@ -219,16 +188,8 @@ where
     }
 }
 
-impl<'application, 'principal, 'scope, Schema, Intent, Spec, Program>
-    WorthQueryOrdinaryWorkflowPublication<
-        'application,
-        'principal,
-        'scope,
-        Schema,
-        Intent,
-        Spec,
-        Program,
-    >
+impl<'application, 'principal, 'scope, Schema, Intent, Spec>
+    WorthQueryOrdinaryWorkflowPublication<'application, 'principal, 'scope, Schema, Intent, Spec>
 where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
@@ -247,7 +208,6 @@ where
         Schema,
         Intent,
         Spec,
-        Program,
     > {
         WorthQueryOrdinaryWorkflowPublicationWithIdempotency {
             request: self.draft.request.without_source().idempotency(key),
@@ -257,8 +217,8 @@ where
     }
 }
 
-impl<Schema, Intent, Spec, Program>
-    WorthQueryOrdinaryWorkflowPublicationWithIdempotency<'_, '_, '_, '_, Schema, Intent, Spec, Program>
+impl<Schema, Intent, Spec>
+    WorthQueryOrdinaryWorkflowPublicationWithIdempotency<'_, '_, '_, '_, Schema, Intent, Spec>
 where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema> + Clone,

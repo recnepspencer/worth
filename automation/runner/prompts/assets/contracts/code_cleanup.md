@@ -16,13 +16,13 @@ context:
 
 Also read the coding laws that govern cleanup work:
 
-- `_docs/coding_guidelines/MENTALITY.md`
-- `_docs/coding_guidelines/arch_laws.md`
-- `_docs/coding_guidelines/composition_laws.md`
-- `_docs/coding_guidelines/domain_structure_laws.md`
-- `_docs/coding_guidelines/perf_laws.md`
+- `docs/coding-guidelines/MENTALITY.md`
+- `docs/coding-guidelines/arch_laws.md`
+- `docs/coding-guidelines/composition_laws.md`
+- `docs/coding-guidelines/domain_structure_laws.md`
+- `docs/coding-guidelines/perf_laws.md`
 
-Read `_docs/coding_guidelines/dx_laws.md` when public caller experience,
+Read `docs/coding-guidelines/dx_laws.md` when public caller experience,
 facades, examples, or ergonomic capability flow changes.
 
 ## Cleanup posture

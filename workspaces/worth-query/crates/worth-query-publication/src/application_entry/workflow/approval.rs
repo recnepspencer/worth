@@ -8,12 +8,10 @@ use worth_query_declaration::facade::{
     },
     application_program::ApplicationWorkflowSpec,
 };
-use worth_query_execution::facade::{
-    application_installation::WorthQueryWorkflowApplicationRuntime,
-    workflow_advance::{
-        PublishedWorkflowInstanceRef, PublishedWorkflowProposalRef, RequiredWorkflowApproval,
-        WorkflowApprovalDecision, WorthQueryWorkflowAdvanceAdapter,
-    },
+use worth_query_execution::facade::application_installation::WorthQueryWorkflowVocabulary;
+use worth_query_execution::publication_boundary::workflow_advance::{
+    PublishedWorkflowInstanceRef, PublishedWorkflowProposalRef, RequiredWorkflowApproval,
+    WorkflowApprovalDecision, WorthQueryWorkflowAdvanceAdapter,
 };
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -33,28 +31,20 @@ type MutationOperation<Schema, Intent> =
 type MutationInput<Schema, Intent> =
     <IntentBinding<Schema, Intent> as ApplicationMutationBinding<Schema>>::Input;
 
-type WorkflowApprovalPreparationResult<
-    'application,
-    'principal,
-    'scope,
-    Schema,
-    Spec,
-    Program,
-    Intent,
-> = Result<
-    WorthQueryWorkflowApprovalSigningRequest<
-        'application,
-        'principal,
-        'scope,
-        Schema,
-        Spec,
-        Program,
-        MutationOperation<Schema, Intent>,
-        MutationInput<Schema, Intent>,
-        MutationScope<Schema, IntentBinding<Schema, Intent>>,
-    >,
-    WorthQueryWorkflowAdvancePreparationDenial,
->;
+type WorkflowApprovalPreparationResult<'application, 'principal, 'scope, Schema, Spec, Intent> =
+    Result<
+        WorthQueryWorkflowApprovalSigningRequest<
+            'application,
+            'principal,
+            'scope,
+            Schema,
+            Spec,
+            MutationOperation<Schema, Intent>,
+            MutationInput<Schema, Intent>,
+            MutationScope<Schema, IntentBinding<Schema, Intent>>,
+        >,
+        WorthQueryWorkflowAdvancePreparationDenial,
+    >;
 
 impl<'application, 'principal, 'scope, 'key, Schema, Intent, SourcePreparation>
     WorthQueryApplicationMutationRequestWithIdempotency<
@@ -83,20 +73,20 @@ where
         >,
 {
     #[allow(clippy::too_many_arguments)]
-    pub fn prepare_workflow_approval<Spec, Program>(
+    pub fn prepare_workflow_approval<Spec>(
         mut self,
-        workflow: &'application WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>,
+        workflow: impl Into<WorthQueryWorkflowVocabulary<'application, Schema, Spec>>,
         instance: PublishedWorkflowInstanceRef,
         required: &RequiredWorkflowApproval,
         proposal: &PublishedWorkflowProposalRef,
         decision: WorkflowApprovalDecision,
-    ) -> WorkflowApprovalPreparationResult<'application, 'principal, 'scope, Schema, Spec, Program, Intent>
+    ) -> WorkflowApprovalPreparationResult<'application, 'principal, 'scope, Schema, Spec, Intent>
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
-        Program: worth_query_declaration::facade::application_program::ApplicationProgramDefinition<Schema>,
     {
+        let workflow = workflow.into();
         let application = self.application_runtime();
-        if !std::ptr::eq(application, workflow.program_runtime().runtime()) {
+        if !std::ptr::eq(application, workflow.runtime()) {
             return Err(WorthQueryWorkflowAdvancePreparationDenial::RuntimeMismatch);
         }
         let selected = application
@@ -113,7 +103,6 @@ where
             MutationInput<Schema, Intent>,
             MutationScope<Schema, IntentBinding<Schema, Intent>>,
             Spec,
-            Program,
         >(
             &selected,
             workflow,
@@ -146,15 +135,12 @@ pub struct WorthQueryWorkflowApprovalSigningRequest<
     'scope,
     Schema,
     Spec,
-    Program,
     Operation,
     Input,
     Scope,
 > where
     Schema: ApplicationSchema,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
-    Program:
-        worth_query_declaration::facade::application_program::ApplicationProgramDefinition<Schema>,
 {
     request: WorthQueryWorkflowAdvanceRequest<
         'application,
@@ -162,21 +148,19 @@ pub struct WorthQueryWorkflowApprovalSigningRequest<
         'scope,
         Schema,
         Spec,
-        Program,
         Operation,
         Input,
         Scope,
     >,
 }
 
-impl<'application, 'principal, 'scope, Schema, Spec, Program, Operation, Input, Scope>
+impl<'application, 'principal, 'scope, Schema, Spec, Operation, Input, Scope>
     WorthQueryWorkflowApprovalSigningRequest<
         'application,
         'principal,
         'scope,
         Schema,
         Spec,
-        Program,
         Operation,
         Input,
         Scope,
@@ -184,8 +168,6 @@ impl<'application, 'principal, 'scope, Schema, Spec, Program, Operation, Input, 
 where
     Schema: ApplicationSchema,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
-    Program:
-        worth_query_declaration::facade::application_program::ApplicationProgramDefinition<Schema>,
 {
     pub fn authentication_intent(
         &self,
@@ -205,7 +187,6 @@ where
             'scope,
             Schema,
             Spec,
-            Program,
             Operation,
             Input,
             Scope,
@@ -225,7 +206,7 @@ where
     pub fn execute_replay(
         self,
     ) -> Result<
-        worth_query_execution::facade::workflow_advance::WorkflowProgressOutcome,
+        worth_query_execution::publication_boundary::workflow_advance::WorkflowProgressOutcome,
         WorthQueryWorkflowAdvancePreparationDenial,
     >
     where
@@ -234,7 +215,7 @@ where
     {
         if !matches!(
             &self.request.prepared,
-            worth_query_execution::facade::workflow_advance::PreparedWorkflowAdvance::ReplayOnly {
+            worth_query_execution::publication_boundary::workflow_advance::PreparedWorkflowAdvance::ReplayOnly {
                 approval: Some(_),
                 ..
             }

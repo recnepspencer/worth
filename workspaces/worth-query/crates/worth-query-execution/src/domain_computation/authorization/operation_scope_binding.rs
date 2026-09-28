@@ -4,6 +4,8 @@ use std::sync::Arc;
 
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 
+/// Exact identity of one entity (partition, slot, and generation) that an
+/// admitted operation was bound to as its principal or scope.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct WorthQueryOperationScopeEntityBinding {
     partition_id: u32,
@@ -33,6 +35,12 @@ impl WorthQueryOperationScopeEntityBinding {
     }
 }
 
+/// The runtime, installed schema binding, operation, principal, and scope that
+/// one operation admission was bound to.
+///
+/// Carried on commit receipts, recovery handles, and invariant contexts so later
+/// steps can compare against the exact admitted binding. It is descriptive and
+/// grants nothing.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryOperationScopeBinding {
     runtime_authority: u64,

@@ -94,7 +94,7 @@ where
     {
         let selection = (
             program.installed_program().identity().clone(),
-            program.installed_program().revision().clone(),
+            *program.installed_program().revision(),
         );
         let mut handle = self.start()?;
         handle.selected_program = Some(selection);

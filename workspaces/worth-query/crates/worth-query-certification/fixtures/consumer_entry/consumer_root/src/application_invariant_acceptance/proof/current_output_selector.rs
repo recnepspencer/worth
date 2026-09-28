@@ -6,8 +6,8 @@ use worth_query_consumer_values::{
 };
 use worth_query_host::facade::{
     application_entry::{
-        WorthQueryApplicationMutationOutcome, WorthQueryApplicationProgramOutputProgress,
-        WorthQueryApplicationRequestMutationDenial, WorthQueryOutputDemandControls,
+        WorthQueryApplicationMutationOutcome, WorthQueryApplicationRequestMutationDenial,
+        WorthQueryOutputDemandControls,
     },
     primary_graph::{
         MutationHandlerExecutionDenial, WorthQueryCurrentOutputDenial,
@@ -108,15 +108,13 @@ fn publish_initial(request: &Request<'_>, application: &ProgramApplication, scop
             ),
         )
         .expect("the declared root producer starts for the selected source");
-    loop {
-        match output
-            .advance(request)
-            .expect("the declared root producer settles")
-        {
-            WorthQueryApplicationProgramOutputProgress::Pending => {}
-            WorthQueryApplicationProgramOutputProgress::Settled(_) => break,
-        }
-    }
+    super::settle(|| {
+        super::settled(
+            output
+                .advance(request)
+                .expect("the declared root producer settles"),
+        )
+    });
 }
 
 fn adjust_source(

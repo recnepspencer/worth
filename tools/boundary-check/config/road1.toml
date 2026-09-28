@@ -731,6 +731,23 @@ forbidden_identifiers = ["program_publication_access"]
 forbidden_identifier_fragments = []
 guidance = "Milestone 9.17.4: only worth-query-publication may issue execution's program-output progression access"
 
+[[source_identifier_denials]]
+root = "workspaces/worth-query/crates"
+exclude_paths = [
+  "workspaces/worth-query/crates/worth-query-execution/src",
+  "workspaces/worth-query/crates/worth-query-publication",
+  "workspaces/worth-query/crates/worth-query-certification/tests/application_graph/workflow_approval/commit_boundary.rs",
+]
+forbidden_identifiers = ["publication_boundary"]
+forbidden_identifier_fragments = []
+guidance = "Milestone 9.17.6 slice 5.7: only worth-query-publication drives execution's workflow owner vocabulary; the certification commit-boundary court alone forges a kernel commit below that owner"
+
+[[rule_contracts.query_audience.facade_surfaces]]
+label = "worth-query-host::application_entry"
+source = "workspaces/worth-query/crates/worth-query-host/src/facade.rs"
+reexport = "worth_query_publication::facade::application_entry"
+owner_source = "workspaces/worth-query/crates/worth-query-publication/src/application_entry/mod.rs"
+
 [[rule_contracts.query_audience.facade_surfaces]]
 label = "worth-query-host::provisional_aftermath"
 source = "workspaces/worth-query/crates/worth-query-host/src/facade.rs"
@@ -1166,3 +1183,26 @@ lifecycle_states = ["OriginalOrderPlacement"]
 crate_root = "workspaces/worth-ui/apps/platform-pulse"
 guidance = "Milestone 3.16.2 requirement 2: name a Pulse lifecycle state's variant where it is built"
 lifecycle_states = ["PlatformPulseNativeInputIngress", "PlatformPulseTerminalPosture", "PlatformPulseVisualIdentityExecution", "PlatformPulseDisabledVisualIdentity", "PlatformPulseQueryOwnerState"]
+
+[[source_owner_isolations]]
+owner_roots = [
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/workflow",
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/workflow.rs",
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow_definition_program",
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow_definition_program.rs",
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow_instance_observation",
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow_instance_observation.rs",
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow_instance_program",
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow_instance_program.rs",
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow_proposal_program",
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow_proposal_program.rs",
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow_transition_program",
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow_transition_program.rs",
+]
+guarded_roots = [
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/managed_run",
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/conditional_operation",
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/conditional_operation.rs",
+]
+forbidden_paths = [["primary_graph", "workflow"]]
+guidance = "9.17.6 Phase 5: provider-read managed runs and conditional operations stay independent of the authored workflow kernel; the kernel composes them, never the reverse"

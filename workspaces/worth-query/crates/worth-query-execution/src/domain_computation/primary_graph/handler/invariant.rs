@@ -8,9 +8,12 @@ use super::super::{
     WorthQueryOperationScopeBinding,
 };
 
+/// Why a mutation handler stopped before finishing.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum HandlerInterruption {
+    /// The request was cancelled.
     Cancelled,
+    /// The request reached its deadline.
     DeadlineExceeded,
 }
 

@@ -3,7 +3,7 @@ use std::sync::Arc;
 use bank_domain::model::{BankPrincipalId, Money};
 use bank_domain::proposals::BankProposalDenial;
 use bank_domain::schema::SendMoney;
-use bank_server::{BankPrincipalSeed, BankWorldSeed};
+use bank_server::{mutations, BankMutationControls, BankPrincipalSeed, BankWorldSeed};
 use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome;
 
 use super::fixture::{funded_independent_sender_world, funded_personal_world, id, key};
@@ -52,13 +52,12 @@ fn concurrent_program_transfers_cannot_overspend_one_account() {
         let actor = Arc::clone(&actor);
         let input = input.clone();
         std::thread::spawn(move || {
-            let request = request_scope();
             world
                 .runtime
-                .request(&actor, &request)
-                .mutate(input)
-                .idempotency(&key(operation_key))
-                .execute_in_program(world.runtime.application_program())
+                .mutate(mutations::send_money(input))
+                .as_principal(&actor)
+                .controls(controls(operation_key))
+                .execute()
         })
     };
     let outcomes = [
@@ -92,17 +91,16 @@ fn concurrent_program_transfers_cannot_overspend_one_account() {
         1
     );
 
-    let request = request_scope();
     let denial = world
         .runtime
-        .request(&actor, &request)
-        .mutate(SendMoney {
+        .mutate(mutations::send_money(SendMoney {
             from: source,
             recipient: id(BankPrincipalId::new, 2),
             amount: Money::from_minor(4_001).unwrap(),
-        })
-        .idempotency(&key("program-post-concurrency-overspend"))
-        .execute_in_program(world.runtime.application_program())
+        }))
+        .as_principal(&actor)
+        .controls(controls("program-post-concurrency-overspend"))
+        .execute()
         .unwrap();
     assert!(matches!(
         denial,
@@ -181,13 +179,17 @@ fn execute_send(
     .unwrap();
     world
         .runtime
-        .request(&actor, &request)
-        .mutate(SendMoney {
+        .mutate(mutations::send_money(SendMoney {
             from: source,
             recipient: id(BankPrincipalId::new, recipient),
             amount: Money::from_minor(100).unwrap(),
-        })
-        .idempotency(&key(operation_key))
-        .execute_in_program(world.runtime.application_program())
+        }))
+        .as_principal(&actor)
+        .controls(controls(operation_key))
+        .execute()
         .unwrap()
+}
+
+fn controls(operation_key: &str) -> BankMutationControls {
+    BankMutationControls::new(request_scope(), key(operation_key))
 }

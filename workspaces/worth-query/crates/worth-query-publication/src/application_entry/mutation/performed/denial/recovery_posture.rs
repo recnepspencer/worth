@@ -9,6 +9,8 @@ use super::WorthQueryRequiredOutputPreparationDenial;
 mod query;
 use query::query_posture;
 
+/// Whether a fresh request can reuse the same committed source receipt to start its
+/// required outputs again.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryRequiredOutputRecoveryPosture {
     Retryable,

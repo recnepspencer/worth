@@ -1,5 +1,7 @@
 # Downstream Runtime Integration
 
+> **Internal engine surface.** This page documents `WorthQueryWorkspace` (`worth_query::facade`), the engine surface that `worth-ui-query-binding` uses. Application code uses `worth-query-decl` and `worth-query-host`; start with the [application front door](ordinary-application-front-door.md).
+
 ## What This Feature Is
 
 This page is the explicit contract for downstream runtimes and domain crates
@@ -258,16 +260,17 @@ If the downstream crate needs to prove it is consuming Query correctly, use the
 [Consumer Kit](consumer-kit.md). The kit is the Query-owned proof path for:
 
 - digest-bearing evidence reports
-- hard-prohibition registry and boundary audits
 - support snapshots and support pins
 - in-memory Query test workspaces
-- adoption and residue audits that prove Query folklore was deleted
 
 This matters because consumer proof is still Query semantics. A local digest
-helper, local source grep, local required-family row list, or fabricated test
-receipt can look like certification while silently drifting from the runtime
-contract. Consumer Kit surfaces derive from Query's evidence identity,
-prohibition registry, support matrix, and ordinary workspace facade instead.
+helper, local required-family row list, or fabricated test receipt can look like
+certification while silently drifting from the runtime contract. Consumer Kit
+surfaces derive from Query's evidence identity, support matrix, and ordinary
+workspace facade instead.
+
+Sealed Query seams need no proof step: the compiler refuses them. See
+[Hard Prohibitions](hard-prohibitions.md).
 
 ## Support And Admission Rules
 

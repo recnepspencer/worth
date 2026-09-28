@@ -37,6 +37,10 @@ fn current_reader_profile_is_derived_from_every_public_version_constant() {
         profile.application_program_description_window(),
         WORTH_QUERY_APPLICATION_PROGRAM_ARCHIVE_PROTOCOL_VERSION,
     );
+    assert_exact_window(
+        profile.workflow_definition_draft_window(),
+        WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION,
+    );
 }
 
 #[test]
@@ -199,6 +203,9 @@ fn supported_version(layer: WorthQueryPackageArchiveProtocolLayer) -> u16 {
         }
         WorthQueryPackageArchiveProtocolLayer::ApplicationProgramDescription => {
             WORTH_QUERY_APPLICATION_PROGRAM_ARCHIVE_PROTOCOL_VERSION
+        }
+        WorthQueryPackageArchiveProtocolLayer::WorkflowDefinitionDraft => {
+            WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION
         }
     }
 }

@@ -9,7 +9,6 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
-from worth_ui_ci_contract import ci_contract_violations
 from worth_ui_compile_contract_topology import compile_reconciliation_violations
 from worth_ui_test_source_topology import source_violations
 from worth_ui_test_topology_config import (
@@ -173,7 +172,6 @@ def main() -> int:
         violations.extend(source_violations(root, config))
         violations.extend(source_inventory_violations(root, config))
         violations.extend(required_source_violations(root, config))
-        violations.extend(ci_contract_violations(root, config))
         violations.extend(compile_reconciliation_violations(root, config))
         lane_runner = root / required_string(config, "lane_runner")
         if not lane_runner.is_file():

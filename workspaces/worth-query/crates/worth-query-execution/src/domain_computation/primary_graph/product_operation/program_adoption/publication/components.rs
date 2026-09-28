@@ -3,9 +3,13 @@ use worth_runtime_world::facade::{NoEffectCompositePublication, RuntimeWorldPubl
 use super::{WorthQueryPerformedBranchAdoption, WorthQueryUnpublishedBranchAdoption};
 use crate::domain_computation::primary_graph::product_operation::program_adoption::preparation::WorthQueryPreparedBranchAdoption;
 
+/// What publishing a prepared branch adoption did. Returned by `publish`.
 pub enum WorthQueryBranchAdoptionPublicationOutcome {
+    /// The adoption is published and the product head moved.
     Performed(WorthQueryPerformedBranchAdoption),
+    /// The publication had no effect: no owner and no product reference moved.
     NoEffect(NoEffectCompositePublication),
+    /// Some owners moved, but the product head did not. Recover publication.
     ProductUnpublished(WorthQueryUnpublishedBranchAdoption),
 }
 

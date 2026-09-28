@@ -11,7 +11,7 @@ use worth_query_execution::facade::primary_graph::{
     WorthQueryRecoveryHandleDenial, WorthQueryRecoveryHandleDenialKind,
     WorthQueryRecoverySafeRetryAdmission,
 };
-use worth_query_execution::facade::workflow_advance::{
+use worth_query_execution::publication_boundary::workflow_advance::{
     RequiredWorkflowOperation, WorthQueryGuardedWorkflowOperationCustody,
     WorthQueryWorkflowAdvanceAdapter,
 };
@@ -29,6 +29,9 @@ type MutationScope<Schema, Binding> =
         Schema,
     >>::Scope;
 
+/// Why `prepare_workflow_operation_recovery_from_owner` refused. `NotWorkflowBound` means
+/// the request is not bound to this transition; `RecoveryNotRequired` means the receipt has
+/// no unresolved external custody.
 #[derive(Debug)]
 pub enum WorthQueryWorkflowOperationRecoveryPreparationDenial {
     NotWorkflowBound,
@@ -65,6 +68,8 @@ impl std::fmt::Display for WorthQueryWorkflowOperationRecoveryPreparationDenial 
 
 impl std::error::Error for WorthQueryWorkflowOperationRecoveryPreparationDenial {}
 
+/// A workflow operation recovery ready to run. `safe_retry` admits a safe retry of the
+/// effect under its recovery handle.
 pub struct WorthQueryPreparedWorkflowOperationRecovery<'application, Schema, Binding>
 where
     Schema: ApplicationSchema,
@@ -80,6 +85,8 @@ where
     handle: WorthQueryRecoveryHandle,
 }
 
+/// A refused workflow operation recovery. `into_recovery` returns the prepared recovery
+/// when it can be tried again.
 pub struct WorthQueryWorkflowOperationRecoveryDenial<'application, Schema, Binding>
 where
     Schema: ApplicationSchema,

@@ -30,9 +30,15 @@ The [public consumer fixture](../worth-query-certification/fixtures/consumer_ent
 checks separately compiled contributions and static program validation. The
 [ordinary product workflow](../worth-query-certification/examples/ordinary_product_workflow.rs)
 installs a validated program with `application_installation::in_memory_program`,
-admits its exact operation, publishes through `commit_for_program`, reads the
+commits a typed mutation through `execute_in_program`, reads the
 successor, and closes conditional resources. Its source is the executable host
 entry example.
+
+The [authored workflow](../worth-query-certification/examples/authored_workflow/main.rs)
+authors a definition around one reusable review component, publishes and discovers
+it, rejects a proposal so the retry asks for a revision, approves and applies the
+revised effect, then publishes a second revision; a start from the superseded
+revision is refused naming the current one.
 
 `WorthQueryApplicationContributionContracts` and
 `WorthQueryApplicationContributionSetup` resolve installed bindings internally.
@@ -101,9 +107,11 @@ The executable configuration and resource setup live in
 [consumer installation](../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/installation.rs),
 with contribution inventory, ownership, and handler-completeness denials in
 [contribution denials](../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/contribution_denials.rs).
-The synchronous application foundation and branch-local program-evolution path
-are complete. The separately governed dynamic workflow-definition product
-remains outside this surface.
+The synchronous application foundation, branch-local program evolution, and
+authored workflow definitions (see the authored workflow example above and the
+[workflows guide](../worth-query/docs/foundations/workflows.md)) are
+available through this facade. The workflow surface exposes no callback,
+resume-message, or inbound-completion API.
 
 ## Branch-Local Program Evolution
 
@@ -119,8 +127,7 @@ let programs = application
 let inspection = programs.inspect()?;
 let requirements = programs.compare(&target_revision)?;
 let prepared = programs
-    .adopt(&target_revision)
-    .requirements(&requirements)
+    .adopt(&requirements)
     .prepare(maximum_selection_work)?;
 let outcome = prepared.publish();
 ```

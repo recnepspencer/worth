@@ -22,7 +22,7 @@ or invariant execution.
 
 ## Stable Entry Points
 
-- Declare application queries and operations through `worth_query_declaration`.
+- Declare application queries and operations through `worth_query_decl::facade`.
 - Inspect `installed_query.graph_obligations()` or
   `installed_operation.graph_obligations()` through
   `worth_query_host::facade::domain`.

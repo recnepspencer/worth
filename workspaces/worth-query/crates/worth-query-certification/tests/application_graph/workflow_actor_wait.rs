@@ -12,10 +12,10 @@ use worth_query_host::facade::application_entry::{
     WorthQueryWorkflowAdvancePreparationDenial,
 };
 
-use super::bounded_dimension_model::{
-    dimension_entry::PART_IDENTITY,
+use super::document_retention_model::{
     host::publish_workflow_on_first_program,
     operator_identity::{authenticate_operator, request_scope},
+    retention_entry::DOCUMENT_IDENTITY,
     workflow::{
         advance_instance, condition_terminal_definition, propose_authoring_instance,
         publish_definition, run_instance, start_instance, terminal_definition,
@@ -79,7 +79,7 @@ fn revoked_advance_grant_yields_a_redacted_actor_wait() {
         .on_branch(instance.branch())
         .mutate(WorkflowApprovalIntent {
             input: WorkflowAdvanceInput {
-                part_identity: PART_IDENTITY.to_owned(),
+                document_identity: DOCUMENT_IDENTITY.to_owned(),
             },
         })
         .without_source()
@@ -112,7 +112,7 @@ fn revoked_advance_grant_yields_a_redacted_actor_wait() {
         .on_branch(sibling)
         .mutate(WorkflowAdvanceIntent {
             input: WorkflowAdvanceInput {
-                part_identity: PART_IDENTITY.to_owned(),
+                document_identity: DOCUMENT_IDENTITY.to_owned(),
             },
         })
         .without_source()
@@ -138,7 +138,7 @@ fn revoked_advance_grant_yields_a_redacted_actor_wait() {
         .on_branch(instance.branch())
         .mutate(WorkflowAdvanceIntent {
             input: WorkflowAdvanceInput {
-                part_identity: PART_IDENTITY.to_owned(),
+                document_identity: DOCUMENT_IDENTITY.to_owned(),
             },
         })
         .without_source()
@@ -210,7 +210,7 @@ fn completed_instance_state_is_redacted_from_a_denied_actor() {
 }
 
 fn change_advance_grant(
-    application: &super::bounded_dimension_model::host::BoundedDimensionWorkflowRuntime,
+    application: &super::document_retention_model::host::DocumentWorkflowRuntime,
     instance: &worth_query_host::facade::application_entry::PublishedWorkflowInstanceRef,
     status: &str,
     key: u64,
@@ -219,7 +219,7 @@ fn change_advance_grant(
 }
 
 fn change_grant(
-    application: &super::bounded_dimension_model::host::BoundedDimensionWorkflowRuntime,
+    application: &super::document_retention_model::host::DocumentWorkflowRuntime,
     instance: &worth_query_host::facade::application_entry::PublishedWorkflowInstanceRef,
     grant_identity: &str,
     status: &str,

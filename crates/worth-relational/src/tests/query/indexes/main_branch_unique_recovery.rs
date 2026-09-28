@@ -8,7 +8,6 @@ fn unique_index_rebuild_uses_main_head_when_a_feature_commit_is_globally_newer()
         registrations: vec![InvariantRegistration::mutation_sensitive_blocking(
             InvariantRule::unique_entity_aspect_field(aspect_key("name"), field_key("name")),
         )],
-        ..InvariantCatalog::default()
     });
     let main_entity = create_entity(&runtime, "main-only");
     runtime

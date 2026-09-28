@@ -39,10 +39,11 @@ shape real.
 ## 1. Import The Facade
 
 ```rust
+use worth_foundational::facade::{AspectKey, FieldKey, ScalarAspectType};
 use worth_runtime_bridge::facade::{
     BridgeMappingId, BridgeMappingRegistration, BridgeTruthViewEvaluationRequest,
     CoarseRoutingMode, MappingSelector, RuntimeBridge, SignalInvalidationScope,
-    TruthBranchIdentity, TruthPatchScope,
+    SnapshotReadContract, TruthBranchIdentity, TruthCommitIdentity, TruthPatchScope,
 };
 ```
 
@@ -56,7 +57,7 @@ If you already have a bound truth source, branch-head source, compute sink, and
 at least one mapping, the standard path is:
 
 ```rust
-let route = bridge.route(crate::facade::TruthCommitIdentity::new("commit:steel-main"))?;
+let route = bridge.route(TruthCommitIdentity::from_relational_commit_id(commit_id))?;
 let evaluation = bridge.evaluate_current(route.target())?;
 let diagnostics = bridge.diagnostics().explain_last();
 ```
@@ -72,13 +73,17 @@ let bridge = RuntimeBridge::builder()
     .with_truth_branch_head_source(relational_source)
     .with_compute_sink(signal_sink)
     .register_mapping(BridgeMappingRegistration::new(
-        BridgeMappingId::new("pricing:steel"),
-        TruthPatchScope::new(
-            MappingSelector::exact("component:steel"),
-            MappingSelector::exact("cost"),
-            MappingSelector::exact("usd"),
+        BridgeMappingId::from_stable_name("pricing:catalog"),
+        TruthPatchScope::for_entity_field(
+            MappingSelector::exact("item:widget"),
+            AspectKey::new("cost").expect("valid aspect key"),
+            FieldKey::new("usd".to_owned()).expect("valid field key"),
         ),
-        SignalInvalidationScope::new("price:bicycle"),
+        SnapshotReadContract::scalar(
+            AspectKey::new("cost").expect("valid aspect key"),
+            ScalarAspectType::String,
+        ),
+        SignalInvalidationScope::from_stable_name("order:total"),
         CoarseRoutingMode::Direct,
     ))
     .build()?;
@@ -95,7 +100,7 @@ Normal setup should feel like:
 ## 4. Route A Truth Change
 
 ```rust
-let route = bridge.route(crate::facade::TruthCommitIdentity::new("commit:steel-main"))?;
+let route = bridge.route(TruthCommitIdentity::from_relational_commit_id(commit_id))?;
 ```
 
 For ordinary work, `route(...)` is the front door.
@@ -114,7 +119,9 @@ If you need a specific truth view, use `evaluate(...)` instead:
 
 ```rust
 let branch_eval = bridge.evaluate(
-    BridgeTruthViewEvaluationRequest::for_branch_head(TruthBranchIdentity::new("main")),
+    BridgeTruthViewEvaluationRequest::for_branch_head(
+        TruthBranchIdentity::from_relational_branch_id("main"),
+    ),
 )?;
 ```
 
@@ -133,7 +140,9 @@ hand you the requests:
 
 ```rust
 let main_eval = bridge.evaluate(
-    comparison.main_evaluation_request(TruthBranchIdentity::new("main")),
+    comparison.main_evaluation_request(
+        TruthBranchIdentity::from_relational_branch_id("main"),
+    ),
 )?;
 let speculative_eval = bridge.evaluate(
     comparison.speculative_evaluation_request(),

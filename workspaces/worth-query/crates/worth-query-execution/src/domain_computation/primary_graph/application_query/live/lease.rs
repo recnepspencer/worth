@@ -44,6 +44,12 @@ use crate::domain_computation::{
     },
 };
 
+/// An open live read: a bounded subscription that delivers a fresh query result
+/// for each matching committed change.
+///
+/// Call `next` with a fresh principal and request for each delivery; each call
+/// re-admits and re-authorizes the read. The lease is not `Send`; end it with
+/// `close`.
 pub struct WorthQueryApplicationLiveLease<
     'runtime,
     Schema,

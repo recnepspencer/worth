@@ -8,7 +8,7 @@ use worth_query_declaration::facade::{
 
 use super::{InstalledWorkflowCapabilityBinding, WorthQueryInstalledApplicationWorkflowSpec};
 
-impl<Schema, Spec, Program> WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>
+impl<Schema, Spec> WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>
 where
     Schema: super::ApplicationSchema,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,

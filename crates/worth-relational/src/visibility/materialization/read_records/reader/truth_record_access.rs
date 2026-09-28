@@ -187,7 +187,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
             registry,
             partition_id,
             kind_id,
-            version_id,
+            super::KindScanVisibility::for_version(self.runtime, version_id),
             &mut scan,
         )
         .expect("an unbounded kind scan cannot exhaust usize::MAX work");
@@ -224,7 +224,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
             registry,
             partition_id,
             kind_id,
-            version_id,
+            super::KindScanVisibility::for_version(self.runtime, version_id),
             &mut scan,
         )
         .expect("an unbounded kind scan cannot exhaust usize::MAX work");

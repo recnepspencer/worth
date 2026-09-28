@@ -72,6 +72,8 @@ where
     work: ProgramOutputTraversalWork,
 }
 
+/// Drives a mutation's discovered program outputs to settlement. `advance` advances at most
+/// one discovered root per call.
 pub struct WorthQueryDiscoveredProgramOutputHandle<'application, Schema, Program, Root>
 where
     Schema: ApplicationSchema,

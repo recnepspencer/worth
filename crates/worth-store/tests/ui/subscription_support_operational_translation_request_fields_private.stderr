@@ -1,7 +1,0 @@
-error[E0560]: struct `SubscriptionSupportOperationalVerdictTranslationRequest` has no field named `plan`
- --> tests/ui/subscription_support_operational_translation_request_fields_private.rs:5:9
-  |
-5 |         plan: unsafe { std::mem::zeroed() },
-  |         ^^^^ `SubscriptionSupportOperationalVerdictTranslationRequest` does not have this field
-  |
-  = note: all struct fields are already assigned

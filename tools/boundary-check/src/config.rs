@@ -25,6 +25,8 @@ pub(crate) struct Road1Config {
     #[serde(default)]
     pub(crate) source_identifier_denials: Vec<SourceIdentifierDenialConfig>,
     #[serde(default)]
+    pub(crate) source_owner_isolations: Vec<SourceOwnerIsolationConfig>,
+    #[serde(default)]
     pub(crate) raw_geometry_denials: Vec<RawGeometryDenialConfig>,
     #[serde(default)]
     pub(crate) truth_type_denials: Vec<TruthTypeDenialConfig>,
@@ -85,6 +87,19 @@ pub(crate) struct SourceIdentifierDenialConfig {
     pub(crate) forbidden_identifiers: Vec<String>,
     #[serde(default)]
     pub(crate) forbidden_identifier_fragments: Vec<String>,
+    pub(crate) guidance: String,
+}
+
+/// Source roots that may never reach an isolated owner, by path or by any
+/// type the owner declares.
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct SourceOwnerIsolationConfig {
+    pub(crate) owner_roots: Vec<String>,
+    pub(crate) guarded_roots: Vec<String>,
+    /// Consecutive path segments that name the owner, such as
+    /// `["primary_graph", "workflow"]`.
+    pub(crate) forbidden_paths: Vec<Vec<String>>,
     pub(crate) guidance: String,
 }
 

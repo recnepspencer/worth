@@ -1,9 +1,9 @@
 //! # worth-relational
 //!
 //! Deterministic truth-state runtime infrastructure for high-consequence graph
-//! domains such as geometry kernels, chip-design systems, and other workloads
-//! that require durable identity, transactional mutation, replay, lineage, and
-//! audit-grade diagnostics.
+//! domains such as order and inventory systems, account ledgers, document
+//! approval workflows, and other workloads that require durable identity,
+//! transactional mutation, replay, lineage, and audit-grade diagnostics.
 //!
 //! The crate is intentionally shaped around the Worth domain standards:
 //!

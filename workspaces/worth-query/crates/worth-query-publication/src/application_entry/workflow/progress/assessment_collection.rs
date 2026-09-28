@@ -26,16 +26,16 @@ where
             Scope = MutationScope<Schema, IntentBinding<Schema, Intent>>,
         >,
 {
-    pub fn prepare_workflow_collect_assessment<Spec, Program>(
+    pub fn prepare_workflow_collect_assessment<Spec>(
         self,
-        workflow: &'application WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>,
+        workflow: impl Into<WorthQueryWorkflowVocabulary<'application, Schema, Spec>>,
         instance: PublishedWorkflowInstanceRef,
         node_path: impl Into<String>,
-    ) -> WorkflowAdvancePreparationResult<'application, 'principal, 'scope, Schema, Spec, Program, Intent>
+    ) -> WorkflowAdvancePreparationResult<'application, 'principal, 'scope, Schema, Spec, Intent>
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
-        Program: worth_query_declaration::facade::application_program::ApplicationProgramDefinition<Schema>,
     {
+        let workflow = workflow.into();
         self.prepare_workflow_request(
             workflow,
             instance,
@@ -46,14 +46,13 @@ where
     }
 }
 
-impl<'application, 'principal, 'scope, Schema, Spec, Program, Operation, Input, Scope>
+impl<'application, 'principal, 'scope, Schema, Spec, Operation, Input, Scope>
     WorthQueryWorkflowAdvanceRequest<
         'application,
         'principal,
         'scope,
         Schema,
         Spec,
-        Program,
         Operation,
         Input,
         Scope,
@@ -61,8 +60,6 @@ impl<'application, 'principal, 'scope, Schema, Spec, Program, Operation, Input, 
 where
     Schema: ApplicationSchema,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
-    Program:
-        worth_query_declaration::facade::application_program::ApplicationProgramDefinition<Schema>,
     Operation: 'static,
     Input: Clone + Send + Sync + 'static,
 {
@@ -76,7 +73,6 @@ where
             'scope,
             Schema,
             Spec,
-            Program,
             Demand,
         >,
         super::super::WorthQueryWorkflowAssessmentDemandPreparationDenial,
@@ -117,7 +113,6 @@ where
             'scope,
             Schema,
             Spec,
-            Program,
             Demand,
         >,
         super::super::WorthQueryWorkflowAssessmentDemandPreparationDenial,

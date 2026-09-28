@@ -26,6 +26,7 @@ where
         mut facts: Vec<super::super::WorthQueryApplicationObservedFact>,
         progress: &crate::domain_computation::primary_graph::workflow::instance::WorkflowInstanceProgress,
         policy: worth_query_declaration::facade::application_program::ApplicationWorkflowEvidenceJoinPolicy,
+        allowance: crate::domain_computation::primary_graph::application_attempt::WorkflowStepAllowance,
     ) -> Result<
         PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
         WorthQueryApplicationAttemptDenial,
@@ -147,6 +148,7 @@ where
                 .saturating_sub(self.facts.len().saturating_add(facts.len()));
             let observed = super::assessment_coverage::observe(
                 node,
+                compiled.program_revision(),
                 coverage,
                 &evidence,
                 layout,
@@ -203,6 +205,7 @@ where
             subject,
             live_membership,
             false,
+            allowance,
         );
         let transition_identity = admitted.identity().to_owned();
         let transition_identity_bytes = *admitted.identity_bytes();
@@ -247,7 +250,7 @@ where
         };
         Ok(PreparedWorkflowAdvance::Transition {
             program,
-            program_revision: compiled.program_revision().clone(),
+            program_revision: *compiled.program_revision(),
             transition_identity,
             transition_identity_bytes,
             transition_identity_locator: layout.transition.identity.clone(),

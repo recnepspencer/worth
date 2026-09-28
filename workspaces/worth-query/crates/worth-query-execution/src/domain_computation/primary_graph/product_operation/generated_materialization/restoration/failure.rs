@@ -9,20 +9,32 @@ use super::{
 };
 use crate::domain_computation::primary_graph::WorthQuerySuspendedGeneratedOutput;
 
+/// Why a restoration was rejected. Nothing was published.
 #[derive(Debug)]
 pub enum WorthQueryGeneratedOutputRestorationFailureCause {
+    /// The suspended output belongs to another runtime or product.
     ForeignRuntime,
+    /// The restoration named a different producer than the one that produced
+    /// the output.
     WrongProducer,
+    /// The producer's provider changed, or the producer is no longer installed.
     StaleProducerVersion,
+    /// The runtime no longer records this output for its source.
     StaleOutputLineage,
+    /// The product's program activation could not admit a publication.
     ProductActivationUnavailable,
+    /// The prepared restoration's invariant evidence was not admitted.
     InvariantAdmission(WorthQueryGeneratedOutputInvariantAdmissionDenial),
+    /// The restoration could not be prepared.
     Preparation,
+    /// A custom invariant rejected the prepared restoration; the fields name it
+    /// and its version.
     PreparationInvariantRejected {
         identifier: String,
         major: u16,
         minor: u16,
     },
+    /// The publication was refused or had no effect.
     PublicationNoEffect(WorthQueryGeneratedOutputPublicationNoEffect),
 }
 

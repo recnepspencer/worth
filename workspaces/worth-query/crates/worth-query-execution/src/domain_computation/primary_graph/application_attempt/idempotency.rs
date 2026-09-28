@@ -1,11 +1,14 @@
 use crate::domain_computation::authorization::WorthQueryOperationScopeBinding;
 
+mod encoding;
 #[cfg(test)]
 mod tests;
 mod workflow_definition;
 mod workflow_instance;
 mod workflow_proposal_context;
 mod workflow_transition;
+
+use encoding::{append_identity_slot, append_scope_slot, encode_identity};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 struct WorthQueryIdempotencyEntityIdentity {
@@ -25,6 +28,14 @@ struct WorthQueryIdempotencyScopeIdentity {
     scope: WorthQueryIdempotencyEntityIdentity,
 }
 
+/// The idempotency key of one commit, bound to the intent it commits.
+///
+/// Build it with `new(key_identity, intent_identity)`; an accepted source
+/// expectation can add its source with `bind_idempotency`. At commit and at
+/// resolution the runtime also binds the admitted operation, its scope, its
+/// preconditions, and its governed input into the intent. Reusing a key with the
+/// same intent finds the earlier commit; reusing it with a different intent is
+/// intent drift.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationIdempotencyBinding {
     key_identity: [u8; 32],
@@ -344,50 +355,5 @@ impl WorthQueryApplicationIdempotencyBinding {
             workflow_client_key_identity: self.workflow_client_key_identity,
             workflow_approval_identity: self.workflow_approval_identity,
         }
-    }
-}
-
-fn append_identity_slot(encoded: &mut String, slot: &str, identity: Option<[u8; 32]>) {
-    encoded.push(':');
-    encoded.push_str(slot);
-    encoded.push('=');
-    match identity {
-        Some(identity) => append_bytes(encoded, &identity),
-        None => encoded.push('-'),
-    }
-}
-
-fn append_scope_slot(encoded: &mut String, identity: Option<WorthQueryIdempotencyScopeIdentity>) {
-    encoded.push_str(":scope=");
-    let Some(identity) = identity else {
-        encoded.push('-');
-        return;
-    };
-    append_bytes(encoded, &identity.runtime_authority.to_be_bytes());
-    append_bytes(encoded, &identity.binding_runtime.to_be_bytes());
-    append_bytes(encoded, &identity.binding_generation.to_be_bytes());
-    append_bytes(encoded, &identity.package_identity);
-    append_bytes(encoded, &identity.schema_identity);
-    append_entity_identity(encoded, identity.principal);
-    append_entity_identity(encoded, identity.scope);
-}
-
-fn append_entity_identity(encoded: &mut String, identity: WorthQueryIdempotencyEntityIdentity) {
-    append_bytes(encoded, &identity.partition.to_be_bytes());
-    append_bytes(encoded, &identity.local_slot.to_be_bytes());
-    append_bytes(encoded, &identity.generation.to_be_bytes());
-}
-
-fn encode_identity(identity: [u8; 32]) -> String {
-    let mut encoded = String::with_capacity(64);
-    append_bytes(&mut encoded, &identity);
-    encoded
-}
-
-fn append_bytes(encoded: &mut String, bytes: &[u8]) {
-    const HEX: &[u8; 16] = b"0123456789abcdef";
-    for byte in bytes {
-        encoded.push(HEX[usize::from(byte >> 4)] as char);
-        encoded.push(HEX[usize::from(byte & 0x0f)] as char);
     }
 }

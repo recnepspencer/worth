@@ -1,4 +1,4 @@
-use worth_query_execution::facade::workflow_advance::RequiredWorkflowAssessment;
+use worth_query_execution::publication_boundary::workflow_advance::RequiredWorkflowAssessment;
 
 /// Acceptance may carry a compatible completed output across a proposal
 /// revision. The owner derives current coverage and evidence meaning from the

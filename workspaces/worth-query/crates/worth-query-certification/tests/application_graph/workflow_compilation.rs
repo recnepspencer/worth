@@ -6,7 +6,7 @@ use worth_relational::facade::transactions::{
     ConflictClass, InvariantViolationFields, TransactionCommitError,
 };
 
-use super::bounded_dimension_model::{
+use super::document_retention_model::{
     host::publish_workflow_on_first_program,
     workflow::{publish_definition, start_instance, terminal_definition},
 };

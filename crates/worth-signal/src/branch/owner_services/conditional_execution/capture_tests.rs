@@ -47,7 +47,6 @@ fn conditional_capture_reserves_before_conversion_and_releases_last_backing_cust
     let charges = prepared.charges();
     let handles = 2 * std::mem::size_of::<SignalConditionalRetentionReservation>() as u64;
     let exact = charges.retained.bytes() + charges.source_growth.bytes() + handles;
-    drop(prepared);
     for maximum in [exact - 1, exact] {
         // Fresh native construction keeps the denial/admitted twin independent.
         let mut runtime = SignalRuntime::build_for::<()>(graph(&claimant));

@@ -1,3 +1,11 @@
+/// Declares a typed operation marker in an application schema, with the
+/// structured value binding of its input.
+///
+/// Input: `vis Operation for Schema, input InputBinding`, or `for Schema:
+/// SchemaBinding, input ..` to declare it for every schema implementing that
+/// trait. It generates a unit struct `Operation` that implements
+/// `ApplicationOperationMarkerIdentity`, with a `const fn reference()`
+/// returning its typed `ApplicationOperationRef`.
 #[macro_export]
 macro_rules! worth_query_operation {
     (
@@ -55,6 +63,11 @@ macro_rules! worth_query_operation {
     };
 }
 
+/// Declares a named authorization policy marker in an application schema.
+///
+/// Input: `vis Policy in Schema`. It generates a unit struct `Policy` with a
+/// `const fn reference()` returning its typed `ApplicationPolicyRef`, which the
+/// schema builder registers and attaches to abilities.
 #[macro_export]
 macro_rules! worth_query_policy {
     ($vis:vis $Policy:ident in $Schema:ty) => {
@@ -71,6 +84,12 @@ macro_rules! worth_query_policy {
     };
 }
 
+/// Declares a named ability marker in an application schema, scoped to one
+/// entity: the unit of authorization that operations and queries require.
+///
+/// Input: `vis Ability scoped_to ScopeEntity, in Schema`. It generates a unit
+/// struct `Ability` with a `const fn reference()` returning its typed
+/// `ApplicationAbilityRef`.
 #[macro_export]
 macro_rules! worth_query_ability {
     ($vis:vis $Ability:ident scoped_to $Scope:ty, in $Schema:ty) => {
@@ -92,6 +111,12 @@ macro_rules! worth_query_ability {
     };
 }
 
+/// Declares, at compile time, that an operation may require the listed
+/// abilities.
+///
+/// Input: `Operation => [Ability, ..]`. It implements
+/// `OperationRequiresAbility<Operation>` for each listed marker. The schema
+/// builder accepts `operation_requires_ability` only for these pairs.
 #[macro_export]
 macro_rules! worth_query_operation_requires {
     ($Operation:ty => [$($Ability:ty),+ $(,)?]) => {
@@ -103,6 +128,13 @@ macro_rules! worth_query_operation_requires {
     };
 }
 
+/// Declares a named unit marker in an application schema for one domain unit
+/// type, for use by fields that declare a unit.
+///
+/// Input: `vis Unit(DomainUnit) in Schema`, or `for Schema: SchemaBinding` to
+/// declare it for every schema implementing that trait. It generates a unit
+/// struct `Unit` that implements `ApplicationUnitMarker<DomainUnit>`, with a
+/// `const fn reference()` returning its typed `ApplicationUnitRef`.
 #[macro_export]
 macro_rules! worth_query_unit {
     ($vis:vis $Unit:ident($DomainUnit:ty) for $Schema:ident : $Binding:path) => {
@@ -146,6 +178,14 @@ macro_rules! worth_query_unit {
     };
 }
 
+/// Declares a typed external effect marker in an application schema, with the
+/// structured value binding of its payload.
+///
+/// Input: `vis Effect for Schema, payload PayloadBinding`, or `for Schema:
+/// SchemaBinding, payload ..` to declare it for every schema implementing that
+/// trait. It generates a unit struct `Effect` that implements
+/// `ApplicationEffectMarkerIdentity`, with a `const fn reference()` returning
+/// its typed `ApplicationEffectRef`.
 #[macro_export]
 macro_rules! worth_query_effect {
     (
@@ -203,6 +243,11 @@ macro_rules! worth_query_effect {
     };
 }
 
+/// Declares, at compile time, that an operation may write the listed fields.
+///
+/// Input: `Operation => [Field, ..]`. It implements
+/// `OperationWrites<Operation>` for each listed marker. This is descriptive;
+/// installed operation authority is still required.
 #[macro_export]
 macro_rules! worth_query_operation_writes {
     ($Operation:ty => [$($Field:ty),+ $(,)?]) => {
@@ -212,6 +257,11 @@ macro_rules! worth_query_operation_writes {
     };
 }
 
+/// Declares, at compile time, that an operation may read the listed schema
+/// members.
+///
+/// Input: `Operation => [Member, ..]`. It implements
+/// `OperationReads<Operation>` for each listed marker.
 #[macro_export]
 macro_rules! worth_query_operation_reads {
     ($Operation:ty => [$($Member:ty),+ $(,)?]) => {
@@ -221,6 +271,11 @@ macro_rules! worth_query_operation_reads {
     };
 }
 
+/// Declares, at compile time, that an operation may carry an expected-version
+/// precondition on the listed fields.
+///
+/// Input: `Operation => [Field, ..]`. It implements
+/// `OperationExpectsVersion<Operation>` for each listed marker.
 #[macro_export]
 macro_rules! worth_query_operation_expects_version {
     ($Operation:ty => [$($Field:ty),+ $(,)?]) => {
@@ -232,6 +287,11 @@ macro_rules! worth_query_operation_expects_version {
     };
 }
 
+/// Declares, at compile time, that an operation may carry an expected-fact
+/// precondition on the listed fields.
+///
+/// Input: `Operation => [Field, ..]`. It implements
+/// `OperationExpectsFact<Operation>` for each listed marker.
 #[macro_export]
 macro_rules! worth_query_operation_expects_fact {
     ($Operation:ty => [$($Field:ty),+ $(,)?]) => {
@@ -243,6 +303,10 @@ macro_rules! worth_query_operation_expects_fact {
     };
 }
 
+/// Declares, at compile time, that an operation may create the listed entities.
+///
+/// Input: `Operation => [Entity, ..]`. It implements
+/// `OperationCreates<Operation>` for each listed marker.
 #[macro_export]
 macro_rules! worth_query_operation_creates {
     ($Operation:ty => [$($Entity:ty),+ $(,)?]) => {
@@ -252,6 +316,10 @@ macro_rules! worth_query_operation_creates {
     };
 }
 
+/// Declares, at compile time, that an operation may delete the listed entities.
+///
+/// Input: `Operation => [Entity, ..]`. It implements
+/// `OperationDeletes<Operation>` for each listed marker.
 #[macro_export]
 macro_rules! worth_query_operation_deletes {
     ($Operation:ty => [$($Entity:ty),+ $(,)?]) => {
@@ -261,6 +329,10 @@ macro_rules! worth_query_operation_deletes {
     };
 }
 
+/// Declares, at compile time, that an operation may link the listed relations.
+///
+/// Input: `Operation => [Relation, ..]`. It implements
+/// `OperationLinks<Operation>` for each listed marker.
 #[macro_export]
 macro_rules! worth_query_operation_links {
     ($Operation:ty => [$($Relation:ty),+ $(,)?]) => {
@@ -270,6 +342,11 @@ macro_rules! worth_query_operation_links {
     };
 }
 
+/// Declares, at compile time, that an operation may unlink the listed
+/// relations.
+///
+/// Input: `Operation => [Relation, ..]`. It implements
+/// `OperationUnlinks<Operation>` for each listed marker.
 #[macro_export]
 macro_rules! worth_query_operation_unlinks {
     ($Operation:ty => [$($Relation:ty),+ $(,)?]) => {
@@ -279,6 +356,11 @@ macro_rules! worth_query_operation_unlinks {
     };
 }
 
+/// Declares, at compile time, that an operation may emit the listed external
+/// effects.
+///
+/// Input: `Operation => [Effect, ..]`. It implements
+/// `OperationEmits<Operation>` for each listed marker.
 #[macro_export]
 macro_rules! worth_query_operation_emits {
     ($Operation:ty => [$($Effect:ty),+ $(,)?]) => {

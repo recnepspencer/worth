@@ -7,15 +7,15 @@ use worth_query_host::facade::application_entry::{
 };
 use worth_query_host::facade::primary_graph::WorthQueryApplicationAttemptDenialKind;
 
-use super::super::bounded_dimension_model::{
-    dimension_entry::{
-        PartDimensionConditionQueryBinding, PartDimensionConditionRead, PART_IDENTITY,
-        RELATED_PART_IDENTITY,
-    },
+use super::super::document_retention_model::{
     host::publish_workflow_on_first_program,
     operator_identity::{authenticate_operator, request_scope},
-    presented_request::set_dimension,
-    settled_verdict::{settle, DimensionVerdict},
+    presented_request::set_retention,
+    retention_entry::{
+        DocumentRetentionConditionQueryBinding, DocumentRetentionConditionRead, DOCUMENT_IDENTITY,
+        RELATED_DOCUMENT_IDENTITY,
+    },
+    settled_verdict::{settle, RetentionVerdict},
     workflow::{
         accept_assessment, accept_early_assessment, advance_instance, approve_instance,
         conditionally_required_related_assessment_definition, link_review_requirement,
@@ -29,13 +29,13 @@ use super::super::bounded_dimension_model::{
 fn native_relation_insertion_makes_an_authored_related_review_newly_required() {
     let application = publish_workflow_on_first_program();
     assert_eq!(
-        settle(set_dimension(
+        settle(set_retention(
             application.program_runtime(),
             application.program_runtime().current_world(),
             0,
             680,
         )),
-        DimensionVerdict::Performed(0),
+        RetentionVerdict::Performed(0),
     );
     let definition = match publish_definition(
         &application,
@@ -69,8 +69,8 @@ fn native_relation_insertion_makes_an_authored_related_review_newly_required() {
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
     let condition_result = runtime
         .request(&principal, &scope)
-        .query(PartDimensionConditionRead {
-            identity: PART_IDENTITY.to_owned(),
+        .query(DocumentRetentionConditionRead {
+            identity: DOCUMENT_IDENTITY.to_owned(),
         })
         .execute()
         .expect("typed condition query must execute");
@@ -79,14 +79,14 @@ fn native_relation_insertion_makes_an_authored_related_review_newly_required() {
         .request(&principal, &scope)
         .mutate(WorkflowAdvanceIntent {
             input: WorkflowAdvanceInput {
-                part_identity: PART_IDENTITY.to_owned(),
+                document_identity: DOCUMENT_IDENTITY.to_owned(),
             },
         })
         .without_source()
         .idempotency(&685_u64)
         .prepare_workflow_advance(&application, instance.clone())
         .expect("condition acceptance must prepare")
-        .accept_condition::<PartDimensionConditionQueryBinding>(
+        .accept_condition::<DocumentRetentionConditionQueryBinding>(
             &required_condition,
             condition_result,
         )
@@ -166,7 +166,7 @@ fn native_relation_insertion_makes_an_authored_related_review_newly_required() {
         instance.clone(),
         "checks/related",
         693,
-        RELATED_PART_IDENTITY,
+        RELATED_DOCUMENT_IDENTITY,
     );
     assert!(matches!(
         accept_early_assessment(
@@ -179,13 +179,13 @@ fn native_relation_insertion_makes_an_authored_related_review_newly_required() {
         Ok(WorkflowProgressOutcome::Completed(_)),
     ));
     assert_eq!(
-        settle(set_dimension(
+        settle(set_retention(
             application.program_runtime(),
             application.program_runtime().current_world(),
             8,
             695,
         )),
-        DimensionVerdict::Performed(8),
+        RetentionVerdict::Performed(8),
     );
     match advance_instance(&application, instance.clone(), 696)
         .expect("resource edit must leave the unrelated Related review reusable")
@@ -202,7 +202,7 @@ fn native_relation_insertion_makes_an_authored_related_review_newly_required() {
             instance.clone(),
             path,
             demand,
-            PART_IDENTITY,
+            DOCUMENT_IDENTITY,
         );
         assert!(matches!(
             accept_early_assessment(&application, instance.clone(), path, &evidence, acceptance),
@@ -223,13 +223,13 @@ fn native_relation_insertion_makes_an_authored_related_review_newly_required() {
 fn settled_join_cannot_authorize_approval_after_requirement_insertion() {
     let application = publish_workflow_on_first_program();
     assert_eq!(
-        settle(set_dimension(
+        settle(set_retention(
             application.program_runtime(),
             application.program_runtime().current_world(),
             0,
             710,
         )),
-        DimensionVerdict::Performed(0),
+        RetentionVerdict::Performed(0),
     );
     let definition = match publish_definition(
         &application,
@@ -261,8 +261,8 @@ fn settled_join_cannot_authorize_approval_after_requirement_insertion() {
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
     let condition_result = runtime
         .request(&principal, &scope)
-        .query(PartDimensionConditionRead {
-            identity: PART_IDENTITY.to_owned(),
+        .query(DocumentRetentionConditionRead {
+            identity: DOCUMENT_IDENTITY.to_owned(),
         })
         .execute()
         .unwrap();
@@ -272,14 +272,17 @@ fn settled_join_cannot_authorize_approval_after_requirement_insertion() {
             .request(&principal, &scope)
             .mutate(WorkflowAdvanceIntent {
                 input: WorkflowAdvanceInput {
-                    part_identity: PART_IDENTITY.to_owned(),
+                    document_identity: DOCUMENT_IDENTITY.to_owned(),
                 },
             })
             .without_source()
             .idempotency(&715_u64)
             .prepare_workflow_advance(&application, instance.clone())
             .unwrap()
-            .accept_condition::<PartDimensionConditionQueryBinding>(&condition, condition_result)
+            .accept_condition::<DocumentRetentionConditionQueryBinding>(
+                &condition,
+                condition_result
+            )
             .unwrap(),
         WorkflowProgressOutcome::Completed(_),
     ));

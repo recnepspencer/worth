@@ -136,6 +136,8 @@ pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         Option<super::program_occurrence::WorthQueryInstalledProgramSupport<Schema>>,
     pub(super) installed_conditionals:
         super::application_contribution::WorthQueryInstalledApplicationConditionalRegistry<Schema>,
+    pub(in crate::domain_computation::primary_graph) workflow_coverage:
+        super::workflow::adoption::WorkflowVocabularyCoverageRegistry,
 }
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
@@ -321,6 +323,10 @@ where
     }
 }
 
+/// Receipt from closing this runtime's live delivery.
+///
+/// Later commits no longer enter live delivery. `owner_terminal()` is true once
+/// no live consumers remain.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationLiveDeliveryCloseReceipt {
     remaining_live_consumers: usize,

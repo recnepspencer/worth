@@ -11,7 +11,9 @@ mod roster_authoring;
 mod specialized_action;
 mod speculation;
 mod supported_program;
-pub use checkpoint::in_memory_program_from_checkpoint;
+pub use checkpoint::{
+    in_memory_program_from_checkpoint, in_memory_rostered_program_from_checkpoint,
+};
 mod workflow_assessment;
 mod workflow_runtime;
 pub use construction::{
@@ -39,4 +41,5 @@ pub use supported_program::WorthQuerySupportedProgramHandle;
 pub(crate) use workflow_runtime::workflow_approval_authentication_intent;
 pub use workflow_runtime::{
     WorthQueryWorkflowApplicationRuntime, WorthQueryWorkflowRuntimeBindingDenial,
+    WorthQueryWorkflowVocabulary,
 };

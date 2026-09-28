@@ -94,6 +94,7 @@ pub struct ApplicationMutationBindingDescriptor {
     source_query_identifier: Option<String>,
     requires_application_program: bool,
     requires_workflow_authority: bool,
+    workflow_control: bool,
 }
 
 impl ApplicationMutationBindingDescriptor {
@@ -120,6 +121,7 @@ impl ApplicationMutationBindingDescriptor {
         candidates: ApplicationCandidateRequirements,
         requires_application_program: bool,
         requires_workflow_authority: bool,
+        workflow_control: bool,
     ) -> Self
     where
         Binding: 'static,
@@ -194,6 +196,7 @@ impl ApplicationMutationBindingDescriptor {
             source_query_identifier: SourceExpectation::QUERY_IDENTIFIER.map(str::to_owned),
             requires_application_program,
             requires_workflow_authority,
+            workflow_control,
         }
     }
 
@@ -291,5 +294,11 @@ impl ApplicationMutationBindingDescriptor {
 
     pub const fn requires_workflow_authority(&self) -> bool {
         self.requires_workflow_authority
+    }
+
+    /// Whether the workflow kernel records this binding itself, so no
+    /// handler serves it.
+    pub const fn workflow_control(&self) -> bool {
+        self.workflow_control
     }
 }

@@ -6,7 +6,7 @@ mod planning_cutover;
 
 fn phase_3_contract() -> toml::Value {
     toml::from_str(&repository_document(
-        "_docs/worth-ui/milestone-3.12-phase-3-contract.toml",
+        "plans/worth-ui/milestone-3.12-phase-3-contract.toml",
     ))
     .expect("Milestone 3.12 Phase 3 contract is TOML")
 }
@@ -27,7 +27,7 @@ fn milestone_312_phase3_contract_and_ledger_are_exact() {
     assert!(contract["closure_claim"]
         .as_str()
         .is_some_and(|claim| !claim.trim().is_empty()));
-    let text = repository_document("_docs/worth-ui/milestone-3.12-phase-3-proof-ledger.csv");
+    let text = repository_document("plans/worth-ui/milestone-3.12-phase-3-proof-ledger.csv");
     ledger::validate_phase_3(&contract, &text)
         .unwrap_or_else(|failure| panic!("Phase 3 ledger is invalid: {failure}"));
 }
@@ -36,7 +36,7 @@ fn milestone_312_phase3_contract_and_ledger_are_exact() {
 fn milestone_312_phase3_ledger_mutations_cannot_manufacture_closure() {
     let mut contract = phase_3_contract();
     contract["status"] = toml::Value::String("closed".to_owned());
-    let open = repository_document("_docs/worth-ui/milestone-3.12-phase-3-proof-ledger.csv");
+    let open = repository_document("plans/worth-ui/milestone-3.12-phase-3-proof-ledger.csv");
     let closed = ledger::prove_all(&open).expect("build a valid closed Phase 3 ledger");
     ledger::validate_phase_3(&contract, &closed).expect("closed Phase 3 fixture is valid");
 

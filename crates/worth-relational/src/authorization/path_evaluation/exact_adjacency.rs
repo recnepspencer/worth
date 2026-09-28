@@ -6,7 +6,7 @@ use super::{
 };
 
 pub(super) fn apply(
-    context: &PathReadContext<'_, '_, '_, '_>,
+    context: &PathReadContext<'_, '_, '_>,
     path: &RelationalAuthorizationPathPlan,
     ordinal: usize,
     frontier: &mut BTreeSet<RelationalAuthorizationWitness>,

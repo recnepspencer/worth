@@ -6,6 +6,26 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+/// A documented engine whose items the audience leaf facades re-export, so
+/// the facade documentation ratchet resolves every leaf name.
+const STUB_ENGINE: &str = r#"//! Stub Query engine.
+
+/// Stub engine facade.
+pub mod facade {
+    /// Stub foundation vocabulary.
+    pub mod foundation {
+        /// Stub canonical artifact.
+        pub struct CanonicalQueryArtifact;
+        /// Stub replay basis.
+        pub struct ScopedReplayBasis;
+    }
+    /// Stub domain namespace.
+    pub mod domain {}
+    /// Stub runtime namespace.
+    pub mod runtime {}
+}
+"#;
+
 /// Isolated temporary repository exercising the production boundary-check binary.
 pub struct LegacyReferenceTestRepository {
     root: PathBuf,
@@ -90,7 +110,7 @@ edition = "2021"
 [workspace]
 "#,
         );
-        self.write_file("crates/worth-query/src/lib.rs", "// stub engine\n");
+        self.write_file("crates/worth-query/src/lib.rs", STUB_ENGINE);
         for (package, export) in [
             (
                 "worth-query-decl",

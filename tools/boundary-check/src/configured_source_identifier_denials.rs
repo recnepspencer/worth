@@ -102,7 +102,7 @@ fn diagnostics_for_source(
     source: &str,
     rule: &SourceIdentifierDenialConfig,
 ) -> Vec<Diagnostic> {
-    let Ok(file) = syn::parse_file(source) else {
+    let Ok(file) = crate::source_syntax::parse_file(source) else {
         return vec![Diagnostic::new(
             DiagnosticCode::Bc2001BandDependencyViolation,
             path,
@@ -241,6 +241,21 @@ mod tests {
             )
             .len(),
             1
+        );
+    }
+
+    #[test]
+    fn raw_identifiers_are_rejected_like_their_bare_spelling() {
+        let mut rule = rule();
+        rule.forbidden_identifier_fragments = vec!["BranchWriter".into()];
+        assert_eq!(
+            diagnostics_for_source(
+                "physical_runtime/work/raw_shortcut.rs",
+                "use r#serde_json::Value; struct r#StoreBranchWriterLease;",
+                &rule,
+            )
+            .len(),
+            2
         );
     }
 

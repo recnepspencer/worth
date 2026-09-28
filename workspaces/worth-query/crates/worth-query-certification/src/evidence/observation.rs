@@ -8,8 +8,10 @@ pub struct WorthQueryCertificationObservation {
     counters: WorthQueryCertificationCounters,
 }
 
+/// Why `WorthQueryCertificationObservation::new` refused an observation.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryCertificationObservationDenial {
+    /// The named semantic fact was supplied more than once.
     DuplicateSemanticFact(String),
 }
 

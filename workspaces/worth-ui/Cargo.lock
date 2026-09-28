@@ -4524,15 +4524,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "worth-harness"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_json",
- "tracing",
-]
-
-[[package]]
 name = "worth-proof"
 version = "0.1.0"
 
@@ -4684,7 +4675,6 @@ dependencies = [
  "serde_json",
  "sha2",
  "worth-foundational",
- "worth-harness",
  "worth-proof",
  "worth-signal",
 ]

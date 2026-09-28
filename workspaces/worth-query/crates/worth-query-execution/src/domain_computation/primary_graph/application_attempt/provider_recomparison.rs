@@ -1,5 +1,11 @@
 use super::precondition_binding::WorthQueryBoundMutationPreconditions;
 
+/// What the provider compared for a commit's mutation preconditions: how many
+/// expected versions and facts, and the identity of the precondition set.
+///
+/// Read it from a commit receipt's `precondition_comparison`. It is descriptive
+/// evidence and grants nothing. The identity is absent when the operation has no
+/// preconditions.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryMutationPreconditionComparisonEvidence {
     expected_version_count: usize,

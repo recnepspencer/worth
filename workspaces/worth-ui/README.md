@@ -20,7 +20,7 @@ native and headless mechanics, and certification surfaces.
 
 The longer contributor orientation is
 [docs/worth-ui-readme.md](./docs/worth-ui-readme.md). Roadmap and milestone
-specifications remain under `_docs/worth-ui` at the repository root.
+specifications remain under `plans/worth-ui` at the repository root.
 
 ## Dependency Direction
 

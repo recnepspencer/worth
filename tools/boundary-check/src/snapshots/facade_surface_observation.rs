@@ -83,8 +83,8 @@ pub(super) fn observe_facade_document(
 fn extract_namespace_exports(path: &Path, namespace: Option<&str>) -> Result<Vec<String>, String> {
     let text =
         fs::read_to_string(path).map_err(|error| format!("read {}: {error}", path.display()))?;
-    let syntax =
-        syn::parse_file(&text).map_err(|error| format!("parse {}: {error}", path.display()))?;
+    let syntax = crate::source_syntax::parse_file(&text)
+        .map_err(|error| format!("parse {}: {error}", path.display()))?;
     let mut exports = BTreeSet::new();
     let items = match namespace {
         Some(namespace) => selected_namespace_items(&syntax.items, namespace, path)?,
@@ -154,6 +154,9 @@ fn collect_namespace_items(
                 };
                 collect_namespace_items(nested, &name, exports, path)?;
             }
+            // A module root declares its private submodules beside the
+            // re-exports; those declarations export nothing.
+            Item::Mod(module) if module.content.is_none() && is_private(&module.vis) => {}
             _ => {
                 return Err(format!(
                     "configured facade surface must contain only public re-exports or inline namespaces in {}",
@@ -163,6 +166,10 @@ fn collect_namespace_items(
         }
     }
     Ok(())
+}
+
+fn is_private(visibility: &Visibility) -> bool {
+    matches!(visibility, Visibility::Inherited)
 }
 
 fn qualify(prefix: &str, name: &str) -> String {
@@ -176,8 +183,8 @@ fn qualify(prefix: &str, name: &str) -> String {
 fn extract_exports(path: &Path) -> Result<Vec<String>, String> {
     let text =
         fs::read_to_string(path).map_err(|e| format!("read facade {}: {e}", path.display()))?;
-    let syntax =
-        syn::parse_file(&text).map_err(|e| format!("parse facade {}: {e}", path.display()))?;
+    let syntax = crate::source_syntax::parse_file(&text)
+        .map_err(|e| format!("parse facade {}: {e}", path.display()))?;
     let mut exports = BTreeSet::new();
     for item in syntax.items {
         match item {
@@ -248,7 +255,8 @@ mod tests {
 
     #[test]
     fn direct_grouped_and_renamed_exports_are_exact() {
-        let syntax = syn::parse_file("pub use x::{A, B as C};\nuse x::Private;").unwrap();
+        let syntax =
+            crate::source_syntax::parse_file("pub use x::{A, B as C};\nuse x::Private;").unwrap();
         let mut exports = BTreeSet::new();
         for item in syntax.items {
             if let Item::Use(item) = item {
@@ -307,6 +315,22 @@ mod tests {
     #[test]
     fn configured_namespace_surface_rejects_behavior_items() {
         let path = temporary_facade("namespace-behavior", "pub fn bypass() {}\n");
+        let error = extract_namespace_exports(&path, None).unwrap_err();
+        fs::remove_file(&path).unwrap();
+        assert!(error.contains("only public re-exports or inline namespaces"));
+    }
+
+    #[test]
+    fn module_root_surface_skips_private_submodule_declarations() {
+        let path = temporary_facade("module-root", "mod inner;\npub use inner::Exported;\n");
+        let exports = extract_namespace_exports(&path, None).unwrap();
+        fs::remove_file(&path).unwrap();
+        assert_eq!(exports, ["Exported"]);
+    }
+
+    #[test]
+    fn module_root_surface_rejects_widened_submodule_declarations() {
+        let path = temporary_facade("module-root-widened", "pub(crate) mod inner;\n");
         let error = extract_namespace_exports(&path, None).unwrap_err();
         fs::remove_file(&path).unwrap();
         assert!(error.contains("only public re-exports or inline namespaces"));

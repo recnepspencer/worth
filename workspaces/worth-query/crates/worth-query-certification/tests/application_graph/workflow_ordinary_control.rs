@@ -7,14 +7,14 @@ use worth_query_host::facade::application_entry::{
 };
 use worth_query_host::facade::primary_graph::WorthQueryApplicationAttemptDenialKind;
 
-use super::bounded_dimension_model::{
-    dimension_entry::{
-        PartDimensionConditionQueryBinding, PartDimensionConditionRead, PART_IDENTITY,
-    },
-    host::{publish_workflow_on_first_program, BoundedDimensionWorkflowRuntime},
+use super::document_retention_model::{
+    host::{publish_workflow_on_first_program, DocumentWorkflowRuntime},
     operator_identity::{authenticate_operator, request_scope},
-    presented_request::set_dimension,
-    settled_verdict::{settle, DimensionVerdict},
+    presented_request::set_retention,
+    retention_entry::{
+        DocumentRetentionConditionQueryBinding, DocumentRetentionConditionRead, DOCUMENT_IDENTITY,
+    },
+    settled_verdict::{settle, RetentionVerdict},
     workflow::{
         advance_instance, bounded_retry_definition, condition_terminal_definition,
         condition_terminal_draft, propose_authoring_instance, publish_definition, run_instance,
@@ -24,7 +24,7 @@ use super::bounded_dimension_model::{
 };
 
 fn accept_condition(
-    application: &BoundedDimensionWorkflowRuntime,
+    application: &DocumentWorkflowRuntime,
     instance: PublishedWorkflowInstanceRef,
     required: &RequiredWorkflowCondition,
     key: u64,
@@ -35,8 +35,8 @@ fn accept_condition(
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
     let result = runtime
         .request(&principal, &scope)
-        .query(PartDimensionConditionRead {
-            identity: PART_IDENTITY.to_owned(),
+        .query(DocumentRetentionConditionRead {
+            identity: DOCUMENT_IDENTITY.to_owned(),
         })
         .execute()
         .expect("the installed condition query executes");
@@ -45,14 +45,14 @@ fn accept_condition(
         .request(&principal, &scope)
         .mutate(WorkflowAdvanceIntent {
             input: WorkflowAdvanceInput {
-                part_identity: PART_IDENTITY.to_owned(),
+                document_identity: DOCUMENT_IDENTITY.to_owned(),
             },
         })
         .without_source()
         .idempotency(&key)
         .prepare_workflow_advance(application, instance)
         .expect("typed condition acceptance prepares")
-        .accept_condition::<PartDimensionConditionQueryBinding>(required, result)
+        .accept_condition::<DocumentRetentionConditionQueryBinding>(required, result)
         .expect("exact typed condition is accepted")
 }
 
@@ -62,13 +62,13 @@ fn assert_condition_path_parity(expected_positive: bool) {
     if !expected_positive {
         for (application, key) in [(&advanced, 919_020), (&ordinary, 919_021)] {
             assert_eq!(
-                settle(set_dimension(
+                settle(set_retention(
                     application.program_runtime(),
                     application.program_runtime().current_world(),
                     0,
                     key,
                 )),
-                DimensionVerdict::Performed(0)
+                RetentionVerdict::Performed(0)
             );
         }
     }
@@ -91,8 +91,8 @@ fn assert_condition_path_parity(expected_positive: bool) {
         .request(&principal, &scope)
         .mutate(WorkflowDefinitionAuthoringIntent {
             input: WorkflowDefinitionAuthoringInput {
-                identity: PART_IDENTITY.to_owned(),
-                dimension: 8,
+                identity: DOCUMENT_IDENTITY.to_owned(),
+                retention_days: 8,
             },
         })
         .workflow(&ordinary, condition_terminal_draft())

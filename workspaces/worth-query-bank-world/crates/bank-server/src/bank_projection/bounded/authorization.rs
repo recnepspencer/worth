@@ -3,7 +3,9 @@ use bank_domain::proposals::BankAccountAuthorization;
 use bank_domain::schema::*;
 use worth_query_host::facade::domain::OperationReads;
 
-use super::{AuthorizationEntity, BoundedProjectionState, PrincipalEntity, ProjectionReader};
+use super::{
+    AccountEntity, AuthorizationEntity, BoundedProjectionState, PrincipalEntity, ProjectionReader,
+};
 use crate::bank_projection::{missing_field, BankProjectionDenial};
 
 impl BoundedProjectionState {
@@ -81,6 +83,37 @@ impl BoundedProjectionState {
                 "account authorization",
             )),
         }
+    }
+
+    /// Projects every authorization on one account, so a decision can see
+    /// who holds which role there.
+    pub(in crate::bank_projection) fn project_account_authorizations<Operation>(
+        &mut self,
+        reader: &mut ProjectionReader<'_, '_, Operation>,
+        account: &AccountEntity,
+    ) -> Result<(), BankProjectionDenial>
+    where
+        AccountAuthorizationIdentity: OperationReads<Operation>,
+        AccountAuthorizedUser: OperationReads<Operation>,
+        AuthorizationAccount: OperationReads<Operation>,
+        AuthorizationRole: OperationReads<Operation>,
+        PrincipalIdentityField: OperationReads<Operation>,
+        AccountIdentity: OperationReads<Operation>,
+        AccountingRevision: OperationReads<Operation>,
+        InstitutionAccount: OperationReads<Operation>,
+        InstitutionIdentityField: OperationReads<Operation>,
+        Kind: OperationReads<Operation>,
+        PersonalOwner: OperationReads<Operation>,
+        BusinessAccount: OperationReads<Operation>,
+        BusinessIdentityField: OperationReads<Operation>,
+        Status: OperationReads<Operation>,
+        AccountDisplayName: OperationReads<Operation>,
+    {
+        let relations = reader.decision_relations_to(AuthorizationAccount::reference(), account)?;
+        for relation in relations {
+            self.project_authorization(reader, relation.from())?;
+        }
+        Ok(())
     }
 
     fn project_authorization<Operation>(

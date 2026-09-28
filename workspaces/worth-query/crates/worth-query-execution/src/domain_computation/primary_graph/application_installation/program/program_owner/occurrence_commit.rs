@@ -52,8 +52,9 @@ where
     let Some(support) = runtime.installed_program_support() else {
         return WorthQueryApplicationCommitOutcome::Denied(program_required());
     };
-    let Some(presented) = support.present(owner.owned_revision()) else {
-        return WorthQueryApplicationCommitOutcome::Denied(program_required());
+    let presented = match support.present_for_commit(owner.owned_revision()) {
+        Ok(presented) => presented,
+        Err(denial) => return WorthQueryApplicationCommitOutcome::Denied(denial),
     };
     runtime.compare_and_commit_application_for_program_action(&presented, program, idempotency)
 }

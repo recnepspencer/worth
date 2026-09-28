@@ -74,7 +74,7 @@ mod tests {
     fn raw_client_keys_expose_raw_surface() {
         let key = ClientKey::raw("edge-a");
 
-        assert_eq!(key.as_raw_str(), Some("edge-a".into()));
+        assert_eq!(key.as_raw_str(), Some("edge-a"));
         assert_eq!(key.as_symbol(), None);
         assert_eq!(key.canonical_text().as_ref(), "edge-a");
     }
@@ -87,10 +87,7 @@ mod tests {
         let normalized = key.normalize_with(&mut interner, ClientKeySymbolPolicy::PreferInterned);
 
         assert_eq!(normalized.as_symbol(), Some(Symbol(1)));
-        assert_eq!(
-            normalized.resolve_with_interner(&interner),
-            Some("edge-a".into())
-        );
+        assert_eq!(normalized.resolve_with_interner(&interner), Some("edge-a"));
     }
 
     #[test]
@@ -100,7 +97,7 @@ mod tests {
 
         let normalized = key.normalize_with(&mut interner, ClientKeySymbolPolicy::Disabled);
 
-        assert_eq!(normalized.as_raw_str(), Some("edge-a".into()));
+        assert_eq!(normalized.as_raw_str(), Some("edge-a"));
         assert_eq!(interner.resolve(Symbol(1)), None);
     }
 }

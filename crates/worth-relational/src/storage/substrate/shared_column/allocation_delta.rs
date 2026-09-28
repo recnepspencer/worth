@@ -52,7 +52,7 @@ impl<T: Clone> SharedColumn<T> {
             let ColumnStorage::Branch(children) = &current.storage else {
                 return None;
             };
-            current = children[(index / PAGE_LEN >> (remaining - 1)) & 1].as_ref()?;
+            current = children[((index / PAGE_LEN) >> (remaining - 1)) & 1].as_ref()?;
             remaining -= 1;
         }
         Some(current)

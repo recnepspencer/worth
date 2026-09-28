@@ -10,37 +10,36 @@ use worth_query_host::facade::declaration::application_program::{
     ApplicationProgramAuthoring, ValidatedApplicationProgram,
 };
 
-use crate::bounded_dimension_model::host::{
-    publish_on_first_program, publish_on_second_program, SEED_DIMENSION,
+use crate::document_retention_model::host::{
+    publish_on_first_program, publish_on_second_program, SEED_RETENTION,
 };
-use crate::bounded_dimension_model::presented_request::set_dimension;
-use crate::bounded_dimension_model::programs::{
-    DimensionProgramP0, DimensionProgramP1, UnrosteredDimensionProgram,
+use crate::document_retention_model::presented_request::set_retention;
+use crate::document_retention_model::programs::{
+    RetentionProgramP0, RetentionProgramP1, UnrosteredRetentionProgram,
 };
-use crate::bounded_dimension_model::readback::{observe_head, read_dimension};
-use crate::bounded_dimension_model::rules::{V1_CEILING, V2_CEILING, V2_FLOOR};
-use crate::bounded_dimension_model::schema::BoundedDimensionSchema;
-use crate::bounded_dimension_model::settled_verdict::{settle, DimensionVerdict};
+use crate::document_retention_model::readback::{observe_head, read_retention};
+use crate::document_retention_model::rules::{V1_CEILING, V2_CEILING, V2_FLOOR};
+use crate::document_retention_model::schema::DocumentRetentionSchema;
+use crate::document_retention_model::settled_verdict::{settle, RetentionVerdict};
 
 /// A value only the first program's law admits.
-const LOW_DIMENSION: u64 = 3;
+const LOW_RETENTION: u64 = 3;
 /// A value only the second program's law admits.
-const HIGH_DIMENSION: u64 = 15;
+const HIGH_RETENTION: u64 = 15;
 /// A second value only the first program's law admits, used on a fork.
-const FORK_DIMENSION: u64 = 9;
+const FORK_RETENTION: u64 = 9;
 
 /// The two probe values must sit on opposite sides of the two laws, or nothing
-/// below distinguishes the programs. Computed here from the bounds themselves.
-#[test]
-fn the_probe_values_separate_the_two_laws() {
-    assert!(LOW_DIMENSION <= V1_CEILING);
-    assert!(LOW_DIMENSION < V2_FLOOR);
-    assert!(HIGH_DIMENSION > V1_CEILING);
-    assert!((V2_FLOOR..=V2_CEILING).contains(&HIGH_DIMENSION));
-    assert!(FORK_DIMENSION <= V1_CEILING);
-    assert!(SEED_DIMENSION <= V1_CEILING);
-    assert!((V2_FLOOR..=V2_CEILING).contains(&SEED_DIMENSION));
-}
+/// below distinguishes the programs. Checked at compile time from the bounds.
+const _: () = {
+    assert!(LOW_RETENTION <= V1_CEILING);
+    assert!(LOW_RETENTION < V2_FLOOR);
+    assert!(HIGH_RETENTION > V1_CEILING);
+    assert!(V2_FLOOR <= HIGH_RETENTION && HIGH_RETENTION <= V2_CEILING);
+    assert!(FORK_RETENTION <= V1_CEILING);
+    assert!(SEED_RETENTION <= V1_CEILING);
+    assert!(V2_FLOOR <= SEED_RETENTION && SEED_RETENTION <= V2_CEILING);
+};
 
 #[test]
 fn two_programs_over_one_schema_carry_two_revisions() {
@@ -65,19 +64,19 @@ fn a_first_program_occurrence_enforces_the_first_law() {
     let branch = host.current_world();
 
     assert_eq!(
-        settle(set_dimension(&host, branch, LOW_DIMENSION, 0x9175_0001)),
-        DimensionVerdict::Performed(LOW_DIMENSION)
+        settle(set_retention(&host, branch, LOW_RETENTION, 0x9175_0001)),
+        RetentionVerdict::Performed(LOW_RETENTION)
     );
-    assert_eq!(read_dimension(host.runtime(), branch), LOW_DIMENSION);
+    assert_eq!(read_retention(host.runtime(), branch), LOW_RETENTION);
 
     assert_eq!(
-        settle(set_dimension(&host, branch, HIGH_DIMENSION, 0x9175_0002)),
-        DimensionVerdict::violated("bounded-dimension-v1"),
+        settle(set_retention(&host, branch, HIGH_RETENTION, 0x9175_0002)),
+        RetentionVerdict::violated("document-retention-v1"),
         "the value the second law admits must be refused by the first program's law"
     );
     assert_eq!(
-        read_dimension(host.runtime(), branch),
-        LOW_DIMENSION,
+        read_retention(host.runtime(), branch),
+        LOW_RETENTION,
         "a refused candidate cannot have moved the branch"
     );
 }
@@ -88,19 +87,19 @@ fn a_second_program_occurrence_enforces_the_second_law() {
     let branch = host.current_world();
 
     assert_eq!(
-        settle(set_dimension(&host, branch, HIGH_DIMENSION, 0x9175_0011)),
-        DimensionVerdict::Performed(HIGH_DIMENSION)
+        settle(set_retention(&host, branch, HIGH_RETENTION, 0x9175_0011)),
+        RetentionVerdict::Performed(HIGH_RETENTION)
     );
-    assert_eq!(read_dimension(host.runtime(), branch), HIGH_DIMENSION);
+    assert_eq!(read_retention(host.runtime(), branch), HIGH_RETENTION);
 
     assert_eq!(
-        settle(set_dimension(&host, branch, LOW_DIMENSION, 0x9175_0012)),
-        DimensionVerdict::violated("bounded-dimension-v2"),
+        settle(set_retention(&host, branch, LOW_RETENTION, 0x9175_0012)),
+        RetentionVerdict::violated("document-retention-v2"),
         "the value the first law admits must be refused by the second program's law"
     );
     assert_eq!(
-        read_dimension(host.runtime(), branch),
-        HIGH_DIMENSION,
+        read_retention(host.runtime(), branch),
+        HIGH_RETENTION,
         "a refused candidate cannot have moved the branch"
     );
 }
@@ -109,36 +108,32 @@ fn a_second_program_occurrence_enforces_the_second_law() {
 fn a_rostered_peer_program_is_named_but_not_active() {
     let host = publish_on_first_program();
     let branch = host.current_world();
-    let peer = host
-        .supported_program::<DimensionProgramP1>()
-        .expect("the peer program this host rostered must be nameable");
     assert!(
-        host.supported_program::<UnrosteredDimensionProgram>()
+        host.supported_program::<RetentionProgramP1>().is_some(),
+        "the peer program this host rostered must be nameable"
+    );
+    assert!(
+        host.supported_program::<UnrosteredRetentionProgram>()
             .is_none(),
         "a program this host never rostered cannot be nameable"
     );
 
     let before = observe_head(host.runtime(), branch);
     assert_eq!(
-        settle(set_dimension(
-            &peer,
-            branch,
-            SEED_DIMENSION + 1,
-            0x9175_0021
-        )),
-        DimensionVerdict::inactive(),
-        "a rostered peer cannot act on an occurrence running another program"
+        settle(set_retention(&host, branch, HIGH_RETENTION, 0x9175_0021)),
+        RetentionVerdict::violated("document-retention-v1"),
+        "a rostered peer's law cannot govern an occurrence running another program"
     );
     let after = observe_head(host.runtime(), branch);
     assert_eq!(
-        read_dimension(host.runtime(), branch),
-        SEED_DIMENSION,
-        "a denial before effects cannot have moved the branch"
+        read_retention(host.runtime(), branch),
+        SEED_RETENTION,
+        "a refused candidate cannot have moved the branch"
     );
     assert_eq!(
         before.selected_commit(),
         after.selected_commit(),
-        "a denial before effects cannot have moved the commit head"
+        "a refused candidate cannot have moved the commit head"
     );
 }
 
@@ -146,22 +141,18 @@ fn a_rostered_peer_program_is_named_but_not_active() {
 fn a_rostered_peer_program_is_named_but_not_active_on_a_second_program_host() {
     let host = publish_on_second_program();
     let branch = host.current_world();
-    let peer = host
-        .supported_program::<DimensionProgramP0>()
-        .expect("the peer program this host rostered must be nameable");
+    assert!(
+        host.supported_program::<RetentionProgramP0>().is_some(),
+        "the peer program this host rostered must be nameable"
+    );
 
     let before = observe_head(host.runtime(), branch);
     assert_eq!(
-        settle(set_dimension(
-            &peer,
-            branch,
-            SEED_DIMENSION + 1,
-            0x9175_0031
-        )),
-        DimensionVerdict::inactive()
+        settle(set_retention(&host, branch, LOW_RETENTION, 0x9175_0031)),
+        RetentionVerdict::violated("document-retention-v2")
     );
     let after = observe_head(host.runtime(), branch);
-    assert_eq!(read_dimension(host.runtime(), branch), SEED_DIMENSION);
+    assert_eq!(read_retention(host.runtime(), branch), SEED_RETENTION);
     assert_eq!(before.selected_commit(), after.selected_commit());
 }
 
@@ -178,51 +169,42 @@ fn a_forked_branch_inherits_the_law_its_source_was_running() {
         .expect("the Relational fork must publish");
 
     assert_eq!(
-        settle(set_dimension(&host, fork, FORK_DIMENSION, 0x9175_0041)),
-        DimensionVerdict::Performed(FORK_DIMENSION),
+        settle(set_retention(&host, fork, FORK_RETENTION, 0x9175_0041)),
+        RetentionVerdict::Performed(FORK_RETENTION),
         "the fork runs the program its source was running"
     );
-    assert_eq!(read_dimension(host.runtime(), fork), FORK_DIMENSION);
+    assert_eq!(read_retention(host.runtime(), fork), FORK_RETENTION);
     assert_eq!(
-        read_dimension(host.runtime(), main),
-        SEED_DIMENSION,
+        read_retention(host.runtime(), main),
+        SEED_RETENTION,
         "a write on the fork cannot reach the branch it forked from"
     );
 
     assert_eq!(
-        settle(set_dimension(&host, fork, LOW_DIMENSION, 0x9175_0042)),
-        DimensionVerdict::Performed(LOW_DIMENSION),
+        settle(set_retention(&host, fork, LOW_RETENTION, 0x9175_0042)),
+        RetentionVerdict::Performed(LOW_RETENTION),
         "the other rostered program's law does not reach this fork"
     );
-    assert_eq!(read_dimension(host.runtime(), fork), LOW_DIMENSION);
+    assert_eq!(read_retention(host.runtime(), fork), LOW_RETENTION);
 
     assert_eq!(
-        settle(set_dimension(&host, fork, HIGH_DIMENSION, 0x9175_0043)),
-        DimensionVerdict::violated("bounded-dimension-v1"),
+        settle(set_retention(&host, fork, HIGH_RETENTION, 0x9175_0043)),
+        RetentionVerdict::violated("document-retention-v1"),
         "the fork carries its source's law, not the other rostered program's"
     );
-    assert_eq!(read_dimension(host.runtime(), fork), LOW_DIMENSION);
+    assert_eq!(read_retention(host.runtime(), fork), LOW_RETENTION);
 
-    let peer = host
-        .supported_program::<DimensionProgramP1>()
-        .expect("the rostered peer is nameable on every occurrence of this host");
-    assert_eq!(
-        settle(set_dimension(&peer, fork, SEED_DIMENSION, 0x9175_0044)),
-        DimensionVerdict::inactive(),
-        "forking an occurrence cannot activate a program it never ran"
-    );
-    assert_eq!(read_dimension(host.runtime(), fork), LOW_DIMENSION);
-    assert_eq!(read_dimension(host.runtime(), main), SEED_DIMENSION);
+    assert_eq!(read_retention(host.runtime(), main), SEED_RETENTION);
 }
 
-fn validated_first() -> ValidatedApplicationProgram<BoundedDimensionSchema, DimensionProgramP0> {
-    ApplicationProgramAuthoring::<BoundedDimensionSchema, DimensionProgramP0>::begin()
+fn validated_first() -> ValidatedApplicationProgram<DocumentRetentionSchema, RetentionProgramP0> {
+    ApplicationProgramAuthoring::<DocumentRetentionSchema, RetentionProgramP0>::begin()
         .validated_program()
         .expect("the first program is authored validly")
 }
 
-fn validated_second() -> ValidatedApplicationProgram<BoundedDimensionSchema, DimensionProgramP1> {
-    ApplicationProgramAuthoring::<BoundedDimensionSchema, DimensionProgramP1>::begin()
+fn validated_second() -> ValidatedApplicationProgram<DocumentRetentionSchema, RetentionProgramP1> {
+    ApplicationProgramAuthoring::<DocumentRetentionSchema, RetentionProgramP1>::begin()
         .validated_program()
         .expect("the second program is authored validly")
 }

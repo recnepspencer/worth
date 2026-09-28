@@ -3,12 +3,13 @@
 `worth-relational` is a standalone truth runtime for graph-shaped state.
 
 It is for systems that need state to be authoritative, transactional,
-inspectable, replayable, and durable instead of just "some mutable data
-structure plus vibes."
+inspectable, replayable, and durable, rather than a mutable data structure
+whose correctness rests on convention.
 
-It is meant for more than CRUD apps. The target is stuff like chip simulators,
-geometry kernels, planning systems, and other runtimes where history,
-determinism, replay, validation, branching, and durable recovery are first-class.
+It is meant for more than CRUD apps. The target is systems like order and
+inventory management, account ledgers, document approval workflows, planning
+systems, and other runtimes where history, determinism, replay, validation,
+branching, and durable recovery are first-class.
 
 The library is built around a few obvious jobs:
 
@@ -49,7 +50,7 @@ use worth_relational::facade::{
     transactions::WorkerIntentBatch,
 };
 
-let mut runtime = RelationalRuntimeApi::builder()
+let runtime = RelationalRuntimeApi::builder()
     .schema_registry(RelationalSchemaRegistry::new())
     .build();
 
@@ -60,7 +61,7 @@ let mut tx = runtime.begin_branch_transaction(
     RelationalTransactionIntent::ordinary(),
 )?;
 tx.push_batch(WorkerIntentBatch::new("example"))?;
-let _outcome = tx.commit(&mut runtime)?;
+let _outcome = tx.commit(&runtime)?;
 
 let _truth = runtime.read_truth();
 let _snapshots = runtime.snapshots();

@@ -1,9 +1,18 @@
 use crate::application_schema::{ApplicationEntityMarkerIdentity, ApplicationSchema};
 
+/// What a mutation does to the record behind one declared output role.
+///
+/// Each `ApplicationMutationOutputRoleDescriptor` in a mutation's output
+/// contract names an entity and one posture; installation checks the roles
+/// against the installed schema.
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum ApplicationMutationOutputPosture {
+    /// The role names a record the mutation keeps; it neither creates nor
+    /// retires it.
     Preserve,
+    /// The role names a record the mutation creates.
     Create,
+    /// The role names a record the mutation retires.
     Retire,
 }
 

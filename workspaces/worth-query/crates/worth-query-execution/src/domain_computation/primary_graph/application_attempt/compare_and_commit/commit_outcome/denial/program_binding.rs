@@ -23,15 +23,33 @@ impl WorthQueryApplicationCommitDenial {
     /// Refuses a rostered program different from the occurrence's activation.
     pub(in crate::domain_computation::primary_graph::application_attempt) fn program_not_active_on_occurrence(
         presented: &ApplicationProgramIdentity,
-        active: &ApplicationProgramIdentity,
+        active_identity: &ApplicationProgramIdentity,
+        active_revision: &ApplicationProgramRevision,
     ) -> Self {
         Self {
-            kind: WorthQueryApplicationCommitDenialKind::ProgramNotActiveOnOccurrence,
+            kind: WorthQueryApplicationCommitDenialKind::ProgramNotActiveOnOccurrence {
+                active: *active_revision,
+            },
             stage: WorthQueryApplicationCommitDenialStage::ProposalBinding,
             detail: Some(std::sync::Arc::from(format!(
                 "presented program {} is not active on this occurrence: {} is",
                 presented.as_str(),
-                active.as_str()
+                active_identity.as_str()
+            ))),
+            custom_invariant: None,
+        }
+    }
+
+    /// Refuses a rostered revision whose support this host is retiring or has
+    /// retired.
+    pub(in crate::domain_computation::primary_graph) fn program_support_retired(
+        revision: &ApplicationProgramRevision,
+    ) -> Self {
+        Self {
+            kind: WorthQueryApplicationCommitDenialKind::ProgramSupportRetired,
+            stage: WorthQueryApplicationCommitDenialStage::ProposalBinding,
+            detail: Some(std::sync::Arc::from(format!(
+                "program revision {revision} is no longer active on this host"
             ))),
             custom_invariant: None,
         }
@@ -44,7 +62,9 @@ impl WorthQueryApplicationCommitDenial {
         active_revision: &ApplicationProgramRevision,
     ) -> Self {
         Self {
-            kind: WorthQueryApplicationCommitDenialKind::ProgramNotActiveOnOccurrence,
+            kind: WorthQueryApplicationCommitDenialKind::ProgramNotActiveOnOccurrence {
+                active: *active_revision,
+            },
             stage: WorthQueryApplicationCommitDenialStage::ProposalBinding,
             detail: Some(std::sync::Arc::from(format!(
                 "presented program {} revision {} is not active on this occurrence: {} revision {} is",

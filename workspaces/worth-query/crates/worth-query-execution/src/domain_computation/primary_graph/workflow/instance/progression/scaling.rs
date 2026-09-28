@@ -17,6 +17,7 @@ fn populated(count: u64) -> WorkflowInstanceProgress {
         latest_transitions: OrdMap::new(),
         latest_transition_identities: OrdMap::new(),
         latest_assessment_evidence: OrdMap::new(),
+        retained_evidence_bytes: 0,
     };
     for occurrence in 0..count {
         let node = entity(occurrence);

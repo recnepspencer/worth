@@ -11,33 +11,33 @@ use worth_query_host::facade::application_entry::{
 };
 use worth_query_host::facade::application_installation::WorthQueryProgramOwner;
 
-use crate::bounded_dimension_model::dimension_entry::{
-    candidate_count, reset_candidate_count, SetPartDimensionIntent,
-    MIGRATION_CANDIDATE_PROBE_DIMENSION, PART_IDENTITY,
+use crate::document_retention_model::host::publish_on_first_program;
+use crate::document_retention_model::operator_identity::{authenticate_operator, request_scope};
+use crate::document_retention_model::presented_request::set_retention;
+use crate::document_retention_model::programs::RetentionProgramP1;
+use crate::document_retention_model::readback::read_retention;
+use crate::document_retention_model::retention_entry::{
+    candidate_count, reset_candidate_count, SetRetentionIntent, DOCUMENT_IDENTITY,
+    MIGRATION_CANDIDATE_PROBE_RETENTION,
 };
-use crate::bounded_dimension_model::host::publish_on_first_program;
-use crate::bounded_dimension_model::operator_identity::{authenticate_operator, request_scope};
-use crate::bounded_dimension_model::presented_request::set_dimension;
-use crate::bounded_dimension_model::programs::DimensionProgramP1;
-use crate::bounded_dimension_model::readback::read_dimension;
-use crate::bounded_dimension_model::schema::SetPartDimensionInput;
-use crate::bounded_dimension_model::settled_verdict::{settle, DimensionVerdict};
+use crate::document_retention_model::schema::SetRetentionInput;
+use crate::document_retention_model::settled_verdict::{settle, RetentionVerdict};
 
-const P0_ONLY_DIMENSION: u64 = 3;
-const P1_VALID_DIMENSION: u64 = 15;
+const P0_ONLY_RETENTION: u64 = 3;
+const P1_VALID_RETENTION: u64 = 15;
 
 #[test]
 fn typed_migration_repairs_state_inside_the_adoption_publication() {
     let host = publish_on_first_program();
     let initial = host.current_world();
     assert_eq!(
-        settle(set_dimension(
+        settle(set_retention(
             &host,
             initial,
-            P0_ONLY_DIMENSION,
+            P0_ONLY_RETENTION,
             0x9175_2101,
         )),
-        DimensionVerdict::Performed(P0_ONLY_DIMENSION),
+        RetentionVerdict::Performed(P0_ONLY_RETENTION),
     );
     let branch = host.current_world();
     let sibling = host
@@ -47,21 +47,20 @@ fn typed_migration_repairs_state_inside_the_adoption_publication() {
         .components(|components| components.fork_relational().reuse_exact_signal_basis())
         .create()
         .expect("the source-program sibling must publish");
-    let target = host
-        .supported_program::<DimensionProgramP1>()
+    let target = *host
+        .supported_program::<RetentionProgramP1>()
         .expect("P1 is rostered")
-        .owned_revision()
-        .clone();
+        .owned_revision();
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let migration = match host
         .runtime()
         .request(&principal, &scope)
         .on_branch(branch)
-        .mutate(SetPartDimensionIntent {
-            input: SetPartDimensionInput {
-                identity: PART_IDENTITY.to_owned(),
-                dimension: P1_VALID_DIMENSION,
+        .mutate(SetRetentionIntent {
+            input: SetRetentionInput {
+                identity: DOCUMENT_IDENTITY.to_owned(),
+                retention_days: P1_VALID_RETENTION,
             },
         })
         .without_source()
@@ -90,8 +89,7 @@ fn typed_migration_repairs_state_inside_the_adoption_publication() {
         .programs();
     let requirements = programs.compare(&target).expect("comparison must succeed");
     let prepared = programs
-        .adopt(&target)
-        .requirements(&requirements)
+        .adopt(&requirements)
         .migration(migration)
         .prepare(64)
         .expect("migration and target validation must prepare atomically");
@@ -108,12 +106,12 @@ fn typed_migration_repairs_state_inside_the_adoption_publication() {
     assert_eq!(performed.target(), &target);
     assert!(performed.migration().is_some());
     assert_eq!(
-        read_dimension(host.runtime(), host.current_world()),
-        P1_VALID_DIMENSION
+        read_retention(host.runtime(), host.current_world()),
+        P1_VALID_RETENTION
     );
     assert_eq!(
-        read_dimension(host.runtime(), sibling),
-        P0_ONLY_DIMENSION,
+        read_retention(host.runtime(), sibling),
+        P0_ONLY_RETENTION,
         "migration and target activation must remain local to the selected branch"
     );
 }
@@ -122,21 +120,20 @@ fn typed_migration_repairs_state_inside_the_adoption_publication() {
 fn migration_candidate_cannot_cross_the_source_product_head() {
     let host = publish_on_first_program();
     let branch = host.current_world();
-    let target = host
-        .supported_program::<DimensionProgramP1>()
+    let target = *host
+        .supported_program::<RetentionProgramP1>()
         .expect("P1 is rostered")
-        .owned_revision()
-        .clone();
+        .owned_revision();
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let migration = match host
         .runtime()
         .request(&principal, &scope)
         .on_branch(branch)
-        .mutate(SetPartDimensionIntent {
-            input: SetPartDimensionInput {
-                identity: PART_IDENTITY.to_owned(),
-                dimension: 16,
+        .mutate(SetRetentionIntent {
+            input: SetRetentionInput {
+                identity: DOCUMENT_IDENTITY.to_owned(),
+                retention_days: 16,
             },
         })
         .without_source()
@@ -155,8 +152,8 @@ fn migration_candidate_cannot_cross_the_source_product_head() {
         .compare(&target)
         .expect("comparison succeeds");
     assert_eq!(
-        settle(set_dimension(&host, branch, 8, 0x9175_2112)),
-        DimensionVerdict::Performed(8),
+        settle(set_retention(&host, branch, 8, 0x9175_2112)),
+        RetentionVerdict::Performed(8),
     );
 
     let denial = host
@@ -164,8 +161,7 @@ fn migration_candidate_cannot_cross_the_source_product_head() {
         .request(&principal, &scope)
         .on_branch(branch)
         .programs()
-        .adopt(&target)
-        .requirements(&requirements)
+        .adopt(&requirements)
         .migration(migration)
         .prepare(64)
         .err()
@@ -176,7 +172,7 @@ fn migration_candidate_cannot_cross_the_source_product_head() {
             worth_query_host::facade::primary_graph::WorthQueryBranchAdoptionPreparationDenial::MigrationSourceChanged
         )
     ));
-    assert_eq!(read_dimension(host.runtime(), host.current_world()), 8);
+    assert_eq!(read_retention(host.runtime(), host.current_world()), 8);
 }
 
 #[test]
@@ -184,31 +180,30 @@ fn unpublished_migration_recovery_never_reruns_candidate_authoring() {
     let host = publish_on_first_program();
     let initial = host.current_world();
     assert_eq!(
-        settle(set_dimension(
+        settle(set_retention(
             &host,
             initial,
-            P0_ONLY_DIMENSION,
+            P0_ONLY_RETENTION,
             0x9175_2121,
         )),
-        DimensionVerdict::Performed(P0_ONLY_DIMENSION),
+        RetentionVerdict::Performed(P0_ONLY_RETENTION),
     );
     let branch = host.current_world();
-    let target = host
-        .supported_program::<DimensionProgramP1>()
+    let target = *host
+        .supported_program::<RetentionProgramP1>()
         .expect("P1 is rostered")
-        .owned_revision()
-        .clone();
+        .owned_revision();
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
-    reset_candidate_count(MIGRATION_CANDIDATE_PROBE_DIMENSION);
+    reset_candidate_count(MIGRATION_CANDIDATE_PROBE_RETENTION);
     let migration = match host
         .runtime()
         .request(&principal, &scope)
         .on_branch(branch)
-        .mutate(SetPartDimensionIntent {
-            input: SetPartDimensionInput {
-                identity: PART_IDENTITY.to_owned(),
-                dimension: MIGRATION_CANDIDATE_PROBE_DIMENSION,
+        .mutate(SetRetentionIntent {
+            input: SetRetentionInput {
+                identity: DOCUMENT_IDENTITY.to_owned(),
+                retention_days: MIGRATION_CANDIDATE_PROBE_RETENTION,
             },
         })
         .without_source()
@@ -219,7 +214,7 @@ fn unpublished_migration_recovery_never_reruns_candidate_authoring() {
         WorthQueryApplicationProgramMigrationPreparationOutcome::Prepared(prepared) => prepared,
         _ => panic!("migration must complete"),
     };
-    assert_eq!(candidate_count(MIGRATION_CANDIDATE_PROBE_DIMENSION), 1);
+    assert_eq!(candidate_count(MIGRATION_CANDIDATE_PROBE_RETENTION), 1);
     let programs = host
         .runtime()
         .request(&principal, &scope)
@@ -227,8 +222,7 @@ fn unpublished_migration_recovery_never_reruns_candidate_authoring() {
         .programs();
     let requirements = programs.compare(&target).expect("comparison succeeds");
     let prepared = programs
-        .adopt(&target)
-        .requirements(&requirements)
+        .adopt(&requirements)
         .migration(migration)
         .prepare(64)
         .expect("migration adoption prepares");
@@ -257,9 +251,9 @@ fn unpublished_migration_recovery_never_reruns_candidate_authoring() {
     };
     assert!(performed.migration().is_some());
     assert_eq!(performed.relational_owner_contacts(), 0);
-    assert_eq!(candidate_count(MIGRATION_CANDIDATE_PROBE_DIMENSION), 1);
+    assert_eq!(candidate_count(MIGRATION_CANDIDATE_PROBE_RETENTION), 1);
     assert_eq!(
-        read_dimension(host.runtime(), host.current_world()),
-        MIGRATION_CANDIDATE_PROBE_DIMENSION,
+        read_retention(host.runtime(), host.current_world()),
+        MIGRATION_CANDIDATE_PROBE_RETENTION,
     );
 }

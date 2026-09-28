@@ -3,7 +3,7 @@ use worth_query_host::facade::application_entry::{
     WorkflowInstanceStartOutcome, WorkflowProgressOutcome, WorkflowProposalOutcome,
 };
 
-use super::bounded_dimension_model::{
+use super::document_retention_model::{
     host::publish_workflow_on_first_program,
     workflow::{
         advance_instance, bounded_retry_definition, propose_authoring_instance, publish_definition,

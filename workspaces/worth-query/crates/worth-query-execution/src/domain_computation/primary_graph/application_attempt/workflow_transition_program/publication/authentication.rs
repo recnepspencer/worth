@@ -89,7 +89,7 @@ impl<Schema> PreparedWorkflowApprovalAuthentication<Schema> {
             intent,
             basis,
             descriptor: ApprovalDescriptor {
-                program_revision: program_revision.clone(),
+                program_revision: *program_revision,
                 transition_identity: transition_identity.clone(),
                 transition_identity_bytes: *transition_identity_bytes,
                 transition_identity_locator: transition_identity_locator.clone(),

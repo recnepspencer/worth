@@ -79,6 +79,13 @@ impl WorthQueryRecoverySafeRetryAdmission {
     }
 }
 
+/// Completes a recovery handle after one performed external re-dispatch.
+///
+/// `redispatch` must be evidence of a re-dispatch performed for this same
+/// handle that reached external completion, and `authority` must be effect
+/// authority for this handle. On success the handle is consumed as completed.
+/// On denial, [`WorthQueryRecoverySafeRetryDenial::Retained`] hands the live
+/// handle back; `Terminal` means the handle had already ended.
 pub fn safe_retry_recovery_handle(
     handle: WorthQueryRecoveryHandle,
     authority: &WorthQueryRecoveryEffectAuthority,

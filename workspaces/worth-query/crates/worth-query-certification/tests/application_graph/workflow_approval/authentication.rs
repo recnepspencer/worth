@@ -6,9 +6,9 @@ use worth_query_host::facade::application_entry::{
     WorthQueryApplicationRequestExt, WorthQueryWorkflowAdvancePreparationDenial,
 };
 
-use super::super::bounded_dimension_model::{
-    dimension_entry::PART_IDENTITY,
+use super::super::document_retention_model::{
     operator_identity::{authenticate_operator, block_on, request_scope},
+    retention_entry::DOCUMENT_IDENTITY,
     workflow::{
         install_certification_authentication, WorkflowAdvanceInput, WorkflowApprovalIntent,
     },
@@ -28,7 +28,7 @@ fn approval_rejects_foreign_owner_wrong_purpose_and_intent_but_replays_without_r
                 .request(&principal, &scope)
                 .mutate(WorkflowApprovalIntent {
                     input: WorkflowAdvanceInput {
-                        part_identity: PART_IDENTITY.to_owned(),
+                        document_identity: DOCUMENT_IDENTITY.to_owned(),
                     },
                 })
                 .without_source()
@@ -57,7 +57,7 @@ fn approval_rejects_foreign_owner_wrong_purpose_and_intent_but_replays_without_r
     let wrong_intent = WorthQueryAuthenticationEventIntent::new(
         "workflow-approval-signature",
         CanonicalDigestId::new([0; 32]),
-        intent.subject_coverage().clone(),
+        *intent.subject_coverage(),
     )
     .unwrap();
     let wrong_event = block_on(application.authentication().authenticate(
@@ -128,7 +128,7 @@ fn approval_rejects_expired_signing_event_from_the_installed_named_clock() {
             .request(&principal, &scope)
             .mutate(WorkflowApprovalIntent {
                 input: WorkflowAdvanceInput {
-                    part_identity: PART_IDENTITY.to_owned(),
+                    document_identity: DOCUMENT_IDENTITY.to_owned(),
                 },
             })
             .without_source()

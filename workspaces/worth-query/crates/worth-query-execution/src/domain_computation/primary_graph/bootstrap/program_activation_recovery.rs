@@ -2,7 +2,6 @@
 
 use worth_foundational::facade::ContractValidatedAspectValueView;
 use worth_query_installation::facade::WorthQueryProgramSupportRoster;
-use worth_relational::facade::identity::PartitionId;
 
 use super::super::program_occurrence::{
     program_revision_rendering, WorthQueryProgramActivationCell,
@@ -22,11 +21,16 @@ pub(in crate::domain_computation::primary_graph) fn recover_program_activation<S
         let basis = runtime
             .admit_branch_basis(&runtime.main_branch_identity())
             .map_err(|error| denial(format!("recovered branch basis refused: {error:?}")))?;
-        let records = runtime.read_truth().visible_entities_of_kind_in_partition(
-            PartitionId::main(),
-            layout.entity_kind,
-            basis.observation().version_id(),
-        );
+        // Read on main's own root: a version alone would also see a
+        // sibling's later adoption of the same activation record. Recovery
+        // examines the recovered root once, as the unbounded scan it replaces.
+        let records = runtime
+            .read_truth()
+            .project_observation(&basis.observation())
+            .map_err(|error| denial(format!("recovered branch is unreadable: {error:?}")))?
+            .bounded_entities_of_kind(layout.entity_kind, usize::MAX)
+            .map_err(|_| denial("recovered program activation scan exceeded its bound"))?
+            .into_records();
         let [record] = records.as_slice() else {
             return Err(denial(format!(
                 "recovered branch contains {} program activation records, expected one",

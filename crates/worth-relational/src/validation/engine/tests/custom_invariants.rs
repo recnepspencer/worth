@@ -112,8 +112,7 @@ fn engine_executes_custom_packets_against_real_structural_surfaces() {
                 kind_id: crate::facade::identity::KindId(1),
                 client_key: crate::symbols::data::ClientKey::raw("source"),
                 fields: crate::transactions::data::AspectFieldPatch::default(),
-            }))
-            .into(),
+            })),
             MutationIntent::Create(CreateIntent::Relation(RelationSpec {
                 partition_id: PartitionId::main(),
                 kind_id: crate::facade::identity::KindId(2),
@@ -121,8 +120,7 @@ fn engine_executes_custom_packets_against_real_structural_surfaces() {
                 source: crate::transactions::data::EntityReference::Existing(source),
                 target: crate::transactions::data::EntityReference::Existing(target),
                 fields: crate::transactions::data::AspectFieldPatch::default(),
-            }))
-            .into(),
+            })),
             MutationIntent::Create(CreateIntent::Relation(RelationSpec {
                 partition_id: PartitionId::main(),
                 kind_id: crate::facade::identity::KindId(2),
@@ -130,8 +128,7 @@ fn engine_executes_custom_packets_against_real_structural_surfaces() {
                 source: crate::transactions::data::EntityReference::Existing(source),
                 target: crate::transactions::data::EntityReference::Existing(target),
                 fields: crate::transactions::data::AspectFieldPatch::default(),
-            }))
-            .into(),
+            })),
         ],
     };
 
@@ -139,7 +136,7 @@ fn engine_executes_custom_packets_against_real_structural_surfaces() {
         InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::CommitBoundary,
             &runtime,
-            InvariantObservation::committed(runtime.storage_access().current_edition()).into(),
+            InvariantObservation::committed(runtime.storage_access().current_edition()),
             runtime.current_version_id(),
             Some(&plan),
             None,
@@ -174,7 +171,7 @@ fn engine_executes_custom_packets_against_real_structural_surfaces() {
         InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::CommitBoundary,
             &runtime,
-            InvariantObservation::committed(runtime.storage_access().current_edition()).into(),
+            InvariantObservation::committed(runtime.storage_access().current_edition()),
             runtime.current_version_id(),
             Some(&plan),
             None,

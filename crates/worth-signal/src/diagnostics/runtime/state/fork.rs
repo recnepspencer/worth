@@ -94,7 +94,7 @@ impl DiagnosticsState {
             next_lineage_sequence: *next_lineage_sequence,
             pending_input: pending_input
                 .as_mut()
-                .map(|input| input.fork_with_resources(resources.as_deref_mut())),
+                .map(|input| input.fork_with_resources(resources)),
             latest_frontier_execution: latest_frontier_execution.clone(),
             latest_invalidation_planning_estimate: latest_invalidation_planning_estimate.clone(),
             latest_invalidation_trace_records: latest_invalidation_trace_records.clone(),
@@ -119,7 +119,7 @@ impl PendingFlowInput {
                 Some(resources) => changed_nodes.fork_reserved(resources),
                 None => changed_nodes.fork_persistent(),
             },
-            changed_aspects: match resources.as_deref_mut() {
+            changed_aspects: match resources {
                 Some(resources) => changed_aspects.fork_reserved(resources),
                 None => changed_aspects.fork_persistent(),
             },

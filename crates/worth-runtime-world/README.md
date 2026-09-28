@@ -59,4 +59,7 @@ and [retention/recovery](RETENTION_AND_RECOVERY.md) for exact contracts.
 
 This crate has no Query, Store, persistence, replay, codec or physical-runtime
 dependency. It does not provide durable restart, multi-parent history, rollback,
-or Query public completion. Query application integration is milestone 9.17.3.
+or Query public completion. Query already consumes this crate through
+`worth_runtime_world::facade` (from `worth-query-execution` and
+`worth-query-publication`) to publish application commits and report their
+product outcomes.

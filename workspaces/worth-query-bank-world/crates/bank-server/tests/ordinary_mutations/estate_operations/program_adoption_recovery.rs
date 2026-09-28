@@ -5,7 +5,6 @@ use bank_external_rail::test_control::FaultScript;
 use bank_external_rail::LedgerStatus;
 use bank_server::{BankApplicationP1, BankCommitDenialKind, BankMutationCommitOutcome};
 use worth_query_host::facade::application_entry::WorthQueryBranchAdoptionPublicationOutcome;
-use worth_query_host::facade::application_installation::WorthQueryProgramOwner;
 use worth_query_host::facade::declaration::application_program::ApplicationSemanticChangeKind;
 use worth_query_host::facade::domain::WorthQueryProgramCustodyInventoryKind;
 use worth_query_host::facade::primary_graph::{
@@ -25,12 +24,11 @@ fn performed_effect_recovery_survives_removal_from_the_current_program() {
     let correlation = world.transport.attempts()[0].clone();
     let handle = world.open_recovery(&receipt);
     let specialist = world.fixture.authenticate_specialist();
-    let application = world.fixture.world.runtime.application_program();
-    let branch = application.current_world();
-    let target_owner = application
-        .supported_program::<BankApplicationP1>()
+    let runtime = &world.fixture.world.runtime;
+    let branch = runtime.current_branch();
+    let target = runtime
+        .supported_program_revision::<BankApplicationP1>()
         .expect("Bank P1 is rostered beside P0");
-    let target = target_owner.owned_revision().clone();
     let adoption_scope = request_scope();
     let programs = world
         .fixture
@@ -49,8 +47,7 @@ fn performed_effect_recovery_survives_removal_from_the_current_program() {
         })
         .expect("removed effectful operation requires exact recovery custody");
     let prepared = programs
-        .adopt(&target)
-        .requirements(&requirements)
+        .adopt(&requirements)
         .prepare(128)
         .expect("Bank P1 adoption prepares");
     assert!(has_exact_recovery(prepared.custody(), recovery));

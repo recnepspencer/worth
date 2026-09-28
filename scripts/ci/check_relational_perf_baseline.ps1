@@ -7,7 +7,7 @@ Write-Host "[relational-perf-baseline] Running relational perf lane and baseline
 
 $RunnerTemp = if ($env:RUNNER_TEMP) { $env:RUNNER_TEMP } else { [System.IO.Path]::GetTempPath() }
 $PerfSummaryPath = if ($env:RELATIONAL_PERF_SUMMARY_PATH) { $env:RELATIONAL_PERF_SUMMARY_PATH } else { Join-Path $RunnerTemp "relational-perf-summary.jsonl" }
-$PerfBaselinePath = if ($env:RELATIONAL_PERF_BASELINE_PATH) { $env:RELATIONAL_PERF_BASELINE_PATH } else { Join-Path $RootDir "_docs\engineering\worth_relational_performance_baseline.jsonl" }
+$PerfBaselinePath = if ($env:RELATIONAL_PERF_BASELINE_PATH) { $env:RELATIONAL_PERF_BASELINE_PATH } else { Join-Path $RootDir "plans\engineering\worth_relational_performance_baseline.jsonl" }
 
 $env:RELATIONAL_PERF_SUMMARY_PATH = $PerfSummaryPath
 $env:RELATIONAL_PERF_BASELINE_PATH = $PerfBaselinePath

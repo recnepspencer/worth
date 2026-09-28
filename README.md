@@ -9,200 +9,259 @@ reconstructed from strings, booleans, logs, or convention. Meaning is declared,
 authority is admitted by its owner, phase progression is visible in types, and
 the evidence needed by a later phase is carried forward instead of rediscovered.
 
+WORTH is domain-neutral infrastructure. It does not know what your application
+is about: orders, ledgers, documents, designs, or anything else. What it knows
+is what may change, who may change it, what a change was based on, and what
+exactly happened.
+
 WORTH is under active construction. This repository is a platform development
-tree rather than a release-stable, single-command application framework. The
+tree, not yet a single-command application framework with numbered versions. The
 major runtimes have their own workspaces, documentation, tests, and lifecycle.
+
+## Start here
+
+| If you want to... | Read |
+|---|---|
+| Understand why WORTH exists and why it is shaped this way | [Philosophy](docs/philosophy.md) |
+| Understand how the platform works, from the substrate up to one request | [How WORTH Works](docs/how-it-works.md) |
+| Look up an exact term | [Glossary](docs/glossary.md) |
+| Build an application, and find which crate to import | [API Map](docs/api.md) |
+| Contribute to the platform itself | [Coding Guidelines](docs/coding-guidelines/) and [AGENTS.md](AGENTS.md) |
+| Browse every public document | [Documentation index](docs/README.md) |
+
+**AI agents:** read [Philosophy](docs/philosophy.md), then
+[How WORTH Works](docs/how-it-works.md), before you write application code.
+A Query application imports only `worth-query-decl` and `worth-query-host`.
+Servers, UIs, and standalone runtimes have their own entry points; see
+[API Map §6](docs/api.md#6-standalone-runtimes-and-hosts). Everything else is
+how the platform keeps its promises.
 
 ## The platform at a glance
 
-```text
-application declarations and domain meaning
-                    |
-                    v
-              WORTH Query
-          admission and execution
-             /      |       \
-            v       v        v
-   WORTH Relational |   external effects
-   authoritative    |
-   graph truth      |
-            \       |
-             v      v
-          Runtime Bridge ---> WORTH Signal
-          truth-to-compute     incremental derived work
-                    |
-                    v
-                 WORTH UI
-          authored applications and hosts
+WORTH is a set of cooperating owners. Each one holds exactly one kind of
+authority, and no other crate may mint it.
 
-WORTH Store persists and reconstructs the durable physical world beneath
-the authoritative runtimes. WORTH Foundational and WORTH Proof supply the
-portable vocabulary and proof progression shared across boundaries.
+```text
+                ┌───────────────────────────────────────────────────┐
+  Application   │  your schema, operations, handlers, workflows     │
+                └───────────────────────────────────────────────────┘
+                     │ worth-query-decl        │ worth-query-host
+                ┌───────────────────────────────────────────────────┐
+  Query         │  declare → install → admit → execute → commit →   │
+                │  publish; workflows; aftermath and recovery        │
+                └───────────────────────────────────────────────────┘
+                ┌───────────────────────────────────────────────────┐
+  Composition   │  Runtime World: product branches over exact        │
+                │  component bases; coordinated publication          │
+                └───────────────────────────────────────────────────┘
+                ┌────────────┐   ┌────────────────┐   ┌─────────────┐
+  Runtimes      │ Relational │──▶│ Runtime Bridge │──▶│   Signal    │
+                │ truth      │   │ correspondence │   │ derived     │
+                └────────────┘   └────────────────┘   │ computation │
+                                                      └─────────────┘
+                ┌───────────────────────────────────────────────────┐
+  Substrate     │  worth-foundational   shared meaning              │
+                │  worth-proof          legality as types           │
+                └───────────────────────────────────────────────────┘
+
+  Beside the stack:  Store (durable physical survival) · UI (authored
+  applications and hosts) · Server (transport) · Contracts (pure schema)
 ```
 
-These are cooperating owners, not interchangeable layers. Relational owns
-authoritative graph-shaped truth. Signal owns incremental computation. Query
-owns application-facing composition and admission. Store owns durable physical
-survival. UI owns authored and mounted application presentation. No diagnostic,
-serialized record, or equivalent-looking identifier is allowed to impersonate
-another subsystem's authority.
+The arrows between the runtimes show how a committed change *flows* at run
+time: from Relational truth, through the Bridge, into Signal. The compile-time
+dependency order is different. See [Dependency order](#dependency-order).
 
-## Major components
+These are cooperating owners, not interchangeable layers:
 
-### WORTH Foundational
+- **Relational** owns authoritative graph-shaped truth.
+- **Signal** owns incremental computation.
+- **Runtime Bridge** owns the causal link between truth changes and computation.
+- **Runtime World** owns product branches across both.
+- **Query** owns application-facing composition and admission.
+- **Store** owns durable physical survival.
+- **UI** owns authored and mounted application presentation.
 
-[`worth-foundational`](./crates/worth-foundational) owns portable meaning that
-must remain identical across runtime boundaries: aspect contracts, canonical
-values, identities, provenance, lineage, receipts, and shared diagnostic and
-performance vocabulary. It deliberately does not own live execution authority.
+No diagnostic, serialized record, or equivalent-looking identifier is allowed
+to impersonate another subsystem's authority.
 
-Start with its [README](./crates/worth-foundational/README.md).
+## Crate map
 
-### WORTH Proof
+Status legend:
 
-[`worth-proof`](./crates/worth-proof) provides reusable proof-bearing types and
-phase progression: authority and capability witnesses, checked transitions,
-freshness, boundary readmission, proof sets, and fixed-shape invariants. Runtime
-owners use this substrate to build concrete authority; generic proof cannot open
-an owner-specific operation.
+- **Stable**: the public export list is snapshotted, and boundary enforcement
+  fails on drift.
+- **Active**: maintained and in use; the API may still change.
+- **Dormant**: present, but nothing active depends on it.
 
-Start with its [README](./crates/worth-proof/README.md).
+Audience legend:
 
-### WORTH Relational
+- **Consumer**: application code may import it. The two Query consumer crates
+  are the *audience facades* for applications.
+- **Internal**: a platform owner; applications reach it only through a facade.
+- **Certification**: tests and evidence.
+- **Tooling**: build and enforcement tools.
 
-[`worth-relational`](./crates/worth-relational) is the authoritative runtime for
-graph-shaped state. It owns entities and relations, transactional writes,
-branch-local MVCC, immutable roots, snapshots, history, validation, merge,
-publication, and replayable truth. It publishes exact semantic changes without
-deciding what an application principal is allowed to do.
+### Substrate and runtimes (`crates/`)
 
-Start with its [README](./crates/worth-relational/README.md).
+| Crate | What it does | Audience | Status | Start with |
+|---|---|---|---|---|
+| `worth-proof` | Legality as types: authority witnesses, phase-typed artifacts, checked transitions, freshness and readmission, performed evidence, linear lifecycles. It has zero dependencies and no clock or counter. | Internal | Active | [README](crates/worth-proof/README.md) |
+| `worth-foundational` | The shared dictionary: canonical values, aspect contracts, canonical basis and SHA-256 digests, identity categories, branch-reference nouns, provenance, lineage, receipts, diagnostics, profiles. | Internal | Active | [README](crates/worth-foundational/README.md) |
+| `worth-relational` | Authoritative truth for graph-shaped state: entities, relations, aspects, branch-local MVCC over immutable roots, compare-and-publish, settlement, history, replay. | Internal (standalone use possible) | Active | [README](crates/worth-relational/README.md) |
+| `worth-signal` | Deterministic incremental derived computation: dependency tracking, scoped invalidation, recompute, rollback, condition decisions, performed execution receipts. It is never truth. | Consumer (standalone) and internal | Active | [README](crates/worth-signal/README.md) |
+| `worth-signal-wasm` | A worker-first WebAssembly and TypeScript browser package for Signal, published to npm as `worth-signals-wasm`. | Consumer (npm) | Active | [README](crates/worth-signal-wasm/README.md) |
+| `worth-runtime-bridge` | The causal protocol between Relational and Signal: installed correspondence, exact routing of committed changes, lowering of conditional meaning. | Internal | Active | [README](crates/worth-runtime-bridge/README.md) |
+| `worth-runtime-world` | Product branches over exact Relational and Signal bases, immutable composite history, and coordinated publication across component owners. | Internal | Active | [README](crates/worth-runtime-world/README.md) |
+| `worth-server` | A typed server facade and transport boundary: WORTH-native operations plus a strict HTTP compatibility boundary. | Consumer | Active | [Docs](crates/worth-server/docs/README.md) |
+| `worth-server-client-generation` | Renders TypeScript and Python remote clients from a server protocol catalog. | Tooling | Dormant | — |
+| `worth-harness` | Scenario, capture, replay, comparison, and workload infrastructure for certification. It is not a product API. | Certification | Active | [README](crates/worth-harness/README.md) |
 
-### WORTH Signal
+### Query (`workspaces/worth-query/`)
 
-[`worth-signal`](./crates/worth-signal) is a deterministic incremental runtime
-for derived work. It owns dependency tracking, producer-local invalidation,
-transactional recomputation, rollback, suppression, diagnostics, and historical
-execution evidence. Application state remains owned by the application or its
-authoritative runtime; Signal owns how declared derived work progresses.
+Query turns application meaning into governed, bounded work. It is not a
+database, identity provider, or policy truth store: it composes those owners.
 
-Start with its [README](./crates/worth-signal/README.md). Browser applications
-can use the worker-first WebAssembly surface in
-[`worth-signal-wasm`](./crates/worth-signal-wasm).
+| Crate | What it does | Audience | Status |
+|---|---|---|---|
+| [`worth-query-decl`](workspaces/worth-query/crates/worth-query-decl/README.md) | Declaration facade: schema, operations, queries, capabilities, workflows, and programs, as types and macros. It adds no behavior. | **Consumer** | **Stable** |
+| [`worth-query-host`](workspaces/worth-query/crates/worth-query-host/README.md) | Host facade: installation, requests, admission, execution, commit outcomes, publication, branches, programs, workflows, and aftermath. | **Consumer** | **Stable** |
+| [`worth-query-replay`](workspaces/worth-query/crates/worth-query-replay/README.md) | Replay and reconstruction, for certification code only. | Certification | Stable |
+| `worth-query-certification` | Reusable certification support, and runnable examples of complete applications. | Certification | Stable |
+| `worth-query-declaration` | Owns canonical declarations, validation, and binding grammar. | Internal | Active |
+| `worth-query-installation` | Owns portable packages, installed contracts, graph obligations, and touch contracts. | Internal | Active |
+| `worth-query-admission` | Owns basis, policy, resource, and access-planning decisions. | Internal | Active |
+| `worth-query-execution` | Owns execution over admitted plans, the primary graph, product branches, and program runtimes. | Internal | Active |
+| `worth-query-publication` | Owns the request API, disclosure, and publication. | Internal | Active |
+| `worth-query-package-archive` | The deterministic archive format for publishing portable Query packages. | Internal (package publishing) | Active |
+| `worth-query` | The internal Query engine, used by the UI binding and the server. | Internal | Active |
 
-### WORTH Runtime Bridge
+Workspace guide: [workspaces/worth-query/README.md](workspaces/worth-query/README.md).
 
-[`worth-runtime-bridge`](./crates/worth-runtime-bridge) is the causal protocol
-boundary between Relational truth and Signal computation. It installs exact
-correspondence between portable semantic dependencies and runtime-local Signal
-targets, routes committed changes, and preserves branch, basis, precision, and
-causal evidence without giving either runtime the other's authority.
+### Contracts (`workspaces/worth-contracts/`)
 
-Start with its [README](./crates/worth-runtime-bridge/README.md).
+| Crate | What it does | Audience | Status |
+|---|---|---|---|
+| `worth-schema-core` | Pure schema vocabulary: stable identities and validated names, plus the first measurement types (a tolerance, and length and angle units). | Consumer (schema) | Stable |
+| `worth-schema-graph` | Pure graph meaning: how a part inside a larger published record keeps a stable identity when it is promoted to a record of its own. Runtime authority stays with the adopting owners. | Consumer (schema) | Stable |
 
-### WORTH Query
+Schema crates never import Query. Guide:
+[workspaces/worth-contracts/README.md](workspaces/worth-contracts/README.md).
 
-[`workspaces/worth-query`](./workspaces/worth-query) is the application-facing
-composition runtime. It turns typed application declarations plus evidence from
-the runtimes that own truth into admitted, bounded operations. It coordinates
-installation, authentication and principal binding, capability admission,
-access planning, execution, publication, external-effect posture, aftermath,
-idempotency, and recovery.
+### Store (`workspaces/worth-store/`)
 
-Query is not a database, identity provider, or policy truth store. It composes
-those owners through typed audience facades:
+Store is the durable physical foundation. It makes accepted physical records
+survive process failure, reopens persisted roots in a fresh process, and
+reports corruption or indeterminate outcomes without inventing semantic truth.
+Store does not decide whether a Query operation is legal, does not redefine
+Relational truth, and does not treat a checksum as proof of authenticity.
+Today no crate outside the Store workspace depends on it.
 
-- `worth-query-decl` for application declarations;
-- `worth-query-host` for installation, admission, execution, and publication;
-- `worth-query-replay` for certification-only reconstruction.
+| Group | Crates | Status |
+|---|---|---|
+| Public facade and physical runtime lifecycle | `worth-store` | Active |
+| Shared vocabulary and boundary claims | `worth-store-contracts`, `-aspect-native`, `-authority`, `-readiness` | Active |
+| Physical format and media | `-physical-format`, `-physical-backend`, `-buffer-pool`, `-io-scheduler`, `-blob-chunks`, `-lsm-authority`, `-layout-indexes` | Active |
+| Durability and recovery | `-wal`, `-modes`, `-recovery-physics`, `-recovery-runtime` | Active |
+| Integrity, isolation, security | `-physical-integrity`, `-physical-isolation`, `-security`, `-reclaim-policy` | Active |
+| Data lifecycle and operations | `-retention`, `-tiering`, `-replication`, `-operations`, `-budgets`, `-maintenance`, `-compatibility` | Active |
+| Semantic durable programs | `-snapshots`, `-branch-deltas`, `-schema-lineage`, `-live-query`, `-subscription-support`, `-bulk`, `-extensions`, `-analysis`, `-claim-boundaries` | Dormant |
+| Independent evidence | `-offline-verifier`, `-offline-integrity-observer`, `-formal-models`, `-physical-certification`, `-certification`, `-test-support` | Active (certification) |
 
-The canonical architectural orientation is
-[WORTH Query Orientation for AI Agents](./workspaces/worth-query/crates/worth-query/docs/AI_README.md).
-The workspace [README](./workspaces/worth-query/README.md) maps focused packages
-and verification lanes.
+Guides: [workspace README](workspaces/worth-store/README.md) and
+[facade README](workspaces/worth-store/crates/worth-store/README.md).
 
-### WORTH Store
+### UI (`workspaces/worth-ui/`)
 
-[`workspaces/worth-store`](./workspaces/worth-store) is the durable physical
-foundation for WORTH. It is responsible for making accepted physical records
-survive process failure, reopening persisted roots in a fresh process, and
-reporting corruption or indeterminate outcomes without inventing semantic
-truth.
-
-Store includes:
-
-| Responsibility | Main owners |
-|---|---|
-| Shared physical vocabulary and claim boundaries | `worth-store-contracts`, `worth-store-readiness`, `worth-store-claim-boundaries` |
-| Byte layout and media mechanics | `worth-store-physical-format`, `worth-store-physical-backend`, `worth-store-buffer-pool` |
-| Durability and bounded execution | `worth-store-wal`, `worth-store-io-scheduler`, the thin `worth-store` facade |
-| Restart and recovery | `worth-store-recovery-physics`, `worth-store-recovery-runtime` |
-| Integrity and isolation | `worth-store-physical-integrity`, `worth-store-physical-isolation`, `worth-store-security` |
-| Durable semantic support | `worth-store-authority`, `worth-store-snapshots`, `worth-store-branch-deltas`, `worth-store-schema-lineage`, `worth-store-live-query` |
-| Data lifecycle and scale | `worth-store-retention`, `worth-store-tiering`, `worth-store-replication`, `worth-store-bulk`, `worth-store-blob-chunks` |
-| Operations and resource governance | `worth-store-maintenance`, `worth-store-operations`, `worth-store-budgets` |
-| Independent evidence | `worth-store-offline-verifier`, `worth-store-offline-integrity-observer`, `worth-store-formal-models`, and the certification crates |
-
-Store does not decide whether a Query operation is legal, redefine Relational
-truth, or treat a checksum as authenticity. Its acknowledgements describe
-physical truth under a qualified backend and remain separate from semantic
-commit authority.
-
-Start with the workspace [README](./workspaces/worth-store/README.md) and the
-public facade [README](./workspaces/worth-store/crates/worth-store/README.md).
-
-### WORTH UI
-
-[`workspaces/worth-ui`](./workspaces/worth-ui) is the product-facing UI platform.
-It owns authored UI meaning, compilation, active application state, planning,
-mounting, interaction and intent admission, runtime services, host exchange,
-native lifecycle, Query-backed views, and read-only inspection.
-
-The DSL, runtime, Query binding, host contracts, native host, headless host, and
-native platform are separate owners. Native input is not automatically user
+The product-facing UI platform. It owns authored UI meaning, compilation,
+active application state, planning, mounting, interaction and intent
+admission, runtime services, host exchange, native lifecycle, Query-backed
+views, and read-only inspection. Native input is not automatically user
 intent, UI admission is not domain admission, and inspection receipts do not
 grant mutation authority.
 
-Start with [WORTH UI AI Discovery](./workspaces/worth-ui/AI_README.md).
+| Crate | What it does | Audience |
+|---|---|---|
+| `worth-ui` | The public UI facade | Consumer |
+| `worth-ui-native-platform` | The sole native-display entry point | Consumer |
+| `worth-ui-runtime` | Active application, planning, mounting, intent admission, publication, runtime services | Internal |
+| `worth-ui-dsl` | Authored syntax, diagnostics, normalization, sealed semantic packages | Internal |
+| `worth-ui-query-binding` | The only crate that turns Query products into UI registrations and observations | Internal |
+| `worth-ui-host-contract`, `-host-native`, `-host-headless` | Host protocol and the native and headless hosts | Internal |
+| `worth-ui-inspection`, `-text`, `-retained-order` | Inspection, text qualification and layout, bounded sequences | Internal |
+| `worth-ui-certification`, `-test-support` | Lifecycle and anti-bypass proofs | Certification |
+| `apps/platform-pulse` | The permanent reference native application | Reference app |
 
-### WORTH Server and browser delivery
+Guide: [WORTH UI AI Discovery](workspaces/worth-ui/AI_README.md).
 
-[`worth-server`](./crates/worth-server) exposes WORTH-native server operations
-and a strict HTTP compatibility boundary for reads, mutations, streams, uploads,
-and downloads. Compatibility routes normalize transport-shaped input into
-canonical execution rather than allowing HTTP metadata to manufacture basis or
-authority.
+### Reference applications
 
-[`worth-signal-wasm`](./crates/worth-signal-wasm) packages worker-first browser
-state, resources, forms, routing, local branch truth, and React integration.
-The default path does not silently fall back to the main thread.
+| Path | What it is |
+|---|---|
+| [`workspaces/worth-query-bank-world`](workspaces/worth-query-bank-world/docs/public-consumer-contract.md) | A complete banking domain, server, HTTP adapter, user node, and fault-injecting external service. It consumes Query **only** through `worth-query-decl` and `worth-query-host`. This is the best end-to-end example of the consumer boundary. |
+| `workspaces/worth-ui/apps/platform-pulse` | A native application that exercises the UI and Query path |
+| [`apps/WORTH-signal-demo`](apps/WORTH-signal-demo/README.md) | A browser demo of `worth-signals-wasm` |
 
-### Supporting crates
+## Dependency order
 
-- [`worth-harness`](./crates/worth-harness) provides shared scenario,
-  certification, parity, diagnostics, and hostile-workload infrastructure.
-- Crates and packages retaining the older `forge-*` name are migration or
-  compatibility surfaces, not the preferred vocabulary for new integrations.
+This is the compile-time order, from the bottom up. It differs from the
+run-time flow in the diagram above.
+
+```text
+worth-proof
+  └─ worth-foundational
+       └─ worth-signal
+            └─ worth-runtime-bridge      (defines the truth-source contracts)
+                 └─ worth-relational     (implements them)
+                      └─ worth-runtime-world
+                           └─ Query authority crates
+                                └─ worth-query-host, worth-query (engine)
+                                     └─ worth-server, worth-ui, reference apps
+```
+
+`worth-query-decl` depends only on `worth-query-declaration`.
+`worth-query-host` sits on the five Query authority crates and does not depend
+on the internal engine. Neither consumer facade depends directly on
+`worth-proof`. Applications receive authority from its owners; they never
+construct it.
+
+Today `worth-relational` depends on `worth-runtime-bridge`: the Bridge defines
+truth-source traits (`CommittedPatchSource`, `SnapshotReadSource`,
+`TruthBranchHeadSource`), and Relational implements them. That is the reverse
+of the intended direction, in which the Bridge depends on both Relational and
+Signal and truth knows nothing of its consumers.
+[Bridge Milestone 20](plans/WORTH-runtime-bridge/milestone-20.md) plans the
+correction.
 
 ## Repository map
 
 | Path | Contents |
 |---|---|
-| [`crates`](./crates) | Shared runtime, protocol, foundation, and delivery crates |
-| [`workspaces/worth-contracts`](./workspaces/worth-contracts) | Pure public schema contracts and graph-constitution meaning |
-| [`workspaces/worth-query`](./workspaces/worth-query) | Query declarations, installation, admission, execution, publication, facades, replay, and certification |
-| [`workspaces/worth-store`](./workspaces/worth-store) | Durable physical store, recovery, integrity, operations, and certification |
-| [`workspaces/worth-ui`](./workspaces/worth-ui) | UI DSL, runtime, Query binding, hosts, native platform, and product application |
-| [`workspaces/worth-query-bank-world`](./workspaces/worth-query-bank-world) | End-to-end banking domain and adapter world for Query integration evidence |
-| [`apps`](./apps) and [`packages`](./packages) | Demonstrations and packaged delivery surfaces |
-| [`tools`](./tools) and [`scripts`](./scripts) | Boundary enforcement, generated context, release checks, and workspace tooling |
-| [`automation`](./automation) | Milestone and task orchestration support |
-| [`_docs`](./_docs) | Architecture, specifications, roadmaps, and engineering laws |
+| [`crates`](crates) | Substrate, runtimes, server, and harness |
+| [`workspaces/worth-query`](workspaces/worth-query) | Query: declarations, installation, admission, execution, publication, facades, replay, certification |
+| [`workspaces/worth-contracts`](workspaces/worth-contracts) | Pure public schema contracts |
+| [`workspaces/worth-store`](workspaces/worth-store) | Durable physical store, recovery, integrity, operations, certification |
+| [`workspaces/worth-ui`](workspaces/worth-ui) | UI DSL, runtime, Query binding, hosts, native platform, reference app |
+| [`workspaces/worth-query-bank-world`](workspaces/worth-query-bank-world) | End-to-end reference domain for the Query consumer boundary |
+| [`apps`](apps) | Demonstrations |
+| [`docs`](docs) | Public documentation: philosophy, how it works, glossary, API map, coding guidelines |
+| [`plans`](plans) | Internal milestone plans, visions, and roadmaps: intent, not documentation |
+| [`tools`](tools) | Boundary enforcement (`boundary-check`), generated agent context (`agent-context`), package publishing and qualification tools |
+| [`scripts`](scripts) | CI guards, WebAssembly packaging, quality and migration scripts |
+| [`automation`](automation) | Local orchestration for long implementation runs |
+| [`skills`](skills) | Agent skill definitions |
+
+The root `Cargo.toml` is a thin orchestrator. Each workspace has its own
+manifest. Use `--manifest-path` and `-p` for focused commands, for example:
+
+```bash
+cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-host
+```
 
 ## Engineering model
 
-The repository is governed by [AGENTS.md](./AGENTS.md) and the documents under
-[`_docs/coding_guidelines`](./_docs/coding_guidelines). The important themes are:
+The repository is governed by [AGENTS.md](AGENTS.md) and the documents under
+[`docs/coding-guidelines`](docs/coding-guidelines). The important themes are:
 
 - one authoritative owner for each decision and truth source;
 - compiler-visible phase and authority progression;
@@ -212,25 +271,37 @@ The repository is governed by [AGENTS.md](./AGENTS.md) and the documents under
 - tests that reach the real boundary claimed; and
 - physical module structure that preserves semantic ownership.
 
+These laws are enforced mechanically. `tools/boundary-check` rejects illegal
+dependencies, band violations, and drift in the public facade exports.
+`tools/agent-context` generates each crate's `AGENT_CONTEXT.md` from the same
+model. Both are required local gates (see [AGENTS.md](AGENTS.md)):
+
+```bash
+cargo run --manifest-path tools/boundary-check/Cargo.toml -- --root .
+```
+
+```bash
+cargo run --manifest-path tools/agent-context/Cargo.toml -- check
+```
+
 Subsystem READMEs contain their focused development and verification commands.
-The root is intentionally a thin orchestrator; use each subsystem's manifest
-for focused commands rather than assuming every workspace is a root member.
 
 ## License and commercial use
 
 WORTH is **source available** under the
-[Business Source License 1.1](./LICENSE). It is not presently OSI open source.
+[Business Source License 1.1](LICENSE). It is not presently OSI open source.
 
 - Reading, evaluation, development, testing, modification, forking, and
   redistribution are permitted by the license.
 - Production use is free while the combined annual revenue of the user and its
-  affiliates is below **US $10 million**.
+  affiliates is below **US $10 million**. After crossing the threshold, the
+  grant continues for 90 days after the end of that fiscal year.
 - Organizations at or above that threshold need a commercial license for
   production use.
 - Each version converts to the Apache License 2.0 no later than four years after
   its first public distribution.
 
-See [Commercial Licensing](./COMMERCIAL-LICENSING.md) or contact
+See [Commercial Licensing](COMMERCIAL-LICENSING.md) or contact
 **goldenspencerh@gmail.com**.
 
 Third-party assets and dependencies remain governed by their own license files
@@ -238,6 +309,6 @@ and notices.
 
 ## Contributing
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md). Contributors retain ownership of their
+See [CONTRIBUTING.md](CONTRIBUTING.md). Contributors retain ownership of their
 work while granting the project the rights needed to maintain the public,
 commercial, and eventual Apache-2.0 licensing model.

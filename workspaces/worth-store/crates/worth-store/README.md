@@ -20,7 +20,7 @@ byte access and cannot be promoted to a byte-read receipt.
 Read-protection disposition adapters are compiled only for unit tests until a
 C.11 owner consumes them; no resident owner issues dispositions yet.
 
-See [_docs/worth-store/bounded-physical-record-access.md](../../../../_docs/worth-store/bounded-physical-record-access.md)
+See [plans/worth-store/bounded-physical-record-access.md](../../../../plans/worth-store/bounded-physical-record-access.md)
 for admission limits, borrowed-byte lifetime, shutdown, and adapter boundaries.
 
 ## Physical Durability And Checkpoints
@@ -61,7 +61,7 @@ boundary checker enforces both. Store schedules checkpoint, scrub and WAL
 reclamation as background work through the one I/O scheduler. It has no
 automatic compaction producer: rewrite and retirement are caller-invoked.
 
-See [_docs/worth-store/physical-durability-and-checkpoints.md](../../../../_docs/worth-store/physical-durability-and-checkpoints.md)
+See [plans/worth-store/physical-durability-and-checkpoints.md](../../../../plans/worth-store/physical-durability-and-checkpoints.md)
 for the caller and operator contract.
 
 ## Physical Residency Failures

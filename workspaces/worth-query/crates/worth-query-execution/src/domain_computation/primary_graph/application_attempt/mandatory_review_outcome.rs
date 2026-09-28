@@ -101,26 +101,45 @@ impl WorthQueryReviewedElevation {
     }
 }
 
+/// Every way committing a mandatory review can end.
+///
+/// This mirrors the application commit outcome. `Reviewed` and
+/// `AlreadyReviewed` carry the move-only reviewed-elevation receipt. Most
+/// variants that did not land hand the consumed mandatory review back, so it
+/// can be committed again.
 #[derive(Debug)]
 pub enum WorthQueryMandatoryReviewOutcome {
+    /// The product branch moved after the basis. Nothing was committed.
     ProductStale(
         crate::domain_computation::WorthQueryProductStaleApplication,
         WorthQueryMandatoryReview,
     ),
+    /// Some owners moved, but the product head did not. Recover publication.
     ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
+    /// Nothing was written; the cause says why.
     NoEffect(
         super::WorthQueryApplicationNoEffect,
         WorthQueryMandatoryReview,
     ),
+    /// This attempt committed the mandatory review.
     Reviewed(WorthQueryReviewedElevation),
+    /// The idempotency key had already committed this mandatory review; nothing was redone.
     AlreadyReviewed(WorthQueryReviewedElevation),
+    /// The basis was stale at compare. Nothing was committed; re-read and retry.
     Stale(WorthQueryApplicationStaleAttempt, WorthQueryMandatoryReview),
+    /// The attempt was cancelled before it landed.
     Cancelled(WorthQueryMandatoryReview),
+    /// The attempt reached its deadline before it landed.
     TimedOut,
+    /// The commit was refused before publication.
     Denied(WorthQueryApplicationCommitDenial, WorthQueryMandatoryReview),
+    /// The commit's answer was lost, and a re-read found it never landed.
     Aborted(WorthQueryMandatoryReview),
+    /// A capacity or lifetime limit stopped the attempt. Retry later.
     Deferred(super::WorthQueryApplicationCommitDeferred),
+    /// The branch moved, but settlement did not finish. Recover the settlement.
     SettlementDeferred(super::WorthQueryApplicationSettlementDeferred),
+    /// Whether the commit landed is unresolved. Do not retry blindly.
     Indeterminate,
 }
 

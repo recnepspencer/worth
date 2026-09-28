@@ -134,7 +134,6 @@ fn snapshot_audit_failure_blocks_publication() {
         registrations: vec![InvariantRegistration::snapshot_publication_blocking(
             InvariantRule::MaxSnapshotEntities(0),
         )],
-        ..InvariantCatalog::default()
     });
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(batch_create("blocked"))

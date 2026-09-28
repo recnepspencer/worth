@@ -11,9 +11,18 @@ pub use product_unpublished::{
     ProductUnpublishedRetentionPosture,
 };
 
+/// Why preparing a product publication that adopts a settled Relational
+/// commit, retained by a `ProductUnpublished` recovery record, was refused.
+///
+/// Returned by `RuntimeWorldRecoveryPort::prepare_settled_relational_adoption`.
+/// Neither variant publishes anything; the recovery record stays retained.
 #[derive(Debug)]
 pub enum RuntimeWorldSettledRelationalAdoptionDenial {
+    /// The recovery record could not be used: the owner was unavailable, the
+    /// record could not be inspected, or it carries no settled Relational
+    /// adoption.
     Recovery(RuntimeWorldRecoveryDenial),
+    /// Preparing the composite publication was refused with no effect.
     Publication(crate::publication::NoEffectCompositePublication),
 }
 

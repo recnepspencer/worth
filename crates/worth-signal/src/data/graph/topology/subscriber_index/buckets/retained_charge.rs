@@ -50,7 +50,7 @@ impl RetainedStorageMeasurement for IndexedSubscriptionMembership {
     fn retained_heap_charge(&self, work: &mut Preparation) -> Result<Charge, Denial> {
         work.visit()?;
         let Self { scope, key: _ } = self;
-        Ok(Charge::ZERO.checked_add(scope.retained_heap_charge(work)?)?)
+        Charge::ZERO.checked_add(scope.retained_heap_charge(work)?)
     }
 }
 impl RetainedStorageMeasurement for SubscriberScopeBuckets {
@@ -63,19 +63,19 @@ impl RetainedStorageMeasurement for SubscriberScopeBuckets {
             exact_details,
             partition_scoped,
         } = self;
-        Ok(Charge::ZERO
+        Charge::ZERO
             .checked_add(all.retained_heap_charge(work)?)?
             .checked_add(unscoped.retained_heap_charge(work)?)?
             .checked_add(whole_partitions.retained_heap_charge(work)?)?
             .checked_add(exact_details.retained_heap_charge(work)?)?
-            .checked_add(partition_scoped.retained_heap_charge(work)?)?)
+            .checked_add(partition_scoped.retained_heap_charge(work)?)
     }
 }
 impl RetainedStorageMeasurement for ReverseSubscriptionIndex {
     fn retained_heap_charge(&self, work: &mut Preparation) -> Result<Charge, Denial> {
         work.visit()?;
         let Self { storage, valid: _ } = self;
-        Ok(Charge::ZERO.checked_add(storage.retained_heap_charge(work)?)?)
+        Charge::ZERO.checked_add(storage.retained_heap_charge(work)?)
     }
 }
 

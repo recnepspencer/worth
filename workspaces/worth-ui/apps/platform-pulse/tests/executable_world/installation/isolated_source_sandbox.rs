@@ -153,18 +153,6 @@ impl IsolatedPulseInstallation {
         self.root.join("main.wui")
     }
 
-    pub(crate) fn intent_source(&self) -> PathBuf {
-        self.root.join("platform-pulse-intent.json")
-    }
-
-    pub(crate) fn signals_source(&self) -> PathBuf {
-        self.root.join("dashboard_signals.wui")
-    }
-
-    pub(crate) fn review_source(&self) -> PathBuf {
-        self.root.join("dashboard_review.wui")
-    }
-
     pub(crate) fn navigation_source(&self) -> PathBuf {
         self.root.join("dashboard_navigation.wui")
     }
@@ -218,10 +206,6 @@ impl PulseInstallationPath {
 
     pub(crate) fn is_absent(&self) -> bool {
         !self.root.exists()
-    }
-
-    pub(crate) fn root(&self) -> &Path {
-        &self.root
     }
 }
 

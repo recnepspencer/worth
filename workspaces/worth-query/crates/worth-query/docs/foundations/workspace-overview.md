@@ -1,9 +1,13 @@
 # Worth Query Workspace Overview
 
+> **Internal engine surface.** This page documents `WorthQueryWorkspace` (`worth_query::facade`), the engine surface that `worth-ui-query-binding` uses. Application code uses `worth-query-decl` and `worth-query-host`; start with the [application front door](ordinary-application-front-door.md).
+
 ## What This Feature Is
 
-`WorthQueryWorkspace` is the stabilized public runtime facade for ordinary
-runtime-backed `worth-query` work. It is the place where product code declares
+`WorthQueryWorkspace` is the internal engine surface for runtime-backed
+`worth-query` work. It is not an application API: `worth-ui-query-binding` and
+Query's own certification use it, while application code uses
+`worth-query-decl` and `worth-query-host`. It is the place where engine code declares
 live views, computed state, and effects, performs reads and writes, authors
 same-batch graph composition, works against existing authoritative truth, opens
 preview or branch sessions, snapshots state, and inspects retained runtime
@@ -11,7 +15,8 @@ evidence.
 
 ## Why You Use It
 
-- you want one public context for runtime-backed query work
+- you are working on engine-side code, such as `worth-ui-query-binding`, that
+  needs one context for runtime-backed query work
 - you want to compose live views, computed state, and effects without reaching
   into lower-runtime plumbing
 - you want branch/preview/state/inspection surfaces to line up around one
@@ -426,8 +431,7 @@ exposing it in another runtime.
 
 ## Current Limits
 
-- The stabilized workspace surface is safe for runtime-backed, synchronous
-  composition.
+- The workspace surface is safe for runtime-backed, synchronous composition.
 - Runtime-backed temporal basis, async/resource execution, mixed-cause
   delivery, remask posture, and downstream delivery projection now ship
   through the same `workspace` / handle / state / inspection world.

@@ -233,30 +233,38 @@ fn assert_warm_path_has_no_hashing(path: &Path) {
     }
     let source = std::fs::read_to_string(path)
         .unwrap_or_else(|error| panic!("failed to read {}: {error}", path.display()));
-    if path.ends_with(Path::new(
-        "application_query/observed_source/source_identity.rs",
-    )) {
-        // Dynamic row and result-set witnesses require a runtime evidence digest;
-        // this one named owner must not become a semantic contract hash seam.
-        for domain in [
-            "worth-query:observed-source:v4",
+    // Dynamic row and result-set witnesses require runtime evidence digests;
+    // the named source-identity owner and its two commitment files must not
+    // become a semantic contract hash seam. Each keeps its exact domain.
+    for (owner, domain) in [
+        (
+            "application_query/observed_source/source_identity.rs",
             "worth-query:observed-result-set:v1",
-            "worth-query:observed-source-partition:v1",
-        ] {
+        ),
+        (
+            "application_query/observed_source/source_identity/checkpoint_commitment.rs",
+            "worth-query:checkpoint-observed-source:v2",
+        ),
+        (
+            "application_query/observed_source/source_identity/runtime_commitment.rs",
+            "worth-query:runtime-source-commitment:v1",
+        ),
+    ] {
+        if path.ends_with(Path::new(owner)) {
             assert!(
                 source.contains(domain),
                 "missing runtime evidence domain {domain}"
             );
+            assert!(!source.contains("prepare_canonical_basis_sequence"));
+            return;
         }
-        assert!(!source.contains("prepare_canonical_basis_sequence"));
-        return;
     }
     if path.ends_with(Path::new(
         "application_query/observed_source/root_selection.rs",
     )) {
         // Native selection facts are observation-time evidence, not installed
         // semantic identities; keep this exception tied to its exact domain.
-        assert!(source.contains("worth-query:root-selection-source:v1"));
+        assert!(source.contains("worth-query:root-selection-source:v2"));
         assert!(!source.contains("prepare_canonical_basis_sequence"));
         return;
     }

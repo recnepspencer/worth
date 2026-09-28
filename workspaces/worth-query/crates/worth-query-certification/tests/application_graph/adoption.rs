@@ -20,6 +20,8 @@ mod program_codec;
 mod recovery_terminals;
 #[path = "adoption/roster_admission.rs"]
 mod roster_admission;
+#[path = "adoption/rostered_restore.rs"]
+mod rostered_restore;
 #[path = "adoption/semantic_impact.rs"]
 mod semantic_impact;
 #[path = "adoption/signal_fork_inheritance.rs"]
@@ -30,3 +32,11 @@ mod support_retirement;
 mod support_retirement_races;
 #[path = "adoption/workflow_custody.rs"]
 mod workflow_custody;
+#[path = "adoption/workflow_identity.rs"]
+mod workflow_identity;
+#[path = "adoption/workflow_participant.rs"]
+mod workflow_participant;
+#[path = "adoption/workflow_participant_races.rs"]
+mod workflow_participant_races;
+#[path = "adoption/workflow_vocabulary.rs"]
+mod workflow_vocabulary;

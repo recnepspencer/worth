@@ -38,7 +38,7 @@ pub fn engineering_external_record_lines_path(file_stem: &str) -> PathBuf {
     let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("..")
         .join("..")
-        .join("_docs")
+        .join("plans")
         .join("engineering")
         .join(file_stem);
     path.set_extension("jsonl");

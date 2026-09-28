@@ -108,7 +108,7 @@ These DTOs cannot open media, runtime decoding, recovery choice, or repair.
 Keep owner disposition separate from observed integrity; projection is one-way,
 never a route back into a sealed runtime proof.
 
-See the [Store integrity guide](../../_docs/worth-store/physical-integrity-and-offline-verification.md)
+See the [Store integrity guide](../../plans/worth-store/physical-integrity-and-offline-verification.md)
 and the module's compiling descriptive-projection example.
 
 - [Query Aspects And Authority Lanes](../../workspaces/worth-query/crates/worth-query/docs/modeling/aspects-and-authority-lanes.md)

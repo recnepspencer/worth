@@ -168,10 +168,10 @@ fn public_query_result_reconstructs_disposable_managed_view_from_owner_observati
     let key = result.observed_sources()[0].managed_derived_view_key();
     assert_eq!(observed.get(&key).unwrap().unwrap().0, "primary");
     view.discard();
-    assert!(matches!(
-        world.application.observe_managed_derived_view(&view),
-        Ok(_)
-    ));
+    assert!(world
+        .application
+        .observe_managed_derived_view(&view)
+        .is_ok());
     assert_eq!(
         observed.get(&key).err(),
         Some(WorthQueryManagedDerivedViewDenial::ColdReconstructionRequired)

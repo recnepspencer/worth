@@ -21,10 +21,13 @@ pub use definition::{
     WorthQueryWorkflowDefinitionPublicationPreparationDenial,
     WorthQueryWorkflowDefinitionPublicationPreparationDenialKind,
     WorthQueryWorkflowDefinitionPublicationRequest,
+    WorthQueryWorkflowDefinitionRetirementPreparationDenial,
+    WorthQueryWorkflowDefinitionRetirementPreparationDenialKind,
+    WorthQueryWorkflowDefinitionRetirementRequest,
 };
 pub use instance::{
-    WorthQueryWorkflowInstanceStartPreparationDenial,
-    WorthQueryWorkflowInstanceStartPreparationDenialKind, WorthQueryWorkflowInstanceStartRequest,
+    WorthQueryWorkflowInstanceCancellationRequest, WorthQueryWorkflowInstancePreparationDenial,
+    WorthQueryWorkflowInstancePreparationDenialKind, WorthQueryWorkflowInstanceStartRequest,
 };
 pub use navigation::WorthQueryWorkflowNavigateBackRequest;
 pub use operation::{
@@ -50,23 +53,30 @@ pub use proposal::{
     WorthQueryWorkflowProposalPreparationDenial, WorthQueryWorkflowProposalPreparationDenialKind,
     WorthQueryWorkflowProposalRequest,
 };
-pub use worth_query_execution::facade::workflow_advance::{
+pub use worth_query_execution::publication_boundary::workflow_advance::{
     PerformedWorkflowApproval, PerformedWorkflowAssessmentEvidence, PerformedWorkflowTransition,
-    RequiredWorkflowApproval, RequiredWorkflowAssessment, RequiredWorkflowCondition,
-    RequiredWorkflowEvidence, RequiredWorkflowOperation, WorkflowApprovalDecision,
-    WorkflowProgressOutcome, WorkflowTransitionBindingDenial, WorkflowTransitionPreparationDenial,
+    RequiredWorkflowActor, RequiredWorkflowApproval, RequiredWorkflowAssessment,
+    RequiredWorkflowCondition, RequiredWorkflowEvidence, RequiredWorkflowOperation,
+    WorkflowApprovalDecision, WorkflowProgressOutcome, WorkflowTransitionBindingDenial,
+    WorkflowTransitionPreparationDenial,
 };
-pub use worth_query_execution::facade::workflow_definition_publication::{
+pub use worth_query_execution::publication_boundary::workflow_definition_publication::{
     PerformedWorkflowDefinitionPublication, PreparedWorkflowDefinitionPublication,
     PublishedWorkflowDefinitionRef, WorkflowDefinitionBindingDenial,
     WorkflowDefinitionExpectedPredecessor, WorkflowDefinitionPreparationDenial,
     WorkflowDefinitionPublicationOutcome,
 };
-pub use worth_query_execution::facade::workflow_instance_start::{
-    PerformedWorkflowInstanceStart, PublishedWorkflowInstanceRef, WorkflowInstanceBindingDenial,
-    WorkflowInstancePreparationDenial, WorkflowInstanceStartOutcome,
+pub use worth_query_execution::publication_boundary::workflow_definition_retirement::{
+    PerformedWorkflowDefinitionRetirement, WorkflowDefinitionRetirementOutcome,
 };
-pub use worth_query_execution::facade::workflow_proposal::{
+pub use worth_query_execution::publication_boundary::workflow_instance::{
+    PerformedWorkflowInstanceCancellation, PerformedWorkflowInstanceStart,
+    PublishedWorkflowInstanceRef, RetiredWorkflowDefinitionStart,
+    SupersededWorkflowDefinitionStart, WorkflowInstanceBindingDenial,
+    WorkflowInstanceCancellationOutcome, WorkflowInstancePreparationDenial,
+    WorkflowInstanceStartOutcome,
+};
+pub use worth_query_execution::publication_boundary::workflow_proposal::{
     PerformedWorkflowProposal, PublishedWorkflowProposalRef, WorkflowProposalBindingDenial,
     WorkflowProposalOutcome, WorkflowProposalPreparationDenial,
 };

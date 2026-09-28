@@ -24,6 +24,30 @@ jobs:
       - name: Enforce the 400-line Rust file cap
         run: bash scripts/ci/check_workspace_rust_line_caps.sh workspace
 
+  boundary-check:
+    name: Boundary and facade doc check
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.94.0
+      - name: Cache Cargo sources and tool builds
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            tools/boundary-check/target
+            tools/agent-context/target
+          key: ${{ runner.os }}-boundary-tools-1.94.0-${{ hashFiles('tools/boundary-check/Cargo.lock', 'tools/agent-context/Cargo.lock', 'tools/boundary-check/src/**', 'tools/agent-context/src/**') }}
+          restore-keys: |
+            ${{ runner.os }}-boundary-tools-1.94.0-
+      # The one constitution entrypoint the hook and the terminal also run:
+      # crate boundaries, facades, facade docs and agent context.
+      - name: Check the constitution
+        shell: pwsh
+        run: ./scripts/check-constitution.ps1
+
   query-checkpoint-recovery:
     name: Query checkpoint recovery court
     runs-on: ubuntu-latest

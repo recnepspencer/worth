@@ -1,0 +1,114 @@
+schema = "worth-ui.milestone-3.12.phase-5-contract.v1"
+milestone = "3.12"
+phase = 5
+status = "closed"
+ledger = "plans/worth-ui/milestone-3.12-phase-5-proof-ledger.csv"
+ledger_header = "id,production_claim,fixture_provenance,typed_result,mutation_control,structural_cost,teardown,evidence_command,status,evidence"
+closure_claim = "the real watched-edit journey, all twelve supporting guarantees, compiled public examples, and continuing documentation close through existing proof targets with one canonical executor and zero open ledger rows"
+
+[documentation]
+status = "closed"
+audit_command = "cargo test --manifest-path workspaces/worth-ui/Cargo.toml -p worth-ui-certification --test topology_contracts milestone_312_phase5_documentation -- --nocapture"
+evidence = "five documentation topology tests pass, including exact tracked-source examples and two hostile mutations; the canonical compile runner passes 37 negative and 14 positive targets in exactly two Cargo sessions"
+documents = [
+    "workspaces/worth-ui/docs/application-lifecycle.md",
+    "workspaces/worth-ui/docs/hot-rebind.md",
+    "workspaces/worth-ui/docs/inspection.md",
+    "workspaces/worth-ui/docs/visual-inspection.md",
+    "workspaces/worth-ui/docs/authored-composition.md",
+    "workspaces/worth-ui/docs/architecture.md",
+    "workspaces/worth-ui/docs/runtime-subsystems.md",
+]
+rebind_compile_source = "workspaces/worth-ui/crates/worth-ui/tests/ui/rebind/pass/rebind_phase_progression_uses_owner_issued_values.rs"
+visual_compile_source = "workspaces/worth-ui/crates/worth-ui/tests/ui/visual_snapshot/pass/governed_visual_snapshot_lifecycle.rs"
+
+[[scenario]]
+id = "RB-01"
+lane = "sole Platform Pulse executable world"
+owner = "worth-ui-platform-pulse executable_world real-process rebind courtroom"
+command = "cargo test --manifest-path workspaces/worth-ui/Cargo.toml -p worth-ui-platform-pulse --features executable-world --test executable_world -- --nocapture"
+minimum_evidence_count = 1
+
+[[scenario]]
+id = "TT-01"
+lane = "application contracts"
+owner = "observation_rebind stale and superseded plan interleavings"
+command = "cargo test --manifest-path workspaces/worth-ui/Cargo.toml -p worth-ui-certification --test application_contracts observation_rebind::stale_plan -- --nocapture"
+minimum_evidence_count = 1
+
+[[scenario]]
+id = "TT-02"
+lane = "application contracts"
+owner = "observation_rebind exact source revision affinity"
+command = "cargo test --manifest-path workspaces/worth-ui/Cargo.toml -p worth-ui-certification --test application_contracts observation_rebind::source_affinity -- --nocapture"
+minimum_evidence_count = 1
+
+[[scenario]]
+id = "TT-03"
+lane = "application contracts"
+owner = "observation_rebind semantic and pixel independence"
+command = "cargo test --manifest-path workspaces/worth-ui/Cargo.toml -p worth-ui-certification --test application_contracts observation_rebind::semantic_pixel_independence -- --nocapture"
+minimum_evidence_count = 1
+
+[[scenario]]
+id = "TT-04"
+lane = "application contracts"
+owner = "observation_rebind independent change and identity model"
+command = "cargo test --manifest-path workspaces/worth-ui/Cargo.toml -p worth-ui-certification --test application_contracts observation_rebind::identity_model -- --nocapture"
+minimum_evidence_count = 1
+
+[[scenario]]
+id = "TT-05"
+lane = "application contracts"
+owner = "observation_rebind mixed-source owner authority"
+command = "cargo test --manifest-path workspaces/worth-ui/Cargo.toml -p worth-ui-certification --test application_contracts observation_rebind::mixed_source -- --nocapture"
+minimum_evidence_count = 1
+
+[[scenario]]
+id = "TT-06"
+lane = "application contracts"
+owner = "observation_rebind independent ordering model"
+command = "cargo test --manifest-path workspaces/worth-ui/Cargo.toml -p worth-ui-certification --test application_contracts observation_rebind::ordering_model -- --nocapture"
+minimum_evidence_count = 1
+
+[[scenario]]
+id = "TT-07"
+lane = "application contracts"
+owner = "observation_rebind UI-owned Query consequence boundary"
+command = "cargo test --manifest-path workspaces/worth-ui/Cargo.toml -p worth-ui-certification --test application_contracts observation_rebind::query_consequence -- --nocapture"
+minimum_evidence_count = 1
+
+[[scenario]]
+id = "TT-08"
+lane = "application contracts"
+owner = "observation_rebind effect completion and recovery"
+command = "cargo test --manifest-path workspaces/worth-ui/Cargo.toml -p worth-ui-certification --test application_contracts observation_rebind::effect_recovery -- --nocapture"
+minimum_evidence_count = 1
+
+[[scenario]]
+id = "TT-09"
+lane = "application contracts"
+owner = "observation_rebind capacity and cost slopes"
+command = "cargo test --manifest-path workspaces/worth-ui/Cargo.toml -p worth-ui-certification --test application_contracts observation_rebind::cost_capacity -- --nocapture"
+minimum_evidence_count = 1
+
+[[scenario]]
+id = "TT-10"
+lane = "application contracts"
+owner = "visual_snapshot comparison receipt affinity"
+command = "cargo test --manifest-path workspaces/worth-ui/Cargo.toml -p worth-ui-certification --test application_contracts visual_snapshot::comparison -- --nocapture"
+minimum_evidence_count = 1
+
+[[scenario]]
+id = "TT-11"
+lane = "application contracts"
+owner = "observation_rebind managed lifecycle cleanup"
+command = "cargo test --manifest-path workspaces/worth-ui/Cargo.toml -p worth-ui-certification --test application_contracts observation_rebind::lifecycle_cleanup -- --nocapture"
+minimum_evidence_count = 1
+
+[[scenario]]
+id = "TT-12"
+lane = "existing two-session compile contracts and dependency enforcement"
+owner = "canonical WORTH UI compile-contract runner"
+command = "python scripts/ci/run_worth_ui_compile_contracts.py"
+minimum_evidence_count = 1

@@ -69,13 +69,6 @@ pub mod mutations {
         initiate_business_payment
     );
     mutation!(
-        ApprovePaymentMutation,
-        ApprovePayment,
-        ApprovePaymentOperation,
-        PaymentIntent,
-        approve_payment
-    );
-    mutation!(
         RejectPaymentMutation,
         RejectPayment,
         RejectPaymentOperation,
@@ -109,11 +102,6 @@ pub mod mutations {
 pub trait BankMutationContract {
     type Operation;
     type Scope;
-}
-
-impl BankMutationContract for crate::BankApprovePendingPayment {
-    type Operation = bank_domain::schema::ApprovePaymentOperation;
-    type Scope = bank_domain::schema::PaymentIntent;
 }
 
 impl BankMutationContract for crate::BankRejectPendingPayment {

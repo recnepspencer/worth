@@ -18,11 +18,18 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationRes
     state: Arc<ResultBufferRegistryState>,
 }
 
+/// Read-only view of the query result buffers this runtime holds.
+///
+/// Get one from `result_buffer_observer` and call `observe` for a
+/// point-in-time reading. Observing grants nothing and changes nothing.
 #[derive(Clone)]
 pub struct WorthQueryApplicationResultBufferObserver {
     state: Arc<ResultBufferRegistryState>,
 }
 
+/// Point-in-time reading of query result buffers: how many are active, the
+/// bytes they retain, the largest size any buffer reached, and the largest
+/// claim that was refused.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationResultBufferObservation {
     active_buffers: usize,
@@ -31,6 +38,10 @@ pub struct WorthQueryApplicationResultBufferObservation {
     peak_rejected_bytes: usize,
 }
 
+/// Result buffer use for one query read: its byte limit, the most bytes it
+/// held, and whether it was released.
+///
+/// Read it from an access receipt's `result_buffer()`.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationResultBufferEvidence {
     limit_bytes: usize,

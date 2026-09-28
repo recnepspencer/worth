@@ -4,6 +4,8 @@ mod actor_handoff;
 mod approval;
 #[path = "approved_payment_workflow/assertions.rs"]
 mod assertions;
+#[path = "approved_payment_workflow/assessment_settlement.rs"]
+mod assessment_settlement;
 #[path = "approved_payment_workflow/authentication.rs"]
 mod authentication;
 #[allow(
@@ -14,6 +16,8 @@ mod authentication;
 mod fixture;
 #[path = "approved_payment_workflow/journey.rs"]
 mod journey;
+#[path = "approved_payment_workflow/owner_custody.rs"]
+mod owner_custody;
 #[path = "approved_payment_workflow/postures.rs"]
 mod postures;
 #[allow(
@@ -22,8 +26,12 @@ mod postures;
 )]
 #[path = "ordinary_mutations/estate_operations/external_effect_dispatch/rail_transport.rs"]
 mod rail_transport;
+#[path = "approved_payment_workflow/ready_payment.rs"]
+mod ready_payment;
 #[path = "approved_payment_workflow/rejection.rs"]
 mod rejection;
+#[path = "approved_payment_workflow/relabel.rs"]
+mod relabel;
 mod support;
 
 use std::{sync::Arc, time::Duration};

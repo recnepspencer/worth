@@ -45,6 +45,10 @@ pub(in crate::domain_computation) struct WorthQueryMandatoryReviewDraft {
     lifecycle_effect: Option<worth_query_declaration::lifecycle_effect_derivation_authority::DerivedApplicationCapabilityLifecycleEffect>,
 }
 
+/// Refusal to authorize a mandatory review step.
+///
+/// The review was not admitted. [`Self::denial`] says why, and
+/// [`Self::into_mandatory_review`] returns the pending review unchanged.
 #[derive(Debug)]
 pub struct WorthQueryMandatoryReviewAuthorizationDenial {
     denial: WorthQueryOperationAuthorizationDenial,

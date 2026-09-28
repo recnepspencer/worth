@@ -5,9 +5,7 @@ use worth_ui_platform_pulse::observation_contract::{
     PlatformPulseShutdownCompleted,
 };
 
-use crate::external_observation::{
-    LifecycleStreamMeasurement, NormalNativeCloseRequestObservation,
-};
+use crate::external_observation::NormalNativeCloseRequestObservation;
 use crate::installation::PulseInstallationCleanupEvidence;
 use crate::product_process::PlatformPulseNativeCloseEvidence;
 use crate::product_process::SuccessfulPlatformPulseExit;
@@ -17,8 +15,6 @@ pub(crate) struct ExecutableLifecycleCleanupEvidence {
     close_request: NormalNativeCloseRequestObservation,
     shutdown_envelope: PlatformPulseLifecycleObservationEnvelope,
     shutdown: PlatformPulseShutdownCompleted,
-    lifecycle_measurement: LifecycleStreamMeasurement,
-    lifecycle_envelopes: Vec<PlatformPulseLifecycleObservationEnvelope>,
     successful_exit: SuccessfulPlatformPulseExit,
     native_close_evidence: PlatformPulseNativeCloseEvidence,
     installation_cleanup: PulseInstallationCleanupEvidence,
@@ -28,8 +24,6 @@ pub(crate) struct CausalLifecycleCleanupObservationSet {
     process_id: u32,
     close_request: NormalNativeCloseRequestObservation,
     shutdown_envelope: PlatformPulseLifecycleObservationEnvelope,
-    lifecycle_measurement: LifecycleStreamMeasurement,
-    lifecycle_envelopes: Vec<PlatformPulseLifecycleObservationEnvelope>,
 }
 
 pub(crate) struct ExecutableLifecycleCleanupObservationSet {
@@ -171,8 +165,6 @@ pub(crate) fn adjudicate_lifecycle_cleanup(
         close_request: causal.close_request,
         shutdown_envelope: causal.shutdown_envelope,
         shutdown,
-        lifecycle_measurement: causal.lifecycle_measurement,
-        lifecycle_envelopes: causal.lifecycle_envelopes,
         successful_exit,
         native_close_evidence,
         installation_cleanup,
@@ -253,15 +245,11 @@ impl CausalLifecycleCleanupObservationSet {
         process_id: u32,
         close_request: NormalNativeCloseRequestObservation,
         shutdown_envelope: PlatformPulseLifecycleObservationEnvelope,
-        lifecycle_measurement: LifecycleStreamMeasurement,
-        lifecycle_envelopes: Vec<PlatformPulseLifecycleObservationEnvelope>,
     ) -> Self {
         Self {
             process_id,
             close_request,
             shutdown_envelope,
-            lifecycle_measurement,
-            lifecycle_envelopes,
         }
     }
 
@@ -281,10 +269,6 @@ impl CausalLifecycleCleanupObservationSet {
 }
 
 impl ExecutableLifecycleCleanupEvidence {
-    pub(crate) fn close_request(&self) -> NormalNativeCloseRequestObservation {
-        self.close_request
-    }
-
     pub(crate) fn close_request_count(&self) -> u32 {
         self.close_request.request_count()
     }
@@ -297,14 +281,6 @@ impl ExecutableLifecycleCleanupEvidence {
         self.shutdown
     }
 
-    pub(crate) fn lifecycle_measurement(&self) -> LifecycleStreamMeasurement {
-        self.lifecycle_measurement
-    }
-
-    pub(crate) fn lifecycle_envelopes(&self) -> &[PlatformPulseLifecycleObservationEnvelope] {
-        &self.lifecycle_envelopes
-    }
-
     pub(crate) fn successful_exit(&self) -> SuccessfulPlatformPulseExit {
         self.successful_exit
     }
@@ -315,9 +291,5 @@ impl ExecutableLifecycleCleanupEvidence {
 
     pub(crate) fn installation_removed(&self) -> bool {
         self.installation_cleanup.removed_owned_root()
-    }
-
-    pub(crate) fn installation_cleanup(&self) -> PulseInstallationCleanupEvidence {
-        self.installation_cleanup
     }
 }

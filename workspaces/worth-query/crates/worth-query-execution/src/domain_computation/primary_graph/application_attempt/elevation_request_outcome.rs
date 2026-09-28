@@ -171,20 +171,37 @@ impl WorthQueryRequestedElevation {
     }
 }
 
+/// Every way committing an elevation request can end.
+///
+/// This mirrors the application commit outcome. `Requested` and
+/// `AlreadyRequested` carry the move-only requested-elevation receipt.
 #[derive(Debug)]
 pub enum WorthQueryElevationRequestOutcome {
+    /// The product branch moved after the basis. Nothing was committed.
     ProductStale(crate::domain_computation::WorthQueryProductStaleApplication),
+    /// Some owners moved, but the product head did not. Recover publication.
     ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
+    /// Nothing was written; the cause says why.
     NoEffect(super::WorthQueryApplicationNoEffect),
+    /// This attempt committed the request.
     Requested(WorthQueryRequestedElevation),
+    /// The idempotency key had already committed this request; nothing was redone.
     AlreadyRequested(WorthQueryRequestedElevation),
+    /// The basis was stale at compare. Nothing was committed; re-read and retry.
     Stale(WorthQueryApplicationStaleAttempt),
+    /// The attempt was cancelled before it landed.
     Cancelled,
+    /// The attempt reached its deadline before it landed.
     TimedOut,
+    /// The commit was refused before publication.
     Denied(WorthQueryApplicationCommitDenial),
+    /// The commit's answer was lost, and a re-read found it never landed.
     Aborted,
+    /// A capacity or lifetime limit stopped the attempt. Retry later.
     Deferred(super::WorthQueryApplicationCommitDeferred),
+    /// The branch moved, but settlement did not finish. Recover the settlement.
     SettlementDeferred(super::WorthQueryApplicationSettlementDeferred),
+    /// Whether the commit landed is unresolved. Do not retry blindly.
     Indeterminate,
 }
 

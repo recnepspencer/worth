@@ -16,5 +16,6 @@ mod manifest;
 mod protocol;
 mod record;
 mod repository;
+mod workflow_definition;
 
 pub mod facade;

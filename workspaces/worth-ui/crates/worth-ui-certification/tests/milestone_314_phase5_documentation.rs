@@ -89,7 +89,7 @@ fn milestone_314_phase5_continuing_docs_name_the_shipped_authority_path() {
     );
     assert_contains_all(
         "DSL vision",
-        &repository_document("_docs/worth-ui/worth-ui-dsl-vision.md"),
+        &repository_document("plans/worth-ui/worth-ui-dsl-vision.md"),
         &[
             "## Interaction And Intent Are Separate Lanes",
             "Those interactions carry no product-effect authority",
@@ -98,7 +98,7 @@ fn milestone_314_phase5_continuing_docs_name_the_shipped_authority_path() {
     );
     assert_contains_all(
         "AI diagnostics",
-        &repository_document("_docs/worth-ui/ai-diagnostics.md"),
+        &repository_document("plans/worth-ui/ai-diagnostics.md"),
         &[
             "### Implemented intent causal index",
             "64-entry semantic-only replacement ring",
@@ -107,7 +107,7 @@ fn milestone_314_phase5_continuing_docs_name_the_shipped_authority_path() {
     );
     assert_contains_all(
         "roadmap",
-        &repository_document("_docs/worth-ui/worth_ui_roadmap.md"),
+        &repository_document("plans/worth-ui/worth_ui_roadmap.md"),
         &[
             "### Milestone 3.14: Intent, Operability, and Interaction Substrate",
             "UI admission, provider execution, Query/domain admission",

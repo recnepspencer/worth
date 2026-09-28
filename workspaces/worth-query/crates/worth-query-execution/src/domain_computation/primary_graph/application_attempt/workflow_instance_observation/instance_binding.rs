@@ -2,9 +2,173 @@ use worth_foundational::facade::{AspectValue, InternedString};
 use worth_relational::facade::identity::EntityId;
 
 use super::{
-    denial, observe_adjacency, observe_field_value, WorthQueryApplicationAdjacencyDirection,
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationObservedFact,
+    denial, observe_adjacency, observe_field_value, CompiledWorkflowDefinition,
+    PublishedWorkflowInstanceRef, WorkflowInstanceState, WorthQueryApplicationAdjacencyDirection,
+    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
+    WorthQueryApplicationObservedFact, WorthQueryWorkflowLayout,
 };
+
+/// An ended instance is named before any field it left behind can mismatch.
+pub(in crate::domain_computation::primary_graph::application_attempt) fn deny_ended(
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    layout: &WorthQueryWorkflowLayout,
+    entity: EntityId,
+) -> Result<(), WorthQueryApplicationAttemptDenial> {
+    let kind = layout.instance.entity_kind;
+    let state = observe_field_value(runtime, snapshot, entity, kind, &layout.instance.state);
+    for (ended, denial_kind, subject) in [
+        (
+            WorkflowInstanceState::Cancelled,
+            WorthQueryApplicationAttemptDenialKind::WorkflowInstanceCancelled,
+            "workflow instance was cancelled",
+        ),
+        (
+            WorkflowInstanceState::Migrated,
+            WorthQueryApplicationAttemptDenialKind::WorkflowInstanceMigrated,
+            "workflow instance was migrated to a successor",
+        ),
+    ] {
+        if state == Some(AspectValue::UInt64(ended.persisted_tag())) {
+            return Err(WorthQueryApplicationAttemptDenial::new(
+                denial_kind,
+                subject,
+            ));
+        }
+    }
+    Ok(())
+}
+
+/// The transition whose external operation last committed into its owner's
+/// custody, if any, and the fact that pins that reading. A commit that moves
+/// the custody makes the fact stale.
+pub(in crate::domain_computation::primary_graph::application_attempt) fn owner_custody(
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    layout: &WorthQueryWorkflowLayout,
+    entity_id: EntityId,
+) -> Result<(Option<String>, WorthQueryApplicationObservedFact), WorthQueryApplicationAttemptDenial>
+{
+    let kind = layout.instance.entity_kind;
+    let locator = layout.instance.owner_custody.clone();
+    match observe_field_value(runtime, snapshot, entity_id, kind, &locator) {
+        None => Ok((
+            None,
+            WorthQueryApplicationObservedFact::AbsentField {
+                entity_id,
+                kind,
+                locator,
+            },
+        )),
+        Some(AspectValue::String(InternedString::Raw(transition))) => Ok((
+            Some(transition.clone()),
+            WorthQueryApplicationObservedFact::Field {
+                entity_id,
+                kind,
+                locator,
+                value: AspectValue::String(InternedString::Raw(transition)),
+            },
+        )),
+        Some(_) => Err(denial("workflow instance owner custody is malformed")),
+    }
+}
+
+/// Refuses to end an instance whose owner still holds an external operation:
+/// the operation committed its product but no transition with its identity
+/// has settled. Otherwise returns the fact that pins the custody reading, so an
+/// external commit landing after this read makes the ending stale.
+pub(in crate::domain_computation::primary_graph::application_attempt) fn fence_owner_custody(
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    layout: &WorthQueryWorkflowLayout,
+    entity_id: EntityId,
+    settled: &[super::ObservedWorkflowTransition],
+    subject: &str,
+) -> Result<WorthQueryApplicationObservedFact, WorthQueryApplicationAttemptDenial> {
+    let (custody, fact) = owner_custody(runtime, snapshot, layout, entity_id)?;
+    if custody.is_some_and(|transition| !settled.iter().any(|done| done.identity == transition)) {
+        return Err(WorthQueryApplicationAttemptDenial::new(
+            WorthQueryApplicationAttemptDenialKind::WorkflowOperationInOwnerCustody,
+            subject,
+        ));
+    }
+    Ok(fact)
+}
+
+/// What the instance's migration sources spent before it, steps or evidence
+/// bytes, zero for an instance that began its lineage. It never changes after
+/// the start.
+pub(super) fn inherited(
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    layout: &WorthQueryWorkflowLayout,
+    entity_id: EntityId,
+    locator: &worth_foundational::facade::AspectFieldLocator,
+    facts: &mut Vec<WorthQueryApplicationObservedFact>,
+) -> Result<u64, WorthQueryApplicationAttemptDenial> {
+    let kind = layout.instance.entity_kind;
+    match observe_field_value(runtime, snapshot, entity_id, kind, locator) {
+        None => {
+            facts.push(WorthQueryApplicationObservedFact::AbsentField {
+                entity_id,
+                kind,
+                locator: locator.clone(),
+            });
+            Ok(0)
+        }
+        Some(AspectValue::UInt64(steps)) if steps > 0 => {
+            facts.push(WorthQueryApplicationObservedFact::Field {
+                entity_id,
+                kind,
+                locator: locator.clone(),
+                value: AspectValue::UInt64(steps),
+            });
+            Ok(steps)
+        }
+        Some(_) => Err(denial("workflow instance inheritance is malformed")),
+    }
+}
+
+/// Reads the definition as this instance runs it: from the node its migration
+/// resumed at, which its reference names, or from the definition's start.
+pub(super) fn resume_definition(
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    layout: &WorthQueryWorkflowLayout,
+    instance: &PublishedWorkflowInstanceRef,
+    compiled: &mut CompiledWorkflowDefinition,
+    facts: &mut Vec<WorthQueryApplicationObservedFact>,
+) -> Result<(), WorthQueryApplicationAttemptDenial> {
+    let entity_id = instance.entity_id();
+    let kind = layout.instance.entity_kind;
+    let locator = &layout.instance.resume_node_path;
+    match observe_field_value(runtime, snapshot, entity_id, kind, locator) {
+        None => {
+            facts.push(WorthQueryApplicationObservedFact::AbsentField {
+                entity_id,
+                kind,
+                locator: locator.clone(),
+            });
+            Ok(())
+        }
+        Some(AspectValue::String(InternedString::Raw(path))) => {
+            if path != instance.start_node_path() {
+                return Err(denial("workflow instance resume node changed"));
+            }
+            *compiled = compiled
+                .resumed_at(&path)
+                .ok_or_else(|| denial("workflow instance resume node is not in its definition"))?;
+            facts.push(WorthQueryApplicationObservedFact::Field {
+                entity_id,
+                kind,
+                locator: locator.clone(),
+                value: text(path),
+            });
+            Ok(())
+        }
+        Some(_) => Err(denial("workflow instance resume node has the wrong type")),
+    }
+}
 
 pub(super) fn exact_u64(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,

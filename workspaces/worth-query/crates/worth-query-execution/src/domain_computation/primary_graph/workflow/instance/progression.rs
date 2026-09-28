@@ -100,6 +100,8 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowInstanceProgress
     latest_transitions: OrdMap<EntityId, WorkflowTransitionLocator>,
     latest_transition_identities: OrdMap<EntityId, (u64, String)>,
     latest_assessment_evidence: OrdMap<EntityId, WorkflowAssessmentEvidenceLocator>,
+    /// Assessment evidence bytes this instance's own history retains.
+    retained_evidence_bytes: u64,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -122,6 +124,7 @@ impl WorkflowInstanceProgress {
             latest_transitions: OrdMap::new(),
             latest_transition_identities: OrdMap::new(),
             latest_assessment_evidence: OrdMap::new(),
+            retained_evidence_bytes: 0,
         }
     }
 
@@ -161,6 +164,7 @@ impl WorkflowInstanceProgress {
             latest_transitions: OrdMap::new(),
             latest_transition_identities: OrdMap::new(),
             latest_assessment_evidence: OrdMap::new(),
+            retained_evidence_bytes: 0,
         };
         for transition in settled {
             progress.advance_with(*transition, &mut successor)?;
@@ -174,6 +178,12 @@ impl WorkflowInstanceProgress {
 
     pub(in crate::domain_computation::primary_graph) const fn next_occurrence(&self) -> u64 {
         self.next_occurrence
+    }
+
+    pub(in crate::domain_computation::primary_graph) const fn retained_evidence_bytes(
+        &self,
+    ) -> u64 {
+        self.retained_evidence_bytes
     }
 
     pub(in crate::domain_computation::primary_graph) const fn back_edge_iterations(

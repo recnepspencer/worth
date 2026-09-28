@@ -3,12 +3,17 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationOperationInvariantProjectionReader, WorthQueryInvariantEntityIdentity,
 };
 
+/// Which step of a temporal operation invoker failed.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryTemporalInvocationFailureKind {
+    /// The invoker's `project` step rejected the read.
     ProjectionRejected,
+    /// The invoker's `apply` step rejected the operation.
     InvocationRejected,
 }
 
+/// Failure an application's temporal operation invoker returns from `project`
+/// or `apply`.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryTemporalInvocationFailure {
     kind: WorthQueryTemporalInvocationFailureKind,

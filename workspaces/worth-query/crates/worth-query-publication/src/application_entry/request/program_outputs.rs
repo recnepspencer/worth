@@ -18,6 +18,9 @@ use worth_query_execution::facade::primary_graph::{
 
 use super::{WorthQueryApplicationRequest, WorthQueryApplicationRetainedRequest};
 
+/// Why `require_current_program_output` refused: the retained observation could not be
+/// selected, it is on another branch, or an output no longer retains its source lineage at
+/// that observation.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryProgramOutputCurrentnessDenial {
     Observation(

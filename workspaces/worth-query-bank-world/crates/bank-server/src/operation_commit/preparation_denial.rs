@@ -53,14 +53,27 @@ pub enum BankApplicationAttemptDenialKind {
     WorkflowDefinitionIntentIdentityUnavailable,
     WorkflowLineageUnavailable,
     WorkflowDefinitionCompilationUnavailable,
+    WorkflowDefinitionSuperseded,
+    WorkflowDefinitionRetired,
     WorkflowInstanceAffinityMismatch,
     WorkflowInstanceAuthorityMismatch,
     WorkflowInstanceIntentIdentityUnavailable,
     WorkflowInstanceCapacityUnavailable,
+    WorkflowLineageCapacityUnavailable,
+    WorkflowInstanceCancelled,
+    WorkflowInstanceCompleted,
+    WorkflowOperationInOwnerCustody,
+    WorkflowInstanceHistoryUnavailable,
+    WorkflowInstanceMigrated,
+    WorkflowInstanceMigrationUnmapped,
+    WorkflowInstanceDeadlineElapsed,
+    WorkflowTrustedTimeUnavailable,
+    WorkflowInstanceEvidenceCapacityUnavailable,
     WorkflowTransitionAffinityMismatch,
     WorkflowTransitionAuthorityMismatch,
     WorkflowTransitionAlreadySettled,
     WorkflowTransitionNodeUnsupported,
+    WorkflowTransitionOperationUnsettled,
     WorkflowTransitionIdentityUnavailable,
     WorkflowAssessmentEvidenceIncomplete,
     WorkflowAssessmentEvidenceMismatch,
@@ -71,7 +84,6 @@ pub enum BankApplicationAttemptDenialKind {
     WorkflowApprovalAuthorityDenied,
     ConflictingEffectStep,
     WorkflowHistoryReconstructionBudgetExceeded,
-    WorkflowTransitionCapacityExceeded,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -211,6 +223,12 @@ const fn application_attempt_kind(
         Query::WorkflowDefinitionCompilationUnavailable => {
             BankApplicationAttemptDenialKind::WorkflowDefinitionCompilationUnavailable
         }
+        Query::WorkflowDefinitionSuperseded => {
+            BankApplicationAttemptDenialKind::WorkflowDefinitionSuperseded
+        }
+        Query::WorkflowDefinitionRetired => {
+            BankApplicationAttemptDenialKind::WorkflowDefinitionRetired
+        }
         Query::WorkflowInstanceAffinityMismatch => {
             BankApplicationAttemptDenialKind::WorkflowInstanceAffinityMismatch
         }
@@ -223,6 +241,36 @@ const fn application_attempt_kind(
         Query::WorkflowInstanceCapacityUnavailable => {
             BankApplicationAttemptDenialKind::WorkflowInstanceCapacityUnavailable
         }
+        Query::WorkflowLineageCapacityUnavailable => {
+            BankApplicationAttemptDenialKind::WorkflowLineageCapacityUnavailable
+        }
+        Query::WorkflowInstanceCancelled => {
+            BankApplicationAttemptDenialKind::WorkflowInstanceCancelled
+        }
+        Query::WorkflowInstanceCompleted => {
+            BankApplicationAttemptDenialKind::WorkflowInstanceCompleted
+        }
+        Query::WorkflowOperationInOwnerCustody => {
+            BankApplicationAttemptDenialKind::WorkflowOperationInOwnerCustody
+        }
+        Query::WorkflowInstanceHistoryUnavailable => {
+            BankApplicationAttemptDenialKind::WorkflowInstanceHistoryUnavailable
+        }
+        Query::WorkflowInstanceMigrated => {
+            BankApplicationAttemptDenialKind::WorkflowInstanceMigrated
+        }
+        Query::WorkflowInstanceMigrationUnmapped => {
+            BankApplicationAttemptDenialKind::WorkflowInstanceMigrationUnmapped
+        }
+        Query::WorkflowInstanceDeadlineElapsed => {
+            BankApplicationAttemptDenialKind::WorkflowInstanceDeadlineElapsed
+        }
+        Query::WorkflowTrustedTimeUnavailable => {
+            BankApplicationAttemptDenialKind::WorkflowTrustedTimeUnavailable
+        }
+        Query::WorkflowInstanceEvidenceCapacityUnavailable => {
+            BankApplicationAttemptDenialKind::WorkflowInstanceEvidenceCapacityUnavailable
+        }
         Query::WorkflowTransitionAffinityMismatch => {
             BankApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch
         }
@@ -234,6 +282,9 @@ const fn application_attempt_kind(
         }
         Query::WorkflowTransitionNodeUnsupported => {
             BankApplicationAttemptDenialKind::WorkflowTransitionNodeUnsupported
+        }
+        Query::WorkflowTransitionOperationUnsettled => {
+            BankApplicationAttemptDenialKind::WorkflowTransitionOperationUnsettled
         }
         Query::WorkflowTransitionIdentityUnavailable => {
             BankApplicationAttemptDenialKind::WorkflowTransitionIdentityUnavailable
@@ -260,9 +311,6 @@ const fn application_attempt_kind(
         Query::ConflictingEffectStep => BankApplicationAttemptDenialKind::ConflictingEffectStep,
         Query::WorkflowHistoryReconstructionBudgetExceeded => {
             BankApplicationAttemptDenialKind::WorkflowHistoryReconstructionBudgetExceeded
-        }
-        Query::WorkflowTransitionCapacityExceeded => {
-            BankApplicationAttemptDenialKind::WorkflowTransitionCapacityExceeded
         }
     }
 }

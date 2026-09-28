@@ -274,6 +274,8 @@ contract and binding.
 
 ## Ordinary Runtime Example
 
+> **Internal engine surface.** This section uses `WorthQueryWorkspace` (`worth_query::facade`), the engine surface that `worth-ui-query-binding` uses. Application code uses `worth-query-decl` and `worth-query-host`; start with the [application front door](../foundations/ordinary-application-front-door.md).
+
 Ordinary computed declarations keep aspect meaning and authority-lane meaning
 separate:
 

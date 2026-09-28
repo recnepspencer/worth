@@ -1,14 +1,24 @@
+/// Why an invariant projection could not take its snapshot or finish.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryInvariantProjectionDenialKind {
+    /// The main branch basis could not be observed.
     BasisUnavailable,
+    /// The basis or snapshot belongs to a different runtime.
     ForeignBasis,
+    /// The installed limit on concurrently active snapshots was reached.
     ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
+    /// The runtime ran out of snapshot identities.
     SnapshotIdentityExhausted,
+    /// No capacity remains to retain a basis.
     RetentionCapacityExhausted,
+    /// The runtime ran out of basis-retention identities.
     RetentionIdentityExhausted,
+    /// The projection exceeded its work budget.
     WorkBudgetExceeded,
 }
 
+/// Refusal to run an invariant projection. No output or snapshot is returned;
+/// [`Self::kind`] says why.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryInvariantProjectionDenial {
     kind: WorthQueryInvariantProjectionDenialKind,

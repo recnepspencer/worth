@@ -19,12 +19,17 @@ use crate::domain_computation::primary_graph::workflow::definition::{
 mod intent_identity;
 mod lineage;
 mod publication;
+mod retirement;
 
 use lineage::select_lineage;
 pub use publication::{
     PerformedWorkflowDefinitionPublication, PreparedWorkflowDefinitionPublication,
     PublishedWorkflowDefinitionRef, WorkflowDefinitionExpectedPredecessor,
     WorkflowDefinitionPublicationOutcome,
+};
+pub use retirement::{
+    PerformedWorkflowDefinitionRetirement, PreparedWorkflowDefinitionRetirement,
+    WorkflowDefinitionRetirementOutcome,
 };
 
 impl<Schema, Operation, Input, Scope>
@@ -42,10 +47,9 @@ where
     pub(in crate::domain_computation::primary_graph) fn materialize_workflow_definition_publication<
         Capability,
         Spec,
-        Program,
     >(
         mut self,
-        bound: BoundWorkflowDefinitionContract<Schema, Spec, Program>,
+        bound: BoundWorkflowDefinitionContract<Schema, Spec>,
         expected_predecessor: WorkflowDefinitionExpectedPredecessor,
     ) -> Result<
         PreparedWorkflowDefinitionPublication<Schema, Operation, Input, Scope>,
@@ -99,7 +103,7 @@ where
         }
         self.facts.extend(lineage.facts);
 
-        let program_revision = bound.contract.program_revision().clone();
+        let program_revision = *bound.contract.program_revision();
         let WorthQueryInstalledWorkflowDefinitionParts {
             definition,
             assessment_bindings,

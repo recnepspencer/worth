@@ -279,7 +279,10 @@ fn text_length(value: &str) -> Result<u64, Denial> {
     Ok(4 + u64::from(length))
 }
 
-fn require_byte_budget(bytes: usize, limits: WorthQueryPackageArchiveLimits) -> Result<(), Denial> {
+pub(crate) fn require_byte_budget(
+    bytes: usize,
+    limits: WorthQueryPackageArchiveLimits,
+) -> Result<(), Denial> {
     let bytes = u64::try_from(bytes).map_err(|_| Denial::new(Kind::LogicalByteBudgetExceeded))?;
     if bytes > limits.maximum_archive_bytes() || bytes > limits.maximum_logical_bytes() {
         Err(Denial::new(Kind::LogicalByteBudgetExceeded))

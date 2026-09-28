@@ -9,7 +9,9 @@ use super::{
     WorkflowOperationAuthority,
 };
 use crate::domain_computation::primary_graph::{
-    application_attempt::workflow_instance_observation::observe_retained_transition,
+    application_attempt::workflow_instance_observation::{
+        instance_binding, observe_retained_transition,
+    },
     workflow::instance::{visit_workflow_operation_transition_facts, WorkflowInstanceProgress},
     workflow::{
         definition::{CompiledWorkflowDefinition, CompiledWorkflowNodeKind},
@@ -52,6 +54,7 @@ where
         mut authority_facts: Vec<WorthQueryApplicationObservedFact>,
         progress: &WorkflowInstanceProgress,
         operation: crate::domain_computation::primary_graph::workflow::instance::SelectedWorkflowOperation,
+        allowance: crate::domain_computation::primary_graph::application_attempt::WorkflowStepAllowance,
     ) -> Result<
         PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
         WorthQueryApplicationAttemptDenial,
@@ -132,6 +135,20 @@ where
         {
             return Err(mismatch(selected.node_path()));
         }
+        // An external operation records its custody on the instance; the
+        // reading it replaces travels with the operation's authority. This
+        // advance cannot see the operation's own external posture, so the
+        // reading is pinned for every operation; only an external commit
+        // ever writes the field, so a local operation is never staled by it.
+        let (_, custody) = self.lease.handle().with_runtime(|runtime| {
+            instance_binding::owner_custody(
+                runtime,
+                self.lease.snapshot(),
+                layout,
+                instance.entity_id(),
+            )
+        })?;
+        facts.push(custody);
         let remaining = self
             .admission
             .allowed_graph_contract()
@@ -171,7 +188,7 @@ where
                 .allowed_graph_contract()
                 .decision_fact_budget()
         {
-            return Err(denial(
+            return Err(WorthQueryApplicationAttemptDenial::new(
                 WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
                 self.admission.operation(),
             ));
@@ -191,6 +208,7 @@ where
         );
         let handle = self.lease.handle().clone();
         let graph_layout = std::sync::Arc::clone(&self.lease.layout);
+        let deadline = self.workflow_deadline;
         let admitted =
             crate::domain_computation::primary_graph::workflow::instance::admit_workflow_transition(
                 self,
@@ -199,6 +217,7 @@ where
                 subject,
                 live_membership,
                 retire_live_membership,
+                allowance,
             );
         let authority = approval_authority.map(|approval_authority| {
             WorkflowOperationAuthority::new(
@@ -216,6 +235,7 @@ where
                 handle,
                 graph_layout,
             )
+            .with_deadline(deadline)
         });
         let required = RequiredWorkflowOperation::from_selected(
             branch,
@@ -233,7 +253,7 @@ where
                 admitted,
                 required,
                 layout: layout.clone(),
-                program_revision: compiled.program_revision().clone(),
+                program_revision: *compiled.program_revision(),
                 replays: Default::default(),
             },
         ))
@@ -361,17 +381,10 @@ where
 }
 
 fn mismatch(subject: impl Into<String>) -> WorthQueryApplicationAttemptDenial {
-    denial(
+    WorthQueryApplicationAttemptDenial::new(
         WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,
         subject,
     )
-}
-
-fn denial(
-    kind: WorthQueryApplicationAttemptDenialKind,
-    subject: impl Into<String>,
-) -> WorthQueryApplicationAttemptDenial {
-    WorthQueryApplicationAttemptDenial::new(kind, subject)
 }
 
 #[cfg(test)]

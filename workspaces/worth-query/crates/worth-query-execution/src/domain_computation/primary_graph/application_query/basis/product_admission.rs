@@ -59,10 +59,7 @@ pub(super) fn admit_retained<Schema: worth_query_installation::facade::Applicati
         .retain_product_application_basis(product.observation())
         .map_err(map_product_admission_denial)?;
     let _ = application
-        .bind_selected_program_interpretation(
-            product.relational_basis().observation().version_id(),
-            &mut application_basis,
-        )
+        .bind_selected_program_interpretation(product.relational_basis(), &mut application_basis)
         .map_err(map_product_admission_denial)?;
     admit(application, product, application_basis)
 }

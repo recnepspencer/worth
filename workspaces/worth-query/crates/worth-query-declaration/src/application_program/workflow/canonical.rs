@@ -83,7 +83,7 @@ where
 
 fn limits_record(limits: ApplicationWorkflowDefinitionLimits) -> String {
     let components = limits.component_limits();
-    format!(
+    let mut record = format!(
         "nodes={};connections={};effects={};component-occurrences={};component-depth={};node-provenance={};connection-provenance={};port-provenance={};bytes={}",
         limits.maximum_nodes(),
         limits.maximum_connections(),
@@ -94,7 +94,13 @@ fn limits_record(limits: ApplicationWorkflowDefinitionLimits) -> String {
         components.maximum_connection_provenance(),
         components.maximum_port_provenance(),
         limits.maximum_canonical_bytes()
-    )
+    );
+    // Appended only when declared, so every definition without a deadline
+    // keeps the content identity it had before deadlines existed.
+    if let Some(deadline) = limits.total_deadline() {
+        record.push_str(&format!(";total-deadline-ms={}", deadline.as_millis()));
+    }
+    record
 }
 
 fn node_record(node: &ApplicationWorkflowNode) -> String {
@@ -167,7 +173,10 @@ fn assessment_applicability_record(
             relation,
             from,
             to,
-        } => framed_record("related-relation-present", &[relation, from, to]),
+        } => framed_record(
+            "related-relation-present",
+            &[relation, from, to].map(String::as_str),
+        ),
     }
 }
 

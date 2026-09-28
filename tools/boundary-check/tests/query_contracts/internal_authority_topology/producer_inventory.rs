@@ -22,6 +22,8 @@ struct Producer {
     shape: &'static str,
 }
 
+#[path = "producer_inventory/bank_api.rs"]
+mod bank_api;
 #[path = "producer_inventory/court.rs"]
 mod court;
 
@@ -121,7 +123,10 @@ fn authority_types(
                 if let Some(target) = associated.get(&key) {
                     authority_types(target, owner, aliases, associated, output);
                 }
-            } else if let Some(target) = aliases.get(&key) {
+            } else if let Some(target) = aliases.get(&key).filter(|_| segments.len() == 1) {
+                // Only a bare name refers to this file's own alias; a qualified
+                // path such as `retention::View` names another module's item,
+                // even when the alias re-exports it under the same name.
                 authority_types(target, owner, aliases, associated, output);
             }
             collect_path_arguments(&path.path, owner, aliases, associated, output);

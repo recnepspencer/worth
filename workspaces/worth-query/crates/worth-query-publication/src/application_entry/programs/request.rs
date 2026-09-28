@@ -6,9 +6,10 @@ use worth_query_installation::facade::{ApplicationSchema, WorthQueryProgramAdopt
 
 use super::{
     WorthQueryApplicationProgramAdoptionPreparationDenial,
-    WorthQueryApplicationProgramAdoptionRequestWithRequirements,
+    WorthQueryApplicationProgramAdoptionRequest,
 };
 
+/// Program operations on one branch: compare, inspect, adopt and recover.
 pub struct WorthQueryApplicationProgramsRequest<'application, 'principal, 'scope, Schema> {
     pub(super) application: &'application worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     // Principal-specific adoption authorization enters with Batch 3 custody.
@@ -18,6 +19,8 @@ pub struct WorthQueryApplicationProgramsRequest<'application, 'principal, 'scope
     pub(super) branch: worth_query_execution::facade::product::WorthQueryProductBranch,
 }
 
+/// Why recovering an interrupted program adoption failed. `into_recovery` returns the
+/// recovery so it can be tried again.
 pub enum WorthQueryApplicationProgramAdoptionRecoveryFailure {
     ProductSelection {
         denial:
@@ -27,6 +30,7 @@ pub enum WorthQueryApplicationProgramAdoptionRecoveryFailure {
     Recovery(worth_query_execution::facade::primary_graph::WorthQueryBranchAdoptionRecoveryFailure),
 }
 
+/// Why the branch's adopted program could not be inspected.
 #[derive(Debug)]
 pub enum WorthQueryApplicationProgramInspectionDenial {
     ProductSelection(
@@ -46,17 +50,6 @@ impl WorthQueryApplicationProgramAdoptionRecoveryFailure {
             Self::Recovery(failure) => failure.into_recovery(),
         }
     }
-}
-
-pub struct WorthQueryApplicationProgramAdoptionRequest<
-    'application,
-    'principal,
-    'scope,
-    'target,
-    Schema,
-> {
-    programs: WorthQueryApplicationProgramsRequest<'application, 'principal, 'scope, Schema>,
-    target: &'target ApplicationProgramRevision,
 }
 
 impl<'application, 'principal, 'scope, Schema>
@@ -110,19 +103,24 @@ where
             .map_err(WorthQueryApplicationProgramInspectionDenial::Inspection)
     }
 
-    pub fn adopt<'target>(
+    /// Adopts the target that `requirements`, as [`Self::compare`] returned
+    /// them, name. Preparation refuses requirements this branch no longer
+    /// matches.
+    pub fn adopt<'requirements>(
         self,
-        target: &'target ApplicationProgramRevision,
+        requirements: &'requirements WorthQueryProgramAdoptionRequirements,
     ) -> WorthQueryApplicationProgramAdoptionRequest<
         'application,
         'principal,
         'scope,
-        'target,
+        'requirements,
         Schema,
     > {
         WorthQueryApplicationProgramAdoptionRequest {
             programs: self,
-            target,
+            requirements,
+            migration: None,
+            workflow: None,
         }
     }
 
@@ -178,30 +176,6 @@ where
                     recovery,
                 },
             ),
-        }
-    }
-}
-
-impl<'application, 'principal, 'scope, 'target, Schema>
-    WorthQueryApplicationProgramAdoptionRequest<'application, 'principal, 'scope, 'target, Schema>
-where
-    Schema: ApplicationSchema,
-{
-    pub fn requirements<'requirements>(
-        self,
-        requirements: &'requirements WorthQueryProgramAdoptionRequirements,
-    ) -> WorthQueryApplicationProgramAdoptionRequestWithRequirements<
-        'application,
-        'principal,
-        'scope,
-        'target,
-        'requirements,
-        Schema,
-    > {
-        WorthQueryApplicationProgramAdoptionRequestWithRequirements {
-            programs: self.programs,
-            target: self.target,
-            requirements,
         }
     }
 }

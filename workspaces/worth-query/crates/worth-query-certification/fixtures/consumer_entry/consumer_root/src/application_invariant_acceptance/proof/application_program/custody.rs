@@ -57,12 +57,12 @@ pub(super) fn abandoned_and_superseded_preparations_are_bounded(
         0,
         "recovery consumes the exact prepared carrier"
     );
-    let recovered_settlement = loop {
+    let recovered_settlement = crate::application_invariant_acceptance::proof::settle(|| {
         match recovered.advance(&request).unwrap() {
-            WorthQueryApplicationProgramOutputProgress::Pending => {}
-            WorthQueryApplicationProgramOutputProgress::Settled(settled) => break settled,
+            WorthQueryApplicationProgramOutputProgress::Pending => None,
+            WorthQueryApplicationProgramOutputProgress::Settled(settled) => Some(settled),
         }
-    };
+    });
     assert_eq!(
         request
             .at(recovered_settlement.observation())
@@ -78,7 +78,6 @@ pub(super) fn abandoned_and_superseded_preparations_are_bounded(
 
     drop(recovered_settlement);
     drop(recovered);
-    drop(request);
     drop(world);
     let world = installation::install(foreign);
     let adapter = authentication::admit(world.application.installed_schema());
@@ -197,7 +196,6 @@ pub(super) fn close_before_required_output_start_is_typed(
         worth_query_host::facade::primary_graph::WorthQueryProductBranchAdmissionDenial::RetiredBranch
     );
     drop(failure);
-    drop(request);
     if let Some(cleanup) = pending_cleanup {
         cleanup
             .retry()
@@ -276,10 +274,9 @@ fn settle<'a>(
 ) -> worth_query_host::facade::application_entry::WorthQueryApplicationProgramOutputSettlement<
     <worth_query_topology_entry::PlanarReadBinding<ConsumerSchema> as worth_query_decl::facade::application_query::ApplicationQueryBinding<ConsumerSchema>>::Query,
 >{
-    loop {
-        match performed.required_output_mut().advance(request).unwrap() {
-            WorthQueryApplicationProgramOutputProgress::Pending => {}
-            WorthQueryApplicationProgramOutputProgress::Settled(settled) => return settled,
-        }
-    }
+    crate::application_invariant_acceptance::proof::settle(|| {
+        crate::application_invariant_acceptance::proof::settled(
+            performed.required_output_mut().advance(request).unwrap(),
+        )
+    })
 }

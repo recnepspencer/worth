@@ -1,5 +1,10 @@
 //! Application-owned deferred commit evidence.
 
+/// Evidence that a commit attempt stopped at a capacity or lifetime limit, carried
+/// by the `Deferred` commit outcome.
+///
+/// Nothing was committed. The [`kind`](Self::kind) names the limit that was
+/// reached; retry later, after the limit has room again.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationCommitDeferred {
     kind: WorthQueryApplicationCommitDeferredKind,
@@ -9,12 +14,18 @@ pub struct WorthQueryApplicationCommitDeferred {
         crate::domain_computation::provider_session::WorthQueryProviderSessionProtocolCounters,
 }
 
+/// The limit that deferred a commit attempt.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationCommitDeferredKind {
+    /// The owner had no room to retain another basis for the attempt.
     RetentionCapacityExhausted,
+    /// Another attempt held the reservation this commit needed.
     PatchPositionReservationContended,
+    /// The prepared candidate outlived its maximum lifetime before it could commit.
     CandidateLifetimeExpired { maximum_lifetime_millis: u64 },
+    /// The owner already held its maximum number of prepared candidates.
     CandidateCapacityExhausted { maximum_candidates: usize },
+    /// The owner already held its maximum number of published snapshot handles.
     PublishedSnapshotCapacityExhausted { maximum_handles: usize },
 }
 

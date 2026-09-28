@@ -22,8 +22,14 @@ impl WorthQueryApplicationCommitDenial {
         let stage = match denial.kind() {
             WorthQueryApplicationAttemptDenialKind::CandidateCapacityExceeded
             | WorthQueryApplicationAttemptDenialKind::CandidateReservationExceeded
-            | WorthQueryApplicationAttemptDenialKind::RetainedEffectBytesExceeded => {
+            | WorthQueryApplicationAttemptDenialKind::RetainedEffectBytesExceeded
+            | WorthQueryApplicationAttemptDenialKind::WorkflowInstanceCapacityUnavailable
+            | WorthQueryApplicationAttemptDenialKind::WorkflowLineageCapacityUnavailable => {
                 WorthQueryApplicationCommitDenialStage::ResourceAdmission
+            }
+            WorthQueryApplicationAttemptDenialKind::WorkflowDefinitionSuperseded
+            | WorthQueryApplicationAttemptDenialKind::WorkflowDefinitionRetired => {
+                WorthQueryApplicationCommitDenialStage::DecisionReadSet
             }
             _ => WorthQueryApplicationCommitDenialStage::ProposalBinding,
         };

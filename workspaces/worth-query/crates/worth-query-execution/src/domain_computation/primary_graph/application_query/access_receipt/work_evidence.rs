@@ -1,3 +1,6 @@
+/// Work units one query read spent, by phase (predicate, adjacency, ordering,
+/// continuation seek, projection), plus the total charged against the work
+/// limit.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationQueryWorkEvidence {
     predicate_work_units: usize,

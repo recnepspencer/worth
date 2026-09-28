@@ -24,19 +24,34 @@ pub(super) use projected_tree::{
     WorthQueryApplicationProjectionNode, WorthQueryApplicationWorkingProjectionTree,
 };
 
+/// Why a query result row could not be projected into an application value.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationProjectionDenialKind {
+    /// The selected field is not part of this row's projection.
     FieldNotProjected,
+    /// The field selector does not match the installed field contract or disclosure.
     FieldContractMismatch,
+    /// The field's value could not be decoded as the selector's value type.
     FieldTypeMismatch,
+    /// A required field was withheld by governed disclosure.
     FieldOmitted,
+    /// The selected relation is not part of this row's projection.
     RelationNotProjected,
+    /// The relation selector does not match the installed relation contract or
+    /// disclosure.
     RelationContractMismatch,
+    /// The relation's result count does not match the selector's cardinality.
     RelationCardinalityMismatch,
+    /// A required relation was withheld by governed disclosure.
     RelationOmitted,
+    /// Application projection code rejected the row with `reject`.
     DomainProjectionRejected,
 }
 
+/// Refusal to project a query result row into an application value.
+///
+/// Returned by row reads and by application code through `reject`.
+/// [`Self::kind`] says why and the subject names the refused result path.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationProjectionDenial {
     kind: WorthQueryApplicationProjectionDenialKind,
@@ -54,6 +69,9 @@ pub struct WorthQueryApplicationProjectionRow<'row, Schema, Query> {
     _marker: PhantomData<fn() -> (Schema, Query)>,
 }
 
+/// The rows of a many-valued relation, read from a projection row.
+///
+/// Iterate to get one projection row per related result.
 pub struct WorthQueryApplicationProjectionRows<'row, Schema, Query> {
     rows: &'row [WorthQueryApplicationProjectionNode],
     disclosure_parent: WorthQueryApplicationDisclosedProjectionNode<'row>,
@@ -298,6 +316,10 @@ impl<'row, Schema, Query> WorthQueryApplicationProjectionRows<'row, Schema, Quer
     }
 }
 
+/// Application code that turns one query result row into a typed value.
+///
+/// Implement `project` by reading fields and relations through the row's
+/// query-bound selectors. Returning a denial refuses the whole read.
 pub trait WorthQueryApplicationProjection<Schema, Query>: Sized {
     fn project(
         row: &WorthQueryApplicationProjectionRow<'_, Schema, Query>,

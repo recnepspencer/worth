@@ -22,9 +22,10 @@ use encoding::*;
 #[derive(Clone, Copy)]
 pub(in crate::domain_computation::primary_graph) enum WorkflowLineagePublicationTarget {
     New,
+    /// A retired lineage reopens with no current relation to replace.
     Existing {
         lineage: EntityId,
-        current_relation: RelationId,
+        current_relation: Option<RelationId>,
     },
 }
 
@@ -49,7 +50,7 @@ where
 {
     let limits = definition.limits();
     let component_limits = limits.component_limits();
-    let fields = BTreeMap::from([
+    let mut fields = BTreeMap::from([
         (
             layout.definition.content_identity.clone(),
             text(definition.content_identity().to_string()),
@@ -95,6 +96,14 @@ where
             AspectValue::UInt64(u64::from(limits.maximum_canonical_bytes())),
         ),
     ]);
+    if let Some(deadline) = limits.total_deadline() {
+        let milliseconds = u64::try_from(deadline.as_millis())
+            .expect("a declared deadline is whole milliseconds that fit in u64");
+        fields.insert(
+            layout.definition.total_deadline_milliseconds.clone(),
+            AspectValue::UInt64(milliseconds),
+        );
+    }
     let publication = stage_lineage(layout, definition, lineage, &mut emit)?;
     let definition_ref = created(
         publication.symbolic_partition,
@@ -242,9 +251,9 @@ fn stage_lineage<Spec: ApplicationWorkflowSpec, Error>(
             lineage,
             current_relation,
         } => {
-            emit(WorthQueryApplicationRealizedEffect::DeleteRelation {
-                relation_id: current_relation,
-            })?;
+            if let Some(relation_id) = current_relation {
+                emit(WorthQueryApplicationRealizedEffect::DeleteRelation { relation_id })?;
+            }
             Ok(WorkflowDefinitionPublicationContext {
                 lineage: EntityReference::Existing(lineage),
                 creation_partition: WorthQueryApplicationCreationPartition::Context(

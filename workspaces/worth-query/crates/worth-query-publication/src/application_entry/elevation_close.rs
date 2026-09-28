@@ -30,6 +30,8 @@ use worth_query_installation::facade::{
 
 use super::{workflow_key::workflow_idempotency, WorthQueryApplicationRequest};
 
+/// Why `execute_elevation_close_in_program` refused. `ProgramMismatch` means the program
+/// runtime is not this request's runtime.
 #[derive(Debug)]
 pub enum WorthQueryApplicationElevationCloseDenial<DecisionDenial> {
     Program(WorthQueryApplicationCommitDenial),
@@ -48,6 +50,8 @@ pub enum WorthQueryApplicationElevationCloseDenial<DecisionDenial> {
     IdempotencyResolution(WorthQueryApplicationIdempotencyResolutionDenial),
 }
 
+/// A refused elevation close. `into_parts` returns the denial and, when it was not
+/// consumed, the approved elevation so it can be closed again.
 #[derive(Debug)]
 pub struct WorthQueryApplicationElevationCloseFailure<DecisionDenial> {
     denial: WorthQueryApplicationElevationCloseDenial<DecisionDenial>,

@@ -23,6 +23,7 @@ where
         retire_live_membership: bool,
         facts: Vec<super::super::WorthQueryApplicationObservedFact>,
         condition: crate::domain_computation::primary_graph::workflow::instance::SelectedWorkflowCondition,
+        allowance: crate::domain_computation::primary_graph::application_attempt::WorkflowStepAllowance,
     ) -> Result<
         PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
         WorthQueryApplicationAttemptDenial,
@@ -47,6 +48,7 @@ where
             subject,
             live_membership,
             retire_live_membership,
+            allowance,
         );
         let required = RequiredWorkflowCondition::from_selected(
             admitted.instance(),

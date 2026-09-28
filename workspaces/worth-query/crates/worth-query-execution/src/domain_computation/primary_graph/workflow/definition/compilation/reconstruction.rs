@@ -91,7 +91,7 @@ pub(in crate::domain_computation::primary_graph) fn reconstruct_compiled_definit
             .bind(
                 reused.semantic,
                 published.content_identity().clone(),
-                program_revision.clone(),
+                *program_revision,
             )
             .map_err(binding_denial)?;
         return Ok((compiled, facts));
@@ -127,7 +127,7 @@ pub(in crate::domain_computation::primary_graph) fn reconstruct_compiled_definit
         .bind(
             semantic,
             published.content_identity().clone(),
-            program_revision.clone(),
+            *program_revision,
         )
         .map_err(binding_denial)?;
     Ok((compiled, facts))

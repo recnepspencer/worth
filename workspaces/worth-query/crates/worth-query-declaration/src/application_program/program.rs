@@ -343,7 +343,7 @@ where
     let revision = ApplicationProgramRevision::mint(&manifest)
         .map_err(|budget| deny_canonical_revision_budget(&identity, budget))?;
     let semantic_description = ApplicationSemanticDescription::from_validated_parts(
-        revision.clone(),
+        revision,
         &features,
         &actions,
         &connections,

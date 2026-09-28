@@ -22,6 +22,7 @@ where
         live_membership: worth_relational::facade::identity::RelationId,
         retire_live_membership: bool,
         facts: Vec<super::super::WorthQueryApplicationObservedFact>,
+        allowance: crate::domain_computation::primary_graph::application_attempt::WorkflowStepAllowance,
     ) -> Result<
         PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
         WorthQueryApplicationAttemptDenial,
@@ -46,6 +47,7 @@ where
             subject,
             live_membership,
             retire_live_membership,
+            allowance,
         );
         let transition_identity = admitted.identity().to_owned();
         let transition_identity_bytes = *admitted.identity_bytes();
@@ -77,7 +79,7 @@ where
         };
         Ok(PreparedWorkflowAdvance::Transition {
             program,
-            program_revision: compiled.program_revision().clone(),
+            program_revision: *compiled.program_revision(),
             transition_identity,
             transition_identity_bytes,
             transition_identity_locator: layout.transition.identity.clone(),

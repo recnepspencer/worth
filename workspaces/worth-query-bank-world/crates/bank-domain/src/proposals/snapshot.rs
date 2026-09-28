@@ -4,9 +4,10 @@ use std::sync::Arc;
 use crate::accounting::{BankAccount, BankJournalEntry};
 use crate::model::{
     AccountAuthorizationId, AccountId, AccountJournalRevision, BankPrincipalId,
-    BankSnapshotVersion, BusinessId, InstitutionId, JournalEntryId, PaymentId,
+    BankSnapshotVersion, BusinessId, CustomerRole, InstitutionId, JournalEntryId, PaymentId,
 };
 use crate::payments::BusinessPayment;
+use crate::schema::PaymentStatus;
 
 use super::BankAccountAuthorization;
 
@@ -122,6 +123,25 @@ impl BankSnapshot {
         self.authorizations
             .values()
             .any(|candidate| candidate.account() == account && candidate.principal() == principal)
+    }
+
+    /// The principals granted a pending payment's approval workflow: every
+    /// Approver on its source account while the payment awaits a decision.
+    pub fn payment_approval_grantees(
+        &self,
+        payment: &BusinessPayment,
+    ) -> BTreeSet<BankPrincipalId> {
+        if payment.status() != PaymentStatus::ApprovalRequired {
+            return BTreeSet::new();
+        }
+        self.authorizations
+            .values()
+            .filter(|authorization| {
+                authorization.account() == payment.source()
+                    && authorization.role() == CustomerRole::Approver
+            })
+            .map(|authorization| authorization.principal())
+            .collect()
     }
 
     pub fn primary_account(&self, principal: BankPrincipalId) -> Option<AccountId> {

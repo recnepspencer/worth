@@ -3,9 +3,9 @@ use super::{
     WorkflowProgressOutcome,
 };
 use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitOutcome,
-    WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationIdempotencyResolution,
-    WorthQueryApplicationIdempotencyResolutionDenial, WorthQueryPrimaryGraphApplicationRuntime,
+    WorthQueryApplicationCommitDenial, WorthQueryApplicationIdempotencyBinding,
+    WorthQueryApplicationIdempotencyResolution, WorthQueryApplicationIdempotencyResolutionDenial,
+    WorthQueryApplicationUncommitted, WorthQueryPrimaryGraphApplicationRuntime,
 };
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -155,7 +155,7 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
             }
         }
         Ok(drift.then(|| {
-            WorkflowProgressOutcome::Application(WorthQueryApplicationCommitOutcome::Denied(
+            WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::Denied(
                 WorthQueryApplicationCommitDenial::idempotency_intent_drift(),
             ))
         }))
@@ -282,7 +282,7 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
         Ok(match resolution.into_resolution() {
             WorthQueryApplicationIdempotencyResolution::Unseen => None,
             WorthQueryApplicationIdempotencyResolution::IntentDrift => Some(
-                WorkflowProgressOutcome::Application(WorthQueryApplicationCommitOutcome::Denied(
+                WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::Denied(
                     WorthQueryApplicationCommitDenial::idempotency_intent_drift(),
                 )),
             ),

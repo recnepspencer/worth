@@ -3,10 +3,8 @@
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationIntent, ApplicationMutationScopeResolution,
 };
-use worth_query_declaration::facade::application_program::{
-    ApplicationProgramDefinition, ApplicationWorkflowSpec,
-};
-use worth_query_execution::facade::workflow_advance::{
+use worth_query_declaration::facade::application_program::ApplicationWorkflowSpec;
+use worth_query_execution::publication_boundary::workflow_advance::{
     RequiredWorkflowOperation, WorkflowProgressOutcome, WorthQueryGuardedWorkflowOperationCustody,
     WorthQueryWorkflowAdvanceAdapter,
 };
@@ -23,6 +21,8 @@ use super::{
     WorthQueryWorkflowOperationAcceptanceDenial, WorthQueryWorkflowOperationBindingDenial,
 };
 
+/// Where the owner of a workflow operation's idempotency key stands when it has not
+/// committed the operation.
 #[derive(Debug)]
 pub enum WorthQueryWorkflowOperationOwnerPosture {
     Unseen,
@@ -35,6 +35,8 @@ pub enum WorthQueryWorkflowOperationOwnerPosture {
     ),
 }
 
+/// Why an operation recovered from its owner was not accepted. `RecoveryNotRequired` means
+/// the owner already committed it.
 #[derive(Debug)]
 pub enum WorthQueryWorkflowOperationOwnerAcceptanceDenial {
     Binding(WorthQueryWorkflowOperationBindingDenial),
@@ -68,14 +70,13 @@ impl std::fmt::Display for WorthQueryWorkflowOperationOwnerAcceptanceDenial {
 
 impl std::error::Error for WorthQueryWorkflowOperationOwnerAcceptanceDenial {}
 
-impl<'application, 'principal, 'scope, Schema, Spec, Program, Operation, Input, Scope>
+impl<'application, 'principal, 'scope, Schema, Spec, Operation, Input, Scope>
     WorthQueryWorkflowAdvanceRequest<
         'application,
         'principal,
         'scope,
         Schema,
         Spec,
-        Program,
         Operation,
         Input,
         Scope,
@@ -83,7 +84,6 @@ impl<'application, 'principal, 'scope, Schema, Spec, Program, Operation, Input, 
 where
     Schema: ApplicationSchema,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
-    Program: ApplicationProgramDefinition<Schema>,
     Operation: 'static,
     Input: Clone + Send + Sync + 'static,
 {
@@ -113,9 +113,10 @@ where
         let (prepared, custody) = resolve_owner(&self, required, &mut operation)?;
         match custody {
             WorthQueryGuardedWorkflowOperationCustody::Committed(receipt) => self
-                .accept_operation::<Intent::Binding, _, _, _>(
+                .accept_custody::<Intent::Binding, _, _, _>(
                     required,
                     &receipt,
+                    None,
                     &prepared.admission,
                     prepared.idempotency,
                 )
@@ -158,10 +159,10 @@ where
         let (prepared, custody) = resolve_owner(&self, required, &mut operation)?;
         match custody {
             WorthQueryGuardedWorkflowOperationCustody::DispatchPending(receipt) => self
-                .accept_recovered_operation::<Intent::Binding, _, _, _>(
+                .accept_custody::<Intent::Binding, _, _, _>(
                     required,
                     &receipt,
-                    recovery,
+                    Some(recovery),
                     &prepared.admission,
                     prepared.idempotency,
                 )
@@ -176,18 +177,8 @@ where
     }
 }
 
-fn resolve_owner<Schema, Spec, Program, Operation, Input, Scope, Intent, SourcePreparation>(
-    advance: &WorthQueryWorkflowAdvanceRequest<
-        '_,
-        '_,
-        '_,
-        Schema,
-        Spec,
-        Program,
-        Operation,
-        Input,
-        Scope,
-    >,
+fn resolve_owner<Schema, Spec, Operation, Input, Scope, Intent, SourcePreparation>(
+    advance: &WorthQueryWorkflowAdvanceRequest<'_, '_, '_, Schema, Spec, Operation, Input, Scope>,
     required: &RequiredWorkflowOperation,
     operation: &mut WorthQueryApplicationMutationRequestWithIdempotency<
         '_,
@@ -208,7 +199,6 @@ fn resolve_owner<Schema, Spec, Program, Operation, Input, Scope, Intent, SourceP
 where
     Schema: ApplicationSchema,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
-    Program: ApplicationProgramDefinition<Schema>,
     Intent: ApplicationMutationIntent<Schema>,
     <Intent::Binding as ApplicationMutationBinding<Schema>>::Input: Clone + Send + Sync + 'static,
     <Intent::Binding as ApplicationMutationBinding<Schema>>::ScopeBinding:

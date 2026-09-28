@@ -25,13 +25,19 @@ pub(super) struct WorthQueryFreshTemporalOperationAccess<
     pub(super) request: WorthQueryRequestScope,
 }
 
+/// Why a temporal principal source could not supply a principal.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryTemporalPrincipalFailureKind {
+    /// The source could not supply a principal now.
     SourceUnavailable,
+    /// The source refused to admit a principal.
     AdmissionRejected,
+    /// The source panicked.
     SourcePanicked,
 }
 
+/// Failure a temporal principal source returns from `admit`, with its kind and
+/// a detail message.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryTemporalPrincipalFailure {
     kind: WorthQueryTemporalPrincipalFailureKind,

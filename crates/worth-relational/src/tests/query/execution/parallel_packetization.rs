@@ -16,7 +16,7 @@ fn planned_query_execution_parallelizes_profitable_multi_seed_traversal_packets(
         create_entity_in_partition(&runtime, "s3", PartitionId(17)),
         create_entity_in_partition(&runtime, "s4", PartitionId(19)),
     ];
-    let neighbors = vec![
+    let neighbors = [
         create_entity_in_partition(&runtime, "n0", PartitionId(23)),
         create_entity_in_partition(&runtime, "n1", PartitionId(29)),
         create_entity_in_partition(&runtime, "n2", PartitionId(31)),

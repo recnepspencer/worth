@@ -23,7 +23,7 @@ For Milestone 13, the reference workload is the pricing-shock matrix:
 
 - shared component costs
 - 100-product fanout
-- live steel-cost churn
+- live shared-input cost churn
 - speculative `rubber +300%` branch shock
 - interleaved main-branch updates
 - discard or promotion

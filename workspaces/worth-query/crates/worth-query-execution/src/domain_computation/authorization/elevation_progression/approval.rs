@@ -57,6 +57,11 @@ pub(in crate::domain_computation) struct WorthQueryElevationApprovalDraft {
     lifecycle_effect: Option<worth_query_declaration::lifecycle_effect_derivation_authority::DerivedApplicationCapabilityLifecycleEffect>,
 }
 
+/// Refusal to authorize approving a requested elevation.
+///
+/// Nothing was approved. [`Self::denial`] says why, and
+/// [`Self::into_requested`] returns the requested elevation so the caller can
+/// try again or replay a recorded approval.
 #[derive(Debug)]
 pub struct WorthQueryElevationApprovalAuthorizationDenial {
     denial: WorthQueryOperationAuthorizationDenial,

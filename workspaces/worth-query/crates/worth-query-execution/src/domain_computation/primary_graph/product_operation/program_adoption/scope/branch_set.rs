@@ -24,17 +24,22 @@ pub use resume::{
     WorthQueryStoppedBranchSetAdoption,
 };
 
+/// Why a branch-set adoption could not be prepared. Nothing was published.
 #[derive(Debug)]
 pub enum WorthQueryBranchSetAdoptionPreparationDenial {
+    /// Memory to hold the prepared branches could not be allocated.
     RetentionAllocationRejected,
+    /// A covered branch could not be selected.
     ProductSelection {
         branch: WorthQueryProductBranch,
         denial: WorthQueryProductBranchAdmissionDenial,
     },
+    /// A covered branch's adoption could not be prepared.
     Adoption {
         branch: WorthQueryProductBranch,
         denial: WorthQueryBranchAdoptionPreparationDenial,
     },
+    /// The total selection work could not be counted without overflow.
     WorkAccountingOverflow,
 }
 
@@ -66,14 +71,22 @@ impl BranchSetAdoptionResolution {
     }
 }
 
+/// Why a branch-set adoption would not advance to the next branch. Nothing was
+/// published.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryBranchSetAdoptionAdvanceDenial {
+    /// The last branch's publication had no effect or left the product
+    /// unpublished. Resume, recover, or cancel before advancing.
     ResolutionRequired { branch: WorthQueryProductBranch },
 }
 
+/// Why a branch-set adoption cannot be closed yet.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryBranchSetAdoptionCloseDenial {
+    /// Some branches are not yet published; `remaining` counts them.
     Pending { remaining: usize },
+    /// The last branch's publication had no effect or left the product
+    /// unpublished. Resume, recover, or cancel it first.
     ResolutionRequired { branch: WorthQueryProductBranch },
 }
 
@@ -191,6 +204,8 @@ impl WorthQueryPreparedBranchSetAdoption {
     }
 }
 
+/// A branch-set adoption in which every covered branch is published. Returned
+/// by `close`.
 pub struct WorthQueryClosedBranchSetAdoption {
     progress: Vec<WorthQueryBranchSetAdoptionProgress>,
     total_selection_work_units: usize,
@@ -208,6 +223,8 @@ impl WorthQueryClosedBranchSetAdoption {
     }
 }
 
+/// A cancelled branch-set adoption: how many branches it did not publish, and
+/// the progress made before cancelling. Published branches stay published.
 pub struct WorthQueryBranchSetAdoptionCancellation {
     pub(super) cancelled_branch_count: usize,
     pub(super) progress: Vec<WorthQueryBranchSetAdoptionProgress>,
@@ -254,7 +271,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             pending,
             progress,
             resolution_required: None,
-            target: target.clone(),
+            target: *target,
             total_selection_work_units,
         })
     }

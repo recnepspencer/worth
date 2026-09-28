@@ -26,6 +26,20 @@ pub enum PaymentStatus {
     Reversed,
 }
 
+impl PaymentStatus {
+    /// Stable text for identity derivation. These bytes are part of every
+    /// derived assessment identity, so they never follow a rename.
+    pub const fn canonical_text(self) -> &'static str {
+        match self {
+            Self::Pending => "Pending",
+            Self::ApprovalRequired => "ApprovalRequired",
+            Self::Committed => "Committed",
+            Self::Rejected => "Rejected",
+            Self::Reversed => "Reversed",
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum PostingPurpose {
     OpeningFunding,
@@ -42,7 +56,21 @@ mod tests {
         ApplicationReadableScalarValueBinding, ApplicationScalarValueBinding,
     };
 
-    use super::{PostingPurpose, PostingPurposeBinding};
+    use super::{PaymentStatus, PostingPurpose, PostingPurposeBinding};
+
+    #[test]
+    fn payment_status_canonical_text_is_pinned() {
+        let pinned = [
+            (PaymentStatus::Pending, "Pending"),
+            (PaymentStatus::ApprovalRequired, "ApprovalRequired"),
+            (PaymentStatus::Committed, "Committed"),
+            (PaymentStatus::Rejected, "Rejected"),
+            (PaymentStatus::Reversed, "Reversed"),
+        ];
+        for (status, text) in pinned {
+            assert_eq!(status.canonical_text(), text);
+        }
+    }
 
     #[test]
     fn estate_disbursement_is_a_distinct_round_tripping_posting_purpose() {

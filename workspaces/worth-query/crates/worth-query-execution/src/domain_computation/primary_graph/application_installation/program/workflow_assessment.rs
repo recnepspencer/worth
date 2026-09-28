@@ -1,9 +1,7 @@
-use worth_query_declaration::facade::application_program::{
-    ApplicationProgramDefinition, ApplicationWorkflowSpec,
-};
+use worth_query_declaration::facade::application_program::ApplicationWorkflowSpec;
 use worth_query_installation::facade::ApplicationSchema;
 
-use super::WorthQueryWorkflowApplicationRuntime;
+use super::WorthQueryWorkflowVocabulary;
 use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedOutputDemand, WorthQueryApplicationOutputDemandSource,
     WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial, WorthQueryProducerOutputFamily,
@@ -13,11 +11,10 @@ type SourceBinding<Schema, Family> = <Family as WorthQueryProducerOutputFamily<S
 type SourceQuery<Schema, Family> = <SourceBinding<Schema, Family> as worth_query_declaration::facade::application_query::ApplicationQueryBinding<Schema>>::Query;
 type SourceValue<Schema, Family> = <<SourceBinding<Schema, Family> as worth_query_declaration::facade::application_query::ApplicationQueryBinding<Schema>>::ResultBinding as worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding>::Value;
 
-impl<Schema, Spec, Program> WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>
+impl<Schema, Spec> WorthQueryWorkflowVocabulary<'_, Schema, Spec>
 where
     Schema: ApplicationSchema + 'static,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
-    Program: ApplicationProgramDefinition<Schema>,
 {
     pub fn admit_workflow_assessment_output<Family>(
         &self,
@@ -32,8 +29,7 @@ where
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
     {
-        self.program_runtime()
-            .runtime()
+        self.runtime()
             .admit_output_demand::<Family>(source, maximum_work, maximum_retained_bytes)
     }
 
@@ -54,14 +50,12 @@ where
         SourceValue<Schema, Family>: 'static,
         SourceQuery<Schema, Family>: 'static,
     {
-        self.program_runtime()
-            .runtime()
-            .advance_program_output_demand(
-                demand,
-                principal,
-                request_scope,
-                delivery_branch,
-                disclosure,
-            )
+        self.runtime().advance_program_output_demand(
+            demand,
+            principal,
+            request_scope,
+            delivery_branch,
+            disclosure,
+        )
     }
 }

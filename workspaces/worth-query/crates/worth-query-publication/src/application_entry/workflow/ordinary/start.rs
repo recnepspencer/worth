@@ -7,9 +7,9 @@ use worth_query_declaration::facade::{
     },
     application_program::ApplicationWorkflowSpec,
 };
-use worth_query_execution::facade::{
-    application_installation::WorthQueryWorkflowApplicationRuntime,
-    workflow_instance_start::{PublishedWorkflowDefinitionRef, WorkflowInstanceStartOutcome},
+use worth_query_execution::facade::application_installation::WorthQueryWorkflowVocabulary;
+use worth_query_execution::publication_boundary::workflow_instance::{
+    PublishedWorkflowDefinitionRef, WorkflowInstanceStartOutcome,
 };
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -18,7 +18,7 @@ use crate::application_entry::{
         WorthQueryApplicationMutationRequest, WorthQueryApplicationMutationRequestWithIdempotency,
         WorthQueryMutationSourcePrepared,
     },
-    WorthQueryWorkflowInstanceStartPreparationDenial,
+    WorthQueryWorkflowInstancePreparationDenial,
 };
 
 type IntentBinding<Schema, Intent> = <Intent as ApplicationMutationIntent<Schema>>::Binding;
@@ -31,24 +31,19 @@ type MutationOperation<Schema, Intent> =
 type MutationInput<Schema, Intent> =
     <IntentBinding<Schema, Intent> as ApplicationMutationBinding<Schema>>::Input;
 
-pub struct WorthQueryOrdinaryWorkflowStart<
-    'application,
-    'principal,
-    'scope,
-    Schema,
-    Intent,
-    Spec,
-    Program,
-> where
+/// A workflow instance start from a published definition. `idempotency` binds its key.
+pub struct WorthQueryOrdinaryWorkflowStart<'application, 'principal, 'scope, Schema, Intent, Spec>
+where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
 {
     request: WorthQueryApplicationMutationRequest<'application, 'principal, 'scope, Schema, Intent>,
-    workflow: &'application WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>,
+    workflow: WorthQueryWorkflowVocabulary<'application, Schema, Spec>,
     definition: PublishedWorkflowDefinitionRef,
 }
 
+/// A workflow instance start bound to its idempotency key. `execute` attempts its commit.
 pub struct WorthQueryOrdinaryWorkflowStartWithIdempotency<
     'application,
     'principal,
@@ -57,7 +52,6 @@ pub struct WorthQueryOrdinaryWorkflowStartWithIdempotency<
     Schema,
     Intent,
     Spec,
-    Program,
 > where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
@@ -72,7 +66,7 @@ pub struct WorthQueryOrdinaryWorkflowStartWithIdempotency<
         Intent,
         WorthQueryMutationSourcePrepared,
     >,
-    workflow: &'application WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>,
+    workflow: WorthQueryWorkflowVocabulary<'application, Schema, Spec>,
     definition: PublishedWorkflowDefinitionRef,
 }
 
@@ -83,22 +77,15 @@ where
     Intent: ApplicationMutationIntent<Schema>,
 {
     /// Subjects and intended capability remain in the caller's typed mutation intent.
-    pub fn start_workflow<Spec, Program>(
+    pub fn start_workflow<Spec>(
         self,
-        workflow: &'application WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>,
+        workflow: impl Into<WorthQueryWorkflowVocabulary<'application, Schema, Spec>>,
         definition: PublishedWorkflowDefinitionRef,
-    ) -> WorthQueryOrdinaryWorkflowStart<
-        'application,
-        'principal,
-        'scope,
-        Schema,
-        Intent,
-        Spec,
-        Program,
-    >
+    ) -> WorthQueryOrdinaryWorkflowStart<'application, 'principal, 'scope, Schema, Intent, Spec>
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
+        let workflow = workflow.into();
         WorthQueryOrdinaryWorkflowStart {
             request: self,
             workflow,
@@ -107,8 +94,8 @@ where
     }
 }
 
-impl<'application, 'principal, 'scope, Schema, Intent, Spec, Program>
-    WorthQueryOrdinaryWorkflowStart<'application, 'principal, 'scope, Schema, Intent, Spec, Program>
+impl<'application, 'principal, 'scope, Schema, Intent, Spec>
+    WorthQueryOrdinaryWorkflowStart<'application, 'principal, 'scope, Schema, Intent, Spec>
 where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
@@ -127,7 +114,6 @@ where
         Schema,
         Intent,
         Spec,
-        Program,
     > {
         WorthQueryOrdinaryWorkflowStartWithIdempotency {
             request: self.request.without_source().idempotency(key),
@@ -137,8 +123,8 @@ where
     }
 }
 
-impl<Schema, Intent, Spec, Program>
-    WorthQueryOrdinaryWorkflowStartWithIdempotency<'_, '_, '_, '_, Schema, Intent, Spec, Program>
+impl<Schema, Intent, Spec>
+    WorthQueryOrdinaryWorkflowStartWithIdempotency<'_, '_, '_, '_, Schema, Intent, Spec>
 where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema> + Clone,
@@ -157,7 +143,7 @@ where
         >,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
 {
-    pub fn execute(self) -> Result<WorkflowInstanceStartOutcome, WorthQueryWorkflowInstanceStartPreparationDenial> {
+    pub fn execute(self) -> Result<WorkflowInstanceStartOutcome, WorthQueryWorkflowInstancePreparationDenial> {
         let prepared = self.request.prepare_workflow_instance_start(self.workflow, self.definition)?;
         Ok(prepared.execute())
     }

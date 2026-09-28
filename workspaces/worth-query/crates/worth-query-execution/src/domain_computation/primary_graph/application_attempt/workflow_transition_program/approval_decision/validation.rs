@@ -12,7 +12,7 @@ pub(super) fn decode_transition_identity(identity: &str) -> Option<[u8; 32]> {
     Some(bytes)
 }
 
-pub(super) fn validate_request_binding<Schema, Capability, Operation, Input, Scope, Spec, Program>(
+pub(super) fn validate_request_binding<Schema, Capability, Operation, Input, Scope, Spec>(
     read_set: &WorthQueryCompleteApplicationReadSet<
         Schema,
         Operation,
@@ -20,7 +20,7 @@ pub(super) fn validate_request_binding<Schema, Capability, Operation, Input, Sco
         Scope,
         WorthQueryProjectedApplicationMutation,
     >,
-    installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+    installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
     instance: &super::super::super::PublishedWorkflowInstanceRef,
     required: &RequiredWorkflowApproval,
     proposal: &super::super::super::PublishedWorkflowProposalRef,

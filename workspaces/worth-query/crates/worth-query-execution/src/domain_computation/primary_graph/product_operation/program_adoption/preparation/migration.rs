@@ -10,6 +10,8 @@ use worth_runtime_world::facade::ProductBranchObservation;
 use crate::domain_computation::primary_graph::application_entry::mutation::WorthQueryCompletedMutationCandidate;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
+/// What a sealed program migration does: the operation that authored it and how
+/// many effects it carries.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryProgramMigrationDescription {
     operation: String,
@@ -26,17 +28,33 @@ impl WorthQueryProgramMigrationDescription {
     }
 }
 
+/// Why a program migration could not be admitted or sealed. Nothing changed.
 #[derive(Debug)]
 pub enum WorthQueryProgramMigrationPreparationDenial {
+    /// The runtime has no installed program support.
     ProgramSupportUnavailable,
+    /// The target program is not on the installed roster.
     TargetProgramUnrostered,
+    /// The target program does not act through this mutation binding.
     TargetBindingUnowned,
+    /// The candidate belongs to another runtime or schema binding.
     ForeignCandidate,
+    /// The runtime could not issue a mutation partition for the migration.
     MutationPartitionUnavailable,
+    /// The candidate does something a migration may not do, such as an external
+    /// effect, an aftermath, a conditional definition, platform effects,
+    /// emitted output, or output production. The text names which.
     UnsupportedPosture(&'static str),
+    /// The candidate's effects were refused while building the migration.
     Candidate(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial),
 }
 
+/// Admission to author a program migration for one target program through one
+/// mutation binding.
+///
+/// Get it from `admit_program_migration`, complete a mutation candidate with
+/// the same binding, then seal both with `seal_program_migration`. It grants
+/// nothing else.
 pub struct WorthQueryAdmittedProgramMigration<Schema, Binding>
 where
     Schema: ApplicationSchema,
@@ -115,7 +133,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     {
         self.require_target_binding::<Binding>(target)?;
         Ok(WorthQueryAdmittedProgramMigration {
-            target: target.clone(),
+            target: *target,
             marker: PhantomData,
         })
     }

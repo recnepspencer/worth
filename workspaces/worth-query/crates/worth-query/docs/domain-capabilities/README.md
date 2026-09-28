@@ -1,5 +1,7 @@
 # Domain Capabilities
 
+> **Internal engine surface.** This page documents `WorthQueryWorkspace` (`worth_query::facade`), the engine surface that `worth-ui-query-binding` uses. Application code uses `worth-query-decl` and `worth-query-host`; start with the [application front door](../foundations/ordinary-application-front-door.md).
+
 Domain work enters Query through a package installed into one runtime. The
 runtime returns an installed handle, and that handle is the root for domain
 reads, workflows, declarations, contributions, live work, remediation, and

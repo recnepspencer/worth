@@ -148,7 +148,14 @@ pub(super) fn observe(
         facts.append(&mut retained_facts);
         let remaining = maximum_facts.saturating_sub(facts.len());
         let coverage_state = super::super::assessment_coverage::observe(
-            node, &coverage, &observed, layout, handle, snapshot, remaining,
+            node,
+            compiled.program_revision(),
+            &coverage,
+            &observed,
+            layout,
+            handle,
+            snapshot,
+            remaining,
         )?;
         facts.extend(coverage_state.facts);
         if !coverage_state.current {

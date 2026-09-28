@@ -103,8 +103,7 @@ pub(super) fn seed_pseudorealistic_rocketship_world(
                 client_key: crate::symbols::data::ClientKey::raw(format!(
                     "rocket.local.{}.{}.{}",
                     layout.section, layout.subsystem, local_index
-                ))
-                .into(),
+                )),
                 source: crate::transactions::data::EntityReference::Existing(
                     subsystem_entities[local_index],
                 ),

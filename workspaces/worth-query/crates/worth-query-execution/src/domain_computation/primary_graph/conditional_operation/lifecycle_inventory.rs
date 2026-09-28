@@ -10,6 +10,11 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryConditionalOpe
     pub(super) attempts: Vec<Weak<()>>,
 }
 
+/// A probe that reports which conditional runtime resources are still alive,
+/// without keeping any of them alive.
+///
+/// Get one from `conditional_runtime_lifecycle_probe`; call `live_inventory`
+/// after close or drop to confirm everything was released.
 pub struct WorthQueryConditionalRuntimeLifecycleProbe {
     bindings: Vec<Weak<()>>,
     leases: Vec<Weak<super::installation::ConditionalClockLease>>,

@@ -64,7 +64,6 @@ fn complete_kind_footprint_proves_non_applicability_before_rule_budget() {
                     client_key: crate::symbols::data::ClientKey::raw(key),
                     fields: crate::transactions::data::AspectFieldPatch::default(),
                 }))
-                .into()
             })
             .collect(),
     };

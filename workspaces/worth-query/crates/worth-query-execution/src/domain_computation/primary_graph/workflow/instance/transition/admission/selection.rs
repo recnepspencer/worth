@@ -15,6 +15,7 @@ use crate::domain_computation::primary_graph::workflow::instance::{
 mod approval;
 mod collection;
 mod identity;
+mod navigation;
 mod replay;
 use approval::select_approval;
 pub(in crate::domain_computation::primary_graph) use approval::SelectedWorkflowApproval;
@@ -216,6 +217,7 @@ pub(in crate::domain_computation::primary_graph) fn select_navigation_back_trans
             node.path(),
         ));
     }
+    navigation::deny_back_over_authorized_operation(compiled, progress, node)?;
     let occurrence = progress.next_occurrence();
     let (identity, identity_bytes) = transition_identity(
         compiled,

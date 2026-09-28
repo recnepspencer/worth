@@ -12,28 +12,28 @@ use worth_query_host::facade::{
     },
 };
 
-use super::bounded_dimension_model::{
-    dimension_entry::{ReviewedSetPartDimensionBinding, PART_IDENTITY},
+use super::document_retention_model::{
     host::publish_workflow_on_first_program,
     operator_identity::{authenticate_operator, request_scope},
-    schema::PartDimensionQuery,
+    retention_entry::{ReviewedSetRetentionBinding, DOCUMENT_IDENTITY},
+    schema::DocumentRetentionQuery,
     workflow::{
         advance_instance, definition_limits, propose_instance, start_instance,
-        ReviewedGeometryWorkflow, WorkflowApprovalCapability, WorkflowDefinitionAuthoringInput,
+        ReviewedDocumentWorkflow, WorkflowApprovalCapability, WorkflowDefinitionAuthoringInput,
         WorkflowDefinitionAuthoringIntent, WorkflowDefinitionAuthoringOperation,
     },
 };
 
-fn reviewed_component_draft() -> AuthoredWorkflowDefinition<ReviewedGeometryWorkflow> {
-    let mut review = ApplicationWorkflowComponentBuilder::<ReviewedGeometryWorkflow>::new(
-        "required-geometry-review",
+fn reviewed_component_draft() -> AuthoredWorkflowDefinition<ReviewedDocumentWorkflow> {
+    let mut review = ApplicationWorkflowComponentBuilder::<ReviewedDocumentWorkflow>::new(
+        "required-document-review",
     )
     .expect("component identity is valid");
     let structural = review
-        .assessment::<PartDimensionQuery>("structural")
+        .assessment::<DocumentRetentionQuery>("structural")
         .expect("structural assessment is valid");
     let independent = review
-        .assessment::<PartDimensionQuery>("independent")
+        .assessment::<DocumentRetentionQuery>("independent")
         .expect("independent assessment is valid");
     let evidence = review
         .evidence_join(
@@ -69,8 +69,8 @@ fn reviewed_component_draft() -> AuthoredWorkflowDefinition<ReviewedGeometryWork
         .expect("evidence port is valid");
     let review = review.finish().expect("component closes");
 
-    let mut workflow = ApplicationWorkflowDefinitionBuilder::<ReviewedGeometryWorkflow>::new(
-        "ordinary-reviewed-geometry",
+    let mut workflow = ApplicationWorkflowDefinitionBuilder::<ReviewedDocumentWorkflow>::new(
+        "ordinary-reviewed-document",
         definition_limits(),
     )
     .expect("workflow identity is valid");
@@ -81,7 +81,7 @@ fn reviewed_component_draft() -> AuthoredWorkflowDefinition<ReviewedGeometryWork
         .approval::<WorkflowApprovalCapability>("approval")
         .expect("approval is valid");
     let apply = workflow
-        .operation_binding::<ReviewedSetPartDimensionBinding>("apply")
+        .operation_binding::<ReviewedSetRetentionBinding>("apply")
         .expect("effect is valid");
     let completed = workflow.terminal("completed").expect("terminal is valid");
     let rejected = workflow.terminal("rejected").expect("terminal is valid");
@@ -146,7 +146,7 @@ fn public_component_ports_validate_and_compile_into_ordinary_progression() {
     let expansions = validated.component_expansions();
     assert_eq!(expansions.len(), 1);
     let review = &expansions[0];
-    assert_eq!(review.component().as_str(), "required-geometry-review");
+    assert_eq!(review.component().as_str(), "required-document-review");
     assert_eq!(review.occurrence_path(), "checks");
     assert_eq!(review.ports().len(), 3);
     for (port, node) in [
@@ -172,8 +172,8 @@ fn public_component_ports_validate_and_compile_into_ordinary_progression() {
         .request(&principal, &scope)
         .mutate(WorkflowDefinitionAuthoringIntent {
             input: WorkflowDefinitionAuthoringInput {
-                identity: PART_IDENTITY.to_owned(),
-                dimension: 8,
+                identity: DOCUMENT_IDENTITY.to_owned(),
+                retention_days: 8,
             },
         })
         .workflow(&application, reviewed_component_draft())

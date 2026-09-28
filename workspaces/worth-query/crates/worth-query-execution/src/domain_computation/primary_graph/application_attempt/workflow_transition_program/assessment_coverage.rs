@@ -176,9 +176,12 @@ pub(super) fn observe_subject_cached(
 }
 
 /// A retained node locator is only a lookup. The authored contract, selected
-/// proposal coverage, and native dependency versions decide reuse.
+/// proposal coverage, collecting program revision, and native dependency
+/// versions decide reuse.
+#[allow(clippy::too_many_arguments)]
 pub(super) fn observe(
     node: &CompiledWorkflowNode,
+    program_revision: &worth_query_declaration::facade::application_program::ApplicationProgramRevision,
     coverage: &WorkflowProposalCoverageMeaning,
     evidence: &ObservedWorkflowAssessmentEvidence,
     layout: &WorthQueryWorkflowLayout,
@@ -206,7 +209,12 @@ pub(super) fn observe(
             "assessment evidence contract differs from its authored requirement",
         ));
     }
-    if evidence.subject != coverage.subject || evidence.coverage_identity != coverage.identity {
+    // Adoption may carry an instance to a later revision in place. Evidence
+    // collected under the earlier revision is stale, never reused.
+    if evidence.subject != coverage.subject
+        || evidence.coverage_identity != coverage.identity
+        || evidence.program_revision.as_deref() != Some(program_revision.to_string().as_str())
+    {
         return Ok(ObservedAssessmentCoverage {
             current: false,
             facts: Vec::new(),

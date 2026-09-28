@@ -1,5 +1,8 @@
 use std::collections::BTreeSet;
 
+#[cfg(feature = "test-controls")]
+#[path = "identity_runtime/certification_controls.rs"]
+mod certification_controls;
 #[path = "identity_runtime/installation.rs"]
 mod installation;
 pub(crate) mod product_world_resources;
@@ -108,7 +111,7 @@ impl BankIdentityRuntime {
         &self.approval_authentication
     }
 
-    pub const fn application_program(
+    pub(crate) const fn application_program(
         &self,
     ) -> &WorthQueryProgramApplicationRuntime<BankSchema, BankApplication> {
         self.runtime.program_runtime()

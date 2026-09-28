@@ -22,7 +22,7 @@ fn planned_query_execution_parallelized_traversal_matches_serial_reference() {
             create_entity_in_partition(runtime, "s3", PartitionId(17)),
             create_entity_in_partition(runtime, "s4", PartitionId(19)),
         ];
-        let neighbors = vec![
+        let neighbors = [
             create_entity_in_partition(runtime, "n0", PartitionId(23)),
             create_entity_in_partition(runtime, "n1", PartitionId(29)),
             create_entity_in_partition(runtime, "n2", PartitionId(31)),
@@ -130,7 +130,7 @@ fn planned_query_execution_reports_workload_derived_scratch_reuse_consistently_a
             create_entity_in_partition(runtime, "s2", PartitionId(13)),
             create_entity_in_partition(runtime, "s3", PartitionId(17)),
         ];
-        let neighbors = vec![
+        let neighbors = [
             create_entity_in_partition(runtime, "n0", PartitionId(19)),
             create_entity_in_partition(runtime, "n1", PartitionId(23)),
             create_entity_in_partition(runtime, "n2", PartitionId(29)),

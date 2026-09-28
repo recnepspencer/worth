@@ -133,6 +133,78 @@ fn append_conditional_application_operations(
     Ok(())
 }
 
+fn append_domain_identity(
+    basis: &mut InstallationCanonicalIdentityBasis,
+    package: &WorthQueryPortableDomainPackage,
+) -> Result<(), CanonicalDigestDerivationDenial> {
+    basis.text("domain.owner", package.identity.owner())?;
+    basis.unsigned_u32("domain.major", package.identity.major())?;
+    basis.unsigned_u32("domain.minor", package.identity.minor())
+}
+
+fn append_requirements(
+    basis: &mut InstallationCanonicalIdentityBasis,
+    package: &WorthQueryPortableDomainPackage,
+) -> Result<(), CanonicalDigestDerivationDenial> {
+    for (index, capability) in package.capabilities.iter().enumerate() {
+        basis.text(format!("capability[{index}]"), capability.as_str())?;
+    }
+    for (index, configuration) in package.configuration.iter().enumerate() {
+        basis.text(format!("configuration[{index}]"), configuration.as_str())?;
+    }
+    for (index, operating) in package.operating.iter().enumerate() {
+        basis.text(format!("operating[{index}]"), operating.as_str())?;
+    }
+    Ok(())
+}
+
+fn append_definitions(
+    basis: &mut InstallationCanonicalIdentityBasis,
+    package: &WorthQueryPortableDomainPackage,
+) -> Result<(), CanonicalDigestDerivationDenial> {
+    for (index, definition) in package.definitions.iter().enumerate() {
+        let prefix = format!("definition[{index}]");
+        basis.text(format!("{prefix}.kind"), definition.kind().as_str())?;
+        basis.text(format!("{prefix}.slot"), definition.slot())?;
+        basis.text(format!("{prefix}.semantics"), definition.semantics())?;
+    }
+    Ok(())
+}
+
+fn append_domain_operations(
+    basis: &mut InstallationCanonicalIdentityBasis,
+    package: &WorthQueryPortableDomainPackage,
+) -> Result<(), CanonicalDigestDerivationDenial> {
+    for (index, operation) in package.domain_operations.iter().enumerate() {
+        let prefix = format!("domain-operation[{index}]");
+        basis.text(format!("{prefix}.slot"), operation.identity().slot())?;
+        basis.text(format!("{prefix}.identity"), operation.canonical_identity())?;
+    }
+    Ok(())
+}
+
+fn append_contracts_and_schemas(
+    basis: &mut InstallationCanonicalIdentityBasis,
+    package: &WorthQueryPortableDomainPackage,
+) -> Result<(), CanonicalDigestDerivationDenial> {
+    for (index, contract) in package.artifact_contracts.iter().enumerate() {
+        basis.text(
+            format!("artifact-contract[{index}].identity"),
+            contract.identity().as_str(),
+        )?;
+    }
+    for (index, schema) in package.application_schemas.iter().enumerate() {
+        let prefix = format!("application-schema[{index}]");
+        basis.text(format!("{prefix}.owner"), schema.owner())?;
+        basis.text(format!("{prefix}.name"), schema.name())?;
+        basis.embedded_basis(
+            &format!("{prefix}.meaning"),
+            schema.identity().canonical_basis(),
+        )?;
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -208,76 +280,4 @@ mod tests {
                 .unwrap();
         assert_eq!(old_identity, new_identity);
     }
-}
-
-fn append_domain_identity(
-    basis: &mut InstallationCanonicalIdentityBasis,
-    package: &WorthQueryPortableDomainPackage,
-) -> Result<(), CanonicalDigestDerivationDenial> {
-    basis.text("domain.owner", package.identity.owner())?;
-    basis.unsigned_u32("domain.major", package.identity.major())?;
-    basis.unsigned_u32("domain.minor", package.identity.minor())
-}
-
-fn append_requirements(
-    basis: &mut InstallationCanonicalIdentityBasis,
-    package: &WorthQueryPortableDomainPackage,
-) -> Result<(), CanonicalDigestDerivationDenial> {
-    for (index, capability) in package.capabilities.iter().enumerate() {
-        basis.text(format!("capability[{index}]"), capability.as_str())?;
-    }
-    for (index, configuration) in package.configuration.iter().enumerate() {
-        basis.text(format!("configuration[{index}]"), configuration.as_str())?;
-    }
-    for (index, operating) in package.operating.iter().enumerate() {
-        basis.text(format!("operating[{index}]"), operating.as_str())?;
-    }
-    Ok(())
-}
-
-fn append_definitions(
-    basis: &mut InstallationCanonicalIdentityBasis,
-    package: &WorthQueryPortableDomainPackage,
-) -> Result<(), CanonicalDigestDerivationDenial> {
-    for (index, definition) in package.definitions.iter().enumerate() {
-        let prefix = format!("definition[{index}]");
-        basis.text(format!("{prefix}.kind"), definition.kind().as_str())?;
-        basis.text(format!("{prefix}.slot"), definition.slot())?;
-        basis.text(format!("{prefix}.semantics"), definition.semantics())?;
-    }
-    Ok(())
-}
-
-fn append_domain_operations(
-    basis: &mut InstallationCanonicalIdentityBasis,
-    package: &WorthQueryPortableDomainPackage,
-) -> Result<(), CanonicalDigestDerivationDenial> {
-    for (index, operation) in package.domain_operations.iter().enumerate() {
-        let prefix = format!("domain-operation[{index}]");
-        basis.text(format!("{prefix}.slot"), operation.identity().slot())?;
-        basis.text(format!("{prefix}.identity"), operation.canonical_identity())?;
-    }
-    Ok(())
-}
-
-fn append_contracts_and_schemas(
-    basis: &mut InstallationCanonicalIdentityBasis,
-    package: &WorthQueryPortableDomainPackage,
-) -> Result<(), CanonicalDigestDerivationDenial> {
-    for (index, contract) in package.artifact_contracts.iter().enumerate() {
-        basis.text(
-            format!("artifact-contract[{index}].identity"),
-            contract.identity().as_str(),
-        )?;
-    }
-    for (index, schema) in package.application_schemas.iter().enumerate() {
-        let prefix = format!("application-schema[{index}]");
-        basis.text(format!("{prefix}.owner"), schema.owner())?;
-        basis.text(format!("{prefix}.name"), schema.name())?;
-        basis.embedded_basis(
-            &format!("{prefix}.meaning"),
-            schema.identity().canonical_basis(),
-        )?;
-    }
-    Ok(())
 }

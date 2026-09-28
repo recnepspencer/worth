@@ -4,8 +4,8 @@ use worth_query_host::facade::application_entry::{
     WorthQueryApplicationRequestExt, WorthQueryWorkflowAssessmentDemandPreparationDenialKind,
 };
 
-use super::super::bounded_dimension_model::{
-    assessment_output::PartAssessmentDemand,
+use super::super::document_retention_model::{
+    assessment_output::RetentionAssessmentDemand,
     operator_identity::{authenticate_operator, request_scope},
     workflow::{WorkflowAdvanceInput, WorkflowAdvanceIntent},
 };
@@ -16,7 +16,7 @@ fn demand_start_refuses_another_instance_requirement_before_source_work() {
     let application = publish_workflow_on_first_program();
     let published = publish_definition(
         &application,
-        reviewed_geometry_definition("completed"),
+        reviewed_document_definition("completed"),
         WorkflowDefinitionExpectedPredecessor::Absent,
         60_000,
     )
@@ -57,7 +57,7 @@ fn demand_start_refuses_another_instance_requirement_before_source_work() {
             .request(&principal, &scope)
             .mutate(WorkflowAdvanceIntent {
                 input: WorkflowAdvanceInput {
-                    part_identity: PART_IDENTITY.to_owned(),
+                    document_identity: DOCUMENT_IDENTITY.to_owned(),
                 },
             })
             .without_source()
@@ -66,7 +66,10 @@ fn demand_start_refuses_another_instance_requirement_before_source_work() {
             .expect("second instance has a current assessment")
     };
     let denied = prepare(60_030)
-        .into_assessment_demand_for(&required[0], PartAssessmentDemand::new(PART_IDENTITY))
+        .into_assessment_demand_for(
+            &required[0],
+            RetentionAssessmentDemand::new(DOCUMENT_IDENTITY),
+        )
         .err()
         .expect("foreign requirement cannot start a demand");
     assert_eq!(
@@ -74,7 +77,10 @@ fn demand_start_refuses_another_instance_requirement_before_source_work() {
         WorthQueryWorkflowAssessmentDemandPreparationDenialKind::RequirementMismatch
     );
     let admitted = prepare(60_031)
-        .into_assessment_demand_for(&required[1], PartAssessmentDemand::new(PART_IDENTITY))
+        .into_assessment_demand_for(
+            &required[1],
+            RetentionAssessmentDemand::new(DOCUMENT_IDENTITY),
+        )
         .expect("the current owner-issued requirement matches exactly");
     assert_eq!(admitted.required(), &required[1]);
 }

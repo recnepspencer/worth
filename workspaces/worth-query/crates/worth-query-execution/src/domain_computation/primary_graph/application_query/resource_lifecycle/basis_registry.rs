@@ -26,6 +26,10 @@ pub(crate) struct WorthQueryApplicationBasisRegistry {
     state: Arc<WorthQueryApplicationBasisRegistryState>,
 }
 
+/// Read-only view of the query bases this runtime holds open.
+///
+/// Get one from `application_query_basis_observer` and call `observe` for a
+/// point-in-time count. Observing grants nothing and changes nothing.
 #[derive(Clone)]
 pub struct WorthQueryApplicationBasisObserver {
     state: Arc<WorthQueryApplicationBasisRegistryState>,
@@ -113,6 +117,8 @@ impl WorthQueryApplicationBasisReleaseOutcome {
     }
 }
 
+/// Point-in-time counts of query bases: how many are open now, the most ever
+/// open at once, and how many were ever acquired.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationBasisObservation {
     active: usize,

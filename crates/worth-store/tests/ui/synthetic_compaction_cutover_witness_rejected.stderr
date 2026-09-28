@@ -1,9 +1,0 @@
-error[E0451]: fields `retained_basis_label` and `compaction_product_id` of struct `CompactionCutoverWitness` are private
- --> tests/ui/synthetic_compaction_cutover_witness_rejected.rs:3:9
-  |
-2 |     let _ = worth_store::CompactionCutoverWitness {
-  |             ------------------------------------- in this type
-3 |         retained_basis_label: String::from("basis-a"),
-  |         ^^^^^^^^^^^^^^^^^^^^ private field
-4 |         compaction_product_id: String::from("product-a"),
-  |         ^^^^^^^^^^^^^^^^^^^^^ private field

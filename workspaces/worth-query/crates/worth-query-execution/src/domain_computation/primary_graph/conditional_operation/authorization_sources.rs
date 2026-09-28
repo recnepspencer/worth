@@ -1,25 +1,34 @@
-use crate::domain_computation::authorization::WorthQueryAdmittedApplicationOperation;
+//! Authorization sources a conditional operation uses to admit its
+//! reconstruction query; operation sources live in the `operation` submodule.
+
 use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedApplicationQueryPlan, WorthQueryApplicationQueryAccessContext,
     WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryControls,
-    WorthQueryAuthenticatedPrincipal, WorthQueryOperationAuthorizationDenial,
-    WorthQueryPrimaryGraphApplicationRuntime,
+    WorthQueryOperationAuthorizationDenial, WorthQueryPrimaryGraphApplicationRuntime,
 };
 use worth_query_declaration::facade::{
     application_capability::ApplicationCapabilityRequest,
-    application_query::ApplicationQueryParameterSet,
-    application_schema::{ApplicationSchema, TypedMutationPreconditions},
+    application_query::ApplicationQueryParameterSet, application_schema::ApplicationSchema,
 };
 use worth_query_installation::facade::{
-    WorthQueryInstalledApplicationCapability, WorthQueryInstalledApplicationOperation,
-    WorthQueryInstalledApplicationQuery,
+    WorthQueryInstalledApplicationCapability, WorthQueryInstalledApplicationQuery,
+};
+mod operation;
+pub use operation::{
+    WorthQueryGovernedTemporalOperationAuthorization,
+    WorthQueryPublicTemporalOperationAuthorization, WorthQueryTemporalOperationAuthorization,
 };
 #[cfg(test)]
 #[path = "authorization_sources/tests.rs"]
 mod tests;
+/// Refusal to admit a conditional operation's reconstruction query.
+///
+/// Nothing was read.
 #[derive(Debug)]
 pub enum WorthQueryTemporalQueryAuthorizationDenial {
+    /// Query admission refused the read.
     Query(WorthQueryApplicationQueryAdmissionDenial),
+    /// Capability authorization refused the read.
     Authorization(WorthQueryOperationAuthorizationDenial),
 }
 impl std::fmt::Display for WorthQueryTemporalQueryAuthorizationDenial {
@@ -31,6 +40,12 @@ impl std::fmt::Display for WorthQueryTemporalQueryAuthorizationDenial {
     }
 }
 impl std::error::Error for WorthQueryTemporalQueryAuthorizationDenial {}
+/// How a conditional operation admits the query that reconstructs its pending
+/// temporal intents.
+///
+/// Use [`WorthQueryPublicTemporalQueryAuthorization`] for a public query or
+/// [`WorthQueryGovernedTemporalQueryAuthorization`] for one governed by a
+/// capability. The query is admitted afresh each time it runs.
 pub trait WorthQueryTemporalQueryAuthorization<
     Schema,
     Query,
@@ -76,6 +91,7 @@ pub trait WorthQueryTemporalQueryAuthorization<
     >;
 }
 
+/// Admits a public reconstruction query with ordinary query admission.
 #[derive(Default)]
 pub struct WorthQueryPublicTemporalQueryAuthorization;
 
@@ -130,6 +146,8 @@ where
     }
 }
 
+/// Admits a governed reconstruction query under a fresh capability
+/// authorization for the given capability and input.
 pub struct WorthQueryGovernedTemporalQueryAuthorization<
     Schema,
     Capability,
@@ -260,137 +278,5 @@ where
         runtime
             .admit_governed_application_query(query, access, capability, parameters, controls)
             .map_err(WorthQueryTemporalQueryAuthorizationDenial::Query)
-    }
-}
-
-pub trait WorthQueryTemporalOperationAuthorization<Schema, Operation, Input, Scope>:
-    Send + Sync + 'static
-where
-    Schema: ApplicationSchema,
-{
-    fn authorize<Principal, PrincipalIdentity>(
-        &self,
-        product: &crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<
-            '_,
-            Schema,
-        >,
-        principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
-        scope: &crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity<
-            Schema,
-            Scope,
-        >,
-        operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
-        input: &Input,
-        preconditions: TypedMutationPreconditions<Schema, Operation, Scope>,
-        request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
-    ) -> Result<
-        WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
-        WorthQueryOperationAuthorizationDenial,
-    >;
-}
-
-#[derive(Default)]
-pub struct WorthQueryPublicTemporalOperationAuthorization;
-
-impl<Schema, Operation, Input, Scope>
-    WorthQueryTemporalOperationAuthorization<Schema, Operation, Input, Scope>
-    for WorthQueryPublicTemporalOperationAuthorization
-where
-    Schema: ApplicationSchema,
-    Operation:
-        worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<
-                Schema,
-            > + 'static,
-    Operation::InputBinding:
-        worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding<
-            Value = Input,
-        >,
-{
-    fn authorize<Principal, PrincipalIdentity>(
-        &self,
-        product: &crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<
-            '_,
-            Schema,
-        >,
-        principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
-        scope: &crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity<
-            Schema,
-            Scope,
-        >,
-        operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
-        input: &Input,
-        preconditions: TypedMutationPreconditions<Schema, Operation, Scope>,
-        request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
-    ) -> Result<
-        WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
-        WorthQueryOperationAuthorizationDenial,
-    > {
-        super::input_validation::validate_operation_input::<Schema, Operation, Input>(
-            input, operation,
-        )?;
-        product.authorize_operation(principal, scope, operation, preconditions, request)
-    }
-}
-
-pub struct WorthQueryGovernedTemporalOperationAuthorization<Schema, Capability, Operation, Input> {
-    capability: WorthQueryInstalledApplicationCapability<Schema, Capability, Operation, Input>,
-}
-
-impl<Schema, Capability, Operation, Input>
-    WorthQueryGovernedTemporalOperationAuthorization<Schema, Capability, Operation, Input>
-{
-    pub fn new(
-        capability: WorthQueryInstalledApplicationCapability<Schema, Capability, Operation, Input>,
-    ) -> Self {
-        Self { capability }
-    }
-}
-
-impl<Schema, Capability, Operation, Input, Scope>
-    WorthQueryTemporalOperationAuthorization<Schema, Operation, Input, Scope>
-    for WorthQueryGovernedTemporalOperationAuthorization<Schema, Capability, Operation, Input>
-where
-    Schema: ApplicationSchema,
-    Input: ApplicationCapabilityRequest<Schema, Capability, Scope = Scope>
-        + Clone
-        + Send
-        + Sync
-        + 'static,
-    Capability: Send + Sync + 'static,
-    Operation:
-        worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<
-                Schema,
-            > + Send
-            + Sync
-            + 'static,
-    <Operation as worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<Schema>>::InputBinding:
-        worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding<
-            Value = Input,
-        >,
-{
-    fn authorize<Principal, PrincipalIdentity>(
-        &self,
-        product: &crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<
-            '_,
-            Schema,
-        >,
-        principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
-        _scope: &crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity<
-            Schema,
-            Scope,
-        >,
-        operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
-        input: &Input,
-        preconditions: TypedMutationPreconditions<Schema, Operation, Scope>,
-        request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
-    ) -> Result<
-        WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
-        WorthQueryOperationAuthorizationDenial,
-    > {
-        let capability =
-            product.admit_capability_access(principal, &self.capability, input.clone(), request)?;
-        product
-            .application()
-            .authorize_capability_operation(capability, operation, preconditions)
     }
 }

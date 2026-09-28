@@ -16,6 +16,7 @@ pub use adoption::{
     WorthQueryProgramAddedRule, WorthQueryProgramAdoptionRequirements,
     WorthQueryProgramAdoptionRequirementsDenial, WorthQueryProgramCustodyInventoryKind,
     WorthQueryProgramCustodyInventoryRequirement, WorthQueryProgramValidationScope,
+    WorthQueryWorkflowDependencyName,
 };
 pub use correspondence::{
     WorthQueryCorrespondedAction, WorthQueryInstalledRepeatedOptionalMember,
@@ -293,12 +294,12 @@ where
     if roster.entry(program.revision()).is_none() {
         return Err(WorthQueryProgramSupportDenial::UnrosteredProgram {
             program: program.identity().clone(),
-            revision: program.revision().clone(),
+            revision: *program.revision(),
         });
     }
     Ok(WorthQueryInstalledApplicationProgram {
         identity: program.identity().clone(),
-        revision: program.revision().clone(),
+        revision: *program.revision(),
         schema_binding,
         features: program.features().to_vec().into_boxed_slice(),
         actions: program.actions().to_vec().into_boxed_slice(),

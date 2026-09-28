@@ -38,6 +38,8 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowOperation<Schema, Operatio
     }
 }
 
+/// A guarded operation the instance waits on: the operation and input it expects, and the
+/// authority slot that lets exactly one matching effect run.
 #[derive(Clone, Debug)]
 pub struct RequiredWorkflowOperation {
     pub(super) branch: crate::basis::WorthQueryProductBranch,
@@ -75,6 +77,8 @@ pub struct WorkflowOperationAuthority {
     pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) observation:
         WorthQueryProductBranchReadIdentity,
     pub(super) facts: Arc<[WorthQueryApplicationObservedFact]>,
+    /// The instance's deadline; the operation commits only before it.
+    pub(in crate::domain_computation::primary_graph::application_attempt) deadline: Option<u64>,
     pub(in crate::domain_computation::primary_graph::application_attempt) settlement_basis:
         crate::domain_computation::primary_graph::workflow::instance::WorkflowOperationSettlementBasis,
     pub(in crate::domain_computation::primary_graph::application_attempt) workflow_layout:
@@ -220,12 +224,21 @@ impl WorkflowOperationAuthority {
             session_identity,
             observation,
             facts: facts.into(),
+            deadline: None,
             settlement_basis,
             workflow_layout,
             approval_authority,
             handle,
             layout,
         }
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn with_deadline(
+        mut self,
+        deadline: Option<u64>,
+    ) -> Self {
+        self.deadline = deadline;
+        self
     }
 
     #[doc(hidden)]
@@ -295,18 +308,31 @@ impl WorkflowOperationAuthority {
                     | WorthQueryOperationAuthorizationDenialKind::DelegationRejected => {
                         WorthQueryApplicationAttemptDenialKind::WorkflowApprovalDelegationChanged
                     }
+                    WorthQueryOperationAuthorizationDenialKind::TrustedTimeUnavailable => {
+                        WorthQueryApplicationAttemptDenialKind::WorkflowTrustedTimeUnavailable
+                    }
                     _ => WorthQueryApplicationAttemptDenialKind::WorkflowApprovalAuthorityDenied,
                 };
                 WorthQueryApplicationAttemptDenial::new(kind, denial.to_string())
             })?;
-        if !lease.handle().with_runtime(|runtime| {
-            self.facts
+        lease.handle().with_runtime(|runtime| {
+            if self
+                .facts
                 .iter()
                 .all(|fact| fact.remains_equal_in(runtime, lease.snapshot()))
-        }) {
-            return Err(mismatch());
-        }
-        Ok(())
+            {
+                return Ok(());
+            }
+            // An instance that ended since is named before any fact it left
+            // behind can mismatch.
+            crate::domain_computation::primary_graph::application_attempt::workflow_instance_observation::instance_binding::deny_ended(
+                runtime,
+                lease.snapshot(),
+                &self.workflow_layout,
+                self.settlement_basis.instance(),
+            )?;
+            Err(mismatch())
+        })
     }
 
     pub(in crate::domain_computation::primary_graph) fn facts(

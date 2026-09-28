@@ -4,7 +4,7 @@ use worth_query_host::facade::application_entry::{
     WorthQueryWorkflowAdvancePreparationDenial, WorthQueryWorkflowAssessmentAcceptanceDenial,
     WorthQueryWorkflowAssessmentDemandPreparationDenial,
     WorthQueryWorkflowDefinitionPublicationPreparationDenial,
-    WorthQueryWorkflowInstanceStartPreparationDenial, WorthQueryWorkflowOperationBindingDenial,
+    WorthQueryWorkflowInstancePreparationDenial, WorthQueryWorkflowOperationBindingDenial,
     WorthQueryWorkflowOperationOwnerAcceptanceDenial,
     WorthQueryWorkflowOperationRecoveryPreparationDenial,
     WorthQueryWorkflowProposalPreparationDenial,
@@ -19,7 +19,9 @@ pub enum BankApprovedPaymentWorkflowError {
     Definition(ApprovedBusinessPaymentDefinitionDenial),
     DefinitionBinding(WorthQueryApplicationWorkflowInstallationDenial),
     DefinitionPublication(WorthQueryWorkflowDefinitionPublicationPreparationDenial),
-    InstanceStart(WorthQueryWorkflowInstanceStartPreparationDenial),
+    InstanceStart(WorthQueryWorkflowInstancePreparationDenial),
+    InstanceCancellation(WorthQueryWorkflowInstancePreparationDenial),
+    InstanceMigration(WorthQueryWorkflowInstancePreparationDenial),
     Proposal(WorthQueryWorkflowProposalPreparationDenial),
     Advance(WorthQueryWorkflowAdvancePreparationDenial),
     AssessmentPreparation(WorthQueryWorkflowAssessmentDemandPreparationDenial),
@@ -43,16 +45,14 @@ impl BankApprovedPaymentWorkflowError {
 impl std::fmt::Display for BankApprovedPaymentWorkflowError {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Authentication(denial) => {
-                write!(formatter, "workflow authentication denied: {denial:?}")
-            }
-            Self::Definition(denial) => write!(formatter, "workflow definition denied: {denial:?}"),
-            Self::OperationBinding(denial) => {
-                write!(formatter, "workflow operation binding denied: {denial:?}")
-            }
+            Self::Authentication(denial) => denial.fmt(formatter),
+            Self::Definition(denial) => denial.fmt(formatter),
+            Self::OperationBinding(denial) => denial.fmt(formatter),
             Self::DefinitionBinding(denial) => denial.fmt(formatter),
             Self::DefinitionPublication(denial) => denial.fmt(formatter),
             Self::InstanceStart(denial) => denial.fmt(formatter),
+            Self::InstanceCancellation(denial) => denial.fmt(formatter),
+            Self::InstanceMigration(denial) => denial.fmt(formatter),
             Self::Proposal(denial) => denial.fmt(formatter),
             Self::Advance(denial) => denial.fmt(formatter),
             Self::AssessmentPreparation(denial) => denial.fmt(formatter),
@@ -68,11 +68,14 @@ impl std::fmt::Display for BankApprovedPaymentWorkflowError {
 impl std::error::Error for BankApprovedPaymentWorkflowError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
-            Self::Authentication(_) => None,
-            Self::Definition(_) | Self::OperationBinding(_) => None,
+            Self::Authentication(denial) => Some(denial),
+            Self::Definition(denial) => Some(denial),
+            Self::OperationBinding(denial) => Some(denial),
             Self::DefinitionBinding(denial) => Some(denial),
             Self::DefinitionPublication(denial) => Some(denial),
             Self::InstanceStart(denial) => Some(denial),
+            Self::InstanceCancellation(denial) => Some(denial),
+            Self::InstanceMigration(denial) => Some(denial),
             Self::Proposal(denial) => Some(denial),
             Self::Advance(denial) => Some(denial),
             Self::AssessmentPreparation(denial) => Some(denial),

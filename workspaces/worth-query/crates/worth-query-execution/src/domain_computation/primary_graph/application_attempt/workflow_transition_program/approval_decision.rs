@@ -1,5 +1,5 @@
 use crate::domain_computation::primary_graph::application_installation::{
-    workflow_approval_authentication_intent, WorthQueryWorkflowApplicationRuntime,
+    workflow_approval_authentication_intent, WorthQueryWorkflowVocabulary,
 };
 use worth_query_declaration::facade::{
     application_capability::ApplicationCapabilityMarkerIdentity,
@@ -39,14 +39,18 @@ where
     pub(in crate::domain_computation::primary_graph) fn materialize_workflow_approval<
         Capability,
         Spec,
-        Program,
     >(
         mut self,
-        workflow: &WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>,
+        workflow: WorthQueryWorkflowVocabulary<'_, Schema, Spec>,
+        installed: &worth_query_installation::facade::WorthQueryInstalledApplicationWorkflowSpec<
+            Schema,
+            Spec,
+        >,
         instance: super::super::PublishedWorkflowInstanceRef,
         required: &RequiredWorkflowApproval,
         proposal: &super::super::PublishedWorkflowProposalRef,
         decision: WorkflowApprovalDecision,
+        clock: &crate::domain_computation::runtime_time::WorthQueryRuntimeClock,
     ) -> Result<
         PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
         WorthQueryApplicationAttemptDenial,
@@ -55,8 +59,7 @@ where
         Capability: ApplicationCapabilityMarkerIdentity<Schema = Schema> + 'static,
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
-        let installed = workflow.workflow_spec();
-        validate_request_binding::<Schema, Capability, Operation, _, _, _, _>(
+        validate_request_binding::<Schema, Capability, Operation, _, _, _>(
             &self, installed, &instance, required, proposal,
         )?;
         let layout = self.lease.layout.workflow().clone();
@@ -65,12 +68,12 @@ where
             instance.definition_entity_id(),
             instance.definition_content_identity().clone(),
         );
-        let (compiled, mut facts) = crate::domain_computation::primary_graph::workflow::definition::reconstruct_compiled_definition(
+        let (mut compiled, mut facts) = crate::domain_computation::primary_graph::workflow::definition::reconstruct_compiled_definition(
                 self.lease.handle(),
                 self.lease.snapshot(),
                 &layout,
                 &published,
-                instance.program_revision(),
+                installed.program_revision(),
                 Spec::IDENTITY.as_str(),
                 installed.support_identity_bytes(),
                 usize::from(installed.resources().maximum_definition_nodes()),
@@ -93,9 +96,10 @@ where
                 &instance,
                 subject,
                 compiled.lineage(),
-                &compiled,
+                &mut compiled,
                 maximum_transitions,
                 installed.resources().history_reconstruction_budget(),
+                super::super::workflow_instance_observation::WorkflowInstanceObservationPurpose::Advance,
             )
         })?;
         let replays = publication::PreparedWorkflowTransitionReplays::retained(std::mem::take(
@@ -255,6 +259,26 @@ where
                 ),
             });
         };
+        // A decision recorded before the budget is spent or the deadline
+        // passes still replays after it.
+        let allowance = match observed.ensure_step_left().and_then(|allowance| {
+            self.bind_workflow_deadline(clock, &layout, instance.entity_id())
+                .map(|_| allowance)
+        }) {
+            Ok(allowance) => allowance,
+            Err(refused) => {
+                return Ok(PreparedWorkflowAdvance::ReplayOnly {
+                    read_set: self,
+                    transition_identity_locator: layout.transition.identity.clone(),
+                    assessment_identity_locator: layout.assessment_evidence.identity.clone(),
+                    instance: instance.entity_id(),
+                    approval: Some(approval_projection.clone()),
+                    approval_identity: Some(meaning.identity),
+                    replays,
+                    denial: refused,
+                })
+            }
+        };
         let selected = match select_current_transition(
             &compiled,
             instance.entity_id(),
@@ -328,10 +352,11 @@ where
             subject,
             live_membership,
             false,
+            allowance,
         );
         let mut prepared = materialize_decision(
             &layout,
-            compiled.program_revision().clone(),
+            *compiled.program_revision(),
             admitted,
             meaning,
             evidence_currentness,

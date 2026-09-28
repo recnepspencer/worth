@@ -12,10 +12,7 @@ use crate::external_observation::{
     StableProcessLivenessObservation,
 };
 
-use super::{
-    adjudicate_native_color, ExecutablePublishedIdentity, ExpectedNativeColor, NativeColorFailure,
-    NativeColorVerdict,
-};
+use super::{adjudicate_native_color, ExpectedNativeColor, NativeColorFailure, NativeColorVerdict};
 
 #[derive(Debug)]
 pub(crate) struct ExecutableFirstFrameEvidence<Verdict = NativeColorVerdict> {
@@ -164,16 +161,6 @@ pub(crate) fn adjudicate_source_signal_first_frame(
     Ok(color)
 }
 
-impl ExecutableFirstFrameEvidence<NativeColorVerdict> {
-    pub(crate) fn matching_blue_samples(&self) -> usize {
-        self.verdict.matching_samples()
-    }
-
-    pub(crate) fn sampled_pixels(&self) -> usize {
-        self.verdict.sampled_pixels()
-    }
-}
-
 impl ExecutableFirstFrameEvidence<super::VerticalThumbEvidence> {
     /// The Recent activity thumb the first frame painted at rest.
     pub(crate) fn resting_thumb(&self) -> super::VerticalThumbEvidence {
@@ -241,22 +228,6 @@ impl<Verdict> ExecutableFirstFrameEvidence<Verdict> {
 
     pub(crate) fn capture_count(&self) -> u32 {
         self.pixels.capture_count()
-    }
-
-    pub(crate) fn pixels(&self) -> &NativeClientPixelCapture {
-        &self.pixels
-    }
-
-    pub(crate) fn run_identity(&self) -> &str {
-        self.first_frame_envelope.run().value()
-    }
-
-    pub(crate) fn published_identity(&self) -> ExecutablePublishedIdentity {
-        ExecutablePublishedIdentity::from_first_frame(
-            self.first_frame,
-            self.run_identity(),
-            self.client_area,
-        )
     }
 }
 

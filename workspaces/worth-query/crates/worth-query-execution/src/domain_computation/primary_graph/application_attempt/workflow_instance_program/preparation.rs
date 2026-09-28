@@ -8,14 +8,24 @@ use worth_query_installation::facade::{
 };
 
 use super::{
-    PreparedWorkflowInstanceStart, PublishedWorkflowDefinitionRef, WorkflowInstanceStartOutcome,
+    PreparedWorkflowInstanceCancellation, PreparedWorkflowInstanceStart,
+    PublishedWorkflowDefinitionRef, PublishedWorkflowInstanceRef,
+    WorkflowInstanceCancellationOutcome, WorkflowInstanceStartOutcome,
 };
+use crate::domain_computation::primary_graph::application_attempt::{
+    WorthQueryCompleteApplicationReadSet, WorthQueryProjectedApplicationMutation,
+};
+use crate::domain_computation::primary_graph::workflow::instance::WorkflowSuccession;
 use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedApplicationOperation, WorthQueryApplicationAttemptDenial,
     WorthQueryApplicationIdempotencyBinding, WorthQueryOperationProjectionDenial,
     WorthQueryPrimaryGraphApplicationRuntime, WorthQuerySelectedProductOperation,
 };
 
+/// Why a workflow instance request could not bind to the branch's program: the installed
+/// spec belongs to another schema, the adopted program could not be inspected, the branch
+/// runs another program revision, or the branch advanced between selection and read-set
+/// assembly.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorkflowInstanceBindingDenial {
     ForeignSchema,
@@ -24,6 +34,8 @@ pub enum WorkflowInstanceBindingDenial {
     SelectedOccurrenceChanged,
 }
 
+/// Why a workflow instance start, migration, fork continuation or cancellation did not
+/// prepare.
 #[derive(Debug)]
 pub enum WorkflowInstancePreparationDenial {
     Binding(WorkflowInstanceBindingDenial),
@@ -53,10 +65,9 @@ where
         Input,
         Scope,
         Spec,
-        Program,
     >(
         &self,
-        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         published: PublishedWorkflowDefinitionRef,
         start_key_identity: [u8; 32],
         admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
@@ -66,6 +77,102 @@ where
     >
     where
         Capability: ApplicationCapabilityMarkerIdentity<Schema = Schema> + 'static,
+        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
+        Spec: ApplicationWorkflowSpec<Schema = Schema>,
+    {
+        self.begin_instance_read_set(installed, admission)?
+            .materialize_workflow_instance_start::<Capability, Spec>(
+                installed,
+                published,
+                start_key_identity,
+                &self.application().authorization_clock,
+            )
+            .map_err(WorkflowInstancePreparationDenial::Attempt)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub(in crate::domain_computation::primary_graph) fn prepare_workflow_instance_migration<
+        Capability,
+        Operation,
+        Input,
+        Scope,
+        Spec,
+    >(
+        &self,
+        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
+        succession: WorkflowSuccession,
+        source: PublishedWorkflowInstanceRef,
+        target: PublishedWorkflowDefinitionRef,
+        resume_at: &str,
+        start_key_identity: [u8; 32],
+        admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+    ) -> Result<
+        PreparedWorkflowInstanceStart<Schema, Operation, Input, Scope>,
+        WorkflowInstancePreparationDenial,
+    >
+    where
+        Capability: ApplicationCapabilityMarkerIdentity<Schema = Schema> + 'static,
+        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
+        Spec: ApplicationWorkflowSpec<Schema = Schema>,
+    {
+        self.begin_instance_read_set(installed, admission)?
+            .materialize_workflow_instance_migration::<Capability, Spec>(
+                installed,
+                succession,
+                source,
+                target,
+                resume_at,
+                start_key_identity,
+                &self.application().authorization_clock,
+            )
+            .map_err(WorkflowInstancePreparationDenial::Attempt)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn prepare_workflow_instance_cancellation<
+        Capability,
+        Operation,
+        Input,
+        Scope,
+        Spec,
+    >(
+        &self,
+        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
+        instance: PublishedWorkflowInstanceRef,
+        cancel_key_identity: [u8; 32],
+        admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+    ) -> Result<
+        PreparedWorkflowInstanceCancellation<Schema, Operation, Input, Scope>,
+        WorkflowInstancePreparationDenial,
+    >
+    where
+        Capability: ApplicationCapabilityMarkerIdentity<Schema = Schema> + 'static,
+        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
+        Spec: ApplicationWorkflowSpec<Schema = Schema>,
+    {
+        self.begin_instance_read_set(installed, admission)?
+            .materialize_workflow_instance_cancellation::<Capability, Spec>(
+                installed,
+                instance,
+                cancel_key_identity,
+            )
+            .map_err(WorkflowInstancePreparationDenial::Attempt)
+    }
+
+    fn begin_instance_read_set<Operation, Input, Scope, Spec>(
+        &self,
+        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
+        admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+    ) -> Result<
+        WorthQueryCompleteApplicationReadSet<
+            Schema,
+            Operation,
+            Input,
+            Scope,
+            WorthQueryProjectedApplicationMutation,
+        >,
+        WorkflowInstancePreparationDenial,
+    >
+    where
         Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
@@ -109,23 +216,21 @@ where
                 WorkflowInstanceBindingDenial::SelectedOccurrenceChanged,
             ));
         }
-        read_set
-            .materialize_workflow_instance_start::<Capability, Spec, Program>(
-                installed,
-                published,
-                start_key_identity,
-            )
-            .map_err(WorkflowInstancePreparationDenial::Attempt)
+        Ok(read_set)
     }
 }
 
+/// Prepares and commits every instance lifecycle request: start, migration,
+/// fork continuation and cancellation. Each is admitted through the
+/// application's instance binding, the same intent a start uses, so one
+/// capability governs an instance from its start to its end.
 #[doc(hidden)]
-pub struct WorthQueryWorkflowInstanceStartAdapter;
+pub struct WorthQueryWorkflowInstanceAdapter;
 
-impl WorthQueryWorkflowInstanceStartAdapter {
-    pub fn prepare<Schema, Capability, Operation, Input, Scope, Spec, Program>(
+impl WorthQueryWorkflowInstanceAdapter {
+    pub fn prepare<Schema, Capability, Operation, Input, Scope, Spec>(
         selected: &WorthQuerySelectedProductOperation<'_, Schema>,
-        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         published: PublishedWorkflowDefinitionRef,
         start_key_identity: [u8; 32],
         admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
@@ -139,13 +244,116 @@ impl WorthQueryWorkflowInstanceStartAdapter {
         Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
+        selected.prepare_workflow_instance_start::<Capability, Operation, Input, Scope, Spec>(
+            installed,
+            published,
+            start_key_identity,
+            admission,
+        )
+    }
+
+    /// Prepares a successor for `source` on the current `target` definition,
+    /// resumed at `resume_at`, committed and replayed exactly like a start.
+    #[allow(clippy::too_many_arguments)]
+    pub fn prepare_migration<Schema, Capability, Operation, Input, Scope, Spec>(
+        selected: &WorthQuerySelectedProductOperation<'_, Schema>,
+        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
+        source: PublishedWorkflowInstanceRef,
+        target: PublishedWorkflowDefinitionRef,
+        resume_at: &str,
+        start_key_identity: [u8; 32],
+        admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+    ) -> Result<
+        PreparedWorkflowInstanceStart<Schema, Operation, Input, Scope>,
+        WorkflowInstancePreparationDenial,
+    >
+    where
+        Schema: ApplicationSchema,
+        Capability: ApplicationCapabilityMarkerIdentity<Schema = Schema> + 'static,
+        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
+        Spec: ApplicationWorkflowSpec<Schema = Schema>,
+    {
+        selected.prepare_workflow_instance_migration::<Capability, Operation, Input, Scope, Spec>(
+            installed,
+            WorkflowSuccession::Migration,
+            source,
+            target,
+            resume_at,
+            start_key_identity,
+            admission,
+        )
+    }
+
+    /// Prepares a successor for the selected fork's copy of `source`, an
+    /// instance started on another branch, on the fork's current `target`
+    /// definition, resumed at `resume_at`.
+    #[allow(clippy::too_many_arguments)]
+    pub fn prepare_fork_continuation<Schema, Capability, Operation, Input, Scope, Spec>(
+        selected: &WorthQuerySelectedProductOperation<'_, Schema>,
+        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
+        source: PublishedWorkflowInstanceRef,
+        target: PublishedWorkflowDefinitionRef,
+        resume_at: &str,
+        start_key_identity: [u8; 32],
+        admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+    ) -> Result<
+        PreparedWorkflowInstanceStart<Schema, Operation, Input, Scope>,
+        WorkflowInstancePreparationDenial,
+    >
+    where
+        Schema: ApplicationSchema,
+        Capability: ApplicationCapabilityMarkerIdentity<Schema = Schema> + 'static,
+        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
+        Spec: ApplicationWorkflowSpec<Schema = Schema>,
+    {
+        selected.prepare_workflow_instance_migration::<Capability, Operation, Input, Scope, Spec>(
+            installed,
+            WorkflowSuccession::ForkContinuation,
+            source,
+            target,
+            resume_at,
+            start_key_identity,
+            admission,
+        )
+    }
+
+    /// Prepares the cancellation of `instance` on the selected branch.
+    pub fn prepare_cancellation<Schema, Capability, Operation, Input, Scope, Spec>(
+        selected: &WorthQuerySelectedProductOperation<'_, Schema>,
+        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
+        instance: PublishedWorkflowInstanceRef,
+        cancel_key_identity: [u8; 32],
+        admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+    ) -> Result<
+        PreparedWorkflowInstanceCancellation<Schema, Operation, Input, Scope>,
+        WorkflowInstancePreparationDenial,
+    >
+    where
+        Schema: ApplicationSchema,
+        Capability: ApplicationCapabilityMarkerIdentity<Schema = Schema> + 'static,
+        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
+        Spec: ApplicationWorkflowSpec<Schema = Schema>,
+    {
         selected
-            .prepare_workflow_instance_start::<Capability, Operation, Input, Scope, Spec, Program>(
+            .prepare_workflow_instance_cancellation::<Capability, Operation, Input, Scope, Spec>(
                 installed,
-                published,
-                start_key_identity,
+                instance,
+                cancel_key_identity,
                 admission,
             )
+    }
+
+    pub fn compare_and_commit_cancellation<Schema, Operation, Input, Scope>(
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        prepared: PreparedWorkflowInstanceCancellation<Schema, Operation, Input, Scope>,
+        idempotency: WorthQueryApplicationIdempotencyBinding,
+    ) -> WorkflowInstanceCancellationOutcome
+    where
+        Schema: ApplicationSchema,
+        Operation: 'static,
+        Input: Clone + Send + Sync + 'static,
+    {
+        runtime.compare_and_commit_workflow_instance_cancellation(prepared, idempotency)
     }
 
     pub fn compare_and_commit<Schema, Operation, Input, Scope>(

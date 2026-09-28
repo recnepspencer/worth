@@ -3,6 +3,7 @@
 mod commit_denial;
 mod commit_outcome;
 mod preparation_denial;
+mod product_recovery;
 mod publication_adapter;
 mod receipt;
 mod recovery_evidence;

@@ -133,7 +133,7 @@ impl ApplicationMutationBinding<BankSchema> for ApprovedPaymentAssessmentBinding
     fn input_identity(input: &ApprovedPaymentAssessmentInput) -> [u8; 32] {
         *CanonicalProposalPayload::new("approved-payment-assessment")
             .text("payment", &input.payment.canonical_text())
-            .text("status", &format!("{:?}", input.status))
+            .text("status", input.status.canonical_text())
             .derive_identity()
             .bytes()
     }

@@ -40,6 +40,8 @@ impl<Schema, Principal> std::fmt::Debug for WorthQueryApplicationPrincipalKey<Sc
     }
 }
 
+/// Refusal to build a principal key because the value is empty, padded,
+/// contains control characters, or is longer than 512 bytes.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationPrincipalKeyDenial;
 

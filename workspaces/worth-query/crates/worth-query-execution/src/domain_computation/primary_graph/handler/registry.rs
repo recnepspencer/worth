@@ -168,6 +168,12 @@ where
                 Binding::IDENTITY,
             ));
         }
+        if Binding::WORKFLOW_CONTROL {
+            return Err(denial(
+                DenialKind::WorkflowControlHandler,
+                Binding::IDENTITY,
+            ));
+        }
         if self.entries.contains_key(Binding::IDENTITY) {
             return Err(denial(
                 DenialKind::DuplicateMutationHandler,
@@ -201,21 +207,22 @@ where
                 "installed schema",
             ));
         }
-        let expected_count = installed_schema
-            .installed_mutation_binding_inventory()
-            .len();
-        if expected_count != self.entries.len() {
+        let handled = || {
+            installed_schema
+                .installed_mutation_binding_inventory()
+                .filter(|descriptor| !descriptor.workflow_control())
+        };
+        if handled().count() != self.entries.len() {
             return Err(denial(
                 DenialKind::MissingMutationHandler,
-                installed_schema
-                    .installed_mutation_binding_inventory()
+                handled()
                     .find(|descriptor| !self.entries.contains_key(descriptor.identity()))
                     .map_or("mutation handler inventory", |descriptor| {
                         descriptor.identity()
                     }),
             ));
         }
-        for descriptor in installed_schema.installed_mutation_binding_inventory() {
+        for descriptor in handled() {
             let entry = self
                 .entries
                 .get(descriptor.identity())
@@ -323,18 +330,25 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: ApplicationSchema,
 {
+    /// The installed handler for `Binding`, or `None` for a workflow control
+    /// binding, which no handler serves.
     pub(in crate::domain_computation::primary_graph) fn mutation_handler_for_attempt<Binding>(
         &self,
-    ) -> (
+    ) -> Option<(
         Arc<dyn OperationHandler<Schema, Binding>>,
         ApplicationCandidateRequirements,
-    )
+    )>
     where
         Binding: ApplicationMutationBinding<Schema>,
     {
-        self.mutation_handlers
-            .get::<Binding>()
-            .expect("runtime publication validated the exact mutation handler inventory")
+        if Binding::WORKFLOW_CONTROL {
+            return None;
+        }
+        Some(
+            self.mutation_handlers
+                .get::<Binding>()
+                .expect("runtime publication validated the exact mutation handler inventory"),
+        )
     }
 }
 

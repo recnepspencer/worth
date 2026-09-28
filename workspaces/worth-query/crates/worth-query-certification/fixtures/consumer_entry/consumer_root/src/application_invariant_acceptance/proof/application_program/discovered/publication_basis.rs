@@ -1,4 +1,5 @@
 use super::*;
+use crate::application_invariant_acceptance::proof::settle;
 use worth_query_topology_entry::PlanarOutputToLateFinalConnection;
 
 pub(in crate::application_invariant_acceptance::proof::application_program) fn joined_roots_discover_at_their_own_publication(
@@ -44,16 +45,16 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn j
     let mut first = first
         .start_required_outputs(&request, controls)
         .unwrap_or_else(|failure| panic!("the first roots start: {:?}", failure.denial()));
-    let first_settled = loop {
+    let first_settled = settle(|| {
         match first
             .required_output_mut()
             .advance(&request)
             .expect("first program advances")
         {
-            WorthQueryDiscoveredProgramOutputProgress::Pending => {}
-            WorthQueryDiscoveredProgramOutputProgress::Settled(settled) => break settled,
+            WorthQueryDiscoveredProgramOutputProgress::Pending => None,
+            WorthQueryDiscoveredProgramOutputProgress::Settled(settled) => Some(settled),
         }
-    };
+    });
     assert_eq!(first_settled.root_outputs().count(), 3);
     assert_eq!(
         first_settled
@@ -92,16 +93,16 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn j
     let mut second = second
         .start_required_outputs(&request, controls)
         .unwrap_or_else(|failure| panic!("unchanged roots join: {:?}", failure.denial()));
-    let second_settled = loop {
+    let second_settled = settle(|| {
         match second
             .required_output_mut()
             .advance(&request)
             .expect("later program advances")
         {
-            WorthQueryDiscoveredProgramOutputProgress::Pending => {}
-            WorthQueryDiscoveredProgramOutputProgress::Settled(settled) => break settled,
+            WorthQueryDiscoveredProgramOutputProgress::Pending => None,
+            WorthQueryDiscoveredProgramOutputProgress::Settled(settled) => Some(settled),
         }
-    };
+    });
     for ((first_demand, first_root), (second_demand, second_root)) in first_settled
         .root_outputs()
         .zip(second_settled.root_outputs())

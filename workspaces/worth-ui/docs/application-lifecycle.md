@@ -462,7 +462,7 @@ evidence projected and observed both forms of cleanup externally.
 
 The historical documentation-lane baseline and its then-remaining ownership
 are recorded in
-[Milestone 3.15 documentation closeout](../../../_docs/worth-ui/milestone-3.15-documentation-closeout.md).
+[Milestone 3.15 documentation closeout](../../../plans/worth-ui/milestone-3.15-documentation-closeout.md).
 
 ## Related Docs
 

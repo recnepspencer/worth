@@ -20,37 +20,83 @@ mod readiness;
 mod scheduling_progression;
 mod selection;
 
+/// Why an output demand was refused while it was selected, admitted, or
+/// advanced.
+///
+/// The denial's [`WorthQueryOutputDemandRecoveryPosture`] says whether asking
+/// again can succeed.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryOutputDemandDenialKind {
+    /// The observed source belongs to another runtime, schema binding, product
+    /// commit, or product occurrence, or is not a product-branch source of the
+    /// family's installed query.
     ForeignSource,
+    /// No installed producer covers this output family and applicability.
     MissingApplicableProducer,
+    /// More than one installed producer covers this output family and
+    /// applicability.
     AmbiguousApplicableProducer,
+    /// The selected producer, its applicability, or its output binding is no
+    /// longer installed.
     ProducerUnavailable,
+    /// The product branch could not be selected; the admission denial says why.
     ProductSelection(crate::basis::WorthQueryProductBranchAdmissionDenial),
+    /// Scheduling the producer was refused and will not succeed as asked.
     SchedulingRejected,
+    /// Scheduling the producer is blocked by a temporary limit. Retry later.
     SchedulingDeferred,
+    /// The product branch or active program moved before the output was
+    /// published.
     PublicationStale,
+    /// The producer's signal found nothing to recompute, so no output was
+    /// produced.
     NoEffect,
+    /// The source no longer matches the admitted demand; a newer source
+    /// replaces it.
     Superseded,
+    /// Publishing the output was cancelled.
     Cancelled,
+    /// Publishing the output reached its deadline.
     TimedOut,
+    /// The producer needs more work than the demand allows.
     WorkBudgetExceeded,
+    /// The producer's retained output is larger than the demand allows.
     RetentionBudgetExceeded,
+    /// The branch had no capacity to publish the output.
     PublicationCapacityExceeded,
+    /// The demand, or its dependent connection, belongs to another runtime,
+    /// schema binding, or program.
     ForeignDemand,
+    /// A dependent output's parent settlement belongs to another program,
+    /// feature, or branch position.
     ForeignSettlement,
+    /// A retained or restored output lacks the dependency facts needed to reuse
+    /// it.
     IncompleteDependencyCoverage,
+    /// The retained basis the demand relies on can no longer be selected.
     RetainedBasisUnavailable,
+    /// The demand was closed; it no longer has an interest to advance.
     Closed,
+    /// The performed source is absent or was already consumed by another
+    /// demand.
     DuplicatePerformedSource,
 }
 
+/// Whether a refused output demand can succeed if asked again.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryOutputDemandRecoveryPosture {
+    /// Asking again, later or with a larger budget, can succeed.
     Retryable,
+    /// Asking again with the same inputs will be refused again.
     Terminal,
 }
 
+/// A refusal to select, admit, or advance an output demand, with the subject it
+/// names (usually the output family or producer).
+///
+/// Match on [`kind`](Self::kind) and check
+/// [`recovery_posture`](Self::recovery_posture) before retrying; the subject is
+/// for diagnostics.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryOutputDemandDenial {
     kind: WorthQueryOutputDemandDenialKind,
@@ -149,6 +195,11 @@ impl std::fmt::Display for WorthQueryOutputDemandDenial {
 
 impl std::error::Error for WorthQueryOutputDemandDenial {}
 
+/// The one installed producer chosen for an output family and source, with the
+/// applicability it was chosen for.
+///
+/// Returned by `select_output_producer`. It records the choice only; admitting
+/// and advancing the demand re-check that the producer is still installed.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQuerySelectedApplicationProducer {
     pub(super) identity: String,
@@ -232,8 +283,11 @@ where
     }
 }
 
+/// Where an output demand stands after one `advance_output_demand` step.
 pub enum WorthQueryOutputDemandAdvance {
+    /// The demand progressed or is waiting; advance it again.
     Pending,
+    /// The demand's output is settled; the settlement is shared.
     Settled(
         std::sync::Arc<
             super::super::super::application_output_demand::WorthQueryOutputDemandSettlement,

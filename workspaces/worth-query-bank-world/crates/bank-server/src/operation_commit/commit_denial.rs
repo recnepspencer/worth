@@ -39,6 +39,7 @@ pub enum BankCommitDenialKind {
     ApplicationProgramRequired,
     WorkflowAuthorityRequired,
     ProgramNotActiveOnOccurrence,
+    ProgramSupportRetired,
     ProgramActivationUnresolved,
     IndexMaintenanceBudgetExceeded,
     IndexGenerationIdentityExhausted,
@@ -112,7 +113,10 @@ pub(crate) const fn denial_kind(
         Query::CapabilityRevocationRequired => BankCommitDenialKind::CapabilityRevocationRequired,
         Query::ApplicationProgramRequired => BankCommitDenialKind::ApplicationProgramRequired,
         Query::WorkflowAuthorityRequired => BankCommitDenialKind::WorkflowAuthorityRequired,
-        Query::ProgramNotActiveOnOccurrence => BankCommitDenialKind::ProgramNotActiveOnOccurrence,
+        Query::ProgramNotActiveOnOccurrence { .. } => {
+            BankCommitDenialKind::ProgramNotActiveOnOccurrence
+        }
+        Query::ProgramSupportRetired => BankCommitDenialKind::ProgramSupportRetired,
         Query::ProgramActivationUnresolved => BankCommitDenialKind::ProgramActivationUnresolved,
         Query::IndexMaintenanceBudgetExceeded => {
             BankCommitDenialKind::IndexMaintenanceBudgetExceeded

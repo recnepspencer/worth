@@ -5,7 +5,7 @@ use worth_query_host::facade::application_entry::{
 use worth_query_host::facade::declaration::application_program::ApplicationWorkflowComponentLimits;
 use worth_query_installation::facade::WorthQueryApplicationWorkflowResourceCeiling;
 
-use super::bounded_dimension_model::{
+use super::document_retention_model::{
     host::publish_on_first_program,
     workflow::{
         bounded_retry_definition_with_attempts, propose_authoring_instance, publish_definition,

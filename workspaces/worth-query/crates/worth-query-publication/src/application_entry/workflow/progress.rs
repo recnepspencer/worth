@@ -7,13 +7,10 @@ use worth_query_declaration::facade::{
     },
     application_program::ApplicationWorkflowSpec,
 };
-use worth_query_execution::facade::{
-    application_installation::WorthQueryWorkflowApplicationRuntime,
-    workflow_advance::{
-        PreparedWorkflowAdvance, PublishedWorkflowInstanceRef, RequiredWorkflowAssessment,
-        WorkflowProgressOutcome, WorkflowTransitionPreparationDenial,
-        WorthQueryWorkflowAdvanceAdapter,
-    },
+use worth_query_execution::facade::application_installation::WorthQueryWorkflowVocabulary;
+use worth_query_execution::publication_boundary::workflow_advance::{
+    PreparedWorkflowAdvance, PublishedWorkflowInstanceRef, RequiredWorkflowAssessment,
+    WorkflowProgressOutcome, WorkflowTransitionPreparationDenial, WorthQueryWorkflowAdvanceAdapter,
 };
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -45,7 +42,6 @@ pub(super) type WorkflowAdvancePreparationResult<
     'scope,
     Schema,
     Spec,
-    Program,
     Intent,
 > = Result<
     WorthQueryWorkflowAdvanceRequest<
@@ -54,7 +50,6 @@ pub(super) type WorkflowAdvancePreparationResult<
         'scope,
         Schema,
         Spec,
-        Program,
         MutationOperation<Schema, Intent>,
         MutationInput<Schema, Intent>,
         MutationScope<Schema, IntentBinding<Schema, Intent>>,
@@ -69,6 +64,7 @@ pub(super) enum WorkflowRequestedAction {
     CollectAssessment { node_path: String },
 }
 
+/// The kind of a `WorthQueryWorkflowAdvancePreparationDenial`.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryWorkflowAdvancePreparationDenialKind {
     RuntimeMismatch,
@@ -78,6 +74,8 @@ pub enum WorthQueryWorkflowAdvancePreparationDenialKind {
     AwaitingActor,
 }
 
+/// Why a workflow advance did not prepare. `RuntimeMismatch` means the workflow belongs to
+/// another runtime.
 #[derive(Debug)]
 pub enum WorthQueryWorkflowAdvancePreparationDenial {
     RuntimeMismatch,
@@ -87,9 +85,12 @@ pub enum WorthQueryWorkflowAdvancePreparationDenial {
         worth_query_admission::facade::authentication_event::WorthQueryAuthenticationEventDenial,
     ),
     /// Observation-time readiness; no transition attempt was prepared.
-    AwaitingActor(worth_query_execution::facade::workflow_advance::RequiredWorkflowActor),
+    AwaitingActor(
+        worth_query_execution::publication_boundary::workflow_advance::RequiredWorkflowActor,
+    ),
 }
 
+/// Why `accept_assessment` refused a settled assessment.
 #[derive(Debug)]
 pub enum WorthQueryWorkflowAssessmentAcceptanceDenial {
     NotAwaitingAssessment,
@@ -100,6 +101,7 @@ pub enum WorthQueryWorkflowAssessmentAcceptanceDenial {
     Attempt(worth_query_execution::facade::primary_graph::WorthQueryApplicationAttemptDenial),
 }
 
+/// Why `accept_condition` refused a published condition result.
 #[derive(Debug)]
 pub enum WorthQueryWorkflowConditionAcceptanceDenial {
     NotAwaitingCondition,
@@ -198,30 +200,28 @@ where
             Scope = MutationScope<Schema, IntentBinding<Schema, Intent>>,
         >,
 {
-    pub fn prepare_workflow_advance<Spec, Program>(
+    pub fn prepare_workflow_advance<Spec>(
         self,
-        workflow: &'application WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>,
+        workflow: impl Into<WorthQueryWorkflowVocabulary<'application, Schema, Spec>>,
         instance: PublishedWorkflowInstanceRef,
-    ) -> WorkflowAdvancePreparationResult<'application, 'principal, 'scope, Schema, Spec, Program, Intent>
+    ) -> WorkflowAdvancePreparationResult<'application, 'principal, 'scope, Schema, Spec, Intent>
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
-        Program: worth_query_declaration::facade::application_program::ApplicationProgramDefinition<Schema>,
     {
-        self.prepare_workflow_request(workflow, instance, WorkflowRequestedAction::Advance)
+        self.prepare_workflow_request(workflow.into(), instance, WorkflowRequestedAction::Advance)
     }
 
-    pub(super) fn prepare_workflow_request<Spec, Program>(
+    pub(super) fn prepare_workflow_request<Spec>(
         mut self,
-        workflow: &'application WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>,
+        workflow: WorthQueryWorkflowVocabulary<'application, Schema, Spec>,
         instance: PublishedWorkflowInstanceRef,
         action: WorkflowRequestedAction,
-    ) -> WorkflowAdvancePreparationResult<'application, 'principal, 'scope, Schema, Spec, Program, Intent>
+    ) -> WorkflowAdvancePreparationResult<'application, 'principal, 'scope, Schema, Spec, Intent>
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
-        Program: worth_query_declaration::facade::application_program::ApplicationProgramDefinition<Schema>,
     {
         let application = self.application_runtime();
-        if !std::ptr::eq(application, workflow.program_runtime().runtime()) {
+        if !std::ptr::eq(application, workflow.runtime()) {
             return Err(WorthQueryWorkflowAdvancePreparationDenial::RuntimeMismatch);
         }
         let selected = application
@@ -240,9 +240,9 @@ where
                             let actor = WorthQueryWorkflowAdvanceAdapter::redacted_awaiting_actor::<
                                     <IntentBinding<Schema, Intent> as ApplicationCapabilityMutationBinding<Schema>>::Capability,
                                     MutationOperation<Schema, Intent>,
-                                    _, _, _,
+                                    _, _,
                                 >(
-                                    workflow.workflow_spec(), &instance, actor_denial,
+                                    workflow.workflow_spec_for(&selected), &instance, actor_denial,
                                 );
                             if let Some(actor) = actor {
                                 return Err(WorthQueryWorkflowAdvancePreparationDenial::AwaitingActor(actor));
@@ -261,8 +261,7 @@ where
                 MutationInput<Schema, Intent>,
                 MutationScope<Schema, IntentBinding<Schema, Intent>>,
                 Spec,
-                Program,
-            >(&selected, workflow.workflow_spec(), instance, mutation.admission),
+            >(&selected, workflow.workflow_spec_for(&selected), instance, mutation.admission),
             WorkflowRequestedAction::NavigateBack => WorthQueryWorkflowAdvanceAdapter::prepare_navigate_back::<
             Schema,
             <IntentBinding<Schema, Intent> as ApplicationCapabilityMutationBinding<Schema>>::Capability,
@@ -270,8 +269,7 @@ where
             MutationInput<Schema, Intent>,
             MutationScope<Schema, IntentBinding<Schema, Intent>>,
             Spec,
-            Program,
-        >(&selected, workflow.workflow_spec(), instance, mutation.admission),
+        >(&selected, workflow.workflow_spec_for(&selected), instance, mutation.admission),
             WorkflowRequestedAction::CollectAssessment { node_path } => WorthQueryWorkflowAdvanceAdapter::prepare_collect_assessment::<
                 Schema,
                 <IntentBinding<Schema, Intent> as ApplicationCapabilityMutationBinding<Schema>>::Capability,
@@ -279,8 +277,7 @@ where
                 MutationInput<Schema, Intent>,
                 MutationScope<Schema, IntentBinding<Schema, Intent>>,
                 Spec,
-                Program,
-            >(&selected, workflow.workflow_spec(), instance, node_path, mutation.admission),
+            >(&selected, workflow.workflow_spec_for(&selected), instance, node_path, mutation.admission),
         }
         .map_err(WorthQueryWorkflowAdvancePreparationDenial::TransitionPreparation)?;
         Ok(WorthQueryWorkflowAdvanceRequest {
@@ -295,13 +292,14 @@ where
     }
 }
 
+/// A prepared workflow advance. `execute` attempts the transition and reports what the
+/// instance needs next.
 pub struct WorthQueryWorkflowAdvanceRequest<
     'application,
     'principal,
     'scope,
     Schema,
     Spec,
-    Program,
     Operation,
     Input,
     Scope,
@@ -309,26 +307,24 @@ pub struct WorthQueryWorkflowAdvanceRequest<
 where
     Schema: ApplicationSchema,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
-    Program: worth_query_declaration::facade::application_program::ApplicationProgramDefinition<Schema>,
 {
     pub(super) application: &'application worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     pub(super) principal: &'principal worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal<Schema>,
     pub(super) scope: &'scope worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     pub(super) branch: worth_query_execution::facade::product::WorthQueryProductBranch,
-    pub(super) workflow: &'application WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>,
+    pub(super) workflow: WorthQueryWorkflowVocabulary<'application, Schema, Spec>,
     pub(super) prepared: PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
     pub(super) idempotency:
         worth_query_execution::facade::primary_graph::WorthQueryApplicationIdempotencyBinding,
 }
 
-impl<'application, 'principal, 'scope, Schema, Spec, Program, Operation, Input, Scope>
+impl<'application, 'principal, 'scope, Schema, Spec, Operation, Input, Scope>
     WorthQueryWorkflowAdvanceRequest<
         'application,
         'principal,
         'scope,
         Schema,
         Spec,
-        Program,
         Operation,
         Input,
         Scope,
@@ -336,8 +332,6 @@ impl<'application, 'principal, 'scope, Schema, Spec, Program, Operation, Input, 
 where
     Schema: ApplicationSchema,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
-    Program:
-        worth_query_declaration::facade::application_program::ApplicationProgramDefinition<Schema>,
     Operation: 'static,
     Input: Clone + Send + Sync + 'static,
 {

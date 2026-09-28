@@ -496,4 +496,4 @@ so destruction from inside an admitted callback cannot wait on itself.
 
 - [`BRANCH_BASES.md`](./BRANCH_BASES.md)
 - [`../worth-relational/OWNER_COMPONENT_PORT.md`](../worth-relational/OWNER_COMPONENT_PORT.md)
-- [`../../_docs/WORTH-query/milestone-9.17.1.2.md`](../../_docs/WORTH-query/milestone-9.17.1.2.md)
+- [`../../plans/WORTH-query/milestone-9.17.1.2.md`](../../plans/WORTH-query/milestone-9.17.1.2.md)

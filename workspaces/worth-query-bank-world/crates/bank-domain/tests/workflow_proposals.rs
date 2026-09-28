@@ -7,9 +7,10 @@ use bank_domain::proposals::{
     BankSnapshot, BankSnapshotBuilder,
 };
 use bank_domain::schema::{
-    ApplyOpeningFunding, ApprovePayment, CreateBusinessAccount, CreatePersonalAccount,
-    GrantAccountAuthorization, InitiateBusinessPayment, PaymentStatus, RejectPayment,
-    RevokeAccountAuthorization,
+    initiate_business_payment_application_idempotency, ApplyOpeningFunding, ApprovePayment,
+    CreateBusinessAccount, CreatePersonalAccount, GrantAccountAuthorization,
+    InitiateBusinessPayment, PaymentStatus, RejectPayment, RevokeAccountAuthorization,
+    MAX_PAYMENT_APPROVAL_GRANTEES,
 };
 
 fn id<T>(constructor: impl FnOnce(u64) -> Option<T>, value: u64) -> T {
@@ -31,11 +32,12 @@ fn binding(value: u8) -> BankOperationScopeBinding {
 }
 
 fn fixture() -> BankSnapshot {
-    BankSnapshotBuilder::new(id(BankSnapshotVersion::new, 1))
-        .institution(id(InstitutionId::new, 1))
-        .principal(id(BankPrincipalId::new, 1))
-        .principal(id(BankPrincipalId::new, 2))
-        .principal(id(BankPrincipalId::new, 3))
+    (1..=12)
+        .fold(
+            BankSnapshotBuilder::new(id(BankSnapshotVersion::new, 1))
+                .institution(id(InstitutionId::new, 1)),
+            |builder, principal| builder.principal(id(BankPrincipalId::new, principal)),
+        )
         .business(id(BusinessId::new, 1))
         .institution_cash_account(id(AccountId::new, 100), id(InstitutionId::new, 1))
         .build()
@@ -241,5 +243,78 @@ fn idempotency_intent_is_stable_and_detects_binding_or_payload_drift() {
         first.idempotency_key_identity(),
         binding_drift.idempotency_key_identity(),
         "principal, operation, and scope binding must partition key identity"
+    );
+}
+
+fn with_authorizations(
+    world: BankSnapshot,
+    grants: impl IntoIterator<Item = (u64, CustomerRole)>,
+) -> BankSnapshot {
+    let account = world.business_account(id(BusinessId::new, 1)).unwrap();
+    grants.into_iter().fold(world, |world, (principal, role)| {
+        BankProposalEngine::prepare_grant_account_authorization(
+            &world,
+            binding(u8::try_from(principal).unwrap()),
+            &key(&format!("grant-{principal}")),
+            &GrantAccountAuthorization {
+                account,
+                principal: id(BankPrincipalId::new, principal),
+                role,
+            },
+        )
+        .unwrap()
+        .proposed_snapshot()
+        .clone()
+    })
+}
+
+fn decide_initiation(
+    world: &BankSnapshot,
+) -> Result<bank_domain::schema::InitiateBusinessPaymentDecision, BankProposalDenial> {
+    let input = InitiateBusinessPayment {
+        business: id(BusinessId::new, 1),
+        from: world.business_account(id(BusinessId::new, 1)).unwrap(),
+        recipient: id(BankPrincipalId::new, 2),
+        amount: Money::from_minor(5_000).unwrap(),
+    };
+    BankProposalEngine::decide_initiate_business_payment_from_application(
+        world,
+        initiate_business_payment_application_idempotency(binding(40), &key("initiate"), &input),
+        id(BankPrincipalId::new, 1),
+        &input,
+    )
+}
+
+#[test]
+fn initiation_grants_its_approval_workflow_to_each_source_approver_only() {
+    let approvers = 3..3 + MAX_PAYMENT_APPROVAL_GRANTEES as u64;
+    let world = with_authorizations(
+        prepared_business_world(),
+        approvers
+            .clone()
+            .map(|principal| (principal, CustomerRole::Approver))
+            .chain([(12, CustomerRole::Viewer)]),
+    );
+    let (payment, grantees) = decide_initiation(&world).unwrap().into_parts();
+    assert_eq!(payment.status(), PaymentStatus::ApprovalRequired);
+    assert_eq!(
+        grantees,
+        approvers
+            .map(|principal| id(BankPrincipalId::new, principal))
+            .collect::<Vec<_>>(),
+        "every source-account approver, and no viewer, holds the new workflow grant"
+    );
+}
+
+#[test]
+fn initiation_refuses_more_approvers_than_its_candidate_ceiling_grants() {
+    let world = with_authorizations(
+        prepared_business_world(),
+        (3..=3 + MAX_PAYMENT_APPROVAL_GRANTEES as u64)
+            .map(|principal| (principal, CustomerRole::Approver)),
+    );
+    assert_eq!(
+        decide_initiation(&world),
+        Err(BankProposalDenial::TooManyPaymentApprovers)
     );
 }

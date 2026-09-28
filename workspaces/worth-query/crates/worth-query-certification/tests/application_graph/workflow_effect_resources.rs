@@ -14,13 +14,13 @@ use worth_query_host::facade::{
     primary_graph::WorthQueryApplicationAttemptDenialKind,
 };
 
-use super::bounded_dimension_model::{
-    dimension_entry::ReviewedSetPartDimensionBinding,
-    host::{publish_workflow_on_first_program, BoundedDimensionWorkflowRuntime},
-    schema::PartDimensionQuery,
+use super::document_retention_model::{
+    host::{publish_workflow_on_first_program, DocumentWorkflowRuntime},
+    retention_entry::ReviewedSetRetentionBinding,
+    schema::DocumentRetentionQuery,
     workflow::{
         accept_assessment, advance_instance, approve_instance, definition_limits, propose_instance,
-        publish_definition, settle_assessment, start_instance, ReviewedGeometryWorkflow,
+        publish_definition, settle_assessment, start_instance, ReviewedDocumentWorkflow,
         WorkflowApprovalCapability, WorkflowDefinitionAuthoringOperation,
     },
 };
@@ -60,7 +60,7 @@ fn approval_ready(
     review_count: usize,
     key: u64,
 ) -> (
-    BoundedDimensionWorkflowRuntime,
+    DocumentWorkflowRuntime,
     worth_query_host::facade::application_entry::PublishedWorkflowInstanceRef,
     worth_query_host::facade::application_entry::PublishedWorkflowProposalRef,
     worth_query_host::facade::application_entry::RequiredWorkflowApproval,
@@ -124,8 +124,8 @@ fn approval_ready(
 
 fn reviewed_definition(
     review_count: usize,
-) -> ValidatedWorkflowDefinition<ReviewedGeometryWorkflow> {
-    let mut builder = ApplicationWorkflowDefinitionBuilder::<ReviewedGeometryWorkflow>::new(
+) -> ValidatedWorkflowDefinition<ReviewedDocumentWorkflow> {
+    let mut builder = ApplicationWorkflowDefinitionBuilder::<ReviewedDocumentWorkflow>::new(
         format!("effect-budget-{review_count}"),
         definition_limits(),
     )
@@ -136,7 +136,7 @@ fn reviewed_definition(
     let reviews = (0..review_count)
         .map(|index| {
             builder
-                .assessment::<PartDimensionQuery>(format!("review/{index}"))
+                .assessment::<DocumentRetentionQuery>(format!("review/{index}"))
                 .unwrap()
         })
         .collect::<Vec<_>>();
@@ -150,7 +150,7 @@ fn reviewed_definition(
         .approval::<WorkflowApprovalCapability>("approval")
         .unwrap();
     let apply = builder
-        .operation_binding::<ReviewedSetPartDimensionBinding>("apply")
+        .operation_binding::<ReviewedSetRetentionBinding>("apply")
         .unwrap();
     let completed = builder.terminal("completed").unwrap();
     let rejected = builder.terminal("rejected").unwrap();

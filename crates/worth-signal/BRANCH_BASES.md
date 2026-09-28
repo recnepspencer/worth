@@ -520,13 +520,15 @@ Do not infer liveness from graph diagnostic output; ask the runtime owner.
 ## Owner Component Port
 
 The public methods described earlier in this guide are current
-`SignalRuntime` compatibility methods. Phase 3 also exports the
-`ManagedSignalBranchReference` vocabulary, but the concrete basis, mutation,
-and lifecycle port methods are not public yet. Their frozen later contract is
-[`OWNER_SERVICES.md`](./OWNER_SERVICES.md); that contract is not an availability
-claim.
+`SignalRuntime` compatibility methods. The owner component ports are also
+public: `SignalRuntime::owner_component_services` issues
+`SignalOwnerServicePorts`, which hands out the concrete
+`SignalBranchBasisPort`, `SignalBranchMutationPort`, and
+`SignalBranchLifecyclePort`. They and the `ManagedSignalBranchReference`
+vocabulary are exported from `worth_signal::facade::branch`, and their contract
+is [`OWNER_SERVICES.md`](./OWNER_SERVICES.md).
 
-When those services stabilize, an integrating owner may consume only the
+Through those ports, an integrating owner consumes only the
 owner-issued managed reference, public admitted basis, descriptor,
 fork outcome, readmission/compatibility denials, retention lease outcomes,
 linear retirement plan, and the admitted basis returned by capture, restore,
@@ -542,9 +544,9 @@ raw branch ID. The managed reference identifies one owner and one branch-cell
 incarnation across branch-state movement; it does not carry exact-state or
 retention authority.
 
-The later ports do not expose Signal graph internals, legacy head tuples,
-private snapshot storage, or authority minting. They become the component
-boundary for composite-owner work only after facade stabilization; they do not
+The ports do not expose Signal graph internals, legacy head tuples,
+private snapshot storage, or authority minting. They are the component
+boundary for composite-owner work such as Runtime World; they do not
 provide cross-owner atomicity.
 
 Milestone 9.17.2 may carry a `SignalBranchBasisDescriptor` as descriptive

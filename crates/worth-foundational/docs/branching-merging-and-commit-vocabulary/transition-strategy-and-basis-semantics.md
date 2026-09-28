@@ -176,8 +176,8 @@ match, they were not the same transition in the Milestone 5 sense.
 
 - This layer defines shared vocabulary, not a strategy registry or hook
   executor.
-- It does not implement correspondence engines, remap engines, or geometry
-  kernels.
+- It does not implement correspondence engines, remap engines, or domain-specific
+  solvers.
 
 ## Related Docs
 

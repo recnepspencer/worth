@@ -1,8 +1,7 @@
 use worth_query_declaration::facade::application_operation::{
-    ApplicationCapabilityMutationBinding, ApplicationMutationBinding, ApplicationMutationIntent,
-    ApplicationMutationScopeBinding, ApplicationMutationScopeResolution,
+    ApplicationMutationBinding, ApplicationMutationIntent, ApplicationMutationScopeBinding,
+    ApplicationMutationScopeResolution,
 };
-use worth_query_execution::facade::application_installation::WorthQueryProgramOwner;
 use worth_query_execution::facade::primary_graph::{
     HandlerResult, MutationHandlerExecutionDenial, WorthQueryAdmittedApplicationOperation,
     WorthQueryApplicationCommitOutcome, WorthQueryApplicationEffectProgram,
@@ -16,6 +15,7 @@ use super::{
 };
 use crate::application_entry::WorthQueryApplicationRequestMutationDenial;
 
+/// Why a program migration request was refused before its handler ran.
 #[derive(Debug)]
 pub enum WorthQueryApplicationProgramMigrationPreparationDenial {
     Request(WorthQueryApplicationRequestMutationDenial),
@@ -24,6 +24,8 @@ pub enum WorthQueryApplicationProgramMigrationPreparationDenial {
     ),
 }
 
+/// What `prepare_program_migration` produced. The handler runs as a candidate for atomic
+/// branch adoption; it commits nothing and registers no idempotency record.
 pub enum WorthQueryApplicationProgramMigrationPreparationOutcome<DomainDenial> {
     Prepared(worth_query_execution::facade::primary_graph::WorthQueryPreparedProgramMigration),
     DomainDenied(DomainDenial),
@@ -149,73 +151,6 @@ where
         )
     }
 
-    /// Executes one action through the exact installed program that owns it.
-    pub fn execute_in_program<Owner>(
-        self,
-        application: &'application Owner,
-    ) -> Result<
-        WorthQueryApplicationMutationOutcome<
-            <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
-            <Intent::Binding as ApplicationMutationBinding<Schema>>::Result,
-        >,
-        WorthQueryApplicationRequestMutationDenial,
-    >
-    where
-        Owner: WorthQueryProgramOwner<Schema>,
-    {
-        if !std::ptr::eq(application.runtime(), self.request.application) {
-            return Err(WorthQueryApplicationRequestMutationDenial::ApplicationProgramMismatch);
-        }
-        if !application.contains_action::<Intent::Binding>() {
-            return Err(WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired);
-        }
-        self.execute_with_preparation_and_commit(
-            super::authorization::prepare,
-            |_, program, idempotency| {
-                application
-                    .compare_and_commit_program_action::<Intent::Binding>(program, idempotency)
-            },
-        )
-    }
-
-    /// Executes one capability-owned action through its exact installed program.
-    pub fn execute_capability_in_program<Owner>(
-        self,
-        application: &'application Owner,
-    ) -> Result<
-        WorthQueryApplicationMutationOutcome<
-            <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
-            <Intent::Binding as ApplicationMutationBinding<Schema>>::Result,
-        >,
-        WorthQueryApplicationRequestMutationDenial,
-    >
-    where
-        Owner: WorthQueryProgramOwner<Schema>,
-        Intent::Binding: ApplicationCapabilityMutationBinding<Schema>,
-        <Intent::Binding as ApplicationMutationBinding<Schema>>::Input:
-            worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest<
-                Schema,
-                <Intent::Binding as ApplicationCapabilityMutationBinding<Schema>>::Capability,
-                Scope = <<Intent::Binding as ApplicationMutationBinding<
-                    Schema,
-                >>::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope,
-            >,
-    {
-        if !std::ptr::eq(application.runtime(), self.request.application) {
-            return Err(WorthQueryApplicationRequestMutationDenial::ApplicationProgramMismatch);
-        }
-        if !application.contains_action::<Intent::Binding>() {
-            return Err(WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired);
-        }
-        self.execute_with_preparation_and_commit(
-            super::authorization::prepare_capability,
-            |_, program, idempotency| {
-                application
-                    .compare_and_commit_program_action::<Intent::Binding>(program, idempotency)
-            },
-        )
-    }
-
     pub(super) fn execute_with_preparation_and_commit(
         mut self,
         prepare: impl FnOnce(
@@ -301,53 +236,26 @@ where
                 )?;
         }
         Ok(
-            match commit(self.request.application, program, idempotency) {
-                WorthQueryApplicationCommitOutcome::Committed(receipt) => {
+            match commit(self.request.application, program, idempotency).landed() {
+                Ok((receipt, false)) => {
                     WorthQueryApplicationMutationOutcome::Committed { receipt, result }
                 }
-                WorthQueryApplicationCommitOutcome::AlreadyCommitted(receipt) => {
+                Ok((receipt, true)) => {
                     WorthQueryApplicationMutationOutcome::AlreadyCommitted(receipt)
                 }
-                outcome => WorthQueryApplicationMutationOutcome::Commit(outcome),
+                Err(uncommitted) => WorthQueryApplicationMutationOutcome::Commit(uncommitted),
             },
         )
-    }
-
-    pub(super) fn execute_with_commit(
-        self,
-        retain_output_demand_observation: bool,
-        commit: impl FnOnce(
-            &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-            WorthQueryApplicationEffectProgram<
-                Schema,
-                <Intent::Binding as ApplicationMutationBinding<Schema>>::Operation,
-                <Intent::Binding as ApplicationMutationBinding<Schema>>::Input,
-                <<Intent::Binding as ApplicationMutationBinding<Schema>>::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope,
-            >,
-            WorthQueryApplicationIdempotencyBinding,
-        ) -> WorthQueryApplicationCommitOutcome,
-    ) -> Result<
-        WorthQueryApplicationMutationOutcome<
-            <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
-            <Intent::Binding as ApplicationMutationBinding<Schema>>::Result,
-        >,
-        WorthQueryApplicationRequestMutationDenial,
-    > {
-        self.require_workflow_transition()?;
-        if !retain_output_demand_observation
-            && self
-                .request
-                .application
-                .requires_application_program::<Intent::Binding>()
-        {
-            return Err(WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired);
-        }
-        self.execute_with_preparation_and_commit(super::authorization::prepare, commit)
     }
 
     fn require_workflow_transition(
         &self,
     ) -> Result<(), WorthQueryApplicationRequestMutationDenial> {
+        if <Intent::Binding as ApplicationMutationBinding<Schema>>::WORKFLOW_CONTROL {
+            return Err(WorthQueryApplicationRequestMutationDenial::Handler(
+                MutationHandlerExecutionDenial::WorkflowControl,
+            ));
+        }
         if <Intent::Binding as ApplicationMutationBinding<Schema>>::REQUIRES_WORKFLOW_AUTHORITY
             && (self.workflow_transition_identity.is_none() || self.workflow_authority.is_none())
         {

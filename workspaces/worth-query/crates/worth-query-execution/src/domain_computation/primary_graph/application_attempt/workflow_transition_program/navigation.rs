@@ -25,6 +25,23 @@ where
         replays: crate::domain_computation::primary_graph::workflow::instance::WorkflowTransitionReplayRetention,
         denial: WorthQueryApplicationAttemptDenial,
     ) -> PreparedWorkflowAdvance<Schema, Operation, Input, Scope> {
+        self.replay_only_denial(
+            layout,
+            instance,
+            publication::PreparedWorkflowTransitionReplays::retained(replays).for_navigation_back(),
+            denial,
+        )
+    }
+
+    /// Refuses a new step while a retry of one already recorded still
+    /// replays its outcome.
+    pub(super) fn replay_only_denial(
+        self,
+        layout: &crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
+        instance: worth_relational::facade::identity::EntityId,
+        replays: publication::PreparedWorkflowTransitionReplays,
+        denial: WorthQueryApplicationAttemptDenial,
+    ) -> PreparedWorkflowAdvance<Schema, Operation, Input, Scope> {
         PreparedWorkflowAdvance::ReplayOnly {
             read_set: self,
             transition_identity_locator: layout.transition.identity.clone(),
@@ -32,8 +49,7 @@ where
             instance,
             approval: None,
             approval_identity: None,
-            replays: publication::PreparedWorkflowTransitionReplays::retained(replays)
-                .for_navigation_back(),
+            replays,
             denial,
         }
     }
@@ -46,6 +62,7 @@ where
         selected: crate::domain_computation::primary_graph::workflow::instance::SelectedWorkflowTransition,
         live_membership: RelationId,
         facts: Vec<super::super::WorthQueryApplicationObservedFact>,
+        allowance: crate::domain_computation::primary_graph::application_attempt::WorkflowStepAllowance,
     ) -> Result<
         PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
         WorthQueryApplicationAttemptDenial,
@@ -70,6 +87,7 @@ where
             subject,
             live_membership,
             false,
+            allowance,
         );
         let progress_update = admitted
             .prepare_progress_update(ApplicationWorkflowControlOutcome::NavigatedBack, None)?;
@@ -114,7 +132,7 @@ where
         };
         Ok(PreparedWorkflowAdvance::Transition {
             program,
-            program_revision: compiled.program_revision().clone(),
+            program_revision: *compiled.program_revision(),
             transition_identity,
             transition_identity_bytes,
             transition_identity_locator: layout.transition.identity.clone(),

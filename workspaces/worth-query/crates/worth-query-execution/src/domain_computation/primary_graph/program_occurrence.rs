@@ -16,6 +16,8 @@ use worth_query_installation::facade::{
     WorthQueryProgramSupportRoster,
 };
 
+use super::WorthQueryApplicationCommitDenial;
+
 mod activation_cell;
 mod presented_program;
 mod revision_rendering;
@@ -83,6 +85,31 @@ impl<Schema> WorthQueryInstalledProgramSupport<Schema> {
         ))
     }
 
+    /// Resolves one revision into the program a commit presents, or the typed
+    /// denial that refuses it before any effect.
+    ///
+    /// A revision this host never admitted is refused as program required. A
+    /// rostered revision whose support is retiring or retired is refused as
+    /// retired support, so a caller holding a stale owner learns why it lost
+    /// standing.
+    pub(in crate::domain_computation::primary_graph) fn present_for_commit(
+        &self,
+        revision: &ApplicationProgramRevision,
+    ) -> Result<WorthQueryPresentedProgram<'_>, WorthQueryApplicationCommitDenial> {
+        self.present(revision).ok_or_else(|| {
+            if self
+                .roster
+                .entries()
+                .iter()
+                .any(|entry| entry.revision() == revision)
+            {
+                WorthQueryApplicationCommitDenial::program_support_retired(revision)
+            } else {
+                WorthQueryApplicationCommitDenial::application_program_required()
+            }
+        })
+    }
+
     /// The mutation bindings every rostered program between them acts through.
     pub(in crate::domain_computation::primary_graph) fn rostered_mutation_bindings(
         &self,
@@ -146,9 +173,7 @@ impl<Schema> WorthQueryInstalledProgramSupport<Schema> {
     {
         if !self.lifecycle.is_active(target) {
             return Err(
-                WorthQueryProgramAdoptionRequirementsDenial::UnrosteredTarget {
-                    revision: target.clone(),
-                },
+                WorthQueryProgramAdoptionRequirementsDenial::UnrosteredTarget { revision: *target },
             );
         }
         self.roster

@@ -1,4 +1,4 @@
-use crate::domain_computation::primary_graph::application_installation::WorthQueryWorkflowApplicationRuntime;
+use crate::domain_computation::primary_graph::application_installation::WorthQueryWorkflowVocabulary;
 use worth_query_declaration::facade::{
     application_capability::ApplicationCapabilityMarkerIdentity,
     application_program::ApplicationWorkflowSpec,
@@ -30,6 +30,10 @@ mod adapter_preparation;
 #[path = "preparation/adapter_replay.rs"]
 mod adapter_replay;
 
+/// Why a workflow transition could not bind to the branch's program: the installed spec
+/// belongs to another schema, the adopted program could not be inspected, the branch runs
+/// another program revision, or the branch advanced between selection and read-set
+/// assembly.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorkflowTransitionBindingDenial {
     ForeignSchema,
@@ -38,6 +42,7 @@ pub enum WorkflowTransitionBindingDenial {
     SelectedOccurrenceChanged,
 }
 
+/// Why a workflow transition did not prepare.
 #[derive(Debug)]
 pub enum WorkflowTransitionPreparationDenial {
     Binding(WorkflowTransitionBindingDenial),
@@ -67,10 +72,9 @@ where
         Input,
         Scope,
         Spec,
-        Program,
     >(
         &self,
-        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         instance: PublishedWorkflowInstanceRef,
         admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     ) -> Result<
@@ -82,7 +86,7 @@ where
         Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
-        self.prepare_workflow_transition::<Capability, Operation, Input, Scope, Spec, Program>(
+        self.prepare_workflow_transition::<Capability, Operation, Input, Scope, Spec>(
             installed,
             instance,
             admission,
@@ -96,10 +100,9 @@ where
         Input,
         Scope,
         Spec,
-        Program,
     >(
         &self,
-        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         instance: PublishedWorkflowInstanceRef,
         admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     ) -> Result<
@@ -111,7 +114,7 @@ where
         Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
-        self.prepare_workflow_transition::<Capability, Operation, Input, Scope, Spec, Program>(
+        self.prepare_workflow_transition::<Capability, Operation, Input, Scope, Spec>(
             installed,
             instance,
             admission,
@@ -125,10 +128,9 @@ where
         Input,
         Scope,
         Spec,
-        Program,
     >(
         &self,
-        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         instance: PublishedWorkflowInstanceRef,
         node_path: String,
         admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
@@ -141,7 +143,7 @@ where
         Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
-        self.prepare_workflow_transition::<Capability, Operation, Input, Scope, Spec, Program>(
+        self.prepare_workflow_transition::<Capability, Operation, Input, Scope, Spec>(
             installed,
             instance,
             admission,
@@ -149,9 +151,9 @@ where
         )
     }
 
-    fn prepare_workflow_transition<Capability, Operation, Input, Scope, Spec, Program>(
+    fn prepare_workflow_transition<Capability, Operation, Input, Scope, Spec>(
         &self,
-        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         instance: PublishedWorkflowInstanceRef,
         admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         request_kind: WorkflowTransitionRequestKind,
@@ -205,10 +207,11 @@ where
             ));
         }
         read_set
-            .materialize_workflow_advance::<Capability, Spec, Program>(
+            .materialize_workflow_advance::<Capability, Spec>(
                 installed,
                 instance,
                 request_kind,
+                &self.application().authorization_clock,
             )
             .map_err(WorkflowTransitionPreparationDenial::Attempt)
     }
@@ -220,10 +223,9 @@ where
         Input,
         Scope,
         Spec,
-        Program,
     >(
         &self,
-        workflow: &WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>,
+        workflow: WorthQueryWorkflowVocabulary<'_, Schema, Spec>,
         instance: PublishedWorkflowInstanceRef,
         required: &RequiredWorkflowApproval,
         proposal: &PublishedWorkflowProposalRef,
@@ -238,7 +240,7 @@ where
         Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
-        let installed = workflow.workflow_spec();
+        let installed = workflow.workflow_spec_for(self);
         if installed.schema_binding() != &self.application().installed_schema().binding_identity() {
             return Err(WorkflowTransitionPreparationDenial::Binding(
                 WorkflowTransitionBindingDenial::ForeignSchema,
@@ -280,8 +282,14 @@ where
             ));
         }
         read_set
-            .materialize_workflow_approval::<Capability, Spec, Program>(
-                workflow, instance, required, proposal, decision,
+            .materialize_workflow_approval::<Capability, Spec>(
+                workflow,
+                installed,
+                instance,
+                required,
+                proposal,
+                decision,
+                &self.application().authorization_clock,
             )
             .map_err(WorkflowTransitionPreparationDenial::Attempt)
     }

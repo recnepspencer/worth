@@ -1,6 +1,6 @@
 //! Published approval authority is read back and rechecked at the effect wait.
 
-use super::super::bounded_dimension_model::workflow::{
+use super::super::document_retention_model::workflow::{
     WorkflowGrantStatusInput, WorkflowGrantStatusIntent,
 };
 use super::*;
@@ -63,10 +63,10 @@ fn assert_grant_change_denies_wait(
     let effect = runtime
         .request(&principal, &scope)
         .on_branch(instance.branch())
-        .mutate(ReviewedSetPartDimensionIntent {
-            input: super::super::bounded_dimension_model::schema::SetPartDimensionInput {
-                identity: PART_IDENTITY.to_owned(),
-                dimension: 8,
+        .mutate(ReviewedSetRetentionIntent {
+            input: super::super::document_retention_model::schema::SetRetentionInput {
+                identity: DOCUMENT_IDENTITY.to_owned(),
+                retention_days: 8,
             },
         })
         .without_source()
@@ -82,7 +82,7 @@ fn assert_grant_change_denies_wait(
         ),
         "the published approval must lose authority at the wait: {effect:?}"
     );
-    assert_eq!(read_dimension(runtime, instance.branch()), SEED_DIMENSION);
+    assert_eq!(read_retention(runtime, instance.branch()), SEED_RETENTION);
     assert!(matches!(
         advance_instance(&application, instance, key + 21),
         Ok(WorkflowProgressOutcome::AwaitingOperation(_))
@@ -90,7 +90,7 @@ fn assert_grant_change_denies_wait(
 }
 
 fn change_approval_grant(
-    application: &BoundedDimensionWorkflowRuntime,
+    application: &DocumentWorkflowRuntime,
     instance: &PublishedWorkflowInstanceRef,
     status: &str,
     key: u64,

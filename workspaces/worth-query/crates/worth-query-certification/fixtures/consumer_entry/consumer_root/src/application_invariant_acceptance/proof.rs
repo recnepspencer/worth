@@ -3,12 +3,15 @@ use std::sync::atomic::Ordering;
 use worth_query_consumer_values::{PlanarAdjustment, PlanarAdjustmentResult, PlanarOperation};
 use worth_query_host::facade::{
     application_entry::{
-        WorthQueryApplicationMutationOutcome, WorthQueryApplicationRequest,
+        WorthQueryApplicationMutationOutcome, WorthQueryApplicationProgramOutputProgress,
+        WorthQueryApplicationProgramOutputSettlement, WorthQueryApplicationRequest,
         WorthQueryApplicationRequestExt,
     },
+    application_installation::WorthQueryProgramApplicationRuntime,
+    domain::WorthQueryInstalledApplicationSchema,
     primary_graph::{
         WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitDenialStage,
-        WorthQueryApplicationCommitOutcome, WorthQueryCustomInvariantDenial,
+        WorthQueryApplicationUncommitted, WorthQueryCustomInvariantDenial,
     },
 };
 use worth_query_topology_entry::{PlanarEdit, PlanarMutation, PlanarRead};
@@ -29,21 +32,35 @@ mod publication;
 mod resource_profile;
 
 type Request<'a> = WorthQueryApplicationRequest<'a, 'a, 'a, ConsumerSchema>;
+
+/// Advances pending work to its settlement. A proof that never settles fails
+/// here instead of hanging, as the House journey does.
+const SETTLE_ADVANCES: usize = 256;
+
+fn settle<Settled>(mut advance: impl FnMut() -> Option<Settled>) -> Settled {
+    (0..SETTLE_ADVANCES)
+        .find_map(|_| advance())
+        .expect("pending work settles within the bounded advances")
+}
+
+/// The settlement a program output advance reached, if any.
+fn settled<RootQuery>(
+    progress: WorthQueryApplicationProgramOutputProgress<RootQuery>,
+) -> Option<WorthQueryApplicationProgramOutputSettlement<RootQuery>> {
+    match progress {
+        WorthQueryApplicationProgramOutputProgress::Pending => None,
+        WorthQueryApplicationProgramOutputProgress::Settled(settlement) => Some(settlement),
+    }
+}
+
 type ProgramApplication =
-    worth_query_host::facade::application_installation::WorthQueryProgramApplicationRuntime<
-        ConsumerSchema,
-        crate::ConsumerProgram,
-    >;
+    WorthQueryProgramApplicationRuntime<ConsumerSchema, crate::ConsumerProgram>;
 type MutationOutcome = WorthQueryApplicationMutationOutcome<
     worth_query_consumer_values::PlanarMutationDenial,
     PlanarAdjustmentResult,
 >;
 
-pub(crate) fn run(
-    foreign: &worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema<
-        ConsumerSchema,
-    >,
-) {
+pub(crate) fn run(foreign: &WorthQueryInstalledApplicationSchema<ConsumerSchema>) {
     super::contribution_denials::run();
     application_program::performed_source_settles_required_output(foreign);
     application_program::caller_disposal_before_progress_recovers(foreign);
@@ -52,6 +69,9 @@ pub(crate) fn run(
     application_program::root_selection::undeclared_root_is_denied_before_publication(foreign);
     application_program::root_selection::truncated_root_is_denied_before_publication(foreign);
     application_program::root_selection::result_set_source_binds_through_publication(foreign);
+    application_program::selected_root_selection::selected_lane_refuses_what_the_selected_program_does_not_own(
+        foreign,
+    );
     application_program::ordinary_source_publication_cannot_bypass_program(foreign);
     application_program::lifecycle_proofs(foreign);
     resource_profile::candidate_bytes_beyond_host_limit_are_denied(foreign);
@@ -145,7 +165,7 @@ fn typed_invariant_access_is_bounded(request: &Request<'_>, world: &installation
 }
 
 fn require_invariant_access_failure(outcome: MutationOutcome) {
-    let WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationCommitOutcome::Denied(
+    let WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationUncommitted::Denied(
         denial,
     )) = outcome
     else {
@@ -194,7 +214,7 @@ fn insufficient_work_is_denied_before_owner(
     let calls = world.invariant_calls.load(Ordering::SeqCst);
     let before = source_version(request);
     let outcome = mutate(request, &world.application, adjust("anchor-a", 2, 1), 1);
-    let WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationCommitOutcome::Denied(
+    let WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationUncommitted::Denied(
         denial,
     )) = outcome
     else {
@@ -277,7 +297,7 @@ fn actual_candidate_checks_untouched_neighbors(
 fn require_planar_violation<Denial: std::fmt::Debug, Result: std::fmt::Debug>(
     outcome: WorthQueryApplicationMutationOutcome<Denial, Result>,
 ) {
-    let WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationCommitOutcome::Denied(
+    let WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationUncommitted::Denied(
         denial,
     )) = outcome
     else {

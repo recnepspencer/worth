@@ -15,4 +15,5 @@ pub use vocabulary::{
     WorthQueryApplicationWorkflowInstallationDenialKind,
     WorthQueryApplicationWorkflowResourceCeiling, WorthQueryApplicationWorkflowSpecInstallation,
     WorthQueryInstalledApplicationWorkflowSpec, WorthQueryWorkflowHistoryReconstructionBudget,
+    WorthQueryWorkflowNodeDependency, WorthQueryWorkflowVocabularyCoverage,
 };

@@ -4,9 +4,9 @@ use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::identity::EntityId;
 
 use super::super::{
-    PublishedWorkflowInstanceRef, WorthQueryApplicationCommitOutcome,
-    WorthQueryApplicationEffectProgram, WorthQueryApplicationIdempotencyBinding,
-    WorthQueryApplicationIdempotencyResolution, WorthQueryApplicationIdempotencyResolutionDenial,
+    PublishedWorkflowInstanceRef, WorthQueryApplicationEffectProgram,
+    WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationIdempotencyResolution,
+    WorthQueryApplicationIdempotencyResolutionDenial, WorthQueryApplicationUncommitted,
 };
 use crate::domain_computation::primary_graph::workflow::proposal::derive_workflow_proposal_context_identity;
 use crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation;
@@ -30,6 +30,8 @@ pub struct PreparedWorkflowProposal<Schema, Operation, Input, Scope> {
     >,
 }
 
+/// A reference to a published workflow proposal: its identity, the operation and input it
+/// proposes, and the node path it was proposed at.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct PublishedWorkflowProposalRef {
     branch: crate::basis::WorthQueryProductBranch,
@@ -77,6 +79,8 @@ impl PublishedWorkflowProposalRef {
     }
 }
 
+/// A workflow proposal that landed: the proposal, the transition it opened, its commit
+/// receipt, and whether the idempotency key replayed an already-landed commit.
 #[derive(Debug)]
 pub struct PerformedWorkflowProposal {
     proposal: PublishedWorkflowProposalRef,
@@ -103,10 +107,14 @@ impl PerformedWorkflowProposal {
     }
 }
 
+/// What executing a workflow proposal produced. `ProjectionDenied` means the commit landed
+/// but its receipt did not record this proposal on the instance's branch.
 #[derive(Debug)]
 pub enum WorkflowProposalOutcome {
     Published(PerformedWorkflowProposal),
-    Application(WorthQueryApplicationCommitOutcome),
+    /// The commit did not land. A landed commit, first or replayed, is the
+    /// performed variant.
+    Application(WorthQueryApplicationUncommitted),
     ProjectionDenied(super::super::WorthQueryApplicationCommitReceipt),
 }
 
@@ -142,7 +150,7 @@ where
         let outcome = match resolution {
             WorthQueryApplicationIdempotencyResolution::Unseen => return Ok(None),
             WorthQueryApplicationIdempotencyResolution::IntentDrift => {
-                WorkflowProposalOutcome::Application(WorthQueryApplicationCommitOutcome::Denied(
+                WorkflowProposalOutcome::Application(WorthQueryApplicationUncommitted::Denied(
                     super::super::WorthQueryApplicationCommitDenial::idempotency_intent_drift(),
                 ))
             }
@@ -198,15 +206,19 @@ where
             source_identity,
             progress_update,
         } = prepared;
-        let Some(presented) = self
+        let presented = match self
             .installed_program_support()
-            .and_then(|support| support.present(&program_revision))
-        else {
-            return WorkflowProposalOutcome::Application(
-                WorthQueryApplicationCommitOutcome::Denied(
-                    super::super::WorthQueryApplicationCommitDenial::application_program_required(),
-                ),
-            );
+            .ok_or_else(
+                super::super::WorthQueryApplicationCommitDenial::application_program_required,
+            )
+            .and_then(|support| support.present_for_commit(&program_revision))
+        {
+            Ok(presented) => presented,
+            Err(denial) => {
+                return WorkflowProposalOutcome::Application(
+                    WorthQueryApplicationUncommitted::Denied(denial),
+                );
+            }
         };
         let outcome = self.compare_and_commit_application_for_program_action(
             &presented,
@@ -223,14 +235,9 @@ where
             input_identity,
             source_identity,
         };
-        let projected = match outcome {
-            WorthQueryApplicationCommitOutcome::Committed(receipt) => {
-                project(receipt, context, false)
-            }
-            WorthQueryApplicationCommitOutcome::AlreadyCommitted(receipt) => {
-                project(receipt, context, true)
-            }
-            other => WorkflowProposalOutcome::Application(other),
+        let projected = match outcome.landed() {
+            Ok((receipt, replayed)) => project(receipt, context, replayed),
+            Err(uncommitted) => WorkflowProposalOutcome::Application(uncommitted),
         };
         if let (Some(progress_update), WorkflowProposalOutcome::Published(performed)) =
             (progress_update, &projected)

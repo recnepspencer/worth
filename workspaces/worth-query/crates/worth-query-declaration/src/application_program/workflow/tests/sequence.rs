@@ -4,7 +4,7 @@ use super::*;
 fn ordinary_sequence_matches_explicit_control_without_inventing_data(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut ordinary =
-        ApplicationWorkflowDefinitionBuilder::<ReviewedGeometry>::new("solver-chain", limits())?;
+        ApplicationWorkflowDefinitionBuilder::<ReviewedChange>::new("assessment-chain", limits())?;
     let structure = ordinary.operation::<ProposeChange>("structure", false)?;
     let electrical = ordinary.operation::<ApplyChange>("electrical", false)?;
     let done = ordinary.terminal("done")?;
@@ -18,7 +18,7 @@ fn ordinary_sequence_matches_explicit_control_without_inventing_data(
     let ordinary = ordinary.finish()?.validate()?;
 
     let mut explicit =
-        ApplicationWorkflowDefinitionBuilder::<ReviewedGeometry>::new("solver-chain", limits())?;
+        ApplicationWorkflowDefinitionBuilder::<ReviewedChange>::new("assessment-chain", limits())?;
     let structure = explicit.operation::<ProposeChange>("structure", false)?;
     let electrical = explicit.operation::<ApplyChange>("electrical", false)?;
     let done = explicit.terminal("done")?;
@@ -45,13 +45,13 @@ fn ordinary_sequence_matches_explicit_control_without_inventing_data(
 fn ordinary_sequence_rejects_foreign_nodes_without_partial_connections(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut builder =
-        ApplicationWorkflowDefinitionBuilder::<ReviewedGeometry>::new("sequence", limits())?;
+        ApplicationWorkflowDefinitionBuilder::<ReviewedChange>::new("sequence", limits())?;
     let local = builder.operation::<ProposeChange>("local", false)?;
     let mut foreign =
-        ApplicationWorkflowDefinitionBuilder::<ReviewedGeometry>::new("other", limits())?;
+        ApplicationWorkflowDefinitionBuilder::<ReviewedChange>::new("other", limits())?;
     let absent = foreign.operation::<ApplyChange>("absent", false)?;
     let mistaken = foreign.operation::<ApplyChange>("collision", false)?;
-    builder.assessment::<StructuralAssessment>("collision")?;
+    builder.assessment::<ConsistencyAssessment>("collision")?;
     assert!(matches!(
         builder.sequence(&[local.clone(), absent]),
         Err(ApplicationWorkflowAuthoringDenial::UnknownSequenceNode(_))
@@ -85,7 +85,7 @@ fn ordinary_sequence_remains_bounded_at_ten_thousand_nodes(
     )
     .unwrap();
     let mut builder =
-        ApplicationWorkflowDefinitionBuilder::<ReviewedGeometry>::new("large-sequence", limits)?;
+        ApplicationWorkflowDefinitionBuilder::<ReviewedChange>::new("large-sequence", limits)?;
     let mut operations = Vec::with_capacity(usize::from(NODES - 1));
     for index in 0..usize::from(NODES - 1) {
         operations

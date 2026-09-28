@@ -25,6 +25,13 @@ pub(in crate::domain_computation::primary_graph) use pending::WorthQueryPendingA
 pub(in crate::domain_computation::primary_graph) use projection::WorthQueryCommittedReceiptProjection;
 pub use publication_source::WorthQueryApplicationCommitPublicationSource;
 
+/// The record of one landed application commit: which branch and commit, what
+/// changed, which records were touched, what must be dispatched, and under what
+/// authority.
+///
+/// Carried by the `Committed` and `AlreadyCommitted` commit outcomes. The fresh
+/// receipt also holds the performed product-change witness; a clone drops it and
+/// is descriptive history only.
 #[derive(Debug, PartialEq)]
 pub struct WorthQueryApplicationCommitReceipt {
     pub(super) authoritative_provider_session:

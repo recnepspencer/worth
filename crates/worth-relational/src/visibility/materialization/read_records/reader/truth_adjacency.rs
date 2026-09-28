@@ -154,6 +154,16 @@ impl<'runtime> VisibilityReadContext<'runtime> {
 }
 
 impl BoundedAdjacencyTruthRead {
+    pub(crate) const fn new(
+        records: Vec<RelationReadRecord>,
+        relation_records_examined: usize,
+    ) -> Self {
+        Self {
+            records,
+            relation_records_examined,
+        }
+    }
+
     pub const fn relation_records_examined(&self) -> usize {
         self.relation_records_examined
     }
@@ -172,7 +182,10 @@ impl BoundedAdjacencyTruthRead {
 }
 
 impl AdjacencyTruthReadLimitExceeded {
-    const fn new(relation_records_examined: usize, endpoint_records_reserved: usize) -> Self {
+    pub(crate) const fn new(
+        relation_records_examined: usize,
+        endpoint_records_reserved: usize,
+    ) -> Self {
         Self {
             relation_records_examined,
             endpoint_records_reserved,

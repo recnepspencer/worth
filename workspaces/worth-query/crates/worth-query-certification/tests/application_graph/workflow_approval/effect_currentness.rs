@@ -21,13 +21,13 @@ fn approved_effect_denies_stale_evidence_before_handler_work() {
         other => panic!("expected an operation requirement, got {other:?}"),
     };
     assert_eq!(
-        settle(set_dimension(
+        settle(set_retention(
             application.program_runtime(),
             instance.branch(),
-            SEED_DIMENSION + 1,
+            SEED_RETENTION + 1,
             942,
         )),
-        DimensionVerdict::Performed(SEED_DIMENSION + 1)
+        RetentionVerdict::Performed(SEED_RETENTION + 1)
     );
     let runtime = application.runtime();
     let scope = request_scope();
@@ -35,10 +35,10 @@ fn approved_effect_denies_stale_evidence_before_handler_work() {
     let effect = runtime
         .request(&principal, &scope)
         .on_branch(instance.branch())
-        .mutate(ReviewedSetPartDimensionIntent {
-            input: super::super::bounded_dimension_model::schema::SetPartDimensionInput {
-                identity: PART_IDENTITY.to_owned(),
-                dimension: 8,
+        .mutate(ReviewedSetRetentionIntent {
+            input: super::super::document_retention_model::schema::SetRetentionInput {
+                identity: DOCUMENT_IDENTITY.to_owned(),
+                retention_days: 8,
             },
         })
         .without_source()
@@ -53,10 +53,10 @@ fn approved_effect_denies_stale_evidence_before_handler_work() {
     let spent = runtime
         .request(&principal, &scope)
         .on_branch(instance.branch())
-        .mutate(ReviewedSetPartDimensionIntent {
-            input: super::super::bounded_dimension_model::schema::SetPartDimensionInput {
-                identity: PART_IDENTITY.to_owned(),
-                dimension: 8,
+        .mutate(ReviewedSetRetentionIntent {
+            input: super::super::document_retention_model::schema::SetRetentionInput {
+                identity: DOCUMENT_IDENTITY.to_owned(),
+                retention_days: 8,
             },
         })
         .without_source()
@@ -69,7 +69,7 @@ fn approved_effect_denies_stale_evidence_before_handler_work() {
         Err(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::WorkflowAuthoritySpent)
     ));
     assert_eq!(
-        read_dimension(runtime, instance.branch()),
-        SEED_DIMENSION + 1
+        read_retention(runtime, instance.branch()),
+        SEED_RETENTION + 1
     );
 }

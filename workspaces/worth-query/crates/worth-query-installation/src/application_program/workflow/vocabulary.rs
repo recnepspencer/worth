@@ -3,15 +3,22 @@ use std::marker::PhantomData;
 
 use worth_query_declaration::facade::{
     application_program::{
-        ApplicationProgramRevision, ApplicationWorkflowSpec, ValidatedWorkflowDefinition,
+        ApplicationProgramRevision, ApplicationWorkflowApprovalRef,
+        ApplicationWorkflowAssessmentRef, ApplicationWorkflowConditionRef,
+        ApplicationWorkflowOperationRef, ApplicationWorkflowSpec, ValidatedWorkflowDefinition,
     },
     application_schema::{ApplicationSchema, ApplicationSchemaBindingIdentity},
     portable_identity::WorthQueryPortableTypeIdentity,
 };
 
+mod adoption_coverage;
 mod approval_binding;
+mod draft_vocabulary;
 mod installation;
 mod support_identity;
+pub use adoption_coverage::{
+    WorthQueryWorkflowNodeDependency, WorthQueryWorkflowVocabularyCoverage,
+};
 pub use installation::WorthQueryApplicationWorkflowSpecInstallation;
 
 mod resource_ceiling;
@@ -74,6 +81,7 @@ pub(super) struct InstalledWorkflowOperation {
     pub(super) binding_type: TypeId,
     pub(super) binding_identity: &'static str,
     pub(super) requires_workflow_authority: bool,
+    pub(super) reference: ApplicationWorkflowOperationRef,
 }
 
 #[derive(Clone)]
@@ -83,6 +91,7 @@ pub(super) struct InstalledWorkflowAssessment {
     pub(super) parameter_type: WorthQueryPortableTypeIdentity,
     pub(super) result_type: WorthQueryPortableTypeIdentity,
     pub(super) binding_identity: &'static str,
+    pub(super) reference: ApplicationWorkflowAssessmentRef,
 }
 
 #[derive(Clone)]
@@ -92,6 +101,7 @@ pub(super) struct InstalledWorkflowCondition {
     pub(super) parameter_type: WorthQueryPortableTypeIdentity,
     pub(super) result_type: WorthQueryPortableTypeIdentity,
     pub(super) binding_identity: &'static str,
+    pub(super) reference: ApplicationWorkflowConditionRef,
 }
 
 #[derive(Clone)]
@@ -148,9 +158,10 @@ pub(super) struct InstalledWorkflowAdvanceCapability {
 #[derive(Clone)]
 pub(super) struct InstalledWorkflowApproval {
     pub(super) binding: InstalledWorkflowCapabilityBinding,
+    pub(super) reference: ApplicationWorkflowApprovalRef,
 }
 
-pub struct WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>
+pub struct WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>
 where
     Schema: ApplicationSchema,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
@@ -166,10 +177,10 @@ where
     pub(super) conditions: Box<[InstalledWorkflowCondition]>,
     pub(super) approvals: Box<[InstalledWorkflowApproval]>,
     pub(super) resources: WorthQueryApplicationWorkflowResourceCeiling,
-    pub(super) marker: PhantomData<fn() -> (Schema, Spec, Program)>,
+    pub(super) marker: PhantomData<fn() -> (Schema, Spec)>,
 }
 
-impl<Schema, Spec, Program> WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>
+impl<Schema, Spec> WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>
 where
     Schema: ApplicationSchema,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
@@ -299,7 +310,7 @@ where
         &self,
         definition: ValidatedWorkflowDefinition<Spec>,
     ) -> Result<
-        super::WorthQueryInstalledWorkflowDefinitionContract<Schema, Spec, Program>,
+        super::WorthQueryInstalledWorkflowDefinitionContract<Schema, Spec>,
         WorthQueryApplicationWorkflowInstallationDenial,
     > {
         super::definition_contract::bind(self, definition)

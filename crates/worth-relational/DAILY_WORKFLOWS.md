@@ -23,7 +23,7 @@ Use:
 - `observe_branch(...)`
 - `begin_branch_transaction(...)`
 - `push_batch(...)`
-- `commit(&mut runtime)`
+- `commit(&runtime)`
 
 For larger staged writes, `plan_bulk_mutation_batch(...)` is the main advanced
 helper.

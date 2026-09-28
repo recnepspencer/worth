@@ -76,13 +76,7 @@ pub(super) fn project_replays(
                 ));
             }
         } else {
-            progress.apply_observation(
-                compiled,
-                WorkflowTransitionProgressObservation::new(
-                    crate::domain_computation::primary_graph::workflow::instance::WorkflowTransitionLocator::new(transition.entity, settled),
-                    transition.assessment_evidence.as_ref().map(|evidence| evidence.entity),
-                ),
-            )?;
+            progress.apply_observation(compiled, transition.progress_observation())?;
         }
     }
     Ok(replays)

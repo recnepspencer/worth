@@ -1,5 +1,7 @@
 # Query Operating Modes
 
+> **Internal engine surface.** This page documents `WorthQueryWorkspace` (`worth_query::facade`), the engine surface that `worth-ui-query-binding` uses. Application code uses `worth-query-decl` and `worth-query-host`; start with the [application front door](ordinary-application-front-door.md).
+
 ## What This Feature Is
 
 Query operating modes describe **how execution, artifacts, and subscriptions are backed** in the current runtime—not a second public API surface. Today the honest default is **runtime-backed**: plans, receipts, live state, and inspection evidence live in the in-process Query runtime. **Store-backed execution**, **durable cursors**, and **restart-stable subscription metadata** are explicit deferred debt, not implied by type names or facade exports.

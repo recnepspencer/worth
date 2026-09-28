@@ -90,7 +90,7 @@ fn fintech_scenario_selectors_expose_canonical_cases_and_expected_invariants() {
     );
     assert_eq!(selection.scenario_key, "late-trade-correction");
     assert!(!selection.expected_invariants.is_empty());
-    assert!(selection.expected_artifacts.contains(&"diagnostics".into()));
+    assert!(selection.expected_artifacts.contains(&"diagnostics"));
     assert_eq!(
         selection.expected_read_alias,
         "trade-correction.read.post-mutation"

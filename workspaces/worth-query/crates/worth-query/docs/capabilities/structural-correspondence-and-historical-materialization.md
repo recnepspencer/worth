@@ -1,5 +1,7 @@
 # Structural Correspondence and Historical Materialization
 
+> **Internal engine surface.** This page documents `WorthQueryWorkspace` (`worth_query::facade`), the engine surface that `worth-ui-query-binding` uses. Application code uses `worth-query-decl` and `worth-query-host`; start with the [application front door](../foundations/ordinary-application-front-door.md).
+
 ## What This Feature Is
 
 Structural correspondence and historical materialization cover **identity evolution queries**, correspondence resolution, and historical envelopes that preserve payload plus support posture—implemented across `correspondence/`, `historical/`, and `correspondence_history.rs`. [Lineage and correspondence](lineage-and-correspondence.md) documents the **public query API** for correspondence/lineage; [historical diff and basis](historical-diff-and-basis.md) owns **diff/basis** semantics. This doc owns **structural materialization and history-shaped execution** boundaries.

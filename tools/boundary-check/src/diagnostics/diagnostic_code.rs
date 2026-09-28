@@ -29,11 +29,13 @@ pub(crate) enum DiagnosticCode {
     Bc8001SnapshotBaseline,
     Bc8002FacadeSnapshotDrift,
     Bc8003CrateDagSnapshotDrift,
+    Bc8004FacadeDocMissing,
+    Bc8005FacadeDocDebtStale,
 }
 
 impl DiagnosticCode {
     #[cfg(test)]
-    pub(crate) const ALL: [Self; 26] = [
+    pub(crate) const ALL: [Self; 28] = [
         Self::Bc1001IllegalCrateName,
         Self::Bc1002UnreservedDomain,
         Self::Bc2001BandDependencyViolation,
@@ -60,6 +62,8 @@ impl DiagnosticCode {
         Self::Bc8001SnapshotBaseline,
         Self::Bc8002FacadeSnapshotDrift,
         Self::Bc8003CrateDagSnapshotDrift,
+        Self::Bc8004FacadeDocMissing,
+        Self::Bc8005FacadeDocDebtStale,
     ];
 
     pub(crate) fn as_str(self) -> &'static str {
@@ -90,6 +94,8 @@ impl DiagnosticCode {
             Self::Bc8001SnapshotBaseline => "BC8001_SNAPSHOT_BASELINE",
             Self::Bc8002FacadeSnapshotDrift => "BC8002_FACADE_SNAPSHOT_DRIFT",
             Self::Bc8003CrateDagSnapshotDrift => "BC8003_CRATE_DAG_SNAPSHOT_DRIFT",
+            Self::Bc8004FacadeDocMissing => "BC8004_FACADE_DOC_MISSING",
+            Self::Bc8005FacadeDocDebtStale => "BC8005_FACADE_DOC_DEBT_STALE",
         }
     }
 
@@ -111,6 +117,7 @@ impl DiagnosticCode {
             Self::Bc7005SealedTruthConstruction => "tools/boundary-check/config/road1.toml [[truth_type_denials]]; construct sealed truth through its owner, or declare the caller the constructor admits",
             Self::Bc7006LifecycleStateDefault => "tools/boundary-check/config/road1.toml [[truth_type_denials]]; name the variant at each construction site instead of a Default",
             Self::Bc8001SnapshotBaseline | Self::Bc8002FacadeSnapshotDrift | Self::Bc8003CrateDagSnapshotDrift => "tools/boundary-check/snapshots/; regenerate the governed snapshot explicitly with boundary-check --update-snapshots",
+            Self::Bc8004FacadeDocMissing | Self::Bc8005FacadeDocDebtStale => "tools/boundary-check/snapshots/facade-doc-debt.toml; document the named definition with a `///` comment, or delete the paid debt entry",
         };
         LegalHome::new(pointer).expect("diagnostic code legal homes are valid")
     }

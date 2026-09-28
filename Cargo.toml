@@ -6,8 +6,6 @@ resolver = "2"
 exclude = ["workspaces/*"]
 members = [
     "crates/worth-harness",
-
-
     "crates/worth-runtime-bridge",
     "crates/worth-server",
     "crates/worth-server-client-generation",

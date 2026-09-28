@@ -1,7 +1,0 @@
-error[E0451]: field `persistence_posture` of struct `SubscriptionSupportAccuracyCertificationRunner` is private
- --> tests/ui/subscription_support_accuracy_runner_fields_private.rs:7:9
-  |
-6 |     let _ = SubscriptionSupportAccuracyCertificationRunner {
-  |             ---------------------------------------------- in this type
-7 |         persistence_posture: SubscriptionSupportAccuracyPersistencePosture::InMemoryCertificationOnly,
-  |         ^^^^^^^^^^^^^^^^^^^ private field

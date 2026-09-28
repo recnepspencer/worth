@@ -7,8 +7,15 @@ pub(in crate::domain_computation::primary_graph) mod action {
     pub trait Sealed {}
 }
 
+/// Output posture marker: the role names a record the mutation keeps, neither
+/// creating nor retiring it. Use it as the action of a
+/// [`WorthQueryApplicationOutputRole`].
 pub struct Preserve;
+/// Output posture marker: the role names a record the mutation creates. Use it as
+/// the action of a [`WorthQueryApplicationOutputRole`].
 pub struct Create;
+/// Output posture marker: the role names a record the mutation retires. Use it as
+/// the action of a [`WorthQueryApplicationOutputRole`].
 pub struct Retire;
 
 /// Marker implemented by Query's sealed output postures.

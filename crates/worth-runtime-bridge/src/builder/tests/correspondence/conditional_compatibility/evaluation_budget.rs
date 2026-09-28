@@ -144,8 +144,7 @@ fn cold_source_recomputes_and_a_live_slot_forces_typed_capacity_denial() {
                 &source,
             ),
         )
-        .err()
-        .expect("the retained first session must hold the only installed Signal slot");
+        .expect_err("the retained first session must hold the only installed Signal slot");
     assert_eq!(
         denial.kind(),
         BridgeConditionalDenialKind::ConditionalEvaluationAdmissionCapacity

@@ -6,7 +6,6 @@ fn complexity_budget_unique_entity_invariant_scans_the_selected_state() {
         registrations: vec![InvariantRegistration::mutation_sensitive_blocking(
             InvariantRule::unique_entity_aspect_field(aspect_key("name"), field_key("name")),
         )],
-        ..InvariantCatalog::default()
     });
     let target = create_entity(&runtime, "target");
     let _other = create_entity(&runtime, "other");
@@ -54,7 +53,6 @@ fn complexity_budget_commit_boundary_unique_invariant_applies_the_selected_plan(
         registrations: vec![InvariantRegistration::commit_boundary_blocking(
             InvariantRule::unique_entity_aspect_field(aspect_key("name"), field_key("name")),
         )],
-        ..InvariantCatalog::default()
     });
     let target = create_entity(&runtime, "target");
     let _other = create_entity(&runtime, "other");
@@ -99,7 +97,6 @@ fn complexity_budget_unique_entity_scan_grows_with_selected_unrelated_state() {
         registrations: vec![InvariantRegistration::mutation_sensitive_blocking(
             InvariantRule::unique_entity_aspect_field(aspect_key("name"), field_key("name")),
         )],
-        ..InvariantCatalog::default()
     });
     let target = create_entity(&runtime, "target");
     let _other_a = create_entity(&runtime, "other-a");

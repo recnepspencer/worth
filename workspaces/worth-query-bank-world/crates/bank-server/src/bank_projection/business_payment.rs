@@ -16,7 +16,9 @@ pub(crate) fn project_business_payment_initiation(
 ) -> Result<BankSnapshot, BankProjectionDenial> {
     let mut state = BoundedProjectionState::new(reader)?;
     state.project_admitted_business(reader, business, input.business)?;
-    state.project_business_account(reader, business)?;
+    if let Some(account) = state.project_business_account(reader, business)? {
+        state.project_account_authorizations(reader, &account)?;
+    }
     state.project_principal(reader, initiator)?;
     let recipient = state.project_principal(reader, input.recipient)?;
     state.project_primary_account(reader, &recipient)?;

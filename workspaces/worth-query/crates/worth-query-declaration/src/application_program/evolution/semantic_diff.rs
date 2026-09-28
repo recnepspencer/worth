@@ -174,8 +174,8 @@ impl ApplicationSemanticDiff {
             .collect::<Vec<_>>()
             .into_boxed_slice();
         Ok(Self {
-            source: source.revision().clone(),
-            target: target.revision().clone(),
+            source: *source.revision(),
+            target: *target.revision(),
             changes: changes.into_boxed_slice(),
             equivalent_families,
             comparison_work_units,

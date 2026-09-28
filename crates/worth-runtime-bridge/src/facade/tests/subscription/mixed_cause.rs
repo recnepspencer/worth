@@ -254,7 +254,7 @@ fn stale_and_revalidation_inputs(runtime: &RuntimeBridge) -> Vec<BridgeMixedCaus
         crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-b"),
     );
     let (denied, displacing_request) = denied_request_response_completion_with_displacing_identity(
-        &runtime,
+        runtime,
         NodeId::new(242, 0),
         original_basis,
         current_basis.clone(),
@@ -269,7 +269,7 @@ fn stale_and_revalidation_inputs(runtime: &RuntimeBridge) -> Vec<BridgeMixedCaus
         )
         .expect("classified denied completion should admit");
     let lineage = request_response_revalidation_lineage(
-        &runtime,
+        runtime,
         NodeId::new(243, 0),
         BridgeAsyncRequestTruthViewBasis::authoritative(
             crate::truth_identity_fixtures::truth_branch_fixture("truth-main"),

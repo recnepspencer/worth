@@ -3,8 +3,10 @@
 
 #[path = "application_graph/adoption.rs"]
 mod adoption;
-#[path = "application_graph/bounded_dimension_model.rs"]
-mod bounded_dimension_model;
+#[path = "application_graph/document_retention_model.rs"]
+mod document_retention_model;
+#[path = "application_graph/fork_decision_reads.rs"]
+mod fork_decision_reads;
 #[path = "application_graph/workflow.rs"]
 mod workflow;
 #[path = "application_graph/workflow_actor_wait.rs"]
@@ -21,10 +23,10 @@ mod workflow_component_scale;
 mod workflow_condition;
 #[path = "application_graph/workflow_control_scale.rs"]
 mod workflow_control_scale;
+#[path = "application_graph/workflow_draft_archive.rs"]
+mod workflow_draft_archive;
 #[path = "application_graph/workflow_effect_resources.rs"]
 mod workflow_effect_resources;
-#[path = "application_graph/workflow_geometry_scale.rs"]
-mod workflow_geometry_scale;
 #[path = "application_graph/workflow_history_scale.rs"]
 mod workflow_history_scale;
 #[path = "application_graph/workflow_navigation.rs"]
@@ -45,7 +47,11 @@ mod workflow_ordinary_navigation;
 mod workflow_progress_retention;
 #[path = "application_graph/workflow_proposal.rs"]
 mod workflow_proposal;
+#[path = "application_graph/workflow_publication_scale.rs"]
+mod workflow_publication_scale;
 #[path = "application_graph/workflow_receipt_lifecycle.rs"]
 mod workflow_receipt_lifecycle;
+#[path = "application_graph/workflow_retirement.rs"]
+mod workflow_retirement;
 #[path = "application_graph/workflow_retry.rs"]
 mod workflow_retry;

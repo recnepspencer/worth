@@ -1,92 +1,18 @@
 use std::num::NonZeroUsize;
-use std::sync::Arc;
 use std::time::Duration;
 
-use bank_domain::schema::ApprovePayment;
-use bank_external_rail::{test_control::FaultScript, LedgerStatus, RailProcessHandle};
-use bank_server::{BankApprovedPaymentApplyOutcome, BankAuthenticatedPrincipal};
-use worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope;
+use bank_external_rail::{test_control::FaultScript, LedgerStatus};
+use bank_server::BankApprovedPaymentApplyOutcome;
 use worth_query_host::facade::application_entry::{
-    PublishedWorkflowInstanceRef, RequiredWorkflowOperation, WorkflowProgressOutcome,
-    WorthQueryWorkflowOperationOwnerAcceptanceDenial, WorthQueryWorkflowOperationOwnerPosture,
-    WorthQueryWorkflowOperationRecoveryPreparationDenial,
+    WorkflowProgressOutcome, WorthQueryWorkflowOperationOwnerAcceptanceDenial,
+    WorthQueryWorkflowOperationOwnerPosture, WorthQueryWorkflowOperationRecoveryPreparationDenial,
 };
 use worth_query_host::facade::primary_graph::{
-    WorthQueryApplicationCommitOutcome, WorthQueryExternalDispatchPostureKind,
+    WorthQueryApplicationUncommitted, WorthQueryExternalDispatchPostureKind,
 };
 
 use super::assertions::key;
-use super::authentication::approval_configuration;
-use super::fixture::{
-    ordinary_read_world_with_approval_authentication, principal_id, OrdinaryReadFixture, APPROVER,
-};
-use super::journey::prepare_approved_payment_operation;
-use super::rail_transport::{spawn_rail, BankEstateRailTransport};
-use super::support::request_scope;
-
-struct ReadyPaymentWorld {
-    fixture: OrdinaryReadFixture,
-    rail: Arc<BankEstateRailTransport>,
-    _rail_process: RailProcessHandle,
-    principal: BankAuthenticatedPrincipal,
-    scope: WorthQueryRequestScope,
-    authority: ApprovePayment,
-    instance: PublishedWorkflowInstanceRef,
-    operation: RequiredWorkflowOperation,
-}
-
-impl ReadyPaymentWorld {
-    fn new(scenario: &str, script: FaultScript) -> Self {
-        let fixture =
-            ordinary_read_world_with_approval_authentication(scenario, approval_configuration());
-        let rail_process = spawn_rail();
-        let rail = Arc::new(BankEstateRailTransport::connected_to(
-            rail_process.local_addr(),
-            rail_process.test_control_addr(),
-        ));
-        rail.under(script, Duration::from_millis(150));
-        fixture
-            .world
-            .runtime
-            .install_external_effect_transport(rail.clone())
-            .expect("the real rail transport installs");
-        let principal = fixture.authenticate(APPROVER);
-        let scope = request_scope();
-        let authority = ApprovePayment {
-            payment: fixture.payment,
-            approver: principal_id(APPROVER),
-        };
-        let workflow = fixture
-            .world
-            .runtime
-            .approved_business_payment(&principal, &scope);
-        let (instance, operation) = prepare_approved_payment_operation(&workflow, &authority);
-        Self {
-            fixture,
-            rail,
-            _rail_process: rail_process,
-            principal,
-            scope,
-            authority,
-            instance,
-            operation,
-        }
-    }
-
-    fn perform(&self) -> BankApprovedPaymentApplyOutcome {
-        self.fixture
-            .world
-            .runtime
-            .approved_business_payment(&self.principal, &self.scope)
-            .perform_apply(
-                self.instance.clone(),
-                &self.operation,
-                self.authority.clone(),
-                &key("approved-payment:operation:perform"),
-            )
-            .expect("the prepared Bank operation reaches Query's owner")
-    }
-}
+use super::ready_payment::ReadyPaymentWorld;
 
 #[test]
 fn pending_rail_dispatch_remains_under_the_committed_outbox_owner() {
@@ -242,12 +168,10 @@ fn unpublished_product_retains_owner_recovery_and_never_dispatches_the_rail() {
         .fixture
         .world
         .runtime
-        .application_program()
-        .runtime()
         .fail_next_durable_append_for_test();
     let partial = match ready.perform() {
         BankApprovedPaymentApplyOutcome::Commit(
-            WorthQueryApplicationCommitOutcome::ProductUnpublished(partial),
+            WorthQueryApplicationUncommitted::ProductUnpublished(partial),
         ) => partial,
         other => {
             panic!("owner durability failure must retain unpublished product custody: {other:?}")
@@ -295,19 +219,16 @@ fn indeterminate_product_comparison_retains_custody_without_rail_dispatch() {
         .fixture
         .world
         .runtime
-        .application_program()
-        .runtime()
-        .world_operation_control_for_test()
-        .panic_before_product_compare_once();
+        .panic_before_product_compare_once_for_test();
     let unresolved = match ready.perform() {
         BankApprovedPaymentApplyOutcome::Commit(
-            WorthQueryApplicationCommitOutcome::Indeterminate(unresolved),
+            WorthQueryApplicationUncommitted::Indeterminate(unresolved),
         ) => unresolved,
         other => panic!("World comparison unwind must retain indeterminate custody: {other:?}"),
     };
     assert!(!unresolved.detail().is_empty());
     assert!(ready.rail.attempts().is_empty());
-    let owner = ready.fixture.world.runtime.application_program().runtime();
+    let owner = &ready.fixture.world.runtime;
     let page = owner
         .product_publication_recovery_page(None, NonZeroUsize::new(1).unwrap())
         .expect("World retains a bounded recovery catalog for unresolved owner work");

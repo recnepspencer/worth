@@ -170,6 +170,8 @@ where
         output_currentness_facts,
     } = program;
     let workflow_settlement = read_set.workflow_authority_binding;
+    let workflow_deadline = read_set.workflow_deadline;
+    let new_commit_refusal = read_set.new_commit_refusal;
     let workflow_approval_authority = workflow_settlement
         .as_ref()
         .map(|binding| binding.approval_authority.clone());
@@ -188,7 +190,15 @@ where
     ) {
         return terminal(outcome);
     }
+    if let Some(denial) = new_commit_refusal {
+        return terminal(WorthQueryApplicationCommitOutcome::Denied(
+            WorthQueryApplicationCommitDenial::workflow_settlement_denied(&denial),
+        ));
+    }
     if let Err(outcome) = validate_elevation_currentness(application, elevation_currentness) {
+        return terminal(outcome);
+    }
+    if let Err(outcome) = validate_workflow_deadline(application, workflow_deadline) {
         return terminal(outcome);
     }
     prepare_authorized_application_commit(
@@ -318,6 +328,25 @@ fn validate_elevation_currentness<Schema>(
     } else {
         Ok(())
     }
+}
+
+/// A workflow step prepared before its instance's deadline still commits only
+/// while the deadline lies ahead on the installed clock.
+fn validate_workflow_deadline<Schema>(
+    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    deadline: Option<u64>,
+) -> Result<(), WorthQueryApplicationCommitOutcome> {
+    deadline.map_or(Ok(()), |deadline| {
+        super::super::super::workflow_deadline::ensure_before(
+            &application.authorization_clock,
+            deadline,
+        )
+        .map_err(|denial| {
+            WorthQueryApplicationCommitOutcome::Denied(
+                WorthQueryApplicationCommitDenial::workflow_settlement_denied(&denial),
+            )
+        })
+    })
 }
 
 fn take_commit_authorization<Schema, Operation, Input, Scope>(

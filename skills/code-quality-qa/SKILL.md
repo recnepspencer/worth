@@ -8,7 +8,7 @@ description: Review and correct WORTH code composition and domain topology withi
 Review whether the change's physical structure preserves its meaning. Judge
 against `composition_laws.md`, `domain_structure_laws.md`, the governing
 specification, and the Composition and Architecture sections of
-`_docs/coding_guidelines/qa_review_guide.md`.
+`docs/coding-guidelines/qa_review_guide.md`.
 
 ## Establish task scope
 

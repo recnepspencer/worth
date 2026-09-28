@@ -1,16 +1,29 @@
+/// Why a generated output publication had no effect. In every case no owner and
+/// no product reference moved.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryGeneratedOutputPublicationNoEffectCause {
+    /// The product head moved from the expected head.
     StaleExpectedProductHead,
+    /// The publication was cancelled before the first owner effect.
     CancelledBeforeEffect,
+    /// The deadline passed before the first owner effect.
     DeadlineBeforeEffect,
+    /// An owner refused the publication before any effect.
     OwnerDeniedBeforeEffect,
+    /// The bridge correspondence moved from the prepared basis; prepare again.
     CorrespondenceRebindRequired,
+    /// The product reference has no generation left to advance to.
     ReferenceGenerationExhausted,
+    /// A publication capacity limit was reached.
     CapacityExhausted,
+    /// An owner could not be reached.
     OwnerUnavailable,
+    /// The publication plan failed a check before any effect.
     PreEffectFailure,
 }
 
+/// A generated output publication that had no effect: nothing was published.
+/// Read the reason with [`cause`](Self::cause).
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorthQueryGeneratedOutputPublicationNoEffect {
     cause: WorthQueryGeneratedOutputPublicationNoEffectCause,

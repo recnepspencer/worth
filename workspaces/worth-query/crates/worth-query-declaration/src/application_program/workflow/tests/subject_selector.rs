@@ -65,13 +65,11 @@ fn context_selector() -> ApplicationWorkflowSubjectSelector {
 
 fn definition(
     selector: ApplicationWorkflowSubjectSelector,
-) -> Result<ValidatedWorkflowDefinition<ReviewedGeometry>, Box<dyn std::error::Error>> {
-    let mut builder = ApplicationWorkflowDefinitionBuilder::<ReviewedGeometry>::new(
-        "subject-selector",
-        limits(),
-    )?;
+) -> Result<ValidatedWorkflowDefinition<ReviewedChange>, Box<dyn std::error::Error>> {
+    let mut builder =
+        ApplicationWorkflowDefinitionBuilder::<ReviewedChange>::new("subject-selector", limits())?;
     let proposal = builder.operation::<ProposeChange>("proposal", false)?;
-    let assessment = builder.assessment_for::<StructuralAssessment>("assessment", selector)?;
+    let assessment = builder.assessment_for::<ConsistencyAssessment>("assessment", selector)?;
     let terminal = builder.terminal("completed")?;
     builder
         .start(&proposal)

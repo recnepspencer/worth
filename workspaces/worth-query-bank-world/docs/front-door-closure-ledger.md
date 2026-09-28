@@ -261,7 +261,7 @@ authority. No row becomes `PROVED` by relabeling an existing query or wrapping
 a lane-specific projector. The current-result column describes the checked
 worktree at the original Phase 6 handoff. Runtime Phase 6 is now closed; its
 canonical final evidence and correction history live in
-`_docs/WORTH-query/milestone-9.16-runtime-phase-6-closure-ledger.md`. The
+`plans/WORTH-query/milestone-9.16-runtime-phase-6-closure-ledger.md`. The
 historical narratives below are retained to explain the handoff, while their
 statuses are synchronized to that final ledger.
 
@@ -369,9 +369,9 @@ checks pass.
 ## Runtime Phases 7-8 handoff
 
 Runtime Phase 7 is closed by
-`_docs/WORTH-query/milestone-9.16-runtime-phase-7-closure-ledger.md` and its
+`plans/WORTH-query/milestone-9.16-runtime-phase-7-closure-ledger.md` and its
 closed Milestone 9.16.1 prerequisite. Runtime Phase 8 is closed by
-`_docs/WORTH-query/milestone-9.16-runtime-phase-8-closure-ledger.md` against
+`plans/WORTH-query/milestone-9.16-runtime-phase-8-closure-ledger.md` against
 the final C1-C8 source candidate. Those phase-owned ledgers are authoritative;
 this Bank ledger does not duplicate their requirement and finding tables.
 

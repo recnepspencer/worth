@@ -4,9 +4,9 @@ use worth_query_host::facade::application_entry::{
     WorthQueryApplicationMutationOutcome, WorthQueryApplicationRequestExt,
 };
 
-use super::super::bounded_dimension_model::{
-    dimension_entry::{PartDimensionConditionQueryBinding, PartDimensionConditionRead},
+use super::super::document_retention_model::{
     operator_identity::{authenticate_operator, request_scope},
+    retention_entry::{DocumentRetentionConditionQueryBinding, DocumentRetentionConditionRead},
     workflow::{
         conditionally_required_related_assessment_definition, link_review_requirement,
         unlink_review_requirement, WorkflowAdvanceInput, WorkflowAdvanceIntent,
@@ -18,13 +18,13 @@ use super::*;
 fn newly_required_related_review_stales_after_relation_away_and_back() {
     let application = publish_workflow_on_first_program();
     assert_eq!(
-        settle(set_dimension(
+        settle(set_retention(
             application.program_runtime(),
             application.program_runtime().current_world(),
             0,
             760,
         )),
-        DimensionVerdict::Performed(0),
+        RetentionVerdict::Performed(0),
     );
     let definition = match publish_definition(
         &application,
@@ -56,8 +56,8 @@ fn newly_required_related_review_stales_after_relation_away_and_back() {
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
     let result = runtime
         .request(&principal, &scope)
-        .query(PartDimensionConditionRead {
-            identity: PART_IDENTITY.to_owned(),
+        .query(DocumentRetentionConditionRead {
+            identity: DOCUMENT_IDENTITY.to_owned(),
         })
         .execute()
         .expect("condition query reads the source");
@@ -67,14 +67,14 @@ fn newly_required_related_review_stales_after_relation_away_and_back() {
             .request(&principal, &scope)
             .mutate(WorkflowAdvanceIntent {
                 input: WorkflowAdvanceInput {
-                    part_identity: PART_IDENTITY.to_owned(),
+                    document_identity: DOCUMENT_IDENTITY.to_owned(),
                 },
             })
             .without_source()
             .idempotency(&765_u64)
             .prepare_workflow_advance(&application, instance.clone())
             .expect("condition acceptance prepares")
-            .accept_condition::<PartDimensionConditionQueryBinding>(&condition, result)
+            .accept_condition::<DocumentRetentionConditionQueryBinding>(&condition, result)
             .expect("false condition settles"),
         WorkflowProgressOutcome::Completed(_),
     ));
@@ -103,7 +103,7 @@ fn newly_required_related_review_stales_after_relation_away_and_back() {
         instance.clone(),
         "checks/related",
         772,
-        RELATED_PART_IDENTITY,
+        RELATED_DOCUMENT_IDENTITY,
     );
     match accept_early_assessment(
         &application,
@@ -146,7 +146,7 @@ fn newly_required_related_review_stales_after_relation_away_and_back() {
         instance.clone(),
         "checks/related",
         781,
-        RELATED_PART_IDENTITY,
+        RELATED_DOCUMENT_IDENTITY,
     );
     assert!(matches!(
         accept_early_assessment(

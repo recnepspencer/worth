@@ -3,10 +3,20 @@
 This workspace owns the Query engine, its audience facades, and its explicit
 cold certification package.
 
-For architecture and usage, start with:
+Application code imports only the audience facades `worth-query-decl` and
+`worth-query-host`. Start with the [API Map](../../docs/api.md), then the
+[`worth-query-decl` README](./crates/worth-query-decl/README.md) and the
+[`worth-query-host` README](./crates/worth-query-host/README.md). Certification
+code also uses `worth-query-replay` and `worth-query-certification`.
 
-- [`docs/AI_README.md`](./crates/worth-query/docs/AI_README.md) for the authority
-  map and current public conventions
+The `worth-query` crate is the internal engine. Its `worth_query::facade`
+Workspace surface serves platform crates such as `worth-ui-query-binding` and
+is not an application API.
+
+For engine internals, start with:
+
+- [`docs/AI_README.md`](./crates/worth-query/docs/AI_README.md), the internal
+  architecture map of the Query engine
 - [Runtime-Installed Domains And Operations](./crates/worth-query/docs/domain-capabilities/runtime-installed-domains.md)
 - [Conditional Installed Operations](./crates/worth-query/docs/domain-capabilities/conditional-installed-operations.md)
 - [Installed Operation Re-Execution And Replay](./crates/worth-query/docs/domain-capabilities/installed-operation-reexecution-and-replay.md)

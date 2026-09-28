@@ -7,7 +7,8 @@ use super::{
     PreparedWorkflowAssessment,
 };
 use crate::domain_computation::primary_graph::workflow::{
-    visit_workflow_assessment_facts, WorkflowAssessmentEvidenceMeaning,
+    visit_workflow_assessment_facts, workflow_evidence_retained_bytes,
+    WorkflowAssessmentEvidenceMeaning,
 };
 use crate::domain_computation::primary_graph::{
     RequiredWorkflowAssessment, WorthQueryApplicationAttemptDenial,
@@ -72,7 +73,7 @@ where
                 self.required.node_path(),
             ));
         }
-        let meaning = evidence_meaning(
+        let mut meaning = evidence_meaning(
             &self.required,
             self.admitted.subject(),
             settlement,
@@ -84,9 +85,21 @@ where
         let transition_identity_bytes = *self.admitted.identity_bytes();
         let node_path = self.admitted.node_path().to_owned();
         let mut demand = super::PlatformEffectDemand::default();
+        let mut retained_bytes = 0_u64;
         visit_workflow_assessment_facts(&self.layout, &self.admitted, &meaning, |effect| {
+            retained_bytes = retained_bytes
+                .saturating_add(workflow_evidence_retained_bytes(&self.layout, &effect));
             demand.observe(&effect)
         })?;
+        // Retained evidence never shrinks, so a lineage that has spent its
+        // evidence budget can take no further assessment evidence.
+        if retained_bytes > self.evidence_allowance {
+            return Err(WorthQueryApplicationAttemptDenial::new(
+                WorthQueryApplicationAttemptDenialKind::WorkflowInstanceEvidenceCapacityUnavailable,
+                self.required.node_path(),
+            ));
+        }
+        meaning.retained_bytes = retained_bytes;
         let reservation = super::admit_platform_effects(self.admitted.read_set(), demand)?;
         let mut effects = Vec::new();
         visit_workflow_assessment_facts(&self.layout, &self.admitted, &meaning, |effect| {
@@ -101,7 +114,8 @@ where
                 worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome::Completed,
                 None,
             )?
-        };
+        }
+        .charging_evidence(retained_bytes);
         let mut read_set = self.admitted.into_read_set();
         bind_currentness_facts(&mut read_set, &currentness_facts, &node_path)?;
         let program = WorthQueryApplicationEffectProgram {
@@ -295,6 +309,7 @@ fn evidence_meaning<Query>(
         required.binding(),
         required.proposal_identity(),
         required.coverage_identity(),
+        required.program_revision(),
         &source_identity,
         &publication_identity,
         &output_content_identity,
@@ -321,6 +336,8 @@ fn evidence_meaning<Query>(
         passing,
         publication_identity,
         output_content_identity,
+        program_revision: required.program_revision().to_owned(),
+        retained_bytes: 0,
         currentness_facts,
     }
 }

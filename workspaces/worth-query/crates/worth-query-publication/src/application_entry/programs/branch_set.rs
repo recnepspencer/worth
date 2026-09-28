@@ -4,6 +4,8 @@ use worth_query_admission::facade::authenticated_principal::{
 use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
 use worth_query_installation::facade::ApplicationSchema;
 
+/// A program request over an ordered set of branches. `adopt` prepares one adoption across
+/// them; `resume` preflights again the branches a no-effect stop left unperformed.
 pub struct WorthQueryApplicationBranchSetProgramsRequest<
     'application,
     'principal,
@@ -71,6 +73,8 @@ where
     }
 }
 
+/// A branch-set adoption of one target program revision. `prepare` checks it before
+/// anything commits.
 pub struct WorthQueryApplicationBranchSetProgramAdoptionRequest<
     'application,
     'principal,

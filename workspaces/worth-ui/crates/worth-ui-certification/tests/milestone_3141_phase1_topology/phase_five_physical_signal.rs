@@ -58,9 +58,9 @@ fn phase_five_physical_signal_owner_is_single_native_and_query_free() {
     let native_manifest =
         repository_document("workspaces/worth-ui/crates/worth-ui-host-native/Cargo.toml");
     if present == 0 {
-        let specification = repository_document("_docs/worth-ui/milestone-3.14.1-phase-5.md");
+        let specification = repository_document("plans/worth-ui/milestone-3.14.1-phase-5.md");
         let plan =
-            repository_document("_docs/worth-ui/milestone-3.14.1-phase-5-implementation-plan.md");
+            repository_document("plans/worth-ui/milestone-3.14.1-phase-5-implementation-plan.md");
         assert!(specification.contains("exactly one bounded host-native physical Signal runtime"));
         assert!(plan.contains("worth-signal.workspace = true"));
         return;

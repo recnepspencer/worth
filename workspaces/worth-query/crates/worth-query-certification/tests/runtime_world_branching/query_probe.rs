@@ -11,8 +11,6 @@ pub(super) struct QueryWork {
     pub basis_acquisitions: usize,
     pub admission_product_resolutions: usize,
     pub execution_product_resolutions: usize,
-    pub reconstructive_graph_scans: usize,
-    pub reconstructive_relation_records_scanned: usize,
     pub fallback_count: usize,
 }
 
@@ -84,9 +82,6 @@ pub(super) fn read_across<Interleaved>(
                 + (after.acquisitions() - before_execution.acquisitions()),
             admission_product_resolutions: authorization.admission_security_product_resolutions(),
             execution_product_resolutions: authorization.execution_security_product_resolutions(),
-            reconstructive_graph_scans: authorization.reconstructive_graph_scans(),
-            reconstructive_relation_records_scanned: authorization
-                .reconstructive_relation_records_scanned(),
             fallback_count: receipt.fallback_count(),
         },
     };
@@ -95,11 +90,11 @@ pub(super) fn read_across<Interleaved>(
 }
 
 pub(super) fn assert_ordinary_work(work: QueryWork) {
-    assert_eq!(work.basis_acquisitions, 3);
+    // Fresh security stages reuse the read's exact snapshot, so one basis
+    // acquisition serves admission and execution.
+    assert_eq!(work.basis_acquisitions, 1);
     assert_eq!(work.admission_product_resolutions, 1);
     assert_eq!(work.execution_product_resolutions, 1);
-    assert_eq!(work.reconstructive_graph_scans, 0);
-    assert_eq!(work.reconstructive_relation_records_scanned, 0);
     assert_eq!(work.fallback_count, 0);
 }
 

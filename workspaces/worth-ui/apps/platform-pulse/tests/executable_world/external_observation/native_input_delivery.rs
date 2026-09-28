@@ -1,4 +1,4 @@
-use super::{NativeWindowIdentity, ProcessBoundNativeClientAreaObservation};
+use super::ProcessBoundNativeClientAreaObservation;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum NativeInputProbeKind {
@@ -9,15 +9,12 @@ pub(crate) enum NativeInputProbeKind {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum NativeKeyboardCommand {
     Escape,
-    Tab,
-    PrimaryShiftP,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct NativeInputDeliveryObservation {
     kind: NativeInputProbeKind,
     process_id: u32,
-    window: NativeWindowIdentity,
     qualified_screen_x: i32,
     qualified_screen_y: i32,
     delivered_event_count: u32,
@@ -33,7 +30,6 @@ impl NativeInputDeliveryObservation {
         Self {
             kind,
             process_id: client.process_id(),
-            window: client.window(),
             qualified_screen_x: qualified_screen_point.0,
             qualified_screen_y: qualified_screen_point.1,
             delivered_event_count,
@@ -46,10 +42,6 @@ impl NativeInputDeliveryObservation {
 
     pub(crate) fn process_id(self) -> u32 {
         self.process_id
-    }
-
-    pub(crate) fn window(self) -> NativeWindowIdentity {
-        self.window
     }
 
     pub(crate) fn qualified_screen_point(self) -> (i32, i32) {

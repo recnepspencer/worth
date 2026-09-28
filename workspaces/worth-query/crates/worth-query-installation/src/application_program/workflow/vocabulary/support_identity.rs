@@ -9,7 +9,7 @@ use super::{
     WorthQueryInstalledApplicationWorkflowSpec,
 };
 
-impl<Schema, Spec, Program> WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>
+impl<Schema, Spec> WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>
 where
     Schema: super::ApplicationSchema,
     Spec: worth_query_declaration::facade::application_program::ApplicationWorkflowSpec<

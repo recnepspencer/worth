@@ -172,7 +172,7 @@ fn fintech_complexity_hooks_measure_seeded_workflows() {
             selector: |counters| counters.full_state_clones,
         });
 
-    assert!(contracts.contains(&"runtime.partition_local_commit".into()));
+    assert!(contracts.contains(&"runtime.partition_local_commit"));
 
     let counters = measure_world_action(&mut world, |world| {
         let _ = correct_seeded_trade_candidate(world, analysis.clone());

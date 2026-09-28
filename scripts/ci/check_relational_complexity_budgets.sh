@@ -7,7 +7,7 @@ cd "$ROOT_DIR"
 echo "[relational-complexity] enforcing declared complexity contracts and budget proofs"
 
 module="crates/worth-relational/src/tests/complexity/contracts.rs"
-doc="_docs/engineering/worth_relational_complexity_budgets.md"
+doc="plans/engineering/worth_relational_complexity_budgets.md"
 
 if [[ ! -f "$module" ]]; then
   echo "FAIL: missing complexity contract test module: $module"

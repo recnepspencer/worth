@@ -20,7 +20,7 @@ Do the following:
   relevant APIs.
 - If this run has a prior boundary review turn for the current phase, use that
   boundary brief as planning input.
-- Read `_docs/coding_guidelines/dx_laws.md` if it exists.
+- Read `docs/coding-guidelines/dx_laws.md` if it exists.
 - Plan the directory skeleton explicitly.
 - Plan the DX target via DX laws as an actual Rust code block target.
 - Make implicit requirements explicit.

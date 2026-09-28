@@ -1,6 +1,6 @@
 use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
 
-use super::super::{WorthQueryApplicationCommitOutcome, WorthQueryApplicationEffectProgram};
+use super::super::{WorthQueryApplicationEffectProgram, WorthQueryApplicationUncommitted};
 
 #[path = "publication/actor.rs"]
 mod actor;
@@ -162,6 +162,8 @@ pub struct PreparedWorkflowAssessment<Schema, Operation, Input, Scope> {
         crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
     pub(super) program_revision: ApplicationProgramRevision,
     pub(super) replays: PreparedWorkflowTransitionReplays,
+    /// Evidence bytes the lineage may still retain when this settles.
+    pub(super) evidence_allowance: u64,
 }
 
 pub struct PreparedWorkflowCondition<Schema, Operation, Input, Scope> {
@@ -199,6 +201,8 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAssessment<Schema, Operati
     }
 }
 
+/// A condition the instance waits on: the installed query, its parameter and result types,
+/// and the binding whose published boolean result decides the transition.
 #[derive(Clone, Debug)]
 pub struct RequiredWorkflowCondition {
     pub(super) instance: worth_relational::facade::identity::EntityId,
@@ -257,6 +261,9 @@ impl RequiredWorkflowCondition {
     }
 }
 
+/// A workflow transition that landed: the node it reached, whether that node is terminal,
+/// its commit receipt, whether it replayed, and the assessment evidence, approval or
+/// operation receipt it consumed.
 #[derive(Debug)]
 pub struct PerformedWorkflowTransition {
     transition: worth_relational::facade::identity::EntityId,
@@ -269,6 +276,8 @@ pub struct PerformedWorkflowTransition {
     operation_receipt_identity: Option<[u8; 32]>,
 }
 
+/// An approval recorded by a transition: its decision, the proposal and evidence it
+/// covered, the approver, its purpose and its expiry.
 #[derive(Debug)]
 pub struct PerformedWorkflowApproval {
     entity: worth_relational::facade::identity::EntityId,
@@ -342,6 +351,9 @@ impl PerformedWorkflowTransition {
     }
 }
 
+/// What advancing a workflow instance produced. The `Awaiting*` variants name what the
+/// instance needs next; `Completed` is a landed transition. The remaining variants say why
+/// nothing landed, or why a landed commit could not be projected.
 #[derive(Debug)]
 pub enum WorkflowProgressOutcome {
     AwaitingActor(RequiredWorkflowActor),
@@ -351,7 +363,9 @@ pub enum WorkflowProgressOutcome {
     AwaitingEvidence(RequiredWorkflowEvidence),
     AwaitingApproval(RequiredWorkflowApproval),
     Completed(PerformedWorkflowTransition),
-    Application(WorthQueryApplicationCommitOutcome),
+    /// The commit did not land. A landed commit, first or replayed, is the
+    /// performed variant.
+    Application(WorthQueryApplicationUncommitted),
     ProjectionDenied(super::super::WorthQueryApplicationCommitReceipt),
     PreparationDenied(super::super::WorthQueryApplicationAttemptDenial),
     AuthenticationDenied(

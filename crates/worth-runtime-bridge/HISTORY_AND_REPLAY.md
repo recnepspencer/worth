@@ -30,25 +30,29 @@ The first history-shaped workflow is explicit truth-view evaluation:
 
 ```rust
 use worth_runtime_bridge::facade::{
-    BridgeTruthViewEvaluationRequest, TruthBranchIdentity, TruthCommitIdentity,
-    TruthSnapshotIdentity,
+    BridgeTruthViewEvaluationRequest, RelationalBridgeSnapshotIdentityParts,
+    TruthBranchIdentity, TruthCommitIdentity, TruthSnapshotIdentity,
 };
 
 let branch_eval = bridge.evaluate(
-    BridgeTruthViewEvaluationRequest::for_branch_head(TruthBranchIdentity::new("main")),
+    BridgeTruthViewEvaluationRequest::for_branch_head(
+        TruthBranchIdentity::from_relational_branch_id("main"),
+    ),
 )?;
 
 let snapshot_eval = bridge.evaluate(
     BridgeTruthViewEvaluationRequest::for_branch_snapshot(
-        TruthBranchIdentity::new("pricing-main"),
-        TruthSnapshotIdentity::new("snapshot:pricing-main"),
+        TruthBranchIdentity::from_relational_branch_id("pricing-main"),
+        TruthSnapshotIdentity::from_relational_snapshot(
+            RelationalBridgeSnapshotIdentityParts::new(snapshot_id, version_id),
+        ),
     ),
 )?;
 
 let historical_eval = bridge.evaluate(
     BridgeTruthViewEvaluationRequest::for_historical_commit(
-        TruthBranchIdentity::new("main"),
-        TruthCommitIdentity::new("commit:steel-main"),
+        TruthBranchIdentity::from_relational_branch_id("main"),
+        TruthCommitIdentity::from_relational_commit_id(commit_id),
     ),
 )?;
 ```

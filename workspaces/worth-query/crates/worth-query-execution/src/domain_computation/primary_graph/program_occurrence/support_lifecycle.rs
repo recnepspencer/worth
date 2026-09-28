@@ -48,7 +48,7 @@ impl WorthQueryProgramSupportLifecycle {
             .iter()
             .map(|entry| {
                 (
-                    entry.revision().clone(),
+                    *entry.revision(),
                     SupportEntryState {
                         status: WorthQueryProgramSupportStatus::Active,
                         retained_interpretations: 0,
@@ -77,7 +77,7 @@ impl WorthQueryProgramSupportLifecycle {
         self.acquire(revision, SupportUse::Interpretation)?;
         Some(WorthQueryProgramSupportInterpretation {
             lifecycle: self.clone(),
-            revision: revision.clone(),
+            revision: *revision,
         })
     }
 
@@ -93,8 +93,8 @@ impl WorthQueryProgramSupportLifecycle {
         }
         Some(WorthQueryProgramSupportCustody {
             lifecycle: self.clone(),
-            source: source.clone(),
-            target: (source != target).then(|| target.clone()),
+            source: *source,
+            target: (source != target).then_some(*target),
         })
     }
 
@@ -139,11 +139,11 @@ impl WorthQueryProgramSupportLifecycle {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let entry = state.entries.get_mut(revision).ok_or_else(|| {
+        let entry = state.entries.get_mut(revision).ok_or(
             WorthQueryProgramSupportRetirementDenial::UnrosteredProgram {
-                revision: revision.clone(),
-            }
-        })?;
+                revision: *revision,
+            },
+        )?;
         match entry.status {
             WorthQueryProgramSupportStatus::Active => {
                 entry.status = WorthQueryProgramSupportStatus::Retiring;
@@ -151,19 +151,19 @@ impl WorthQueryProgramSupportLifecycle {
             WorthQueryProgramSupportStatus::Retiring => {
                 return Err(
                     WorthQueryProgramSupportRetirementDenial::RetirementInProgress {
-                        revision: revision.clone(),
+                        revision: *revision,
                     },
                 )
             }
             WorthQueryProgramSupportStatus::Retired => {
                 return Err(WorthQueryProgramSupportRetirementDenial::AlreadyRetired {
-                    revision: revision.clone(),
+                    revision: *revision,
                 })
             }
         }
         Ok(WorthQueryProgramSupportRetirementAttempt {
             lifecycle: self.clone(),
-            revision: revision.clone(),
+            revision: *revision,
             finished: false,
         })
     }
@@ -243,7 +243,7 @@ impl WorthQueryProgramSupportRetirementAttempt {
             .get_mut(&self.revision)
             .expect("a retirement attempt retains its installed program");
         let inventory = WorthQueryProgramSupportPartialRetirementInventory::inspected(
-            self.revision.clone(),
+            self.revision,
             entry.retained_interpretations,
             entry.mandatory_custody,
             retained_program_bytes,
@@ -269,7 +269,7 @@ impl WorthQueryProgramSupportRetirementAttempt {
             .get_mut(&self.revision)
             .expect("a retirement attempt retains its installed program");
         let inventory = WorthQueryProgramSupportRetirementInventory::inspected(
-            self.revision.clone(),
+            self.revision,
             current_branches,
             entry.retained_interpretations,
             entry.mandatory_custody,

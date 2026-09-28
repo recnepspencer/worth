@@ -8,25 +8,24 @@ use worth_query_host::facade::declaration::application_program::ApplicationSeman
 use worth_query_host::facade::domain::WorthQueryProgramCustodyInventoryKind;
 use worth_query_host::facade::primary_graph::WorthQueryProgramCustodyDispositionKind;
 
-use crate::bounded_dimension_model::host::{
+use crate::document_retention_model::host::{
     publish_on_first_program, publish_on_first_resource_program,
 };
-use crate::bounded_dimension_model::operator_identity::{authenticate_operator, request_scope};
-use crate::bounded_dimension_model::presented_request::set_dimension;
-use crate::bounded_dimension_model::programs::{
-    ChangedOperationDimensionProgram, RemovedOperationDimensionProgram, ResourceDimensionProgramP1,
+use crate::document_retention_model::operator_identity::{authenticate_operator, request_scope};
+use crate::document_retention_model::presented_request::set_retention;
+use crate::document_retention_model::programs::{
+    ChangedOperationRetentionProgram, RemovedOperationRetentionProgram, ResourceRetentionProgramP1,
 };
-use crate::bounded_dimension_model::settled_verdict::{settle, DimensionVerdict};
+use crate::document_retention_model::settled_verdict::{settle, RetentionVerdict};
 
 #[test]
 fn removed_operation_derives_retire_disposition_and_closes_its_source_owner() {
     let host = publish_on_first_program();
     let branch = host.current_world();
-    let target = host
-        .supported_program::<RemovedOperationDimensionProgram>()
+    let target = *host
+        .supported_program::<RemovedOperationRetentionProgram>()
         .expect("the removal target is rostered")
-        .owned_revision()
-        .clone();
+        .owned_revision();
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let programs = host
@@ -50,8 +49,7 @@ fn removed_operation_derives_retire_disposition_and_closes_its_source_owner() {
         .all(|requirement| requirement.change() == ApplicationSemanticChangeKind::Removed));
 
     let prepared = programs
-        .adopt(&target)
-        .requirements(&requirements)
+        .adopt(&requirements)
         .prepare(64)
         .expect("execution derives the disposition from installed owner truth");
     let expected_custody = prepared.custody().clone();
@@ -79,8 +77,8 @@ fn removed_operation_derives_retire_disposition_and_closes_its_source_owner() {
     };
     assert_eq!(performed.custody(), &expected_custody);
     assert_eq!(
-        settle(set_dimension(&host, host.current_world(), 8, 0x9175_3c00)),
-        DimensionVerdict::inactive(),
+        settle(set_retention(&host, host.current_world(), 8, 0x9175_3c00)),
+        RetentionVerdict::inactive(&target),
         "the removed operation cannot continue through its obsolete source-program owner"
     );
 }
@@ -90,9 +88,9 @@ fn changed_operation_requires_and_then_receives_fresh_target_admission() {
     let host = publish_on_first_program();
     let branch = host.current_world();
     let target_owner = host
-        .supported_program::<ChangedOperationDimensionProgram>()
+        .supported_program::<ChangedOperationRetentionProgram>()
         .expect("the changed-operation target is rostered");
-    let target = target_owner.owned_revision().clone();
+    let target = *target_owner.owned_revision();
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let programs = host
@@ -111,8 +109,7 @@ fn changed_operation_requires_and_then_receives_fresh_target_admission() {
     assert_eq!(requirement.change(), ApplicationSemanticChangeKind::Changed);
 
     let prepared = programs
-        .adopt(&target)
-        .requirements(&requirements)
+        .adopt(&requirements)
         .prepare(64)
         .expect("changed operation has an owner-derived disposition");
     assert!(prepared.custody().dispositions().iter().any(|disposition| {
@@ -126,14 +123,9 @@ fn changed_operation_requires_and_then_receives_fresh_target_admission() {
 
     let adopted = host.current_world();
     assert_eq!(
-        settle(set_dimension(&host, adopted, 9, 0x9175_3c01)),
-        DimensionVerdict::inactive(),
-        "the changed operation cannot continue through stale source admission"
-    );
-    assert_eq!(
-        settle(set_dimension(&target_owner, adopted, 9, 0x9175_3c02)),
-        DimensionVerdict::Performed(9),
-        "the operation executes only through a fresh request admitted by the active target"
+        settle(set_retention(&host, adopted, 9, 0x9175_3c01)),
+        RetentionVerdict::Performed(9),
+        "the changed operation executes through a fresh request admitted by the active target"
     );
 }
 
@@ -141,11 +133,10 @@ fn changed_operation_requires_and_then_receives_fresh_target_admission() {
 fn changed_resource_ceiling_derives_exact_source_reservation_disposition() {
     let host = publish_on_first_resource_program();
     let branch = host.current_world();
-    let target = host
-        .supported_program::<ResourceDimensionProgramP1>()
+    let target = *host
+        .supported_program::<ResourceRetentionProgramP1>()
         .expect("the changed-resource target is rostered")
-        .owned_revision()
-        .clone();
+        .owned_revision();
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let programs = host
@@ -178,8 +169,7 @@ fn changed_resource_ceiling_derives_exact_source_reservation_disposition() {
     );
 
     let prepared = programs
-        .adopt(&target)
-        .requirements(&requirements)
+        .adopt(&requirements)
         .prepare(64)
         .expect("the resource owner supplies an exact-source disposition");
     assert!(prepared.custody().dispositions().iter().any(|disposition| {

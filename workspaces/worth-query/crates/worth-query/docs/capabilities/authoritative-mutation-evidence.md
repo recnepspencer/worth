@@ -1,5 +1,7 @@
 # Authoritative Mutation Evidence
 
+> **Internal engine surface.** This page documents `WorthQueryWorkspace` (`worth_query::facade`), the engine surface that `worth-ui-query-binding` uses. Application code uses `worth-query-decl` and `worth-query-host`; start with the [application front door](../foundations/ordinary-application-front-door.md).
+
 ## What This Feature Is
 
 Authoritative mutation evidence is the **runtime surface for proving what a write batch bound, executed, and retained** on bridge-backed and graph-composition paths: target identity, existing-truth assertions, causality/provenance digests, and session/batch aggregates. Inspection surfaces expose **read-side** retained evidence; **write receipts** and `public_authoritative_mutation_evidence_support()` define what mutation claims are contractually supported.

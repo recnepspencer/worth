@@ -56,8 +56,8 @@ impl RetainedStorageMeasurement for SignalSchemaBinding {
             schema_id: _,
             version: _,
         } = self;
-        Ok(Charge::ZERO
+        Charge::ZERO
             .checked_add(semantic_name.retained_heap_charge(work)?)?
-            .checked_add(descriptor_digest.retained_heap_charge(work)?)?)
+            .checked_add(descriptor_digest.retained_heap_charge(work)?)
     }
 }

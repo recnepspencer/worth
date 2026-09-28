@@ -19,8 +19,10 @@ pub struct WorthQueryCertificationCounters {
     values: BTreeMap<WorthQueryCertificationCounter, u64>,
 }
 
+/// Why `WorthQueryCertificationCounters::exact` refused a counter set.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryCertificationCounterSetDenial {
+    /// The same counter was supplied more than once.
     DuplicateCounter(WorthQueryCertificationCounter),
 }
 

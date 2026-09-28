@@ -16,13 +16,21 @@ use super::{
     WorthQueryNormalizedWorkflowIntent, WorthQueryWorkflowOperation,
 };
 
+/// How historical replay should reach the original run's basis, requested
+/// from `admit_installed_historical_replay_basis`.
+///
+/// Only `RetainedSnapshot` is currently admitted; the other paths are denied
+/// with `HistoricalExecutionSubstrateUnavailable`.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryInstalledHistoricalReplayPath {
+    /// Replay on the retained snapshot of the original run.
     RetainedSnapshot,
+    /// Delta replay, with its event limit and the actual event count.
     DeltaReplay {
         max_events: usize,
         actual_events: usize,
     },
+    /// Full reconstruction, with its scope limit and the actual scope.
     FullReconstruction {
         max_scope: usize,
         actual_scope: usize,
@@ -104,6 +112,13 @@ pub fn admit_installed_historical_replay_basis<
     })
 }
 
+/// Re-executes a completed workflow trace on an admitted historical basis
+/// and compares the replay with the original.
+///
+/// The admission must have been issued for this original trace and bound
+/// operation, and the workspace must be the historical snapshot it names;
+/// otherwise the replay is denied before anything runs. The remaining checks
+/// and the comparison are those of `replay_installed_workflow`.
 pub fn replay_installed_workflow_historical<
     D: 'static,
     O,
