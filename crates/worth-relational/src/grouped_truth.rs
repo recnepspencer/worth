@@ -14,3 +14,6 @@ pub use row_set::{
     RelationalRowIdentity, RelationalRowSetDigest,
 };
 pub use snapshot_aspect_reads::encode_snapshot_aspect_read_value;
+
+#[cfg(test)]
+mod canonical_digest_parity_tests;
