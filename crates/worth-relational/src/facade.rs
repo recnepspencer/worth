@@ -54,6 +54,9 @@ pub mod commit_strategies {
 #[path = "facade/bridge.rs"]
 pub mod bridge;
 
+#[path = "facade/change_source.rs"]
+pub mod change_source;
+
 pub mod diagnostics {
     pub use crate::diagnostics::data::RelationalDiagnosticsFacade;
     pub use crate::diagnostics::data::{

@@ -5,8 +5,8 @@ use worth_foundational::facade::{
 };
 use worth_runtime_bridge::facade::SnapshotReadValue;
 
-use crate::identity::data::EntityId;
-use crate::storage::data::RelationReadRecord;
+use crate::facade::identity::EntityId;
+use crate::facade::runtime::RelationReadRecord;
 
 use super::lifecycle_snapshot_values::lifecycle_aspect_value;
 

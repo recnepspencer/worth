@@ -1,0 +1,13 @@
+error[E0308]: mismatched types
+ --> tests/ui/change_source/raw_commit_cannot_mint_receipt.rs:5:41
+  |
+5 |     let _ = runtime.mint_change_receipt(CommitId(1), None);
+  |                     ------------------- ^^^^^^^^^^^ expected `RelationalSelectedCommit`, found `CommitId`
+  |                     |
+  |                     arguments to this method are incorrect
+  |
+note: method defined here
+ --> src/change_source/receipt_minting.rs
+  |
+  |     pub fn mint_change_receipt(
+  |            ^^^^^^^^^^^^^^^^^^^

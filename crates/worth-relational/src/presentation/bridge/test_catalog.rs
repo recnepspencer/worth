@@ -1,8 +1,8 @@
 use std::collections::BTreeMap;
 use std::sync::{Arc, RwLock};
 
-use crate::history::data::{BranchId, CommitId};
-use crate::publication::patch::data::PublishedAuthoritativePatchEnvelope;
+use crate::facade::history::{BranchId, CommitId};
+use crate::facade::publication::PublishedAuthoritativePatchEnvelope;
 use worth_runtime_bridge::facade::{
     BridgeCommittedPatchEnvelope, CommittedPatchSource, RelationalBridgeSourceError,
     RelationalCommittedPatchRequest, SnapshotReadPacket, SnapshotReadPacketResult,

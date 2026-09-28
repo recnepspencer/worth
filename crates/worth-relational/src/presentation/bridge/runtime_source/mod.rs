@@ -1,6 +1,8 @@
 use std::sync::{Arc, Mutex};
 
-use crate::runtime::RelationalRuntime;
+use crate::facade::change_source::RelationalRuntimeHandle;
+use crate::facade::identity::PartitionId;
+use crate::facade::runtime::RelationalRuntime;
 
 mod branch_basis;
 mod branch_head_bindings;
@@ -27,7 +29,7 @@ pub use retained_snapshot::RelationalBridgeRetainedSnapshot;
 
 #[derive(Debug, Clone)]
 pub struct RuntimeBridgeRelationalSource {
-    runtime: crate::visibility::runtime_authority::RelationalVisibilityRuntimeAuthority,
+    runtime: RelationalRuntimeHandle,
     runtime_instance_id: u64,
     observation_bindings: Arc<observation_bindings::RelationalBridgeObservationBindings>,
     branch_head_bindings: Arc<branch_head_bindings::RelationalBridgeBranchHeadBindings>,
@@ -37,7 +39,7 @@ pub struct RuntimeBridgeRelationalSource {
 
 #[derive(Debug, Clone)]
 struct RelationalBridgePartitionBinding {
-    relational: crate::identity::data::PartitionId,
+    relational: PartitionId,
     truth: worth_foundational::facade::TruthPartitionRole,
 }
 
@@ -57,7 +59,7 @@ impl RuntimeBridgeRelationalSource {
         }
         let runtime_instance_id = runtime.runtime_instance_id();
         Ok(Self {
-            runtime: crate::visibility::runtime_authority::RelationalVisibilityRuntimeAuthority::immutable(runtime),
+            runtime: RelationalRuntimeHandle::immutable(runtime),
             runtime_instance_id,
             observation_bindings: observation_bindings::RelationalBridgeObservationBindings::new(),
             branch_head_bindings: branch_head_bindings::RelationalBridgeBranchHeadBindings::new(),
@@ -77,10 +79,7 @@ impl RuntimeBridgeRelationalSource {
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .runtime_instance_id();
         Ok(Self {
-            runtime:
-                crate::visibility::runtime_authority::RelationalVisibilityRuntimeAuthority::shared(
-                    runtime,
-                ),
+            runtime: RelationalRuntimeHandle::shared(runtime),
             runtime_instance_id,
             observation_bindings: observation_bindings::RelationalBridgeObservationBindings::new(),
             branch_head_bindings: branch_head_bindings::RelationalBridgeBranchHeadBindings::new(),
@@ -92,7 +91,7 @@ impl RuntimeBridgeRelationalSource {
     pub fn for_shared_graph_partition(
         runtime: Arc<Mutex<RelationalRuntime>>,
         graph_role: impl Into<Arc<str>>,
-        relational_partition: crate::identity::data::PartitionId,
+        relational_partition: PartitionId,
         truth_partition: worth_foundational::facade::TruthPartitionRole,
     ) -> Result<Self, RelationalBridgeSourceConfigurationError> {
         let mut source = Self::for_shared_graph_role(runtime, graph_role)?;
@@ -106,7 +105,7 @@ impl RuntimeBridgeRelationalSource {
     pub fn for_graph_partition(
         runtime: Arc<RelationalRuntime>,
         graph_role: impl Into<Arc<str>>,
-        relational_partition: crate::identity::data::PartitionId,
+        relational_partition: PartitionId,
         truth_partition: worth_foundational::facade::TruthPartitionRole,
     ) -> Result<Self, RelationalBridgeSourceConfigurationError> {
         let mut source = Self::for_graph_role(runtime, graph_role)?;

@@ -6,7 +6,7 @@ use worth_runtime_bridge::facade::{
     RelationalBridgeSourceError, TruthBranchIdentity, TruthSnapshotIdentity,
 };
 
-use crate::history::data::CommitId;
+use crate::facade::history::CommitId;
 
 use super::{RelationalBridgeObservationLease, RelationalBridgeObservationReleaseReceipt};
 

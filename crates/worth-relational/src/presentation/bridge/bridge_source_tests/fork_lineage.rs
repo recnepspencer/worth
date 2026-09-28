@@ -1,12 +1,9 @@
 use std::sync::{Arc, Mutex};
 
-use crate::facade::identity::PartitionId;
-use crate::facade::transactions::{
-    EntityMutationIntent, MutationIntent, ReplaceEntityIntent, WorkerIntentBatch,
-};
-use crate::history::data::BranchId;
-use crate::tests::support::{
-    changed_entities, create_entity_outcome, field_key, single_string_aspect_field_patch,
+use crate::facade::history::BranchId;
+use crate::presentation::bridge::relational_test_support::{
+    changed_entities, create_entity_outcome, fork_branch, replace_entity_on_branch,
+    replacement_successor,
 };
 use worth_runtime_bridge::facade::{
     BridgeContinuityAuthorityBasis, BridgeHistoricalLineageAuthority,
@@ -39,11 +36,11 @@ fn assert_retained_fork_excludes_later_event(later_branch: BranchId) {
 }
 
 struct RetainedForkFixture {
-    runtime: Arc<Mutex<crate::runtime::RelationalRuntime>>,
+    runtime: Arc<Mutex<crate::facade::runtime::RelationalRuntime>>,
     bridge: RuntimeBridge,
     commit: TruthCommitIdentity,
     snapshot: TruthSnapshotIdentity,
-    successor: crate::identity::data::EntityId,
+    successor: crate::facade::identity::EntityId,
     _lease: super::super::RelationalBridgeObservationLease,
 }
 
@@ -70,30 +67,20 @@ fn retained_fork_fixture() -> RetainedForkFixture {
     let runtime = runtime_with_test_schema();
     let created = create_entity_outcome(&runtime, "fork-source");
     let entity = changed_entities(&created)[0];
-    replace_entity_on_branch(
+    let replaced = replace_entity_on_branch(
         &runtime,
         entity,
         "fork-inherited-replacement",
         BranchId("main".to_owned()),
     );
+    let successor = replacement_successor(&replaced, entity);
     let inherited = runtime
         .publication()
         .latest_bundle()
         .expect("inherited replacement publication")
         .clone();
-    let successor = runtime
-        .read_truth()
-        .project_historical_version(inherited.commit.version_id)
-        .all_authoritative_entity_records()
-        .into_iter()
-        .find(|record| record.entity_id != entity && record.lineage_id.is_some())
-        .expect("inherited replacement successor")
-        .entity_id;
     let feature = BranchId("feature".to_owned());
-    runtime
-        .history_authority()
-        .fork_branch_from(feature.clone(), &BranchId("main".to_owned()))
-        .expect("feature fork from inherited main root");
+    fork_branch(&runtime, feature.clone(), &BranchId("main".to_owned()));
     let feature_identity = runtime
         .branch_identity(&feature)
         .expect("feature branch identity");
@@ -128,35 +115,6 @@ fn retained_fork_fixture() -> RetainedForkFixture {
         successor,
         _lease: lease,
     }
-}
-
-pub(super) fn replace_entity_on_branch(
-    runtime: &crate::runtime::RelationalRuntime,
-    entity: crate::identity::data::EntityId,
-    replacement: &str,
-    branch: BranchId,
-) -> crate::identity::data::EntityId {
-    let mut txn = crate::tests::support::test_owner_begin_transaction_for_branch(runtime, branch);
-    txn.push_batch(
-        WorkerIntentBatch::new(replacement).push(MutationIntent::Entity(
-            EntityMutationIntent::Replace(ReplaceEntityIntent {
-                entity_id: entity,
-                replacement: crate::transactions::data::EntitySpec {
-                    partition_id: PartitionId::main(),
-                    kind_id: crate::facade::identity::KindId(1),
-                    client_key: crate::symbols::data::ClientKey::raw(replacement),
-                    fields: single_string_aspect_field_patch(
-                        crate::tests::support::aspect_key("name"),
-                        field_key("name"),
-                        replacement,
-                    ),
-                },
-            }),
-        )),
-    )
-    .expect("test staging stays within configured resource budgets");
-    let outcome = txn.commit(runtime).expect("replacement should commit");
-    changed_entities(&outcome)[0]
 }
 
 pub(super) fn plan_lineage_packet(

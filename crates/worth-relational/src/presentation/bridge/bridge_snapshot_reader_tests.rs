@@ -5,12 +5,12 @@ use worth_runtime_bridge::facade::{
     RelationalBridgeRecordIdentityParts, SnapshotReadContract, SnapshotReadSource,
 };
 
-use crate::config::data::CascadeDeletePolicy;
+use crate::facade::config::CascadeDeletePolicy;
 use crate::facade::identity::PartitionId;
 use crate::facade::transactions::{
     EntityMutationIntent, MutationIntent, ReplaceEntityIntent, WorkerIntentBatch,
 };
-use crate::tests::support::{
+use crate::presentation::bridge::relational_test_support::{
     changed_entities, create_entity_outcome, field_key, runtime_with_declared_aspect_schema,
     single_string_aspect_field_patch,
 };
@@ -73,7 +73,7 @@ fn runtime_bridge_snapshot_reader_prefers_retained_observation_over_later_commit
 fn runtime_bridge_snapshot_reader_requires_a_retained_branch_observation() {
     let runtime = runtime_with_test_schema();
     let created = create_entity_outcome(&runtime, "managed");
-    let branch_id = created.snapshot.branch_id.clone();
+    let branch_id = created.snapshot.branch_id().clone();
     let branch_identity = runtime
         .branch_identity(&branch_id)
         .expect("created branch identity is owner-issued");
@@ -85,7 +85,7 @@ fn runtime_bridge_snapshot_reader_requires_a_retained_branch_observation() {
     let runtime = Arc::new(runtime);
     let source = RuntimeBridgeRelationalSource::for_graph_role(Arc::clone(&runtime), "model")
         .expect("test graph role");
-    let before = runtime.retention_cost_counters();
+    let before = retention(&runtime, &branch_identity);
     let (_, basis) = source
         .observe_branch_basis(&branch_identity)
         .expect("Relational owner should admit its exact branch basis");
@@ -98,7 +98,7 @@ fn runtime_bridge_snapshot_reader_requires_a_retained_branch_observation() {
         .open_snapshot(&identity)
         .expect("retained observation should authorize Bridge snapshot access");
     let second_reader = source.open_snapshot(&identity).unwrap();
-    let opened = runtime.retention_cost_counters();
+    let opened = retention(&runtime, &branch_identity);
     assert_eq!(opened.observation_acquires, before.observation_acquires + 1);
     assert_eq!(
         opened.external_pin_acquires,
@@ -122,7 +122,7 @@ fn runtime_bridge_snapshot_reader_requires_a_retained_branch_observation() {
 
     assert!(lease.release().released());
     assert!(source.open_snapshot(&identity).is_err());
-    let unregistered = runtime.retention_cost_counters();
+    let unregistered = retention(&runtime, &branch_identity);
     assert_eq!(
         unregistered.external_pin_releases,
         opened.external_pin_releases + 1
@@ -137,17 +137,26 @@ fn runtime_bridge_snapshot_reader_requires_a_retained_branch_observation() {
     );
     drop(reader);
     assert_eq!(
-        runtime.retention_cost_counters().observation_releases,
+        retention(&runtime, &branch_identity).observation_releases,
         opened.observation_releases
     );
     drop(second_reader);
-    let released = runtime.retention_cost_counters();
+    let released = retention(&runtime, &branch_identity);
     assert_eq!(
         released.observation_releases,
         opened.observation_releases + 1
     );
     assert_eq!(released.observation_acquires, opened.observation_acquires);
     assert_eq!(released.external_pin_acquires, opened.external_pin_acquires);
+}
+
+fn retention(
+    runtime: &crate::facade::runtime::RelationalRuntime,
+    branch: &crate::facade::branch::RelationalBranchIdentity,
+) -> crate::facade::inspection::RelationalRetentionCostCounters {
+    runtime
+        .branch_retention_cost_counters(branch)
+        .expect("owner-issued branch has retention counters")
 }
 
 fn active_entity_identity(
@@ -165,17 +174,17 @@ fn replace_entity_after_snapshot(
     runtime: &mut crate::facade::runtime::RelationalRuntime,
     created: &crate::facade::transactions::CommitResult,
 ) {
-    let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(runtime);
+    let mut txn = crate::presentation::bridge::relational_test_support::test_owner_begin_transaction_for_main(runtime);
     txn.push_batch(
         WorkerIntentBatch::new("update").push(MutationIntent::Entity(
             EntityMutationIntent::Replace(ReplaceEntityIntent {
                 entity_id: changed_entities(created)[0],
-                replacement: crate::transactions::data::EntitySpec {
+                replacement: crate::facade::transactions::EntitySpec {
                     partition_id: PartitionId::main(),
                     kind_id: crate::facade::identity::KindId(1),
-                    client_key: crate::symbols::data::ClientKey::raw("alice"),
+                    client_key: crate::facade::symbols::ClientKey::raw("alice"),
                     fields: single_string_aspect_field_patch(
-                        crate::tests::support::aspect_key("name"),
+                        crate::presentation::bridge::relational_test_support::aspect_key("name"),
                         field_key("name"),
                         "alice-updated",
                     ),

@@ -8,12 +8,14 @@ pub(super) struct PartitionPatchProjection {
     pub(super) records_filtered_out: u64,
 }
 
+/// Keep only the records in `partition_id`, or every record when it is
+/// `None`, and count what was kept and dropped.
 pub(super) fn project_patch_partition(
-    patch: &PublishedAuthoritativePatchEnvelope,
+    patch: PublishedAuthoritativePatchEnvelope,
     partition_id: Option<PartitionId>,
 ) -> PartitionPatchProjection {
     let records_examined = patch.authoritative_record_patches.len() as u64;
-    let mut patch = patch.clone();
+    let mut patch = patch;
     if let Some(partition_id) = partition_id {
         patch
             .authoritative_record_patches

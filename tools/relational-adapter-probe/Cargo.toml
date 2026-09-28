@@ -1,0 +1,21 @@
+[package]
+name = "relational-adapter-probe"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+# Milestone 20 Phase 3 probe. It compiles the Relational Bridge adapter
+# (`crates/worth-relational/src/presentation/bridge`) as an outside crate, so
+# it builds only if the adapter uses public Relational API. Phase 4 deletes it
+# when the adapter moves into the Bridge.
+[workspace]
+
+[dependencies]
+worth-foundational = { path = "../../crates/worth-foundational" }
+worth-proof = { path = "../../crates/worth-proof" }
+worth-relational = { path = "../../crates/worth-relational" }
+worth-runtime-bridge = { path = "../../crates/worth-runtime-bridge" }
+
+[dev-dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"

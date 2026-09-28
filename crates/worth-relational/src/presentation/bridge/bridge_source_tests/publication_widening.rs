@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use worth_proof::TransitionOutcome;
 
-use crate::tests::support::create_entity_outcome;
+use crate::presentation::bridge::relational_test_support::create_entity_outcome;
 
 use super::super::RuntimeBridgeRelationalSource;
 use super::support::runtime_with_test_schema;
@@ -18,18 +18,22 @@ fn live_runtime_mints_publication_provenance_and_rejects_foreign_widening_author
         .commit
         .commit_id;
     let branch_identity = owner
-        .branch_identity(&crate::history::data::BranchId("main".to_owned()))
+        .branch_identity(&crate::facade::history::BranchId("main".to_owned()))
         .expect("owner branch identity");
-    let admission = owner.admit_opaque_aspect_bridge_widening("model").unwrap();
-    let wrong_role_admission = owner
-        .admit_opaque_aspect_bridge_widening("analysis")
-        .unwrap();
-    let foreign = runtime_with_test_schema();
-    let foreign_admission = foreign
-        .admit_opaque_aspect_bridge_widening("model")
-        .unwrap();
-    let source = RuntimeBridgeRelationalSource::for_graph_role(Arc::new(owner), "model")
+    let owner = Arc::new(owner);
+    let source = RuntimeBridgeRelationalSource::for_graph_role(owner.clone(), "model")
         .expect("owner graph source");
+    let admission = source.admit_opaque_aspect_widening().unwrap();
+    let wrong_role_admission =
+        RuntimeBridgeRelationalSource::for_graph_role(owner, "analysis")
+            .expect("owner analysis source")
+            .admit_opaque_aspect_widening()
+            .unwrap();
+    let foreign_admission =
+        RuntimeBridgeRelationalSource::for_graph_role(Arc::new(runtime_with_test_schema()), "model")
+            .expect("foreign graph source")
+            .admit_opaque_aspect_widening()
+            .unwrap();
     let (_, basis) = source
         .observe_branch_basis(&branch_identity)
         .expect("owner exact basis");

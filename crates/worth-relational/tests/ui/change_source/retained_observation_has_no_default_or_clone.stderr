@@ -1,0 +1,23 @@
+error[E0277]: the trait bound `RelationalRetainedObservation: Default` is not satisfied
+ --> tests/ui/change_source/retained_observation_has_no_default_or_clone.rs:7:24
+  |
+7 |     requires_default::<RelationalRetainedObservation>();
+  |                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `Default` is not implemented for `RelationalRetainedObservation`
+  |
+note: required by a bound in `requires_default`
+ --> tests/ui/change_source/retained_observation_has_no_default_or_clone.rs:3:24
+  |
+3 | fn requires_default<T: Default>() {}
+  |                        ^^^^^^^ required by this bound in `requires_default`
+
+error[E0277]: the trait bound `RelationalRetainedObservation: Clone` is not satisfied
+ --> tests/ui/change_source/retained_observation_has_no_default_or_clone.rs:8:22
+  |
+8 |     requires_clone::<RelationalRetainedObservation>();
+  |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `Clone` is not implemented for `RelationalRetainedObservation`
+  |
+note: required by a bound in `requires_clone`
+ --> tests/ui/change_source/retained_observation_has_no_default_or_clone.rs:4:22
+  |
+4 | fn requires_clone<T: Clone>() {}
+  |                      ^^^^^ required by this bound in `requires_clone`

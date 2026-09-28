@@ -3,13 +3,13 @@ use worth_foundational::facade::{
 };
 use worth_runtime_bridge::facade::TruthDeltaSurfaceKind;
 
-use crate::config::data::CascadeDeletePolicy;
+use crate::facade::config::CascadeDeletePolicy;
 use crate::facade::schema::DeclaredAspectContractBinding;
 use crate::facade::transactions::{
     CreateIntent, EntityMutationIntent, EntitySpec, MutationIntent, UpdateEntityFieldsIntent,
     WorkerIntentBatch,
 };
-use crate::tests::support::{
+use crate::presentation::bridge::relational_test_support::{
     aspect_key, changed_entities, create_entity_outcome, create_relation_outcome,
     entity_summary_struct_aspect, field_key, string_aspect_field_patch, AspectSchemaFixture,
 };
@@ -74,14 +74,17 @@ fn real_entity_transaction_preserves_field_lifecycle_and_structural_surfaces() {
         structural_binding("facet", 93, AspectBinding::StructuralFacet),
     ]);
     let runtime = fixture.build_runtime();
-    let mut creation = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
+    let mut creation =
+        crate::presentation::bridge::relational_test_support::test_owner_begin_transaction_for_main(
+            &runtime,
+        );
     creation
         .push_batch(
             WorkerIntentBatch::new("structural-create").push(MutationIntent::Create(
                 CreateIntent::Entity(EntitySpec {
                     partition_id: crate::facade::identity::PartitionId::main(),
                     kind_id: crate::facade::identity::KindId(1),
-                    client_key: crate::symbols::data::ClientKey::raw("solid"),
+                    client_key: crate::facade::symbols::ClientKey::raw("solid"),
                     fields: string_aspect_field_patch([
                         (aspect_key("name"), field_key("name"), "solid"),
                         (aspect_key("summary"), field_key("title"), "solid"),
@@ -98,7 +101,10 @@ fn real_entity_transaction_preserves_field_lifecycle_and_structural_surfaces() {
         .unwrap()
         .commit
         .commit_id;
-    let mut transaction = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
+    let mut transaction =
+        crate::presentation::bridge::relational_test_support::test_owner_begin_transaction_for_main(
+            &runtime,
+        );
     transaction
         .push_batch(
             WorkerIntentBatch::new("summary-field-update").push(MutationIntent::Entity(
@@ -165,11 +171,15 @@ fn structural_binding(
     let key = AspectKey::new(key).unwrap();
     DeclaredAspectContractBinding {
         binding,
-        contract: worth_foundational::aspects()
+        contract: worth_foundational::facade::aspects()
             .contract()
             .for_key(key)
             .identified_by(AspectIdentity(identity))
-            .at_revision(worth_foundational::aspects().vocabulary().revision(1))
+            .at_revision(
+                worth_foundational::facade::aspects()
+                    .vocabulary()
+                    .revision(1),
+            )
             .scalar(ScalarAspectType::String),
     }
 }

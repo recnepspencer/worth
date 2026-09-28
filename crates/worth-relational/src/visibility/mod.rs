@@ -6,7 +6,6 @@ pub(crate) mod materialization;
 pub(crate) mod pins;
 pub(crate) mod residency;
 pub(crate) mod retention;
-pub(crate) mod runtime_authority;
 mod snapshot_admission;
 mod snapshot_release;
 pub(crate) mod snapshot_states;

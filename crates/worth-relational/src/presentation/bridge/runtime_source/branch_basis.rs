@@ -1,7 +1,8 @@
-use crate::branch::{
+use crate::facade::branch::{
     AdmittedRelationalBranchBasis, RelationalBranchBasisDenial, RelationalBranchBasisDescriptor,
     RelationalBranchIdentity,
 };
+use crate::facade::runtime::RelationalRuntime;
 
 use super::{
     RelationalBridgeBranchHeadLease, RelationalBridgeObservationLease,
@@ -50,7 +51,7 @@ impl RuntimeBridgeRelationalSource {
     /// atomic publication.
     pub fn retain_branch_basis_for_bridge_in_runtime(
         &self,
-        runtime: &crate::runtime::RelationalRuntime,
+        runtime: &RelationalRuntime,
         basis: &AdmittedRelationalBranchBasis,
     ) -> Result<RelationalBridgeObservationLease, RelationalBranchBasisDenial> {
         if runtime.runtime_instance_id()
@@ -63,14 +64,8 @@ impl RuntimeBridgeRelationalSource {
                 actual_runtime_instance_id: runtime.runtime_instance_id(),
             });
         }
-        let retention = runtime.retain_component_basis(basis)?;
-        let snapshot_id = runtime
-            .visibility
-            .allocate_snapshot_id()
-            .ok_or(RelationalBranchBasisDenial::SnapshotIdentityExhausted)?;
-        Ok(self
-            .observation_bindings
-            .insert(snapshot_id, basis.observation(), retention))
+        let retained = runtime.retain_observation_snapshot(basis)?;
+        Ok(self.observation_bindings.insert(retained))
     }
 
     /// Bind one already-admitted basis as the exact Bridge head for its branch.
@@ -99,7 +94,7 @@ impl RuntimeBridgeRelationalSource {
     /// Bind a branch head while the caller already owns the runtime closure.
     pub fn bind_branch_head_basis_for_bridge_in_runtime(
         &self,
-        runtime: &crate::runtime::RelationalRuntime,
+        runtime: &RelationalRuntime,
         basis: &AdmittedRelationalBranchBasis,
     ) -> Result<RelationalBridgeBranchHeadLease, RelationalBranchBasisDenial> {
         let commit_id = basis

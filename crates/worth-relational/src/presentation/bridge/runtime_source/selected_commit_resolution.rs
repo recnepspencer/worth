@@ -1,76 +1,105 @@
-use worth_runtime_bridge::facade::RelationalBridgeSourceError;
+use worth_runtime_bridge::facade::{RelationalBridgeSourceError, TruthSnapshotIdentity};
 
-use crate::history::data::CommitId;
-use crate::history::CommitAncestryPosture;
+use crate::facade::change_source::{
+    RelationalCommitSelection, RelationalCommitSelectionDenial, RelationalCommitSelectionWork,
+};
+use crate::facade::history::CommitId;
+use crate::facade::runtime::RelationalRuntime;
 
 use super::{RelationalBridgeSelectedCommitObservation, RelationalBridgeSelectedObservation};
+
+/// One adapter commit selection and the Relational work it did.
+pub(in crate::presentation::bridge) struct SourceCommitSelection {
+    outcome: Result<RelationalBridgeSelectedCommitObservation, RelationalBridgeSourceError>,
+    /// Read by the adapter's cost tests. Production callers need only the
+    /// outcome; the runtime's own counters record the same work.
+    #[cfg_attr(not(test), allow(dead_code))]
+    work: RelationalCommitSelectionWork,
+}
+
+impl SourceCommitSelection {
+    #[cfg(test)]
+    pub(in crate::presentation::bridge) fn work(&self) -> RelationalCommitSelectionWork {
+        self.work
+    }
+
+    pub(in crate::presentation::bridge) fn into_result(
+        self,
+    ) -> Result<RelationalBridgeSelectedCommitObservation, RelationalBridgeSourceError> {
+        self.outcome
+    }
+}
 
 impl RelationalBridgeSelectedObservation {
     pub(super) fn select_reachable_commit(
         self,
-        runtime: &crate::runtime::RelationalRuntime,
+        runtime: &RelationalRuntime,
         commit_id: CommitId,
-    ) -> Result<RelationalBridgeSelectedCommitObservation, RelationalBridgeSourceError> {
-        let selected_commit = self.observation.commit_id().ok_or_else(|| {
-            RelationalBridgeSourceError::new(format!(
-                "relational bridge snapshot {:?} has no committed selected root",
-                self.snapshot_identity
-            ))
-        })?;
-        let ancestry = runtime.history().inspect_commit_ancestry(selected_commit);
-        let classification = runtime
-            .history()
-            .classify_commit_in_ancestry(&ancestry, commit_id);
-        runtime
-            .performance_access()
-            .count_bridge_observation_commit_selection(classification.traversal_work());
-        match classification.posture() {
-            CommitAncestryPosture::SelectedCommitUnavailable => {
-                Err(RelationalBridgeSourceError::new(format!(
-                    "relational bridge snapshot {:?} selects unavailable commit `{}`",
-                    self.snapshot_identity, selected_commit.0
-                )))
-            }
-            CommitAncestryPosture::RequestedCommitUnavailable => {
-                Err(RelationalBridgeSourceError::new(format!(
-                    "relational bridge snapshot {:?} cannot see unavailable requested commit `{}`",
-                    self.snapshot_identity, commit_id.0
-                )))
-            }
-            CommitAncestryPosture::Unreachable => Err(RelationalBridgeSourceError::new(format!(
-                "relational bridge snapshot {:?} at commit `{}` cannot see requested commit `{}` without an exact retained historical observation",
-                self.snapshot_identity, selected_commit.0, commit_id.0,
-            ))),
-            CommitAncestryPosture::Reachable => Ok(RelationalBridgeSelectedCommitObservation {
-                commit_id,
-                observation: self,
-            }),
-        }
+    ) -> SourceCommitSelection {
+        let selection = runtime.select_reachable_commit(&self.observation, commit_id);
+        self.into_source_selection(selection, "has no committed selected root")
     }
 
     pub(super) fn select_exact_selected_commit(
         self,
-        runtime: &crate::runtime::RelationalRuntime,
+        runtime: &RelationalRuntime,
         commit_id: CommitId,
-    ) -> Result<RelationalBridgeSelectedCommitObservation, RelationalBridgeSourceError> {
-        let selected_commit = self.observation.commit_id().ok_or_else(|| {
-            RelationalBridgeSourceError::new(format!(
-                "relational bridge snapshot {:?} has no selected commit",
-                self.snapshot_identity
-            ))
-        })?;
-        runtime
-            .performance_access()
-            .count_bridge_observation_commit_selection(0);
-        if selected_commit != commit_id {
-            return Err(RelationalBridgeSourceError::new(format!(
-                "relational bridge snapshot {:?} selects commit `{}` rather than exact requested commit `{}`",
-                self.snapshot_identity, selected_commit.0, commit_id.0
-            )));
-        }
-        Ok(RelationalBridgeSelectedCommitObservation {
-            commit_id,
-            observation: self,
-        })
+    ) -> SourceCommitSelection {
+        let selection = runtime.select_exact_commit(&self.observation, commit_id);
+        self.into_source_selection(selection, "has no selected commit")
     }
+
+    fn into_source_selection(
+        self,
+        selection: RelationalCommitSelection,
+        no_commit_detail: &str,
+    ) -> SourceCommitSelection {
+        let work = selection.work();
+        let snapshot_identity = self.snapshot_identity;
+        let outcome = match selection.into_outcome() {
+            Ok(selected) => Ok(RelationalBridgeSelectedCommitObservation {
+                selected,
+                snapshot_identity,
+            }),
+            Err(denial) => Err(selection_error(&snapshot_identity, denial, no_commit_detail)),
+        };
+        SourceCommitSelection { outcome, work }
+    }
+}
+
+fn selection_error(
+    snapshot: &TruthSnapshotIdentity,
+    denial: RelationalCommitSelectionDenial,
+    no_commit_detail: &str,
+) -> RelationalBridgeSourceError {
+    RelationalBridgeSourceError::new(match denial {
+        RelationalCommitSelectionDenial::ForeignObservation => {
+            format!("relational bridge snapshot {snapshot:?} was observed in another runtime")
+        }
+        RelationalCommitSelectionDenial::NoSelectedCommit => {
+            format!("relational bridge snapshot {snapshot:?} {no_commit_detail}")
+        }
+        RelationalCommitSelectionDenial::SelectedCommitUnavailable { selected } => format!(
+            "relational bridge snapshot {snapshot:?} selects unavailable commit `{}`",
+            selected.0
+        ),
+        RelationalCommitSelectionDenial::RequestedCommitUnavailable { requested } => format!(
+            "relational bridge snapshot {snapshot:?} cannot see unavailable requested commit `{}`",
+            requested.0
+        ),
+        RelationalCommitSelectionDenial::Unreachable {
+            selected,
+            requested,
+        } => format!(
+            "relational bridge snapshot {snapshot:?} at commit `{}` cannot see requested commit `{}` without an exact retained historical observation",
+            selected.0, requested.0,
+        ),
+        RelationalCommitSelectionDenial::NotSelectedCommit {
+            selected,
+            requested,
+        } => format!(
+            "relational bridge snapshot {snapshot:?} selects commit `{}` rather than exact requested commit `{}`",
+            selected.0, requested.0
+        ),
+    })
 }

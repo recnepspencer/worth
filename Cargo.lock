@@ -1632,6 +1632,7 @@ dependencies = [
  "rayon",
  "rmp-serde",
  "serde",
+ "serde_json",
  "sha2",
  "smallvec",
  "stats_alloc",

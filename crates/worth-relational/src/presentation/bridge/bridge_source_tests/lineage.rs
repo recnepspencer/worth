@@ -1,11 +1,8 @@
 use std::sync::{Arc, Mutex};
 
-use crate::facade::identity::PartitionId;
-use crate::facade::transactions::{
-    EntityMutationIntent, MutationIntent, ReplaceEntityIntent, WorkerIntentBatch,
-};
-use crate::tests::support::{
-    changed_entities, create_entity_outcome, field_key, single_string_aspect_field_patch,
+use crate::facade::history::BranchId;
+use crate::presentation::bridge::relational_test_support::{
+    changed_entities, create_entity_outcome, replace_entity_on_branch, replacement_successor,
 };
 use worth_runtime_bridge::facade::{
     BridgeContinuityAuthorityBasis, BridgeHistoricalLineageAuthority,
@@ -24,26 +21,8 @@ fn runtime_bridge_lineage_source_resolves_real_relational_history() {
     let created = create_entity_outcome(&runtime, "source");
     let entity = changed_entities(&created)[0];
 
-    let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
-    txn.push_batch(
-        WorkerIntentBatch::new("replace").push(MutationIntent::Entity(
-            EntityMutationIntent::Replace(ReplaceEntityIntent {
-                entity_id: entity,
-                replacement: crate::transactions::data::EntitySpec {
-                    partition_id: PartitionId::main(),
-                    kind_id: crate::facade::identity::KindId(1),
-                    client_key: crate::symbols::data::ClientKey::raw("replacement"),
-                    fields: single_string_aspect_field_patch(
-                        crate::tests::support::aspect_key("name"),
-                        field_key("name"),
-                        "replacement",
-                    ),
-                },
-            }),
-        )),
-    )
-    .expect("test staging stays within configured resource budgets");
-    txn.commit(&runtime).expect("replace should commit");
+    let replaced =
+        replace_entity_on_branch(&runtime, entity, "replacement", BranchId("main".to_owned()));
     let latest_bundle = runtime
         .publication()
         .latest_bundle()
@@ -52,21 +31,14 @@ fn runtime_bridge_lineage_source_resolves_real_relational_history() {
     let branch_identity = runtime
         .branch_identity(&latest_bundle.commit.branch_id)
         .expect("lineage branch identity");
-    let expected_successor_record_identities = runtime
-        .read_truth()
-        .project_historical_version(latest_bundle.commit.version_id)
-        .all_authoritative_entity_records()
-        .into_iter()
-        .filter_map(|record| {
-            record.lineage_id.map(|_| {
-                BridgeHistoricalResolvedRecordIdentity::from_relational_record(
-                    super::super::identities::record_ref_identity(
-                        &crate::transactions::data::RecordRef::Entity(record.entity_id),
-                    ),
-                )
-            })
-        })
-        .collect::<Vec<_>>();
+    let expected_successor_record_identities =
+        vec![BridgeHistoricalResolvedRecordIdentity::from_relational_record(
+            super::super::identities::record_ref_identity(
+                &crate::facade::transactions::RecordRef::Entity(replacement_successor(
+                    &replaced, entity,
+                )),
+            ),
+        )];
 
     let runtime = Arc::new(runtime);
     let source = RuntimeBridgeRelationalSource::for_graph_role(Arc::clone(&runtime), "model")
@@ -136,10 +108,11 @@ fn retained_lineage_observation_excludes_later_same_branch_replacement() {
         .expect("retained lineage basis should resolve before branch movement"),
     );
 
-    replace_entity(
+    replace_entity_on_branch(
         &fixture.runtime.lock().unwrap(),
         fixture.successor,
         "later-replacement",
+        BranchId("main".to_owned()),
     );
 
     let after = lineage_authority_with_events(
@@ -171,11 +144,11 @@ fn continuity_lineage_denies_mixed_branch_and_snapshot_axes() {
 }
 
 struct RetainedLineageFixture {
-    runtime: Arc<Mutex<crate::runtime::RelationalRuntime>>,
+    runtime: Arc<Mutex<crate::facade::runtime::RelationalRuntime>>,
     bridge: RuntimeBridge,
     commit_identity: TruthCommitIdentity,
     snapshot: TruthSnapshotIdentity,
-    successor: crate::identity::data::EntityId,
+    successor: crate::facade::identity::EntityId,
     _lease: super::super::RelationalBridgeObservationLease,
 }
 
@@ -183,20 +156,14 @@ fn retained_lineage_fixture() -> RetainedLineageFixture {
     let runtime = runtime_with_test_schema();
     let created = create_entity_outcome(&runtime, "source");
     let entity = changed_entities(&created)[0];
-    replace_entity(&runtime, entity, "replacement");
+    let replaced =
+        replace_entity_on_branch(&runtime, entity, "replacement", BranchId("main".to_owned()));
+    let successor = replacement_successor(&replaced, entity);
     let bundle = runtime
         .publication()
         .latest_bundle()
         .expect("replacement publication bundle")
         .clone();
-    let successor = runtime
-        .read_truth()
-        .project_historical_version(bundle.commit.version_id)
-        .all_authoritative_entity_records()
-        .into_iter()
-        .find(|record| record.entity_id != entity && record.lineage_id.is_some())
-        .expect("replacement successor record")
-        .entity_id;
     let branch_identity = runtime
         .branch_identity(&bundle.commit.branch_id)
         .expect("retained lineage branch identity");
@@ -226,34 +193,6 @@ fn retained_lineage_fixture() -> RetainedLineageFixture {
         successor,
         _lease: lease,
     }
-}
-
-fn replace_entity(
-    runtime: &crate::runtime::RelationalRuntime,
-    entity: crate::identity::data::EntityId,
-    replacement: &str,
-) -> crate::identity::data::EntityId {
-    let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(runtime);
-    txn.push_batch(
-        WorkerIntentBatch::new(replacement).push(MutationIntent::Entity(
-            EntityMutationIntent::Replace(ReplaceEntityIntent {
-                entity_id: entity,
-                replacement: crate::transactions::data::EntitySpec {
-                    partition_id: PartitionId::main(),
-                    kind_id: crate::facade::identity::KindId(1),
-                    client_key: crate::symbols::data::ClientKey::raw(replacement),
-                    fields: single_string_aspect_field_patch(
-                        crate::tests::support::aspect_key("name"),
-                        field_key("name"),
-                        replacement,
-                    ),
-                },
-            }),
-        )),
-    )
-    .expect("test staging stays within configured resource budgets");
-    let outcome = txn.commit(runtime).expect("replacement should commit");
-    changed_entities(&outcome)[0]
 }
 
 fn plan_lineage_packet(

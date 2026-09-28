@@ -7,12 +7,12 @@ use worth_runtime_bridge::facade::{
 use super::{
     observation_bindings::RelationalBridgeSelectedObservation, RuntimeBridgeRelationalSource,
 };
-use crate::identity::data::EntityId;
-use crate::lineage::data::HistoricalLineageResolution;
+use crate::facade::identity::EntityId;
+use crate::facade::lineage::HistoricalLineageResolution;
+use crate::facade::transactions::RecordRef;
 use crate::presentation::bridge::identities::{
     record_ref_from_identity_parts, record_ref_identity,
 };
-use crate::transactions::data::RecordRef;
 
 impl ContinuityLineageSource for RuntimeBridgeRelationalSource {
     fn historical_lineage(
@@ -92,22 +92,16 @@ fn resolve_exact_lineage(
     );
     let (resolution, visible_entities) = source.runtime.with_runtime(|runtime| {
         let resolution = runtime
-            .lineage_access()
-            .resolve_record_history_for_observation(
-                admitted.entity_id,
-                admitted.observation.observation(),
-            )
+            .record_history_at_observation(admitted.observation.observation(), admitted.entity_id)
             .ok_or_else(|| {
                 lineage_error(format!(
                     "bridge continuity lineage adapter could not resolve record history for `{entity_label}`"
                 ))
             })?;
-        let visible_entities = runtime
-            .lineage_access()
-            .visible_entity_ids_for_lineages_for_observation(
-                &resolution.resolved,
-                admitted.observation.observation(),
-            );
+        let visible_entities = runtime.visible_entities_for_lineages_at_observation(
+            admitted.observation.observation(),
+            &resolution.resolved,
+        );
         Ok((resolution, visible_entities))
     })?;
     Ok(ResolvedLineageRequest {

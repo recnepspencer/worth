@@ -3,11 +3,14 @@ use std::sync::{Arc, Mutex, MutexGuard};
 
 use worth_runtime_bridge::facade::{RelationalBridgeSourceError, TruthSnapshotIdentity};
 
-use crate::history::data::CommitId;
-use crate::history::retention::RelationalBranchRetentionLease;
-use crate::identity::data::VersionId;
-use crate::mvcc::RelationalBranchObservation;
-use crate::snapshots::data::SnapshotId;
+use crate::facade::branch::{
+    AdmittedRelationalBranchBasis, RelationalBranchRetentionReleaseReceipt,
+};
+use crate::facade::change_source::{RelationalRetainedObservation, RelationalSelectedCommit};
+use crate::facade::history::{BranchId, CommitId};
+use crate::facade::identity::VersionId;
+use crate::facade::mvcc::RelationalBranchObservation;
+use crate::facade::snapshots::SnapshotId;
 
 #[derive(Clone, Debug)]
 pub(in crate::presentation::bridge) struct RelationalBridgeSelectedObservation {
@@ -15,35 +18,20 @@ pub(in crate::presentation::bridge) struct RelationalBridgeSelectedObservation {
     pub(super) observation: RelationalBranchObservation,
 }
 
+/// A commit Relational selected at a retained Bridge observation.
 #[derive(Debug)]
 pub(in crate::presentation::bridge) struct RelationalBridgeSelectedCommitObservation {
-    pub(super) commit_id: CommitId,
-    pub(super) observation: RelationalBridgeSelectedObservation,
+    pub(super) selected: RelationalSelectedCommit,
+    pub(super) snapshot_identity: TruthSnapshotIdentity,
 }
 
 impl RelationalBridgeSelectedObservation {
-    pub(in crate::presentation::bridge) fn branch_id(&self) -> &crate::history::data::BranchId {
+    pub(in crate::presentation::bridge) fn branch_id(&self) -> &BranchId {
         self.observation.identity().branch_id()
     }
 
     pub(super) fn observation(&self) -> &RelationalBranchObservation {
         &self.observation
-    }
-}
-
-impl RelationalBridgeSelectedCommitObservation {
-    pub(in crate::presentation::bridge) fn into_parts(
-        self,
-    ) -> (
-        CommitId,
-        TruthSnapshotIdentity,
-        crate::history::data::BranchId,
-    ) {
-        (
-            self.commit_id,
-            self.observation.snapshot_identity,
-            self.observation.observation.identity().branch_id().clone(),
-        )
     }
 }
 
@@ -62,8 +50,7 @@ struct RelationalBridgeObservationBindingIndex {
 struct RelationalBridgeObservationBinding {
     version_id: VersionId,
     commit_id: Option<CommitId>,
-    observation: RelationalBranchObservation,
-    retention: RelationalBranchRetentionLease,
+    retained: RelationalRetainedObservation,
 }
 
 impl RelationalBridgeObservationBindings {
@@ -73,20 +60,18 @@ impl RelationalBridgeObservationBindings {
 
     pub(super) fn insert(
         self: &Arc<Self>,
-        snapshot_id: SnapshotId,
-        observation: RelationalBranchObservation,
-        retention: RelationalBranchRetentionLease,
+        retained: RelationalRetainedObservation,
     ) -> RelationalBridgeObservationLease {
-        let version_id = observation.version_id();
-        let commit_id = observation.commit_id();
+        let snapshot_id = retained.snapshot_id();
+        let version_id = retained.observation().version_id();
+        let commit_id = retained.observation().commit_id();
         let mut entries = self.lock_entries();
         entries.by_snapshot.insert(
             snapshot_id,
             RelationalBridgeObservationBinding {
                 version_id,
                 commit_id,
-                observation,
-                retention,
+                retained,
             },
         );
         if let Some(commit_id) = commit_id {
@@ -130,7 +115,7 @@ impl RelationalBridgeObservationBindings {
         }
         Ok(RelationalBridgeSelectedObservation {
             snapshot_identity: identity.clone(),
-            observation: binding.observation.clone(),
+            observation: binding.retained.observation().clone(),
         })
     }
 
@@ -203,11 +188,11 @@ pub struct RelationalBridgeObservationLease {
 impl RelationalBridgeObservationLease {
     /// Confirm that this retained Bridge observation was issued from the exact
     /// Relational basis carried by a composite product observation.
-    pub fn admits_basis(&self, basis: &crate::branch::AdmittedRelationalBranchBasis) -> bool {
+    pub fn admits_basis(&self, basis: &AdmittedRelationalBranchBasis) -> bool {
         self.bindings
             .as_ref()
             .and_then(|bindings| self.resolve_for(bindings).ok())
-            .is_some_and(|selected| selected.observation().admitted_basis() == *basis)
+            .is_some_and(|selected| selected.observation().issued_from(basis))
     }
 
     pub(super) fn resolve_for(
@@ -235,7 +220,7 @@ impl RelationalBridgeObservationLease {
             .bindings
             .take()
             .and_then(|bindings| bindings.remove(self.snapshot_id))
-            .map(|binding| binding.retention.release());
+            .map(|binding| binding.retained.release());
         RelationalBridgeObservationReleaseReceipt {
             snapshot_identity: self.snapshot_identity.clone(),
             component_release,
@@ -254,7 +239,7 @@ impl Drop for RelationalBridgeObservationLease {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct RelationalBridgeObservationReleaseReceipt {
     snapshot_identity: TruthSnapshotIdentity,
-    component_release: Option<crate::history::retention::RelationalBranchRetentionReleaseReceipt>,
+    component_release: Option<RelationalBranchRetentionReleaseReceipt>,
 }
 
 impl RelationalBridgeObservationReleaseReceipt {
@@ -268,7 +253,7 @@ impl RelationalBridgeObservationReleaseReceipt {
 
     pub fn component_release(
         &self,
-    ) -> Option<&crate::history::retention::RelationalBranchRetentionReleaseReceipt> {
+    ) -> Option<&RelationalBranchRetentionReleaseReceipt> {
         self.component_release.as_ref()
     }
 }

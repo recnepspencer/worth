@@ -396,17 +396,18 @@ that decision in the Phase 3 closeout.
 
 ### Bridge: the Relational adapter
 
-The adapter moves to one Bridge module, provisionally
-`worth_runtime_bridge::facade::relational` (source under
-`crates/worth-runtime-bridge/src/relational_source/`).
+The adapter moves to one Bridge module,
+`crates/worth-runtime-bridge/src/relational_source/`, and its public items
+are exported flat from `worth_runtime_bridge::facade`.
 
 The Bridge facade has hidden `everyday`, `advanced`, and `specialist` modules
 that re-export everything with `pub use super::*`. A new top-level
 `pub mod relational` would get three alias paths automatically, and the
-no-alias rule forbids that. So the final path is settled in the Phase 3 DX
-review, together with how the exports avoid those aliases. The existing export
-files are near the cap (`facade/exports_core.rs` is 375 lines), so the new
-exports get their own `#[path]` export file.
+no-alias rule forbids that. The Phase 3 DX review settled on the flat export,
+the same shape Phase 2 gave grouped truth: it adds no module path, and every
+exported name already says `Relational`. The existing export files are near
+the cap (`facade/exports_core.rs` is 375 lines), so the new exports get their
+own `#[path]` export file, `facade/exports_relational.rs`.
 
 The adapter keeps its existing homes:
 
@@ -447,7 +448,7 @@ It then:
 in Bridge terms. Only its path changes:
 
 - before: `worth_relational::facade::bridge::RuntimeBridgeRelationalSource`
-- after: `worth_runtime_bridge::facade::relational::RuntimeBridgeRelationalSource`
+- after: `worth_runtime_bridge::facade::RuntimeBridgeRelationalSource`
 
 The same applies to the lease, receipt, and configuration-error types.
 
@@ -841,4 +842,88 @@ Phase 2 is complete.
 - The grouped-truth identity scan is a Bridge unit test beside the code it
   guards, and also bans the crate-private identity minters.
 
-Phases 3 to 5 are not started.
+Phase 3 is complete.
+
+- `worth_relational::facade::change_source` holds items 0 to 7. It names no
+  Bridge concept, and every public item has rustdoc. The publication proof
+  chain, partition projection, and consistency checks live there; receipt
+  minting runs the checks, so holding a `RelationalChangeReceipt` proves they
+  passed.
+- The adapter uses only the Relational facade, the Bridge facade,
+  `worth_foundational::facade`, and `worth_proof`. The probe crate
+  `tools/relational-adapter-probe` compiles the adapter and its tests as an
+  outside crate, and all 39 adapter tests pass there.
+- Compile-fail tests in `tests/ui/change_source` prove that a raw
+  `CommitId` or a fork basis cannot mint a receipt (E0308), and that the
+  receipt, the selected commit, and the retained observation have no
+  struct-literal constructor, `Default`, or `Clone`.
+  `tests/ui/change_source_pass` holds the valid counterpart. These replace
+  the two Phase 1 deferrals.
+- `struct_field_patch_authority.rs` and `read_cutover.rs` are split. Each
+  Relational half asserts on Relational state: the change receipt for the
+  first, and history and visibility at both observations for the second.
+  The Bridge halves are adapter tests
+  (`bridge_source_tests/struct_field_patch.rs` and `read_cutover.rs`), built
+  on the adapter's own support module instead of the supply-chain world.
+
+**DX review.** The change source names say what each item is in Relational
+terms: `RelationalRuntimeHandle`; `select_reachable_commit` and
+`select_exact_commit`, which return a `RelationalCommitSelection` holding a
+`RelationalSelectedCommit` or a `RelationalCommitSelectionDenial`, plus a
+`RelationalCommitSelectionWork`; `mint_change_receipt`, which returns a
+`RelationalChangeReceiptOutcome`; `RelationalChangeConsistencyDenial` and
+`RelationalChangeConsistencyWork`; and `retain_observation_snapshot`, which
+returns a `RelationalRetainedObservation`. The Bridge-side path is the flat
+facade export described above. `bridge_snapshot_identity_for_commit` and
+`bridge_snapshot_identity_for_handle` keep their names: their parameters are
+Relational types, and Query callers already use them.
+
+**Destinations.** Every remaining `RA/**` file moves in Phase 4 to the same
+relative path under `crates/worth-runtime-bridge/src/relational_source/`:
+`mod.rs`, `change_publication.rs`, `identities.rs`, `lowering_precision.rs`,
+`patch_envelopes.rs`, `publication_outcome.rs`, `snapshot_reading.rs`,
+`runtime_source/**`, and `snapshot_values/**`. The test modules
+(`*_tests.rs`, `bridge_source_tests/**`), `relational_test_support/**`, and
+`test_catalog.rs` move beside them as Bridge test code. Nothing stays in
+Relational. `partition_projection.rs`, `patch_semantic_validation.rs`,
+`authoritative_patch_publication.rs`, and
+`authoritative_publication_witness.rs` no longer exist in `RA/**`; Phase 3
+moved their Relational meaning into the change source and their Bridge
+meaning into `change_publication.rs` and `lowering_precision.rs`.
+
+Deviations from the plan:
+
+- Publication no longer re-checks for an empty graph role (the old
+  `UnsupportedProducerEnvelope` denial). The source refuses a blank or padded
+  role when it is built, so the check could not fire.
+- The widening publication path ignores the source's partition, as it did
+  before.
+- The receipt carries the selected branch as well as the authoring branch,
+  so a fork publication keeps the branch it was selected on.
+- `RelationalCommitSelectionDenial::ForeignObservation` is new. Commit
+  selection refuses an observation another runtime issued, before it reads
+  any history.
+- The adapter mints the receipt under the runtime lock and lowers it
+  outside the lock.
+- The consistency checks all run at receipt minting, before any lowering
+  check, so a patch that fails both reports the Relational denial rather
+  than a lowering denial.
+- `RecordStructuralChange` is non-exhaustive outside Relational, so lowering
+  denies an unknown structural change with `InvalidLoweringContract` instead
+  of guessing. Inside Relational that arm is unreachable and carries
+  `#[allow(unreachable_patterns)]`, which Phase 4 drops.
+- The copied-metadata and endpoint-label consistency tests moved from the
+  adapter to `change_source/consistency_tests.rs`, because receipt minting
+  owns those checks. The fork-lineage scale test moved to
+  `tests/lineage/fork_scale.rs`, because it measures Relational internals.
+- Lowering tests that need patches no commit produces decode them from
+  Relational's wire shape (`relational_test_support/publication.rs`), rather
+  than widening Relational's constructors.
+- The adapter's retention assertions use the public
+  `branch_retention_cost_counters`.
+
+Follow-up outside this milestone: an earlier Phase 3 run saw six Relational
+wall-clock timing tests fail under concurrent machine load. The full suite
+passes at the Phase 3 commit.
+
+Phases 4 and 5 are not started.

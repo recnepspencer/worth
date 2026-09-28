@@ -1,7 +1,7 @@
-use crate::history::data::CommitId;
-use crate::identity::data::{EntityId, PartitionId, RelationId, VersionId};
-use crate::snapshots::data::{SnapshotHandle, SnapshotId};
-use crate::transactions::data::RecordRef;
+use crate::facade::history::CommitId;
+use crate::facade::identity::{EntityId, PartitionId, RelationId, VersionId};
+use crate::facade::snapshots::{SnapshotHandle, SnapshotId};
+use crate::facade::transactions::RecordRef;
 use worth_runtime_bridge::facade::{
     RelationalBridgeRecordIdentityKind, RelationalBridgeRecordIdentityParts,
     RelationalBridgeSnapshotIdentityParts, RelationalBridgeSourceError, TruthCommitIdentity,
@@ -13,7 +13,7 @@ pub(crate) fn relational_bridge_adapter_semantic_identity() -> std::sync::Arc<st
 }
 
 pub fn bridge_snapshot_identity_for_handle(handle: &SnapshotHandle) -> TruthSnapshotIdentity {
-    bridge_snapshot_identity_for_binding(handle.snapshot_id, handle.version_id)
+    bridge_snapshot_identity_for_binding(handle.snapshot_id(), handle.version_id())
 }
 
 pub fn bridge_snapshot_identity_for_commit(

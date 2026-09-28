@@ -28,6 +28,7 @@ mod authorization;
 mod branch;
 mod canonical_basis_ready_sequence;
 mod capabilities;
+mod change_source;
 mod commit_strategies;
 mod config;
 mod diagnostics;

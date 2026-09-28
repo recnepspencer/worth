@@ -1,12 +1,12 @@
 use crate::facade::history::{BranchId, CommitId};
 use crate::facade::identity::{EntityId, PartitionId, VersionId};
+use crate::facade::publication::PatchDetail;
 use crate::facade::publication::{
     PatchOrdering, PatchPublicationMode, PatchStreamPosition, PublishedAuthoritativePatchEnvelope,
     PublishedAuthoritativeRecordPatch, RecordStructuralChange,
 };
-use crate::publication::patch::data::{
-    PatchDetail, PublishedAuthoritativeAspectChange, PublishedAuthoritativePatch,
-    PublishedAuthoritativePatchOperation,
+use crate::presentation::bridge::relational_test_support::{
+    exact_change, published_patch, WireOperation,
 };
 use worth_foundational::facade::{
     AspectBinding, AspectContractRevision, AspectIdentity, AspectKey, AspectValue,
@@ -35,23 +35,21 @@ fn publication_bridge_catalog_exposes_committed_patch_and_snapshot() {
                 publication_mode: PatchPublicationMode::CommitNative,
                 position: PatchStreamPosition(11),
                 authoritative_record_patches: vec![PublishedAuthoritativeRecordPatch {
-                    target: crate::transactions::data::RecordRef::Entity(EntityId::new(
+                    target: crate::facade::transactions::RecordRef::Entity(EntityId::new(
                         PartitionId::main(),
                         4,
                         1,
                     )),
                     structural_change: RecordStructuralChange::Updated,
-                    authoritative_patch: PublishedAuthoritativePatch::new(vec![
-                        PublishedAuthoritativePatchOperation::WholeAspectClear {
-                            aspect_key: AspectKey::new("profile.name").unwrap(),
-                            aspect_identity: AspectIdentity(1),
-                            contract_revision: AspectContractRevision(1),
-                            binding: AspectBinding::EntityField {
-                                field: FieldKey::new("name").unwrap(),
-                            },
+                    authoritative_patch: published_patch(vec![WireOperation::WholeAspectClear {
+                        aspect_key: AspectKey::new("profile.name").unwrap(),
+                        aspect_identity: AspectIdentity(1),
+                        contract_revision: AspectContractRevision(1),
+                        binding: AspectBinding::EntityField {
+                            field: FieldKey::new("name").unwrap(),
                         },
-                    ]),
-                    semantic_changes: vec![PublishedAuthoritativeAspectChange::exact(
+                    }]),
+                    semantic_changes: vec![exact_change(
                         AspectKey::new("profile.name").unwrap(),
                         AspectIdentity(1),
                         AspectContractRevision(1),

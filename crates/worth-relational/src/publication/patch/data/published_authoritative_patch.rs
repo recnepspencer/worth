@@ -40,7 +40,8 @@ impl PublishedAuthoritativePatch {
         &self.operations
     }
 
-    pub(crate) fn full_grammar_operation_count(&self) -> usize {
+    /// The number of operations in the full patch grammar.
+    pub fn full_grammar_operation_count(&self) -> usize {
         self.operations.len()
     }
 

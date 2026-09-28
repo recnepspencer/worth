@@ -1,4 +1,4 @@
-use crate::config::data::CascadeDeletePolicy;
+use crate::facade::config::CascadeDeletePolicy;
 use worth_foundational::facade::{AspectKey, ScalarAspectType};
 use worth_runtime_bridge::facade::{
     AspectKeySelector, BridgeAspectRegistration, BridgeAspectRegistrationId,
@@ -12,8 +12,8 @@ use worth_runtime_bridge::facade::{
 use super::super::RuntimeBridgeRelationalSource;
 
 pub(super) fn bridge_envelopes_at_current_observation(
-    runtime: crate::runtime::RelationalRuntime,
-    commit_ids: impl IntoIterator<Item = crate::history::data::CommitId>,
+    runtime: crate::facade::runtime::RelationalRuntime,
+    commit_ids: impl IntoIterator<Item = crate::facade::history::CommitId>,
 ) -> Vec<BridgeCommittedPatchEnvelope> {
     use worth_runtime_bridge::facade::{
         CommittedPatchSource, RelationalCommittedPatchRequest, TruthCommitIdentity,
@@ -193,7 +193,7 @@ fn snapshot_read_contract(aspect_key: &AspectKey) -> SnapshotReadContract {
 }
 
 pub(super) fn runtime_with_test_schema() -> crate::facade::runtime::RelationalRuntime {
-    crate::tests::support::runtime_with_declared_aspect_schema(
+    crate::presentation::bridge::relational_test_support::runtime_with_declared_aspect_schema(
         CascadeDeletePolicy::CascadeDeleteRelations,
     )
 }

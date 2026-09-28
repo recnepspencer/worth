@@ -4,6 +4,11 @@ use worth_runtime_bridge::facade::{
 };
 
 use super::identities::record_ref_from_identity_parts;
+use crate::facade::change_source::RelationalRuntimeHandle;
+use crate::facade::identity::PartitionId;
+use crate::facade::mvcc::RelationalBranchObservation;
+use crate::facade::runtime::RelationalRuntime;
+use crate::facade::transactions::RecordRef;
 use super::snapshot_values::{
     export_entity_aspect_snapshot_value, export_relation_aspect_snapshot_value,
 };
@@ -14,18 +19,18 @@ use super::snapshot_values::{
 /// external pin and may end while an already-open reader remains alive.
 #[derive(Debug, Clone)]
 pub(crate) struct RuntimePublicationSnapshotReader {
-    runtime: crate::visibility::runtime_authority::RelationalVisibilityRuntimeAuthority,
+    runtime: RelationalRuntimeHandle,
     snapshot_identity: TruthSnapshotIdentity,
-    observation: crate::mvcc::RelationalBranchObservation,
-    partition: Option<crate::identity::data::PartitionId>,
+    observation: RelationalBranchObservation,
+    partition: Option<PartitionId>,
 }
 
 impl RuntimePublicationSnapshotReader {
     pub(super) fn for_observation_authority(
-        runtime: crate::visibility::runtime_authority::RelationalVisibilityRuntimeAuthority,
+        runtime: RelationalRuntimeHandle,
         snapshot_identity: TruthSnapshotIdentity,
-        observation: crate::mvcc::RelationalBranchObservation,
-        partition: Option<crate::identity::data::PartitionId>,
+        observation: RelationalBranchObservation,
+        partition: Option<PartitionId>,
     ) -> Self {
         Self {
             runtime,
@@ -54,12 +59,11 @@ impl TruthSnapshotReader for RuntimePublicationSnapshotReader {
 }
 
 fn read_packet(
-    runtime: &crate::runtime::RelationalRuntime,
+    runtime: &RelationalRuntime,
     request: &SnapshotReadPacket,
-    observation: &crate::mvcc::RelationalBranchObservation,
-    partition: Option<crate::identity::data::PartitionId>,
+    observation: &RelationalBranchObservation,
+    partition: Option<PartitionId>,
 ) -> Result<Vec<SnapshotReadRecord>, BridgeSnapshotReadError> {
-    let read_truth = runtime.read_truth();
     let mut records = Vec::with_capacity(request.reads().len());
     for read in request.reads() {
         let identity_parts = read.relational_record_identity_parts().ok_or_else(|| {
@@ -74,33 +78,28 @@ fn read_packet(
         }
         let record_ref = record_ref_from_identity_parts(identity_parts)
             .map_err(|error| BridgeSnapshotReadError::new(error.to_string()))?;
+        let aspect = read.aspect_key();
         let aspect_value = match record_ref {
-            crate::transactions::data::RecordRef::Entity(entity_id) => {
-                match read_entity(&read_truth, observation, entity_id) {
+            RecordRef::Entity(entity_id) => {
+                match runtime.entity_record_at_observation(observation, entity_id) {
                     Some(record) => {
                         require_declared_aspect(
-                            observation
-                                .selected_root()
-                                .schema_authority()
-                                .entity_aspect_plan(record.kind.kind_id),
-                            read.aspect_key(),
+                            observation.entity_kind_declares_aspect(record.kind.kind_id, aspect),
+                            aspect,
                         )?;
-                        export_entity_aspect_snapshot_value(&record, read.aspect_key())
+                        export_entity_aspect_snapshot_value(&record, aspect)
                     }
                     None => None,
                 }
             }
-            crate::transactions::data::RecordRef::Relation(relation_id) => {
-                match read_relation(&read_truth, observation, relation_id) {
+            RecordRef::Relation(relation_id) => {
+                match runtime.relation_record_at_observation(observation, relation_id) {
                     Some(record) => {
                         require_declared_aspect(
-                            observation
-                                .selected_root()
-                                .schema_authority()
-                                .relation_aspect_plan(record.kind.kind_id),
-                            read.aspect_key(),
+                            observation.relation_kind_declares_aspect(record.kind.kind_id, aspect),
+                            aspect,
                         )?;
-                        export_relation_aspect_snapshot_value(&record, read.aspect_key())
+                        export_relation_aspect_snapshot_value(&record, aspect)
                     }
                     None => None,
                 }
@@ -114,37 +113,13 @@ fn read_packet(
     Ok(records)
 }
 
-fn read_entity(
-    read_truth: &crate::runtime::VisibilityReadContext<'_>,
-    observation: &crate::mvcc::RelationalBranchObservation,
-    entity_id: crate::identity::data::EntityId,
-) -> Option<crate::storage::data::EntityReadRecord> {
-    read_truth.authoritative_entity_record_for_id_from_exact_state(
-        observation.selected_root().as_ref(),
-        observation.selected_root().schema_authority().registry(),
-        entity_id,
-    )
-}
-
-fn read_relation(
-    read_truth: &crate::runtime::VisibilityReadContext<'_>,
-    observation: &crate::mvcc::RelationalBranchObservation,
-    relation_id: crate::identity::data::RelationId,
-) -> Option<crate::storage::data::RelationReadRecord> {
-    read_truth.authoritative_relation_record_for_id_from_exact_state(
-        observation.selected_root().as_ref(),
-        observation.selected_root().schema_authority().registry(),
-        relation_id,
-    )
-}
-
+/// Relation endpoints and lifecycle are readable on every record; any other
+/// aspect must be declared by the retained schema.
 fn require_declared_aspect(
-    plan: Option<&crate::schema::data::LoweredAspectContractPlan>,
+    declared: bool,
     aspect: &worth_foundational::facade::AspectKey,
 ) -> Result<(), BridgeSnapshotReadError> {
-    if plan.and_then(|plan| plan.contract_for(aspect)).is_some()
-        || matches!(aspect.as_str(), "source" | "target" | "lifecycle")
-    {
+    if declared || matches!(aspect.as_str(), "source" | "target" | "lifecycle") {
         Ok(())
     } else {
         Err(BridgeSnapshotReadError::new(format!(

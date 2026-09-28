@@ -3,16 +3,27 @@ use worth_runtime_bridge::facade::{
     TruthBranchIdentity,
 };
 
+use super::selected_commit_resolution::SourceCommitSelection;
 use super::RuntimeBridgeRelationalSource;
+
+impl RuntimeBridgeRelationalSource {
+    /// Select the branch's bound head commit exactly, at constant cost.
+    pub(in crate::presentation::bridge) fn select_branch_head(
+        &self,
+        branch_identity: &TruthBranchIdentity,
+    ) -> Result<SourceCommitSelection, RelationalBridgeSourceError> {
+        let (commit_id, snapshot_identity) = self.branch_head_bindings.resolve(branch_identity)?;
+        let observation = self.observation_bindings.resolve(&snapshot_identity)?;
+        Ok(self.select_exact_commit_for_observation(commit_id, observation))
+    }
+}
 
 impl TruthBranchHeadSource for RuntimeBridgeRelationalSource {
     fn load_branch_head_patch(
         &self,
         branch_identity: &TruthBranchIdentity,
     ) -> Result<BridgeCommittedPatchEnvelope, RelationalBridgeSourceError> {
-        let (commit_id, snapshot_identity) = self.branch_head_bindings.resolve(branch_identity)?;
-        let observation = self.observation_bindings.resolve(&snapshot_identity)?;
-        let selected_commit = self.select_exact_commit_for_observation(commit_id, observation)?;
+        let selected_commit = self.select_branch_head(branch_identity)?.into_result()?;
 
         match self.publish_commit_for_selected_observation(selected_commit) {
             worth_proof::TransitionOutcome::Success(publication) => {

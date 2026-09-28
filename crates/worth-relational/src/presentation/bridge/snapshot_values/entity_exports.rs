@@ -1,7 +1,7 @@
 use worth_foundational::facade::{AspectKey, ContractValidatedAspectValueView};
 use worth_runtime_bridge::facade::SnapshotReadValue;
 
-use crate::storage::data::EntityReadRecord;
+use crate::facade::runtime::EntityReadRecord;
 
 use super::lifecycle_snapshot_values::lifecycle_aspect_value;
 

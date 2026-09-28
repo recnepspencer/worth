@@ -2,8 +2,10 @@ use std::sync::{Arc, Mutex};
 
 use crate::facade::identity::PartitionId;
 use crate::facade::transactions::{CreateIntent, EntitySpec, MutationIntent, WorkerIntentBatch};
-use crate::tests::support::{aspect_key, field_key, single_string_aspect_field_patch};
-use worth_foundational::ScalarAspectType;
+use crate::presentation::bridge::relational_test_support::{
+    aspect_key, field_key, single_string_aspect_field_patch,
+};
+use worth_foundational::facade::ScalarAspectType;
 use worth_runtime_bridge::facade::{
     CommittedPatchSource, RelationalBridgeRecordIdentityParts, RelationalCommittedPatchRequest,
     SnapshotReadContract, SnapshotReadPacket, SnapshotReadRequest, SnapshotReadSource,
@@ -32,7 +34,7 @@ fn shared_source_retains_the_live_runtime_authority_and_observes_later_commits()
     let committed = {
         let runtime = runtime.lock().expect("test runtime lock");
         let mut transaction =
-            crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
+            crate::presentation::bridge::relational_test_support::test_owner_begin_transaction_for_main(&runtime);
         transaction
             .push_batch(WorkerIntentBatch::new("shared-authority-create").push(
                 MutationIntent::Create(CreateIntent::Entity(EntitySpec {
@@ -108,12 +110,15 @@ fn shared_source_retains_the_live_runtime_authority_and_observes_later_commits()
 fn exact_reader_rejects_a_foreign_lease_despite_equal_snapshot_descriptors() {
     fn retained_source() -> (
         RuntimeBridgeRelationalSource,
-        crate::facade::bridge::RelationalBridgeObservationLease,
+        crate::presentation::bridge::RelationalBridgeObservationLease,
     ) {
         let runtime = runtime_with_test_schema();
-        crate::tests::support::create_entity_outcome(&runtime, "retained-reader");
+        crate::presentation::bridge::relational_test_support::create_entity_outcome(
+            &runtime,
+            "retained-reader",
+        );
         let identity = runtime
-            .branch_identity(&crate::history::data::BranchId("main".to_owned()))
+            .branch_identity(&crate::facade::history::BranchId("main".to_owned()))
             .unwrap();
         let source =
             RuntimeBridgeRelationalSource::for_graph_role(Arc::new(runtime), "model").unwrap();

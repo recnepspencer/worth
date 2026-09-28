@@ -2,10 +2,10 @@ use std::sync::{Arc, Mutex};
 
 use crate::facade::identity::PartitionId;
 use crate::facade::transactions::{CreateIntent, EntitySpec, MutationIntent, WorkerIntentBatch};
-use crate::tests::support::{
+use crate::presentation::bridge::relational_test_support::{
     aspect_key, create_entity_outcome, field_key, single_string_aspect_field_patch,
 };
-use worth_foundational::ScalarAspectType;
+use worth_foundational::facade::ScalarAspectType;
 use worth_runtime_bridge::facade::{
     BridgeRouteRequest, CommittedPatchSource, RelationalBridgeRecordIdentityParts,
     RelationalCommittedPatchRequest, RuntimeBridgeBuilder, SnapshotReadContract,
@@ -79,13 +79,16 @@ fn partition_source_filters_the_real_commit_and_retains_exact_partition_provenan
             kind_id: crate::facade::identity::KindId(1),
             client_key: crate::facade::symbols::ClientKey::raw(key),
             fields: single_string_aspect_field_patch(
-                crate::tests::support::aspect_key("name"),
+                crate::presentation::bridge::relational_test_support::aspect_key("name"),
                 field_key("name"),
                 key,
             ),
         }))
     };
-    let mut transaction = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
+    let mut transaction =
+        crate::presentation::bridge::relational_test_support::test_owner_begin_transaction_for_main(
+            &runtime,
+        );
     transaction
         .push_batch(
             WorkerIntentBatch::new("partition-publication")
@@ -247,16 +250,18 @@ fn runtime_bridge_replays_historical_commit_after_newer_publication_arrives() {
 
     {
         let runtime = runtime.lock().expect("test runtime lock");
-        let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
+        let mut txn = crate::presentation::bridge::relational_test_support::test_owner_begin_transaction_for_main(&runtime);
         txn.push_batch(
             WorkerIntentBatch::new("update").push(MutationIntent::Create(
-                crate::transactions::data::CreateIntent::Entity(
-                    crate::transactions::data::EntitySpec {
+                crate::facade::transactions::CreateIntent::Entity(
+                    crate::facade::transactions::EntitySpec {
                         partition_id: PartitionId::main(),
                         kind_id: crate::facade::identity::KindId(1),
-                        client_key: crate::symbols::data::ClientKey::raw("bob"),
+                        client_key: crate::facade::symbols::ClientKey::raw("bob"),
                         fields: single_string_aspect_field_patch(
-                            crate::tests::support::aspect_key("name"),
+                            crate::presentation::bridge::relational_test_support::aspect_key(
+                                "name",
+                            ),
                             field_key("name"),
                             "bob",
                         ),

@@ -5,8 +5,8 @@ use worth_runtime_bridge::facade::{
 };
 
 use super::RuntimeBridgeRelationalSource;
+use crate::facade::transactions::RecordRef;
 use crate::presentation::bridge::identities::record_ref_from_identity_parts;
-use crate::transactions::data::RecordRef;
 
 impl RuntimeBridgeRelationalSource {
     /// Project one entity's authoritative aspect state from an exact retained
@@ -41,16 +41,7 @@ impl RuntimeBridgeRelationalSource {
 
         Ok(self.runtime.with_runtime(|runtime| {
             runtime
-                .read_truth()
-                .authoritative_entity_record_for_id_from_exact_state(
-                    observation.observation().selected_root().as_ref(),
-                    observation
-                        .observation()
-                        .selected_root()
-                        .schema_authority()
-                        .registry(),
-                    entity_id,
-                )
+                .entity_record_at_observation(observation.observation(), entity_id)
                 .and_then(|record| record.authoritative_aspect_state)
         }))
     }

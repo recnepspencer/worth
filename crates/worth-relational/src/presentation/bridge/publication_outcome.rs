@@ -2,8 +2,10 @@ use worth_runtime_bridge::facade::{
     BridgeAuthoritativePatchLoweringCounters, BridgeCommittedPatchEnvelope,
 };
 
-use super::authoritative_publication_witness::PublicationReadyRecipe;
-use crate::history::data::CommitId;
+use super::change_publication::ChangeLoweringContext;
+use crate::facade::change_source::RelationalChangeReceipt;
+use crate::facade::history::CommitId;
+use crate::facade::identity::PartitionId;
 
 pub type RelationalBridgePublicationOutcome = worth_proof::TransitionOutcome<
     RelationalBridgePatchPublication,
@@ -67,30 +69,39 @@ pub enum RelationalBridgePublicationRebindRequired {
 
 pub type RelationalBridgePublicationFailure = std::convert::Infallible;
 
-/// Relational-owned proof that a Bridge envelope was derived from one admitted
-/// canonical authoritative patch, rather than assembled from detached items.
+/// A Bridge envelope lowered from one Relational change receipt, rather than
+/// assembled from detached items.
+///
+/// Only receipt lowering mints it, so its provenance always names the
+/// receipt's runtime, commit, and partition.
 pub struct RelationalBridgePatchPublication {
     envelope: BridgeCommittedPatchEnvelope,
-    proof: PublicationReadyRecipe,
-    _commit_identity: crate::identity_authority::RelationalSourceTruthAuthorityIdentity<
-        u64,
-        crate::identity_authority::RelationalCommitIdentityKind,
-    >,
+    runtime_instance_id: u64,
+    commit_id: CommitId,
+    relational_partition_id: Option<PartitionId>,
+    graph_role: std::sync::Arc<str>,
+    partition_role: Option<worth_foundational::facade::TruthPartitionRole>,
+    adapter_semantic_identity: std::sync::Arc<str>,
+    source_basis: std::sync::Arc<str>,
 }
 
 impl RelationalBridgePatchPublication {
     pub(super) fn mint(
-        proof: PublicationReadyRecipe,
+        receipt: &RelationalChangeReceipt,
         envelope: BridgeCommittedPatchEnvelope,
+        context: &ChangeLoweringContext<'_>,
+        adapter_semantic_identity: std::sync::Arc<str>,
+        source_basis: std::sync::Arc<str>,
     ) -> Self {
-        let commit_identity = worth_foundational::facade::admit_foundational_authority_identity(
-            proof.payload().commit_id.0,
-            crate::identity_authority::relational_source_truth_authority(),
-        );
         Self {
             envelope,
-            proof,
-            _commit_identity: commit_identity,
+            runtime_instance_id: receipt.runtime_instance_id(),
+            commit_id: receipt.commit_id(),
+            relational_partition_id: receipt.partition_id(),
+            graph_role: context.graph_role.clone(),
+            partition_role: context.partition_role.cloned(),
+            adapter_semantic_identity,
+            source_basis,
         }
     }
 
@@ -103,31 +114,31 @@ impl RelationalBridgePatchPublication {
     }
 
     pub fn runtime_instance_id(&self) -> u64 {
-        self.proof.payload().runtime_instance_id
+        self.runtime_instance_id
     }
 
     pub fn commit_id(&self) -> CommitId {
-        self.proof.payload().commit_id
+        self.commit_id
     }
 
     pub fn graph_role(&self) -> &str {
-        &self.proof.payload().graph_role
+        &self.graph_role
     }
 
     pub fn adapter_semantic_identity(&self) -> &str {
-        &self.proof.strong_basis().value().adapter_semantic_identity
+        &self.adapter_semantic_identity
     }
 
     pub fn source_basis(&self) -> &str {
-        &self.proof.strong_basis().value().source_basis
+        &self.source_basis
     }
 
     pub fn partition_role(&self) -> Option<&worth_foundational::facade::TruthPartitionRole> {
-        self.proof.payload().partition_role.as_ref()
+        self.partition_role.as_ref()
     }
 
-    pub fn relational_partition_id(&self) -> Option<crate::identity::data::PartitionId> {
-        self.proof.payload().relational_partition_id
+    pub fn relational_partition_id(&self) -> Option<PartitionId> {
+        self.relational_partition_id
     }
 
     pub(crate) fn into_bridge_envelope(self) -> BridgeCommittedPatchEnvelope {

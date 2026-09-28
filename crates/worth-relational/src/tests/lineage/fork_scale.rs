@@ -1,11 +1,51 @@
-use crate::history::data::BranchId;
-use crate::identity::data::{EntityId, PartitionId};
-use crate::lineage::data::HistoricalLineageResolution;
-use crate::tests::support::{changed_entities, create_entity_outcome};
-use crate::transactions::data::{CreateIntent, EntitySpec, MutationIntent, WorkerIntentBatch};
+use crate::facade::history::BranchId;
+use crate::facade::identity::{EntityId, PartitionId};
+use crate::facade::lineage::HistoricalLineageResolution;
+use crate::facade::config::CascadeDeletePolicy;
+use crate::facade::transactions::{
+    CreateIntent, EntityMutationIntent, EntitySpec, MutationIntent, ReplaceEntityIntent,
+    WorkerIntentBatch,
+};
+use crate::tests::support::{
+    aspect_key, changed_entities, create_entity_outcome, field_key,
+    runtime_with_declared_aspect_schema, single_string_aspect_field_patch,
+    test_owner_begin_transaction_for_branch,
+};
 
-use super::fork_lineage::replace_entity_on_branch;
-use super::support::runtime_with_test_schema;
+fn runtime_with_test_schema() -> crate::facade::runtime::RelationalRuntime {
+    runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations)
+}
+
+fn replace_entity_on_branch(
+    runtime: &crate::facade::runtime::RelationalRuntime,
+    entity: EntityId,
+    replacement: &str,
+    branch: BranchId,
+) {
+    let mut transaction = test_owner_begin_transaction_for_branch(runtime, branch);
+    transaction
+        .push_batch(
+            WorkerIntentBatch::new(replacement).push(MutationIntent::Entity(
+                EntityMutationIntent::Replace(ReplaceEntityIntent {
+                    entity_id: entity,
+                    replacement: EntitySpec {
+                        partition_id: PartitionId::main(),
+                        kind_id: crate::facade::identity::KindId(1),
+                        client_key: crate::facade::symbols::ClientKey::raw(replacement),
+                        fields: single_string_aspect_field_patch(
+                            aspect_key("name"),
+                            field_key("name"),
+                            replacement,
+                        ),
+                    },
+                }),
+            )),
+        )
+        .expect("test staging stays within configured resource budgets");
+    transaction
+        .commit(runtime)
+        .expect("replacement should commit");
+}
 
 #[test]
 fn retained_fork_lineage_ancestry_is_flat_across_owner_created_history() {
@@ -25,9 +65,9 @@ fn selected_main_lineage_is_flat_at_65_536_unrelated_commits() {
 }
 
 struct RetainedScaleFixture {
-    runtime: crate::runtime::RelationalRuntime,
+    runtime: crate::facade::runtime::RelationalRuntime,
     original: EntityId,
-    observation: crate::mvcc::RelationalBranchObservation,
+    observation: crate::facade::mvcc::RelationalBranchObservation,
 }
 
 impl RetainedScaleFixture {
@@ -82,9 +122,9 @@ fn retained_scale_fixture(replacement_count: usize) -> RetainedScaleFixture {
 }
 
 fn retained_resolution(
-    runtime: &crate::runtime::RelationalRuntime,
+    runtime: &crate::facade::runtime::RelationalRuntime,
     entity_id: EntityId,
-    observation: &crate::mvcc::RelationalBranchObservation,
+    observation: &crate::facade::mvcc::RelationalBranchObservation,
 ) -> HistoricalLineageResolution {
     runtime
         .lineage_access()
@@ -122,23 +162,23 @@ fn assert_owner_history_scale(unrelated_commit_count: usize) {
 }
 
 fn create_entity_on_branch(
-    runtime: &crate::runtime::RelationalRuntime,
+    runtime: &crate::facade::runtime::RelationalRuntime,
     branch: BranchId,
     ordinal: usize,
 ) {
     let key = format!("owner-scale-entity-{ordinal}");
     let mut transaction =
-        crate::tests::support::test_owner_begin_transaction_for_branch(runtime, branch);
+        test_owner_begin_transaction_for_branch(runtime, branch);
     transaction
         .push_batch(
             WorkerIntentBatch::new(key.clone()).push(MutationIntent::Create(CreateIntent::Entity(
                 EntitySpec {
                     partition_id: PartitionId::main(),
                     kind_id: crate::facade::identity::KindId(1),
-                    client_key: crate::symbols::data::ClientKey::raw(&key),
-                    fields: crate::tests::support::single_string_aspect_field_patch(
-                        crate::tests::support::aspect_key("name"),
-                        crate::tests::support::field_key("name"),
+                    client_key: crate::facade::symbols::ClientKey::raw(&key),
+                    fields: single_string_aspect_field_patch(
+                        aspect_key("name"),
+                        field_key("name"),
                         &key,
                     ),
                 },

@@ -1,6 +1,6 @@
 use worth_foundational::facade::AspectValue;
 
-use crate::storage::data::RecordLifecycleState;
+use crate::facade::storage::RecordLifecycleState;
 
 pub(super) fn lifecycle_aspect_value(lifecycle: RecordLifecycleState) -> AspectValue {
     AspectValue::String(lifecycle_snapshot_label(lifecycle).into())

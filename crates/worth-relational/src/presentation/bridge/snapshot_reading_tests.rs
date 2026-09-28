@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use worth_foundational::facade::{AspectKey, AspectValue, ScalarAspectType};
 
-use crate::config::data::CascadeDeletePolicy;
-use crate::tests::support::{
+use crate::facade::config::CascadeDeletePolicy;
+use crate::presentation::bridge::relational_test_support::{
     changed_relations, create_entity, create_entity_outcome, create_relation_outcome,
     runtime_with_declared_aspect_schema,
 };
@@ -33,7 +33,7 @@ fn snapshot_reader_reads_published_entity_values_without_projection_surface() {
     let reader = reader_for_current(
         runtime,
         snapshot_identity.clone(),
-        published_snapshot.version_id,
+        published_snapshot.version_id(),
     );
     let packet = SnapshotReadPacket::new(vec![SnapshotReadRequest::for_relational_record(
         RelationalBridgeRecordIdentityParts::entity(
@@ -67,7 +67,7 @@ fn snapshot_reader_reads_published_relation_field_aspects_from_authoritative_sta
     let reader = reader_for_current(
         runtime,
         snapshot_identity.clone(),
-        published_snapshot.version_id,
+        published_snapshot.version_id(),
     );
     let packet = SnapshotReadPacket::new(vec![SnapshotReadRequest::for_relational_record(
         RelationalBridgeRecordIdentityParts::relation(
@@ -95,13 +95,13 @@ fn snapshot_reader_rejects_undeclared_dotted_document_paths() {
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
     let created = create_entity_outcome(&runtime, "visible");
     let published_snapshot = created.snapshot.clone();
-    let published_entity = crate::tests::support::changed_entities(&created)[0];
+    let published_entity = crate::presentation::bridge::relational_test_support::changed_entities(&created)[0];
 
     let snapshot_identity = bridge_snapshot_identity_for_handle(&published_snapshot);
     let reader = reader_for_current(
         runtime,
         snapshot_identity.clone(),
-        published_snapshot.version_id,
+        published_snapshot.version_id(),
     );
     let packet = SnapshotReadPacket::new(vec![SnapshotReadRequest::for_relational_record(
         RelationalBridgeRecordIdentityParts::entity(
@@ -131,7 +131,7 @@ fn snapshot_reader_rejects_untyped_bridge_record_identity() {
     let published_snapshot = created.snapshot.clone();
 
     let snapshot_identity = bridge_snapshot_identity_for_handle(&published_snapshot);
-    let reader = reader_for_current(runtime, snapshot_identity, published_snapshot.version_id);
+    let reader = reader_for_current(runtime, snapshot_identity, published_snapshot.version_id());
     let packet = SnapshotReadPacket::new(vec![SnapshotReadRequest::for_coarse(
         // allowed-untyped-negative-test
         "legacy-row",
@@ -156,7 +156,7 @@ fn snapshot_reader_reports_missing_record_as_authoritative_absence() {
     let created = create_entity_outcome(&runtime, "visible");
     let published_snapshot = created.snapshot.clone();
     let snapshot_identity = bridge_snapshot_identity_for_handle(&published_snapshot);
-    let reader = reader_for_current(runtime, snapshot_identity, published_snapshot.version_id);
+    let reader = reader_for_current(runtime, snapshot_identity, published_snapshot.version_id());
     let packet = SnapshotReadPacket::new(vec![SnapshotReadRequest::for_relational_record(
         RelationalBridgeRecordIdentityParts::entity(1, 999, 1),
         scalar_string_contract("name"),
@@ -177,9 +177,9 @@ fn runtime_with_test_schema() -> crate::facade::runtime::RelationalRuntime {
 fn reader_for_current(
     runtime: crate::facade::runtime::RelationalRuntime,
     snapshot_identity: worth_runtime_bridge::facade::TruthSnapshotIdentity,
-    expected_version: crate::identity::data::VersionId,
+    expected_version: crate::facade::identity::VersionId,
 ) -> RuntimePublicationSnapshotReader {
-    let branch = crate::history::data::BranchId("main".to_owned());
+    let branch = crate::facade::history::BranchId("main".to_owned());
     let identity = runtime
         .branch_identity(&branch)
         .expect("main branch identity");
@@ -189,7 +189,7 @@ fn reader_for_current(
     let observation = basis.observation();
     assert_eq!(observation.version_id(), expected_version);
     RuntimePublicationSnapshotReader::for_observation_authority(
-        crate::visibility::runtime_authority::RelationalVisibilityRuntimeAuthority::immutable(
+        crate::facade::change_source::RelationalRuntimeHandle::immutable(
             Arc::new(runtime),
         ),
         snapshot_identity,

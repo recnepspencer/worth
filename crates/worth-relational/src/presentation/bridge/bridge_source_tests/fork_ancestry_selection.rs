@@ -5,8 +5,8 @@ use worth_runtime_bridge::facade::{
     TruthBranchIdentity, TruthCommitIdentity,
 };
 
-use crate::history::data::BranchId;
-use crate::tests::support::{create_entity_outcome, create_entity_outcome_on_branch};
+use crate::facade::history::BranchId;
+use crate::presentation::bridge::relational_test_support::{create_entity_outcome, create_entity_outcome_on_branch, fork_branch};
 
 use super::super::RuntimeBridgeRelationalSource;
 use super::support::{runtime_bridge_for_envelope, runtime_with_test_schema};
@@ -16,12 +16,7 @@ fn advanced_fork_selects_inherited_ancestor_but_not_post_fork_source_sibling() {
     let runtime = Arc::new(Mutex::new(runtime_with_test_schema()));
     let inherited = create_entity_outcome(&runtime.lock().unwrap(), "fork-ancestor");
     let feature = BranchId("feature".to_owned());
-    runtime
-        .lock()
-        .unwrap()
-        .history_authority()
-        .fork_branch_from(feature.clone(), &BranchId("main".to_owned()))
-        .unwrap();
+    fork_branch(&runtime.lock().unwrap(), feature.clone(), &BranchId("main".to_owned()));
     let source_sibling = create_entity_outcome(&runtime.lock().unwrap(), "source-sibling");
     let feature_head =
         create_entity_outcome_on_branch(&runtime.lock().unwrap(), "feature-head", feature.clone());
@@ -43,11 +38,11 @@ fn advanced_fork_selects_inherited_ancestor_but_not_post_fork_source_sibling() {
     let ancestor_commit =
         TruthCommitIdentity::from_relational_commit_id(inherited.commit.commit_id.0);
 
-    runtime
-        .lock()
-        .unwrap()
-        .performance_access()
-        .reset_counters();
+    let inherited_selection = source
+        .select_commit_at_snapshot(inherited.commit.commit_id, &snapshot)
+        .unwrap();
+    assert_eq!(inherited_selection.work().selections(), 1);
+    assert!(inherited_selection.work().ancestry_visits() > 0);
     let inherited_envelope = source
         .load_committed_patch(RelationalCommittedPatchRequest::at_snapshot(
             ancestor_commit.clone(),
@@ -72,6 +67,12 @@ fn advanced_fork_selects_inherited_ancestor_but_not_post_fork_source_sibling() {
         ))
         .expect("historical evaluation must retain the advanced fork's ancestor");
 
+    let sibling_selection = source
+        .select_commit_at_snapshot(source_sibling.commit.commit_id, &snapshot)
+        .unwrap();
+    assert_eq!(sibling_selection.work().selections(), 1);
+    assert!(sibling_selection.work().ancestry_visits() > 0);
+    assert!(sibling_selection.into_result().is_err());
     let denial = source
         .load_committed_patch(RelationalCommittedPatchRequest::at_snapshot(
             TruthCommitIdentity::from_relational_commit_id(source_sibling.commit.commit_id.0),
@@ -79,7 +80,4 @@ fn advanced_fork_selects_inherited_ancestor_but_not_post_fork_source_sibling() {
         ))
         .expect_err("a post-fork source sibling is not beneath the feature head");
     assert!(denial.to_string().contains("cannot see requested commit"));
-    let counters = runtime.lock().unwrap().performance_access().counters();
-    assert_eq!(counters.bridge_observation_commit_selections, 3);
-    assert!(counters.bridge_observation_commit_ancestry_visits > 0);
 }
