@@ -1,5 +1,10 @@
 mod appearance_compiler_denial_tests;
 mod appearance_lowering_equivalence_tests;
+mod expression_compilation;
+mod expression_declaration_tests;
+mod expression_diagnostic_tests;
+mod expression_identity_tests;
+mod expression_lexing_tests;
 mod layout_declaration_tests;
 mod phase1_source_package_tests;
 mod phase2_parse_tests;

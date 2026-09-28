@@ -28,10 +28,10 @@ pub(crate) use rust_overlay_identity_resolution::resolve_rust_authored_overlay_d
 pub use sealed_overlay_declaration_bindings::WorthUiSealedOverlayDeclarationBindings;
 pub use sealed_semantic_artifact::WorthUiSealedSemanticArtifact;
 pub use sealed_semantic_package::{
-    WorthUiSealedSemanticPackage, WorthUiSemanticAppearanceRoleDeclaration,
-    WorthUiSemanticBackdropDeclaration, WorthUiSemanticBlock, WorthUiSemanticDeclaration,
-    WorthUiSemanticDeclarationView, WorthUiSemanticImport, WorthUiSemanticLayoutDeclaration,
-    WorthUiSemanticModule, WorthUiSemanticProjectionDeclaration, WorthUiSemanticProvenanceRef,
-    WorthUiSemanticToken,
+    WorthUiSealedExpression, WorthUiSealedExpressionOperand, WorthUiSealedSemanticPackage,
+    WorthUiSemanticAppearanceRoleDeclaration, WorthUiSemanticBackdropDeclaration,
+    WorthUiSemanticBlock, WorthUiSemanticDeclaration, WorthUiSemanticDeclarationView,
+    WorthUiSemanticImport, WorthUiSemanticLayoutDeclaration, WorthUiSemanticModule,
+    WorthUiSemanticProjectionDeclaration, WorthUiSemanticProvenanceRef, WorthUiSemanticToken,
 };
 pub use semantic_package_identity::WorthUiSemanticPackageIdentity;

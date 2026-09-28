@@ -55,6 +55,13 @@ pub enum WorthUiDslCompileDiagnosticCode {
     CyclicOverlayRelation,
     AmbiguousOverlayRelation,
     OverlayCapacityDenied,
+    UnterminatedExpressionBody,
+    InvalidExpressionDeclaration,
+    UnknownExpressionOperandSource,
+    ExpressionCycle,
+    ExpressionSyntax,
+    ExpressionAdmissionDenied,
+    UnusedExpressionOperand,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

@@ -1,3 +1,4 @@
+use super::input_sealing::SealableInput;
 use super::{
     WorthUiSemanticBlock, WorthUiSemanticDeclaration, WorthUiSemanticImport,
     WorthUiSemanticProjectionDeclaration, WorthUiSemanticProvenanceRef, WorthUiSemanticToken,
@@ -11,32 +12,32 @@ use crate::source::{
 use crate::WorthUiSealedSemanticArtifact;
 
 pub(super) fn seal_declaration(
-    declaration: &WorthUiArtifactInputNode,
+    declaration: SealableInput<'_>,
     provenance_ref: WorthUiSemanticProvenanceRef,
 ) -> Result<WorthUiSemanticDeclaration, WorthUiDslCompileDiagnostic> {
     match declaration {
-        WorthUiArtifactInputNode::Import(import) => {
+        SealableInput::Import(import) => {
             Ok(WorthUiSemanticDeclaration::Import(WorthUiSemanticImport {
                 target: import.target().clone(),
                 provenance_ref,
             }))
         }
-        WorthUiArtifactInputNode::Component(block) => {
+        SealableInput::Component(block) => {
             seal_block(block, provenance_ref).map(WorthUiSemanticDeclaration::Component)
         }
-        WorthUiArtifactInputNode::Surface(block) => {
+        SealableInput::Surface(block) => {
             seal_block(block, provenance_ref).map(WorthUiSemanticDeclaration::Surface)
         }
-        WorthUiArtifactInputNode::Binding(block) => {
+        SealableInput::Binding(block) => {
             seal_block(block, provenance_ref).map(WorthUiSemanticDeclaration::Binding)
         }
-        WorthUiArtifactInputNode::QueryScalar(block) => {
+        SealableInput::QueryScalar(block) => {
             seal_projection(block, WorthUiProjectionShape::Scalar, provenance_ref)
         }
-        WorthUiArtifactInputNode::QueryCollection(block) => {
+        SealableInput::QueryCollection(block) => {
             seal_projection(block, WorthUiProjectionShape::Collection, provenance_ref)
         }
-        WorthUiArtifactInputNode::Token(token) => {
+        SealableInput::Token(token) => {
             Ok(WorthUiSemanticDeclaration::Token(WorthUiSemanticToken {
                 name_text: token.name_text().to_owned(),
                 authored_identity: token.authored_identity().map(str::to_owned),
@@ -44,26 +45,22 @@ pub(super) fn seal_declaration(
                 provenance_ref,
             }))
         }
-        WorthUiArtifactInputNode::SemanticArtifact(node) => {
-            Ok(WorthUiSemanticDeclaration::SemanticArtifact(
-                WorthUiSealedSemanticArtifact::new(node.declaration().clone(), provenance_ref),
-            ))
-        }
-        WorthUiArtifactInputNode::AppearanceRole(node) => {
-            Ok(WorthUiSemanticDeclaration::AppearanceRole(
-                super::WorthUiSemanticAppearanceRoleDeclaration::new(
-                    node.role().clone(),
-                    provenance_ref,
-                ),
-            ))
-        }
-        WorthUiArtifactInputNode::Backdrop(node) => Ok(WorthUiSemanticDeclaration::Backdrop(
+        SealableInput::SemanticArtifact(node) => Ok(WorthUiSemanticDeclaration::SemanticArtifact(
+            WorthUiSealedSemanticArtifact::new(node.declaration().clone(), provenance_ref),
+        )),
+        SealableInput::AppearanceRole(node) => Ok(WorthUiSemanticDeclaration::AppearanceRole(
+            super::WorthUiSemanticAppearanceRoleDeclaration::new(
+                node.role().clone(),
+                provenance_ref,
+            ),
+        )),
+        SealableInput::Backdrop(node) => Ok(WorthUiSemanticDeclaration::Backdrop(
             super::WorthUiSemanticBackdropDeclaration::new(
                 node.declaration().clone(),
                 provenance_ref,
             ),
         )),
-        WorthUiArtifactInputNode::Layout(node) => Ok(WorthUiSemanticDeclaration::Layout(
+        SealableInput::Layout(node) => Ok(WorthUiSemanticDeclaration::Layout(
             super::WorthUiSemanticLayoutDeclaration::new(
                 node.declaration().clone(),
                 provenance_ref,
@@ -87,6 +84,8 @@ pub(super) fn input_node_provenance(
         WorthUiArtifactInputNode::AppearanceRole(declaration) => declaration.provenance(),
         WorthUiArtifactInputNode::Backdrop(declaration) => declaration.provenance(),
         WorthUiArtifactInputNode::Layout(declaration) => declaration.provenance(),
+        WorthUiArtifactInputNode::Condition(declaration)
+        | WorthUiArtifactInputNode::Derived(declaration) => declaration.provenance(),
     }
 }
 
@@ -244,7 +243,7 @@ fn structural_diagnostic(
     )
 }
 
-fn diagnostic_location(
+pub(super) fn diagnostic_location(
     provenance: &WorthUiArtifactInputProvenance,
 ) -> (String, Option<WorthUiDslSourceSpan>) {
     match provenance {

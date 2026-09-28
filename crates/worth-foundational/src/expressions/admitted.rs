@@ -8,7 +8,7 @@ use super::denial::{ExpressionDenial, ExpressionDenialDetail, ExpressionResult};
 use super::draft::ExpressionDraft;
 use super::functions::InstalledExpressionFunction;
 use super::profile::ExpressionProfile;
-use super::program::ExpressionProgram;
+use super::program::{ExpressionProgram, Op};
 use super::syntax::ExpressionSourceMap;
 use super::types::{ExpressionSchema, ExpressionType};
 
@@ -106,6 +106,15 @@ impl AdmittedExpression {
 
     pub fn identity(&self) -> &ExpressionProgramIdentity {
         &self.identity
+    }
+
+    /// Whether the program binds a named intermediate with `let`.
+    /// Comprehension binders are not `let` bindings.
+    pub fn binds_let(&self) -> bool {
+        self.program
+            .nodes()
+            .iter()
+            .any(|node| matches!(node.op, Op::Let))
     }
 
     /// Canonical node origins in the authored draft.

@@ -156,6 +156,24 @@ fn lower_rust_authored_module(
                     body_atoms.clone(),
                     provenance,
                 )),
+                WorthUiRustAuthoredDeclaration::Condition {
+                    name_text,
+                    body_atoms,
+                } => WorthUiArtifactInputNode::Condition(WorthUiArtifactInputBlockNode::new(
+                    name_text,
+                    None,
+                    body_atoms.clone(),
+                    provenance,
+                )),
+                WorthUiRustAuthoredDeclaration::Derived {
+                    name_text,
+                    body_atoms,
+                } => WorthUiArtifactInputNode::Derived(WorthUiArtifactInputBlockNode::new(
+                    name_text,
+                    None,
+                    body_atoms.clone(),
+                    provenance,
+                )),
                 WorthUiRustAuthoredDeclaration::Token {
                     name_text,
                     authored_identity,

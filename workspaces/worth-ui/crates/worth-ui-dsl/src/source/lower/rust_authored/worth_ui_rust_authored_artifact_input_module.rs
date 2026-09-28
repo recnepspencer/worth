@@ -1,4 +1,5 @@
 mod appearance;
+mod expression;
 mod projection;
 mod revision;
 
@@ -37,6 +38,14 @@ pub(crate) enum WorthUiRustAuthoredDeclaration {
         body_atoms: Vec<WorthUiArtifactInputBodyAtom>,
     },
     QueryCollection {
+        name_text: String,
+        body_atoms: Vec<WorthUiArtifactInputBodyAtom>,
+    },
+    Condition {
+        name_text: String,
+        body_atoms: Vec<WorthUiArtifactInputBodyAtom>,
+    },
+    Derived {
         name_text: String,
         body_atoms: Vec<WorthUiArtifactInputBodyAtom>,
     },

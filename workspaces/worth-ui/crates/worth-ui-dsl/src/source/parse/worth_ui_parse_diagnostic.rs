@@ -11,6 +11,7 @@ pub(crate) enum WorthUiParseDiagnosticCode {
     MissingSemicolon,
     MissingBlockStart,
     UnterminatedBlock,
+    UnterminatedExpressionBody,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

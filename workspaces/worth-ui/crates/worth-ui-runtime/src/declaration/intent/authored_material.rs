@@ -100,7 +100,8 @@ pub(crate) fn prepare_authored_intent_material(
                 | WorthUiSemanticDeclaration::SemanticArtifact(_)
                 | WorthUiSemanticDeclaration::AppearanceRole(_)
                 | WorthUiSemanticDeclaration::Backdrop(_)
-                | WorthUiSemanticDeclaration::Layout(_) => {}
+                | WorthUiSemanticDeclaration::Layout(_)
+                | WorthUiSemanticDeclaration::Expression(_) => {}
             }
         }
     }

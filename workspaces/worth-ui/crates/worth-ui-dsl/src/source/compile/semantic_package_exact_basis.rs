@@ -1,4 +1,5 @@
 mod declaration_basis;
+mod expression_basis;
 mod fingerprint;
 
 use crate::source::{

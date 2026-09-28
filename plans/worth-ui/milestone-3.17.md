@@ -30,13 +30,13 @@ operands, and a result role:
 
 ```
 condition platform.pulse.condition.action_allowed {
-  operand status query-scalar-text platform.pulse.status;
+  operand status query-scalar platform.pulse.status;
   operand allowed application-boolean platform.pulse.action.policy-allowed;
   when (status == "ONLINE" && allowed)
 }
 
 derived platform.pulse.derived.status_label {
-  operand status query-scalar-text platform.pulse.status;
+  operand status query-scalar platform.pulse.status;
   result text;
   value (status == "ONLINE" ? "Online" : "Syncing")
 }
@@ -170,14 +170,6 @@ AC, clippy, fmt, and the tests of the crates it touches.
 - Each denial class yields its code.
 - An invalid expression denies the package.
 
-### Phase 1b: typed Query scalars (`worth-ui-dsl` + `worth-ui-query-binding`)
-
-Scalar projections gain `require integer` and `require decimal`. Today the DSL
-only knows `Text` and `Boolean` native families. Query-binding admission also
-rejects anything but `Text`. Values decode from the Query native value with
-their fact receipts intact. A value of the wrong type is a typed projection
-diagnostic, never a coercion.
-
 ### Phase 2: evaluation owner (`worth-ui-runtime`)
 
 **Installation**
@@ -194,9 +186,11 @@ diagnostic, never a coercion.
 **Evaluation and dependencies**
 - The owner evaluates and keeps the law 7 record.
 - A dependency index maps operand facts to expressions.
-- A new fact owner `ExpressionRuntime` and family `ExpressionResult` publish
-  a result change only when the value or posture changes.
-- An `Expression` lane joins `WorthUiPlanExecutionLane`.
+- A result is republished, and its dependents re-evaluated, only when its
+  value or posture changes.
+- The produced fact family `ExpressionResult` arrives in 3a with its first
+  consumer, and the `Expression` lane arrives in Phase 4 with its first plan
+  nodes. Neither lands as an empty placeholder.
 
 **Tests**
 - Each outcome posture: true, false, value, denied, stale, unavailable.
@@ -222,6 +216,17 @@ The phase lands in this order:
 - **3f data-driven appearance.** An appearance aspect takes its token from a
   `derived` token value. The state-axis decision table stays as it is. A
   derived token and state cells compose through the existing resolver.
+- **3g typed Query scalars.** Scalar projections admit `require boolean`,
+  `require integer`, and `require decimal` beside `text`.
+  - Today the whole scalar binding path is text-only: one Query domain
+    operation, its executor, native request, progression, and outcomes. Even
+    `boolean`, which the DSL parses, is refused at binding.
+  - The path becomes generic over the native value family. It is not copied
+    per family.
+  - Values keep their fact receipts. A value of the wrong type is a typed
+    projection posture, never a coercion.
+  - The five uses above prove themselves over text and application facts
+    first, so this does not block them.
 
 Before each brief, I read the owning code and fix the seam. Each use gets
 tests for its denial and stale postures.
@@ -230,8 +235,10 @@ tests for its denial and stale postures.
 
 **Classification**
 - Source classification gains an authored expression fact kind.
+- An `Expression` lane joins `WorthUiPlanExecutionLane`, lowered from one
+  plan node per installed expression.
 - A meaning change (program identity or operands) invalidates that expression
-  and its consumers through the `Expression` lane.
+  and its consumers through that lane.
 - A span-only change is evidence only.
 
 **Proofs**

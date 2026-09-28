@@ -1,3 +1,4 @@
+use super::worth_ui_expression_body_scanner::consume_expression_body;
 use crate::source::{
     WorthUiParseDiagnostic, WorthUiParseDiagnosticCode, WorthUiSourceModuleId, WorthUiSourceSpan,
     WorthUiSourceToken, WorthUiSourceTokenKind,
@@ -46,7 +47,14 @@ pub(crate) fn tokenize_module_source(
         }
 
         if is_identifier_start(next) {
-            let (token, next_position) = consume_identifier(module_id, source_text, position);
+            let (token, next_position) = match consume_identifier(module_id, source_text, position)
+            {
+                Ok(consumed) => consumed,
+                Err(diagnostic) => {
+                    diagnostics.push(diagnostic);
+                    break;
+                }
+            };
             tokens.push(token);
             position = next_position;
             continue;
@@ -78,13 +86,16 @@ fn consume_identifier(
     module_id: &WorthUiSourceModuleId,
     source_text: &str,
     start: usize,
-) -> (WorthUiSourceToken, usize) {
+) -> Result<(WorthUiSourceToken, usize), WorthUiParseDiagnostic> {
     let mut end = start;
     for character in source_text[start..].chars() {
         if !is_identifier_continue(character) {
             break;
         }
         end += character.len_utf8();
+    }
+    if let Some(body) = consume_expression_body(module_id, source_text, start, end) {
+        return body;
     }
     let raw_text = &source_text[start..end];
     let kind = match raw_text {
@@ -101,10 +112,10 @@ fn consume_identifier(
         "backdrop" => WorthUiSourceTokenKind::KeywordBackdrop,
         _ => WorthUiSourceTokenKind::Identifier(raw_text.to_owned()),
     };
-    (
+    Ok((
         WorthUiSourceToken::new(kind, WorthUiSourceSpan::new(module_id.clone(), start, end)),
         end,
-    )
+    ))
 }
 
 fn consume_number(

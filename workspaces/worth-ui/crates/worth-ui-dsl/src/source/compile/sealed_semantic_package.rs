@@ -2,18 +2,27 @@
 mod appearance_validation;
 #[path = "sealed_semantic_package/authored_route_validation.rs"]
 mod authored_route_validation;
+#[path = "expression_admission/mod.rs"]
+mod expression_admission;
+mod input_sealing;
 #[path = "sealed_semantic_package/region_bindings.rs"]
 mod region_bindings;
 #[path = "sealed_semantic_accessors.rs"]
 mod sealed_semantic_accessors;
 #[path = "sealed_semantic_appearance.rs"]
 mod sealed_semantic_appearance;
+#[path = "sealed_semantic_expression.rs"]
+mod sealed_semantic_expression;
+#[path = "sealed_semantic_expression_operand.rs"]
+mod sealed_semantic_expression_operand;
 #[path = "sealed_semantic_layout.rs"]
 mod sealed_semantic_layout;
 mod sealing;
 pub use sealed_semantic_appearance::{
     WorthUiSemanticAppearanceRoleDeclaration, WorthUiSemanticBackdropDeclaration,
 };
+pub use sealed_semantic_expression::WorthUiSealedExpression;
+pub use sealed_semantic_expression_operand::WorthUiSealedExpressionOperand;
 pub use sealed_semantic_layout::WorthUiSemanticLayoutDeclaration;
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -28,6 +37,7 @@ use crate::source::{
     WorthUiSealedOverlayDeclarationBindings, WorthUiSourceModuleId,
 };
 use crate::UiDslLoweringReceipt;
+use input_sealing::{InputSealing, SealableInput};
 #[derive(Debug)]
 pub struct WorthUiSealedSemanticPackage {
     modules: BTreeMap<WorthUiSourceModuleId, WorthUiSemanticModule>,
@@ -38,6 +48,7 @@ pub struct WorthUiSealedSemanticPackage {
     authored_mode: WorthUiAuthoredMode,
     overlay_declaration_bindings: WorthUiSealedOverlayDeclarationBindings,
     overlay_relation_graph: Option<crate::UiOverlayRelationGraph>,
+    expressions: BTreeMap<String, WorthUiSealedExpression>,
     _seal: WorthUiSemanticPackageSeal,
 }
 
@@ -59,6 +70,7 @@ pub enum WorthUiSemanticDeclaration {
     AppearanceRole(WorthUiSemanticAppearanceRoleDeclaration),
     Backdrop(WorthUiSemanticBackdropDeclaration),
     Layout(WorthUiSemanticLayoutDeclaration),
+    Expression(WorthUiSealedExpression),
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -122,6 +134,8 @@ struct WorthUiSemanticPackageSealingState {
     backdrops: Vec<(crate::UiBackdropDeclaration, WorthUiArtifactInputProvenance)>,
     overlay_declaration_bindings: WorthUiSealedOverlayDeclarationBindings,
     overlay_relation_graph: Option<crate::UiOverlayRelationGraph>,
+    pending_expressions: Vec<expression_admission::PendingExpression>,
+    expressions: BTreeMap<String, WorthUiSealedExpression>,
 }
 
 impl WorthUiSealedSemanticPackage {
@@ -138,6 +152,7 @@ impl WorthUiSealedSemanticPackage {
                 .expect("normalized semantic input should contain every canonical module");
             state.seal_module(module_id, input_module);
         }
+        state.admit_expressions();
         state.validate_projection_content_references();
         authored_route_validation::validate(&mut state);
         state.validate_appearance_declarations();
@@ -165,6 +180,7 @@ impl WorthUiSealedSemanticPackage {
             authored_mode,
             overlay_declaration_bindings: state.overlay_declaration_bindings,
             overlay_relation_graph: state.overlay_relation_graph,
+            expressions: state.expressions,
             _seal: WorthUiSemanticPackageSeal,
         })
     }
@@ -235,6 +251,8 @@ impl WorthUiSemanticPackageSealingState {
             backdrops: Vec::new(),
             overlay_declaration_bindings,
             overlay_relation_graph: None,
+            pending_expressions: Vec::new(),
+            expressions: BTreeMap::new(),
         }
     }
 
@@ -245,7 +263,7 @@ impl WorthUiSemanticPackageSealingState {
     ) {
         let mut declarations = Vec::new();
         for input_declaration in input_module.nodes() {
-            self.seal_input_declaration(input_declaration, &mut declarations);
+            self.seal_input_declaration(module_id, input_declaration, &mut declarations);
         }
         self.modules.insert(
             module_id.clone(),
@@ -258,13 +276,31 @@ impl WorthUiSemanticPackageSealingState {
 
     fn seal_input_declaration(
         &mut self,
+        module_id: &WorthUiSourceModuleId,
         input: &WorthUiArtifactInputNode,
         declarations: &mut Vec<WorthUiSemanticDeclaration>,
     ) {
         let provenance_ref = WorthUiSemanticProvenanceRef(self.provenance_table.len());
         self.provenance_table
             .push(sealing::input_node_provenance(input).clone());
-        match sealing::seal_declaration(input, provenance_ref) {
+        match InputSealing::classify(input) {
+            InputSealing::Expression(expression) => {
+                self.defer_expression(expression, provenance_ref, module_id, declarations.len());
+            }
+            InputSealing::Declaration(sealable) => {
+                self.seal_declaration_input(input, sealable, provenance_ref, declarations);
+            }
+        }
+    }
+
+    fn seal_declaration_input(
+        &mut self,
+        input: &WorthUiArtifactInputNode,
+        sealable: SealableInput<'_>,
+        provenance_ref: WorthUiSemanticProvenanceRef,
+        declarations: &mut Vec<WorthUiSemanticDeclaration>,
+    ) {
+        match sealing::seal_declaration(sealable, provenance_ref) {
             Ok(WorthUiSemanticDeclaration::Projection(projection))
                 if !self
                     .projection_identities

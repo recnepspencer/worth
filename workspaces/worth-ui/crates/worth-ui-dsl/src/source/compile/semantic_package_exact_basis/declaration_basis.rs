@@ -1,5 +1,6 @@
 use crate::source::WorthUiSemanticDeclaration;
 
+use super::expression_basis::WorthUiExpressionExactBasis;
 use super::{Fingerprint, WorthUiSemanticBlockExactBasis};
 
 #[derive(Debug, Eq, PartialEq)]
@@ -40,6 +41,7 @@ pub(super) enum WorthUiSemanticDeclarationExactBasis {
     AppearanceRole(Box<[u8]>),
     Backdrop(Box<[u8]>),
     Layout(Box<[u8]>),
+    Expression(WorthUiExpressionExactBasis),
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -118,6 +120,9 @@ impl WorthUiSemanticDeclarationExactBasis {
             }
             WorthUiSemanticDeclaration::Layout(layout) => {
                 Self::Layout(layout.declaration().canonical_bytes().into_boxed_slice())
+            }
+            WorthUiSemanticDeclaration::Expression(expression) => {
+                Self::Expression(WorthUiExpressionExactBasis::from_expression(expression))
             }
         }
     }
@@ -212,6 +217,7 @@ impl WorthUiSemanticDeclarationExactBasis {
                 fingerprint.fold_text("layout");
                 fingerprint.fold_bytes(bytes);
             }
+            Self::Expression(expression) => expression.fold_into(fingerprint),
         }
     }
 }

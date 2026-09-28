@@ -6,7 +6,7 @@ use worth_foundational::expression_api::{
     ExpressionFunctionCatalog, ExpressionProfile, ExpressionType, IntegerType,
 };
 
-use super::{admitted_type, denied_family, function, length, nominal, schema};
+use super::{admit, admitted_type, denied_family, function, length, nominal, schema};
 
 #[test]
 fn engineering_arithmetic_keeps_types_and_dimensions() {
@@ -65,6 +65,23 @@ fn logic_options_and_collections_type_exactly() {
     assert_eq!(denied_family("ready ? 1.0 : \"no\""), Family::TypeMismatch);
     assert_eq!(denied_family("frame.weight"), Family::UnknownBinding);
     assert_eq!(denied_family("missing_operand"), Family::UnknownBinding);
+}
+
+#[test]
+fn admitted_programs_report_whether_they_bind_let() {
+    let binds_let = |source: &str| {
+        admit(source)
+            .unwrap_or_else(|denial| panic!("{source} was denied: {denial:?}"))
+            .binds_let()
+    };
+    assert!(binds_let("let twice = width * 2.0; twice + twice"));
+    assert!(!binds_let("width * 2.0 + depth"));
+    assert!(!binds_let(
+        "members.all(m, m.thickness > quantity(1.0, mm))"
+    ));
+    assert!(binds_let(
+        "members.all(m, let thick = m.thickness; thick > quantity(1.0, mm))"
+    ));
 }
 
 #[test]

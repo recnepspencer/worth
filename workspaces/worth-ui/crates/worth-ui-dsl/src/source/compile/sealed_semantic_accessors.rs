@@ -146,6 +146,7 @@ impl WorthUiSemanticDeclaration {
             Self::AppearanceRole(declaration) => declaration.provenance_ref(),
             Self::Backdrop(declaration) => declaration.provenance_ref(),
             Self::Layout(declaration) => declaration.provenance_ref(),
+            Self::Expression(declaration) => declaration.provenance_ref(),
         }
     }
 }
