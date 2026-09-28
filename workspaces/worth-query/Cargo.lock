@@ -806,7 +806,6 @@ dependencies = [
  "smallvec",
  "worth-foundational",
  "worth-proof",
- "worth-runtime-bridge",
 ]
 
 [[package]]
@@ -817,6 +816,7 @@ dependencies = [
  "sha2",
  "worth-foundational",
  "worth-proof",
+ "worth-relational",
  "worth-signal",
 ]
 

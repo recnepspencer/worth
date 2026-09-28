@@ -5,7 +5,7 @@ This document freezes the Relational component boundary that Query Milestone
 not access to Relational internals and not a composite commit implementation.
 
 This file is the normative component contract for the 9.17.2 Runtime World
-composition owner above Runtime Bridge. The complete caller mental model is in
+composition owner above the Bridge. The complete caller mental model is in
 [`BRANCH_LOCAL_MVCC.md`](./BRANCH_LOCAL_MVCC.md), which explains the model to
 ordinary Relational callers without assigning product authority to Bridge.
 The executable publication flow is

@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::identity::BridgeIdentityEvidence;
-use crate::relational_identity::RelationalBridgeRecordIdentityParts;
+use crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts;
 
 use super::digest::existing_truth_binding_digest;
 

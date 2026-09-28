@@ -146,7 +146,7 @@ The advanced lane executes in this order:
      - `worth_relational::facade::history`
      - `worth_runtime_bridge::facade::RelationalGroupedProjectionArtifact`
      - `worth_relational::facade::commit_strategies`
-     - `worth_relational::facade::bridge::RuntimeBridgeRelationalSource`
+     - `worth_runtime_bridge::facade::RuntimeBridgeRelationalSource`
    - derives one relational-routing digest from retained proof
 4. Query returns a routed, deferred, denied, or failed relational-routing
    artifact

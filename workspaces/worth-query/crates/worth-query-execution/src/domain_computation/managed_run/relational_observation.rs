@@ -1,11 +1,10 @@
-use worth_relational::facade::{
-    branch::{AdmittedRelationalBranchBasis, RelationalBranchBasisDescriptor},
-    bridge::{
-        RelationalBridgeObservationLease, RelationalBridgeObservationReleaseReceipt,
-        RuntimeBridgeRelationalSource,
-    },
+use worth_relational::facade::branch::{
+    AdmittedRelationalBranchBasis, RelationalBranchBasisDescriptor,
 };
-use worth_runtime_bridge::facade::TruthSnapshotIdentity;
+use worth_runtime_bridge::facade::{
+    RelationalBridgeObservationLease, RelationalBridgeObservationReleaseReceipt,
+    RuntimeBridgeRelationalSource, TruthSnapshotIdentity,
+};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation) struct WorthQueryManagedRelationalObservationIdentity {

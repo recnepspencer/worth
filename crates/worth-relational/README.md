@@ -101,21 +101,27 @@ cross a runtime boundary. The publication facade exposes
 - an optional canonical field path
 - `Exact` or explicitly declared widening precision
 
-This is the authoritative change meaning consumed by Runtime Bridge. Relational
-does not allocate Signal aspects, and downstream callers must not reinterpret
-raw patch fields into their own change taxonomy.
-
-For Query-installed conditional operations, the flow is:
-
-```text
-Relational commit
-  -> aspect-precise authoritative publication
-  -> Runtime Bridge installed correspondence
-  -> Signal invalidation and decision
-  -> Query consequence
-```
+This is the authoritative change meaning. Relational does not allocate Signal
+aspects, and downstream callers must not reinterpret raw patch fields into
+their own change taxonomy.
 
 Use `worth_relational::facade::publication` and
 `worth_relational::facade::schema`. Equal labels or diagnostic digests do not
 replace the typed aspect identity and binding.
+
+#### Who consumes this
+
+The Bridge reads committed changes through
+`worth_relational::facade::change_source`. It selects a commit, has Relational
+mint a change receipt, which proves the publication is consistent, and lowers
+that receipt into its own envelope. Relational does not depend on the Bridge.
+For Query-installed conditional operations, the flow is:
+
+```text
+Relational commit
+  -> aspect-precise authoritative publication and change receipt
+  -> Bridge installed correspondence
+  -> Signal invalidation and decision
+  -> Query consequence
+```
 

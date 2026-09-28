@@ -1,5 +1,4 @@
-use worth_relational::facade::bridge::RuntimeBridgeRelationalSource;
-use worth_runtime_bridge::facade::RuntimeBridge;
+use worth_runtime_bridge::facade::{RuntimeBridge, RuntimeBridgeRelationalSource};
 
 use super::admission::{validate_direct_run_head, validate_direct_run_lower};
 use super::lower_admission::{

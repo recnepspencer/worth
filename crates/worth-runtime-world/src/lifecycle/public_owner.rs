@@ -44,7 +44,7 @@ where
         bridge: &worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,
         declaration: &worth_runtime_bridge::facade::LoweredBridgeAsyncSourceDeclaration,
         observation: &crate::branch::ProductBranchObservation,
-        relational_source: &worth_relational::facade::bridge::RelationalBridgeObservationLease,
+        relational_source: &worth_runtime_bridge::facade::RelationalBridgeObservationLease,
     ) -> Result<
         worth_runtime_bridge::facade::BridgeOwnedAsyncRequestAdmission,
         super::owner::RuntimeWorldOwnedAsyncRequestAdmissionDenial,
@@ -58,7 +58,7 @@ where
         bridge: &worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,
         request: &worth_runtime_bridge::facade::BridgeOwnedAsyncRequestAdmission,
         observation: &crate::branch::ProductBranchObservation,
-        relational_source: &worth_relational::facade::bridge::RelationalBridgeObservationLease,
+        relational_source: &worth_runtime_bridge::facade::RelationalBridgeObservationLease,
     ) -> Result<
         worth_runtime_bridge::facade::BridgeOwnedAsyncRevalidationAdmission,
         super::owner::RuntimeWorldOwnedAsyncRevalidationDenial,

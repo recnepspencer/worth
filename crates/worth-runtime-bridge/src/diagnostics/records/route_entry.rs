@@ -5,7 +5,7 @@ use crate::mapping::{
     BridgeAspectRegistrationId, BridgeMappingId, BridgeMappingWideningClass, CoarseRoutingMode,
     SliceWideningPolicy, SubscriptionSliceKind, TruthDeltaSurfaceKind,
 };
-use crate::relational_identity::RelationalBridgeRecordIdentityParts;
+use crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts;
 use crate::routing::surfaces::TruthDeltaSurfaceIdentity;
 use crate::routing::{FineGrainedMatchOutcome, FineGrainedMatchStatus};
 
@@ -37,9 +37,9 @@ impl BridgeRouteRecordEntityIdentity {
             Self::RelationalRecord(record) => format!(
                 "relational-record:{}:{}:{}:{}",
                 match record.kind() {
-                    crate::relational_identity::RelationalBridgeRecordIdentityKind::Entity =>
+                    crate::relational_source::identity_parts::RelationalBridgeRecordIdentityKind::Entity =>
                         "entity",
-                    crate::relational_identity::RelationalBridgeRecordIdentityKind::Relation =>
+                    crate::relational_source::identity_parts::RelationalBridgeRecordIdentityKind::Relation =>
                         "relation",
                 },
                 record.partition_id(),

@@ -9,7 +9,7 @@ use super::{
 pub struct WorthQueryGranularSourceReadBasis {
     snapshot: worth_runtime_bridge::facade::TruthSnapshotIdentity,
     branch: worth_runtime_bridge::facade::TruthBranchIdentity,
-    observation: std::sync::Arc<worth_relational::facade::bridge::RelationalBridgeObservationLease>,
+    observation: std::sync::Arc<worth_runtime_bridge::facade::RelationalBridgeObservationLease>,
 }
 
 impl PartialEq for WorthQueryGranularSourceReadBasis {
@@ -24,9 +24,7 @@ impl WorthQueryGranularSourceReadBasis {
     pub(in crate::domain_computation::primary_graph) fn new(
         snapshot: worth_runtime_bridge::facade::TruthSnapshotIdentity,
         branch: worth_runtime_bridge::facade::TruthBranchIdentity,
-        observation: std::sync::Arc<
-            worth_relational::facade::bridge::RelationalBridgeObservationLease,
-        >,
+        observation: std::sync::Arc<worth_runtime_bridge::facade::RelationalBridgeObservationLease>,
     ) -> Self {
         Self {
             snapshot,
@@ -46,7 +44,7 @@ impl WorthQueryGranularSourceReadBasis {
     #[doc(hidden)]
     pub fn retain_observation(
         &self,
-    ) -> std::sync::Arc<worth_relational::facade::bridge::RelationalBridgeObservationLease> {
+    ) -> std::sync::Arc<worth_runtime_bridge::facade::RelationalBridgeObservationLease> {
         std::sync::Arc::clone(&self.observation)
     }
 }

@@ -1,5 +1,5 @@
 use worth_relational::facade::branch::RelationalBranchLifecyclePort;
-use worth_relational::facade::bridge::RuntimeBridgeRelationalSource;
+use worth_runtime_bridge::facade::RuntimeBridgeRelationalSource;
 use worth_runtime_world::facade::{
     ProductBranchIdentity, ProductBranchIncarnation, RuntimeWorldOwner,
 };

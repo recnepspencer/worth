@@ -214,10 +214,6 @@ pub use crate::policy::{
     BridgePolicySourceClass, BridgeRoutePlanningPolicy, BridgeRuntimePolicy, BridgeRuntimePosture,
     LoweredBridgeExecutionPolicy, ValidatedBridgePolicyDeclaration,
 };
-pub use crate::relational_identity::{
-    RelationalBridgeRecordIdentityKind, RelationalBridgeRecordIdentityParts,
-    RelationalBridgeSnapshotIdentityParts,
-};
 pub use crate::routing::{
     AdmittedBridgeExecutionPlan, AdmittedPreparationPartitionSet, BridgeAdmissionProfileIdentity,
     BridgeBulkDecisionLog, BridgeBulkDecisionRecord, BridgeBulkDecisionRecordKind,

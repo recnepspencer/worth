@@ -5,7 +5,7 @@ use worth_foundational::facade::{
 };
 
 use crate::mapping::SubscriptionSliceKind;
-use crate::relational_identity::RelationalBridgeRecordIdentityParts;
+use crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts;
 use crate::routing::{
     BridgeSubscriptionSlice, BridgeSubscriptionSliceIdentity, FineGrainedMatchStatus,
 };

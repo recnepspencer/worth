@@ -51,8 +51,6 @@ const RELATIONAL_AUTHORITY_CATEGORIES: &[&str] = &[
     "RelationalSourceTruthDigestIdentityEvidence",
 ];
 
-const RELATIONAL_EXTERNAL_CATEGORIES: &[&str] = &["RelationalSourceTruthExternalIdentityToken"];
-
 const RELATIONAL_SOURCE_TRUTH_IDENTITY_PHASE_ONE_FAMILIES:
     &[RelationalSourceTruthIdentityPhaseOneFamily] = &[
     RelationalSourceTruthIdentityPhaseOneFamily::new(
@@ -60,56 +58,49 @@ const RELATIONAL_SOURCE_TRUTH_IDENTITY_PHASE_ONE_FAMILIES:
         "RelationalSourceTruthAuthority",
         "RelationalCommitIdentityKind",
         RELATIONAL_AUTHORITY_CATEGORIES,
-        "presentation::bridge commit export",
+        "change source commit receipt",
     ),
     RelationalSourceTruthIdentityPhaseOneFamily::new(
         "entity",
         "RelationalSourceTruthAuthority",
         "RelationalEntityIdentityKind",
         RELATIONAL_AUTHORITY_CATEGORIES,
-        "presentation::bridge record export",
+        "change source exact record reads",
     ),
     RelationalSourceTruthIdentityPhaseOneFamily::new(
         "relation",
         "RelationalSourceTruthAuthority",
         "RelationalRelationIdentityKind",
         RELATIONAL_AUTHORITY_CATEGORIES,
-        "presentation::bridge record export",
+        "change source exact record reads",
     ),
     RelationalSourceTruthIdentityPhaseOneFamily::new(
         "snapshot",
         "RelationalSourceTruthAuthority",
         "RelationalSnapshotIdentityKind",
         RELATIONAL_AUTHORITY_CATEGORIES,
-        "presentation::bridge snapshot export",
+        "change source retained observation",
     ),
     RelationalSourceTruthIdentityPhaseOneFamily::new(
         "version",
         "RelationalSourceTruthAuthority",
         "RelationalVersionIdentityKind",
         RELATIONAL_AUTHORITY_CATEGORIES,
-        "snapshot and commit bridge export",
+        "change source commit and snapshot versions",
     ),
     RelationalSourceTruthIdentityPhaseOneFamily::new(
         "branch",
         "RelationalSourceTruthAuthority",
         "RelationalBranchIdentityKind",
         RELATIONAL_AUTHORITY_CATEGORIES,
-        "branch/workspace bridge export",
+        "change source branch selection",
     ),
     RelationalSourceTruthIdentityPhaseOneFamily::new(
         "workspace",
         "RelationalSourceTruthAuthority",
         "RelationalWorkspaceIdentityKind",
         RELATIONAL_AUTHORITY_CATEGORIES,
-        "branch/workspace bridge export",
-    ),
-    RelationalSourceTruthIdentityPhaseOneFamily::new(
-        "bridge_presentation_export",
-        "RelationalSourceTruthAuthority",
-        "RelationalBridgePresentationExportIdentityKind",
-        RELATIONAL_EXTERNAL_CATEGORIES,
-        "runtime bridge intake",
+        "change source branch selection",
     ),
 ];
 

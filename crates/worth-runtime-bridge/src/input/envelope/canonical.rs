@@ -1,7 +1,7 @@
 use super::*;
 use crate::error::BridgeRouteError;
 use crate::mapping::TruthDeltaSurfaceKind;
-use crate::relational_identity::RelationalBridgeRecordIdentityParts;
+use crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BridgeCommittedPatchItem {

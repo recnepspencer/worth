@@ -1256,18 +1256,6 @@ dependencies = [
  "smallvec",
  "worth-foundational",
  "worth-proof",
- "worth-runtime-bridge",
-]
-
-[[package]]
-name = "worth-runtime-bridge"
-version = "0.1.0"
-dependencies = [
- "serde_json",
- "sha2",
- "worth-foundational",
- "worth-proof",
- "worth-signal",
 ]
 
 [[package]]

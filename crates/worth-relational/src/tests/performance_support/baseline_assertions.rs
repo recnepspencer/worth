@@ -282,13 +282,19 @@ fn perf_case_contract(suite: &str, case: &str) -> PerfCaseContract {
         | ("geometry_kernel_matrix", "topology_bridge_connectivity_wave")
         | ("chip_simulator_matrix", "dense_fanout_compile_wave")
         | ("chip_simulator_matrix", "dense_fanout_compile_wave_rich_diagnostics")
-        | ("runtime_bridge_mock_matrix", "geometry_commit_bridge_wave_operational")
-        | ("runtime_bridge_mock_matrix", "geometry_commit_bridge_wave_development")
-        | ("runtime_bridge_mock_matrix", "geometry_commit_bridge_wave_medium_region_operational")
-        | ("runtime_bridge_mock_matrix", "geometry_commit_bridge_wave_medium_region_development")
+        | ("downstream_runtime_mock_matrix", "geometry_commit_downstream_wave_operational")
+        | ("downstream_runtime_mock_matrix", "geometry_commit_downstream_wave_development")
         | (
-            "runtime_bridge_mock_matrix",
-            "geometry_commit_bridge_wave_mixed_locality_operational",
+            "downstream_runtime_mock_matrix",
+            "geometry_commit_downstream_wave_medium_region_operational",
+        )
+        | (
+            "downstream_runtime_mock_matrix",
+            "geometry_commit_downstream_wave_medium_region_development",
+        )
+        | (
+            "downstream_runtime_mock_matrix",
+            "geometry_commit_downstream_wave_mixed_locality_operational",
         )
         | ("mixed_load_matrix", "concurrent_relation_index_parity_pressure")
         | ("game_engine_matrix", "local_scene_graph_propagation_wave")

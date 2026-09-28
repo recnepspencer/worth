@@ -1,6 +1,6 @@
 use crate::identity::BridgeIdentityPayload;
 use crate::input::envelope::{TruthBranchIdentity, TruthCommitIdentity, TruthPatchIdentity};
-use crate::relational_identity::RelationalBridgeSnapshotIdentityParts;
+use crate::relational_source::identity_parts::RelationalBridgeSnapshotIdentityParts;
 use crate::snapshot::TruthSnapshotIdentity;
 
 pub(crate) fn truth_branch(label: &'static str) -> TruthBranchIdentity {

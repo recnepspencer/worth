@@ -10,7 +10,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryConditionalTru
     product: crate::basis::WorthQueryProductBranchLease,
     _application_basis:
         super::super::application_query::resource_lifecycle::WorthQueryApplicationBasisLease,
-    observation: std::sync::Arc<worth_relational::facade::bridge::RelationalBridgeObservationLease>,
+    observation: std::sync::Arc<worth_runtime_bridge::facade::RelationalBridgeObservationLease>,
     _branch: TruthBranchIdentity,
     snapshot: TruthSnapshotIdentity,
     branch_projection: worth_runtime_bridge::facade::BridgeIdentityEvidence,

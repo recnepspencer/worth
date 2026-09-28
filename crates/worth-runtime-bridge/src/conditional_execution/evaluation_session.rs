@@ -55,7 +55,7 @@ pub struct BridgeConditionalEvaluationSession {
     pub(super) signal_port: super::signal_port::BridgeConditionalSignalPort,
     pub(super) snapshot_admission_attempts: usize,
     pub(super) managed_source_record:
-        Option<crate::relational_identity::RelationalBridgeRecordIdentityParts>,
+        Option<crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts>,
     pub(super) observation_baselines: Arc<super::observation_retention::BridgeObservationBaselines>,
     pub(super) readmission_counters: Option<super::BridgeConditionalEvaluationReadmissionCounters>,
 }
@@ -81,7 +81,7 @@ impl BridgeOwnedSignalRuntime {
         &self,
         request: BridgeConditionalEvaluationAdmissionRequest<'_>,
         managed_source_record: Option<
-            crate::relational_identity::RelationalBridgeRecordIdentityParts,
+            crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts,
         >,
     ) -> Result<BridgeConditionalEvaluationSession, BridgeConditionalDenial> {
         let bridge_snapshot_identity = match request.source {

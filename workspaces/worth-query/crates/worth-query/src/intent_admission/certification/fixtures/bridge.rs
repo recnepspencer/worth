@@ -19,7 +19,7 @@ pub(crate) fn certification_bridge() -> RuntimeBridge {
 }
 
 pub(super) fn certification_bridge_from_source(
-    source: worth_relational::facade::bridge::RuntimeBridgeRelationalSource,
+    source: worth_runtime_bridge::facade::RuntimeBridgeRelationalSource,
 ) -> RuntimeBridge {
     RuntimeBridgeBuilder::new()
         .with_relational_source(source)

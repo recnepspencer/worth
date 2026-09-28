@@ -51,9 +51,6 @@ pub mod commit_strategies {
     pub use crate::commit_strategies::{FrozenCommitStrategyRegistry, StrategyExecutionError};
 }
 
-#[path = "facade/bridge.rs"]
-pub mod bridge;
-
 #[path = "facade/change_source.rs"]
 pub mod change_source;
 

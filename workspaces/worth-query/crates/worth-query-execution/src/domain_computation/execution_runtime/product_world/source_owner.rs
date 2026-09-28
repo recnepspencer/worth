@@ -1,10 +1,10 @@
 use std::sync::{Arc, Mutex};
 
-use worth_relational::facade::bridge::{
+use worth_relational::facade::runtime::RelationalRuntime;
+use worth_runtime_bridge::facade::{
     RelationalBridgeBranchHeadLease, RelationalBridgeSourceConfigurationError,
     RuntimeBridgeRelationalSource,
 };
-use worth_relational::facade::runtime::RelationalRuntime;
 
 /// Shared custody of one installed Relational owner and its exact Bridge registry.
 ///

@@ -3,9 +3,7 @@ use std::sync::Arc;
 use super::super::*;
 use crate::facade::{ProductBranchCreationIntent, RuntimeWorldOwner};
 use worth_foundational::facade::{AspectKey, FieldKey, ScalarAspectType};
-use worth_relational::facade::{
-    bridge::RuntimeBridgeRelationalSource, runtime::RelationalRuntimeApi,
-};
+use worth_relational::facade::runtime::RelationalRuntimeApi;
 use worth_runtime_bridge::facade::{
     BridgeAspectRegistration, BridgeAspectRegistrationId, BridgeConditionalComputeProvider,
     BridgeConditionalCondition, BridgeConditionalContract, BridgeConditionalContractParts,
@@ -13,9 +11,9 @@ use worth_runtime_bridge::facade::{
     BridgeConditionalRuntimeBuilder, BridgeDeliveryReceipt, BridgeInstalledConditionalLowering,
     BridgeMappingId, BridgeMappingRegistration, BridgeOwnedConditionalInstallationRequest,
     BridgeRuntimePolicy, BridgeSealedRuntimeAssembly, CoarseRoutingMode, InvalidationSink,
-    MappingSelector, RuntimeBridge, SignalBridgeSinkError, SignalInvalidationScope,
-    SliceWideningPolicy, SnapshotReadContract, SubscriptionSliceKind, TruthDeltaSurfaceKind,
-    TruthPatchScope, TruthPatchTargetSelector,
+    MappingSelector, RuntimeBridge, RuntimeBridgeRelationalSource, SignalBridgeSinkError,
+    SignalInvalidationScope, SliceWideningPolicy, SnapshotReadContract, SubscriptionSliceKind,
+    TruthDeltaSurfaceKind, TruthPatchScope, TruthPatchTargetSelector,
 };
 use worth_signal::facade::{
     NodeEvaluationResult, SignalConditionalArtifactReuse, SignalConditionalVersionComparator,

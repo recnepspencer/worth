@@ -41,7 +41,7 @@ fn test_product_root_with_runtime_and_writeback(
 }
 
 pub(in crate::runtime::tests) fn build_test_product_bridge(
-    source: worth_relational::facade::bridge::RuntimeBridgeRelationalSource,
+    source: worth_runtime_bridge::facade::RuntimeBridgeRelationalSource,
     install_writeback: bool,
 ) -> Result<RuntimeBridge, worth_runtime_bridge::facade::BridgeBuildError> {
     let aspect = AspectKey::new("aspect").expect("the test Product aspect should admit");

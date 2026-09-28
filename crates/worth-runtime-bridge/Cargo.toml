@@ -14,12 +14,14 @@ certification-construction = []
 [dependencies]
 worth-foundational = { path = "../worth-foundational" }
 worth-proof = { path = "../worth-proof" }
+worth-relational = { path = "../worth-relational" }
 worth-signal = { path = "../worth-signal" }
 serde_json = "1"
 sha2 = "0.10"
 
 [dev-dependencies]
 worth-harness = { path = "../worth-harness" }
+serde = { version = "1", features = ["derive"] }
 trybuild.workspace = true
 
 [lints]

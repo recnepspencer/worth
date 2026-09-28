@@ -103,10 +103,14 @@ fn dependency_parts(label: &str, installation: u64) -> BridgeSemanticDependencyC
         )),
         graph_adapter_identity: Arc::from("bridge-test-graph-adapter"),
         source_record_identity: (label != "query:partition").then(|| {
-            crate::relational_identity::RelationalBridgeRecordIdentityParts::entity(0, 1, 1)
+            crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts::entity(
+                0, 1, 1,
+            )
         }),
         observation_record_identity: (label != "query:partition").then(|| {
-            crate::relational_identity::RelationalBridgeRecordIdentityParts::entity(0, 1, 1)
+            crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts::entity(
+                0, 1, 1,
+            )
         }),
         contract: contract(),
         projection_mask: AspectMask::<ProjectionMask>::new([field_path()]),
@@ -121,8 +125,11 @@ fn dependency_parts(label: &str, installation: u64) -> BridgeSemanticDependencyC
 #[test]
 fn record_local_observation_anchor_cannot_drift_from_invalidation_identity() {
     let mut parts = dependency_parts("query:one", 1);
-    parts.observation_record_identity =
-        Some(crate::relational_identity::RelationalBridgeRecordIdentityParts::entity(0, 2, 1));
+    parts.observation_record_identity = Some(
+        crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts::entity(
+            0, 2, 1,
+        ),
+    );
 
     let denial = BridgeSemanticDependencyCandidate::admit(parts).unwrap_err();
 

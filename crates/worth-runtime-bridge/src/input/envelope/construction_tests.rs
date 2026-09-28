@@ -58,7 +58,9 @@ fn semantic_metadata_cannot_disagree_with_native_target_shape() {
             truth_branch("branch"),
         ),
         vec![BridgeCommittedPatchItem::with_relational_semantic_change(
-            crate::relational_identity::RelationalBridgeRecordIdentityParts::entity(0, 1, 1),
+            crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts::entity(
+                0, 1, 1,
+            ),
             BridgeCommittedPatchTarget::entity_field_path(
                 AspectLocator::new(LocatorAuthority::Authoritative, key.clone()),
                 target_path,

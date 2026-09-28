@@ -7,7 +7,7 @@ error[E0308]: mismatched types
   |                     arguments to this function are incorrect
   |
 note: associated function defined here
- --> src/relational_identity.rs
+ --> src/relational_source/identity_parts.rs
   |
   |     pub fn from_relational_commit_id(commit_id: u64) -> Self {
   |            ^^^^^^^^^^^^^^^^^^^^^^^^^

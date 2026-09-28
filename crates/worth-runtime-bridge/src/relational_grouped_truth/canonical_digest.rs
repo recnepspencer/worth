@@ -1,4 +1,4 @@
-use crate::relational_identity::{
+use crate::relational_source::identity_parts::{
     RelationalBridgeRecordIdentityKind, RelationalBridgeRecordIdentityParts,
 };
 use crate::snapshot::{SnapshotReadValue, TruthSnapshotIdentity};

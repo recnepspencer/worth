@@ -12,8 +12,7 @@ pub use categories::{
     RelationalSourceTruthProjectionIdentity,
 };
 pub use kinds::{
-    RelationalBranchIdentityKind, RelationalBridgePresentationDigestIdentityBasis,
-    RelationalBridgePresentationExportIdentityKind, RelationalCanonicalDigestIdentityBasis,
+    RelationalBranchIdentityKind, RelationalCanonicalDigestIdentityBasis,
     RelationalCommitIdentityKind, RelationalEntityIdentityKind, RelationalRelationIdentityKind,
     RelationalSnapshotIdentityKind, RelationalVersionIdentityKind, RelationalWorkspaceIdentityKind,
 };

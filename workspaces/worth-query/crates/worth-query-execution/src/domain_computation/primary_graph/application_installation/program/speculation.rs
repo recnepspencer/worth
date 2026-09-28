@@ -38,15 +38,14 @@ pub enum WorthQueryApplicationPreviewReadmissionDenial {
 
 pub struct WorthQueryApplicationPreviewSession {
     handle: Option<BridgeSpeculativeSessionHandle>,
-    source:
-        Option<std::sync::Arc<worth_relational::facade::bridge::RelationalBridgeObservationLease>>,
+    source: Option<std::sync::Arc<worth_runtime_bridge::facade::RelationalBridgeObservationLease>>,
     runtime_authority: u64,
     source_commit: CompositeCommitIdentity,
 }
 
 pub struct WorthQueryReadmittedApplicationPreview {
     handle: Option<BridgeSpeculativeSessionHandle>,
-    _source: std::sync::Arc<worth_relational::facade::bridge::RelationalBridgeObservationLease>,
+    _source: std::sync::Arc<worth_runtime_bridge::facade::RelationalBridgeObservationLease>,
 }
 
 impl WorthQueryApplicationPreviewSession {

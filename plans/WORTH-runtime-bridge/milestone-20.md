@@ -955,4 +955,53 @@ Follow-up outside this milestone: an earlier Phase 3 run saw six Relational
 wall-clock timing tests fail under concurrent machine load. The full suite
 passes at the Phase 3 commit.
 
-Phases 4 and 5 are not started.
+Phase 4 is complete.
+
+- The adapter lives in `crates/worth-runtime-bridge/src/relational_source/`,
+  at the destinations above. `relational_identity.rs` became
+  `relational_source/identity_parts.rs`. The Bridge facade exports the
+  adapter, grouped truth, and the identity parts from one module,
+  `facade/exports_relational.rs`; downstream callers import them from
+  `worth_runtime_bridge::facade`.
+- Relational no longer has `facade::bridge`, `presentation::bridge`,
+  `tests/bridge_identity_boundary.rs`, or the `worth-runtime-bridge`
+  dependency. The probe crate is deleted: the adapter now compiles as Bridge
+  code against the Relational facade, which is the property the probe proved.
+  The identity scan is the Bridge unit test
+  `relational_source/identity_boundary_tests.rs`.
+- `road1.toml` denies `worth-relational -> worth-runtime-bridge`, and
+  `configured_fence_keeps_relational_off_the_bridge_and_lets_the_bridge_read_relational`
+  proves the denial and that the reverse edge passes.
+- All eight lock files carry the flipped edges. The two UI certification
+  fixture locks are already stale for reasons outside this milestone, so only
+  the two edges were changed there.
+- The performance mock is renamed for what it mocks: a downstream runtime
+  (`downstream_runtime_support.rs`, `downstream_runtime_mock_matrix/`, and
+  `geometry_commit_downstream_wave_*` scenario ids).
+- `RelationalBridgePresentation{ExportIdentityKind,DigestIdentityBasis}` and
+  the `bridge_presentation_export` family were deleted here rather than in
+  Phase 5, because the family map named the moved paths. The family-map
+  frontier strings now name the change source.
+- D10 and D12: `basis_lifecycle/reuse.rs` and
+  `declaration_relational_routing/lower.rs` name
+  `worth_runtime_bridge::facade::RuntimeBridgeRelationalSource`. Neither
+  digest is pinned; both are computed from these strings.
+- `tools/boundary-check/snapshots/facades.toml` does not change: it lists no
+  Bridge path, and `RelationalBridgeRecordIdentityParts` keeps its name.
+
+Hunks that are not a move or a path rewrite:
+
+- `fork_ancestry_selection.rs` asserts the work after evaluation.
+- `patch_envelopes.rs` drops a stale doc paragraph and the
+  `#[allow(unreachable_patterns)]`, which is no longer needed outside
+  Relational.
+- `consistency_lowering_tests.rs` adds
+  `a_consistent_unadmitted_opaque_record_is_unsupported_precision`, the
+  single-fault baseline for the two double-fault cases.
+- `relational_source/mod.rs` declares `identity_parts` and the identity scan.
+- Four Runtime World test fixtures import `RelationalRuntimeApi` from
+  Relational and the adapter from the Bridge.
+- Relational's README and `API_OVERVIEW.md` move the Bridge flow into "Who
+  consumes this" sections.
+
+Phase 5 is not started.

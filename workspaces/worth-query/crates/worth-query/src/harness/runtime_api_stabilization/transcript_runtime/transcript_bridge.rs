@@ -37,7 +37,7 @@ impl worth_runtime_bridge::facade::TruthWritebackAuthority for TranscriptWriteba
 }
 
 pub(super) fn transcript_bridge(
-    source: worth_relational::facade::bridge::RuntimeBridgeRelationalSource,
+    source: worth_runtime_bridge::facade::RuntimeBridgeRelationalSource,
 ) -> RuntimeBridge {
     RuntimeBridgeBuilder::new()
         .with_relational_source(source)

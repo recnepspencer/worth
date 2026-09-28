@@ -72,7 +72,7 @@ impl WorthQueryRuntimeBackendParts {
         mut self,
         graph_role: impl Into<std::sync::Arc<str>>,
         build: impl FnOnce(
-            worth_relational::facade::bridge::RuntimeBridgeRelationalSource,
+            worth_runtime_bridge::facade::RuntimeBridgeRelationalSource,
         )
             -> Result<RuntimeBridge, worth_runtime_bridge::facade::BridgeBuildError>,
     ) -> Result<(Self, RuntimeBridge), WorthQueryRuntimeError> {

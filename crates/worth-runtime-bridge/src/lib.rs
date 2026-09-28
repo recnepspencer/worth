@@ -89,7 +89,7 @@ mod mapping;
 mod merge;
 mod policy;
 mod relational_grouped_truth;
-mod relational_identity;
+mod relational_source;
 mod routing;
 mod snapshot;
 mod source;
