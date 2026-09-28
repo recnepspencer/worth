@@ -31,10 +31,21 @@ pub(in crate::native::mechanics_adapter) fn admits(
         .iter()
         .map(|batch| batch.records().len())
         .sum();
+    worth_ui_host_contract::record_presentation_glyphs(
+        worth_ui_host_contract::UiPresentationWorkStage::GlyphRunAdmission,
+        demand_records,
+    );
+    worth_ui_host_contract::record_presentation_map_inserts(demand_records);
     if !demand_shape_admits(raster.glyph_runs().len(), demand_records) {
         return false;
     }
     let mechanics = semantic_mechanics(view.presentation_work());
+    let runs = raster.glyph_runs().len();
+    worth_ui_host_contract::record_presentation_glyphs(
+        worth_ui_host_contract::UiPresentationWorkStage::GlyphRunAdmission,
+        runs,
+    );
+    worth_ui_host_contract::record_presentation_map_inserts(runs + mechanics.len());
     let runs_admitted = raster.glyph_runs().iter().all(|run| {
         demands.contains(&(
             run.layout_identity(),

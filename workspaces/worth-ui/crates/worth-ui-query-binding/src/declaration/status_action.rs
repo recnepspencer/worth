@@ -1,4 +1,4 @@
-use sha2::{Digest, Sha256};
+use sha2::Digest;
 use worth_query_decl::facade::{
     application_operation::{
         ApplicationCandidateCardinalityCeiling, ApplicationCandidateRequirements,
@@ -16,6 +16,7 @@ use worth_query_host::facade::primary_graph::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
     WorthQueryInvariantMutationTarget,
 };
+use worth_ui_host_contract::UiCountedSha256;
 
 use super::status_mutation::{
     StatusMutationScope, WorthUiStatusUpdateDenial, WorthUiStatusUpdateDenialBinding,
@@ -71,7 +72,7 @@ impl ApplicationMutationBinding<WorthUiApplicationSchema> for WorthUiStatusActio
         );
 
     fn idempotency_key_identity(key: &WorthUiStatusActionIdentity) -> [u8; 32] {
-        let mut digest = Sha256::new();
+        let mut digest = UiCountedSha256::new();
         digest.update(b"worth.ui.status-action-command.v1");
         digest.update(key.session().to_le_bytes());
         digest.update(key.lineage().to_le_bytes());
@@ -79,7 +80,7 @@ impl ApplicationMutationBinding<WorthUiApplicationSchema> for WorthUiStatusActio
     }
 
     fn input_identity(input: &WorthUiStatusActionRequest) -> [u8; 32] {
-        let mut digest = Sha256::new();
+        let mut digest = UiCountedSha256::new();
         digest.update(b"worth.ui.status-action-input.v1");
         digest.update(input.source_revision().to_le_bytes());
         digest.update((input.status().len() as u64).to_le_bytes());

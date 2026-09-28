@@ -253,6 +253,15 @@ While the platform runs a modal resize loop, a deadline watch posts one wake
 per armed deadline the loop misses, sleeping precisely for its last
 millisecond; its wake cost across a drag is a known trade against timer-tick
 lateness, to revisit if a later budget needs the idle core back.
+Every presentation attempt charges its work to a per-thread ledger in
+worth-ui-host-contract: glyph records each text stage touched (demand, request
+basis, atlas normalize/plan/settle, pins, run admission, coverage, command
+planning, vertex encode), bytes digested, glyph-path map inserts, and, when the
+binary counts them, process-wide allocations as a diagnostic. Presentation hashing goes through the ledger's
+counted SHA-256 (boundary-check denies the raw hasher outside tests), and the
+resize trace writes each submitted frame's counts. Budget tests over the
+deterministic glyph, byte, and insert counts, not wall-clock timings, gate per-frame work while this
+milestone develops; timings are qualified once, at the end.
 
 Acceptance commits those prepared results and retires predecessor resources only
 after physical completion. Pre-effect rejection preserves accepted application
@@ -336,6 +345,15 @@ publication. This is the endpoint used to drive the remaining work.
 to the whole dashboard. Finish scroll extent/anchor succession, text constraints,
 modal/popover placement, and Backdrop extent through the same preparation boundary.
 No stretched-canvas substitute or separate initial/rebind/retry layout formula.
+
+**2a. Bound per-frame work.** Count each attempt's work per stage (ledger above)
+and drive a headless native pass so budget tests run the production pipeline
+without a window: a move-only resize frame touches no glyphs in the text stages
+and O(moved blocks) work overall; a rewrap frame touches only rewrapped blocks'
+glyphs. Then retain text per block (move-only deltas, block-local glyph buffers),
+intern glyph raster keys, reuse unchanged async admission, make runtime passes
+incremental, and move presentation to a render thread. Ledger and trace counts:
+completed. Headless pass, budget tests, and the structural work: not yet.
 
 **3. Harden and qualify.** Cover delayed completion followed by a newer extent,
 pre-effect rejection/retry, scale transitions, minimize/restore, reconstruction,

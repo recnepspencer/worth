@@ -17,11 +17,12 @@ impl WorthUiScalarProjectionActionEvidence {
         status: String,
         publication: &crate::WorthUiStatusPublication,
     ) -> Self {
-        use sha2::{Digest, Sha256};
+        use sha2::Digest;
+        use worth_ui_host_contract::UiCountedSha256;
 
         let receipt = publication.query_receipt().inspect();
         let basis = receipt.basis();
-        let mut digest = Sha256::new();
+        let mut digest = UiCountedSha256::new();
         digest.update(b"worth.ui.status-action-publication.v1");
         digest.update(receipt.query_identity().as_bytes());
         digest.update(receipt.parameter_binding_identity().as_bytes());

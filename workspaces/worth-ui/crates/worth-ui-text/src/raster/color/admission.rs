@@ -2,7 +2,9 @@
 
 use std::collections::{HashMap, HashSet};
 
-use sha2::{Digest, Sha256};
+use sha2::Digest;
+
+use worth_ui_host_contract::UiCountedSha256;
 use worth_ui_host_contract::{
     UiGlyphRasterAttribution, UiGlyphRasterDemandIdentity, UiGlyphRasterKey, UiGlyphRasterLane,
     UiQualifiedTextLayoutIdentity,
@@ -204,7 +206,7 @@ pub fn admit_intrinsic_color_transaction(
 pub(super) fn transaction_identity(
     batches: &[(&UiQualifiedTextLayout, &UiGlyphRasterDemandBatch)],
 ) -> [u8; 32] {
-    let mut digest = Sha256::new();
+    let mut digest = UiCountedSha256::new();
     digest.update(b"worth-ui-color-raster-transaction-v1\0");
     digest.update(
         u64::try_from(batches.len())

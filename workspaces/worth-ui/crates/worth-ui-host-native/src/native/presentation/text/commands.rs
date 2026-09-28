@@ -55,6 +55,10 @@ pub(crate) fn plan_raw_glyph_commands(
     runs: &[UiGlyphRunView],
     atlas: &UiNativeTextAtlas,
 ) -> Result<Box<[UiNativeGlyphCommand]>, UiNativeGlyphCommandDenial> {
+    worth_ui_host_contract::record_presentation_glyphs(
+        worth_ui_host_contract::UiPresentationWorkStage::CommandPlanning,
+        runs.len(),
+    );
     let mut commands = runs
         .iter()
         .copied()

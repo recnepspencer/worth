@@ -41,10 +41,24 @@ use std::process::ExitCode;
 
 /// The native host allocates short-lived buffers on every frame; mimalloc's
 /// thread-local free lists serve them far cheaper than the system heap.
+#[cfg(not(feature = "count-allocations"))]
 #[global_allocator]
 static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
+/// Diagnostic builds count allocations through the system heap instead, so
+/// the resize trace can report each frame's. A reallocation, such as a
+/// growing `Vec`, counts as an allocation. The counts are process-wide, every
+/// thread included.
+#[cfg(feature = "count-allocations")]
+#[global_allocator]
+static GLOBAL: &stats_alloc::StatsAlloc<std::alloc::System> = &stats_alloc::INSTRUMENTED_SYSTEM;
+
 fn main() -> ExitCode {
+    #[cfg(feature = "count-allocations")]
+    worth_ui_native_platform::install_presentation_allocation_counter(|| {
+        let stats = GLOBAL.stats();
+        u64::try_from(stats.allocations.saturating_add(stats.reallocations)).unwrap_or(u64::MAX)
+    });
     if let Some(points) = std::env::args().find_map(|argument| {
         argument
             .strip_prefix("--worth-ui-native-phase7-world=")

@@ -127,6 +127,7 @@ impl CandidateAtlasStore {
     }
 
     pub(crate) fn insert(&mut self, entry: UiAtlasEntry) {
+        worth_ui_host_contract::record_presentation_map_inserts(1);
         self.added.insert(entry.key, entry);
     }
 
@@ -142,6 +143,7 @@ impl CandidateAtlasStore {
         self.pages
             .get_mut(usize::try_from(entry.page).ok()?)?
             .release(entry.rect);
+        worth_ui_host_contract::record_presentation_map_inserts(1);
         self.removed.insert(key);
         Some(entry)
     }
@@ -177,6 +179,7 @@ impl CandidateAtlasStore {
         for key in self.removed {
             store.entries.remove(&key);
         }
+        worth_ui_host_contract::record_presentation_map_inserts(self.added.len());
         store.entries.extend(self.added);
     }
 }

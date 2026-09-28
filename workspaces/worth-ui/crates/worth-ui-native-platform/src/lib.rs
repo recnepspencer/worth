@@ -1,7 +1,8 @@
 //! Public native-platform facade over the runtime-owned binding gate.
 
 pub use worth_ui_runtime::native_platform::{
-    UiNativeApplicationBuilder, UiNativeApplicationDefinition, UiNativeApplicationFrame,
+    install_presentation_allocation_counter, UiNativeApplicationBuilder,
+    UiNativeApplicationDefinition, UiNativeApplicationFrame,
     UiNativeApplicationObservationProgress, UiNativeApplicationPhysicalProgress,
     UiNativeApplicationPreparation, UiNativeApplicationPreparationDenial,
     UiNativeApplicationPreparationDenialCause, UiNativeApplicationPreparationOutcome,

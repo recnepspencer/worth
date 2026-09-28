@@ -44,6 +44,10 @@ pub(super) fn physical_capacity_denial(
 pub(super) fn native_pin_transition(
     pins: UiGlyphRasterPinTransitionView<'_>,
 ) -> UiNativeTextAtlasPinTransition {
+    worth_ui_host_contract::record_presentation_glyphs(
+        worth_ui_host_contract::UiPresentationWorkStage::Pins,
+        pins.additions().len() + pins.releases().len(),
+    );
     UiNativeTextAtlasPinTransition::from_text_mechanics(
         pins.additions().iter().copied().map(|pin| {
             UiNativeTextAtlasPinRequest::from_text_mechanics(pin.layout_identity(), pin.key())

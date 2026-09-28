@@ -1,5 +1,6 @@
-use sha2::{Digest, Sha256};
+use sha2::Digest;
 use std::sync::Arc;
+use worth_ui_host_contract::UiCountedSha256;
 use worth_ui_host_contract::{UiQualifiedFontFaceIdentity, UiQualifiedFontFamilyIdentity};
 
 use crate::layout_artifact::{
@@ -22,7 +23,7 @@ fn face(source: UiQualifiedTextColorSource) -> UiQualifiedTextFaceResource {
 }
 
 fn face_digest(face: &UiQualifiedTextFaceResource) -> [u8; 32] {
-    let mut digest = Sha256::new();
+    let mut digest = UiCountedSha256::new();
     super::hash_faces(&mut digest, std::slice::from_ref(face));
     digest.finalize().into()
 }

@@ -1,5 +1,6 @@
 use super::{UiNativeApplicationQueryCloseObservation, WorthUiNativeApplicationShell};
-use sha2::{Digest, Sha256};
+use sha2::Digest;
+use worth_ui_host_contract::UiCountedSha256;
 
 #[derive(Debug)]
 pub struct WorthUiNativeApplicationShutdownReceipt {
@@ -298,7 +299,7 @@ fn authored_mounted_instances(
         .iter()
         .map(|(authored, index)| {
             worth_ui_host_native::UiNativeClientAuthoredMountedInstanceObservation::reported(
-                Sha256::digest(authored.as_bytes()).into(),
+                UiCountedSha256::digest(authored.as_bytes()).into(),
                 shell.mounted_rows[*index].latest_mounted.diagnostic_value(),
             )
         })

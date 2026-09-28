@@ -58,7 +58,7 @@ pub(super) fn rebuild_glyph_runs<'work>(
 ) -> Box<[UiGlyphRunView]> {
     debug_assert_eq!(mechanics.len(), layouts.len());
     debug_assert_eq!(mechanics.len(), demands.len());
-    mechanics
+    let runs = mechanics
         .iter()
         .zip(layouts)
         .zip(demands)
@@ -104,8 +104,12 @@ pub(super) fn rebuild_glyph_runs<'work>(
                     })
                 })
         })
-        .collect::<Vec<_>>()
-        .into_boxed_slice()
+        .collect::<Box<[_]>>();
+    worth_ui_host_contract::record_presentation_glyphs(
+        worth_ui_host_contract::UiPresentationWorkStage::DemandDerivation,
+        runs.len(),
+    );
+    runs
 }
 
 impl<'work, Resolve> MountedTextDemandJoin<'_, 'work, Resolve>

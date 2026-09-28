@@ -97,12 +97,51 @@ pub(crate) fn consumed(size: [u32; 2]) {
     record(format_args!("consumed {} {}", size[0], size[1]));
 }
 
-/// The host handed a frame of `extent` to the surface for display.
+/// The host handed a frame of `extent` to the surface for display, and the
+/// work counted since the previous submission is charged to it.
 pub(crate) fn submitted(frame: u64, extent: [u32; 2]) {
     record(format_args!(
         "submitted {frame} {} {}",
         extent[0], extent[1]
     ));
+    work(frame);
+}
+
+/// Records the presentation work counted since the previous submission,
+/// attempts that never submitted included, as `frame`'s: glyph records per
+/// [`worth_ui_host_contract::UiPresentationWorkStage::ALL`] stage, then
+/// digested bytes, map inserts, and allocations (`-` when uncounted). Taking
+/// the counts even when no trace is written starts each frame afresh.
+///
+/// Like every trace line, this one is formatted into a single allocation,
+/// which the next frame's count includes along with the frame's other lines.
+fn work(frame: u64) {
+    let work = worth_ui_host_contract::take_presentation_work();
+    if enabled() {
+        record(format_args!("work {frame} {}", WorkFields(work)));
+    }
+}
+
+/// The fields of a `work` line, written without allocating.
+struct WorkFields(worth_ui_host_contract::UiPresentationWorkCounts);
+
+impl std::fmt::Display for WorkFields {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let work = self.0;
+        for stage in worth_ui_host_contract::UiPresentationWorkStage::ALL {
+            write!(formatter, "{} ", work.glyphs(stage))?;
+        }
+        write!(
+            formatter,
+            "{} {} ",
+            work.digested_bytes(),
+            work.map_inserts()
+        )?;
+        match work.allocations() {
+            Some(allocations) => write!(formatter, "{allocations}"),
+            None => formatter.write_str("-"),
+        }
+    }
 }
 
 /// The host acknowledged the presentation of a frame it painted.

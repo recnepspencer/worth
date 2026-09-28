@@ -1,6 +1,8 @@
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use sha2::{Digest, Sha256};
+use sha2::Digest;
+
+use worth_ui_host_contract::UiCountedSha256;
 use worth_ui_host_contract::{
     UiGlyphRasterDemandBatchView, UiGlyphRasterLane, UiGlyphRasterPinTransitionView,
 };
@@ -88,7 +90,7 @@ fn atlas_basis_digest(
     demands: &[UiGlyphRasterDemandBatchView<'_>],
     pins: UiGlyphRasterPinTransitionView<'_>,
 ) -> [u8; 32] {
-    let mut digest = Sha256::new();
+    let mut digest = UiCountedSha256::new();
     digest.update(b"worth-ui/native-physical-atlas-request/v2\0");
     digest_presentation_basis(&mut digest, presentation_basis);
     digest_demands(&mut digest, demands);
@@ -98,7 +100,10 @@ fn atlas_basis_digest(
     digest.finalize().into()
 }
 
-fn digest_presentation_basis(digest: &mut Sha256, basis: UiNativePhysicalPresentationBasis) {
+fn digest_presentation_basis(
+    digest: &mut UiCountedSha256,
+    basis: UiNativePhysicalPresentationBasis,
+) {
     let baseline = basis.baseline();
     digest.update(basis.host_session_identity().to_le_bytes());
     digest.update(basis.attempt().diagnostic_value().to_le_bytes());
@@ -143,7 +148,7 @@ fn digest_presentation_basis(digest: &mut Sha256, basis: UiNativePhysicalPresent
     }
 }
 
-fn digest_demands(digest: &mut Sha256, demands: &[UiGlyphRasterDemandBatchView<'_>]) {
+fn digest_demands(digest: &mut UiCountedSha256, demands: &[UiGlyphRasterDemandBatchView<'_>]) {
     digest.update((demands.len() as u64).to_le_bytes());
     for demand in demands {
         digest.update(demand.identity().digest());
@@ -168,7 +173,7 @@ fn digest_demands(digest: &mut Sha256, demands: &[UiGlyphRasterDemandBatchView<'
 }
 
 fn digest_pins(
-    digest: &mut Sha256,
+    digest: &mut UiCountedSha256,
     domain: &[u8],
     pins: &[worth_ui_host_contract::UiGlyphRasterPinRequest],
 ) {
@@ -180,7 +185,7 @@ fn digest_pins(
     }
 }
 
-fn digest_capacity(digest: &mut Sha256, capacity: UiNativeTextAtlasQualifiedCapacity) {
+fn digest_capacity(digest: &mut UiCountedSha256, capacity: UiNativeTextAtlasQualifiedCapacity) {
     for value in [
         capacity.alpha_pages(),
         capacity.alpha_width(),

@@ -47,6 +47,10 @@ pub use runtime_qualification::{
     UiNativeRuntimeDerivedStateLossClass, UiNativeRuntimeQualificationPlan,
     UiNativeRuntimeQualificationPlanDenial,
 };
+/// The executable, which chooses the process allocator, installs its
+/// allocation reading here to have the resize trace count each frame's
+/// allocations.
+pub use worth_ui_host_contract::install_presentation_allocation_counter;
 #[cfg(feature = "certification-support")]
 pub use worth_ui_host_native::{
     UiNativeClientAuthoredMountedInstanceObservation, UiNativeClientDerivedStateLossClass,

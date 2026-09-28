@@ -19,3 +19,4 @@ workspace = true
 
 [dependencies]
 worth-foundational = { path = "../../../../crates/worth-foundational" }
+sha2.workspace = true
