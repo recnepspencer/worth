@@ -169,6 +169,7 @@ pub(crate) fn present_initial<Port: UiNativePresentationPort>(
     let initial =
         validate_initial(view, &retained).map_err(UiNativePresentationFailure::BeforeEffects)?;
     let mut operations = initial_operations(&retained, graphics, atlas, &initial)?;
+    retained.paint_target(graphics.target_generation());
     retained
         .initialize_physical_coverage(
             raster::UiNativeRasterBasis::from_presentation_access(graphics),

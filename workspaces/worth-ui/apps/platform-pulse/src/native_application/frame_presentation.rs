@@ -1,4 +1,5 @@
 use worth_ui::facade::app::UiMountedFrameOutcome;
+use worth_ui_native_platform::UiNativeSurfaceSuccession;
 
 use super::PlatformPulseApplicationRuntime;
 use crate::native_application::frame_execution_diagnostic;
@@ -39,10 +40,13 @@ impl PlatformPulseApplicationRuntime {
         {
             return;
         }
-        self.present_for_surface_basis(false);
+        self.present_for_surface(None);
     }
 
-    pub(super) fn present_for_surface_basis(&mut self, surface_basis_successor: bool) {
+    /// Present after a host surface succession, if any. A successor target
+    /// the host kept the retained presentation on only needs a frame; a
+    /// reconstruction the host owes is presented as one directly.
+    pub(super) fn present_for_surface(&mut self, surface: Option<UiNativeSurfaceSuccession>) {
         if self.external_close_requested
             || self.pending_frame_presentation.is_some()
             || self.pending_managed_rebind.is_some()
@@ -58,9 +62,10 @@ impl PlatformPulseApplicationRuntime {
         let first_frame = self.initial_source.is_some();
         let viewport_successor = shell.native_viewport_presentation_pending();
         let retry = self.presentation_retry;
-        let reconstruction_required =
-            surface_basis_successor || retry.is_some_and(|retry| retry.reconstruction);
+        let reconstruction_required = surface == Some(UiNativeSurfaceSuccession::Reconstruct)
+            || retry.is_some_and(|retry| retry.reconstruction);
         if !first_frame
+            && surface.is_none()
             && !reconstruction_required
             && retry.is_none()
             && !shell.native_presentation_retry_pending()

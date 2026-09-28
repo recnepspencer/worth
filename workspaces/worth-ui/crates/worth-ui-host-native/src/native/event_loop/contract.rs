@@ -253,6 +253,7 @@ impl UiNativeObservationTimeProgress {
 pub struct UiNativeReadinessGrant {
     generation: u64,
     surface_basis_generation: u64,
+    surface_reconstruction_owed: bool,
     scale_factor_milli: u32,
     client_physical_size: [u32; 2],
 }

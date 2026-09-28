@@ -38,6 +38,18 @@ impl UiNativeTextForegroundCoverageCertification {
     pub fn cost(&self) -> UiNativeTextForegroundJoinCost {
         self.cost
     }
+    /// This paint's coverage carried onto a successor target of `extent`.
+    pub fn regions_at(
+        &self,
+        extent: [u32; 2],
+    ) -> Result<Box<[[i64; 4]]>, UiNativeTextForegroundFinalizationDenial> {
+        Ok(self
+            .finalized
+            .coverage_at(extent)?
+            .iter()
+            .map(|r| [r.left, r.top, r.right, r.bottom])
+            .collect())
+    }
 }
 
 pub use crate::native::presentation::UiNativeTextReplayOperation;

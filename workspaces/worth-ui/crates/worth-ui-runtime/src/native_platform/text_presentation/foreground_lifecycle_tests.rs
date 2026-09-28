@@ -181,3 +181,37 @@ fn commands(world: &CoverageWorld) -> Vec<UiMountedPaintCommand> {
         })
         .collect()
 }
+
+/// A resize carries finalized text onto a successor target: its coverage
+/// there is exactly what finalizing the same paint for that target produces,
+/// whether the target clips more of the text or reveals it.
+#[test]
+fn successor_target_coverage_matches_finalizing_for_that_target() {
+    let world = CoverageWorld::new(
+        "W	W	W",
+        UiMountedInstanceIdentity::mint_unbound().unwrap(),
+        0.0,
+        [5.0, 0.0, 70.0, 48.0],
+    );
+    let mut atlas = UiNativeTextForegroundAtlasModel::new();
+    world.with_native(world.attempt, |view| {
+        let wide = atlas
+            .rasterize_with_simulated_submission(
+                &world.fragment,
+                view,
+                &world.foreground,
+                [400, 48],
+            )
+            .unwrap();
+        let narrow = atlas
+            .finalize_existing(&world.fragment, view, &world.foreground, [40, 48])
+            .unwrap();
+        assert_ne!(
+            wide.regions(),
+            narrow.regions(),
+            "the narrow target clips the text"
+        );
+        assert_eq!(wide.regions_at([40, 48]).unwrap(), narrow.regions());
+        assert_eq!(narrow.regions_at([400, 48]).unwrap(), wide.regions());
+    });
+}

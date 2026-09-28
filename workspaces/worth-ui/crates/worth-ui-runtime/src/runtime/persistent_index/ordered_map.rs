@@ -144,7 +144,7 @@ impl<K: Ord + Clone, V> UiPersistentOrdMap<K, V> {
         let mut work = UiPersistentIndexMutationWork::default();
         let (root, removed) = super::ordered_map_mutation::remove(self.root.take(), key, &mut work);
         self.root = root;
-        (removed, work)
+        (removed.is_some(), work)
     }
 
     pub(crate) fn iter(&self) -> UiPersistentOrdMapIter<'_, K, V> {
@@ -265,8 +265,13 @@ impl<K: fmt::Debug + Ord + Clone, V: fmt::Debug> fmt::Debug for UiPersistentOrdM
 }
 
 impl<K: Ord + Clone + PartialEq, V: PartialEq> PartialEq for UiPersistentOrdMap<K, V> {
+    /// A fork shares its unchanged tree, whose rows are immutable, so a
+    /// shared root answers without visiting a row. That assumes each row
+    /// equals itself: a row that does not, such as one holding NaN, still
+    /// compares equal through a shared root.
     fn eq(&self, other: &Self) -> bool {
-        self.len() == other.len() && self.iter().eq(other.iter())
+        self.root_is_shared_with(other)
+            || (self.len() == other.len() && self.iter().eq(other.iter()))
     }
 }
 

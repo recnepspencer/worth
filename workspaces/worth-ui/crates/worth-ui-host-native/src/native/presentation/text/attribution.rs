@@ -25,6 +25,7 @@ fn positioned_glyph_matches(
     layout: worth_ui_host_contract::UiQualifiedTextLayoutView<'_>,
     run: UiGlyphRunView,
 ) -> bool {
+    let presented = mechanic.presented_origin_millipoints(run.raster_key().dpi_milli());
     layout.positioned_glyphs().iter().any(|positioned| {
         let Some(glyph) = usize::try_from(positioned.source_glyph_index())
             .ok()
@@ -36,22 +37,11 @@ fn positioned_glyph_matches(
             && glyph.original_range() == run.original_range()
             && positioned.line_index() == run.line_index()
             && positioned.visual_run_index() == run.visual_run_index()
-            && mounted_origin_millipoints(mechanic.origin_x(), positioned.origin_x_millipoints())
+            && presented.and_then(|[x, _]| x.checked_add(positioned.origin_x_millipoints()))
                 == Some(run.origin_x_millipoints())
-            && mounted_origin_millipoints(mechanic.origin_y(), positioned.origin_y_millipoints())
+            && presented.and_then(|[_, y]| y.checked_add(positioned.origin_y_millipoints()))
                 == Some(run.origin_y_millipoints())
     })
-}
-
-fn mounted_origin_millipoints(origin: f32, positioned: i64) -> Option<i64> {
-    if !origin.is_finite() {
-        return None;
-    }
-    let mounted = (f64::from(origin) * 1_000.0).round();
-    if mounted < i64::MIN as f64 || mounted > i64::MAX as f64 {
-        return None;
-    }
-    (mounted as i64).checked_add(positioned)
 }
 
 fn range_contains(

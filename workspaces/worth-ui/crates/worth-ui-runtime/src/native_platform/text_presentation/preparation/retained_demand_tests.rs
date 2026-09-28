@@ -78,13 +78,13 @@ fn narrow_damage_preserves_complete_selected_command_and_rejects_filtered_reuse(
             command,
             mechanic,
             demand,
-            &[],
+            &std::sync::Arc::from([]),
             basis(initial_work),
         )
     };
     let reused = prepare_from_foreground_reuse(
         successor_work,
-        &[receipt(&complete.demand_batches()[0])],
+        &[&receipt(&complete.demand_batches()[0])],
         basis(successor_work),
         |_| Some(layout.as_ref()),
     )
@@ -93,7 +93,7 @@ fn narrow_damage_preserves_complete_selected_command_and_rejects_filtered_reuse(
     assert!(
         prepare_from_foreground_reuse(
             successor_work,
-            &[receipt(&filtered.demands[0])],
+            &[&receipt(&filtered.demands[0])],
             basis(successor_work),
             |_| Some(layout.as_ref())
         )

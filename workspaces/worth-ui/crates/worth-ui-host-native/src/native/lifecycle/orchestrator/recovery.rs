@@ -24,10 +24,9 @@ impl UiNativeLifecycleOrchestrator {
                 UiNativeRecoveryCause::Resize,
                 UiNativeLifecycleDirective::WaitForVisibility,
             ),
-            UiNativeSurfaceBasisTransition::Resize => (
-                UiNativeRecoveryCause::Resize,
-                UiNativeLifecycleDirective::Reconstruct(UiNativePresentationRecoveryClass::Resize),
-            ),
+            // An ordinary resize keeps every retained resource: the next
+            // presentation repaints the successor target, nothing reconstructs.
+            UiNativeSurfaceBasisTransition::Resize => return UiNativeLifecycleDirective::Repaint,
             UiNativeSurfaceBasisTransition::Dpi => (
                 UiNativeRecoveryCause::Dpi,
                 UiNativeLifecycleDirective::Reconstruct(UiNativePresentationRecoveryClass::Dpi),

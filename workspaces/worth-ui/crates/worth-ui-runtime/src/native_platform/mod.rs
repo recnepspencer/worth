@@ -34,7 +34,7 @@ pub use application_runtime::{
     UiNativeApplicationReadinessSignalDisposition, UiNativeApplicationRuntime,
     UiNativeApplicationRuntimeActivationStopped, UiNativeApplicationRuntimeCloseIncomplete,
     UiNativeApplicationRuntimeClosed, UiNativeApplicationRuntimeDirective,
-    UiNativeApplicationRuntimeProgressStopped,
+    UiNativeApplicationRuntimeProgressStopped, UiNativeSurfaceSuccession,
 };
 pub use outcome::{
     UiNativePlatformCloseReceipt, UiNativePlatformOutcome, UiNativePlatformStopReason,

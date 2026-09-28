@@ -1,5 +1,6 @@
 //! Native atlas settlement, rollback, and effects-indeterminate recovery.
 
+use std::collections::HashMap;
 use std::rc::Rc;
 
 use super::admission::{candidate_entry_mut, next_entry_after_plan};
@@ -173,14 +174,19 @@ fn update_changed_pin_counts(
     core: &mut super::ownership::AtlasCore,
     plan: &UiNativeTextAtlasTransactionPlan,
 ) {
-    for key in plan
+    let mut counts: HashMap<_, u32> = plan
         .pin_change_keys
         .iter()
         .copied()
         .chain(plan.misses.iter().map(|demand| demand.key()))
-    {
-        let count = u32::try_from(core.pins.values().filter(|pin| pin.key() == key).count())
-            .unwrap_or(u32::MAX);
+        .map(|key| (key, 0))
+        .collect();
+    for pin in core.pins.values() {
+        if let Some(count) = counts.get_mut(&pin.key()) {
+            *count = count.saturating_add(1);
+        }
+    }
+    for (key, count) in counts {
         if let Some(entry) = candidate_entry_mut(&mut core.alpha, &mut core.color, key) {
             entry.pin_count = count;
         }

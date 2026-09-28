@@ -25,6 +25,13 @@ impl UiMountedAppearanceStatePredecessor {
         }
     }
 
+    pub(super) fn into_sidecar(self) -> UiMountedAppearanceSidecar {
+        match self {
+            Self::Resolved(entry) => entry.sidecar,
+            Self::PhysicalOnly(physical) => physical.sidecar,
+        }
+    }
+
     pub(super) fn semantic(&self) -> Option<&UiMountedAppearanceStateEntry> {
         match self {
             Self::Resolved(entry) => Some(entry),

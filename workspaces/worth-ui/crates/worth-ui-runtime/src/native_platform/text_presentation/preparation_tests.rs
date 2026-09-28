@@ -170,7 +170,7 @@ fn complete_empty_text_set_reaches_the_committed_pin_owner() {
 #[test]
 fn mixed_bidi_native_runs_keep_logical_paint_ownership() {
     crate::mounting::prove_paint_only_mechanic_locality();
-    let (layout, mechanic, command, damage) = mixed_bidi_paint_world();
+    let (layout, mechanic, command, damage) = mixed_bidi_paint_world([0.0, 0.0]);
     let join = super::MountedTextDemandJoin {
         dpi: super::UiMountedEventTimeDpiAuthority(std::num::NonZeroU32::new(1_000).unwrap()),
         lane: worth_ui_host_contract::UiGlyphRasterLane::Ordinary,
@@ -197,11 +197,8 @@ fn mixed_bidi_native_runs_keep_logical_paint_ownership() {
             selection: worth_ui_text::UiGlyphRasterDemandSelection::LogicalDamage(&damage),
             scale: worth_ui_text::UiGlyphRasterScale::new(1_000, mechanic.qualified_layout_scale())
                 .unwrap(),
-            placement: worth_ui_text::UiGlyphRasterPlacement::from_mounted_logical(
-                mechanic.origin_x(),
-                mechanic.origin_y(),
-            )
-            .unwrap(),
+            // The world mounts its text at the origin, a whole device pixel.
+            placement: worth_ui_text::UiGlyphRasterPlacement::from_millipoints([0, 0]),
             lane: worth_ui_host_contract::UiGlyphRasterLane::Ordinary,
         },
     )
@@ -239,7 +236,7 @@ fn mixed_bidi_native_runs_keep_logical_paint_ownership() {
 
 #[test]
 fn single_color_and_logical_order_mutants_disagree_with_native_runs() {
-    let (layout, mechanic, command, damage) = mixed_bidi_paint_world();
+    let (layout, mechanic, command, damage) = mixed_bidi_paint_world([0.0, 0.0]);
     let join = super::MountedTextDemandJoin {
         dpi: super::UiMountedEventTimeDpiAuthority(std::num::NonZeroU32::new(1_000).unwrap()),
         lane: worth_ui_host_contract::UiGlyphRasterLane::Ordinary,
@@ -263,7 +260,9 @@ fn single_color_and_logical_order_mutants_disagree_with_native_runs() {
     assert_ne!(observed, logical_order);
 }
 
-fn mixed_bidi_paint_world() -> (
+pub(super) fn mixed_bidi_paint_world(
+    origin: [f32; 2],
+) -> (
     std::sync::Arc<worth_ui_text::UiQualifiedTextLayout>,
     UiMountedSemanticTextMechanic,
     UiMountedPaintCommandIdentity,
@@ -343,8 +342,8 @@ fn mixed_bidi_paint_world() -> (
             ),
             bounds,
             clip_bounds: bounds,
-            origin_x: 0.0,
-            origin_y: 0.0,
+            origin_x: origin[0],
+            origin_y: origin[1],
             text: source,
             layout: layout.view(),
             slot: worth_ui_host_contract::UiSemanticTextSlot::Value,

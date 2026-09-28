@@ -246,6 +246,15 @@ pub(super) fn releasing_one_of_two_layout_pins_keeps_the_shared_entry_protected(
             UiNativeTextAtlasCommitOutcome::Committed(_)
         ));
     }
+    let pinned = |layout| {
+        atlas.is_pinned(
+            worth_ui_host_contract::UiGlyphRasterPinRequest::from_text_mechanics(
+                layout, pinned_key,
+            ),
+        )
+    };
+    assert!(pinned(first_layout) && pinned(second_layout));
+    assert_eq!(atlas.pin_count(), 2);
     let release = UiNativeTextAtlasPinTransition::from_text_mechanics(
         [],
         [UiNativeTextAtlasPinRequest::from_text_mechanics(
@@ -262,6 +271,8 @@ pub(super) fn releasing_one_of_two_layout_pins_keeps_the_shared_entry_protected(
         ),
         UiNativeTextAtlasCommitOutcome::Committed(_)
     ));
+    assert!(!pinned(first_layout) && pinned(second_layout));
+    assert_eq!(atlas.pin_count(), 1);
     for glyph in 400..=463 {
         let replacement_key = key(glyph, UiGlyphRasterSource::AlphaOutline);
         let plan = atlas

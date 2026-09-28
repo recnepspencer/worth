@@ -52,6 +52,7 @@ pub(crate) fn present_sample<Port: UiNativePresentationPort>(
         ));
     };
     let basis = UiNativeRasterBasis::from_presentation_access(graphics);
+    super::retained_raster::prepare_target(graphics, basis, retained)?;
     let (plan, undo) = prepare_sample_plan(basis, sample, atlas, retained)?;
     if plan.operations.is_empty() && !plan.clear_retained_target {
         return Ok(UiNativeSamplePresentation {
@@ -131,6 +132,7 @@ fn settle_staged_sample(
 ) -> Result<UiNativeSamplePresentation, UiNativePresentationFailure> {
     match result {
         Ok(observation) => {
+            retained.settle_target();
             let (pixels, cost, port_crossings) = observation.into_parts();
             Ok(UiNativeSamplePresentation {
                 cost,
@@ -149,6 +151,7 @@ fn settle_staged_sample(
             Err(failure)
         }
         Err(UiNativePresentationFailure::Pending(pending)) => {
+            retained.settle_target();
             Err(UiNativePresentationFailure::Pending(
                 pending.with_settlement(super::UiNativePendingSurfaceSettlement::Sample(undo)),
             ))

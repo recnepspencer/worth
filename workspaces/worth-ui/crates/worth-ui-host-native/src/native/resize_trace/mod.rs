@@ -1,18 +1,19 @@
 //! Resize qualification trace.
 //!
 //! When [`TRACE_PATH_ENVIRONMENT`] names a file, the native host timestamps its
-//! extent path on the performance counter an outside capture also reads: each
-//! extent the window reports, each extent its visible surface is replaced at,
-//! each frame it submits, and each painted frame whose presentation it
-//! acknowledges. Submitted frames also carry a [`stamp`] so the capture can
-//! name the frame on screen. Beside the timings it records the work behind
-//! them: the adapter presenting, each render target allocated, each mounted
-//! frame's text work, and, as the host closes, the most of each resource it
-//! retained at once.
+//! extent path on the performance counter an outside capture also reads: the
+//! least extent the window allows, each extent the window reports, each extent
+//! its visible surface is replaced at, each frame it submits, and each painted
+//! frame whose presentation it acknowledges. Submitted frames also carry a
+//! [`stamp`] so the capture can name the frame on screen. Beside the timings it
+//! records the work behind them: the adapter presenting, each render target
+//! allocated, each mounted frame's text work, and, as the host closes, the
+//! most of each resource it retained at once.
 //!
 //! The file starts with `worth-ui-resize-trace 1 frequency <counts per second>`.
 //! Every later line is `<counter> <event> <fields>`:
 //!
+//! - `minimum <width> <height>`, when the window opens and again at each scale change
 //! - `observed <width> <height>`
 //! - `consumed <width> <height>`
 //! - `submitted <frame> <width> <height>`
@@ -72,6 +73,12 @@ fn record(event: std::fmt::Arguments<'_>) {
     if failed {
         *file = None;
     }
+}
+
+/// The window allows no client extent smaller than `extent`, from its opening
+/// or from a change of scale.
+pub(crate) fn minimum(extent: [u32; 2]) {
+    record(format_args!("minimum {} {}", extent[0], extent[1]));
 }
 
 /// The window reported a new client extent.

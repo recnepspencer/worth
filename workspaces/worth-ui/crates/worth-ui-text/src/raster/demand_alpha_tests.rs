@@ -166,12 +166,12 @@ pub(super) fn mounted_translation_controls_damage_selection_and_fractional_raste
     let quarter = demand_for_at(
         &layout,
         scenario(),
-        UiGlyphRasterPlacement::from_mounted_logical(1_000.25, 0.0).unwrap(),
+        UiGlyphRasterPlacement::from_millipoints([1_000_250, 0]),
     );
     let three_quarters = demand_for_at(
         &layout,
         scenario(),
-        UiGlyphRasterPlacement::from_mounted_logical(1_000.75, 0.0).unwrap(),
+        UiGlyphRasterPlacement::from_millipoints([1_000_750, 0]),
     );
     assert!(!quarter.records().is_empty());
     assert_eq!(quarter.records().len(), three_quarters.records().len());

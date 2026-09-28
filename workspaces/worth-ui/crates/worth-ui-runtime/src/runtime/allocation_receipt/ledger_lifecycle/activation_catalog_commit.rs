@@ -274,9 +274,9 @@ fn retain_only_active_catalog(
             receipt.clone(),
         );
     }
-    successor.completed_transactions.clear();
+    successor.completed_transactions = Default::default();
     successor
         .completed_transactions
         .insert(replay_key, vec![committed.clone()]);
-    successor.denied_transactions.clear();
+    successor.denied_transactions = Default::default();
 }

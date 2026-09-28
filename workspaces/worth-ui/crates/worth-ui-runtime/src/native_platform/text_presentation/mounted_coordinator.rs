@@ -1,6 +1,6 @@
 //! Ordinary runtime coordinator for mounted native text pin transactions.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::mounting::presentation::coordinator::{
     UiMountedTextPinCandidate, UiMountedTextPinState,
@@ -74,11 +74,11 @@ impl UiNativeMountedTextCoordinator {
             presentation_damage_digest(work),
         );
         let semantic_work = super::mounted_semantic_text(work);
-        let retained: Option<Vec<UiMountedTextForegroundReuseReceipt>> = semantic_work
+        let retained: Option<Vec<&UiMountedTextForegroundReuseReceipt>> = semantic_work
             .mechanics
             .iter()
-            .map(|(command, _)| self.foreground_receipts.get(command).cloned())
-            .collect::<Option<Vec<UiMountedTextForegroundReuseReceipt>>>();
+            .map(|(command, _)| self.foreground_receipts.get(command))
+            .collect::<Option<Vec<&UiMountedTextForegroundReuseReceipt>>>();
         if let Some(retained) = retained.filter(|receipts| {
             !self.raster_cache_reconstruction_required
                 && receipts
@@ -89,9 +89,10 @@ impl UiNativeMountedTextCoordinator {
             {
                 let candidate = self.pins.candidate(requirement.binding(), &prepared);
                 let pins_continue = candidate.has_no_pin_churn()
-                    && retained.iter().all(|receipt| {
-                        receipt.pins_are_continuous(UiMountedTextPinState::binding_pins(&candidate))
-                    });
+                    && UiMountedTextForegroundReuseReceipt::pins_are_continuous(
+                        retained.iter().copied(),
+                        UiMountedTextPinState::binding_pins(&candidate),
+                    );
                 if pins_continue {
                     return Some(UiNativeTextPresentationPreparation::Prepared(prepared));
                 }
@@ -232,17 +233,14 @@ impl UiNativeMountedTextCoordinator {
             host_lineage,
             presentation_damage_digest(work),
         );
+        let pins = std::sync::Arc::from(UiMountedTextPinState::binding_pins(candidate));
         let receipts = semantic_work
             .mechanics
             .iter()
             .zip(prepared.demand_batches())
             .map(|((command, mechanic), demand)| {
                 UiMountedTextForegroundReuseReceipt::from_prepared(
-                    *command,
-                    mechanic,
-                    demand,
-                    UiMountedTextPinState::binding_pins(candidate),
-                    basis,
+                    *command, mechanic, demand, &pins, basis,
                 )
             })
             .collect::<Vec<_>>()
@@ -267,7 +265,7 @@ impl UiNativeMountedTextCoordinator {
                 .receipts
                 .iter()
                 .map(UiMountedTextForegroundReuseReceipt::command)
-                .collect::<Vec<_>>();
+                .collect::<HashSet<_>>();
             self.foreground_receipts.retain(|_, receipt| {
                 receipt.basis().binding() != update.binding || active.contains(&receipt.command())
             });

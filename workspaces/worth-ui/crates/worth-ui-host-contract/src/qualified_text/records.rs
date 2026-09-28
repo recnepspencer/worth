@@ -1,4 +1,4 @@
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct UiTextOriginalRange {
     start: u32,
     end: u32,

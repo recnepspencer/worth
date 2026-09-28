@@ -114,6 +114,7 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
             UiNativeReadinessGrant::issued(
                 0,
                 surface.basis_generation(),
+                false,
                 (surface.state().scale_factor() * 1_000.0).round() as u32,
                 surface.state().extent(),
             )

@@ -17,7 +17,11 @@ pub(super) fn perform_unchanged(
     if state.lifecycle.recovery_required(key) {
         return super::require_owner_reconstruction(state, key);
     }
-    if view.appearance_work().is_some() {
+    let owes_repaint = state
+        .presentation_access()
+        .zip(state.retained_draw_lists.get(&key))
+        .is_some_and(|(graphics, retained)| retained.owes_repaint(graphics.target_generation()));
+    if view.appearance_work().is_some() || owes_repaint {
         return present_appearance_only(state, view, unchanged, key);
     }
     retain_unchanged(state, view, unchanged, key)

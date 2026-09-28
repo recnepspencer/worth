@@ -3,7 +3,7 @@ use worth_ui_host_contract::{
 };
 
 use super::damage::damage_for_change;
-use super::fact::UiMountedAppearanceFacts;
+use super::fact::{UiMountedAppearanceFacts, UiMountedAppearanceLoweringInput};
 use super::UiMountedAppearanceLoweringDenial;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -36,6 +36,77 @@ impl UiMountedAppearanceDeltaSummary {
 pub(crate) struct UiMountedAppearanceDelta {
     pub(super) work: UiMountedAppearanceWork,
     pub(super) summary: UiMountedAppearanceDeltaSummary,
+}
+
+/// A lowering checked against the current facts but not yet adopted, so a
+/// denied successor leaves the sidecar untouched without a defensive copy.
+pub(crate) struct UiMountedAppearancePreparedDelta {
+    delta: UiMountedAppearanceDelta,
+    successor: UiMountedAppearanceFacts,
+    /// The facts it was checked against, named by where their rows live,
+    /// which moving the sidecar leaves in place.
+    basis: Option<usize>,
+}
+
+impl UiMountedAppearancePreparedDelta {
+    pub(in crate::mounting::projection) const fn work(&self) -> &UiMountedAppearanceWork {
+        &self.delta.work
+    }
+}
+
+impl super::UiMountedAppearanceSidecar {
+    pub(in crate::mounting::projection) fn prepare_mount(
+        &self,
+        input: UiMountedAppearanceLoweringInput,
+    ) -> Result<UiMountedAppearancePreparedDelta, UiMountedAppearanceLoweringDenial> {
+        let successor = super::lowering::lower(input)?;
+        let delta = work(self.current.as_ref(), &successor)?;
+        Ok(UiMountedAppearancePreparedDelta {
+            delta,
+            successor,
+            basis: self.facts_basis(),
+        })
+    }
+
+    pub(in crate::mounting::projection) fn prepare_reconstruct(
+        &self,
+        input: UiMountedAppearanceLoweringInput,
+    ) -> Result<UiMountedAppearancePreparedDelta, UiMountedAppearanceLoweringDenial> {
+        super::reconstruction::rebuild(self.current.as_ref(), input).map(|(delta, successor)| {
+            UiMountedAppearancePreparedDelta {
+                delta,
+                successor,
+                basis: self.facts_basis(),
+            }
+        })
+    }
+
+    fn facts_basis(&self) -> Option<usize> {
+        self.current
+            .as_ref()
+            .map(|facts| facts.records().as_ptr().addr())
+    }
+
+    /// Adopts a lowering prepared against these same current facts.
+    pub(in crate::mounting::projection) fn commit(
+        &mut self,
+        prepared: UiMountedAppearancePreparedDelta,
+    ) -> UiMountedAppearanceWork {
+        let UiMountedAppearancePreparedDelta {
+            delta,
+            successor,
+            basis,
+        } = prepared;
+        debug_assert_eq!(
+            basis,
+            self.facts_basis(),
+            "a prepared lowering commits onto the facts it was checked against"
+        );
+        self.counters.observe(&delta.work, delta.summary);
+        self.last_delta = Some(delta.summary);
+        self.current = Some(successor);
+        delta.work
+    }
 }
 
 pub(super) fn work(

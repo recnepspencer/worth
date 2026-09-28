@@ -74,6 +74,7 @@ pub enum UiNativePresentationFault {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum UiNativePresentationRecoveryClass {
+    #[cfg(feature = "certification-support")]
     Resize,
     Dpi,
     #[cfg(feature = "certification-support")]

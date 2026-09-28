@@ -26,6 +26,9 @@ pub(crate) enum UiNativeLifecycleDirective {
     WaitForVisibility,
     #[cfg(feature = "certification-support")]
     RejectValidation,
+    /// The retained device, pipelines and draw lists carry onto a successor
+    /// target of the same scale; the next presentation repaints it whole.
+    Repaint,
     Reconstruct(crate::native::presentation::UiNativePresentationRecoveryClass),
 }
 

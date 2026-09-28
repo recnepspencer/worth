@@ -1,7 +1,7 @@
 use crate::analysis::analyze;
 use crate::analysis::tests::{capture, host, submitted};
 use crate::gaps::Gap;
-use crate::logs::HostKind;
+use crate::logs::{Grip, HostKind};
 use crate::stamp::Reading;
 
 #[test]
@@ -139,4 +139,64 @@ fn the_gap_open_at_release_ends_at_the_next_frame_or_the_capture() {
         }]
     );
     assert_eq!(analysis.missing, Some([800, 600]));
+}
+
+#[test]
+fn movement_held_past_the_minimum_extent_owes_nothing_until_it_comes_back() {
+    let mut trace = host(&[
+        (20, HostKind::Observed([900, 700])),
+        (22, HostKind::Consumed([900, 700])),
+        (30, submitted(1, [900, 700])),
+        (31, HostKind::Accepted(1)),
+        (32, HostKind::Observed([880, 700])),
+        (33, HostKind::Consumed([880, 700])),
+        (40, submitted(2, [880, 700])),
+        (41, HostKind::Accepted(2)),
+        (202, HostKind::Observed([890, 700])),
+        (203, HostKind::Consumed([890, 700])),
+        (250, submitted(3, [890, 700])),
+        (251, HostKind::Accepted(3)),
+    ]);
+    let mut log = capture(&trace, |before| match before {
+        ..35 => Reading::Unreadable,
+        35..45 => Reading::Frame(1),
+        45..250 => Reading::Frame(2),
+        _ => Reading::Frame(3),
+    });
+    for sample in log.samples.iter_mut().filter(|sample| sample.pressed) {
+        let inward = if sample.before < 200 {
+            sample.before - 10
+        } else {
+            10
+        };
+        sample.cursor = [-(inward as i32), 0];
+    }
+    let pinned = |analysis: crate::analysis::Analysis| analysis.gaps[1];
+
+    trace.minimum = Some([880, 700]);
+    log.grip = Grip::BottomRight;
+    assert_eq!(
+        pinned(analyze(&trace, &log).expect("the logs correlate")),
+        Gap {
+            start: 37.0,
+            end: 242.0,
+            active: Some(52.0)
+        },
+        "the corner held at 880 wide moved again only when the cursor came back"
+    );
+
+    trace.minimum = None;
+    assert_eq!(
+        pinned(analyze(&trace, &log).expect("the logs correlate")).active,
+        Some(202.0),
+        "without a traced minimum, every held movement is demand"
+    );
+
+    trace.minimum = Some([880, 700]);
+    log.grip = Grip::Unknown;
+    assert_eq!(
+        pinned(analyze(&trace, &log).expect("the logs correlate")).active,
+        Some(202.0),
+        "a drag of an unknown edge may be moving outward, so every held movement is demand"
+    );
 }

@@ -19,11 +19,10 @@ impl CoverageWorld {
                     candidate.qualified_layout_scale(),
                 )
                 .unwrap(),
-                placement: worth_ui_text::UiGlyphRasterPlacement::from_mounted_logical(
-                    candidate.origin_x(),
-                    0.0,
-                )
-                .unwrap(),
+                placement: worth_ui_text::UiGlyphRasterPlacement::from_millipoints([
+                    presented_millipoints(candidate.origin_x()),
+                    0,
+                ]),
                 lane: worth_ui_host_contract::UiGlyphRasterLane::Ordinary,
             },
         )
@@ -48,4 +47,15 @@ impl CoverageWorld {
             })
             .collect()
     }
+}
+
+/// Where the host draws `points` from, read independently of it: the nearest
+/// device pixel at one device pixel per point, in millipoints.
+fn presented_millipoints(points: f32) -> i64 {
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "fixture origins are a few hundred points, far inside i64"
+    )]
+    let pixels = f64::from(points).round() as i64;
+    pixels * 1_000
 }

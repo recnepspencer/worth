@@ -1,4 +1,6 @@
-use crate::mounting::projection::appearance::UiMountedAppearanceGeometryScope;
+use crate::mounting::projection::appearance::{
+    UiMountedAppearanceGeometryScope, UiMountedAppearanceSidecar,
+};
 use crate::runtime::appearance::{
     UiAppearanceChangeReceipt, UiAppearanceInspectionDenial, UiAppearanceInspectionRecord,
     UiAppearanceMountAffinity, UiAppearanceProjectionAttempt,
@@ -201,10 +203,9 @@ impl UiMountedAppearanceFrameState {
             self.restore_predecessor(&mut predecessor);
             return Ok(());
         }
-        let mut sidecar = predecessor
+        let predecessor_receipt = predecessor
             .as_ref()
-            .map_or_else(Default::default, |previous| previous.sidecar().clone());
-        let predecessor_receipt = sidecar.current_node_receipt();
+            .and_then(|previous| previous.sidecar().current_node_receipt());
         let mut input = match context.lower_resolved(
             projection,
             presentation,
@@ -239,16 +240,20 @@ impl UiMountedAppearanceFrameState {
             issuer: context.issuer(),
             presentation,
         };
+        let unmounted = UiMountedAppearanceSidecar::default();
+        let prior = predecessor
+            .as_ref()
+            .map_or(&unmounted, UiMountedAppearanceStatePredecessor::sidecar);
         let lowering = match posture {
             AppearanceLoweringPosture::Reconstruction if predecessor_receipt.is_some() => {
-                sidecar.reconstruct(input)
+                prior.prepare_reconstruct(input)
             }
             AppearanceLoweringPosture::Delta | AppearanceLoweringPosture::Reconstruction => {
-                sidecar.mount(input)
+                prior.prepare_mount(input)
             }
         };
-        let work = match lowering {
-            Ok(work) => work,
+        let prepared = match lowering {
+            Ok(prepared) => prepared,
             Err(_) => {
                 records.push(denial_record(
                     context.clone(),
@@ -265,7 +270,7 @@ impl UiMountedAppearanceFrameState {
         let receipt = match UiAppearanceChangeReceipt::from_resolved_mount(
             predecessor_projection,
             projection,
-            &work,
+            prepared.work(),
             affinity,
         ) {
             Ok(receipt) => receipt,
@@ -278,6 +283,11 @@ impl UiMountedAppearanceFrameState {
                 return Ok(());
             }
         };
+        let mut sidecar = predecessor.map_or_else(
+            UiMountedAppearanceSidecar::default,
+            UiMountedAppearanceStatePredecessor::into_sidecar,
+        );
+        let work = sidecar.commit(prepared);
         self.node_work.push(
             super::super::appearance_output::UiMountedAppearanceNodeWork {
                 predecessor: predecessor_receipt,

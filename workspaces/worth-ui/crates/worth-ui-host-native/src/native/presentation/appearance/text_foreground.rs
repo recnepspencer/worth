@@ -1,10 +1,11 @@
 //! Staged text foreground finalization from authenticated demand and atlas images.
 
+mod coverage;
 mod paint;
 
-use super::damage::{UiNativeAppearanceDamage, UiNativeAppearanceDamageRect};
+use super::damage::UiNativeAppearanceDamageRect;
 use crate::native::presentation::text::{
-    mechanic_contains_run, plan_raw_glyph_commands, sampled_glyph, UiNativeGlyphCommandDenial,
+    mechanic_contains_run, plan_raw_glyph_commands, UiNativeGlyphCommandDenial,
 };
 use crate::native::text_atlas::{UiNativeTextAtlas, UiNativeTextAtlasImageObservation};
 use worth_ui_host_contract::*;
@@ -186,9 +187,6 @@ impl UiNativeTextForegroundJoin {
                 UiNativeGlyphCommandDenial::MissingAtlasEntry => Denial::MissingAtlasEntry,
                 UiNativeGlyphCommandDenial::GeometryOverflow => Denial::Geometry,
             })?;
-        let mut coverage = UiNativeAppearanceDamage::new(usize::from(
-            crate::native_profile::APPEARANCE_PROFILE.damage_regions,
-        ));
         let [red, green, blue, alpha] = self.mechanic.foreground().straight_srgba();
         let foreground = UiMountedRgba8::new(red, green, blue, alpha);
         // Runtime already composed appearance and Motion at u16 precision.
@@ -196,42 +194,8 @@ impl UiNativeTextForegroundJoin {
         for command in commands.iter_mut() {
             command.foreground = foreground;
             command.opacity = opacity;
-            // Paint applies to every admitted image, including offscreen rows
-            // a Scroll sample can reveal. Only present coverage contributes damage.
-            let Some(visible) = sampled_glyph(
-                *command,
-                None,
-                crate::native::presentation::raster::UiNativeRasterBasis::new(
-                    extent,
-                    self.binding.device_scale_milli() as f32 / 1_000.0,
-                ),
-            )
-            .map_err(|_| Denial::Geometry)?
-            else {
-                continue;
-            };
-            let [x, y, width, height] = visible.target;
-            let edges = [
-                x.floor(),
-                y.floor(),
-                (x + width).ceil(),
-                (y + height).ceil(),
-            ];
-            if edges
-                .iter()
-                .any(|edge| !edge.is_finite() || *edge < 0.0 || f64::from(*edge) > i64::MAX as f64)
-            {
-                return Err(Denial::Geometry);
-            }
-            coverage
-                .add(UiNativeAppearanceDamageRect {
-                    left: edges[0] as i64,
-                    top: edges[1] as i64,
-                    right: edges[2] as i64,
-                    bottom: edges[3] as i64,
-                })
-                .map_err(|_| Denial::CoverageCapacity)?;
         }
+        let coverage = coverage::visible_coverage(&commands, self.binding, extent)?;
         self.cost.image_commands = commands.len();
         Ok((
             UiNativeFinalizedTextForeground {
@@ -239,7 +203,7 @@ impl UiNativeTextForegroundJoin {
                 binding: self.binding,
                 affinity: self.affinity,
                 attempt: self.attempt,
-                coverage: coverage.take(),
+                coverage,
                 images,
                 candidates: self.candidates.into_boxed_slice(),
                 glyphs: commands,

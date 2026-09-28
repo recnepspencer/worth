@@ -31,6 +31,8 @@ mod portal_visibility;
 mod sampled_locality;
 #[path = "render_order_tests/scroll_sample.rs"]
 mod scroll_sample;
+#[path = "render_order_tests/successor_target.rs"]
+mod successor_target;
 
 #[test]
 fn complete_and_damage_join_surfaces_at_their_ordinary_text_slots() {

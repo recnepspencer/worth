@@ -45,13 +45,42 @@ pub(super) fn insert<K: Ord + Clone, V>(
     }
 }
 
+impl<K: Ord + Clone, V> super::UiPersistentOrdMap<K, V> {
+    /// Applies `edit` to `key`'s value, or to the default when absent. The
+    /// value moves out and back, so it is copied only while a fork shares it.
+    pub(crate) fn edit_or_default(&mut self, key: K, edit: impl FnOnce(&mut V))
+    where
+        V: Clone + Default,
+    {
+        let mut value = self.take_with_work(&key).0.unwrap_or_default();
+        edit(&mut value);
+        self.insert(key, value);
+    }
+
+    /// Removes `key` and hands back its value, copying it only while a fork
+    /// still shares it.
+    pub(crate) fn take_with_work(&mut self, key: &K) -> (Option<V>, UiPersistentIndexMutationWork)
+    where
+        V: Clone,
+    {
+        let mut work = UiPersistentIndexMutationWork::default();
+        let (root, removed) = remove(self.root.take(), key, &mut work);
+        self.root = root;
+        let value =
+            removed.map(|value| Rc::try_unwrap(value).unwrap_or_else(|shared| (*shared).clone()));
+        (value, work)
+    }
+}
+
+/// Removes `key`, answering the removed value. The old path is dropped
+/// before the caller sees the value, so an unshared value is its only owner.
 pub(super) fn remove<K: Ord + Clone, V>(
     root: Link<K, V>,
     key: &K,
     work: &mut UiPersistentIndexMutationWork,
-) -> (Link<K, V>, bool) {
+) -> (Link<K, V>, Option<Rc<V>>) {
     let Some(node) = root else {
-        return (None, false);
+        return (None, None);
     };
     work.record_key_probe();
     match key.cmp(&node.key) {
@@ -78,8 +107,8 @@ pub(super) fn remove<K: Ord + Clone, V>(
             (Some(balance(root, work)), removed)
         }
         Ordering::Equal => match (&node.left, &node.right) {
-            (None, _) => (node.right.clone(), true),
-            (_, None) => (node.left.clone(), true),
+            (None, _) => (node.right.clone(), Some(Rc::clone(&node.value))),
+            (_, None) => (node.left.clone(), Some(Rc::clone(&node.value))),
             (Some(_), Some(right)) => {
                 let (successor_key, successor_value, next_right) = take_min(Rc::clone(right), work);
                 let root = make_node(
@@ -89,7 +118,7 @@ pub(super) fn remove<K: Ord + Clone, V>(
                     next_right,
                     work,
                 );
-                (Some(balance(root, work)), true)
+                (Some(balance(root, work)), Some(Rc::clone(&node.value)))
             }
         },
     }
@@ -241,4 +270,79 @@ fn make_node<K, V>(
         left,
         right,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use std::cell::Cell;
+    use std::rc::Rc;
+
+    use super::super::UiPersistentOrdMap;
+
+    /// A row that counts every copy made of it.
+    #[derive(Debug, Default)]
+    struct Counted(Rc<Cell<usize>>);
+
+    impl Clone for Counted {
+        fn clone(&self) -> Self {
+            self.0.set(self.0.get() + 1);
+            Self(Rc::clone(&self.0))
+        }
+    }
+
+    #[test]
+    fn take_and_edit_copy_a_row_only_while_a_fork_shares_it() {
+        let copies = Rc::new(Cell::new(0));
+        let mut map = UiPersistentOrdMap::default();
+        for key in 0..64 {
+            map.insert(key, Counted(Rc::clone(&copies)));
+        }
+        let fork = map.clone();
+        assert!(map.take_with_work(&7).0.is_some());
+        assert_eq!(copies.get(), 1, "the row the fork shares is copied out");
+        map.edit_or_default(8, |_| {});
+        assert_eq!(copies.get(), 2, "an edit copies the row the fork shares");
+        assert!(fork.get(&7).is_some() && fork.get(&8).is_some());
+        assert!(map.get(&7).is_none() && map.get(&8).is_some());
+
+        drop(fork);
+        assert!(map.take_with_work(&9).0.is_some());
+        map.edit_or_default(10, |_| {});
+        assert_eq!(copies.get(), 2, "unshared rows move out and back uncopied");
+        assert!(map.take_with_work(&9).0.is_none());
+        assert_eq!(map.len(), 62);
+    }
+
+    #[test]
+    fn edit_or_default_starts_absent_rows_from_default_and_keeps_forks() {
+        let mut map: UiPersistentOrdMap<u32, Vec<u32>> = UiPersistentOrdMap::default();
+        map.edit_or_default(3, |rows| rows.push(1));
+        let fork = map.clone();
+        map.edit_or_default(3, |rows| rows.push(2));
+        map.edit_or_default(4, |rows| rows.push(9));
+        assert_eq!(map.get(&3), Some(&vec![1, 2]));
+        assert_eq!(map.get(&4), Some(&vec![9]));
+        assert_eq!(fork.get(&3), Some(&vec![1]));
+        assert!(fork.get(&4).is_none());
+    }
+
+    #[test]
+    fn a_shared_root_answers_equal_and_divergent_forks_compare_rows() {
+        let mut map = UiPersistentOrdMap::default();
+        for key in 0..32 {
+            map.insert(key, key);
+        }
+        let mut fork = map.clone();
+        assert_eq!(map, fork);
+        fork.insert(5, 50);
+        assert_ne!(map, fork);
+        fork.insert(5, 5);
+        assert_eq!(map, fork, "rows are compared once the roots differ");
+        let mut nan = UiPersistentOrdMap::default();
+        nan.insert(0, f32::NAN);
+        assert_eq!(nan, nan.clone(), "a shared root skips the rows");
+        let mut rebuilt = UiPersistentOrdMap::default();
+        rebuilt.insert(0, f32::NAN);
+        assert_ne!(nan, rebuilt);
+    }
 }
