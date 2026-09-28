@@ -44,6 +44,7 @@ pub(crate) fn present_delta<Port: UiNativePresentationPort>(
     defer_initial_observation: bool,
     lifecycle: &mut crate::native::lifecycle::UiNativeLifecycleOrchestrator,
 ) -> Result<UiNativeDeltaPresentation, UiNativePresentationFailure> {
+    let _stage = crate::native::trace_resize_stage(crate::native::UiNativeResizeTraceStage::Draw);
     let UiMountedPresentationWorkView::Delta(delta) = view.presentation_work() else {
         return Err(before_effects(
             UiHostSurfacePresentationDenial::AdapterDeclined,

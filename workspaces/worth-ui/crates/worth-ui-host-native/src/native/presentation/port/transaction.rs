@@ -58,12 +58,16 @@ impl UiNativePresentationStagePort for UiWgpuPresentationTransaction<'_, '_> {
     }
 
     fn acquire(&mut self, prepared: Self::Prepared) -> Result<Self::Acquired, Self::Failure> {
+        let _stage =
+            crate::native::trace_resize_stage(crate::native::UiNativeResizeTraceStage::Acquire);
         prepared
             .acquire(self.graphics)
             .map_err(UiNativePresentationPortFailure::Surface)
     }
 
     fn encode(&mut self, acquired: Self::Acquired) -> Result<Self::Encoded, Self::Failure> {
+        let _stage =
+            crate::native::trace_resize_stage(crate::native::UiNativeResizeTraceStage::Encode);
         let plan = self
             .plan
             .take()
@@ -74,6 +78,8 @@ impl UiNativePresentationStagePort for UiWgpuPresentationTransaction<'_, '_> {
     }
 
     fn submit(&mut self, encoded: Self::Encoded) -> Result<Self::Submitted, Self::Failure> {
+        let _stage =
+            crate::native::trace_resize_stage(crate::native::UiNativeResizeTraceStage::Submit);
         Ok(encoded.submit(self.graphics.queue()))
     }
 
@@ -231,7 +237,8 @@ fn encode(
         &surface_view,
         &surface_pipeline,
         &surface_bind_group,
-        stamp.map(|stamp| (stamp, graphics.extent())),
+        graphics.extent(),
+        stamp,
     );
     copy_evidence_pixels(
         &mut encoder,

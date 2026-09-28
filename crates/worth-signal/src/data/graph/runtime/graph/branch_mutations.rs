@@ -9,6 +9,21 @@ use crate::diagnostics::lineage::LineageArtifactId;
 
 use super::SignalGraph;
 
+/// One node's structural change since its branch baseline.
+///
+/// The journal holds each facet's net change, not each evaluation that made
+/// it: a marker facet is recorded once, a dependency topology change keeps
+/// the net edge set, a runtime artifact change keeps the artifact the
+/// baseline held and the one the latest evaluation produced, and a dependency
+/// snapshot change keeps the baseline and latest entry counts with the total
+/// number of entries changed along the way. A node evaluated on every frame of
+/// a long-lived runtime would otherwise grow its record, and the copy each
+/// later publication makes of it, without bound.
+///
+/// That changed-entry total is the one facet that still depends on the path:
+/// two branches reaching the same snapshot through different evaluations
+/// record different totals, and merge reports them as a snapshot mismatch.
+/// The report is conservative, never a missed conflict.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub(crate) struct BranchMutationRecord {
     pub introduced: bool,
@@ -39,52 +54,105 @@ impl BranchMutationRecord {
     fn mark_introduced(&mut self) {
         self.introduced = true;
         self.state_changed = true;
-        self.structural_deltas
-            .push(BranchStructuralDelta::NodeIntroduced);
+        self.record_delta(BranchStructuralDelta::NodeIntroduced);
     }
 
     fn mark_state_changed(&mut self) {
         self.state_changed = true;
-        self.structural_deltas
-            .push(BranchStructuralDelta::NodeStateChanged);
+        self.record_delta(BranchStructuralDelta::NodeStateChanged);
     }
 
     fn mark_dependencies_changed(&mut self, delta: DependencyTopologyDelta) {
         self.dependencies_changed = true;
-        if let Some(BranchStructuralDelta::DependencyTopologyChanged(existing)) = self
-            .structural_deltas
-            .iter_mut()
-            .find(|delta| matches!(delta, BranchStructuralDelta::DependencyTopologyChanged(_)))
-        {
-            merge_dependency_topology_delta(existing, delta);
-        } else {
-            self.structural_deltas
-                .push(BranchStructuralDelta::DependencyTopologyChanged(delta));
-        }
+        self.record_delta(BranchStructuralDelta::DependencyTopologyChanged(delta));
     }
 
     fn mark_dependency_snapshot_changed(&mut self, delta: DependencySnapshotStructuralDelta) {
         self.dependency_snapshot_changed = true;
-        self.structural_deltas
-            .push(BranchStructuralDelta::DependencySnapshotChanged(delta));
+        self.record_delta(BranchStructuralDelta::DependencySnapshotChanged(delta));
     }
 
     fn mark_runtime_artifact_changed(&mut self, delta: RuntimeArtifactStructuralDelta) {
         self.runtime_artifact_changed = true;
-        self.structural_deltas
-            .push(BranchStructuralDelta::RuntimeArtifactChanged(delta));
+        self.record_delta(BranchStructuralDelta::RuntimeArtifactChanged(delta));
     }
 
     fn mark_retained_artifact_changed(&mut self) {
         self.retained_artifact_changed = true;
-        self.structural_deltas
-            .push(BranchStructuralDelta::RetainedArtifactChanged);
+        self.record_delta(BranchStructuralDelta::RetainedArtifactChanged);
     }
 
     fn mark_causality_changed(&mut self) {
         self.causality_changed = true;
-        self.structural_deltas
-            .push(BranchStructuralDelta::CausalityChanged);
+        self.record_delta(BranchStructuralDelta::CausalityChanged);
+    }
+
+    /// Folds a later record of the same node into this one.
+    pub(crate) fn absorb(&mut self, later: Self) {
+        self.introduced |= later.introduced;
+        self.state_changed |= later.state_changed;
+        self.dependencies_changed |= later.dependencies_changed;
+        self.dependency_snapshot_changed |= later.dependency_snapshot_changed;
+        self.runtime_artifact_changed |= later.runtime_artifact_changed;
+        self.retained_artifact_changed |= later.retained_artifact_changed;
+        self.causality_changed |= later.causality_changed;
+        for delta in later.structural_deltas {
+            self.record_delta(delta);
+        }
+    }
+
+    fn record_delta(&mut self, delta: BranchStructuralDelta) {
+        match delta {
+            BranchStructuralDelta::DependencyTopologyChanged(delta) => {
+                if let Some(BranchStructuralDelta::DependencyTopologyChanged(existing)) =
+                    self.structural_deltas.iter_mut().find(|delta| {
+                        matches!(delta, BranchStructuralDelta::DependencyTopologyChanged(_))
+                    })
+                {
+                    merge_dependency_topology_delta(existing, delta);
+                } else {
+                    self.structural_deltas
+                        .push(BranchStructuralDelta::DependencyTopologyChanged(delta));
+                }
+            }
+            BranchStructuralDelta::RuntimeArtifactChanged(delta) => {
+                if let Some(BranchStructuralDelta::RuntimeArtifactChanged(existing)) = self
+                    .structural_deltas
+                    .iter_mut()
+                    .find(|delta| matches!(delta, BranchStructuralDelta::RuntimeArtifactChanged(_)))
+                {
+                    existing.next_artifact_id = delta.next_artifact_id;
+                    existing.next_output_hash = delta.next_output_hash;
+                    existing.next_reuse_basis = delta.next_reuse_basis;
+                } else {
+                    self.structural_deltas
+                        .push(BranchStructuralDelta::RuntimeArtifactChanged(delta));
+                }
+            }
+            BranchStructuralDelta::DependencySnapshotChanged(delta) => {
+                if let Some(BranchStructuralDelta::DependencySnapshotChanged(existing)) =
+                    self.structural_deltas.iter_mut().find(|delta| {
+                        matches!(delta, BranchStructuralDelta::DependencySnapshotChanged(_))
+                    })
+                {
+                    existing.next_entry_count = delta.next_entry_count;
+                    existing.changed_entry_count = existing
+                        .changed_entry_count
+                        .saturating_add(delta.changed_entry_count);
+                } else {
+                    self.structural_deltas
+                        .push(BranchStructuralDelta::DependencySnapshotChanged(delta));
+                }
+            }
+            BranchStructuralDelta::NodeIntroduced
+            | BranchStructuralDelta::NodeStateChanged
+            | BranchStructuralDelta::RetainedArtifactChanged
+            | BranchStructuralDelta::CausalityChanged => {
+                if !self.structural_deltas.contains(&delta) {
+                    self.structural_deltas.push(delta);
+                }
+            }
+        }
     }
 }
 
@@ -283,3 +351,6 @@ fn restore_optional_record(
         }
     }
 }
+
+#[cfg(test)]
+mod tests;

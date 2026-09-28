@@ -4,6 +4,7 @@ use winit::window::Window;
 
 mod mechanics;
 mod surface_selection;
+mod swapchain_extent;
 
 pub(crate) use mechanics::{
     UiNativePreparedGraphicsRecovery, UiWgpuDeviceGenerationMechanics, UiWgpuDeviceMechanics,
@@ -100,8 +101,17 @@ impl UiNativeGraphicsPort for UiWgpuNativeGraphicsPort {
         let size = window.inner_size();
         let surface_suspended = size.width == 0 || size.height == 0;
         let extent = [size.width.max(1), size.height.max(1)];
-        let surface_configuration = surface_configuration(extent);
+        let texture_limit = device.limits().max_texture_dimension_2d;
+        let surface_configuration = surface_configuration(swapchain_extent::swapchain_extent(
+            extent,
+            [0, 0],
+            texture_limit,
+        ));
         if !surface_suspended {
+            crate::native::resize_trace::swapchain([
+                surface_configuration.width,
+                surface_configuration.height,
+            ]);
             surface.configure(&device, &surface_configuration);
         }
         let retained_target = (!surface_suspended).then(|| retained_target(&device, extent));
@@ -126,6 +136,8 @@ impl UiNativeGraphicsPort for UiWgpuNativeGraphicsPort {
                     surface,
                     retained_target,
                     configuration: surface_configuration,
+                    configuration_pending: std::sync::atomic::AtomicBool::new(surface_suspended),
+                    texture_limit,
                 },
                 scale_factor: window.scale_factor(),
                 extent: [size.width, size.height],

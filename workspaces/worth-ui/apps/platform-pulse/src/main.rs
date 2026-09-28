@@ -39,6 +39,11 @@ mod visual_observation_publication;
 
 use std::process::ExitCode;
 
+/// The native host allocates short-lived buffers on every frame; mimalloc's
+/// thread-local free lists serve them far cheaper than the system heap.
+#[global_allocator]
+static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
+
 fn main() -> ExitCode {
     if let Some(points) = std::env::args().find_map(|argument| {
         argument

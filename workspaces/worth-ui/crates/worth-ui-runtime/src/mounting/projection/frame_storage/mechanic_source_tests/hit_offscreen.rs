@@ -1,4 +1,5 @@
-//! Scrolling an admitted region past the viewport origin omits its hit row.
+//! Scrolling an admitted region past the viewport origin omits its hit row,
+//! and scrolling it off the device grid keeps both of its boxes.
 //!
 //! The geometry stays well formed: only its posture changes. A frame that
 //! failed instead would end the application every time a list scrolled a
@@ -47,6 +48,48 @@ fn regions_scrolled_past_the_viewport_origin_are_omitted_not_denied() {
     );
 }
 
+#[test]
+fn a_row_scrolled_off_the_device_grid_hits_where_recorded_and_paints_on_the_grid() {
+    let (fonts, _) = worth_ui_text::UiGlobalFontCollection::admit_qualified_profile().unwrap();
+    let fonts = Arc::new(fonts);
+    let surface = UiSemanticSurfaceIdentity::mint_unbound().unwrap();
+    let binding = UiSurfaceBindingGeneration::mint_unbound().unwrap();
+    let scrolled = UiMountedInstanceIdentity::mint_unbound().unwrap();
+    // A third-of-a-point scroll offset: the host paints the row on the device
+    // grid, while its offset leaves it where hit testing must find it.
+    let mut row = node(scrolled, surface, 0, [40.0, 177.5, 80.0, 32.0]);
+    let recorded = viewport_box([40.0, 177.333_33, 80.0, 32.0]);
+    row.recorded_bounds = Some(recorded);
+    let semantic = projection(vec![row], surface, binding);
+    let frame = UiMountedFrameIdentity::mint_unbound().unwrap();
+    let receipts = receipts_for(frame, &[scrolled]);
+    let mut source = UiMountedMechanicSource::default();
+    source
+        .apply(completion(
+            frame,
+            UiMountedContentGeneration::mint_unbound().unwrap(),
+            &receipts,
+            &semantic,
+            &fonts,
+            &[scrolled],
+            1,
+        ))
+        .expect("a grid-corrected row completes");
+
+    let row = *source
+        .hit_test_for_instance(scrolled, surface, binding, frame, &receipts)
+        .unwrap()
+        .expect("the scrolled row is admitted")
+        .in_layout_space();
+
+    assert_eq!(row.bounds(), recorded, "hit testing reads the recorded box");
+    assert_eq!(
+        row.painted_bounds(),
+        Some(viewport_box([40.0, 177.5, 80.0, 32.0])),
+        "the row carries the box the host paints"
+    );
+}
+
 fn query(
     source: &UiMountedMechanicSource,
     binding: UiSurfaceBindingGeneration,
@@ -76,11 +119,7 @@ fn attempt(
     crate::mounting::UiMountedProjectionDenial,
 > {
     let frame = UiMountedFrameIdentity::mint_unbound().unwrap();
-    let mut instances = crate::runtime::persistent_index::UiPersistentOrdSet::default();
-    for instance in changed {
-        instances.insert(*instance);
-    }
-    let receipts = crate::mounting::UiMountedNodeReceiptBasis::mint(frame, instances).unwrap();
+    let receipts = receipts_for(frame, changed);
     source.apply(completion(
         frame,
         UiMountedContentGeneration::mint_unbound().unwrap(),
@@ -90,6 +129,28 @@ fn attempt(
         changed,
         1,
     ))
+}
+
+fn receipts_for(
+    frame: UiMountedFrameIdentity,
+    changed: &[UiMountedInstanceIdentity],
+) -> crate::mounting::UiMountedNodeReceiptBasis {
+    let mut instances = crate::runtime::persistent_index::UiPersistentOrdSet::default();
+    for instance in changed {
+        instances.insert(*instance);
+    }
+    crate::mounting::UiMountedNodeReceiptBasis::mint(frame, instances).unwrap()
+}
+
+fn viewport_box(edges: [f32; 4]) -> UiMountedCanonicalBox {
+    UiMountedCanonicalBox::canonicalize(UiMountedCanonicalBoxInput {
+        x: edges[0],
+        y: edges[1],
+        width: edges[2],
+        height: edges[3],
+        coordinate_space: UiMountedCoordinateSpace::Viewport,
+    })
+    .unwrap()
 }
 
 fn projection(
@@ -114,14 +175,7 @@ fn node(
     rank: u32,
     edges: [f32; 4],
 ) -> UiMountedProjectionNodeRecord {
-    let bounds = UiMountedCanonicalBox::canonicalize(UiMountedCanonicalBoxInput {
-        x: edges[0],
-        y: edges[1],
-        width: edges[2],
-        height: edges[3],
-        coordinate_space: UiMountedCoordinateSpace::Viewport,
-    })
-    .unwrap();
+    let bounds = viewport_box(edges);
     let allocation = UiMountedAllocationProjection::Known {
         bounds,
         basis: UiMountedAllocationBasis::new(1, 2, 3, UiMountedTransformProjection::Identity),

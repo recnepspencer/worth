@@ -29,10 +29,11 @@ pub(in crate::mounting::projection) fn complete_hit_test(
     }
     // Scrolled content is painted on the device grid, but hit testing reads
     // it exactly where its offset put it, as every later pose moves it.
-    let bounds = match *node.occurrence_allocation.in_layout_space() {
-        UiMountedAllocationProjection::Known { bounds, .. } => {
-            node.recorded_bounds.unwrap_or(bounds)
-        }
+    let (bounds, painted_bounds) = match *node.occurrence_allocation.in_layout_space() {
+        UiMountedAllocationProjection::Known { bounds, .. } => match node.recorded_bounds {
+            Some(recorded) => (recorded, Some(bounds)),
+            None => (bounds, None),
+        },
         UiMountedAllocationProjection::PortalAnchorObservation { .. } => {
             return Err(UiMountedProjectionDenial::UnsupportedHitTestAllocation(
                 node.receipt.graph_node(),
@@ -47,13 +48,16 @@ pub(in crate::mounting::projection) fn complete_hit_test(
     let surface = semantic
         .surface_for(node.receipt.semantic_surface())
         .ok_or(UiMountedProjectionDenial::MissingSurfaceBinding)?;
-    let bounds = if node.portal_child_owner.is_none() {
-        super::super::frame_storage::surface_coordinates::viewport_bounds(
-            bounds,
-            surface.coordinate_posture,
-        )?
+    let (bounds, painted_bounds) = if node.portal_child_owner.is_none() {
+        let viewport = |bounds| {
+            super::super::frame_storage::surface_coordinates::viewport_bounds(
+                bounds,
+                surface.coordinate_posture,
+            )
+        };
+        (viewport(bounds)?, painted_bounds.map(viewport).transpose()?)
     } else {
-        bounds
+        (bounds, painted_bounds)
     };
     let mounted_instance = node.receipt.mounted_instance();
     let node_receipt = receipt_basis
@@ -77,6 +81,7 @@ pub(in crate::mounting::projection) fn complete_hit_test(
         node_receipt,
         bounds,
         clip_bounds,
+        painted_bounds,
         order: seed.order(),
     })
     .map(Some)
@@ -106,6 +111,7 @@ pub(in crate::mounting) fn reattribute_hit_test_with_probes(
         node_receipt,
         bounds: row.bounds(),
         clip_bounds: row.clip_bounds(),
+        painted_bounds: row.painted_bounds(),
         order: row.order(),
     })
     .map(|row| (row, probes))
@@ -166,6 +172,7 @@ pub(in crate::mounting::projection) fn rebind_hit_tests(
                 node_receipt: row.node_receipt(),
                 bounds: row.bounds(),
                 clip_bounds: row.clip_bounds(),
+                painted_bounds: row.painted_bounds(),
                 order: row.order(),
             },
         )

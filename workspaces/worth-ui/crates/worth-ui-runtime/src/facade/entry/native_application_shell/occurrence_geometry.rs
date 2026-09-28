@@ -293,6 +293,9 @@ impl WorthUiNativeApplicationShell {
         crate::mounting::UiMountedLayoutCompletionReceipt,
         crate::mounting::UiMountedOccurrenceGeometryDenial,
     > {
+        let _stage = worth_ui_host_native::trace_resize_stage(
+            worth_ui_host_native::UiNativeResizeTraceStage::Layout,
+        );
         if batch.surface() != self.surface {
             return Err(crate::mounting::UiMountedOccurrenceGeometryDenial::ForeignSurface);
         }

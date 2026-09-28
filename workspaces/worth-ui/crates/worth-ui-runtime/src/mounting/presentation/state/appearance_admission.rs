@@ -17,6 +17,9 @@ impl UiMountedPresentationAdmission {
         profile: Option<&worth_ui_host_contract::UiHostAppearanceProfileContract>,
         derived: &crate::mounting::UiMountedAppearanceDerivedInput,
     ) -> UiMountedAppearanceAdmission {
+        let _stage = worth_ui_host_native::trace_resize_stage(
+            worth_ui_host_native::UiNativeResizeTraceStage::Appearance,
+        );
         let overlays = derived.overlays.as_slice();
         let requires_complete = self.candidates.requires_complete_appearance_projection();
         if requires_complete && self.frame.prepare_appearance_reconstruction().is_err() {

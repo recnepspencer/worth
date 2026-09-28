@@ -217,6 +217,9 @@ impl WorthUiNativeApplicationShell {
         deadline_tick: u64,
         now_tick: u64,
     ) -> Result<UiMountedFrameOutcome, super::WorthUiMountedFrameExecutionStop<'_>> {
+        let _stage = worth_ui_host_native::trace_resize_stage(
+            worth_ui_host_native::UiNativeResizeTraceStage::Frame,
+        );
         self.settle_pending_native_viewport_measurements()?;
         self.refresh_native_surface_reconciliation();
         let answers = self.host_retry_wake_clearing_answers();
@@ -355,6 +358,9 @@ impl WorthUiNativeApplicationShell {
         in_flight: crate::mounting::UiMountedPresentationInFlight,
         now_tick: u64,
     ) -> UiMountedFrameOutcome {
+        let _stage = worth_ui_host_native::trace_resize_stage(
+            worth_ui_host_native::UiNativeResizeTraceStage::Completion,
+        );
         let answers = self.host_retry_wake_clearing_answers();
         let outcome = self
             .session

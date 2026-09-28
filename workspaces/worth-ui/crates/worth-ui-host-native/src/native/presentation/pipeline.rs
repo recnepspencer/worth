@@ -312,12 +312,16 @@ pub(super) fn stamp_transfer(
     })
 }
 
+/// Draws the retained target 1:1 into the top-left `extent` of the surface
+/// texture, which may be larger than the window (see `swapchain_extent`); the
+/// rest of the surface stays cleared.
 pub(super) fn draw_retained_to_surface(
     encoder: &mut wgpu::CommandEncoder,
     target: &wgpu::TextureView,
     pipeline: &wgpu::RenderPipeline,
     bind_group: &wgpu::BindGroup,
-    stamp: Option<(&wgpu::BindGroup, [u32; 2])>,
+    extent: [u32; 2],
+    stamp: Option<&wgpu::BindGroup>,
 ) {
     let attachments = [Some(wgpu::RenderPassColorAttachment {
         view: target,
@@ -333,10 +337,11 @@ pub(super) fn draw_retained_to_surface(
         color_attachments: &attachments,
         ..Default::default()
     });
+    pass.set_scissor_rect(0, 0, extent[0], extent[1]);
     pass.set_pipeline(pipeline);
     pass.set_bind_group(0, bind_group, &[]);
     pass.draw(0..3, 0..1);
-    if let Some((stamp, extent)) = stamp {
+    if let Some(stamp) = stamp {
         let [width, height] = crate::native::resize_trace::STAMP_EXTENT;
         pass.set_scissor_rect(0, 0, width.min(extent[0]), height.min(extent[1]));
         pass.set_bind_group(0, stamp, &[]);

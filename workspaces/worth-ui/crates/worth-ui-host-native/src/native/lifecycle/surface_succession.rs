@@ -10,6 +10,8 @@ pub(crate) fn resize_surface(
     extent: [u32; 2],
     registry: &mut UiNativeResourceRegistry,
 ) -> Result<bool, ()> {
+    let _stage =
+        crate::native::trace_resize_stage(crate::native::UiNativeResizeTraceStage::Surface);
     replace_basis(
         device,
         surface,
@@ -99,15 +101,7 @@ fn replace_target(
     let successor_owner = registry.register(UiNativeResourceClass::RetainedTarget)?;
     let successor =
         crate::native::graphics::prepare_replacement_target(device, scale_factor, extent);
-    let generation = device.state().generation();
-    surface.replace_basis(
-        successor,
-        successor_owner,
-        scale_factor,
-        extent,
-        generation.device(),
-        registry,
-    )
+    surface.replace_basis(successor, successor_owner, scale_factor, extent, registry)
 }
 
 fn commit_prepared_recovery(

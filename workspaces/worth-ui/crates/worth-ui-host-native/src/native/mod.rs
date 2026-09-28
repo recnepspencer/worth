@@ -18,7 +18,10 @@ mod readiness;
 #[cfg(feature = "certification-support")]
 mod readiness_certification;
 mod resize_trace;
-pub use resize_trace::{trace_resize_text_work, UiNativeResizeTraceTextWork};
+pub use resize_trace::{
+    trace_resize_stage, trace_resize_text_work, UiNativeResizeTraceSpan, UiNativeResizeTraceStage,
+    UiNativeResizeTraceTextWork,
+};
 mod solicited_effect;
 mod text_atlas;
 

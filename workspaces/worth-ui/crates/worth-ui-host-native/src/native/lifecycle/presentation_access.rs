@@ -78,6 +78,12 @@ impl<'owners> UiNativePresentationAccess<'owners> {
         self.surface.state().configuration()
     }
 
+    /// Resizes the swapchain to the committed basis if a basis change is
+    /// still pending, before a frame acquires its texture.
+    pub(crate) fn configure_pending_surface(&self) {
+        self.surface.state().configure_pending(self.device());
+    }
+
     pub(crate) fn adapter_info(&self) -> &wgpu::AdapterInfo {
         self.device.state().adapter_info()
     }
