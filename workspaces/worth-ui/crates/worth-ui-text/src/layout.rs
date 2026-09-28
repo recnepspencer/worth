@@ -21,11 +21,10 @@ mod visual_order;
 use std::sync::Arc;
 
 use worth_ui_host_contract::{
-    UiPositionedTextGlyphRecord, UiQualifiedTextCaretRecord, UiQualifiedTextCostInput,
-    UiQualifiedTextCostRecord, UiQualifiedTextCoverageRecord, UiQualifiedTextLayoutIdentity,
-    UiQualifiedTextLineRecord, UiQualifiedTextSelectionRect, UiQualifiedTextStyleRecord,
-    UiQualifiedTextVisualRunRecord, UiQualifiedTextWordBoundaryRecord, UiTextHitResult,
-    UiTextOriginalRange, UiTextPoint,
+    UiPositionedTextGlyphRecord, UiQualifiedTextCaretRecord, UiQualifiedTextCoverageRecord,
+    UiQualifiedTextLayoutIdentity, UiQualifiedTextLineRecord, UiQualifiedTextSelectionRect,
+    UiQualifiedTextStyleRecord, UiQualifiedTextVisualRunRecord, UiQualifiedTextWordBoundaryRecord,
+    UiTextHitResult, UiTextOriginalRange, UiTextPoint,
 };
 
 use crate::{
@@ -73,6 +72,8 @@ pub struct UiQualifiedTextLayout {
     line_anchors: Box<[interaction::PositionedLineAnchor]>,
     reconstruction: Option<Arc<crate::UiQualifiedTextReconstructionSource>>,
     cost: UiTextLayoutCost,
+    reflow: line_fitting::ReflowWidths,
+    reflow_key: crate::UiQualifiedTextReflowKey,
 }
 
 impl UiQualifiedTextLayout {
@@ -90,7 +91,12 @@ impl UiQualifiedTextLayout {
             return Err(UiTextLayoutDenial::StaleFontCollectionGeneration);
         }
         let mut shaped = shaped;
-        let (mut units, mut plans) = contextual_line_shaping::fit(&mut shaped)?;
+        let contextual_line_shaping::FittedLines {
+            mut units,
+            mut plans,
+            widths: fit_widths,
+        } = contextual_line_shaping::fit(&mut shaped)?;
+        let mut decided_by_fit_alone = plans.iter().all(|plan| !plan.overflowed);
         let mut logical_runs = shaped.runs().to_vec();
         let mut logical_glyphs = shaped.glyphs().to_vec();
         if plans.len() > shaped.capacity().lines() as usize {
@@ -113,6 +119,7 @@ impl UiQualifiedTextLayout {
         let mut line_anchors = Vec::new();
         for (line_index, plan) in plans.iter().enumerate() {
             let visual = visual_order::order(&shaped, &units, plan);
+            decided_by_fit_alone &= visual_order::places_independently_of_width(&shaped, &visual);
             let mut output = recording::Output {
                 lines: &mut lines,
                 visual_runs: &mut visual_runs,
@@ -142,36 +149,16 @@ impl UiQualifiedTextLayout {
                 .expect("profile capacity fits u32"),
             caret_records_emitted: u32::try_from(carets.len()).expect("profile capacity fits u32"),
         };
-        let analysis_cost = shaped.analysis_cost();
-        let fallback_cost = shaped.fallback_cost();
-        let shaping_cost = shaped.cost();
-        let host_cost = UiQualifiedTextCostRecord::from_text_mechanics(UiQualifiedTextCostInput {
-            analyzed_bytes: analysis_cost.analyzed_bytes(),
-            graphemes: analysis_cost.grapheme_records(),
-            word_boundaries: analysis_cost.word_boundaries(),
-            line_opportunities: analysis_cost.line_opportunities(),
-            bidi_contexts: analysis_cost.bidi_contexts(),
-            fallback_clusters: fallback_cost.clusters_considered(),
-            coverage_index_queries: fallback_cost.coverage_index_queries(),
-            face_shape_attempts: fallback_cost.face_shape_attempts(),
-            probed_glyphs: fallback_cost.glyphs_probed(),
-            shaped_runs: shaping_cost.runs_shaped(),
-            shaped_scalars: shaping_cost.input_scalars_shaped(),
-            emitted_glyphs: shaping_cost.glyphs_emitted(),
-            fitted_units: cost.units_fitted(),
-            emitted_lines: cost.lines_emitted(),
-            emitted_visual_runs: cost.visual_runs_emitted(),
-            positioned_glyphs: cost.glyphs_positioned(),
-            emitted_carets: cost.caret_records_emitted(),
-        });
+        let host_cost = shaped.cost_record(cost);
         let logical_runs: Arc<[_]> = logical_runs.into();
         let logical_glyphs: Arc<[_]> = logical_glyphs.into();
         let lines: Arc<[_]> = lines.into();
         let visual_runs: Arc<[_]> = visual_runs.into();
         let positioned_glyphs: Arc<[_]> = positioned_glyphs.into();
         let logical_bounds =
-            aggregate_line_bounds(&lines, UiQualifiedTextLineRecord::logical_bounds);
-        let ink_bounds = aggregate_line_bounds(&lines, UiQualifiedTextLineRecord::ink_bounds);
+            recording::aggregate_line_bounds(&lines, UiQualifiedTextLineRecord::logical_bounds);
+        let ink_bounds =
+            recording::aggregate_line_bounds(&lines, UiQualifiedTextLineRecord::ink_bounds);
         let coverage: Arc<[_]> = shaped
             .selected_clusters()
             .iter()
@@ -198,8 +185,16 @@ impl UiQualifiedTextLayout {
             })
             .collect::<Vec<_>>()
             .into();
+        let requested_width = shaped.constraints().width_millipoints();
+        let reflow = fit_widths.reflow(decided_by_fit_alone, requested_width);
+        let parts = crate::request::UiQualifiedTextRequestParts::of_shaped(&shaped, &fonts);
+        let reflow_key = parts.reflow_key();
+        // Name the layout by the least width it stands for, whatever width it was fitted at.
+        let request_identity = parts.identity_at(reflow.fitted_width());
         let identity = identity::for_layout(identity::UiQualifiedTextLayoutIdentityInput {
             shaped: &shaped,
+            request_identity,
+            width_millipoints: reflow.fitted_width(),
             word_boundaries: &word_boundaries,
             logical_runs: &logical_runs,
             logical_glyphs: &logical_glyphs,
@@ -215,11 +210,9 @@ impl UiQualifiedTextLayout {
         let profile = shaped.profile_generation();
         let font_collection = shaped.font_collection_generation();
         let text_scale = shaped.text_scale_generation();
-        let request_identity = shaped.request_identity();
-        let width_basis = worth_ui_host_contract::UiQualifiedTextLayoutWidthBasis::new(
-            shaped.constraints().width_millipoints(),
-        )
-        .expect("admitted text constraints retain a non-zero width");
+        let width_basis =
+            worth_ui_host_contract::UiQualifiedTextLayoutWidthBasis::new(reflow.fitted_width())
+                .expect("a fitted width is never zero");
         let (source, graphemes) = shaped.into_artifact_source();
         let artifact = Arc::new(UiQualifiedTextLayoutArtifact::new(
             UiQualifiedTextLayoutArtifactInput {
@@ -260,7 +253,27 @@ impl UiQualifiedTextLayout {
             line_anchors: line_anchors.into_boxed_slice(),
             reconstruction: None,
             cost,
+            reflow,
+            reflow_key,
         })
+    }
+
+    /// The key this layout shares with its request at every width.
+    pub const fn reflow_key(&self) -> crate::UiQualifiedTextReflowKey {
+        self.reflow_key
+    }
+
+    /// Whether qualifying this layout's request at `width_millipoints` lays
+    /// the paragraph out as this layout, identity and all.
+    pub fn admits_width(&self, width_millipoints: u32) -> bool {
+        self.reflow.admits(width_millipoints)
+    }
+
+    /// The least width this layout stands for. The layouts of one request
+    /// admit disjoint widths, so the one admitting a width is the one with
+    /// the greatest least width not above it.
+    pub const fn least_width_millipoints(&self) -> u32 {
+        self.reflow.fitted_width()
     }
 
     pub const fn identity(&self) -> UiQualifiedTextLayoutIdentity {
@@ -338,30 +351,6 @@ impl UiQualifiedTextLayout {
             range,
         )
     }
-}
-
-fn aggregate_line_bounds(
-    lines: &[UiQualifiedTextLineRecord],
-    bounds_of: impl Fn(UiQualifiedTextLineRecord) -> worth_ui_host_contract::UiTextRect,
-) -> worth_ui_host_contract::UiTextRect {
-    let Some(first) = lines.first().copied() else {
-        return worth_ui_host_contract::UiTextRect::from_text_mechanics(0, 0, 0, 0)
-            .expect("empty paragraph bounds are ordered");
-    };
-    lines
-        .iter()
-        .copied()
-        .skip(1)
-        .fold(bounds_of(first), |bounds, line| {
-            let next = bounds_of(line);
-            worth_ui_host_contract::UiTextRect::from_text_mechanics(
-                bounds.left_millipoints().min(next.left_millipoints()),
-                bounds.top_millipoints().min(next.top_millipoints()),
-                bounds.right_millipoints().max(next.right_millipoints()),
-                bounds.bottom_millipoints().max(next.bottom_millipoints()),
-            )
-            .expect("paragraph bounds union is ordered")
-        })
 }
 
 impl UiTextLayoutCost {

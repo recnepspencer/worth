@@ -362,3 +362,27 @@ fn line_range(
 fn scale_font_units(value: i32, size: u32, units_per_em: u16) -> i64 {
     i64::from(value) * i64::from(size) / i64::from(units_per_em)
 }
+
+pub(super) fn aggregate_line_bounds(
+    lines: &[UiQualifiedTextLineRecord],
+    bounds_of: impl Fn(UiQualifiedTextLineRecord) -> worth_ui_host_contract::UiTextRect,
+) -> worth_ui_host_contract::UiTextRect {
+    let Some(first) = lines.first().copied() else {
+        return worth_ui_host_contract::UiTextRect::from_text_mechanics(0, 0, 0, 0)
+            .expect("empty paragraph bounds are ordered");
+    };
+    lines
+        .iter()
+        .copied()
+        .skip(1)
+        .fold(bounds_of(first), |bounds, line| {
+            let next = bounds_of(line);
+            worth_ui_host_contract::UiTextRect::from_text_mechanics(
+                bounds.left_millipoints().min(next.left_millipoints()),
+                bounds.top_millipoints().min(next.top_millipoints()),
+                bounds.right_millipoints().max(next.right_millipoints()),
+                bounds.bottom_millipoints().max(next.bottom_millipoints()),
+            )
+            .expect("paragraph bounds union is ordered")
+        })
+}

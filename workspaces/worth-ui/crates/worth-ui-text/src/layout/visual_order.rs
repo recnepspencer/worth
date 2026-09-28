@@ -162,6 +162,22 @@ fn paragraph_level(shaped: &UiShapedTextParagraph, offset: u32) -> u8 {
         )
 }
 
+/// Whether placing `line` left the paragraph's width unread. Aligning a line
+/// to the left edge does, as start alignment does left to right and end
+/// alignment right to left; aligning it anywhere else, or anchoring a line
+/// with nothing on it across the width, reads it.
+pub(super) fn places_independently_of_width(
+    shaped: &UiShapedTextParagraph,
+    line: &VisualLine,
+) -> bool {
+    let left_to_right = line.base_level.is_multiple_of(2);
+    !line.groups.is_empty()
+        && matches!(
+            (shaped.constraints().alignment(), left_to_right),
+            (UiTextAlignment::Start, true) | (UiTextAlignment::End, false)
+        )
+}
+
 fn alignment_offset(shaped: &UiShapedTextParagraph, width: i64, base_level: u8) -> i64 {
     let available = i64::from(shaped.constraints().width_millipoints());
     let remaining = (available - width).max(0);

@@ -26,8 +26,8 @@ pub(crate) fn mixed_latin_arabic_indic_and_emoji_shape_in_exhaustive_runs_with_o
         let range = glyph.original_range();
         range.start() < range.end() && range.end() <= source.len() as u32
     }));
-    assert_eq!(shaped.cost().runs_shaped(), shaped.runs().len() as u32);
-    assert_eq!(shaped.cost().glyphs_emitted(), shaped.glyphs().len() as u32);
+    assert_eq!(shaped.cost.runs_shaped(), shaped.runs().len() as u32);
+    assert_eq!(shaped.cost.glyphs_emitted(), shaped.glyphs().len() as u32);
 }
 
 #[test]
@@ -57,7 +57,7 @@ pub(crate) fn each_complete_missing_cluster_emits_one_glyph_with_its_exact_origi
 
     assert_eq!(shaped.runs().len(), missing_ranges.len());
     assert_eq!(shaped.glyphs().len(), missing_ranges.len());
-    assert_eq!(shaped.cost().glyphs_emitted(), 2);
+    assert_eq!(shaped.cost.glyphs_emitted(), 2);
     for (glyph, expected_range) in shaped.glyphs().iter().zip(missing_ranges) {
         assert_ne!(glyph.glyph_id(), 0);
         assert_eq!(glyph.original_range(), expected_range);

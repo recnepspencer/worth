@@ -39,7 +39,6 @@ pub(crate) struct UiAdmittedTextParagraph {
     profile_generation: UiTextProfileGeneration,
     font_collection_generation: UiFontCollectionGeneration,
     text_scale_generation: UiTextScaleGeneration,
-    request_identity: worth_ui_host_contract::UiQualifiedTextLayoutRequestIdentity,
     styles: Box<[UiTextStyleSpan]>,
     capacity: UiTextCapacityReservation,
 }
@@ -57,17 +56,14 @@ impl UiAdmittedTextParagraph {
     pub(crate) fn admit(
         input: UiTextParagraphAdmissionInput,
     ) -> Result<(Self, UiTextAdmissionCost), UiTextParagraphAdmissionDenial> {
-        let request_identity = crate::request::identity_for_input(&input);
         Self::admit_with_bound(
             input,
-            request_identity,
             crate::font_collection::UiFontCollectionCapacityBound::qualified_profile(),
         )
     }
 
-    pub(crate) fn admit_with_identity(
+    pub(crate) fn admit_from(
         input: UiTextParagraphAdmissionInput,
-        request_identity: worth_ui_host_contract::UiQualifiedTextLayoutRequestIdentity,
         fonts: &crate::UiGlobalFontCollection,
         posture: crate::qualification::QualificationPosture,
     ) -> Result<(Self, UiTextAdmissionCost), UiTextParagraphAdmissionDenial> {
@@ -77,12 +73,11 @@ impl UiAdmittedTextParagraph {
         if posture.requires_current_collection() && !fonts.is_current_for_admission() {
             return Err(UiTextParagraphAdmissionDenial::StaleFontCollectionGeneration);
         }
-        Self::admit_with_bound(input, request_identity, fonts.capacity_bound())
+        Self::admit_with_bound(input, fonts.capacity_bound())
     }
 
     fn admit_with_bound(
         input: UiTextParagraphAdmissionInput,
-        request_identity: worth_ui_host_contract::UiQualifiedTextLayoutRequestIdentity,
         capacity_bound: crate::font_collection::UiFontCollectionCapacityBound,
     ) -> Result<(Self, UiTextAdmissionCost), UiTextParagraphAdmissionDenial> {
         let bytes = input.source.len();
@@ -119,7 +114,6 @@ impl UiAdmittedTextParagraph {
             profile_generation: input.profile_generation,
             font_collection_generation: input.font_collection_generation,
             text_scale_generation: input.text_scale_generation,
-            request_identity,
             styles: input.styles,
             capacity: UiTextCapacityReservation {
                 graphemes: u32::try_from(graphemes).expect("profile grapheme cap fits u32"),
@@ -155,11 +149,6 @@ impl UiAdmittedTextParagraph {
     }
     pub const fn text_scale_generation(&self) -> UiTextScaleGeneration {
         self.text_scale_generation
-    }
-    pub const fn request_identity(
-        &self,
-    ) -> worth_ui_host_contract::UiQualifiedTextLayoutRequestIdentity {
-        self.request_identity
     }
     pub fn styles(&self) -> &[UiTextStyleSpan] {
         &self.styles
@@ -316,10 +305,8 @@ pub(crate) mod tests {
             text_scale_generation: UiTextScaleGeneration::new(1).unwrap(),
             styles: Box::new([]),
         };
-        let request_identity = crate::request::identity_for_input(&input);
-        let result = UiAdmittedTextParagraph::admit_with_identity(
+        let result = UiAdmittedTextParagraph::admit_from(
             input,
-            request_identity,
             &fonts,
             crate::qualification::QualificationPosture::Fresh,
         );

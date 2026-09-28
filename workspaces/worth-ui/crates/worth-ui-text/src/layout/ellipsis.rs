@@ -66,8 +66,11 @@ pub(super) fn apply(
         .iter()
         .map(|glyph| i64::from(glyph.x_advance).unsigned_abs())
         .sum();
-    let advance = scale_advance(raw_advance, style, ellipsis.units_per_em)
-        + i64::from(style.letter_spacing_millipoints());
+    // Spacing may pull the ellipsis back over its own glyphs, but like every
+    // other unit it never advances backward.
+    let advance = (scale_advance(raw_advance, style, ellipsis.units_per_em)
+        + i64::from(style.letter_spacing_millipoints()))
+    .max(0);
     while end > line.unit_start
         && measure(shaped, &units[line.unit_start..end]) + advance > maximum_width
     {

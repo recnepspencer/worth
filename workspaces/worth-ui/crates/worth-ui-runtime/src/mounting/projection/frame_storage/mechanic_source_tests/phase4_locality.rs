@@ -57,7 +57,7 @@ fn content_and_width_locality_have_exact_constant_work_at_every_qualified_size()
             surface,
             binding,
             "UPDATED",
-            80.0,
+            REFIT_WIDTH,
         );
         let width_index_work = crate::runtime::persistent_index::test_work();
         assert_eq!(width.semantic_text, 1);
@@ -78,7 +78,7 @@ fn content_and_width_locality_have_exact_constant_work_at_every_qualified_size()
             surface,
             binding,
             "UPDATED",
-            80.0,
+            REFIT_WIDTH,
             &[],
         );
         let unchanged_index_work = crate::runtime::persistent_index::test_work();
@@ -141,6 +141,11 @@ fn retained_document_scan_and_global_width_substitution_are_rejected() {
     content_and_width_locality_have_exact_constant_work_at_every_qualified_size();
 }
 
+/// A width narrower than any word these paragraphs hold. A layout stands for
+/// every width its lines fit identically at, so only a width change that
+/// refits the text reshapes it; this one does for every paragraph here.
+const REFIT_WIDTH: f32 = 16.0;
+
 #[test]
 fn one_width_change_relayouts_only_its_mounted_paragraphs_and_unchanged_is_zero_work() {
     let (fonts, _) = worth_ui_text::UiGlobalFontCollection::admit_qualified_profile().unwrap();
@@ -187,7 +192,7 @@ fn one_width_change_relayouts_only_its_mounted_paragraphs_and_unchanged_is_zero_
         surface,
         binding,
         seed,
-        [0.0, 0.0, 80.0, 96.0],
+        [0.0, 0.0, REFIT_WIDTH, 96.0],
     );
     let frame = UiMountedFrameIdentity::mint_unbound().unwrap();
     let receipts = receipt_basis(frame, left);

@@ -198,8 +198,10 @@ stale viewport commitment, mixed text/hit geometry, and incorrect overlay order.
   at the owning physical boundary; independently rounded neighboring cards must
   not leave gaps or double borders. Preserve half-open bounds and seam ownership.
 - Text wraps/ellipsizes according to its declared contract at the actual allocated
-  width. Reuse shaping when its constraints are equal; moving a label alone cannot
-  reshape it. Icons, radii, and typography retain logical sizes through resizing.
+  width. Reuse shaping when its constraints are equal, or differ only in a width
+  its lines fit identically at; moving a label, or widening a left-placed one
+  that already fits, cannot reshape it. Icons, radii, and typography retain
+  logical sizes through resizing.
 - Modal cards stay centered within the usable viewport, with 24-point minimum
   insets, bounded width, and scrollable content when height is constrained. Popovers
   remain anchored with existing fit/flip/clamp policy. Backdrops use current extent;

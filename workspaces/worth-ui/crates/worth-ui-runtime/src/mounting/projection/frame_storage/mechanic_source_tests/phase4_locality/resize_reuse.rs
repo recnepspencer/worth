@@ -1,6 +1,7 @@
-//! Resizing reshapes text only where its shaping inputs change: the allocated
-//! width and the declared flow. Moving a paragraph, or changing only its box
-//! height, reuses the layout an earlier frame shaped.
+//! Resizing reshapes text only where its shaping changes: a width its lines
+//! no longer fit identically at, or the declared flow. Moving a paragraph,
+//! changing only its box height, or giving it a width its lines still fit at
+//! reuses the layout an earlier frame shaped.
 
 use super::*;
 use crate::capability::ComponentSemanticTextFlow;
@@ -30,15 +31,27 @@ fn a_height_only_change_keeps_its_shaping() {
 }
 
 #[test]
-fn a_width_change_reshapes_and_the_new_width_is_then_reused() {
+fn a_width_the_text_still_fits_keeps_its_shaping() {
     let mut world = ResizeWorld::mounted(UiMountedSemanticTextSeed::scalar_for_test(), HOME);
     let before = world.layouts();
 
     world.resize([0.0, 0.0, 80.0, 96.0]);
+    world.assert_reused(&before);
+    world.resize([0.0, 0.0, 600.0, 96.0]);
+    world.assert_reused(&before);
+}
+
+#[test]
+fn a_width_the_text_no_longer_fits_reshapes_and_is_then_reused() {
+    let mut world = ResizeWorld::mounted(UiMountedSemanticTextSeed::scalar_for_test(), HOME);
+    let before = world.layouts();
+
+    // Narrower than any word the paragraph holds, so every line refits.
+    world.resize([0.0, 0.0, 16.0, 96.0]);
     let narrow = world.layouts();
     world.assert_reshaped(&before);
 
-    world.resize([12.0, 0.0, 80.0, 30.0]);
+    world.resize([12.0, 0.0, 16.0, 30.0]);
     world.assert_reused(&narrow);
 }
 

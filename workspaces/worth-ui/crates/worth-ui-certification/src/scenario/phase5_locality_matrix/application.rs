@@ -16,6 +16,7 @@ use super::case::{
     color, token, Phase5LocalityAxis, Phase5LocalityCase, BASE_TOKEN, ROOT, SURFACE, TARGET_TOKEN,
 };
 use super::timings::Phase5LocalityApplicationTimingRecorder;
+use worth_ui_text::UiTextAlignment;
 
 pub(super) struct Phase5LocalityMatrixApplication {
     case: Phase5LocalityCase,
@@ -111,13 +112,22 @@ fn root_component() -> ComponentDescriptor {
 
 fn text_component(case: Phase5LocalityCase, index: usize) -> ComponentDescriptor {
     let identity = case.component_identity(index);
-    let measurement = if case.axis() == Phase5LocalityAxis::Width && index == case.target_index() {
+    let width_target = case.axis() == Phase5LocalityAxis::Width && index == case.target_index();
+    let measurement = if width_target {
         ComponentAllocationMeasurementContract::viewport_inset(ComponentViewportInset::symmetric(
             8, 8,
         ))
     } else {
         ComponentAllocationMeasurementContract::fixed_logical_size(144, 24)
             .expect("matrix fixed paragraph bounds")
+    };
+    // A start-aligned line that fits stands for every wider width, so the
+    // viewport change would reuse its layout. Centering places the line by
+    // the width it is given, which keeps the width axis a real relayout.
+    let alignment = if width_target {
+        UiTextAlignment::Center
+    } else {
+        UiTextAlignment::Start
     };
     let foreground = if index == case.target_index() {
         TARGET_TOKEN
@@ -131,10 +141,13 @@ fn text_component(case: Phase5LocalityCase, index: usize) -> ComponentDescriptor
         ComponentStateOwnership::runtime_owned(),
     )
     .with_allocation_measurement_contract(measurement)
-    .with_semantic_text(ComponentSemanticTextContract::body_default(
-        token(foreground),
-        u32::try_from(index + 1).expect("matrix layer order is bounded"),
-    ))
+    .with_semantic_text(
+        ComponentSemanticTextContract::body_default(
+            token(foreground),
+            u32::try_from(index + 1).expect("matrix layer order is bounded"),
+        )
+        .with_alignment(alignment),
+    )
 }
 
 fn matrix_token(identity: &str, value: &str) -> ThemeTokenDescriptor {

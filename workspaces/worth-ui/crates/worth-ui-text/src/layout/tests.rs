@@ -53,6 +53,12 @@ pub(crate) fn canonical_layout_identity_changes_when_its_exact_cost_record_chang
     let identity = |word_boundaries: &[UiQualifiedTextWordBoundaryRecord], cost| {
         identity::for_layout(identity::UiQualifiedTextLayoutIdentityInput {
             shaped: &shaped,
+            request_identity: crate::request::UiQualifiedTextRequestParts::of_shaped(
+                &shaped,
+                shaped.fonts(),
+            )
+            .identity_at(shaped.constraints().width_millipoints()),
+            width_millipoints: shaped.constraints().width_millipoints(),
             word_boundaries,
             logical_runs: &[],
             logical_glyphs: &[],

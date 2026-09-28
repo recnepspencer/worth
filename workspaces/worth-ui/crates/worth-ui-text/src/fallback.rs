@@ -299,12 +299,6 @@ impl UiFallbackTextParagraph {
     pub const fn text_scale_generation(&self) -> worth_ui_host_contract::UiTextScaleGeneration {
         self.analyzed.text_scale_generation()
     }
-    pub const fn request_identity(
-        &self,
-    ) -> worth_ui_host_contract::UiQualifiedTextLayoutRequestIdentity {
-        self.analyzed.request_identity()
-    }
-
     pub const fn cost(&self) -> UiTextFallbackCost {
         self.cost
     }
