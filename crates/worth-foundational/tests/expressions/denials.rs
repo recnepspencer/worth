@@ -322,7 +322,11 @@ fn four_valued_values_have_no_implied_equality() {
         )
     };
     assert!(admitted("case_equal(sig.line, enable)").is_ok());
-    assert!(admitted("logic_eq(sig.line, enable) == logic_eq(enable, enable)").is_err());
+    let result = admitted("logic_eq(sig.line, enable) == logic_eq(enable, enable)");
+    assert_eq!(
+        result.unwrap_err().family(),
+        Family::FunctionContractMismatch
+    );
 }
 
 #[test]
