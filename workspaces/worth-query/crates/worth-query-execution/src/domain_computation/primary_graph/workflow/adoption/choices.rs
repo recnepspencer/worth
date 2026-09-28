@@ -11,6 +11,8 @@ use super::{
     WorthQueryWorkflowInstanceOccurrence,
 };
 
+/// Why a workflow disposition, or a set of dispositions, was refused for a
+/// branch adoption.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryWorkflowDispositionDenial {
     /// The law does not permit this disposition for the definition.

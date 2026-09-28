@@ -75,11 +75,11 @@ The hot serial lane should not need to build or reduce packet-shaped scaffolding
 
 ### Main Code Surfaces
 
-- [stage.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/planner/apply/stage.rs)
-- [prepared_apply.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/evaluation/engine/prepared_apply.rs)
-- [apply.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/evaluation/engine/apply.rs)
-- [effect.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/graph/runtime/effect.rs)
-- [semantic/mod.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/planner/semantic/mod.rs)
+- [stage.rs](../../crates/worth-signal/src/logic/planner/apply/stage.rs)
+- [prepared_apply.rs](../../crates/worth-signal/src/logic/evaluation/engine/prepared_apply.rs)
+- [apply.rs](../../crates/worth-signal/src/logic/evaluation/engine/apply.rs)
+- [effect.rs](../../crates/worth-signal/src/data/graph/runtime/effect.rs)
+- [semantic/mod.rs](../../crates/worth-signal/src/logic/planner/semantic/mod.rs)
 
 ### What We Need To Build
 
@@ -142,11 +142,11 @@ Cold state should move further out:
 
 ### Main Code Surfaces
 
-- [trace.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/trace.rs)
-- [effect.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/graph/runtime/effect.rs)
-- [artifacts.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/graph/diagnostics_access/artifacts.rs)
-- [recorder.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/diagnostics/runtime/recorder.rs)
-- [resolver.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/explain/resolver.rs)
+- [trace.rs](../../crates/worth-signal/src/data/trace.rs)
+- [effect.rs](../../crates/worth-signal/src/data/graph/runtime/effect.rs)
+- [artifacts.rs](../../crates/worth-signal/src/data/graph/diagnostics_access/artifacts.rs)
+- [recorder.rs](../../crates/worth-signal/src/diagnostics/runtime/recorder.rs)
+- [resolver.rs](../../crates/worth-signal/src/logic/explain/resolver.rs)
 
 ### What We Need To Build
 
@@ -195,9 +195,9 @@ The common case should avoid rebuilding whole snapshot objects.
 
 ### Main Code Surfaces
 
-- [apply.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/evaluation/engine/apply.rs)
-- [entries.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/graph/storage/entries.rs)
-- dependency data types under [data](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data)
+- [apply.rs](../../crates/worth-signal/src/logic/evaluation/engine/apply.rs)
+- [entries.rs](../../crates/worth-signal/src/data/graph/storage/entries.rs)
+- dependency data types under [data](../../crates/worth-signal/src/data)
 - topology/runtime dependency accessors under the graph runtime/topology storage layers
 
 ### What We Need To Build
@@ -264,7 +264,7 @@ The hottest state should become more locality-friendly:
 - dependency snapshot handle access
 - hot artifact/access paths
 - selected storage code under:
-  - [entries.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/graph/storage/entries.rs)
+  - [entries.rs](../../crates/worth-signal/src/data/graph/storage/entries.rs)
   - graph/node runtime code
   - traversal scratch and hot execution code
 

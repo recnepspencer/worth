@@ -23,13 +23,13 @@ fn retried_assessments_replace_stale_failing_occurrences_at_the_join() {
     };
     propose_instance(&application, started.instance().clone(), 492).expect("proposal must settle");
     assert_eq!(
-        settle(set_dimension(
+        settle(set_retention(
             application.program_runtime(),
             started.instance().branch(),
             6,
             493,
         )),
-        DimensionVerdict::Performed(6)
+        RetentionVerdict::Performed(6)
     );
     for (settlement_key, acceptance_key) in [(494, 495), (496, 497)] {
         let settled = settle_assessment(&application, started.instance().clone(), settlement_key);
@@ -57,13 +57,13 @@ fn retried_assessments_replace_stale_failing_occurrences_at_the_join() {
     }
 
     assert_eq!(
-        settle(set_dimension(
+        settle(set_retention(
             application.program_runtime(),
             started.instance().branch(),
             7,
             499,
         )),
-        DimensionVerdict::Performed(7)
+        RetentionVerdict::Performed(7)
     );
     for (settlement_key, acceptance_key, path) in
         [(500, 501, "checks/first"), (502, 503, "checks/second")]
@@ -120,13 +120,13 @@ fn back_navigation_reuses_compatible_evidence_across_new_transition_occurrences(
     };
     propose_instance(&application, started.instance().clone(), 542).expect("proposal must settle");
     assert_eq!(
-        settle(set_dimension(
+        settle(set_retention(
             application.program_runtime(),
             started.instance().branch(),
             6,
             543,
         )),
-        DimensionVerdict::Performed(6)
+        RetentionVerdict::Performed(6)
     );
     for (settlement_key, acceptance_key) in [(544, 545), (546, 547)] {
         let settled = settle_assessment(&application, started.instance().clone(), settlement_key);
@@ -219,13 +219,13 @@ fn evidence_join_requires_new_evidence_after_its_native_source_changes() {
         ));
     }
     assert_eq!(
-        settle(set_dimension(
+        settle(set_retention(
             application.program_runtime(),
             started.instance().branch(),
-            SEED_DIMENSION + 1,
+            SEED_RETENTION + 1,
             487,
         )),
-        DimensionVerdict::Performed(SEED_DIMENSION + 1)
+        RetentionVerdict::Performed(SEED_RETENTION + 1)
     );
     match advance_instance(&application, started.instance().clone(), 488)
         .expect("stale evidence must remain an unmet authored requirement")
@@ -273,22 +273,22 @@ fn evidence_join_requires_new_evidence_after_native_source_aba() {
     }
 
     assert_eq!(
-        settle(set_dimension(
+        settle(set_retention(
             application.program_runtime(),
             started.instance().branch(),
-            SEED_DIMENSION + 1,
+            SEED_RETENTION + 1,
             527,
         )),
-        DimensionVerdict::Performed(SEED_DIMENSION + 1)
+        RetentionVerdict::Performed(SEED_RETENTION + 1)
     );
     assert_eq!(
-        settle(set_dimension(
+        settle(set_retention(
             application.program_runtime(),
             started.instance().branch(),
-            SEED_DIMENSION,
+            SEED_RETENTION,
             528,
         )),
-        DimensionVerdict::Performed(SEED_DIMENSION)
+        RetentionVerdict::Performed(SEED_RETENTION)
     );
 
     match advance_instance(&application, started.instance().clone(), 529)
@@ -307,7 +307,7 @@ fn assessment_acceptance_rejects_output_after_its_native_source_changes() {
     let application = publish_workflow_on_first_program();
     let definition = match publish_definition(
         &application,
-        reviewed_geometry_definition("currentness"),
+        reviewed_document_definition("currentness"),
         WorkflowDefinitionExpectedPredecessor::Absent,
         451,
     )
@@ -327,13 +327,13 @@ fn assessment_acceptance_rejects_output_after_its_native_source_changes() {
     let settled = settle_assessment(&application, started.instance().clone(), 454);
 
     assert_eq!(
-        settle(set_dimension(
+        settle(set_retention(
             application.program_runtime(),
             started.instance().branch(),
-            SEED_DIMENSION + 1,
+            SEED_RETENTION + 1,
             455,
         )),
-        DimensionVerdict::Performed(SEED_DIMENSION + 1)
+        RetentionVerdict::Performed(SEED_RETENTION + 1)
     );
 
     assert!(matches!(

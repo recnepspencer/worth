@@ -12,7 +12,7 @@
 >
 > **Primary predecessor:** [runtime-authoritative-mutation-evidence-plan.md](./runtime-authoritative-mutation-evidence-plan.md)
 >
-> **Primary downstream pressure:** [../worth/worth-query-runtime-kernel-hard-break.md](../worth/worth-query-runtime-kernel-hard-break.md)
+> **Primary downstream pressure:** `../worth/worth-query-runtime-kernel-hard-break.md`
 >
 > **Primary owners:** `worth-query`, `worth-runtime-bridge`, and production runtime adapters in downstream domains
 >
@@ -21,7 +21,7 @@
 > - [runtime-authoritative-mutation-evidence-plan.md](./runtime-authoritative-mutation-evidence-plan.md)
 >
 > **Concurrent downstream programs:**
-> - [../worth/worth-query-runtime-kernel-hard-break.md](../worth/worth-query-runtime-kernel-hard-break.md)
+> - `../worth/worth-query-runtime-kernel-hard-break.md`
 >
 > **Impacted later roadmap work:**
 > - `Milestone 9.4` (`Temporal Query Basis And Time-Aware Subscription Contracts`)

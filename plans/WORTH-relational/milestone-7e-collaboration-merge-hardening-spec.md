@@ -127,9 +127,9 @@ retained branch-basis artifact rather than on ambient branch-head inspection.
 
 ### Relevant APIs
 
-- [C:\Users\Esther\Documents\Programming\WORTH_workspace\worktree_3\crates\worth-relational\src\history\data\mod.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-relational/src/history/data/mod.rs)
-- [C:\Users\Esther\Documents\Programming\WORTH_workspace\worktree_3\crates\worth-relational\src\history\logic\access\ancestry.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-relational/src/history/logic/access/ancestry.rs)
-- [C:\Users\Esther\Documents\Programming\WORTH_workspace\worktree_3\crates\worth-relational\src\history\data\branch_creation.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-relational/src/history/data/branch_creation.rs)
+- [crates/worth-relational/src/history/data/mod.rs](../../crates/worth-relational/src/history/data/mod.rs)
+- [C:\Users\Esther\Documents\Programming\WORTH_workspace\worktree_3\crates\worth-relational\src\history\logic\access\ancestry.rs](../../crates/worth-relational/src/history/access/ancestry.rs)
+- [crates/worth-relational/src/history/data/branch_creation.rs](../../crates/worth-relational/src/history/data/branch_creation.rs)
 
 ### Warnings
 
@@ -180,8 +180,8 @@ remaining a relational-only basis dialect above the authority boundary.
 
 ### Relevant APIs
 
-- [C:\Users\Esther\Documents\Programming\WORTH_workspace\worktree_3\crates\worth-foundational\src\transitions\basis\mod.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/transitions/basis/mod.rs)
-- [C:\Users\Esther\Documents\Programming\WORTH_workspace\worktree_3\crates\worth-foundational\src\boundary_evidence_api\stronger_lane\readmission.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_evidence_api/stronger_lane/readmission.rs)
+- [crates/worth-foundational/src/transitions/basis/mod.rs](../../crates/worth-foundational/src/transitions/basis/mod.rs)
+- [crates/worth-foundational/src/boundary_evidence_api/stronger_lane/readmission.rs](../../crates/worth-foundational/src/boundary_evidence_api/stronger_lane/readmission.rs)
 
 ### Warnings
 
@@ -232,8 +232,8 @@ single reconcile intent.
 
 ### Relevant APIs
 
-- [C:\Users\Esther\Documents\Programming\WORTH_workspace\worktree_3\crates\worth-relational\src\merge\data\requests.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-relational/src/merge/data/requests.rs)
-- [C:\Users\Esther\Documents\Programming\WORTH_workspace\worktree_3\crates\worth-relational\src\merge\data\execution.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-relational/src/merge/data/execution.rs)
+- [crates/worth-relational/src/merge/data/requests.rs](../../crates/worth-relational/src/merge/data/requests.rs)
+- [crates/worth-relational/src/merge/data/execution.rs](../../crates/worth-relational/src/merge/data/execution.rs)
 
 ### Warnings
 
@@ -289,7 +289,7 @@ vocabulary wherever the shared toolkit already has an honest equivalent.
 
 ### Relevant APIs
 
-- [C:\Users\Esther\Documents\Programming\WORTH_workspace\worktree_3\crates\worth-foundational\src\transitions\merges\mod.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/transitions/merges/mod.rs)
+- [crates/worth-foundational/src/transitions/merges/mod.rs](../../crates/worth-foundational/src/transitions/merges/mod.rs)
 
 ### Warnings
 
@@ -339,9 +339,9 @@ digests, and counts.
 
 ### Relevant APIs
 
-- [C:\Users\Esther\Documents\Programming\WORTH_workspace\worktree_3\crates\worth-relational\src\merge\data\artifacts\planning_artifact_core.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-relational/src/merge/data/artifacts/planning_artifact_core.rs)
-- [C:\Users\Esther\Documents\Programming\WORTH_workspace\worktree_3\crates\worth-relational\src\transactions\data\outcomes\plan_artifacts.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-relational/src/transactions/data/outcomes/plan_artifacts.rs)
-- [C:\Users\Esther\Documents\Programming\WORTH_workspace\worktree_3\crates\worth-relational\src\merge\data\execution.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-relational/src/merge/data/execution.rs)
+- [crates/worth-relational/src/merge/data/artifacts/planning_artifact_core.rs](../../crates/worth-relational/src/merge/data/artifacts/planning_artifact_core.rs)
+- [crates/worth-relational/src/transactions/data/outcomes/plan_artifacts.rs](../../crates/worth-relational/src/transactions/data/outcomes/plan_artifacts.rs)
+- [crates/worth-relational/src/merge/data/execution.rs](../../crates/worth-relational/src/merge/data/execution.rs)
 
 ### Warnings
 
@@ -399,8 +399,8 @@ assembling its own digest grammar.
 
 ### Relevant APIs
 
-- [C:\Users\Esther\Documents\Programming\WORTH_workspace\worktree_3\crates\worth-foundational\src\transitions\basis\mod.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/transitions/basis/mod.rs)
-- [C:\Users\Esther\Documents\Programming\WORTH_workspace\worktree_3\crates\worth-foundational\src\facade.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/facade.rs)
+- [crates/worth-foundational/src/transitions/basis/mod.rs](../../crates/worth-foundational/src/transitions/basis/mod.rs)
+- [crates/worth-foundational/src/facade.rs](../../crates/worth-foundational/src/facade.rs)
 
 ### Warnings
 
@@ -452,8 +452,8 @@ evidence and become retained merge truth with explicit authority and denial.
 
 ### Relevant APIs
 
-- [C:\Users\Esther\Documents\Programming\WORTH_workspace\worktree_3\crates\worth-relational\src\merge\data\identity.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-relational/src/merge/data/identity.rs)
-- [C:\Users\Esther\Documents\Programming\WORTH_workspace\worktree_3\crates\worth-relational\src\merge\data\plans.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-relational/src/merge/data/plans.rs)
+- [crates/worth-relational/src/merge/data/identity.rs](../../crates/worth-relational/src/merge/data/identity.rs)
+- [crates/worth-relational/src/merge/data/plans.rs](../../crates/worth-relational/src/merge/data/plans.rs)
 
 ### Warnings
 
@@ -508,8 +508,8 @@ truth rather than an execution-time side interpretation of schema declarations.
 
 ### Relevant APIs
 
-- [C:\Users\Esther\Documents\Programming\WORTH_workspace\worktree_3\crates\worth-relational\src\merge\data\policy.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-relational/src/merge/data/policy.rs)
-- [C:\Users\Esther\Documents\Programming\WORTH_workspace\worktree_3\crates\worth-relational\src\merge\data\artifacts\planning_artifact_core.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-relational/src/merge/data/artifacts/planning_artifact_core.rs)
+- [crates/worth-relational/src/merge/data/policy.rs](../../crates/worth-relational/src/merge/data/policy.rs)
+- [crates/worth-relational/src/merge/data/artifacts/planning_artifact_core.rs](../../crates/worth-relational/src/merge/data/artifacts/planning_artifact_core.rs)
 
 ### Warnings
 
@@ -565,9 +565,9 @@ summary output and scattered lowered-plan fields.
 
 ### Relevant APIs
 
-- [C:\Users\Esther\Documents\Programming\WORTH_workspace\worktree_3\crates\worth-relational\src\merge\data\policy.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-relational/src/merge/data/policy.rs)
-- [C:\Users\Esther\Documents\Programming\WORTH_workspace\worktree_3\crates\worth-relational\src\merge\data\artifacts\execution_authority_contract.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-relational/src/merge/data/artifacts/execution_authority_contract.rs)
-- [C:\Users\Esther\Documents\Programming\WORTH_workspace\worktree_3\crates\worth-relational\src\transactions\data\outcomes\plan_artifacts.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-relational/src/transactions/data/outcomes/plan_artifacts.rs)
+- [crates/worth-relational/src/merge/data/policy.rs](../../crates/worth-relational/src/merge/data/policy.rs)
+- [crates/worth-relational/src/merge/data/artifacts/execution_authority_contract.rs](../../crates/worth-relational/src/merge/data/artifacts/execution_authority_contract.rs)
+- [crates/worth-relational/src/transactions/data/outcomes/plan_artifacts.rs](../../crates/worth-relational/src/transactions/data/outcomes/plan_artifacts.rs)
 
 ### Warnings
 
@@ -623,8 +623,8 @@ crate-local locator strings or support-specific key formats.
 
 ### Relevant APIs
 
-- [C:\Users\Esther\Documents\Programming\WORTH_workspace\worktree_3\crates\worth-foundational\src\diagnostics\subjects.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/diagnostics/subjects.rs)
-- [C:\Users\Esther\Documents\Programming\WORTH_workspace\worktree_3\crates\worth-foundational\src\facade.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/facade.rs)
+- [crates/worth-foundational/src/diagnostics/subjects.rs](../../crates/worth-foundational/src/diagnostics/subjects.rs)
+- [crates/worth-foundational/src/facade.rs](../../crates/worth-foundational/src/facade.rs)
 
 ### Warnings
 
@@ -675,8 +675,8 @@ grammar.
 
 ### Relevant APIs
 
-- [C:\Users\Esther\Documents\Programming\WORTH_workspace\worktree_3\crates\worth-foundational\src\boundary_evidence_api\stronger_lane\readmission.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_evidence_api/stronger_lane/readmission.rs)
-- [C:\Users\Esther\Documents\Programming\WORTH_workspace\worktree_3\crates\worth-foundational\src\profiles\progression.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/profiles/progression.rs)
+- [crates/worth-foundational/src/boundary_evidence_api/stronger_lane/readmission.rs](../../crates/worth-foundational/src/boundary_evidence_api/stronger_lane/readmission.rs)
+- [crates/worth-foundational/src/profiles/progression.rs](../../crates/worth-foundational/src/profiles/progression.rs)
 
 ### Warnings
 
@@ -736,9 +736,9 @@ ontology.
 
 ### Relevant APIs
 
-- [C:\Users\Esther\Documents\Programming\WORTH_workspace\worktree_3\crates\worth-foundational\src\profiles\mod.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/profiles/mod.rs)
-- [C:\Users\Esther\Documents\Programming\WORTH_workspace\worktree_3\crates\worth-relational\src\merge\data\artifacts\inspection_artifact.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-relational/src/merge/data/artifacts/inspection_artifact.rs)
-- [C:\Users\Esther\Documents\Programming\WORTH_workspace\worktree_3\crates\worth-relational\src\facade.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-relational/src/facade.rs)
+- [crates/worth-foundational/src/profiles/mod.rs](../../crates/worth-foundational/src/profiles/mod.rs)
+- [crates/worth-relational/src/merge/data/artifacts/inspection_artifact.rs](../../crates/worth-relational/src/merge/data/artifacts/inspection_artifact.rs)
+- [crates/worth-relational/src/facade.rs](../../crates/worth-relational/src/facade.rs)
 
 ### Warnings
 
@@ -791,8 +791,8 @@ first-class canonical truth rather than best-effort reconstruction.
 
 ### Relevant APIs
 
-- [C:\Users\Esther\Documents\Programming\WORTH_workspace\worktree_3\crates\worth-relational\src\merge\facade.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-relational/src/merge/facade.rs)
-- [C:\Users\Esther\Documents\Programming\WORTH_workspace\worktree_3\crates\worth-relational\src\transactions\data\outcomes\plan_artifacts.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-relational/src/transactions/data/outcomes/plan_artifacts.rs)
+- [crates/worth-relational/src/merge/facade.rs](../../crates/worth-relational/src/merge/facade.rs)
+- [crates/worth-relational/src/transactions/data/outcomes/plan_artifacts.rs](../../crates/worth-relational/src/transactions/data/outcomes/plan_artifacts.rs)
 
 ### Warnings
 
@@ -1107,6 +1107,6 @@ This milestone is complete only when:
   merge-correspondence witness certification requirement
 - an explicit collaboration-merge retained-proof certification requirement is
   added to
-  [C:\Users\Esther\Documents\Programming\WORTH_workspace\worktree_3\plans\worth-relational\test-requirements.md](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/plans/worth-relational/test-requirements.md)
+  [plans/WORTH-relational/test-requirements.md](./test-requirements.md)
   if the current requirements set does not already cover retained proof,
   foundational lowering, compatibility, and support inspection parity honestly

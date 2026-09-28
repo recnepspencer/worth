@@ -1,28 +1,28 @@
 # Milestone 1 Engineering Spec: Canonical Commit Persistence And Artifact Authority
 
 > **Status:** Implemented and closed in
-> [milestone-1-closeout.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-1-closeout.md)
+> [milestone-1-closeout.md](./milestone-1-closeout.md)
 >
-> **Roadmap parent:** [worth_store_roadmap.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/worth_store_roadmap.md)
+> **Roadmap parent:** `worth_store_roadmap.md`
 >
-> **Vision parent:** [worth_store_vision.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/worth_store_vision.md)
+> **Vision parent:** [worth_store_vision.md](./worth_store_vision.md)
 >
-> **Test requirements:** [test-requirements.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/test-requirements.md)
+> **Test requirements:** [test-requirements.md](./test-requirements.md)
 >
 > **Primary architectural driver:** lock one canonical durable artifact model before WAL, snapshots, delta layering, compaction, replication, or derived storage are allowed to exist
 >
 > **Companion docs:**
-> - [MENTALITY.md](/Users/Esther/Documents/Programming/worth_workspace/worth/docs/coding-guidelines/MENTALITY.md)
-> - [arch_laws.md](/Users/Esther/Documents/Programming/worth_workspace/worth/docs/coding-guidelines/arch_laws.md)
-> - [perf_laws.md](/Users/Esther/Documents/Programming/worth_workspace/worth/docs/coding-guidelines/perf_laws.md)
-> - [domain_laws.md](/Users/Esther/Documents/Programming/worth_workspace/worth/docs/coding-guidelines/domain_laws.md)
-> - [worth_relational_vision.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-relational/worth_relational_vision.md)
-> - [worth_relational_roadmap.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-relational/worth_relational_roadmap.md)
-> - [worth_runtime_bridge_vision.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-runtime-bridge/worth_runtime_bridge_vision.md)
-> - [milestone-1.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-runtime-bridge/milestone-1.md)
-> - [worth_runtime_bridge_roadmap.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-runtime-bridge/worth_runtime_bridge_roadmap.md)
-> - [worth_signal_vision.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth_signal/worth_signal_vision.md)
-> - [worth_signals2.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth_signal/worth_signals2.md)
+> - [MENTALITY.md](../../docs/coding-guidelines/MENTALITY.md)
+> - [arch_laws.md](../../docs/coding-guidelines/arch_laws.md)
+> - [perf_laws.md](../../docs/coding-guidelines/perf_laws.md)
+> - [domain_laws.md](../../docs/coding-guidelines/domain_structure_laws.md)
+> - [worth_relational_vision.md](../WORTH-relational/WORTH_relational_vision.md)
+> - [worth_relational_roadmap.md](../WORTH-relational/WORTH_relational_roadmap.md)
+> - [worth_runtime_bridge_vision.md](../WORTH-runtime-bridge/WORTH_runtime_bridge_vision.md)
+> - [milestone-1.md](../WORTH-runtime-bridge/milestone-1.md)
+> - [worth_runtime_bridge_roadmap.md](../WORTH-runtime-bridge/WORTH_runtime_bridge_roadmap.md)
+> - [worth_signal_vision.md](../WORTH_signal/WORTH_signal_vision.md)
+> - [worth_signals2.md](../WORTH_signal/WORTH_signals2.md)
 
 ## Goal
 
@@ -968,7 +968,7 @@ top of Milestone 1.
 - one structurally distinct second backend parity lane
 - exact append/fetch counters and parity bundle surfaces
 - Milestone 1 certification through the named suite in
-  [test-requirements.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/test-requirements.md)
+  [test-requirements.md](./test-requirements.md)
 
 ## Must Preserve
 

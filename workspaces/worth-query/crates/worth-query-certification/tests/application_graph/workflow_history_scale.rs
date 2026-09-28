@@ -1,5 +1,5 @@
 //! History and unrelated-instance axes through real workflow publication owners.
-//! This court does not claim geometry population or authored-node qualification.
+//! This court does not claim sparse-definition publication or authored-node qualification.
 
 use std::time::Instant;
 use worth_query_host::facade::{
@@ -17,8 +17,8 @@ use worth_query_installation::facade::{
 };
 use worth_query_replay::facade::WorthQueryCertificationCostRuntimeExt;
 
-use super::bounded_dimension_model::{
-    host::{publish_on_first_program_for_history_scale, BoundedDimensionWorkflowRuntime},
+use super::document_retention_model::{
+    host::{publish_on_first_program_for_history_scale, DocumentWorkflowRuntime},
     workflow::{
         bounded_retry_definition_with_attempts, propose_authoring_instance, publish_definition,
         retain_workflow_with_resources, start_instance,
@@ -29,7 +29,7 @@ const SAMPLES: u64 = 20;
 const MAXIMUM_HISTORY: u32 = 10_128;
 
 struct HistoryCourt {
-    application: BoundedDimensionWorkflowRuntime,
+    application: DocumentWorkflowRuntime,
     definition: PublishedWorkflowDefinitionRef,
     instance: PublishedWorkflowInstanceRef,
     next_key: u64,
@@ -252,7 +252,7 @@ impl HistoryCourt {
 }
 
 fn started(
-    application: &BoundedDimensionWorkflowRuntime,
+    application: &DocumentWorkflowRuntime,
     definition: PublishedWorkflowDefinitionRef,
     key: u64,
 ) -> PublishedWorkflowInstanceRef {

@@ -8,26 +8,37 @@ use crate::scenario::{
     canonical_hostile_matrix, WorthQueryCertificationHostileAttack, WorthQueryCertificationSuite,
 };
 
+/// Why a certification run failed. The run stops at the first failure and
+/// produces no report.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryCertificationFailure {
+    /// A provider identity was empty or contained characters other than ASCII
+    /// letters, digits, `-`, `.`, and `_`.
     InvalidProviderIdentity(String),
+    /// Both providers of a pair reported the same identity.
     SameProviderIdentity,
+    /// A provider returned an error while executing a scenario.
     ProviderExecution {
         provider: String,
         scenario: String,
         detail: String,
     },
+    /// A provider's observation of a scenario differed from the scenario's
+    /// oracle.
     OracleMismatch {
         provider: String,
         scenario: String,
         expected: WorthQueryCertificationObservation,
         observed: WorthQueryCertificationObservation,
     },
+    /// A provider returned an error while running a hostile attack.
     HostileExecution {
         provider: String,
         attack: WorthQueryCertificationHostileAttack,
         detail: String,
     },
+    /// A provider's denial evidence for a hostile attack differed from the
+    /// expected evidence.
     HostileEvidenceMismatch {
         provider: String,
         attack: WorthQueryCertificationHostileAttack,
@@ -36,6 +47,12 @@ pub enum WorthQueryCertificationFailure {
     },
 }
 
+/// Runs every scenario of a certification suite against two independent
+/// providers and checks that each provider's observation equals the scenario's
+/// oracle.
+///
+/// Both provider identities must be valid and distinct. Returns a report with
+/// one entry per scenario, or the first `WorthQueryCertificationFailure`.
 pub fn certify_provider_pair(
     suite: &WorthQueryCertificationSuite,
     first: &mut impl WorthQueryCertificationProvider,
@@ -79,6 +96,11 @@ pub fn certify_provider_pair(
     Ok(WorthQueryCertificationReport::new(identities, reports))
 }
 
+/// Runs the canonical hostile attack matrix against one provider and checks
+/// that each attack yields exactly the expected denial evidence.
+///
+/// Returns a report naming the provider and the number of hostile cases
+/// checked, or the first `WorthQueryCertificationFailure`.
 pub fn certify_hostile_provider(
     provider: &mut impl WorthQueryHostileCertificationProvider,
 ) -> Result<WorthQueryHostileCertificationReport, WorthQueryCertificationFailure> {

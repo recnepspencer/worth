@@ -47,7 +47,7 @@ To keep comparisons honest:
 
 ---
 
-## Workload 1 â€” Fintech Mixed Fanout
+## Workload 1 — Fintech Mixed Fanout
 
 **Purpose**
 
@@ -82,7 +82,7 @@ Targets:
 
 ---
 
-## Workload 2 â€” Topology Rewiring Churn
+## Workload 2 — Topology Rewiring Churn
 
 **Purpose**
 
@@ -111,7 +111,7 @@ Targets:
 
 ---
 
-## Workload 3 â€” Suppression Wide Fanout
+## Workload 3 — Suppression Wide Fanout
 
 **Purpose**
 
@@ -141,7 +141,7 @@ Targets:
 
 ---
 
-## Workload 4 â€” Harness Observability Profile Delta
+## Workload 4 — Harness Observability Profile Delta
 
 **Purpose**
 
@@ -465,7 +465,7 @@ Interpretation:
 - the stable-shape benchmark is overwhelmingly hitting the stable-shape path
 - the replacement path is absent in this workload (`replacement_count = 0`)
 - stable-shape proof, shape-handle lookup, snapshot fetch, and version-delta construction are all bounded and visible
-- this is the right benchmark to use when judging whether Milestone 3â€™s proof-carrying stable-shape design is working
+- this is the right benchmark to use when judging whether Milestone 3’s proof-carrying stable-shape design is working
 
 Final QA rerun note:
 

@@ -27,23 +27,23 @@ will freeze today's internal seams into tomorrow's public contract.
 The WORTH Signal DX program already established the right pattern for this kind
 of work. The most relevant documents are:
 
-- [`plans/worth_signal/dx_plan.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth_signal/dx_plan.md)
-- [`plans/worth_signal/dx_canonical_surface_spec.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth_signal/dx_canonical_surface_spec.md)
-- [`plans/worth_signal/dx_boundary_spec.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth_signal/dx_boundary_spec.md)
-- [`plans/worth_signal/dx_api_matrix.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth_signal/dx_api_matrix.md)
-- [`plans/worth_signal/dx_export_inventory.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth_signal/dx_export_inventory.md)
-- [`plans/worth_signal/dx_export_decision_matrix.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth_signal/dx_export_decision_matrix.md)
-- [`plans/worth_signal/dx_exposure_cleanup_strategy.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth_signal/dx_exposure_cleanup_strategy.md)
-- [`plans/worth_signal/dx_condensation_map.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth_signal/dx_condensation_map.md)
-- [`plans/worth_signal/dx_diagnostics_product_map.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth_signal/dx_diagnostics_product_map.md)
-- [`plans/worth_signal/dx_compatibility_transition_plan.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth_signal/dx_compatibility_transition_plan.md)
-- [`plans/worth_signal/dx_wording_map.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth_signal/dx_wording_map.md)
-- [`plans/worth_signal/docs_publication_audit.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth_signal/docs_publication_audit.md)
-- [`plans/worth_signal/dx_phase_0_2_review.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth_signal/dx_phase_0_2_review.md)
-- [`plans/worth_signal/dx_phase_4_review.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth_signal/dx_phase_4_review.md)
-- [`plans/worth_signal/dx_phase_5_plan.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth_signal/dx_phase_5_plan.md)
-- [`plans/worth_signal/dx_phase_5_policy_inventory.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth_signal/dx_phase_5_policy_inventory.md)
-- [`plans/worth_signal/dx_phase_5_review.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth_signal/dx_phase_5_review.md)
+- [`plans/worth_signal/dx_plan.md`](../WORTH_signal/dx_plan.md)
+- [`plans/worth_signal/dx_canonical_surface_spec.md`](../WORTH_signal/dx_canonical_surface_spec.md)
+- [`plans/worth_signal/dx_boundary_spec.md`](../WORTH_signal/dx_boundary_spec.md)
+- [`plans/worth_signal/dx_api_matrix.md`](../WORTH_signal/dx_api_matrix.md)
+- [`plans/worth_signal/dx_export_inventory.md`](../WORTH_signal/dx_export_inventory.md)
+- [`plans/worth_signal/dx_export_decision_matrix.md`](../WORTH_signal/dx_export_decision_matrix.md)
+- [`plans/worth_signal/dx_exposure_cleanup_strategy.md`](../WORTH_signal/dx_exposure_cleanup_strategy.md)
+- [`plans/worth_signal/dx_condensation_map.md`](../WORTH_signal/dx_condensation_map.md)
+- [`plans/worth_signal/dx_diagnostics_product_map.md`](../WORTH_signal/dx_diagnostics_product_map.md)
+- [`plans/worth_signal/dx_compatibility_transition_plan.md`](../WORTH_signal/dx_compatibility_transition_plan.md)
+- [`plans/worth_signal/dx_wording_map.md`](../WORTH_signal/dx_wording_map.md)
+- [`plans/worth_signal/docs_publication_audit.md`](../WORTH_signal/docs_publication_audit.md)
+- [`plans/worth_signal/dx_phase_0_2_review.md`](../WORTH_signal/dx_phase_0_2_review.md)
+- [`plans/worth_signal/dx_phase_4_review.md`](../WORTH_signal/dx_phase_4_review.md)
+- [`plans/worth_signal/dx_phase_5_plan.md`](../WORTH_signal/dx_phase_5_plan.md)
+- [`plans/worth_signal/dx_phase_5_policy_inventory.md`](../WORTH_signal/dx_phase_5_policy_inventory.md)
+- [`plans/worth_signal/dx_phase_5_review.md`](../WORTH_signal/dx_phase_5_review.md)
 
 The important takeaway is not "copy Signal literally."
 
@@ -63,20 +63,20 @@ The important takeaway is:
 
 This plan builds on:
 
-- [`plans/engineering/worth_relational_coverage_and_api_inventory.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/engineering/worth_relational_coverage_and_api_inventory.md)
-- [`plans/worth-relational/worth_relational_vision.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/worth_relational_vision.md)
-- [`plans/worth-relational/worth_relational_roadmap.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/worth_relational_roadmap.md)
-- [`plans/worth-relational/test-requirements.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/test-requirements.md)
-- [`plans/worth-relational/dx_phase_0_5_review.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_phase_0_5_review.md)
-- [`plans/worth-relational/dx_phase_1_plan.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_phase_1_plan.md)
-- [`plans/worth-relational/dx_phase_1_review.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_phase_1_review.md)
-- [`plans/worth-relational/dx_phase_2_review.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_phase_2_review.md)
-- [`plans/worth-relational/dx_phase_3_review.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_phase_3_review.md)
-- [`plans/worth-relational/dx_phase_4_review.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_phase_4_review.md)
-- [`plans/worth-relational/dx_phase_5_review.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_phase_5_review.md)
-- [`crates/worth-relational/src/lib.rs`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/lib.rs)
-- [`crates/worth-relational/src/facade.rs`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/facade.rs)
-- [`crates/worth-relational/src/presentation/api.rs`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/presentation/api.rs)
+- `plans/engineering/worth_relational_coverage_and_api_inventory.md`
+- [`plans/worth-relational/worth_relational_vision.md`](./WORTH_relational_vision.md)
+- [`plans/worth-relational/worth_relational_roadmap.md`](./WORTH_relational_roadmap.md)
+- [`plans/worth-relational/test-requirements.md`](./test-requirements.md)
+- [`plans/worth-relational/dx_phase_0_5_review.md`](./dx_phase_0_5_review.md)
+- [`plans/worth-relational/dx_phase_1_plan.md`](./dx_phase_1_plan.md)
+- [`plans/worth-relational/dx_phase_1_review.md`](./dx_phase_1_review.md)
+- [`plans/worth-relational/dx_phase_2_review.md`](./dx_phase_2_review.md)
+- [`plans/worth-relational/dx_phase_3_review.md`](./dx_phase_3_review.md)
+- [`plans/worth-relational/dx_phase_4_review.md`](./dx_phase_4_review.md)
+- [`plans/worth-relational/dx_phase_5_review.md`](./dx_phase_5_review.md)
+- [`crates/worth-relational/src/lib.rs`](../../crates/worth-relational/src/lib.rs)
+- [`crates/worth-relational/src/facade.rs`](../../crates/worth-relational/src/facade.rs)
+- [`crates/worth-relational/src/presentation/api.rs`](../../crates/worth-relational/src/presentation/api.rs)
 
 ---
 
@@ -118,8 +118,8 @@ Those things matter, but they must not own the first impression.
 
 Things already working in our favor:
 
-- one official crate boundary exists: [`facade.rs`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/facade.rs)
-- a small top-level API exists through [`api.rs`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/presentation/api.rs)
+- one official crate boundary exists: [`facade.rs`](../../crates/worth-relational/src/facade.rs)
+- a small top-level API exists through [`api.rs`](../../crates/worth-relational/src/presentation/api.rs)
 - the runtime has real performance certification breadth
 - the crate already distinguishes many serious specialist surfaces instead of
   pretending they do not exist
@@ -149,10 +149,10 @@ Current status after the Phase 0-0.5 closeout:
 
 Operational checkpoint:
 
-- [`plans/worth-relational/dx_phase_0_5_review.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_phase_0_5_review.md)
-- [`plans/worth-relational/dx_phase_1_plan.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_phase_1_plan.md)
-- [`plans/worth-relational/dx_phase_1_review.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_phase_1_review.md)
-- [`plans/worth-relational/dx_phase_2_review.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_phase_2_review.md)
+- [`plans/worth-relational/dx_phase_0_5_review.md`](./dx_phase_0_5_review.md)
+- [`plans/worth-relational/dx_phase_1_plan.md`](./dx_phase_1_plan.md)
+- [`plans/worth-relational/dx_phase_1_review.md`](./dx_phase_1_review.md)
+- [`plans/worth-relational/dx_phase_2_review.md`](./dx_phase_2_review.md)
 
 ---
 
@@ -394,12 +394,12 @@ should stop participating in the main product identity.
 
 ### Goal
 
-Create the relational equivalent of Signalâ€™s export and decision discipline so
+Create the relational equivalent of Signal’s export and decision discipline so
 future cleanup is systematic rather than taste-driven.
 
 ### Tasks
 
-- turn [`worth_relational_coverage_and_api_inventory.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/engineering/worth_relational_coverage_and_api_inventory.md)
+- turn `worth_relational_coverage_and_api_inventory.md`
   into the seed for a strict relational DX export inventory
 - produce `dx_export_inventory.md`
 - produce `dx_export_decision_matrix.md`
@@ -640,7 +640,7 @@ At that point, the bridge can be designed as:
 
 Instead of:
 
-- one runtime with another runtimeâ€™s internal seams glued onto it
+- one runtime with another runtime’s internal seams glued onto it
 
 ---
 

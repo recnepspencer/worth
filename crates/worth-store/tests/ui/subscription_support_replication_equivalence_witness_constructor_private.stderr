@@ -1,7 +1,0 @@
-error[E0451]: field `witness` of struct `SupportReplicationEquivalenceWitness` is private
- --> tests/ui/subscription_support_replication_equivalence_witness_constructor_private.rs:7:9
-  |
-6 |     let _ = SupportReplicationEquivalenceWitness {
-  |             ------------------------------------ in this type
-7 |         witness: unsafe { std::mem::zeroed::<SupportTrustEquivalenceWitness>() },
-  |         ^^^^^^^ private field

@@ -1,31 +1,31 @@
 # Milestone 4 Engineering Spec: Collection Semantics, Ordering, Pagination, And Bounded Traversal
 
-> **Status:** Closed on 2026-04-14 for the runtime-backed collection semantics scope. Durable cursor resume, store-backed collection parity, and broader family coverage remain deferred to later milestones.
+> **Status:** Completed. Durable cursor resume, store-backed collection parity, and broader family coverage remain open for later milestones. Closeout: [milestone-4-closeout.md](./milestone-4-closeout.md).
 >
-> **Roadmap parent:** [worth_query_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/worth_query_roadmap.md)
+> **Roadmap parent:** [worth_query_roadmap.md](./WORTH_query_roadmap.md)
 >
-> **Vision parent:** [worth_query_vision.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/worth_query_vision.md)
+> **Vision parent:** [worth_query_vision.md](./WORTH_query_vision.md)
 >
-> **Prior milestone:** [milestone-3.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/milestone-3.md)
+> **Prior milestone:** [milestone-3.md](./milestone-3.md)
 >
-> **Prior closeout:** [milestone-3-closeout.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/milestone-3-closeout.md)
+> **Prior closeout:** [milestone-3-closeout.md](./milestone-3-closeout.md)
 >
-> **Test requirements:** [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/test-requirements.md)
+> **Test requirements:** [test-requirements.md](./test-requirements.md)
 >
 > **Primary architectural driver:** make collection reads, page advancement, bounded traversal, aggregate shaping, and CDC-shaped result families planner-owned proof surfaces so large-surface reads stay basis-honest, breadth-explicit, and parity-safe under repeated execution
 >
 > **Companion docs:**
-> - [MENTALITY.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/MENTALITY.md)
-> - [arch_laws.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/arch_laws.md)
-> - [perf_laws.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/perf_laws.md)
-> - [domain_laws.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/domain_laws.md)
-> - [worth_query_vision.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/worth_query_vision.md)
-> - [worth_query_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/worth_query_roadmap.md)
-> - [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/test-requirements.md)
-> - [milestone-2.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/milestone-2.md)
-> - [milestone-2-closeout.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/milestone-2-closeout.md)
-> - [milestone-3.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/milestone-3.md)
-> - [milestone-3-closeout.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/milestone-3-closeout.md)
+> - [MENTALITY.md](../../docs/coding-guidelines/MENTALITY.md)
+> - [arch_laws.md](../../docs/coding-guidelines/arch_laws.md)
+> - [perf_laws.md](../../docs/coding-guidelines/perf_laws.md)
+> - [domain_laws.md](../../docs/coding-guidelines/domain_structure_laws.md)
+> - [worth_query_vision.md](./WORTH_query_vision.md)
+> - [worth_query_roadmap.md](./WORTH_query_roadmap.md)
+> - [test-requirements.md](./test-requirements.md)
+> - [milestone-2.md](./milestone-2.md)
+> - [milestone-2-closeout.md](./milestone-2-closeout.md)
+> - [milestone-3.md](./milestone-3.md)
+> - [milestone-3-closeout.md](./milestone-3-closeout.md)
 
 ## Goal
 
@@ -341,7 +341,7 @@ subdomains such as:
 - `derived_field_planner`
 - `cdc_family_planner`
 
-These may share a faÃ§ade, but they should remain independently testable and
+These may share a façade, but they should remain independently testable and
 proof-bearing because they fail for different reasons and will evolve under
 different milestone pressure later.
 
@@ -519,7 +519,7 @@ certification harness with deterministic machine-checkable artifacts.
 Milestone 4 is complete only when `worth-query` can prove:
 
 - the `Collection, Cursor, Rollup, And CDC Shape Parity Test` in
-  [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/test-requirements.md)
+  [test-requirements.md](./test-requirements.md)
   passes with canonical machine-checkable artifacts
 - ordered collection queries return stable cursor-advancable pages for one
   snapshot basis
@@ -632,7 +632,7 @@ Milestone 4 should explicitly require:
 - sealed constructors for aggregate, rollup, derived-field, and CDC-family
   artifacts
 - `pub(crate)` planner lowering entry points for family-specific planners, with
-  only faÃ§ade-level crate APIs exposed
+  only façade-level crate APIs exposed
 - type-level separation between ordinary collection result envelopes and
   CDC-shaped collection result envelopes even if they share storage internals
 

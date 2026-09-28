@@ -2,15 +2,15 @@
 
 > **Status:** Planned
 >
-> **Roadmap parent:** [plans/worth-proof/worth_proof_roadmap.md](/C:/Users/shepworth/Documents/programming/WORTH/plans/worth-proof/worth_proof_roadmap.md)
+> **Roadmap parent:** [plans/worth-proof/worth_proof_roadmap.md](./WORTH_proof_roadmap.md)
 >
-> **Vision parent:** [plans/worth-proof/worth_proof_vision.md](/C:/Users/shepworth/Documents/programming/WORTH/plans/worth-proof/worth_proof_vision.md)
+> **Vision parent:** [plans/worth-proof/worth_proof_vision.md](./WORTH_proof_vision.md)
 >
-> **Test requirements:** [plans/worth-proof/test-requirements.md](/C:/Users/shepworth/Documents/programming/WORTH/plans/worth-proof/test-requirements.md)
+> **Test requirements:** [plans/worth-proof/test-requirements.md](./test-requirements.md)
 >
-> **Adjacent milestone:** [plans/worth-proof/milestone-6.md](/C:/Users/shepworth/Documents/programming/WORTH/plans/worth-proof/milestone-6.md)
+> **Adjacent milestone:** [plans/worth-proof/milestone-6.md](./milestone-6.md)
 >
-> **Adjacent milestone closeout:** [plans/worth-proof/milestone-6-closeout.md](/C:/Users/shepworth/Documents/programming/WORTH/plans/worth-proof/milestone-6-closeout.md)
+> **Adjacent milestone closeout:** [plans/worth-proof/milestone-6-closeout.md](./milestone-6-closeout.md)
 >
 > **Primary architectural driver:** prove that `worth-proof` is actually
 > migration-worthy for real WORTH flows rather than only locally elegant inside
@@ -436,7 +436,7 @@ Implementation guidance:
 ## Acceptance Evidence
 
 Milestone 7 is not complete until the named suite required by
-[plans/worth-proof/test-requirements.md](/C:/Users/shepworth/Documents/programming/WORTH/plans/worth-proof/test-requirements.md)
+[plans/worth-proof/test-requirements.md](./test-requirements.md)
 passes with a machine-checkable certification bundle for:
 
 - `migration_parity_report`

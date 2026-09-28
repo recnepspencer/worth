@@ -8,12 +8,12 @@ use worth_query_host::facade::{
     primary_graph::{WorthQueryApplicationCommitDenialKind, WorthQueryApplicationUncommitted},
 };
 
-use super::bounded_dimension_model::{
+use super::document_retention_model::{
     host::publish_workflow_on_first_program,
     workflow::{
         advance_instance, proposal_terminal_definition, propose_authoring_instance,
         propose_instance, propose_instance_on_branch, publish_definition,
-        repeated_proposal_definition, reviewed_geometry_definition, start_instance,
+        repeated_proposal_definition, reviewed_document_definition, start_instance,
     },
 };
 
@@ -22,7 +22,7 @@ fn public_real_operation_request_publishes_and_replays_one_immutable_proposal() 
     let application = publish_workflow_on_first_program();
     let definition = expect_published(publish_definition(
         &application,
-        reviewed_geometry_definition("completed"),
+        reviewed_document_definition("completed"),
         WorkflowDefinitionExpectedPredecessor::Absent,
         401,
     ));

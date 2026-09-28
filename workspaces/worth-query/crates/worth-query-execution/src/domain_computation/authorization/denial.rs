@@ -2,78 +2,156 @@
 
 use crate::domain_computation::application_outcome_identity::WorthQueryApplicationOutcomeIdentity;
 
+/// The specific reason authorization refused an operation or query.
+///
+/// Families: cancellation and deadline; stale installed meaning, principal,
+/// scope, or authorization; capability, policy, and rule outcomes; elevation
+/// and delegation lifecycle; basis, capacity, and identity exhaustion; and
+/// internal consistency failures. Every kind is decided at admission, before
+/// any effect.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryOperationAuthorizationDenialKind {
+    /// The authorization check was cancelled.
     Cancelled,
+    /// The authorization check reached its deadline.
     DeadlineExceeded,
+    /// The principal's authentication has expired.
     ExpiredAuthentication,
+    /// The authorization material belongs to a different runtime.
     ForeignRuntime,
+    /// The installed schema binding changed since the material was admitted.
     StaleInstalledSchema,
+    /// The installed operation changed or is no longer installed.
     StaleInstalledOperation,
+    /// The principal no longer resolves as it did.
     StalePrincipal,
+    /// The request scope no longer resolves as it did.
     StaleScope,
+    /// A declared mutation precondition did not hold.
     MutationPreconditionRejected,
+    /// The bounded canonical work for the decision was refused.
     CanonicalWorkDenied,
+    /// The trusted clock needed for the decision was unavailable.
     TrustedTimeUnavailable,
+    /// The operation input could not be evaluated for authorization.
     InvalidOperationInput,
+    /// The capability projection read for the decision was rejected.
     CapabilityProjectionRejected,
+    /// No capability grant covers the principal for this action.
     CapabilityGrantMissing,
+    /// The action needs a capability authorization that was not presented.
     CapabilityAuthorizationMissing,
+    /// The declared purpose does not match the grant.
     PurposeMismatch,
+    /// An installed deny rule matched.
     ExplicitDenyRuleMatched,
+    /// An installed conflict rule matched.
     ConflictRuleMatched,
+    /// An installed separation-of-duty rule matched.
     SeparationOfDutyRuleMatched,
+    /// An installed distinct-actor rule matched.
     DistinctActorRuleMatched,
+    /// The operation requires a capability and none was used.
     CapabilityRequired,
+    /// A capability lane was used for an operation that requires no capability.
     CapabilityNotRequired,
+    /// The capability grant has expired.
     CapabilityExpired,
+    /// The action requires an approved elevation.
     ElevationRequired,
+    /// An approved elevation was presented for a capability that declares none.
     ElevationNotApplicable,
+    /// The elevation state read for the decision was rejected.
     ElevationProjectionRejected,
+    /// The elevation has expired.
     ElevationExpired,
+    /// The elevation is not active.
     ElevationInactive,
+    /// The requester tried to approve their own elevation.
     ElevationSelfApproval,
+    /// The approver conflicts with the elevation request.
     ElevationApproverConflict,
+    /// The action must go through the elevation lifecycle transition.
     ElevationTransitionRequired,
+    /// The operation's role in the elevation lifecycle does not match its use.
     ElevationLifecycleRoleMismatch,
+    /// The elevation request was rejected.
     ElevationRequestRejected,
+    /// The elevation approval was rejected.
     ElevationApprovalRejected,
+    /// Closing the elevation was rejected.
     ElevationCloseRejected,
+    /// A mandatory review was rejected.
     MandatoryReviewRejected,
+    /// The requested elevation exceeds the permitted duration.
     ElevationDurationExceeded,
+    /// The delegation was rejected.
     DelegationRejected,
+    /// The action must go through its delegation or revocation transition.
     DelegationTransitionRequired,
+    /// The delegation chain is deeper than permitted.
     DelegationDepthExceeded,
+    /// The delegation chain contains a cycle.
     DelegationCycle,
+    /// The delegation lineage changed since it was observed.
     DelegationLineageChanged,
+    /// Previously admitted authorization is no longer current.
     StaleAuthorization,
+    /// The security basis on the product branch could not be admitted.
     ProductSecurityBasis(crate::basis::WorthQueryProductBranchAdmissionDenial),
+    /// The runtime ran out of admission identities.
     AdmissionIdentityExhausted,
+    /// The installed limit on concurrently active snapshots was reached.
     ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
+    /// The runtime ran out of snapshot identities.
     SnapshotIdentityExhausted,
+    /// No capacity remains to retain the authorization basis.
     RetentionCapacityExhausted,
+    /// The runtime ran out of basis-retention identities.
     RetentionIdentityExhausted,
+    /// Graph work for the decision could not be admitted.
     GraphWorkAdmissionUnavailable,
+    /// The request scope is outside what the grant covers.
     ScopeMismatch,
+    /// The policy the decision needs is not installed.
     PolicyNotInstalled,
+    /// The installed policy is invalid.
     InvalidInstalledPolicy,
+    /// A Relational observation needed for the decision was rejected.
     RelationalObservationRejected,
+    /// Selecting grants exceeded the installed bound.
     GrantSelectionLimitExceeded,
+    /// The Runtime Bridge rejected the policy evaluation.
     BridgeEvaluationRejected,
+    /// The authorization material disagreed with itself; the decision is refused.
     InconsistentDecision,
+    /// The installed policy evaluated and did not allow the action.
     PermissionDenied,
 }
 
+/// Coarse, explainable cause of an authorization denial, fit to show a user.
+///
+/// Only policy-level denials have one; operational causes such as deadlines or
+/// capacity do not.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationAuthorizationExplanationCause {
+    /// The principal lacks a required capability.
     MissingCapability,
+    /// An explicit deny rule applied.
     ExplicitPolicyDenial,
+    /// The scope is outside what the grant covers.
     ScopeMismatch,
+    /// The declared purpose does not match the grant.
     PurposeMismatch,
+    /// A conflict rule applied.
     Conflict,
+    /// A separation-of-duty or distinct-actor rule applied.
     SeparationOfDuty,
+    /// The action requires an approved elevation.
     ElevationRequired,
+    /// The elevation or its lifecycle step was refused.
     ElevationDenied,
+    /// The capability or elevation has expired.
     ElevationExpired,
 }
 
@@ -109,6 +187,7 @@ impl WorthQueryApplicationAuthorizationExplanationCause {
     }
 }
 
+/// Process-local identity of one authorization denial, for correlation.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct WorthQueryOperationAuthorizationDenialIdentity(WorthQueryApplicationOutcomeIdentity);
 
@@ -122,6 +201,12 @@ impl WorthQueryOperationAuthorizationDenialIdentity {
     }
 }
 
+/// Refusal by authorization to let an operation or query proceed.
+///
+/// Decided during admission, before any effect. [`Self::kind`] is the first
+/// cause and [`Self::causes`] lists every cause in order;
+/// [`Self::explanation_cause`] gives a user-facing cause when one applies, and
+/// [`Self::subject`] names what was being authorized.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryOperationAuthorizationDenial {
     identity: Option<WorthQueryOperationAuthorizationDenialIdentity>,

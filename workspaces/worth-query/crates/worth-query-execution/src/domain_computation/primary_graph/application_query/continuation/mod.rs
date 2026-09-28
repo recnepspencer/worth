@@ -32,6 +32,11 @@ use super::{
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use outcome::finalize_continuation_page;
 
+/// One page of a paged query read: the rows, the continuation for the next
+/// page if there is one, and the access receipt for this page.
+///
+/// Pass the continuation back with fresh resume controls to read the next page;
+/// each page is admitted afresh.
 pub struct WorthQueryApplicationContinuationPageResult<
     Schema,
     Query,

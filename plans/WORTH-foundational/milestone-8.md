@@ -686,7 +686,7 @@ Phase 1 is complete only when:
 
 This phase builds the first real claim objects on top of the frozen primitive
 families. The job here is not reporting yet. The job is to make it impossible
-to talk vaguely about â€œperformanceâ€ without naming what boundary is being
+to talk vaguely about “performance” without naming what boundary is being
 described, what work is included, what work is excluded, and how strong the
 claim really is.
 
@@ -718,7 +718,7 @@ Phase 2 is complete only when:
 
 ### Phase 3: Layout Intent, Access Posture, And Allocation Law
 
-This phase answers the â€œwhy is this laid out this way?â€ question without
+This phase answers the “why is this laid out this way?” question without
 standardizing the representation itself. It is intentionally after Phase 2,
 because layout intent only becomes meaningful once claim boundaries and work
 disclosure already exist.
@@ -737,7 +737,7 @@ surfaces that can be attached to claims and bundles later, plus hostile
 representation-boundary tests proving that different internal layouts can emit
 the same shared meaning. The engineer should leave this phase with
 representation freedom preserved and with no room left for a future crate to
-smuggle â€œfast because SoAâ€ or â€œshared because packedâ€ into the vocabulary.
+smuggle “fast because SoA” or “shared because packed” into the vocabulary.
 
 Phase 3 is complete only when:
 
@@ -863,7 +863,7 @@ through the stronger proof lane.
 The output from this phase should be a readiness artifact that an engineer can
 use as a closure checklist and that a hostile reviewer can use to prove the
 milestone is actually frozen. If a later implementer could still plausibly ask
-â€œis this supposed to be in common, lowering, certified, or readiness?â€ then
+“is this supposed to be in common, lowering, certified, or readiness?” then
 this phase is not complete.
 
 Phase 7 is complete only when:
@@ -880,7 +880,7 @@ Phase 7 is complete only when:
 
 This is the terminal implementation-delivery phase. The implementation is not
 complete until the shipped surface has been turned into real crate-facing docs
-through the `feature-doc-writer` skill and integrated into the crateâ€™s
+through the `feature-doc-writer` skill and integrated into the crate’s
 documentation tree in the final published shape.
 
 This phase exists to prevent the common failure mode where the milestone closes
@@ -895,7 +895,7 @@ Second, create category folders under
 feature category rather than as a flat pile of markdown files. Third, write
 exactly one feature document per real feature seam. A seam gets one primary
 document, not several overlapping notes. Fourth, ensure each document follows
-the skillâ€™s feature-doc standards: problem-first framing, stable entry points,
+the skill’s feature-doc standards: problem-first framing, stable entry points,
 core mental model, execution model, small example, real example, inspection and
 debugging guidance, anti-patterns, current limits, and related docs. Fifth, add
 the resulting category folders and landing pages to the crate-facing
@@ -921,7 +921,7 @@ Phase 8 is complete only when:
 - the `feature-doc-writer` skill has been used for the final feature-doc pass
 - the docs live under crate-doc category folders rather than a flat directory
 - each real feature seam has exactly one primary feature document
-- the landing pages and feature docs are linked into the crateâ€™s documentation
+- the landing pages and feature docs are linked into the crate’s documentation
   surface
 - an adopter can learn the performance vocabulary, lowering lane, stronger
   proof lane, and readiness lane from crate docs alone without reading the

@@ -7,8 +7,8 @@ use worth_query_host::facade::primary_graph::{
 };
 use worth_query_host::facade::product::WorthQueryProductBranch;
 
-use super::super::bounded_dimension_model::{
-    programs::DimensionProgramP1,
+use super::super::document_retention_model::{
+    programs::RetentionProgramP1,
     workflow::{continue_on_fork, second_program_workflow_inventory, support_workflow_program},
 };
 use super::instance_migration::{migration_denial, perform_approved_effect, started, supersede};
@@ -102,7 +102,7 @@ fn a_fork_continues_a_waiting_instance_only_as_a_new_admitted_instance() {
         }
     }
     perform_approved_effect(&application, &successor, 88_031);
-    assert_eq!(read_dimension(application.runtime(), fork), 8);
+    assert_eq!(read_retention(application.runtime(), fork), 8);
     assert!(
         matches!(
             approve_instance(
@@ -118,8 +118,8 @@ fn a_fork_continues_a_waiting_instance_only_as_a_new_admitted_instance() {
         "the instance on its own branch still takes its decision",
     );
     assert_eq!(
-        read_dimension(application.runtime(), instance.branch()),
-        SEED_DIMENSION,
+        read_retention(application.runtime(), instance.branch()),
+        SEED_RETENTION,
         "the fork's effect never lands on the source branch",
     );
 }
@@ -156,7 +156,7 @@ fn a_fork_carries_performed_effects_and_never_continues_an_unsettled_approval() 
 
     perform_approved_effect(&application, &instance, 88_113);
     let fork = fork_of(&application, instance.branch());
-    assert_eq!(read_dimension(application.runtime(), fork), 8);
+    assert_eq!(read_retention(application.runtime(), fork), 8);
     match continue_on_fork(
         &application,
         fork,
@@ -207,7 +207,7 @@ fn a_fork_carries_performed_effects_and_never_continues_an_unsettled_approval() 
         "a definition published after the fork is not the fork's to continue under",
     );
 
-    support_workflow_program::<DimensionProgramP1>(&mut application);
+    support_workflow_program::<RetentionProgramP1>(&mut application);
     assert!(
         second_program_workflow_inventory(&application, early)
             .instances()
@@ -234,8 +234,8 @@ fn a_fork_carries_performed_effects_and_never_continues_an_unsettled_approval() 
             .is_some(),
         "the instance still needs its disposition on its own branch",
     );
-    assert_eq!(read_dimension(application.runtime(), instance.branch()), 8);
-    assert_eq!(read_dimension(application.runtime(), fork), 8);
+    assert_eq!(read_retention(application.runtime(), instance.branch()), 8);
+    assert_eq!(read_retention(application.runtime(), fork), 8);
 }
 
 #[test]
@@ -281,7 +281,7 @@ fn a_fork_never_continues_a_siblings_copy() {
 }
 
 pub(super) fn fork_of(
-    application: &BoundedDimensionWorkflowRuntime,
+    application: &DocumentWorkflowRuntime,
     branch: WorthQueryProductBranch,
 ) -> WorthQueryProductBranch {
     application

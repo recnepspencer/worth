@@ -1,14 +1,14 @@
 # Milestone 2 Engineering Spec: Operating Modes And Lifecycle Contracts
 
-> **Status:** Closed via [milestone-2-closeout.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-2-closeout.md)
+> **Status:** Closed via [milestone-2-closeout.md](./milestone-2-closeout.md)
 >
-> **Roadmap parent:** [worth_store_roadmap.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/worth_store_roadmap.md)
+> **Roadmap parent:** `worth_store_roadmap.md`
 >
-> **Vision parent:** [worth_store_vision.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/worth_store_vision.md)
+> **Vision parent:** [worth_store_vision.md](./worth_store_vision.md)
 >
-> **Test requirements:** [test-requirements.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/test-requirements.md)
+> **Test requirements:** [test-requirements.md](./test-requirements.md)
 >
-> **Prerequisite milestone:** [milestone-1.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-1.md)
+> **Prerequisite milestone:** [milestone-1.md](./milestone-1.md)
 >
 > **Primary architectural driver:** freeze runtime ownership, intake, and persistence contracts for durable mode, embedded mode, and absent mode before WAL, snapshots, and checkpoint flows widen the store surface
 
@@ -748,7 +748,7 @@ Exit condition:
 - typed lifecycle and misuse failures
 - exact mode-selection and intake counters
 - Milestone 2 certification through the named suite in
-  [test-requirements.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/test-requirements.md)
+  [test-requirements.md](./test-requirements.md)
 
 ## Must Preserve
 

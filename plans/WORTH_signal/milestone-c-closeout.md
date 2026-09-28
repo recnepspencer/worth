@@ -66,7 +66,7 @@ wrong evidence.
 Policy model and registry:
 
 - [policy.rs](../../crates/worth-signal/src/data/resource/policy.rs)
-- [policy_registry.rs](../../crates/worth-signal/src/data/resource/policy_registry.rs)
+- [policy_registry.rs](../../crates/worth-signal/src/data/resource/policy_registry/mod.rs)
 - [policy/retry.rs](../../crates/worth-signal/src/data/resource/policy/retry.rs)
 - [policy/timeout.rs](../../crates/worth-signal/src/data/resource/policy/timeout.rs)
 - [policy/cancellation.rs](../../crates/worth-signal/src/data/resource/policy/cancellation.rs)
@@ -82,21 +82,21 @@ Policy model and registry:
 Runtime ownership, replay, observation, and retention:
 
 - [resource.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/resource.rs)
-- [runtime_state.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/runtime_state.rs)
+- [runtime_state.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/runtime_state/mod.rs)
 - [resource_observation.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/resource_observation.rs)
-- [revalidation.rs](../../crates/worth-signal/src/data/resource/revalidation.rs)
+- [revalidation.rs](../../crates/worth-signal/src/data/resource/revalidation/mod.rs)
 - [retention.rs](../../crates/worth-signal/src/data/resource/retention.rs)
 - [replay_availability.rs](../../crates/worth-signal/src/data/resource/replay_availability.rs)
-- [summary.rs](../../crates/worth-signal/src/data/resource/summary.rs)
+- [summary.rs](../../crates/worth-signal/src/data/resource/summary/mod.rs)
 - [diagnostics.rs](../../crates/worth-signal/src/data/resource/diagnostics.rs)
 - [observation.rs](../../crates/worth-signal/src/data/resource/observation.rs)
 - [telemetry.rs](../../crates/worth-signal/src/data/telemetry.rs)
 
 Certification and public surface:
 
-- [certification.rs](../../crates/worth-signal/src/data/resource/certification.rs)
+- [certification.rs](../../crates/worth-signal/src/data/resource/certification/mod.rs)
 - [facade.rs](../../crates/worth-signal/src/facade.rs)
-- [resource_runtime.rs](../../crates/worth-signal/src/tests/resource_runtime.rs)
+- [resource_runtime.rs](../../crates/worth-signal/src/tests/resource_runtime/mod.rs)
 - [resource_api.rs](../../crates/worth-signal/src/tests/resource_api.rs)
 - [temporal_runtime.rs](../../crates/worth-signal/src/tests/temporal_runtime.rs)
 - [resource compile-fail fixtures](../../crates/worth-signal/tests/ui)

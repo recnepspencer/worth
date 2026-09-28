@@ -989,12 +989,12 @@ certification work.
 
 ## Companion Documents
 
-- [worth_relational_vision.md](file:///c:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/worth_relational_vision.md)
-- [worth_signals2.md](file:///c:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth_signal/worth_signals2.md)
-- [worth_store_vision.md](file:///c:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-store/worth_store_vision.md)
-- [worth_server_vision.md](file:///c:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-server/worth_server_vision.md)
+- [worth_relational_vision.md](../WORTH-relational/WORTH_relational_vision.md)
+- [worth_signals2.md](../WORTH_signal/WORTH_signals2.md)
+- [worth_store_vision.md](../worth-store/worth_store_vision.md)
+- [worth_server_vision.md](../WORTH-server/WORTH_server_vision.md)
 - [WORTH_cloud_vision.md](file:///c:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/WORTH-cloud/WORTH_cloud_vision.md)
-- [worth_runtime_bridge_vision.md](file:///c:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/engineering/worth_runtime_bridge_vision.md)
+- [worth_runtime_bridge_vision.md](../WORTH-runtime-bridge/WORTH_runtime_bridge_vision.md)
 
 The query layer is where developer experience lives or dies. If queries are
 expressive, typed, composable, and natively promotable to live subscriptions,

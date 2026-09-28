@@ -1,5 +1,7 @@
 # Milestone 9.13.2: Query Authority Crate Decomposition
 
+> **Status:** Completed.
+
 ## Goal
 
 Complete the one-way Query authority graph established by Milestone 9.13.1:

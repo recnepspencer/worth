@@ -1,5 +1,7 @@
 # Milestone 9.20: Correlated Paths And Conflict-Proof Set Execution
 
+> **Status:** Not started.
+
 ## Goal
 
 Install typed heterogeneous path programs and execute large batches through

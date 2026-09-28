@@ -323,6 +323,10 @@ where
     }
 }
 
+/// Receipt from closing this runtime's live delivery.
+///
+/// Later commits no longer enter live delivery. `owner_terminal()` is true once
+/// no live consumers remain.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationLiveDeliveryCloseReceipt {
     remaining_live_consumers: usize,

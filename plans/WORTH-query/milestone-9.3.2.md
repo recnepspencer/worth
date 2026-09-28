@@ -1,7 +1,6 @@
 # Milestone 9.3.2 Engineering Spec: Query Basis Capability Lifecycle
 
-> **Status:** Closed as of 2026-05-13; see
-> [milestone-9.3.2-closeout.md](./milestone-9.3.2-closeout.md)
+> **Status:** Completed. Closeout: [milestone-9.3.2-closeout.md](./milestone-9.3.2-closeout.md).
 >
 > **Roadmap parent:** [worth_query_roadmap.md](./worth_query_roadmap.md)
 >

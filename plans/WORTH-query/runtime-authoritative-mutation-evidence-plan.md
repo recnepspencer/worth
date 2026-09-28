@@ -4,7 +4,7 @@
 > **Vision parent:** [worth_query_vision.md](./worth_query_vision.md)
 > **Bridge parent:** [../worth-runtime-bridge/worth_runtime_bridge_roadmap.md](../worth-runtime-bridge/worth_runtime_bridge_roadmap.md)
 > **Primary predecessors:** [aspect-api-finalization-closeout.md](./aspect-api-finalization-closeout.md), [runtime-api-public-stabilization-closeout.md](./runtime-api-public-stabilization-closeout.md), and [../worth-runtime-bridge/milestone-12.md](../worth-runtime-bridge/milestone-12.md)
-> **Primary downstream pressure:** [../worth/worth-query-runtime-rewrite-plan.md](../worth/worth-query-runtime-rewrite-plan.md)
+> **Primary downstream pressure:** `../worth/worth-query-runtime-rewrite-plan.md`
 > **Primary owners:** `worth-query` and `worth-runtime-bridge`
 > **Purpose:** harden the public mutation and receipt contract together with the bridge carry-forward contract so serious domains can express authoritative writes against new and existing truth without shadow identity glue, semantic target loss, dropped causality/provenance, or domain-local writeback runtimes.
 >

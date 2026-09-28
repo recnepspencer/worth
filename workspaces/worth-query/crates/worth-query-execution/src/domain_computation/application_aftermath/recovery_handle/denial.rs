@@ -40,6 +40,11 @@ pub enum WorthQueryRecoveryHandleDenialKind {
     UnresolvedExternalPosture,
 }
 
+/// Refusal to mint, inspect, or transition a recovery handle.
+///
+/// Read [`Self::kind`] for the exact binding axis or lifecycle check that
+/// failed. A transition denied during admission relinquishes the handle rather
+/// than consuming it; no compensation, reconciliation, or retry took effect.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryRecoveryHandleDenial {
     kind: WorthQueryRecoveryHandleDenialKind,

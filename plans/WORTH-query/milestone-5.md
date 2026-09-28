@@ -1,31 +1,31 @@
 # Milestone 5 Engineering Spec: Live Query Promotion, Query-Shaped Patches, And Convergence Proof
 
-> **Status:** Draft engineering spec
+> **Status:** Completed. Closeout: [milestone-5-closeout.md](./milestone-5-closeout.md).
 >
-> **Roadmap parent:** [worth_query_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/worth_query_roadmap.md)
+> **Roadmap parent:** [worth_query_roadmap.md](./WORTH_query_roadmap.md)
 >
-> **Vision parent:** [worth_query_vision.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/worth_query_vision.md)
+> **Vision parent:** [worth_query_vision.md](./WORTH_query_vision.md)
 >
-> **Prior milestone:** [milestone-4.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/milestone-4.md)
+> **Prior milestone:** [milestone-4.md](./milestone-4.md)
 >
-> **Prior closeout:** [milestone-4-closeout.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/milestone-4-closeout.md)
+> **Prior closeout:** [milestone-4-closeout.md](./milestone-4-closeout.md)
 >
-> **Test requirements:** [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/test-requirements.md)
+> **Test requirements:** [test-requirements.md](./test-requirements.md)
 >
 > **Primary architectural driver:** make live promotion a proof-bearing execution mode over the Milestone 3 and Milestone 4 plan substrate so one-shot query meaning survives invalidation, patch construction, suppression, and replay without degrading into raw CDC or host-local recomputation
 >
 > **Companion docs:**
-> - [MENTALITY.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/MENTALITY.md)
-> - [arch_laws.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/arch_laws.md)
-> - [perf_laws.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/perf_laws.md)
-> - [domain_laws.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/domain_laws.md)
-> - [worth_query_vision.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/worth_query_vision.md)
-> - [worth_query_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/worth_query_roadmap.md)
-> - [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/test-requirements.md)
-> - [milestone-3.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/milestone-3.md)
-> - [milestone-3-closeout.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/milestone-3-closeout.md)
-> - [milestone-4.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/milestone-4.md)
-> - [milestone-4-closeout.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/milestone-4-closeout.md)
+> - [MENTALITY.md](../../docs/coding-guidelines/MENTALITY.md)
+> - [arch_laws.md](../../docs/coding-guidelines/arch_laws.md)
+> - [perf_laws.md](../../docs/coding-guidelines/perf_laws.md)
+> - [domain_laws.md](../../docs/coding-guidelines/domain_structure_laws.md)
+> - [worth_query_vision.md](./WORTH_query_vision.md)
+> - [worth_query_roadmap.md](./WORTH_query_roadmap.md)
+> - [test-requirements.md](./test-requirements.md)
+> - [milestone-3.md](./milestone-3.md)
+> - [milestone-3-closeout.md](./milestone-3-closeout.md)
+> - [milestone-4.md](./milestone-4.md)
+> - [milestone-4-closeout.md](./milestone-4-closeout.md)
 
 ## Goal
 
@@ -1017,7 +1017,7 @@ Minimum rejection rows should include:
 Milestone 5 is complete only when `worth-query` can prove:
 
 - the `Live Promotion Convergence And Suppression Test` in
-  [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/test-requirements.md)
+  [test-requirements.md](./test-requirements.md)
   passes with canonical machine-checkable artifacts
 - the same query expression can execute as one-shot or live without semantic
   drift

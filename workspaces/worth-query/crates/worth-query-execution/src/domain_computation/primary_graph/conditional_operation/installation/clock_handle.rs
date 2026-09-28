@@ -2,6 +2,10 @@
 
 use std::{marker::PhantomData, sync::Arc};
 
+/// Handle to one installed temporal conditional binding.
+///
+/// Returned by `bind_temporal_operation`; pass it to `conditional_clock` to
+/// feed that binding clock readings.
 pub struct WorthQueryConditionalClockHandle<Schema, Node, Clock> {
     pub(super) binding_identity: Arc<str>,
     pub(super) binding_identity_digest: [u8; 32],

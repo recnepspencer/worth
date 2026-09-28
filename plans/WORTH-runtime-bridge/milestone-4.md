@@ -1,25 +1,25 @@
 # Milestone 4 Engineering Spec: Historical And Branch-Aware Evaluation
 
-> **Status:** Planned engineering spec
+> **Status:** Completed. Closeout: [milestone-4-closeout.md](./milestone-4-closeout.md).
 >
-> **Roadmap parent:** [worth_runtime_bridge_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/worth_runtime_bridge_roadmap.md)
+> **Roadmap parent:** [worth_runtime_bridge_roadmap.md](./WORTH_runtime_bridge_roadmap.md)
 >
-> **Vision parent:** [worth_runtime_bridge_vision.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/worth_runtime_bridge_vision.md)
+> **Vision parent:** [worth_runtime_bridge_vision.md](./WORTH_runtime_bridge_vision.md)
 >
-> **Prior milestone:** [milestone-3.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-3.md)
+> **Prior milestone:** [milestone-3.md](./milestone-3.md)
 >
-> **Prior closeout:** [milestone-3-closeout.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-3-closeout.md)
+> **Prior closeout:** [milestone-3-closeout.md](./milestone-3-closeout.md)
 >
 > **Primary architectural driver:** make intentional evaluation against retained historical truth and branch-local truth a first-class bridge protocol without letting latest-state convenience, ambient branch context, or signal-owned execution identity become accidental truth authority
 >
 > **Companion docs:**
-> - [worth_relational_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/worth_relational_roadmap.md)
-> - [worth_signal_vision.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth_signal/worth_signal_vision.md)
-> - [worth_signals2.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth_signal/worth_signals2.md)
-> - [MENTALITY.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/MENTALITY.md)
-> - [architectural_guidelines.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/architectural_guidelines.md)
-> - [domain_standards.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/domain_standards.md)
-> - [performance_guidelines.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/performance_guidelines.md)
+> - [worth_relational_roadmap.md](../WORTH-relational/WORTH_relational_roadmap.md)
+> - [worth_signal_vision.md](../WORTH_signal/WORTH_signal_vision.md)
+> - [worth_signals2.md](../WORTH_signal/WORTH_signals2.md)
+> - [MENTALITY.md](../../docs/coding-guidelines/MENTALITY.md)
+> - [architectural_guidelines.md](../../docs/coding-guidelines/arch_laws.md)
+> - [domain_standards.md](../../docs/coding-guidelines/domain_structure_laws.md)
+> - [performance_guidelines.md](../../docs/coding-guidelines/perf_laws.md)
 
 ## Summary
 
@@ -1057,14 +1057,14 @@ Minimum representative test names:
 
 ### Existing Files Expected To Change
 
-- [mod.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/snapshot/mod.rs)
-- [context.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/snapshot/context.rs)
-- [packet.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/snapshot/packet.rs)
-- [context.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/routing/context.rs)
-- [context.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/delivery/context.rs)
-- [facade.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/facade.rs)
-- [mod.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/harness/mod.rs)
-- [facade.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/facade.rs)
+- [mod.rs](../../crates/worth-runtime-bridge/src/snapshot/mod.rs)
+- [context.rs](../../crates/worth-runtime-bridge/src/snapshot/context.rs)
+- [packet.rs](../../crates/worth-runtime-bridge/src/snapshot/packet.rs)
+- [context.rs](../../crates/worth-runtime-bridge/src/routing/context.rs)
+- [context.rs](../../crates/worth-runtime-bridge/src/delivery/context.rs)
+- [facade.rs](../../crates/worth-runtime-bridge/src/facade.rs)
+- [mod.rs](../../crates/worth-runtime-bridge/src/harness/mod.rs)
+- [facade.rs](../../crates/worth-relational/src/facade.rs)
 
 ## Implementation Phases
 

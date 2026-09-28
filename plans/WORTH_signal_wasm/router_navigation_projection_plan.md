@@ -22,9 +22,9 @@
 > - [worker_runtime_placement_closeout.md](./worker_runtime_placement_closeout.md)
 > - [worker_runtime_product_entrypoint_correction_closeout.md](./worker_runtime_product_entrypoint_correction_closeout.md)
 >
-> **Core vision:** [plans/worth_signal/worth_signal_vision.md](../../../plans/worth_signal/worth_signal_vision.md)
+> **Core vision:** [plans/worth_signal/worth_signal_vision.md](../WORTH_signal/WORTH_signal_vision.md)
 >
-> **Core test requirements:** [plans/worth_signal/test-requirements.md](../../../plans/worth_signal/test-requirements.md)
+> **Core test requirements:** [plans/worth_signal/test-requirements.md](../WORTH_signal/test-requirements.md)
 >
 > **Certification spec:** [router_test_requirements.md](./router_test_requirements.md)
 

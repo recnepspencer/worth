@@ -8,9 +8,9 @@
 >
 > **Callback-computed parent:** [host_callback_computed_spec.md](./host_callback_computed_spec.md)
 >
-> **Core vision:** [plans/worth_signal/worth_signal_vision.md](../../../plans/worth_signal/worth_signal_vision.md)
+> **Core vision:** [plans/worth_signal/worth_signal_vision.md](../WORTH_signal/WORTH_signal_vision.md)
 >
-> **Core test requirements:** [plans/worth_signal/test-requirements.md](../../../plans/worth_signal/test-requirements.md)
+> **Core test requirements:** [plans/worth_signal/test-requirements.md](../WORTH_signal/test-requirements.md)
 >
 > **Primary architectural driver:** make controller-first signal authoring and
 > explicit graph publication first-class product surfaces so app code can
@@ -434,7 +434,7 @@ treat it as a real product object.
 ### 1. Add a dedicated composition/publication responsibility space
 
 Do not keep the composition API as ad hoc helper code inside
-[signals.js](../package-src/product/signals.ts).
+[signals.js](../../crates/worth-signal-wasm/package-src/product/signals.ts).
 
 Expected package-level responsibility split:
 

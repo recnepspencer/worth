@@ -4,7 +4,7 @@
 >
 > **Parent:** [signal_architecture2.md](./signal_architecture2.md)
 >
-> **Goal:** Capture the compile-time safety work that is still relevant after `S1` through `S8`, and express it as an implementation plan that matches the new architecture instead of the old `R16â€“R33` backlog shape.
+> **Goal:** Capture the compile-time safety work that is still relevant after `S1` through `S8`, and express it as an implementation plan that matches the new architecture instead of the old `R16–R33` backlog shape.
 
 ---
 
@@ -12,10 +12,10 @@
 
 1. [What Changed Since V1](#what-changed-since-v1)
 2. [What Is Already Landed or Absorbed](#what-is-already-landed-or-absorbed)
-3. [Phase C1 â€” Branded Handle Safety](#phase-c1--branded-handle-safety)
-4. [Phase C2 â€” Deterministic and Topology Guardrails](#phase-c2--deterministic-and-topology-guardrails)
-5. [Phase C3 â€” Branch and Timeline Safety](#phase-c3--branch-and-timeline-safety)
-6. [Phase C4 â€” Specialized Future Safety Layers](#phase-c4--specialized-future-safety-layers)
+3. [Phase C1 — Branded Handle Safety](#phase-c1--branded-handle-safety)
+4. [Phase C2 — Deterministic and Topology Guardrails](#phase-c2--deterministic-and-topology-guardrails)
+5. [Phase C3 — Branch and Timeline Safety](#phase-c3--branch-and-timeline-safety)
+6. [Phase C4 — Specialized Future Safety Layers](#phase-c4--specialized-future-safety-layers)
 7. [Items We Are Explicitly Not Carrying Forward](#items-we-are-explicitly-not-carrying-forward)
 8. [Sequencing](#sequencing)
 
@@ -44,7 +44,7 @@ The current architecture already changed the safety baseline:
 - `S6` already absorbed partition-aware versions, observation purity, rollback hardening, typed errors, and builder completeness
 - `S8` is moving evaluation onto `EvaluationContext<'g, Ctx>`
 
-So this document should no longer be read as â€œimplement the old `R16â€“R33` literally.â€ It should be read as â€œwhich compile-time safety ideas are still valuable under the new architecture, and what would they look like now?â€
+So this document should no longer be read as “implement the old `R16–R33` literally.” It should be read as “which compile-time safety ideas are still valuable under the new architecture, and what would they look like now?”
 
 ---
 
@@ -54,10 +54,10 @@ These V1 items are no longer standalone future work:
 
 | V1 Item | Current Status | Where It Landed |
 | --- | --- | --- |
-| `R17` `ScopedVersion` witness | Mostly absorbed | `S6.1` partition-aware version tracking in [version.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/aspect/version.rs) and [entry.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/node/entry.rs) |
-| `R18` private state setters | Done | `transition_clean/dirty/maybe_stale` in [entry.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/node/entry.rs) |
+| `R17` `ScopedVersion` witness | Mostly absorbed | `S6.1` partition-aware version tracking in [version.rs](../../crates/worth-signal/src/data/aspect/version.rs) and [entry.rs](../../crates/worth-signal/src/data/node/entry.rs) |
+| `R18` private state setters | Done | `transition_clean/dirty/maybe_stale` in [entry.rs](../../crates/worth-signal/src/data/node/entry.rs) |
 | `R19` phase restriction | Redesigned and mostly absorbed | `S6.2` observer borrows plus subsystem borrow patterns |
-| `R20` observation purity | Done through redesign | [observer.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/graph/runtime/observer.rs) and runtime observer surfaces |
+| `R20` observation purity | Done through redesign | [observer.rs](../../crates/worth-signal/src/data/graph/runtime/observer.rs) and runtime observer surfaces |
 | `R21` single source of truth | Redesigned and mostly absorbed | `EdgeTopology` ownership and `S6.3` consistency assertions |
 | `R22` transactional mutation | Redesigned and mostly absorbed | `S3` effect pipeline plus `S6.4` rollback hardening |
 
@@ -65,11 +65,11 @@ These do not need a second compile-time roadmap. The remaining compile-time work
 
 ---
 
-## Phase C1 â€” Branded Handle Safety
+## Phase C1 — Branded Handle Safety
 
 This is the highest-value remaining compile-time phase.
 
-### C1.1 â€” Branded `NodeRef<'g>`
+### C1.1 — Branded `NodeRef<'g>`
 
 **V1 source:** `R16`
 
@@ -117,10 +117,10 @@ Internal storage keeps `RawNodeId`.
 
 ### Files Most Likely Touched
 
-- [node/mod.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/node/mod.rs)
-- [observer.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/graph/runtime/observer.rs)
-- [graph.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/graph/runtime/graph.rs)
-- [context.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/context.rs)
+- [node/mod.rs](../../crates/worth-signal/src/data/node/mod.rs)
+- [observer.rs](../../crates/worth-signal/src/data/graph/runtime/observer.rs)
+- [graph.rs](../../crates/worth-signal/src/data/graph/runtime/graph.rs)
+- [context.rs](../../crates/worth-signal/src/logic/context.rs)
 - explain / diagnostics surfaces
 - public facade exports
 
@@ -130,7 +130,7 @@ Internal storage keeps `RawNodeId`.
 - using an old node handle across graph mutation becomes a compile error in normal observation/evaluation paths
 - internal topology storage remains raw and efficient
 
-### C1.2 â€” Opaque `ScopedVersion`
+### C1.2 — Opaque `ScopedVersion`
 
 **V1 source:** `R17`
 
@@ -164,9 +164,9 @@ Only `NodeEntry::scoped_version(...)` constructs it.
 
 ---
 
-## Phase C2 â€” Deterministic and Topology Guardrails
+## Phase C2 — Deterministic and Topology Guardrails
 
-### C2.1 â€” `DeterministicMap<K, V>`
+### C2.1 — `DeterministicMap<K, V>`
 
 **V1 source:** `R24`
 
@@ -204,7 +204,7 @@ Only expose sorted iteration.
 - ordering-sensitive surfaces cannot accidentally use raw hash iteration
 - no performance-hostile global replacement of all maps
 
-### C2.2 â€” Discovery/Wiring Decoupling Hardening
+### C2.2 — Discovery/Wiring Decoupling Hardening
 
 **V1 source:** `R29`
 
@@ -228,7 +228,7 @@ Keep discovered dependencies as plain data until `EdgeTopology` applies them.
 - wiring remains a topology/apply concern
 - no mid-evaluation topology mutation path reappears
 
-### C2.3 â€” Plan Guard Newtypes
+### C2.3 — Plan Guard Newtypes
 
 **V1 source:** `R27`, `R33`
 
@@ -253,15 +253,15 @@ pub struct CoalescedPlan { ... }
 
 ### Acceptance Criteria
 
-- no ambiguous middle state where optimization is â€œoptional by conventionâ€
+- no ambiguous middle state where optimization is “optional by convention”
 
 ---
 
-## Phase C3 â€” Branch and Timeline Safety
+## Phase C3 — Branch and Timeline Safety
 
 These items are still relevant, but only if branch/timeline semantics become a serious product surface.
 
-### C3.1 â€” Generative Branch Isolation
+### C3.1 — Generative Branch Isolation
 
 **V1 source:** `R25`
 
@@ -279,7 +279,7 @@ If branch-local config/state becomes richer, use a generative brand per branch s
 2. When branch-local borrowed state becomes real, brand it with a branch scope lifetime.
 3. Do not introduce this early if branches remain mostly serialized snapshots.
 
-### C3.2 â€” Branded `Version<'timeline>`
+### C3.2 — Branded `Version<'timeline>`
 
 **V1 source:** `R26`
 
@@ -298,35 +298,35 @@ If timeline values become explicit in APIs, brand them by timeline scope.
 
 ---
 
-## Phase C4 â€” Specialized Future Safety Layers
+## Phase C4 — Specialized Future Safety Layers
 
 These are still theoretically relevant, but they should stay deferred until the matching feature exists.
 
-### C4.1 â€” Affine Topology Tokens
+### C4.1 — Affine Topology Tokens
 
 **V1 source:** `R23`
 
 Still theoretically valid, but low priority now that the execution pipeline is effect-driven. Revisit only if the executor needs stronger stage-proof semantics than ordinary scheduling and tests provide.
 
-### C4.2 â€” Linear Computational Fuel
+### C4.2 — Linear Computational Fuel
 
 **V1 source:** `R30`
 
 Relevant only if we add real fixed-point or feedback-loop evaluation where non-convergence becomes a product concern.
 
-### C4.3 â€” Branded `FrameValue<'epoch>`
+### C4.3 — Branded `FrameValue<'epoch>`
 
 **V1 source:** `R31`
 
 Relevant only if frame/tick semantics become first-class.
 
-### C4.4 â€” Strategy Marker Traits
+### C4.4 — Strategy Marker Traits
 
 **V1 source:** `R32`
 
 Lower value now that strategy is derived from graph state. Revisit only if strategy categories become an important public typed boundary.
 
-### C4.5 â€” Quotient Types
+### C4.5 — Quotient Types
 
 **V1 source:** `R28`
 
@@ -345,7 +345,7 @@ These old items should not be treated as active roadmap work anymore:
 - `R32` as a near-term engine priority
   - strategy is currently state-derived; marker-typed strategy surfaces are no longer the obvious next move
 
-If these come back, they should come back in the new architectureâ€™s language, not as literal restoration of the V1 proposal.
+If these come back, they should come back in the new architecture’s language, not as literal restoration of the V1 proposal.
 
 ---
 

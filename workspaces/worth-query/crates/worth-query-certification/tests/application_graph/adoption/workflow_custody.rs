@@ -15,15 +15,15 @@ use worth_query_host::facade::primary_graph::{
     WorthQueryWorkflowInstanceDisposition as InstanceDisposition,
 };
 
-use crate::bounded_dimension_model::{
+use crate::document_retention_model::{
     host::publish_workflow_on_first_program,
     operator_identity::{authenticate_operator, request_scope},
-    presented_request::set_dimension,
+    presented_request::set_retention,
     programs::RemovedAssessmentSupplierProgram,
-    settled_verdict::{settle, DimensionVerdict},
+    settled_verdict::{settle, RetentionVerdict},
     workflow::{
         advance_instance, propose_instance, propose_instance_on_branch, publish_definition,
-        reviewed_geometry_definition, start_instance,
+        reviewed_document_definition, start_instance,
     },
 };
 
@@ -40,7 +40,7 @@ fn supplier_removal_requires_owner_disposition_for_a_waiting_instance() {
         .expect("P0 sibling publishes before the instance starts");
     let definition = match publish_definition(
         &application,
-        reviewed_geometry_definition("completed"),
+        reviewed_document_definition("completed"),
         WorkflowDefinitionExpectedPredecessor::Absent,
         83_000,
     )
@@ -179,23 +179,23 @@ fn supplier_removal_requires_owner_disposition_for_a_waiting_instance() {
         WorthQueryWorkflowProposalPreparationDenialKind::InstanceBranchMismatch,
     );
     assert_eq!(
-        settle(set_dimension(
+        settle(set_retention(
             application.program_runtime(),
             main,
             8,
             83_004
         )),
-        DimensionVerdict::Performed(8),
+        RetentionVerdict::Performed(8),
         "denied adoption leaves P0 active on main",
     );
     assert_eq!(
-        settle(set_dimension(
+        settle(set_retention(
             application.program_runtime(),
             sibling,
             8,
             83_005
         )),
-        DimensionVerdict::Performed(8),
+        RetentionVerdict::Performed(8),
         "the P0 sibling remains independently callable",
     );
 }

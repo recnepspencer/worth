@@ -74,7 +74,7 @@ This audit covers the policy families named in the Phase 5 plan:
 ### `SignalRuntime::build_for::<Ctx>(graph)`
 
 - Owner module:
-  [runtime_state/mod.rs](C:/forge_workspace/worktree_3/crates/worth-signal/src/logic/transaction/runtime/state/runtime_state/mod.rs)
+  [runtime_state/mod.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/runtime_state/mod.rs)
 - Current public path:
   `worth_signal::facade::SignalRuntime::build_for`
 - What it really controls:
@@ -87,7 +87,7 @@ This audit covers the policy families named in the Phase 5 plan:
 ### `SignalRuntime::{development_for, operational_for, web_development_for, fintech_for, forensic_for}`
 
 - Owner module:
-  [runtime_state/construction/context_presets.rs](C:/forge_workspace/worktree_3/crates/worth-signal/src/logic/transaction/runtime/state/runtime_state/construction/context_presets.rs)
+  [runtime_state/construction/context_presets.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/runtime_state/construction/context_presets.rs)
 - Current public path:
   `worth_signal::facade::SignalRuntime::*_for`
 - What it really controls:
@@ -100,7 +100,7 @@ This audit covers the policy families named in the Phase 5 plan:
 ### `SignalRuntimeBuilder::runtime_policy(...)`
 
 - Owner module:
-  [builder.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/state/builder.rs)
+  [builder.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/builder.rs)
 - Current public path:
   `worth_signal::facade::runtime::SignalRuntimeBuilder::runtime_policy`
 - What it really controls:
@@ -113,7 +113,7 @@ This audit covers the policy families named in the Phase 5 plan:
 ### `SignalRuntime::set_runtime_policy(...)`
 
 - Owner module:
-  [observation.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/state/observation.rs)
+  [observation.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/observation.rs)
 - Current public path:
   `worth_signal::facade::SignalRuntime::set_runtime_policy`
 - What it really controls:
@@ -126,7 +126,7 @@ This audit covers the policy families named in the Phase 5 plan:
 ### `SignalRuntime::try_set_runtime_policy(...)`
 
 - Owner module:
-  [observation.rs](C:/forge_workspace/worktree_3/crates/worth-signal/src/logic/transaction/runtime/state/observation.rs)
+  [observation.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/observation.rs)
 - Current public path:
   `worth_signal::facade::SignalRuntime::try_set_runtime_policy`
 - What it really controls:
@@ -139,7 +139,7 @@ This audit covers the policy families named in the Phase 5 plan:
 ### `SignalGraph::set_runtime_policy(...)`
 
 - Owner module:
-  [runtime.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/graph/diagnostics_access/runtime.rs)
+  [runtime.rs](../../crates/worth-signal/src/data/graph/diagnostics_access/runtime.rs)
 - Current public path:
   crate-internal support; external tooling must use the canonical
   `SignalRuntime` builder or runtime mutation front door
@@ -153,7 +153,7 @@ This audit covers the policy families named in the Phase 5 plan:
 ### `SignalRuntimePolicy`
 
 - Owner module:
-  [definition.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/runtime_policy/definition.rs)
+  [definition.rs](../../crates/worth-signal/src/runtime_policy/definition.rs)
 - Current public path:
   `worth_signal::facade::SignalRuntimePolicy`
 - What it really controls:
@@ -171,7 +171,7 @@ This audit covers the policy families named in the Phase 5 plan:
 ### `DiagnosticsTier`
 
 - Owner module:
-  [profile.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/diagnostics/policy/profile.rs)
+  [profile.rs](../../crates/worth-signal/src/diagnostics/policy/profile.rs)
 - Current public path:
   `worth_signal::facade::DiagnosticsTier`
 - What it really controls:
@@ -184,7 +184,7 @@ This audit covers the policy families named in the Phase 5 plan:
 ### Removed: `SignalGraph::set_diagnostics_profile(...)`
 
 - Owner module:
-  [runtime.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/graph/diagnostics_access/runtime.rs)
+  [runtime.rs](../../crates/worth-signal/src/data/graph/diagnostics_access/runtime.rs)
 - Current public path:
   removed in M10 Phase 8
 - What it really controls:
@@ -197,7 +197,7 @@ This audit covers the policy families named in the Phase 5 plan:
 ### Removed: `SignalRuntime::set_diagnostics_profile(...)`
 
 - Owner module:
-  [observation.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/state/observation.rs)
+  [observation.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/observation.rs)
 - Current public path:
   removed in M10 Phase 8
 - What it really controls:
@@ -210,7 +210,7 @@ This audit covers the policy families named in the Phase 5 plan:
 ### `SignalRuntimePolicy::{operational, development, forensic, web_development, fintech, kernel, game_engine}`
 
 - Owner module:
-  [presets.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/runtime_policy/presets.rs)
+  [presets.rs](../../crates/worth-signal/src/runtime_policy/presets.rs)
 - Current public path:
   `worth_signal::facade::SignalRuntimePolicy::*`
 - What it really controls:
@@ -223,7 +223,7 @@ This audit covers the policy families named in the Phase 5 plan:
 ### `SignalRuntimePolicy::{with_explanation_retention, with_provenance_retention, with_replay_detail, with_semantic_retention, with_history_limit, with_detail_limit, with_history_details, with_snapshot_restore_lineage_mode}`
 
 - Owner module:
-  [presets.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/runtime_policy/presets.rs)
+  [presets.rs](../../crates/worth-signal/src/runtime_policy/presets.rs)
 - Current public path:
   `worth_signal::facade::SignalRuntimePolicy::*`
 - What it really controls:
@@ -236,7 +236,7 @@ This audit covers the policy families named in the Phase 5 plan:
 ### `RetentionBudget` and `ReconstructionBudget`
 
 - Owner module:
-  [definition.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/diagnostics/policy/definition.rs)
+  [definition.rs](../../crates/worth-signal/src/diagnostics/policy/definition.rs)
 - Current public path:
   `worth_signal::facade::RetentionBudget`,
   `worth_signal::facade::ReconstructionBudget`
@@ -254,7 +254,7 @@ This audit covers the policy families named in the Phase 5 plan:
 ### `ParallelAdmissionPolicy`
 
 - Owner module:
-  [parallel.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/runtime_policy/parallel.rs)
+  [parallel.rs](../../crates/worth-signal/src/runtime_policy/parallel.rs)
 - Current public path:
   `worth_signal::facade::ParallelAdmissionPolicy`
 - What it really controls:
@@ -268,7 +268,7 @@ This audit covers the policy families named in the Phase 5 plan:
 ### `SignalRuntimePolicy::with_parallel_admission(...)`
 
 - Owner module:
-  [presets.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/runtime_policy/presets.rs)
+  [presets.rs](../../crates/worth-signal/src/runtime_policy/presets.rs)
 - Current public path:
   `worth_signal::facade::SignalRuntimePolicy::with_parallel_admission`
 - What it really controls:
@@ -281,7 +281,7 @@ This audit covers the policy families named in the Phase 5 plan:
 ### `StageExecutor`
 
 - Owner module:
-  [facade.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/facade.rs)
+  [facade.rs](../../crates/worth-signal/src/facade.rs)
 - Current public path:
   `worth_signal::facade::advanced::StageExecutor`
 - What it really controls:
@@ -294,7 +294,7 @@ This audit covers the policy families named in the Phase 5 plan:
 ### `ParallelExecutionPolicy`
 
 - Owner module:
-  [facade.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/facade.rs)
+  [facade.rs](../../crates/worth-signal/src/facade.rs)
 - Current public path:
   `worth_signal::facade::advanced::ParallelExecutionPolicy`
 - What it really controls:
@@ -311,7 +311,7 @@ This audit covers the policy families named in the Phase 5 plan:
 ### `VersionComparatorPolicy`
 
 - Owner module:
-  [comparator.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/comparator.rs)
+  [comparator.rs](../../crates/worth-signal/src/data/comparator.rs)
 - Current public path:
   `worth_signal::facade::advanced::VersionComparatorPolicy`
 - What it really controls:
@@ -324,7 +324,7 @@ This audit covers the policy families named in the Phase 5 plan:
 ### `SignalRuntimeBuilder::fallback_comparator(...)`
 
 - Owner module:
-  [builder.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/state/builder.rs)
+  [builder.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/builder.rs)
 - Current public path:
   `worth_signal::facade::runtime::SignalRuntimeBuilder::fallback_comparator`
 - What it really controls:
@@ -337,7 +337,7 @@ This audit covers the policy families named in the Phase 5 plan:
 ### `SignalRuntime::set_fallback_comparator(...)`
 
 - Owner module:
-  [observation.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/state/observation.rs)
+  [observation.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/observation.rs)
 - Current public path:
   `worth_signal::facade::SignalRuntime::set_fallback_comparator`
 - What it really controls:
@@ -350,7 +350,7 @@ This audit covers the policy families named in the Phase 5 plan:
 ### `TierPolicy::with_default_comparator(...)`
 
 - Owner module:
-  [tier.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/tier.rs)
+  [tier.rs](../../crates/worth-signal/src/data/tier.rs)
 - Current public path:
   `worth_signal::facade::runtime::TierPolicy::with_default_comparator`
 - What it really controls:
@@ -363,7 +363,7 @@ This audit covers the policy families named in the Phase 5 plan:
 ### `Recipe::with_comparator(...)`
 
 - Owner module:
-  [computation.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/computation.rs)
+  [computation.rs](../../crates/worth-signal/src/logic/transaction/runtime/computation.rs)
 - Current public path:
   `worth_signal::facade::runtime::Recipe::with_comparator`
 - What it really controls:
@@ -376,7 +376,7 @@ This audit covers the policy families named in the Phase 5 plan:
 ### `NodeContract::with_comparator_override(...)`
 
 - Owner module:
-  [contract.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/node/contract.rs)
+  [contract.rs](../../crates/worth-signal/src/data/node/contract.rs)
 - Current public path:
   specialist node contract API
 - What it really controls:
@@ -393,7 +393,7 @@ This audit covers the policy families named in the Phase 5 plan:
 ### `EvaluationCondition`
 
 - Owner module:
-  [facade.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/facade.rs)
+  [facade.rs](../../crates/worth-signal/src/facade.rs)
 - Current public path:
   `worth_signal::facade::EvaluationCondition`
 - What it really controls:
@@ -406,7 +406,7 @@ This audit covers the policy families named in the Phase 5 plan:
 ### `ConditionResolver` and related advanced condition types
 
 - Owner module:
-  [facade.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/facade.rs)
+  [facade.rs](../../crates/worth-signal/src/facade.rs)
 - Current public path:
   `worth_signal::facade::advanced::*`
 - What they really control:
@@ -419,7 +419,7 @@ This audit covers the policy families named in the Phase 5 plan:
 ### `DependencyMode`, `DirtyPropagation`, `EvaluationTrigger`
 
 - Owner module:
-  [tier.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/tier.rs)
+  [tier.rs](../../crates/worth-signal/src/data/tier.rs)
 - Current public path:
   `worth_signal::facade::runtime::*`
 - What they really control:
@@ -436,7 +436,7 @@ This audit covers the policy families named in the Phase 5 plan:
 ### `TierPolicy`
 
 - Owner module:
-  [tier.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/tier.rs)
+  [tier.rs](../../crates/worth-signal/src/data/tier.rs)
 - Current public path:
   `worth_signal::facade::runtime::TierPolicy`
 - What it really controls:
@@ -449,7 +449,7 @@ This audit covers the policy families named in the Phase 5 plan:
 ### `SignalRuntimeBuilder::tier_policy(...)`
 
 - Owner module:
-  [builder.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/state/builder.rs)
+  [builder.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/builder.rs)
 - Current public path:
   `worth_signal::facade::runtime::SignalRuntimeBuilder::tier_policy`
 - What it really controls:
@@ -462,7 +462,7 @@ This audit covers the policy families named in the Phase 5 plan:
 ### `SignalRuntime::set_tier_policy(...)`
 
 - Owner module:
-  [observation.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/state/observation.rs)
+  [observation.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/observation.rs)
 - Current public path:
   `worth_signal::facade::SignalRuntime::set_tier_policy`
 - What it really controls:
@@ -475,7 +475,7 @@ This audit covers the policy families named in the Phase 5 plan:
 ### `SignalRuntime::set_node_tier(...)`
 
 - Owner module:
-  [observation.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/state/observation.rs)
+  [observation.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/observation.rs)
 - Current public path:
   `worth_signal::facade::SignalRuntime::set_node_tier`
 - What it really controls:
@@ -488,7 +488,7 @@ This audit covers the policy families named in the Phase 5 plan:
 ### `CheckpointBarrier`
 
 - Owner module:
-  [checkpoint.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/checkpoint.rs)
+  [checkpoint.rs](../../crates/worth-signal/src/data/checkpoint.rs)
 - Current public path:
   `worth_signal::facade::runtime::CheckpointBarrier`
 - What it really controls:
@@ -501,7 +501,7 @@ This audit covers the policy families named in the Phase 5 plan:
 ### `CheckpointPolicy`
 
 - Owner module:
-  [checkpoint_policy.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/checkpoint_policy.rs)
+  [checkpoint_policy.rs](../../crates/worth-signal/src/data/checkpoint_policy.rs)
 - Current public path:
   `worth_signal::facade::runtime::CheckpointPolicy`
 - What it really controls:
@@ -514,7 +514,7 @@ This audit covers the policy families named in the Phase 5 plan:
 ### `SignalRuntimeBuilder::{checkpoint_barrier, checkpoint_policy}`
 
 - Owner module:
-  [builder.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/state/builder.rs)
+  [builder.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/builder.rs)
 - Current public path:
   `worth_signal::facade::runtime::SignalRuntimeBuilder::*`
 - What they really control:
@@ -531,7 +531,7 @@ This audit covers the policy families named in the Phase 5 plan:
 ### `RuntimeHistory`
 
 - Owner module:
-  [guided.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/state/guided.rs)
+  [guided.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/guided.rs)
 - Current public path:
   `worth_signal::facade::runtime::RuntimeHistory`
 - What it really controls:
@@ -544,8 +544,8 @@ This audit covers the policy families named in the Phase 5 plan:
 ### `SnapshotRestoreIntent` and related snapshot restore types
 
 - Owner modules:
-  [state/mod.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/state/mod.rs),
-  [facade.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/facade.rs)
+  [state/mod.rs](../../crates/worth-signal/src/state/mod.rs),
+  [facade.rs](../../crates/worth-signal/src/facade.rs)
 - Current public path:
   `worth_signal::facade::history::*`
 - What they really control:
@@ -559,7 +559,7 @@ This audit covers the policy families named in the Phase 5 plan:
 ### `SnapshotRestoreLineageMode`
 
 - Owner module:
-  [mod.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/diagnostics/policy/mod.rs)
+  [mod.rs](../../crates/worth-signal/src/diagnostics/policy/mod.rs)
 - Current public path:
   `worth_signal::facade::SnapshotRestoreLineageMode`
 - What it really controls:
@@ -573,7 +573,7 @@ This audit covers the policy families named in the Phase 5 plan:
 ### `RuntimeMerge`
 
 - Owner module:
-  [guided.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/state/guided.rs)
+  [guided.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/guided.rs)
 - Current public path:
   `worth_signal::facade::runtime::RuntimeMerge`
 - What it really controls:
@@ -586,7 +586,7 @@ This audit covers the policy families named in the Phase 5 plan:
 ### `BranchMergeReconciliationPolicy` and raw merge policy types
 
 - Owner module:
-  [policy.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/state/merge/policy.rs)
+  [policy.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/merge/policy.rs)
 - Current public path:
   `worth_signal::facade::integration::*`
 - What they really control:

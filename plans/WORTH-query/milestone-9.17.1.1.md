@@ -1,10 +1,6 @@
 # Milestone 9.17.1.1: Owner-Port Concurrency And Lifecycle Closure
 
-> **Status:** Closed on 2026-08-29. Every phase is implemented, independently
-> reviewed, and verified on the integrated tree. Its corrected Relational,
-> retention, and lifecycle surface is frozen in the handoff below and,
-> normatively, in `crates/worth-relational/OWNER_COMPONENT_PORT.md` and
-> `crates/worth-signal/BRANCH_BASES.md`.
+> **Status:** Completed.
 >
 > **Historical posture:** Milestone 9.17.1 remains closed and historical. This
 > corrective sub-milestone repairs the current owner-component contract exposed

@@ -78,7 +78,7 @@ Rules for every remaining query item:
 - any knowingly incomplete first ship must be marked as explicit debt rather
   than implied completeness
 - named certification suites in
-  [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/test-requirements.md)
+  [test-requirements.md](./test-requirements.md)
   are the authoritative acceptance source for milestone closure
 
 ## Operating Modes
@@ -268,7 +268,7 @@ cross-feature proof gates before final certification:
   reuse debts are closed as production-ready Query productization lanes before
   store-backed and durable milestones build on top of them
 - `Milestone 9.6` must prove evidence identity, stop-class matching, and
-  session label identity are runtime-owned structural contracts â€” digests
+  session label identity are runtime-owned structural contracts — digests
   survive formatting drift, every covered stop class is matchable without
   string operations, and session labels carry canonical identity with typed
   collision posture
@@ -548,7 +548,7 @@ This milestone is not blocked on `worth-store`.
 This milestone is complete only when `worth-query` can prove:
 
 - the `Canonical Query Normalization Parity Test` in
-  [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/test-requirements.md)
+  [test-requirements.md](./test-requirements.md)
   passes with canonical machine-checkable artifacts
 
 - equivalent query builder paths normalize into the same canonical query
@@ -640,7 +640,7 @@ This milestone is not blocked on `worth-store`.
 This milestone is complete only when `worth-query` can prove:
 
 - the `Schema-Aware Rejection And Projection Legality Test` in
-  [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/test-requirements.md)
+  [test-requirements.md](./test-requirements.md)
   passes with canonical machine-checkable artifacts
 
 - schema-invalid queries fail during construction with typed diagnostics
@@ -749,7 +749,7 @@ builds on it. Store-backed plan variants can advance in parallel as
 This milestone is complete only when `worth-query` can prove:
 
 - the `Planner / Executor / Binding Parity Test` in
-  [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/test-requirements.md)
+  [test-requirements.md](./test-requirements.md)
   passes with canonical machine-checkable artifacts
 
 - identical query/context input lowers to identical execution plans
@@ -858,7 +858,7 @@ artifacts.
 This milestone is complete only when `worth-query` can prove:
 
 - the `Collection, Cursor, Rollup, And CDC Shape Parity Test` in
-  [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/test-requirements.md)
+  [test-requirements.md](./test-requirements.md)
   passes with canonical machine-checkable artifacts
 
 - ordered collection queries return stable cursor-advancable pages for one
@@ -957,7 +957,7 @@ planning and Milestone 4 collection semantics are stable.
 This milestone is complete only when `worth-query` can prove:
 
 - the `Live Promotion Convergence And Suppression Test` in
-  [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/test-requirements.md)
+  [test-requirements.md](./test-requirements.md)
   passes with canonical machine-checkable artifacts
 
 - the same query expression can execute as one-shot or live without semantic
@@ -1577,7 +1577,7 @@ historical-contract hardening from Milestones 5.2 and 5.4.
 This milestone is complete only when `worth-query` can prove:
 
 - the `Historical / Diff / Basis Parity Test` in
-  [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/test-requirements.md)
+  [test-requirements.md](./test-requirements.md)
   passes with canonical machine-checkable artifacts
 
 - the same declared query shape can run against current and historical truth
@@ -1669,7 +1669,7 @@ explicit correspondence vocabulary.
 This milestone is complete only when `worth-query` can prove:
 
 - the `Lineage And Correspondence Query Parity Test` in
-  [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/test-requirements.md)
+  [test-requirements.md](./test-requirements.md)
   passes with canonical machine-checkable artifacts
 
 - lineage traversal yields typed, explainable results across admitted identity
@@ -1786,7 +1786,7 @@ basis, and platform-facade behavior.
 This milestone is complete only when `worth-query` can prove:
 
 - the `Scope / Template / View-Shape Semantic Parity Test` in
-  [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/test-requirements.md)
+  [test-requirements.md](./test-requirements.md)
   passes with canonical machine-checkable artifacts
 
 - scopes and templates compose into the same canonical query artifacts as
@@ -1805,7 +1805,7 @@ Store-backed execution parity, durable policy cursors, durable artifact reload,
 durable delivery metadata reload, restart-stable subscription metadata, and
 durable tenant/query artifact portability remain intentionally deferred to
 WORTH Store and later milestones. See
-[milestone-9-closeout.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/milestone-9-closeout.md).
+[milestone-9-closeout.md](./milestone-9-closeout.md).
 
 ### Goal
 
@@ -1925,7 +1925,7 @@ workflow/facade surfaces are stable enough to prove parity across them.
 This milestone is complete only when `worth-query` can prove:
 
 - the `Policy, Tenant Schema, And Relationship-Proof Boundary Test` in
-  [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/test-requirements.md)
+  [test-requirements.md](./test-requirements.md)
   passes with canonical machine-checkable artifacts
 
 - masked aspects never appear in the execution plan or result
@@ -2050,7 +2050,7 @@ subscription equivalence and denial semantics.
 This milestone is complete only when `worth-query` can prove:
 
 - the `Query Subscription Declaration And Lowering Parity Test` in
-  [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/test-requirements.md)
+  [test-requirements.md](./test-requirements.md)
   passes with canonical machine-checkable artifacts
 
 - equivalent live query inputs lower to the same canonical
@@ -2167,7 +2167,7 @@ admitted subscription families.
 This milestone is complete only when `worth-query` can prove:
 
 - the `Subscription Lifecycle Sharing And Preview Parity Test` in
-  [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/test-requirements.md)
+  [test-requirements.md](./test-requirements.md)
   passes with canonical machine-checkable artifacts
 
 - active subscription delivery remains query-shaped and parity-safe with
@@ -2278,7 +2278,7 @@ hostile certification.
 This milestone is complete only when `worth-query` can prove:
 
 - the `Query Subscription Bridge Parity And Diagnostic Sufficiency Test` in
-  [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/test-requirements.md)
+  [test-requirements.md](./test-requirements.md)
   passes with canonical machine-checkable artifacts
 
 - every admitted automatic subscription family can be explained through
@@ -3114,7 +3114,7 @@ semantics while also closing durable backend parity.
 This milestone is complete only when `worth-query` can prove:
 
 - the merged temporal/async certification suites in
-  [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/test-requirements.md)
+  [test-requirements.md](./test-requirements.md)
   pass with canonical machine-checkable artifacts
 - temporal query basis, time-only delivery, async/resource result-state, and
   mixed truth/time/async ordering all remain Query-shaped and replay-equivalent
@@ -3231,7 +3231,7 @@ This milestone is complete only when `worth-query` can prove:
 
 > **Status:** Closed for non-spatial identity-boundary scope on `query-repair`;
 > `worth-spatial public_api_contract` remains a named postponed external gate.
-> Non-spatial Phases 8â€“12 are reconciled in
+> Non-spatial Phases 8–12 are reconciled in
 > [milestone-9.6-attack-plan.md](./milestone-9.6-attack-plan.md), and Milestone
 > 9.7 is unblocked for worth-query identity-boundary sequencing.
 
@@ -3244,8 +3244,8 @@ free-form session labels against a runtime built on canonical identity.
 
 ### Adversarial Constraint
 
-For the same runtime fact â€” admission denial, basis admission, receipt,
-support row, session identity â€” Query must produce the same canonical
+For the same runtime fact — admission denial, basis admission, receipt,
+support row, session identity — Query must produce the same canonical
 evidence identity and the same typed stop-class meaning under `Debug` derive
 reordering, field renaming, message rewording, separator injection inside
 field values, and session label collision pressure.
@@ -3335,7 +3335,7 @@ beside the workspace.
 N concurrent shared read contexts under sustained commit pressure, preview
 and branch churn, and live maintenance load must produce byte-identical
 results and receipts for the same canonical declaration and basis capability
-as fully serialized execution â€” while journal replay reconstructs identical
+as fully serialized execution — while journal replay reconstructs identical
 truth, receipts, and published derived artifacts, with zero locks on the
 committed-read hot path and zero derived evaluations triggered by readers.
 
@@ -3344,14 +3344,14 @@ committed-read hot path and zero derived evaluations triggered by readers.
 Every workspace operation takes `&mut self`, so the borrow checker enforces
 one operation in flight per workspace regardless of MVCC immutability
 underneath. Server-grade consumers would otherwise improvise a global lock or
-branch-per-connection â€” both prohibited folklore. Store-backed shapes in
+branch-per-connection — both prohibited folklore. Store-backed shapes in
 Store Milestone 1 must inherit lane-correct contracts rather than retrofit
 `Send` boundaries later.
 
 ### Must Ship
 
 - backend adapter contracts decomposed by authority lane with `Send + Sync`
-  read lanes (Phases 1â€“2)
+  read lanes (Phases 1–2)
 - runtime-owned published-artifact registry authority with registry/mint
   inventory and scans (Phase 11)
 - generation-indexed pinning with lock-free hot path, pin/retire inventory, and
@@ -3401,13 +3401,13 @@ shapes inherit the concurrency topology.
 
 ### Parallelization Notes
 
-Phases 1â€“10 may overlap at the topology layer (adapter decomposition,
+Phases 1–10 may overlap at the topology layer (adapter decomposition,
 read-context scaffold, submission seam, facade families, interim hostile
-schedule). Phases 11â€“18 are the mandatory honesty end-cap: each phase owns its
-substrate and proof together â€” inventory slices, scans, hostile schedules, and
+schedule). Phases 11–18 are the mandatory honesty end-cap: each phase owns its
+substrate and proof together — inventory slices, scans, hostile schedules, and
 sabotage close inside the phase that ships the work. Sequence:
-**11 â†’ 12 â†’ 13** (pinning closes in Phase 13), **14 â†’ 15** (journal closes in
-Phase 15), **16 â†’ 17** (certification with in-phase sabotage, public-bridge
+**11 → 12 → 13** (pinning closes in Phase 13), **14 → 15** (journal closes in
+Phase 15), **16 → 17** (certification with in-phase sabotage, public-bridge
 honesty), **18** (aggregated closeout only). Milestone `9.7` may not report
 `Closed` until Phase 18.
 
@@ -3433,8 +3433,8 @@ This milestone is complete only when `worth-query` can prove:
 ### Goal
 
 Ship the runtime-owned kit that eliminates consumer-side folklore around
-Query's product contracts â€” declarative evidence-report scaffolding, a
-shipped boundary-bypass audit, and exportable, pinnable support snapshots â€”
+Query's product contracts — declarative evidence-report scaffolding, a
+shipped boundary-bypass audit, and exportable, pinnable support snapshots —
 proven by reference-consumer adoption rather than API presence.
 
 ### Adversarial Constraint
@@ -3442,8 +3442,8 @@ proven by reference-consumer adoption rather than API presence.
 A downstream domain crate must be able to author a digest-bearing evidence
 report, enforce the no-bypass contract, and pin its support-posture
 dependencies using only Query-shipped kit surfaces, with every divergence
-class â€” escaped digest fields, prohibited seam usage, pinned posture
-regression, folklore resurrection â€” failing mechanically in the consumer's
+class — escaped digest fields, prohibited seam usage, pinned posture
+regression, folklore resurrection — failing mechanically in the consumer's
 build.
 
 ### Why This Milestone Exists
@@ -3534,18 +3534,18 @@ This milestone is complete only when `worth-query` can prove:
 ### Goal
 
 Establish graph touch obligation dispatch as a complete Query authority
-boundary â€” typed obligation kinds, three-state verdicts, canonical dispatch
+boundary — typed obligation kinds, three-state verdicts, canonical dispatch
 artifacts, index-backed selection, relational execution bridge, duplicate-rule
-elimination, and mechanical consumer anti-folklore â€” certified
+elimination, and mechanical consumer anti-folklore — certified
 architecturally and proven by reference-consumer deletion of parallel
 legality in `worth-topo` and `worth-kernel`.
 
 ### Adversarial Constraint
 
 Obligation dispatch must be a pure function of touch descriptor, operating
-world, and assembly index â€” on every lane that reaches authoritative
+world, and assembly index — on every lane that reaches authoritative
 execution: write-batch intent admission, declaration-entry orchestration,
-read-family execution, and preview/branch mutation where applicable â€” with
+read-family execution, and preview/branch mutation where applicable — with
 exact-zero false negatives, false positives, duplicate rule implementations,
 manual pre-check residue, and dispatch-plan drift on covered surfaces under
 property-test certification.
@@ -3589,7 +3589,7 @@ store-backed execution inherits another legality layer.
 
 ### Complexity / Proof Obligations
 
-- every obligation kind Ã— representative touch in certification matrix
+- every obligation kind × representative touch in certification matrix
 - false-fire/false-miss, replay equivalence, complexity contracts
 - exact-zero duplicate rule implementations and adoption manifest residue
 - policy-aware mutation gate parity with operating context changes
@@ -3603,11 +3603,11 @@ store-backed execution inherits another legality layer.
 ### Sequencing Notes
 
 The detailed execution plan lives in [milestone-9.9.md](./milestone-9.9.md).
-Twenty phases: vocabulary and relational execution point (1â€“5); intent
-admission integration before surface-specific wiring (6â€“9); remaining
-executors and envelope attachment (10â€“12); re-homing and bypass audit (13â€“14);
-kernel operating context before birth compose (15â€“16); adoption (17â€“18);
-docs then certification close (19â€“20).
+Twenty phases: vocabulary and relational execution point (1–5); intent
+admission integration before surface-specific wiring (6–9); remaining
+executors and envelope attachment (10–12); re-homing and bypass audit (13–14);
+kernel operating context before birth compose (15–16); adoption (17–18);
+docs then certification close (19–20).
 
 ### Parallelization Notes
 
@@ -3623,7 +3623,7 @@ staffing allows; adoption and certification close strictly last.
 
 - every obligation kind executes in certification matrix across representative
   touches and lanes
-- write-batch intent admission carries obligation dispatch â€” manual
+- write-batch intent admission carries obligation dispatch — manual
   invariant-pack pre-hook eliminated on covered paths
 - primitive construction birth executes compose_graph with obligation routing
 - compose, batch, read-family, preview/branch, and declaration-entry lanes
@@ -3955,18 +3955,8 @@ This milestone is not blocked on `worth-store`.
 
 ## Milestone 9.13: Declarative Query Experience And Phase-Surface Cutover
 
-Status: Core Phases 1-12 closed on 2026-07-14 for the runtime-backed
-declarative product boundary. Add-on Phases 13-30 are open. Phases 13-20 close
-runtime-installed domain packages and single domain-capability authority;
-Phases 21-30 close Foundational-native aspect value authority, portable
-readmission, Relational transaction integration, durability, and consumer DX.
-The ten-family grammar, ordinary/internal parity, managed lifecycle,
-facade/prohibition/residue enforcement, and reference-consumer adoption remain
-certified at the original boundary. Store-backed execution and durable
-artifact/continuation claims remain Store Milestones 9 through 13. See
-[milestone-9.13-closeout.md](./milestone-9.13-closeout.md) for the historical
-Phases 1-12 evidence and [milestone-9.13.md](./milestone-9.13.md) for the open
-add-on phase contract.
+Status: Completed. Store-backed execution parity and durable restore belong to
+Milestones 10 and 11. See [milestone-9.13-closeout.md](./milestone-9.13-closeout.md).
 
 ### Goal
 
@@ -4156,7 +4146,7 @@ the resulting value, predicate, row, and projection contracts unchanged.
 
 ## Milestone 9.13.1: Query Iteration Foundation
 
-Status: Phases 1-3 closed on 2026-07-18. Phases 4-8 are open.
+Status: Completed.
 
 ### Goal
 
@@ -4281,7 +4271,7 @@ replay, or Store-facing semantic contract.
 
 ## Milestone 9.13.2: Query Authority Crate Decomposition
 
-Status: Open. Begins after Milestone 9.13.1 closes.
+Status: Completed.
 
 ### Goal
 
@@ -4716,27 +4706,12 @@ have one governing home in Milestone 9.16 and Milestones 9.19 through 9.22.
 
 ## Milestone 9.16: Authenticated Async Bank World And The Ordinary Query Front Door
 
-**Status:** Runtime Hardening Phases 1-10 and Bank World Phases 1-5 are closed.
-The accepted aftermath, external-effect, recovery, retention, and publication
-foundation is proved through corrections C1-C8 under the
-[Runtime Phase 8 finish plan](./milestone-9.16-runtime-phase-8-finish-plan.md).
-Runtime Phase 9 closes host-installed conditional providers, managed clocks,
-Signal-owned temporal wakes, and reconstruction from authoritative
-Relational/domain truth. Runtime Phase 10 closes the public-policy cutover,
-developer guidance, facade contract, reference-consumer classification, and
-workaround residue under their
-[Phase 9](./milestone-9.16-runtime-phase-9-closure-ledger.md) and
-[Phase 10](./milestone-9.16-runtime-phase-10-closure-ledger.md) ledgers.
-The existing undo/redo lane is provisional and is excluded from Bank Phases 5
-and 6, Closure Phase 1, and current milestone acceptance evidence; Milestone
-9.18 owns its product contract and proof. Developer guidance is
+**Status:** Completed. The undo and redo lane is provisional; Milestone 9.18 owns
+its product contract and proof. Developer guidance is
 [Application Aftermath, External Effects, And Recovery](../../workspaces/worth-query/crates/worth-query/docs/execution/application-aftermath-and-recovery.md).
-Bank Phase 5 is closed by the real Docker-backed, separate-process transport
-court (2026-08-13). Milestone 9.16 remains open: Bank Phase 6 and Closure Phase
-1 still precede the Milestone 9.17 handoff. Milestone 9.16.1.1 is the installed
-graph-contract prerequisite for Milestone 9.16.2. After it closes, 9.16.2 is an
-additional portable-package prerequisite before 9.17.1 and may proceed beside
-the remaining 9.16 phases where the touched boundaries do not overlap.
+Closure ledgers: [Phase 8](./milestone-9.16-runtime-phase-8-closure-ledger.md),
+[Phase 9](./milestone-9.16-runtime-phase-9-closure-ledger.md), and
+[Phase 10](./milestone-9.16-runtime-phase-10-closure-ledger.md).
 
 ### Goal
 
@@ -5829,14 +5804,14 @@ execution belongs to the Store roadmap.
 This milestone is complete only when `worth-query` can prove:
 
 - the `Query Certification Matrix Sufficiency Test` in
-  [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/test-requirements.md)
+  [test-requirements.md](./test-requirements.md)
   passes with canonical machine-checkable artifacts
 - the `Admitted Query Family Boundary Test`, `Fallback Non-Leakage / No Silent
   Widening Test`, `Cross-Feature Composition Matrix Test`, `Reference
   Semantics Test`, `Saved Artifact Semantic Freeze Test`, `Schema Evolution
   Compatibility Test`, `Diagnostic Sufficiency Test`, and `Beta Support Matrix
   Enforcement Test` in
-  [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/test-requirements.md)
+  [test-requirements.md](./test-requirements.md)
   pass for the surfaces `worth-query` claims as shipped or beta-supported
 
 - every shipped query capability has at least one hostile certification path
@@ -6034,9 +6009,9 @@ must gain a row in the same patch or the roadmap is incomplete.
 
 ## Companion Documents
 
-- [worth_query_vision.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/worth_query_vision.md)
-- [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/test-requirements.md)
-- [milestone-9.3.1.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/milestone-9.3.1.md)
+- [worth_query_vision.md](./WORTH_query_vision.md)
+- [test-requirements.md](./test-requirements.md)
+- [milestone-9.3.1.md](./milestone-9.3.1.md)
 - [milestone-9.3.2.md](./milestone-9.3.2.md)
 - [milestone-9.3.3.md](./milestone-9.3.3.md)
 - [milestone-9.3.4.md](./milestone-9.3.4.md)
@@ -6075,12 +6050,12 @@ must gain a row in the same patch or the roadmap is incomplete.
 - [milestone-9.20.md](./milestone-9.20.md)
 - [milestone-9.21.md](./milestone-9.21.md)
 - [milestone-9.22.md](./milestone-9.22.md)
-- [runtime-api-public-stabilization-plan.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/runtime-api-public-stabilization-plan.md)
-- [runtime-authoritative-mutation-evidence-plan.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/runtime-authoritative-mutation-evidence-plan.md)
-- [worth_runtime_bridge_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/worth_runtime_bridge_roadmap.md)
-- [worth_relational_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/worth_relational_roadmap.md)
+- [runtime-api-public-stabilization-plan.md](./runtime-api-public-stabilization-plan.md)
+- [runtime-authoritative-mutation-evidence-plan.md](./runtime-authoritative-mutation-evidence-plan.md)
+- [worth_runtime_bridge_roadmap.md](../WORTH-runtime-bridge/WORTH_runtime_bridge_roadmap.md)
+- [worth_relational_roadmap.md](../WORTH-relational/WORTH_relational_roadmap.md)
 - [Worth Store Runtime And Integration Roadmap](../worth-store/runtime-integration-roadmap.md)
-- [MENTALITY.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/MENTALITY.md)
-- [architectural_guidelines.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/architectural_guidelines.md)
-- [domain_standards.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/domain_standards.md)
-- [performance_guidelines.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/performance_guidelines.md)
+- [MENTALITY.md](../../docs/coding-guidelines/MENTALITY.md)
+- [architectural_guidelines.md](../../docs/coding-guidelines/arch_laws.md)
+- [domain_standards.md](../../docs/coding-guidelines/domain_structure_laws.md)
+- [performance_guidelines.md](../../docs/coding-guidelines/perf_laws.md)

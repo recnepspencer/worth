@@ -10,16 +10,16 @@
 
 > **Scope class:** Fast-moving application showcase, not a new roadmap milestone
 >
-> **Vision parent:** [worth_query_vision.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/worth_query_vision.md)
+> **Vision parent:** [worth_query_vision.md](./WORTH_query_vision.md)
 >
-> **Roadmap parent:** [worth_query_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/worth_query_roadmap.md)
+> **Roadmap parent:** [worth_query_roadmap.md](./WORTH_query_roadmap.md)
 >
-> **Test requirements reference:** [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/test-requirements.md)
+> **Test requirements reference:** [test-requirements.md](./test-requirements.md)
 >
 > **Most relevant capability specs:**
-> - [milestone-5.2.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/milestone-5.2.md)
-> - [milestone-5.5.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/milestone-5.5.md)
-> - [milestone-8.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/milestone-8.md)
+> - [milestone-5.2.md](./milestone-5.2.md)
+> - [milestone-5.5.md](./milestone-5.5.md)
+> - [milestone-8.md](./milestone-8.md)
 >
 > **Primary architectural driver:** prove that `worth-query` can act as the
 > app-facing surface for a small but visually ambitious todo application whose

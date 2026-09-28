@@ -28,29 +28,29 @@ Milestone 5.4 delivered:
 
 - explicit correspondence outcome families, historical result envelopes, and
   composition boundaries in
-  [crates/worth-query/src/correspondence_history](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/correspondence_history)
+  [crates/worth-query/src/correspondence_history](../../workspaces/worth-query/crates/worth-query/src/correspondence_history)
 - replay-safe correspondence/history parity bundles, digest lowering, and
   denial carriers in
-  [crates/worth-query/src/correspondence_history_parity](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/correspondence_history_parity)
+  [crates/worth-query/src/correspondence_history_parity](../../workspaces/worth-query/crates/worth-query/src/correspondence_history_parity)
 - structural and lineage-backed correspondence surfaces plus historical-path
   admission/resolution counters in
-  [crates/worth-query/src/correspondence](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/correspondence)
+  [crates/worth-query/src/correspondence](../../workspaces/worth-query/crates/worth-query/src/correspondence)
   and
-  [crates/worth-query/src/historical](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/historical)
+  [crates/worth-query/src/historical](../../workspaces/worth-query/crates/worth-query/src/historical)
 - milestone-native certification artifacts, row catalogs, fixture lanes,
   rejection builders, and closeout mapping in
-  [crates/worth-query/src/harness/correspondence_history_certification](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/correspondence_history_certification)
+  [crates/worth-query/src/harness/correspondence_history_certification](../../workspaces/worth-query/crates/worth-query/src/harness/correspondence_history_certification)
 - compile-fail proof boundaries for structural-authority WORTHry, raw ambiguity
   collapse, naked historical payload access, and related privacy constraints in
-  [crates/worth-query/tests/ui](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/tests/ui)
+  `crates/worth-query/tests/ui`
 
 ## Acceptance Mapping
 
 Milestone 5.4 is considered closed against
-[milestone-5.4.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/milestone-5.4.md),
-[worth_query_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/worth_query_roadmap.md),
+[milestone-5.4.md](./milestone-5.4.md),
+[worth_query_roadmap.md](./WORTH_query_roadmap.md),
 and
-[test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/test-requirements.md)
+[test-requirements.md](./test-requirements.md)
 because the required correspondence and historical-path proof surfaces now
 exist directly.
 
@@ -58,9 +58,9 @@ exist directly.
 
 Covered by:
 
-- [mod.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/correspondence_history_certification/mod.rs)
-- [model.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/correspondence_history_certification/model.rs)
-- [tests.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/correspondence_history_certification/tests.rs)
+- [mod.rs](../../workspaces/worth-query/crates/worth-query/src/harness/correspondence_history_certification/mod.rs)
+- [model.rs](../../workspaces/worth-query/crates/worth-query/src/harness/correspondence_history_certification/model.rs)
+- [tests.rs](../../workspaces/worth-query/crates/worth-query/src/harness/correspondence_history_certification/tests.rs)
 
 What is proven:
 
@@ -100,10 +100,10 @@ What is proven:
 
 Covered by:
 
-- [crates/worth-query/src/correspondence_history/success.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/correspondence_history/success.rs)
-- [crates/worth-query/src/correspondence_history/denied.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/correspondence_history/denied.rs)
-- [crates/worth-query/src/correspondence_history/view.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/correspondence_history/view.rs)
-- [crates/worth-query/src/correspondence_history/tests.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/correspondence_history/tests.rs)
+- [crates/worth-query/src/correspondence_history/success.rs](../../workspaces/worth-query/crates/worth-query/src/correspondence_history/success.rs)
+- [crates/worth-query/src/correspondence_history/denied.rs](../../workspaces/worth-query/crates/worth-query/src/correspondence_history/denied.rs)
+- [crates/worth-query/src/correspondence_history/view.rs](../../workspaces/worth-query/crates/worth-query/src/correspondence_history/view.rs)
+- [crates/worth-query/src/correspondence_history/tests.rs](../../workspaces/worth-query/crates/worth-query/src/correspondence_history/tests.rs)
 
 What is proven:
 
@@ -118,10 +118,10 @@ What is proven:
 
 Covered by:
 
-- [crates/worth-query/src/correspondence_history_parity/lowering.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/correspondence_history_parity/lowering.rs)
-- [crates/worth-query/src/correspondence_history_parity/digests.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/correspondence_history_parity/digests.rs)
-- [crates/worth-query/src/correspondence_history_parity/tests.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/correspondence_history_parity/tests.rs)
-- [crates/worth-query/src/historical/tests.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/historical/tests.rs)
+- [crates/worth-query/src/correspondence_history_parity/lowering.rs](../../workspaces/worth-query/crates/worth-query/src/correspondence_history_parity/lowering.rs)
+- [crates/worth-query/src/correspondence_history_parity/digests.rs](../../workspaces/worth-query/crates/worth-query/src/correspondence_history_parity/digests.rs)
+- [crates/worth-query/src/correspondence_history_parity/tests.rs](../../workspaces/worth-query/crates/worth-query/src/correspondence_history_parity/tests.rs)
+- [crates/worth-query/src/historical/tests.rs](../../workspaces/worth-query/crates/worth-query/src/historical/tests.rs)
 
 What is proven:
 

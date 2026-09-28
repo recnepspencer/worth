@@ -20,11 +20,16 @@ impl WorthQuerySelectedProgramInspection {
     }
 }
 
+/// Why the program carried by a selected product could not be inspected.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQuerySelectedProgramInspectionDenial {
+    /// The runtime has no installed program support.
     ProgramSupportUnavailable,
+    /// No program activation is published.
     ProgramActivationUnavailable,
+    /// The product's program activation record could not be read.
     ProgramActivationUnreadable,
+    /// The product's program revision is not on the installed roster.
     ProgramActivationUnrostered,
 }
 

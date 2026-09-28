@@ -15,12 +15,12 @@ use worth_query_host::facade::{
     product::WorthQueryProductBranch,
 };
 
-use super::super::bounded_dimension_model::schema::BoundedDimensionSchema;
+use super::super::document_retention_model::schema::DocumentRetentionSchema;
 use super::fork_definitions::fork_of;
 use super::*;
 
 fn discover(
-    application: &BoundedDimensionWorkflowRuntime,
+    application: &DocumentWorkflowRuntime,
     branch: WorthQueryProductBranch,
     identity: &ApplicationWorkflowDefinitionIdentity,
 ) -> WorthQueryWorkflowDefinitionDiscovery {
@@ -29,12 +29,12 @@ fn discover(
         .on_branch(branch)
         .select()
         .expect("the branch selects its exact occurrence")
-        .discover_workflow_definition::<ReviewedGeometryWorkflow>(identity)
+        .discover_workflow_definition::<ReviewedDocumentWorkflow>(identity)
         .expect("the branch's workflow lineage reads within its bound")
 }
 
 fn discovered_current(
-    application: &BoundedDimensionWorkflowRuntime,
+    application: &DocumentWorkflowRuntime,
     branch: WorthQueryProductBranch,
     identity: &ApplicationWorkflowDefinitionIdentity,
 ) -> PublishedWorkflowDefinitionRef {
@@ -146,11 +146,11 @@ fn discovery_on_a_fork_names_the_forks_own_definition() {
 }
 
 /// A second workflow family over the same schema, which never published the
-/// lineage the reviewed-geometry spec owns.
+/// lineage the reviewed-document spec owns.
 struct ForeignWorkflow;
 
 impl ApplicationWorkflowSpec for ForeignWorkflow {
-    type Schema = BoundedDimensionSchema;
+    type Schema = DocumentRetentionSchema;
     const IDENTITY: ApplicationWorkflowSpecIdentity =
         ApplicationWorkflowSpecIdentity::new("worth.query.certification.foreign-workflow.v1");
 }

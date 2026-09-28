@@ -8,6 +8,13 @@ use super::entries::{
     CanonicalTraversalEntry,
 };
 
+/// The canonical form of one authored query: its family, root entity,
+/// projection, predicates, ordering, traversal, and identity bindings in
+/// canonical order, with the digest and canonical identity derived from them.
+///
+/// You get one from a `CanonicalQueryBundle` after canonicalization. It is
+/// descriptive meaning, not installation or execution authority; compare two
+/// artifacts with `equivalence_to`.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct CanonicalQueryArtifact {
     pub(crate) digest: CanonicalQueryDigest,

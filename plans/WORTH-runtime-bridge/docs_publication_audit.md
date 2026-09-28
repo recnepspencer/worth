@@ -43,10 +43,10 @@ This audit reflects the current bridge direction:
 
 Right now `worth-runtime-bridge` does not have a real publish-facing docs set
 under
-[`crates/worth-runtime-bridge`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge).
+[`crates/worth-runtime-bridge`](../../crates/worth-runtime-bridge).
 
 Most meaningful writing lives under
-[`plans/worth-runtime-bridge`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge),
+[`plans/worth-runtime-bridge`](./),
 and it is mostly:
 
 - vision and roadmap control
@@ -67,7 +67,7 @@ These topics should absolutely exist in the published docs set, but the current
 docs are too architecture-first, too historical, or too certification-shaped
 to ship as the public bridge story.
 
-### [`worth_runtime_bridge_vision.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/worth_runtime_bridge_vision.md)
+### [`worth_runtime_bridge_vision.md`](./WORTH_runtime_bridge_vision.md)
 
 Classification:
 
@@ -85,7 +85,7 @@ Target replacement:
 - `QUICKSTART.md`
 - `API_OVERVIEW.md`
 
-### [`worth_runtime_bridge_roadmap.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/worth_runtime_bridge_roadmap.md)
+### [`worth_runtime_bridge_roadmap.md`](./WORTH_runtime_bridge_roadmap.md)
 
 Classification:
 
@@ -102,7 +102,7 @@ Target replacement:
 - capability-status notes inside `API_OVERVIEW.md`
 - release notes or changelog material later
 
-### [`test-requirements.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md)
+### [`test-requirements.md`](./test-requirements.md)
 
 Classification:
 
@@ -126,7 +126,7 @@ Target replacement:
 These documents are useful and materially valid, but they should not carry the
 public onboarding load.
 
-### [`milestone-12b.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-12b.md)
+### [`milestone-12b.md`](./milestone-12b.md)
 
 Classification:
 
@@ -139,7 +139,7 @@ Why:
 - important for advanced readers evaluating bridge authority boundaries
 - too milestone-shaped for the public first-read stack
 
-### [`milestone-13.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-13.md)
+### [`milestone-13.md`](./milestone-13.md)
 
 Classification:
 
@@ -159,28 +159,28 @@ Classification:
 
 Files:
 
-- [`milestone-1.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-1.md)
-- [`milestone-1-closeout.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-1-closeout.md)
-- [`milestone-2.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-2.md)
-- [`milestone-2-closeout.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-2-closeout.md)
-- [`milestone-2-envelope-and-planning-hardening.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-2-envelope-and-planning-hardening.md)
-- [`milestone-3.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-3.md)
-- [`milestone-3-closeout.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-3-closeout.md)
-- [`milestone-4.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-4.md)
-- [`milestone-4-closeout.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-4-closeout.md)
-- [`milestone-5.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-5.md)
-- [`milestone-6.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-6.md)
-- [`milestone-7.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-7.md)
-- [`milestone-7-closeout.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-7-closeout.md)
-- [`milestone-8.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-8.md)
-- [`milestone-8-closeout.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-8-closeout.md)
-- [`milestone-9.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-9.md)
-- [`milestone-9-closeout.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-9-closeout.md)
-- [`milestone-10.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-10.md)
-- [`milestone-10-closeout.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-10-closeout.md)
-- [`milestone-11.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-11.md)
-- [`milestone-11-closeout.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-11-closeout.md)
-- [`milestone-12.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-12.md)
+- [`milestone-1.md`](./milestone-1.md)
+- [`milestone-1-closeout.md`](./milestone-1-closeout.md)
+- [`milestone-2.md`](./milestone-2.md)
+- [`milestone-2-closeout.md`](./milestone-2-closeout.md)
+- [`milestone-2-envelope-and-planning-hardening.md`](./milestone-2-envelope-and-planning-hardening.md)
+- [`milestone-3.md`](./milestone-3.md)
+- [`milestone-3-closeout.md`](./milestone-3-closeout.md)
+- [`milestone-4.md`](./milestone-4.md)
+- [`milestone-4-closeout.md`](./milestone-4-closeout.md)
+- [`milestone-5.md`](./milestone-5.md)
+- [`milestone-6.md`](./milestone-6.md)
+- [`milestone-7.md`](./milestone-7.md)
+- [`milestone-7-closeout.md`](./milestone-7-closeout.md)
+- [`milestone-8.md`](./milestone-8.md)
+- [`milestone-8-closeout.md`](./milestone-8-closeout.md)
+- [`milestone-9.md`](./milestone-9.md)
+- [`milestone-9-closeout.md`](./milestone-9-closeout.md)
+- [`milestone-10.md`](./milestone-10.md)
+- [`milestone-10-closeout.md`](./milestone-10-closeout.md)
+- [`milestone-11.md`](./milestone-11.md)
+- [`milestone-11-closeout.md`](./milestone-11-closeout.md)
+- [`milestone-12.md`](./milestone-12.md)
 
 Why:
 
@@ -197,10 +197,10 @@ treated as publish-facing product docs.
 
 ### DX planning docs
 
-- [`dx_plan.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/dx_plan.md)
-- [`dx_canonical_surface_spec.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/dx_canonical_surface_spec.md)
-- [`dx_boundary_spec.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/dx_boundary_spec.md)
-- [`dx_boundary_cleanup_spec.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/dx_boundary_cleanup_spec.md)
+- [`dx_plan.md`](./dx_plan.md)
+- [`dx_canonical_surface_spec.md`](./dx_canonical_surface_spec.md)
+- [`dx_boundary_spec.md`](./dx_boundary_spec.md)
+- [`dx_boundary_cleanup_spec.md`](./dx_boundary_cleanup_spec.md)
 
 Why:
 
@@ -209,9 +209,9 @@ Why:
 
 ### Vision, roadmap, and certification control docs
 
-- [`worth_runtime_bridge_vision.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/worth_runtime_bridge_vision.md)
-- [`worth_runtime_bridge_roadmap.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/worth_runtime_bridge_roadmap.md)
-- [`test-requirements.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md)
+- [`worth_runtime_bridge_vision.md`](./WORTH_runtime_bridge_vision.md)
+- [`worth_runtime_bridge_roadmap.md`](./WORTH_runtime_bridge_roadmap.md)
+- [`test-requirements.md`](./test-requirements.md)
 
 Why:
 

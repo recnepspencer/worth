@@ -1,11 +1,6 @@
 # Milestone 9.16.1: Canonical Graph Obligation And Provider Session Convergence
 
-> **Status:** Closed — Milestone 9.16 resumes at Runtime Hardening Phase 7.3
->
-> **Historical posture:** Milestones 9.9, 9.10, 9.11, and 9.15 retain their
-> recorded statuses. Milestones 9.9, 9.11, and 9.15 closure and Milestone
-> 9.10's recorded Draft status are not reopened, revoked, or rewritten by this
-> corrective milestone.
+> **Status:** Completed.
 >
 > **Closure ledger:**
 > [milestone-9.16.1-closure-ledger.md](./milestone-9.16.1-closure-ledger.md)

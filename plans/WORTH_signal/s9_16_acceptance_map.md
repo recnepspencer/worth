@@ -19,7 +19,7 @@ It exists to prevent a familiar failure mode:
 - the negative-space condition that must stay impossible
 
 This map does not replace the architecture plan in
-[signal_architecture2.md](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth_signal/signal_architecture2.md).
+[signal_architecture2.md](./signal_architecture2.md).
 It is the implementation-side acceptance companion for that plan.
 
 ## Program Rules
@@ -165,9 +165,9 @@ Current starting proof:
   `SignalSnapshotMeta.artifact_retention`, and
   `tests::phase5_state::snapshot_artifact_retention_policy_changes_richness_not_restore_truth`
   proves that snapshot richness can change while restore truth stays stable
-- restore now consumes explicit `SnapshotRestoreIntent`, so â€œrewind active
-  state,â€ â€œrestore captured richness,â€ and â€œapply active runtime policy after
-  restoreâ€ are no longer bundled implicitly behind one restore helper
+- restore now consumes explicit `SnapshotRestoreIntent`, so “rewind active
+  state,” “restore captured richness,” and “apply active runtime policy after
+  restore” are no longer bundled implicitly behind one restore helper
 - dependency snapshot rewrites now derive a canonical narrow update form from
   explicit previous/next snapshot contracts, which lets stable-shape rewrites
   narrow to version-only delta updates instead of defaulting to shared replacement
@@ -280,14 +280,14 @@ during Milestones 12 and 13, not by a successor certification milestone.
 
 This map should be read alongside:
 
-- [worth_signal_adversarial_testing_matrix.md](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/engineering/worth_signal_adversarial_testing_matrix.md)
-- [worth_signal_fintech_certification_matrix.md](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/engineering/worth_signal_fintech_certification_matrix.md)
-- [worth_harness_workflow_certification_design.md](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/engineering/worth_harness_workflow_certification_design.md)
+- `worth_signal_adversarial_testing_matrix.md`
+- `worth_signal_fintech_certification_matrix.md`
+- `worth_harness_workflow_certification_design.md`
 
 Those docs define certification philosophy and domain workflow expectations.
 This map binds `S9.16` implementation batches to concrete acceptance ownership inside `worth-signal`.
 
 For `S9.9`, `S9.10`, `S9.12`, and `S9.15`, this map should be read together
-with [s9_missing_substrate_completion.md](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth_signal/s9_missing_substrate_completion.md).
+with [s9_missing_substrate_completion.md](./s9_missing_substrate_completion.md).
 That document defines the proof chain and migration discipline; this map defines
 the acceptance owner, counters, and negative-space obligations.

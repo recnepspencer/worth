@@ -12,8 +12,8 @@
 >
 > - [host_capability_closeout.md](./host_capability_closeout.md)
 > - [api_surface_closeout.md](./api_surface_closeout.md)
-> - [plans/worth_signal/milestone-d-closeout.md](../../../plans/worth_signal/milestone-d-closeout.md)
-> - [plans/worth_signal/milestone-11-closeout.md](../../../plans/worth_signal/milestone-11-closeout.md)
+> - [plans/worth_signal/milestone-d-closeout.md](../WORTH_signal/milestone-d-closeout.md)
+> - [plans/worth_signal/milestone-11-closeout.md](../WORTH_signal/milestone-11-closeout.md)
 
 ## Purpose
 

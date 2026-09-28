@@ -135,13 +135,13 @@ Milestone 14 necessary:
 ## Tests Added Or Strengthened
 
 The milestone now has focused declaration/admission/lifecycle coverage in
-[subscription.rs](/Users/shepworth/Documents/programming/WORTH/crates/worth-runtime-bridge/src/facade/tests/subscription.rs)
+[subscription.rs](../../crates/worth-runtime-bridge/src/facade/tests/subscription/mod.rs)
 plus direct replay-tamper coverage in
-[replay.rs](/Users/shepworth/Documents/programming/WORTH/crates/worth-runtime-bridge/src/subscription/replay.rs),
+[replay.rs](../../crates/worth-runtime-bridge/src/subscription/replay.rs),
 suite-shaped certification coverage in
-[subscription_certification.rs](/Users/shepworth/Documents/programming/WORTH/crates/worth-runtime-bridge/src/harness/tests/subscription_certification.rs),
+[subscription_certification.rs](../../crates/worth-runtime-bridge/src/harness/tests/subscription_certification/mod.rs),
 and compile-fail privacy coverage in
-[/Users/shepworth/Documents/programming/WORTH/crates/worth-runtime-bridge/tests/ui](C:\Users\shepworth\Documents\programming\WORTH\crates\worth-runtime-bridge\tests\ui).
+[crates/worth-runtime-bridge/tests/ui](../../crates/worth-runtime-bridge/tests/ui).
 
 Key proof lanes include:
 

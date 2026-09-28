@@ -26,34 +26,34 @@ ad hoc test logic.
 Milestone 3 delivered:
 
 - planner-owned artifacts and lowering in
-  [crates/worth-query/src/planning](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/planning)
+  [crates/worth-query/src/planning](../../workspaces/worth-query/crates/worth-query/src/planning)
 - explicit basis intent, basis resolution, and preflight coupling in
-  [crates/worth-query/src/basis](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/basis)
+  [crates/worth-query/src/basis](../../workspaces/worth-query/crates/worth-query/src/basis)
 - query-owned binding fulfillment and resolution in
-  [crates/worth-query/src/binding](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/binding)
+  [crates/worth-query/src/binding](../../workspaces/worth-query/crates/worth-query/src/binding)
 - runtime-backed execution envelopes and exact execution counters in
-  [crates/worth-query/src/execution](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/execution)
+  [crates/worth-query/src/execution](../../workspaces/worth-query/crates/worth-query/src/execution)
 - plan/basis/binding/result digest authority in
-  [crates/worth-query/src/identity](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/identity)
+  [crates/worth-query/src/identity](../../workspaces/worth-query/crates/worth-query/src/identity)
 - compile-fail proof-boundary tests for planned, basis, and execution
   artifacts under
-  [crates/worth-query/tests/ui](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/tests/ui)
+  `crates/worth-query/tests/ui`
 - a shared certification core and requirements registry under
-  [crates/worth-query/src/harness/certification](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/certification)
+  [crates/worth-query/src/harness/certification](../../workspaces/worth-query/crates/worth-query/src/harness/certification)
 - phase-aligned fixture layers under
-  [crates/worth-query/src/harness/fixtures](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/fixtures)
+  [crates/worth-query/src/harness/fixtures](../../workspaces/worth-query/crates/worth-query/src/harness/fixtures)
 - the named Milestone 3 certification surface under
-  [crates/worth-query/src/harness/planning_certification](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/planning_certification)
+  [crates/worth-query/src/harness/planning_certification](../../workspaces/worth-query/crates/worth-query/src/harness/planning_certification)
   and
-  [crates/worth-query/src/harness/planning_matrix](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/planning_matrix)
+  [crates/worth-query/src/harness/planning_matrix](../../workspaces/worth-query/crates/worth-query/src/harness/planning_matrix)
 
 ## Acceptance Mapping
 
 Milestone 3 is considered closed against
-[milestone-3.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/milestone-3.md),
-[worth_query_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/worth_query_roadmap.md),
+[milestone-3.md](./milestone-3.md),
+[worth_query_roadmap.md](./WORTH_query_roadmap.md),
 and
-[test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/test-requirements.md)
+[test-requirements.md](./test-requirements.md)
 because the required runtime-backed acceptance surfaces are now covered
 directly.
 
@@ -61,9 +61,9 @@ directly.
 
 Covered by:
 
-- [planning_certification/mod.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/planning_certification/mod.rs)
-- [planning_certification/tests.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/planning_certification/tests.rs)
-- [planning_matrix](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/planning_matrix)
+- [planning_certification/mod.rs](../../workspaces/worth-query/crates/worth-query/src/harness/planning_certification/mod.rs)
+- [planning_certification/tests.rs](../../workspaces/worth-query/crates/worth-query/src/harness/planning_certification/tests.rs)
+- [planning_matrix](../../workspaces/worth-query/crates/worth-query/src/harness/planning_matrix)
 
 What is proven:
 
@@ -112,7 +112,7 @@ Covered by:
 - `basis::preflight_execution_basis`
 - `execution::execute_preflight_bundle`
 - harness tests in
-  [crates/worth-query/src/harness/planning.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/planning.rs)
+  `crates/worth-query/src/harness/planning.rs`
 
 What is proven:
 
@@ -145,11 +145,11 @@ What is proven:
 Covered by:
 
 - shared certification grammar under
-  [harness/certification](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/certification)
+  [harness/certification](../../workspaces/worth-query/crates/worth-query/src/harness/certification)
 - Milestone 1, 2, and 3 completeness reports deriving from the shared
   requirements registry
 - shared phase fixtures under
-  [harness/fixtures](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/fixtures)
+  [harness/fixtures](../../workspaces/worth-query/crates/worth-query/src/harness/fixtures)
 
 What is proven:
 

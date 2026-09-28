@@ -76,7 +76,7 @@ The first four phases shipped:
 - routed temporal cause artifacts instead of implicit time-trigger behavior
 - historical temporal readiness and replay basis for retained lanes
 
-These phases closed the â€œtime is ambientâ€ loophole. Temporal work now enters
+These phases closed the “time is ambient” loophole. Temporal work now enters
 the bridge through admitted basis and typed cause artifacts rather than raw host
 clock posture.
 
@@ -92,7 +92,7 @@ The middle async foundation phases shipped:
 - authoritative-only completion writeback with typed commit, noop, and
   rejection outcomes
 
-These phases closed the â€œasync work is just a task handleâ€ trap. Async identity
+These phases closed the “async work is just a task handle” trap. Async identity
 and completion-to-writeback semantics are now typed, replay-safe, and bridge
 owned.
 
@@ -157,7 +157,7 @@ by the spec:
 - stale or superseded completions cannot masquerade as deliverable truth
 - authoritative writeback rejects preview-local or drifted completion truth
 - host callback order cannot redefine mixed-cause delivery meaning
-- one consumerâ€™s lag cannot redefine canonical delivery bundle truth
+- one consumer’s lag cannot redefine canonical delivery bundle truth
 - restart cannot silently succeed from incomplete or incompatible retained basis
 - preview-local temporal or async residue cannot become authoritative by rename
   or object reuse
@@ -197,17 +197,17 @@ The final support matrix explicitly distinguishes:
 - workload sufficiency proven
 - merged closeout proven
 
-That means the milestone no longer closes by â€œall the right tests happened to
-pass.â€ It closes by one machine-checkable retained artifact.
+That means the milestone no longer closes by “all the right tests happened to
+pass.” It closes by one machine-checkable retained artifact.
 
 ## Tests Added Or Strengthened
 
 Milestone 17 has focused facade coverage under
-[C:\Users\Esther\Documents\Programming\WORTH_workspace\WORTH\crates\worth-runtime-bridge\src\facade\tests](C:\Users\Esther\Documents\Programming\WORTH_workspace\WORTH\crates\worth-runtime-bridge\src\facade\tests),
+[crates/worth-runtime-bridge/src/facade/tests](../../crates/worth-runtime-bridge/src/facade/tests),
 compile-fail privacy coverage under
-[C:\Users\Esther\Documents\Programming\WORTH_workspace\WORTH\crates\worth-runtime-bridge\tests\ui](C:\Users\Esther\Documents\Programming\WORTH_workspace\WORTH\crates\worth-runtime-bridge\tests\ui),
+[crates/worth-runtime-bridge/tests/ui](../../crates/worth-runtime-bridge/tests/ui),
 and workload/certification coverage under
-[C:\Users\Esther\Documents\Programming\WORTH_workspace\WORTH\crates\worth-runtime-bridge\src\harness\tests](C:\Users\Esther\Documents\Programming\WORTH_workspace\WORTH\crates\worth-runtime-bridge\src\harness\tests).
+[crates/worth-runtime-bridge/src/harness/tests](../../crates/worth-runtime-bridge/src/harness/tests).
 
 Key proof lanes include:
 

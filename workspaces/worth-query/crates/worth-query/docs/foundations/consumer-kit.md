@@ -1,5 +1,7 @@
 # Consumer Kit
 
+> **Internal engine surface.** This page documents `WorthQueryWorkspace` (`worth_query::facade`), the engine surface that `worth-ui-query-binding` uses. Application code uses `worth-query-decl` and `worth-query-host`; start with the [application front door](ordinary-application-front-door.md).
+
 ## What This Feature Is
 
 The Consumer Kit is the Query-owned way for downstream crates to prove they

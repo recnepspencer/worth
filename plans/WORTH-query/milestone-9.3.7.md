@@ -1,7 +1,6 @@
 # Milestone 9.3.7 Engineering Spec: Domain Capability Contributions And Canonical Runtime Materialization
 
-> **Status:** Closed on 2026-05-22 via
-> [milestone-9.3.7-closeout.md](./milestone-9.3.7-closeout.md)
+> **Status:** Completed.
 >
 > **Roadmap parent:** [worth_query_roadmap.md](./worth_query_roadmap.md)
 >
@@ -283,11 +282,11 @@ It exists so a later engineer does not have to infer what "use
 
 Use the real `worth-proof` substrate:
 
-- [crates/worth-proof/src/artifact/carrier.rs](/C:/Users/shepworth/Documents/programming/WORTH-2/crates/worth-proof/src/artifact/carrier.rs)
+- [crates/worth-proof/src/artifact/carrier.rs](../../crates/worth-proof/src/artifact/carrier.rs)
   - `Artifact<P, T, S = NoProofs, A = NoAssumptionBasis>`
-- [crates/worth-proof/src/transition/outcomes.rs](/C:/Users/shepworth/Documents/programming/WORTH-2/crates/worth-proof/src/transition/outcomes.rs)
+- [crates/worth-proof/src/transition/outcomes.rs](../../crates/worth-proof/src/transition/outcomes.rs)
   - `TransitionOutcome<S, D, De, St, R, F>`
-- [crates/worth-proof/src/proof/witnesses.rs](/C:/Users/shepworth/Documents/programming/WORTH-2/crates/worth-proof/src/proof/witnesses.rs)
+- [crates/worth-proof/src/proof/witnesses.rs](../../crates/worth-proof/src/proof/witnesses.rs)
   - `AuthorityWitness`
   - `CapabilityWitness`
 
@@ -353,17 +352,17 @@ Locked rule:
 Use the real foundational surfaces that already exist today:
 
 - diagnostics row families from
-  [crates/worth-foundational/src/facade.rs](/C:/Users/shepworth/Documents/programming/WORTH-2/crates/worth-foundational/src/facade.rs)
+  [crates/worth-foundational/src/facade.rs](../../crates/worth-foundational/src/facade.rs)
   - `FoundationalDiagnosticDecisionRow`
   - `FoundationalDiagnosticSupportRow`
   - `FoundationalDiagnosticProvenanceReadyRow`
 - profile progression from
-  [crates/worth-foundational/src/profiles/progression.rs](/C:/Users/shepworth/Documents/programming/WORTH-2/crates/worth-foundational/src/profiles/progression.rs)
+  [crates/worth-foundational/src/profiles/progression.rs](../../crates/worth-foundational/src/profiles/progression.rs)
   - `request_foundational_profile_set(...)`
   - `admit_requested_foundational_profile(...)`
   - `materialize_admitted_foundational_profile(...)`
 - provenance from
-  [crates/worth-foundational/src/boundary_evidence/front_doors/mod.rs](/C:/Users/shepworth/Documents/programming/WORTH-2/crates/worth-foundational/src/boundary_evidence/front_doors/mod.rs)
+  [crates/worth-foundational/src/boundary_evidence/front_doors/mod.rs](../../crates/worth-foundational/src/boundary_evidence/front_doors/mod.rs)
   - `boundary_evidence().provenance()`
   - `FoundationalBoundaryEvidenceSourceBasis`
   - `FoundationalBoundaryEvidenceFreshnessPosture`
@@ -581,13 +580,13 @@ authority.
 
 The exact lower-level relational surfaces touched today are:
 
-- [crates/worth-relational/src/logic/builder.rs](/C:/Users/shepworth/Documents/programming/WORTH-2/crates/worth-relational/src/logic/builder.rs)
+- `crates/worth-relational/src/logic/builder.rs`
   - `LogicRuntimeBuilder::invariant_catalog(...)`
   - `LogicRuntimeBuilder::custom_invariant(...)`
   - owned data lane:
     - `CustomInvariantRegistration`
     - `InvariantCatalog`
-- [crates/worth-relational/src/facade.rs](/C:/Users/shepworth/Documents/programming/WORTH-2/crates/worth-relational/src/facade.rs)
+- [crates/worth-relational/src/facade.rs](../../crates/worth-relational/src/facade.rs)
   - exported invariant authoring types:
     - `CustomInvariantRegistration`
     - `CustomInvariantRule`
@@ -745,7 +744,7 @@ phase-like names.
 
 The DX laws apply directly to this milestone.
 
-The public surface must not expose â€œdomain capability contributionsâ€ as a bag
+The public surface must not expose “domain capability contributions” as a bag
 of generic builders. It must expose:
 
 1. one obvious common semantic lane

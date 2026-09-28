@@ -13,8 +13,8 @@ The governing rule remains:
 
 `parallelize disposable work, serialize authority`
 
-Milestone 7D does not treat deletion or topology semantics as â€œspecial merge
-exceptions.â€ It treats them as truth-bearing merge classes that must either:
+Milestone 7D does not treat deletion or topology semantics as “special merge
+exceptions.” It treats them as truth-bearing merge classes that must either:
 
 - compile into an authoritative executable class, or
 - remain explicitly non-executable with typed denial and proof-bearing
@@ -37,11 +37,11 @@ enough to evolve execution incrementally.
 The current failure mode is not correctness of 7C execution. The failure mode
 is ontology collapse:
 
-- all deletion cases look like one generic â€œblocked deletionâ€
+- all deletion cases look like one generic “blocked deletion”
 - relation rewiring remains visible as conflict but not as execution-class
   ontology
-- operators cannot distinguish â€œsafe but not yet admittedâ€ from â€œsemantically
-  impossible under current truth rulesâ€
+- operators cannot distinguish “safe but not yet admitted” from “semantically
+  impossible under current truth rules”
 - future executable promotion risks leaking semantics into lowering or commit
   apply instead of passing through a clear proof boundary
 
@@ -114,7 +114,7 @@ Deletion and topology semantics will be introduced in two layers:
 2. `MergeExecutableClass`
    This is the admitted executable subset for the current milestone.
 
-The architecture must never equate â€œrepresentedâ€ with â€œexecutable.â€
+The architecture must never equate “represented” with “executable.”
 
 The execution boundary may consume only `MergeExecutableClass`.
 All other classes remain typed denial surfaces.
@@ -140,8 +140,8 @@ every class is owned by the runtime as either:
 - an explicitly certified non-executable class with typed denial and proof-
   bearing diagnostics
 
-There must be no generic merge class whose only answer is â€œleave it to custom
-policy.â€
+There must be no generic merge class whose only answer is “leave it to custom
+policy.”
 
 ### Record-Level Structural Merge Classes The Runtime Must Own
 
@@ -178,7 +178,7 @@ not be delegated to custom policy:
 - `PreferRicher`
 
 These are generic data-shape policies, not domain-specific semantics. They are
-part of the runtimeâ€™s standard merge contract and must preserve:
+part of the runtime’s standard merge contract and must preserve:
 
 - explicit applied-policy provenance
 - explicit per-aspect resolution records
@@ -210,7 +210,7 @@ Every generic merge class, whether executed or denied, must preserve:
 - causal disposition provenance
 - applied policy provenance
 - record-level classification provenance
-- lineage continuity semantics, including explicit â€œunchangedâ€ when lineage does
+- lineage continuity semantics, including explicit “unchanged” when lineage does
   not move
 
 The runtime must not treat identity, lineage, or provenance preservation as
@@ -319,7 +319,7 @@ The default 7D promotion target is:
 Why this class first:
 
 - it has the smallest semantic surface
-- it does not require one branch to â€œwinâ€ a visible record over the other
+- it does not require one branch to “win” a visible record over the other
 - it does not imply topology rewiring
 - it is the easiest class to replay/certify without hidden identity mutation
 
@@ -355,7 +355,7 @@ Required invariants:
 - every topology conflict must map to exactly one topology execution or denial
   class
 - it must be impossible for execution compilation to receive a generic
-  â€œblocked deletionâ€ bucket
+  “blocked deletion” bucket
 
 Additional required invariants:
 
@@ -413,8 +413,8 @@ If `DeletedOnBothSides` is promoted, execution must add a concrete executable
 record-plan variant for authoritative no-op convergence or authoritative tombstone
 convergence, whichever semantics the runtime formally adopts.
 
-The execution type must make the choice explicit. It must not rely on â€œno
-mutation happened so it must have been both deleted.â€
+The execution type must make the choice explicit. It must not rely on “no
+mutation happened so it must have been both deleted.”
 
 ### Assumptions That Must Become Explicit
 
@@ -466,7 +466,7 @@ The runtime must localize each with:
 - base evidence
 - if relation-local, continuity/propagation evidence
 
-This fail-closed status does not make these classes â€œcustom-policy territory.â€
+This fail-closed status does not make these classes “custom-policy territory.”
 It means the runtime owns them as generic truth classes but has not yet admitted
 them for authoritative execution.
 
@@ -519,7 +519,7 @@ Required outcomes:
 
 Exit criteria:
 
-- illegal state â€œnon-admitted deletion/topology class reaches executable planâ€
+- illegal state “non-admitted deletion/topology class reaches executable plan”
   is unrepresentable
 
 ### Phase C: First Deletion Promotion
@@ -536,7 +536,7 @@ Required outcomes:
 - success/failure diagnostics distinguish executable deletion truth from denied
   deletion truth
 - lineage semantics for the admitted class are explicit and proof-bearing, not
-  inferred from â€œno mutation emittedâ€
+  inferred from “no mutation emitted”
 
 Exit criteria:
 

@@ -13,20 +13,20 @@ use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationCommitOutcome, WorthQueryApplicationUncommitted,
 };
 
-use super::bounded_dimension_model::{
-    dimension_entry::{
-        candidate_count, reset_candidate_count, ReviewedSetPartDimensionBinding,
-        ReviewedSetPartDimensionIntent, SetPartDimensionIntent, PART_IDENTITY,
-    },
-    host::{BoundedDimensionWorkflowRuntime, SEED_DIMENSION},
+use super::document_retention_model::{
+    host::{DocumentWorkflowRuntime, SEED_RETENTION},
     operator_identity::{authenticate_operator, request_scope},
-    presented_request::set_dimension,
-    readback::read_dimension,
-    settled_verdict::{settle, DimensionVerdict},
+    presented_request::set_retention,
+    readback::read_retention,
+    retention_entry::{
+        candidate_count, reset_candidate_count, ReviewedSetRetentionBinding,
+        ReviewedSetRetentionIntent, SetRetentionIntent, DOCUMENT_IDENTITY,
+    },
+    settled_verdict::{settle, RetentionVerdict},
     workflow::{
         accept_assessment, advance_instance, approve_instance, propose_instance,
-        publish_definition, reviewed_geometry_definition,
-        reviewed_geometry_definition_with_join_policy, settle_assessment, start_instance,
+        publish_definition, reviewed_document_definition,
+        reviewed_document_definition_with_join_policy, settle_assessment, start_instance,
     },
 };
 
@@ -131,10 +131,10 @@ fn approved_operation_requires_and_consumes_the_exact_performed_effect() {
     let unbound = runtime
         .request(&principal, &scope)
         .on_branch(instance.branch())
-        .mutate(ReviewedSetPartDimensionIntent {
-            input: super::bounded_dimension_model::schema::SetPartDimensionInput {
-                identity: PART_IDENTITY.to_owned(),
-                dimension: 8,
+        .mutate(ReviewedSetRetentionIntent {
+            input: super::document_retention_model::schema::SetRetentionInput {
+                identity: DOCUMENT_IDENTITY.to_owned(),
+                retention_days: 8,
             },
         })
         .without_source()
@@ -144,7 +144,7 @@ fn approved_operation_requires_and_consumes_the_exact_performed_effect() {
         unbound,
         Err(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::RequiresWorkflowTransition)
     ));
-    assert_eq!(read_dimension(runtime, instance.branch()), SEED_DIMENSION);
+    assert_eq!(read_retention(runtime, instance.branch()), SEED_RETENTION);
     let sibling = runtime
         .branches()
         .fork(instance.branch())
@@ -154,10 +154,10 @@ fn approved_operation_requires_and_consumes_the_exact_performed_effect() {
     let wrong_branch = runtime
         .request(&principal, &scope)
         .on_branch(sibling)
-        .mutate(ReviewedSetPartDimensionIntent {
-            input: super::bounded_dimension_model::schema::SetPartDimensionInput {
-                identity: PART_IDENTITY.to_owned(),
-                dimension: 8,
+        .mutate(ReviewedSetRetentionIntent {
+            input: super::document_retention_model::schema::SetRetentionInput {
+                identity: DOCUMENT_IDENTITY.to_owned(),
+                retention_days: 8,
             },
         })
         .without_source()
@@ -170,10 +170,10 @@ fn approved_operation_requires_and_consumes_the_exact_performed_effect() {
     let wrong_binding = runtime
         .request(&principal, &scope)
         .on_branch(instance.branch())
-        .mutate(SetPartDimensionIntent {
-            input: super::bounded_dimension_model::schema::SetPartDimensionInput {
-                identity: PART_IDENTITY.to_owned(),
-                dimension: 8,
+        .mutate(SetRetentionIntent {
+            input: super::document_retention_model::schema::SetRetentionInput {
+                identity: DOCUMENT_IDENTITY.to_owned(),
+                retention_days: 8,
             },
         })
         .without_source()
@@ -186,10 +186,10 @@ fn approved_operation_requires_and_consumes_the_exact_performed_effect() {
     let wrong_input = runtime
         .request(&principal, &scope)
         .on_branch(instance.branch())
-        .mutate(ReviewedSetPartDimensionIntent {
-            input: super::bounded_dimension_model::schema::SetPartDimensionInput {
-                identity: PART_IDENTITY.to_owned(),
-                dimension: 9,
+        .mutate(ReviewedSetRetentionIntent {
+            input: super::document_retention_model::schema::SetRetentionInput {
+                identity: DOCUMENT_IDENTITY.to_owned(),
+                retention_days: 9,
             },
         })
         .without_source()
@@ -205,10 +205,10 @@ fn approved_operation_requires_and_consumes_the_exact_performed_effect() {
     let effect = runtime
         .request(&principal, &scope)
         .on_branch(instance.branch())
-        .mutate(ReviewedSetPartDimensionIntent {
-            input: super::bounded_dimension_model::schema::SetPartDimensionInput {
-                identity: PART_IDENTITY.to_owned(),
-                dimension: 8,
+        .mutate(ReviewedSetRetentionIntent {
+            input: super::document_retention_model::schema::SetRetentionInput {
+                identity: DOCUMENT_IDENTITY.to_owned(),
+                retention_days: 8,
             },
         })
         .without_source()
@@ -233,7 +233,7 @@ fn approved_operation_requires_and_consumes_the_exact_performed_effect() {
         2,
         "the zero-create handler and Query-owned transition share one commit"
     );
-    assert_eq!(read_dimension(runtime, instance.branch()), 8);
+    assert_eq!(read_retention(runtime, instance.branch()), 8);
     match advance_instance(&application, instance.clone(), 817)
         .expect("the local mutation already settled apply, so the successor must prepare")
     {
@@ -243,21 +243,21 @@ fn approved_operation_requires_and_consumes_the_exact_performed_effect() {
         other => panic!("expected the completion terminal, got {other:?}"),
     }
     assert_eq!(
-        settle(set_dimension(
+        settle(set_retention(
             application.program_runtime(),
             instance.branch(),
-            SEED_DIMENSION,
+            SEED_RETENTION,
             819,
         )),
-        DimensionVerdict::Performed(SEED_DIMENSION)
+        RetentionVerdict::Performed(SEED_RETENTION)
     );
     let stale = runtime
         .request(&principal, &scope)
         .on_branch(instance.branch())
-        .mutate(ReviewedSetPartDimensionIntent {
-            input: super::bounded_dimension_model::schema::SetPartDimensionInput {
-                identity: PART_IDENTITY.to_owned(),
-                dimension: 8,
+        .mutate(ReviewedSetRetentionIntent {
+            input: super::document_retention_model::schema::SetRetentionInput {
+                identity: DOCUMENT_IDENTITY.to_owned(),
+                retention_days: 8,
             },
         })
         .without_source()
@@ -269,25 +269,25 @@ fn approved_operation_requires_and_consumes_the_exact_performed_effect() {
         stale,
         Ok(WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift)
     ));
-    assert_eq!(read_dimension(runtime, instance.branch()), SEED_DIMENSION);
+    assert_eq!(read_retention(runtime, instance.branch()), SEED_RETENTION);
 }
 
 #[test]
 fn all_completed_join_does_not_turn_failing_evidence_into_approval_authority() {
-    const FAILING_DIMENSION: u64 = 6;
-    let application = super::bounded_dimension_model::host::publish_workflow_on_first_program();
+    const FAILING_RETENTION: u64 = 6;
+    let application = super::document_retention_model::host::publish_workflow_on_first_program();
     assert_eq!(
-        settle(set_dimension(
+        settle(set_retention(
             application.program_runtime(),
             application.program_runtime().current_world(),
-            FAILING_DIMENSION,
+            FAILING_RETENTION,
             720,
         )),
-        DimensionVerdict::Performed(FAILING_DIMENSION)
+        RetentionVerdict::Performed(FAILING_RETENTION)
     );
     let definition = match publish_definition(
         &application,
-        reviewed_geometry_definition_with_join_policy(
+        reviewed_document_definition_with_join_policy(
             "completed",
             worth_query_host::facade::declaration::application_program::ApplicationWorkflowEvidenceJoinPolicy::AllRequiredCompleted,
         ),
@@ -346,15 +346,15 @@ fn all_completed_join_does_not_turn_failing_evidence_into_approval_authority() {
 #[test]
 fn approval_rejects_assessment_evidence_after_native_source_aba() {
     let (application, _, instance, proposal, required, _) = approval_journey("approved", 700);
-    for (dimension, key) in [(SEED_DIMENSION + 1, 710), (SEED_DIMENSION, 711)] {
+    for (retention_days, key) in [(SEED_RETENTION + 1, 710), (SEED_RETENTION, 711)] {
         assert_eq!(
-            settle(set_dimension(
+            settle(set_retention(
                 application.program_runtime(),
                 instance.branch(),
-                dimension,
+                retention_days,
                 key,
             )),
-            DimensionVerdict::Performed(dimension)
+            RetentionVerdict::Performed(retention_days)
         );
     }
     assert!(matches!(

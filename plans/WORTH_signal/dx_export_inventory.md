@@ -6,11 +6,11 @@ This document is the strict public export audit for `worth-signal`.
 
 It inventories:
 
-- every root public module exposed from [`crates/worth-signal/src/lib.rs`](/Users/spenstar/Documents/programming/WORTH/WORTH/crates/worth-signal/src/lib.rs)
-- every public namespace exported from [`crates/worth-signal/src/facade.rs`](/Users/spenstar/Documents/programming/WORTH/WORTH/crates/worth-signal/src/facade.rs)
+- every root public module exposed from [`crates/worth-signal/src/lib.rs`](../../crates/worth-signal/src/lib.rs)
+- every public namespace exported from [`crates/worth-signal/src/facade.rs`](../../crates/worth-signal/src/facade.rs)
 - every additional direct public export path exposed through
-  [`crates/worth-signal/src/diagnostics/mod.rs`](/Users/spenstar/Documents/programming/WORTH/WORTH/crates/worth-signal/src/diagnostics/mod.rs)
-  and [`crates/worth-signal/src/easy/mod.rs`](/Users/spenstar/Documents/programming/WORTH/WORTH/crates/worth-signal/src/easy/mod.rs)
+  [`crates/worth-signal/src/diagnostics/mod.rs`](../../crates/worth-signal/src/diagnostics/mod.rs)
+  and [`crates/worth-signal/src/easy/mod.rs`](../../crates/worth-signal/src/easy/mod.rs)
 - notable edge cases like feature-gated and test-only exports
 
 This is an **inventory and classification** artifact, not a recommendation that
@@ -29,11 +29,11 @@ all of these remain public.
 
 ## Root Public Entry Paths
 
-From [`crates/worth-signal/src/lib.rs`](/Users/spenstar/Documents/programming/WORTH/WORTH/crates/worth-signal/src/lib.rs):
+From [`crates/worth-signal/src/lib.rs`](../../crates/worth-signal/src/lib.rs):
 
-- `worth_signal::facade` â†’ main public boundary
-- `worth_signal::easy` â†’ convenience surface
-- `worth_signal::diagnostics` â†’ direct diagnostics surface
+- `worth_signal::facade` → main public boundary
+- `worth_signal::easy` → convenience surface
+- `worth_signal::diagnostics` → direct diagnostics surface
 
 Assessment:
 
@@ -50,7 +50,7 @@ Implication:
 
 ## Facade Inventory
 
-Source: [`crates/worth-signal/src/facade.rs`](/Users/spenstar/Documents/programming/WORTH/WORTH/crates/worth-signal/src/facade.rs)
+Source: [`crates/worth-signal/src/facade.rs`](../../crates/worth-signal/src/facade.rs)
 
 ## `facade::types`
 
@@ -693,7 +693,7 @@ Assessment:
 Assessment:
 
 - diagnostics is intentionally large and product-differentiating
-- but it is still too large to present as a flat â€œstart hereâ€ surface
+- but it is still too large to present as a flat “start here” surface
 
 ---
 
@@ -748,7 +748,7 @@ These are public even if users never import `facade`.
 
 ## `worth_signal::easy`
 
-Source: [`crates/worth-signal/src/easy/mod.rs`](/Users/spenstar/Documents/programming/WORTH/WORTH/crates/worth-signal/src/easy/mod.rs)
+Source: [`crates/worth-signal/src/easy/mod.rs`](../../crates/worth-signal/src/easy/mod.rs)
 
 ### `P0`
 
@@ -771,7 +771,7 @@ Notes:
 
 ## `worth_signal::diagnostics`
 
-Source: [`crates/worth-signal/src/diagnostics/mod.rs`](/Users/spenstar/Documents/programming/WORTH/WORTH/crates/worth-signal/src/diagnostics/mod.rs)
+Source: [`crates/worth-signal/src/diagnostics/mod.rs`](../../crates/worth-signal/src/diagnostics/mod.rs)
 
 ### Direct public submodules
 
@@ -824,7 +824,7 @@ Assessment:
 
 ### Test-only public export
 
-From [`crates/worth-signal/src/facade.rs`](/Users/spenstar/Documents/programming/WORTH/WORTH/crates/worth-signal/src/facade.rs):
+From [`crates/worth-signal/src/facade.rs`](../../crates/worth-signal/src/facade.rs):
 
 - `GraphDependencyBatchExt` is only `pub` under `#[cfg(test)]`
 
@@ -832,7 +832,7 @@ This is not part of the shipped public library surface.
 
 ### Convenience-only public export
 
-From [`crates/worth-signal/src/easy/runtime.rs`](/Users/spenstar/Documents/programming/WORTH/WORTH/crates/worth-signal/src/easy/runtime.rs):
+From [`crates/worth-signal/src/easy/runtime.rs`](../../crates/worth-signal/src/easy/runtime.rs):
 
 - `ReactiveGraph` has a doc-only deprecation note signaling that it is not the
   production runtime surface

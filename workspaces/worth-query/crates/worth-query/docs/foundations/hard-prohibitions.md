@@ -1,5 +1,7 @@
 # Worth Query Hard Prohibitions
 
+> **Internal engine surface.** This page documents `WorthQueryWorkspace` (`worth_query::facade`), the engine surface that `worth-ui-query-binding` uses. Application code uses `worth-query-decl` and `worth-query-host`; start with the [application front door](ordinary-application-front-door.md).
+
 This reference is generated from the hard prohibition registry. Do not edit it without updating the registry-owned projection test.
 
 | Seam | Forbidden symbol | Enforcement | Replacement lane | Rationale |

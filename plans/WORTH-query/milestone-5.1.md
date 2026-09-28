@@ -1,33 +1,33 @@
 # Milestone 5.1 Engineering Spec: Region-Scoped Live Narrowing And Stream-Contract Delivery
 
-> **Status:** Draft engineering spec
+> **Status:** Completed. Closeout: [milestone-5.1-closeout.md](./milestone-5.1-closeout.md).
 >
-> **Roadmap parent:** [worth_query_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/worth_query_roadmap.md)
+> **Roadmap parent:** [worth_query_roadmap.md](./WORTH_query_roadmap.md)
 >
-> **Vision parent:** [worth_query_vision.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/worth_query_vision.md)
+> **Vision parent:** [worth_query_vision.md](./WORTH_query_vision.md)
 >
-> **Prior milestone:** [milestone-5.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/milestone-5.md)
+> **Prior milestone:** [milestone-5.md](./milestone-5.md)
 >
-> **Prior closeout:** [milestone-5-closeout.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/milestone-5-closeout.md)
+> **Prior closeout:** [milestone-5-closeout.md](./milestone-5-closeout.md)
 >
-> **Test requirements:** [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/test-requirements.md)
+> **Test requirements:** [test-requirements.md](./test-requirements.md)
 >
 > **Primary architectural driver:** make region-aware invalidation and stream-contract lowering planner-owned live artifacts so locality-bearing truth changes can narrow below broad aspect scope and still arrive as query-shaped delivery contracts rather than raw partition events or transport-local glue
 >
 > **Companion docs:**
-> - [MENTALITY.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/MENTALITY.md)
-> - [arch_laws.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/arch_laws.md)
-> - [perf_laws.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/perf_laws.md)
-> - [domain_laws.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/domain_laws.md)
-> - [worth_query_vision.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/worth_query_vision.md)
-> - [worth_query_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/worth_query_roadmap.md)
-> - [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/test-requirements.md)
-> - [milestone-4.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/milestone-4.md)
-> - [milestone-4-closeout.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/milestone-4-closeout.md)
-> - [milestone-5.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/milestone-5.md)
-> - [milestone-5-closeout.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/milestone-5-closeout.md)
-> - [worth-runtime-bridge milestone-2.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-2.md)
-> - [worth-runtime-bridge milestone-6.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-6.md)
+> - [MENTALITY.md](../../docs/coding-guidelines/MENTALITY.md)
+> - [arch_laws.md](../../docs/coding-guidelines/arch_laws.md)
+> - [perf_laws.md](../../docs/coding-guidelines/perf_laws.md)
+> - [domain_laws.md](../../docs/coding-guidelines/domain_structure_laws.md)
+> - [worth_query_vision.md](./WORTH_query_vision.md)
+> - [worth_query_roadmap.md](./WORTH_query_roadmap.md)
+> - [test-requirements.md](./test-requirements.md)
+> - [milestone-4.md](./milestone-4.md)
+> - [milestone-4-closeout.md](./milestone-4-closeout.md)
+> - [milestone-5.md](./milestone-5.md)
+> - [milestone-5-closeout.md](./milestone-5-closeout.md)
+> - [worth-runtime-bridge milestone-2.md](../WORTH-runtime-bridge/milestone-2.md)
+> - [worth-runtime-bridge milestone-6.md](../WORTH-runtime-bridge/milestone-6.md)
 
 ## Goal
 
@@ -1042,7 +1042,7 @@ Minimum rejection rows should include:
 Milestone 5.1 is complete only when `worth-query` can prove:
 
 - the `Region-Scoped Live Narrowing And Stream Contract Test` in
-  [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/test-requirements.md)
+  [test-requirements.md](./test-requirements.md)
   passes with canonical machine-checkable artifacts
 - region-scoped live invalidation stays narrower than broad aspect invalidation
   when lower-runtime locality contracts admit that narrowing

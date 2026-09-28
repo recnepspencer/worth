@@ -11,11 +11,11 @@ use worth_query_host::facade::{
     primary_graph::{WorthQueryApplicationCommitDenialKind, WorthQueryApplicationUncommitted},
 };
 
-use super::bounded_dimension_model::{
+use super::document_retention_model::{
     host::publish_workflow_on_first_program,
     workflow::{
         advance_instance, expect_capacity_refused, expect_superseded_start, publish_definition,
-        reviewed_geometry_definition, start_instance, terminal_definition,
+        reviewed_document_definition, start_instance, terminal_definition,
     },
 };
 
@@ -33,12 +33,12 @@ fn installed_resource_ceiling_rejects_a_definition_declaring_broader_limits() {
             256 * 1024,
         )
         .expect("the constrained workflow resources are nonzero");
-    let application = super::bounded_dimension_model::workflow::retain_workflow_with_resources(
-        super::bounded_dimension_model::host::publish_on_first_program(),
+    let application = super::document_retention_model::workflow::retain_workflow_with_resources(
+        super::document_retention_model::host::publish_on_first_program(),
         resources,
     );
     let denial = match application.workflow_spec().bind_definition(
-        super::bounded_dimension_model::workflow::reviewed_geometry_definition("completed"),
+        super::document_retention_model::workflow::reviewed_document_definition("completed"),
     ) {
         Ok(_) => panic!("definition limits exceeded the installed effect ceiling"),
         Err(denial) => denial,
@@ -63,12 +63,12 @@ fn installed_component_ceiling_rejects_only_the_broader_component_contract() {
             256 * 1024,
         )
         .expect("the constrained workflow resources are nonzero");
-    let application = super::bounded_dimension_model::workflow::retain_workflow_with_resources(
-        super::bounded_dimension_model::host::publish_on_first_program(),
+    let application = super::document_retention_model::workflow::retain_workflow_with_resources(
+        super::document_retention_model::host::publish_on_first_program(),
         resources,
     );
     let denial = match application.workflow_spec().bind_definition(
-        super::bounded_dimension_model::workflow::reviewed_geometry_definition("completed"),
+        super::document_retention_model::workflow::reviewed_document_definition("completed"),
     ) {
         Ok(_) => panic!("definition component limits exceed installed resources"),
         Err(denial) => denial,
@@ -168,7 +168,7 @@ fn public_authoring_publishes_replays_and_revises_one_branch_lineage() {
         "initial publication",
         publish_definition(
             &application,
-            reviewed_geometry_definition("completed"),
+            reviewed_document_definition("completed"),
             WorkflowDefinitionExpectedPredecessor::Absent,
             1,
         ),
@@ -180,7 +180,7 @@ fn public_authoring_publishes_replays_and_revises_one_branch_lineage() {
         "exact replay",
         publish_definition(
             &application,
-            reviewed_geometry_definition("completed"),
+            reviewed_document_definition("completed"),
             WorkflowDefinitionExpectedPredecessor::Absent,
             1,
         ),
@@ -196,7 +196,7 @@ fn public_authoring_publishes_replays_and_revises_one_branch_lineage() {
         "lawful revision",
         publish_definition(
             &application,
-            reviewed_geometry_definition("settled"),
+            reviewed_document_definition("settled"),
             WorkflowDefinitionExpectedPredecessor::Published(first_definition.clone()),
             2,
         ),
@@ -214,14 +214,14 @@ fn public_authoring_publishes_replays_and_revises_one_branch_lineage() {
 
     expect_stale_predecessor(publish_definition(
         &application,
-        reviewed_geometry_definition("superseded"),
+        reviewed_document_definition("superseded"),
         WorkflowDefinitionExpectedPredecessor::Published(first_definition),
         3,
     ));
 
     expect_intent_drift(publish_definition(
         &application,
-        reviewed_geometry_definition("different-intent"),
+        reviewed_document_definition("different-intent"),
         WorkflowDefinitionExpectedPredecessor::Published(second.definition().clone()),
         1,
     ));
@@ -234,7 +234,7 @@ fn public_instance_start_binds_revisions_replays_and_enforces_lineage_capacity()
         "initial publication",
         publish_definition(
             &application,
-            reviewed_geometry_definition("completed"),
+            reviewed_document_definition("completed"),
             WorkflowDefinitionExpectedPredecessor::Absent,
             11,
         ),
@@ -266,7 +266,7 @@ fn public_instance_start_binds_revisions_replays_and_enforces_lineage_capacity()
         "replacement publication",
         publish_definition(
             &application,
-            reviewed_geometry_definition("settled"),
+            reviewed_document_definition("settled"),
             WorkflowDefinitionExpectedPredecessor::Published(first_definition.clone()),
             12,
         ),
@@ -287,7 +287,7 @@ fn public_instance_start_binds_revisions_replays_and_enforces_lineage_capacity()
         "same-content new revision",
         publish_definition(
             &application,
-            reviewed_geometry_definition("completed"),
+            reviewed_document_definition("completed"),
             WorkflowDefinitionExpectedPredecessor::Published(second.definition().clone()),
             13,
         ),

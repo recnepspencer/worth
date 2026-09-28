@@ -8,7 +8,7 @@
 >
 > **Formal closeout:** [api_surface_closeout.md](./api_surface_closeout.md)
 >
-> **Core lineage:** [\plans/worth_signal/test-requirements.md](../../../plans/worth_signal/test-requirements.md)
+> **Core lineage:** [\plans/worth_signal/test-requirements.md](../WORTH_signal/test-requirements.md)
 
 ## Purpose
 

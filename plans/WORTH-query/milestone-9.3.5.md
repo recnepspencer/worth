@@ -1,7 +1,6 @@
 # Milestone 9.3.5 Engineering Spec: Intent Admission Decision Lattice And Decision Trace
 
-> **Status:** Closed on 2026-05-18 via
-> [milestone-9.3.5-closeout.md](./milestone-9.3.5-closeout.md)
+> **Status:** Completed. Closeout: [milestone-9.3.5-closeout.md](./milestone-9.3.5-closeout.md).
 >
 > **Roadmap parent:** [worth_query_roadmap.md](./worth_query_roadmap.md)
 >

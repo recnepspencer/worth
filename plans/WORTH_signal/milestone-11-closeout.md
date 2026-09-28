@@ -31,35 +31,35 @@ frontend-specific semantics.
 
 Core observation substrate:
 
-- [runtime_observation.rs](/C:/Users/shepworth/Documents/programming/WORTH/crates/worth-signal/src/logic/transaction/runtime/state/runtime_observation.rs)
-- [observation.rs](/C:/Users/shepworth/Documents/programming/WORTH/crates/worth-signal/src/logic/transaction/runtime/state/observation.rs)
-- [observer.rs](/C:/Users/shepworth/Documents/programming/WORTH/crates/worth-signal/src/logic/transaction/runtime/state/observer.rs)
-- [runtime_state.rs](/C:/Users/shepworth/Documents/programming/WORTH/crates/worth-signal/src/logic/transaction/runtime/state/runtime_state.rs)
+- [runtime_observation.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/runtime_observation.rs)
+- [observation.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/observation.rs)
+- [observer.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/observer.rs)
+- [runtime_state.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/runtime_state/mod.rs)
 
 Transaction staging, classification, and boundary delivery:
 
-- [transaction_observation.rs](/C:/Users/shepworth/Documents/programming/WORTH/crates/worth-signal/src/logic/transaction/runtime/transaction/transaction_observation.rs)
-- [transaction_mutation.rs](/C:/Users/shepworth/Documents/programming/WORTH/crates/worth-signal/src/logic/transaction/runtime/transaction/transaction_mutation.rs)
-- [commit_path.rs](/C:/Users/shepworth/Documents/programming/WORTH/crates/worth-signal/src/logic/transaction/runtime/transaction/transaction_commit/commit_path.rs)
-- [rollback_path.rs](/C:/Users/shepworth/Documents/programming/WORTH/crates/worth-signal/src/logic/transaction/runtime/transaction/transaction_commit/rollback_path.rs)
-- [finalize.rs](/C:/Users/shepworth/Documents/programming/WORTH/crates/worth-signal/src/logic/transaction/runtime/transaction/transaction_commit/finalize.rs)
+- [transaction_observation.rs](../../crates/worth-signal/src/logic/transaction/runtime/transaction/transaction_observation.rs)
+- [transaction_mutation.rs](../../crates/worth-signal/src/logic/transaction/runtime/transaction/transaction_mutation.rs)
+- [commit_path.rs](../../crates/worth-signal/src/logic/transaction/runtime/transaction/transaction_commit/commit_path.rs)
+- [rollback_path.rs](../../crates/worth-signal/src/logic/transaction/runtime/transaction/transaction_commit/rollback_path.rs)
+- [finalize.rs](../../crates/worth-signal/src/logic/transaction/runtime/transaction/transaction_commit/finalize/mod.rs)
 
 Diagnostics and public surface:
 
-- [state.rs](/C:/Users/shepworth/Documents/programming/WORTH/crates/worth-signal/src/diagnostics/runtime/state.rs)
-- [flow.rs](/C:/Users/shepworth/Documents/programming/WORTH/crates/worth-signal/src/diagnostics/model/flow.rs)
-- [access.rs](/C:/Users/shepworth/Documents/programming/WORTH/crates/worth-signal/src/diagnostics/inspection/access.rs)
-- [facade.rs](/C:/Users/shepworth/Documents/programming/WORTH/crates/worth-signal/src/facade.rs)
+- [state.rs](../../crates/worth-signal/src/diagnostics/runtime/state.rs)
+- [flow.rs](../../crates/worth-signal/src/diagnostics/model/flow.rs)
+- [access.rs](../../crates/worth-signal/src/diagnostics/inspection/access.rs)
+- [facade.rs](../../crates/worth-signal/src/facade.rs)
 
 Easy surface:
 
-- [runtime.rs](/C:/Users/shepworth/Documents/programming/WORTH/crates/worth-signal/src/easy/runtime.rs)
-- [observation.rs](/C:/Users/shepworth/Documents/programming/WORTH/crates/worth-signal/src/easy/observation.rs)
-- [compute.rs](/C:/Users/shepworth/Documents/programming/WORTH/crates/worth-signal/src/easy/compute.rs)
+- [runtime.rs](../../crates/worth-signal/src/easy/runtime.rs)
+- [observation.rs](../../crates/worth-signal/src/easy/observation.rs)
+- [compute.rs](../../crates/worth-signal/src/easy/compute.rs)
 
 ## Architectural Result
 
-The final implementation satisfies the milestoneâ€™s boundary contract:
+The final implementation satisfies the milestone’s boundary contract:
 
 - `worth-signal` owns runtime-local observation semantics for derived-state change
 - `worth-relational` still owns truth identity, mutation, history, and diffs
@@ -87,7 +87,7 @@ Milestone 11 was not closed on implementation alone. It was closed only after:
 
 Closeout gate:
 
-- [tests.rs](/C:/Users/shepworth/Documents/programming/WORTH/crates/worth-signal/src/logic/transaction/tests.rs)
+- [tests.rs](../../crates/worth-signal/src/logic/transaction/tests/mod.rs)
   `observation_unobserve_does_not_resurrect_dead_listener_after_branch_restore_churn`
 
 That closeout test proves:
@@ -99,9 +99,9 @@ That closeout test proves:
 
 Additional test-strengthening work landed in:
 
-- [tests.rs](/C:/Users/shepworth/Documents/programming/WORTH/crates/worth-signal/src/logic/transaction/tests.rs)
-- [phase1_api.rs](/C:/Users/shepworth/Documents/programming/WORTH/crates/worth-signal/src/tests/phase1_api.rs)
-- [diagnostics.rs](/C:/Users/shepworth/Documents/programming/WORTH/crates/worth-signal/src/tests/diagnostics.rs)
+- [tests.rs](../../crates/worth-signal/src/logic/transaction/tests/mod.rs)
+- [phase1_api.rs](../../crates/worth-signal/src/tests/phase1_api.rs)
+- [diagnostics.rs](../../crates/worth-signal/src/tests/diagnostics.rs)
 
 ## Final Verification
 

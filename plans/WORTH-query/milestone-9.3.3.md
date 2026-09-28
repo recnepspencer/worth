@@ -1,7 +1,6 @@
 # Milestone 9.3.3 Engineering Spec: Authority-Scoped Effect Execution Pipeline
 
-> **Status:** Closed 2026-05-13 via
-> [milestone-9.3.3-closeout.md](./milestone-9.3.3-closeout.md)
+> **Status:** Completed.
 >
 > **Roadmap parent:** [worth_query_roadmap.md](./worth_query_roadmap.md)
 >

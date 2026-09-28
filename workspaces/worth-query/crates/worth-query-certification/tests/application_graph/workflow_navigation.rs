@@ -5,10 +5,10 @@ use worth_query_host::facade::application_entry::{
 };
 use worth_query_host::facade::primary_graph::WorthQueryApplicationAttemptDenialKind;
 
-use super::bounded_dimension_model::{
-    dimension_entry::PART_IDENTITY,
+use super::document_retention_model::{
     host::publish_workflow_on_first_program,
     operator_identity::{authenticate_operator, request_scope},
+    retention_entry::DOCUMENT_IDENTITY,
     workflow::{
         accept_assessment, advance_instance, assessment_join_terminal_definition,
         propose_authoring_instance, publish_definition, settle_assessment, start_instance,
@@ -49,7 +49,7 @@ fn back_is_one_published_transition_and_reconstructs_without_replaying_an_effect
             .request(&principal, &scope)
             .mutate(WorkflowAdvanceIntent {
                 input: WorkflowAdvanceInput {
-                    part_identity: PART_IDENTITY.to_owned(),
+                    document_identity: DOCUMENT_IDENTITY.to_owned(),
                 },
             })
             .without_source()

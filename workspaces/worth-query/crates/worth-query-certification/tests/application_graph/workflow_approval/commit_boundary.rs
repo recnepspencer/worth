@@ -9,14 +9,14 @@ use worth_query_host::facade::{
     },
 };
 
-use super::super::bounded_dimension_model::schema::{
-    PartIdentityField, SetPartDimension, SetPartDimensionInput,
+use super::super::document_retention_model::schema::{
+    DocumentIdentityField, SetRetention, SetRetentionInput,
 };
 
 #[test]
 fn guarded_action_cannot_commit_through_public_program_owner_without_workflow_authority() {
     let application =
-        super::super::bounded_dimension_model::host::publish_workflow_on_first_program();
+        super::super::document_retention_model::host::publish_workflow_on_first_program();
     let runtime = application.runtime();
     let branch = application.program_runtime().current_world();
     let scope = request_scope();
@@ -28,7 +28,7 @@ fn guarded_action_cannot_commit_through_public_program_owner_without_workflow_au
     let principal_binding = runtime
         .installed_schema()
         .principal_binding(
-            super::super::bounded_dimension_model::schema::PartPrincipalBinding::reference(),
+            super::super::document_retention_model::schema::DocumentPrincipalBinding::reference(),
         )
         .expect("principal binding must install");
     let principal = selected
@@ -39,28 +39,34 @@ fn guarded_action_cannot_commit_through_public_program_owner_without_workflow_au
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .expect("operator must resolve");
-    let part = selected
+    let document = selected
         .resolve_entity(
-            PartIdentityField::reference(),
-            PART_IDENTITY.to_owned(),
+            DocumentIdentityField::reference(),
+            DOCUMENT_IDENTITY.to_owned(),
             &scope,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
-        .expect("part must resolve");
+        .expect("document must resolve");
     let operation = runtime
         .installed_schema()
-        .installed_operation(SetPartDimension::reference())
+        .installed_operation(SetRetention::reference())
         .expect("operation must install");
-    let input = SetPartDimensionInput {
-        identity: PART_IDENTITY.to_owned(),
-        dimension: SEED_DIMENSION + 1,
+    let input = SetRetentionInput {
+        identity: DOCUMENT_IDENTITY.to_owned(),
+        retention_days: SEED_RETENTION + 1,
     };
     let candidate = |key: u64| {
         let admission = selected
-            .authorize_operation(&principal, &part, &operation, Default::default(), &scope)
+            .authorize_operation(
+                &principal,
+                &document,
+                &operation,
+                Default::default(),
+                &scope,
+            )
             .expect("ordinary operation admission must succeed");
         let HandlerResult::Completed(completed) = runtime
-            .execute_mutation_handler::<ReviewedSetPartDimensionBinding>(
+            .execute_mutation_handler::<ReviewedSetRetentionBinding>(
                 &input,
                 &key,
                 principal.principal_identity(),
@@ -75,11 +81,11 @@ fn guarded_action_cannot_commit_through_public_program_owner_without_workflow_au
     let key = 950_u64;
     let outcome = application
         .program_runtime()
-        .compare_and_commit_program_action::<ReviewedSetPartDimensionBinding>(
+        .compare_and_commit_program_action::<ReviewedSetRetentionBinding>(
             candidate(key),
             WorthQueryApplicationIdempotencyBinding::new(
-                ReviewedSetPartDimensionBinding::idempotency_key_identity(&key),
-                ReviewedSetPartDimensionBinding::input_identity(&input),
+                ReviewedSetRetentionBinding::idempotency_key_identity(&key),
+                ReviewedSetRetentionBinding::input_identity(&input),
             ),
         );
     assert!(matches!(
@@ -87,24 +93,24 @@ fn guarded_action_cannot_commit_through_public_program_owner_without_workflow_au
         WorthQueryApplicationCommitOutcome::Denied(denial)
             if denial.kind() == WorthQueryApplicationCommitDenialKind::WorkflowAuthorityRequired
     ));
-    assert_eq!(read_dimension(runtime, branch), SEED_DIMENSION);
+    assert_eq!(read_retention(runtime, branch), SEED_RETENTION);
     let admission = application
         .program_runtime()
-        .admit_program_operation::<SetPartDimension>();
+        .admit_program_operation::<SetRetention>();
     assert!(matches!(
         admission,
         Err(denial)
             if denial.kind() == WorthQueryApplicationCommitDenialKind::WorkflowAuthorityRequired
     ));
-    assert_eq!(read_dimension(runtime, branch), SEED_DIMENSION);
+    assert_eq!(read_retention(runtime, branch), SEED_RETENTION);
     assert_eq!(
-        settle(set_dimension(
+        settle(set_retention(
             application.program_runtime(),
             branch,
-            SEED_DIMENSION + 1,
+            SEED_RETENTION + 1,
             key + 2,
         )),
-        DimensionVerdict::Performed(SEED_DIMENSION + 1),
+        RetentionVerdict::Performed(SEED_RETENTION + 1),
         "the ordinary binding remains independently usable"
     );
 }
@@ -136,7 +142,7 @@ fn one_approval_transition_cannot_commit_twice_under_different_client_keys() {
     let principal_binding = runtime
         .installed_schema()
         .principal_binding(
-            super::super::bounded_dimension_model::schema::PartPrincipalBinding::reference(),
+            super::super::document_retention_model::schema::DocumentPrincipalBinding::reference(),
         )
         .unwrap();
     let principal = selected
@@ -147,28 +153,34 @@ fn one_approval_transition_cannot_commit_twice_under_different_client_keys() {
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap();
-    let part = selected
+    let document = selected
         .resolve_entity(
-            PartIdentityField::reference(),
-            PART_IDENTITY.to_owned(),
+            DocumentIdentityField::reference(),
+            DOCUMENT_IDENTITY.to_owned(),
             &scope,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap();
     let operation = runtime
         .installed_schema()
-        .installed_operation(SetPartDimension::reference())
+        .installed_operation(SetRetention::reference())
         .unwrap();
-    let input = SetPartDimensionInput {
-        identity: PART_IDENTITY.to_owned(),
-        dimension: 8,
+    let input = SetRetentionInput {
+        identity: DOCUMENT_IDENTITY.to_owned(),
+        retention_days: 8,
     };
     let candidate = |key: u64| {
         let admission = selected
-            .authorize_operation(&principal, &part, &operation, Default::default(), &scope)
+            .authorize_operation(
+                &principal,
+                &document,
+                &operation,
+                Default::default(),
+                &scope,
+            )
             .unwrap();
         let HandlerResult::Completed(completed) = runtime
-            .execute_mutation_handler::<ReviewedSetPartDimensionBinding>(
+            .execute_mutation_handler::<ReviewedSetRetentionBinding>(
                 &input,
                 &key,
                 principal.principal_identity(),
@@ -187,19 +199,25 @@ fn one_approval_transition_cannot_commit_twice_under_different_client_keys() {
     let idempotency = |key: u64| {
         WorthQueryWorkflowAdvanceAdapter::bind_operation_idempotency(
             WorthQueryApplicationIdempotencyBinding::new(
-                ReviewedSetPartDimensionBinding::idempotency_key_identity(&key),
-                ReviewedSetPartDimensionBinding::input_identity(&input),
+                ReviewedSetRetentionBinding::idempotency_key_identity(&key),
+                ReviewedSetRetentionBinding::input_identity(&input),
             ),
             required.transition_identity_bytes(),
         )
     };
     let sibling_key = 974_u64;
     let sibling_admission = selected
-        .authorize_operation(&principal, &part, &operation, Default::default(), &scope)
+        .authorize_operation(
+            &principal,
+            &document,
+            &operation,
+            Default::default(),
+            &scope,
+        )
         .unwrap();
     let HandlerResult::Completed(sibling) = runtime
         .execute_mutation_handler::<
-            super::super::bounded_dimension_model::dimension_entry::SetPartDimensionBinding,
+            super::super::document_retention_model::retention_entry::SetRetentionBinding,
         >(
             &input,
             &sibling_key,
@@ -217,7 +235,7 @@ fn one_approval_transition_cannot_commit_twice_under_different_client_keys() {
         .unwrap();
     let relabeled = application
         .program_runtime()
-        .compare_and_commit_program_action::<ReviewedSetPartDimensionBinding>(
+        .compare_and_commit_program_action::<ReviewedSetRetentionBinding>(
             sibling_program,
             idempotency(sibling_key),
         );
@@ -226,7 +244,7 @@ fn one_approval_transition_cannot_commit_twice_under_different_client_keys() {
         WorthQueryApplicationCommitOutcome::Denied(denial)
             if denial.kind() == WorthQueryApplicationCommitDenialKind::WorkflowAuthorityRequired
     ));
-    assert_eq!(read_dimension(runtime, instance.branch()), SEED_DIMENSION);
+    assert_eq!(read_retention(runtime, instance.branch()), SEED_RETENTION);
     let first_program = candidate(972)
         .bind_workflow_operation_authority(&authority)
         .unwrap();
@@ -235,7 +253,7 @@ fn one_approval_transition_cannot_commit_twice_under_different_client_keys() {
         .unwrap();
     let first = application
         .program_runtime()
-        .compare_and_commit_program_action::<ReviewedSetPartDimensionBinding>(
+        .compare_and_commit_program_action::<ReviewedSetRetentionBinding>(
             first_program,
             idempotency(972),
         );
@@ -245,7 +263,7 @@ fn one_approval_transition_cannot_commit_twice_under_different_client_keys() {
     ));
     let second = application
         .program_runtime()
-        .compare_and_commit_program_action::<ReviewedSetPartDimensionBinding>(
+        .compare_and_commit_program_action::<ReviewedSetRetentionBinding>(
             second_program,
             idempotency(973),
         );
@@ -254,5 +272,5 @@ fn one_approval_transition_cannot_commit_twice_under_different_client_keys() {
         WorthQueryApplicationCommitOutcome::Denied(denial)
             if denial.kind() == WorthQueryApplicationCommitDenialKind::IdempotencyIntentDrift
     ));
-    assert_eq!(read_dimension(runtime, instance.branch()), 8);
+    assert_eq!(read_retention(runtime, instance.branch()), 8);
 }

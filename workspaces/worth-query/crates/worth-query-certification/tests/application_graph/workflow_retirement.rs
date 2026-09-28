@@ -14,13 +14,13 @@ use worth_query_host::facade::{
     primary_graph::WorthQueryApplicationUncommitted,
 };
 
-use super::bounded_dimension_model::{
-    host::{publish_workflow_on_first_program, BoundedDimensionWorkflowRuntime},
+use super::document_retention_model::{
+    host::{publish_workflow_on_first_program, DocumentWorkflowRuntime},
     operator_identity::{authenticate_operator, request_scope},
     workflow::{
         advance_instance, authoring_intent, expect_retired_start, expect_superseded_start,
         publish_definition, retire_definition, start_instance, terminal_definition,
-        ReviewedGeometryWorkflow,
+        ReviewedDocumentWorkflow,
     },
 };
 

@@ -1,5 +1,7 @@
 # Milestone 9.19: Managed Advanced Access And Verified Footprints
 
+> **Status:** Not started.
+
 ## Goal
 
 Add installed-query-bound search and provider-backed access products whose

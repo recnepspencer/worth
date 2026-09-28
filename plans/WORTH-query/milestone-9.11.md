@@ -1,8 +1,6 @@
 # Milestone 9.11: Declarative Downstream Basis Authority And Consumer DX
 
-Status:
-Closed on 2026-07-12. The implementation and verification record is
-[milestone-9.11-closeout.md](./milestone-9.11-closeout.md).
+> **Status:** Completed. Closeout: [milestone-9.11-closeout.md](./milestone-9.11-closeout.md).
 
 ## Goal
 

@@ -44,7 +44,7 @@ Phase 4 is complete only if all of these are true:
 
 ### The Wording System Now Exists
 
-[`dx_wording_map.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_wording_map.md)
+[`dx_wording_map.md`](./dx_wording_map.md)
 now records:
 
 - the core tone rule
@@ -58,7 +58,7 @@ job-shaped it should sound.
 
 ### The Publication Plan Now Exists
 
-[`docs_publication_audit.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/docs_publication_audit.md)
+[`docs_publication_audit.md`](./docs_publication_audit.md)
 now records:
 
 - what should be rewritten for publish

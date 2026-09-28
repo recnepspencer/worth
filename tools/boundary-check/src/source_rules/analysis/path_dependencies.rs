@@ -76,6 +76,42 @@ pub(super) fn path_dependency_roots(
     Ok(roots)
 }
 
+/// Map from Rust crate ident to crate root for path-backed library dependencies only.
+///
+/// Read-only navigation (facade doc resolution) uses this: a registry, git, or
+/// version dependency cannot hold a workspace definition, so such rows are
+/// skipped instead of failing. Callers fail closed when a path they must follow
+/// names a crate this map does not contain.
+pub(crate) fn path_backed_dependency_roots(
+    crate_root: &Path,
+) -> Result<BTreeMap<String, PathBuf>, String> {
+    let manifest_path = crate_root.join("Cargo.toml");
+    let text = fs::read_to_string(&manifest_path)
+        .map_err(|e| format!("read {}: {e}", manifest_path.display()))?;
+    let value: toml::Value =
+        toml::from_str(&text).map_err(|e| format!("parse {}: {e}", manifest_path.display()))?;
+    let workspace_root = find_workspace_root(crate_root)?;
+    let workspace_deps = load_workspace_dependency_table(&workspace_root)?;
+    let mut tables = Vec::new();
+    tables.extend(value.get("dependencies").and_then(|v| v.as_table()));
+    if let Some(targets) = value.get("target").and_then(|v| v.as_table()) {
+        tables.extend(
+            targets
+                .values()
+                .filter_map(|target| target.get("dependencies").and_then(|v| v.as_table())),
+        );
+    }
+    let mut roots = BTreeMap::new();
+    for (dep_key, spec) in tables.into_iter().flatten() {
+        if let Ok((ident, dep_root)) =
+            resolve_dependency_entry(crate_root, &workspace_root, &workspace_deps, dep_key, spec)
+        {
+            roots.insert(ident, dep_root);
+        }
+    }
+    Ok(roots)
+}
+
 fn collect_dep_table(
     crate_root: &Path,
     workspace_root: &Path,

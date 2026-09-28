@@ -2,21 +2,21 @@
 
 > **Status:** Complete
 >
-> **Roadmap parent:** [worth_runtime_bridge_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/worth_runtime_bridge_roadmap.md)
+> **Roadmap parent:** [worth_runtime_bridge_roadmap.md](./WORTH_runtime_bridge_roadmap.md)
 >
-> **Vision parent:** [worth_runtime_bridge_vision.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/worth_runtime_bridge_vision.md)
+> **Vision parent:** [worth_runtime_bridge_vision.md](./WORTH_runtime_bridge_vision.md)
 >
-> **Prior milestone:** [milestone-12b.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-12b.md)
+> **Prior milestone:** [milestone-12b.md](./milestone-12b.md)
 >
-> **Bridge certification companion:** [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md)
+> **Bridge certification companion:** [test-requirements.md](./test-requirements.md)
 >
-> **Running closeout:** [milestone-13-closeout.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-13-closeout.md)
+> **Running closeout:** [milestone-13-closeout.md](./milestone-13-closeout.md)
 >
-> **Signal companion:** [plans/worth_signal/worth_signal_vision.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth_signal/worth_signal_vision.md)
+> **Signal companion:** [plans/worth_signal/worth_signal_vision.md](../WORTH_signal/WORTH_signal_vision.md)
 >
-> **Relational companion:** [worth_relational_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/worth_relational_roadmap.md)
+> **Relational companion:** [worth_relational_roadmap.md](../WORTH-relational/WORTH_relational_roadmap.md)
 >
-> **Bridge DX companions:** [dx_plan.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/dx_plan.md), [dx_canonical_surface_spec.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/dx_canonical_surface_spec.md), [dx_boundary_spec.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/dx_boundary_spec.md), [dx_boundary_cleanup_spec.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/dx_boundary_cleanup_spec.md)
+> **Bridge DX companions:** [dx_plan.md](./dx_plan.md), [dx_canonical_surface_spec.md](./dx_canonical_surface_spec.md), [dx_boundary_spec.md](./dx_boundary_spec.md), [dx_boundary_cleanup_spec.md](./dx_boundary_cleanup_spec.md)
 >
 > **Primary architectural driver:** turn the bridge from a collection of individually strong capabilities into one certifiable causal protocol boundary with one canonical reference workload, one bridge-native failure topology, one coherent diagnostics entrypoint, and one machine-checkable certification bundle story spanning truth commit, routing, branch-local evaluation, speculative discard or commit, writeback, and replay
 
@@ -223,7 +223,7 @@ In scope:
 - one mixed workload matrix covering live updates, speculative fork, discard,
   commit promotion, replay, and hostile failure injection
 - certification bundles satisfying suites 25 through 27 in
-  [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md)
+  [test-requirements.md](./test-requirements.md)
 - one top-level pricing-shock workload certification bundle capable of offline
   diagnosis across the ordinary, hostile, lifecycle, fanout, replay,
   restart, merge-history, writeback, and historical-provenance lanes
@@ -572,15 +572,15 @@ Milestone 13 builds directly on:
 
 It also depends on the bridge DX hardening program defined in:
 
-- [`dx_plan.md`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/dx_plan.md)
-- [`dx_canonical_surface_spec.md`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/dx_canonical_surface_spec.md)
-- [`dx_boundary_spec.md`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/dx_boundary_spec.md)
-- [`dx_boundary_cleanup_spec.md`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/dx_boundary_cleanup_spec.md)
+- [`dx_plan.md`](./dx_plan.md)
+- [`dx_canonical_surface_spec.md`](./dx_canonical_surface_spec.md)
+- [`dx_boundary_spec.md`](./dx_boundary_spec.md)
+- [`dx_boundary_cleanup_spec.md`](./dx_boundary_cleanup_spec.md)
 
 The reference workload should be implemented against that hardened public bridge
 boundary rather than against ad hoc subsystem seams.
 
-For execution order, [`dx_plan.md`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/dx_plan.md)
+For execution order, [`dx_plan.md`](./dx_plan.md)
 is now the implementation-guide authority.
 Milestone 13 work should track the active DX phase explicitly:
 

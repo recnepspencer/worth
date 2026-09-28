@@ -37,6 +37,13 @@ pub enum WorthQueryUndoDenialKind {
     LoweringCorrespondenceRequired,
 }
 
+/// Refusal to admit or progress an undo of a committed change.
+///
+/// Returned by undo admission, progression, and continuation closing. A denial
+/// from admission or progression means the undo never reached the mutation
+/// lane. Read [`Self::kind`] for the exact cause. Kinds such as
+/// `IrreversibleLegal` or `EscapedEffect` are reached only by the runtime,
+/// from the installed contract.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryUndoDenial {
     kind: WorthQueryUndoDenialKind,

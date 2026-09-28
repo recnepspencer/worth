@@ -1,10 +1,6 @@
 # Milestone 9 Engineering Spec: Policy-Aware Narrowing, Tenant Scope, And Delivery Contracts
 
-> **Status:** Closed on 2026-04-21 for the runtime-backed policy-aware
-> narrowing, tenant scope, relationship-proof admission, execution seam, live,
-> delivery, and certification scope. Durable tenant/query artifacts, durable
-> delivery cursors, restart-stable subscription metadata, and store-backed
-> restart parity remain later store-gated work.
+> **Status:** Completed. Durable artifacts, durable delivery cursors, and store-backed restart parity remain open for later store work.
 >
 > **Roadmap parent:** [worth_query_roadmap.md](./worth_query_roadmap.md)
 >
@@ -36,7 +32,7 @@
 > - [MENTALITY.md](../../docs/coding-guidelines/MENTALITY.md)
 > - [arch_laws.md](../../docs/coding-guidelines/arch_laws.md)
 > - [perf_laws.md](../../docs/coding-guidelines/perf_laws.md)
-> - [domain_laws.md](../../docs/coding-guidelines/domain_laws.md)
+> - [domain_laws.md](../../docs/coding-guidelines/domain_structure_laws.md)
 > - [worth_query_vision.md](./worth_query_vision.md)
 > - [worth_query_roadmap.md](./worth_query_roadmap.md)
 > - [test-requirements.md](./test-requirements.md)

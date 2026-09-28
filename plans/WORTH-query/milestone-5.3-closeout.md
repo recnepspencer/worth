@@ -30,32 +30,32 @@ Milestone 5.3 delivered:
 
 - planner-owned frontier posture, packet identity, bundle basis proof, route
   posture, parity bundles, and counter snapshots in
-  [crates/worth-query/src/frontier_planning](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/frontier_planning)
+  [crates/worth-query/src/frontier_planning](../../workspaces/worth-query/crates/worth-query/src/frontier_planning)
 - lower-runtime frontier-evidence translation in
-  [crates/worth-query/src/frontier_signal_adapter.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/frontier_signal_adapter.rs)
+  [crates/worth-query/src/frontier_signal_adapter.rs](../../workspaces/worth-query/crates/worth-query/src/frontier_signal_adapter.rs)
 - route-typed planning wrappers and facade exposure in
-  [crates/worth-query/src/planning/mod.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/planning/mod.rs)
+  [crates/worth-query/src/planning/mod.rs](../../workspaces/worth-query/crates/worth-query/src/planning/mod.rs)
   and
-  [crates/worth-query/src/facade.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/facade.rs)
+  [crates/worth-query/src/facade.rs](../../workspaces/worth-query/crates/worth-query/src/facade.rs)
 - route-typed execution entrypoints in
-  [crates/worth-query/src/execution/mod.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/execution/mod.rs)
+  [crates/worth-query/src/execution/mod.rs](../../workspaces/worth-query/crates/worth-query/src/execution/mod.rs)
 - milestone-native frontier certification artifacts, rejection rows, and
   closeout mapping under
-  [crates/worth-query/src/harness/frontier_certification](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/frontier_certification)
+  [crates/worth-query/src/harness/frontier_certification](../../workspaces/worth-query/crates/worth-query/src/harness/frontier_certification)
 - frontier lowering, bundle, signal-backed evidence, drift, and parity harness
   coverage under
-  [crates/worth-query/src/harness/frontier_planning.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/frontier_planning.rs)
+  `crates/worth-query/src/harness/frontier_planning.rs`
 - compile-fail proof-boundary tests for route forging, wrong-entrypoint
   execution, and private frontier artifacts under
-  [crates/worth-query/tests/ui](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/tests/ui)
+  `crates/worth-query/tests/ui`
 
 ## Acceptance Mapping
 
 Milestone 5.3 is considered closed against
-[milestone-5.3.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/milestone-5.3.md),
-[worth_query_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/worth_query_roadmap.md),
+[milestone-5.3.md](./milestone-5.3.md),
+[worth_query_roadmap.md](./WORTH_query_roadmap.md),
 and
-[test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/test-requirements.md)
+[test-requirements.md](./test-requirements.md)
 because the required frontier-planning and deterministic parallel-admission
 acceptance surfaces now exist directly.
 
@@ -63,9 +63,9 @@ acceptance surfaces now exist directly.
 
 Covered by:
 
-- [frontier_certification/mod.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/frontier_certification/mod.rs)
-- [frontier_certification/model.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/frontier_certification/model.rs)
-- [frontier_certification/tests.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/frontier_certification/tests.rs)
+- [frontier_certification/mod.rs](../../workspaces/worth-query/crates/worth-query/src/harness/frontier_certification/mod.rs)
+- [frontier_certification/model.rs](../../workspaces/worth-query/crates/worth-query/src/harness/frontier_certification/model.rs)
+- [frontier_certification/tests.rs](../../workspaces/worth-query/crates/worth-query/src/harness/frontier_certification/tests.rs)
 
 What is proven:
 
@@ -106,7 +106,7 @@ Covered by:
 - `frontier_planning::PlannedWorkPacket`
 - `frontier_planning::PacketMergeBoundary`
 - frontier lowering harness tests in
-  [crates/worth-query/src/harness/frontier_planning.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/frontier_planning.rs)
+  `crates/worth-query/src/harness/frontier_planning.rs`
 
 What is proven:
 

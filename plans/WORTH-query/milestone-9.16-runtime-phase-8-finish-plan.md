@@ -1,19 +1,6 @@
 # Runtime Phase 8 Finish Plan
 
-**Status:** **CLOSED (2026-08-12).** Corrections C1-C8 are proved against the
-final source record in the closure ledger. The last hostile pass found one
-missing foreign-runtime denial in commit reauthorization; the denial and its
-two-runtime regression are included in the final candidate. Any later source
-or test edit that changes an accepted guarantee reopens the affected row.
-The earlier F6A closure is historical evidence, not current authority. The
-opening audit found compile-time contract collapse, facade escape, copied
-publication truth, non-exact outbox observation, hidden ordinary-lane work,
-string identity authority, and dishonest proof fixtures. C1-C6 closed their
-respective facade, authoring, protocol, outbox, retention, and publication
-defects through independent hostile review. C7's provider phase
-affinity/ownership correction and C8's final courtroom are closed. Undo and
-redo remain compiled but provisional;
-this plan neither accepts nor redesigns their product semantics.
+> **Status:** Completed.
 
 **Opened:** 2026-08-07 after the correction-slice implementation was reviewed
 against the current tree.

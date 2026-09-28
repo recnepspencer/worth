@@ -1,6 +1,7 @@
 use core::error::Error;
 use core::fmt;
 
+/// Why a raw string was rejected as a [`Name`]. Its `Display` gives the reason.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct InvalidName {
     reason: &'static str,
@@ -20,16 +21,22 @@ impl fmt::Display for InvalidName {
 
 impl Error for InvalidName {}
 
+/// A non-empty name made only of ASCII letters, digits, `-` and `_`.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct Name(String);
 
 impl Name {
+    /// Validate a raw string as a name.
+    ///
+    /// Fails with [`InvalidName`] if the string is empty or has any other
+    /// character.
     pub fn new(raw: impl Into<String>) -> Result<Self, InvalidName> {
         let raw = raw.into();
         validate_name(&raw)?;
         Ok(Self(raw))
     }
 
+    /// The name as a string.
     pub fn as_str(&self) -> &str {
         &self.0
     }

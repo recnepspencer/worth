@@ -2,7 +2,7 @@
 
 > **Status:** Planned
 >
-> **Roadmap parent:** [worth_ui_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/worth-ui/plans/worth-ui/worth_ui_roadmap.md)
+> **Roadmap parent:** [worth_ui_roadmap.md](./worth_ui_roadmap.md)
 >
 > **Primary prerequisite:** `Milestone 3.1 Inspection Boundary, DSL Ownership, And Certification Topology`
 >

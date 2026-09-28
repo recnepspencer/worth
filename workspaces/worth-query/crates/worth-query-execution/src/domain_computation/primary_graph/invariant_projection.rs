@@ -73,6 +73,11 @@ pub struct WorthQueryApplicationInvariantProjectionAuthority<Schema> {
     _schema: PhantomData<fn() -> Schema>,
 }
 
+/// A retained read of the main branch at one version, kept after an invariant
+/// projection completes.
+///
+/// `version` names the version read and `field` reads further values at it.
+/// Dropping the snapshot releases it.
 pub struct WorthQueryApplicationInvariantProjectionSnapshot<Schema> {
     graph: WorthQueryPrimaryGraphIntegrationHandle,
     layout: Arc<WorthQueryPrimaryGraphLayout>,
@@ -87,6 +92,10 @@ pub struct WorthQueryApplicationInvariantProjectionSnapshot<Schema> {
     _schema: PhantomData<fn() -> Schema>,
 }
 
+/// An entity observed by an invariant projection, typed by its entity kind.
+///
+/// It is valid only with readers from the same projection authority; any other
+/// reader refuses it as foreign.
 #[derive(Clone, Debug)]
 pub struct WorthQueryInvariantEntityIdentity<Schema, Entity> {
     entity_id: EntityId,
@@ -111,6 +120,8 @@ pub struct WorthQueryInvariantMutationTarget<Schema, Entity> {
     _marker: PhantomData<fn() -> (Schema, Entity)>,
 }
 
+/// A relation observed by an invariant projection, with the identities of its
+/// source and target entities.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryInvariantRelation<Schema, Relation, From, To> {
     relation_id: RelationId,

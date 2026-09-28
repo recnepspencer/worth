@@ -1,6 +1,6 @@
 # Milestone 9.4 Engineering Spec: Runtime-Backed Temporal And Async Query Surface
 
-> **Status:** Draft rewrite
+> **Status:** Completed. Closeout: [milestone-9.4-closeout.md](./milestone-9.4-closeout.md).
 >
 > **Roadmap parent:** [worth_query_roadmap.md](./worth_query_roadmap.md)
 >
@@ -152,19 +152,19 @@ extend one existing public runtime world rather than growing a sibling
 - `worth-runtime-bridge` temporal/async basis and lifecycle artifacts
 
 **Relevant Query docs**
-- [Workspace Overview](../../crates/worth-query/docs/foundations/workspace-overview.md)
-- [Support Matrix And Admission](../../crates/worth-query/docs/foundations/support-matrix-and-admission.md)
+- [Workspace Overview](../../workspaces/worth-query/crates/worth-query/docs/foundations/workspace-overview.md)
+- [Support Matrix And Admission](../../workspaces/worth-query/crates/worth-query/docs/foundations/support-matrix-and-admission.md)
 
 **Documentation follow-through**
 - Add or revise the phase's feature-facing docs with the `feature-doc-writer` skill before this phase can close.
 - Treat doc updates as part of the same authority boundary as the code/API change, not as post-hoc cleanup.
 
 **Relevant Query source surfaces**
-- [runtime/workspace.rs](../../crates/worth-query/src/runtime/workspace.rs)
-- [runtime/public_api.rs](../../crates/worth-query/src/runtime/public_api.rs)
-- [runtime/handle_contract.rs](../../crates/worth-query/src/runtime/handle_contract.rs)
-- [runtime/state.rs](../../crates/worth-query/src/runtime/state.rs)
-- [runtime/inspection.rs](../../crates/worth-query/src/runtime/inspection.rs)
+- [runtime/workspace.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/workspace.rs)
+- [runtime/public_api.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/public_api.rs)
+- [runtime/handle_contract.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/handle_contract.rs)
+- [runtime/state.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/state.rs)
+- [runtime/inspection.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/inspection.rs)
 
 **Relevant APIs**
 - `runtime.workspace(...)`
@@ -200,17 +200,17 @@ teach it as a production surface.
 - `worth-runtime-bridge` capability availability and deferred-debt posture
 
 **Relevant Query docs**
-- [Support Matrix And Admission](../../crates/worth-query/docs/foundations/support-matrix-and-admission.md)
-- [Downstream Runtime Integration](../../crates/worth-query/docs/foundations/downstream-runtime-integration.md)
+- [Support Matrix And Admission](../../workspaces/worth-query/crates/worth-query/docs/foundations/support-matrix-and-admission.md)
+- [Downstream Runtime Integration](../../workspaces/worth-query/crates/worth-query/docs/foundations/downstream-runtime-integration.md)
 
 **Documentation follow-through**
 - Add or revise the phase's feature-facing docs with the `feature-doc-writer` skill before this phase can close.
 - Treat doc updates as part of the same authority boundary as the code/API change, not as post-hoc cleanup.
 
 **Relevant Query source surfaces**
-- [runtime/support_matrix.rs](../../crates/worth-query/src/runtime/support_matrix.rs)
-- [runtime/support/mod.rs](../../crates/worth-query/src/runtime/support/mod.rs)
-- [runtime/support/profile.rs](../../crates/worth-query/src/runtime/support/profile.rs)
+- [runtime/support_matrix.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/support_matrix.rs)
+- [runtime/support/mod.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/support/mod.rs)
+- [runtime/support/profile.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/support/profile.rs)
 
 **Relevant APIs**
 - `workspace.public_support_matrix()`
@@ -246,18 +246,18 @@ runtime ids.
 - `worth-query` domain support snapshots
 
 **Relevant Query docs**
-- [Platform Entry](../../crates/worth-query/docs/domain-capabilities/platform-entry.md)
-- [Configured Domain Handles](../../crates/worth-query/docs/domain-capabilities/configured-domain-handles.md)
+- Platform Entry
+- Configured Domain Handles
 
 **Documentation follow-through**
 - Add or revise the phase's feature-facing docs with the `feature-doc-writer` skill before this phase can close.
 - Treat doc updates as part of the same authority boundary as the code/API change, not as post-hoc cleanup.
 
 **Relevant Query source surfaces**
-- [application/domain_handle/mod.rs](../../crates/worth-query/src/application/domain_handle/mod.rs)
-- [application/domain_handle/operating_context.rs](../../crates/worth-query/src/application/domain_handle/operating_context.rs)
-- [application/domain_handle/admitted_world_basis.rs](../../crates/worth-query/src/application/domain_handle/admitted_world_basis.rs)
-- [application/domain_entry/support_snapshot.rs](../../crates/worth-query/src/application/domain_entry/support_snapshot.rs)
+- [application/domain_handle/mod.rs](../../workspaces/worth-query/crates/worth-query/src/application/domain_handle/mod.rs)
+- [application/domain_handle/operating_context.rs](../../workspaces/worth-query/crates/worth-query/src/application/domain_handle/operating_context.rs)
+- [application/domain_handle/admitted_world_basis.rs](../../workspaces/worth-query/crates/worth-query/src/application/domain_handle/admitted_world_basis.rs)
+- [application/domain_entry/support_snapshot.rs](../../workspaces/worth-query/crates/worth-query/src/application/domain_entry/support_snapshot.rs)
 
 **Relevant APIs**
 - `WORTHQueryDomainOperatingContext`
@@ -293,18 +293,18 @@ timers or host observer setup.
 - `worth-runtime-bridge` temporal basis and temporal subscription families
 
 **Relevant Query docs**
-- [Query Expressions And Result Shapes](../../crates/worth-query/docs/authoring/query-expressions-and-result-shapes.md)
-- [Declaration Family Taxonomy](../../crates/worth-query/docs/domain-capabilities/declaration-family-taxonomy.md)
-- [Canonical Domain Declarations](../../crates/worth-query/docs/domain-capabilities/canonical-domain-declarations.md)
+- [Query Expressions And Result Shapes](../../workspaces/worth-query/crates/worth-query/docs/authoring/query-expressions-and-result-shapes.md)
+- [Declaration Family Taxonomy](../../workspaces/worth-query/crates/worth-query/docs/domain-capabilities/declaration-family-taxonomy.md)
+- Canonical Domain Declarations
 
 **Documentation follow-through**
 - Add or revise the phase's feature-facing docs with the `feature-doc-writer` skill before this phase can close.
 - Treat doc updates as part of the same authority boundary as the code/API change, not as post-hoc cleanup.
 
 **Relevant Query source surfaces**
-- [runtime/workspace_declaration.rs](../../crates/worth-query/src/runtime/workspace_declaration.rs)
-- [application/declaration_entry_orchestration/grammar.rs](../../crates/worth-query/src/application/declaration_entry_orchestration/grammar.rs)
-- [application/declaration_entry_seam/mod.rs](../../crates/worth-query/src/application/declaration_entry_seam/mod.rs)
+- [runtime/workspace_declaration.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/workspace_declaration.rs)
+- [application/declaration_entry_orchestration/grammar.rs](../../workspaces/worth-query/crates/worth-query/src/application/declaration_entry_orchestration/grammar.rs)
+- [application/declaration_entry_seam/mod.rs](../../workspaces/worth-query/crates/worth-query/src/application/declaration_entry_seam/mod.rs)
 
 **Relevant APIs**
 - declaration-entry inputs and canonical declaration artifacts
@@ -338,18 +338,18 @@ component-local status enums or transport adapters.
 - `worth-runtime-bridge` async source declaration and request identity
 
 **Relevant Query docs**
-- [Query Expressions And Result Shapes](../../crates/worth-query/docs/authoring/query-expressions-and-result-shapes.md)
-- [Configured Domain Handles](../../crates/worth-query/docs/domain-capabilities/configured-domain-handles.md)
-- [Declaration Family Taxonomy](../../crates/worth-query/docs/domain-capabilities/declaration-family-taxonomy.md)
+- [Query Expressions And Result Shapes](../../workspaces/worth-query/crates/worth-query/docs/authoring/query-expressions-and-result-shapes.md)
+- Configured Domain Handles
+- [Declaration Family Taxonomy](../../workspaces/worth-query/crates/worth-query/docs/domain-capabilities/declaration-family-taxonomy.md)
 
 **Documentation follow-through**
 - Add or revise the phase's feature-facing docs with the `feature-doc-writer` skill before this phase can close.
 - Treat doc updates as part of the same authority boundary as the code/API change, not as post-hoc cleanup.
 
 **Relevant Query source surfaces**
-- [runtime/workspace_declaration.rs](../../crates/worth-query/src/runtime/workspace_declaration.rs)
-- [application/domain_handle/admitted_handle/declaration.rs](../../crates/worth-query/src/application/domain_handle/admitted_handle/declaration.rs)
-- [application/declaration_entry_orchestration/grammar.rs](../../crates/worth-query/src/application/declaration_entry_orchestration/grammar.rs)
+- [runtime/workspace_declaration.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/workspace_declaration.rs)
+- [application/domain_handle/admitted_handle/declaration.rs](../../workspaces/worth-query/crates/worth-query/src/application/domain_handle/admitted_handle/declaration.rs)
+- [application/declaration_entry_orchestration/grammar.rs](../../workspaces/worth-query/crates/worth-query/src/application/declaration_entry_orchestration/grammar.rs)
 
 **Relevant APIs**
 - configured-handle declaration entrypoints
@@ -382,18 +382,18 @@ combinations deny before route planning, activation, or materialization.
 - `worth-runtime-bridge` temporal admission and wake-evidence requirements
 
 **Relevant Query docs**
-- [Declaration Legality](../../crates/worth-query/docs/domain-capabilities/declaration-legality.md)
-- [Declaration Entry Readiness](../../crates/worth-query/docs/domain-capabilities/declaration-entry-readiness.md)
-- [Support Matrix And Admission](../../crates/worth-query/docs/foundations/support-matrix-and-admission.md)
+- Declaration Legality
+- [Declaration Entry Readiness](../../workspaces/worth-query/crates/worth-query/docs/domain-capabilities/declaration-entry-readiness.md)
+- [Support Matrix And Admission](../../workspaces/worth-query/crates/worth-query/docs/foundations/support-matrix-and-admission.md)
 
 **Documentation follow-through**
 - Add or revise the phase's feature-facing docs with the `feature-doc-writer` skill before this phase can close.
 - Treat doc updates as part of the same authority boundary as the code/API change, not as post-hoc cleanup.
 
 **Relevant Query source surfaces**
-- [application/declaration_entry_orchestration/lower/legality.rs](../../crates/worth-query/src/application/declaration_entry_orchestration/lower/legality.rs)
-- [application/declaration_entry_seam/readiness_projection.rs](../../crates/worth-query/src/application/declaration_entry_seam/readiness_projection.rs)
-- [application/declaration_entry_seam/inspection/mod.rs](../../crates/worth-query/src/application/declaration_entry_seam/inspection/mod.rs)
+- [application/declaration_entry_orchestration/lower/legality.rs](../../workspaces/worth-query/crates/worth-query/src/application/declaration_entry_orchestration/lower/legality.rs)
+- [application/declaration_entry_seam/readiness_projection.rs](../../workspaces/worth-query/crates/worth-query/src/application/declaration_entry_seam/readiness_projection.rs)
+- [application/declaration_entry_seam/inspection/mod.rs](../../workspaces/worth-query/crates/worth-query/src/application/declaration_entry_seam/inspection/mod.rs)
 
 **Relevant APIs**
 - readiness projection and declaration-entry inspection artifacts
@@ -427,18 +427,18 @@ subscription or materialized result-state exists.
 - `worth-signal` async capability family substrate
 
 **Relevant Query docs**
-- [Declaration Legality](../../crates/worth-query/docs/domain-capabilities/declaration-legality.md)
-- [Declaration Entry Readiness](../../crates/worth-query/docs/domain-capabilities/declaration-entry-readiness.md)
-- [Support Matrix And Admission](../../crates/worth-query/docs/foundations/support-matrix-and-admission.md)
+- Declaration Legality
+- [Declaration Entry Readiness](../../workspaces/worth-query/crates/worth-query/docs/domain-capabilities/declaration-entry-readiness.md)
+- [Support Matrix And Admission](../../workspaces/worth-query/crates/worth-query/docs/foundations/support-matrix-and-admission.md)
 
 **Documentation follow-through**
 - Add or revise the phase's feature-facing docs with the `feature-doc-writer` skill before this phase can close.
 - Treat doc updates as part of the same authority boundary as the code/API change, not as post-hoc cleanup.
 
 **Relevant Query source surfaces**
-- [application/declaration_entry_orchestration/lower/legality.rs](../../crates/worth-query/src/application/declaration_entry_orchestration/lower/legality.rs)
-- [application/declaration_entry_seam/readiness_projection.rs](../../crates/worth-query/src/application/declaration_entry_seam/readiness_projection.rs)
-- [runtime/support_matrix.rs](../../crates/worth-query/src/runtime/support_matrix.rs)
+- [application/declaration_entry_orchestration/lower/legality.rs](../../workspaces/worth-query/crates/worth-query/src/application/declaration_entry_orchestration/lower/legality.rs)
+- [application/declaration_entry_seam/readiness_projection.rs](../../workspaces/worth-query/crates/worth-query/src/application/declaration_entry_seam/readiness_projection.rs)
+- [runtime/support_matrix.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/support_matrix.rs)
 
 **Relevant APIs**
 - readiness projection
@@ -472,20 +472,20 @@ instead of raw branch/snapshot/time/source ids.
 - `worth-runtime-bridge` temporal basis, async request identity, and resume basis
 
 **Relevant Query docs**
-- [Historical Diff And Basis](../../crates/worth-query/docs/capabilities/historical-diff-and-basis.md)
-- [Inspection](../../crates/worth-query/docs/capabilities/inspection.md)
-- [Configured Domain Handles](../../crates/worth-query/docs/domain-capabilities/configured-domain-handles.md)
+- [Historical Diff And Basis](../../workspaces/worth-query/crates/worth-query/docs/capabilities/historical-diff-and-basis.md)
+- [Inspection](../../workspaces/worth-query/crates/worth-query/docs/capabilities/inspection.md)
+- Configured Domain Handles
 
 **Documentation follow-through**
 - Add or revise the phase's feature-facing docs with the `feature-doc-writer` skill before this phase can close.
 - Treat doc updates as part of the same authority boundary as the code/API change, not as post-hoc cleanup.
 
 **Relevant Query source surfaces**
-- [query_basis_lifecycle/mod.rs](../../crates/worth-query/src/query_basis_lifecycle/mod.rs)
-- [query_basis_lifecycle/binding.rs](../../crates/worth-query/src/query_basis_lifecycle/binding.rs)
-- [query_basis_lifecycle/eligibility.rs](../../crates/worth-query/src/query_basis_lifecycle/eligibility.rs)
-- [query_basis_lifecycle/compatibility.rs](../../crates/worth-query/src/query_basis_lifecycle/compatibility.rs)
-- [runtime/state.rs](../../crates/worth-query/src/runtime/state.rs)
+- `query_basis_lifecycle/mod.rs`
+- `query_basis_lifecycle/binding.rs`
+- `query_basis_lifecycle/eligibility.rs`
+- `query_basis_lifecycle/compatibility.rs`
+- [runtime/state.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/state.rs)
 
 **Relevant APIs**
 - basis binding, eligibility, compatibility, and capability surfaces
@@ -518,19 +518,19 @@ story.
 - `worth-runtime-bridge` temporal/async continuation and boundary-envelope artifacts
 
 **Relevant Query docs**
-- [Declaration Route Plan](../../crates/worth-query/docs/domain-capabilities/declaration-route-plan.md)
-- [Declaration Bridge Continuation Routing](../../crates/worth-query/docs/domain-capabilities/declaration-bridge-continuation-routing.md)
-- [Configured Domain Handles](../../crates/worth-query/docs/domain-capabilities/configured-domain-handles.md)
+- Declaration Route Plan
+- [Declaration Bridge Continuation Routing](../../workspaces/worth-query/crates/worth-query/docs/domain-capabilities/declaration-bridge-continuation-routing.md)
+- Configured Domain Handles
 
 **Documentation follow-through**
 - Add or revise the phase's feature-facing docs with the `feature-doc-writer` skill before this phase can close.
 - Treat doc updates as part of the same authority boundary as the code/API change, not as post-hoc cleanup.
 
 **Relevant Query source surfaces**
-- [application/declaration_bridge_routing/mod.rs](../../crates/worth-query/src/application/declaration_bridge_routing/mod.rs)
-- [application/declaration_bridge_routing/lower.rs](../../crates/worth-query/src/application/declaration_bridge_routing/lower.rs)
-- [application/declaration_bridge_routing/request.rs](../../crates/worth-query/src/application/declaration_bridge_routing/request.rs)
-- [application/domain_handle/admitted_handle/bridge_routing.rs](../../crates/worth-query/src/application/domain_handle/admitted_handle/bridge_routing.rs)
+- [application/declaration_bridge_routing/mod.rs](../../workspaces/worth-query/crates/worth-query/src/application/declaration_bridge_routing/mod.rs)
+- `application/declaration_bridge_routing/lower.rs`
+- [application/declaration_bridge_routing/request.rs](../../workspaces/worth-query/crates/worth-query/src/application/declaration_bridge_routing/request.rs)
+- [application/domain_handle/admitted_handle/bridge_routing.rs](../../workspaces/worth-query/crates/worth-query/src/application/domain_handle/admitted_handle/bridge_routing.rs)
 
 **Relevant APIs**
 - `route_bridge_continuation(...)`
@@ -565,20 +565,20 @@ lower-runtime behavior.
 - `worth-runtime-bridge` temporal/async continuation posture and signal-facing readiness
 
 **Relevant Query docs**
-- [Declaration Signal Compatibility](../../crates/worth-query/docs/domain-capabilities/declaration-signal-compatibility.md)
-- [Signal Compatibility Orchestration](../../crates/worth-query/docs/domain-capabilities/signal-compatibility-orchestration.md)
-- [Continuation Pipeline](../../crates/worth-query/docs/domain-capabilities/continuation-pipeline.md)
+- [Declaration Signal Compatibility](../../workspaces/worth-query/crates/worth-query/docs/domain-capabilities/declaration-signal-compatibility.md)
+- [Signal Compatibility Orchestration](../../workspaces/worth-query/crates/worth-query/docs/domain-capabilities/signal-compatibility-orchestration.md)
+- [Continuation Pipeline](../../workspaces/worth-query/crates/worth-query/docs/domain-capabilities/continuation-pipeline.md)
 
 **Documentation follow-through**
 - Add or revise the phase's feature-facing docs with the `feature-doc-writer` skill before this phase can close.
 - Treat doc updates as part of the same authority boundary as the code/API change, not as post-hoc cleanup.
 
 **Relevant Query source surfaces**
-- [application/domain_handle/admitted_handle/signal_compatibility.rs](../../crates/worth-query/src/application/domain_handle/admitted_handle/signal_compatibility.rs)
-- [application/domain_handle/admitted_handle/signal_compatibility_orchestration.rs](../../crates/worth-query/src/application/domain_handle/admitted_handle/signal_compatibility_orchestration.rs)
-- [application/declaration_signal_compatibility/handle_gate.rs](../../crates/worth-query/src/application/declaration_signal_compatibility/handle_gate.rs)
-- [continuation_pipeline/mod.rs](../../crates/worth-query/src/continuation_pipeline/mod.rs)
-- [continuation_pipeline/artifacts.rs](../../crates/worth-query/src/continuation_pipeline/artifacts.rs)
+- [application/domain_handle/admitted_handle/signal_compatibility.rs](../../workspaces/worth-query/crates/worth-query/src/application/domain_handle/admitted_handle/signal_compatibility.rs)
+- [application/domain_handle/admitted_handle/signal_compatibility_orchestration.rs](../../workspaces/worth-query/crates/worth-query/src/application/domain_handle/admitted_handle/signal_compatibility_orchestration.rs)
+- [application/declaration_signal_compatibility/handle_gate.rs](../../workspaces/worth-query/crates/worth-query/src/application/declaration_signal_compatibility/handle_gate.rs)
+- [continuation_pipeline/mod.rs](../../workspaces/worth-query/crates/worth-query/src/continuation_pipeline/mod.rs)
+- `continuation_pipeline/artifacts.rs`
 
 **Relevant APIs**
 - signal-compatibility support and orchestration artifacts
@@ -612,18 +612,18 @@ subscription API.
 - `worth-runtime-bridge` time-aware and async-capable live families
 
 **Relevant Query docs**
-- [Subscription Selection And Diagnostics](../../crates/worth-query/docs/capabilities/subscription-selection-and-diagnostics.md)
-- [Scopes, Templates, Saved Queries, And View Shapes](../../crates/worth-query/docs/authoring/scopes-templates-saved-queries-and-view-shapes.md)
+- [Subscription Selection And Diagnostics](../../workspaces/worth-query/crates/worth-query/docs/capabilities/subscription-selection-and-diagnostics.md)
+- [Scopes, Templates, Saved Queries, And View Shapes](../../workspaces/worth-query/crates/worth-query/docs/authoring/scopes-templates-saved-queries-and-view-shapes.md)
 
 **Documentation follow-through**
 - Add or revise the phase's feature-facing docs with the `feature-doc-writer` skill before this phase can close.
 - Treat doc updates as part of the same authority boundary as the code/API change, not as post-hoc cleanup.
 
 **Relevant Query source surfaces**
-- [subscription/selection.rs](../../crates/worth-query/src/subscription/selection.rs)
-- [subscription/family.rs](../../crates/worth-query/src/subscription/family.rs)
-- [subscription/signal_strategy.rs](../../crates/worth-query/src/subscription/signal_strategy.rs)
-- [subscription/support/report.rs](../../crates/worth-query/src/subscription/support/report.rs)
+- [subscription/selection.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/selection.rs)
+- [subscription/family.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/family.rs)
+- [subscription/signal_strategy.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/signal_strategy.rs)
+- [subscription/support/report.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/support/report.rs)
 
 **Relevant APIs**
 - `select_query_subscription_family(...)`
@@ -659,19 +659,19 @@ lifecycle begins.
 - `worth-runtime-bridge` temporal basis requests and async live declaration binding
 
 **Relevant Query docs**
-- [Subscription Selection And Diagnostics](../../crates/worth-query/docs/capabilities/subscription-selection-and-diagnostics.md)
-- [Historical Diff And Basis](../../crates/worth-query/docs/capabilities/historical-diff-and-basis.md)
-- [Support Matrix And Admission](../../crates/worth-query/docs/foundations/support-matrix-and-admission.md)
+- [Subscription Selection And Diagnostics](../../workspaces/worth-query/crates/worth-query/docs/capabilities/subscription-selection-and-diagnostics.md)
+- [Historical Diff And Basis](../../workspaces/worth-query/crates/worth-query/docs/capabilities/historical-diff-and-basis.md)
+- [Support Matrix And Admission](../../workspaces/worth-query/crates/worth-query/docs/foundations/support-matrix-and-admission.md)
 
 **Documentation follow-through**
 - Add or revise the phase's feature-facing docs with the `feature-doc-writer` skill before this phase can close.
 - Treat doc updates as part of the same authority boundary as the code/API change, not as post-hoc cleanup.
 
 **Relevant Query source surfaces**
-- [subscription/declaration.rs](../../crates/worth-query/src/subscription/declaration.rs)
-- [subscription/declaration_digest.rs](../../crates/worth-query/src/subscription/declaration_digest.rs)
-- [subscription/basis_request.rs](../../crates/worth-query/src/subscription/basis_request.rs)
-- [subscription/bridge_lowering.rs](../../crates/worth-query/src/subscription/bridge_lowering.rs)
+- [subscription/declaration.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/declaration.rs)
+- [subscription/declaration_digest.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/declaration_digest.rs)
+- [subscription/basis_request.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/basis_request.rs)
+- [subscription/bridge_lowering.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/bridge_lowering.rs)
 
 **Relevant APIs**
 - subscription declaration artifacts and declaration digests
@@ -704,21 +704,21 @@ active objects instead of declaration-only paperwork.
 - `worth-runtime-bridge` mixed-cause live maintenance and restart posture
 
 **Relevant Query docs**
-- [Subscription Selection And Diagnostics](../../crates/worth-query/docs/capabilities/subscription-selection-and-diagnostics.md)
-- [Continuation Pipeline](../../crates/worth-query/docs/domain-capabilities/continuation-pipeline.md)
-- [Branches And Previews](../../crates/worth-query/docs/foundations/branches-and-previews.md)
+- [Subscription Selection And Diagnostics](../../workspaces/worth-query/crates/worth-query/docs/capabilities/subscription-selection-and-diagnostics.md)
+- [Continuation Pipeline](../../workspaces/worth-query/crates/worth-query/docs/domain-capabilities/continuation-pipeline.md)
+- [Branches And Previews](../../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md)
 
 **Documentation follow-through**
 - Add or revise the phase's feature-facing docs with the `feature-doc-writer` skill before this phase can close.
 - Treat doc updates as part of the same authority boundary as the code/API change, not as post-hoc cleanup.
 
 **Relevant Query source surfaces**
-- [subscription/activation.rs](../../crates/worth-query/src/subscription/activation.rs)
-- [subscription/active.rs](../../crates/worth-query/src/subscription/active.rs)
-- [subscription/active_handle.rs](../../crates/worth-query/src/subscription/active_handle.rs)
-- [subscription/fanout.rs](../../crates/worth-query/src/subscription/fanout.rs)
-- [subscription/continuation.rs](../../crates/worth-query/src/subscription/continuation.rs)
-- [subscription/preview_isolation.rs](../../crates/worth-query/src/subscription/preview_isolation.rs)
+- [subscription/activation.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/activation.rs)
+- [subscription/active.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/active.rs)
+- [subscription/active_handle.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/active_handle.rs)
+- [subscription/fanout.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/fanout.rs)
+- `subscription/continuation.rs`
+- [subscription/preview_isolation.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/preview_isolation.rs)
 
 **Relevant APIs**
 - active subscription handles and continuation artifacts
@@ -751,19 +751,19 @@ produce canonical deliveries even when no relational patch arrived.
 - `worth-runtime-bridge` time-only cause routing
 
 **Relevant Query docs**
-- [Ordinary Outcomes](../../crates/worth-query/docs/domain-capabilities/ordinary-outcomes.md)
-- [Inspection](../../crates/worth-query/docs/capabilities/inspection.md)
-- [Workspace Overview](../../crates/worth-query/docs/foundations/workspace-overview.md)
+- [Ordinary Outcomes](../../workspaces/worth-query/crates/worth-query/docs/domain-capabilities/ordinary-outcomes.md)
+- [Inspection](../../workspaces/worth-query/crates/worth-query/docs/capabilities/inspection.md)
+- [Workspace Overview](../../workspaces/worth-query/crates/worth-query/docs/foundations/workspace-overview.md)
 
 **Documentation follow-through**
 - Add or revise the phase's feature-facing docs with the `feature-doc-writer` skill before this phase can close.
 - Treat doc updates as part of the same authority boundary as the code/API change, not as post-hoc cleanup.
 
 **Relevant Query source surfaces**
-- [runtime/delivery.rs](../../crates/worth-query/src/runtime/delivery.rs)
-- [subscription/delivery.rs](../../crates/worth-query/src/subscription/delivery.rs)
-- [runtime/state.rs](../../crates/worth-query/src/runtime/state.rs)
-- [runtime/inspection/live.rs](../../crates/worth-query/src/runtime/inspection/live.rs)
+- [runtime/delivery.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/delivery.rs)
+- [subscription/delivery.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/delivery.rs)
+- [runtime/state.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/state.rs)
+- [runtime/inspection/live.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/inspection/live.rs)
 
 **Relevant APIs**
 - delivery artifacts
@@ -798,19 +798,19 @@ Query.
 - `worth-runtime-bridge` completion causality and denial taxonomy
 
 **Relevant Query docs**
-- [Workspace Overview](../../crates/worth-query/docs/foundations/workspace-overview.md)
-- [Ordinary Outcomes](../../crates/worth-query/docs/domain-capabilities/ordinary-outcomes.md)
-- [Support Matrix And Admission](../../crates/worth-query/docs/foundations/support-matrix-and-admission.md)
+- [Workspace Overview](../../workspaces/worth-query/crates/worth-query/docs/foundations/workspace-overview.md)
+- [Ordinary Outcomes](../../workspaces/worth-query/crates/worth-query/docs/domain-capabilities/ordinary-outcomes.md)
+- [Support Matrix And Admission](../../workspaces/worth-query/crates/worth-query/docs/foundations/support-matrix-and-admission.md)
 
 **Documentation follow-through**
 - Add or revise the phase's feature-facing docs with the `feature-doc-writer` skill before this phase can close.
 - Treat doc updates as part of the same authority boundary as the code/API change, not as post-hoc cleanup.
 
 **Relevant Query source surfaces**
-- [runtime/state.rs](../../crates/worth-query/src/runtime/state.rs)
-- [runtime/delivery.rs](../../crates/worth-query/src/runtime/delivery.rs)
-- [ordinary_outcome/mod.rs](../../crates/worth-query/src/ordinary_outcome/mod.rs)
-- [runtime/inspection.rs](../../crates/worth-query/src/runtime/inspection.rs)
+- [runtime/state.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/state.rs)
+- [runtime/delivery.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/delivery.rs)
+- [ordinary_outcome/mod.rs](../../workspaces/worth-query/crates/worth-query/src/ordinary_outcome/mod.rs)
+- [runtime/inspection.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/inspection.rs)
 
 **Relevant APIs**
 - state snapshots
@@ -844,19 +844,19 @@ canonical Query delivery stream.
 - `worth-runtime-bridge` mixed-cause ordering and suppression posture
 
 **Relevant Query docs**
-- [Subscription Selection And Diagnostics](../../crates/worth-query/docs/capabilities/subscription-selection-and-diagnostics.md)
-- [Scopes, Templates, Saved Queries, And View Shapes](../../crates/worth-query/docs/authoring/scopes-templates-saved-queries-and-view-shapes.md)
-- [Inspection](../../crates/worth-query/docs/capabilities/inspection.md)
+- [Subscription Selection And Diagnostics](../../workspaces/worth-query/crates/worth-query/docs/capabilities/subscription-selection-and-diagnostics.md)
+- [Scopes, Templates, Saved Queries, And View Shapes](../../workspaces/worth-query/crates/worth-query/docs/authoring/scopes-templates-saved-queries-and-view-shapes.md)
+- [Inspection](../../workspaces/worth-query/crates/worth-query/docs/capabilities/inspection.md)
 
 **Documentation follow-through**
 - Add or revise the phase's feature-facing docs with the `feature-doc-writer` skill before this phase can close.
 - Treat doc updates as part of the same authority boundary as the code/API change, not as post-hoc cleanup.
 
 **Relevant Query source surfaces**
-- [runtime/delivery.rs](../../crates/worth-query/src/runtime/delivery.rs)
-- [subscription/delivery.rs](../../crates/worth-query/src/subscription/delivery.rs)
-- [view_shape/delivery.rs](../../crates/worth-query/src/view_shape/delivery.rs)
-- [ordinary_outcome/topology.rs](../../crates/worth-query/src/ordinary_outcome/topology.rs)
+- [runtime/delivery.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/delivery.rs)
+- [subscription/delivery.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/delivery.rs)
+- [view_shape/delivery.rs](../../workspaces/worth-query/crates/worth-query/src/view_shape/delivery.rs)
+- [ordinary_outcome/topology.rs](../../workspaces/worth-query/crates/worth-query/src/ordinary_outcome/topology.rs)
 
 **Relevant APIs**
 - delivery and suppression artifacts
@@ -889,19 +889,19 @@ language already used for ordinary reads, live views, writes, and previews.
 - `worth-query` ordinary inspection
 
 **Relevant Query docs**
-- [Ordinary Outcomes](../../crates/worth-query/docs/domain-capabilities/ordinary-outcomes.md)
-- [Inspection](../../crates/worth-query/docs/capabilities/inspection.md)
-- [Workspace Overview](../../crates/worth-query/docs/foundations/workspace-overview.md)
+- [Ordinary Outcomes](../../workspaces/worth-query/crates/worth-query/docs/domain-capabilities/ordinary-outcomes.md)
+- [Inspection](../../workspaces/worth-query/crates/worth-query/docs/capabilities/inspection.md)
+- [Workspace Overview](../../workspaces/worth-query/crates/worth-query/docs/foundations/workspace-overview.md)
 
 **Documentation follow-through**
 - Add or revise the phase's feature-facing docs with the `feature-doc-writer` skill before this phase can close.
 - Treat doc updates as part of the same authority boundary as the code/API change, not as post-hoc cleanup.
 
 **Relevant Query source surfaces**
-- [ordinary_outcome/mod.rs](../../crates/worth-query/src/ordinary_outcome/mod.rs)
-- [ordinary_outcome/posture.rs](../../crates/worth-query/src/ordinary_outcome/posture.rs)
-- [runtime/state.rs](../../crates/worth-query/src/runtime/state.rs)
-- [runtime/inspection/unified/mod.rs](../../crates/worth-query/src/runtime/inspection/unified/mod.rs)
+- [ordinary_outcome/mod.rs](../../workspaces/worth-query/crates/worth-query/src/ordinary_outcome/mod.rs)
+- [ordinary_outcome/posture.rs](../../workspaces/worth-query/crates/worth-query/src/ordinary_outcome/posture.rs)
+- [runtime/state.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/state.rs)
+- [runtime/inspection/unified/mod.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/inspection/unified/mod.rs)
 
 **Relevant APIs**
 - ordinary outcome variants
@@ -936,24 +936,24 @@ imports in downstream code.
 - `worth-runtime-bridge` offline diagnostics, mixed-cause evidence, and failure taxonomy
 
 **Relevant Query docs**
-- [Inspection](../../crates/worth-query/docs/capabilities/inspection.md)
-- [Cross-Runtime Causal Inspection](../../crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md)
+- [Inspection](../../workspaces/worth-query/crates/worth-query/docs/capabilities/inspection.md)
+- [Cross-Runtime Causal Inspection](../../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md)
 
 **Documentation follow-through**
 - Add or revise the phase's feature-facing docs with the `feature-doc-writer` skill before this phase can close.
 - Treat doc updates as part of the same authority boundary as the code/API change, not as post-hoc cleanup.
 
 **Relevant Query source surfaces**
-- [runtime/inspection/causal/mod.rs](../../crates/worth-query/src/runtime/inspection/causal/mod.rs)
-- [runtime/inspection/causal/materialization/mod.rs](../../crates/worth-query/src/runtime/inspection/causal/materialization/mod.rs)
-- [runtime/inspection/causal/certification/mod.rs](../../crates/worth-query/src/runtime/inspection/causal/certification/mod.rs)
+- [runtime/inspection/causal/mod.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/inspection/causal/mod.rs)
+- [runtime/inspection/causal/materialization/mod.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/inspection/causal/materialization/mod.rs)
+- [runtime/inspection/causal/certification/mod.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/inspection/causal/certification/mod.rs)
 
 **Relevant APIs**
 - causal inspection request/admission/materialization artifacts
 
 **Warnings**
 - Do not turn ordinary inspection into a partial causal inspection clone.
-- Do not require lower-runtime spelunking for temporal/async â€œwhyâ€ questions.
+- Do not require lower-runtime spelunking for temporal/async “why” questions.
 
 **Test requirements**
 - Add causal-inspection materialization tests for changed, suppressed, denied, replayed, and remasked temporal/async artifacts.
@@ -979,20 +979,20 @@ if they were already authoritative.
 - `worth-runtime-bridge` preview residue and re-admission law
 
 **Relevant Query docs**
-- [Branches And Previews](../../crates/worth-query/docs/foundations/branches-and-previews.md)
-- [Continuation Pipeline](../../crates/worth-query/docs/domain-capabilities/continuation-pipeline.md)
-- [Inspection](../../crates/worth-query/docs/capabilities/inspection.md)
+- [Branches And Previews](../../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md)
+- [Continuation Pipeline](../../workspaces/worth-query/crates/worth-query/docs/domain-capabilities/continuation-pipeline.md)
+- [Inspection](../../workspaces/worth-query/crates/worth-query/docs/capabilities/inspection.md)
 
 **Documentation follow-through**
 - Add or revise the phase's feature-facing docs with the `feature-doc-writer` skill before this phase can close.
 - Treat doc updates as part of the same authority boundary as the code/API change, not as post-hoc cleanup.
 
 **Relevant Query source surfaces**
-- [preview/mod.rs](../../crates/worth-query/src/preview/mod.rs)
-- [preview/scoped.rs](../../crates/worth-query/src/preview/scoped.rs)
-- [subscription/preview_isolation.rs](../../crates/worth-query/src/subscription/preview_isolation.rs)
-- [runtime/inspection/preview.rs](../../crates/worth-query/src/runtime/inspection/preview.rs)
-- [query_basis_lifecycle/binding.rs](../../crates/worth-query/src/query_basis_lifecycle/binding.rs)
+- [preview/mod.rs](../../workspaces/worth-query/crates/worth-query/src/preview/mod.rs)
+- [preview/scoped.rs](../../workspaces/worth-query/crates/worth-query/src/preview/scoped.rs)
+- [subscription/preview_isolation.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/preview_isolation.rs)
+- `runtime/inspection/preview.rs`
+- `query_basis_lifecycle/binding.rs`
 
 **Relevant APIs**
 - `workspace.preview(...)`
@@ -1026,20 +1026,20 @@ changes resolve before delivery or result-state materialization.
 - `worth-runtime-bridge` remask and drift denial artifacts
 
 **Relevant Query docs**
-- [Support Matrix And Admission](../../crates/worth-query/docs/foundations/support-matrix-and-admission.md)
-- [Historical Diff And Basis](../../crates/worth-query/docs/capabilities/historical-diff-and-basis.md)
-- [Inspection](../../crates/worth-query/docs/capabilities/inspection.md)
+- [Support Matrix And Admission](../../workspaces/worth-query/crates/worth-query/docs/foundations/support-matrix-and-admission.md)
+- [Historical Diff And Basis](../../workspaces/worth-query/crates/worth-query/docs/capabilities/historical-diff-and-basis.md)
+- [Inspection](../../workspaces/worth-query/crates/worth-query/docs/capabilities/inspection.md)
 
 **Documentation follow-through**
 - Add or revise the phase's feature-facing docs with the `feature-doc-writer` skill before this phase can close.
 - Treat doc updates as part of the same authority boundary as the code/API change, not as post-hoc cleanup.
 
 **Relevant Query source surfaces**
-- [policy_basis/mod.rs](../../crates/worth-query/src/policy_basis/mod.rs)
-- [tenant_basis/mod.rs](../../crates/worth-query/src/tenant_basis/mod.rs)
-- [policy_delivery/mod.rs](../../crates/worth-query/src/policy_delivery/mod.rs)
-- [relationship_proof/support.rs](../../crates/worth-query/src/relationship_proof/support.rs)
-- [runtime/support_matrix.rs](../../crates/worth-query/src/runtime/support_matrix.rs)
+- [policy_basis/mod.rs](../../workspaces/worth-query/crates/worth-query/src/policy_basis/mod.rs)
+- [tenant_basis/mod.rs](../../workspaces/worth-query/crates/worth-query/src/tenant_basis/mod.rs)
+- [policy_delivery/mod.rs](../../workspaces/worth-query/crates/worth-query/src/policy_delivery/mod.rs)
+- [relationship_proof/support.rs](../../workspaces/worth-query/crates/worth-query-admission/src/domain_computation/relationship_proof/support.rs)
+- [runtime/support_matrix.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/support_matrix.rs)
 
 **Relevant APIs**
 - policy basis and tenant basis artifacts
@@ -1073,19 +1073,19 @@ semantics.
 - `worth-query` declaration composition over scopes and templates
 
 **Relevant Query docs**
-- [Scopes, Templates, Saved Queries, And View Shapes](../../crates/worth-query/docs/authoring/scopes-templates-saved-queries-and-view-shapes.md)
-- [Read Composition](../../crates/worth-query/docs/authoring/read-composition.md)
-- [Support Matrix And Admission](../../crates/worth-query/docs/foundations/support-matrix-and-admission.md)
+- [Scopes, Templates, Saved Queries, And View Shapes](../../workspaces/worth-query/crates/worth-query/docs/authoring/scopes-templates-saved-queries-and-view-shapes.md)
+- [Read Composition](../../workspaces/worth-query/crates/worth-query/docs/authoring/read-composition.md)
+- [Support Matrix And Admission](../../workspaces/worth-query/crates/worth-query/docs/foundations/support-matrix-and-admission.md)
 
 **Documentation follow-through**
 - Add or revise the phase's feature-facing docs with the `feature-doc-writer` skill before this phase can close.
 - Treat doc updates as part of the same authority boundary as the code/API change, not as post-hoc cleanup.
 
 **Relevant Query source surfaces**
-- [view_shape/support.rs](../../crates/worth-query/src/view_shape/support.rs)
-- [view_shape/delivery.rs](../../crates/worth-query/src/view_shape/delivery.rs)
-- [saved_query/support.rs](../../crates/worth-query/src/saved_query/support.rs)
-- [canonicalization/projection.rs](../../crates/worth-query/src/canonicalization/projection.rs)
+- `view_shape/support.rs`
+- [view_shape/delivery.rs](../../workspaces/worth-query/crates/worth-query/src/view_shape/delivery.rs)
+- [saved_query/support.rs](../../workspaces/worth-query/crates/worth-query/src/saved_query/support.rs)
+- [canonicalization/projection.rs](../../workspaces/worth-query/crates/worth-query-declaration/src/canonicalization/projection.rs)
 
 **Relevant APIs**
 - view-shape support reports
@@ -1119,19 +1119,19 @@ reopening lower authority or degrading to row-bag folklore.
 - `worth-runtime-bridge` temporal/async materialization and delivery artifacts
 
 **Relevant Query docs**
-- [Read Composition](../../crates/worth-query/docs/authoring/read-composition.md)
-- [Projection Consumption](../../crates/worth-query/docs/capabilities/projection-consumption.md)
-- [Inspection](../../crates/worth-query/docs/capabilities/inspection.md)
+- [Read Composition](../../workspaces/worth-query/crates/worth-query/docs/authoring/read-composition.md)
+- [Projection Consumption](../../workspaces/worth-query/crates/worth-query/docs/capabilities/projection-consumption.md)
+- [Inspection](../../workspaces/worth-query/crates/worth-query/docs/capabilities/inspection.md)
 
 **Documentation follow-through**
 - Add or revise the phase's feature-facing docs with the `feature-doc-writer` skill before this phase can close.
 - Treat doc updates as part of the same authority boundary as the code/API change, not as post-hoc cleanup.
 
 **Relevant Query source surfaces**
-- [runtime/read_composition.rs](../../crates/worth-query/src/runtime/read_composition.rs)
-- [runtime/read_composition_materialization.rs](../../crates/worth-query/src/runtime/read_composition_materialization.rs)
-- [projection_consumption/mod.rs](../../crates/worth-query/src/projection_consumption/mod.rs)
-- [projection_consumption/receipt.rs](../../crates/worth-query/src/projection_consumption/receipt.rs)
+- [runtime/read_composition.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/read_composition.rs)
+- [runtime/read_composition_materialization.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/read_composition_materialization.rs)
+- [projection_consumption/mod.rs](../../workspaces/worth-query/crates/worth-query/src/projection_consumption/mod.rs)
+- [projection_consumption/receipt.rs](../../workspaces/worth-query/crates/worth-query/src/projection_consumption/receipt.rs)
 - [projection_consumption/facts/mod.rs](../../workspaces/worth-query/crates/worth-query/src/projection_consumption/facts/mod.rs)
 
 **Relevant APIs**
@@ -1167,19 +1167,19 @@ ambient exceptions or log-only failures.
 - `worth-runtime-bridge` resume basis and denial taxonomy
 
 **Relevant Query docs**
-- [Continuation Pipeline](../../crates/worth-query/docs/domain-capabilities/continuation-pipeline.md)
-- [Ordinary Outcomes](../../crates/worth-query/docs/domain-capabilities/ordinary-outcomes.md)
-- [Inspection](../../crates/worth-query/docs/capabilities/inspection.md)
+- [Continuation Pipeline](../../workspaces/worth-query/crates/worth-query/docs/domain-capabilities/continuation-pipeline.md)
+- [Ordinary Outcomes](../../workspaces/worth-query/crates/worth-query/docs/domain-capabilities/ordinary-outcomes.md)
+- [Inspection](../../workspaces/worth-query/crates/worth-query/docs/capabilities/inspection.md)
 
 **Documentation follow-through**
 - Add or revise the phase's feature-facing docs with the `feature-doc-writer` skill before this phase can close.
 - Treat doc updates as part of the same authority boundary as the code/API change, not as post-hoc cleanup.
 
 **Relevant Query source surfaces**
-- [continuation_pipeline/mod.rs](../../crates/worth-query/src/continuation_pipeline/mod.rs)
-- [continuation_pipeline/execution/readmission.rs](../../crates/worth-query/src/continuation_pipeline/execution/readmission.rs)
-- [recovery_boundary/checked/continuation.rs](../../crates/worth-query/src/recovery_boundary/checked/continuation.rs)
-- [application/domain_handle/admitted_handle/recovery.rs](../../crates/worth-query/src/application/domain_handle/admitted_handle/recovery.rs)
+- [continuation_pipeline/mod.rs](../../workspaces/worth-query/crates/worth-query/src/continuation_pipeline/mod.rs)
+- [continuation_pipeline/execution/readmission.rs](../../workspaces/worth-query/crates/worth-query/src/continuation_pipeline/execution/readmission.rs)
+- [recovery_boundary/checked/continuation.rs](../../workspaces/worth-query/crates/worth-query/src/recovery_boundary/checked/continuation.rs)
+- [application/domain_handle/admitted_handle/recovery.rs](../../workspaces/worth-query/crates/worth-query/src/application/domain_handle/admitted_handle/recovery.rs)
 
 **Relevant APIs**
 - continuation execution and readmission artifacts
@@ -1214,21 +1214,21 @@ for write-adjacent work.
 - `worth-runtime-bridge` completion causality and write-adjacent continuation posture
 
 **Relevant Query docs**
-- [Writes And Intents](../../crates/worth-query/docs/execution/writes-and-intents.md)
-- [Intent Admission](../../crates/worth-query/docs/execution/intent-admission.md)
-- [Continuation Pipeline](../../crates/worth-query/docs/domain-capabilities/continuation-pipeline.md)
+- [Writes And Intents](../../workspaces/worth-query/crates/worth-query/docs/execution/writes-and-intents.md)
+- [Intent Admission](../../workspaces/worth-query/crates/worth-query/docs/execution/intent-admission.md)
+- [Continuation Pipeline](../../workspaces/worth-query/crates/worth-query/docs/domain-capabilities/continuation-pipeline.md)
 
 **Documentation follow-through**
 - Add or revise the phase's feature-facing docs with the `feature-doc-writer` skill before this phase can close.
 - Treat doc updates as part of the same authority boundary as the code/API change, not as post-hoc cleanup.
 
 **Relevant Query source surfaces**
-- [intent_admission/mod.rs](../../crates/worth-query/src/intent_admission/mod.rs)
-- [intent_admission/handoffs/mod.rs](../../crates/worth-query/src/intent_admission/handoffs/mod.rs)
-- [intent_admission/trace/mod.rs](../../crates/worth-query/src/intent_admission/trace/mod.rs)
-- [runtime/effect/mod.rs](../../crates/worth-query/src/runtime/effect/mod.rs)
-- [runtime/effect/delivery.rs](../../crates/worth-query/src/runtime/effect/delivery.rs)
-- [workflow/inspection.rs](../../crates/worth-query/src/workflow/inspection.rs)
+- [intent_admission/mod.rs](../../workspaces/worth-query/crates/worth-query/src/intent_admission/mod.rs)
+- [intent_admission/handoffs/mod.rs](../../workspaces/worth-query/crates/worth-query/src/intent_admission/handoffs/mod.rs)
+- [intent_admission/trace/mod.rs](../../workspaces/worth-query/crates/worth-query/src/intent_admission/trace/mod.rs)
+- [runtime/effect/mod.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/effect/mod.rs)
+- [runtime/effect/delivery.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/effect/delivery.rs)
+- [workflow/inspection.rs](../../workspaces/worth-query/crates/worth-query/src/workflow/inspection.rs)
 
 **Relevant APIs**
 - intent admission and handoff artifacts
@@ -1262,19 +1262,19 @@ posture instead of rediscovering temporal/async semantics at the network edge.
 - `worth-runtime-bridge` delivery and restart/resume bundle artifacts
 
 **Relevant Query docs**
-- [Downstream Runtime Integration](../../crates/worth-query/docs/foundations/downstream-runtime-integration.md)
-- [Workspace Overview](../../crates/worth-query/docs/foundations/workspace-overview.md)
-- [Support Matrix And Admission](../../crates/worth-query/docs/foundations/support-matrix-and-admission.md)
+- [Downstream Runtime Integration](../../workspaces/worth-query/crates/worth-query/docs/foundations/downstream-runtime-integration.md)
+- [Workspace Overview](../../workspaces/worth-query/crates/worth-query/docs/foundations/workspace-overview.md)
+- [Support Matrix And Admission](../../workspaces/worth-query/crates/worth-query/docs/foundations/support-matrix-and-admission.md)
 
 **Documentation follow-through**
 - Add or revise the phase's feature-facing docs with the `feature-doc-writer` skill before this phase can close.
 - Treat doc updates as part of the same authority boundary as the code/API change, not as post-hoc cleanup.
 
 **Relevant Query source surfaces**
-- [runtime/delivery.rs](../../crates/worth-query/src/runtime/delivery.rs)
-- [runtime/public_api.rs](../../crates/worth-query/src/runtime/public_api.rs)
-- [runtime/handle_contract.rs](../../crates/worth-query/src/runtime/handle_contract.rs)
-- [lower_runtime_routing/support.rs](../../crates/worth-query/src/lower_runtime_routing/support.rs)
+- [runtime/delivery.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/delivery.rs)
+- [runtime/public_api.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/public_api.rs)
+- [runtime/handle_contract.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/handle_contract.rs)
+- `lower_runtime_routing/support.rs`
 
 **Relevant APIs**
 - public delivery and handle contracts
@@ -1307,8 +1307,8 @@ async-only, and mixed-cause lanes.
 - `worth-runtime-bridge` temporal/async certification bundles and pricing-shock workload extensions
 
 **Relevant Query docs**
-- [Support Matrix And Admission](../../crates/worth-query/docs/foundations/support-matrix-and-admission.md)
-- [Downstream Runtime Integration](../../crates/worth-query/docs/foundations/downstream-runtime-integration.md)
+- [Support Matrix And Admission](../../workspaces/worth-query/crates/worth-query/docs/foundations/support-matrix-and-admission.md)
+- [Downstream Runtime Integration](../../workspaces/worth-query/crates/worth-query/docs/foundations/downstream-runtime-integration.md)
 - [Runtime-Installed Domains And Operations](../../workspaces/worth-query/crates/worth-query/docs/domain-capabilities/runtime-installed-domains.md)
 - [Domain Capability Documentation Certification](../../workspaces/worth-query/crates/worth-query/docs/domain-capabilities/public-doc-coverage.md)
 
@@ -1317,11 +1317,11 @@ async-only, and mixed-cause lanes.
 - Treat doc updates as part of the same authority boundary as the code/API change, not as post-hoc cleanup.
 
 **Relevant Query source surfaces**
-- [subscription/certification.rs](../../crates/worth-query/src/subscription/certification.rs)
-- [subscription/tests/runtime_certification.rs](../../crates/worth-query/src/subscription/tests/runtime_certification.rs)
-- [runtime/inspection/causal/certification/mod.rs](../../crates/worth-query/src/runtime/inspection/causal/certification/mod.rs)
-- [harness/preview_certification/mod.rs](../../crates/worth-query/src/harness/preview_certification/mod.rs)
-- [public_doc_coverage/tests/support.rs](../../crates/worth-query/src/public_doc_coverage/tests/support.rs)
+- [subscription/certification.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/certification.rs)
+- `subscription/tests/runtime_certification.rs`
+- [runtime/inspection/causal/certification/mod.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/inspection/causal/certification/mod.rs)
+- [harness/preview_certification/mod.rs](../../workspaces/worth-query/crates/worth-query/src/harness/preview_certification/mod.rs)
+- `public_doc_coverage/tests/support.rs`
 
 **Relevant APIs**
 - runtime certification harness surfaces

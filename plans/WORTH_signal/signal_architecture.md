@@ -3,6 +3,8 @@
 > **Status:** Pre-production. No public consumers. All changes are breaking-change-safe.
 >
 > **Scope:** Systematic structural overhaul of the `worth-signal` crate to eliminate duplication, enforce invariants at compile time, and create composable primitives that make wrong code unwritable.
+>
+> **Note:** Source links in this document pointed at files that have since moved or been removed from `crates/worth-signal`. They are kept as plain paths for history.
 
 ---
 
@@ -23,12 +25,12 @@
 13. [R13: Diagnostics Replay Filter Consolidation](#r13-diagnostics-replay-filter-consolidation)
 14. [R14: Stale Utility Deduplication](#r14-stale-utility-deduplication)
 15. [**Phase 2**: R15: Partition-Aware MaybeStale Validation](#r15-partition-aware-maybestale-validation)
-16. [R19: `PhaseGuard<P>` â€” Cross-Epoch Re-entrancy Prevention](#r19-phaseguardp--cross-epoch-re-entrancy-prevention)
-17. [R20: Observation Purity â€” `&self` Diagnostic Enforcement](#r20-observation-purity--self-diagnostic-enforcement)
-18. [R21: Single Source of Truth â€” Representational Drift Prevention](#r21-single-source-of-truth--representational-drift-prevention)
-19. [R22: Transactional Mutation â€” Rollback Amnesia Prevention](#r22-transactional-mutation--rollback-amnesia-prevention)
+16. [R19: `PhaseGuard<P>` — Cross-Epoch Re-entrancy Prevention](#r19-phaseguardp--cross-epoch-re-entrancy-prevention)
+17. [R20: Observation Purity — `&self` Diagnostic Enforcement](#r20-observation-purity--self-diagnostic-enforcement)
+18. [R21: Single Source of Truth — Representational Drift Prevention](#r21-single-source-of-truth--representational-drift-prevention)
+19. [R22: Transactional Mutation — Rollback Amnesia Prevention](#r22-transactional-mutation--rollback-amnesia-prevention)
 20. [Meta-Abstractions](#meta-abstractions)
-21. [**Phase 3**: R16â€“R18: Compile-Time Safety](./signal_compile_time_safety.md) *(separate document)*
+21. [**Phase 3**: R16–R18: Compile-Time Safety](./signal_compile_time_safety.md) *(separate document)*
 22. [**Deferred**: Bug Classes & Compile-Time Enforcement](./signal_compile_time_safety.md) *(separate document)*
 23. [Verification](#verification)
 24. [Sequencing](#sequencing)
@@ -39,23 +41,23 @@
 
 ### Problem
 
-Node state transitions require manually coordinating 3â€“5 fields (`set_state`, `set_dirty_aspects`/`add_dirty_aspect`, `clear_dirty_partition_scopes`/`clear_dirty_partition_scopes_for`/`add_dirty_partition_scope`). This ceremony is duplicated across 5+ locations with subtle semantic differences.
+Node state transitions require manually coordinating 3–5 fields (`set_state`, `set_dirty_aspects`/`add_dirty_aspect`, `clear_dirty_partition_scopes`/`clear_dirty_partition_scopes_for`/`add_dirty_partition_scope`). This ceremony is duplicated across 5+ locations with subtle semantic differences.
 
 ### Exhaustive Inventory of Duplication
 
 | Transition                    | File                                                                                                                                                                  | Lines     | Fields Touched                                                                                                            | Telemetry                         |
 | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
-| Source â†’ Dirty                | [invalidation.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/invalidation.rs#L76-L84)                         | L76â€“L84   | `set_state(Dirty)`, `add_dirty_aspect`, `merge_dirty_partition_scopes`                                                    | none                              |
-| Direct Sub â†’ Dirty/MaybeStale | [invalidation.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/invalidation.rs#L163-L177)                       | L163â€“L177 | `set_state(Dirty\|MaybeStale)`, `add_dirty_aspect`, `merge_dirty_partition_scopes`                                        | `invalidation_nodes_visited` L189 |
-| Transitive Sub â†’ MaybeStale   | [invalidation.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/invalidation.rs#L438-L450)                       | L438â€“L450 | `set_state(MaybeStale)`, `add_dirty_aspect`, `clear_dirty_partition_scopes_for`                                           | `invalidation_nodes_visited` L426 |
-| Eval Result â†’ Clean           | [result_apply.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/evaluation/engine/result_apply.rs#L116-L123)     | L116â€“L123 | `set_aspect_version`, `set_trace_summary`, `set_state(Clean)`, `set_dirty_aspects(EMPTY)`, `clear_dirty_partition_scopes` | `nodes_recomputed` L127           |
-| Comparator Skip â†’ Clean       | [prepared_apply.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/evaluation/engine/prepared_apply.rs#L123-L130) | L123â€“L130 | `set_state(Clean)`, `set_dirty_aspects(EMPTY)`, `clear_dirty_partition_scopes`                                            | `skipped_by_comparator` L124      |
-| Condition Skip â†’ Clean        | [prepared_apply.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/evaluation/engine/prepared_apply.rs#L132-L141) | L132â€“L141 | `set_state(Clean)`, `set_dirty_aspects(EMPTY)`, `clear_dirty_partition_scopes`                                            | none                              |
-| Condition Defer â†’ MaybeStale  | [prepared_apply.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/evaluation/engine/prepared_apply.rs#L143-L146) | L143â€“L146 | `set_state(MaybeStale)`                                                                                                   | none                              |
+| Source → Dirty                | `crates/worth-signal/src/logic/invalidation.rs`                         | L76–L84   | `set_state(Dirty)`, `add_dirty_aspect`, `merge_dirty_partition_scopes`                                                    | none                              |
+| Direct Sub → Dirty/MaybeStale | `crates/worth-signal/src/logic/invalidation.rs`                       | L163–L177 | `set_state(Dirty\|MaybeStale)`, `add_dirty_aspect`, `merge_dirty_partition_scopes`                                        | `invalidation_nodes_visited` L189 |
+| Transitive Sub → MaybeStale   | `crates/worth-signal/src/logic/invalidation.rs`                       | L438–L450 | `set_state(MaybeStale)`, `add_dirty_aspect`, `clear_dirty_partition_scopes_for`                                           | `invalidation_nodes_visited` L426 |
+| Eval Result → Clean           | `crates/worth-signal/src/logic/evaluation/engine/result_apply.rs`     | L116–L123 | `set_aspect_version`, `set_trace_summary`, `set_state(Clean)`, `set_dirty_aspects(EMPTY)`, `clear_dirty_partition_scopes` | `nodes_recomputed` L127           |
+| Comparator Skip → Clean       | [prepared_apply.rs](../../crates/worth-signal/src/logic/evaluation/engine/prepared_apply.rs#L123-L130) | L123–L130 | `set_state(Clean)`, `set_dirty_aspects(EMPTY)`, `clear_dirty_partition_scopes`                                            | `skipped_by_comparator` L124      |
+| Condition Skip → Clean        | [prepared_apply.rs](../../crates/worth-signal/src/logic/evaluation/engine/prepared_apply.rs#L132-L141) | L132–L141 | `set_state(Clean)`, `set_dirty_aspects(EMPTY)`, `clear_dirty_partition_scopes`                                            | none                              |
+| Condition Defer → MaybeStale  | [prepared_apply.rs](../../crates/worth-signal/src/logic/evaluation/engine/prepared_apply.rs#L143-L146) | L143–L146 | `set_state(MaybeStale)`                                                                                                   | none                              |
 
 ### Design
 
-Add transition methods to `NodeEntry` ([data/node/entry.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/node/entry.rs)):
+Add transition methods to `NodeEntry` ([data/node/entry.rs](../../crates/worth-signal/src/data/node/entry.rs)):
 
 ```rust
 impl NodeEntry {
@@ -92,22 +94,22 @@ impl NodeEntry {
 }
 ```
 
-`merge_dirty_partition_scopes` moves from `invalidation.rs` L480â€“L505 into `data/node/entry.rs` as a private helper.
+`merge_dirty_partition_scopes` moves from `invalidation.rs` L480–L505 into `data/node/entry.rs` as a private helper.
 
 ### Files Modified
 
 | File                                                                                                                                                        | Change                                                                                                                                                                                                          |
 | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [data/node/entry.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/node/entry.rs)                       | Add `transition_clean`, `transition_dirty`, `transition_maybe_stale`; absorb `merge_dirty_partition_scopes`                                                                                                     |
-| [invalidation.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/invalidation.rs)                       | Replace L76â€“L84, L163â€“L177, L438â€“L450 with single transition calls; delete `merge_dirty_partition_scopes`                                                                                                       |
-| [result_apply.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/evaluation/engine/result_apply.rs)     | Replace L116â€“L123 with `entry.transition_clean()`                                                                                                                                                               |
-| [prepared_apply.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/evaluation/engine/prepared_apply.rs) | Collapse `revert_to_clean` + `revert_to_clean_due_to_condition` into one function calling `transition_clean`; `defer_due_to_condition` calls `set_state(MaybeStale)` directly (single field, no wrapper needed) |
+| [data/node/entry.rs](../../crates/worth-signal/src/data/node/entry.rs)                       | Add `transition_clean`, `transition_dirty`, `transition_maybe_stale`; absorb `merge_dirty_partition_scopes`                                                                                                     |
+| `crates/worth-signal/src/logic/invalidation.rs`                       | Replace L76–L84, L163–L177, L438–L450 with single transition calls; delete `merge_dirty_partition_scopes`                                                                                                       |
+| `crates/worth-signal/src/logic/evaluation/engine/result_apply.rs`     | Replace L116–L123 with `entry.transition_clean()`                                                                                                                                                               |
+| [prepared_apply.rs](../../crates/worth-signal/src/logic/evaluation/engine/prepared_apply.rs) | Collapse `revert_to_clean` + `revert_to_clean_due_to_condition` into one function calling `transition_clean`; `defer_due_to_condition` calls `set_state(MaybeStale)` directly (single field, no wrapper needed) |
 
 ### Lines Saved: ~50
 
 ### Bug Class Eliminated
 
-"Inconsistent state transition" â€” WORTHtting to clear scopes, WORTHtting to add dirty aspect, using wrong clearing method for the transition type.
+"Inconsistent state transition" — WORTHtting to clear scopes, WORTHtting to add dirty aspect, using wrong clearing method for the transition type.
 
 ---
 
@@ -119,11 +121,11 @@ The same partition-scope matching logic exists in **5 separate functions** acros
 
 | Function                                                                                                                                                                        | File              | Lines     | Input Types                                                       |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- | --------- | ----------------------------------------------------------------- |
-| [partition_scope_matches](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/invalidation.rs#L329-L343)                         | `invalidation.rs` | L329â€“L343 | `&PartitionSubscription` Ã— `&PartitionSubscription`               |
-| [interned_partition_scope_matches](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/invalidation.rs#L295-L309)                | `invalidation.rs` | L295â€“L309 | `InternedPartitionSubscription` Ã— `InternedPartitionSubscription` |
-| [partition_subscription_matches](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/evaluation/engine/suppression.rs#L111-L125) | `suppression.rs`  | L111â€“L125 | `&PartitionSubscription` Ã— `&ChangedRegion`                       |
-| [partition_scope_touched](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/evaluation/engine/suppression.rs#L85-L102)         | `suppression.rs`  | L85â€“L102  | wraps above with trace lookup                                     |
-| [partition_scope_untouched](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/planner/plan_builder.rs#L343-L360)               | `plan_builder.rs` | L343â€“L360 | **Yet another copy**                                              |
+| `crates/worth-signal/src/logic/invalidation.rs`                         | `invalidation.rs` | L329–L343 | `&PartitionSubscription` × `&PartitionSubscription`               |
+| `crates/worth-signal/src/logic/invalidation.rs`                | `invalidation.rs` | L295–L309 | `InternedPartitionSubscription` × `InternedPartitionSubscription` |
+| `crates/worth-signal/src/logic/evaluation/engine/suppression.rs` | `suppression.rs`  | L111–L125 | `&PartitionSubscription` × `&ChangedRegion`                       |
+| `crates/worth-signal/src/logic/evaluation/engine/suppression.rs`         | `suppression.rs`  | L85–L102  | wraps above with trace lookup                                     |
+| `crates/worth-signal/src/logic/planner/plan_builder.rs`               | `plan_builder.rs` | L343–L360 | **Yet another copy**                                              |
 
 All five implement the same semantic: "does partition A overlap with partition B, considering WholePartition vs PartitionAndDetail?"
 
@@ -171,16 +173,16 @@ pub fn scope_touched_by_trace(trace: Option<&TraceSummary>, scope: &PartitionSub
 
 | File                                                                                                                                                  | Change                                                                    |
 | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| [data/output.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/output.rs)                         | Add `PartitionScoped` trait, impls, `scopes_overlap`                      |
-| [invalidation.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/invalidation.rs)                 | Delete L295â€“L343; replace with `scopes_overlap` calls                     |
-| [suppression.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/evaluation/engine/suppression.rs) | Delete L85â€“L125; replace with `scope_touched_by_trace` + `scopes_overlap` |
-| [plan_builder.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/planner/plan_builder.rs)         | Delete L343â€“L360; import shared function                                  |
+| [data/output.rs](../../crates/worth-signal/src/data/output.rs)                         | Add `PartitionScoped` trait, impls, `scopes_overlap`                      |
+| `crates/worth-signal/src/logic/invalidation.rs`                 | Delete L295–L343; replace with `scopes_overlap` calls                     |
+| `crates/worth-signal/src/logic/evaluation/engine/suppression.rs` | Delete L85–L125; replace with `scope_touched_by_trace` + `scopes_overlap` |
+| `crates/worth-signal/src/logic/planner/plan_builder.rs`         | Delete L343–L360; import shared function                                  |
 
 ### Lines Saved: ~80
 
 ### Bug Class Eliminated
 
-"Scope matching semantic drift" â€” five functions that could diverge independently (and one already handles `detail: None` differently from the others).
+"Scope matching semantic drift" — five functions that could diverge independently (and one already handles `detail: None` differently from the others).
 
 ---
 
@@ -196,16 +198,16 @@ entries: Vec<(NodeId, Aspect, u64, Option<PartitionSubscription>)>
 
 This results in:
 
-1. **Positional access throughout the codebase** â€” `snapshot.0`, `snapshot.1`, `snapshot.2`, `snapshot.3` with no field names.
+1. **Positional access throughout the codebase** — `snapshot.0`, `snapshot.1`, `snapshot.2`, `snapshot.3` with no field names.
 2. **Three separate comparison functions** that extract the same sort key from different representations:
 
 | Function                                                                                                                                                                         | File              | Lines     | Extracts From                       |
 | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- | --------- | ----------------------------------- |
-| [compare_snapshot_entries](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/dependency.rs#L205-L223)                            | `dependency.rs`   | L205â€“L223 | `(NodeId, Aspect, u64, Option<PS>)` |
-| [compare_snapshot_identity](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/dependency.rs#L225-L235)                           | `dependency.rs`   | L225â€“L235 | `(NodeId, Aspect, u64, Option<PS>)` |
-| [compare_dependency_to_snapshot](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/evaluation/engine/result_apply.rs#L230-L251) | `result_apply.rs` | L230â€“L251 | `DependencyEdge` vs tuple           |
+| [compare_snapshot_entries](../../crates/worth-signal/src/data/dependency.rs#L205-L223)                            | `dependency.rs`   | L205–L223 | `(NodeId, Aspect, u64, Option<PS>)` |
+| [compare_snapshot_identity](../../crates/worth-signal/src/data/dependency.rs#L225-L235)                           | `dependency.rs`   | L225–L235 | `(NodeId, Aspect, u64, Option<PS>)` |
+| `crates/worth-signal/src/logic/evaluation/engine/result_apply.rs` | `result_apply.rs` | L230–L251 | `DependencyEdge` vs tuple           |
 
-3. **Implicit sort key agreement** â€” `DependencyEdge` and `DependencySnapshot` entries must sort in the same order for binary searching, but nothing in the type system guarantees this.
+3. **Implicit sort key agreement** — `DependencyEdge` and `DependencySnapshot` entries must sort in the same order for binary searching, but nothing in the type system guarantees this.
 
 ### Design
 
@@ -257,9 +259,9 @@ All three comparison functions are replaced by `a.sort_key().cmp(&b.sort_key())`
 
 | File                                                                                                                                                    | Change                                                                                                                                              |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [dependency.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/dependency.rs)                        | Introduce `DependencySnapshotEntry`, `DependencySortKey`; replace tuple with struct, delete `compare_snapshot_entries`, `compare_snapshot_identity` |
-| [result_apply.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/evaluation/engine/result_apply.rs) | Delete `compare_dependency_to_snapshot` (L230â€“L251), use `DependencySortKey`                                                                        |
-| [storage.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/graph/storage.rs)                        | Replace `compare_dependency_edges` with `DependencyEdge::sort_key()`                                                                                |
+| [dependency.rs](../../crates/worth-signal/src/data/dependency.rs)                        | Introduce `DependencySnapshotEntry`, `DependencySortKey`; replace tuple with struct, delete `compare_snapshot_entries`, `compare_snapshot_identity` |
+| `crates/worth-signal/src/logic/evaluation/engine/result_apply.rs` | Delete `compare_dependency_to_snapshot` (L230–L251), use `DependencySortKey`                                                                        |
+| `crates/worth-signal/src/data/graph/storage.rs`                        | Replace `compare_dependency_edges` with `DependencyEdge::sort_key()`                                                                                |
 | All consumers of `.entries()`                                                                                                                           | Change from `(NodeId, Aspect, u64, Option<PS>)` to `DependencySnapshotEntry` field access                                                           |
 
 ### Lines Saved: ~60
@@ -270,9 +272,9 @@ All three comparison functions are replaced by `a.sort_key().cmp(&b.sort_key())`
 
 ### Problem
 
-[TraversalScratch](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/graph/scratch.rs) uses a runtime-checked `acquire`/`restore` protocol. The lease kind must match on restore. WORTHtting to call `restore` leaks the scratch buffer, causing subsequent operations to fail with `ScratchReentryError`.
+`crates/worth-signal/src/data/graph/scratch.rs` uses a runtime-checked `acquire`/`restore` protocol. The lease kind must match on restore. WORTHtting to call `restore` leaks the scratch buffer, causing subsequent operations to fail with `ScratchReentryError`.
 
-Current usage pattern in [invalidation.rs L39â€“L49](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/invalidation.rs#L39-L49):
+Current usage pattern in `crates/worth-signal/src/logic/invalidation.rs`:
 
 ```rust
 let mut scratch = graph.acquire_scratch(ScratchLeaseKind::Invalidation)?;
@@ -308,13 +310,13 @@ impl SignalGraph {
 
 | File                                                                                                                                       | Change                                                                      |
 | ------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------- |
-| [signal_graph.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/graph/signal_graph.rs) | Add `with_scratch` method                                                   |
-| [invalidation.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/invalidation.rs)      | Replace L39â€“L49 with `graph.with_scratch(kind, \|graph, scratch\| { ... })` |
+| `crates/worth-signal/src/data/graph/signal_graph.rs` | Add `with_scratch` method                                                   |
+| `crates/worth-signal/src/logic/invalidation.rs`      | Replace L39–L49 with `graph.with_scratch(kind, \|graph, scratch\| { ... })` |
 | All other `acquire_scratch`/`restore_scratch` call sites                                                                                   | Same closure conversion                                                     |
 
 ### Bug Class Eliminated
 
-"Unreturned scratch lease" â€” impossible, because `with_scratch` restores on both Ok and Err paths.
+"Unreturned scratch lease" — impossible, because `with_scratch` restores on both Ok and Err paths.
 
 ---
 
@@ -322,7 +324,7 @@ impl SignalGraph {
 
 ### Problem
 
-Every edge mutation in [storage.rs L252â€“L405](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/graph/storage.rs#L252-L405) follows the same 5-step ceremony:
+Every edge mutation in `crates/worth-signal/src/data/graph/storage.rs` follows the same 5-step ceremony:
 
 ```
 1. Read current edges into Vec      (snapshot)
@@ -336,16 +338,16 @@ This ceremony appears in 6 functions:
 
 | Function                           | Lines     | Mutation Type              |
 | ---------------------------------- | --------- | -------------------------- |
-| `add_dependency_edge`              | L252â€“L268 | sorted insert              |
-| `remove_dependency_edge`           | L282â€“L301 | filter                     |
-| `remove_dependency_edges_matching` | L303â€“L329 | filter with scope matching |
-| `remove_dependencies_on`           | L331â€“L350 | filter by source           |
-| `add_subscriber_edge`              | L359â€“L374 | sorted insert              |
-| `remove_subscriber_edge`           | L387â€“L405 | filter                     |
+| `add_dependency_edge`              | L252–L268 | sorted insert              |
+| `remove_dependency_edge`           | L282–L301 | filter                     |
+| `remove_dependency_edges_matching` | L303–L329 | filter with scope matching |
+| `remove_dependencies_on`           | L331–L350 | filter by source           |
+| `add_subscriber_edge`              | L359–L374 | sorted insert              |
+| `remove_subscriber_edge`           | L387–L405 | filter                     |
 
 ### Design
 
-Following WORTH-kernel's `BRepWorkspace::as_parts_mut()` pattern â€” destructure the graph into the parts the mutation needs, then operate on them independently.
+Following WORTH-kernel's `BRepWorkspace::as_parts_mut()` pattern — destructure the graph into the parts the mutation needs, then operate on them independently.
 
 Two alternatives:
 
@@ -376,7 +378,7 @@ impl SignalGraph {
 }
 ```
 
-**Option B: Use reconciliation (see R6)** â€” if R6 is implemented, most of these functions become unnecessary entirely.
+**Option B: Use reconciliation (see R6)** — if R6 is implemented, most of these functions become unnecessary entirely.
 
 ### Recommendation
 
@@ -386,7 +388,7 @@ Implement Option A as an incremental step. When R6 lands, the individual add/rem
 
 | File                                                                                                                             | Change                                                                       |
 | -------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| [storage.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/graph/storage.rs) | Extract `mutate_deps`/`mutate_subs`; rewrite 6 functions as 1-3 line callers |
+| `crates/worth-signal/src/data/graph/storage.rs` | Extract `mutate_deps`/`mutate_subs`; rewrite 6 functions as 1-3 line callers |
 
 ### Lines Saved: ~100
 
@@ -396,7 +398,7 @@ Implement Option A as an incremental step. When R6 lands, the individual add/rem
 
 ### Problem
 
-Dependency management is imperative: callers must manually track what to add and what to remove. The evaluation engine already computes the desired dependency set via `PreparedDependencyCapture` and then [apply_prepared_dependencies](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/evaluation/engine/prepared_apply.rs#L90-L121) manually diffs old vs new.
+Dependency management is imperative: callers must manually track what to add and what to remove. The evaluation engine already computes the desired dependency set via `PreparedDependencyCapture` and then [apply_prepared_dependencies](../../crates/worth-signal/src/logic/evaluation/engine/prepared_apply.rs#L90-L121) manually diffs old vs new.
 
 This is the Kubernetes reconciliation pattern buried inside the evaluation engine instead of being the primary API.
 
@@ -443,15 +445,15 @@ The existing imperative API (`connect_dependency_capture`, `disconnect_dependenc
 
 ### Problem
 
-[mark_dirty_with_scratch](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/invalidation.rs#L61-L125) is a 65-line monolith that performs 5 sequential phases:
+`crates/worth-signal/src/logic/invalidation.rs` is a 65-line monolith that performs 5 sequential phases:
 
-1. **Mark source** â€” transitions source node to Dirty (L68â€“L86)
-2. **Collect subscribers** â€” gathers live direct subscribers (L97â€“L98)
-3. **Detect cycles** â€” DFS cycle check on the reachable subgraph (L99)
-4. **Mark direct subscribers** â€” partition-aware dirty/maybe-stale marking (L100â€“L117)
-5. **Propagate transitive** â€” BFS frontier marking all reachable nodes MaybeStale (L119â€“L124)
+1. **Mark source** — transitions source node to Dirty (L68–L86)
+2. **Collect subscribers** — gathers live direct subscribers (L97–L98)
+3. **Detect cycles** — DFS cycle check on the reachable subgraph (L99)
+4. **Mark direct subscribers** — partition-aware dirty/maybe-stale marking (L100–L117)
+5. **Propagate transitive** — BFS frontier marking all reachable nodes MaybeStale (L119–L124)
 
-Each phase reads from and writes to shared mutable state (`graph` + `scratch`). Testing phase 3 (cycle detection) requires setting up all state for phases 1â€“2. Adding a new pass (e.g., "skip OnDemand-gated subscribers") requires modifying the monolith.
+Each phase reads from and writes to shared mutable state (`graph` + `scratch`). Testing phase 3 (cycle detection) requires setting up all state for phases 1–2. Adding a new pass (e.g., "skip OnDemand-gated subscribers") requires modifying the monolith.
 
 ### Design
 
@@ -501,7 +503,7 @@ Each pass can be unit-tested with a minimal graph + scratch setup. Future passes
 
 ### Problem
 
-The evaluation planner ([plan_builder.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/planner/plan_builder.rs)) allocates a new `EvaluationPlan` per evaluation. This struct contains a `Vec<ExecutionStage>`, which itself contains a `Vec<EvaluationTask>`.
+The evaluation planner (`crates/worth-signal/src/logic/planner/plan_builder.rs`) allocates a new `EvaluationPlan` per evaluation. This struct contains a `Vec<ExecutionStage>`, which itself contains a `Vec<EvaluationTask>`.
 Similarly, the execution engine produces an `ExecutionReport` containing a fresh `Vec<StageExecutionRecord>`, each containing a `Vec<TaskExecutionRecord>`.
 
 These are heap allocations occurring on _every_ transaction commit, bypassing the arena storage entirely. For a graph executing hundreds of micro-transactions per second, this results in significant heap churn and fragmentation.
@@ -510,7 +512,7 @@ These are heap allocations occurring on _every_ transaction commit, bypassing th
 
 Apply the **Areana-backed Cursor Pattern** (similar to ECS query iterators).
 
-Instead of the planner returning owned `Vec`s, the planner writes task schedules into a pre-allocated graph-owned scratch buffer (e.g., `graph.task_scratch`), and returns an `EvaluationCursor`â€”a lightweight struct containing only index ranges.
+Instead of the planner returning owned `Vec`s, the planner writes task schedules into a pre-allocated graph-owned scratch buffer (e.g., `graph.task_scratch`), and returns an `EvaluationCursor`—a lightweight struct containing only index ranges.
 
 ```rust
 pub struct EvaluationCursor {
@@ -531,7 +533,7 @@ The `ExecutionReport` telemetry should also be accumulated into graph-owned buff
 
 ### Bug Class Eliminated
 
-"Transaction-rate GC pressure" â€” Removes unbounded dynamic allocations from the hottest path in the system.
+"Transaction-rate GC pressure" — Removes unbounded dynamic allocations from the hottest path in the system.
 
 ---
 
@@ -543,7 +545,7 @@ There is a semantic disconnect between how `invalidation.rs` pushes `MaybeStale`
 
 During invalidation, the engine correctly checks if a subscriber's `PartitionSubscription` overlaps with the `changed_scopes` of the upstream node. If they don't overlap, the subscriber remains `Clean`.
 
-However, when a subscriber is marked `MaybeStale` (e.g., due to a transitive dependency chain), and the executor goes to validate it, [count_meaningful_input_changes()](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/evaluation/engine/result_apply.rs#L168-L179) compares the cached dependency version against the current `AspectVersion` of the upstream node.
+However, when a subscriber is marked `MaybeStale` (e.g., due to a transitive dependency chain), and the executor goes to validate it, `crates/worth-signal/src/logic/evaluation/engine/result_apply.rs` compares the cached dependency version against the current `AspectVersion` of the upstream node.
 
 **The Bug:** The upstream `AspectVersion` is a flat integer slot. It increments if _any_ partition changes.
 If Node A (partition `East`) changes, its `AspectVersion` increments.
@@ -572,17 +574,17 @@ pub struct PartitionVersionMap {
 
 ### Bug Class Eliminated
 
-"Partition-scoped invalidation Ã— MaybeStale validation mismatch" (Over-evaluation of transitive dependencies due to global flat versioning of partitioned outputs).
+"Partition-scoped invalidation × MaybeStale validation mismatch" (Over-evaluation of transitive dependencies due to global flat versioning of partitioned outputs).
 
 ---
 
-## R19: `PhaseGuard<P>` â€” Cross-Epoch Re-entrancy Prevention
+## R19: `PhaseGuard<P>` — Cross-Epoch Re-entrancy Prevention
 
 ### Problem
 
 GC epochs, checkpoint barriers, compaction triggers, and evaluation stages all define different "phase boundaries." They assume mutual exclusion: you don't compact during evaluation, you don't GC during invalidation, you don't flush events during planning. But nothing in the type system enforces this. If a future code path calls `mark_dirty` from inside an `on_checkpoint` handler, which triggers `stage_mark_dirty_candidates`, which calls `maybe_compact_graph_storage`, you get compaction inside event flushing inside transaction commit.
 
-Each subsystem's invariants hold in isolation but break under re-entrant composition. Rust's borrow checker prevents some of this, but not all â€” mutable borrows through different accessor methods on the same struct can compose in ways that violate phase assumptions.
+Each subsystem's invariants hold in isolation but break under re-entrant composition. Rust's borrow checker prevents some of this, but not all — mutable borrows through different accessor methods on the same struct can compose in ways that violate phase assumptions.
 
 ### Design
 
@@ -610,19 +612,19 @@ impl GraphHandle<Idle> {
 impl GraphHandle<Evaluating> {
     pub fn evaluate_node(&mut self, ...) { ... }
     pub fn finish(self) -> GraphHandle<Idle> { ... }
-    // mark_dirty is NOT available here â€” compile error
-    // compact is NOT available here â€” compile error
+    // mark_dirty is NOT available here — compile error
+    // compact is NOT available here — compile error
 }
 
 impl GraphHandle<Invalidating> {
     pub fn mark_dirty(&mut self, ...) { ... }
     pub fn propagate(&mut self, ...) { ... }
     pub fn finish(self) -> GraphHandle<Idle> { ... }
-    // evaluate_node is NOT available here â€” compile error
+    // evaluate_node is NOT available here — compile error
 }
 
 impl GraphHandle<Observing> {
-    // Only &self methods â€” diagnostics, explain, telemetry reads
+    // Only &self methods — diagnostics, explain, telemetry reads
     pub fn explain(&self, ...) { ... }
     pub fn replay_events(&self) -> &[ReplayEvent] { ... }
     // No mutation methods exist here at all
@@ -635,11 +637,11 @@ R8 (Zero-Allocation Planner) and R9 (Pipeline Execution Engine) define the evalu
 
 ### Bug Class Eliminated
 
-"Cross-Epoch Re-entrancy" â€” calling GC during evaluation, compaction during invalidation, mark_dirty during planning.
+"Cross-Epoch Re-entrancy" — calling GC during evaluation, compaction during invalidation, mark_dirty during planning.
 
 ---
 
-## R20: Observation Purity â€” `&self` Diagnostic Enforcement
+## R20: Observation Purity — `&self` Diagnostic Enforcement
 
 ### Problem
 
@@ -649,7 +651,7 @@ If any of these side effects alter the graph's behavior on the next real computa
 
 ### Design
 
-All diagnostic, telemetry, and explain methods must take `&self`, not `&mut self`. Any lazy initialization (interner rebuild, compaction) must happen *before* the observation phase â€” during a preparation step that takes `&mut self`.
+All diagnostic, telemetry, and explain methods must take `&self`, not `&mut self`. Any lazy initialization (interner rebuild, compaction) must happen *before* the observation phase — during a preparation step that takes `&mut self`.
 
 ```rust
 impl SignalGraph {
@@ -659,14 +661,14 @@ impl SignalGraph {
         self.compact_graph_storage_if_needed();
     }
 
-    /// All diagnostic methods are &self â€” pure reads.
+    /// All diagnostic methods are &self — pure reads.
     pub fn explain(&self, node: NodeId) -> ExplainTrace { ... }
     pub fn replay_events(&self) -> &[ReplayEvent] { ... }
     pub fn dependencies_of(&self, node: NodeId) -> &[DependencyEdge] { ... }
 }
 ```
 
-This is tightly related to R19 (`PhaseGuard`): the `Observing` phase only exposes `&self` methods. The preparation happens during the `Idle â†’ Observing` transition.
+This is tightly related to R19 (`PhaseGuard`): the `Observing` phase only exposes `&self` methods. The preparation happens during the `Idle → Observing` transition.
 
 ### Why This Is Foundational
 
@@ -674,11 +676,11 @@ R12 (Telemetry Decomposition) is restructuring how diagnostics and telemetry are
 
 ### Bug Class Eliminated
 
-"Observation Contamination" â€” reading the graph for diagnostics mutates state that affects subsequent computation.
+"Observation Contamination" — reading the graph for diagnostics mutates state that affects subsequent computation.
 
 ---
 
-## R21: Single Source of Truth â€” Representational Drift Prevention
+## R21: Single Source of Truth — Representational Drift Prevention
 
 ### Problem
 
@@ -686,7 +688,7 @@ The codebase maintains two supposedly-equivalent representations of the same tru
 
 Each should be derivable from the other. But mutations update one representation and reconstruct the other lazily (e.g., `rebuild_interner_if_needed`). If the rebuild happens at the wrong time, or if a mutation path updates one but not the other, the two representations disagree.
 
-Unlike Topological Dementia (dead references), both representations contain valid, live data â€” they just say different things about the same relationship.
+Unlike Topological Dementia (dead references), both representations contain valid, live data — they just say different things about the same relationship.
 
 ### Design
 
@@ -707,7 +709,7 @@ impl SignalGraph {
 }
 ```
 
-For performance, the derived view can be cached â€” but the cache must carry a branded epoch that expires when the canonical data mutates:
+For performance, the derived view can be cached — but the cache must carry a branded epoch that expires when the canonical data mutates:
 
 ```rust
 struct SubscriberCache<'epoch> {
@@ -724,19 +726,19 @@ impl SignalGraph {
 
 ### Why This Is Foundational
 
-R5 (Edge Mutation Ceremony) and R6 (Declarative Reconciliation) are already extracting the edge mutation surface. If the ceremony doesn't enforce that dependencies and subscribers are kept in sync *structurally* (not by convention), you're locking in the exact dual-representation problem. **R21 is R5/R6's core concern â€” it must be stated as an explicit design constraint.**
+R5 (Edge Mutation Ceremony) and R6 (Declarative Reconciliation) are already extracting the edge mutation surface. If the ceremony doesn't enforce that dependencies and subscribers are kept in sync *structurally* (not by convention), you're locking in the exact dual-representation problem. **R21 is R5/R6's core concern — it must be stated as an explicit design constraint.**
 
 ### Bug Class Eliminated
 
-"Representational Drift" â€” two supposedly-equivalent representations of the same relationship silently diverge.
+"Representational Drift" — two supposedly-equivalent representations of the same relationship silently diverge.
 
 ---
 
-## R22: Transactional Mutation â€” Rollback Amnesia Prevention
+## R22: Transactional Mutation — Rollback Amnesia Prevention
 
 ### Problem
 
-The `SparsePatchBuffer` captures `NodeEntry` snapshots, but diagnostics state, partition interner growth, edge store segments, and memo cache mutations are tracked through separate rollback paths. If any one of those paths has a gap, rollback produces a graph state that never existed â€” not the pre-transaction state and not the post-transaction state, but a Frankenstate.
+The `SparsePatchBuffer` captures `NodeEntry` snapshots, but diagnostics state, partition interner growth, edge store segments, and memo cache mutations are tracked through separate rollback paths. If any one of those paths has a gap, rollback produces a graph state that never existed — not the pre-transaction state and not the post-transaction state, but a Frankenstate.
 
 The insidious part: the graph looks valid. It just contains data from two different timelines.
 
@@ -779,7 +781,7 @@ R1 (NodeEntry Transitions) restricts the mutation surface. If R1 doesn't also co
 
 ### Bug Class Eliminated
 
-"Rollback Amnesia" â€” transaction layer fails to record some piece of state in its undo log, producing a Frankenstate on rollback.
+"Rollback Amnesia" — transaction layer fails to record some piece of state in its undo log, producing a Frankenstate on rollback.
 
 ---
 
@@ -788,7 +790,7 @@ R1 (NodeEntry Transitions) restricts the mutation surface. If R1 doesn't also co
 > [!NOTE]
 > Several of the refactoring items in this spec share underlying type-system patterns. These two meta-abstractions are worth calling out because instantiating them once and reusing them across items reduces total implementation work and keeps the codebase consistent.
 
-### `BrandedHandle<'scope, T>` â€” Generative Lifetime Branding
+### `BrandedHandle<'scope, T>` — Generative Lifetime Branding
 
 The pattern of wrapping a value in a struct with a `PhantomData<&'scope T>` so that the Rust borrow checker ensures the handle cannot outlive its originating scope. Used by:
 
@@ -802,7 +804,7 @@ The pattern of wrapping a value in a struct with a `PhantomData<&'scope T>` so t
 
 All five are the same generic pattern. Implementing `NodeRef<'graph>` and `SubscriberCache<'epoch>` first gives the codebase a reusable branded-handle idiom for the deferred items.
 
-### `PhaseGuard<P>` â€” Typestate Phase Restriction
+### `PhaseGuard<P>` — Typestate Phase Restriction
 
 The pattern of wrapping a resource in a typestate that restricts which methods are available. Used by:
 
@@ -820,7 +822,7 @@ All three are instances of "restrict which operations are legal based on the cur
 
 ### Problem
 
-[runtime_execution.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/runtime_execution.rs) and [execution.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/planner/execution.rs) contain massive monolithic execution functions (`execute_prepared_plan_with_policy` is ~400 lines).
+`crates/worth-signal/src/logic/transaction/runtime/runtime_execution.rs` and `crates/worth-signal/src/logic/planner/execution.rs` contain massive monolithic execution functions (`execute_prepared_plan_with_policy` is ~400 lines).
 The code is heavily littered with `#[cfg(feature = "parallel")]` conditional compilation blocks interleaving directly with core business logic.
 
 This makes the executor incredibly difficult to read, test in isolation, or extend.
@@ -849,7 +851,7 @@ The executor simply runs the configured pipeline. Conditional compilation is res
 
 ### Bug Class Eliminated
 
-"Conditional compilation rot" â€” Ensure sequential and parallel executors share the identical architectural seams, preventing them from diverging purely because of `#cfg` spaghetti.
+"Conditional compilation rot" — Ensure sequential and parallel executors share the identical architectural seams, preventing them from diverging purely because of `#cfg` spaghetti.
 
 ---
 
@@ -857,7 +859,7 @@ The executor simply runs the configured pipeline. Conditional compilation is res
 
 ### Problem
 
-[lifecycle.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/graph/lifecycle.rs) implements `run_gc_epoch()` as a synchronous, "stop-the-world" sweep. When the `tombstone_count` exceeds a threshold, the graph halts to dynamically re-allocate massive `Vec` arrays for `gc_liveness_generations` and `gc_liveness_alive` bitsets into the scratch buffer, iterates over every single node in the graph, and explicitly rebuilds subscriber edges.
+`crates/worth-signal/src/data/graph/lifecycle.rs` implements `run_gc_epoch()` as a synchronous, "stop-the-world" sweep. When the `tombstone_count` exceeds a threshold, the graph halts to dynamically re-allocate massive `Vec` arrays for `gc_liveness_generations` and `gc_liveness_alive` bitsets into the scratch buffer, iterates over every single node in the graph, and explicitly rebuilds subscriber edges.
 
 This creates unpredictable latency spikes in tail latencies for large graphs.
 
@@ -874,7 +876,7 @@ Liveness checking arrays (`gc_liveness_generations`) are entirely eliminated bec
 
 ### Bug Class Eliminated
 
-"Latency jitter" â€” Eliminates O(N) full-graph traversals triggered unexpectedly during transactions.
+"Latency jitter" — Eliminates O(N) full-graph traversals triggered unexpectedly during transactions.
 
 ---
 
@@ -882,27 +884,27 @@ Liveness checking arrays (`gc_liveness_generations`) are entirely eliminated bec
 
 ### Problem
 
-[DependencyEdgeStore](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/graph/edge_store.rs#L58-L123) and [SubscriberEdgeStore](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/graph/edge_store.rs#L125-L191) are structurally identical. Both maintain `Vec<T>`, `Vec<Segment>`, and `HashMap<u64, Vec<Id>>`. The `rebuild_interner_if_needed`, `get`, `insert_from_slice`, `storage_counts`, and `live_segment_count` methods are copy-pasted with only the element type and id type changed.
+`crates/worth-signal/src/data/graph/edge_store.rs` and `crates/worth-signal/src/data/graph/edge_store.rs` are structurally identical. Both maintain `Vec<T>`, `Vec<Segment>`, and `HashMap<u64, Vec<Id>>`. The `rebuild_interner_if_needed`, `get`, `insert_from_slice`, `storage_counts`, and `live_segment_count` methods are copy-pasted with only the element type and id type changed.
 
-[DependencySnapshotStore](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/dependency.rs#L144-L198) is a third instance of the same pattern, differing only in that it uses `HashMap<DependencySnapshot, Id>` (equality-based) instead of `HashMap<u64, Vec<Id>>` (hash-based). This store should remain separate unless the interning strategy can be unified.
+[DependencySnapshotStore](../../crates/worth-signal/src/data/dependency.rs#L144-L198) is a third instance of the same pattern, differing only in that it uses `HashMap<DependencySnapshot, Id>` (equality-based) instead of `HashMap<u64, Vec<Id>>` (hash-based). This store should remain separate unless the interning strategy can be unified.
 
 ### Evidence
 
 | Struct                | Lines                | Element Type     | Id Type           |
 | --------------------- | -------------------- | ---------------- | ----------------- |
-| `DependencyEdgeStore` | L58â€“L123 (65 lines)  | `DependencyEdge` | `DependencySetId` |
-| `SubscriberEdgeStore` | L125â€“L191 (66 lines) | `NodeId`         | `SubscriberSetId` |
+| `DependencyEdgeStore` | L58–L123 (65 lines)  | `DependencyEdge` | `DependencySetId` |
+| `SubscriberEdgeStore` | L125–L191 (66 lines) | `NodeId`         | `SubscriberSetId` |
 
 Method-by-method diff:
 
 | Method                       | Dep version | Sub version | Difference                                                     |
 | ---------------------------- | ----------- | ----------- | -------------------------------------------------------------- |
-| `rebuild_interner_if_needed` | L67â€“L79     | L134â€“L147   | `edges` â†’ `subscribers`, `DependencySetId` â†’ `SubscriberSetId` |
-| `get`                        | L81â€“L89     | L149â€“L157   | `edges` â†’ `subscribers`                                        |
-| `insert_from_slice`          | L91â€“L113    | L159â€“L181   | `edges` â†’ `subscribers`, id types differ                       |
-| `live_segment_count`         | L120â€“L122   | L188â€“L190   | identical                                                      |
+| `rebuild_interner_if_needed` | L67–L79     | L134–L147   | `edges` → `subscribers`, `DependencySetId` → `SubscriberSetId` |
+| `get`                        | L81–L89     | L149–L157   | `edges` → `subscribers`                                        |
+| `insert_from_slice`          | L91–L113    | L159–L181   | `edges` → `subscribers`, id types differ                       |
+| `live_segment_count`         | L120–L122   | L188–L190   | identical                                                      |
 
-The `DependencySetId` and `SubscriberSetId` types (L9â€“L23 and L36â€“L50) are also identical except for name.
+The `DependencySetId` and `SubscriberSetId` types (L9–L23 and L36–L50) are also identical except for name.
 
 ### Design
 
@@ -944,7 +946,7 @@ pub type SubscriberEdgeStore = SegmentedStore<NodeId, SubscriberSetId>;
 
 | File                                                                                                                                   | Change                                                         |
 | -------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| [edge_store.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/graph/edge_store.rs) | Replace two impl blocks with generic struct + two type aliases |
+| `crates/worth-signal/src/data/graph/edge_store.rs` | Replace two impl blocks with generic struct + two type aliases |
 
 ### Lines Saved: ~65
 
@@ -954,15 +956,15 @@ pub type SubscriberEdgeStore = SegmentedStore<NodeId, SubscriberSetId>;
 
 ### Problem
 
-[RuntimeTelemetry](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/telemetry.rs) has **46 flat fields**. These same fields are **manually copied** into two additional structs:
+[RuntimeTelemetry](../../crates/worth-signal/src/data/telemetry.rs) has **46 flat fields**. These same fields are **manually copied** into two additional structs:
 
 | Struct             | File                                                                                                                                                      | Lines     | Fields                      |
 | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | --------------------------- |
-| `RuntimeTelemetry` | [data/telemetry.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/telemetry.rs)                       | L5â€“L132   | 46                          |
-| `GraphMetrics`     | [presentation/metrics.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/presentation/metrics.rs#L7-L55)    | L7â€“L55    | 48 (46 telemetry + 2 extra) |
-| `RuntimeMetrics`   | [presentation/metrics.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/presentation/metrics.rs#L118-L166) | L118â€“L166 | 46                          |
+| `RuntimeTelemetry` | [data/telemetry.rs](../../crates/worth-signal/src/data/telemetry.rs)                       | L5–L132   | 46                          |
+| `GraphMetrics`     | `crates/worth-signal/src/presentation/metrics.rs`    | L7–L55    | 48 (46 telemetry + 2 extra) |
+| `RuntimeMetrics`   | `crates/worth-signal/src/presentation/metrics.rs` | L118–L166 | 46                          |
 
-The [from_runtime_telemetry](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/presentation/metrics.rs#L57-L113) conversion is **54 lines** of `field: telemetry.field`. Adding a single counter requires edits to all three structs plus the conversion function. Missing a copy is silent data loss.
+The `crates/worth-signal/src/presentation/metrics.rs` conversion is **54 lines** of `field: telemetry.field`. Adding a single counter requires edits to all three structs plus the conversion function. Missing a copy is silent data loss.
 
 ### Design
 
@@ -1089,15 +1091,15 @@ impl GraphMetrics {
 
 | File                                                                                                                                            | Change                                                         |
 | ----------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| [data/telemetry.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/telemetry.rs)             | Decompose 46-field flat struct into 7 sub-structs + composite  |
-| [presentation/metrics.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/presentation/metrics.rs) | Delete 54-line `from_runtime_telemetry`; embed sub-structs     |
+| [data/telemetry.rs](../../crates/worth-signal/src/data/telemetry.rs)             | Decompose 46-field flat struct into 7 sub-structs + composite  |
+| `crates/worth-signal/src/presentation/metrics.rs` | Delete 54-line `from_runtime_telemetry`; embed sub-structs     |
 | All `graph.telemetry_mut().field += 1` call sites (~40)                                                                                         | Change to `graph.telemetry_mut().invalidation.field += 1` etc. |
 
 ### Lines Saved: ~100 (54-line copy function eliminated; metrics structs shrink by ~50 lines)
 
 ### Bug Class Eliminated
 
-"Missing field in telemetry copy" â€” impossible, because sub-structs are embedded by value.
+"Missing field in telemetry copy" — impossible, because sub-structs are embedded by value.
 
 ---
 
@@ -1134,8 +1136,8 @@ A `stale_error` helper function is duplicated in two files:
 
 | Function      | File                                                                                                                                       |
 | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `stale_error` | [signal_graph.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/graph/signal_graph.rs) |
-| `stale_error` | [storage.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/graph/storage.rs)           |
+| `stale_error` | `crates/worth-signal/src/data/graph/signal_graph.rs` |
+| `stale_error` | `crates/worth-signal/src/data/graph/storage.rs`           |
 
 ### Fix
 
@@ -1162,21 +1164,21 @@ Each refactor in this spec is intended as internal restructuring with no behavio
 
 | Refactor             | Verification                                                                       | Risk                                                                   |
 | -------------------- | ---------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| R1 (Transitions)     | All invalidation and evaluation tests                                              | Medium â€” behavior now centralized, subtle edge cases in scope clearing |
-| R2 (PartitionScoped) | All partition-related tests, especially `phase3_partitions` and `phase5_workflows` | Medium â€” multiple matching semantics being unified                     |
-| R3 (DependencyKey)   | Existing snapshot and comparison tests                                             | Low â€” named fields, same semantics                                     |
-| R4 (ScratchGuard)    | All tests that trigger invalidation or evaluation (they all use scratch)           | Low â€” closure wrapper, same acquire/restore semantics                  |
-| R5 (Edge ceremony)   | All dependency/subscriber modification tests                                       | Low â€” internal extraction                                              |
-| R6 (Reconciliation)  | Evaluation + dependency capture tests                                              | Medium â€” new API, existing tests run through old API                   |
-| R7 (Pipeline)        | All invalidation tests                                                             | Medium â€” structural change to core algorithm                           |
-| R11 (SegmentedStore) | Existing edge_store tests must pass unchanged                                      | Low â€” type alias, no behavior change                                   |
-| R12 (Telemetry)      | All tests that assert on telemetry counters or metrics                             | Medium â€” field paths change everywhere                                 |
-| R13 (Replay)         | Diagnostic replay tests                                                            | Low â€” trivial wrapper                                                  |
+| R1 (Transitions)     | All invalidation and evaluation tests                                              | Medium — behavior now centralized, subtle edge cases in scope clearing |
+| R2 (PartitionScoped) | All partition-related tests, especially `phase3_partitions` and `phase5_workflows` | Medium — multiple matching semantics being unified                     |
+| R3 (DependencyKey)   | Existing snapshot and comparison tests                                             | Low — named fields, same semantics                                     |
+| R4 (ScratchGuard)    | All tests that trigger invalidation or evaluation (they all use scratch)           | Low — closure wrapper, same acquire/restore semantics                  |
+| R5 (Edge ceremony)   | All dependency/subscriber modification tests                                       | Low — internal extraction                                              |
+| R6 (Reconciliation)  | Evaluation + dependency capture tests                                              | Medium — new API, existing tests run through old API                   |
+| R7 (Pipeline)        | All invalidation tests                                                             | Medium — structural change to core algorithm                           |
+| R11 (SegmentedStore) | Existing edge_store tests must pass unchanged                                      | Low — type alias, no behavior change                                   |
+| R12 (Telemetry)      | All tests that assert on telemetry counters or metrics                             | Medium — field paths change everywhere                                 |
+| R13 (Replay)         | Diagnostic replay tests                                                            | Low — trivial wrapper                                                  |
 | R14 (stale_error)    | Compilation                                                                        | Trivial                                                                |
-| R19 (PhaseGuard)     | All evaluation and invalidation tests â€” entry points change                        | High â€” rewrites how the graph is entered for mutation                  |
-| R20 (Observation)    | All diagnostic/explain tests, telemetry assertions                                 | Medium â€” methods change from `&mut self` to `&self`                    |
-| R21 (Single Source)  | All subscriber-related tests, dependency/subscriber consistency assertions         | High â€” subscriber storage model changes                                |
-| R22 (Transactional)  | All transaction/rollback tests, especially multi-step mutation sequences            | High â€” mutation API surface changes                                    |
+| R19 (PhaseGuard)     | All evaluation and invalidation tests — entry points change                        | High — rewrites how the graph is entered for mutation                  |
+| R20 (Observation)    | All diagnostic/explain tests, telemetry assertions                                 | Medium — methods change from `&mut self` to `&self`                    |
+| R21 (Single Source)  | All subscriber-related tests, dependency/subscriber consistency assertions         | High — subscriber storage model changes                                |
+| R22 (Transactional)  | All transaction/rollback tests, especially multi-step mutation sequences            | High — mutation API surface changes                                    |
 
 ---
 
@@ -1184,13 +1186,13 @@ Each refactor in this spec is intended as internal restructuring with no behavio
 
 ### Dependency Rules
 
-If the goal is to reach `R8`â€“`R10` as early as possible **without building Phase 2 on weak foundations**, the order has to follow abstraction dependencies rather than cosmetic cleanup.
+If the goal is to reach `R8`–`R10` as early as possible **without building Phase 2 on weak foundations**, the order has to follow abstraction dependencies rather than cosmetic cleanup.
 
 #### Hard prerequisites for Phase 2
 
 - `R1` must land before `R7` and materially before `R8`
   - planner/execution refactors should not preserve duplicated node-state transition ceremony
-  - `R22` is a design constraint on R1 â€” transition methods must be compatible with transactional undo recording
+  - `R22` is a design constraint on R1 — transition methods must be compatible with transactional undo recording
 - `R2` must land before `R7`, `R6`, and effectively before `R8`
   - zero-allocation planning and pipeline execution need one canonical partition-matching semantic
 - `R3` must land before `R6` and strongly before `R8`
@@ -1199,7 +1201,7 @@ If the goal is to reach `R8`â€“`R10` as early as possible **without buildin
   - pass pipelines should not retain manual scratch-lease ceremony
 - `R5` and `R6` must land before `R8`/`R9`
   - planner/execution refactors need explicit dependency mutation/reconciliation seams
-  - `R21` is a design constraint on R5/R6 â€” edge ceremony must enforce single source of truth
+  - `R21` is a design constraint on R5/R6 — edge ceremony must enforce single source of truth
 - `R7` should land before `R9`
   - pipeline execution should compose over a decomposed invalidation pipeline, not another monolith
 - `R19` does not block Batch C, but it constrains it
@@ -1213,11 +1215,11 @@ If the goal is to reach `R8`â€“`R10` as early as possible **without buildin
 
 - `R14` is cleanup only
 - `R13` is diagnostics convenience only
-- `R12` is observability architecture, but it does not unblock `R8`â€“`R10` (though `R20` constrains its API)
+- `R12` is observability architecture, but it does not unblock `R8`–`R10` (though `R20` constrains its API)
 
 ### Recommended Execution Order
 
-#### Batch A â€” Semantic Foundation
+#### Batch A — Semantic Foundation
 
 These are the minimum structural foundations required before Phase 2 is worth touching.
 
@@ -1233,7 +1235,7 @@ Why first:
 - these changes make wrong state handling, wrong scope matching, and wrong dependency identity harder to write
 - `R8` and `R9` built before these would lock in the same weak invariants under a faster engine
 
-#### Batch B â€” Mutation and Pipeline Seams
+#### Batch B — Mutation and Pipeline Seams
 
 These expose the core seams the planner/executor refactor needs.
 
@@ -1248,7 +1250,7 @@ Why second:
 - `R8` should target reconciliation and explicit mutation contracts, not imperative edge surgery
 - `R9` should assemble pipelines out of decomposed passes, not monolithic execution and invalidation blobs
 
-#### Batch C â€” Phase 2 Acceleration
+#### Batch C — Phase 2 Acceleration
 
 Once B is complete, Phase 2 can begin safely.
 
@@ -1265,14 +1267,14 @@ Why here:
 - `R10` benefits from the clearer execution/storage seams and should not be designed against duplicated stores if that can be avoided
 - `R19` should guide the public shape of this batch, but should not delay internal planner/executor work already underway
 
-#### Batch D â€” Storage and Observability Consolidation
+#### Batch D — Storage and Observability Consolidation
 
 These are still important, but they should no longer block Phase 2.
 
 ```text
 R11  Unified SegmentedStore<T, Id>
 R12  Telemetry sub-struct decomposition (with R20 observation purity constraint)
-R20  Observation Purity (land alongside R12 â€” constrains diagnostic API)
+R20  Observation Purity (land alongside R12 — constrains diagnostic API)
 R13  Diagnostics replay filter consolidation
 R14  stale_error deduplication
 ```
@@ -1286,31 +1288,31 @@ Why later:
 ### Practical Batch Plan
 
 ```text
-Batch A1 â€” semantic correctness floor
+Batch A1 — semantic correctness floor
   R1  NodeEntry transitions (design with R22 transactional constraint)
   R2  PartitionScoped trait
 
-Batch A2 â€” dependency identity floor
+Batch A2 — dependency identity floor
   R3  DependencyKey + named snapshot entries
   R4  ScratchGuard / with_scratch
 
-Batch B1 â€” mutation seam extraction
+Batch B1 — mutation seam extraction
   R5  Edge mutation ceremony extraction (design with R21 single-source constraint)
   R6  Declarative dependency reconciliation (design with R21 constraint)
 
-Batch B2 â€” invalidation decomposition
+Batch B2 — invalidation decomposition
   R7  Invalidation pass pipeline
 
-Batch C1 â€” planner hot path
+Batch C1 — planner hot path
   R8  Zero-allocation planner & prepared cursor
 
-Batch C2 â€” execution hot path
+Batch C2 — execution hot path
   R9  Feature-gated pipeline execution engine
 
-Batch C3 â€” lifecycle hot path
+Batch C3 — lifecycle hot path
   R10 Epoch-driven amortized garbage collection
 
-Batch D â€” cleanup and consolidation
+Batch D — cleanup and consolidation
   R11 Unified SegmentedStore<T, Id>
   R12 Telemetry sub-struct decomposition
   R20 Observation Purity (constrains R12 diagnostic API)
@@ -1319,22 +1321,22 @@ Batch D â€” cleanup and consolidation
   R19 PhaseGuard<P> (harden public entry points after Batch C seams stabilize)
   R22 Transactional Mutation (wire up undo recording over R1 transitions)
 
-Batch E â€” Phase 2 Semantic Correctness
+Batch E — Phase 2 Semantic Correctness
   R15 Partition-Aware MaybeStale Validation
   R21 Single Source of Truth (verify subscriber derivation after R5/R6)
 
-Batch F â€” Phase 3 Compile-Time Safety (see signal_compile_time_safety.md)
+Batch F — Phase 3 Compile-Time Safety (see signal_compile_time_safety.md)
   R16 Branded NodeRef<'g>
   R17 ScopedVersion witness type
   R18 Private state setters
 
-Batch G â€” Deferred Compile-Time Safety (see signal_compile_time_safety.md)
-  R23â€“R34 (see deferred items document)
+Batch G — Deferred Compile-Time Safety (see signal_compile_time_safety.md)
+  R23–R34 (see deferred items document)
 ```
 
 ### Recommended Rule
 
-If there is tension between â€œclean every layerâ€ and â€œreach Phase 2 quickly,â€ use this rule:
+If there is tension between “clean every layer” and “reach Phase 2 quickly,” use this rule:
 
 - do the minimum foundation work that prevents Phase 2 from encoding bad invariants
 - begin `R8` immediately after those foundations and mutation seams are in place
@@ -1371,7 +1373,7 @@ That means:
 | R12 | Telemetry sub-structs         | 100         | Missing field in telemetry copy          |
 | R13 | `replay_where`                | 60          | N/A (DRY)                                |
 | R14 | `stale_error` dedup           | 5           | N/A (DRY)                                |
-| R15 | `PartitionVersionMap`         | -100        | PartitionÃ—MaybeStale evaluation mismatch |
+| R15 | `PartitionVersionMap`         | -100        | Partition×MaybeStale evaluation mismatch |
 | R16 | Branded `NodeRef<'g>`         | -50         | Topological Dementia (ghost edges)       |
 | R17 | `ScopedVersion` witness       | -30         | Granularity False Negatives              |
 | R18 | Private state setters         | 0           | State Machine Fracture                   |

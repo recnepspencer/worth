@@ -1,5 +1,7 @@
 # Milestone 2: Canonical UI Source, Lowering, And Runtime Artifact
 
+> **Status:** Completed. Closeout: [milestone-2-closeout.md](./milestone-2-closeout.md).
+
 ## Goal
 
 Make repo-authored and Rust-authored Worth UI composition lower through one

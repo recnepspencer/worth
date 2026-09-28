@@ -26,28 +26,28 @@ bundles.
 Milestone 4 delivered:
 
 - planner-owned collection artifacts and collection digest authority in
-  [crates/worth-query/src/collection](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/collection)
+  [crates/worth-query/src/collection](../../workspaces/worth-query/crates/worth-query/src/collection)
 - collection-aware plan lowering in
-  [crates/worth-query/src/planning](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/planning)
+  [crates/worth-query/src/planning](../../workspaces/worth-query/crates/worth-query/src/planning)
 - runtime-backed collection execution envelopes and collection-specific
   counters in
-  [crates/worth-query/src/execution](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/execution)
+  [crates/worth-query/src/execution](../../workspaces/worth-query/crates/worth-query/src/execution)
 - collection-specific harness and acceptance artifacts under
-  [crates/worth-query/src/harness/collection_certification](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/collection_certification)
+  `crates/worth-query/src/harness/collection_certification`
   and
-  [crates/worth-query/src/harness/collection_matrix](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/collection_matrix)
+  `crates/worth-query/src/harness/collection_matrix`
 - shared fixture coverage for collection preflights under
-  [crates/worth-query/src/harness/fixtures](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/fixtures)
+  [crates/worth-query/src/harness/fixtures](../../workspaces/worth-query/crates/worth-query/src/harness/fixtures)
 - compile-fail proof-boundary tests for collection artifacts under
-  [crates/worth-query/tests/ui](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/tests/ui)
+  `crates/worth-query/tests/ui`
 
 ## Acceptance Mapping
 
 Milestone 4 is considered closed against
-[milestone-4.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/milestone-4.md),
-[worth_query_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/worth_query_roadmap.md),
+[milestone-4.md](./milestone-4.md),
+[worth_query_roadmap.md](./WORTH_query_roadmap.md),
 and
-[test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/test-requirements.md)
+[test-requirements.md](./test-requirements.md)
 because the required runtime-backed collection acceptance surfaces are now
 covered directly.
 
@@ -55,9 +55,9 @@ covered directly.
 
 Covered by:
 
-- [collection_certification/mod.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/collection_certification/mod.rs)
-- [collection_certification/tests.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/collection_certification/tests.rs)
-- [collection_matrix](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/collection_matrix)
+- `collection_certification/mod.rs`
+- `collection_certification/tests.rs`
+- collection_matrix
 
 What is proven:
 
@@ -87,7 +87,7 @@ Covered by:
 - `planning::plan_validated_bundle`
 - `planning::plan_validated_bundle_for_collection_family`
 - collection harness coverage in
-  [crates/worth-query/src/harness/planning.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/planning.rs)
+  `crates/worth-query/src/harness/planning.rs`
 
 What is proven:
 

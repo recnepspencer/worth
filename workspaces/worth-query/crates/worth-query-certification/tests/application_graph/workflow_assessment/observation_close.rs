@@ -4,13 +4,13 @@
 //! until a later observer settles it. Wakes coalesce into the run's single
 //! generation, so an observer never has more than one pending notification.
 
-use super::super::bounded_dimension_model::{
-    assessment_output::PartAssessmentDemand,
-    host::BoundedDimensionWorkflowRuntime,
+use super::super::document_retention_model::{
+    assessment_output::RetentionAssessmentDemand,
+    host::DocumentWorkflowRuntime,
     operator_identity::{authenticate_operator, request_scope},
-    schema::{BoundedDimensionSchema, PartDimensionQuery},
+    schema::{DocumentRetentionQuery, DocumentRetentionSchema},
     workflow::{
-        cancel_instance, ReviewedGeometryWorkflow, WorkflowAdvanceInput, WorkflowAdvanceIntent,
+        cancel_instance, ReviewedDocumentWorkflow, WorkflowAdvanceInput, WorkflowAdvanceIntent,
     },
 };
 use super::*;
@@ -22,16 +22,11 @@ use worth_query_host::facade::application_entry::{
 };
 
 /// A published instance awaiting its assessment head.
-fn awaiting_assessment(
-    key: u64,
-) -> (
-    BoundedDimensionWorkflowRuntime,
-    PublishedWorkflowInstanceRef,
-) {
+fn awaiting_assessment(key: u64) -> (DocumentWorkflowRuntime, PublishedWorkflowInstanceRef) {
     let application = publish_workflow_on_first_program();
     let definition = match publish_definition(
         &application,
-        reviewed_geometry_definition("completed"),
+        reviewed_document_definition("completed"),
         WorkflowDefinitionExpectedPredecessor::Absent,
         key,
     )
@@ -54,7 +49,7 @@ fn awaiting_assessment(
 }
 
 fn assert_awaiting(
-    application: &BoundedDimensionWorkflowRuntime,
+    application: &DocumentWorkflowRuntime,
     instance: &PublishedWorkflowInstanceRef,
     key: u64,
 ) {
@@ -68,13 +63,13 @@ fn assert_awaiting(
 
 type Observer<'application> = WorthQueryWorkflowAssessmentDemandHandle<
     'application,
-    BoundedDimensionSchema,
-    ReviewedGeometryWorkflow,
-    PartAssessmentDemand,
+    DocumentRetentionSchema,
+    ReviewedDocumentWorkflow,
+    RetentionAssessmentDemand,
 >;
 
 fn observe<'application>(
-    application: &'application BoundedDimensionWorkflowRuntime,
+    application: &'application DocumentWorkflowRuntime,
     instance: &PublishedWorkflowInstanceRef,
     key: u64,
     attempts: usize,
@@ -87,14 +82,14 @@ fn observe<'application>(
         .on_branch(instance.branch())
         .mutate(WorkflowAdvanceIntent {
             input: WorkflowAdvanceInput {
-                part_identity: PART_IDENTITY.to_owned(),
+                document_identity: DOCUMENT_IDENTITY.to_owned(),
             },
         })
         .without_source()
         .idempotency(&key)
         .prepare_workflow_advance(application, instance.clone())
         .expect("the assessment head admits an observer")
-        .into_assessment_demand(PartAssessmentDemand::new(PART_IDENTITY))
+        .into_assessment_demand(RetentionAssessmentDemand::new(DOCUMENT_IDENTITY))
         .expect("the demand matches the installed assessment contract")
         .controls(
             WorthQueryOutputDemandControls::new(
@@ -108,11 +103,11 @@ fn observe<'application>(
 }
 
 fn progress(
-    application: &BoundedDimensionWorkflowRuntime,
+    application: &DocumentWorkflowRuntime,
     instance: &PublishedWorkflowInstanceRef,
     observer: &mut Observer<'_>,
 ) -> Result<
-    WorthQueryWorkflowAssessmentDemandProgress<PartDimensionQuery>,
+    WorthQueryWorkflowAssessmentDemandProgress<DocumentRetentionQuery>,
     WorthQueryApplicationOutputDemandDenial,
 > {
     let runtime = application.runtime();
@@ -126,11 +121,11 @@ fn progress(
 }
 
 fn settle(
-    application: &BoundedDimensionWorkflowRuntime,
+    application: &DocumentWorkflowRuntime,
     instance: &PublishedWorkflowInstanceRef,
     observer: &mut Observer<'_>,
 ) -> Result<
-    WorthQueryWorkflowAssessmentDemandSettlement<PartDimensionQuery>,
+    WorthQueryWorkflowAssessmentDemandSettlement<DocumentRetentionQuery>,
     WorthQueryApplicationOutputDemandDenial,
 > {
     match progress(application, instance, observer)? {
@@ -150,9 +145,9 @@ fn closed<Value>(outcome: Result<Value, WorthQueryApplicationOutputDemandDenial>
 }
 
 fn accepted_past_assessment(
-    application: &BoundedDimensionWorkflowRuntime,
+    application: &DocumentWorkflowRuntime,
     instance: &PublishedWorkflowInstanceRef,
-    settled: &WorthQueryWorkflowAssessmentDemandSettlement<PartDimensionQuery>,
+    settled: &WorthQueryWorkflowAssessmentDemandSettlement<DocumentRetentionQuery>,
     key: u64,
 ) {
     match accept_assessment(application, instance.clone(), settled, key)

@@ -141,28 +141,50 @@ impl WorthQueryWorkflowTraceSemantics {
 pub type WorthQueryReplayNoiseContract =
     worth_query_installation::facade::WorthQueryOperationReplayNoiseContract;
 
+/// A semantic difference found between an original workflow trace and its
+/// replay. Variants with a `stage` name the stage that differed.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryReplayDivergence {
+    /// The traces belong to different operations.
     Operation,
+    /// The operation-level conditional path differed.
     OperationConditionalPath,
+    /// The set of stages differed.
     StageSet,
+    /// The stage's predecessor stages differed.
     PredecessorTopology { stage: String },
+    /// The stage's input differed.
     Input { stage: String },
+    /// The stage's output differed.
     Output { stage: String },
+    /// The stage's result state differed.
     ResultState { stage: String },
+    /// The stage's diagnostic warnings differed and the installed noise
+    /// contract does not tolerate that.
     Diagnostic { stage: String },
+    /// The stage's domain evidence differed.
     DomainEvidence { stage: String },
+    /// The stage's effects differed.
     Effect { stage: String },
+    /// The stage's invariant results differed.
     Invariant { stage: String },
+    /// The stage's conditional path differed, or the replay deferred at it.
     ConditionalPath { stage: String },
+    /// The stage's lineage evidence differed.
     Lineage { stage: String },
+    /// The published output differed.
     Publication,
+    /// The semantic aspect dependency closures were missing or did not
+    /// converge.
     DependencyClosure,
 }
 
+/// The verdict of comparing an original workflow trace with its replay.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryReplayComparison {
+    /// No semantic difference was found.
     Equivalent,
+    /// The traces differ as described.
     Diverged(WorthQueryReplayDivergence),
 }
 

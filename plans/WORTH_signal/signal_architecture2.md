@@ -1,25 +1,27 @@
-# worth-signal Architecture V2 Ã¢â‚¬â€ Structural Redesign
+# worth-signal Architecture V2 — Structural Redesign
 
 > **Status:** Pre-production. All changes are breaking-change-safe.
 >
-> **Scope:** Architectural redesign of `worth-signal` applying the same rigor as the [relational architecture doc](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/worth-relational/relational_architecture.md) Ã¢â‚¬â€ type-as-contract, contract duality, declarative effects, subsystem decomposition, state-derived context, and commit result envelopes.
+> **Scope:** Architectural redesign of `worth-signal` applying the same rigor as the [relational architecture doc](../WORTH-relational/relational_architecture.md) — type-as-contract, contract duality, declarative effects, subsystem decomposition, state-derived context, and commit result envelopes.
 >
-> **Relationship to V1:** This document supersedes Batches CÃ¢â‚¬â€œG of [signal_architecture.md](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/worth_signal/signal_architecture.md). Batches A and B (R1Ã¢â‚¬â€œR7) and the landed items from Batch D (R11, R12, R13) are *preserved* Ã¢â‚¬â€ they form the foundation this document builds on.
+> **Relationship to V1:** This document supersedes Batches C–G of [signal_architecture.md](./signal_architecture.md). Batches A and B (R1–R7) and the landed items from Batch D (R11, R12, R13) are *preserved* — they form the foundation this document builds on.
+>
+> **Note:** Source links in this document pointed at files that have since moved or been removed from `crates/worth-signal`. They are kept as plain paths for history.
 
 ---
 
 ## Table of Contents
 
 1. [What Landed from V1](#what-landed-from-v1)
-2. [Phase S1 Ã¢â‚¬â€ Subsystem Decomposition](#phase-s1--subsystem-decomposition)
-3. [Phase S2 Ã¢â‚¬â€ Contract System](#phase-s2--contract-system)
-4. [Phase S3 Ã¢â‚¬â€ Declarative Effects & Computation Model](#phase-s3--declarative-effects--computation-model)
-5. [Phase S4 Ã¢â‚¬â€ Transaction Architecture](#phase-s4--transaction-architecture)
-6. [Phase S5 Ã¢â‚¬â€ Pipeline & Performance](#phase-s5--pipeline--performance)
-7. [Phase S6 Ã¢â‚¬â€ Safety Architecture](#phase-s6--safety-architecture)
-8. [Phase S7 Ã¢â‚¬â€ API Surface & Facade](#phase-s7--api-surface--facade)
-9. [Phase S8 Ã¢â‚¬â€ Context-Aware Computation](#phase-s8--context-aware-computation)
-10. [Phase S9 Ã¢â‚¬â€ Performance Enforcement Addendum](#phase-s9--performance-enforcement-addendum)
+2. [Phase S1 — Subsystem Decomposition](#phase-s1--subsystem-decomposition)
+3. [Phase S2 — Contract System](#phase-s2--contract-system)
+4. [Phase S3 — Declarative Effects & Computation Model](#phase-s3--declarative-effects--computation-model)
+5. [Phase S4 — Transaction Architecture](#phase-s4--transaction-architecture)
+6. [Phase S5 — Pipeline & Performance](#phase-s5--pipeline--performance)
+7. [Phase S6 — Safety Architecture](#phase-s6--safety-architecture)
+8. [Phase S7 — API Surface & Facade](#phase-s7--api-surface--facade)
+9. [Phase S8 — Context-Aware Computation](#phase-s8--context-aware-computation)
+10. [Phase S9 — Performance Enforcement Addendum](#phase-s9--performance-enforcement-addendum)
 11. [What Must Be Preserved](#what-must-be-preserved)
 12. [Sequencing](#sequencing)
 
@@ -31,28 +33,28 @@ These items are complete and form the structural floor for this document:
 
 | V1 Item | What It Did | Current File |
 |---|---|---|
-| R1 | `transition_clean/dirty/maybe_stale` on `NodeEntry` | [entry.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/node/entry.rs) |
-| R2 | `PartitionScoped` trait + `scopes_overlap` | [output.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/output.rs) |
-| R3 | `DependencySnapshotEntry` + `DependencySortKey` | [dependency.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/dependency.rs) |
-| R4 | `with_scratch` closure-based lease | [graph.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/graph/runtime/graph.rs) |
-| R5/R6 | `reconcile_dependencies` + edge ceremony | [mutation.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/graph/topology/mutation.rs) |
-| R7 | `InvalidationTraversal` pipeline struct | [routing.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/invalidation/routing.rs) |
-| R11 | `SegmentedStore<T, Id>` + type aliases | [segmented.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/graph/storage/segmented.rs) |
-| R12 | Telemetry sub-structs (7 domain groups) | [telemetry.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/telemetry.rs) |
-| R13 | `replay_where` filter consolidation | [replay.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/graph/diagnostics_access/replay.rs) |
+| R1 | `transition_clean/dirty/maybe_stale` on `NodeEntry` | [entry.rs](../../crates/worth-signal/src/data/node/entry.rs) |
+| R2 | `PartitionScoped` trait + `scopes_overlap` | [output.rs](../../crates/worth-signal/src/data/output.rs) |
+| R3 | `DependencySnapshotEntry` + `DependencySortKey` | [dependency.rs](../../crates/worth-signal/src/data/dependency.rs) |
+| R4 | `with_scratch` closure-based lease | [graph.rs](../../crates/worth-signal/src/data/graph/runtime/graph.rs) |
+| R5/R6 | `reconcile_dependencies` + edge ceremony | [mutation.rs](../../crates/worth-signal/src/data/graph/topology/mutation.rs) |
+| R7 | `InvalidationTraversal` pipeline struct | [routing.rs](../../crates/worth-signal/src/logic/invalidation/routing.rs) |
+| R11 | `SegmentedStore<T, Id>` + type aliases | [segmented.rs](../../crates/worth-signal/src/data/graph/storage/segmented.rs) |
+| R12 | Telemetry sub-structs (7 domain groups) | [telemetry.rs](../../crates/worth-signal/src/data/telemetry.rs) |
+| R13 | `replay_where` filter consolidation | [replay.rs](../../crates/worth-signal/src/data/graph/diagnostics_access/replay.rs) |
 
 > [!NOTE]
 > R14 (stale_error dedup) is trivial and should be done alongside any Batch D cleanup. It is not tracked in this document.
 
 ---
 
-## Phase S1 Ã¢â‚¬â€ Subsystem Decomposition
+## Phase S1 — Subsystem Decomposition
 
-**Kernel reference:** [Relational C1 Ã¢â‚¬â€ Runtime Subsystems](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/worth-relational/relational_architecture.md).
+**Kernel reference:** [Relational C1 — Runtime Subsystems](../WORTH-relational/relational_architecture.md).
 
 ### Problem
 
-`SignalGraph` ([graph.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/graph/runtime/graph.rs)) is a 13-field god struct mixing:
+`SignalGraph` ([graph.rs](../../crates/worth-signal/src/data/graph/runtime/graph.rs)) is a 13-field god struct mixing:
 
 ```rust
 pub struct SignalGraph {
@@ -81,11 +83,11 @@ pub struct SignalGraph {
 
 Five distinct concerns share one mutable borrow. Adding a method to diagnostics forces reasoning about arena liveness. Adding an edge store method forces reasoning about scratch state.
 
-Above this, `SignalRuntime<D, I, E, Ctx, T>` ([runtime_state.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/state/runtime_state.rs)) is 698 lines mixing graph ownership, branch management, snapshot capture/restore, event bus, diagnostics passthrough, tier configuration, keyed computation, and transactions Ã¢â‚¬â€ all behind 5 type parameters.
+Above this, `SignalRuntime<D, I, E, Ctx, T>` (`crates/worth-signal/src/logic/transaction/runtime/state/runtime_state.rs`) is 698 lines mixing graph ownership, branch management, snapshot capture/restore, event bus, diagnostics passthrough, tier configuration, keyed computation, and transactions — all behind 5 type parameters.
 
 ### Design
 
-#### S1.1 Ã¢â‚¬â€ `SignalGraph` Subsystem Split
+#### S1.1 — `SignalGraph` Subsystem Split
 
 Decompose `SignalGraph` into subsystem structs accessible through a `GraphParts` destructuring pattern (matching WORTH-kernel's `BRepWorkspace::as_parts_mut()`):
 
@@ -126,9 +128,9 @@ impl SignalGraph {
 }
 ```
 
-The public `SignalGraph` type stays Ã¢â‚¬â€ it is the composed whole. But internal code calls `as_parts_mut()` to borrow only what it needs, eliminating false borrow conflicts.
+The public `SignalGraph` type stays — it is the composed whole. But internal code calls `as_parts_mut()` to borrow only what it needs, eliminating false borrow conflicts.
 
-#### S1.2 Ã¢â‚¬â€ `SignalRuntime` Subsystem Split
+#### S1.2 — `SignalRuntime` Subsystem Split
 
 `SignalRuntime` currently delegates ~30 methods directly to `self.graph.method()`. These passthrough methods exist because the runtime cannot expose the graph without exposing everything. With subsystem decomposition:
 
@@ -149,15 +151,15 @@ pub struct SignalRuntime<D, I, E, Ctx, T> {
 
 | File | Change |
 |---|---|
-| [graph.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/graph/runtime/graph.rs) | Split fields into `NodeArena`, `EdgeTopology`, `TraversalResources`, `RuntimeObservation`; add `as_parts_mut()` |
-| [runtime_state.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/state/runtime_state.rs) | Extract `BranchManager`; reduce passthrough surface |
+| [graph.rs](../../crates/worth-signal/src/data/graph/runtime/graph.rs) | Split fields into `NodeArena`, `EdgeTopology`, `TraversalResources`, `RuntimeObservation`; add `as_parts_mut()` |
+| `crates/worth-signal/src/logic/transaction/runtime/state/runtime_state.rs` | Extract `BranchManager`; reduce passthrough surface |
 | All internal callers of `&mut SignalGraph` | Use `as_parts_mut()` where borrowing independent subsystems |
 
 ---
 
-## Phase S2 Ã¢â‚¬â€ Contract System
+## Phase S2 — Contract System
 
-**Kernel reference:** [Relational F2 Ã¢â‚¬â€ RecordProjection](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/worth-relational/relational_architecture.md) and [Relational D4 Ã¢â‚¬â€ Intent Contracts](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/worth-relational/relational_architecture.md).
+**Kernel reference:** [Relational F2 — RecordProjection](../WORTH-relational/relational_architecture.md) and [Relational D4 — Intent Contracts](../WORTH-relational/relational_architecture.md).
 
 > [!NOTE]
 > Phase S9 extends this phase. `NodeContract` becomes the main performance
@@ -170,7 +172,7 @@ In worth-relational, **write contracts** (`MutationIntent::invariant_contract()`
 
 In worth-signal, the equivalent information exists but is scattered:
 
-- **What a node reads** (its dependency subscriptions) is only known after evaluation Ã¢â‚¬â€ it is a *side effect* of `PreparedDependencyCapture`, not a declaration.
+- **What a node reads** (its dependency subscriptions) is only known after evaluation — it is a *side effect* of `PreparedDependencyCapture`, not a declaration.
 - **What a node produces** (its output aspects and partition scopes) is only known from the `NodeEvaluationResult` returned at runtime.
 - **What invalidation propagates** (dirty aspects and scopes) is inferred on the fly via `subscribes_to_aspect()`.
 
@@ -178,12 +180,12 @@ None of this is declared up front. The pipeline has no way to skip unnecessary w
 
 ### Design
 
-#### S2.1 Ã¢â‚¬â€ `NodeContract` Trait
+#### S2.1 — `NodeContract` Trait
 
 The read-path equivalent of `RecordProjection`. A node declares its dependency contract up front:
 
 ```rust
-/// Declared on node registration Ã¢â‚¬â€ what this node reads and produces.
+/// Declared on node registration — what this node reads and produces.
 pub struct NodeContract {
     /// Which aspects this node subscribes to on its dependencies.
     pub reads: AspectMask,
@@ -207,9 +209,9 @@ let node = graph.node()
     .build();
 ```
 
-Nodes that don't register a contract default to a wildcard contract (`reads: ALL, produces: ALL, scope: None`) Ã¢â‚¬â€ backward compatible, no behavioral change.
+Nodes that don't register a contract default to a wildcard contract (`reads: ALL, produces: ALL, scope: None`) — backward compatible, no behavioral change.
 
-#### S2.2 Ã¢â‚¬â€ Contract Duality: Invalidation Ãƒâ€” Evaluation
+#### S2.2 — Contract Duality: Invalidation × Evaluation
 
 The invalidation path pushes *what changed* (aspect + scopes). The evaluation path checks *what a node depends on*. These are duals:
 
@@ -220,9 +222,9 @@ The invalidation path pushes *what changed* (aspect + scopes). The evaluation pa
 
 The pipeline uses contract intersection to prune the plan: if a node's `reads` mask doesn't intersect the combined `changed_aspects` mask of its dirty dependencies, the planner can skip it without evaluation.
 
-#### S2.3 Ã¢â‚¬â€ Aspect-Aware Planner Pruning
+#### S2.3 — Aspect-Aware Planner Pruning
 
-Currently [plan_builder.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/planner/planning/mod.rs) includes all `Dirty` and `MaybeStale` nodes. With contracts:
+Currently [plan_builder.rs](../../crates/worth-signal/src/logic/planner/planning/mod.rs) includes all `Dirty` and `MaybeStale` nodes. With contracts:
 
 ```rust
 fn should_include_in_plan(
@@ -236,11 +238,11 @@ fn should_include_in_plan(
 }
 ```
 
-This is the same optimization as relational's D4 topology inference Ã¢â‚¬â€ the `union_mask` determines which checks to run.
+This is the same optimization as relational's D4 topology inference — the `union_mask` determines which checks to run.
 
-#### S2.4 Ã¢â‚¬â€ Context-Type in Contracts
+#### S2.4 — Context-Type in Contracts
 
-A node's contract should also declare which **domain context** it requires for evaluation. Signal currently has `Ctx` as a type parameter on `SignalRuntime<D, I, E, Ctx, T>`, but evaluation closures never receive it. Different computations need different contexts Ã¢â‚¬â€ a geometry kernel evaluation needs a model snapshot, a dashboard aggregation needs cross-project summaries, an admin metric needs system-level state.
+A node's contract should also declare which **domain context** it requires for evaluation. Signal currently has `Ctx` as a type parameter on `SignalRuntime<D, I, E, Ctx, T>`, but evaluation closures never receive it. Different computations need different contexts — a geometry kernel evaluation needs a model snapshot, a dashboard aggregation needs cross-project summaries, an admin metric needs system-level state.
 
 The contract declares this:
 
@@ -259,29 +261,29 @@ pub enum ContextRequirement {
     DomainContext,
     /// Node needs a relational snapshot (bridge integration)
     RelationalSnapshot,
-    /// Node is context-free Ã¢â‚¬â€ pure function of its inputs
+    /// Node is context-free — pure function of its inputs
     None,
 }
 ```
 
 The planner uses this to verify that the required context is available before scheduling evaluation. If a node requires `RelationalSnapshot` but the transaction was started without a bridge, the planner reports a contract violation at planning time instead of a runtime panic during evaluation.
 
-This is the signal equivalent of the frontend's `ProjectContextService` Ã¢â‚¬â€ each computation declares its context dependency, and the framework verifies availability before execution.
+This is the signal equivalent of the frontend's `ProjectContextService` — each computation declares its context dependency, and the framework verifies availability before execution.
 
 ### Files Modified
 
 | File | Change |
 |---|---|
-| [entry.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/node/entry.rs) | Add `NodeContract` field to `NodeEntry` |
-| [construction](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/graph/construction) | Add `.with_contract()` to `NodeBuilder` |
-| [planning/mod.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/planner/planning/mod.rs) | Use `NodeContract.reads` to prune plan; verify `required_context` |
-| [routing.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/invalidation/routing.rs) | Use `NodeContract.reads` to skip subscribers that don't care about the changed aspect |
+| [entry.rs](../../crates/worth-signal/src/data/node/entry.rs) | Add `NodeContract` field to `NodeEntry` |
+| [construction](../../crates/worth-signal/src/data/graph/construction) | Add `.with_contract()` to `NodeBuilder` |
+| [planning/mod.rs](../../crates/worth-signal/src/logic/planner/planning/mod.rs) | Use `NodeContract.reads` to prune plan; verify `required_context` |
+| [routing.rs](../../crates/worth-signal/src/logic/invalidation/routing.rs) | Use `NodeContract.reads` to skip subscribers that don't care about the changed aspect |
 
 ---
 
-## Phase S3 Ã¢â‚¬â€ Declarative Effects & Computation Model
+## Phase S3 — Declarative Effects & Computation Model
 
-**Kernel reference:** [Relational B5 Ã¢â‚¬â€ Declarative Effect Assembly](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/worth-relational/relational_architecture.md).
+**Kernel reference:** [Relational B5 — Declarative Effect Assembly](../WORTH-relational/relational_architecture.md).
 
 > [!NOTE]
 > Phase S9 extends this phase by splitting hot operational effect data from
@@ -289,25 +291,25 @@ This is the signal equivalent of the frontend's `ProjectContextService` Ã¢â�
 
 ### Problem
 
-[result_apply.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/evaluation/engine/result_apply.rs) `apply_evaluation_result_with_policy()` is a 137-line function that mixes:
-1. **Comparison logic** Ã¢â‚¬â€ output identity/continuity token checks (L53Ã¢â‚¬â€œL71)
-2. **Dependency snapshot building** Ã¢â‚¬â€ `build_dep_snapshot` + `count_meaningful_input_changes` (L72Ã¢â‚¬â€œL73)
-3. **Trace assembly** Ã¢â‚¬â€ constructing `TraceSummary` from 15 fields (L79Ã¢â‚¬â€œL113)
-4. **State transition** Ã¢â‚¬â€ `entry.transition_clean()` (L119)
-5. **Telemetry** Ã¢â‚¬â€ incrementing counters conditionally (L123Ã¢â‚¬â€œL134)
-6. **Downstream suppression** Ã¢â‚¬â€ `suppress_downstream_if_identity_unchanged` (L128Ã¢â‚¬â€œL130)
+`crates/worth-signal/src/logic/evaluation/engine/result_apply.rs` `apply_evaluation_result_with_policy()` is a 137-line function that mixes:
+1. **Comparison logic** — output identity/continuity token checks (L53–L71)
+2. **Dependency snapshot building** — `build_dep_snapshot` + `count_meaningful_input_changes` (L72–L73)
+3. **Trace assembly** — constructing `TraceSummary` from 15 fields (L79–L113)
+4. **State transition** — `entry.transition_clean()` (L119)
+5. **Telemetry** — incrementing counters conditionally (L123–L134)
+6. **Downstream suppression** — `suppress_downstream_if_identity_unchanged` (L128–L130)
 
 Every new evaluation behavior requires editing this monolith. Adding telemetry means adding more branches. Adding a new comparison policy means adding more conditions.
 
 ### Design
 
-#### S3.1 Ã¢â‚¬â€ `EvaluationEffect` Struct
+#### S3.1 — `EvaluationEffect` Struct
 
 Separate domain-level computation outcome from framework bookkeeping:
 
 ```rust
 /// The pure result of evaluating a signal node.
-/// Contains what changed Ã¢â‚¬â€ not how to apply it.
+/// Contains what changed — not how to apply it.
 pub struct EvaluationEffect {
     pub node: NodeId,
     pub aspect_version: AspectVersion,
@@ -324,7 +326,7 @@ pub struct EvaluationEffect {
 }
 ```
 
-#### S3.2 Ã¢â‚¬â€ `apply_effect` Pipeline
+#### S3.2 — `apply_effect` Pipeline
 
 The current monolith becomes a pipeline of small, testable phases:
 
@@ -348,9 +350,9 @@ impl SignalGraph {
 
 Each phase is a separate method that can be unit-tested. Adding a new comparison policy means adding a new `compare_output` variant, not editing a 137-line function.
 
-#### S3.3 Ã¢â‚¬â€ Commit Ceremony Extraction (Transaction)
+#### S3.3 — Commit Ceremony Extraction (Transaction)
 
-[transaction_commit.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/transaction/transaction_commit.rs) has the **same 30-line rollback ceremony copy-pasted 3 times** (L25Ã¢â‚¬â€œL65, L69Ã¢â‚¬â€œL109, L176Ã¢â‚¬â€œL213):
+`crates/worth-signal/src/logic/transaction/runtime/transaction/transaction_commit.rs` has the **same 30-line rollback ceremony copy-pasted 3 times** (L25–L65, L69–L109, L176–L213):
 
 ```
 1. compute rollback_patch_count
@@ -380,15 +382,15 @@ fn fail_and_rollback(
 }
 ```
 
-#### S3.4 Ã¢â‚¬â€ Evaluation Verdicts
+#### S3.4 — Evaluation Verdicts
 
-**Kernel reference:** [Relational D5 Ã¢â‚¬â€ Three-State Verdicts](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/worth-relational/relational_architecture.md).
+**Kernel reference:** [Relational D5 — Three-State Verdicts](../WORTH-relational/relational_architecture.md).
 
 Signal evaluation has outcomes that are actually ternary, but this is inferred from scattered booleans across `result_apply.rs` and `prepared_apply.rs`:
 
-- `recomputed == true` Ã¢â€ â€™ the closure ran and produced new output
-- `propagation_suppressed == true` Ã¢â€ â€™ output identity matched, downstream propagation skipped
-- on-demand / condition-deferred Ã¢â€ â€™ the node was skipped entirely by condition gating
+- `recomputed == true` → the closure ran and produced new output
+- `propagation_suppressed == true` → output identity matched, downstream propagation skipped
+- on-demand / condition-deferred → the node was skipped entirely by condition gating
 
 Formalize this as a first-class verdict:
 
@@ -417,9 +419,9 @@ pub enum DeferralReason {
 
 The verdict is attached to `EvaluationEffect` and flows into `TransactionResult` (S4), making the pipeline self-describing. The caller knows not just *that* a node was evaluated, but *what the evaluation decided*.
 
-#### S3.5 Ã¢â‚¬â€ `defineComputation` Pattern
+#### S3.5 — `defineComputation` Pattern
 
-**Frontend reference:** Inspired by frontend `defineCrudResource` / `useCrudResource` patterns. If the agent working on this wants to see examples, ask the user Ã¢â‚¬â€ the frontend code is in a separate workspace.
+**Frontend reference:** Inspired by frontend `defineCrudResource` / `useCrudResource` patterns. If the agent working on this wants to see examples, ask the user — the frontend code is in a separate workspace.
 
 Currently, defining a computation requires multi-step ceremony:
 
@@ -432,7 +434,7 @@ runtime.set_fallback_comparator(OutputIdentity);
 // ... then separately wire up the evaluator closure in the transaction
 ```
 
-This is the same problem the frontend had before `defineCrudResource` Ã¢â‚¬â€ scattered setup that must be kept in sync manually.
+This is the same problem the frontend had before `defineCrudResource` — scattered setup that must be kept in sync manually.
 
 `defineComputation` bundles everything into a single declaration:
 
@@ -458,26 +460,26 @@ let node = volumes.keyed("body_42");
 let result = volumes.evaluate(node)?;
 ```
 
-The `ComputationSpec` is the signal equivalent of the frontend's `CrudResourceDefinition` Ã¢â‚¬â€ a single source of truth for everything the framework needs to know about a computation.
+The `ComputationSpec` is the signal equivalent of the frontend's `CrudResourceDefinition` — a single source of truth for everything the framework needs to know about a computation.
 
 > [!NOTE]
-> `defineComputation` is a convenience API built on top of `NodeContract` (S2.1) and context requirements (S2.4). It does not introduce new primitives Ã¢â‚¬â€ it composes existing ones into a zero-boilerplate surface.
+> `defineComputation` is a convenience API built on top of `NodeContract` (S2.1) and context requirements (S2.4). It does not introduce new primitives — it composes existing ones into a zero-boilerplate surface.
 
 ### Files Modified
 
 | File | Change |
 |---|---|
-| [result_apply.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/evaluation/engine/result_apply.rs) | Replace monolith with `EvaluationEffect` + `apply_effect` pipeline; add `EvaluationVerdict` |
-| [transaction_commit.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/transaction/transaction_commit.rs) | Extract `fail_and_rollback`, collapse 3 copies to 3 one-line calls |
-| [prepared_apply.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/evaluation/engine/prepared_apply.rs) | Construct `EvaluationEffect` and call `graph.apply_effect()` |
-| [config.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/config.rs) | Add `ComputationSpec`, `define_computation()`, and computation registry |
-| [runtime_state.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/state/runtime_state.rs) | Expose `define_computation()` on `SignalRuntime` |
+| `crates/worth-signal/src/logic/evaluation/engine/result_apply.rs` | Replace monolith with `EvaluationEffect` + `apply_effect` pipeline; add `EvaluationVerdict` |
+| `crates/worth-signal/src/logic/transaction/runtime/transaction/transaction_commit.rs` | Extract `fail_and_rollback`, collapse 3 copies to 3 one-line calls |
+| [prepared_apply.rs](../../crates/worth-signal/src/logic/evaluation/engine/prepared_apply.rs) | Construct `EvaluationEffect` and call `graph.apply_effect()` |
+| [config.rs](../../crates/worth-signal/src/logic/transaction/runtime/config.rs) | Add `ComputationSpec`, `define_computation()`, and computation registry |
+| `crates/worth-signal/src/logic/transaction/runtime/state/runtime_state.rs` | Expose `define_computation()` on `SignalRuntime` |
 
 ---
 
-## Phase S4 Ã¢â‚¬â€ Transaction Architecture
+## Phase S4 — Transaction Architecture
 
-**Kernel reference:** [Relational E1 Ã¢â‚¬â€ Commit Decision Log](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/worth-relational/relational_architecture.md) and [Relational E2 Ã¢â‚¬â€ Commit Result Envelope](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/worth-relational/relational_architecture.md).
+**Kernel reference:** [Relational E1 — Commit Decision Log](../WORTH-relational/relational_architecture.md) and [Relational E2 — Commit Result Envelope](../WORTH-relational/relational_architecture.md).
 
 ### Problem
 
@@ -495,7 +497,7 @@ After a commit, the caller has **no structured information** about what happened
 
 ### Design
 
-#### S4.1 Ã¢â‚¬â€ `TransactionResult` Envelope
+#### S4.1 — `TransactionResult` Envelope
 
 ```rust
 pub struct TransactionResult {
@@ -542,7 +544,7 @@ let result = runtime.transaction(ctx, |txn| {
 println!("evaluated {} nodes", result.evaluation_summary.nodes_evaluated);
 ```
 
-#### S4.2 Ã¢â‚¬â€ `SemanticDelta` Consolidation
+#### S4.2 — `SemanticDelta` Consolidation
 
 `TransactionSemanticDelta` currently stores replay events as `Vec<(ReplayEventKind, String, Option<..>, Option<..>)>` tuples. Replace with named struct:
 
@@ -559,13 +561,13 @@ pub struct TransactionReplayEntry {
 
 | File | Change |
 |---|---|
-| [transaction_commit.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/transaction/transaction_commit.rs) | Return `TransactionResult` instead of bare `TransactionOutcome` |
-| [transaction_types.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/transaction/transaction_types.rs) | Add `TransactionResult`, `TransactionTiming`, `EvaluationSummary`, `TransactionReplayEntry` |
+| `crates/worth-signal/src/logic/transaction/runtime/transaction/transaction_commit.rs` | Return `TransactionResult` instead of bare `TransactionOutcome` |
+| [transaction_types.rs](../../crates/worth-signal/src/logic/transaction/runtime/transaction/transaction_types.rs) | Add `TransactionResult`, `TransactionTiming`, `EvaluationSummary`, `TransactionReplayEntry` |
 | All callers of `.commit()` / `.transaction()` | Receive `TransactionResult` |
 
 ---
 
-## Phase S5 Ã¢â‚¬â€ Pipeline & Performance
+## Phase S5 — Pipeline & Performance
 
 **Kernel reference:** Relational D4 (topology inference) and frontier patterns from WORTH-kernel.
 
@@ -575,9 +577,9 @@ pub struct TransactionReplayEntry {
 > batch-first contracts by default.
 
 > [!NOTE]
-> This phase subsumes V1's R8 (zero-allocation planner), R9 (feature-gated execution), and R10 (amortized GC). The designs are refined to align with the subsystem and contract patterns from S1Ã¢â‚¬â€œS2.
+> This phase subsumes V1's R8 (zero-allocation planner), R9 (feature-gated execution), and R10 (amortized GC). The designs are refined to align with the subsystem and contract patterns from S1–S2.
 
-### Cross-Cutting Rule Ã¢â‚¬â€ Batch-Scoped Structural Maintenance
+### Cross-Cutting Rule — Batch-Scoped Structural Maintenance
 
 > [!IMPORTANT]
 > Amortize structural maintenance across a batch boundary whenever
@@ -633,21 +635,21 @@ When reviewing hot-path code, ask:
 - are downstream consumers reconstructing structure that the batch boundary
   already knew?
 
-### S5.1 Ã¢â‚¬â€ Contract-Driven Plan Pruning
+### S5.1 — Contract-Driven Plan Pruning
 
-After S2 lands, the planner has `NodeContract.reads` available. The `populate_plan_buffers` function in [planning/mod.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/planner/planning/mod.rs) currently includes all `Dirty`/`MaybeStale` nodes. With contracts, nodes whose `reads` mask doesn't intersect the propagated `changed_aspects` mask are excluded at planning time, before any evaluation runs.
+After S2 lands, the planner has `NodeContract.reads` available. The `populate_plan_buffers` function in [planning/mod.rs](../../crates/worth-signal/src/logic/planner/planning/mod.rs) currently includes all `Dirty`/`MaybeStale` nodes. With contracts, nodes whose `reads` mask doesn't intersect the propagated `changed_aspects` mask are excluded at planning time, before any evaluation runs.
 
-This is the signal equivalent of relational's D4 Ã¢â‚¬â€ the contract mask determines which pipeline phases execute.
+This is the signal equivalent of relational's D4 — the contract mask determines which pipeline phases execute.
 
-### S5.2 Ã¢â‚¬â€ Zero-Allocation Planner (V1 R8, Redesigned)
+### S5.2 — Zero-Allocation Planner (V1 R8, Redesigned)
 
 V1's R8 proposed arena-backed cursors. The design is refined:
 
 The planner already has a `build_evaluation_session_with_policy_resolver` that writes into `TraversalScratch`-owned buffers (`scratch.planner_targets`, `scratch.planner_tasks`, `scratch.planner_stages`). The runtime execution path already uses this through `EvaluationSession`.
 
-What remains is ensuring the `EvaluationSession` path is the **primary** path, and the allocating `EvaluationPlan` path is only used for diagnostics/inspection. This is already partially done Ã¢â‚¬â€ it needs completion, not redesign.
+What remains is ensuring the `EvaluationSession` path is the **primary** path, and the allocating `EvaluationPlan` path is only used for diagnostics/inspection. This is already partially done — it needs completion, not redesign.
 
-### S5.3 Ã¢â‚¬â€ Execution Pipeline Decomposition (V1 R9, Redesigned)
+### S5.3 — Execution Pipeline Decomposition (V1 R9, Redesigned)
 
 V1's R9 proposed an `ExecutionPass` trait with `#[cfg(feature)]` isolation. Redesigned through S1 subsystem lens:
 
@@ -691,7 +693,7 @@ fn precompute_stage(...) -> ... {
 
 Conditional compilation is restricted to **function dispatch**, not interleaved within business logic.
 
-### S5.4 Ã¢â‚¬â€ Amortized GC (V1 R10, Redesigned)
+### S5.4 — Amortized GC (V1 R10, Redesigned)
 
 V1's R10 proposed incremental GC during traversals. Refined through S1:
 
@@ -699,16 +701,16 @@ With `NodeArena` as a separate subsystem, GC becomes a method on `NodeArena` tha
 
 Edge cleanup happens in `EdgeTopology` via a separate `prune_dead_edges()` method that runs lazily when the tombstone ratio exceeds a threshold. Since `NodeArena` and `EdgeTopology` are independent subsystems, they can compact independently without stop-the-world coordination.
 
-### S5.5 Ã¢â‚¬â€ Execution Path Collapse
+### S5.5 — Execution Path Collapse
 
-**Frontend reference:** Inspired by frontend component collapse patterns (create-dialog + edit-dialog Ã¢â€ â€™ single parameterized form). If the agent working on this wants to see examples, ask the user Ã¢â‚¬â€ the frontend code is in a separate workspace.
+**Frontend reference:** Inspired by frontend component collapse patterns (create-dialog + edit-dialog → single parameterized form). If the agent working on this wants to see examples, ask the user — the frontend code is in a separate workspace.
 
-[runtime_execution.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/execution/runtime_execution.rs) has `execute_for_commit` (~100 lines) and `execute_for_on_demand` (~100 lines) that are **structurally identical** Ã¢â‚¬â€ they differ only in:
+[runtime_execution.rs](../../crates/worth-signal/src/logic/transaction/runtime/execution/runtime_execution.rs) has `execute_for_commit` (~100 lines) and `execute_for_on_demand` (~100 lines) that are **structurally identical** — they differ only in:
 - Request mode (`Default` vs `ForceOnDemand`)
 - Target selection (all dirty via `staged_dirty` vs explicit node list)
 - Whether they report execution timing to `semantic_delta`
 
-The logic Ã¢â‚¬â€ build plan, precompute snapshots, evaluate stage, apply results, record diagnostics Ã¢â‚¬â€ is the same.
+The logic — build plan, precompute snapshots, evaluate stage, apply results, record diagnostics — is the same.
 
 Collapse into a single `execute_evaluation` parameterized by an `ExecutionIntent`:
 
@@ -745,23 +747,23 @@ This is the same pattern as the frontend collapsing `DialogCreateComponent` and 
 
 | File | Change |
 |---|---|
-| [planning/mod.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/planner/planning/mod.rs) | Add contract-based pruning to `visit_node` |
-| [runtime_execution.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/execution/runtime_execution.rs) | Collapse `execute_for_commit` / `execute_for_on_demand` into `execute_evaluation`; decompose into subsystem calls |
-| [execution.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/planner/execution.rs) | Isolate `#[cfg(feature)]` to dispatch functions |
-| [lifecycle.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/graph/lifecycle) | Subsystem-scoped compaction |
+| [planning/mod.rs](../../crates/worth-signal/src/logic/planner/planning/mod.rs) | Add contract-based pruning to `visit_node` |
+| [runtime_execution.rs](../../crates/worth-signal/src/logic/transaction/runtime/execution/runtime_execution.rs) | Collapse `execute_for_commit` / `execute_for_on_demand` into `execute_evaluation`; decompose into subsystem calls |
+| `crates/worth-signal/src/logic/planner/execution.rs` | Isolate `#[cfg(feature)]` to dispatch functions |
+| [lifecycle.rs](../../crates/worth-signal/src/data/graph/lifecycle) | Subsystem-scoped compaction |
 
 ---
 
-## Phase S6 Ã¢â‚¬â€ Safety Architecture
+## Phase S6 — Safety Architecture
 
 > [!NOTE]
 > Phase S9 extends this phase with allocation lifetime scopes, single-consumer
 > packet rules, and phase-typed fast-exit progression.
 
 > [!NOTE]
-> This phase subsumes V1's R15 (partition-aware validation), R19 (PhaseGuard), R20 (observation purity), R21 (single source of truth), and R22 (transactional mutation). The designs are refined to build on S1Ã¢â‚¬â€œS3 rather than being standalone compile-time safety items.
+> This phase subsumes V1's R15 (partition-aware validation), R19 (PhaseGuard), R20 (observation purity), R21 (single source of truth), and R22 (transactional mutation). The designs are refined to build on S1–S3 rather than being standalone compile-time safety items.
 
-### S6.1 Ã¢â‚¬â€ Partition-Aware Version Tracking (V1 R15, Unchanged)
+### S6.1 — Partition-Aware Version Tracking (V1 R15, Unchanged)
 
 The bug from V1 R15 is real and the design is sound. Move `AspectVersion` from a flat integer to a `PartitionVersionMap` so that `count_meaningful_input_changes` compares scope-specific versions:
 
@@ -775,11 +777,11 @@ pub struct PartitionVersionMap {
 > [!IMPORTANT]
 > This should land **before S5** (pipeline performance). Optimizing a pipeline that over-evaluates due to false version matches is wasted optimization.
 
-### S6.2 Ã¢â‚¬â€ Phase-Typed Graph Access (V1 R19 + R20, Redesigned)
+### S6.2 — Phase-Typed Graph Access (V1 R19 + R20, Redesigned)
 
 V1 proposed `GraphHandle<Phase>` with `PhantomData` typestates. With S1's subsystem split, the approach is simpler: each phase borrows only the subsystems it needs.
 
-Invalidation borrows `(&mut NodeArena, &EdgeTopology, &mut TraversalResources, &mut RuntimeObservation)`. Evaluation borrows `(&mut NodeArena, &mut EdgeTopology, &mut TraversalResources, &mut RuntimeObservation)`. Observation borrows `(&NodeArena, &EdgeTopology, &RuntimeObservation)` Ã¢â‚¬â€ all `&self`.
+Invalidation borrows `(&mut NodeArena, &EdgeTopology, &mut TraversalResources, &mut RuntimeObservation)`. Evaluation borrows `(&mut NodeArena, &mut EdgeTopology, &mut TraversalResources, &mut RuntimeObservation)`. Observation borrows `(&NodeArena, &EdgeTopology, &RuntimeObservation)` — all `&self`.
 
 The type system enforces phase restrictions through borrow patterns, not through wrapper types:
 
@@ -798,27 +800,27 @@ impl SignalGraph {
 impl<'a> GraphObserver<'a> {
     pub fn explain(&self, node: NodeId) -> Result<NodeExplanation, SignalError> { ... }
     pub fn replay_events(&self) -> &[ReplayEvent] { ... }
-    // No mutation methods exist here Ã¢â‚¬â€ compile error if attempted
+    // No mutation methods exist here — compile error if attempted
 }
 ```
 
 V1's R20 (observation purity) falls out naturally: `GraphObserver` only has `&self` references.
 
-### S6.3 Ã¢â‚¬â€ Single Source of Truth (V1 R21, Redesigned)
+### S6.3 — Single Source of Truth (V1 R21, Redesigned)
 
-With `EdgeTopology` as a subsystem, the dual-representation problem (dependencies Ã¢â€ â€ subscribers) is contained. `EdgeTopology` owns both stores and enforces that mutations always update **both** through `reconcile_dependencies` (already landed via R6).
+With `EdgeTopology` as a subsystem, the dual-representation problem (dependencies ↔ subscribers) is contained. `EdgeTopology` owns both stores and enforces that mutations always update **both** through `reconcile_dependencies` (already landed via R6).
 
-The remaining risk is **stale subscriber edges after topology changes**. With S1, this becomes a subsystem invariant: `EdgeTopology` exposes an `assert_bidirectional_consistency(&self)` debug assertion that verifies depsÃ¢â€ â€subs agreement. This runs in debug builds and tests, not in production.
+The remaining risk is **stale subscriber edges after topology changes**. With S1, this becomes a subsystem invariant: `EdgeTopology` exposes an `assert_bidirectional_consistency(&self)` debug assertion that verifies deps↔subs agreement. This runs in debug builds and tests, not in production.
 
-### S6.4 Ã¢â‚¬â€ Transactional Mutation Safety (V1 R22, Redesigned)
+### S6.4 — Transactional Mutation Safety (V1 R22, Redesigned)
 
 V1 proposed wrapping `&mut SignalGraph` in a `TransactionalMut<'tx>`. With S3's `EvaluationEffect` struct, the design is simpler: mutations during evaluation produce effects, and effects are applied atomically. The transaction only needs to undo `NodeEntry` patches (already handled by `SparsePatchBuffer`) and rollback created nodes (already handled by `rollback_created_nodes`).
 
-The remaining gap is **edge store rollback** Ã¢â‚¬â€ if dependencies are reconciled during evaluation and the transaction rolls back, the edge topology must revert. With `EdgeTopology` as a subsystem, the rollback tracks `(NodeId, old_dependency_set_id)` tuples and restores them atomically.
+The remaining gap is **edge store rollback** — if dependencies are reconciled during evaluation and the transaction rolls back, the edge topology must revert. With `EdgeTopology` as a subsystem, the rollback tracks `(NodeId, old_dependency_set_id)` tuples and restores them atomically.
 
-### S6.5 Ã¢â‚¬â€ Typed Error Hierarchy
+### S6.5 — Typed Error Hierarchy
 
-**Kernel reference:** [Relational A3 Ã¢â‚¬â€ Typed Error Hierarchy](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/worth-relational/relational_architecture.md).
+**Kernel reference:** [Relational A3 — Typed Error Hierarchy](../WORTH-relational/relational_architecture.md).
 
 `SignalError` is currently string-based:
 
@@ -870,9 +872,9 @@ match result {
 }
 ```
 
-### S6.6 Ã¢â‚¬â€ Builder Completeness
+### S6.6 — Builder Completeness
 
-**Kernel reference:** [Relational C4 Ã¢â‚¬â€ Fork-Safe Construction](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/worth-relational/relational_architecture.md).
+**Kernel reference:** [Relational C4 — Fork-Safe Construction](../WORTH-relational/relational_architecture.md).
 
 `SignalRuntimeBuilder` currently accepts all configuration as optional:
 
@@ -912,36 +914,36 @@ impl<D, I> SignalRuntimeBuilder<CheckpointRuntime<D, I>, ()> {
 }
 ```
 
-This is the same pattern as relational's C4 Ã¢â‚¬â€ the builder type tracks which required subsystems have been configured, and `build()` is only available when all required subsystems are present.
+This is the same pattern as relational's C4 — the builder type tracks which required subsystems have been configured, and `build()` is only available when all required subsystems are present.
 
 ### Files Modified
 
 | File | Change |
 |---|---|
-| [entry.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/node/entry.rs) | Replace flat `AspectVersion` with `PartitionVersionMap` |
-| [graph.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/graph/runtime/graph.rs) | Add `observe()` method returning `GraphObserver` |
-| [mutation.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/graph/topology/mutation.rs) | Add `assert_bidirectional_consistency` |
-| [result_apply.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/evaluation/engine/result_apply.rs) | Track edge set IDs for rollback |
-| [error.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/error.rs) | Replace string-based `SignalError` with typed enum variants |
-| [builder.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/state/builder.rs) | Add typestate to `SignalRuntimeBuilder` |
+| [entry.rs](../../crates/worth-signal/src/data/node/entry.rs) | Replace flat `AspectVersion` with `PartitionVersionMap` |
+| [graph.rs](../../crates/worth-signal/src/data/graph/runtime/graph.rs) | Add `observe()` method returning `GraphObserver` |
+| [mutation.rs](../../crates/worth-signal/src/data/graph/topology/mutation.rs) | Add `assert_bidirectional_consistency` |
+| `crates/worth-signal/src/logic/evaluation/engine/result_apply.rs` | Track edge set IDs for rollback |
+| [error.rs](../../crates/worth-signal/src/data/error.rs) | Replace string-based `SignalError` with typed enum variants |
+| [builder.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/builder.rs) | Add typestate to `SignalRuntimeBuilder` |
 
 ---
 
-## Phase S7 Ã¢â‚¬â€ API Surface & Facade
+## Phase S7 — API Surface & Facade
 
 > [!NOTE]
 > Phase S9 extends this phase by making batch-first, bulk-first API shape a
 > normative architecture rule rather than a style preference.
 
-**Kernel reference:** [Relational F1 Ã¢â‚¬â€ Facade Namespace Organization](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/worth-relational/relational_architecture.md).
+**Kernel reference:** [Relational F1 — Facade Namespace Organization](../WORTH-relational/relational_architecture.md).
 
 ### Problem
 
-[facade.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/facade.rs) has ~120 flat `pub use` re-exports. Consumers must know which of the 120 types they need. No organization by domain.
+[facade.rs](../../crates/worth-signal/src/facade.rs) has ~120 flat `pub use` re-exports. Consumers must know which of the 120 types they need. No organization by domain.
 
 ### Design
 
-#### S7.1 Ã¢â‚¬â€ Grouped Facade Namespaces
+#### S7.1 — Grouped Facade Namespaces
 
 ```rust
 // facade.rs
@@ -979,9 +981,9 @@ pub use graph::{SignalGraph, NodeBuilder};
 pub use transaction::{SignalRuntime, SignalTransaction, TransactionResult};
 ```
 
-#### S7.2 Ã¢â‚¬â€ State-Derived Evaluation Strategy
+#### S7.2 — State-Derived Evaluation Strategy
 
-**Kernel reference:** [Relational D6 Ã¢â‚¬â€ State-Derived Invariant Context](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/worth-relational/relational_architecture.md).
+**Kernel reference:** [Relational D6 — State-Derived Invariant Context](../WORTH-relational/relational_architecture.md).
 
 The evaluation engine currently applies the same strategy regardless of graph state. With a state-derived context, the runtime adapts:
 
@@ -1021,25 +1023,25 @@ The transaction uses this to configure its evaluation pass dynamically.
 
 ---
 
-## Phase S8 Ã¢â‚¬â€ Context-Aware Computation
+## Phase S8 — Context-Aware Computation
 
-**Frontend reference:** Inspired by frontend ambient context patterns (`ProjectContextService`, operations mode, admin mode). If the agent working on this wants to see examples, ask the user Ã¢â‚¬â€ the frontend code is in a separate workspace.
+**Frontend reference:** Inspired by frontend ambient context patterns (`ProjectContextService`, operations mode, admin mode). If the agent working on this wants to see examples, ask the user — the frontend code is in a separate workspace.
 
 ### Problem
 
 `SignalRuntime<D, I, E, Ctx, T>` has a `Ctx` type parameter, but it only flows to the event bus during `commit()`. **Evaluation closures never receive the domain context.** This means:
 
-- Geometry kernel evaluations need a model snapshot Ã¢â€ â€™ must be captured in a closure upvalue, losing transactional safety
-- Dashboard aggregations need cross-project summaries Ã¢â€ â€™ must be threaded manually
-- Admin metrics need system-level state Ã¢â€ â€™ same manual threading
+- Geometry kernel evaluations need a model snapshot → must be captured in a closure upvalue, losing transactional safety
+- Dashboard aggregations need cross-project summaries → must be threaded manually
+- Admin metrics need system-level state → same manual threading
 
 As the system scales to support projects, operations, and administrative modes (each with different context shapes), this problem multiplies. Every new context type requires a new way to smuggle state into evaluation closures.
 
-In the frontend, this was solved by `ProjectContextService` Ã¢â‚¬â€ context is injected by the framework, not threaded by the consumer. Signal needs the same pattern.
+In the frontend, this was solved by `ProjectContextService` — context is injected by the framework, not threaded by the consumer. Signal needs the same pattern.
 
 ### Design
 
-#### S8.1 Ã¢â‚¬â€ Ambient Evaluation Context
+#### S8.1 — Ambient Evaluation Context
 
 Extend `EvaluationContext` to carry the domain context:
 
@@ -1067,7 +1069,7 @@ runtime.transaction(ctx, |txn| {
 })?;
 ```
 
-#### S8.2 Ã¢â‚¬â€ Multi-Context Support
+#### S8.2 — Multi-Context Support
 
 Different parts of the system operate in different contexts:
 
@@ -1079,13 +1081,13 @@ Different parts of the system operate in different contexts:
 | **Kernel** | `ModelContext` | BRep workspace, topology access |
 | **Simulation** | `SimulationContext` | Tick state, entity world |
 
-The `Ctx` type parameter on `SignalRuntime` already supports this Ã¢â‚¬â€ different runtime instances can have different context types. The key design decision is: **do different computations within the same runtime need different context types?**
+The `Ctx` type parameter on `SignalRuntime` already supports this — different runtime instances can have different context types. The key design decision is: **do different computations within the same runtime need different context types?**
 
 Two approaches:
 
-**Option A: Homogeneous context** Ã¢â‚¬â€ all computations in one runtime share one `Ctx`. This is the current model. Different modes use different runtime instances.
+**Option A: Homogeneous context** — all computations in one runtime share one `Ctx`. This is the current model. Different modes use different runtime instances.
 
-**Option B: Heterogeneous context via trait objects** Ã¢â‚¬â€ a single runtime carries a context registry, and computations request their specific context layer:
+**Option B: Heterogeneous context via trait objects** — a single runtime carries a context registry, and computations request their specific context layer:
 
 ```rust
 pub trait ContextProvider: 'static {
@@ -1103,7 +1105,7 @@ impl<'graph> EvaluationContext<'graph, dyn ContextProvider> {
 > [!IMPORTANT]
 > **Recommendation: start with Option A** (homogeneous context per runtime). This is simpler, fully type-safe, and matches how the frontend handles it (separate services per mode, not one service with dynamic dispatch). Option B can be added later if multi-mode runtime becomes a real requirement.
 
-#### S8.3 Ã¢â‚¬â€ Context-Scoped Evaluation
+#### S8.3 — Context-Scoped Evaluation
 
 With ambient context, evaluation closures become pure functions of (context + dependencies) instead of closures that capture external state:
 
@@ -1154,14 +1156,14 @@ let volumes = runtime.define_computation(ComputationSpec {
 
 | File | Change |
 |---|---|
-| [context.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/context.rs) | Extend `EvaluationContext` with generic `Ctx` parameter |
-| [runtime_state.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/state/runtime_state.rs) | Thread `Ctx` from `transaction()` through evaluation pipeline |
-| [runtime_execution.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/execution/runtime_execution.rs) | Accept `&Ctx` and pass to evaluation closures |
-| [transaction_evaluation.rs](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/execution/transaction_evaluation.rs) | Inject `Ctx` into evaluation closures |
+| [context.rs](../../crates/worth-signal/src/logic/context.rs) | Extend `EvaluationContext` with generic `Ctx` parameter |
+| `crates/worth-signal/src/logic/transaction/runtime/state/runtime_state.rs` | Thread `Ctx` from `transaction()` through evaluation pipeline |
+| [runtime_execution.rs](../../crates/worth-signal/src/logic/transaction/runtime/execution/runtime_execution.rs) | Accept `&Ctx` and pass to evaluation closures |
+| [transaction_evaluation.rs](../../crates/worth-signal/src/logic/transaction/runtime/execution/transaction_evaluation.rs) | Inject `Ctx` into evaluation closures |
 
 ---
 
-## Phase S9 Ã¢â‚¬â€ Performance Enforcement Addendum
+## Phase S9 — Performance Enforcement Addendum
 
 > **Status:** Mandatory completion layer for V2, not an optional appendix.
 >
@@ -1171,7 +1173,7 @@ let volumes = runtime.define_computation(ComputationSpec {
 > phase defines how those phases become performance-enforced rather than merely
 > performance-aware.
 
-### S9.1 Ã¢â‚¬â€ Performance Enforcement Model
+### S9.1 — Performance Enforcement Model
 
 Performance in `worth-signal` is enforced in three layers:
 
@@ -1191,7 +1193,7 @@ This addendum exists because the current V2 design already points in this
 direction, but still leaves too many performance-critical truths encoded as raw
 collections, late branching, or optional discipline.
 
-### S9.2 Ã¢â‚¬â€ Proof-Bearing Pipeline Forms
+### S9.2 — Proof-Bearing Pipeline Forms
 
 Once a phase establishes a costly fact, later phases must consume that fact as
 an explicit proof-bearing form instead of rediscovering it.
@@ -1226,7 +1228,7 @@ Normative rule:
 
 This is the main architectural encoding for laws `10`, `22`, `25`, and `26`.
 
-### S9.3 Ã¢â‚¬â€ Contracts That Must Grow Beyond Current S2
+### S9.3 — Contracts That Must Grow Beyond Current S2
 
 `NodeContract` is no longer only a dependency/read declaration. It becomes the
 central performance contract for a node.
@@ -1344,7 +1346,7 @@ reinforces laws `7`, `19`, `31`, and `33`.
 
 This is the primary encoding for laws `7`, `19`, `20`, `28`, and `29`.
 
-### S9.4 Ã¢â‚¬â€ Canonical Collections and Narrowed Deltas
+### S9.4 — Canonical Collections and Narrowed Deltas
 
 Hot-path structural operations currently still move too much meaning through raw
 lists. That stops here.
@@ -1406,7 +1408,7 @@ reinforces laws `6`, `10`, `22`, `25`, `30`, and `31`.
 This section extends S5 and strengthens S2/S6. It is the main architectural
 encoding for laws `1`, `6`, `10`, `22`, `25`, and `26`.
 
-### S9.5 Ã¢â‚¬â€ Lowered Stage Plans as the Only Execution Input
+### S9.5 — Lowered Stage Plans as the Only Execution Input
 
 The planner must not hand execution a loosely interpreted bag of tasks. Serial
 and parallel execution must consume the same lowered form.
@@ -1457,7 +1459,7 @@ Execution must consume `LoweredStagePlan`, not re-decide:
 - whether the stage is speculative-first or authority-blocking
 - which policy decisions were already resolved and recorded in the decision log
 
-Typestate also applies here. The target architecture is not just Ã¢â‚¬Å“typed data,Ã¢â‚¬Â
+Typestate also applies here. The target architecture is not just “typed data,”
 but phase-typed construction:
 
 ```rust
@@ -1473,7 +1475,7 @@ after the fact. Invalid operational states are architecture bugs.
 This is the strongest protection against serial/parallel drift and late
 branching. It extends S5 directly and encodes laws `3`, `8`, `16`, and `21`.
 
-### S9.6 Ã¢â‚¬â€ Operational Effect vs Diagnostic Envelope
+### S9.6 — Operational Effect vs Diagnostic Envelope
 
 S3 currently proposes `EvaluationEffect` as a single effect shape. That is no
 longer sufficient.
@@ -1543,7 +1545,7 @@ separation plus explicit speculative/authoritative reconciliation.
 
 This section extends S3 and encodes laws `2`, `15`, and `20`.
 
-### S9.7 Ã¢â‚¬â€ Boundary Envelopes and Decision Logs
+### S9.7 — Boundary Envelopes and Decision Logs
 
 Every boundary crossing in Signal must produce a self-describing envelope, and
 every authority-path decision must be structurally recorded.
@@ -1594,7 +1596,7 @@ Normative rule:
 
 This section extends S3 and S13 and encodes laws `7`, `8`, and `32`.
 
-### S9.7.a Ã¢â‚¬â€ Lineage Semantic Purity
+### S9.7.a — Lineage Semantic Purity
 
 Signal lineage is artifact lineage over time within a branched execution
 runtime, not execution logging.
@@ -1611,7 +1613,7 @@ Required lineage laws:
 
 Normative rule:
 
-- no lineage accessor may return Ã¢â‚¬Å“some related artifactÃ¢â‚¬Â under a parentage name
+- no lineage accessor may return “some related artifact” under a parentage name
 - if a record needs multiple artifact relations, those relations must be named
   separately and precisely
 - a lineage surface is incomplete if it requires string parsing to recover
@@ -1619,7 +1621,7 @@ Normative rule:
 
 This section extends S5 and S13 and encodes laws `8`, `15`, and `32`.
 
-### S9.8 Ã¢â‚¬â€ Cardinality-Matched API Surface
+### S9.8 — Cardinality-Matched API Surface
 
 S7 now has a normative API-shape rule:
 
@@ -1643,7 +1645,7 @@ Normative rule:
 
 This extends S7 directly and encodes laws `6`, `9`, `17`, and `18`.
 
-### S9.9 Ã¢â‚¬â€ Locality and Parallel Disjointness Contracts
+### S9.9 — Locality and Parallel Disjointness Contracts
 
 Locality and parallel safety must be represented structurally, not inferred
 late.
@@ -1679,7 +1681,7 @@ Normative rule:
 
 This extends S5 and S6 and encodes laws `5`, `21`, `30`, and `33`.
 
-### S9.10 Ã¢â‚¬â€ Allocation Lifetime and Single-Consumer Flow
+### S9.10 — Allocation Lifetime and Single-Consumer Flow
 
 Lifecycle scope must become visible in the architecture, not only in local
 scratch helpers.
@@ -1716,7 +1718,7 @@ would be structural waste.
 
 This extends S6 and encodes laws `24`, `31`, `32`, and `35`.
 
-### S9.11 Ã¢â‚¬â€ Fast-Exit and Phase-Typed Eligibility
+### S9.11 — Fast-Exit and Phase-Typed Eligibility
 
 Cheap rejection must happen before expensive construction.
 
@@ -1739,7 +1741,7 @@ Normative rule:
 
 This extends S5 and S6 and encodes law `34`.
 
-### S9.12 Ã¢â‚¬â€ Authority, Derivation, Checkpoints, and Reconstructability
+### S9.12 — Authority, Derivation, Checkpoints, and Reconstructability
 
 Authoritative truth and derived runtime state are categorically different
 objects. Derived state must be reproducible from authority alone.
@@ -1764,7 +1766,7 @@ Normative rule:
 
 This section extends S3, S6, and S7 and encodes laws `19`, `33`, and `36`.
 
-### S9.13 Ã¢â‚¬â€ Measurement Boundaries Required by Architecture
+### S9.13 — Measurement Boundaries Required by Architecture
 
 Because S9 defines all three enforcement layers, the architecture itself must
 name the mandatory measurement boundaries and counters that every rewritten path
@@ -1797,7 +1799,7 @@ Normative rule:
 This section ties S9 back to the performance baseline and encodes the
 architecture-level part of law `13`.
 
-### S9.14 Ã¢â‚¬â€ Concrete Integration with Existing Phases
+### S9.14 — Concrete Integration with Existing Phases
 
 This addendum modifies earlier phases as follows:
 
@@ -1814,7 +1816,7 @@ This addendum modifies earlier phases as follows:
 - **S7** becomes the home of batch-first operational APIs and the explicit
   demotion of scalar mutation surfaces plus framework-owned resource lifecycle.
 
-### S9.15 Ã¢â‚¬â€ Branched Runtime Reconciliation and Merge Lineage
+### S9.15 — Branched Runtime Reconciliation and Merge Lineage
 
 Branching is incomplete without a way to reconcile accepted branch-local work
 back into an authoritative branch.
@@ -1860,7 +1862,7 @@ Implementation is intentionally staged inside S9.15 itself. Merge hardening is
 not a generic cleanup pass after S9.x; it is part of making merge a real
 product capability.
 
-#### S9.15.0 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Merge Substrate Foundation
+#### S9.15.0 — Merge Substrate Foundation
 
 Required completion:
 
@@ -1880,7 +1882,7 @@ Normative rule:
 - merge substrate is not complete until repeated merges can stay bounded by
   branch-carried proof instead of cumulative whole-branch inspection
 
-#### S9.15.1 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Reconciliation Semantics and Conflict Surfaces
+#### S9.15.1 — Reconciliation Semantics and Conflict Surfaces
 
 Required completion:
 
@@ -1897,7 +1899,7 @@ Normative rule:
 - planner and executor must agree on merge meaning from lowered typed policy,
   not rediscover it from runtime state at execution time
 
-#### S9.15.2 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Structural Mutation Journal
+#### S9.15.2 — Structural Mutation Journal
 
 The branch mutation ledger must evolve from node-granular proof to structural
 merge truth.
@@ -1919,7 +1921,7 @@ Normative rule:
 - if merge planning must rescan broad graph state to reconstruct structural
   delta, the mutation journal is incomplete
 
-#### S9.15.3 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Production-Grade Hardening and Certification
+#### S9.15.3 — Production-Grade Hardening and Certification
 
 Merge is not production-grade until breadth, traceability, and replay
 coherence are certified under repeated history evolution.
@@ -1957,7 +1959,7 @@ Normative rule:
 
 This section extends S5 and S9.7.a and encodes laws `7`, `15`, and `32`.
 
-#### S9.15.4 Ã¢â‚¬â€ Conflict Reconciliation Semantics
+#### S9.15.4 — Conflict Reconciliation Semantics
 
 Conflict reporting is necessary, but it is not enough. Merge becomes a real
 product capability only when at least some conflicting shared-state cases can
@@ -1984,7 +1986,7 @@ Completion criteria:
 - successful resolved conflicts produce truthful merge lineage distinct from
   ordinary artifact derivation
 
-#### S9.15.5 Ã¢â‚¬â€ Final Merge Certification
+#### S9.15.5 — Final Merge Certification
 
 Once conflict reconciliation exists, merge must be certified as a stable
 product capability under longer histories and hostile branch evolution.
@@ -2004,7 +2006,7 @@ Completion criteria:
 - cost-sensitive tests fail if broad scans or broad repairs reappear
 - resolved conflicts and rejected conflicts both leave truthful diagnostics
 
-#### S9.15.6 Ã¢â‚¬â€ Scope Decision and Closeout
+#### S9.15.6 — Scope Decision and Closeout
 
 S9.15 closes only after the remaining merge scope is made explicit rather than
 implicitly drifting into future work.
@@ -2065,7 +2067,7 @@ Deferred to S10:
 - richer edge-level merge result surfaces
 - partial-conflict acceptance and broader conflict-resolution policy families
 
-### S9.16 Ã¢â‚¬â€ Geometry-Kernel Performance Hardening Program
+### S9.16 — Geometry-Kernel Performance Hardening Program
 
 `S9.16` assumes the `S9.15` merge substrate is complete enough to support
 performance hardening without re-opening merge-truth shortcuts. The next
@@ -2074,7 +2076,7 @@ as implied future cleanup.
 
 If `worth-signal` is expected to support geometry kernels for next-generation
 aircraft, performance hardening must target the real failure modes of that
-workload rather than generic Ã¢â‚¬Å“incremental runtimeÃ¢â‚¬Â benchmarks.
+workload rather than generic “incremental runtime” benchmarks.
 
 Geometry-kernel pressure profile:
 
@@ -2102,13 +2104,13 @@ Cross-phase invariants:
 | Hot paths never require cold richness | Operational execution, planning, merge, invalidation, and reuse must run from hot runtime truth alone |
 | Snapshot policy affects richness, not truth | Retention/storage policy may change retained payload and reconstruction capability, never operational semantics |
 | Invalidation breadth is bounded by canonical delta | Propagation breadth must come from mutation-time proof, not broad rediscovery |
-| Reuse requires explicit equivalence contract | No reuse from ad hoc â€œclose enoughâ€ field comparisons |
+| Reuse requires explicit equivalence contract | No reuse from ad hoc “close enough” field comparisons |
 | Diagnostic tier affects availability, not semantics | Lower tiers may drop richness, never alter meaning |
 | Certification uses runtime counters, not log scraping | Performance/correctness proof must consume canonical counters and summaries |
 
 Required workstreams:
 
-### S9.16.1 Ã¢â‚¬â€ Hot/Cold Artifact Separation
+### S9.16.1 — Hot/Cold Artifact Separation
 
 Operational state, retained diagnostic artifacts, and historical explainability
 must become physically and architecturally separate lanes.
@@ -2139,7 +2141,7 @@ Normative rule:
 - large geometry artifacts must not be cloned merely to satisfy diagnostics or
   retained history
 
-### S9.16.2 Ã¢â‚¬â€ Structural-Sharing Snapshots and Dependency State
+### S9.16.2 — Structural-Sharing Snapshots and Dependency State
 
 Snapshotting and dependency-state retention must stop scaling with whole owned
 payload size when the semantic delta is narrow.
@@ -2174,7 +2176,7 @@ Normative rule:
 - whole-snapshot clone behavior is acceptable only for compact or explicitly
   bounded profiles, never as the universal geometry-kernel path
 
-### S9.16.3 Ã¢â‚¬â€ Locality-First Invalidation and Frontier Execution
+### S9.16.3 — Locality-First Invalidation and Frontier Execution
 
 The invalidation engine must evolve from batch-amortized traversal into a true
 locality-first multi-source frontier engine.
@@ -2295,7 +2297,7 @@ progression, and realized cost evidence. Later parallel work may consume only
 the sealed canonical work stream and measured envelopes; it may not reinterpret
 aspect, scope, cause, or readiness authority.
 
-### S9.16.4 Ã¢â‚¬â€ Geometry-Scale Equivalence and Reuse Contracts
+### S9.16.4 — Geometry-Scale Equivalence and Reuse Contracts
 
 Reuse is mandatory for geometry scale, but it must stay truth-grade.
 
@@ -2340,7 +2342,7 @@ Normative rule:
   invalid semantic boundaries such as topology regime, tolerance regime, or
   semantic region identity
 
-### S9.16.5 Ã¢â‚¬â€ Diagnostic Tiering Without Semantic Drift
+### S9.16.5 — Diagnostic Tiering Without Semantic Drift
 
 Diagnostics must be tiered by policy without changing the operational meaning
 of the run.
@@ -2407,7 +2409,7 @@ Normative rule:
 - reconstruction work must be budgeted explicitly rather than happening as
   hidden lazy cost on first access
 
-### S9.16.6 Ã¢â‚¬â€ Integrated Invalidation Certification And Performance Proof
+### S9.16.6 — Integrated Invalidation Certification And Performance Proof
 
 The runtime must earn invalidation credibility with hostile financial
 scenarios during implementation, not with a later certification milestone or
@@ -2704,7 +2706,7 @@ This section extends S4, S5, S6, S9.5, S9.9, S9.10, S9.13, and S9.16 and
 encodes architectural laws `4`, `7`, `15`, `16`, `17`, `21`, and `22` plus the
 parallel, boundary, allocation, and measurement performance laws.
 
-### S10 Ã¢â‚¬â€ Merge-Forward Expansion
+### S10 — Merge-Forward Expansion
 
 Once `S9.15` closes and `S9.16` no longer requires merge-substrate churn, the
 next merge-expansion work must be tracked explicitly rather than rediscovered ad
@@ -2853,7 +2855,7 @@ path, the feature is incomplete regardless of whether it works for one domain
 
 | File | Change |
 |---|---|
-| [signal_architecture2.md](file:///Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/worth_signal/signal_architecture2.md) | Append S9 addendum; extend S2/S3/S5/S6/S7 by reference |
+| [signal_architecture2.md](./signal_architecture2.md) | Append S9 addendum; extend S2/S3/S5/S6/S7 by reference |
 
 ## What Must Be Preserved
 
@@ -2879,14 +2881,14 @@ path, the feature is incomplete regardless of whether it works for one domain
 ### Dependency Rules
 
 ```
-S1 (subsystem split) Ã¢â€ â€™ unlocks S3, S5, S6
-S2 (contracts) Ã¢â€ â€™ unlocks S5.1 (contract-driven pruning), S8.1 (ambient context)
-S3 (declarative effects) Ã¢â€ â€™ unlocks S4 (transaction result envelope), S3.5 (defineComputation)
-S6.1 (partition versions) Ã¢â€ â€™ should precede S5 (pipeline perf)
-S6.5 (error hierarchy) Ã¢â€ â€™ should precede S6.6 (builder completeness)
-S7 (facade) Ã¢â€ â€™ after S1Ã¢â‚¬â€œS4 stabilize
-S8 (context) Ã¢â€ â€™ after S2.4 (context in contracts) and S3.5 (defineComputation)
-S9 (performance enforcement addendum) Ã¢â€ â€™ extends S2/S3/S5/S6/S7 and should be
+S1 (subsystem split) → unlocks S3, S5, S6
+S2 (contracts) → unlocks S5.1 (contract-driven pruning), S8.1 (ambient context)
+S3 (declarative effects) → unlocks S4 (transaction result envelope), S3.5 (defineComputation)
+S6.1 (partition versions) → should precede S5 (pipeline perf)
+S6.5 (error hierarchy) → should precede S6.6 (builder completeness)
+S7 (facade) → after S1–S4 stabilize
+S8 (context) → after S2.4 (context in contracts) and S3.5 (defineComputation)
+S9 (performance enforcement addendum) → extends S2/S3/S5/S6/S7 and should be
 written before any V2.1 rewrite work begins
 S9.16.3 causal/local invalidation repair and S9.16.6 certification
   -> precede S9.17 parallel-execution expansion
@@ -2898,52 +2900,52 @@ S9.17.3 structured partition proof -> precedes S9.17.4 portable backends
 ### Recommended Execution Order
 
 ```text
-Batch 1 Ã¢â‚¬â€ Structural Foundation
+Batch 1 — Structural Foundation
   S1.1  SignalGraph subsystem split (NodeArena, EdgeTopology, etc.)
   S1.2  BranchManager extraction from SignalRuntime
   S6.5  Typed error hierarchy (enables match-based error handling throughout)
 
-Batch 2 Ã¢â‚¬â€ Effect Pipeline
+Batch 2 — Effect Pipeline
   S3.1  EvaluationEffect struct
   S3.2  apply_effect pipeline (replaces result_apply monolith)
   S3.3  Commit ceremony extraction (fail_and_rollback)
   S3.4  EvaluationVerdict (three-state outcome enum)
 
-Batch 3 Ã¢â‚¬â€ Contract System
+Batch 3 — Contract System
   S2.1  NodeContract trait + NodeBuilder integration
   S2.2  Contract duality documentation
   S2.3  Aspect-aware planner pruning
   S2.4  Context-type in contracts (ContextRequirement)
 
-Batch 4 Ã¢â‚¬â€ Correctness
+Batch 4 — Correctness
   S6.1  PartitionVersionMap (fixes over-evaluation bug)
   S6.3  EdgeTopology bidirectional consistency assertion
   S6.4  Edge store rollback tracking
   S6.6  Builder completeness (typestate on SignalRuntimeBuilder)
 
-Batch 5 Ã¢â‚¬â€ Transaction Surface
+Batch 5 — Transaction Surface
   S4.1  TransactionResult envelope
   S4.2  SemanticDelta consolidation (named replay entries)
 
-Batch 6 Ã¢â‚¬â€ Computation Model
+Batch 6 — Computation Model
   S8.1  Ambient evaluation context (Ctx threaded to evaluation closures)
   S8.2  Multi-context design decision (Option A: homogeneous per runtime)
   S3.5  defineComputation pattern (ComputationSpec)
   S5.5  Execution path collapse (merge commit/on-demand paths)
 
-Batch 7 Ã¢â‚¬â€ Performance
+Batch 7 — Performance
   S5.1  Contract-driven plan pruning
   S5.2  EvaluationSession as primary path (zero-alloc completion)
   S5.3  Execution pipeline subsystem decomposition + cfg isolation
   S5.4  Subsystem-scoped amortized GC
 
-Batch 8 Ã¢â‚¬â€ Safety & Surface
+Batch 8 — Safety & Surface
   S6.2  GraphObserver (phase-typed observation)
   S7.1  Grouped facade namespaces
   S7.2  State-derived evaluation strategy
   S8.3  Context-scoped evaluation (framework-owned context lifetime)
 
-Batch 9 Ã¢â‚¬â€ Performance Enforcement Rewrite Layer
+Batch 9 — Performance Enforcement Rewrite Layer
   S9.1  Performance enforcement model
   S9.2  Proof-bearing pipeline forms
   S9.3  Performance-expanded NodeContract
@@ -2968,7 +2970,7 @@ The same rule as the relational doc: if there is tension between "clean every la
 
 - Do **not** start S5 before S1 (subsystem split prevents false borrow conflicts in execution decomposition)
 - Do **not** start S5 before S6.1 (don't optimize a pipeline that over-evaluates)
-- Do **not** start S7 before S1Ã¢â‚¬â€œS4 (API surface should reflect stabilized internals)
+- Do **not** start S7 before S1–S4 (API surface should reflect stabilized internals)
 - **Do** start S3 immediately after S1 (effect pipeline is high-impact, low-risk)
 
 > [!IMPORTANT]
@@ -2981,10 +2983,10 @@ The same rule as the relational doc: if there is tension between "clean every la
 | Phase | Items | Key Pattern Source |
 |---|---|---|
 | S1 | Subsystem decomposition | Relational C1 (god struct split) |
-| S2 | NodeContract + contract duality + context requirements | Relational F2 + D4 Ã‚Â· Frontend `ProjectContextService` |
-| S3 | EvaluationEffect + verdicts + `defineComputation` | Relational B5 + D5 Ã‚Â· Frontend `defineCrudResource` |
+| S2 | NodeContract + contract duality + context requirements | Relational F2 + D4 · Frontend `ProjectContextService` |
+| S3 | EvaluationEffect + verdicts + `defineComputation` | Relational B5 + D5 · Frontend `defineCrudResource` |
 | S4 | TransactionResult envelope | Relational E1/E2 (commit result envelope) |
-| S5 | Pipeline + performance + path collapse | Relational D4 Ã‚Â· Frontend component collapse |
+| S5 | Pipeline + performance + path collapse | Relational D4 · Frontend component collapse |
 | S6 | Safety + error hierarchy + builder completeness | Relational A3 + C3 + C4 |
 | S7 | Facade + state-derived strategy | Relational F1 + D6 |
 | S8 | Context-aware computation (ambient, multi-mode) | Frontend `ProjectContextService` / operations mode |

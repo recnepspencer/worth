@@ -1,29 +1,12 @@
 # Milestone 9.16: Authenticated Async Bank World And The Ordinary Query Front Door
 
-> **Current execution posture:** Runtime Hardening Phase 7 is closed through
-> Phase 7.7 Gate D. Runtime Phase 8's accepted application-aftermath,
-> external-effect, recovery, retention, and publication foundation is
-> **closed through C8 (2026-08-12)** under the
-> [Runtime Phase 8 finish plan](./milestone-9.16-runtime-phase-8-finish-plan.md); see the
-> [Phase 8 closure ledger](./milestone-9.16-runtime-phase-8-closure-ledger.md)
-> for closure evidence and the
-> [feature guide](../../workspaces/worth-query/crates/worth-query/docs/execution/application-aftermath-and-recovery.md) for the
-> supported developer surface. Historical gate labels remain evidence only.
-> The present undo/redo implementation is provisional: it may remain in the
-> tree, but its product semantics and final public contract belong to
-> [Milestone 9.18](./milestone-9.18.md).
-> [Milestone 9.16.1](./milestone-9.16.1.md) is closed, and its canonical
-> graph-progression substrate remains inherited. Gates A-C and the executable
-> release/disbursement slices remain historical prerequisites. Bank World
-> Phase 5 is closed by the real Docker-backed, separate-process transport court
-> (2026-08-13). Runtime Phase 9's host-installed conditional-operation path and
-> Runtime Phase 10's public cutover are closed by their
-> [Phase 9](./milestone-9.16-runtime-phase-9-closure-ledger.md) and
-> [Phase 10](./milestone-9.16-runtime-phase-10-closure-ledger.md) ledgers.
-> Milestone 9.16 itself remains open for Bank Phase 6 and Closure Phase 1.
-> The independently governed
-> [Milestone 9.16.2](./milestone-9.16.2.md) portable-package and fresh-
-> readmission foundation must also close before 9.17.
+> **Status:** Completed. Its undo and redo lane is provisional; [Milestone 9.18](./milestone-9.18.md) owns its final semantics.
+>
+> **Closed runtime phases:** [Phase 8](./milestone-9.16-runtime-phase-8-closure-ledger.md),
+> [Phase 9](./milestone-9.16-runtime-phase-9-closure-ledger.md), and
+> [Phase 10](./milestone-9.16-runtime-phase-10-closure-ledger.md) closure ledgers.
+>
+> **Developer guide:** [Application Aftermath, External Effects, And Recovery](../../workspaces/worth-query/crates/worth-query/docs/execution/application-aftermath-and-recovery.md)
 
 ## Goal
 
@@ -3595,7 +3578,7 @@ is the legacy
 [`WorthQueryRuntimeBuilder::conditional_node(...)`](../../workspaces/worth-query/crates/worth-query/src/runtime/builder/conditional_execution.rs),
 which accepts a raw Signal graph and `BridgeConditionalProviderSet`. At the same
 time, Query's
-[`installed-operation` consumer-residue registry](../../workspaces/worth-query/crates/worth-query/src/consumer_kit/consumer_residue/registry/installed_operation_rows.rs)
+`installed-operation` consumer-residue registry
 forbids direct `worth_signal` and `worth_runtime_bridge` use. The
 primary-graph application runtime creates and retains its managed Runtime Bridge
 but exposes no corresponding host installation port. A consumer therefore

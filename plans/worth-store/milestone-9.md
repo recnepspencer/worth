@@ -1,22 +1,22 @@
 # Milestone 9 Engineering Spec: Deterministic Bulk Ingest And Bulk Transform Paths
 
-> **Status:** Closed via [milestone-9-closeout.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-9-closeout.md)
+> **Status:** Closed via [milestone-9-closeout.md](./milestone-9-closeout.md)
 >
-> **Closeout:** [milestone-9-closeout.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-9-closeout.md)
+> **Closeout:** [milestone-9-closeout.md](./milestone-9-closeout.md)
 >
-> **Roadmap parent:** [worth_store_roadmap.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/worth_store_roadmap.md)
+> **Roadmap parent:** `worth_store_roadmap.md`
 >
-> **Vision parent:** [worth_store_vision.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/worth_store_vision.md)
+> **Vision parent:** [worth_store_vision.md](./worth_store_vision.md)
 >
-> **Test requirements:** [test-requirements.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/test-requirements.md)
+> **Test requirements:** [test-requirements.md](./test-requirements.md)
 >
 > **Prerequisite milestones:**
-> - [milestone-1.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-1.md)
-> - [milestone-2.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-2.md)
-> - [milestone-3.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-3.md)
-> - [milestone-3.5-3.6.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-3.5-3.6.md)
-> - [milestone-4.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-4.md)
-> - [milestone-5.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-5.md)
+> - [milestone-1.md](./milestone-1.md)
+> - [milestone-2.md](./milestone-2.md)
+> - [milestone-3.md](./milestone-3.md)
+> - [milestone-3.5-3.6.md](./milestone-3.5-3.6.md)
+> - [milestone-4.md](./milestone-4.md)
+> - [milestone-5.md](./milestone-5.md)
 >
 > **Concurrent milestone:** Milestone 6 (`Aspect-Aware Physical Layout And Content-Addressed Structural Blocks`)
 >
@@ -937,7 +937,7 @@ Implementation note:
 
 - the closeout evidence and explicit obligation-to-test mapping for this
   section is recorded in
-  [milestone-9-closeout.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-9-closeout.md)
+  [milestone-9-closeout.md](./milestone-9-closeout.md)
 
 Milestone-specific proof obligations:
 

@@ -6,9 +6,9 @@ use worth_query_host::facade::application_entry::{
 };
 use worth_query_host::facade::application_installation::WorthQueryApplicationProgramRoster;
 
-use crate::bounded_dimension_model::host::{publish_on_first_program, restore_on_first_program};
-use crate::bounded_dimension_model::operator_identity::{authenticate_operator, request_scope};
-use crate::bounded_dimension_model::programs::{validated_second_program, DimensionProgramP1};
+use crate::document_retention_model::host::{publish_on_first_program, restore_on_first_program};
+use crate::document_retention_model::operator_identity::{authenticate_operator, request_scope};
+use crate::document_retention_model::programs::{validated_second_program, RetentionProgramP1};
 
 #[test]
 fn a_restored_host_keeps_each_branch_on_the_program_it_adopted() {
@@ -16,7 +16,7 @@ fn a_restored_host_keeps_each_branch_on_the_program_it_adopted() {
     let main = host.current_world();
     let source = *host.installed_program().revision();
     let target = *host
-        .supported_program::<DimensionProgramP1>()
+        .supported_program::<RetentionProgramP1>()
         .expect("P1 is rostered")
         .installed_program()
         .revision();

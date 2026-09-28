@@ -4,7 +4,7 @@
 >
 > **Parent:** [web_runtime_spec.md](web_runtime_spec.md)
 >
-> **Core prerequisite:** [plans/worth_signal/milestone-11-closeout.md](../../../plans/worth_signal/milestone-11-closeout.md)
+> **Core prerequisite:** [plans/worth_signal/milestone-11-closeout.md](../WORTH_signal/milestone-11-closeout.md)
 >
 > **Primary architectural driver:** add a React domain inside
 > `worth-signals-wasm` that feels native in a React codebase without inventing a

@@ -41,17 +41,17 @@ The default move is:
 
 This document builds on:
 
-- [`dx_export_inventory.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_export_inventory.md)
-- [`dx_export_exhaustive_audit.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_export_exhaustive_audit.md)
-- [`dx_method_decision_matrix.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_method_decision_matrix.md)
-- [`dx_plan.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_plan.md)
-- [`architectural_guidelines.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/architectural_guidelines.md)
-- [`MENTALITY.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/MENTALITY.md)
+- [`dx_export_inventory.md`](./dx_export_inventory.md)
+- [`dx_export_exhaustive_audit.md`](./dx_export_exhaustive_audit.md)
+- [`dx_method_decision_matrix.md`](./dx_method_decision_matrix.md)
+- [`dx_plan.md`](./dx_plan.md)
+- [`architectural_guidelines.md`](../../docs/coding-guidelines/arch_laws.md)
+- [`MENTALITY.md`](../../docs/coding-guidelines/MENTALITY.md)
 
 This file is the module-level pass.
 
 The method-level pass now lives in
-[`dx_method_decision_matrix.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_method_decision_matrix.md).
+[`dx_method_decision_matrix.md`](./dx_method_decision_matrix.md).
 
 That split is intentional.
 
@@ -237,7 +237,7 @@ The facade story is what is split.
 Today:
 
 - `facade::config` exposes profile/policy vocabulary
-- [`RelationalRuntimeConfig`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/config/data/runtime_config.rs)
+- [`RelationalRuntimeConfig`](../../crates/worth-relational/src/config/data/runtime_config.rs)
   is exported from `facade::runtime`
 - section config structs are not exposed through the top-level `facade::config`
   module

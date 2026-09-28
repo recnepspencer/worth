@@ -2,22 +2,22 @@
 
 > **Status:** Planned engineering spec
 >
-> **Roadmap parent:** [worth_runtime_bridge_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/worth_runtime_bridge_roadmap.md)
+> **Roadmap parent:** [worth_runtime_bridge_roadmap.md](./WORTH_runtime_bridge_roadmap.md)
 >
-> **Vision parent:** [worth_runtime_bridge_vision.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/worth_runtime_bridge_vision.md)
+> **Vision parent:** [worth_runtime_bridge_vision.md](./WORTH_runtime_bridge_vision.md)
 >
-> **Prior milestone:** [milestone-5.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-5.md)
+> **Prior milestone:** [milestone-5.md](./milestone-5.md)
 >
 > **Primary architectural driver:** turn truth-side patch consumption into a stable, replay-safe bridge protocol that supports more than one downstream consumer shape without letting host feed quirks, per-consumer checkpoints, or delivery heuristics redefine canonical bridge semantics
 >
 > **Companion docs:**
-> - [worth_relational_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/worth_relational_roadmap.md)
-> - [worth_signal_vision.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth_signal/worth_signal_vision.md)
-> - [worth_signals2.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth_signal/worth_signals2.md)
-> - [MENTALITY.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/MENTALITY.md)
-> - [architectural_guidelines.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/architectural_guidelines.md)
-> - [domain_standards.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/domain_standards.md)
-> - [performance_guidelines.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/performance_guidelines.md)
+> - [worth_relational_roadmap.md](../WORTH-relational/WORTH_relational_roadmap.md)
+> - [worth_signal_vision.md](../WORTH_signal/WORTH_signal_vision.md)
+> - [worth_signals2.md](../WORTH_signal/WORTH_signals2.md)
+> - [MENTALITY.md](../../docs/coding-guidelines/MENTALITY.md)
+> - [architectural_guidelines.md](../../docs/coding-guidelines/arch_laws.md)
+> - [domain_standards.md](../../docs/coding-guidelines/domain_structure_laws.md)
+> - [performance_guidelines.md](../../docs/coding-guidelines/perf_laws.md)
 
 ## Summary
 
@@ -915,12 +915,12 @@ Minimum representative test names:
 
 ### Existing Files Expected To Change
 
-- [facade.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/facade.rs)
-- [lib.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/lib.rs)
-- [mod.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/delivery/mod.rs)
-- [mod.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/diagnostics/mod.rs)
-- [replay.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/historical/replay.rs)
-- [mod.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/harness/mod.rs)
+- [facade.rs](../../crates/worth-runtime-bridge/src/facade.rs)
+- [lib.rs](../../crates/worth-runtime-bridge/src/lib.rs)
+- [mod.rs](../../crates/worth-runtime-bridge/src/delivery/mod.rs)
+- [mod.rs](../../crates/worth-runtime-bridge/src/diagnostics/mod.rs)
+- [replay.rs](../../crates/worth-runtime-bridge/src/historical/replay.rs)
+- [mod.rs](../../crates/worth-runtime-bridge/src/harness/mod.rs)
 
 ## Implementation Phases
 

@@ -2,15 +2,15 @@
 
 > **Status:** Complete
 >
-> **Roadmap parent:** [worth_runtime_bridge_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/worth_runtime_bridge_roadmap.md)
+> **Roadmap parent:** [worth_runtime_bridge_roadmap.md](./WORTH_runtime_bridge_roadmap.md)
 >
-> **Vision parent:** [worth_runtime_bridge_vision.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/worth_runtime_bridge_vision.md)
+> **Vision parent:** [worth_runtime_bridge_vision.md](./WORTH_runtime_bridge_vision.md)
 >
-> **Prior milestone:** [milestone-12.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-12.md)
+> **Prior milestone:** [milestone-12.md](./milestone-12.md)
 >
-> **Next milestone:** [milestone-13.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-13.md)
+> **Next milestone:** [milestone-13.md](./milestone-13.md)
 >
-> **Bridge certification companion:** [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md)
+> **Bridge certification companion:** [test-requirements.md](./test-requirements.md)
 >
 > **Primary architectural driver:** turn writeback family extensibility into a bridge-owned protocol surface so domains can admit multiple authority-bearing writeback families through one causal, replay-safe, loop-safe bridge contract without teaching domain semantics to the bridge and without pushing writeback protocol logic into host-local mappers
 

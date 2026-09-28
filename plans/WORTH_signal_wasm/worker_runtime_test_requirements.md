@@ -6,7 +6,7 @@
 >
 > **Milestone parent:** [worker_runtime_placement_plan.md](./worker_runtime_placement_plan.md)
 >
-> **Core lineage:** [plans/worth_signal/test-requirements.md](../../../plans/worth_signal/test-requirements.md)
+> **Core lineage:** [plans/worth_signal/test-requirements.md](../WORTH_signal/test-requirements.md)
 
 ## Purpose
 

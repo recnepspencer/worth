@@ -19,6 +19,12 @@ use crate::basis::{
 };
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
+/// The product branch lifecycle of one application runtime: fork branches,
+/// issue program adoption coverage, page through recovery, and find pending
+/// cleanup.
+///
+/// Get it from the runtime's `branches`. Forks made here carry the
+/// application's commit lane and output lineage.
 pub struct WorthQueryApplicationProductBranches<'runtime, Schema> {
     branches: WorthQueryProductBranches<'runtime>,
     pub(super) application: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,

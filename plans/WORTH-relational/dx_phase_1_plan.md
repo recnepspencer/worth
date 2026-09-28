@@ -25,14 +25,14 @@ starts being "boundary-shaped on purpose."
 
 This phase builds on:
 
-- [`dx_plan.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_plan.md)
-- [`dx_phase_0_5_review.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_phase_0_5_review.md)
-- [`dx_export_decision_matrix.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_export_decision_matrix.md)
-- [`dx_method_decision_matrix.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_method_decision_matrix.md)
-- [`dx_boundary_cleanup_list.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_boundary_cleanup_list.md)
-- [`dx_canonical_surface_spec.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_canonical_surface_spec.md)
-- [`dx_boundary_spec.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_boundary_spec.md)
-- [`dx_phase_1_boundary_delta.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_phase_1_boundary_delta.md)
+- [`dx_plan.md`](./dx_plan.md)
+- [`dx_phase_0_5_review.md`](./dx_phase_0_5_review.md)
+- [`dx_export_decision_matrix.md`](./dx_export_decision_matrix.md)
+- [`dx_method_decision_matrix.md`](./dx_method_decision_matrix.md)
+- [`dx_boundary_cleanup_list.md`](./dx_boundary_cleanup_list.md)
+- [`dx_canonical_surface_spec.md`](./dx_canonical_surface_spec.md)
+- [`dx_boundary_spec.md`](./dx_boundary_spec.md)
+- [`dx_phase_1_boundary_delta.md`](./dx_phase_1_boundary_delta.md)
 
 ---
 
@@ -149,7 +149,7 @@ calls add up to one visible product story.
 
 Live-code checkpoint:
 
-- [`dx_phase_1_boundary_delta.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_phase_1_boundary_delta.md)
+- [`dx_phase_1_boundary_delta.md`](./dx_phase_1_boundary_delta.md)
 
 ---
 
@@ -314,8 +314,8 @@ Exit condition:
 
 Phase 1 is only done when these exist and are current:
 
-- [`dx_boundary_spec.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_boundary_spec.md)
-- [`dx_boundary_cleanup_list.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_boundary_cleanup_list.md)
+- [`dx_boundary_spec.md`](./dx_boundary_spec.md)
+- [`dx_boundary_cleanup_list.md`](./dx_boundary_cleanup_list.md)
 - `dx_phase_1_review.md`
 
 And the code should reflect the main cleanup calls, not just describe them.

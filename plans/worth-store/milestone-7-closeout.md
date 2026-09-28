@@ -1,5 +1,7 @@
 # Milestone 7 Closeout: Durable Schema, Lineage, Cursor, And Checkpoint Artifacts
 
+> **Note:** The legacy root crate `crates/worth-store` was removed on 2026-09-27. Paths into it below name its files as they were; they are no longer links. The store now lives in [`workspaces/worth-store`](../../workspaces/worth-store/README.md).
+
 ## Status
 
 Milestone 7 is closed as of 2026-04-15.
@@ -29,57 +31,57 @@ The center of the milestone that shipped is:
 Milestone 7 delivered:
 
 - explicit schema-boundary support persistence and fetch surfaces in
-  [crates/worth-store/src/backend/integrity/support_records.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/backend/integrity/support_records.rs),
-  [crates/worth-store/src/backend/engine.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/backend/engine.rs),
+  `crates/worth-store/src/backend/integrity/support_records.rs`,
+  `crates/worth-store/src/backend/engine.rs`,
   and
-  [crates/worth-store/src/facade.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/facade.rs)
+  `crates/worth-store/src/facade.rs`
 - explicit lineage support persistence and first-class historical identity
   resolution through `HistoricalIdentityRequest`,
   `HistoricalIdentityResolution`, and
   `WorthStore::fetch_lineage_history(...)` in
-  [crates/worth-store/src/authority/proofs.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/authority/proofs.rs),
-  [crates/worth-store/src/backend/engine.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/backend/engine.rs),
+  `crates/worth-store/src/authority/proofs.rs`,
+  `crates/worth-store/src/backend/engine.rs`,
   and
-  [crates/worth-store/src/facade.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/facade.rs)
+  `crates/worth-store/src/facade.rs`
 - commit-coupled support publication and deterministic support identities in
-  [crates/worth-store/src/backend/state/commit_append.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/backend/state/commit_append.rs)
+  `crates/worth-store/src/backend/state/commit_append.rs`
   and
-  [crates/worth-store/src/backend/integrity/support_records.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/backend/integrity/support_records.rs)
+  `crates/worth-store/src/backend/integrity/support_records.rs`
 - durable cursor identity persistence, checkpoint persistence, monotonic
   acknowledgment, resume planning, and witness-bearing advance flow in
-  [crates/worth-store/src/authority/proofs.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/authority/proofs.rs),
-  [crates/worth-store/src/backend/engine.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/backend/engine.rs),
+  `crates/worth-store/src/authority/proofs.rs`,
+  `crates/worth-store/src/backend/engine.rs`,
   and
-  [crates/worth-store/src/facade.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/facade.rs)
+  `crates/worth-store/src/facade.rs`
 - proof-bearing embedded checkpoint admission and persistence in
-  [crates/worth-store/src/modes/embedded.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/modes/embedded.rs)
+  `crates/worth-store/src/modes/embedded.rs`
 - durable restart and support-gap recovery classification in
-  [crates/worth-store/src/recovery/support.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/recovery/support.rs),
-  [crates/worth-store/src/recovery/report.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/recovery/report.rs),
+  `crates/worth-store/src/recovery/support.rs`,
+  `crates/worth-store/src/recovery/report.rs`,
   and
-  [crates/worth-store/src/modes/durable.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/modes/durable.rs)
+  `crates/worth-store/src/modes/durable.rs`
 - backend-open access-structure verification and backend-family-specific
   complexity proof surfaces in
-  [crates/worth-store/src/evidence/milestone_7.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/evidence/milestone_7.rs)
+  `crates/worth-store/src/evidence/milestone_7.rs`
   and
-  [crates/worth-store/src/backend/engine.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/backend/engine.rs)
+  `crates/worth-store/src/backend/engine.rs`
 - Milestone 7 counter extensions and named hot-path accounting in
-  [crates/worth-store/src/evidence/counters.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/evidence/counters.rs)
+  `crates/worth-store/src/evidence/counters.rs`
 - compile-fail checkpoint boundary enforcement in
-  [crates/worth-store/tests/phase_boundaries_compile_fail.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/tests/phase_boundaries_compile_fail.rs)
+  `crates/worth-store/tests/phase_boundaries_compile_fail.rs`
   and
-  [crates/worth-store/tests/ui](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/tests/ui)
+  `crates/worth-store/tests/ui`
 - milestone-grade evidence and certification in
-  [crates/worth-store/src/evidence/milestone_7.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/evidence/milestone_7.rs)
+  `crates/worth-store/src/evidence/milestone_7.rs`
   and
-  [crates/worth-store/src/tests/milestone_7_certification.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/tests/milestone_7_certification.rs)
+  `crates/worth-store/src/tests/milestone_7_certification.rs`
 
 ## Acceptance Mapping
 
 Milestone 7 is considered closed against
-[milestone-7.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-7.md)
+[milestone-7.md](./milestone-7.md)
 and
-[test-requirements.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/test-requirements.md)
+[test-requirements.md](./test-requirements.md)
 because the required acceptance surfaces are now directly mapped to code and
 tests.
 
@@ -87,8 +89,8 @@ tests.
 
 Covered by:
 
-- [crates/worth-store/src/tests/milestone_7_certification.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/tests/milestone_7_certification.rs)
-- [crates/worth-store/src/tests/cursor_support.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/tests/cursor_support.rs)
+- `crates/worth-store/src/tests/milestone_7_certification.rs`
+- `crates/worth-store/src/tests/cursor_support.rs`
 
 What is proven:
 
@@ -123,9 +125,9 @@ What is proven:
 
 Covered by:
 
-- [crates/worth-store/tests/ui/raw_external_checkpoint_envelope_rejected.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/tests/ui/raw_external_checkpoint_envelope_rejected.rs)
-- [crates/worth-store/tests/ui/basis_free_checkpoint_rejects_basis_binding.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/tests/ui/basis_free_checkpoint_rejects_basis_binding.rs)
-- [crates/worth-store/src/modes/embedded.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/modes/embedded.rs)
+- `crates/worth-store/tests/ui/raw_external_checkpoint_envelope_rejected.rs`
+- `crates/worth-store/tests/ui/basis_free_checkpoint_rejects_basis_binding.rs`
+- `crates/worth-store/src/modes/embedded.rs`
 
 What is proven:
 
@@ -140,8 +142,8 @@ What is proven:
 
 Covered by:
 
-- [crates/worth-store/src/evidence/milestone_7.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/evidence/milestone_7.rs)
-- [crates/worth-store/src/evidence/counters.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/evidence/counters.rs)
+- `crates/worth-store/src/evidence/milestone_7.rs`
+- `crates/worth-store/src/evidence/counters.rs`
 - `tests::milestone_7_certification::milestone_7_access_structure_verification_degrades_to_debt_when_cursor_index_is_corrupted`
 - `tests::milestone_7_certification::milestone_7_schema_access_structure_degrades_to_debt_when_index_is_corrupted`
 - `tests::milestone_7_certification::milestone_7_lineage_access_structure_degrades_to_debt_when_index_is_corrupted`

@@ -1,14 +1,10 @@
 # Milestone 9.6 Bridge Truth Identity Lowering
 
-> **Status:** Phase 2B **closed** (2026-06-15) â€” evidence/feeder root breaks and
-> repair are complete for `worth-query` + `worth-runtime-bridge`. Downstream
-> crates (worth-topo, worth-server, etc.) are explicitly out of Phase 2B scope
-> and remain for Phase 8+. Phase 7 QA re-cleared post-2B under compiler-enforced
-> category boundaries.
+> **Status:** Completed.
 >
 > **Roadmap parent:** [worth_query_roadmap.md](./worth_query_roadmap.md)
 >
-> **Hard gate for:** [milestone-9.7.md](./milestone-9.7.md) Phases 14â€“16
+> **Hard gate for:** [milestone-9.7.md](./milestone-9.7.md) Phases 14–16
 >
 > **Purpose:** truth-routing identity authority is mechanically preserved from
 > relational source truth through the runtime bridge, Query intake, receipts,
@@ -136,7 +132,7 @@ Work top-down. Do not restore any forbidden API to unblock a downstream crate.
 1  -> root-category hard break design
 2  -> compiler-discovery break - workspace RED (Frontier A: truth routing)
 2A -> upstream relational/signal boundary verification gate
-2B -> compiler-discovery break - workspace RED (Frontier Bâ€“F: evidence/feeder roots)
+2B -> compiler-discovery break - workspace RED (Frontier B–F: evidence/feeder roots)
 3  -> worth-relational source-truth admission
 4  -> worth-runtime-bridge authority carriers
 5  -> worth-query intake, storage, adapters, and harnesses
@@ -147,7 +143,7 @@ Work top-down. Do not restore any forbidden API to unblock a downstream crate.
 10 -> workspace GREEN + compiler ledger closeout
 ```
 
-### Phase 1 â€” root-category hard break design (do not fix call sites)
+### Phase 1 — root-category hard break design (do not fix call sites)
 
 **What this phase is:** define the exact authority categories, marker kinds, and
 root API breaks that will make lower-authority identity fail mechanically. This
@@ -168,24 +164,24 @@ by manual scan.
 | Root authority family list | Commit, snapshot, patch, entity, branch, signal route, evidence, session, basis, receipt, feeder, retained bridge mapping, and downstream adapter identity families. |
 | Marker-kind plan | One owner authority marker and one identity kind marker per family; wrong `Kind` markers must not unify across identity families. |
 | Family category map | For each family: owner authority, `Kind`, allowed authority categories, and first Phase 2 compiler frontier. |
-| Root break list | Constructors, accessors, `Display`, `AsRef<str>`, raw-evidence constructors, trait methods, receipt fields, registry keys, and equality paths that currently admit lower-authority values. **Phase 2B extension:** concrete Tier 3â€“6 symbol paths in [Phase 2B](#phase-2b--evidencefeeder-root-break-compiler-discovery-frontier-2). |
+| Root break list | Constructors, accessors, `Display`, `AsRef<str>`, raw-evidence constructors, trait methods, receipt fields, registry keys, and equality paths that currently admit lower-authority values. **Phase 2B extension:** concrete Tier 3–6 symbol paths in [Phase 2B](#phase-2b--evidencefeeder-root-break-compiler-discovery-frontier-2). |
 | Compiler ledger schema | Failure id, compiler error, broken API, attempted category, required category, owning phase, row status, and compile-fail guard. |
 | Trybuild plan | Boundary-specific compile-fail suites for bridge, Query, and downstream/harness consumers. |
 
 **Root families to classify**
 
-1. **Relational source truth** â€” `CommitId`, `EntityId`, `SnapshotId`,
+1. **Relational source truth** — `CommitId`, `EntityId`, `SnapshotId`,
    `VersionId`, branch/workspace truth, and bridge presentation export.
-2. **Runtime bridge carriers** â€” `TruthCommitIdentity`,
+2. **Runtime bridge carriers** — `TruthCommitIdentity`,
    `TruthSnapshotIdentity`, `TruthPatchIdentity`, `TruthBranchIdentity`, bridge
    causal references, envelopes, receipts, and retained mapping evidence.
-3. **Query intake and storage** â€” runtime backend/source adapter contracts,
+3. **Query intake and storage** — runtime backend/source adapter contracts,
    mutation receipts, deltas, live patches, write receipts, read receipts,
    snapshot/current-state adapters, and memory workspace records.
-4. **Query feeder spines** â€” evidence, intent, signal invalidation, workflow,
+4. **Query feeder spines** — evidence, intent, signal invalidation, workflow,
    domain-capability, materialization, effect-lifecycle, causal inspection,
    subscription/session, and bridge retained-evidence feeders.
-5. **Downstream and harness consumers** â€” worth-topo, worth-kernel, worth-server,
+5. **Downstream and harness consumers** — worth-topo, worth-kernel, worth-server,
    hadwiger-research, hostile certification fixtures, support-kit tests, and
    old receipt literal construction.
 
@@ -240,7 +236,7 @@ the call site.
 
 ---
 
-### Phase 2 â€” compiler-discovery break (workspace RED)
+### Phase 2 — compiler-discovery break (workspace RED)
 
 **What this phase is:** install the root authority-category break designed in
 Phase 1, run `cargo check --workspace`, and record the first compiler failure
@@ -298,7 +294,7 @@ break so more downstream code can compile.
 - Downstream/harness: old receipt literals, raw identity strings, and reporting
   accessor inputs fail.
 
-**Done when (Frontier A only â€” Phase 2A slice)**
+**Done when (Frontier A only — Phase 2A slice)**
 
 - [x] Truth-routing root APIs reject lower-authority categories at compile time.
 - [x] `cargo check --workspace` was red for truth-routing authority reasons after
@@ -474,13 +470,13 @@ Phase 2A current result:
 - Letting `WORTHQueryEvidenceIdentity` become authority merely because it
   contains stable evidence text.
 
-### Phase 2B â€” evidence/feeder root break (compiler-discovery frontier 2)
+### Phase 2B — evidence/feeder root break (compiler-discovery frontier 2)
 
 **What this phase is:** install the **true parent** authority-category breaks
 that Phase 2 skipped. Frontier A closed truth routing (receipts, bridge
-`Truth*`, relational export). Frontier Bâ€“F must close the **Query evidence
+`Truth*`, relational export). Frontier B–F must close the **Query evidence
 composition substrate** and mandatory `worth-foundational` category admission so
-the compiler discovers the full feeder graph â€” not grep, not matrix rows, not
+the compiler discovers the full feeder graph — not grep, not matrix rows, not
 bundle-local fixes.
 
 **What this phase is not:**
@@ -494,7 +490,7 @@ bundle-local fixes.
 
 **Why Phase 2B exists**
 
-Phase 2 broke **Tier 1â€“2 + part of Tier 5** (truth routing). Feeders still
+Phase 2 broke **Tier 1–2 + part of Tier 5** (truth routing). Feeders still
 compile because **Tier 3** (evidence encoder + evidence string surface) was never
 cut. `QueryAuthorityIdentity` wrappers exist but are opt-in (~5 call sites).
 `tests/ui/query_identity_authority/*` is named in
@@ -510,24 +506,24 @@ graph alive elsewhere.
 | Tier | Layer | Frontier | Break status |
 |------|-------|----------|--------------|
 | 0 | `worth-foundational` admission / projection / digest derive | substrate | Types exist; not **required** at Query roots |
-| 1 | Relational source-truth mint â†’ bridge export | A | Closed |
-| 2 | Bridge `BridgeIdentity` / `BridgeIdentityEvidence` | A + D | Partial â€” see open roots below |
-| 3 | **Query evidence composition** (`WORTHQueryEvidenceIdentity` encoder) | **B** | **Not broken â€” primary parent** |
-| 4 | Query truth IDs (`WORTHQueryCommitIdentity`, snapshot, entity) | C | Partial â€” external-label + round-trip open |
+| 1 | Relational source-truth mint → bridge export | A | Closed |
+| 2 | Bridge `BridgeIdentity` / `BridgeIdentityEvidence` | A + D | Partial — see open roots below |
+| 3 | **Query evidence composition** (`WORTHQueryEvidenceIdentity` encoder) | **B** | **Not broken — primary parent** |
+| 4 | Query truth IDs (`WORTHQueryCommitIdentity`, snapshot, entity) | C | Partial — external-label + round-trip open |
 | 5 | Runtime intake traits + typed receipts | A | Largely closed |
 | 6 | Feeder structs, certification `hash_parts`, `*_for_reporting: String` | children | Do **not** break first; must catch fire from Tier 3 |
 
 **Parent test:** Does this API accept both authority and projection through the
 same type (usually `impl AsRef<str>` or `&str`)? If yes, it is a root or
 near-root. If breaking it produces fewer than ~20 unique error **files** in
-`worth-query`, you broke a child â€” move up a tier.
+`worth-query`, you broke a child — move up a tier.
 
 **Anti-patterns (child vs parent)**
 
 | Break target | Verdict |
 |--------------|---------|
-| One feeder's struct fields or one certification helper | Child â€” insufficient |
-| `WORTHQueryEvidenceIdentityEncoder::field_identity(AsRef<str>)` globally | **Parent** â€” expect 50â€“150+ error files |
+| One feeder's struct fields or one certification helper | Child — insufficient |
+| `WORTHQueryEvidenceIdentityEncoder::field_identity(AsRef<str>)` globally | **Parent** — expect 50–150+ error files |
 | `WORTHQueryEvidenceIdentity::as_str` / `AsRef<str>` globally | **Parent** |
 | Pattern `*_for_reporting() -> &str` replaced with `QueryProjectionIdentity` | **Parent pattern** |
 | Single bundle's cached `String` field removed | Child unless parent already broke |
@@ -555,7 +551,7 @@ Extend `crates/worth-query/src/identity_authority/phase_one_root_break_targets.r
 with **concrete symbol paths**. The existing vague row
 `receipt/intake/storage/feeders identity fields` is insufficient. Add at minimum:
 
-**Tier 3 â€” Query evidence composition (Frontier B)**
+**Tier 3 — Query evidence composition (Frontier B)**
 
 | API | Required restriction |
 |-----|----------------------|
@@ -567,14 +563,14 @@ with **concrete symbol paths**. The existing vague row
 | `WORTHQueryEvidenceIdentity::compose` | Witness-gate or restrict to owner admission modules |
 | `WORTHQueryEvidenceIdentity::as_str` | Terminal projection module only |
 | `impl AsRef<str> for WORTHQueryEvidenceIdentity` | Remove |
-| `WORTHQueryEvidenceIdentity::bridge_evidence_identity` | Remove or owner-gate â€” no rebuild from digest token text |
+| `WORTHQueryEvidenceIdentity::bridge_evidence_identity` | Remove or owner-gate — no rebuild from digest token text |
 | `WORTHQueryEvidenceIdentity::bridge_external_identity_evidence` | External-token path only with explicit admission |
 
-**Tier 4 â€” Query truth IDs (Frontier C)**
+**Tier 4 — Query truth IDs (Frontier C)**
 
 | API | Required restriction |
 |-----|----------------------|
-| `WORTHQueryCommitIdentity::from_external_authority_label` | Remove; external labels â†’ `QueryExternalIdentityToken` â†’ witness admission |
+| `WORTHQueryCommitIdentity::from_external_authority_label` | Remove; external labels → `QueryExternalIdentityToken` → witness admission |
 | `WORTHQuerySnapshotIdentity::from_external_authority_label` | Same |
 | `WORTHQueryEntityIdentity::authored_command` | Same |
 | `WORTHQuery*Identity::preview(WORTHQueryEvidenceIdentity)` | Require admitted evidence / owner witness |
@@ -582,7 +578,7 @@ with **concrete symbol paths**. The existing vague row
 | `impl Display for WORTHQuery*Identity` | Remove or opaque debug only |
 | `WORTHQueryEntityIdentity: Ord/Hash` via `as_str()` | Compare typed authority, not projection text |
 
-**Tier 2 â€” Bridge evidence (Frontier D)** â€” extend bridge manifest if not closed
+**Tier 2 — Bridge evidence (Frontier D)** — extend bridge manifest if not closed
 
 | API | Required restriction |
 |-----|----------------------|
@@ -592,7 +588,7 @@ with **concrete symbol paths**. The existing vague row
 | `BridgeIdentityEvidence::from_query_evidence_identity` | Keep category pair; block raw/substitute inputs |
 | `BridgeIdentity::<Tag>::evidence_identity` | Must not downgrade truth to external-authority evidence |
 
-**Tier 3 mid â€” Digest folklore (Frontier E)**
+**Tier 3 mid — Digest folklore (Frontier E)**
 
 | API | Required restriction |
 |-----|----------------------|
@@ -601,48 +597,48 @@ with **concrete symbol paths**. The existing vague row
 | `Canonical*Digest::as_str` public | Terminal projection only |
 | `Canonical*Digest::evidence_identity` rebuilding from `self.as_str()` | Remove self-referential compose |
 
-**Tier 6 pattern â€” reporting storage (follows B)**
+**Tier 6 pattern — reporting storage (follows B)**
 
 | Pattern | Required restriction |
 |---------|----------------------|
-| `fn *_for_reporting(&self) -> &str` on authority-bearing artifacts | Return `QueryProjectionIdentity<â€¦>` or crate-private terminal only |
+| `fn *_for_reporting(&self) -> &str` on authority-bearing artifacts | Return `QueryProjectionIdentity<…>` or crate-private terminal only |
 | struct fields `*_for_reporting: String` | Remove; no cached projection beside typed authority |
 
 **Mandatory admission (Frontier B/C)**
 
 Feeder bundle boundaries listed in `phase_one_family_map.rs` must **store**
-`Query*AuthorityIdentity<â€¦>` (or bridged/external token types), not bare
+`Query*AuthorityIdentity<…>` (or bridged/external token types), not bare
 `WORTHQueryEvidenceIdentity`, at:
 
 - subscription lifecycle certification bundle authority
 - causal inspection certification bundle authority
-- lower-runtime basis binding authority (partially landed â€” extend pattern)
+- lower-runtime basis binding authority (partially landed — extend pattern)
 - every family with owner `QueryFeederAuthority`, `QuerySubscriptionAuthority`,
   `QueryCausalInspectionAuthority`, `QueryWorkflowAuthority`,
   `QueryDomainCapabilityAuthority`, `QueryEffectLifecycleAuthority`
 
-#### Trybuild suite (Frontier F â€” land with or immediately after Frontier B)
+#### Trybuild suite (Frontier F — land with or immediately after Frontier B)
 
 Create every path named in
 `identity_authority/phase_one_compile_fail_targets.rs`:
 
 | Fixture path | Forbidden substitution |
 |--------------|------------------------|
-| `tests/ui/query_identity_authority/projection_cannot_satisfy_query_authority.rs` | projection â†’ authority |
-| `tests/ui/query_identity_authority/digest_cannot_satisfy_query_authority.rs` | digest evidence â†’ authority |
-| `tests/ui/query_identity_authority/external_token_cannot_satisfy_query_authority.rs` | external token â†’ authority |
-| `tests/ui/query_identity_authority/bridged_cannot_satisfy_current_query_authority.rs` | bridged â†’ current without readmission |
+| `tests/ui/query_identity_authority/projection_cannot_satisfy_query_authority.rs` | projection → authority |
+| `tests/ui/query_identity_authority/digest_cannot_satisfy_query_authority.rs` | digest evidence → authority |
+| `tests/ui/query_identity_authority/external_token_cannot_satisfy_query_authority.rs` | external token → authority |
+| `tests/ui/query_identity_authority/bridged_cannot_satisfy_current_query_authority.rs` | bridged → current without readmission |
 | `tests/ui/query_identity_authority/wrong_kind_cannot_satisfy_query_family.rs` | wrong `Kind` marker |
-| `tests/ui/query_identity_authority/raw_text_cannot_satisfy_query_authority.rs` | `&str` / `String` â†’ authority |
-| `tests/ui/query_identity_authority/reporting_accessor_cannot_feed_query_authority.rs` | `*_for_reporting()` â†’ compose/admission |
+| `tests/ui/query_identity_authority/raw_text_cannot_satisfy_query_authority.rs` | `&str` / `String` → authority |
+| `tests/ui/query_identity_authority/reporting_accessor_cannot_feed_query_authority.rs` | `*_for_reporting()` → compose/admission |
 
 Wire a dedicated test runner (mirror bridge):
-`tests/phase_boundaries_query_identity_authority_compile_fail.rs` â†’
+`tests/phase_boundaries_query_identity_authority_compile_fail.rs` →
 `tests/ui/query_identity_authority/*.rs`.
 
 #### Phase 2B implementation slices (agent order)
 
-**Slice 2B-0 â€” manifests only (no call-site fixes)**
+**Slice 2B-0 — manifests only (no call-site fixes)**
 
 1. Extend `phase_one_root_break_targets.rs` with the concrete APIs above.
 2. Create all `tests/ui/query_identity_authority/*.rs` fixtures and capture
@@ -704,40 +700,40 @@ capture is blocked while the crate fails before trybuild execution. Do not fake
 these files from stale or synthetic diagnostics; capture them after the current
 Query frontier compiles far enough to run the trybuild harness.
 
-**Slice 2B-1 â€” Frontier B hard break (workspace RED; no fixes)**
+**Slice 2B-1 — Frontier B hard break (workspace RED; no fixes)**
 
 1. Privatize or remove `WORTHQueryEvidenceIdentityEncoder::field_identity` and
    string-based `optional_identity` / `field_identity_sequence`.
 2. Split replacement APIs, e.g.:
-   - `field_authority_identity` â†’ `&WORTHQueryEvidenceIdentity` or
-     `&QueryAuthorityIdentity<â€¦>` only
-   - `field_projection_identity` â†’ `QueryProjectionIdentity<â€¦>` (terminal
+   - `field_authority_identity` → `&WORTHQueryEvidenceIdentity` or
+     `&QueryAuthorityIdentity<…>` only
+   - `field_projection_identity` → `QueryProjectionIdentity<…>` (terminal
      modules only)
-   - `field_digest_evidence` â†’ `QueryDigestIdentityEvidence<â€¦>`
+   - `field_digest_evidence` → `QueryDigestIdentityEvidence<…>`
 3. Remove public `WORTHQueryEvidenceIdentity::as_str` and `impl AsRef<str>`.
-4. Run `cargo check -p worth-query 2>&1` â†’ record **full** ledger in
+4. Run `cargo check -p worth-query 2>&1` → record **full** ledger in
    `bridge_truth_identity_exposure_report.md` with new failure ids prefixed
    `2B-`.
 5. **Stop.** Do not fix call sites in the same change.
 
-**Slice 2B-2 â€” Frontier C** (after 2B-1 ledger exists)
+**Slice 2B-2 — Frontier C** (after 2B-1 ledger exists)
 
 Break truth-ID external-label constructors and round-trip
-`evidence_identity()` â†’ compose paths. Re-run check; extend ledger.
+`evidence_identity()` → compose paths. Re-run check; extend ledger.
 
-**Slice 2B-3 â€” Frontier D** (bridge crate)
+**Slice 2B-3 — Frontier D** (bridge crate)
 
 Align bridge manifest open roots; re-run `cargo check --workspace`.
 
-**Slice 2B-4 â€” Frontier E**
+**Slice 2B-4 — Frontier E**
 
 Privatize `hash_parts` and `Canonical*Digest::from_parts`; certification modules
-go red last â€” expected.
+go red last — expected.
 
-**Slices 2B-5+ â€” top-down repair (Phases 3â€“7 content, compiler-led)**
+**Slices 2B-5+ — top-down repair (Phases 3–7 content, compiler-led)**
 
-Fix ledger rows top-down: truth ID admission â†’ basis binding â†’ subscription â†’
-causal â†’ workflow/domain_capabilities â†’ effect_lifecycle â†’ certification harness.
+Fix ledger rows top-down: truth ID admission → basis binding → subscription →
+causal → workflow/domain_capabilities → effect_lifecycle → certification harness.
 Each fix must include compile-fail guard or typed replacement; no dual APIs.
 
 #### Phase 2B-1 / 2B-3 / 2B-4 status
@@ -783,12 +779,12 @@ Each fix must include compile-fail guard or typed replacement; no dual APIs.
 After each break slice:
 
 1. Run `cargo check -p worth-query 2>&1` (or `--workspace` when unblocked).
-2. Record **unique error file count**. Parent break: expect **â‰¥ 50 files** in
+2. Record **unique error file count**. Parent break: expect **≥ 50 files** in
    `worth-query` for Frontier B. If &lt; 20, the break was too shallow.
 3. For each failure, ledger: `broken_api`, `tier`, `attempted_category`,
    `required_category`, `owning_phase`, `blocked_crates`.
 4. If crate X cannot compile far enough to show its errors, log
-   `blocked_crates: [X]` and fix upstream first â€” **do not** restore APIs.
+   `blocked_crates: [X]` and fix upstream first — **do not** restore APIs.
 5. Grep is **verification only after break**, not the discovery tool. Root
    definitions such as public `field_identity(AsRef<str>)` must be zero; red
    call sites may remain only as compiler-led ledger failures until their owning
@@ -801,7 +797,7 @@ After each break slice:
 - [x] Frontier B break landed; `cargo check -p worth-query` was red for category
   reasons (not missing imports from unrelated work).
 - [x] Compiler ledger `2B-*` rows cover the full red graph with owning phases.
-- [x] Frontier Câ€“E breaks landed (C: external-token truth ID admission; D/E:
+- [x] Frontier C–E breaks landed (C: external-token truth ID admission; D/E:
   bridge + digest folklore roots cut and repaired in `worth-query`).
 - [x] No public `field_identity(AsRef<str>)`, no public
   `WORTHQueryEvidenceIdentity: AsRef<str>`, no dual `String` + typed authority
@@ -832,7 +828,7 @@ adding typed fields beside _for_reporting: String; restoring APIs to green
 downstream crates; marking Phase 2B done with <50 error files in worth-query.
 ```
 
-### Phases 3-9 â€” top-down authority repair
+### Phases 3-9 — top-down authority repair
 
 Per phase: start at the first compiler frontier, replace the lower-authority
 path with an authority-category type, then run the narrowest meaningful crate
@@ -849,13 +845,13 @@ string comparisons, keeping old behavior behind `cfg`, "prove identical envelope
 across repeated export," or landing ergonomic helpers that hide the authority
 witness.
 
-**Phase 3** â€” `worth-relational/src/presentation/bridge/`, `facade.rs`;
+**Phase 3** — `worth-relational/src/presentation/bridge/`, `facade.rs`;
 source-truth admission and owner witness production
 
-**Phase 4** â€” `worth-runtime-bridge/src/identity.rs`, facade exports; bridge
+**Phase 4** — `worth-runtime-bridge/src/identity.rs`, facade exports; bridge
 carriers preserve authority category and expose only quarantined projections
 
-**Phase 5** â€” `contracts.rs`, runtime backends, source adapters, and harness
+**Phase 5** — `contracts.rs`, runtime backends, source adapters, and harness
 adapters under `worth-query`; Query intake must reject projection/digest/external
 tokens unless owner revalidation occurs
 
@@ -870,11 +866,11 @@ tokens unless owner revalidation occurs
   bridge-backed `write -> signal_sink.route_write_receipt` path with an
   authority-less mutation receipt.
 
-**Phase 6** â€” `memory_workspace/`, write receipt surfaces, read receipts,
+**Phase 6** — `memory_workspace/`, write receipt surfaces, read receipts,
 write surfaces, and `shared_read_pins/`; receipts store authority/evidence
 categories, not text that later milestones must reinterpret
 
-**Phase 7** â€” projection re-entry purge across evidence `from_bridge`,
+**Phase 7** — projection re-entry purge across evidence `from_bridge`,
 intent/receipt/inspection surfaces, runtime/backend receipts, causal
 inspection/materialization, live subscription/runtime session feeders,
 workflow/domain-capability/effect-lifecycle feeders, and bridge causal
@@ -928,21 +924,21 @@ do not overlap):
 | subscription / live / sessions | `runtime/live_subscription.rs`, `runtime/backend/receipts.rs` (`SubscriptionActivationReceipt`), `runtime/runtime_sessions.rs`, `subscription/` |
 | workflow / domain_capabilities | `workflow/lowering/writeback.rs`, `domain_capabilities/canonical_runtime/workflow/`, `domain_capabilities/payloads/workflow_semantics.rs`, `domain_capabilities/authoring/workflow.rs` |
 | canonical_runtime artifacts | `domain_capabilities/canonical_runtime/continuity.rs`, `support.rs`, `artifacts.rs`, `invariant_capability.rs` |
-| effect_lifecycle | `effect_lifecycle/` (normalization â†’ lowering â†’ `execution_bridge.rs`) |
+| effect_lifecycle | `effect_lifecycle/` (normalization → lowering → `execution_bridge.rs`) |
 | causal inspection (query) | `runtime/inspection/causal/request.rs`, `identity.rs`, `materialization/` |
 | bridge causal envelope | `worth-runtime-bridge/src/diagnostics/causal_envelope/evidence_reference.rs`, `binding.rs`, `retained_mapping/digest_basis.rs`, `retained_mapping/retained_artifact_digest/` |
 
 **Phase 7 done when**
 
 - [x] All matrix rows with `Fix Phase = 7` are `Fixed`, including feeder bundles
-  572â€“577 (not path rows alone)
+  572–577 (not path rows alone)
 - [x] Local gates clean for Phase 7 surfaces (at minimum):
   `cargo check -p worth-query --lib`, `cargo check -p worth-runtime-bridge --lib`,
   targeted tests for causal envelope, lower_runtime, identity_boundary as touched
-- [x] Phase 7 QA gate returns **`CLEARED`** (hostile review â€” see below)
+- [x] Phase 7 QA gate returns **`CLEARED`** (hostile review — see below)
 - [x] Matrix header records Phase 7 QA date and `CLEARED`
 
-**Phase 8** â€” `worth-topo/.../write_authority.rs`, `bridge_source.rs`,
+**Phase 8** — `worth-topo/.../write_authority.rs`, `bridge_source.rs`,
 `TopologyStaticSignalSink` must call `RuntimeBridge::route` with typed commit
 identity
 
@@ -950,12 +946,12 @@ Phase 8 path rows in the matrix may show `Fixed` when worth-topo code is
 landed, but **Phase 8 is milestone-blocked** until Phase 7 QA is `CLEARED`.
 Do not treat Phase 8 as complete for sequencing or closeout until then.
 
-**Phase 9** â€” `hostile_certification*`, causal support; zero
+**Phase 9** — `hostile_certification*`, causal support; zero
 `commit_identity().rsplit('-').parse()`; downstream crates and harnesses that
 consume the typed receipt/query facade must compile without string shims before
 Phase 10 closeout.
 
-### End-to-End Trace Map â€” Phase 7 Through Phase 9
+### End-to-End Trace Map — Phase 7 Through Phase 9
 
 Use this trace map before changing row status. The compiler failure ledger is
 the authoritative discovery record; these lanes keep the end-to-end pipeline
@@ -1183,7 +1179,7 @@ milestone. Do not collapse these rows back into broad folder claims.
 | Worth-kernel / WORTH-kernel | local/display formatting only in sweep | no identity-lowering authority found | ordinary local strings | Out of scope | Do not add blocker without new evidence |
 | Subscription replay tests | bridge replay tests | truth identities from string literals | deferred replay fixture labels | Phase 10 | Close in Phase 10: migrate `subscription/replay_tests.rs` to typed relational constructors; no separate owner milestone |
 
-### Phase 10 â€” closure (zero-deferral closeout)
+### Phase 10 — closure (zero-deferral closeout)
 
 Phase 10 closes Milestone 9.6 only when **every item below is met**. Nothing from
 Phase 9 or earlier closeout passes may remain silently deferred.
@@ -1193,11 +1189,11 @@ Phase 9 or earlier closeout passes may remain silently deferred.
 - [ ] Phase 7 QA gate `CLEARED` (recorded in compiler ledger/header)
 - [ ] Phase 9 hostile QA `CLEARED` on `query-repair` (gate paths + residual folklore)
 - [ ] `cargo check --workspace` green
-- [ ] Full compile-fail matrix green (see closeout doc Verification Gates â€” all
+- [ ] Full compile-fail matrix green (see closeout doc Verification Gates — all
   `phase_boundaries_*` suites, not the fast Phase 9 subset alone)
 - [ ] Hostile QA pass on full 9.6 bar (code inspection, not tests alone)
 
-**worth-topo Phase 9 compile-fail extension (required â€” was deferred from Phase 9)**
+**worth-topo Phase 9 compile-fail extension (required — was deferred from Phase 9)**
 
 - [ ] Add `query_runtime_phase_nine` trybuild manifest mirroring Phase 8
   (`phase_eight_compile_fail_targets.rs` pattern)
@@ -1208,7 +1204,7 @@ Phase 9 or earlier closeout passes may remain silently deferred.
   terminal projection authority misuse)
 - [ ] Wire `phase_boundaries_query_runtime_phase_nine_compile_fail.rs` + Cargo.toml
 
-**worth-runtime-bridge subscription replay (required â€” was deferred to non-existent owner milestone)**
+**worth-runtime-bridge subscription replay (required — was deferred to non-existent owner milestone)**
 
 - [ ] Migrate `src/subscription/replay_tests.rs` from label-based
   `truth_identity_fixtures::{truth_snapshot_fixture, truth_branch_fixture}` to
@@ -1218,11 +1214,11 @@ Phase 9 or earlier closeout passes may remain silently deferred.
 - [ ] Add compile-fail or folklore guard on replay test paths if label-mint
   patterns remain reachable
 
-**worth-spatial certification (postponed â€” separate optimization agent)**
+**worth-spatial certification (postponed — separate optimization agent)**
 
 - [ ] Triage and optimize `cargo test -p worth-spatial --test public_api_contract`
   (serial gate `--test-threads=1`; lib 72/72 green; harness perf/flake)
-- Owner: worth-spatial agent â€” does **not** block worth-query WS-6+
+- Owner: worth-spatial agent — does **not** block worth-query WS-6+
   failures (boolean evidence ledger, evidence-ledger receipts, honesty guards,
   workload vocabulary)
 - [ ] Distinguish 9.6 harness fallout vs pre-existing drift; fix either way
@@ -1230,7 +1226,7 @@ Phase 9 or earlier closeout passes may remain silently deferred.
 
 **Documentation and ledger**
 
-- [ ] Update `phase-9-discovery-ledger.md` â€” remove open trybuild row; record
+- [ ] Update `phase-9-discovery-ledger.md` — remove open trybuild row; record
   Phase 10 execution
 - [ ] Append `query-repair` closeout section to
   `milestone-9.6-bridge-truth-identity-closeout.md` with gate evidence
@@ -1239,7 +1235,7 @@ Phase 9 or earlier closeout passes may remain silently deferred.
 
 ## Phase 7 QA gate
 
-Phase 7 closes only on **`CLEARED`** from a hostile QA pass â€” not when path rows
+Phase 7 closes only on **`CLEARED`** from a hostile QA pass — not when path rows
 flip to `Fixed` or when `identity_boundary` regex scans report zero residue.
 
 Run QA only after feeder-bundle local fixes and gates are clean. Use a separate
@@ -1255,8 +1251,8 @@ comparison, or coherence.
 
 **Return format (exactly one):**
 
-- `CLEARED:` â€” concise evidence Phase 7 satisfies the hard bar.
-- `NOT CLEARED:` â€” numbered blockers with file paths and violation kind.
+- `CLEARED:` — concise evidence Phase 7 satisfies the hard bar.
+- `NOT CLEARED:` — numbered blockers with file paths and violation kind.
 
 **QA prompt (copy verbatim):**
 
@@ -1277,7 +1273,7 @@ cfg/test escape hatch in production. String projections acceptable only as
 *_for_reporting or equivalent explicit projection names backed by typed internal
 fields and never re-entering authority.
 
-Inspect these feeder bundles (matrix rows 572â€“577):
+Inspect these feeder bundles (matrix rows 572–577):
 - subscription/live/session/backend receipts
 - workflow + domain_capabilities workflow lowering
 - domain_capabilities canonical_runtime continuity/support/artifacts
@@ -1307,7 +1303,7 @@ Closed only when:
 3. No Query adapter or receipt surface accepts or exposes truth identity as `String`.
 4. Production signal sink routes through bridge with typed commit identity.
 5. Journal-order helpers do not parse commit identity text.
-6. Phase 2A + 2B hard gates still enforced â€” no restored public string constructors,
+6. Phase 2A + 2B hard gates still enforced — no restored public string constructors,
    no public `field_identity(AsRef<str>)`, no public
    `WORTHQueryEvidenceIdentity: AsRef<str>`.
 7. No incremental-refactor debt: no dual string/typed paths, no `cfg` folklore,
@@ -1343,7 +1339,7 @@ Read Mechanical Breakage Rules first. They override convenience.
      green after only bundle-local fixes, or `field_identity(AsRef<str>)` still
      public. **This is the active frontier until Phase 2B done-when is satisfied.**
    - Phase 7 incomplete: any Fix Phase = 7 feeder bundle row Open (572-577), any
-     projection re-entry route remains, or Phase 7 QA not CLEARED â€” path rows
+     projection re-entry route remains, or Phase 7 QA not CLEARED — path rows
      Fixed alone are insufficient.
    - Phase 8 blocked: do not start Phase 9 downstream harness cleanup claiming
       Phase 8 done until Phase 7 QA is CLEARED (Phase 8 path rows may already
@@ -1352,7 +1348,7 @@ Read Mechanical Breakage Rules first. They override convenience.
      until Phase 10.
 2. Phase 1: define root authority categories, kind markers, root API breaks,
    compiler ledger schema, and trybuild plan. Do not fix call sites. Extend
-   phase_one_root_break_targets.rs with concrete Tier 3â€“6 APIs from Phase 2B.
+   phase_one_root_break_targets.rs with concrete Tier 3–6 APIs from Phase 2B.
 3. Phase 2A: truth-routing root breaks (closed). Phase 2B: install evidence/feeder
    root breaks per Phase 2B slices; run `cargo check -p worth-query` (then
    workspace as unblocked); write 2B-* ledger rows. Workspace RED = success. Do
@@ -1375,38 +1371,38 @@ text, and closing Phase 7 from row-scoped scans alone.
 
 ## Compiler Failure Ledger And Historical Matrix
 
-> **Phase 1 scan status:** `Closed` â€” agent scan completed on 2026-06-11;
+> **Phase 1 scan status:** `Closed` — agent scan completed on 2026-06-11;
 > Cursor QA omissions corrected on 2026-06-11.
 >
-> **Phase 7 QA status:** `CLEARED` post-Phase-2B (2026-06-15) â€” hostile re-pass
+> **Phase 7 QA status:** `CLEARED` post-Phase-2B (2026-06-15) — hostile re-pass
 > after evidence/feeder repair: no production `field_identity` ingress; Query +
 > bridge compile-fail suites pass; Phase 7 certification lanes
 > (`causal_inspection`, `runtime_certification`, `query_basis_lifecycle`) pass.
 > Downstream crate repair remains Phase 8+.
 >
 > **Phase 7 QA blockers (2026-06-09 pass 5):**
-> 1. `subscription/evidence_identities.rs::lifecycle_certification_bundle_identity` â€” lifecycle delivery auxiliaries (performance, attachment, delivery_window, work_packet, closeout, etc.) still composed via `field_identity(&str)` from certification sequence-projection strings, not typed handles.
-> 2. `subscription/evidence_identities.rs::{active_lane_identity,certification_activation_bundle_identity}` â€” `query_declaration_for_reporting` embedded via `field_identity` while typed `query_declaration_identity` exists upstream (dual string/typed lane on same field).
-> 3. `runtime/live_subscription.rs::live_subscription_source_digest_evidence` â€” installation/counter evidence still wraps `counters.digest()` and other string sources through `field_identity(source_digest, â€¦)` after typed counter `evidence_identity()` exists on the subscription spine.
-> 4. `domain_capabilities/canonical_runtime/{artifacts,support,invariant_capability}.rs` â€” `canonical_runtime_request_identity` / `support_request_identity` still string-wrap `request_digest` with `field_identity` while target/binding use `field_evidence_identity` on the same materialization compose.
-> 5. `domain_capabilities/canonical_runtime/workflow/{lowering,preview}.rs` â€” denial/preview materialization paths still use `field_identity(target, target_digest)` beside typed binding paths.
-> 6. `effect_lifecycle/{planning,receipt,batch,authoring_basis}.rs` â€” production spine retains `hash_parts` compatibility digests and `field_identity` on `admitted_digest()` / `counters.digest()` / receipt strings beyond the normalized/lowering slice that pass 4 fixed.
-> 7. `runtime/inspection/causal/materialization/artifacts/bridge_backed.rs` â€” dual authoritative accessors on typed fields (`artifact_identity()` + `artifact_digest()`, `causal_identity` + `causal_identity_digest()`, `bridge_envelope_digest()` beside `_for_reporting` siblings).
-> 8. `runtime/inspection/causal/materialization/exploration.rs` â€” exploration path still calls `query_admission_digest()` / `bridge_envelope_digest()` after receipt API rename to `*_for_reporting()`, leaving mixed projection dialect.
-> 9. `workflow/foundation.rs::{workflow_scope_digest_identity,preview bind helpers}` â€” binding-scope and preview-session evidence still compose via `field_identity` on raw string digests; only primary source/query/basis helpers were elevated to typed `field_evidence_identity`.
+> 1. `subscription/evidence_identities.rs::lifecycle_certification_bundle_identity` — lifecycle delivery auxiliaries (performance, attachment, delivery_window, work_packet, closeout, etc.) still composed via `field_identity(&str)` from certification sequence-projection strings, not typed handles.
+> 2. `subscription/evidence_identities.rs::{active_lane_identity,certification_activation_bundle_identity}` — `query_declaration_for_reporting` embedded via `field_identity` while typed `query_declaration_identity` exists upstream (dual string/typed lane on same field).
+> 3. `runtime/live_subscription.rs::live_subscription_source_digest_evidence` — installation/counter evidence still wraps `counters.digest()` and other string sources through `field_identity(source_digest, …)` after typed counter `evidence_identity()` exists on the subscription spine.
+> 4. `domain_capabilities/canonical_runtime/{artifacts,support,invariant_capability}.rs` — `canonical_runtime_request_identity` / `support_request_identity` still string-wrap `request_digest` with `field_identity` while target/binding use `field_evidence_identity` on the same materialization compose.
+> 5. `domain_capabilities/canonical_runtime/workflow/{lowering,preview}.rs` — denial/preview materialization paths still use `field_identity(target, target_digest)` beside typed binding paths.
+> 6. `effect_lifecycle/{planning,receipt,batch,authoring_basis}.rs` — production spine retains `hash_parts` compatibility digests and `field_identity` on `admitted_digest()` / `counters.digest()` / receipt strings beyond the normalized/lowering slice that pass 4 fixed.
+> 7. `runtime/inspection/causal/materialization/artifacts/bridge_backed.rs` — dual authoritative accessors on typed fields (`artifact_identity()` + `artifact_digest()`, `causal_identity` + `causal_identity_digest()`, `bridge_envelope_digest()` beside `_for_reporting` siblings).
+> 8. `runtime/inspection/causal/materialization/exploration.rs` — exploration path still calls `query_admission_digest()` / `bridge_envelope_digest()` after receipt API rename to `*_for_reporting()`, leaving mixed projection dialect.
+> 9. `workflow/foundation.rs::{workflow_scope_digest_identity,preview bind helpers}` — binding-scope and preview-session evidence still compose via `field_identity` on raw string digests; only primary source/query/basis helpers were elevated to typed `field_evidence_identity`.
 >
-> **Phase 7 QA blockers (2026-06-09 pass 3â€“4 â€” resolved on targeted spine):**
-> 1. ~~`subscription/performance_receipt.rs`~~ â€” typed `performance_receipt_identity`; reporting via `performance_receipt_for_reporting()`.
-> 2. ~~`subscription/evidence_identities.rs`~~ â€” auxiliaries use `field_evidence_identity` for diagnostics, support, counters, future_selection, performance.
-> 3. ~~`SubscriptionLifecycleCertificationBundle`~~ â€” dual typed `*_digest()` aliases removed; `_for_reporting` + `*_identity()` accessors only.
-> 4. ~~`causal/materialization/receipt.rs`, `bridge_backed.rs`~~ â€” `*_for_reporting()` projection API aligned with proof.rs.
-> 5. ~~`domain_capabilities/payloads/*`~~ â€” payload composition via `WORTHQueryEvidenceIdentity::compose`.
-> 6. ~~`canonical_runtime/{artifacts,support,invariant_capability}.rs`~~ â€” target/request wired with `field_evidence_identity`.
-> 7. ~~`effect_lifecycle/normalized.rs`~~ â€” capability/scoped-basis from typed `EffectAuthoringBasis` identities.
-> 8. ~~`effect_lifecycle/lowering.rs`~~ â€” plan/artifact via `field_evidence_identity`.
-> 9. ~~`workflow/foundation.rs`~~ â€” context source/query/basis accept typed identities.
+> **Phase 7 QA blockers (2026-06-09 pass 3–4 — resolved on targeted spine):**
+> 1. ~~`subscription/performance_receipt.rs`~~ — typed `performance_receipt_identity`; reporting via `performance_receipt_for_reporting()`.
+> 2. ~~`subscription/evidence_identities.rs`~~ — auxiliaries use `field_evidence_identity` for diagnostics, support, counters, future_selection, performance.
+> 3. ~~`SubscriptionLifecycleCertificationBundle`~~ — dual typed `*_digest()` aliases removed; `_for_reporting` + `*_identity()` accessors only.
+> 4. ~~`causal/materialization/receipt.rs`, `bridge_backed.rs`~~ — `*_for_reporting()` projection API aligned with proof.rs.
+> 5. ~~`domain_capabilities/payloads/*`~~ — payload composition via `WORTHQueryEvidenceIdentity::compose`.
+> 6. ~~`canonical_runtime/{artifacts,support,invariant_capability}.rs`~~ — target/request wired with `field_evidence_identity`.
+> 7. ~~`effect_lifecycle/normalized.rs`~~ — capability/scoped-basis from typed `EffectAuthoringBasis` identities.
+> 8. ~~`effect_lifecycle/lowering.rs`~~ — plan/artifact via `field_evidence_identity`.
+> 9. ~~`workflow/foundation.rs`~~ — context source/query/basis accept typed identities.
 >
-> **Phase 8 milestone status:** `Closed` â€” Phase 7 QA is `CLEARED`, production worth-topo entity/relation/read-anchor blockers are fixed, and remaining non-production replay cleanup is explicitly deferred to the subscription replay typed identity milestone.
+> **Phase 8 milestone status:** `Closed` — Phase 7 QA is `CLEARED`, production worth-topo entity/relation/read-anchor blockers are fixed, and remaining non-production replay cleanup is explicitly deferred to the subscription replay typed identity milestone.
 >
 > **Last updated:** 2026-06-15
 >
@@ -1570,7 +1566,7 @@ text, and closing Phase 7 from row-scoped scans alone.
 | 9 | worth-server | `surfaces/compat_http/mutation_execution/query_execution.rs` | Compatibility precondition observes `handoff.workspace().snapshot_token()` as a string basis digest. | Fixed | Compatibility precondition now reads `workspace().snapshot_identity()` and converts it only to the terminal HTTP validator label; the erased `snapshot_token()` backend/source seam remains absent. Gate: `cargo check -p worth-server` |
 | 9 | worth-server | `tests/support/direct_context_runtime.rs`, `tests/support/query_handoff/runtime.rs`, `tests/support/query_handoff/runtime_mutation_support.rs`, `tests/support/compat_http/phase_three_runtime.rs`, `tests/support/compat_http/phase_four_runtime.rs` | Server test adapters implement `snapshot_token(&self) -> String` and construct `WORTHQueryMutationReceipt` with formatted commit/snapshot strings. | Fixed | Adapters provide typed snapshot/session/support evidence identities, mutation receipts are built from typed commit/snapshot/entity identities, and split helper files keep touched tests within the 400-line cap. Gates: `cargo test -p worth-server --test WORTH_native_facade_entry` (`62 passed`), compat phase three/four (`8 passed` each) |
 | 9 | worth-server | `tests/WORTH_native/direct_mutation.rs`, `tests/WORTH_native/direct_projection.rs` | WORTH-native integration tests compare result/inspection digests to `receipt.commit_identity()`, assert `inspection.snapshot_token() == receipt.snapshot_token()`, and consume direct projection read receipt snapshot tokens as strings. | Fixed | Direct integration assertions now compare typed commit/snapshot handles or explicit evidence/projection accessors, and the backend-verified assertion denial fixture rejects fake raw entity labels by requiring canonical relational bridge identity input. Gate: `cargo test -p worth-server --test WORTH_native_facade_entry` (`62 passed`) |
-| â€” | worth-runtime-bridge | `src/subscription/replay_tests.rs` | Subscription replay tests mint truth identities from string literals/formatted commit and patch text, but subscription replay is outside this milestone's ordinary truth-routing spine. | Fixed | Phase 10: migrated to typed relational constructors; folklore guard in `tests/subscription_replay_folklore_guard.rs` |
+| — | worth-runtime-bridge | `src/subscription/replay_tests.rs` | Subscription replay tests mint truth identities from string literals/formatted commit and patch text, but subscription replay is outside this milestone's ordinary truth-routing spine. | Fixed | Phase 10: migrated to typed relational constructors; folklore guard in `tests/subscription_replay_folklore_guard.rs` |
 
 **Historical note:** rows below the header were produced by the earlier Phase 1
 scan and remain useful trace material. They are not sufficient for closure after
@@ -1582,6 +1578,6 @@ quarantine, or named deferred owner milestone.
 
 | Artifact | When | Path |
 |----------|------|------|
-| Compiler failure ledger / exposure report | Phase 2 | `plans/worth-query/bridge_truth_identity_exposure_report.md` â€” first `cargo check --workspace` failure inventory after root authority breaks; classify attempted category, required category, owner phase, and closure route |
+| Compiler failure ledger / exposure report | Phase 2 | `plans/worth-query/bridge_truth_identity_exposure_report.md` — first `cargo check --workspace` failure inventory after root authority breaks; classify attempted category, required category, owner phase, and closure route |
 | Compile-fail gates | Phase 2+ | `worth-runtime-bridge/tests/ui/`, `worth-query/tests/ui/`, downstream/harness UI fixtures for forbidden substitutions |
 | Closeout | Phase 10 | `plans/worth-query/milestone-9.6-bridge-truth-identity-closeout.md` |

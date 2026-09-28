@@ -18,24 +18,40 @@ use worth_query_installation::facade::{
 
 use super::{WorthQueryApplicationInvariantProjectionReader, WorthQueryInvariantEntityIdentity};
 
+/// Why an aggregate over incoming relations could not be computed.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryInvariantAggregateDenialKind {
+    /// The relation is not installed.
     RelationNotInstalled,
+    /// The summed field is not installed.
     FieldNotInstalled,
+    /// The target identity came from a different projection authority.
     ForeignIdentity,
+    /// The aggregate exceeded the projection's work budget.
     WorkBudgetExceeded,
+    /// A stored value is not a valid scalar for the field.
     InvalidScalar,
+    /// The sum overflowed.
     ArithmeticOverflow,
+    /// The count of contributing sources overflowed.
     SourceCountOverflow,
+    /// A source is not related to the target exactly once through the relation.
     AmbiguousSourceRelation,
 }
 
+/// Refusal to compute an aggregate over incoming relations.
+///
+/// [`Self::kind`] says why and [`Self::member`] names the relation or field.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryInvariantAggregateDenial {
     kind: WorthQueryInvariantAggregateDenialKind,
     member: String,
 }
 
+/// A field summed over the sources exclusively related to one target, with the
+/// number of sources that contributed.
+///
+/// Returned by `summarize_exclusive_incoming`.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryInvariantAggregate<Value> {
     value: Value,

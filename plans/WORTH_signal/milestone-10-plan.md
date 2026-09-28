@@ -7,20 +7,20 @@
 > **Primary architectural driver:** `S10 - Merge-Forward Expansion`
 >
 > **Related implementation surfaces:**
-> - [facade.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/facade.rs)
-> - [builder.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/state/builder.rs)
-> - [merge_runtime.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/state/branching/merge_runtime.rs)
-> - [core.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/state/merge/core.rs)
-> - [policy.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/state/merge/policy.rs)
-> - [plan.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/state/merge/plan.rs)
-> - [result.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/state/merge/result.rs)
-> - [journal.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/state/merge/journal.rs)
-> - [contract.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/node/contract.rs)
-> - [facade.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/facade.rs)
-> - [facade.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/commit_strategies/facade.rs)
-> - [registration.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/commit_strategies/data/registration.rs)
-> - [lowering.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/commit_strategies/data/lowering.rs)
-> - [frozen_registry.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/commit_strategies/logic/frozen_registry.rs)
+> - [facade.rs](../../crates/worth-signal/src/facade.rs)
+> - [builder.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/builder.rs)
+> - [merge_runtime.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/branching/merge_runtime.rs)
+> - [core.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/merge/core.rs)
+> - [policy.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/merge/policy.rs)
+> - [plan.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/merge/plan.rs)
+> - [result.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/merge/result.rs)
+> - [journal.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/merge/journal.rs)
+> - [contract.rs](../../crates/worth-signal/src/data/node/contract.rs)
+> - [facade.rs](../../crates/worth-relational/src/facade.rs)
+> - [facade.rs](../../crates/worth-relational/src/commit_strategies/facade.rs)
+> - [registration.rs](../../crates/worth-relational/src/commit_strategies/data/registration.rs)
+> - [lowering.rs](../../crates/worth-relational/src/commit_strategies/data/lowering.rs)
+> - [frozen_registry.rs](../../crates/worth-relational/src/commit_strategies/frozen_registry.rs)
 > - [test-requirements.md](./test-requirements.md)
 
 ## Summary
@@ -90,9 +90,9 @@ fresh system. S9.15 already established the bounded merge floor:
 
 However, the semantic control plane is still effectively hardcoded:
 
-- [policy.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/state/merge/policy.rs)
+- [policy.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/merge/policy.rs)
   defines a fixed `BranchMergeReconciliationPolicy` with three coarse enums
-- [merge_runtime.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/state/branching/merge_runtime.rs)
+- [merge_runtime.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/branching/merge_runtime.rs)
   constructs the reconciliation policy inline during planning
 - identity matching is currently storage-identity-first and planner-owned
 - merge-base selection is implicit in branch ancestry instead of a named lowered
@@ -127,7 +127,7 @@ Normative consequence:
 - any implementation path that preserves old merge artifact shapes by
   compatibility layering rather than replacing them is a design regression
 - any implementation path that defers schema registry introduction in favor of
-  â€œnode contracts first, registry laterâ€ is out of spec
+  “node contracts first, registry later” is out of spec
 
 ## 3. Governing Design Rules
 
@@ -468,7 +468,7 @@ This precedence order must lower into proof-bearing ownership artifacts such as:
 - `ResolvedAspectPolicyOwnership`
 - `ResolvedIdentityScopeOwnership`
 
-Extend [`NodeContract`](C:\Users\Esther\Documents\Programming\WORTH_workspace\WORTH\crates\worth-signal\src\data\node\contract.rs)
+Extend [`NodeContract`](../../crates/worth-signal/src/data/node/contract.rs)
 with a merge override section:
 
 ```rust
@@ -960,17 +960,17 @@ Suggested tests:
 
 Milestone 10 must include one adversarial scenario implemented on top of the
 existing parametric gear demo at
-[apps/worth-signal-demo](C:\Users\Esther\Documents\Programming\WORTH_workspace\WORTH\apps\worth-signal-demo),
+[apps/worth-signal-demo](../../apps/WORTH-signal-demo),
 not as a separate demo app.
 
 The current app already gives us the exact scaffolding we need:
 
 - branch creation and merge buttons in
-  [App.tsx](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/apps/worth-signal-demo/src/App.tsx)
+  [App.tsx](../../apps/WORTH-signal-demo/src/App.tsx)
 - worker-driven branch / merge / scrub flows in
-  [demo-worker.ts](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/apps/worth-signal-demo/src/gear-scene/worker/demo-worker.ts)
+  `demo-worker.ts`
 - an explicit runtime layer with `planMerge()` and `executeMerge()` in
-  [runtime.ts](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/apps/worth-signal-demo/src/gear-scene/core/runtime.ts)
+  `runtime.ts`
 - a timeline, replay scrubber, node inspect panel, and live HUD already wired
   into the app shell
 
@@ -1007,11 +1007,11 @@ This is good enough to represent:
 
 #### Required demo implementation plan
 
-The adversarial scenario should be built as an explicit â€œscenario modeâ€ inside
+The adversarial scenario should be built as an explicit “scenario mode” inside
 the existing app rather than as free-form manual slider play.
 
 Add a new demo mode toggle in
-[App.tsx](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/apps/worth-signal-demo/src/App.tsx):
+[App.tsx](../../apps/WORTH-signal-demo/src/App.tsx):
 
 - `Manual Gear`
 - `Adversarial Merge Arena`
@@ -1027,22 +1027,22 @@ Use the existing `main` branch and `what-if` branch.
 Script on `main`:
 
 1. start from the current default scene
-2. apply a â€œtopology-heavyâ€ patch sequence:
+2. apply a “topology-heavy” patch sequence:
    - `gear.teeth += 4`
    - `gear.outerRadius += 0.18`
    - `gear.innerRadius += 0.04`
-3. then apply a â€œrender-only / shadingâ€ patch sequence:
+3. then apply a “render-only / shading” patch sequence:
    - `light.intensity += 0.35`
    - `gear.rotation += 0.2`
 
 Script on `what-if`:
 
 1. fork after the baseline
-2. apply a conflicting â€œtopology-heavyâ€ patch sequence:
+2. apply a conflicting “topology-heavy” patch sequence:
    - `gear.teeth -= 2`
    - `gear.outerRadius += 0.10`
    - `gear.innerRadius += 0.09`
-3. then apply a different â€œrender-only / shadingâ€ patch sequence:
+3. then apply a different “render-only / shading” patch sequence:
    - `light.intensity -= 0.15`
    - `gear.rotation -= 0.35`
 
@@ -1078,8 +1078,8 @@ existing node graph:
 
 #### UI additions required in the existing app
 
-Add a dedicated â€œMerge Arenaâ€ panel in
-[App.tsx](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/apps/worth-signal-demo/src/App.tsx)
+Add a dedicated “Merge Arena” panel in
+[App.tsx](../../apps/WORTH-signal-demo/src/App.tsx)
 using the existing sidebar pattern. That panel must expose:
 
 - scenario mode selector
@@ -1109,13 +1109,13 @@ Add a semantic-zone legend tied to the existing node tree:
 - resolved nodes
 
 The node tree already exists in
-[App.tsx](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/apps/worth-signal-demo/src/App.tsx);
+[App.tsx](../../apps/WORTH-signal-demo/src/App.tsx);
 this work should extend it rather than replace it.
 
 #### Worker orchestration changes
 
 Extend the existing worker command protocol in
-[protocol.ts](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/apps/worth-signal-demo/src/gear-scene/worker/protocol.ts)
+`protocol.ts`
 with scripted scenario commands:
 
 - `runAdversarialMergeScenario`
@@ -1125,7 +1125,7 @@ with scripted scenario commands:
 - `setDiagnosticsTier`
 
 Implementation should live in
-[demo-worker.ts](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/apps/worth-signal-demo/src/gear-scene/worker/demo-worker.ts)
+`demo-worker.ts`
 and should reuse the existing:
 
 - `applyScenePatch()`
@@ -1140,7 +1140,7 @@ scenario must use the same worker authority path as normal interaction.
 #### Runtime-layer changes
 
 Extend
-[runtime.ts](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/apps/worth-signal-demo/src/gear-scene/core/runtime.ts)
+`runtime.ts`
 to expose:
 
 - schema registry digest
@@ -1149,7 +1149,7 @@ to expose:
 - merge-result counters
 - any per-family strategy summaries needed by the UI
 
-These should come from the runtimeâ€™s canonical merge/report surfaces, not from
+These should come from the runtime’s canonical merge/report surfaces, not from
 demo-local recomputation.
 
 #### What exactly the scenario must prove
@@ -1160,7 +1160,7 @@ run:
 - changing `gear.teeth` causes tooth-family identity pressure and visibly
   changes merge candidate scope
 - topology-zone conflicts and render-zone conflicts are distinguished rather
-  than collapsed into one generic â€œmerge conflictâ€
+  than collapsed into one generic “merge conflict”
 - at least one zone resolves and at least one zone rejects or remains blocked
 - replaying the same scripted merge produces the same schema-registry digest,
   lowered strategy bundle digest, merge-result digest, and lineage digest
@@ -1203,7 +1203,7 @@ The scenario must emit machine-checkable artifacts, not just UI text:
 
 These artifacts should be consumable both by the web app UI and by crate-level
 tests in
-[merge_strategies.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/tests/merge_strategies.rs),
+`merge_strategies.rs`,
 so the demo and certification are exercising the same scenario truth.
 
 ### 11.4 Diagnostics-Tier Tests
@@ -1264,7 +1264,7 @@ Required work:
   - replaced
   - deleted
 - identify every current hardcoded semantic decision in
-  [merge_runtime.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/state/branching/merge_runtime.rs)
+  [merge_runtime.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/branching/merge_runtime.rs)
 - identify every current public or semi-public artifact that will become legacy
   and unsupported after S10
 - produce a checklist mapping each strategy family in this spec to the file(s)
@@ -1273,7 +1273,7 @@ Required work:
 Exit criteria:
 
 - there is an explicit replacement list for all pre-S10 merge artifacts
-- there is an explicit â€œpreserve vs replaceâ€ list for all merge files
+- there is an explicit “preserve vs replace” list for all merge files
 - there is no unresolved ambiguity about whether S10 is additive or replacing
   the prototype merge control plane
 

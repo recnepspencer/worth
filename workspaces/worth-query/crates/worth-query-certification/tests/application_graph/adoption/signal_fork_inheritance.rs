@@ -4,15 +4,15 @@
 //! which program an occurrence runs must not depend on whether the fork shares
 //! its source's exact Signal basis or forks Signal alongside Relational.
 
-use crate::bounded_dimension_model::host::{publish_on_second_program, SEED_DIMENSION};
-use crate::bounded_dimension_model::presented_request::set_dimension;
-use crate::bounded_dimension_model::readback::read_dimension;
-use crate::bounded_dimension_model::settled_verdict::{settle, DimensionVerdict};
+use crate::document_retention_model::host::{publish_on_second_program, SEED_RETENTION};
+use crate::document_retention_model::presented_request::set_retention;
+use crate::document_retention_model::readback::read_retention;
+use crate::document_retention_model::settled_verdict::{settle, RetentionVerdict};
 
 /// A value only the second program's law admits.
-const HIGH_DIMENSION: u64 = 15;
+const HIGH_RETENTION: u64 = 15;
 /// A value only the first program's law admits.
-const LOW_DIMENSION: u64 = 3;
+const LOW_RETENTION: u64 = 3;
 
 #[test]
 fn a_fork_of_both_components_inherits_the_law_its_source_was_running() {
@@ -27,22 +27,22 @@ fn a_fork_of_both_components_inherits_the_law_its_source_was_running() {
         .expect("the Relational and Signal fork must publish");
 
     assert_eq!(
-        settle(set_dimension(&host, fork, HIGH_DIMENSION, 0x9175_0051)),
-        DimensionVerdict::Performed(HIGH_DIMENSION),
+        settle(set_retention(&host, fork, HIGH_RETENTION, 0x9175_0051)),
+        RetentionVerdict::Performed(HIGH_RETENTION),
         "the fork runs the second program its source was running"
     );
-    assert_eq!(read_dimension(host.runtime(), fork), HIGH_DIMENSION);
+    assert_eq!(read_retention(host.runtime(), fork), HIGH_RETENTION);
     assert_eq!(
-        read_dimension(host.runtime(), main),
-        SEED_DIMENSION,
+        read_retention(host.runtime(), main),
+        SEED_RETENTION,
         "a write on the fork cannot reach the branch it forked from"
     );
 
     assert_eq!(
-        settle(set_dimension(&host, fork, LOW_DIMENSION, 0x9175_0052)),
-        DimensionVerdict::violated("bounded-dimension-v2"),
+        settle(set_retention(&host, fork, LOW_RETENTION, 0x9175_0052)),
+        RetentionVerdict::violated("document-retention-v2"),
         "the fork carries its source's law, not the other rostered program's"
     );
-    assert_eq!(read_dimension(host.runtime(), fork), HIGH_DIMENSION);
-    assert_eq!(read_dimension(host.runtime(), main), SEED_DIMENSION);
+    assert_eq!(read_retention(host.runtime(), fork), HIGH_RETENTION);
+    assert_eq!(read_retention(host.runtime(), main), SEED_RETENTION);
 }

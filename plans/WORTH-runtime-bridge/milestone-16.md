@@ -2,15 +2,15 @@
 
 > **Status:** Planned
 >
-> **Roadmap parent:** [worth_runtime_bridge_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/worth_runtime_bridge_roadmap.md)
+> **Roadmap parent:** [worth_runtime_bridge_roadmap.md](./WORTH_runtime_bridge_roadmap.md)
 >
-> **Vision parent:** [worth_runtime_bridge_vision.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/worth_runtime_bridge_vision.md)
+> **Vision parent:** [worth_runtime_bridge_vision.md](./WORTH_runtime_bridge_vision.md)
 >
-> **Prior milestone:** [milestone-15.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-15.md)
+> **Prior milestone:** [milestone-15.md](./milestone-15.md)
 >
-> **Prior closeout:** [milestone-15-closeout.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-15-closeout.md)
+> **Prior closeout:** [milestone-15-closeout.md](./milestone-15-closeout.md)
 >
-> **Bridge certification companion:** [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md)
+> **Bridge certification companion:** [test-requirements.md](./test-requirements.md)
 >
 > **Primary architectural driver:** turn Milestones 14 and 15 subscription declaration, admission, active delivery, fanout, continuation, checkpoint, replay, and preview artifacts into one offline-certifiable subscription story with canonical bundles, typed subscription failure localization, and a concrete end-to-end reference workload.
 
@@ -177,7 +177,7 @@ Normative consequence:
 - subscription-specific bridge failure taxonomy additions
 - diagnostics-entrypoint extensions for subscription certification artifacts
 - offline certification reports for original, replay, restart, hostile adapter, and diagnostics-tier lanes
-- certification of suites 35 through 37 in [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md)
+- certification of suites 35 through 37 in [test-requirements.md](./test-requirements.md)
 - Rust-only reference workload extension for long-lived subscriptions
 - reference workload lanes for authoritative, historical, branch-local, preview, shared-consumer, restart, continuation, discard, promotion, and hostile failure paths
 - exact counter snapshots for bundle production, comparison, replay reconstruction, diagnostics materialization, failure localization, residue inspection, and family-aware strategy lowering proof
@@ -948,7 +948,7 @@ Phase 4 is complete only when the reference workload can prove suites 35 through
 - exact counter contracts for assembly, comparison, localization, diagnostics, replay, residue, and strategy-lowering provenance
 - Rust-only end-to-end subscription reference workload extension
 - reference workload coverage for authoritative, historical, branch-local, preview, shared-consumer, restart, continuation, discard, promotion, hostile adapter, diagnostics-tier, and typed rejection lanes
-- certification satisfying suites 35 through 37 in [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md)
+- certification satisfying suites 35 through 37 in [test-requirements.md](./test-requirements.md)
 - compile-fail or equivalent external-boundary coverage preventing external construction of canonical bundles, passing comparison witnesses, typed failure witnesses, residue proofs, or offline audit success markers
 
 ## Must Preserve

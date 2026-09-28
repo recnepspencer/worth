@@ -2,14 +2,14 @@
 
 > **Status:** Published closure inventory for Milestone 2
 >
-> **Primary spec:** [milestone-2.md](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth_signal/milestone-2.md)
+> **Primary spec:** [milestone-2.md](./milestone-2.md)
 >
 > **Primary implementation surfaces:**
-> - [trace.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/trace.rs)
-> - [effect.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/graph/runtime/effect.rs)
-> - [prepared_apply.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/evaluation/engine/prepared_apply.rs)
-> - [recorder.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/diagnostics/runtime/recorder.rs)
-> - [resolver.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/explain/resolver.rs)
+> - [trace.rs](../../crates/worth-signal/src/data/trace.rs)
+> - [effect.rs](../../crates/worth-signal/src/data/graph/runtime/effect.rs)
+> - [prepared_apply.rs](../../crates/worth-signal/src/logic/evaluation/engine/prepared_apply.rs)
+> - [recorder.rs](../../crates/worth-signal/src/diagnostics/runtime/recorder.rs)
+> - [resolver.rs](../../crates/worth-signal/src/logic/explain/resolver.rs)
 
 ## Purpose
 

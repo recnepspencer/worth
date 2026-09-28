@@ -13,11 +13,11 @@ use worth_query_host::facade::primary_graph::{
     WorthQueryBranchAdoptionRecoveryDenial,
 };
 
-use super::{fork, target_revision, P1_ONLY_DIMENSION};
-use crate::bounded_dimension_model::host::publish_on_first_program;
-use crate::bounded_dimension_model::operator_identity::{authenticate_operator, request_scope};
-use crate::bounded_dimension_model::presented_request::set_dimension;
-use crate::bounded_dimension_model::settled_verdict::{settle, DimensionVerdict};
+use super::{fork, target_revision, P1_ONLY_RETENTION};
+use crate::document_retention_model::host::publish_on_first_program;
+use crate::document_retention_model::operator_identity::{authenticate_operator, request_scope};
+use crate::document_retention_model::presented_request::set_retention;
+use crate::document_retention_model::settled_verdict::{settle, RetentionVerdict};
 
 #[test]
 fn unpublished_middle_branch_recovers_without_stranding_prefix_or_suffix() {
@@ -119,13 +119,13 @@ fn unpublished_middle_branch_recovers_without_stranding_prefix_or_suffix() {
 
     for (ordinal, branch) in [a, b, c].into_iter().enumerate() {
         assert_eq!(
-            settle(set_dimension(
+            settle(set_retention(
                 &host,
                 branch,
-                P1_ONLY_DIMENSION,
+                P1_ONLY_RETENTION,
                 0x9175_4040 + ordinal as u64
             )),
-            DimensionVerdict::Performed(P1_ONLY_DIMENSION)
+            RetentionVerdict::Performed(P1_ONLY_RETENTION)
         );
     }
 }
@@ -227,18 +227,18 @@ fn unpublished_middle_branch_can_release_custody_without_relabeling_untouched_su
     assert_eq!(cancelled.cancelled_branch_count(), 2);
 
     assert_eq!(
-        settle(set_dimension(&host, a, P1_ONLY_DIMENSION, 0x9175_4050)),
-        DimensionVerdict::Performed(P1_ONLY_DIMENSION),
+        settle(set_retention(&host, a, P1_ONLY_RETENTION, 0x9175_4050)),
+        RetentionVerdict::Performed(P1_ONLY_RETENTION),
         "release cannot erase the already-performed prefix"
     );
     assert_eq!(
-        settle(set_dimension(
+        settle(set_retention(
             &host,
             c,
-            super::P0_ONLY_DIMENSION,
+            super::P0_ONLY_RETENTION,
             0x9175_4051
         )),
-        DimensionVerdict::Performed(super::P0_ONLY_DIMENSION),
+        RetentionVerdict::Performed(super::P0_ONLY_RETENTION),
         "release cannot relabel the untouched suffix"
     );
 }

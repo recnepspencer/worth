@@ -1,9 +1,0 @@
-error[E0451]: fields `translated` and `drift_report` of struct `SupportTrustDriftChecked` are private
- --> tests/ui/subscription_support_trust_drift_checked_constructor_private.rs:7:9
-  |
-6 |     let _ = SupportTrustDriftChecked {
-  |             ------------------------ in this type
-7 |         translated: unsafe { std::mem::zeroed::<SupportTrustTranslatedInputs>() },
-  |         ^^^^^^^^^^ private field
-8 |         drift_report: unsafe { std::mem::zeroed::<SupportTrustDriftReport>() },
-  |         ^^^^^^^^^^^^ private field

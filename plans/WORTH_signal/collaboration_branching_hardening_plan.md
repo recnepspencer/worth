@@ -39,7 +39,7 @@ and merge posture they own.
 
 `worth-signal` already has substantial branching support, replay, restore,
 merge planning, and branch-local derived execution truth. The remaining gap is
-not â€œadd branching.â€ The remaining gap is hardening the branch substrate so
+not “add branching.” The remaining gap is hardening the branch substrate so
 later collaborative readmission, conflict classification, and recovery do not
 depend on:
 
@@ -50,12 +50,12 @@ depend on:
 - or raw branch/merge handles that do not retain enough proof for later
   strategy-aware inspection
 
-This milestone therefore belongs before Queryâ€™s late collaboration phases and
+This milestone therefore belongs before Query’s late collaboration phases and
 before the sibling lower-authority hardening work in `worth-relational` and
 `worth-runtime-bridge` is consumed by the same Query collaboration seam.
 
 It should not be treated as a Query-owned roadmap item. The dependency
-direction is the opposite: Queryâ€™s collaboration seam must wait for this Signal
+direction is the opposite: Query’s collaboration seam must wait for this Signal
 substrate to close honestly.
 
 ## Governing Summaries
@@ -68,7 +68,7 @@ substrate to close honestly.
   rediscover strategy or basis on the hot path.
 - `composition_laws.md`: branch basis, fork admission, scoped merge request,
   candidate lowering, denial, strategy proof, and inspection support must stay
-  as separate named responsibilities rather than one â€œcollaboration mergeâ€
+  as separate named responsibilities rather than one “collaboration merge”
   helper subsystem.
 - `domain_structure_laws.md`: the tree must preserve the distinction between
   signal-owned branch/merge truth and Query-owned collaboration projection; the
@@ -194,7 +194,7 @@ collaborative readmission work.
   `FreshnessScopedBasis<CurrentValidity, _>`
 
 **Warnings**
-- Do not let â€œcurrent active branchâ€ act as an unstated branch basis.
+- Do not let “current active branch” act as an unstated branch basis.
 - Do not collapse branch identity, snapshot identity, and restore posture into
   one raw handle or string packet.
 
@@ -548,7 +548,7 @@ surface that collaboration-aware upper layers will later consume through Query.
 **Warnings**
 - Do not hide strategy identity behind helper-local labels or ad hoc enums.
 - Do not collapse merge strategy posture and delivery/invalidation posture into
-  one generic â€œsignal strategyâ€ bag if the runtime reasons about them
+  one generic “signal strategy” bag if the runtime reasons about them
   differently.
 
 **Test requirements**
@@ -730,7 +730,7 @@ closure because those phases need lower-authority branch, merge, and strategy
 posture to already be hardened.
 
 It also belongs alongside later sibling hardening specs in `worth-relational`
-and `worth-runtime-bridge`, because Queryâ€™s collaboration-facing witness,
+and `worth-runtime-bridge`, because Query’s collaboration-facing witness,
 readmission, classification, and recovery seams must compose lower-authority
 facts from all three runtimes without reopening local host glue.
 

@@ -193,5 +193,5 @@ The following remain intentionally explicit, not accidental unfinished work:
 - host-capability reads inside worker-first callback capture remain denied until
   a distinct explicit host-read lowering lane exists
 
-Those boundaries are aligned with the placement spec and the correction planÃ¢â‚¬â„¢s
+Those boundaries are aligned with the placement spec and the correction plan’s
 single-runtime-authority rule.

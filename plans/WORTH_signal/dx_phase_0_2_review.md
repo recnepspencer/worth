@@ -21,7 +21,7 @@ officially so later work can proceed linearly.
 - Phase 1: Complete
 - Phase 2: Complete
 
-These phases are not â€œperfect forever.â€
+These phases are not “perfect forever.”
 
 They are complete in the only way that matters for linear execution:
 
@@ -43,13 +43,13 @@ Any remaining issues belong to later phases, especially 3 through 5.
 
 ### Evidence
 
-- [`dx_export_decision_matrix.md`](/Users/spenstar/Documents/programming/WORTH/WORTH/plans/worth_signal/dx_export_decision_matrix.md)
+- [`dx_export_decision_matrix.md`](./dx_export_decision_matrix.md)
   exists and has been used as the classification basis for the cleanup work
 - later design artifacts exist and align to it:
-  - [`dx_boundary_spec.md`](/Users/spenstar/Documents/programming/WORTH/WORTH/plans/worth_signal/dx_boundary_spec.md)
-  - [`dx_canonical_surface_spec.md`](/Users/spenstar/Documents/programming/WORTH/WORTH/plans/worth_signal/dx_canonical_surface_spec.md)
-  - [`dx_diagnostics_product_map.md`](/Users/spenstar/Documents/programming/WORTH/WORTH/plans/worth_signal/dx_diagnostics_product_map.md)
-  - [`dx_compatibility_transition_plan.md`](/Users/spenstar/Documents/programming/WORTH/WORTH/plans/worth_signal/dx_compatibility_transition_plan.md)
+  - [`dx_boundary_spec.md`](./dx_boundary_spec.md)
+  - [`dx_canonical_surface_spec.md`](./dx_canonical_surface_spec.md)
+  - [`dx_diagnostics_product_map.md`](./dx_diagnostics_product_map.md)
+  - [`dx_compatibility_transition_plan.md`](./dx_compatibility_transition_plan.md)
 - the actual code work has followed the classification logic:
   - guided surface promoted
   - specialist surface contained
@@ -70,7 +70,7 @@ Complete.
 
 ### Evidence
 
-- [`dx_canonical_surface_spec.md`](/Users/spenstar/Documents/programming/WORTH/WORTH/plans/worth_signal/dx_canonical_surface_spec.md)
+- [`dx_canonical_surface_spec.md`](./dx_canonical_surface_spec.md)
   now matches the current implementation direction
 - the canonical import path is explicit:
   - `use worth_signal::facade::*;`
@@ -101,11 +101,11 @@ Complete.
 
 ### Evidence
 
-- [`lib.rs`](/Users/spenstar/Documents/programming/WORTH/WORTH/crates/worth-signal/src/lib.rs)
+- [`lib.rs`](../../crates/worth-signal/src/lib.rs)
   states the main import path directly
-- [`facade.rs`](/Users/spenstar/Documents/programming/WORTH/WORTH/crates/worth-signal/src/facade.rs)
+- [`facade.rs`](../../crates/worth-signal/src/facade.rs)
   documents the intended public shape directly in code
-- [`docs/README.md`](/Users/spenstar/Documents/programming/WORTH/WORTH/crates/worth-signal/docs/README.md)
+- [`docs/README.md`](../../crates/worth-signal/docs/README.md)
   starts with the curated product journey and names `facade` as the main import
   path
 - `worth_signal::easy` remains public, but the docs do not position it as the
@@ -132,15 +132,15 @@ Complete.
 
 - `facade::harness` is no longer part of the non-test public boundary
 - the harness/deployment/metrics compatibility exports in
-  [`facade.rs`](/Users/spenstar/Documents/programming/WORTH/WORTH/crates/worth-signal/src/facade.rs)
+  [`facade.rs`](../../crates/worth-signal/src/facade.rs)
   are gated to `#[cfg(test)]`
-- [`lib.rs`](/Users/spenstar/Documents/programming/WORTH/WORTH/crates/worth-signal/src/lib.rs)
+- [`lib.rs`](../../crates/worth-signal/src/lib.rs)
   keeps `presentation` private in non-test builds and only exposes it under
   tests
 - the docs place certification and harness material in lower-level reference,
   not in the first-path product story:
-  - [`CERTIFICATION_AND_HARNESS.md`](/Users/spenstar/Documents/programming/WORTH/WORTH/crates/worth-signal/docs/CERTIFICATION_AND_HARNESS.md)
-  - [`docs/README.md`](/Users/spenstar/Documents/programming/WORTH/WORTH/crates/worth-signal/docs/README.md)
+  - `CERTIFICATION_AND_HARNESS.md`
+  - [`docs/README.md`](../../crates/worth-signal/docs/README.md)
 - the user-facing README and crate docs do not pitch harness/certification as
   the front door
 

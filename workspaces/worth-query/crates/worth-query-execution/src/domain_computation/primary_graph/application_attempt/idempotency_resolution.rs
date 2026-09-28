@@ -22,10 +22,17 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphApplicationRuntime,
 };
 
+/// What an idempotency key already means on the current product branch, read
+/// through `resolve_admitted_application_idempotency` without committing
+/// anything.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationIdempotencyResolution {
+    /// No commit is recorded under this key.
     Unseen,
+    /// A commit with the same intent is recorded under this key; its receipt is
+    /// recovered.
     AlreadyCommitted(WorthQueryApplicationCommitReceipt),
+    /// The key was already used for a different intent.
     IntentDrift,
 }
 
@@ -42,17 +49,33 @@ pub enum WorthQueryGuardedWorkflowOperationCustody {
     Indeterminate(WorthQueryApplicationIdempotencyResolutionDenial),
 }
 
+/// Why an idempotency key could not be resolved. The resolution is a read, so
+/// nothing took effect.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationIdempotencyResolutionDenialKind {
+    /// The admission's current authority no longer holds, or inspecting the key was
+    /// not authorized. The authorization denial has the detail.
     Authorization,
+    /// The admission belongs to another runtime or schema binding, or has no product
+    /// to resolve against.
     ForeignAdmission,
+    /// The provider holds its maximum number of active snapshots.
     ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
+    /// The provider has no retention capacity for the read.
     RetentionCapacityExhausted,
+    /// The provider has run out of retention identities.
     RetentionIdentityExhausted,
+    /// The provider has run out of snapshot identities.
     SnapshotIdentityExhausted,
+    /// The provider could not answer, the product was unpublished, or the recorded
+    /// receipt could not be read back.
     ProviderUnavailable,
 }
 
+/// A refusal to resolve an idempotency key. Nothing took effect.
+///
+/// Match on [`kind`](Self::kind); [`authorization`](Self::authorization) is set
+/// only for an authorization refusal.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationIdempotencyResolutionDenial {
     kind: WorthQueryApplicationIdempotencyResolutionDenialKind,

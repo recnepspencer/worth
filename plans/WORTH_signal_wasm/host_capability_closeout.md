@@ -6,7 +6,7 @@
 >
 > **Roadmap parent:** [wasm_product_roadmap.md](./wasm_product_roadmap.md)
 >
-> **Product guide:** [host_capabilities.md](./host_capabilities.md)
+> **Product guide:** [host_capabilities.md](../../crates/worth-signal-wasm/docs/integrations/host-capabilities.md)
 >
 > **Prerequisite closeout:** [host_callback_computed_spec.md](./host_callback_computed_spec.md)
 
@@ -52,8 +52,8 @@ The implementation now includes:
 
 The direct closeout gates are:
 
-- [host_capabilities.certification.test.mjs](../package-src/product/host_capabilities.certification.test.mjs)
-- [verify-worth-signals-wasm-package.mjs](../../../scripts/wasm/verify-worth-signals-wasm-package.mjs)
+- [host_capabilities.certification.test.mjs](../../crates/worth-signal-wasm/package/product/host_capabilities.certification.test.mjs)
+- [verify-worth-signals-wasm-package.mjs](../../scripts/wasm/verify-worth-signals-wasm-package.mjs)
 
 Those two surfaces matter together:
 
@@ -65,31 +65,31 @@ Those two surfaces matter together:
 
 Product surface and lifecycle ownership:
 
-- [package-src/product/host_capabilities.ts](../package-src/product/host_capabilities.ts)
-- [package-src/product/signals.ts](../package-src/product/signals.ts)
-- [package-src/product/callback_frames.ts](../package-src/product/callback_frames.ts)
-- [package-src/product/transactions.ts](../package-src/product/transactions.ts)
-- [package-src/product/diagnostics.ts](../package-src/product/diagnostics.ts)
-- [package-src/product/host_capability_reports.ts](../package-src/product/host_capability_reports.ts)
+- [package-src/product/host_capabilities.ts](../../crates/worth-signal-wasm/package-src/product/host_capabilities.ts)
+- [package-src/product/signals.ts](../../crates/worth-signal-wasm/package-src/product/signals.ts)
+- [package-src/product/callback_frames.ts](../../crates/worth-signal-wasm/package-src/product/callback_frames.ts)
+- [package-src/product/transactions.ts](../../crates/worth-signal-wasm/package-src/product/transactions.ts)
+- [package-src/product/diagnostics.ts](../../crates/worth-signal-wasm/package-src/product/diagnostics.ts)
+- [package-src/product/host_capability_reports.ts](../../crates/worth-signal-wasm/package-src/product/host_capability_reports.ts)
 
 Typed public surface:
 
-- [package-src/index.ts](../package-src/index.ts)
-- [package/types/callable_surface.d.ts](../package/types/callable_surface.d.ts)
-- [package/types/diagnostics.d.ts](../package/types/diagnostics.d.ts)
-- [package/types/raw_surface.d.ts](../package/types/raw_surface.d.ts)
-- [package/types-smoke.ts](../package/types-smoke.ts)
+- [package-src/index.ts](../../crates/worth-signal-wasm/package-src/index.ts)
+- [package/types/callable_surface.d.ts](../../crates/worth-signal-wasm/package/types/callable_surface.d.ts)
+- [package/types/diagnostics.d.ts](../../crates/worth-signal-wasm/package/types/diagnostics.d.ts)
+- [package/types/raw_surface.d.ts](../../crates/worth-signal-wasm/package/types/raw_surface.d.ts)
+- [package/types-smoke.ts](../../crates/worth-signal-wasm/package/types-smoke.ts)
 Runtime and transport ownership:
 
-- [src/runtime/compute_callbacks/invocation.rs](../src/runtime/compute_callbacks/invocation.rs)
-- [src/runtime/compute_callbacks/types.rs](../src/runtime/compute_callbacks/types.rs)
-- [src/runtime/core/state.rs](../src/runtime/core/state.rs)
-- [src/runtime/core/diagnostics/callback_nodes.rs](../src/runtime/core/diagnostics/callback_nodes.rs)
-- [src/runtime/core/diagnostics/why.rs](../src/runtime/core/diagnostics/why.rs)
-- [src/runtime/core/envelopes.rs](../src/runtime/core/envelopes.rs)
-- [src/runtime/adapters.rs](../src/runtime/adapters.rs)
-- [src/runtime/summaries.rs](../src/runtime/summaries.rs)
-- [src/boundary/restore_tokens.rs](../src/boundary/restore_tokens.rs)
+- [src/runtime/compute_callbacks/invocation.rs](../../crates/worth-signal-wasm/src/runtime/compute_callbacks/invocation.rs)
+- [src/runtime/compute_callbacks/types.rs](../../crates/worth-signal-wasm/src/runtime/compute_callbacks/types.rs)
+- [src/runtime/core/state.rs](../../crates/worth-signal-wasm/src/runtime/core/state.rs)
+- [src/runtime/core/diagnostics/callback_nodes.rs](../../crates/worth-signal-wasm/src/runtime/core/diagnostics/callback_nodes.rs)
+- [src/runtime/core/diagnostics/why.rs](../../crates/worth-signal-wasm/src/runtime/core/diagnostics/why.rs)
+- [src/runtime/core/envelopes.rs](../../crates/worth-signal-wasm/src/runtime/core/envelopes.rs)
+- [src/runtime/adapters.rs](../../crates/worth-signal-wasm/src/runtime/adapters.rs)
+- [src/runtime/summaries.rs](../../crates/worth-signal-wasm/src/runtime/summaries.rs)
+- [src/boundary/restore_tokens.rs](../../crates/worth-signal-wasm/src/boundary/restore_tokens.rs)
 
 ## Must-Ship Acceptance Map
 

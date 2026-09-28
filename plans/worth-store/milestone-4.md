@@ -2,19 +2,19 @@
 
 > **Status:** Closed 2026-04-14
 >
-> **Roadmap parent:** [worth_store_roadmap.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/worth_store_roadmap.md)
+> **Roadmap parent:** `worth_store_roadmap.md`
 >
-> **Vision parent:** [worth_store_vision.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/worth_store_vision.md)
+> **Vision parent:** [worth_store_vision.md](./worth_store_vision.md)
 >
-> **Test requirements:** [test-requirements.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/test-requirements.md)
+> **Test requirements:** [test-requirements.md](./test-requirements.md)
 >
 > **Prerequisite milestones:**
-> - [milestone-1.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-1.md)
-> - [milestone-1-closeout.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-1-closeout.md)
-> - [milestone-2.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-2.md)
-> - [milestone-2-closeout.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-2-closeout.md)
-> - [milestone-3.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-3.md)
-> - [milestone-3-closeout.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-3-closeout.md)
+> - [milestone-1.md](./milestone-1.md)
+> - [milestone-1-closeout.md](./milestone-1-closeout.md)
+> - [milestone-2.md](./milestone-2.md)
+> - [milestone-2-closeout.md](./milestone-2-closeout.md)
+> - [milestone-3.md](./milestone-3.md)
+> - [milestone-3-closeout.md](./milestone-3-closeout.md)
 >
 > **Primary architectural driver:** make snapshots a fast, immutable, derived
 > restore substrate without letting them become a second source of truth

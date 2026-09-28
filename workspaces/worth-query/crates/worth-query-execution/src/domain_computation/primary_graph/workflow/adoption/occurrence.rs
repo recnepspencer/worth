@@ -15,9 +15,12 @@ pub enum WorthQueryWorkflowIncompatibility {
     DependencyChanged { node_path: String, name: String },
 }
 
+/// Whether a retained workflow definition can run under the target program.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryWorkflowCompatibility {
+    /// The definition runs under the target exactly as retained.
     Compatible,
+    /// The definition cannot run under the target; the cause says why.
     Incompatible(WorthQueryWorkflowIncompatibility),
 }
 
@@ -44,6 +47,8 @@ pub enum WorthQueryWorkflowInstanceCustody {
     OperationInOwnerCustody,
 }
 
+/// The caller's choice for one workflow definition when a branch adopts a new
+/// program.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum WorthQueryWorkflowDefinitionDisposition {
     /// Keep the definition current; later starts run under the target.
@@ -52,6 +57,8 @@ pub enum WorthQueryWorkflowDefinitionDisposition {
     Retire,
 }
 
+/// The caller's choice for one live workflow instance when a branch adopts a
+/// new program.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum WorthQueryWorkflowInstanceDisposition {
     /// Continue the instance under the target program.

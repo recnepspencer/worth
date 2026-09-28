@@ -82,7 +82,7 @@ Why:
 
 - valuable content, but too easy to collapse several different stories together
 - transaction and keyed runtime should be documented as deliberate advanced
-  workflows, not as a single â€œmiscellaneous power surfaceâ€
+  workflows, not as a single “miscellaneous power surface”
 
 Target replacement:
 
@@ -145,7 +145,7 @@ Classification:
 Why:
 
 - concept is real and important
-- â€œlineage modelâ€ is too architecture-first for the main product story
+- “lineage model” is too architecture-first for the main product story
 - should sit underneath a more approachable history/replay document
 
 Target replacement:
@@ -342,5 +342,5 @@ Can follow immediately after:
 The docs do need a significant rewrite.
 
 The code and tests are now in a stable enough place that we should stop trying
-to make old docs â€œgood enoughâ€ and instead build a new publish-facing docs set
+to make old docs “good enough” and instead build a new publish-facing docs set
 that matches the product shape we actually intend to ship.

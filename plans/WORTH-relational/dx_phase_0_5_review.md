@@ -46,21 +46,21 @@ It is just not Phase 0 or 0.5 work anymore.
 
 ### Evidence
 
-- [`dx_export_inventory.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_export_inventory.md)
+- [`dx_export_inventory.md`](./dx_export_inventory.md)
   exists and is anchored to the live
-  [`facade.rs`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/facade.rs)
+  [`facade.rs`](../../crates/worth-relational/src/facade.rs)
   surface instead of stale historical docs
-- [`dx_export_exhaustive_audit.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_export_exhaustive_audit.md)
+- [`dx_export_exhaustive_audit.md`](./dx_export_exhaustive_audit.md)
   exists and gives the symbol-level facade ground truth
-- [`dx_export_decision_matrix.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_export_decision_matrix.md)
+- [`dx_export_decision_matrix.md`](./dx_export_decision_matrix.md)
   exists and turns the inventory into explicit module-level exposure decisions
-- [`dx_method_decision_matrix.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_method_decision_matrix.md)
+- [`dx_method_decision_matrix.md`](./dx_method_decision_matrix.md)
   exists and covers the verb surface that module-level classification alone
   would miss
 - the analysis was explicitly corrected to follow the repo architectural
   standards in:
-  - [`architectural_guidelines.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/architectural_guidelines.md)
-  - [`MENTALITY.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/MENTALITY.md)
+  - [`architectural_guidelines.md`](../../docs/coding-guidelines/arch_laws.md)
+  - [`MENTALITY.md`](../../docs/coding-guidelines/MENTALITY.md)
 - the classification rule is now architectural:
   - keep real power
   - contain it deliberately
@@ -91,7 +91,7 @@ We have crossed that line.
 
 ### Evidence
 
-- [`dx_canonical_surface_spec.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_canonical_surface_spec.md)
+- [`dx_canonical_surface_spec.md`](./dx_canonical_surface_spec.md)
   exists and defines the agent-friendly target shape:
   - one obvious setup door
   - one obvious mutation flow
@@ -99,13 +99,13 @@ We have crossed that line.
   - one obvious inspection flow
   - explicit escalation into history, replay, merge, durability, validation,
     and strategy work
-- [`dx_boundary_spec.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_boundary_spec.md)
+- [`dx_boundary_spec.md`](./dx_boundary_spec.md)
   exists and defines what is:
   - primary
   - contained
   - specialist
   - not part of the public product story
-- [`dx_boundary_cleanup_list.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_boundary_cleanup_list.md)
+- [`dx_boundary_cleanup_list.md`](./dx_boundary_cleanup_list.md)
   exists and resolves the ugly seam question in a concrete way:
   - which seams get promoted
   - which seams get removed

@@ -1,3 +1,15 @@
+/// Why an application attempt was refused while reading its decision basis or
+/// authoring its candidate.
+///
+/// Nothing was committed. The families are: foreign or stale inputs (wrong
+/// application, current authority lost, source retired or changed, stale entity
+/// identity); decision-read
+/// violations (undeclared, outside scope, incomplete, over budget, precondition
+/// mismatch); effect violations (undeclared effect, invalid value, foreign
+/// target, output-role mismatch); candidate capacity limits; lane mismatches,
+/// where the operation needs a delegation, capability, elevation, or review lane;
+/// and workflow refusals for definitions, instances, transitions, assessments,
+/// and approvals.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationAttemptDenialKind {
     ForeignApplication,
@@ -113,6 +125,11 @@ pub enum WorthQueryApplicationAttemptDenialKind {
     WorkflowApprovalAuthorityDenied,
 }
 
+/// A typed refusal of an application attempt before commit, with the subject it
+/// names (usually the operation, entity, field, or relation involved).
+///
+/// Nothing was committed. Match on [`kind`](Self::kind); the subject is for
+/// diagnostics.
 #[derive(Debug)]
 pub struct WorthQueryApplicationAttemptDenial {
     kind: WorthQueryApplicationAttemptDenialKind,

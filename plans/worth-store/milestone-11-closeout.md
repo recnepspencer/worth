@@ -1,10 +1,12 @@
 # Milestone 11 Closeout: Background Maintenance Isolation And Scheduling Contracts
 
+> **Note:** The legacy root crate `crates/worth-store` was removed on 2026-09-27. Paths into it below name its files as they were; they are no longer links. The store now lives in [`workspaces/worth-store`](../../workspaces/worth-store/README.md).
+
 Status: Completed on 2026-04-21
 
-Parent spec: [milestone-11.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-11.md)
+Parent spec: [milestone-11.md](./milestone-11.md)
 
-Roadmap: [worth_store_roadmap.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/worth_store_roadmap.md)
+Roadmap: `worth_store_roadmap.md`
 
 ## Summary
 
@@ -34,40 +36,40 @@ The closure claim is:
 
 - maintenance declaration payloads, classes, descriptor identities, and
   crate-private container constructors in
-  [crates/worth-store/src/maintenance/declarations](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/maintenance/declarations)
+  `crates/worth-store/src/maintenance/declarations`
 - scheduler vocabulary, lane keys, locality scopes, reservation families,
   budget grants, queue summaries, debt summaries, coalescing decisions,
   starvation status, escalation verdicts, and descriptor lowering in
-  [crates/worth-store/src/maintenance/scheduler.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/maintenance/scheduler.rs)
+  `crates/worth-store/src/maintenance/scheduler.rs`
 - lifecycle-typed maintenance status, foreground interference, foreground wait,
   readmission, reservation, completion, cancellation, and failure surfaces in
-  [crates/worth-store/src/maintenance/lifecycle.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/maintenance/lifecycle.rs)
+  `crates/worth-store/src/maintenance/lifecycle.rs`
 - backend admission, planning, execution, foreground-guarding, evidence, and
   restart-readmission logic in
-  [crates/worth-store/src/backend/maintenance](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/backend/maintenance)
+  `crates/worth-store/src/backend/maintenance`
 - durable maintenance declaration, execution, queue-summary,
   locality-summary, reservation-summary, budget-summary, and debt-summary
   records in
-  [crates/worth-store/src/backend/records/maintenance.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/backend/records/maintenance.rs)
+  `crates/worth-store/src/backend/records/maintenance.rs`
 - Milestone 11 counter contracts, maintenance reports, topology reports,
   resource-budget reports, interference matrix rows, debt-escalation reports,
   complexity surfaces, and certification bundles in
-  [crates/worth-store/src/evidence/milestone_11.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/evidence/milestone_11.rs)
+  `crates/worth-store/src/evidence/milestone_11.rs`
 - focused Milestone 11 runtime coverage in
-  [crates/worth-store/src/tests/milestone_11_maintenance.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/tests/milestone_11_maintenance.rs)
+  `crates/worth-store/src/tests/milestone_11_maintenance.rs`
   and
-  [crates/worth-store/src/tests/milestone_11_maintenance](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/tests/milestone_11_maintenance)
+  `crates/worth-store/src/tests/milestone_11_maintenance`
 - compile-time phase-boundary coverage in
-  [crates/worth-store/tests/phase_boundaries_compile_fail.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/tests/phase_boundaries_compile_fail.rs)
+  `crates/worth-store/tests/phase_boundaries_compile_fail.rs`
   and
-  [crates/worth-store/tests/ui](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/tests/ui)
+  `crates/worth-store/tests/ui`
 
 ## Acceptance Mapping
 
 Milestone 11 is considered closed against
-[milestone-11.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-11.md)
+[milestone-11.md](./milestone-11.md)
 and
-[test-requirements.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/test-requirements.md)
+[test-requirements.md](./test-requirements.md)
 because the required named suite and supporting hostile lanes now map directly
 to code and machine-checkable evidence.
 
@@ -75,12 +77,12 @@ to code and machine-checkable evidence.
 
 Covered by:
 
-- [crates/worth-store/src/tests/milestone_11_maintenance.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/tests/milestone_11_maintenance.rs)
-- [crates/worth-store/src/tests/milestone_11_maintenance/foreground.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/tests/milestone_11_maintenance/foreground.rs)
-- [crates/worth-store/src/tests/milestone_11_maintenance/plan_transitions.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/tests/milestone_11_maintenance/plan_transitions.rs)
-- [crates/worth-store/src/tests/milestone_11_maintenance/restart_status.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/tests/milestone_11_maintenance/restart_status.rs)
-- [crates/worth-store/src/tests/milestone_11_maintenance/resume.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/tests/milestone_11_maintenance/resume.rs)
-- [crates/worth-store/src/tests/milestone_11_maintenance/rebuild.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/tests/milestone_11_maintenance/rebuild.rs)
+- `crates/worth-store/src/tests/milestone_11_maintenance.rs`
+- `crates/worth-store/src/tests/milestone_11_maintenance/foreground.rs`
+- `crates/worth-store/src/tests/milestone_11_maintenance/plan_transitions.rs`
+- `crates/worth-store/src/tests/milestone_11_maintenance/restart_status.rs`
+- `crates/worth-store/src/tests/milestone_11_maintenance/resume.rs`
+- `crates/worth-store/src/tests/milestone_11_maintenance/rebuild.rs`
 
 What is proven:
 
@@ -132,9 +134,9 @@ They prove admission, pacing, locality, debt posture, counters, and visibility.
 
 Covered by:
 
-- [crates/worth-store/tests/phase_boundaries_compile_fail.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/tests/phase_boundaries_compile_fail.rs)
-- [crates/worth-store/tests/ui/tier_maintenance_container_constructor_private.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/tests/ui/tier_maintenance_container_constructor_private.rs)
-- [crates/worth-store/tests/ui/late_maintenance_container_constructor_private.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/tests/ui/late_maintenance_container_constructor_private.rs)
+- `crates/worth-store/tests/phase_boundaries_compile_fail.rs`
+- `crates/worth-store/tests/ui/tier_maintenance_container_constructor_private.rs`
+- `crates/worth-store/tests/ui/late_maintenance_container_constructor_private.rs`
 
 What is proven:
 

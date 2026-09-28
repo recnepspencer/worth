@@ -11,9 +11,9 @@ use worth_query_host::facade::domain::{
 };
 use worth_query_host::facade::primary_graph::WorthQueryBranchAdoptionPreparationDenial;
 
-use crate::bounded_dimension_model::host::publish_on_first_program;
-use crate::bounded_dimension_model::operator_identity::{authenticate_operator, request_scope};
-use crate::bounded_dimension_model::programs::DimensionProgramP1;
+use crate::document_retention_model::host::publish_on_first_program;
+use crate::document_retention_model::operator_identity::{authenticate_operator, request_scope};
+use crate::document_retention_model::programs::RetentionProgramP1;
 
 #[test]
 fn current_branch_prevents_program_support_retirement() {
@@ -45,7 +45,7 @@ fn retained_interpretation_blocks_retirement_after_the_live_branch_moves_on() {
         .select()
         .expect("the exact P0 branch selection is retained");
     let target = *host
-        .supported_program::<DimensionProgramP1>()
+        .supported_program::<RetentionProgramP1>()
         .expect("P1 is rostered")
         .owned_revision();
     adopt(&host, branch, &target);
@@ -79,7 +79,7 @@ fn prepared_adoption_custody_blocks_target_support_retirement() {
     let host = publish_on_first_program();
     let branch = host.current_world();
     let target = *host
-        .supported_program::<DimensionProgramP1>()
+        .supported_program::<RetentionProgramP1>()
         .expect("P1 is rostered")
         .owned_revision();
     let scope = request_scope();
@@ -110,7 +110,7 @@ fn prepared_adoption_custody_blocks_target_support_retirement() {
         .retire_program_support(&target)
         .expect("P1 retires after prepared custody is released");
     assert!(receipt.inventory().can_retire());
-    assert!(host.supported_program::<DimensionProgramP1>().is_none());
+    assert!(host.supported_program::<RetentionProgramP1>().is_none());
     let programs = host
         .runtime()
         .request(&principal, &scope)
@@ -131,7 +131,7 @@ fn unpublished_adoption_prevents_retirement_until_exact_recovery_is_released() {
     let host = publish_on_first_program();
     let branch = host.current_world();
     let target = *host
-        .supported_program::<DimensionProgramP1>()
+        .supported_program::<RetentionProgramP1>()
         .expect("P1 is rostered")
         .owned_revision();
     let scope = request_scope();
@@ -165,7 +165,7 @@ fn unpublished_adoption_prevents_retirement_until_exact_recovery_is_released() {
     assert_eq!(inventory.retained_interpretations(), 0);
     assert_eq!(inventory.mandatory_custody(), 1);
     assert!(inventory.retained_program_bytes() > 0);
-    assert!(host.supported_program::<DimensionProgramP1>().is_some());
+    assert!(host.supported_program::<RetentionProgramP1>().is_some());
     let outcome = host
         .runtime()
         .request(&principal, &scope)
@@ -204,7 +204,7 @@ fn denied_recovery_release_preserves_support_custody_for_retry() {
     let host = publish_on_first_program();
     let branch = host.current_world();
     let target = *host
-        .supported_program::<DimensionProgramP1>()
+        .supported_program::<RetentionProgramP1>()
         .expect("P1 is rostered")
         .owned_revision();
     let scope = request_scope();
@@ -274,8 +274,8 @@ fn denied_recovery_release_preserves_support_custody_for_retry() {
 }
 
 pub(super) fn adopt(
-    host: &crate::bounded_dimension_model::host::BoundedDimensionRuntime<
-        crate::bounded_dimension_model::programs::DimensionProgramP0,
+    host: &crate::document_retention_model::host::DocumentRetentionRuntime<
+        crate::document_retention_model::programs::RetentionProgramP0,
     >,
     branch: worth_query_host::facade::product::WorthQueryProductBranch,
     target: &worth_query_host::facade::declaration::application_program::ApplicationProgramRevision,

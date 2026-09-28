@@ -14,6 +14,10 @@ use super::{
     WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphInstallationDenialKind,
 };
 
+/// One entity to seed into the primary graph at bootstrap: its kind, key, and
+/// field values.
+///
+/// Build with `new` and `field`, then pass it to `bind_entity`.
 pub struct WorthQueryApplicationEntitySeed<Schema, Entity> {
     entity: &'static str,
     key: WorthQueryApplicationEntityKey<Schema, Entity>,
@@ -56,6 +60,10 @@ impl<Schema, Entity> WorthQueryApplicationEntitySeed<Schema, Entity> {
     }
 }
 
+/// One relation to seed at bootstrap, keyed and linking two seeded entities by
+/// their keys.
+///
+/// Pass it to `bind_relation`.
 pub struct WorthQueryApplicationRelationSeed<Schema, Relation, From, To> {
     relation: &'static str,
     key: String,

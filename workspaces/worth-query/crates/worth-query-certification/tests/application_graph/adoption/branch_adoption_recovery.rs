@@ -7,12 +7,12 @@ use worth_query_host::facade::application_entry::{
 use worth_query_host::facade::application_installation::WorthQueryProgramOwner;
 use worth_query_host::facade::primary_graph::WorthQueryBranchAdoptionRecoveryDenial;
 
-use crate::bounded_dimension_model::host::publish_on_first_program;
-use crate::bounded_dimension_model::operator_identity::{authenticate_operator, request_scope};
-use crate::bounded_dimension_model::presented_request::set_dimension;
-use crate::bounded_dimension_model::programs::DimensionProgramP1;
-use crate::bounded_dimension_model::readback::read_dimension;
-use crate::bounded_dimension_model::settled_verdict::{settle, DimensionVerdict};
+use crate::document_retention_model::host::publish_on_first_program;
+use crate::document_retention_model::operator_identity::{authenticate_operator, request_scope};
+use crate::document_retention_model::presented_request::set_retention;
+use crate::document_retention_model::programs::RetentionProgramP1;
+use crate::document_retention_model::readback::read_retention;
+use crate::document_retention_model::settled_verdict::{settle, RetentionVerdict};
 
 const P1_VALUE: u64 = 15;
 
@@ -21,7 +21,7 @@ fn unpublished_adoption_settles_and_publishes_without_replaying_relational_work(
     let host = publish_on_first_program();
     let branch = host.current_world();
     let target = *host
-        .supported_program::<DimensionProgramP1>()
+        .supported_program::<RetentionProgramP1>()
         .expect("P1 is rostered")
         .owned_revision();
     let scope = request_scope();
@@ -81,10 +81,10 @@ fn unpublished_adoption_settles_and_publishes_without_replaying_relational_work(
 
     let adopted = host.current_world();
     assert_eq!(
-        settle(set_dimension(&host, adopted, P1_VALUE, 0x9175_2001)),
-        DimensionVerdict::Performed(P1_VALUE)
+        settle(set_retention(&host, adopted, P1_VALUE, 0x9175_2001)),
+        RetentionVerdict::Performed(P1_VALUE)
     );
-    assert_eq!(read_dimension(host.runtime(), adopted), P1_VALUE);
+    assert_eq!(read_retention(host.runtime(), adopted), P1_VALUE);
 }
 
 #[test]
@@ -99,7 +99,7 @@ fn sibling_branch_cannot_consume_an_unpublished_adoption_recovery() {
         .create()
         .expect("sibling branch publishes");
     let target = *host
-        .supported_program::<DimensionProgramP1>()
+        .supported_program::<RetentionProgramP1>()
         .expect("P1 is rostered")
         .owned_revision();
     let scope = request_scope();
@@ -156,8 +156,8 @@ fn sibling_branch_cannot_consume_an_unpublished_adoption_recovery() {
     }
 
     assert_eq!(
-        settle(set_dimension(&host, sibling, 3, 0x9175_2011)),
-        DimensionVerdict::Performed(3),
+        settle(set_retention(&host, sibling, 3, 0x9175_2011)),
+        RetentionVerdict::Performed(3),
         "the sibling remains on P0"
     );
 }
@@ -167,7 +167,7 @@ fn performed_recovery_retains_cleanup_failure_after_the_effect() {
     let host = publish_on_first_program();
     let branch = host.current_world();
     let target = *host
-        .supported_program::<DimensionProgramP1>()
+        .supported_program::<RetentionProgramP1>()
         .expect("P1 is rostered")
         .owned_revision();
     let scope = request_scope();
@@ -226,7 +226,7 @@ fn two_same_head_adoptions_report_one_performed_world_transition() {
         .program_activation_entity_for_test()
         .expect("the activation record is published once");
     let target = *host
-        .supported_program::<DimensionProgramP1>()
+        .supported_program::<RetentionProgramP1>()
         .expect("P1 is rostered")
         .owned_revision();
     let scope = request_scope();
@@ -311,12 +311,12 @@ fn two_same_head_adoptions_report_one_performed_world_transition() {
 
     let adopted = host.current_world();
     assert_eq!(
-        settle(set_dimension(&host, adopted, P1_VALUE, 0x9175_2021)),
-        DimensionVerdict::Performed(P1_VALUE),
+        settle(set_retention(&host, adopted, P1_VALUE, 0x9175_2021)),
+        RetentionVerdict::Performed(P1_VALUE),
         "the next ordinary call must execute under the performed program"
     );
     assert_eq!(
-        read_dimension(host.runtime(), host.current_world()),
+        read_retention(host.runtime(), host.current_world()),
         P1_VALUE,
         "the post-race World must expose one coherent component combination"
     );

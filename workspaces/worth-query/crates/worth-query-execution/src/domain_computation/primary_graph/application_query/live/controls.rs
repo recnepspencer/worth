@@ -6,13 +6,22 @@ use crate::domain_computation::primary_graph::live_delivery::{
     WorthQueryLiveDeliveryControlDenial, WorthQueryLiveDeliveryControls,
 };
 
+/// Why live-read controls could not be built from the given bounds.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationLiveControlDenial {
+    /// The request scope or buffer capacity was refused.
     Delivery(WorthQueryLiveDeliveryControlDenial),
+    /// The materialized record limit was zero.
     ZeroMaterializedRecordLimit,
+    /// The per-delivery work limit was zero.
     ZeroWorkLimit,
 }
 
+/// Bounds for a live read: the request scope, how many causes to buffer, and
+/// the record and work limits for each delivery.
+///
+/// Build with `bounded`; zero limits are refused. Each delivery replaces the
+/// request scope with the fresh request passed to `next`.
 #[derive(Clone)]
 pub struct WorthQueryApplicationLiveControls {
     delivery: WorthQueryLiveDeliveryControls,

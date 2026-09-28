@@ -1,12 +1,9 @@
 # Milestone 2 Plan: Canonical Aspect-Delta Engine
 
-## Status
-
-Milestone 2 is the next implementation milestone after
-[milestone-1-closeout.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/milestone-1-closeout.md).
+> **Status:** Completed. Closeout: [milestone-2-closeout.md](./milestone-2-closeout.md).
 
 This document is the implementation-spec companion to
-[worth_relational_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/worth_relational_roadmap.md)
+[worth_relational_roadmap.md](./WORTH_relational_roadmap.md)
 `Milestone 2: Relational Aspect Semantics`.
 
 It is intentionally not a short roadmap summary. It exists to lock the
@@ -968,7 +965,7 @@ than a collection of aspect-adjacent surfaces.
 ## Adversarial Alignment With Test Requirements
 
 The milestone must be interpreted through
-[test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/test-requirements.md),
+[test-requirements.md](./test-requirements.md),
 not merely alongside it.
 
 Milestone 2 is not required to fully implement every generic ultimate test, but
@@ -1194,7 +1191,7 @@ Status markers:
   aspect rewires remain historically queryable from durable truth alone
   Disposition:
   deferred to Milestone 7B in
-  [worth_relational_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/worth_relational_roadmap.md)
+  [worth_relational_roadmap.md](./WORTH_relational_roadmap.md)
   because Milestone 2 defines endpoint-bound aspect truth but does not define
   first-class relation rewiring as an authoritative mutation/reconciliation
   capability. Milestone 2 must preserve truthful endpoint-bound aspect
@@ -1256,7 +1253,7 @@ Status markers:
   connectivity-parity outputs
   Disposition:
   deferred to Milestone 7B in
-  [worth_relational_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/worth_relational_roadmap.md)
+  [worth_relational_roadmap.md](./WORTH_relational_roadmap.md)
   because the roadmap places first-class rewiring/merge/reconciliation
   semantics later than Milestone 2. Milestone 2 owns the endpoint-bound aspect
   truth foundation that netlist rewiring will consume, but not the full

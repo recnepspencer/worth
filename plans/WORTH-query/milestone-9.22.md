@@ -1,5 +1,7 @@
 # Milestone 9.22: Occurrence-Safe Stage And Subartifact Reuse
 
+> **Status:** Not started.
+
 ## Goal
 
 Reuse eligible stages and subartifacts across attempts through framework-owned

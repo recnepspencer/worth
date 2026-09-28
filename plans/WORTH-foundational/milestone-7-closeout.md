@@ -44,10 +44,10 @@ for the shipped Milestone 7 surface.
   inventory, documentation inventory, runtime assumptions, non-assumptions, and
   residual debt.
 - Crate-facing Milestone 7 docs now exist under
-  [crates/worth-foundational/docs/lineage-provenance-receipts-and-support-truth](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/docs/lineage-provenance-receipts-and-support-truth),
+  [crates/worth-foundational/docs/lineage-provenance-receipts-and-support-truth](../../crates/worth-foundational/docs/lineage-provenance-receipts-and-support-truth),
   with one landing page and one feature doc per shipped capability seam, plus a
   crate docs entrypoint at
-  [crates/worth-foundational/docs/README.md](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/docs/README.md).
+  [crates/worth-foundational/docs/README.md](../../crates/worth-foundational/docs/README.md).
 
 ## Phase Crosswalk
 
@@ -55,12 +55,12 @@ for the shipped Milestone 7 surface.
 
 Shipped homes:
 
-- [primitives.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_evidence/primitives.rs)
-- [front_doors/mod.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_evidence/front_doors/mod.rs)
-- [common_path.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_evidence_api/common_path.rs)
-- [lower_lane/primitives.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_evidence_api/lower_lane/primitives.rs)
-- [primitives.rs test](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/boundary_evidence/primitives.rs)
-- [ui/boundary_evidence/primitives](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/ui/boundary_evidence/primitives)
+- [primitives.rs](../../crates/worth-foundational/src/boundary_evidence/primitives.rs)
+- [front_doors/mod.rs](../../crates/worth-foundational/src/boundary_evidence/front_doors/mod.rs)
+- [common_path.rs](../../crates/worth-foundational/src/boundary_evidence_api/common_path.rs)
+- [lower_lane/primitives.rs](../../crates/worth-foundational/src/boundary_evidence_api/lower_lane/primitives.rs)
+- [primitives.rs test](../../crates/worth-foundational/tests/certification/boundary_evidence/primitives.rs)
+- [ui/boundary_evidence/primitives](../../crates/worth-foundational/tests/ui/boundary_evidence/primitives)
 
 What closed:
 
@@ -73,14 +73,14 @@ What closed:
 
 Shipped homes:
 
-- [provenance/mod.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_evidence/provenance/mod.rs)
-- [layers.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_evidence/provenance/layers.rs)
-- [source_basis.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_evidence/provenance/source_basis.rs)
-- [artifact.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_evidence/provenance/artifact.rs)
-- [provenance_front_doors.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_evidence/provenance_front_doors.rs)
-- [lower_lane/provenance.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_evidence_api/lower_lane/provenance.rs)
-- [provenance.rs test](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/boundary_evidence/provenance.rs)
-- [ui/boundary_evidence/provenance](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/ui/boundary_evidence/provenance)
+- [provenance/mod.rs](../../crates/worth-foundational/src/boundary_evidence/provenance/mod.rs)
+- [layers.rs](../../crates/worth-foundational/src/boundary_evidence/provenance/layers.rs)
+- [source_basis.rs](../../crates/worth-foundational/src/boundary_evidence/provenance/source_basis.rs)
+- [artifact.rs](../../crates/worth-foundational/src/boundary_evidence/provenance/artifact.rs)
+- [provenance_front_doors.rs](../../crates/worth-foundational/src/boundary_evidence/provenance_front_doors.rs)
+- [lower_lane/provenance.rs](../../crates/worth-foundational/src/boundary_evidence_api/lower_lane/provenance.rs)
+- [provenance.rs test](../../crates/worth-foundational/tests/certification/boundary_evidence/provenance.rs)
+- [ui/boundary_evidence/provenance](../../crates/worth-foundational/tests/ui/boundary_evidence/provenance)
 
 What closed:
 
@@ -94,12 +94,12 @@ What closed:
 
 Shipped homes:
 
-- [receipts/mod.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_evidence/receipts/mod.rs)
-- [artifact.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_evidence/receipts/artifact.rs)
-- [receipt_front_doors.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_evidence/receipt_front_doors.rs)
-- [lower_lane/receipts.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_evidence_api/lower_lane/receipts.rs)
-- [receipts.rs test](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/boundary_evidence/receipts.rs)
-- [ui/boundary_evidence/receipts](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/ui/boundary_evidence/receipts)
+- [receipts/mod.rs](../../crates/worth-foundational/src/boundary_evidence/receipts/mod.rs)
+- [artifact.rs](../../crates/worth-foundational/src/boundary_evidence/receipts/artifact.rs)
+- [receipt_front_doors.rs](../../crates/worth-foundational/src/boundary_evidence/receipt_front_doors.rs)
+- [lower_lane/receipts.rs](../../crates/worth-foundational/src/boundary_evidence_api/lower_lane/receipts.rs)
+- [receipts.rs test](../../crates/worth-foundational/tests/certification/boundary_evidence/receipts.rs)
+- [ui/boundary_evidence/receipts](../../crates/worth-foundational/tests/ui/boundary_evidence/receipts)
 
 What closed:
 
@@ -112,12 +112,12 @@ What closed:
 
 Shipped homes:
 
-- [lineage/mod.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_evidence/lineage/mod.rs)
-- [artifact.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_evidence/lineage/artifact.rs)
-- [lineage_front_doors.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_evidence/lineage_front_doors.rs)
-- [lower_lane/lineage.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_evidence_api/lower_lane/lineage.rs)
-- [lineage.rs test](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/boundary_evidence/lineage.rs)
-- [ui/boundary_evidence/lineage](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/ui/boundary_evidence/lineage)
+- [lineage/mod.rs](../../crates/worth-foundational/src/boundary_evidence/lineage/mod.rs)
+- [artifact.rs](../../crates/worth-foundational/src/boundary_evidence/lineage/artifact.rs)
+- [lineage_front_doors.rs](../../crates/worth-foundational/src/boundary_evidence/lineage_front_doors.rs)
+- [lower_lane/lineage.rs](../../crates/worth-foundational/src/boundary_evidence_api/lower_lane/lineage.rs)
+- [lineage.rs test](../../crates/worth-foundational/tests/certification/boundary_evidence/lineage.rs)
+- [ui/boundary_evidence/lineage](../../crates/worth-foundational/tests/ui/boundary_evidence/lineage)
 
 What closed:
 
@@ -131,13 +131,13 @@ What closed:
 
 Shipped homes:
 
-- [support/mod.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_evidence/support/mod.rs)
-- [definitions.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_evidence/support/definitions.rs)
-- [artifact.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_evidence/support/artifact.rs)
-- [support_front_doors.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_evidence/support_front_doors.rs)
-- [lower_lane/support.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_evidence_api/lower_lane/support.rs)
-- [support.rs test](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/boundary_evidence/support.rs)
-- [ui/boundary_evidence/support](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/ui/boundary_evidence/support)
+- [support/mod.rs](../../crates/worth-foundational/src/boundary_evidence/support/mod.rs)
+- [definitions.rs](../../crates/worth-foundational/src/boundary_evidence/support/definitions.rs)
+- [artifact.rs](../../crates/worth-foundational/src/boundary_evidence/support/artifact.rs)
+- [support_front_doors.rs](../../crates/worth-foundational/src/boundary_evidence/support_front_doors.rs)
+- [lower_lane/support.rs](../../crates/worth-foundational/src/boundary_evidence_api/lower_lane/support.rs)
+- [support.rs test](../../crates/worth-foundational/tests/certification/boundary_evidence/support.rs)
+- [ui/boundary_evidence/support](../../crates/worth-foundational/tests/ui/boundary_evidence/support)
 
 What closed:
 
@@ -150,17 +150,17 @@ What closed:
 
 Shipped homes:
 
-- [attachments/mod.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_evidence/attachments/mod.rs)
-- [target.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_evidence/attachments/target.rs)
-- [continuity.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_evidence/attachments/continuity.rs)
-- [descriptive.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_evidence/attachments/descriptive.rs)
-- [bundle.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_evidence/attachments/bundle.rs)
-- [materialization.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_evidence/attachments/materialization.rs)
-- [readmission.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_evidence/attachments/readmission.rs)
-- [attachment_front_doors.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_evidence/attachment_front_doors.rs)
-- [stronger_lane/readmission.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_evidence_api/stronger_lane/readmission.rs)
-- [attachments.rs test](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/boundary_evidence/attachments.rs)
-- [ui/boundary_evidence/attachments](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/ui/boundary_evidence/attachments)
+- [attachments/mod.rs](../../crates/worth-foundational/src/boundary_evidence/attachments/mod.rs)
+- [target.rs](../../crates/worth-foundational/src/boundary_evidence/attachments/target.rs)
+- [continuity.rs](../../crates/worth-foundational/src/boundary_evidence/attachments/continuity.rs)
+- [descriptive.rs](../../crates/worth-foundational/src/boundary_evidence/attachments/descriptive.rs)
+- [bundle.rs](../../crates/worth-foundational/src/boundary_evidence/attachments/bundle.rs)
+- [materialization.rs](../../crates/worth-foundational/src/boundary_evidence/attachments/materialization.rs)
+- [readmission.rs](../../crates/worth-foundational/src/boundary_evidence/attachments/readmission.rs)
+- [attachment_front_doors.rs](../../crates/worth-foundational/src/boundary_evidence/attachment_front_doors.rs)
+- [stronger_lane/readmission.rs](../../crates/worth-foundational/src/boundary_evidence_api/stronger_lane/readmission.rs)
+- [attachments.rs test](../../crates/worth-foundational/tests/certification/boundary_evidence/attachments.rs)
+- [ui/boundary_evidence/attachments](../../crates/worth-foundational/tests/ui/boundary_evidence/attachments)
 
 What closed:
 
@@ -173,16 +173,16 @@ What closed:
 
 Shipped homes:
 
-- [readiness/mod.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_evidence/readiness/mod.rs)
-- [authority.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_evidence/readiness/authority.rs)
-- [certification.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_evidence/readiness/certification.rs)
-- [vocabulary.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_evidence/readiness/vocabulary.rs)
-- [inventory.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_evidence/readiness/inventory.rs)
-- [report.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_evidence/readiness/report.rs)
-- [grouped_surface.rs test](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/boundary_evidence/grouped_surface.rs)
-- [readiness.rs test](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/boundary_evidence/readiness.rs)
-- [ui/boundary_evidence/grouped_surface](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/ui/boundary_evidence/grouped_surface)
-- [ui/boundary_evidence/readiness](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/ui/boundary_evidence/readiness)
+- [readiness/mod.rs](../../crates/worth-foundational/src/boundary_evidence/readiness/mod.rs)
+- [authority.rs](../../crates/worth-foundational/src/boundary_evidence/readiness/authority.rs)
+- [certification.rs](../../crates/worth-foundational/src/boundary_evidence/readiness/certification.rs)
+- [vocabulary.rs](../../crates/worth-foundational/src/boundary_evidence/readiness/vocabulary.rs)
+- [inventory.rs](../../crates/worth-foundational/src/boundary_evidence/readiness/inventory.rs)
+- [report.rs](../../crates/worth-foundational/src/boundary_evidence/readiness/report.rs)
+- [grouped_surface.rs test](../../crates/worth-foundational/tests/certification/boundary_evidence/grouped_surface.rs)
+- [readiness.rs test](../../crates/worth-foundational/tests/certification/boundary_evidence/readiness.rs)
+- [ui/boundary_evidence/grouped_surface](../../crates/worth-foundational/tests/ui/boundary_evidence/grouped_surface)
+- [ui/boundary_evidence/readiness](../../crates/worth-foundational/tests/ui/boundary_evidence/readiness)
 
 What closed:
 
@@ -196,16 +196,16 @@ What closed:
 
 Shipped homes:
 
-- [docs/README.md](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/docs/README.md)
-- [lineage-provenance-receipts-and-support-truth/README.md](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/docs/lineage-provenance-receipts-and-support-truth/README.md)
-- [primitive-categories-locality-and-role-postures.md](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/docs/lineage-provenance-receipts-and-support-truth/primitive-categories-locality-and-role-postures.md)
-- [provenance-layering-and-freshness.md](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/docs/lineage-provenance-receipts-and-support-truth/provenance-layering-and-freshness.md)
-- [receipts-and-closeout-truth.md](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/docs/lineage-provenance-receipts-and-support-truth/receipts-and-closeout-truth.md)
-- [lineage-continuity-divergence-and-promotion.md](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/docs/lineage-provenance-receipts-and-support-truth/lineage-continuity-divergence-and-promotion.md)
-- [support-truth-recovery-and-degraded-operation.md](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/docs/lineage-provenance-receipts-and-support-truth/support-truth-recovery-and-degraded-operation.md)
-- [attachment-materialization-canonical-participation-and-readmission.md](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/docs/lineage-provenance-receipts-and-support-truth/attachment-materialization-canonical-participation-and-readmission.md)
-- [grouped-public-lanes-and-stronger-readiness.md](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/docs/lineage-provenance-receipts-and-support-truth/grouped-public-lanes-and-stronger-readiness.md)
-- [boundary-evidence-production-readiness.md](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/docs/lineage-provenance-receipts-and-support-truth/boundary-evidence-production-readiness.md)
+- [docs/README.md](../../crates/worth-foundational/docs/README.md)
+- [lineage-provenance-receipts-and-support-truth/README.md](../../crates/worth-foundational/docs/lineage-provenance-receipts-and-support-truth/README.md)
+- [primitive-categories-locality-and-role-postures.md](../../crates/worth-foundational/docs/lineage-provenance-receipts-and-support-truth/primitive-categories-locality-and-role-postures.md)
+- [provenance-layering-and-freshness.md](../../crates/worth-foundational/docs/lineage-provenance-receipts-and-support-truth/provenance-layering-and-freshness.md)
+- [receipts-and-closeout-truth.md](../../crates/worth-foundational/docs/lineage-provenance-receipts-and-support-truth/receipts-and-closeout-truth.md)
+- [lineage-continuity-divergence-and-promotion.md](../../crates/worth-foundational/docs/lineage-provenance-receipts-and-support-truth/lineage-continuity-divergence-and-promotion.md)
+- [support-truth-recovery-and-degraded-operation.md](../../crates/worth-foundational/docs/lineage-provenance-receipts-and-support-truth/support-truth-recovery-and-degraded-operation.md)
+- [attachment-materialization-canonical-participation-and-readmission.md](../../crates/worth-foundational/docs/lineage-provenance-receipts-and-support-truth/attachment-materialization-canonical-participation-and-readmission.md)
+- [grouped-public-lanes-and-stronger-readiness.md](../../crates/worth-foundational/docs/lineage-provenance-receipts-and-support-truth/grouped-public-lanes-and-stronger-readiness.md)
+- [boundary-evidence-production-readiness.md](../../crates/worth-foundational/docs/lineage-provenance-receipts-and-support-truth/boundary-evidence-production-readiness.md)
 
 What closed:
 
@@ -218,12 +218,12 @@ What closed:
 
 Shipped homes:
 
-- [milestone-7.md](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/plans/worth-foundational/milestone-7.md)
-- [docs/README.md](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/docs/README.md)
-- [lib.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/lib.rs)
-- [readiness/inventory.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_evidence/readiness/inventory.rs)
-- [readiness/report.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_evidence/readiness/report.rs)
-- [readiness.rs test](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/boundary_evidence/readiness.rs)
+- [milestone-7.md](./milestone-7.md)
+- [docs/README.md](../../crates/worth-foundational/docs/README.md)
+- [lib.rs](../../crates/worth-foundational/src/lib.rs)
+- [readiness/inventory.rs](../../crates/worth-foundational/src/boundary_evidence/readiness/inventory.rs)
+- [readiness/report.rs](../../crates/worth-foundational/src/boundary_evidence/readiness/report.rs)
+- [readiness.rs test](../../crates/worth-foundational/tests/certification/boundary_evidence/readiness.rs)
 
 What closed:
 
@@ -235,9 +235,9 @@ What closed:
 
 Milestone 7 ships the grouped public lane at:
 
-- [boundary_evidence_api::common_path](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_evidence_api/common_path.rs)
-- [boundary_evidence_api::lower_lane](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_evidence_api/lower_lane)
-- [boundary_evidence_api::stronger_lane](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_evidence_api/stronger_lane)
+- [boundary_evidence_api::common_path](../../crates/worth-foundational/src/boundary_evidence_api/common_path.rs)
+- [boundary_evidence_api::lower_lane](../../crates/worth-foundational/src/boundary_evidence_api/lower_lane)
+- [boundary_evidence_api::stronger_lane](../../crates/worth-foundational/src/boundary_evidence_api/stronger_lane)
 
 The readiness artifact freezes the exact grouped surface inventory and the
 exact docs inventory that explain it.
@@ -246,7 +246,7 @@ exact docs inventory that explain it.
 
 Milestone 7 now satisfies the local proof bar for lineage/provenance/receipt
 vocabulary in
-[plans/worth-foundational/test-requirements.md](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/plans/worth-foundational/test-requirements.md)
+[plans/worth-foundational/test-requirements.md](./test-requirements.md)
 before adopting-crate migration.
 
 What is proved locally:
@@ -263,9 +263,9 @@ What is proved locally:
 
 Primary evidence homes:
 
-- [tests/certification/boundary_evidence](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/boundary_evidence)
-- [tests/ui/boundary_evidence](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/ui/boundary_evidence)
-- [readiness/report.rs](C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_evidence/readiness/report.rs)
+- [tests/certification/boundary_evidence](../../crates/worth-foundational/tests/certification/boundary_evidence)
+- [tests/ui/boundary_evidence](../../crates/worth-foundational/tests/ui/boundary_evidence)
+- [readiness/report.rs](../../crates/worth-foundational/src/boundary_evidence/readiness/report.rs)
 
 ## Remaining Debt
 

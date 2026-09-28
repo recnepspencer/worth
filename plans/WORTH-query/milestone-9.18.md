@@ -1,5 +1,7 @@
 # Milestone 9.18: Tree-Based Semantic Undo And Redo
 
+> **Status:** Not started.
+
 ## Goal
 
 Replace Milestone 9.16's provisional linear current-head undo/redo experiment

@@ -27,9 +27,9 @@ struct AdjustInput;
 struct AdjustInputBinding;
 struct AdjustOperation;
 struct AuditOperation;
-struct BoundedDimensionV1;
-struct BoundedDimensionV2;
-struct BoundedDimensionV3;
+struct BoundedValueV1;
+struct BoundedValueV2;
+struct BoundedValueV3;
 struct BoundedExport;
 struct AuditImport;
 struct BoundedToAudit;
@@ -104,27 +104,27 @@ impl ApplicationOperationMarkerIdentity<RevisionSchema> for AuditOperation {
     const IDENTIFIER: &'static str = "worth.query.tests.bounded-feature.audit.v1";
 }
 
-impl ApplicationInvariantMarkerIdentity<RevisionSchema> for BoundedDimensionV1 {
-    const IDENTIFIER: &'static str = "BoundedDimension";
+impl ApplicationInvariantMarkerIdentity<RevisionSchema> for BoundedValueV1 {
+    const IDENTIFIER: &'static str = "BoundedValue";
     const MAJOR: u16 = 1;
     const MINOR: u16 = 0;
 }
 
-impl ApplicationInvariantMarkerIdentity<RevisionSchema> for BoundedDimensionV2 {
-    const IDENTIFIER: &'static str = "BoundedDimension";
+impl ApplicationInvariantMarkerIdentity<RevisionSchema> for BoundedValueV2 {
+    const IDENTIFIER: &'static str = "BoundedValue";
     const MAJOR: u16 = 2;
     const MINOR: u16 = 0;
 }
 
-impl ApplicationInvariantMarkerIdentity<RevisionSchema> for BoundedDimensionV3 {
-    const IDENTIFIER: &'static str = "BoundedDimension";
+impl ApplicationInvariantMarkerIdentity<RevisionSchema> for BoundedValueV3 {
+    const IDENTIFIER: &'static str = "BoundedValue";
     const MAJOR: u16 = 3;
     const MINOR: u16 = 0;
 }
 
 type BaselineRules = ApplicationRuleList<
     ApplicationRuleAt<
-        ApplicationSharedRuleRef<RevisionSchema, BoundedDimensionV1>,
+        ApplicationSharedRuleRef<RevisionSchema, BoundedValueV1>,
         ApplicationCommitBoundary,
     >,
     ApplicationRuleLeaf,
@@ -132,7 +132,7 @@ type BaselineRules = ApplicationRuleList<
 
 type RaisedRules = ApplicationRuleList<
     ApplicationRuleAt<
-        ApplicationSharedRuleRef<RevisionSchema, BoundedDimensionV2>,
+        ApplicationSharedRuleRef<RevisionSchema, BoundedValueV2>,
         ApplicationCommitBoundary,
     >,
     ApplicationRuleLeaf,
@@ -140,12 +140,12 @@ type RaisedRules = ApplicationRuleList<
 
 type MultipleRuleVersions = ApplicationRuleList<
     ApplicationRuleAt<
-        ApplicationSharedRuleRef<RevisionSchema, BoundedDimensionV1>,
+        ApplicationSharedRuleRef<RevisionSchema, BoundedValueV1>,
         ApplicationCommitBoundary,
     >,
     ApplicationRuleList<
         ApplicationRuleAt<
-            ApplicationSharedRuleRef<RevisionSchema, BoundedDimensionV3>,
+            ApplicationSharedRuleRef<RevisionSchema, BoundedValueV3>,
             ApplicationCommitBoundary,
         >,
         ApplicationRuleLeaf,
@@ -154,12 +154,12 @@ type MultipleRuleVersions = ApplicationRuleList<
 
 type ShiftedRuleVersions = ApplicationRuleList<
     ApplicationRuleAt<
-        ApplicationSharedRuleRef<RevisionSchema, BoundedDimensionV2>,
+        ApplicationSharedRuleRef<RevisionSchema, BoundedValueV2>,
         ApplicationCommitBoundary,
     >,
     ApplicationRuleList<
         ApplicationRuleAt<
-            ApplicationSharedRuleRef<RevisionSchema, BoundedDimensionV3>,
+            ApplicationSharedRuleRef<RevisionSchema, BoundedValueV3>,
             ApplicationCommitBoundary,
         >,
         ApplicationRuleLeaf,
@@ -170,7 +170,7 @@ type ShiftedRuleVersions = ApplicationRuleList<
 /// the only declared difference between the two execution-point programs.
 type MutationSensitiveRules = ApplicationRuleList<
     ApplicationRuleAt<
-        ApplicationSharedRuleRef<RevisionSchema, BoundedDimensionV1>,
+        ApplicationSharedRuleRef<RevisionSchema, BoundedValueV1>,
         ApplicationMutationSensitive,
     >,
     ApplicationRuleLeaf,

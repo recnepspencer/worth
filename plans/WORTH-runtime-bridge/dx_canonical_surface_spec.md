@@ -13,7 +13,7 @@ The goal is to decide what users and tests are supposed to memorize first so the
 reference workload and certification suites can target the real bridge.
 
 The everyday feel target for that surface is defined in
-[`dx_standard_path_spec.md`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/dx_standard_path_spec.md).
+[`dx_standard_path_spec.md`](./dx_standard_path_spec.md).
 
 ---
 

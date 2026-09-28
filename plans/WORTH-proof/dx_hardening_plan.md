@@ -2,13 +2,13 @@
 
 > **Status:** Planned engineering spec
 >
-> **Roadmap parent:** [worth_proof_roadmap.md](/C:/Users/shepworth/Documents/programming/WORTH/plans/worth-proof/worth_proof_roadmap.md)
+> **Roadmap parent:** [worth_proof_roadmap.md](./WORTH_proof_roadmap.md)
 >
-> **Vision parent:** [worth_proof_vision.md](/C:/Users/shepworth/Documents/programming/WORTH/plans/worth-proof/worth_proof_vision.md)
+> **Vision parent:** [worth_proof_vision.md](./WORTH_proof_vision.md)
 >
-> **Test requirements:** [test-requirements.md](/C:/Users/shepworth/Documents/programming/WORTH/plans/worth-proof/test-requirements.md)
+> **Test requirements:** [test-requirements.md](./test-requirements.md)
 >
-> **Adjacent milestone:** [milestone-7.md](/C:/Users/shepworth/Documents/programming/WORTH/plans/worth-proof/milestone-7.md)
+> **Adjacent milestone:** [milestone-7.md](./milestone-7.md)
 >
 > **Primary architectural driver:** make the shipped `worth-proof` surface read
 > like a proof language instead of only like a stabilized substrate, without

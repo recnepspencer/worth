@@ -6,9 +6,9 @@ This document is the full decision pass over the current public export surface.
 
 It extends:
 
-- [`plans/worth_signal/dx_api_matrix.md`](/Users/spenstar/Documents/programming/WORTH/WORTH/plans/worth_signal/dx_api_matrix.md)
-- [`plans/worth_signal/dx_export_inventory.md`](/Users/spenstar/Documents/programming/WORTH/WORTH/plans/worth_signal/dx_export_inventory.md)
-- [`plans/worth_signal/dx_exposure_cleanup_strategy.md`](/Users/spenstar/Documents/programming/WORTH/WORTH/plans/worth_signal/dx_exposure_cleanup_strategy.md)
+- [`plans/worth_signal/dx_api_matrix.md`](./dx_api_matrix.md)
+- [`plans/worth_signal/dx_export_inventory.md`](./dx_export_inventory.md)
+- [`plans/worth_signal/dx_exposure_cleanup_strategy.md`](./dx_exposure_cleanup_strategy.md)
 
 This is a **full list** review, not a shortlist.
 

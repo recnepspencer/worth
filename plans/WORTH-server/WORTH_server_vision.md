@@ -942,10 +942,10 @@ certification work.
 
 ## Companion Documents
 
-- [plans/worth-relational/worth_relational_vision.md](/C:/Users/shepworth/Documents/programming/WORTH/plans/worth-relational/worth_relational_vision.md)
-- [plans/worth_signal/worth_signals2.md](/C:/Users/shepworth/Documents/programming/WORTH/plans/worth_signal/worth_signals2.md)
-- [plans/worth-runtime-bridge/worth_runtime_bridge_vision.md](/C:/Users/shepworth/Documents/programming/WORTH/plans/worth-runtime-bridge/worth_runtime_bridge_vision.md)
-- [plans/worth-store/worth_store_vision.md](/C:/Users/shepworth/Documents/programming/WORTH/plans/worth-store/worth_store_vision.md)
+- [plans/worth-relational/worth_relational_vision.md](../WORTH-relational/WORTH_relational_vision.md)
+- [plans/worth_signal/worth_signals2.md](../WORTH_signal/WORTH_signals2.md)
+- [plans/worth-runtime-bridge/worth_runtime_bridge_vision.md](../WORTH-runtime-bridge/WORTH_runtime_bridge_vision.md)
+- [plans/worth-store/worth_store_vision.md](../worth-store/worth_store_vision.md)
 
 Query-first semantic intake, signal-backed subscription evaluation,
 server-managed durable-in-design subscriptions, cursor-based resume, typed

@@ -1,5 +1,7 @@
 # Milestone 5 Plan: Honest Schema Continuity, Transition Truth, and Classified Reconciliation
 
+> **Status:** Completed. Closeout: [milestone-5-closeout.md](./milestone-5-closeout.md).
+
 ## Summary
 
 Milestone 5 will make schema evolution an authoritative runtime capability rather than a builder-time assumption or host-side coordination pattern. The runtime will explicitly understand what kind of continuity is honest at each schema boundary, classify that boundary across multiple semantic layers, and publish canonical transition artifacts that CDC, replay, recovery, and reconciliation consume directly.
@@ -216,7 +218,7 @@ Required asymptotic intent:
 
 Deliverables:
 
-- update [plans/worth-relational/test-requirements.md](C:\Users\Esther\Documents\Programming\WORTH_workspace\WORTH\plans\worth-relational\test-requirements.md) with:
+- update [plans/worth-relational/test-requirements.md](./test-requirements.md) with:
   - `Schema evolution CDC contract test`
   - `Schema reconciliation classification test`
 - update milestone planning docs with:
@@ -377,13 +379,13 @@ Deliverables:
   - descriptor construction
   - authoritative apply
   - artifact assembly
-- extend [CommitResult](C:\Users\Esther\Documents\Programming\WORTH_workspace\WORTH\crates\worth-relational\src\transactions\data\outcomes.rs) and summary families with:
+- extend [CommitResult](../../crates/worth-relational/src/transactions/data/outcomes/mod.rs) and summary families with:
   - schema transition summary
   - continuation summary
   - reconciliation summary
   - descriptor version summary
   - historical interpretation sensitivity summary
-- extend [CanonicalCommitEnvelope](C:\Users\Esther\Documents\Programming\WORTH_workspace\WORTH\crates\worth-relational\src\replay\data\mod.rs) with:
+- extend [CanonicalCommitEnvelope](../../crates/worth-relational/src/replay/data/mod.rs) with:
   - source schema identity
   - target schema identity
   - schema transition artifact
@@ -417,7 +419,7 @@ Exit condition:
 
 Deliverables:
 
-- extend [SubscriberCheckpoint](C:\Users\Esther\Documents\Programming\WORTH_workspace\WORTH\crates\worth-relational\src\publication\cdc\data\subscriber_checkpoint.rs) with:
+- extend [SubscriberCheckpoint](../../crates/worth-relational/src/publication/cdc/data/subscriber_checkpoint.rs) with:
   - subscriber contract identity
   - normalized continuation proof
   - post-boundary contract identity
@@ -426,7 +428,7 @@ Deliverables:
   - consumable schema surface
   - accepted continuation classes
   - upgrade support classes
-- extend [SubscriberStreamBatch](C:\Users\Esther\Documents\Programming\WORTH_workspace\WORTH\crates\worth-relational\src\publication\cdc\data\subscriber_stream_batch.rs) with:
+- extend [SubscriberStreamBatch](../../crates/worth-relational/src/publication/cdc/data/subscriber_stream_batch.rs) with:
   - crossed boundary fingerprints
   - continuation outcome
   - applied continuation descriptor summary
@@ -597,11 +599,11 @@ New public families:
 
 Evolved public artifacts:
 
-- [CanonicalCommitEnvelope](C:\Users\Esther\Documents\Programming\WORTH_workspace\WORTH\crates\worth-relational\src\replay\data\mod.rs)
-- [CommitResult](C:\Users\Esther\Documents\Programming\WORTH_workspace\WORTH\crates\worth-relational\src\transactions\data\outcomes.rs)
-- [SubscriberCheckpoint](C:\Users\Esther\Documents\Programming\WORTH_workspace\WORTH\crates\worth-relational\src\publication\cdc\data\subscriber_checkpoint.rs)
-- [SubscriberResumeRequest](C:\Users\Esther\Documents\Programming\WORTH_workspace\WORTH\crates\worth-relational\src\publication\cdc\data\subscriber_resume_request.rs)
-- [SubscriberStreamBatch](C:\Users\Esther\Documents\Programming\WORTH_workspace\WORTH\crates\worth-relational\src\publication\cdc\data\subscriber_stream_batch.rs)
+- [CanonicalCommitEnvelope](../../crates/worth-relational/src/replay/data/mod.rs)
+- [CommitResult](../../crates/worth-relational/src/transactions/data/outcomes/mod.rs)
+- [SubscriberCheckpoint](../../crates/worth-relational/src/publication/cdc/data/subscriber_checkpoint.rs)
+- [SubscriberResumeRequest](../../crates/worth-relational/src/publication/cdc/data/subscriber_resume_request.rs)
+- [SubscriberStreamBatch](../../crates/worth-relational/src/publication/cdc/data/subscriber_stream_batch.rs)
 - recovery mismatch/reporting types
 - replay mismatch and verification-mode types
 

@@ -17,7 +17,7 @@ fn ten_thousand_node_sparse_definition_has_indexed_validation_work(
         LARGE_CANONICAL_BYTE_LIMIT,
     )
     .unwrap();
-    let mut builder = ApplicationWorkflowDefinitionBuilder::<ReviewedGeometry>::new(
+    let mut builder = ApplicationWorkflowDefinitionBuilder::<ReviewedChange>::new(
         "ten-thousand-node-chain",
         limits,
     )?;
@@ -79,7 +79,7 @@ fn ten_thousand_node_data_chain_exercises_logarithmic_dominance_work(
         LARGE_CANONICAL_BYTE_LIMIT,
     )
     .unwrap();
-    let mut builder = ApplicationWorkflowDefinitionBuilder::<ReviewedGeometry>::new(
+    let mut builder = ApplicationWorkflowDefinitionBuilder::<ReviewedChange>::new(
         "ten-thousand-node-data-chain",
         limits,
     )?;
@@ -129,7 +129,7 @@ fn retry_rich_validation_reports_its_separate_sparse_traversal_lane(
         RETRY_RICH_CANONICAL_BYTE_LIMIT,
     )
     .unwrap();
-    let mut builder = ApplicationWorkflowDefinitionBuilder::<ReviewedGeometry>::new(
+    let mut builder = ApplicationWorkflowDefinitionBuilder::<ReviewedChange>::new(
         "retry-rich-validation",
         limits,
     )?;

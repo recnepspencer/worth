@@ -1,5 +1,7 @@
 # Milestone 4 Closeout: Snapshot Persistence And Point-In-Time Restore
 
+> **Note:** The legacy root crate `crates/worth-store` was removed on 2026-09-27. Paths into it below name its files as they were; they are no longer links. The store now lives in [`workspaces/worth-store`](../../workspaces/worth-store/README.md).
+
 ## Status
 
 Milestone 4 is closed as of 2026-04-14.
@@ -31,40 +33,40 @@ This is not "we added checkpoints." The store now owns:
 Milestone 4 delivered:
 
 - a dedicated public snapshot subdomain in
-  [snapshot/mod.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/snapshot/mod.rs)
+  `crates/worth-store/src/snapshot/mod.rs`
 - snapshot basis and image records in
-  [backend/records.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/backend/records.rs)
+  `crates/worth-store/src/backend/records.rs`
 - snapshot state decomposition by responsibility in
-  [backend/state/snapshots/basis.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/backend/state/snapshots/basis.rs),
-  [backend/state/snapshots/image.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/backend/state/snapshots/image.rs),
-  [backend/state/snapshots/read.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/backend/state/snapshots/read.rs),
+  `crates/worth-store/src/backend/state/snapshots/basis.rs`,
+  `crates/worth-store/src/backend/state/snapshots/image.rs`,
+  `crates/worth-store/src/backend/state/snapshots/read.rs`,
   and
-  [backend/state/snapshots/restore.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/backend/state/snapshots/restore.rs)
+  `crates/worth-store/src/backend/state/snapshots/restore.rs`
 - backend snapshot orchestration in
-  [backend/engine.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/backend/engine.rs)
+  `crates/worth-store/src/backend/engine.rs`
   and
-  [backend/facade.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/backend/facade.rs)
+  `crates/worth-store/src/backend/facade.rs`
 - SQLite snapshot persistence in
-  [backend/sqlite.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/backend/sqlite.rs)
+  `crates/worth-store/src/backend/sqlite.rs`
 - snapshot integrity verification in
-  [backend/integrity/snapshot_records.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/backend/integrity/snapshot_records.rs)
+  `crates/worth-store/src/backend/integrity/snapshot_records.rs`
 - shared authoritative export rebuild support in
-  [backend/export.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/backend/export.rs)
+  `crates/worth-store/src/backend/export.rs`
 - Milestone 4 evidence and counter extensions in
-  [evidence/milestone_4.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/evidence/milestone_4.rs)
+  `crates/worth-store/src/evidence/milestone_4.rs`
   and
-  [evidence/counters.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/evidence/counters.rs)
+  `crates/worth-store/src/evidence/counters.rs`
 - public facade support in
-  [facade.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/facade.rs)
+  `crates/worth-store/src/facade.rs`
 - snapshot scenario coverage in
-  [tests/snapshots.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/tests/snapshots.rs)
+  `crates/worth-store/src/tests/snapshots.rs`
 - Milestone 4 certification coverage in
-  [tests/milestone_4_certification.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/tests/milestone_4_certification.rs)
+  `crates/worth-store/src/tests/milestone_4_certification.rs`
 
 ## Acceptance Mapping
 
 Milestone 4 is considered closed against the roadmap and
-[test-requirements.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/test-requirements.md)
+[test-requirements.md](./test-requirements.md)
 because the required acceptance surfaces are now covered directly.
 
 ### `Snapshot-plus-tail restore equivalence test`

@@ -1,10 +1,12 @@
 # Milestone 6 Closeout: Aspect-Aware Physical Layout And Content-Addressed Structural Blocks
 
+> **Note:** The legacy root crate `crates/worth-store` was removed on 2026-09-27. Paths into it below name its files as they were; they are no longer links. The store now lives in [`workspaces/worth-store`](../../workspaces/worth-store/README.md).
+
 Status: Completed on 2026-04-17
 
-Parent spec: [milestone-6.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-6.md)
+Parent spec: [milestone-6.md](./milestone-6.md)
 
-Roadmap: [worth_store_roadmap.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/worth_store_roadmap.md)
+Roadmap: `worth_store_roadmap.md`
 
 ## Summary
 
@@ -107,9 +109,9 @@ The Milestone 6 evidence surface now explicitly carries:
 ## Certification Result
 
 The Milestone 6 named suite required by
-[test-requirements.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/test-requirements.md)
+[test-requirements.md](./test-requirements.md)
 is now implemented in
-[crates/worth-store/src/tests/milestone_6_certification.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/tests/milestone_6_certification.rs).
+`crates/worth-store/src/tests/milestone_6_certification.rs`.
 
 It covers:
 

@@ -8,7 +8,7 @@ use worth_query_host::facade::application_entry::{
 use worth_query_host::facade::declaration::application_program::ApplicationWorkflowComponentLimits;
 use worth_query_installation::facade::WorthQueryApplicationWorkflowResourceCeiling;
 
-use super::super::bounded_dimension_model::{
+use super::super::document_retention_model::{
     host::publish_on_first_program,
     workflow::{
         bounded_retry_definition_with_attempts, cancel_instance, propose_authoring_instance,
@@ -21,12 +21,7 @@ use super::*;
 const CAPACITY: u32 = 4;
 
 /// An instance whose next proposal no longer fits its retained capacity.
-fn at_capacity(
-    key: u64,
-) -> (
-    BoundedDimensionWorkflowRuntime,
-    PublishedWorkflowInstanceRef,
-) {
+fn at_capacity(key: u64) -> (DocumentWorkflowRuntime, PublishedWorkflowInstanceRef) {
     let resources = WorthQueryApplicationWorkflowResourceCeiling::new(
         32,
         64,

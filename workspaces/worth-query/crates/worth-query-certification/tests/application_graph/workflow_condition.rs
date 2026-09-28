@@ -4,14 +4,14 @@ use worth_query_host::facade::application_entry::{
     WorthQueryApplicationRequestExt,
 };
 
-use super::bounded_dimension_model::{
-    dimension_entry::{
-        PartDimensionConditionQueryBinding, PartDimensionConditionRead, PART_IDENTITY,
-    },
+use super::document_retention_model::{
     host::publish_workflow_on_first_program,
     operator_identity::{authenticate_operator, request_scope},
-    presented_request::set_dimension,
-    settled_verdict::{settle, DimensionVerdict},
+    presented_request::set_retention,
+    retention_entry::{
+        DocumentRetentionConditionQueryBinding, DocumentRetentionConditionRead, DOCUMENT_IDENTITY,
+    },
+    settled_verdict::{settle, RetentionVerdict},
     workflow::{
         advance_instance, condition_terminal_definition, propose_authoring_instance,
         publish_definition, start_instance, WorkflowAdvanceInput, WorkflowAdvanceIntent,
@@ -22,13 +22,13 @@ use super::bounded_dimension_model::{
 fn false_typed_query_condition_routes_to_unsatisfied_terminal() {
     let application = publish_workflow_on_first_program();
     assert_eq!(
-        settle(set_dimension(
+        settle(set_retention(
             application.program_runtime(),
             application.program_runtime().current_world(),
             0,
             910,
         )),
-        DimensionVerdict::Performed(0)
+        RetentionVerdict::Performed(0)
     );
     let definition = match publish_definition(
         &application,
@@ -62,8 +62,8 @@ fn false_typed_query_condition_routes_to_unsatisfied_terminal() {
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
     let condition_result = runtime
         .request(&principal, &scope)
-        .query(PartDimensionConditionRead {
-            identity: PART_IDENTITY.to_owned(),
+        .query(DocumentRetentionConditionRead {
+            identity: DOCUMENT_IDENTITY.to_owned(),
         })
         .execute()
         .expect("the installed condition query must execute");
@@ -72,14 +72,14 @@ fn false_typed_query_condition_routes_to_unsatisfied_terminal() {
         .request(&principal, &scope)
         .mutate(WorkflowAdvanceIntent {
             input: WorkflowAdvanceInput {
-                part_identity: PART_IDENTITY.to_owned(),
+                document_identity: DOCUMENT_IDENTITY.to_owned(),
             },
         })
         .without_source()
         .idempotency(&915_u64)
         .prepare_workflow_advance(&application, instance.clone())
         .expect("condition acceptance must prepare")
-        .accept_condition::<PartDimensionConditionQueryBinding>(&required, condition_result)
+        .accept_condition::<DocumentRetentionConditionQueryBinding>(&required, condition_result)
         .expect("the false typed condition result must be accepted");
     assert!(matches!(outcome, WorkflowProgressOutcome::Completed(_)));
     match advance_instance(&application, instance, 916)
@@ -132,8 +132,8 @@ fn typed_query_condition_routes_and_duplicate_acceptance_replays() {
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
     let condition_result = runtime
         .request(&principal, &scope)
-        .query(PartDimensionConditionRead {
-            identity: PART_IDENTITY.to_owned(),
+        .query(DocumentRetentionConditionRead {
+            identity: DOCUMENT_IDENTITY.to_owned(),
         })
         .execute()
         .expect("the installed condition query must execute");
@@ -142,18 +142,18 @@ fn typed_query_condition_routes_and_duplicate_acceptance_replays() {
         .request(&principal, &scope)
         .mutate(WorkflowAdvanceIntent {
             input: WorkflowAdvanceInput {
-                part_identity: PART_IDENTITY.to_owned(),
+                document_identity: DOCUMENT_IDENTITY.to_owned(),
             },
         })
         .without_source()
         .idempotency(&904_u64)
         .prepare_workflow_advance(&application, instance.clone())
         .expect("condition acceptance must prepare")
-        .accept_condition::<PartDimensionConditionQueryBinding>(&required, condition_result)
+        .accept_condition::<DocumentRetentionConditionQueryBinding>(&required, condition_result)
         .expect("the exact typed condition result must be accepted");
     match outcome {
         WorkflowProgressOutcome::Completed(performed) => {
-            assert_eq!(performed.node_path(), "positive-dimension");
+            assert_eq!(performed.node_path(), "positive-retention");
             assert!(!performed.replayed());
         }
         other => panic!("expected condition settlement, got {other:?}"),
@@ -161,8 +161,8 @@ fn typed_query_condition_routes_and_duplicate_acceptance_replays() {
 
     let replay_result = runtime
         .request(&principal, &scope)
-        .query(PartDimensionConditionRead {
-            identity: PART_IDENTITY.to_owned(),
+        .query(DocumentRetentionConditionRead {
+            identity: DOCUMENT_IDENTITY.to_owned(),
         })
         .execute()
         .expect("the replay condition query must execute");
@@ -170,18 +170,18 @@ fn typed_query_condition_routes_and_duplicate_acceptance_replays() {
         .request(&principal, &scope)
         .mutate(WorkflowAdvanceIntent {
             input: WorkflowAdvanceInput {
-                part_identity: PART_IDENTITY.to_owned(),
+                document_identity: DOCUMENT_IDENTITY.to_owned(),
             },
         })
         .without_source()
         .idempotency(&904_u64)
         .prepare_workflow_advance(&application, instance.clone())
         .expect("condition replay must prepare")
-        .accept_condition::<PartDimensionConditionQueryBinding>(&required, replay_result)
+        .accept_condition::<DocumentRetentionConditionQueryBinding>(&required, replay_result)
         .expect("the duplicate condition acceptance must resolve");
     match replay {
         WorkflowProgressOutcome::Completed(performed) => {
-            assert_eq!(performed.node_path(), "positive-dimension");
+            assert_eq!(performed.node_path(), "positive-retention");
             assert!(performed.replayed());
         }
         other => panic!("expected replayed condition settlement, got {other:?}"),

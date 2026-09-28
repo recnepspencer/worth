@@ -7,14 +7,14 @@ use worth_query_host::facade::declaration::application_program::{
     ApplicationWorkflowEvidenceJoinPolicy, AuthoredWorkflowComponent,
 };
 
-use crate::bounded_dimension_model::{
-    schema::PartDimensionQuery, workflow::ReviewedGeometryWorkflow,
+use crate::document_retention_model::{
+    schema::DocumentRetentionQuery, workflow::ReviewedDocumentWorkflow,
 };
 
-/// One review, authored once: two assessments of the proposed geometry
-/// joined into the evidence an approval reads.
+/// One review, authored once: two assessments of the proposed document
+/// change joined into the evidence an approval reads.
 pub(crate) struct Review {
-    pub(crate) component: AuthoredWorkflowComponent<ReviewedGeometryWorkflow>,
+    pub(crate) component: AuthoredWorkflowComponent<ReviewedDocumentWorkflow>,
     pub(crate) structural: ApplicationWorkflowComponentInputPort<ApplicationWorkflowAssessmentNode>,
     pub(crate) independent:
         ApplicationWorkflowComponentInputPort<ApplicationWorkflowAssessmentNode>,
@@ -24,13 +24,13 @@ pub(crate) struct Review {
 
 pub(crate) fn review() -> Review {
     let mut review =
-        ApplicationWorkflowComponentBuilder::<ReviewedGeometryWorkflow>::new("geometry-review")
+        ApplicationWorkflowComponentBuilder::<ReviewedDocumentWorkflow>::new("document-review")
             .expect("the component identity is valid");
     let structural = review
-        .assessment::<PartDimensionQuery>("structural")
+        .assessment::<DocumentRetentionQuery>("structural")
         .expect("the structural assessment is valid");
     let independent = review
-        .assessment::<PartDimensionQuery>("independent")
+        .assessment::<DocumentRetentionQuery>("independent")
         .expect("the independent assessment is valid");
     let evidence = review
         .evidence_join(

@@ -20,8 +20,8 @@ It does not reflect later cleanup that closed the phase.
 
 For the closeout state, use:
 
-- [`dx_phase_1_review.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_phase_1_review.md)
-- [`dx_phase_2_review.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_phase_2_review.md)
+- [`dx_phase_1_review.md`](./dx_phase_1_review.md)
+- [`dx_phase_2_review.md`](./dx_phase_2_review.md)
 
 ---
 
@@ -52,29 +52,29 @@ These removals are now real in the live code:
 
 ### Removed From Public Runtime Boundary
 
-- [`publication_authority()`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/publication/logic/authority.rs)
+- `publication_authority()`
   is `pub(crate)`
-- [`storage_authority()`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/storage/logic/authority.rs)
+- `storage_authority()`
   is `pub(crate)`
-- [`lineage_access()`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/lineage/logic/access/mod.rs)
+- `lineage_access()`
   is `pub(crate)`
-- [`lineage_authority()`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/lineage/logic/authority/mod.rs)
+- `lineage_authority()`
   is `pub(crate)`
 
 ### Removed Specialist Backdoor
 
-- [`MergeAccess::runtime()`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/merge/logic/mod.rs)
+- `MergeAccess::runtime()`
   is gone
 
 ### Promoted Into Exported Runtime Vocabulary
 
 The runtime surface now exports these explicitly:
 
-- [`InvariantAccess`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/validation/logic/mod.rs)
-- [`SimulationAccess`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/simulation/logic/access.rs)
-- [`SimulationAuthority`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/simulation/logic/authority.rs)
-- [`VisibilityReadContext`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/visibility/materialization/read_records/mod.rs)
-- [`VisibilityRetentionAuthority`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/visibility/retention/retention_authority.rs)
+- `InvariantAccess`
+- `SimulationAccess`
+- `SimulationAuthority`
+- [`VisibilityReadContext`](../../crates/worth-relational/src/visibility/materialization/read_records/mod.rs)
+- [`VisibilityRetentionAuthority`](../../crates/worth-relational/src/visibility/retention/retention_authority.rs)
 
 That means the code already reflects the first round of:
 
@@ -118,13 +118,13 @@ Not:
 ## 1. `facade::harness` Is Still Publicly Loud
 
 Source:
-[`facade.rs`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/facade.rs)
+[`facade.rs`](../../crates/worth-relational/src/facade.rs)
 
 Current reality:
 
 - `harness` is still a top-level facade module
 - it still exports fixture and harness planning types directly from
-  [`presentation/harness.rs`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/presentation/harness.rs)
+  [`presentation/harness.rs`](../../crates/worth-relational/src/presentation/harness/mod.rs)
 
 Why this still matters:
 
@@ -164,7 +164,7 @@ Call:
 ## 3. `RelationalRuntimeApi::runtime()` Is Still Boundary-Ambiguous
 
 Source:
-[`presentation/api.rs`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/presentation/api.rs)
+[`presentation/api.rs`](../../crates/worth-relational/src/presentation/api.rs)
 
 Current reality:
 

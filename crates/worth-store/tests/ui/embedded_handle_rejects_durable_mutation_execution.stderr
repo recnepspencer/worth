@@ -1,5 +1,0 @@
-error[E0599]: no method named `execute_mutation` found for struct `EmbeddedStoreHandle` in the current scope
- --> tests/ui/embedded_handle_rejects_durable_mutation_execution.rs:7:22
-  |
-7 |     let _ = embedded.execute_mutation(request);
-  |                      ^^^^^^^^^^^^^^^^ method not found in `EmbeddedStoreHandle`

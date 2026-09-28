@@ -18,39 +18,39 @@ milestone debt.
 Milestone 9 delivered:
 
 - policy and tenant basis admission in
-  [crates/worth-query/src/policy_basis](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/policy_basis)
+  [crates/worth-query/src/policy_basis](../../workspaces/worth-query/crates/worth-query/src/policy_basis)
   and
-  [crates/worth-query/src/tenant_basis](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/tenant_basis)
+  [crates/worth-query/src/tenant_basis](../../workspaces/worth-query/crates/worth-query/src/tenant_basis)
 - policy mask snapshots, authorized projection artifacts, masked influence
   denial, and immutable mask boundaries in
-  [crates/worth-query/src/authorized_projection](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/authorized_projection)
+  [crates/worth-query/src/authorized_projection](../../workspaces/worth-query/crates/worth-query/src/authorized_projection)
 - query-authored relationship-proof descriptors, admission, budgets, and typed
   denials in
-  [crates/worth-query/src/relationship_proof](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/relationship_proof)
+  [crates/worth-query/src/relationship_proof](../../workspaces/worth-query/crates/worth-query/src/relationship_proof)
 - pre-execution narrowing, policy-aware validation reports, optimizer inputs,
   and saved-policy narrowing reuse classification in
-  [crates/worth-query/src/policy_narrowing](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/policy_narrowing)
+  [crates/worth-query/src/policy_narrowing](../../workspaces/worth-query/crates/worth-query/src/policy_narrowing)
 - policy-aware current, branch, runtime-historical, runtime-diff, and
   store-deferred plan lowering in
-  [crates/worth-query/src/policy_plan](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/policy_plan)
+  [crates/worth-query/src/policy_plan](../../workspaces/worth-query/crates/worth-query/src/policy_plan)
 - policy-aware execution seam identities, counters, deferred handoff honesty,
   and durable overclaim denials in
-  [crates/worth-query/src/policy_execution_seam](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/policy_execution_seam)
+  [crates/worth-query/src/policy_execution_seam](../../workspaces/worth-query/crates/worth-query/src/policy_execution_seam)
 - policy-aware live admission, drift evidence, density evidence, and dense
   restart debt classification in
-  [crates/worth-query/src/policy_live](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/policy_live)
+  [crates/worth-query/src/policy_live](../../workspaces/worth-query/crates/worth-query/src/policy_live)
 - policy-aware delivery shape lowering and placeholder masking denial in
-  [crates/worth-query/src/policy_delivery](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/policy_delivery)
+  [crates/worth-query/src/policy_delivery](../../workspaces/worth-query/crates/worth-query/src/policy_delivery)
 - concrete EmployeeRecord certification fixtures, scale-slope evidence, mask
   parity, composition parity, view-shape parity, and identity-aware inspector
   parity in
-  [crates/worth-query/src/policy_certification](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/policy_certification)
+  [crates/worth-query/src/policy_certification](../../workspaces/worth-query/crates/worth-query/src/policy_certification)
 - Milestone 9 certification in
-  [crates/worth-query/src/harness/milestone_nine_certification](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/milestone_nine_certification)
+  [crates/worth-query/src/harness/milestone_nine_certification](../../workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_certification)
 - public facade exposure for the admitted Milestone 9 surfaces in
-  [crates/worth-query/src/facade.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/facade.rs)
+  [crates/worth-query/src/facade.rs](../../workspaces/worth-query/crates/worth-query/src/facade.rs)
 - compile-fail proof boundaries in
-  [crates/worth-query/tests/ui](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/tests/ui)
+  `crates/worth-query/tests/ui`
 
 The semantic center that now exists is:
 
@@ -79,8 +79,8 @@ execution-seam, live, delivery, and certification surfaces now exist directly.
 
 Covered by:
 
-- [crates/worth-query/src/harness/milestone_nine_certification/mod.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/milestone_nine_certification/mod.rs)
-- [crates/worth-query/src/harness/milestone_nine_certification/tests.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/milestone_nine_certification/tests.rs)
+- [crates/worth-query/src/harness/milestone_nine_certification/mod.rs](../../workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_certification/mod.rs)
+- `crates/worth-query/src/harness/milestone_nine_certification/tests.rs`
 
 What is proven:
 
@@ -106,9 +106,9 @@ What is proven:
 
 Covered by:
 
-- [crates/worth-query/src/policy_basis](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/policy_basis)
-- [crates/worth-query/src/tenant_basis](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/tenant_basis)
-- [crates/worth-query/src/policy_narrowing](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/policy_narrowing)
+- [crates/worth-query/src/policy_basis](../../workspaces/worth-query/crates/worth-query/src/policy_basis)
+- [crates/worth-query/src/tenant_basis](../../workspaces/worth-query/crates/worth-query/src/tenant_basis)
+- [crates/worth-query/src/policy_narrowing](../../workspaces/worth-query/crates/worth-query/src/policy_narrowing)
 
 What is proven:
 
@@ -125,9 +125,9 @@ What is proven:
 
 Covered by:
 
-- [crates/worth-query/src/authorized_projection](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/authorized_projection)
-- [crates/worth-query/src/policy_delivery](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/policy_delivery)
-- [crates/worth-query/src/policy_certification](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/policy_certification)
+- [crates/worth-query/src/authorized_projection](../../workspaces/worth-query/crates/worth-query/src/authorized_projection)
+- [crates/worth-query/src/policy_delivery](../../workspaces/worth-query/crates/worth-query/src/policy_delivery)
+- [crates/worth-query/src/policy_certification](../../workspaces/worth-query/crates/worth-query/src/policy_certification)
 
 What is proven:
 
@@ -146,10 +146,10 @@ What is proven:
 
 Covered by:
 
-- [crates/worth-query/src/policy_plan](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/policy_plan)
-- [crates/worth-query/src/policy_execution_seam](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/policy_execution_seam)
-- [crates/worth-query/src/policy_live](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/policy_live)
-- [crates/worth-query/src/policy_delivery](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/policy_delivery)
+- [crates/worth-query/src/policy_plan](../../workspaces/worth-query/crates/worth-query/src/policy_plan)
+- [crates/worth-query/src/policy_execution_seam](../../workspaces/worth-query/crates/worth-query/src/policy_execution_seam)
+- [crates/worth-query/src/policy_live](../../workspaces/worth-query/crates/worth-query/src/policy_live)
+- [crates/worth-query/src/policy_delivery](../../workspaces/worth-query/crates/worth-query/src/policy_delivery)
 
 What is proven:
 
@@ -170,8 +170,8 @@ What is proven:
 
 Covered by:
 
-- [crates/worth-query/src/policy_certification](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/policy_certification)
-- [crates/worth-query/src/harness/milestone_nine_certification](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/milestone_nine_certification)
+- [crates/worth-query/src/policy_certification](../../workspaces/worth-query/crates/worth-query/src/policy_certification)
+- [crates/worth-query/src/harness/milestone_nine_certification](../../workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_certification)
 
 What is proven:
 
@@ -191,8 +191,8 @@ What is proven:
 
 Covered by:
 
-- [crates/worth-query/tests/phase_boundaries_compile_fail.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/tests/phase_boundaries_compile_fail.rs)
-- [crates/worth-query/tests/ui](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/tests/ui)
+- `crates/worth-query/tests/phase_boundaries_compile_fail.rs`
+- `crates/worth-query/tests/ui`
 
 What is proven:
 

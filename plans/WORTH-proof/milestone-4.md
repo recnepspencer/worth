@@ -2,17 +2,17 @@
 
 > **Status:** Closed
 >
-> **Closeout:** [milestone-4-closeout.md](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-proof/milestone-4-closeout.md)
+> **Closeout:** [milestone-4-closeout.md](./milestone-4-closeout.md)
 >
-> **Roadmap parent:** [worth_proof_roadmap.md](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-proof/worth_proof_roadmap.md)
+> **Roadmap parent:** [worth_proof_roadmap.md](./WORTH_proof_roadmap.md)
 >
-> **Vision parent:** [worth_proof_vision.md](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-proof/worth_proof_vision.md)
+> **Vision parent:** [worth_proof_vision.md](./WORTH_proof_vision.md)
 >
-> **Test requirements:** [test-requirements.md](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-proof/test-requirements.md)
+> **Test requirements:** [test-requirements.md](./test-requirements.md)
 >
-> **Adjacent milestone:** [milestone-3.md](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-proof/milestone-3.md)
+> **Adjacent milestone:** [milestone-3.md](./milestone-3.md)
 >
-> **Adjacent milestone closeout:** [milestone-3-closeout.md](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-proof/milestone-3-closeout.md)
+> **Adjacent milestone closeout:** [milestone-3-closeout.md](./milestone-3-closeout.md)
 >
 > **Impacted later milestones:**
 > - `Milestone 5` (`Lowering And Execution Readiness`)

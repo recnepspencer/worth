@@ -12,9 +12,9 @@
 >
 > **Host capability prerequisite:** [host_capability_spec.md](./host_capability_spec.md)
 >
-> **Core vision:** [plans/worth_signal/worth_signal_vision.md](../../../plans/worth_signal/worth_signal_vision.md)
+> **Core vision:** [plans/worth_signal/worth_signal_vision.md](../WORTH_signal/WORTH_signal_vision.md)
 >
-> **Core test requirements:** [plans/worth_signal/test-requirements.md](../../../plans/worth_signal/test-requirements.md)
+> **Core test requirements:** [plans/worth_signal/test-requirements.md](../WORTH_signal/test-requirements.md)
 >
 > **Primary architectural driver:** make controller-authored graphs mature
 > enough for serious application architecture by adding scoped controller
@@ -622,7 +622,7 @@ It must define enough identity law that future code can safely express:
 - nested subgraphs
 - future dynamic graph families
 
-without reducing correctness to Ã¢â‚¬Å“choose different strings carefully.Ã¢â‚¬Â
+without reducing correctness to “choose different strings carefully.”
 
 ### Significant-code bridge rule
 
@@ -1581,7 +1581,7 @@ At minimum, include:
 - graph expose misuse denial
 - export/import compatibility denial where required
 
-If the wrong thing can happen and still Ã¢â‚¬Å“mostly works,Ã¢â‚¬Â it needs a denial test.
+If the wrong thing can happen and still “mostly works,” it needs a denial test.
 
 ### Required Self-Check
 

@@ -138,7 +138,7 @@ fn a_definition_published_on_a_sibling_is_never_another_forks() {
 }
 
 pub(super) fn fork_of(
-    application: &BoundedDimensionWorkflowRuntime,
+    application: &DocumentWorkflowRuntime,
     branch: WorthQueryProductBranch,
 ) -> WorthQueryProductBranch {
     application

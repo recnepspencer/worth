@@ -1,5 +1,7 @@
 # Milestone 1 Closeout: Canonical Commit Persistence And Artifact Authority
 
+> **Note:** The legacy root crate `crates/worth-store` was removed on 2026-09-27. Paths into it below name its files as they were; they are no longer links. The store now lives in [`workspaces/worth-store`](../../workspaces/worth-store/README.md).
+
 ## Status
 
 Milestone 1 is closed as of 2026-04-13.
@@ -36,35 +38,35 @@ Milestone 1 delivered:
 
 - the `worth-store` crate wired into the workspace
 - a narrow public facade in
-  [facade.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/facade.rs)
+  `crates/worth-store/src/facade.rs`
 - proof-bearing authority types, canonicalization, and authoritative export
   basis under
-  [authority](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/authority)
+  `crates/worth-store/src/authority`
 - a store-owned backend contract, embedded backend baseline, and SQLite backend
   family in
-  [backend/mod.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/backend/mod.rs)
+  `crates/worth-store/src/backend/mod.rs`
   plus
-  [backend/embedded.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/backend/embedded.rs)
+  `crates/worth-store/src/backend/embedded.rs`
   and
-  [backend/sqlite.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/backend/sqlite.rs)
+  `crates/worth-store/src/backend/sqlite.rs`
 - normalized authoritative record families in
-  [backend/records.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/backend/records.rs)
+  `crates/worth-store/src/backend/records.rs`
 - separated state mutation, integrity, and persistence subsystems under
-  [backend/state](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/backend/state)
+  `crates/worth-store/src/backend/state`
   and
-  [backend/integrity](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/backend/integrity)
+  `crates/worth-store/src/backend/integrity`
 - exact counters and machine-checkable evidence bundles under
-  [evidence](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/evidence)
+  `crates/worth-store/src/evidence`
 - typed failure families under
-  [failure](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/failure)
+  `crates/worth-store/src/failure`
 - hostile test coverage for append legality, branch-head authority, corruption
   rejection, export/rebuild parity, and backend parity under
-  [crates/worth-store/src/tests](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/tests)
+  `crates/worth-store/src/tests`
 
 ## Acceptance Mapping
 
 Milestone 1 is considered closed against the roadmap and
-[test-requirements.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/test-requirements.md)
+[test-requirements.md](./test-requirements.md)
 because the required acceptance surfaces are now covered directly.
 
 ### `Durable artifact authority equivalence test`

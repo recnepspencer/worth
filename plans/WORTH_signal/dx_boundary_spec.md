@@ -148,7 +148,7 @@ Should contain:
 
 Why:
 
-- mundane day-to-day usage should revolve around â€œthe runtimeâ€ as one coherent
+- mundane day-to-day usage should revolve around “the runtime” as one coherent
   thing
 
 ## `facade::diagnostics`
@@ -327,7 +327,7 @@ Canonical surface:
 
 Desired feel:
 
-- â€œwhy did this change?â€ should be near at hand
+- “why did this change?” should be near at hand
 
 Anti-goal:
 
@@ -458,5 +458,5 @@ questions instantly:
 5. How do I explain why something changed?
 6. Where do I go when I need deeper control?
 
-If the answer to any of those is still â€œit depends which namespace you learned
-first,â€ the boundary is not ready.
+If the answer to any of those is still “it depends which namespace you learned
+first,” the boundary is not ready.

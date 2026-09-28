@@ -453,11 +453,11 @@ For every export, ask:
 
 Suggested interpretation:
 
-- `yes, yes, no, no, no, no, no` â†’ `Keep`
-- `yes, yes, yes, maybe, maybe, no, no` â†’ `Condense`
-- `yes, yes, maybe, maybe, yes, no, no` â†’ `Contain`
-- `maybe, no, maybe, yes, yes, maybe, maybe` â†’ `Hide`
-- `no, no, maybe, yes, yes, no, yes` â†’ `Internalize`
+- `yes, yes, no, no, no, no, no` → `Keep`
+- `yes, yes, yes, maybe, maybe, no, no` → `Condense`
+- `yes, yes, maybe, maybe, yes, no, no` → `Contain`
+- `maybe, no, maybe, yes, yes, maybe, maybe` → `Hide`
+- `no, no, maybe, yes, yes, no, yes` → `Internalize`
 
 ---
 

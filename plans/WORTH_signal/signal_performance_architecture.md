@@ -13,12 +13,12 @@
 1. [Problem Statement](#problem-statement)
 2. [Performance Model](#performance-model)
 3. [Performance Profiles](#performance-profiles)
-4. [Phase P1 â€” Hot Path Isolation](#phase-p1--hot-path-isolation)
-5. [Phase P2 â€” Data Layout and Locality](#phase-p2--data-layout-and-locality)
-6. [Phase P3 â€” Topology Mutation Discipline](#phase-p3--topology-mutation-discipline)
-7. [Phase P4 â€” Parallel Scaling](#phase-p4--parallel-scaling)
-8. [Phase P5 â€” Profile-Gated Observability](#phase-p5--profile-gated-observability)
-9. [Phase P6 â€” Domain-Specific Optimization Hooks](#phase-p6--domain-specific-optimization-hooks)
+4. [Phase P1 — Hot Path Isolation](#phase-p1--hot-path-isolation)
+5. [Phase P2 — Data Layout and Locality](#phase-p2--data-layout-and-locality)
+6. [Phase P3 — Topology Mutation Discipline](#phase-p3--topology-mutation-discipline)
+7. [Phase P4 — Parallel Scaling](#phase-p4--parallel-scaling)
+8. [Phase P5 — Profile-Gated Observability](#phase-p5--profile-gated-observability)
+9. [Phase P6 — Domain-Specific Optimization Hooks](#phase-p6--domain-specific-optimization-hooks)
 10. [Current Confirmed Hot-Path Costs](#current-confirmed-hot-path-costs)
 11. [What Must Stay Configurable](#what-must-stay-configurable)
 12. [Sequencing](#sequencing)
@@ -43,7 +43,7 @@ Examples:
 - a chip simulator may care most about deterministic propagation throughput and sparse fanout scaling
 - a frame-budget runtime may care most about bounded maintenance pauses and allocation predictability
 
-So this document does **not** say â€œone perfect fast architecture for every deployment.â€ It says:
+So this document does **not** say “one perfect fast architecture for every deployment.” It says:
 
 1. isolate the universal hot-path costs
 2. make those costs configurable or profile-driven where the product needs differ
@@ -89,7 +89,7 @@ These should not become universal engine law:
 
 The engine should support a small number of explicit performance profiles rather than hiding policy in ad hoc flags.
 
-### Profile A â€” `Balanced`
+### Profile A — `Balanced`
 
 Default product profile.
 
@@ -112,7 +112,7 @@ installed before planning, and the planner reads only the installed policy.
 Tier labels remain descriptive compatibility presets rather than a second
 execution authority.
 
-### Profile B â€” `Introspective`
+### Profile B — `Introspective`
 
 Diagnostics-heavy profile.
 
@@ -128,7 +128,7 @@ Good for:
 - replay and forensic analysis
 - certification-style workflows
 
-### Profile C â€” `Throughput`
+### Profile C — `Throughput`
 
 High-scale compute profile.
 
@@ -145,7 +145,7 @@ Good for:
 - chip simulators
 - large batched evaluation graphs
 
-### Profile D â€” `FrameBound`
+### Profile D — `FrameBound`
 
 Latency-budget profile.
 
@@ -166,7 +166,7 @@ Good for:
 
 ---
 
-## Phase P1 â€” Hot Path Isolation
+## Phase P1 — Hot Path Isolation
 
 ### Problem
 
@@ -215,7 +215,7 @@ Define the canonical cold paths:
 
 ---
 
-## Phase P2 â€” Data Layout and Locality
+## Phase P2 — Data Layout and Locality
 
 ### Problem
 
@@ -230,7 +230,7 @@ The graph still risks carrying too much cold data through hot access patterns. T
 
 Treat layout as a first-class architectural concern, not a later micro-optimization.
 
-#### P2.1 â€” Hot/cold split on node state
+#### P2.1 — Hot/cold split on node state
 
 Hot fields should be cheap to touch during invalidation and planning:
 
@@ -245,7 +245,7 @@ Cold fields should be moved away from the common cache line when possible:
 - rarely used metadata
 - heavyweight partition detail state that is only relevant in some domains
 
-#### P2.2 â€” Storage-family locality review
+#### P2.2 — Storage-family locality review
 
 Audit:
 
@@ -260,7 +260,7 @@ for:
 - avoidable indirection
 - opportunities for SoA or tighter packed storage
 
-#### P2.3 â€” Public-boundary allocation vs internal representation
+#### P2.3 — Public-boundary allocation vs internal representation
 
 Public APIs may still accept ergonomic types such as strings or richer tokens, but the engine core should normalize them quickly into compact internal representations.
 
@@ -270,7 +270,7 @@ This means:
 - keep profile/domain flexibility at the boundary
 - keep core traversal and mutation representations compact
 
-#### P2.4 â€” Effect Allocation Discipline
+#### P2.4 — Effect Allocation Discipline
 
 `EvaluationEffect` is now one of the engine's central hot-path artifacts. That means its allocation behavior is not an implementation detail; it is part of the architecture.
 
@@ -288,7 +288,7 @@ The engine should support one clean low-allocation effect path:
 
 The goal is to prevent per-node effect creation from becoming a hidden heap-allocation tax.
 
-#### P2.5 â€” Hash-First Token Comparison
+#### P2.5 — Hash-First Token Comparison
 
 Token ergonomics at the public boundary do not require the engine core to ignore precomputed hashes.
 
@@ -300,7 +300,7 @@ For token-heavy invalidation and partition-matching paths, comparison should be 
 
 This preserves correctness while reducing repeated string-heavy comparison cost.
 
-#### P2.6 â€” Scratch Retention Policy
+#### P2.6 — Scratch Retention Policy
 
 `TraversalScratch` currently benefits throughput by retaining grown capacity, but that should be a policy choice rather than an implicit permanent law.
 
@@ -327,7 +327,7 @@ Different profiles may want different retention behavior:
 
 ---
 
-## Phase P3 â€” Topology Mutation Discipline
+## Phase P3 — Topology Mutation Discipline
 
 ### Problem
 
@@ -344,7 +344,7 @@ That is acceptable for some low-churn workloads and fatal for others.
 
 Make adjacency mutation strategies explicit and profile-sensitive.
 
-#### P3.1 â€” Mutation-path complexity audit
+#### P3.1 — Mutation-path complexity audit
 
 Audit all topology mutation and reconciliation flows for:
 
@@ -353,7 +353,7 @@ Audit all topology mutation and reconciliation flows for:
 - repeated full-set sorting
 - repeated source-union rebuilding
 
-#### P3.2 â€” Profile-sensitive adjacency representation
+#### P3.2 — Profile-sensitive adjacency representation
 
 Different domains may want different tradeoffs:
 
@@ -363,7 +363,7 @@ Different domains may want different tradeoffs:
 
 The engine should not hard-code one strategy if the workload classes differ materially.
 
-#### P3.3 â€” Canonicalization boundaries
+#### P3.3 — Canonicalization boundaries
 
 Not every mutation must immediately pay the full canonicalization cost.
 
@@ -376,7 +376,7 @@ Possible model:
   - plan materialization
   - observation preparation
 
-#### P3.4 â€” Batched Subscriber Reconciliation
+#### P3.4 — Batched Subscriber Reconciliation
 
 Subscriber reconciliation should not pay one clone-mutate-reinsert cycle per individual source-edge change when the engine already knows the complete before/after dependency set.
 
@@ -406,7 +406,7 @@ This is especially important for rewiring-heavy or keyed dynamic workloads.
 
 ---
 
-## Phase P4 â€” Parallel Scaling
+## Phase P4 — Parallel Scaling
 
 ### Problem
 
@@ -416,7 +416,7 @@ Parallel execution only helps if shared-state contention stays low. Any shared m
 
 Parallel work should produce local data first and merge centrally only at clearly bounded seams.
 
-#### P4.1 â€” Local-first staging
+#### P4.1 — Local-first staging
 
 Parallel tasks should prefer:
 
@@ -430,7 +430,7 @@ Then merge through:
 - explicit reduction steps
 - post-stage aggregation
 
-#### P4.2 â€” Contention audit
+#### P4.2 — Contention audit
 
 Audit parallel paths for:
 
@@ -439,7 +439,7 @@ Audit parallel paths for:
 - shared diagnostics staging
 - shared string formatting and retention
 
-#### P4.3 â€” Profile-sensitive parallel policy
+#### P4.3 — Profile-sensitive parallel policy
 
 Not every profile wants the same strategy:
 
@@ -447,7 +447,7 @@ Not every profile wants the same strategy:
 - `Introspective` may accept lower throughput for richer traceability
 - `FrameBound` may prefer bounded work over maximum thread saturation
 
-#### P4.4 â€” Suppression Propagation Scaling
+#### P4.4 — Suppression Propagation Scaling
 
 Even when precompute scales well, the engine can still bottleneck on sequential post-apply suppression propagation.
 
@@ -473,7 +473,7 @@ That means suppression cost must be treated as part of the scaling model:
 
 ---
 
-## Phase P5 â€” Profile-Gated Observability
+## Phase P5 — Profile-Gated Observability
 
 ### Problem
 
@@ -483,7 +483,7 @@ Observability is valuable, but rich telemetry, flow summaries, replay events, an
 
 Observability must be explicitly profile-gated and phase-bounded.
 
-#### P5.1 â€” Minimal operational reporting
+#### P5.1 — Minimal operational reporting
 
 The default operational path should prefer:
 
@@ -498,18 +498,18 @@ over:
 - heavy string formatting
 - rich replay payloads on every operation
 
-#### P5.2 â€” Deferred materialization
+#### P5.2 — Deferred materialization
 
 Where possible:
 
 - store enough to reconstruct later
 - materialize rich artifacts only when the profile or caller requests them
 
-#### P5.3 â€” Harness and diagnostics honesty
+#### P5.3 — Harness and diagnostics honesty
 
 Harness and certification flows can be rich, but they must remain explicit `Introspective`-style surfaces, not hidden cost inside normal execution.
 
-#### P5.4 â€” Confirmed Hot-Path Allocation Audit
+#### P5.4 — Confirmed Hot-Path Allocation Audit
 
 The engine should keep an explicit watchlist of concrete allocation-sensitive hot-path patterns instead of relying on vague performance intent.
 
@@ -523,7 +523,7 @@ Current confirmed examples include:
 ### Implementation Plan
 
 1. Audit where rich diagnostics are constructed eagerly.
-2. Separate â€œrecord enough to explain laterâ€ from â€œfully explain now.â€
+2. Separate “record enough to explain later” from “fully explain now.”
 3. Keep a concrete hot-path allocation watchlist and burn it down intentionally.
 4. Make diagnostic depth a deliberate profile/policy choice.
 5. Keep harness on real production code, but allow it to opt into richer observation profiles.
@@ -536,7 +536,7 @@ Current confirmed examples include:
 
 ---
 
-## Phase P6 â€” Domain-Specific Optimization Hooks
+## Phase P6 — Domain-Specific Optimization Hooks
 
 ### Problem
 
@@ -546,7 +546,7 @@ Some performance needs are domain-specific and should not become universal engin
 
 Provide explicit hooks where domains can specialize without forking the engine core.
 
-#### P6.1 â€” Boundary normalization hooks
+#### P6.1 — Boundary normalization hooks
 
 Examples:
 
@@ -554,14 +554,14 @@ Examples:
 - chip simulators normalize wire/net identifiers
 - web systems normalize request/session/detail keys
 
-#### P6.2 â€” Equality/comparison hooks
+#### P6.2 — Equality/comparison hooks
 
 Examples:
 
 - geometry outputs may need tolerance-aware identity
 - chip outputs may need logical equivalence rather than raw bit-pattern equivalence
 
-#### P6.3 â€” Maintenance policy hooks
+#### P6.3 — Maintenance policy hooks
 
 Examples:
 
@@ -653,4 +653,4 @@ Reasoning:
 - then stop paying introspective cost in hot paths
 - then fix storage/layout and parallel contention
 - then redesign mutation strategy with actual workload profiles in mind
-- then expose domain-appropriate hooks without hard-coding one nicheâ€™s performance law into the engine
+- then expose domain-appropriate hooks without hard-coding one niche’s performance law into the engine

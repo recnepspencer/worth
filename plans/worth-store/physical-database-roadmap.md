@@ -88,7 +88,7 @@ then the store has not earned the database claim.
 - The Physical Database Roadmap is greenfield for the physical Store
   foundation. Planned code lands in the dedicated Store workspace/crate family.
 - The dedicated Store workspace must close the
-  [Aspect-Native Workspace Gate](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/storage-foundation-aspect-native-gate.md)
+  [Aspect-Native Workspace Gate](./storage-foundation-aspect-native-gate.md)
   before `S.0` implementation proceeds. JSON may exist only as an explicitly
   named terminal projection or hostile/readmission test input.
 - No compatibility backend, prior persistence path, historical topology, or
@@ -160,7 +160,7 @@ then the store has not earned the database claim.
 
 ## Aspect-Native Workspace Gate
 
-Engineering spec: [storage-foundation-aspect-native-gate.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/storage-foundation-aspect-native-gate.md)
+Engineering spec: [storage-foundation-aspect-native-gate.md](./storage-foundation-aspect-native-gate.md)
 
 ### Goal
 
@@ -225,7 +225,7 @@ confined to named terminal projection or hostile/readmission boundaries.
 
 ## S.0: Foundation Source Boundary And Claim Vocabulary
 
-Engineering spec: [storage-foundation-s0.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/storage-foundation-s0.md)
+Engineering spec: [storage-foundation-s0.md](./storage-foundation-s0.md)
 
 ### Goal
 
@@ -287,7 +287,7 @@ vocabulary adoption, certification evidence, and S.1 handoff readiness.
 
 ## S.1: Physical Page, Segment, And Extent Substrate
 
-Engineering spec: [storage-foundation-s1.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/storage-foundation-s1.md)
+Engineering spec: [storage-foundation-s1.md](./storage-foundation-s1.md)
 
 ### Goal
 
@@ -357,7 +357,7 @@ deserializing the whole store into domain structs.
 
 ## S.2: Buffer Pool, Memory Budgets, And Zero-Copy Record Access
 
-Engineering spec: [storage-foundation-s2.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/storage-foundation-s2.md)
+Engineering spec: [storage-foundation-s2.md](./storage-foundation-s2.md)
 
 ### Goal
 
@@ -407,7 +407,7 @@ allocation counters.
 
 ## S.3: Physical Integrity, Scrub, Quarantine, And Corruption Localization
 
-Engineering spec: [storage-foundation-s3.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/storage-foundation-s3.md)
+Engineering spec: [storage-foundation-s3.md](./storage-foundation-s3.md)
 
 ### Goal
 
@@ -458,7 +458,7 @@ allowed to consume the bytes.
 
 ## S.4: WAL, Checkpoint, LSN, And Recovery Physics
 
-Engineering spec: [storage-foundation-s4.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/storage-foundation-s4.md)
+Engineering spec: [storage-foundation-s4.md](./storage-foundation-s4.md)
 
 ### Goal
 
@@ -511,7 +511,7 @@ and recovery never relies on scanning backend residue as authority.
 
 ## S.4.5: Physical Database Simulation Harness
 
-Engineering spec: [storage-foundation-s4-5.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/storage-foundation-s4-5.md)
+Engineering spec: [storage-foundation-s4-5.md](./storage-foundation-s4-5.md)
 
 ### Goal
 
@@ -586,7 +586,7 @@ oracles, exact counters, replayable transcripts, and direct S.5 scenarios.
 
 ## S.5: Physical Isolation, Latches, Epochs, And Stable Read Plans
 
-Engineering spec: [storage-foundation-s5.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/storage-foundation-s5.md)
+Engineering spec: [storage-foundation-s5.md](./storage-foundation-s5.md)
 
 ### Goal
 
@@ -638,7 +638,7 @@ chunks that were still protected by an admitted read plan.
 
 ## S.5.1: Cryptographic Boundary Seeds And Tenant Scope Metadata
 
-Engineering spec: [storage-foundation-s5-1.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/storage-foundation-s5-1.md)
+Engineering spec: [storage-foundation-s5-1.md](./storage-foundation-s5-1.md)
 
 ### Goal
 
@@ -779,7 +779,7 @@ showing when background work yielded, paced, or was denied.
 
 ## S.7: Native Blob/Object Chunk Store
 
-Engineering spec: [storage-foundation-s7.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/storage-foundation-s7.md)
+Engineering spec: [storage-foundation-s7.md](./storage-foundation-s7.md)
 
 ### Goal
 
@@ -842,7 +842,7 @@ localization.
 
 ## S.7.1: Proof-Flow And Domain-Structure Cleanup Gate
 
-Engineering spec: [storage-foundation-s7-1.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/storage-foundation-s7-1.md)
+Engineering spec: [storage-foundation-s7-1.md](./storage-foundation-s7-1.md)
 
 ### Goal
 

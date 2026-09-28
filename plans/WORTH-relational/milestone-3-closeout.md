@@ -24,7 +24,7 @@ of flattening multiple truth families into one ambiguous payload.
 
 Milestone 3 delivered:
 
-- a public `inspection` faÃ§ade namespace with read-only
+- a public `inspection` façade namespace with read-only
   `RelationalRuntime::inspection_access(&self)` entry
 - an explicit inspection truth contract built around origin, access path,
   resolution context, availability, and narrow degradation semantics
@@ -189,7 +189,7 @@ What is explicitly not claimed by Milestone 3:
   and historical artifacts
 
 That capability remains deferred to
-[worth_relational_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/worth_relational_roadmap.md)
+[worth_relational_roadmap.md](./WORTH_relational_roadmap.md)
 `Milestone 7B: Authoritative Merge Execution`.
 
 ## Additional Hardening Added Before Close
@@ -222,9 +222,9 @@ Milestone 3 intentionally does not claim ownership of merge execution,
 authoritative correspondence promotion completion, or rewiring reconciliation.
 
 Those remain deferred to later roadmap milestones, including
-[worth_relational_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/worth_relational_roadmap.md)
+[worth_relational_roadmap.md](./WORTH_relational_roadmap.md)
 `Milestone 6: Correspondence and Merge Foundations` and
-[worth_relational_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/worth_relational_roadmap.md)
+[worth_relational_roadmap.md](./WORTH_relational_roadmap.md)
 `Milestone 7B: Authoritative Merge Execution`, including:
 
 - authoritative promotion of correspondence into merged identity
@@ -265,5 +265,5 @@ inspection, with explicit provenance and availability boundaries and no hidden
 mutation during observer flows.
 
 The next product milestone is
-[worth_relational_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/worth_relational_roadmap.md)
+[worth_relational_roadmap.md](./WORTH_relational_roadmap.md)
 `Milestone 4: Relation Integrity and Schema Contracts`.

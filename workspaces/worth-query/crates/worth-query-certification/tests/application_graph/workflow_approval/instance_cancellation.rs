@@ -10,8 +10,8 @@ use worth_query_host::facade::application_entry::{
 };
 use worth_query_host::facade::primary_graph::WorthQueryApplicationCommitDenialStage;
 
-use super::super::bounded_dimension_model::{
-    programs::DimensionProgramP1,
+use super::super::document_retention_model::{
+    programs::RetentionProgramP1,
     workflow::{
         cancel_instance, prepare_cancellation, prepare_second_program_adoption, publish_adoption,
         retire_definition, support_workflow_program,
@@ -51,10 +51,10 @@ fn a_cancel_before_the_effect_refuses_the_admitted_step_as_cancelled() {
     let effect = runtime
         .request(&principal, &scope)
         .on_branch(instance.branch())
-        .mutate(ReviewedSetPartDimensionIntent {
-            input: super::super::bounded_dimension_model::schema::SetPartDimensionInput {
-                identity: PART_IDENTITY.to_owned(),
-                dimension: 8,
+        .mutate(ReviewedSetRetentionIntent {
+            input: super::super::document_retention_model::schema::SetRetentionInput {
+                identity: DOCUMENT_IDENTITY.to_owned(),
+                retention_days: 8,
             },
         })
         .without_source()
@@ -73,8 +73,8 @@ fn a_cancel_before_the_effect_refuses_the_admitted_step_as_cancelled() {
         other => panic!("a step admitted before the cancellation never performs: {other:?}"),
     }
     assert_eq!(
-        read_dimension(application.runtime(), instance.branch()),
-        SEED_DIMENSION
+        read_retention(application.runtime(), instance.branch()),
+        SEED_RETENTION
     );
     match advance_instance(&application, instance, 88_015) {
         Err(WorthQueryWorkflowAdvancePreparationDenial::TransitionPreparation(
@@ -102,7 +102,7 @@ fn a_cancel_after_the_effect_reports_it_and_leaves_it_performed() {
         ["apply".to_owned()],
         "a replay reports the same performed effect from settled history",
     );
-    assert_eq!(read_dimension(application.runtime(), instance.branch()), 8);
+    assert_eq!(read_retention(application.runtime(), instance.branch()), 8);
 }
 
 #[test]
@@ -132,7 +132,7 @@ fn a_cancel_prepared_before_the_effect_goes_stale_when_the_effect_lands_first() 
     let done = cancelled(cancel_instance(&application, instance.clone(), 88_211));
     assert!(!done.replayed());
     assert_eq!(done.performed_node_paths(), ["apply".to_owned()]);
-    assert_eq!(read_dimension(application.runtime(), instance.branch()), 8);
+    assert_eq!(read_retention(application.runtime(), instance.branch()), 8);
 }
 
 #[test]
@@ -163,7 +163,7 @@ fn a_completed_instance_has_nothing_left_to_cancel_and_a_sibling_runs_on() {
 fn a_cancellation_replays_exactly_after_its_branch_adopts_a_new_program() {
     let (mut application, _, instance, _, _, _) = approval_journey("approved", 88_400);
     let done = cancelled(cancel_instance(&application, instance.clone(), 88_410));
-    support_workflow_program::<DimensionProgramP1>(&mut application);
+    support_workflow_program::<RetentionProgramP1>(&mut application);
     let main = application.current_world();
     publish_adoption(prepare_second_program_adoption(
         &application,
@@ -199,7 +199,7 @@ fn a_cancellation_replays_after_adoption_leaves_its_retired_definition_behind() 
     }
     // Neither a current definition nor a live instance asks adoption to
     // carry it, so the adopted program cannot run the definition.
-    support_workflow_program::<DimensionProgramP1>(&mut application);
+    support_workflow_program::<RetentionProgramP1>(&mut application);
     let main = application.current_world();
     publish_adoption(prepare_second_program_adoption(
         &application,
@@ -228,7 +228,7 @@ fn a_cancellation_replays_after_adoption_leaves_its_retired_definition_behind() 
 }
 
 pub(super) fn approve(
-    application: &BoundedDimensionWorkflowRuntime,
+    application: &DocumentWorkflowRuntime,
     instance: &PublishedWorkflowInstanceRef,
     required: &RequiredWorkflowApproval,
     proposal: &PublishedWorkflowProposalRef,

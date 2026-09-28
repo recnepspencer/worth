@@ -5,15 +5,15 @@
 > **Roadmap parent:** [performance.md](./performance.md)
 >
 > **Related implementation surfaces:**
-> - [entry.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/node/entry.rs)
-> - [trace.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/trace.rs)
-> - [entries.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/graph/storage/entries.rs)
-> - [effect.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/graph/runtime/effect.rs)
-> - [apply.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/evaluation/engine/apply.rs)
-> - [stage.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/planner/apply/stage.rs)
-> - [mod.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/planner/model/mod.rs)
-> - [milestone-3.md](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth_signal/milestone-3.md)
-> - [milestone-2.md](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth_signal/milestone-2.md)
+> - [entry.rs](../../crates/worth-signal/src/data/node/entry.rs)
+> - [trace.rs](../../crates/worth-signal/src/data/trace.rs)
+> - [entries.rs](../../crates/worth-signal/src/data/graph/storage/entries.rs)
+> - [effect.rs](../../crates/worth-signal/src/data/graph/runtime/effect.rs)
+> - [apply.rs](../../crates/worth-signal/src/logic/evaluation/engine/apply.rs)
+> - [stage.rs](../../crates/worth-signal/src/logic/planner/apply/stage.rs)
+> - [mod.rs](../../crates/worth-signal/src/logic/planner/model/mod.rs)
+> - [milestone-3.md](./milestone-3.md)
+> - [milestone-2.md](./milestone-2.md)
 
 ## Goal
 
@@ -54,23 +54,23 @@ named implementation artifacts and code certification surfaces:
 - Gate 1, persistence and restore contract closure
   status: closed
   evidence: [milestone-4-access-matrix.md](./milestone-4-access-matrix.md),
-  [checkpoint_image.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/node/checkpoint_image.rs),
-  [mod.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/state/mod.rs)
+  [checkpoint_image.rs](../../crates/worth-signal/src/data/node/checkpoint_image.rs),
+  [mod.rs](../../crates/worth-signal/src/state/mod.rs)
 - Gate 2, access-discipline closure
   status: closed
   evidence: [milestone-4-access-matrix.md](./milestone-4-access-matrix.md),
   [milestone-4-interior-heat-audit.md](./milestone-4-interior-heat-audit.md),
-  [phase1_api.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/tests/phase1_api.rs)
+  [phase1_api.rs](../../crates/worth-signal/src/tests/phase1_api.rs)
 - Gate 3, artifact and node storage split closure
   status: closed
-  evidence: [trace.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/trace.rs),
-  [entry.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/node/entry.rs),
-  [entries.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/graph/storage/entries.rs),
-  [observer.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/graph/runtime/observer.rs),
-  [serial_batch.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/planner/apply/serial_batch.rs),
-  [stage.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/planner/apply/stage.rs),
-  [semantic/mod.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/planner/semantic/mod.rs),
-  [phase1_api.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/tests/phase1_api.rs)
+  evidence: [trace.rs](../../crates/worth-signal/src/data/trace.rs),
+  [entry.rs](../../crates/worth-signal/src/data/node/entry.rs),
+  [entries.rs](../../crates/worth-signal/src/data/graph/storage/entries.rs),
+  [observer.rs](../../crates/worth-signal/src/data/graph/runtime/observer.rs),
+  [serial_batch.rs](../../crates/worth-signal/src/logic/planner/apply/serial_batch.rs),
+  [stage.rs](../../crates/worth-signal/src/logic/planner/apply/stage.rs),
+  [semantic/mod.rs](../../crates/worth-signal/src/logic/planner/semantic/mod.rs),
+  [phase1_api.rs](../../crates/worth-signal/src/tests/phase1_api.rs)
 
 The remaining gates were executed in order on top of the now-closed
 persistence, access-discipline, storage-split, and proof-bearing execution
@@ -78,14 +78,14 @@ boundaries. Gates 1 through 6 are now closed.
 
 - Gate 4, proof-bearing execution closure
   status: closed
-  evidence: [proof.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/proof.rs),
-  [trace.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/trace.rs),
-  [workspace.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/planner/apply/workspace.rs),
-  [serial_batch.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/planner/apply/serial_batch.rs),
-  [stage.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/planner/apply/stage.rs),
-  [semantic/mod.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/planner/semantic/mod.rs),
-  [model/mod.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/planner/model/mod.rs),
-  [phase1_api.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/tests/phase1_api.rs)
+  evidence: [proof.rs](../../crates/worth-signal/src/data/proof/mod.rs),
+  [trace.rs](../../crates/worth-signal/src/data/trace.rs),
+  [workspace.rs](../../crates/worth-signal/src/logic/planner/apply/workspace.rs),
+  [serial_batch.rs](../../crates/worth-signal/src/logic/planner/apply/serial_batch.rs),
+  [stage.rs](../../crates/worth-signal/src/logic/planner/apply/stage.rs),
+  [semantic/mod.rs](../../crates/worth-signal/src/logic/planner/semantic/mod.rs),
+  [model/mod.rs](../../crates/worth-signal/src/logic/planner/model/mod.rs),
+  [phase1_api.rs](../../crates/worth-signal/src/tests/phase1_api.rs)
 
 Gate 4 is closed because the planner/apply/finalize execution boundary now
 keeps proof-carrying forms intact instead of collapsing back to generic packet
@@ -93,37 +93,37 @@ or field-bag representations:
 
 - stage-owned pending dependency snapshots no longer collapse back to a generic
   `SnapshotBatchCommit` before publication inside the planner hot path
-- [workspace.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/planner/apply/workspace.rs)
+- [workspace.rs](../../crates/worth-signal/src/logic/planner/apply/workspace.rs)
   stores `ClassifiedSnapshotBatchCommit` in `StageScratch`
-- [serial_batch.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/planner/apply/serial_batch.rs)
+- [serial_batch.rs](../../crates/worth-signal/src/logic/planner/apply/serial_batch.rs)
   classifies pending stage snapshots before the finalize boundary instead of
   carrying only a generic batch form
-- [stage.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/planner/apply/stage.rs)
+- [stage.rs](../../crates/worth-signal/src/logic/planner/apply/stage.rs)
   commits the already-classified proof form through
   `apply_classified_snapshot_batch_commit`
-- [proof.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/proof.rs)
+- [proof.rs](../../crates/worth-signal/src/data/proof/mod.rs)
   seals stable-shape and replacement snapshot proof entry fields so those
   proof-bearing entry forms are no longer WORTHable by public struct literal
-- [trace.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/trace.rs)
+- [trace.rs](../../crates/worth-signal/src/data/trace.rs)
   no longer derives `Default` for `RuntimeArtifactFinalizeImage`, which
   prevents synthetic construction of a finalize carrier that claims runtime
   capture without runtime capture having occurred
-- [model/mod.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/planner/model/mod.rs)
+- [model/mod.rs](../../crates/worth-signal/src/logic/planner/model/mod.rs)
   seals `LoweredTaskExecution`, `LoweredTask`, and `LoweredStagePlan` behind
   constructors, accessors, and owned decomposition methods instead of leaving
   planner execution as open field bags
-- [semantic/mod.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/planner/semantic/mod.rs)
+- [semantic/mod.rs](../../crates/worth-signal/src/logic/planner/semantic/mod.rs)
   seals `SemanticTaskUpdate`, `SemanticSegment`, and `StageSemanticBatch`
   behind constructors / owned transitions instead of open packet assembly
-- [serial_batch.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/planner/apply/serial_batch.rs)
+- [serial_batch.rs](../../crates/worth-signal/src/logic/planner/apply/serial_batch.rs)
   establishes `ReadySerialFinalizeBatch` through a constructor after
   stage-width and snapshot-ownership checks, instead of open struct assembly
-- [workspace.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/planner/apply/workspace.rs)
+- [workspace.rs](../../crates/worth-signal/src/logic/planner/apply/workspace.rs)
   seals grouped-apply workspace packets behind constructors and owned
   decomposition methods, including `ConcurrentWorkerInput`,
   `ConcurrentApplyGroupInput`, `GroupLocalTaskCommit`, `GroupLocalApplyPacket`,
   and `StageScratch`
-- [stage.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/planner/apply/stage.rs)
+- [stage.rs](../../crates/worth-signal/src/logic/planner/apply/stage.rs)
   constructs and consumes lowered execution, semantic publication, finalize
   readiness, and grouped-apply workspace packets through those transition
   methods instead of open field assembly, so both serial and parallel hot paths
@@ -132,53 +132,53 @@ or field-bag representations:
 Gate 3 is closed because the split now exists as runtime structure instead of
 only classification intent:
 
-- [trace.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/trace.rs)
+- [trace.rs](../../crates/worth-signal/src/data/trace.rs)
   separates `RuntimeArtifactHot`, `RuntimeArtifactWarm`, and the compatibility
   carrier `RuntimeArtifactState`, and adds the narrower
   `RuntimeArtifactFinalizeImage` for planner/finalize use
-- [entry.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/node/entry.rs)
+- [entry.rs](../../crates/worth-signal/src/data/node/entry.rs)
   structurally splits `NodeEntry` into `NodeHotData`, `NodeWarmData`, and boxed
   cold payload while preserving the serialized compatibility boundary
-- [entries.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/graph/storage/entries.rs)
+- [entries.rs](../../crates/worth-signal/src/data/graph/storage/entries.rs)
   exposes explicit hot, warm, and finalize-image accessors instead of forcing
   hot callers through broad node entry assembly
-- [serial_batch.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/planner/apply/serial_batch.rs),
-  [stage.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/planner/apply/stage.rs),
-  and [semantic/mod.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/planner/semantic/mod.rs)
+- [serial_batch.rs](../../crates/worth-signal/src/logic/planner/apply/serial_batch.rs),
+  [stage.rs](../../crates/worth-signal/src/logic/planner/apply/stage.rs),
+  and [semantic/mod.rs](../../crates/worth-signal/src/logic/planner/semantic/mod.rs)
   no longer carry broad `RuntimeArtifactState` snapshots through the main
   apply/finalize planner path
-- [observer.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/graph/runtime/observer.rs)
+- [observer.rs](../../crates/worth-signal/src/data/graph/runtime/observer.rs)
   surfaces node and artifact lane inline-size inventory so the split is
   observable without pretending the node-side lane separation is already a
   fully independent physical store
 
 Gate 5 is now closed, with the following explicit closure work landed:
 
-- [patch_buffer.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/transaction/patch_buffer.rs)
+- [patch_buffer.rs](../../crates/worth-signal/src/logic/transaction/patch_buffer.rs)
   now stores canonical `CheckpointNodeImage` rollback packets instead of raw
   `NodeEntry` clones, so transaction rollback restores touched nodes through an
   explicit authority-image boundary
-- [entries.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/graph/storage/entries.rs)
+- [entries.rs](../../crates/worth-signal/src/data/graph/storage/entries.rs)
   now exposes `node_checkpoint_image`,
   now exposes `create_node_from_checkpoint_image` and
   `replace_entry_from_checkpoint_image` so rollback and merge paths can operate
   on checkpoint-carried authority images without smuggling broad entry objects
   across the boundary
-- [execute.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/state/merge/execute.rs)
+- [execute.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/merge/execute.rs)
   now captures and reapplies source/target authority through checkpoint node
   images when adopting or rewriting merge candidates, and applies carry-policy
   mutation directly to the checkpoint image instead of bouncing back through
   `NodeEntry::from_checkpoint_image(...)`
-- [merge_runtime.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/state/branching/merge_runtime.rs)
+- [merge_runtime.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/branching/merge_runtime.rs)
   now rewrites existing-target reconciliation through checkpoint images and
   derives merge comparability / lineage / merge authority from explicit hot and
   warm artifact lane accessors instead of broad `RuntimeArtifactState` reads
-- [phase1_api.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/tests/phase1_api.rs)
+- [phase1_api.rs](../../crates/worth-signal/src/tests/phase1_api.rs)
   now carries a Gate 5 regression barrier asserting that rollback and merge use
   checkpoint node images as their authority-transfer seam and that merge
   planning derives comparable state from explicit hot/warm lanes instead of
   broad runtime artifact reads
-- [artifacts.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/graph/diagnostics_access/artifacts.rs)
+- [artifacts.rs](../../crates/worth-signal/src/data/graph/diagnostics_access/artifacts.rs)
   now keeps snapshot restore proof-bearing by carrying the classified
   checkpoint-carried dependency snapshot rebuild batch in
   `SnapshotRestorePlan` and rebuilding dependency snapshot state through
@@ -186,14 +186,14 @@ Gate 5 is now closed, with the following explicit closure work landed:
   commit surface or late execution-time reclassification, while rewiring
   diagnostics pull scoped versions through a narrowed version accessor instead
   of a broad entry read
-- [snapshotting.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/state/branching/snapshotting.rs)
+- [snapshotting.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/branching/snapshotting.rs)
   now consumes that already-classified restore-plan batch on the runtime branch
   restore path as well, preventing restore execution from silently
   reclassifying the checkpoint batch late
-- [branches.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/state/branching/branches.rs),
-  [runtime_state.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/state/runtime_state.rs),
-  [snapshotting.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/state/branching/snapshotting.rs),
-  and [merge_runtime.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/state/branching/merge_runtime.rs)
+- [branches.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/branching/branches.rs),
+  [runtime_state.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/runtime_state/mod.rs),
+  [snapshotting.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/branching/snapshotting.rs),
+  and [merge_runtime.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/branching/merge_runtime.rs)
   now keep branch authority / derived / ancestry / mutation-ledger state behind
   mediated `BranchState` and `BranchAncestryState` accessors instead of open
   field reach-through, and stored branch state now keys itself from sealed
@@ -201,7 +201,7 @@ Gate 5 is now closed, with the following explicit closure work landed:
   cannot silently file a branch state under the wrong branch key
 - active branch restore and active-target merge no longer duplicate full
   `BranchState` authority just to preserve ancestry and mutation-journal truth;
-  [branches.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/state/branching/branches.rs)
+  [branches.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/branching/branches.rs)
   now keeps branch runtime metadata separately from stored inactive full-state
   payloads so the active runtime can move authority once and retain
   branch-local proof state without a second heavyweight clone
@@ -214,7 +214,7 @@ Gate 5 is now closed, with the following explicit closure work landed:
   `cargo check -p worth-signal --features parallel`,
   and `cargo test -p worth-signal --lib --features parallel`
 - allocation and footprint certification surface now exists in
-  [performance_support.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/tests/performance_support.rs):
+  [performance_support.rs](../../crates/worth-signal/src/tests/performance_support.rs):
   the ignored perf harness runs under a process-wide `stats_alloc`
   instrumentation boundary, serializes sample execution with `PERF_ALLOC_LOCK`,
   and emits per-sample `allocation_metrics` including `allocated_bytes`,
@@ -254,10 +254,10 @@ Milestones 1 through 3 move the runtime toward a batch-native and proof-carrying
 execution model, but the current storage surfaces still leave too much locality
 on the floor:
 
-- [NodeEntry](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/node/entry.rs)
+- [NodeEntry](../../crates/worth-signal/src/data/node/entry.rs)
   is still the broad authority aggregate for many operations whose actual
   read/write set is much smaller
-- [RuntimeArtifactState](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/trace.rs)
+- [RuntimeArtifactState](../../crates/worth-signal/src/data/trace.rs)
   is conceptually hot, but still contains fields whose dominant consumers are
   warm or cold
 - the serial hot lane still reaches through broad entry access for state,
@@ -422,10 +422,10 @@ Corollaries:
 The following classification is the initial expected split based on the current
 hot surfaces in:
 
-- [entry.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/node/entry.rs)
-- [trace.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/trace.rs)
-- [effect.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/graph/runtime/effect.rs)
-- [apply.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/evaluation/engine/apply.rs)
+- [entry.rs](../../crates/worth-signal/src/data/node/entry.rs)
+- [trace.rs](../../crates/worth-signal/src/data/trace.rs)
+- [effect.rs](../../crates/worth-signal/src/data/graph/runtime/effect.rs)
+- [apply.rs](../../crates/worth-signal/src/logic/evaluation/engine/apply.rs)
 
 `NodeEntry`-owned fields expected to live in the hot lane:
 
@@ -1301,34 +1301,34 @@ Closure gate:
 Gate 6 is now closed with the following visibility and compatibility work
 landed:
 
-- [entries.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/graph/storage/entries.rs)
+- [entries.rs](../../crates/worth-signal/src/data/graph/storage/entries.rs)
   now keeps `get_entry` and `get_entry_mut` crate-visible instead of public, so
   broad `NodeEntry` assembly is no longer part of the external API surface
-- [entries.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/graph/storage/entries.rs)
+- [entries.rs](../../crates/worth-signal/src/data/graph/storage/entries.rs)
   now exposes explicit boundary accessors for condition reads, runtime artifact
   presence, lineage id, reuse-boundary authority, retained/cold artifact lanes,
   execution-trace stamps, and lineage/execution stamping so boundary modules do
   not need to reach through broad entry state by default
-- [dot.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/presentation/outputs/dot.rs),
-  [bridge.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/presentation/harness/bridge.rs),
-  [execution_flow.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/diagnostics/runtime/execution_flow.rs),
-  [recorder.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/diagnostics/runtime/recorder.rs),
-  [history.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/diagnostics/inspection/history.rs),
-  and [summary.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/diagnostics/model/summary.rs)
+- [dot.rs](../../crates/worth-signal/src/presentation/outputs/dot.rs),
+  [bridge.rs](../../crates/worth-signal/src/presentation/harness/bridge.rs),
+  [execution_flow.rs](../../crates/worth-signal/src/diagnostics/runtime/execution_flow.rs),
+  [recorder.rs](../../crates/worth-signal/src/diagnostics/runtime/recorder.rs),
+  [history.rs](../../crates/worth-signal/src/diagnostics/inspection/history.rs),
+  and [summary.rs](../../crates/worth-signal/src/diagnostics/model/summary.rs)
   now consume those named graph accessors instead of relying on public broad
   entry assembly
-- [effect.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/graph/runtime/effect.rs),
-  [context.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/context.rs),
-  [context_resolution.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/evaluation/reuse/context_resolution.rs),
-  and [routing.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/invalidation/routing.rs)
+- [effect.rs](../../crates/worth-signal/src/data/graph/runtime/effect.rs),
+  [context.rs](../../crates/worth-signal/src/logic/context.rs),
+  [context_resolution.rs](../../crates/worth-signal/src/logic/evaluation/reuse/context_resolution.rs),
+  and [routing.rs](../../crates/worth-signal/src/logic/invalidation/routing.rs)
   now use named graph transitions and narrowed read accessors instead of
   directly assembling broad `NodeEntry` state on execution and invalidation
   paths
-- [observer.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/graph/runtime/observer.rs)
+- [observer.rs](../../crates/worth-signal/src/data/graph/runtime/observer.rs)
   now keeps broad runtime artifact compatibility state crate-visible, and
-  [facade.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/facade.rs)
+  [facade.rs](../../crates/worth-signal/src/facade.rs)
   no longer re-exports `NodeEntry` or `RuntimeArtifactState` on the public API
-- [phase1_api.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/tests/phase1_api.rs)
+- [phase1_api.rs](../../crates/worth-signal/src/tests/phase1_api.rs)
   now carries a Gate 6 regression barrier asserting that broad entry access is
   crate-visible only and that representative boundary modules use explicit
   accessors
@@ -1340,7 +1340,7 @@ Enumerated remaining broad-path compatibility seams:
 - diagnostics and explain materialization boundaries that intentionally assemble
   rich authority from multiple retained and reconstructed lanes
 - convenience-only easy-mode runtime code in
-  [easy/runtime.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/easy/runtime.rs)
+  [easy/runtime.rs](../../crates/worth-signal/src/easy/runtime.rs)
 - crate-internal tests that deliberately mutate or inspect full entries to
   validate invariants and migration boundaries
 

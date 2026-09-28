@@ -1,10 +1,12 @@
 # Milestone 5 Closeout: Structural Delta Storage And Branch Delta Layering
 
+> **Note:** The legacy root crate `crates/worth-store` was removed on 2026-09-27. Paths into it below name its files as they were; they are no longer links. The store now lives in [`workspaces/worth-store`](../../workspaces/worth-store/README.md).
+
 Status: Completed on 2026-04-15
 
-Parent spec: [milestone-5.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-5.md)
+Parent spec: [milestone-5.md](./milestone-5.md)
 
-Roadmap: [worth_store_roadmap.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/worth_store_roadmap.md)
+Roadmap: `worth_store_roadmap.md`
 
 ## Summary
 
@@ -65,7 +67,7 @@ The `delta_storage_report` explicitly carries:
 ## Certification Result
 
 The milestone 5 named suite now exists in
-[crates/worth-store/src/tests/milestone_5_certification.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/tests/milestone_5_certification.rs)
+`crates/worth-store/src/tests/milestone_5_certification.rs`
 and covers:
 
 - backend variation parity

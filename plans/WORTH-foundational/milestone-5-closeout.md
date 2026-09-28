@@ -13,7 +13,7 @@ basis and locator participation, profile reuse, current-basis readmission, and
 production-test readiness evidence.
 
 Crate-facing transition docs now also exist under
-[crates/worth-foundational/docs/branching-merging-and-commit-vocabulary](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/docs/branching-merging-and-commit-vocabulary),
+[crates/worth-foundational/docs/branching-merging-and-commit-vocabulary](../../crates/worth-foundational/docs/branching-merging-and-commit-vocabulary),
 with one landing page and one feature doc per shipped transition seam.
 
 This milestone is ready for production-shaped testing through `worth-harness`
@@ -62,9 +62,9 @@ surfaces into the foundational transition language correctly.
 
 Shipped homes:
 
-- [branches/mod.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/transitions/branches/mod.rs)
-- [branch_local.rs test](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/transitions/branch_local.rs)
-- [ui/branch_local](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/ui/transitions/branch_local)
+- [branches/mod.rs](../../crates/worth-foundational/src/transitions/branches/mod.rs)
+- [branch_local.rs test](../../crates/worth-foundational/tests/certification/transitions/branch_local.rs)
+- [ui/branch_local](../../crates/worth-foundational/tests/ui/transitions/branch_local)
 
 What closed:
 
@@ -77,13 +77,13 @@ What closed:
 
 Shipped homes:
 
-- [merges/mod.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/transitions/merges/mod.rs)
-- [builder.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/transitions/merges/builder.rs)
-- [verdict.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/transitions/merges/verdict.rs)
-- [strategy.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/transitions/merges/strategy.rs)
-- [vocabulary.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/transitions/merges/vocabulary.rs)
-- [merge_verdicts.rs test](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/transitions/merge_verdicts.rs)
-- [ui/merge_admission](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/ui/transitions/merge_admission)
+- [merges/mod.rs](../../crates/worth-foundational/src/transitions/merges/mod.rs)
+- [builder.rs](../../crates/worth-foundational/src/transitions/merges/builder.rs)
+- [verdict.rs](../../crates/worth-foundational/src/transitions/merges/verdict.rs)
+- [strategy.rs](../../crates/worth-foundational/src/transitions/merges/strategy.rs)
+- [vocabulary.rs](../../crates/worth-foundational/src/transitions/merges/vocabulary.rs)
+- [merge_verdicts.rs test](../../crates/worth-foundational/tests/certification/transitions/merge_verdicts.rs)
+- [ui/merge_admission](../../crates/worth-foundational/tests/ui/transitions/merge_admission)
 
 What closed:
 
@@ -96,11 +96,11 @@ What closed:
 
 Shipped homes:
 
-- [commits/mod.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/transitions/commits/mod.rs)
-- [authority.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/transitions/commits/authority.rs)
-- [vocabulary.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/transitions/commits/vocabulary.rs)
-- [committed_authority.rs test](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/transitions/committed_authority.rs)
-- [ui/committed_authority](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/ui/transitions/committed_authority)
+- [commits/mod.rs](../../crates/worth-foundational/src/transitions/commits/mod.rs)
+- [authority.rs](../../crates/worth-foundational/src/transitions/commits/authority.rs)
+- [vocabulary.rs](../../crates/worth-foundational/src/transitions/commits/vocabulary.rs)
+- [committed_authority.rs test](../../crates/worth-foundational/tests/certification/transitions/committed_authority.rs)
+- [ui/committed_authority](../../crates/worth-foundational/tests/ui/transitions/committed_authority)
 
 What closed:
 
@@ -113,12 +113,12 @@ What closed:
 
 Shipped homes:
 
-- [receipts/mod.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/transitions/receipts/mod.rs)
-- [issuance.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/transitions/receipts/issuance.rs)
-- [bundle.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/transitions/receipts/bundle.rs)
-- [vocabulary.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/transitions/receipts/vocabulary.rs)
-- [receipts_and_bundles.rs test](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/transitions/receipts_and_bundles.rs)
-- [ui/receipt_boundaries](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/ui/transitions/receipt_boundaries)
+- [receipts/mod.rs](../../crates/worth-foundational/src/transitions/receipts/mod.rs)
+- [issuance.rs](../../crates/worth-foundational/src/transitions/receipts/issuance.rs)
+- [bundle.rs](../../crates/worth-foundational/src/transitions/receipts/bundle.rs)
+- [vocabulary.rs](../../crates/worth-foundational/src/transitions/receipts/vocabulary.rs)
+- [receipts_and_bundles.rs test](../../crates/worth-foundational/tests/certification/transitions/receipts_and_bundles.rs)
+- [ui/receipt_boundaries](../../crates/worth-foundational/tests/ui/transitions/receipt_boundaries)
 
 What closed:
 
@@ -131,15 +131,15 @@ What closed:
 
 Shipped homes:
 
-- [canonical.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/transitions/basis/canonical.rs)
-- [canonical_branch.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/transitions/basis/canonical_branch.rs)
-- [canonical_merge.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/transitions/basis/canonical_merge.rs)
-- [canonical_commit.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/transitions/basis/canonical_commit.rs)
-- [current_basis.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/transitions/basis/current_basis.rs)
-- [profiles.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/transitions/basis/profiles.rs)
-- [transition_locator.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/locators/transition_locator.rs)
-- [phase5_basis.rs test](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/transitions/phase5_basis.rs)
-- [ui/phase5_boundaries](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/ui/transitions/phase5_boundaries)
+- [canonical.rs](../../crates/worth-foundational/src/transitions/basis/canonical.rs)
+- [canonical_branch.rs](../../crates/worth-foundational/src/transitions/basis/canonical_branch.rs)
+- [canonical_merge.rs](../../crates/worth-foundational/src/transitions/basis/canonical_merge.rs)
+- [canonical_commit.rs](../../crates/worth-foundational/src/transitions/basis/canonical_commit.rs)
+- [current_basis.rs](../../crates/worth-foundational/src/transitions/basis/current_basis.rs)
+- [profiles.rs](../../crates/worth-foundational/src/transitions/basis/profiles.rs)
+- [transition_locator.rs](../../crates/worth-foundational/src/locators/transition_locator.rs)
+- [phase5_basis.rs test](../../crates/worth-foundational/tests/certification/transitions/phase5_basis.rs)
+- [ui/phase5_boundaries](../../crates/worth-foundational/tests/ui/transitions/phase5_boundaries)
 
 What closed:
 
@@ -152,14 +152,14 @@ What closed:
 
 Shipped homes:
 
-- [readiness/mod.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/transitions/readiness/mod.rs)
-- [authority.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/transitions/readiness/authority.rs)
-- [vocabulary.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/transitions/readiness/vocabulary.rs)
-- [inventory.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/transitions/readiness/inventory.rs)
-- [report.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/transitions/readiness/report.rs)
-- [certification.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/transitions/readiness/certification.rs)
-- [readiness.rs test](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/transitions/readiness.rs)
-- [ui/readiness_boundaries](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/ui/transitions/readiness_boundaries)
+- [readiness/mod.rs](../../crates/worth-foundational/src/transitions/readiness/mod.rs)
+- [authority.rs](../../crates/worth-foundational/src/transitions/readiness/authority.rs)
+- [vocabulary.rs](../../crates/worth-foundational/src/transitions/readiness/vocabulary.rs)
+- [inventory.rs](../../crates/worth-foundational/src/transitions/readiness/inventory.rs)
+- [report.rs](../../crates/worth-foundational/src/transitions/readiness/report.rs)
+- [certification.rs](../../crates/worth-foundational/src/transitions/readiness/certification.rs)
+- [readiness.rs test](../../crates/worth-foundational/tests/certification/transitions/readiness.rs)
+- [ui/readiness_boundaries](../../crates/worth-foundational/tests/ui/transitions/readiness_boundaries)
 
 What closed:
 
@@ -176,15 +176,15 @@ not pull plain transition vocabulary into the proof kernel.
 Proof-bearing surfaces standardized here:
 
 - merge admission through `worth-proof::TransitionOutcome` in
-  [builder.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/transitions/merges/builder.rs)
+  [builder.rs](../../crates/worth-foundational/src/transitions/merges/builder.rs)
 - committed-authority admission through
-  [authority.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/transitions/commits/authority.rs)
+  [authority.rs](../../crates/worth-foundational/src/transitions/commits/authority.rs)
 - receipt issuance through
-  [issuance.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/transitions/receipts/issuance.rs)
+  [issuance.rs](../../crates/worth-foundational/src/transitions/receipts/issuance.rs)
 - current-basis trust-boundary bridge and readmission through
-  [current_basis.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/transitions/basis/current_basis.rs)
+  [current_basis.rs](../../crates/worth-foundational/src/transitions/basis/current_basis.rs)
 - production-readiness certification through
-  [readiness](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/transitions/readiness)
+  [readiness](../../crates/worth-foundational/src/transitions/readiness)
 
 Concrete `worth-proof` APIs the readiness artifact now freezes as the chosen
 lane:
@@ -207,14 +207,14 @@ Plain transition vocabulary deliberately stayed local:
 ## Test-Requirements Mapping
 
 Milestone 5 now satisfies the Milestone-5-specific bars that were added to
-[plans/worth-foundational/test-requirements.md](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/plans/worth-foundational/test-requirements.md).
+[plans/worth-foundational/test-requirements.md](./test-requirements.md).
 
 ### Branch-Local Versus Authority Separation
 
 Evidence:
 
-- [branch_local.rs test](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/transitions/branch_local.rs)
-- [ui/branch_local](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/ui/transitions/branch_local)
+- [branch_local.rs test](../../crates/worth-foundational/tests/certification/transitions/branch_local.rs)
+- [ui/branch_local](../../crates/worth-foundational/tests/ui/transitions/branch_local)
 
 What is proved:
 
@@ -225,8 +225,8 @@ What is proved:
 
 Evidence:
 
-- [merge_verdicts.rs test](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/transitions/merge_verdicts.rs)
-- [ui/merge_admission](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/ui/transitions/merge_admission)
+- [merge_verdicts.rs test](../../crates/worth-foundational/tests/certification/transitions/merge_verdicts.rs)
+- [ui/merge_admission](../../crates/worth-foundational/tests/ui/transitions/merge_admission)
 
 What is proved:
 
@@ -238,8 +238,8 @@ What is proved:
 
 Evidence:
 
-- [committed_authority.rs test](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/transitions/committed_authority.rs)
-- [ui/committed_authority](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/ui/transitions/committed_authority)
+- [committed_authority.rs test](../../crates/worth-foundational/tests/certification/transitions/committed_authority.rs)
+- [ui/committed_authority](../../crates/worth-foundational/tests/ui/transitions/committed_authority)
 
 What is proved:
 
@@ -251,8 +251,8 @@ What is proved:
 
 Evidence:
 
-- [receipts_and_bundles.rs test](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/transitions/receipts_and_bundles.rs)
-- [ui/receipt_boundaries](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/ui/transitions/receipt_boundaries)
+- [receipts_and_bundles.rs test](../../crates/worth-foundational/tests/certification/transitions/receipts_and_bundles.rs)
+- [ui/receipt_boundaries](../../crates/worth-foundational/tests/ui/transitions/receipt_boundaries)
 
 What is proved:
 
@@ -264,8 +264,8 @@ What is proved:
 
 Evidence:
 
-- [phase5_basis.rs test](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/transitions/phase5_basis.rs)
-- [ui/phase5_boundaries](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/ui/transitions/phase5_boundaries)
+- [phase5_basis.rs test](../../crates/worth-foundational/tests/certification/transitions/phase5_basis.rs)
+- [ui/phase5_boundaries](../../crates/worth-foundational/tests/ui/transitions/phase5_boundaries)
 
 What is proved:
 
@@ -277,8 +277,8 @@ What is proved:
 
 Evidence:
 
-- [readiness.rs test](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/transitions/readiness.rs)
-- [inventory.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/transitions/readiness/inventory.rs)
+- [readiness.rs test](../../crates/worth-foundational/tests/certification/transitions/readiness.rs)
+- [inventory.rs](../../crates/worth-foundational/src/transitions/readiness/inventory.rs)
 
 What is proved:
 

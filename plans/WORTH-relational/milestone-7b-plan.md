@@ -128,15 +128,15 @@ yet the merge ontology.
 
 ### Existing substrates that remain valid
 
-- [`CommitReference.parents`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/history/data/mod.rs)
+- [`CommitReference.parents`](../../crates/worth-relational/src/history/data/mod.rs)
   is the authoritative ordered-parent history surface
-- [`HistoryAccess::inspect_merge(...)`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/history/logic/access.rs)
+- `HistoryAccess::inspect_merge(...)`
   is a useful history/overlap inspection helper
 - lineage authority phase types in
-  [`phase_types.rs`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/lineage/logic/authority/phase_types.rs)
+  `phase_types.rs`
   are a strong precedent for proof-bearing lifecycle design
 - aspect declarations and lowered aspect plans in
-  [`aspect_semantics.rs`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/schema/data/aspect_semantics.rs)
+  `aspect_semantics.rs`
   prove the repo already accepts declaration-surface to lowered-plan
   transitions as an architectural pattern
 

@@ -1,5 +1,7 @@
 # Milestone 3: External HTTP, Streaming, Binary, And Blob Surface
 
+> **Status:** Completed.
+>
 > **Shipped closeout:** [milestone-3-closeout.md](./milestone-3-closeout.md)
 
 ## Goal

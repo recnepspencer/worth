@@ -1,10 +1,12 @@
 # Milestone 12 Closeout: Artifact Format Evolution And Rolling Compatibility
 
+> **Note:** The legacy root crate `crates/worth-store` was removed on 2026-09-27. Paths into it below name its files as they were; they are no longer links. The store now lives in [`workspaces/worth-store`](../../workspaces/worth-store/README.md).
+
 Status: Completed on 2026-04-21
 
-Parent spec: [milestone-12.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-12.md)
+Parent spec: [milestone-12.md](./milestone-12.md)
 
-Roadmap: [worth_store_roadmap.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/worth_store_roadmap.md)
+Roadmap: `worth_store_roadmap.md`
 
 ## Summary
 
@@ -35,42 +37,42 @@ The closure claim is:
 
 - compatibility admission, manifest, authoritative, rolling, restore, derived,
   certification, and production surfaces in
-  [crates/worth-store/src/compatibility](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/compatibility)
+  `crates/worth-store/src/compatibility`
 - production execution modules for derived rebuild, rolling publication, and
   authoritative adapter execution in
-  [crates/worth-store/src/backend/engine/compatibility_production](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/backend/engine/compatibility_production)
+  `crates/worth-store/src/backend/engine/compatibility_production`
 - runtime compatibility gating and recovered-manifest index reconstruction in
-  [crates/worth-store/src/backend/engine/compatibility_runtime.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/backend/engine/compatibility_runtime.rs)
+  `crates/worth-store/src/backend/engine/compatibility_runtime.rs`
 - durable compatibility manifest records, state defaults, SQLite schema/load/
   persist support, and boot-time integrity verification in
-  [crates/worth-store/src/backend/records/compatibility.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/backend/records/compatibility.rs),
-  [crates/worth-store/src/backend/sqlite/schema/compatibility.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/backend/sqlite/schema/compatibility.rs),
-  [crates/worth-store/src/backend/sqlite/load/compatibility.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/backend/sqlite/load/compatibility.rs),
-  [crates/worth-store/src/backend/sqlite/persist/compatibility.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/backend/sqlite/persist/compatibility.rs),
+  `crates/worth-store/src/backend/records/compatibility.rs`,
+  `crates/worth-store/src/backend/sqlite/schema/compatibility.rs`,
+  `crates/worth-store/src/backend/sqlite/load/compatibility.rs`,
+  `crates/worth-store/src/backend/sqlite/persist/compatibility.rs`,
   and
-  [crates/worth-store/src/backend/integrity/compatibility_records.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/backend/integrity/compatibility_records.rs)
+  `crates/worth-store/src/backend/integrity/compatibility_records.rs`
 - public store compatibility surfaces in
-  [crates/worth-store/src/facade/authority.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/facade/authority.rs),
-  [crates/worth-store/src/facade/maintenance.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/facade/maintenance.rs),
+  `crates/worth-store/src/facade/authority.rs`,
+  `crates/worth-store/src/facade/maintenance.rs`,
   and
-  [crates/worth-store/src/facade/support.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/facade/support.rs)
+  `crates/worth-store/src/facade/support.rs`
 - milestone-specific evidence and certification reporting in
-  [crates/worth-store/src/evidence/milestone_12.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/evidence/milestone_12.rs)
+  `crates/worth-store/src/evidence/milestone_12.rs`
 - named and focused hostile coverage in
-  [crates/worth-store/src/tests/compatibility_facade_integration.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/tests/compatibility_facade_integration.rs),
-  [crates/worth-store/src/tests/compatibility_persistence.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/tests/compatibility_persistence.rs),
-  [crates/worth-store/src/tests/compatibility_rebuild_execution.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/tests/compatibility_rebuild_execution.rs),
-  [crates/worth-store/src/tests/compatibility_restore_execution.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/tests/compatibility_restore_execution.rs),
-  [crates/worth-store/src/tests/compatibility_rolling_execution.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/tests/compatibility_rolling_execution.rs),
+  `crates/worth-store/src/tests/compatibility_facade_integration.rs`,
+  `crates/worth-store/src/tests/compatibility_persistence.rs`,
+  `crates/worth-store/src/tests/compatibility_rebuild_execution.rs`,
+  `crates/worth-store/src/tests/compatibility_restore_execution.rs`,
+  `crates/worth-store/src/tests/compatibility_rolling_execution.rs`,
   and
-  [crates/worth-store/src/tests/compatibility_adapter_execution.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/tests/compatibility_adapter_execution.rs)
+  `crates/worth-store/src/tests/compatibility_adapter_execution.rs`
 
 ## Acceptance Mapping
 
 Milestone 12 is considered closed against
-[milestone-12.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-12.md)
+[milestone-12.md](./milestone-12.md)
 and
-[test-requirements.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/test-requirements.md)
+[test-requirements.md](./test-requirements.md)
 because the named milestone suite and the restart/hostile production-path tests
 now map directly to shipped code and machine-checkable evidence.
 
@@ -78,13 +80,13 @@ now map directly to shipped code and machine-checkable evidence.
 
 Covered by:
 
-- [crates/worth-store/src/compatibility/certification_runner.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/compatibility/certification_runner.rs)
-- [crates/worth-store/src/tests/compatibility_facade_integration.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/tests/compatibility_facade_integration.rs)
-- [crates/worth-store/src/tests/compatibility_persistence.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/tests/compatibility_persistence.rs)
-- [crates/worth-store/src/tests/compatibility_rebuild_execution.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/tests/compatibility_rebuild_execution.rs)
-- [crates/worth-store/src/tests/compatibility_restore_execution.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/tests/compatibility_restore_execution.rs)
-- [crates/worth-store/src/tests/compatibility_rolling_execution.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/tests/compatibility_rolling_execution.rs)
-- [crates/worth-store/src/tests/compatibility_adapter_execution.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/tests/compatibility_adapter_execution.rs)
+- `crates/worth-store/src/compatibility/certification_runner.rs`
+- `crates/worth-store/src/tests/compatibility_facade_integration.rs`
+- `crates/worth-store/src/tests/compatibility_persistence.rs`
+- `crates/worth-store/src/tests/compatibility_rebuild_execution.rs`
+- `crates/worth-store/src/tests/compatibility_restore_execution.rs`
+- `crates/worth-store/src/tests/compatibility_rolling_execution.rs`
+- `crates/worth-store/src/tests/compatibility_adapter_execution.rs`
 
 What is proven:
 
@@ -111,8 +113,8 @@ What is proven:
 
 Covered by:
 
-- [crates/worth-store/tests/phase_boundaries_compile_fail.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/tests/phase_boundaries_compile_fail.rs)
-- [crates/worth-store/tests/ui](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/tests/ui)
+- `crates/worth-store/tests/phase_boundaries_compile_fail.rs`
+- `crates/worth-store/tests/ui`
 
 What is proven:
 

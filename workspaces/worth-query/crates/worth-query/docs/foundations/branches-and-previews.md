@@ -1,83 +1,17 @@
 # Branches and Previews
 
-## What This Feature Is
+This page covers two separate concepts that share the word "branch":
 
-Preview and branch sessions are isolated runtime contexts built from the same
-workspace model. They let you reuse retained live, computed, and effect
-surfaces while moving writes and intent-like work into preview-local or
-branch-local authority lanes instead of mutating current truth directly.
+| Concept | Entry point | Audience |
+|---|---|---|
+| Application product branch | `application.branches()` and `application.on_branch(...)` from `worth-query-host` | Application code |
+| Workspace preview and branch session | `workspace.preview(...)` and `workspace.branch(...)` from `worth_query::facade` | Internal engine code |
 
-## Why You Use It
+A product branch is a Runtime World identity with its own history and program
+revision. A Workspace preview or branch session is a lane-shifted context over
+retained runtime surfaces and never mints product identity.
 
-- you want to try changes without touching authoritative truth
-- you need isolated preview-local writes and closeout behavior
-- you need branch-local intent staging that never silently executes against the
-  authoritative lane
-
-## Stable Entry Points
-
-Stable session entry points:
-
-- `workspace.preview(...)`
-- `workspace.preview_with_options(...)`
-- `workspace.branch(...)`
-- `workspace.branch_with_options(...)`
-
-Stable option constructors:
-
-- `WorthQueryPreviewOptions::derive_only()`
-- `WorthQueryPreviewOptions::muted()`
-- `WorthQueryPreviewOptions::redirected_delivery()`
-- `WorthQueryPreviewOptions::sandboxed_write_intent()`
-- `WorthQueryBranchOptions::derive_only()`
-- `WorthQueryBranchOptions::muted()`
-- `WorthQueryBranchOptions::redirected_delivery()`
-- `WorthQueryBranchOptions::sandboxed_write_intent()`
-
-Ordinary preview and branch entry uses typed session labels:
-
-- pass `WorthQuerySessionLabel`, not raw strings
-- equivalent label identity re-entry stops through
-  `WorthQueryStopClass::SessionLabelCollision`
-- display rendering is presentation; basis admission and closeout identity use
-  canonical label identity instead
-
-Stable preview-local operations:
-
-- bind live/computed/effect handles into a preview
-- stage preview-local writes
-- discard or promote a preview outcome
-
-Stable ordinary branch-merge operations under
-`worth_query::facade::workflow`:
-
-- `declare_branch_merge(...)`
-- `branch_merge(...)`
-- `WorthQueryBranchMergeOutcome`
-- `WorthQueryBranchMergeSettlementDeferred`
-- `WorthQueryBranchMergeNextAction::RepairDeferredBranchMergeSettlement`
-- `WorthQueryRuntime::repair_deferred_branch_merge_settlement(...)`
-- `WorthQueryWorkspace::repair_deferred_branch_merge_settlement(...)`
-
-Stable preview-live planning entry points live under
-`worth_query::facade::policy`:
-
-- `admit_scoped_preview_session_plan_binding(...)`
-- `admit_scoped_preview_live_session_plan(...)`
-- `execute_scoped_preview_live_session_plan(...)`
-- `assess_preview_live_drift(...)`
-- `ScopedPreviewSessionPlanBinding`
-- `ScopedPreviewLiveSessionPlanBinding`
-
-Support-gated neighbors:
-
-- preview-local or branch-local intent execution still depends on admitted
-  intent support and the correct sandboxed policy
-
-## Core Mental Model
-
-Preview and branch sessions are not separate products. They are lane-shifted
-contexts over the same retained runtime surfaces.
+## Application product branches (host)
 
 A **product branch** is a separate public concept. Runtime World owns its
 identity, current composite commit, bounded single-parent history, and exact
@@ -146,6 +80,92 @@ Later-created branches never enter previously issued coverage. This is program
 adoption, not merge or rebase; multi-parent reconciliation remains a separate
 roadmap product.
 
+For the request lanes that run against a selected branch, see
+[Branch-resolved mutation lanes](ordinary-application-front-door.md#branch-resolved-mutation-lanes).
+
+## Workspace preview sessions (internal)
+
+> **Internal engine surface.** This section documents `WorthQueryWorkspace` (`worth_query::facade`), the engine surface that `worth-ui-query-binding` uses. Application code uses `worth-query-decl` and `worth-query-host`; start with the [application front door](ordinary-application-front-door.md).
+
+### What This Feature Is
+
+Preview and branch sessions are isolated runtime contexts built from the same
+workspace model. They let you reuse retained live, computed, and effect
+surfaces while moving writes and intent-like work into preview-local or
+branch-local authority lanes instead of mutating current truth directly.
+
+### Why You Use It
+
+- you want to try changes without touching authoritative truth
+- you need isolated preview-local writes and closeout behavior
+- you need branch-local intent staging that never silently executes against the
+  authoritative lane
+
+### Stable Entry Points
+
+Stable session entry points:
+
+- `workspace.preview(...)`
+- `workspace.preview_with_options(...)`
+- `workspace.branch(...)`
+- `workspace.branch_with_options(...)`
+
+Stable option constructors:
+
+- `WorthQueryPreviewOptions::derive_only()`
+- `WorthQueryPreviewOptions::muted()`
+- `WorthQueryPreviewOptions::redirected_delivery()`
+- `WorthQueryPreviewOptions::sandboxed_write_intent()`
+- `WorthQueryBranchOptions::derive_only()`
+- `WorthQueryBranchOptions::muted()`
+- `WorthQueryBranchOptions::redirected_delivery()`
+- `WorthQueryBranchOptions::sandboxed_write_intent()`
+
+Ordinary preview and branch entry uses typed session labels:
+
+- pass `WorthQuerySessionLabel`, not raw strings
+- equivalent label identity re-entry stops through
+  `WorthQueryStopClass::SessionLabelCollision`
+- display rendering is presentation; basis admission and closeout identity use
+  canonical label identity instead
+
+Stable preview-local operations:
+
+- bind live/computed/effect handles into a preview
+- stage preview-local writes
+- discard or promote a preview outcome
+
+Stable ordinary branch-merge operations under
+`worth_query::facade::workflow`:
+
+- `declare_branch_merge(...)`
+- `branch_merge(...)`
+- `WorthQueryBranchMergeOutcome`
+- `WorthQueryBranchMergeSettlementDeferred`
+- `WorthQueryBranchMergeNextAction::RepairDeferredBranchMergeSettlement`
+- `WorthQueryRuntime::repair_deferred_branch_merge_settlement(...)`
+- `WorthQueryWorkspace::repair_deferred_branch_merge_settlement(...)`
+
+Stable preview-live planning entry points live under
+`worth_query::facade::policy`:
+
+- `admit_scoped_preview_session_plan_binding(...)`
+- `admit_scoped_preview_live_session_plan(...)`
+- `execute_scoped_preview_live_session_plan(...)`
+- `assess_preview_live_drift(...)`
+- `ScopedPreviewSessionPlanBinding`
+- `ScopedPreviewLiveSessionPlanBinding`
+
+Support-gated neighbors:
+
+- preview-local or branch-local intent execution still depends on admitted
+  intent support and the correct sandboxed policy
+
+### Core Mental Model
+
+Preview and branch sessions are not separate products. They are lane-shifted
+contexts over the same retained runtime surfaces.
+
 Preview:
 
 - binds existing handles into a preview lane
@@ -201,7 +221,7 @@ graph touches must carry an operating world descriptor, and Query must select
 registered obligations from that descriptor rather than pretending branch-local,
 preview-local, and authoritative graph work share one validator table.
 
-## How It Executes
+### How It Executes
 
 Preview path:
 
@@ -243,7 +263,7 @@ not rerun the mutation or merge.
 derived behavior is allowed, but delivery and write-intent work are denied or
 muted unless you explicitly choose a broader policy.
 
-## Small Example
+### Small Example
 
 ```rust
 use worth_query::facade::runtime::{WorthQueryPreviewOptions, WorthQuerySessionLabel};
@@ -272,7 +292,7 @@ This is the smallest honest example because it shows preview-local staging with
 an explicit closeout result instead of pretending preview writes are ordinary
 truth writes.
 
-## Real Example
+### Real Example
 
 ```rust
 use worth_query::facade::runtime::{
@@ -430,7 +450,7 @@ What closeout means:
   and can fail typed and early when crossed preview residue requires
   authoritative re-admission first
 
-## How It Relates To Other Features
+### How It Relates To Other Features
 
 - Use [Live Views](../runtime-surfaces/live-views.md) and [Computed](../runtime-surfaces/computed.md) as the
   retained handles you bind into previews.
@@ -443,7 +463,7 @@ What closeout means:
 Preview and branch sessions are lane-control features, not alternate truth
 engines.
 
-## Inspection And Debugging
+### Inspection And Debugging
 
 The runtime can explain:
 
@@ -467,7 +487,7 @@ Look for:
 - branch-merge settlement message, counters, and `next_action()` without raw
   settlement access
 
-## Anti-Patterns
+### Anti-Patterns
 
 - Treating preview writes as if they are already authoritative.
 - Assuming `derive_only` allows delivery or write-intent work.

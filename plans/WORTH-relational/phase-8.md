@@ -156,7 +156,7 @@ Rules:
 
 ### 2. Define canonical reduction as an explicit contract
 
-Reduction is not â€œwhatever stable sort each subsystem chooses.â€ It is a declared contract per packet family.
+Reduction is not “whatever stable sort each subsystem chooses.” It is a declared contract per packet family.
 
 Shared contract:
 - each packet has a stable canonical reduction key
@@ -388,7 +388,7 @@ Gate for each follow-on slice:
 - invalidated planning context forces replanning
 - overlapping packet claims produce `PacketOverlapDetected` or serial fallback according to subsystem contract
 - legality true / profitability false produces explicit serial fallback with recorded reason
-- no speculative locking or â€œtry parallel then recoverâ€ paths
+- no speculative locking or “try parallel then recover” paths
 
 ### Reducer identity
 - duplicate worker-local validation observations with same identity reduce correctly

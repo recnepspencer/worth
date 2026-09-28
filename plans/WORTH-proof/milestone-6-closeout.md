@@ -42,15 +42,15 @@ Named suite:
 
 Primary test:
 
-- [static_fork_join_and_composition_family_certification.rs](/C:/Users/shepworth/Documents/programming/WORTH/crates/worth-proof/tests/static_fork_join_and_composition_family_certification.rs)
+- [static_fork_join_and_composition_family_certification.rs](../../crates/worth-proof/tests/static_fork_join_and_composition_family_certification.rs)
 
 Supporting evidence module:
 
-- [tests/support/milestone6/mod.rs](/C:/Users/shepworth/Documents/programming/WORTH/crates/worth-proof/tests/support/milestone6/mod.rs)
+- `tests/support/milestone6/mod.rs`
 
 Supporting topology note:
 
-- [tests/support/milestone6/README.md](/C:/Users/shepworth/Documents/programming/WORTH/crates/worth-proof/tests/support/milestone6/README.md)
+- `tests/support/milestone6/README.md`
 
 Machine-checkable outputs:
 
@@ -89,16 +89,16 @@ The closeout suite now owns the hostile lanes required by the milestone:
 
 Compile-fail fixtures:
 
-- [raw_vec_cannot_satisfy_join_inputs.rs](/C:/Users/shepworth/Documents/programming/WORTH/crates/worth-proof/tests/ui/milestone6/compile_fail/raw_vec_cannot_satisfy_join_inputs.rs)
-- [raw_tuple_cannot_satisfy_fork_outputs.rs](/C:/Users/shepworth/Documents/programming/WORTH/crates/worth-proof/tests/ui/milestone6/compile_fail/raw_tuple_cannot_satisfy_fork_outputs.rs)
-- [lowered_recipe_cannot_satisfy_ready_join.rs](/C:/Users/shepworth/Documents/programming/WORTH/crates/worth-proof/tests/ui/milestone6/compile_fail/lowered_recipe_cannot_satisfy_ready_join.rs)
-- [symbolic_family_reference_cannot_satisfy_authoritative_api.rs](/C:/Users/shepworth/Documents/programming/WORTH/crates/worth-proof/tests/ui/milestone6/compile_fail/symbolic_family_reference_cannot_satisfy_authoritative_api.rs)
+- [raw_vec_cannot_satisfy_join_inputs.rs](../../crates/worth-proof/tests/ui/milestone6/compile_fail/raw_vec_cannot_satisfy_join_inputs.rs)
+- [raw_tuple_cannot_satisfy_fork_outputs.rs](../../crates/worth-proof/tests/ui/milestone6/compile_fail/raw_tuple_cannot_satisfy_fork_outputs.rs)
+- [lowered_recipe_cannot_satisfy_ready_join.rs](../../crates/worth-proof/tests/ui/milestone6/compile_fail/lowered_recipe_cannot_satisfy_ready_join.rs)
+- [symbolic_family_reference_cannot_satisfy_authoritative_api.rs](../../crates/worth-proof/tests/ui/milestone6/compile_fail/symbolic_family_reference_cannot_satisfy_authoritative_api.rs)
 
 Compile-pass fixtures:
 
-- [explicit_fixed_arity_fork_join_progression_compiles.rs](/C:/Users/shepworth/Documents/programming/WORTH/crates/worth-proof/tests/ui/milestone6/compile_pass/explicit_fixed_arity_fork_join_progression_compiles.rs)
-- [checked_multi_input_ordering_and_ready_join_compiles.rs](/C:/Users/shepworth/Documents/programming/WORTH/crates/worth-proof/tests/ui/milestone6/compile_pass/checked_multi_input_ordering_and_ready_join_compiles.rs)
-- [explicit_family_symbol_resolution_and_lowering_compiles.rs](/C:/Users/shepworth/Documents/programming/WORTH/crates/worth-proof/tests/ui/milestone6/compile_pass/explicit_family_symbol_resolution_and_lowering_compiles.rs)
+- [explicit_fixed_arity_fork_join_progression_compiles.rs](../../crates/worth-proof/tests/ui/milestone6/compile_pass/explicit_fixed_arity_fork_join_progression_compiles.rs)
+- [checked_multi_input_ordering_and_ready_join_compiles.rs](../../crates/worth-proof/tests/ui/milestone6/compile_pass/checked_multi_input_ordering_and_ready_join_compiles.rs)
+- [explicit_family_symbol_resolution_and_lowering_compiles.rs](../../crates/worth-proof/tests/ui/milestone6/compile_pass/explicit_family_symbol_resolution_and_lowering_compiles.rs)
 
 ## Residual Debt
 

@@ -41,7 +41,7 @@ crate-facing feature documentation for the shipped diagnostics surface.
   runtime adoption assumptions, non-assumptions, downstream failure pressures,
   residual debt, and adoption-shaped followthrough.
 - Crate-facing diagnostics docs now exist under
-  [crates/worth-foundational/docs/diagnostics-and-explanation-ontology](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/docs/diagnostics-and-explanation-ontology),
+  [crates/worth-foundational/docs/diagnostics-and-explanation-ontology](../../crates/worth-foundational/docs/diagnostics-and-explanation-ontology),
   with one landing page and one feature doc per shipped capability seam.
 
 ## Phase Crosswalk
@@ -50,10 +50,10 @@ crate-facing feature documentation for the shipped diagnostics surface.
 
 Shipped homes:
 
-- [primitives.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/diagnostics/primitives.rs)
-- [categories.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/diagnostics/categories.rs)
-- [primitives.rs test](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/diagnostics/primitives.rs)
-- [ui/diagnostics/primitives](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/ui/diagnostics/primitives)
+- [primitives.rs](../../crates/worth-foundational/src/diagnostics/primitives.rs)
+- [categories.rs](../../crates/worth-foundational/src/diagnostics/categories.rs)
+- [primitives.rs test](../../crates/worth-foundational/tests/certification/diagnostics/primitives.rs)
+- [ui/diagnostics/primitives](../../crates/worth-foundational/tests/ui/diagnostics/primitives)
 
 What closed:
 
@@ -68,13 +68,13 @@ What closed:
 
 Shipped homes:
 
-- [outcomes.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/diagnostics/outcomes.rs)
-- [subjects.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/diagnostics/subjects.rs)
-- [rows/mod.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/diagnostics/rows/mod.rs)
-- [labels.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/diagnostics/rows/labels.rs)
-- [types.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/diagnostics/rows/types.rs)
-- [rows.rs test](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/diagnostics/rows.rs)
-- [ui/diagnostics/rows](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/ui/diagnostics/rows)
+- [outcomes.rs](../../crates/worth-foundational/src/diagnostics/outcomes.rs)
+- [subjects.rs](../../crates/worth-foundational/src/diagnostics/subjects.rs)
+- [rows/mod.rs](../../crates/worth-foundational/src/diagnostics/rows/mod.rs)
+- [labels.rs](../../crates/worth-foundational/src/diagnostics/rows/labels.rs)
+- [types.rs](../../crates/worth-foundational/src/diagnostics/rows/types.rs)
+- [rows.rs test](../../crates/worth-foundational/tests/certification/diagnostics/rows.rs)
+- [ui/diagnostics/rows](../../crates/worth-foundational/tests/ui/diagnostics/rows)
 
 What closed:
 
@@ -88,13 +88,13 @@ What closed:
 
 Shipped homes:
 
-- [materialization/mod.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/diagnostics/materialization/mod.rs)
-- [vocabulary.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/diagnostics/materialization/vocabulary.rs)
-- [planning.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/diagnostics/materialization/planning.rs)
-- [surfaces.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/diagnostics/materialization/surfaces.rs)
-- [materialization.rs test](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/diagnostics/materialization.rs)
-- [materialization_support.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/diagnostics/materialization_support.rs)
-- [ui/diagnostics/materialization](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/ui/diagnostics/materialization)
+- [materialization/mod.rs](../../crates/worth-foundational/src/diagnostics/materialization/mod.rs)
+- [vocabulary.rs](../../crates/worth-foundational/src/diagnostics/materialization/vocabulary.rs)
+- [planning.rs](../../crates/worth-foundational/src/diagnostics/materialization/planning.rs)
+- [surfaces.rs](../../crates/worth-foundational/src/diagnostics/materialization/surfaces.rs)
+- [materialization.rs test](../../crates/worth-foundational/tests/certification/diagnostics/materialization.rs)
+- [materialization_support.rs](../../crates/worth-foundational/tests/certification/diagnostics/materialization_support.rs)
+- [ui/diagnostics/materialization](../../crates/worth-foundational/tests/ui/diagnostics/materialization)
 
 What closed:
 
@@ -108,15 +108,15 @@ What closed:
 
 Shipped homes:
 
-- [basis/mod.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/diagnostics/basis/mod.rs)
-- [canonical.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/diagnostics/basis/canonical.rs)
-- [comparison.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/diagnostics/basis/comparison.rs)
-- [entries.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/diagnostics/basis/entries.rs)
-- [row_entries.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/diagnostics/basis/row_entries.rs)
-- [tokens.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/diagnostics/basis/tokens.rs)
-- [basis.rs test](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/diagnostics/basis.rs)
-- [basis_support.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/diagnostics/basis_support.rs)
-- [ui/diagnostics/basis](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/ui/diagnostics/basis)
+- [basis/mod.rs](../../crates/worth-foundational/src/diagnostics/basis/mod.rs)
+- [canonical.rs](../../crates/worth-foundational/src/diagnostics/basis/canonical.rs)
+- [comparison.rs](../../crates/worth-foundational/src/diagnostics/basis/comparison.rs)
+- [entries.rs](../../crates/worth-foundational/src/diagnostics/basis/entries.rs)
+- [row_entries.rs](../../crates/worth-foundational/src/diagnostics/basis/row_entries.rs)
+- [tokens.rs](../../crates/worth-foundational/src/diagnostics/basis/tokens.rs)
+- [basis.rs test](../../crates/worth-foundational/tests/certification/diagnostics/basis.rs)
+- [basis_support.rs](../../crates/worth-foundational/tests/certification/diagnostics/basis_support.rs)
+- [ui/diagnostics/basis](../../crates/worth-foundational/tests/ui/diagnostics/basis)
 
 What closed:
 
@@ -129,14 +129,14 @@ What closed:
 
 Shipped homes:
 
-- [certified/mod.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/diagnostics/certified/mod.rs)
-- [vocabulary.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/diagnostics/certified/vocabulary.rs)
-- [authority.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/diagnostics/certified/authority.rs)
-- [attachments.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/diagnostics/certified/attachments.rs)
-- [surfaces.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/diagnostics/certified/surfaces.rs)
-- [certified.rs test](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/diagnostics/certified.rs)
-- [certified_support.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/diagnostics/certified_support.rs)
-- [ui/diagnostics/certified](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/ui/diagnostics/certified)
+- [certified/mod.rs](../../crates/worth-foundational/src/diagnostics/certified/mod.rs)
+- [vocabulary.rs](../../crates/worth-foundational/src/diagnostics/certified/vocabulary.rs)
+- [authority.rs](../../crates/worth-foundational/src/diagnostics/certified/authority.rs)
+- [attachments.rs](../../crates/worth-foundational/src/diagnostics/certified/attachments.rs)
+- [surfaces.rs](../../crates/worth-foundational/src/diagnostics/certified/surfaces.rs)
+- [certified.rs test](../../crates/worth-foundational/tests/certification/diagnostics/certified.rs)
+- [certified_support.rs](../../crates/worth-foundational/tests/certification/diagnostics/certified_support.rs)
+- [ui/diagnostics/certified](../../crates/worth-foundational/tests/ui/diagnostics/certified)
 
 What closed:
 
@@ -149,14 +149,14 @@ What closed:
 
 Shipped homes:
 
-- [readiness/mod.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/diagnostics/readiness/mod.rs)
-- [authority.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/diagnostics/readiness/authority.rs)
-- [vocabulary.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/diagnostics/readiness/vocabulary.rs)
-- [inventory.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/diagnostics/readiness/inventory.rs)
-- [report.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/diagnostics/readiness/report.rs)
-- [certification.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/diagnostics/readiness/certification.rs)
-- [readiness.rs test](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/diagnostics/readiness.rs)
-- [ui/diagnostics/readiness_boundaries](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/ui/diagnostics/readiness_boundaries)
+- [readiness/mod.rs](../../crates/worth-foundational/src/diagnostics/readiness/mod.rs)
+- [authority.rs](../../crates/worth-foundational/src/diagnostics/readiness/authority.rs)
+- [vocabulary.rs](../../crates/worth-foundational/src/diagnostics/readiness/vocabulary.rs)
+- [inventory.rs](../../crates/worth-foundational/src/diagnostics/readiness/inventory.rs)
+- [report.rs](../../crates/worth-foundational/src/diagnostics/readiness/report.rs)
+- [certification.rs](../../crates/worth-foundational/src/diagnostics/readiness/certification.rs)
+- [readiness.rs test](../../crates/worth-foundational/tests/certification/diagnostics/readiness.rs)
+- [ui/diagnostics/readiness_boundaries](../../crates/worth-foundational/tests/ui/diagnostics/readiness_boundaries)
 
 What closed:
 
@@ -172,13 +172,13 @@ What closed:
 
 Shipped homes:
 
-- [README.md](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/docs/diagnostics-and-explanation-ontology/README.md)
-- [diagnostic-primitives-and-categories.md](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/docs/diagnostics-and-explanation-ontology/diagnostic-primitives-and-categories.md)
-- [diagnostic-outcomes-subjects-and-rows.md](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/docs/diagnostics-and-explanation-ontology/diagnostic-outcomes-subjects-and-rows.md)
-- [diagnostic-materialization-and-support-reports.md](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/docs/diagnostics-and-explanation-ontology/diagnostic-materialization-and-support-reports.md)
-- [diagnostic-canonical-basis-and-comparison.md](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/docs/diagnostics-and-explanation-ontology/diagnostic-canonical-basis-and-comparison.md)
-- [certified-diagnostic-bundles-and-attachments.md](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/docs/diagnostics-and-explanation-ontology/certified-diagnostic-bundles-and-attachments.md)
-- [diagnostic-production-readiness.md](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/docs/diagnostics-and-explanation-ontology/diagnostic-production-readiness.md)
+- [README.md](../../crates/worth-foundational/docs/diagnostics-and-explanation-ontology/README.md)
+- [diagnostic-primitives-and-categories.md](../../crates/worth-foundational/docs/diagnostics-and-explanation-ontology/diagnostic-primitives-and-categories.md)
+- [diagnostic-outcomes-subjects-and-rows.md](../../crates/worth-foundational/docs/diagnostics-and-explanation-ontology/diagnostic-outcomes-subjects-and-rows.md)
+- [diagnostic-materialization-and-support-reports.md](../../crates/worth-foundational/docs/diagnostics-and-explanation-ontology/diagnostic-materialization-and-support-reports.md)
+- [diagnostic-canonical-basis-and-comparison.md](../../crates/worth-foundational/docs/diagnostics-and-explanation-ontology/diagnostic-canonical-basis-and-comparison.md)
+- [certified-diagnostic-bundles-and-attachments.md](../../crates/worth-foundational/docs/diagnostics-and-explanation-ontology/certified-diagnostic-bundles-and-attachments.md)
+- [diagnostic-production-readiness.md](../../crates/worth-foundational/docs/diagnostics-and-explanation-ontology/diagnostic-production-readiness.md)
 
 What closed:
 
@@ -199,13 +199,13 @@ Plain diagnostics vocabulary stayed local to `worth-foundational`.
 Proof-bearing surfaces standardized here:
 
 - certified diagnostic attachment authority in
-  [attachments.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/diagnostics/certified/attachments.rs)
+  [attachments.rs](../../crates/worth-foundational/src/diagnostics/certified/attachments.rs)
 - proof-bearing certified bundle carrier in
-  [surfaces.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/diagnostics/certified/surfaces.rs)
+  [surfaces.rs](../../crates/worth-foundational/src/diagnostics/certified/surfaces.rs)
 - trust-boundary bridge/readmission for stronger certified bundles in
-  [surfaces.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/diagnostics/certified/surfaces.rs)
+  [surfaces.rs](../../crates/worth-foundational/src/diagnostics/certified/surfaces.rs)
 - production-test readiness certification in
-  [readiness/certification.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/diagnostics/readiness/certification.rs)
+  [readiness/certification.rs](../../crates/worth-foundational/src/diagnostics/readiness/certification.rs)
 
 Concrete `worth-proof` APIs the readiness artifact freezes:
 
@@ -225,14 +225,14 @@ Deliberately not moved into the proof kernel:
 ## Test-Requirements Mapping
 
 Milestone 6 now satisfies the diagnostics-specific proof bar in
-[plans/worth-foundational/test-requirements.md](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/plans/worth-foundational/test-requirements.md).
+[plans/worth-foundational/test-requirements.md](./test-requirements.md).
 
 ### Primitive And Category Law
 
 Evidence:
 
-- [primitives.rs test](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/diagnostics/primitives.rs)
-- [ui/diagnostics/primitives](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/ui/diagnostics/primitives)
+- [primitives.rs test](../../crates/worth-foundational/tests/certification/diagnostics/primitives.rs)
+- [ui/diagnostics/primitives](../../crates/worth-foundational/tests/ui/diagnostics/primitives)
 
 What is proved:
 
@@ -245,8 +245,8 @@ What is proved:
 
 Evidence:
 
-- [rows.rs test](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/diagnostics/rows.rs)
-- [ui/diagnostics/rows](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/ui/diagnostics/rows)
+- [rows.rs test](../../crates/worth-foundational/tests/certification/diagnostics/rows.rs)
+- [ui/diagnostics/rows](../../crates/worth-foundational/tests/ui/diagnostics/rows)
 
 What is proved:
 
@@ -259,8 +259,8 @@ What is proved:
 
 Evidence:
 
-- [materialization.rs test](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/diagnostics/materialization.rs)
-- [ui/diagnostics/materialization](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/ui/diagnostics/materialization)
+- [materialization.rs test](../../crates/worth-foundational/tests/certification/diagnostics/materialization.rs)
+- [ui/diagnostics/materialization](../../crates/worth-foundational/tests/ui/diagnostics/materialization)
 
 What is proved:
 
@@ -274,8 +274,8 @@ What is proved:
 
 Evidence:
 
-- [basis.rs test](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/diagnostics/basis.rs)
-- [ui/diagnostics/basis](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/ui/diagnostics/basis)
+- [basis.rs test](../../crates/worth-foundational/tests/certification/diagnostics/basis.rs)
+- [ui/diagnostics/basis](../../crates/worth-foundational/tests/ui/diagnostics/basis)
 
 What is proved:
 
@@ -288,8 +288,8 @@ What is proved:
 
 Evidence:
 
-- [certified.rs test](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/diagnostics/certified.rs)
-- [ui/diagnostics/certified](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/ui/diagnostics/certified)
+- [certified.rs test](../../crates/worth-foundational/tests/certification/diagnostics/certified.rs)
+- [ui/diagnostics/certified](../../crates/worth-foundational/tests/ui/diagnostics/certified)
 
 What is proved:
 
@@ -302,8 +302,8 @@ What is proved:
 
 Evidence:
 
-- [readiness.rs test](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/diagnostics/readiness.rs)
-- [inventory.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/diagnostics/readiness/inventory.rs)
+- [readiness.rs test](../../crates/worth-foundational/tests/certification/diagnostics/readiness.rs)
+- [inventory.rs](../../crates/worth-foundational/src/diagnostics/readiness/inventory.rs)
 
 What is proved:
 
@@ -328,7 +328,7 @@ What is proved:
   proof-bearing artifact itself rather than only by external tests.
 - Expanded the diagnostics readiness artifact to satisfy the full shared
   production-test-readiness contract from
-  [test-requirements.md](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/plans/worth-foundational/test-requirements.md),
+  [test-requirements.md](./test-requirements.md),
   including canonical golden artifacts, property seeds, harness expansion
   points, downstream failure pressures, and adoption-shaped followthrough.
 
@@ -345,7 +345,7 @@ What is proved:
   drift, hidden rediscovery debt, thin or empty support overclaim, hidden
   source-digest WORTHry, and explanation/provenance boundary collapse.
 - Crate-facing feature docs now exist under
-  [crates/worth-foundational/docs/diagnostics-and-explanation-ontology](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/docs/diagnostics-and-explanation-ontology),
+  [crates/worth-foundational/docs/diagnostics-and-explanation-ontology](../../crates/worth-foundational/docs/diagnostics-and-explanation-ontology),
   with one doc per shipped capability seam plus a landing page.
 
 ## Verification

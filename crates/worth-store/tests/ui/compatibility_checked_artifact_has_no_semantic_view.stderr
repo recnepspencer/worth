@@ -1,5 +1,0 @@
-error[E0599]: no method named `view` found for struct `CompatibilityCheckedArtifact` in the current scope
- --> tests/ui/compatibility_checked_artifact_has_no_semantic_view.rs:8:21
-  |
-8 |     let _ = checked.view();
-  |                     ^^^^ method not found in `CompatibilityCheckedArtifact`

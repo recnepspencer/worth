@@ -1,30 +1,6 @@
 # Milestone 8 Engineering Spec
 
-## Status
-
-Milestone 8 is complete as of 2026-03-30.
-
-This document now serves two roles:
-
-- the architectural spec that governed implementation
-- the closeout record for what actually shipped
-
-Closeout verification completed against:
-
-- full `worth-relational` test matrix
-- compile-fail phase-boundary suite
-- UI boundary suite
-- Milestone 8 hostile query, parity, publication, fintech, and complexity lanes
-
-Notable shipped closeout points:
-
-- proof-bearing query planning is the only supported growth path
-- immutable parallel read execution is reducer-owned and deterministic
-- bounded deterministic `SampledParity` is implemented
-- accelerated query support includes equality and `AnyOf` payload-field lanes
-- bulk mutation planning and admission carry naming, lineage, and provenance
-- legacy public packet/result fallback surfaces were hard-removed rather than
-  left as compatibility debt
+> **Status:** Completed. Closeout: [milestone-8-closeout.md](./milestone-8-closeout.md).
 
 ## 1. Milestone Intent
 
@@ -65,21 +41,21 @@ scale-grade bulk mutation.
 The code already gives Milestone 8 a substantial base:
 
 - namespaced public facade in
-  [facade.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/facade.rs)
+  [facade.rs](../../crates/worth-relational/src/facade.rs)
 - explicit immutable read surfaces through `RelationalReadView` and
   `VisibilityProjectionView`
 - explicit lineage, inspection, and structural identity surfaces in
-  [inspection/data/mod.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/inspection/data/mod.rs)
+  [inspection/data/mod.rs](../../crates/worth-relational/src/inspection/data/mod.rs)
 - explicit commit, validation, and complexity artifacts in
-  [outcomes.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/transactions/data/outcomes.rs)
+  [outcomes.rs](../../crates/worth-relational/src/transactions/data/outcomes/mod.rs)
 - explicit complexity registry and broad runtime counters in
-  [performance/data/mod.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/performance/data/mod.rs)
+  [performance/data/mod.rs](../../crates/worth-relational/src/performance/data/mod.rs)
 - partition-bounded visibility complexity tests in
-  [visibility_budgets.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/tests/complexity/contracts/visibility_budgets.rs)
+  [visibility_budgets.rs](../../crates/worth-relational/src/tests/complexity/contracts/visibility_budgets/mod.rs)
 - existing bulk mutation intent substrate in
-  [mutation_intent.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/transactions/data/intents/mutation_intent.rs)
+  [mutation_intent.rs](../../crates/worth-relational/src/transactions/data/intents/mutation_intent.rs)
 - existing client-key normalization substrate in
-  [client_keys.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/transactions/data/intents/client_keys.rs)
+  [client_keys.rs](../../crates/worth-relational/src/transactions/data/intents/client_keys.rs)
 
 ### 2.2 Historical Weak Seams Milestone 8 Addressed
 

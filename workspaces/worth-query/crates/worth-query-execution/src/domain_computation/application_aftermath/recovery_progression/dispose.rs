@@ -20,6 +20,11 @@ impl WorthQueryRecoveryDisposalReceipt {
     }
 }
 
+/// Disposes of a recovery handle, ending the custody it stands for.
+///
+/// `authority` must be fresh effect authority minted for this exact handle. On
+/// success the handle is consumed as disposed and the receipt names its binding.
+/// On denial the handle is relinquished, not disposed.
 pub fn dispose_recovery_handle(
     handle: WorthQueryRecoveryHandle,
     authority: &WorthQueryRecoveryEffectAuthority,

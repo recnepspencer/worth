@@ -10,9 +10,9 @@ use worth_query_host::facade::application_entry::{
 use worth_query_host::facade::primary_graph::WorthQueryApplicationUncommitted;
 
 use super::workflow_participant::{expect_started, live_instance_on_first_program};
-use crate::bounded_dimension_model::{
-    dimension_entry::PART_IDENTITY,
+use crate::document_retention_model::{
     operator_identity::{authenticate_operator, request_scope},
+    retention_entry::DOCUMENT_IDENTITY,
     workflow::{
         advance_instance, prepare_second_program_adoption, publish_adoption, publish_definition,
         retire_definition, second_program_workflow_inventory, start_instance, terminal_definition,
@@ -75,7 +75,7 @@ fn an_advance_prepared_under_the_source_program_is_stale_after_adoption() {
         .request(&principal, &scope)
         .mutate(WorkflowAdvanceIntent {
             input: WorkflowAdvanceInput {
-                part_identity: PART_IDENTITY.to_owned(),
+                document_identity: DOCUMENT_IDENTITY.to_owned(),
             },
         })
         .without_source()
@@ -102,7 +102,7 @@ fn an_advance_prepared_under_the_source_program_is_stale_after_adoption() {
 }
 
 fn republish(
-    application: &crate::bounded_dimension_model::host::BoundedDimensionWorkflowRuntime,
+    application: &crate::document_retention_model::host::DocumentWorkflowRuntime,
     key: u64,
 ) -> PublishedWorkflowDefinitionRef {
     match publish_definition(

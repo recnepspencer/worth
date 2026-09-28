@@ -1,5 +1,7 @@
 # Milestone 13.3 Closeout: Subscription Support Accuracy Taxonomy And Certification
 
+> **Note:** The legacy root crate `crates/worth-store` was removed on 2026-09-27. Paths into it below name its files as they were; they are no longer links. The store now lives in [`workspaces/worth-store`](../../workspaces/worth-store/README.md).
+
 ## Status
 
 Closed for Milestone 13.3 scope.
@@ -11,12 +13,12 @@ physical database readiness, durable certification-run persistence, or future
 extension-family support registration.
 
 Parent spec:
-[milestone-13.3.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-13.3.md)
+[milestone-13.3.md](./milestone-13.3.md)
 
 ## What Shipped
 
 - Dedicated trust subdomain under
-  [crates/worth-store/src/subscription_support/trust](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/subscription_support/trust).
+  `crates/worth-store/src/subscription_support/trust`.
 - Split trust vocabulary for class, strength, provenance, use boundary,
   downgrade reason, failure kind, and recovery posture.
 - Proof-widening trust pipeline from raw trust request through admission,

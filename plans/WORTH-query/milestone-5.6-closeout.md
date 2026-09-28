@@ -28,41 +28,41 @@ admission behavior.
 Milestone 5.6 delivered:
 
 - subsystem-owned unified configuration in
-  [config.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/application/config.rs)
+  `config.rs`
 - typed capability witnesses, admission artifacts, and facade entrypoints in
-  [facade.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/application/capability/facade.rs),
-  [resolution.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/application/capability/resolution.rs),
-  [errors.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/application/capability/errors.rs),
+  [facade.rs](../../workspaces/worth-query/crates/worth-query/src/application/capability/facade.rs),
+  [resolution.rs](../../workspaces/worth-query/crates/worth-query/src/application/capability/resolution.rs),
+  [errors.rs](../../workspaces/worth-query/crates/worth-query/src/application/capability/errors.rs),
   and
-  [witnesses.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/application/capability/witnesses.rs)
+  [witnesses.rs](../../workspaces/worth-query/crates/worth-query/src/application/capability/witnesses.rs)
 - support registry, support matrix, and support report authority surfaces in
-  [registry.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/application/support/registry.rs)
+  [registry.rs](../../workspaces/worth-query/crates/worth-query/src/application/support/registry.rs)
   and
-  [report.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/application/support/report.rs)
+  [report.rs](../../workspaces/worth-query/crates/worth-query/src/application/support/report.rs)
 - milestone-native certification in
-  [crates/worth-query/src/harness/unified_facade_certification](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/unified_facade_certification)
+  [crates/worth-query/src/harness/unified_facade_certification](../../workspaces/worth-query/crates/worth-query/src/harness/unified_facade_certification)
 - compile-fail proof boundaries in
-  [crates/worth-query/tests/ui](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/tests/ui)
+  `crates/worth-query/tests/ui`
 
 ## Acceptance Mapping
 
 Milestone 5.6 is considered closed against
-[milestone-5.6.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/milestone-5.6.md),
-[milestone-5.6-build-checklist.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/milestone-5.6-build-checklist.md),
-[worth_query_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/worth_query_roadmap.md),
+[milestone-5.6.md](./milestone-5.6.md),
+[milestone-5.6-build-checklist.md](./milestone-5.6-build-checklist.md),
+[worth_query_roadmap.md](./WORTH_query_roadmap.md),
 and
-[test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/test-requirements.md)
+[test-requirements.md](./test-requirements.md)
 because the required facade/configuration proof chain now exists directly.
 
 ### `Unified Facade And Configuration Boundary Test`
 
 Covered by:
 
-- [mod.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/unified_facade_certification/mod.rs)
-- [lane.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/unified_facade_certification/lane.rs)
-- [matrix.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/unified_facade_certification/matrix.rs)
-- [row_catalog.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/unified_facade_certification/row_catalog.rs)
-- [tests.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/unified_facade_certification/tests.rs)
+- [mod.rs](../../workspaces/worth-query/crates/worth-query/src/harness/unified_facade_certification/mod.rs)
+- [lane.rs](../../workspaces/worth-query/crates/worth-query/src/harness/unified_facade_certification/lane.rs)
+- `matrix.rs`
+- [row_catalog.rs](../../workspaces/worth-query/crates/worth-query/src/harness/unified_facade_certification/row_catalog.rs)
+- [tests.rs](../../workspaces/worth-query/crates/worth-query/src/harness/unified_facade_certification/tests.rs)
 
 What is proven:
 
@@ -94,9 +94,9 @@ What is proven:
 
 Covered by:
 
-- [facade.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/application/capability/facade.rs)
-- [resolution.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/application/capability/resolution.rs)
-- [tests.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/application/tests.rs)
+- [facade.rs](../../workspaces/worth-query/crates/worth-query/src/application/capability/facade.rs)
+- [resolution.rs](../../workspaces/worth-query/crates/worth-query/src/application/capability/resolution.rs)
+- `tests.rs`
 
 What is proven:
 
@@ -112,9 +112,9 @@ What is proven:
 
 Covered by:
 
-- [registry.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/application/support/registry.rs)
-- [report.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/application/support/report.rs)
-- [tests.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/application/tests.rs)
+- [registry.rs](../../workspaces/worth-query/crates/worth-query/src/application/support/registry.rs)
+- [report.rs](../../workspaces/worth-query/crates/worth-query/src/application/support/report.rs)
+- `tests.rs`
 
 What is proven:
 
@@ -128,21 +128,21 @@ What is proven:
 
 Covered by:
 
-- [tests/ui/validated_worth_query_config_constructor_private.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/tests/ui/validated_worth_query_config_constructor_private.rs)
-- [tests/ui/worth_query_support_report_constructor_private.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/tests/ui/worth_query_support_report_constructor_private.rs)
-- [tests/ui/capability_admission_decision_constructor_private.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/tests/ui/capability_admission_decision_constructor_private.rs)
-- [tests/ui/query_read_capability_constructor_private.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/tests/ui/query_read_capability_constructor_private.rs)
-- [tests/ui/live_query_capability_constructor_private.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/tests/ui/live_query_capability_constructor_private.rs)
-- [tests/ui/preview_session_capability_constructor_private.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/tests/ui/preview_session_capability_constructor_private.rs)
-- [tests/ui/workflow_orchestration_capability_constructor_private.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/tests/ui/workflow_orchestration_capability_constructor_private.rs)
-- [tests/ui/historical_evaluation_capability_constructor_private.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/tests/ui/historical_evaluation_capability_constructor_private.rs)
-- [tests/ui/query_context_capability_constructor_private.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/tests/ui/query_context_capability_constructor_private.rs)
-- [tests/ui/facade_has_no_dynamic_capability_routing.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/tests/ui/facade_has_no_dynamic_capability_routing.rs)
-- [tests/ui/internal_application_module_not_public.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/tests/ui/internal_application_module_not_public.rs)
-- [tests/ui/facade_query_read_capability_has_no_live_promote.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/tests/ui/facade_query_read_capability_has_no_live_promote.rs)
-- [tests/ui/facade_preview_capability_cannot_admit_workflow.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/tests/ui/facade_preview_capability_cannot_admit_workflow.rs)
-- [tests/ui/facade_historical_capability_cannot_bind_query_context.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/tests/ui/facade_historical_capability_cannot_bind_query_context.rs)
-- [tests/ui/legacy_broad_facade_has_no_preview_workflow_shortcut.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/tests/ui/legacy_broad_facade_has_no_preview_workflow_shortcut.rs)
+- `tests/ui/validated_worth_query_config_constructor_private.rs`
+- `tests/ui/worth_query_support_report_constructor_private.rs`
+- `tests/ui/capability_admission_decision_constructor_private.rs`
+- `tests/ui/query_read_capability_constructor_private.rs`
+- `tests/ui/live_query_capability_constructor_private.rs`
+- `tests/ui/preview_session_capability_constructor_private.rs`
+- `tests/ui/workflow_orchestration_capability_constructor_private.rs`
+- `tests/ui/historical_evaluation_capability_constructor_private.rs`
+- `tests/ui/query_context_capability_constructor_private.rs`
+- `tests/ui/facade_has_no_dynamic_capability_routing.rs`
+- `tests/ui/internal_application_module_not_public.rs`
+- `tests/ui/facade_query_read_capability_has_no_live_promote.rs`
+- `tests/ui/facade_preview_capability_cannot_admit_workflow.rs`
+- `tests/ui/facade_historical_capability_cannot_bind_query_context.rs`
+- `tests/ui/legacy_broad_facade_has_no_preview_workflow_shortcut.rs`
 
 What is proven:
 

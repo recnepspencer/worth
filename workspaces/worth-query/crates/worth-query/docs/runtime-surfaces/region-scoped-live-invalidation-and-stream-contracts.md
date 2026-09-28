@@ -1,5 +1,7 @@
 # Region-Scoped Live Invalidation and Stream Contracts
 
+> **Internal engine surface.** This page documents `WorthQueryWorkspace` (`worth_query::facade`), the engine surface that `worth-ui-query-binding` uses. Application code uses `worth-query-decl` and `worth-query-host`; start with the [application front door](../foundations/ordinary-application-front-door.md).
+
 ## What This Feature Is
 
 Region-scoped live ties **locality predicates** to live query plans: admit a region-scoped plan, execute region-scoped live changes, and **lower** execution to **query-shaped stream contracts**—not raw CDC event feeds. Region narrowing is **query-planner-owned**; stream lowering delivers projected, admission-class-aware delivery.

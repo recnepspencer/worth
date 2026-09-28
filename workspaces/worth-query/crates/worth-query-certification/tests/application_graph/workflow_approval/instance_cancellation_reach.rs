@@ -6,7 +6,7 @@ use worth_query_host::facade::application_entry::{
     WorkflowInstancePreparationDenial, WorthQueryWorkflowInstancePreparationDenial,
 };
 
-use super::super::bounded_dimension_model::workflow::{
+use super::super::document_retention_model::workflow::{
     cancel_instance, continue_on_fork, migrate_instance, prepare_cancellation_on,
     WorkflowAdvanceInput, WorkflowApprovalIntent,
 };
@@ -78,7 +78,7 @@ fn a_migrated_instance_reports_the_effect_its_source_performed() {
         ["apply".to_owned()],
         "a replay reads the carried effect back from settled history",
     );
-    assert_eq!(read_dimension(application.runtime(), successor.branch()), 8);
+    assert_eq!(read_retention(application.runtime(), successor.branch()), 8);
 }
 
 #[test]
@@ -92,7 +92,7 @@ fn a_cancellation_without_the_start_capability_is_refused_and_claims_no_key() {
         .on_branch(instance.branch())
         .mutate(WorkflowApprovalIntent {
             input: WorkflowAdvanceInput {
-                part_identity: PART_IDENTITY.to_owned(),
+                document_identity: DOCUMENT_IDENTITY.to_owned(),
             },
         })
         .without_source()

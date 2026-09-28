@@ -1,5 +1,7 @@
 # Lower-Runtime Capability Routing
 
+> **Internal engine surface.** This page documents `WorthQueryWorkspace` (`worth_query::facade`), the engine surface that `worth-ui-query-binding` uses. Application code uses `worth-query-decl` and `worth-query-host`; start with the [application front door](../foundations/ordinary-application-front-door.md).
+
 ## What This Feature Is
 
 Lower-runtime capability routing is Query’s **declared path for contacting** relational, bridge, and signal runtimes: route plans, boundary envelopes, eligibility receipts, and `worth_query_lower_runtime_support_matrix()`—without domain code importing lower crates directly. **Compatibility debt** rows still exist; `TemporalQueryBasisRoutingNeighbor` is **deferred**.

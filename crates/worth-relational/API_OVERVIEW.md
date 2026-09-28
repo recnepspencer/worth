@@ -39,7 +39,7 @@ The product center is:
 - `runtime.observe_branch(...)`
 - `runtime.begin_branch_transaction(...)`
 - `tx.push_batch(...)`
-- `tx.commit(&mut runtime)` for the ordinary convenience path
+- `tx.commit(&runtime)` for the ordinary convenience path
 - or `runtime.prepare_branch_transaction(...)` followed by
   `runtime.publication_port().compare_and_publish(...)` and owner settlement
 

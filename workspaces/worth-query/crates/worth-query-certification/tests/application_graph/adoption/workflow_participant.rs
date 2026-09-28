@@ -16,9 +16,9 @@ use worth_query_host::facade::primary_graph::{
     WorthQueryWorkflowInstanceDisposition as InstanceDisposition,
 };
 
-use crate::bounded_dimension_model::{
-    host::{publish_workflow_on_first_program, BoundedDimensionWorkflowRuntime},
-    programs::DimensionProgramP1,
+use crate::document_retention_model::{
+    host::{publish_workflow_on_first_program, DocumentWorkflowRuntime},
+    programs::RetentionProgramP1,
     workflow::{
         advance_instance, prepare_second_program_adoption, publish_adoption, publish_definition,
         second_program_workflow_inventory, second_revision, start_instance,
@@ -161,12 +161,12 @@ fn choices_made_against_a_moved_inventory_are_refused() {
 pub(super) fn live_instance_on_first_program(
     key: u64,
 ) -> (
-    BoundedDimensionWorkflowRuntime,
+    DocumentWorkflowRuntime,
     PublishedWorkflowDefinitionRef,
     PublishedWorkflowInstanceRef,
 ) {
     let mut application = publish_workflow_on_first_program();
-    support_workflow_program::<DimensionProgramP1>(&mut application);
+    support_workflow_program::<RetentionProgramP1>(&mut application);
     let definition = match publish_definition(
         &application,
         terminal_definition("completed"),

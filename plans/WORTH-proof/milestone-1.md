@@ -2,11 +2,11 @@
 
 > **Status:** Closed
 >
-> **Roadmap parent:** [worth_proof_roadmap.md](/C:/Users/shepworth/Documents/programming/WORTH/plans/worth-proof/worth_proof_roadmap.md)
+> **Roadmap parent:** [worth_proof_roadmap.md](./WORTH_proof_roadmap.md)
 >
-> **Vision parent:** [worth_proof_vision.md](/C:/Users/shepworth/Documents/programming/WORTH/plans/worth-proof/worth_proof_vision.md)
+> **Vision parent:** [worth_proof_vision.md](./WORTH_proof_vision.md)
 >
-> **Test requirements:** [test-requirements.md](/C:/Users/shepworth/Documents/programming/WORTH/plans/worth-proof/test-requirements.md)
+> **Test requirements:** [test-requirements.md](./test-requirements.md)
 >
 > **Impacted later milestones:**
 > - `Milestone 2` (`Sealed Minting And Witness Authority`)

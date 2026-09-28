@@ -119,9 +119,9 @@ path is now implemented and certified in the
 [Milestone 13.1 closeout](../WORTH_signal/milestone-13.1-closeout.md); Milestone
 2's local closeout remains only the Bridge-owned prerequisite.
 
-Engineering spec: [milestone-2.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-2.md)
-Shipped closeout: [milestone-2-closeout.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-2-closeout.md)
-Envelope/planning hardening companion: [milestone-2-envelope-and-planning-hardening.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-2-envelope-and-planning-hardening.md)
+Engineering spec: [milestone-2.md](./milestone-2.md)
+Shipped closeout: [milestone-2-closeout.md](./milestone-2-closeout.md)
+Envelope/planning hardening companion: [milestone-2-envelope-and-planning-hardening.md](./milestone-2-envelope-and-planning-hardening.md)
 
 ### Goal
 
@@ -153,7 +153,7 @@ This milestone is complete only when the bridge harness can prove:
 
 ## Milestone 3: Lineage-Aware Subscription Continuity
 
-Engineering spec: [milestone-3.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-3.md)
+Engineering spec: [milestone-3.md](./milestone-3.md)
 
 ### Goal
 
@@ -186,8 +186,8 @@ This milestone is complete only when the bridge harness can prove:
 
 ## Milestone 4: Historical and Branch-Aware Evaluation
 
-Engineering spec: [milestone-4.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-4.md)
-Shipped closeout: [milestone-4-closeout.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-4-closeout.md)
+Engineering spec: [milestone-4.md](./milestone-4.md)
+Shipped closeout: [milestone-4-closeout.md](./milestone-4-closeout.md)
 
 ### Goal
 
@@ -219,7 +219,7 @@ This milestone is complete only when the bridge harness can prove:
 
 ## Milestone 5: Bridge Planning, Bulk Routing, and Parallel-Ready Scale Path
 
-Engineering spec: [milestone-5.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-5.md)
+Engineering spec: [milestone-5.md](./milestone-5.md)
 
 ### Goal
 
@@ -270,8 +270,8 @@ becomes more capable here, not more authoritative.
 
 ## Milestone 6: Change Stream Protocol and Multi-Consumer Contracts
 
-Engineering spec: [milestone-6.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-6.md)
-Required certification suites: [test-requirements.md](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md)
+Engineering spec: [milestone-6.md](./milestone-6.md)
+Required certification suites: [test-requirements.md](./test-requirements.md)
 Suites 1-3: Change Stream Checkpoint Fracture Equivalence, Multi-Consumer Coalescing Parity, Backpressure And Retention Anchor Hostility
 
 ### Goal
@@ -305,9 +305,9 @@ This milestone is complete only when bridge harness scenarios can prove:
 
 ## Milestone 7: Reactive Source Protocol and Clean Host Surfaces
 
-Engineering spec: [milestone-7.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-7.md)
-Shipped closeout: [milestone-7-closeout.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-7-closeout.md)
-Required certification suites: [test-requirements.md](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md)
+Engineering spec: [milestone-7.md](./milestone-7.md)
+Shipped closeout: [milestone-7-closeout.md](./milestone-7-closeout.md)
+Required certification suites: [test-requirements.md](./test-requirements.md)
 Suites 4-6: Multi-Host Source Parity, Source Capability Rejection Boundary, Builder Surface Swap Parity
 
 ### Goal
@@ -342,7 +342,7 @@ This milestone is complete only when bridge harness scenarios can prove:
 
 ## Milestone 8: Structural-Identity-Aware Remapping
 
-Required certification suites: [test-requirements.md](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md)
+Required certification suites: [test-requirements.md](./test-requirements.md)
 Suites 7-9: Structural Match Ambiguity Torture, Structural Reuse Without Identity Fusion, Branch Comparison Drift
 
 ### Goal
@@ -373,7 +373,7 @@ This milestone is complete only when bridge harness scenarios can prove:
 
 ## Milestone 9: Merge-Aware Bridge Semantics and Multi-Parent History Consumption
 
-Required certification suites: [test-requirements.md](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md)
+Required certification suites: [test-requirements.md](./test-requirements.md)
 Suites 10-12: Merge Parent Order Determinism, Unsupported Merge Class Denial, Merge Replay And Explanation Parity
 
 ### Goal
@@ -411,9 +411,9 @@ This milestone is complete only when bridge harness scenarios can prove:
 
 ## Milestone 10: Speculative Truth-Branch to Signal-Branch Coordination and Preview Flows
 
-Engineering spec: [milestone-10.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-10.md)
+Engineering spec: [milestone-10.md](./milestone-10.md)
 
-Required certification suites: [test-requirements.md](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md)
+Required certification suites: [test-requirements.md](./test-requirements.md)
 Suites 13-15: Speculative Discard Zero-Residue, Speculative Commit Boundary Clarity, Preview Lifecycle Leak Resistance
 
 ### Goal
@@ -449,9 +449,9 @@ This milestone is complete only when bridge harness scenarios can prove:
 
 ## Milestone 11: Cross-Runtime Policy Propagation and Clean Configuration Model
 
-Engineering spec: [milestone-11.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-11.md)
+Engineering spec: [milestone-11.md](./milestone-11.md)
 
-Required certification suites: [test-requirements.md](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md)
+Required certification suites: [test-requirements.md](./test-requirements.md)
 Suites 16-18: Policy Provenance Equivalence, Illegal Policy Combination Rejection, Ambient Policy Leak Resistance
 
 ### Goal
@@ -487,9 +487,9 @@ This milestone is complete only when bridge harness scenarios can prove:
 
 ## Milestone 12: Bridge-Mediated Commit Strategies and Derived Writeback Contracts
 
-Engineering spec: [milestone-12.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-12.md)
+Engineering spec: [milestone-12.md](./milestone-12.md)
 
-Required certification suites: [test-requirements.md](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md)
+Required certification suites: [test-requirements.md](./test-requirements.md)
 Suites 19-21: Bridge Writeback Idempotence And Diff Truth, Strategy Failure Containment, Authority Bypass Rejection
 
 ### Goal
@@ -530,9 +530,9 @@ This milestone is complete only when bridge harness scenarios can prove:
 
 Status: Complete
 
-Engineering spec: [milestone-12b.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-12b.md)
+Engineering spec: [milestone-12b.md](./milestone-12b.md)
 
-Required certification suites: [test-requirements.md](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md)
+Required certification suites: [test-requirements.md](./test-requirements.md)
 Suites 22-24: Multi-Family Writeback Admission Boundary, Cross-Family Replay And Loop Isolation, Host Mapper Parity And Shadow-Protocol Rejection
 
 ### Goal
@@ -580,10 +580,10 @@ This milestone is complete only when bridge harness scenarios can prove:
 
 ## Milestone 13: End-to-End Causality, Failure Taxonomy, and Bridge Certification
 
-Required certification suites: [test-requirements.md](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md)
+Required certification suites: [test-requirements.md](./test-requirements.md)
 Suites 25-27: End-To-End Causality Bundle Equivalence, Failure Taxonomy Localization, Certification Matrix Sufficiency
-Engineering spec: [milestone-13.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-13.md)
-Showcase extension companion: [milestone-13-showcase-extension.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-13-showcase-extension.md)
+Engineering spec: [milestone-13.md](./milestone-13.md)
+Showcase extension companion: [milestone-13-showcase-extension.md](./milestone-13-showcase-extension.md)
 
 ### Goal
 
@@ -623,7 +623,7 @@ This milestone is complete only when the bridge harness can prove:
 
 ## Milestone 14: Bridge-Native Subscription Declaration Families, Admission, and Lifecycle
 
-Required certification suites: [test-requirements.md](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md)
+Required certification suites: [test-requirements.md](./test-requirements.md)
 Suites 28-30: Subscription Declaration Equivalence, Subscription Basis Binding And Rejection Boundary, Subscription Lifecycle Replay Parity
 
 ### Goal
@@ -683,10 +683,10 @@ This milestone is complete only when bridge harness scenarios can prove:
 
 ## Milestone 15: Subscription Delivery Families, Continuation, and Shared Consumer Contracts
 
-Engineering spec: [milestone-15.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-15.md)
-Shipped closeout: [milestone-15-closeout.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-15-closeout.md)
+Engineering spec: [milestone-15.md](./milestone-15.md)
+Shipped closeout: [milestone-15-closeout.md](./milestone-15-closeout.md)
 
-Required certification suites: [test-requirements.md](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md)
+Required certification suites: [test-requirements.md](./test-requirements.md)
 Suites 31-34: Shared Subscription Fanout Parity, Subscription Continuation Across Identity Evolution, Subscription Resume Replay And Checkpoint Exactness, Preview Subscription Zero-Residue
 
 ### Goal
@@ -747,9 +747,9 @@ This milestone is complete only when bridge harness scenarios can prove:
 
 ## Milestone 16: Subscription Family Certification and End-to-End Subscription Workload
 
-Engineering spec: [milestone-16.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-16.md)
+Engineering spec: [milestone-16.md](./milestone-16.md)
 
-Required certification suites: [test-requirements.md](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md)
+Required certification suites: [test-requirements.md](./test-requirements.md)
 Suites 35-37: End-To-End Subscription Bundle Equivalence, Subscription Failure Taxonomy Localization, Subscription Reference Workload Sufficiency
 
 ### Goal
@@ -800,7 +800,7 @@ This milestone is complete only when bridge harness scenarios can prove:
 
 ## Milestone 17: Temporal Bridge Basis and Time-Aware Lowering
 
-Required certification suites: [test-requirements.md](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md)
+Required certification suites: [test-requirements.md](./test-requirements.md)
 Suites 38-41: Temporal Bridge Basis Equivalence, Truth Patch Plus Clock Advance Replay Parity, Time-Aware Subscription Basis Rejection, Historical Truth With Temporal Wake Replay
 
 ### Goal
@@ -859,7 +859,7 @@ This milestone is complete only when bridge harness scenarios can prove:
 
 ## Milestone 18: Async Resource Bridge Families and Completion Causality
 
-Required certification suites: [test-requirements.md](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md)
+Required certification suites: [test-requirements.md](./test-requirements.md)
 Suites 42-45: Async Source Lifecycle Bridge Parity, Out-Of-Order Completion Truth-Basis Supersession, Async Retry And Revalidation Causality, Async Completion Writeback Loop Prevention
 
 ### Goal
@@ -919,7 +919,7 @@ This milestone is complete only when bridge harness scenarios can prove:
 
 ## Milestone 19: Temporal/Async Subscription Certification and Reference Workload
 
-Required certification suites: [test-requirements.md](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md)
+Required certification suites: [test-requirements.md](./test-requirements.md)
 Suites 46-50: Temporal Async Subscription Bundle Equivalence, Mixed Cause Delivery Ordering Parity, Restart Resume With Clock And Inflight Basis, Temporal Async Failure Taxonomy Localization, End-To-End Temporal Async Reference Workload Sufficiency
 
 ### Goal
@@ -980,6 +980,38 @@ This milestone is complete only when bridge harness scenarios can prove:
 - the Milestone 19 certification suites in `test-requirements.md` pass with
   canonical machine-checkable bundles
 
+## Milestone 20: The Bridge Owns The Relational Adapter
+
+Engineering spec: [milestone-20.md](./milestone-20.md)
+
+### Goal
+
+Reverse the `worth-relational -> worth-runtime-bridge` dependency so the
+Bridge depends on Relational and Signal, and neither runtime names the Bridge.
+
+### Must Ship
+
+- a Bridge-free Relational change source API in which Relational mints the
+  committed-change receipt
+- the Relational adapter, its binding tables, and grouped truth projection
+  owned by the Bridge
+- the manifest flip and an inverted boundary-check denial
+- narrowed Bridge envelope constructors that only the Bridge can call
+
+### Must Preserve
+
+- Relational alone decides committed-change meaning
+- byte-identical envelopes, snapshot identities, digests, route records, and
+  replay bundles
+- no compatibility re-export of the old `worth_relational::facade::bridge`
+  path
+
+### Acceptance Evidence
+
+This milestone is complete only when `cargo tree` shows no path from
+`worth-relational` to `worth-runtime-bridge`, the boundary checker denies that
+edge, and the parity and compile-fail evidence in the spec passes.
+
 ## Completion Standard
 
 The bridge roadmap is complete only when:
@@ -1003,9 +1035,9 @@ The bridge roadmap is complete only when:
 
 ## Companion Documents
 
-- [plans/worth-runtime-bridge/worth_runtime_bridge_vision.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/worth_runtime_bridge_vision.md)
+- [plans/worth-runtime-bridge/worth_runtime_bridge_vision.md](./WORTH_runtime_bridge_vision.md)
 - [plans/worth-runtime-bridge/aspect_native_refactor.md](aspect_native_refactor.md)
-- [plans/worth-runtime-bridge/test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md)
-- [plans/worth-relational/worth_relational_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/worth_relational_roadmap.md)
-- [plans/worth_signal/worth_signal_vision.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth_signal/worth_signal_vision.md)
-- [plans/worth_signal/worth_signals2.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth_signal/worth_signals2.md)
+- [plans/worth-runtime-bridge/test-requirements.md](./test-requirements.md)
+- [plans/worth-relational/worth_relational_roadmap.md](../WORTH-relational/WORTH_relational_roadmap.md)
+- [plans/worth_signal/worth_signal_vision.md](../WORTH_signal/WORTH_signal_vision.md)
+- [plans/worth_signal/worth_signals2.md](../WORTH_signal/WORTH_signals2.md)

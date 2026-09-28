@@ -1,5 +1,7 @@
 # Milestone 3.10.1 Phase 8 Plan
 
+> **Status:** Completed.
+
 > Historical QA policy (2026-08-22): proof, closure, migration, acceptance,
 > and phase ledgers described below are frozen historical records. They are not
 > active implementation or release gates, are not updated or reopened, and a
@@ -9,12 +11,6 @@
 > considerations in prose, tests and repository checks run against the current
 > commit, and code review decides whether the evidence is adequate. This note
 > does not retire product-domain ledgers that are part of runtime behavior.
-
-## Status
-
-Planned from the exact Phase 7 closing source. Phase 7 is closed with all
-twelve proof-ledger claims marked `PROVED`, the canonical 23-fail/12-pass
-compiler matrix using two Cargo sessions, and the exact-source full lane green.
 
 ## Objective
 

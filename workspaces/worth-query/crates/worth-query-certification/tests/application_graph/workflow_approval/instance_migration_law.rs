@@ -6,8 +6,8 @@ use worth_query_host::facade::application_entry::{
     WorkflowProposalPreparationDenial, WorthQueryWorkflowProposalPreparationDenial,
 };
 
-use super::super::bounded_dimension_model::workflow::{
-    migrate_instance, proposal_terminal_definition, reproposing_geometry_definition,
+use super::super::document_retention_model::workflow::{
+    migrate_instance, proposal_terminal_definition, reproposing_document_definition,
 };
 use super::instance_migration::{migration_denial, replace_definition, started, supersede};
 use super::*;
@@ -124,7 +124,7 @@ fn a_loop_back_to_a_producer_never_admits_a_resume_before_it() {
     let target = replace_definition(
         &application,
         definition,
-        reproposing_geometry_definition("applied"),
+        reproposing_document_definition("applied"),
         87_310,
     );
     assert_eq!(

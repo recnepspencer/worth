@@ -1,9 +1,6 @@
 # Milestone 9.17.5: Branch-Scoped Application Program Evolution
 
-> **Status:** Planned successor to [9.17.4](./milestone-9.17.4.md).
-> Static graph authoring and ordinary consumer migration must already work.
-> This milestone adds program evolution across exact composite branches.
-> [9.17.6](./milestone-9.17.6.md) then adds runtime-authored workflow instances.
+> **Status:** Completed. Successor to [9.17.4](./milestone-9.17.4.md).
 
 ## Goal, Entry And Completion
 
@@ -85,7 +82,7 @@ platform behavior without depending on private CAD.
 10. Close readers, pending interests, old program support and branches in legal order.
     Outstanding exact-effect custody blocks disposal rather than being leaked or lost.
 
-For an inexpensive exact oracle, a public model uses a declared bounded-dimension
+For an inexpensive exact oracle, a public model uses a declared bounded document-retention
 rule and a derived numeric result whose P0/P1 formulas differ. CAD supplies the
 production geometric endpoint. Both assert actual values, rule verdicts, component
 bases, producer contacts and performed outcomes; a program digest changing is not

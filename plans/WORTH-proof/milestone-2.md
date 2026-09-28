@@ -2,15 +2,15 @@
 
 > **Status:** Closed
 >
-> **Closeout:** [milestone-2-closeout.md](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-proof/milestone-2-closeout.md)
+> **Closeout:** [milestone-2-closeout.md](./milestone-2-closeout.md)
 >
-> **Roadmap parent:** [worth_proof_roadmap.md](/C:/Users/shepworth/Documents/programming/WORTH/plans/worth-proof/worth_proof_roadmap.md)
+> **Roadmap parent:** [worth_proof_roadmap.md](./WORTH_proof_roadmap.md)
 >
-> **Vision parent:** [worth_proof_vision.md](/C:/Users/shepworth/Documents/programming/WORTH/plans/worth-proof/worth_proof_vision.md)
+> **Vision parent:** [worth_proof_vision.md](./WORTH_proof_vision.md)
 >
-> **Test requirements:** [test-requirements.md](/C:/Users/shepworth/Documents/programming/WORTH/plans/worth-proof/test-requirements.md)
+> **Test requirements:** [test-requirements.md](./test-requirements.md)
 >
-> **Adjacent milestone closeout:** [milestone-1.md](/C:/Users/shepworth/Documents/programming/WORTH/plans/worth-proof/milestone-1.md)
+> **Adjacent milestone closeout:** [milestone-1.md](./milestone-1.md)
 >
 > **Impacted later milestones:**
 > - `Milestone 3` (`Assumption, Freshness, And Staleness Law`)

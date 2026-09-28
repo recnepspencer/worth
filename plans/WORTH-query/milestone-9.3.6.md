@@ -1,6 +1,6 @@
 # Milestone 9.3.6 Engineering Spec: Lower-Runtime Capability Routing And Boundary Envelopes
 
-> **Status:** Draft
+> **Status:** Completed. Closeout: [milestone-9.3.6-closeout.md](./milestone-9.3.6-closeout.md).
 >
 > **Roadmap parent:** [worth_query_roadmap.md](./worth_query_roadmap.md)
 >
@@ -1598,7 +1598,7 @@ This phase does not close if:
   evidence concretely
 - elimination or deferred rows live only in prose
 - support metadata can drift from envelope or registry posture
-- any in-scope seam still relies on â€œeveryone knows this is temporaryâ€
+- any in-scope seam still relies on “everyone knows this is temporary”
 
 Completion gate:
 

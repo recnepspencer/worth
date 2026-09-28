@@ -219,7 +219,13 @@ class NativePlatformLaneRustBindingTests(TestCase):
 
     def test_world_floor_counts_the_desktop_ignored_courtroom_worlds(self) -> None:
         ignored = sum(
-            len(re.findall(r"^#\[ignore\b", rust_source(path), re.MULTILINE))
+            len(
+                re.findall(
+                    r'^#\[ignore = "requires the serialized (?:interactive )?certified native desktop',
+                    rust_source(path),
+                    re.MULTILINE,
+                )
+            )
             for path in (COURTROOM / "courtroom").rglob("*.rs")
         )
 

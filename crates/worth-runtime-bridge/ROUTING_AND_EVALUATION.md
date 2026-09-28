@@ -36,7 +36,8 @@ The bridge should make that answer:
 In ordinary code, that begins with one call:
 
 ```rust
-let route = bridge.route(crate::facade::TruthCommitIdentity::new("commit:steel-main"))?;
+// `commit_id` is the `u64` id of the Relational commit that carried the change.
+let route = bridge.route(TruthCommitIdentity::from_relational_commit_id(commit_id))?;
 ```
 
 That route is the canonical bridge view of the truth change, not just a casual
@@ -65,9 +66,10 @@ At a high level, each mapping says:
 Example:
 
 ```rust
+use worth_foundational::facade::{AspectKey, FieldKey, ScalarAspectType};
 use worth_runtime_bridge::facade::{
     BridgeMappingId, BridgeMappingRegistration, CoarseRoutingMode, MappingSelector,
-    SignalInvalidationScope, TruthPatchScope,
+    RuntimeBridge, SignalInvalidationScope, SnapshotReadContract, TruthPatchScope,
 };
 
 let bridge = RuntimeBridge::builder()
@@ -75,17 +77,26 @@ let bridge = RuntimeBridge::builder()
     .with_truth_branch_head_source(relational_source)
     .with_compute_sink(signal_sink)
     .register_mapping(BridgeMappingRegistration::new(
-        BridgeMappingId::new("pricing:steel"),
-        TruthPatchScope::new(
-            MappingSelector::exact("component:steel"),
-            MappingSelector::exact("cost"),
-            MappingSelector::exact("usd"),
+        BridgeMappingId::from_stable_name("pricing:catalog"),
+        TruthPatchScope::for_entity_field(
+            MappingSelector::exact("item:widget"),
+            AspectKey::new("cost").expect("valid aspect key"),
+            FieldKey::new("usd".to_owned()).expect("valid field key"),
         ),
-        SignalInvalidationScope::new("price:bicycle"),
+        SnapshotReadContract::scalar(
+            AspectKey::new("cost").expect("valid aspect key"),
+            ScalarAspectType::String,
+        ),
+        SignalInvalidationScope::from_stable_name("order:total"),
         CoarseRoutingMode::Direct,
     ))
     .build()?;
 ```
+
+`TruthPatchScope::for_entity_field(entity, aspect, field)` is shorthand for
+`TruthPatchScope::new(entity, AspectKeySelector::exact(aspect), TruthPatchTargetSelector::entity_field(field))`.
+Call `TruthPatchScope::new` directly with `AspectKeySelector::any()` or
+`TruthPatchTargetSelector::any()` only when a mapping deliberately widens.
 
 The important product rule is that the mapping registry should produce the same
 routing meaning for the same truth change every time.
@@ -97,8 +108,8 @@ One truth change may affect many compute targets.
 That is not an edge case.
 It is part of the bridge's normal job.
 
-In the pricing-shock reference workload, one shared component like `steel` can
-invalidate many final-price targets at once.
+In the pricing-shock reference workload, one shared input cost can invalidate
+many final-price targets at once.
 
 The bridge should preserve:
 
@@ -115,7 +126,7 @@ After a route, the most common next question is:
 That is the role of `evaluate_current(...)`:
 
 ```rust
-let route = bridge.route(crate::facade::TruthCommitIdentity::new("commit:steel-main"))?;
+let route = bridge.route(TruthCommitIdentity::from_relational_commit_id(commit_id))?;
 let evaluation = bridge.evaluate_current(route.target())?;
 ```
 
@@ -136,25 +147,29 @@ The bridge provides request constructors for those cases:
 
 ```rust
 use worth_runtime_bridge::facade::{
-    BridgeTruthViewEvaluationRequest, TruthBranchIdentity, TruthCommitIdentity,
-    TruthSnapshotIdentity,
+    BridgeTruthViewEvaluationRequest, RelationalBridgeSnapshotIdentityParts,
+    TruthBranchIdentity, TruthCommitIdentity, TruthSnapshotIdentity,
 };
 
 let branch_eval = bridge.evaluate(
-    BridgeTruthViewEvaluationRequest::for_branch_head(TruthBranchIdentity::new("main")),
+    BridgeTruthViewEvaluationRequest::for_branch_head(
+        TruthBranchIdentity::from_relational_branch_id("main"),
+    ),
 )?;
 
 let snapshot_eval = bridge.evaluate(
     BridgeTruthViewEvaluationRequest::for_branch_snapshot(
-        TruthBranchIdentity::new("pricing-main"),
-        TruthSnapshotIdentity::new("snapshot:pricing-main"),
+        TruthBranchIdentity::from_relational_branch_id("pricing-main"),
+        TruthSnapshotIdentity::from_relational_snapshot(
+            RelationalBridgeSnapshotIdentityParts::new(snapshot_id, version_id),
+        ),
     ),
 )?;
 
 let historical_eval = bridge.evaluate(
     BridgeTruthViewEvaluationRequest::for_historical_commit(
-        TruthBranchIdentity::new("main"),
-        TruthCommitIdentity::new("commit:steel-main"),
+        TruthBranchIdentity::from_relational_branch_id("main"),
+        TruthCommitIdentity::from_relational_commit_id(commit_id),
     ),
 )?;
 ```
@@ -180,7 +195,7 @@ possible.
 Diagnostics should be attached to these jobs directly:
 
 ```rust
-let route = bridge.route(crate::facade::TruthCommitIdentity::new("commit:steel-main"))?;
+let route = bridge.route(TruthCommitIdentity::from_relational_commit_id(commit_id))?;
 let evaluation = bridge.evaluate_current(route.target())?;
 
 let diagnostics = bridge.diagnostics();

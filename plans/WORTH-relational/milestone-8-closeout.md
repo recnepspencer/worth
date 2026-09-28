@@ -122,9 +122,9 @@ implementation surface, verification basis, and no open architectural blocker.
 
 Closed by:
 
-- [query/data/mod.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/query/data/mod.rs)
-- [facade.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/facade.rs)
-- [planning.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/tests/query/planning.rs)
+- [query/data/mod.rs](../../crates/worth-relational/src/query/data/mod.rs)
+- [facade.rs](../../crates/worth-relational/src/facade.rs)
+- [planning.rs](../../crates/worth-relational/src/tests/query/planning.rs)
 
 What is proven:
 
@@ -136,9 +136,9 @@ What is proven:
 
 Closed by:
 
-- [reader.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/visibility/materialization/read_records/reader.rs)
-- [history/logic/access.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/history/logic/access.rs)
-- [planning.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/tests/query/planning.rs)
+- [reader.rs](../../crates/worth-relational/src/visibility/materialization/read_records/reader/mod.rs)
+- `history/logic/access.rs`
+- [planning.rs](../../crates/worth-relational/src/tests/query/planning.rs)
 
 What is proven:
 
@@ -152,10 +152,10 @@ What is proven:
 
 Closed by:
 
-- [reader.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/visibility/materialization/read_records/reader.rs)
-- [mod.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/query/data/mod.rs)
-- [execution.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/tests/query/execution.rs)
-- [concurrency.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/tests/query/concurrency.rs)
+- [reader.rs](../../crates/worth-relational/src/visibility/materialization/read_records/reader/mod.rs)
+- [mod.rs](../../crates/worth-relational/src/query/data/mod.rs)
+- [execution.rs](../../crates/worth-relational/src/tests/query/execution/mod.rs)
+- [concurrency.rs](../../crates/worth-relational/src/tests/query/concurrency.rs)
 
 What is proven:
 
@@ -168,9 +168,9 @@ What is proven:
 
 Closed by:
 
-- [access.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/indexes/logic/access.rs)
-- [indexes.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/tests/query/indexes.rs)
-- [visibility_budgets.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/tests/complexity/contracts/visibility_budgets.rs)
+- `access.rs`
+- [indexes.rs](../../crates/worth-relational/src/tests/query/indexes/mod.rs)
+- [visibility_budgets.rs](../../crates/worth-relational/src/tests/complexity/contracts/visibility_budgets/mod.rs)
 
 What is proven:
 
@@ -183,9 +183,9 @@ What is proven:
 
 Closed by:
 
-- [primitives.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/transactions/data/primitives.rs)
-- [mod.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/transactions/logic/mod.rs)
-- [mod.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/tests/transactions/core/mod.rs)
+- [primitives.rs](../../crates/worth-relational/src/transactions/data/primitives.rs)
+- `mod.rs`
+- [mod.rs](../../crates/worth-relational/src/tests/transactions/core/mod.rs)
 
 What is proven:
 
@@ -198,9 +198,9 @@ What is proven:
 
 Closed by:
 
-- [primitives.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/transactions/data/primitives.rs)
-- [mod.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/transactions/logic/mod.rs)
-- [pipeline.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/authority/commit/pipeline.rs)
+- [primitives.rs](../../crates/worth-relational/src/transactions/data/primitives.rs)
+- `mod.rs`
+- [pipeline.rs](../../crates/worth-relational/src/authority/commit/pipeline/mod.rs)
 
 What is proven:
 
@@ -213,10 +213,10 @@ What is proven:
 
 Closed by:
 
-- [reader.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/visibility/materialization/read_records/reader.rs)
-- [access.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/indexes/logic/access.rs)
-- [mod.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/performance/data/mod.rs)
-- [visibility_budgets.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/tests/complexity/contracts/visibility_budgets.rs)
+- [reader.rs](../../crates/worth-relational/src/visibility/materialization/read_records/reader/mod.rs)
+- `access.rs`
+- [mod.rs](../../crates/worth-relational/src/performance/data/mod.rs)
+- [visibility_budgets.rs](../../crates/worth-relational/src/tests/complexity/contracts/visibility_budgets/mod.rs)
 
 What is proven:
 
@@ -230,11 +230,11 @@ What is proven:
 
 Closed by:
 
-- [reader.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/visibility/materialization/read_records/reader.rs)
-- [access.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/indexes/logic/access.rs)
-- [execution.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/tests/query/execution.rs)
-- [indexes.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/tests/query/indexes.rs)
-- [concurrency.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/tests/query/concurrency.rs)
+- [reader.rs](../../crates/worth-relational/src/visibility/materialization/read_records/reader/mod.rs)
+- `access.rs`
+- [execution.rs](../../crates/worth-relational/src/tests/query/execution/mod.rs)
+- [indexes.rs](../../crates/worth-relational/src/tests/query/indexes/mod.rs)
+- [concurrency.rs](../../crates/worth-relational/src/tests/query/concurrency.rs)
 
 What is proven:
 
@@ -247,14 +247,14 @@ What is proven:
 
 Closed by:
 
-- [planning.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/tests/query/planning.rs)
-- [execution.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/tests/query/execution.rs)
-- [concurrency.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/tests/query/concurrency.rs)
-- [indexes.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/tests/query/indexes.rs)
-- [observability.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/tests/publication/observability.rs)
-- [visibility_budgets.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/tests/complexity/contracts/visibility_budgets.rs)
-- [commit_budgets.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/tests/complexity/contracts/commit_budgets.rs)
-- [workflows](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/tests/domains/fintech/workflows)
+- [planning.rs](../../crates/worth-relational/src/tests/query/planning.rs)
+- [execution.rs](../../crates/worth-relational/src/tests/query/execution/mod.rs)
+- [concurrency.rs](../../crates/worth-relational/src/tests/query/concurrency.rs)
+- [indexes.rs](../../crates/worth-relational/src/tests/query/indexes/mod.rs)
+- [observability.rs](../../crates/worth-relational/src/tests/publication/observability/mod.rs)
+- [visibility_budgets.rs](../../crates/worth-relational/src/tests/complexity/contracts/visibility_budgets/mod.rs)
+- [commit_budgets.rs](../../crates/worth-relational/src/tests/complexity/contracts/commit_budgets/mod.rs)
+- [workflows](../../crates/worth-relational/src/tests/domains/fintech/workflows)
 
 What is proven:
 
@@ -316,7 +316,7 @@ Non-blocking note:
 
 - the deeper engineering rationale, historical critique, and design evolution
   remain in
-  [milestone-8-plan.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/milestone-8-plan.md)
+  [milestone-8-plan.md](./milestone-8-plan.md)
   as the companion engineering spec
 
 ## Summary

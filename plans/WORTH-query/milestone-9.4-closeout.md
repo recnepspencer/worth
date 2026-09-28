@@ -138,12 +138,12 @@ The public runtime-backed closeout is now visible through:
 - `workspace.public_downstream_delivery_contract()` for admitted runtime resume
   and explicit durable-resume debt
 - runtime-backed docs:
-  - [AI_README.md](../../crates/worth-query/docs/AI_README.md)
-  - [workspace-overview.md](../../crates/worth-query/docs/foundations/workspace-overview.md)
-  - [state.md](../../crates/worth-query/docs/foundations/state.md)
-  - [support-matrix-and-admission.md](../../crates/worth-query/docs/foundations/support-matrix-and-admission.md)
-  - [downstream-runtime-integration.md](../../crates/worth-query/docs/foundations/downstream-runtime-integration.md)
-  - [async-resources-and-result-state.md](../../crates/worth-query/docs/capabilities/async-resources-and-result-state.md)
+  - [AI_README.md](../../workspaces/worth-query/crates/worth-query/docs/AI_README.md)
+  - [workspace-overview.md](../../workspaces/worth-query/crates/worth-query/docs/foundations/workspace-overview.md)
+  - [state.md](../../workspaces/worth-query/crates/worth-query/docs/foundations/state.md)
+  - [support-matrix-and-admission.md](../../workspaces/worth-query/crates/worth-query/docs/foundations/support-matrix-and-admission.md)
+  - [downstream-runtime-integration.md](../../workspaces/worth-query/crates/worth-query/docs/foundations/downstream-runtime-integration.md)
+  - [async-resources-and-result-state.md](../../workspaces/worth-query/crates/worth-query/docs/capabilities/async-resources-and-result-state.md)
 
 The separate facade-family support rows for `Temporal`, `AsyncResource`, and
 `MixedCauseDelivery` remain intentionally deferred. That is not a contradiction

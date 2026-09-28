@@ -12,19 +12,19 @@ use worth_query_host::facade::primary_graph::{
 };
 use worth_query_replay::facade::WorthQueryCertificationCostRuntimeExt;
 
-use super::bounded_dimension_model::{
-    assessment_output::PartAssessmentBinding,
-    dimension_entry::{PART_IDENTITY, RELATED_PART_IDENTITY},
-    host::{publish_workflow_on_first_program, SEED_DIMENSION},
-    presented_request::set_dimension,
-    schema::Part,
-    settled_verdict::{settle, DimensionVerdict},
+use super::document_retention_model::{
+    assessment_output::RetentionAssessmentBinding,
+    host::{publish_workflow_on_first_program, SEED_RETENTION},
+    presented_request::set_retention,
+    retention_entry::{DOCUMENT_IDENTITY, RELATED_DOCUMENT_IDENTITY},
+    schema::Document,
+    settled_verdict::{settle, RetentionVerdict},
     workflow::{
         accept_assessment, accept_early_assessment, advance_instance,
         assessment_join_terminal_definition, assessment_join_terminal_definition_with_policy,
         assessment_retry_definition, early_assessment_definition,
         multi_subject_assessment_retry_definition, prepare_early_assessment_denial,
-        propose_instance, publish_definition, reviewed_geometry_definition, settle_assessment,
+        propose_instance, publish_definition, reviewed_document_definition, settle_assessment,
         settle_assessment_for, settle_early_assessment_for, spoofed_assessment_denial,
         start_instance,
     },
@@ -52,7 +52,7 @@ fn authenticated_advance_reconstructs_the_exact_required_assessment_without_sett
     let application = publish_workflow_on_first_program();
     let definition = match publish_definition(
         &application,
-        reviewed_geometry_definition("completed"),
+        reviewed_document_definition("completed"),
         WorkflowDefinitionExpectedPredecessor::Absent,
         441,
     )
@@ -84,20 +84,20 @@ fn authenticated_advance_reconstructs_the_exact_required_assessment_without_sett
         };
         assert_eq!(required.instance(), started.instance().entity_id());
         assert_eq!(required.node_path(), "checks/structural");
-        assert_eq!(required.query(), "part_dimension_query");
+        assert_eq!(required.query(), "document_retention_query");
         assert_eq!(
             required.binding(),
-            "worth.query.certification.bounded-dimension.read-binding.v1"
+            "worth.query.certification.document-retention.read-binding.v1"
         );
         assert_eq!(
             required.result_type(),
-            "worth.query.certification.bounded-dimension.row.v1"
+            "worth.query.certification.document-retention.row.v1"
         );
     }
 
     let settled = settle_assessment(&application, started.instance().clone(), 446);
     assert_eq!(settled.required().node_path(), "checks/structural");
-    assert_eq!(settled.required().query(), "part_dimension_query");
+    assert_eq!(settled.required().query(), "document_retention_query");
     assert_eq!(
         settled
             .settlement()
@@ -128,21 +128,21 @@ fn authenticated_advance_reconstructs_the_exact_required_assessment_without_sett
                 .expect("assessment acceptance must project its committed evidence fact");
             assert_eq!(
                 evidence.producer(),
-                "worth.query.certification.part-assessment.producer.v1"
+                "worth.query.certification.retention-assessment.producer.v1"
             );
             assert_eq!(
                 evidence.family(),
-                "worth.query.certification.part-assessment.output.v1"
+                "worth.query.certification.retention-assessment.output.v1"
             );
-            assert_eq!(evidence.query(), "part_dimension_query");
-            assert_eq!(evidence.parameter_type(), "PartQueryParameters");
+            assert_eq!(evidence.query(), "document_retention_query");
+            assert_eq!(evidence.parameter_type(), "DocumentQueryParameters");
             assert_eq!(
                 evidence.result_type(),
-                "worth.query.certification.bounded-dimension.row.v1"
+                "worth.query.certification.document-retention.row.v1"
             );
             assert_eq!(
                 evidence.binding(),
-                "worth.query.certification.bounded-dimension.read-binding.v1"
+                "worth.query.certification.document-retention.read-binding.v1"
             );
             let output = settled
                 .settlement()
@@ -150,8 +150,8 @@ fn authenticated_advance_reconstructs_the_exact_required_assessment_without_sett
                 .expect("fresh assessment has a commit receipt")
                 .output_correspondence()
                 .entity(WorthQueryApplicationOutputRole::<
-                    PartAssessmentBinding,
-                    Part,
+                    RetentionAssessmentBinding,
+                    Document,
                     WorthQueryPreserveOutput,
                 >::from_static("assessment"))
                 .expect("the assessment output role must project from its performed receipt");
@@ -170,7 +170,7 @@ fn authenticated_advance_reconstructs_the_exact_required_assessment_without_sett
         .expect("accepted assessment must advance to the next exact requirement")
     {
         WorkflowProgressOutcome::AwaitingAssessment(required) => {
-            assert_eq!(required.node_path(), "checks/manufacturability");
+            assert_eq!(required.node_path(), "checks/compliance");
             assert_eq!(required.occurrence(), 2);
         }
         other => panic!("expected the second assessment requirement, got {other:?}"),
@@ -221,7 +221,7 @@ fn authenticated_advance_reconstructs_the_exact_required_assessment_without_sett
     .expect("an exact assessment retry must resolve through a non-assessment successor head")
     {
         WorkflowProgressOutcome::Completed(performed) => {
-            assert_eq!(performed.node_path(), "checks/manufacturability");
+            assert_eq!(performed.node_path(), "checks/compliance");
             assert!(performed.replayed());
         }
         other => panic!("expected replay through successor head, got {other:?}"),
@@ -268,7 +268,7 @@ fn authenticated_advance_reconstructs_the_exact_required_assessment_without_sett
             assert_eq!(required.instance(), started.instance().entity_id());
             assert_eq!(required.node_path(), "approval");
             assert_eq!(required.operation(), "WorkflowAdvanceOperation");
-            assert_eq!(required.target_operation(), "SetPartDimension");
+            assert_eq!(required.target_operation(), "SetRetention");
             assert_eq!(required.installed_capability_identity().len(), 64);
         }
         other => panic!("expected the exact approval requirement, got {other:?}"),
@@ -296,7 +296,7 @@ fn authenticated_advance_reconstructs_the_exact_required_assessment_without_sett
 
     let foreign_definition = match publish_definition(
         &application,
-        reviewed_geometry_definition("separate-instance"),
+        reviewed_document_definition("separate-instance"),
         WorkflowDefinitionExpectedPredecessor::Published(definition.definition().clone()),
         460,
     )

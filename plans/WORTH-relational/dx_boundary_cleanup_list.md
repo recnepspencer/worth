@@ -68,7 +68,7 @@ We only remove seams that do not currently earn public boundary status.
 ## `publication_authority`
 
 Source:
-[`authority.rs`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/publication/logic/authority.rs)
+`authority.rs`
 
 Call:
 `Remove`
@@ -90,7 +90,7 @@ Cleanup move:
 ## `storage_authority`
 
 Source:
-[`authority.rs`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/storage/logic/authority.rs)
+`authority.rs`
 
 Call:
 `Remove`
@@ -109,7 +109,7 @@ Cleanup move:
 ## `lineage_access`
 
 Source:
-[`mod.rs`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/lineage/logic/access/mod.rs)
+`mod.rs`
 
 Call:
 `Remove` for now
@@ -130,7 +130,7 @@ Cleanup move:
 ## `lineage_authority`
 
 Source:
-[`mod.rs`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/lineage/logic/authority/mod.rs)
+`mod.rs`
 
 Call:
 `Remove` for now
@@ -148,7 +148,7 @@ Cleanup move:
 ## `MergeAccess::runtime`
 
 Source:
-[`mod.rs`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/merge/logic/mod.rs)
+`mod.rs`
 
 Call:
 `Remove`
@@ -172,7 +172,7 @@ Cleanup move:
 ## `retention_authority`
 
 Source:
-[`retention_authority.rs`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/visibility/retention/retention_authority.rs)
+[`retention_authority.rs`](../../crates/worth-relational/src/visibility/retention/retention_authority.rs)
 
 Call:
 `Promote`
@@ -197,7 +197,7 @@ Promotion move:
 ## `visibility_reads`
 
 Source:
-[`mod.rs`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/visibility/materialization/read_records/mod.rs)
+[`mod.rs`](../../crates/worth-relational/src/visibility/materialization/read_records/mod.rs)
 
 Call:
 `Promote`
@@ -219,7 +219,7 @@ Promotion move:
 ## `simulation_access`
 
 Source:
-[`access.rs`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/simulation/logic/access.rs)
+`access.rs`
 
 Call:
 `Promote`
@@ -241,7 +241,7 @@ Promotion move:
 ## `simulation_authority`
 
 Source:
-[`authority.rs`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/simulation/logic/authority.rs)
+`authority.rs`
 
 Call:
 `Promote`
@@ -260,7 +260,7 @@ Promotion move:
 ## `invariant_access`
 
 Source:
-[`invariant_access.rs`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/validation/logic/invariant_access.rs)
+`invariant_access.rs`
 
 Call:
 `Promote`

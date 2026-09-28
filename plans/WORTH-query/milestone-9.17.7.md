@@ -1,8 +1,6 @@
 # Milestone 9.17.7: Inbound Occurrences And External Effect Completion
 
-> **Status:** Planned successor to [9.17.6](./milestone-9.17.6.md).
-> 9.17.6 supplies the complete dynamic workflow kernel but deliberately exposes no
-> callback, resume-message or inbound-completion API.
+> **Status:** Not started. Successor to [9.17.6](./milestone-9.17.6.md).
 
 ## Goal And Boundary
 

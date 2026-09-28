@@ -23,25 +23,25 @@ fn changing_one_subject_invalidates_only_that_subjects_evidence() {
     };
     propose_instance(&application, started.instance().clone(), 562).expect("proposal must settle");
     assert_eq!(
-        settle(set_dimension(
+        settle(set_retention(
             application.program_runtime(),
             started.instance().branch(),
             6,
             563,
         )),
-        DimensionVerdict::Performed(6)
+        RetentionVerdict::Performed(6)
     );
     for (settlement_key, acceptance_key, subject, posture) in [
         (
             564,
             565,
-            PART_IDENTITY,
+            DOCUMENT_IDENTITY,
             WorthQueryWorkflowAssessmentPosture::Failing,
         ),
         (
             566,
             567,
-            RELATED_PART_IDENTITY,
+            RELATED_DOCUMENT_IDENTITY,
             WorthQueryWorkflowAssessmentPosture::Passing,
         ),
     ] {
@@ -67,13 +67,13 @@ fn changing_one_subject_invalidates_only_that_subjects_evidence() {
         Ok(WorkflowProgressOutcome::Completed(_))
     ));
     assert_eq!(
-        settle(set_dimension(
+        settle(set_retention(
             application.program_runtime(),
             started.instance().branch(),
-            SEED_DIMENSION,
+            SEED_RETENTION,
             569,
         )),
-        DimensionVerdict::Performed(SEED_DIMENSION)
+        RetentionVerdict::Performed(SEED_RETENTION)
     );
 
     match advance_instance(&application, started.instance().clone(), 570)

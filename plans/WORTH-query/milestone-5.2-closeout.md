@@ -5,7 +5,7 @@
 Milestone 5.2 is closed as of 2026-04-16 for the runtime-backed preview,
 preview-live, promotion-parity comparison, and workflow-foundation scope
 defined in
-[milestone-5.2.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/milestone-5.2.md).
+[milestone-5.2.md](./milestone-5.2.md).
 
 `worth-query` now has a real preview-session query substrate layered on top of
 the Milestone 3 planning/basis boundary, the Milestone 4 result-family
@@ -32,28 +32,28 @@ Milestone 5.2 delivered:
 
 - preview basis binding, preview execution, promotion-parity comparison,
   preview-live admission/execution/drift, and workflow-foundation artifacts in
-  [crates/worth-query/src/preview/mod.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/preview/mod.rs)
+  [crates/worth-query/src/preview/mod.rs](../../workspaces/worth-query/crates/worth-query/src/preview/mod.rs)
 - the public preview facade surface in
-  [crates/worth-query/src/facade.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/facade.rs)
+  [crates/worth-query/src/facade.rs](../../workspaces/worth-query/crates/worth-query/src/facade.rs)
 - milestone-native preview certification artifacts, completeness reports, row
   catalogs, and matrix assertions under
-  [crates/worth-query/src/harness/preview_certification](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/preview_certification)
+  [crates/worth-query/src/harness/preview_certification](../../workspaces/worth-query/crates/worth-query/src/harness/preview_certification)
 - shared milestone requirement wiring in
-  [crates/worth-query/src/harness/certification/requirements.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/certification/requirements.rs)
+  [crates/worth-query/src/harness/certification/requirements.rs](../../workspaces/worth-query/crates/worth-query/src/harness/certification/requirements.rs)
   and
-  [crates/worth-query/src/harness/certification/tests.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/certification/tests.rs)
+  [crates/worth-query/src/harness/certification/tests.rs](../../workspaces/worth-query/crates/worth-query/src/harness/certification/tests.rs)
 - compile-fail proof-boundary tests for preview proof types, preview-live
   staging, comparison admission, workflow admission, and forbidden construction
   paths under
-  [crates/worth-query/tests/ui](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/tests/ui)
+  `crates/worth-query/tests/ui`
 
 ## Acceptance Mapping
 
 Milestone 5.2 is considered closed against
-[milestone-5.2.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/milestone-5.2.md),
-[worth_query_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/worth_query_roadmap.md),
+[milestone-5.2.md](./milestone-5.2.md),
+[worth_query_roadmap.md](./WORTH_query_roadmap.md),
 and
-[test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/test-requirements.md)
+[test-requirements.md](./test-requirements.md)
 because the required preview-session and preview-live acceptance surface now
 exists directly.
 
@@ -61,9 +61,9 @@ exists directly.
 
 Covered by:
 
-- [preview_certification/mod.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/preview_certification/mod.rs)
-- [preview_certification/row_catalog.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/preview_certification/row_catalog.rs)
-- [preview_certification/model.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/preview_certification/model.rs)
+- [preview_certification/mod.rs](../../workspaces/worth-query/crates/worth-query/src/harness/preview_certification/mod.rs)
+- [preview_certification/row_catalog.rs](../../workspaces/worth-query/crates/worth-query/src/harness/preview_certification/row_catalog.rs)
+- `preview_certification/model.rs`
 
 What is proven:
 
@@ -111,7 +111,7 @@ Covered by:
 - `preview::PreviewSessionBindingTuple`
 - `preview::PreviewSessionPlanBinding`
 - preview binding tests in
-  [crates/worth-query/src/preview/mod.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/preview/mod.rs)
+  [crates/worth-query/src/preview/mod.rs](../../workspaces/worth-query/crates/worth-query/src/preview/mod.rs)
 
 What is proven:
 

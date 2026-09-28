@@ -2,15 +2,15 @@
 
 > **Status:** Complete for the first admitted writeback family; Milestone 12b is required before Milestone 13 to make writeback family extensibility bridge-native and production-grade
 >
-> **Roadmap parent:** [worth_runtime_bridge_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/worth_runtime_bridge_roadmap.md)
+> **Roadmap parent:** [worth_runtime_bridge_roadmap.md](./WORTH_runtime_bridge_roadmap.md)
 >
-> **Vision parent:** [worth_runtime_bridge_vision.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/worth_runtime_bridge_vision.md)
+> **Vision parent:** [worth_runtime_bridge_vision.md](./WORTH_runtime_bridge_vision.md)
 >
-> **Prior milestone:** [milestone-11.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-11.md)
+> **Prior milestone:** [milestone-11.md](./milestone-11.md)
 >
-> **Bridge certification companion:** [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md)
+> **Bridge certification companion:** [test-requirements.md](./test-requirements.md)
 >
-> **Relational authority companion:** [milestone-8.5-plan.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/milestone-8.5-plan.md)
+> **Relational authority companion:** [milestone-8.5-plan.md](../WORTH-relational/milestone-8.5-plan.md)
 >
 > **Primary architectural driver:** make bridge-origin effect production, writeback admission, relational strategy selection, idempotence classification, authority-boundary outcome, and replay-safe provenance first-class bridge protocol surfaces so derived execution can propose truth changes without giving the bridge mutation authority or creating duplicate authority effects under retry and replay pressure
 
@@ -179,7 +179,7 @@ them ambient:
   retention policy
 - no-op suppression must be semantic, not merely request-identity based
 - the first shipped writeback classes should be narrow and structurally honest,
-  not generic â€œarbitrary node can mutate arbitrary truthâ€
+  not generic “arbitrary node can mutate arbitrary truth”
 
 If any one of those assumptions is false in implementation, the spec must be
 revised before code lands.
@@ -218,7 +218,7 @@ In scope:
 - replay-safe writeback artifacts spanning effect production through authority
   outcome
 - certification for suites 19 through 21 in
-  [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md)
+  [test-requirements.md](./test-requirements.md)
 
 Out of scope:
 
@@ -528,9 +528,9 @@ Milestone 12 should extend the bridge crate with subdomains such as:
 - `diagnostics/writeback.rs`
 
 The current
-[policy](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/policy)
+[policy](../../crates/worth-runtime-bridge/src/policy)
 and
-[speculation](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/speculation)
+[speculation](../../crates/worth-runtime-bridge/src/speculation)
 subsystems are prerequisites, not substitutes. Milestone 12 should consume
 their outputs rather than duplicate them.
 
@@ -568,7 +568,7 @@ phase chain.
 
 Milestone 12 is not closed by feature tests. It must satisfy the certification
 discipline defined in
-[test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md),
+[test-requirements.md](./test-requirements.md),
 including:
 
 - `control_lane`, `hostile_lane`, and `replay_lane`
@@ -731,7 +731,7 @@ Required hostile scenarios:
 - direct mutation-plan injection without strategy contract
 - merge-bearing writeback without admitted merge legality
 - invariant-skipping writeback attempt
-- â€œpublish because preview already proved itâ€ shortcut
+- “publish because preview already proved it” shortcut
 
 ### Required Loop-Resistance Certification
 

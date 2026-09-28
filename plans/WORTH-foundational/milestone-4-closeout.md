@@ -13,7 +13,7 @@ same-family descriptive extension room, reserved authority-transition
 fail-closed law, and production-test readiness evidence.
 
 Crate-facing boundary-artifact docs now also exist under
-[crates/worth-foundational/docs/boundary-artifact-taxonomy-and-materialization-contracts](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/docs/boundary-artifact-taxonomy-and-materialization-contracts),
+[crates/worth-foundational/docs/boundary-artifact-taxonomy-and-materialization-contracts](../../crates/worth-foundational/docs/boundary-artifact-taxonomy-and-materialization-contracts),
 with one landing page and one feature doc per shipped boundary-artifact seam.
 
 This milestone is ready for production-shaped testing through `worth-harness`
@@ -59,9 +59,9 @@ into the foundational boundary-artifact language correctly.
 
 Shipped homes:
 
-- [categories.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_artifacts/categories.rs)
-- [categories.rs test](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/boundary_artifacts/categories.rs)
-- [ui/categories](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/ui/boundary_artifacts/categories)
+- [categories.rs](../../crates/worth-foundational/src/boundary_artifacts/categories.rs)
+- [categories.rs test](../../crates/worth-foundational/tests/certification/boundary_artifacts/categories.rs)
+- [ui/categories](../../crates/worth-foundational/tests/ui/boundary_artifacts/categories)
 
 What closed:
 
@@ -74,11 +74,11 @@ What closed:
 
 Shipped homes:
 
-- [roles.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_artifacts/roles.rs)
-- [authority.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_artifacts/authority.rs)
-- [roles_and_authority.rs test](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/boundary_artifacts/roles_and_authority.rs)
-- [ui/authority_admission](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/ui/boundary_artifacts/authority_admission)
-- [ui/role_legality](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/ui/boundary_artifacts/role_legality)
+- [roles.rs](../../crates/worth-foundational/src/boundary_artifacts/roles.rs)
+- [authority.rs](../../crates/worth-foundational/src/boundary_artifacts/authority.rs)
+- [roles_and_authority.rs test](../../crates/worth-foundational/tests/certification/boundary_artifacts/roles_and_authority.rs)
+- [ui/authority_admission](../../crates/worth-foundational/tests/ui/boundary_artifacts/authority_admission)
+- [ui/role_legality](../../crates/worth-foundational/tests/ui/boundary_artifacts/role_legality)
 
 What closed:
 
@@ -91,16 +91,16 @@ What closed:
 
 Shipped homes:
 
-- [materialization/mod.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_artifacts/materialization/mod.rs)
-- [surface.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_artifacts/materialization/surface.rs)
-- [model.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_artifacts/materialization/model.rs)
-- [derivation.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_artifacts/materialization/derivation.rs)
-- [bundle.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_artifacts/materialization/bundle.rs)
-- [bundle_types.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_artifacts/materialization/bundle_types.rs)
-- [vocabulary.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_artifacts/materialization/vocabulary.rs)
-- [materialization.rs test](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/boundary_artifacts/materialization.rs)
-- [ui/materialization_contracts](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/ui/boundary_artifacts/materialization_contracts)
-- [ui/bundle_contracts](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/ui/boundary_artifacts/bundle_contracts)
+- [materialization/mod.rs](../../crates/worth-foundational/src/boundary_artifacts/materialization/mod.rs)
+- [surface.rs](../../crates/worth-foundational/src/boundary_artifacts/materialization/surface.rs)
+- [model.rs](../../crates/worth-foundational/src/boundary_artifacts/materialization/model.rs)
+- [derivation.rs](../../crates/worth-foundational/src/boundary_artifacts/materialization/derivation.rs)
+- [bundle.rs](../../crates/worth-foundational/src/boundary_artifacts/materialization/bundle.rs)
+- [bundle_types.rs](../../crates/worth-foundational/src/boundary_artifacts/materialization/bundle_types.rs)
+- [vocabulary.rs](../../crates/worth-foundational/src/boundary_artifacts/materialization/vocabulary.rs)
+- [materialization.rs test](../../crates/worth-foundational/tests/certification/boundary_artifacts/materialization.rs)
+- [ui/materialization_contracts](../../crates/worth-foundational/tests/ui/boundary_artifacts/materialization_contracts)
+- [ui/bundle_contracts](../../crates/worth-foundational/tests/ui/boundary_artifacts/bundle_contracts)
 
 What closed:
 
@@ -114,9 +114,9 @@ What closed:
 
 Shipped homes:
 
-- [basis.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_artifacts/basis.rs)
-- [canonical_basis.rs test](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/boundary_artifacts/canonical_basis.rs)
-- [ui/basis_boundaries](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/ui/boundary_artifacts/basis_boundaries)
+- [basis.rs](../../crates/worth-foundational/src/boundary_artifacts/basis.rs)
+- [canonical_basis.rs test](../../crates/worth-foundational/tests/certification/boundary_artifacts/canonical_basis.rs)
+- [ui/basis_boundaries](../../crates/worth-foundational/tests/ui/boundary_artifacts/basis_boundaries)
 
 What closed:
 
@@ -129,9 +129,9 @@ What closed:
 
 Shipped homes:
 
-- [current_basis.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_artifacts/current_basis.rs)
-- [current_basis.rs test](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/boundary_artifacts/current_basis.rs)
-- [ui/current_basis_boundaries](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/ui/boundary_artifacts/current_basis_boundaries)
+- [current_basis.rs](../../crates/worth-foundational/src/boundary_artifacts/current_basis.rs)
+- [current_basis.rs test](../../crates/worth-foundational/tests/certification/boundary_artifacts/current_basis.rs)
+- [ui/current_basis_boundaries](../../crates/worth-foundational/tests/ui/boundary_artifacts/current_basis_boundaries)
 
 What closed:
 
@@ -144,11 +144,11 @@ What closed:
 
 Shipped homes:
 
-- [planned.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_artifacts/planned.rs)
-- [same_family.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_artifacts/same_family.rs)
-- [reserved_authority_transition.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_artifacts/reserved_authority_transition.rs)
-- [descriptive_extensions.rs test](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/boundary_artifacts/descriptive_extensions.rs)
-- [ui/descriptive_extensions](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/ui/boundary_artifacts/descriptive_extensions)
+- [planned.rs](../../crates/worth-foundational/src/boundary_artifacts/planned.rs)
+- [same_family.rs](../../crates/worth-foundational/src/boundary_artifacts/same_family.rs)
+- [reserved_authority_transition.rs](../../crates/worth-foundational/src/boundary_artifacts/reserved_authority_transition.rs)
+- [descriptive_extensions.rs test](../../crates/worth-foundational/tests/certification/boundary_artifacts/descriptive_extensions.rs)
+- [ui/descriptive_extensions](../../crates/worth-foundational/tests/ui/boundary_artifacts/descriptive_extensions)
 
 What closed:
 
@@ -161,14 +161,14 @@ What closed:
 
 Shipped homes:
 
-- [readiness/mod.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_artifacts/readiness/mod.rs)
-- [authority.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_artifacts/readiness/authority.rs)
-- [vocabulary.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_artifacts/readiness/vocabulary.rs)
-- [inventory.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_artifacts/readiness/inventory.rs)
-- [report.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_artifacts/readiness/report.rs)
-- [certification.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_artifacts/readiness/certification.rs)
-- [readiness.rs test](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/boundary_artifacts/readiness.rs)
-- [ui/readiness_boundaries](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/ui/boundary_artifacts/readiness_boundaries)
+- [readiness/mod.rs](../../crates/worth-foundational/src/boundary_artifacts/readiness/mod.rs)
+- [authority.rs](../../crates/worth-foundational/src/boundary_artifacts/readiness/authority.rs)
+- [vocabulary.rs](../../crates/worth-foundational/src/boundary_artifacts/readiness/vocabulary.rs)
+- [inventory.rs](../../crates/worth-foundational/src/boundary_artifacts/readiness/inventory.rs)
+- [report.rs](../../crates/worth-foundational/src/boundary_artifacts/readiness/report.rs)
+- [certification.rs](../../crates/worth-foundational/src/boundary_artifacts/readiness/certification.rs)
+- [readiness.rs test](../../crates/worth-foundational/tests/certification/boundary_artifacts/readiness.rs)
+- [ui/readiness_boundaries](../../crates/worth-foundational/tests/ui/boundary_artifacts/readiness_boundaries)
 
 What closed:
 
@@ -187,12 +187,12 @@ pull plain boundary vocabulary into the proof kernel.
 Proof-bearing surfaces standardized here:
 
 - Phase 2 authority admission through
-  [authority.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_artifacts/authority.rs)
+  [authority.rs](../../crates/worth-foundational/src/boundary_artifacts/authority.rs)
 - Phase 4.5 current-basis admission, trust-boundary bridge, and readmission
   through
-  [current_basis.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_artifacts/current_basis.rs)
+  [current_basis.rs](../../crates/worth-foundational/src/boundary_artifacts/current_basis.rs)
 - Phase 6 production-readiness certification through
-  [readiness](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_artifacts/readiness)
+  [readiness](../../crates/worth-foundational/src/boundary_artifacts/readiness)
 
 Concrete `worth-proof` APIs the readiness artifact now freezes as the chosen
 lane:
@@ -216,14 +216,14 @@ Plain boundary vocabulary deliberately stayed local:
 ## Test-Requirements Mapping
 
 Milestone 4 now satisfies the Milestone-4-specific bars that were added to
-[plans/worth-foundational/test-requirements.md](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/plans/worth-foundational/test-requirements.md).
+[plans/worth-foundational/test-requirements.md](./test-requirements.md).
 
 ### DX-Lane Separation
 
 Evidence:
 
-- [materialization.rs test](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/boundary_artifacts/materialization.rs)
-- [roles_and_authority.rs test](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/boundary_artifacts/roles_and_authority.rs)
+- [materialization.rs test](../../crates/worth-foundational/tests/certification/boundary_artifacts/materialization.rs)
+- [roles_and_authority.rs test](../../crates/worth-foundational/tests/certification/boundary_artifacts/roles_and_authority.rs)
 
 What is proved:
 
@@ -235,8 +235,8 @@ What is proved:
 
 Evidence:
 
-- [categories.rs test](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/boundary_artifacts/categories.rs)
-- [local_generic_wrapper_cannot_satisfy_category_surface_trait.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/ui/boundary_artifacts/categories/local_generic_wrapper_cannot_satisfy_category_surface_trait.rs)
+- [categories.rs test](../../crates/worth-foundational/tests/certification/boundary_artifacts/categories.rs)
+- [local_generic_wrapper_cannot_satisfy_category_surface_trait.rs](../../crates/worth-foundational/tests/ui/boundary_artifacts/categories/local_generic_wrapper_cannot_satisfy_category_surface_trait.rs)
 
 What is proved:
 
@@ -247,8 +247,8 @@ What is proved:
 
 Evidence:
 
-- [materialization.rs test](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/boundary_artifacts/materialization.rs)
-- [ui/bundle_contracts](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/ui/boundary_artifacts/bundle_contracts)
+- [materialization.rs test](../../crates/worth-foundational/tests/certification/boundary_artifacts/materialization.rs)
+- [ui/bundle_contracts](../../crates/worth-foundational/tests/ui/boundary_artifacts/bundle_contracts)
 
 What is proved:
 
@@ -260,7 +260,7 @@ What is proved:
 
 Evidence:
 
-- [materialization.rs test](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/boundary_artifacts/materialization.rs)
+- [materialization.rs test](../../crates/worth-foundational/tests/certification/boundary_artifacts/materialization.rs)
 
 What is proved:
 
@@ -271,9 +271,9 @@ What is proved:
 
 Evidence:
 
-- [materialization.rs test](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/boundary_artifacts/materialization.rs)
-- [materialization/vocabulary.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_artifacts/materialization/vocabulary.rs)
-- [materialization/derivation.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_artifacts/materialization/derivation.rs)
+- [materialization.rs test](../../crates/worth-foundational/tests/certification/boundary_artifacts/materialization.rs)
+- [materialization/vocabulary.rs](../../crates/worth-foundational/src/boundary_artifacts/materialization/vocabulary.rs)
+- [materialization/derivation.rs](../../crates/worth-foundational/src/boundary_artifacts/materialization/derivation.rs)
 
 What is proved:
 
@@ -284,8 +284,8 @@ What is proved:
 
 Evidence:
 
-- [canonical_basis.rs test](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/boundary_artifacts/canonical_basis.rs)
-- [basis.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_artifacts/basis.rs)
+- [canonical_basis.rs test](../../crates/worth-foundational/tests/certification/boundary_artifacts/canonical_basis.rs)
+- [basis.rs](../../crates/worth-foundational/src/boundary_artifacts/basis.rs)
 
 What is proved:
 
@@ -296,8 +296,8 @@ What is proved:
 
 Evidence:
 
-- [current_basis.rs test](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/boundary_artifacts/current_basis.rs)
-- [ui/current_basis_boundaries](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/ui/boundary_artifacts/current_basis_boundaries)
+- [current_basis.rs test](../../crates/worth-foundational/tests/certification/boundary_artifacts/current_basis.rs)
+- [ui/current_basis_boundaries](../../crates/worth-foundational/tests/ui/boundary_artifacts/current_basis_boundaries)
 
 What is proved:
 
@@ -308,8 +308,8 @@ What is proved:
 
 Evidence:
 
-- [descriptive_extensions.rs test](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/boundary_artifacts/descriptive_extensions.rs)
-- [ui/descriptive_extensions](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/ui/boundary_artifacts/descriptive_extensions)
+- [descriptive_extensions.rs test](../../crates/worth-foundational/tests/certification/boundary_artifacts/descriptive_extensions.rs)
+- [ui/descriptive_extensions](../../crates/worth-foundational/tests/ui/boundary_artifacts/descriptive_extensions)
 
 What is proved:
 
@@ -320,8 +320,8 @@ What is proved:
 
 Evidence:
 
-- [readiness.rs test](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/boundary_artifacts/readiness.rs)
-- [readiness/inventory.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_artifacts/readiness/inventory.rs)
+- [readiness.rs test](../../crates/worth-foundational/tests/certification/boundary_artifacts/readiness.rs)
+- [readiness/inventory.rs](../../crates/worth-foundational/src/boundary_artifacts/readiness/inventory.rs)
 
 What is proved:
 
@@ -334,9 +334,9 @@ What is proved:
   real proof markers rather than authority-gated `NoProofs` artifacts.
 - Renamed the descriptive-extension guard surface from milestone-provenance
   naming into responsibility-owned naming:
-  [reserved_authority_transition.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary_artifacts/reserved_authority_transition.rs)
+  [reserved_authority_transition.rs](../../crates/worth-foundational/src/boundary_artifacts/reserved_authority_transition.rs)
   and
-  [descriptive_extensions.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/boundary_artifacts/descriptive_extensions.rs).
+  [descriptive_extensions.rs](../../crates/worth-foundational/tests/certification/boundary_artifacts/descriptive_extensions.rs).
 - Corrected the materialization split so model-owned types and plan
   materialization stayed in the model layer instead of leaking through the
   entrypoint layer.

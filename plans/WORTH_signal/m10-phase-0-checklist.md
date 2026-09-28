@@ -8,7 +8,7 @@
 
 This document is the concrete execution artifact for `M10.0`.
 
-It exists to prevent the milestone from starting â€œin the middleâ€ by making the
+It exists to prevent the milestone from starting “in the middle” by making the
 current merge substrate explicit:
 
 - what exists now
@@ -42,7 +42,7 @@ Current file set under
 
 Current branch-merge orchestration is centered in:
 
-- [merge_runtime.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/state/branching/merge_runtime.rs)
+- [merge_runtime.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/branching/merge_runtime.rs)
 
 This file currently contains both:
 
@@ -55,9 +55,9 @@ S10 must preserve the first and replace the second.
 
 Current merge-related exports appear in:
 
-- [merge/mod.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/state/merge/mod.rs)
-- [logic/transaction/mod.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/transaction/mod.rs)
-- [facade.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/facade.rs)
+- [merge/mod.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/merge/mod.rs)
+- [logic/transaction/mod.rs](../../crates/worth-signal/src/logic/transaction/mod.rs)
+- [facade.rs](../../crates/worth-signal/src/facade.rs)
 
 Current exported merge family includes:
 
@@ -144,14 +144,14 @@ The following patterns must disappear from the supported authority path:
 
 Concrete deletion target:
 
-- the current â€œpolicy assembled inline in `merge_runtime.rs`â€ approach
+- the current “policy assembled inline in `merge_runtime.rs`” approach
 
 ## 3. Hardcoded Semantic Decisions To Remove
 
 ### 3.1 Inline reconciliation policy construction
 
 Current hardcoding in
-[merge_runtime.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/state/branching/merge_runtime.rs):
+[merge_runtime.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/branching/merge_runtime.rs):
 
 - `existing_target: PreserveEquivalentOtherwiseAdoptSource`
 - `source_only: IntroduceAdoptableSkipNonAdoptable`

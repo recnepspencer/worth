@@ -1,7 +1,7 @@
 use super::*;
 
 pub(super) fn published_proposal(
-    application: &BoundedDimensionWorkflowRuntime,
+    application: &DocumentWorkflowRuntime,
     instance: PublishedWorkflowInstanceRef,
     key: u64,
 ) -> PublishedWorkflowProposalRef {

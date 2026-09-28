@@ -45,38 +45,38 @@ Milestone 9.2 delivered:
 
 - active lane admission, registry ownership, handles, sharing, budgets, lookup
   posture, lifecycle posture, delivery posture, and counters in
-  [crates/worth-query/src/subscription/active.rs](../../crates/worth-query/src/subscription/active.rs),
-  [crates/worth-query/src/subscription/active_lane.rs](../../crates/worth-query/src/subscription/active_lane.rs),
-  [crates/worth-query/src/subscription/active_registry.rs](../../crates/worth-query/src/subscription/active_registry.rs),
-  [crates/worth-query/src/subscription/active_runtime.rs](../../crates/worth-query/src/subscription/active_runtime.rs), and
-  [crates/worth-query/src/subscription/active_budget.rs](../../crates/worth-query/src/subscription/active_budget.rs)
+  [crates/worth-query/src/subscription/active.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/active.rs),
+  [crates/worth-query/src/subscription/active_lane.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/active_lane.rs),
+  [crates/worth-query/src/subscription/active_registry.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/active_registry.rs),
+  [crates/worth-query/src/subscription/active_runtime.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/active_runtime.rs), and
+  [crates/worth-query/src/subscription/active_budget.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/active_budget.rs)
 - consumer attachment, acknowledgement frontier, backpressure, fanout, and
   delivery cursor semantics in
-  [crates/worth-query/src/subscription/attachment.rs](../../crates/worth-query/src/subscription/attachment.rs),
-  [crates/worth-query/src/subscription/acknowledgement.rs](../../crates/worth-query/src/subscription/acknowledgement.rs), and
-  [crates/worth-query/src/subscription/fanout.rs](../../crates/worth-query/src/subscription/fanout.rs)
+  [crates/worth-query/src/subscription/attachment.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/attachment.rs),
+  [crates/worth-query/src/subscription/acknowledgement.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/acknowledgement.rs), and
+  [crates/worth-query/src/subscription/fanout.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/fanout.rs)
 - query-shaped delivery windows, maintenance deltas, work packets, batches,
   patch groups, and raw CDC / raw bridge invalidation denials in
-  [crates/worth-query/src/subscription/delivery_window.rs](../../crates/worth-query/src/subscription/delivery_window.rs),
-  [crates/worth-query/src/subscription/maintenance_delta.rs](../../crates/worth-query/src/subscription/maintenance_delta.rs),
-  [crates/worth-query/src/subscription/delivery_work_packet.rs](../../crates/worth-query/src/subscription/delivery_work_packet.rs), and
-  [crates/worth-query/src/subscription/patch_group.rs](../../crates/worth-query/src/subscription/patch_group.rs)
+  [crates/worth-query/src/subscription/delivery_window.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/delivery_window.rs),
+  [crates/worth-query/src/subscription/maintenance_delta.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/maintenance_delta.rs),
+  [crates/worth-query/src/subscription/delivery_work_packet.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/delivery_work_packet.rs), and
+  [crates/worth-query/src/subscription/patch_group.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/patch_group.rs)
 - typed continuation/remap evidence and report lowering in
-  [crates/worth-query/src/subscription/continuation.rs](../../crates/worth-query/src/subscription/continuation.rs)
+  `crates/worth-query/src/subscription/continuation.rs`
 - preview isolation, discard closeout, promotion handoff, residue classes, and
   residue reports in
-  [crates/worth-query/src/subscription/preview_isolation.rs](../../crates/worth-query/src/subscription/preview_isolation.rs)
+  [crates/worth-query/src/subscription/preview_isolation.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/preview_isolation.rs)
 - lifecycle closeout support and terminal runtime closure in
-  [crates/worth-query/src/subscription/closeout.rs](../../crates/worth-query/src/subscription/closeout.rs) and
-  [crates/worth-query/src/subscription/support.rs](../../crates/worth-query/src/subscription/support.rs)
+  [crates/worth-query/src/subscription/closeout.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/closeout.rs) and
+  `crates/worth-query/src/subscription/support.rs`
 - phase-local performance receipts in
-  [crates/worth-query/src/subscription/performance_receipt.rs](../../crates/worth-query/src/subscription/performance_receipt.rs)
+  [crates/worth-query/src/subscription/performance_receipt.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/performance_receipt.rs)
 - shipped lifecycle certification, including preview/support closure, in
-  [crates/worth-query/src/subscription/certification.rs](../../crates/worth-query/src/subscription/certification.rs)
+  [crates/worth-query/src/subscription/certification.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/certification.rs)
 - milestone certification in
-  [crates/worth-query/src/harness/milestone_nine_two_certification](../../crates/worth-query/src/harness/milestone_nine_two_certification)
+  [crates/worth-query/src/harness/milestone_nine_two_certification](../../workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_two_certification)
 - compile-fail phase boundaries in
-  [crates/worth-query/tests/ui](../../crates/worth-query/tests/ui)
+  `crates/worth-query/tests/ui`
 
 ## Acceptance Mapping
 
@@ -96,10 +96,10 @@ consumes that shipped certification surface for lifecycle rows.
 
 Covered by:
 
-- [crates/worth-query/src/harness/milestone_nine_two_certification/mod.rs](../../crates/worth-query/src/harness/milestone_nine_two_certification/mod.rs)
-- [crates/worth-query/src/harness/milestone_nine_two_certification/builders.rs](../../crates/worth-query/src/harness/milestone_nine_two_certification/builders.rs)
-- [crates/worth-query/src/harness/milestone_nine_two_certification/tests.rs](../../crates/worth-query/src/harness/milestone_nine_two_certification/tests.rs)
-- [crates/worth-query/src/harness/certification/requirements.rs](../../crates/worth-query/src/harness/certification/requirements.rs)
+- [crates/worth-query/src/harness/milestone_nine_two_certification/mod.rs](../../workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_two_certification/mod.rs)
+- `crates/worth-query/src/harness/milestone_nine_two_certification/builders.rs`
+- [crates/worth-query/src/harness/milestone_nine_two_certification/tests.rs](../../workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_two_certification/tests.rs)
+- [crates/worth-query/src/harness/certification/requirements.rs](../../workspaces/worth-query/crates/worth-query/src/harness/certification/requirements.rs)
 
 What is proven:
 
@@ -124,8 +124,8 @@ What is proven:
 
 Covered by:
 
-- [crates/worth-query/src/subscription/certification.rs](../../crates/worth-query/src/subscription/certification.rs)
-- [crates/worth-query/src/subscription/tests/certification.rs](../../crates/worth-query/src/subscription/tests/certification.rs)
+- [crates/worth-query/src/subscription/certification.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/certification.rs)
+- `crates/worth-query/src/subscription/tests/certification.rs`
 
 What is proven:
 

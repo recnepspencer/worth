@@ -1,3 +1,14 @@
+/// Declares an application schema type whose members are registered in one
+/// builder closure.
+///
+/// Input: `vis schema Schema { owner: "owner" (or an identifier), version:
+/// (major, minor), members: |builder| { .. } }`. The `members` block receives
+/// an `ApplicationSchemaDeclarationBuilder` and returns it with the members
+/// registered. It generates a unit struct `Schema` that implements
+/// `ApplicationSchema`, plus an inherent `declaration()` that builds and
+/// validates the declaration, returning `ApplicationSchemaDeclarationDenial`
+/// if it is invalid. A declaration does nothing on its own; installation
+/// compiles it.
 #[macro_export]
 macro_rules! worth_query_application_schema {
     (
@@ -71,6 +82,12 @@ macro_rules! worth_query_application_schema {
     };
 }
 
+/// Declares a typed entity marker in an application schema.
+///
+/// Input: `vis Entity for Schema`, or `for Schema: SchemaBinding` to declare
+/// it for every schema implementing that trait. It generates a unit struct
+/// `Entity` that implements `ApplicationEntityMarkerIdentity`, with a
+/// `const fn reference()` returning its typed `ApplicationEntityRef`.
 #[macro_export]
 macro_rules! worth_query_entity {
     ($vis:vis $Entity:ident for $Schema:ident : $Binding:path) => {
@@ -115,6 +132,18 @@ macro_rules! worth_query_entity {
     };
 }
 
+/// Declares how an authenticated external principal maps to a principal
+/// entity in an application schema.
+///
+/// Input: `vis Binding in Schema, mapping Mapping { identity: IdentityField,
+/// status: StatusField, target: TargetRelation => Principal,
+/// principal_identity: PrincipalIdentityField }`. The mapping entity carries a
+/// read-only, equality-comparable external principal identity field and a
+/// read-write mapping status field; the target relation leads from the
+/// mapping to the principal entity, whose identity field is read-only and
+/// equality-comparable. The field and relation types are checked at compile
+/// time. It generates a unit struct `Binding` with a `fn reference()`
+/// returning its typed `ApplicationPrincipalBindingRef`.
 #[macro_export]
 macro_rules! worth_query_principal_binding {
     (

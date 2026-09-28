@@ -6,7 +6,7 @@ This document defines the certification-grade store test requirements for
 `worth-store`.
 
 Roadmap 2 physical certification is additionally governed by
-[test-requirements-2.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/test-requirements-2.md),
+[test-requirements-2.md](./test-requirements-2.md),
 which defines the adversarial simulation harness requirements needed to make
 the `S.*` suites realistic rather than minimum-effective-dose tests.
 

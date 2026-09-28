@@ -63,9 +63,12 @@ impl WorthQueryProductUnpublishedRecovery {
     }
 }
 
+/// Why releasing an unpublished product's recovery record was refused.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryProductUnpublishedRecoveryReleaseDenial {
+    /// Runtime World refused to inspect or release the record.
     World(RuntimeWorldRecoveryDenial),
+    /// No owner-cleanup capacity was available; retry later.
     CleanupCapacityExhausted,
 }
 
@@ -75,6 +78,10 @@ impl From<RuntimeWorldRecoveryDenial> for WorthQueryProductUnpublishedRecoveryRe
     }
 }
 
+/// A refused recovery release, carrying the recovery record back unchanged.
+///
+/// [`Self::denial`] says why; [`Self::into_recovery`] returns the record so the
+/// caller can retry.
 #[derive(Debug)]
 pub struct WorthQueryProductUnpublishedRecoveryFailure {
     denial: WorthQueryProductUnpublishedRecoveryReleaseDenial,
@@ -91,9 +98,14 @@ impl WorthQueryProductUnpublishedRecoveryFailure {
     }
 }
 
+/// Why `release_product_publication_recovery` did not return a cleanup
+/// receipt.
 #[derive(Debug)]
 pub enum WorthQueryProductUnpublishedRecoveryReleaseFailure {
+    /// The record was not released; the recovery record is returned.
     Recovery(WorthQueryProductUnpublishedRecoveryFailure),
+    /// The record was released but owner cleanup did not finish; the cleanup is
+    /// returned for retry.
     OwnerCleanup(
         crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanupFailure,
     ),

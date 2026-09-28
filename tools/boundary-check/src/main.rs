@@ -7,6 +7,7 @@ mod configured_source_owner_isolations;
 mod context_workspace_rules;
 mod dependency_rules;
 mod diagnostics;
+mod facade_docs;
 mod hook_authority;
 mod legacy_references;
 mod manifest_types;

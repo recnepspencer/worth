@@ -13,6 +13,3 @@ Dependency direction:
   facades, but physical foundation crates may not depend on semantic programs.
 - `worth-store` is a thin public composition crate.
 - certification crates sit at the top and consume evidence from lower crates.
-
-The existing root `crates/worth-store` remains legacy semantic evidence and
-compatibility until an explicit migration plan retires or wraps it.

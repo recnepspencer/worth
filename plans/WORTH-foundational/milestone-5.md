@@ -1,5 +1,7 @@
 # Milestone 5: Branching, Merging, And Commit Vocabulary
 
+> **Status:** Completed. Closeout: [milestone-5-closeout.md](./milestone-5-closeout.md).
+
 ## Goal
 
 Define the shared language for branch-local intent, merge admission and

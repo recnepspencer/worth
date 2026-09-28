@@ -99,7 +99,12 @@ impl WorthQueryBranchSetAdoptionRecovery {
     }
 }
 
+/// What continuing a branch-set adoption recovery did. Returned by
+/// `recover_branch_set_adoption`.
 pub enum WorthQueryBranchSetAdoptionRecoveryOutcome {
+    /// The blocked branch is published, and the branch-set adoption is handed
+    /// back to advance. `cleanup` reports releasing the recovery's owner
+    /// custody.
     Performed {
         adoption: WorthQueryPreparedBranchSetAdoption,
         cleanup: Result<
@@ -107,10 +112,15 @@ pub enum WorthQueryBranchSetAdoptionRecoveryOutcome {
             WorthQueryProductUnpublishedRecoveryReleaseFailure,
         >,
     },
+    /// The publication had no effect: nothing was published. The recovery is
+    /// handed back to continue again.
     NoEffect {
         no_effect: NoEffectCompositePublication,
         recovery: WorthQueryBranchSetAdoptionRecovery,
     },
+    /// The publication again moved some owners but not the product head. The
+    /// new recovery is handed back; `prior_cleanup` reports releasing the
+    /// earlier recovery's custody.
     ProductUnpublished {
         recovery: WorthQueryBranchSetAdoptionRecovery,
         prior_cleanup: Result<
@@ -120,11 +130,15 @@ pub enum WorthQueryBranchSetAdoptionRecoveryOutcome {
     },
 }
 
+/// Why continuing a branch-set adoption recovery stopped. Nothing was
+/// published; the recovery can be taken back with `into_recovery`.
 pub enum WorthQueryBranchSetAdoptionRecoveryFailure {
+    /// The blocked branch could not be selected.
     ProductSelection {
         denial: WorthQueryProductBranchAdmissionDenial,
         recovery: WorthQueryBranchSetAdoptionRecovery,
     },
+    /// The branch adoption recovery stopped; `failure` says why.
     Recovery {
         branch: WorthQueryProductBranch,
         adoption: WorthQueryPreparedBranchSetAdoption,
@@ -132,11 +146,17 @@ pub enum WorthQueryBranchSetAdoptionRecoveryFailure {
     },
 }
 
+/// Why `release_branch_set_adoption_recovery` did not return a cleanup receipt.
 pub enum WorthQueryBranchSetAdoptionRecoveryReleaseFailure {
+    /// The recovery record was not released; the recovery is handed back
+    /// unchanged to retry.
     Recovery {
         denial: WorthQueryProductUnpublishedRecoveryReleaseDenial,
         recovery: WorthQueryBranchSetAdoptionRecovery,
     },
+    /// The recovery record was released and the remaining branches were
+    /// cancelled, but owner cleanup did not finish. The cleanup is carried for
+    /// retry.
     OwnerCleanup {
         cancellation: WorthQueryBranchSetAdoptionCancellation,
         failure: WorthQueryProductBranchOwnerCleanupFailure,

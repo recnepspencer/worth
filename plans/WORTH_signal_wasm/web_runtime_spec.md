@@ -2,9 +2,9 @@
 
 > **Status:** Completed 2026-04-29
 >
-> **Vision parent:** [plans/worth_signal/worth_signals2.md](../../../plans/worth_signal/worth_signals2.md)
+> **Vision parent:** [plans/worth_signal/worth_signals2.md](../WORTH_signal/WORTH_signals2.md)
 >
-> **Core prerequisite:** [plans/worth_signal/milestone-11-closeout.md](../../../plans/worth_signal/milestone-11-closeout.md)
+> **Core prerequisite:** [plans/worth_signal/milestone-11-closeout.md](../WORTH_signal/milestone-11-closeout.md)
 >
 > **Primary architectural driver:** ship a framework-agnostic web runtime that
 > feels native in React, Angular, Vue, workers, and plain TypeScript without
@@ -43,7 +43,7 @@ At the time of writing, the risk looked like this:
 
 - the public surface is still kernel-first instead of app-first
 - the main boundary is too collapsed, especially
-  [facade.rs](../src/boundary/facade.rs)
+  [facade.rs](../../crates/worth-signal-wasm/src/boundary/facade.rs)
 - observation parity with the newly completed `worth-signal` substrate is
   incomplete
 - `computed`, `effect`, and `output` are not first-class web concepts yet
@@ -370,7 +370,7 @@ The transition must therefore be explicit:
 
 The current wasm crate has some useful foldering, but the product boundary is
 still too collapsed. The clearest example is
-[facade.rs](../src/boundary/facade.rs),
+[facade.rs](../../crates/worth-signal-wasm/src/boundary/facade.rs),
 which currently mixes too many reasons to change:
 
 - app/runtime creation

@@ -39,11 +39,11 @@ Named suite:
 
 Primary test:
 
-- [assumption_freshness_and_downgrade_certification.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-proof/tests/assumption_freshness_and_downgrade_certification.rs)
+- [assumption_freshness_and_downgrade_certification.rs](../../crates/worth-proof/tests/assumption_freshness_and_downgrade_certification.rs)
 
 Supporting evidence module:
 
-- [tests/support/milestone3/mod.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-proof/tests/support/milestone3/mod.rs)
+- `tests/support/milestone3/mod.rs`
 
 Machine-checkable outputs:
 
@@ -66,17 +66,17 @@ The closeout suite now owns the hostile lanes required by the milestone:
 
 Compile-fail fixtures:
 
-- [unresolved_recipe_cannot_bridge_trust_boundary.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-proof/tests/ui/unresolved_recipe_cannot_bridge_trust_boundary.rs)
-- [stale_readable_recipe_rejects_strong_basis_api.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-proof/tests/ui/stale_readable_recipe_rejects_strong_basis_api.rs)
-- [rebind_required_recipe_cannot_lower.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-proof/tests/ui/rebind_required_recipe_cannot_lower.rs)
-- [boundary_bridged_recipe_rejects_strong_basis_api.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-proof/tests/ui/boundary_bridged_recipe_rejects_strong_basis_api.rs)
-- [shifted_basis_readmission_cannot_be_treated_as_original_basis.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-proof/tests/ui/shifted_basis_readmission_cannot_be_treated_as_original_basis.rs)
+- [unresolved_recipe_cannot_bridge_trust_boundary.rs](../../crates/worth-proof/tests/ui/milestone3/unresolved_recipe_cannot_bridge_trust_boundary.rs)
+- [stale_readable_recipe_rejects_strong_basis_api.rs](../../crates/worth-proof/tests/ui/milestone3/stale_readable_recipe_rejects_strong_basis_api.rs)
+- [rebind_required_recipe_cannot_lower.rs](../../crates/worth-proof/tests/ui/milestone3/rebind_required_recipe_cannot_lower.rs)
+- [boundary_bridged_recipe_rejects_strong_basis_api.rs](../../crates/worth-proof/tests/ui/milestone3/boundary_bridged_recipe_rejects_strong_basis_api.rs)
+- [shifted_basis_readmission_cannot_be_treated_as_original_basis.rs](../../crates/worth-proof/tests/ui/milestone3/shifted_basis_readmission_cannot_be_treated_as_original_basis.rs)
 
 Compile-pass fixtures:
 
-- [explicit_current_validity_progression_compiles.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-proof/tests/ui/explicit_current_validity_progression_compiles.rs)
-- [explicit_same_basis_readmission_progression_compiles.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-proof/tests/ui/explicit_same_basis_readmission_progression_compiles.rs)
-- [explicit_readmission_progression_compiles.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-proof/tests/ui/explicit_readmission_progression_compiles.rs)
+- [explicit_current_validity_progression_compiles.rs](../../crates/worth-proof/tests/ui/milestone3/explicit_current_validity_progression_compiles.rs)
+- [explicit_same_basis_readmission_progression_compiles.rs](../../crates/worth-proof/tests/ui/milestone3/explicit_same_basis_readmission_progression_compiles.rs)
+- [explicit_readmission_progression_compiles.rs](../../crates/worth-proof/tests/ui/milestone3/explicit_readmission_progression_compiles.rs)
 
 ## Residual Debt
 

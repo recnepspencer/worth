@@ -12,11 +12,11 @@
 >
 > **Callback-computed prerequisite:** [host_callback_computed_spec.md](./host_callback_computed_spec.md)
 >
-> **Core runtime prerequisite:** [plans/worth_signal/worth_signal_temporal_async_roadmap.md](../../../plans/worth_signal/worth_signal_temporal_async_roadmap.md)
+> **Core runtime prerequisite:** [plans/worth_signal/worth_signal_temporal_async_roadmap.md](../WORTH_signal/WORTH_signal_temporal_async_roadmap.md)
 >
-> **Core vision:** [plans/worth_signal/worth_signal_vision.md](../../../plans/worth_signal/worth_signal_vision.md)
+> **Core vision:** [plans/worth_signal/worth_signal_vision.md](../WORTH_signal/WORTH_signal_vision.md)
 >
-> **Core test requirements:** [plans/worth_signal/test-requirements.md](../../../plans/worth_signal/test-requirements.md)
+> **Core test requirements:** [plans/worth_signal/test-requirements.md](../WORTH_signal/test-requirements.md)
 >
 > **Primary architectural driver:** add a typed host-capability lane to
 > `worth-signals-wasm` so browser/runtime-local facts can participate in

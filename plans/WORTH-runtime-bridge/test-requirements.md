@@ -102,9 +102,9 @@ produced runs with declared semantic relationships.
 Every named certification suite must define at least these lanes unless the
 suite explicitly states a narrower reason:
 
-- `control_lane` â€” the canonical no-failure, no-hostility baseline
-- `hostile_lane` â€” the adversarial variation being certified
-- `replay_lane` â€” replay, resume, restart, or retained-artifact reproduction of
+- `control_lane` — the canonical no-failure, no-hostility baseline
+- `hostile_lane` — the adversarial variation being certified
+- `replay_lane` — replay, resume, restart, or retained-artifact reproduction of
   the same semantic workload
 
 If a suite is about explicit rejection, the hostile lane may terminate in a

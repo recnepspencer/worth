@@ -1,28 +1,28 @@
 # Milestone 1 Engineering Spec: Canonical Query Artifact And Result Shape Authority
 
-> **Status:** Closed engineering spec and shipped closeout reference
+> **Status:** Completed.
 >
-> **Roadmap parent:** [worth_query_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/worth_query_roadmap.md)
+> **Roadmap parent:** [worth_query_roadmap.md](./WORTH_query_roadmap.md)
 >
-> **Vision parent:** [worth_query_vision.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/worth_query_vision.md)
+> **Vision parent:** [worth_query_vision.md](./WORTH_query_vision.md)
 >
-> **Shipped closeout:** [milestone-1-closeout.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/milestone-1-closeout.md)
+> **Shipped closeout:** [milestone-1-closeout.md](./milestone-1-closeout.md)
 >
-> **Test requirements:** [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/test-requirements.md)
+> **Test requirements:** [test-requirements.md](./test-requirements.md)
 >
 > **Primary architectural driver:** lock one canonical typed query artifact and one canonical typed result-shape artifact before validation, planning, live promotion, saved queries, or store-backed execution are allowed to multiply representations
 >
 > **Companion docs:**
-> - [MENTALITY.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/MENTALITY.md)
-> - [arch_laws.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/arch_laws.md)
-> - [perf_laws.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/perf_laws.md)
-> - [domain_laws.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/domain_laws.md)
-> - [worth_query_vision.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/worth_query_vision.md)
-> - [worth_query_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/worth_query_roadmap.md)
-> - [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/test-requirements.md)
-> - [milestone-1.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-store/milestone-1.md)
-> - [milestone-1.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-1.md)
-> - [milestone-2.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-2.md)
+> - [MENTALITY.md](../../docs/coding-guidelines/MENTALITY.md)
+> - [arch_laws.md](../../docs/coding-guidelines/arch_laws.md)
+> - [perf_laws.md](../../docs/coding-guidelines/perf_laws.md)
+> - [domain_laws.md](../../docs/coding-guidelines/domain_structure_laws.md)
+> - [worth_query_vision.md](./WORTH_query_vision.md)
+> - [worth_query_roadmap.md](./WORTH_query_roadmap.md)
+> - [test-requirements.md](./test-requirements.md)
+> - [milestone-1.md](../worth-store/milestone-1.md)
+> - [milestone-1.md](../WORTH-runtime-bridge/milestone-1.md)
+> - [milestone-2.md](../WORTH-runtime-bridge/milestone-2.md)
 
 ## Goal
 
@@ -1027,7 +1027,7 @@ authority.
 Milestone 1 is complete only when `worth-query` can prove:
 
 - the `Canonical Query Normalization Parity Test` in
-  [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/test-requirements.md)
+  [test-requirements.md](./test-requirements.md)
   passes with canonical machine-checkable artifacts
 - equivalent direct construction and builder/combinator construction produce
   identical `query_digest`

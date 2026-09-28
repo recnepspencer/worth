@@ -2,28 +2,28 @@
 
 > **Status:** Closed engineering spec and shipped closeout reference
 >
-> **Roadmap parent:** [worth_runtime_bridge_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/worth_runtime_bridge_roadmap.md)
+> **Roadmap parent:** [worth_runtime_bridge_roadmap.md](./WORTH_runtime_bridge_roadmap.md)
 >
-> **Vision parent:** [worth_runtime_bridge_vision.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/worth_runtime_bridge_vision.md)
+> **Vision parent:** [worth_runtime_bridge_vision.md](./WORTH_runtime_bridge_vision.md)
 >
-> **Prior milestone:** [milestone-1.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-1.md)
+> **Prior milestone:** [milestone-1.md](./milestone-1.md)
 >
-> **Prior closeout:** [milestone-1-closeout.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-1-closeout.md)
+> **Prior closeout:** [milestone-1-closeout.md](./milestone-1-closeout.md)
 >
-> **Shipped closeout:** [milestone-2-closeout.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-2-closeout.md)
+> **Shipped closeout:** [milestone-2-closeout.md](./milestone-2-closeout.md)
 >
-> **Hardening companion:** [milestone-2-envelope-and-planning-hardening.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-2-envelope-and-planning-hardening.md)
+> **Hardening companion:** [milestone-2-envelope-and-planning-hardening.md](./milestone-2-envelope-and-planning-hardening.md)
 >
 > **Primary architectural driver:** make bridge precision first-class without collapsing truth-side aspect semantics into signal-side dependency ownership
 >
 > **Companion docs:**
-> - [worth_relational_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/worth_relational_roadmap.md)
-> - [worth_signal_vision.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth_signal/worth_signal_vision.md)
-> - [worth_signals2.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth_signal/worth_signals2.md)
-> - [MENTALITY.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/MENTALITY.md)
-> - [architectural_guidelines.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/architectural_guidelines.md)
-> - [domain_standards.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/domain_standards.md)
-> - [performance_guidelines.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/performance_guidelines.md)
+> - [worth_relational_roadmap.md](../WORTH-relational/WORTH_relational_roadmap.md)
+> - [worth_signal_vision.md](../WORTH_signal/WORTH_signal_vision.md)
+> - [worth_signals2.md](../WORTH_signal/WORTH_signals2.md)
+> - [MENTALITY.md](../../docs/coding-guidelines/MENTALITY.md)
+> - [architectural_guidelines.md](../../docs/coding-guidelines/arch_laws.md)
+> - [domain_standards.md](../../docs/coding-guidelines/domain_structure_laws.md)
+> - [performance_guidelines.md](../../docs/coding-guidelines/perf_laws.md)
 
 ## Summary
 
@@ -808,13 +808,13 @@ Minimum representative test names:
 
 ### Existing Files Expected To Change
 
-- [facade.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/facade.rs)
-- [registration.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/mapping/registration.rs)
-- [lookup.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/mapping/lookup.rs)
-- [planning.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/routing/planning.rs)
-- [lowering.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/routing/lowering.rs)
-- [records.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/diagnostics/records.rs)
-- [adapter.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/harness/adapter.rs)
+- [facade.rs](../../crates/worth-runtime-bridge/src/facade.rs)
+- [registration.rs](../../crates/worth-runtime-bridge/src/mapping/registration.rs)
+- [lookup.rs](../../crates/worth-runtime-bridge/src/mapping/lookup.rs)
+- [planning.rs](../../crates/worth-runtime-bridge/src/routing/planning/mod.rs)
+- [lowering.rs](../../crates/worth-runtime-bridge/src/routing/lowering/mod.rs)
+- [records.rs](../../crates/worth-runtime-bridge/src/diagnostics/records/mod.rs)
+- [adapter.rs](../../crates/worth-runtime-bridge/src/harness/adapter/mod.rs)
 
 ## Implementation Phases
 

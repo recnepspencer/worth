@@ -218,7 +218,7 @@ subsystem export surfaces for ordinary jobs, the boundary is not yet honest.
 
 Bridge-native extensible writeback families and mapper containment are now part
 of the real bridge product baseline after
-[`milestone-12b.md`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-12b.md).
+[`milestone-12b.md`](./milestone-12b.md).
 
 That means the boundary must make room for:
 

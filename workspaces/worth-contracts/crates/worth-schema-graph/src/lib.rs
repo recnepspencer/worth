@@ -8,13 +8,13 @@
 //!
 //! let request = PromotionRequest::new(
 //!     DurableReferenceKind::ManualRefinement,
-//!     SubelementKey::new("edge:17").unwrap(),
+//!     SubelementKey::new("row:17").unwrap(),
 //! );
 //! let promoted = lower_graph_promotion_identity_basis(
 //!     request,
-//!     CarryingArtifactIdentity::new("publication:brep:4").unwrap(),
+//!     CarryingArtifactIdentity::new("publication:dataset:4").unwrap(),
 //! );
-//! assert_eq!(promoted.subelement_key().as_str(), "edge:17");
+//! assert_eq!(promoted.subelement_key().as_str(), "row:17");
 //! ```
 
 pub mod facade;

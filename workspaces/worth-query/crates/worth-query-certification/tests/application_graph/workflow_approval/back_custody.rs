@@ -24,9 +24,9 @@ fn back_is_refused_while_an_approval_awaits_its_receipted_operation() {
         runtime
             .request(&principal, &scope)
             .mutate(
-                super::super::bounded_dimension_model::workflow::WorkflowAdvanceIntent {
-                    input: super::super::bounded_dimension_model::workflow::WorkflowAdvanceInput {
-                        part_identity: PART_IDENTITY.to_owned(),
+                super::super::document_retention_model::workflow::WorkflowAdvanceIntent {
+                    input: super::super::document_retention_model::workflow::WorkflowAdvanceInput {
+                        document_identity: DOCUMENT_IDENTITY.to_owned(),
                     },
                 },
             )
@@ -61,10 +61,10 @@ fn back_is_refused_while_an_approval_awaits_its_receipted_operation() {
     let effect = runtime
         .request(&principal, &scope)
         .on_branch(instance.branch())
-        .mutate(ReviewedSetPartDimensionIntent {
-            input: super::super::bounded_dimension_model::schema::SetPartDimensionInput {
-                identity: PART_IDENTITY.to_owned(),
-                dimension: 8,
+        .mutate(ReviewedSetRetentionIntent {
+            input: super::super::document_retention_model::schema::SetRetentionInput {
+                identity: DOCUMENT_IDENTITY.to_owned(),
+                retention_days: 8,
             },
         })
         .without_source()

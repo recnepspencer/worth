@@ -2,21 +2,21 @@
 
 > **Status:** Closed
 >
-> **Roadmap parent:** [worth_store_roadmap.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/worth_store_roadmap.md)
+> **Roadmap parent:** `worth_store_roadmap.md`
 >
-> **Vision parent:** [worth_store_vision.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/worth_store_vision.md)
+> **Vision parent:** [worth_store_vision.md](./worth_store_vision.md)
 >
-> **Test requirements:** [test-requirements.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/test-requirements.md)
+> **Test requirements:** [test-requirements.md](./test-requirements.md)
 >
 > **Prerequisite milestones:**
-> - [milestone-1.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-1.md)
-> - [milestone-1-closeout.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-1-closeout.md)
-> - [milestone-2.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-2.md)
-> - [milestone-2-closeout.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-2-closeout.md)
-> - [milestone-3.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-3.md)
-> - [milestone-3-closeout.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-3-closeout.md)
+> - [milestone-1.md](./milestone-1.md)
+> - [milestone-1-closeout.md](./milestone-1-closeout.md)
+> - [milestone-2.md](./milestone-2.md)
+> - [milestone-2-closeout.md](./milestone-2-closeout.md)
+> - [milestone-3.md](./milestone-3.md)
+> - [milestone-3-closeout.md](./milestone-3-closeout.md)
 >
-> **Impacted later milestone:** [milestone-4.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-4.md)
+> **Impacted later milestone:** [milestone-4.md](./milestone-4.md)
 >
 > **Primary architectural driver:** make acknowledged durable truth depend on
 > declared media barriers and typed recovery source precedence instead of

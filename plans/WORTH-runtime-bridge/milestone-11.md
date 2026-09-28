@@ -1,25 +1,25 @@
 # Milestone 11 Engineering Spec: Cross-Runtime Policy Propagation And Clean Configuration Model
 
-> **Status:** Planned engineering spec
+> **Status:** Completed. Closeout: [milestone-11-closeout.md](./milestone-11-closeout.md).
 >
-> **Roadmap parent:** [worth_runtime_bridge_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/worth_runtime_bridge_roadmap.md)
+> **Roadmap parent:** [worth_runtime_bridge_roadmap.md](./WORTH_runtime_bridge_roadmap.md)
 >
-> **Vision parent:** [worth_runtime_bridge_vision.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/worth_runtime_bridge_vision.md)
+> **Vision parent:** [worth_runtime_bridge_vision.md](./WORTH_runtime_bridge_vision.md)
 >
-> **Prior milestone:** [milestone-10.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-10.md)
+> **Prior milestone:** [milestone-10.md](./milestone-10.md)
 >
-> **Bridge certification companion:** [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md)
+> **Bridge certification companion:** [test-requirements.md](./test-requirements.md)
 >
 > **Primary architectural driver:** make cross-runtime policy declaration, admission, lowering, provenance, and rejection first-class bridge protocol surfaces so deterministic-vs-optimized mode, diagnostics/artifact policy, replay allowance, preview policy, and host/runtime policy inputs remain explicit, replay-safe, and request-scoped instead of drifting into ambient runtime state
 >
 > **Companion docs:**
-> - [worth_relational_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/worth_relational_roadmap.md)
-> - [worth_signal_vision.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth_signal/worth_signal_vision.md)
-> - [worth_signals2.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth_signal/worth_signals2.md)
-> - [MENTALITY.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/MENTALITY.md)
-> - [architectural_guidelines.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/architectural_guidelines.md)
-> - [domain_standards.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/domain_standards.md)
-> - [performance_guidelines.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/performance_guidelines.md)
+> - [worth_relational_roadmap.md](../WORTH-relational/WORTH_relational_roadmap.md)
+> - [worth_signal_vision.md](../WORTH_signal/WORTH_signal_vision.md)
+> - [worth_signals2.md](../WORTH_signal/WORTH_signals2.md)
+> - [MENTALITY.md](../../docs/coding-guidelines/MENTALITY.md)
+> - [architectural_guidelines.md](../../docs/coding-guidelines/arch_laws.md)
+> - [domain_standards.md](../../docs/coding-guidelines/domain_structure_laws.md)
+> - [performance_guidelines.md](../../docs/coding-guidelines/perf_laws.md)
 
 ## Summary
 
@@ -345,7 +345,7 @@ In scope for Milestone 11:
 - builder/configuration restructuring where needed so policy surfaces align
   with subsystem boundaries
 - certification satisfying suites 16 through 18 in
-  [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md)
+  [test-requirements.md](./test-requirements.md)
 
 Out of scope for Milestone 11:
 
@@ -883,7 +883,7 @@ Milestone 11 is complete only when the bridge harness can prove:
 - policy admission, lowering, provenance, and replay satisfy the named
   complexity contracts through counter proof tests
 - the Milestone 11 certification suites in
-  [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md)
+  [test-requirements.md](./test-requirements.md)
   pass with canonical machine-checkable bundles
 
 ## Architectural Notes
@@ -903,7 +903,7 @@ as:
 - `builder/policy.rs`
 
 The current single-file
-[policy.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/policy.rs)
+[policy.rs](../../crates/worth-runtime-bridge/src/policy.rs)
 is a valid seed but likely too flat for the completed milestone. The milestone
 should preserve the existing public meaning of `BridgeRuntimePolicy` where
 possible while decomposing responsibilities beneath it.
@@ -972,7 +972,7 @@ These names are illustrative, but the separation is mandatory:
 
 Milestone 11 must follow the same structural testing discipline as earlier
 bridge milestones and must satisfy the Milestone 11 certification suites in
-[test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md).
+[test-requirements.md](./test-requirements.md).
 
 Milestone 11 certification must also obey the Milestone 6+ global certification
 rules from that document, not just the Milestone 11 suite names.

@@ -12,24 +12,24 @@ use worth_query_host::facade::primary_graph::WorthQueryBranchAdoptionPublication
 use worth_query_host::facade::product::WorthQueryProductBranch;
 use worth_query_installation::facade::WorthQueryInstalledApplicationWorkflowSpec;
 
-use crate::bounded_dimension_model::{
-    host::{publish_workflow_on_first_program, BoundedDimensionWorkflowRuntime},
+use crate::document_retention_model::{
+    host::{publish_workflow_on_first_program, DocumentWorkflowRuntime},
     operator_identity::{authenticate_operator, request_scope},
-    programs::DimensionProgramP1,
-    schema::BoundedDimensionSchema,
+    programs::RetentionProgramP1,
+    schema::DocumentRetentionSchema,
     workflow::{
         advance_instance, authoring_intent, install_workflow_spec, start_instance,
-        support_workflow_program, terminal_definition, ReviewedGeometryWorkflow,
+        support_workflow_program, terminal_definition, ReviewedDocumentWorkflow,
     },
 };
 
 type InstalledSpec =
-    WorthQueryInstalledApplicationWorkflowSpec<BoundedDimensionSchema, ReviewedGeometryWorkflow>;
+    WorthQueryInstalledApplicationWorkflowSpec<DocumentRetentionSchema, ReviewedDocumentWorkflow>;
 
 #[test]
 fn an_adopted_branch_runs_workflows_through_its_new_program_vocabulary() {
     let mut application = publish_workflow_on_first_program();
-    support_workflow_program::<DimensionProgramP1>(&mut application);
+    support_workflow_program::<RetentionProgramP1>(&mut application);
     let main = application.current_world();
     let initial = application.workflow_spec().program_revision();
     assert_eq!(
@@ -74,7 +74,7 @@ fn an_adopted_branch_runs_workflows_through_its_new_program_vocabulary() {
 #[test]
 fn a_sibling_keeps_its_program_vocabulary_after_its_parent_adopts() {
     let mut application = publish_workflow_on_first_program();
-    support_workflow_program::<DimensionProgramP1>(&mut application);
+    support_workflow_program::<RetentionProgramP1>(&mut application);
     let main = application.current_world();
     let sibling = fork_sibling(&application, main);
     adopt_second_program(&application, main);
@@ -108,7 +108,7 @@ fn an_adopted_branch_without_its_program_vocabulary_refuses_workflow_work() {
 
     // The refusal claimed nothing: once P1's vocabulary is supported, the
     // same key publishes through it.
-    support_workflow_program::<DimensionProgramP1>(&mut application);
+    support_workflow_program::<RetentionProgramP1>(&mut application);
     expect_published(publish(&application, main, "unserved", 84_150));
 }
 
@@ -140,12 +140,12 @@ fn sibling_workflow_lineages_stay_on_their_own_branch() {
 #[test]
 fn a_supported_vocabulary_names_one_rostered_program_once() {
     let mut application = publish_workflow_on_first_program();
-    support_workflow_program::<DimensionProgramP1>(&mut application);
+    support_workflow_program::<RetentionProgramP1>(&mut application);
 
     let duplicate = install_workflow_spec(
         application.installed_schema(),
         application
-            .supported_program::<DimensionProgramP1>()
+            .supported_program::<RetentionProgramP1>()
             .expect("P1 is rostered")
             .installed_program(),
         application.workflow_spec().resources(),
@@ -185,7 +185,7 @@ fn a_retired_program_accepts_no_workflow_vocabulary() {
     let late = install_workflow_spec(
         application.installed_schema(),
         application
-            .supported_program::<DimensionProgramP1>()
+            .supported_program::<RetentionProgramP1>()
             .expect("P1 is rostered")
             .installed_program(),
         application.workflow_spec().resources(),
@@ -198,18 +198,18 @@ fn a_retired_program_accepts_no_workflow_vocabulary() {
 }
 
 fn second_revision(
-    application: &BoundedDimensionWorkflowRuntime,
+    application: &DocumentWorkflowRuntime,
 ) -> &worth_query_host::facade::declaration::application_program::ApplicationProgramRevision {
     application
-        .supported_program::<DimensionProgramP1>()
+        .supported_program::<RetentionProgramP1>()
         .expect("P1 is rostered")
         .installed_program()
         .revision()
 }
 
-fn retire_second_program(application: &BoundedDimensionWorkflowRuntime) {
+fn retire_second_program(application: &DocumentWorkflowRuntime) {
     let revision = *application
-        .supported_program::<DimensionProgramP1>()
+        .supported_program::<RetentionProgramP1>()
         .expect("P1 is rostered")
         .installed_program()
         .revision();
@@ -219,7 +219,7 @@ fn retire_second_program(application: &BoundedDimensionWorkflowRuntime) {
 }
 
 fn fork_sibling(
-    application: &BoundedDimensionWorkflowRuntime,
+    application: &DocumentWorkflowRuntime,
     parent: WorthQueryProductBranch,
 ) -> WorthQueryProductBranch {
     application
@@ -231,12 +231,9 @@ fn fork_sibling(
         .expect("the sibling branch publishes")
 }
 
-fn adopt_second_program(
-    application: &BoundedDimensionWorkflowRuntime,
-    branch: WorthQueryProductBranch,
-) {
+fn adopt_second_program(application: &DocumentWorkflowRuntime, branch: WorthQueryProductBranch) {
     let target = *application
-        .supported_program::<DimensionProgramP1>()
+        .supported_program::<RetentionProgramP1>()
         .expect("P1 is rostered")
         .installed_program()
         .revision();
@@ -260,7 +257,7 @@ fn adopt_second_program(
 
 /// Publishes a definition bound to the vocabulary `branch` currently runs.
 fn publish(
-    application: &BoundedDimensionWorkflowRuntime,
+    application: &DocumentWorkflowRuntime,
     branch: WorthQueryProductBranch,
     terminal: &str,
     idempotency: u64,
@@ -276,7 +273,7 @@ fn publish(
 /// Publishes a definition bound to `spec` on `branch`, whichever program the
 /// branch runs.
 fn publish_bound(
-    application: &BoundedDimensionWorkflowRuntime,
+    application: &DocumentWorkflowRuntime,
     spec: &InstalledSpec,
     branch: WorthQueryProductBranch,
     terminal: &str,

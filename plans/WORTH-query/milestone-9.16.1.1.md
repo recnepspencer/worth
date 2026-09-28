@@ -1,6 +1,6 @@
 # Milestone 9.16.1.1: Installed Graph Contract Integrity Repair
 
-> **Status:** Closed on 2026-08-23 — required predecessor for Milestone 9.16.2
+> **Status:** Completed.
 >
 > **Historical posture:** Milestone 9.16.1 remains historical. This corrective
 > sub-milestone repairs the current installed application-operation contract;

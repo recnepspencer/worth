@@ -2,15 +2,15 @@
 
 > **Status:** Planned hardening companion spec
 >
-> **Roadmap parent:** [worth_runtime_bridge_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/worth_runtime_bridge_roadmap.md)
+> **Roadmap parent:** [worth_runtime_bridge_roadmap.md](./WORTH_runtime_bridge_roadmap.md)
 >
-> **Primary milestone:** [milestone-2.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-2.md)
+> **Primary milestone:** [milestone-2.md](./milestone-2.md)
 >
-> **Prior milestone:** [milestone-1.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-1.md)
+> **Prior milestone:** [milestone-1.md](./milestone-1.md)
 >
-> **Prior closeout:** [milestone-1-closeout.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-1-closeout.md)
+> **Prior closeout:** [milestone-1-closeout.md](./milestone-1-closeout.md)
 >
-> **Companion crate reference:** [worth-relational facade bridge export](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/facade.rs)
+> **Companion crate reference:** [worth-relational facade bridge export](../../crates/worth-relational/src/facade.rs)
 >
 > **Primary architectural driver:** make bridge envelope ingress, route planning, and lowering as proof-carrying and authority-shaped as the rest of WORTH
 

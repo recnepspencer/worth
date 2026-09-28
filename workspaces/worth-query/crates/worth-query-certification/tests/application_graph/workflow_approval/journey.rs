@@ -4,7 +4,7 @@ pub(super) fn approval_journey(
     completion: &str,
     key: u64,
 ) -> (
-    BoundedDimensionWorkflowRuntime,
+    DocumentWorkflowRuntime,
     PublishedWorkflowDefinitionRef,
     PublishedWorkflowInstanceRef,
     PublishedWorkflowProposalRef,
@@ -12,10 +12,10 @@ pub(super) fn approval_journey(
     Vec<worth_relational::facade::identity::EntityId>,
 ) {
     let application =
-        super::super::bounded_dimension_model::host::publish_workflow_on_first_program();
+        super::super::document_retention_model::host::publish_workflow_on_first_program();
     let definition = match publish_definition(
         &application,
-        reviewed_geometry_definition(completion),
+        reviewed_document_definition(completion),
         WorkflowDefinitionExpectedPredecessor::Absent,
         key,
     )
@@ -44,7 +44,7 @@ pub(super) fn approval_journey(
 /// Proposes, collects both assessments and joins them, leaving `instance`
 /// awaiting its approval on its own branch. Uses keys `key + 2..=key + 8`.
 pub(super) fn approval_requirement(
-    application: &BoundedDimensionWorkflowRuntime,
+    application: &DocumentWorkflowRuntime,
     instance: PublishedWorkflowInstanceRef,
     key: u64,
 ) -> (

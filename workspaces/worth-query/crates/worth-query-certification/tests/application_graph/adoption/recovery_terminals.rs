@@ -16,16 +16,16 @@ use worth_query_host::facade::primary_graph::{
     WorthQueryBranchAdoptionRecoveryDenial,
 };
 
-use crate::bounded_dimension_model::host::publish_on_first_program;
-use crate::bounded_dimension_model::operator_identity::{authenticate_operator, request_scope};
-use crate::bounded_dimension_model::programs::DimensionProgramP1;
+use crate::document_retention_model::host::publish_on_first_program;
+use crate::document_retention_model::operator_identity::{authenticate_operator, request_scope};
+use crate::document_retention_model::programs::RetentionProgramP1;
 
 #[test]
 fn cancellation_after_settled_adoption_hands_off_next_custody_and_prior_cleanup() {
     let host = publish_on_first_program();
     let branch = host.current_world();
     let target = *host
-        .supported_program::<DimensionProgramP1>()
+        .supported_program::<RetentionProgramP1>()
         .expect("P1 is rostered")
         .owned_revision();
     let cancellation = WorthQueryCancellationSource::new();
@@ -103,7 +103,7 @@ fn unavailable_settlement_evidence_returns_the_same_recovery_for_retry() {
     let host = publish_on_first_program();
     let branch = host.current_world();
     let target = *host
-        .supported_program::<DimensionProgramP1>()
+        .supported_program::<RetentionProgramP1>()
         .expect("P1 is rostered")
         .owned_revision();
     let scope = request_scope();

@@ -1,8 +1,12 @@
 use worth_relational::facade::history::BranchId;
 
+/// How a committed receipt became observable to this caller.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationCommitTerminalKind {
+    /// This attempt ran the commit and observed its landing directly.
     Executed,
+    /// The receipt was rebuilt from the committed record rather than from this
+    /// attempt's own execution, for example on an idempotent replay.
     Recovered,
 }
 

@@ -13,17 +13,17 @@ use worth_query_package_archive::facade::{
     WorthQueryWorkflowDefinitionDraftDenialKind as DraftDenial,
 };
 
-use super::bounded_dimension_model::{
-    host::{publish_workflow_on_first_program, BoundedDimensionWorkflowRuntime},
+use super::document_retention_model::{
+    host::{publish_workflow_on_first_program, DocumentWorkflowRuntime},
     workflow::{
         approval_retry_definition, bounded_retry_definition, condition_terminal_definition,
         conditionally_required_related_assessment_definition, publish_definition,
-        reviewed_geometry_definition, start_instance, ReviewedGeometryWorkflow,
+        reviewed_document_definition, start_instance, ReviewedDocumentWorkflow,
     },
 };
 use super::workflow_component_scale::component_definition;
 
-type Definition = ValidatedWorkflowDefinition<ReviewedGeometryWorkflow>;
+type Definition = ValidatedWorkflowDefinition<ReviewedDocumentWorkflow>;
 
 #[test]
 fn every_definition_shape_round_trips_to_the_same_content_identity() {
@@ -32,7 +32,7 @@ fn every_definition_shape_round_trips_to_the_same_content_identity() {
         .validate()
         .expect("the component definition is valid");
     for definition in [
-        reviewed_geometry_definition("applied"),
+        reviewed_document_definition("applied"),
         approval_retry_definition(),
         condition_terminal_definition(),
         bounded_retry_definition(),
@@ -60,7 +60,7 @@ fn every_definition_shape_round_trips_to_the_same_content_identity() {
 #[test]
 fn a_rebuilt_draft_publishes_and_starts_like_the_typed_original() {
     let application = publish_workflow_on_first_program();
-    let bytes = encode(&reviewed_geometry_definition("applied"));
+    let bytes = encode(&reviewed_document_definition("applied"));
     let rebuilt = round_trip(&application, &bytes);
     let published = match publish_definition(
         &application,
@@ -81,7 +81,7 @@ fn a_rebuilt_draft_publishes_and_starts_like_the_typed_original() {
 #[test]
 fn drafts_naming_foreign_or_changed_vocabulary_are_refused_by_node() {
     let application = publish_workflow_on_first_program();
-    let definition = reviewed_geometry_definition("applied");
+    let definition = reviewed_document_definition("applied");
     let bytes = encode(&definition);
     let (identifier, input_type) = definition
         .nodes()
@@ -97,7 +97,7 @@ fn drafts_naming_foreign_or_changed_vocabulary_are_refused_by_node() {
 
     let foreign = retext(
         &bytes,
-        <ReviewedGeometryWorkflow as worth_query_host::facade::declaration::application_program::ApplicationWorkflowSpec>::IDENTITY.as_str(),
+        <ReviewedDocumentWorkflow as worth_query_host::facade::declaration::application_program::ApplicationWorkflowSpec>::IDENTITY.as_str(),
         "worth.query.certification.foreign-workflow.v1",
     );
     assert_eq!(refusal(&application, &foreign), DraftDenial::ForeignSpec);
@@ -112,7 +112,7 @@ fn drafts_naming_foreign_or_changed_vocabulary_are_refused_by_node() {
 #[test]
 fn drafts_naming_another_binding_or_capability_are_refused() {
     let application = publish_workflow_on_first_program();
-    let definition = reviewed_geometry_definition("applied");
+    let definition = reviewed_document_definition("applied");
     let bytes = encode(&definition);
     let binding = definition
         .nodes()
@@ -174,7 +174,7 @@ fn a_relation_the_schema_does_not_declare_is_refused() {
 #[test]
 fn authoring_refuses_invalid_identities_and_validation_refuses_open_graphs() {
     let application = publish_workflow_on_first_program();
-    let definition = reviewed_geometry_definition("applied");
+    let definition = reviewed_document_definition("applied");
     let bytes = encode(&definition);
     let start = definition.start().as_str();
 
@@ -203,7 +203,7 @@ fn decode(bytes: &[u8]) -> WorthQueryUntrustedWorkflowDefinitionDraft {
         .expect("the draft bytes are well formed")
 }
 
-fn round_trip(application: &BoundedDimensionWorkflowRuntime, bytes: &[u8]) -> Definition {
+fn round_trip(application: &DocumentWorkflowRuntime, bytes: &[u8]) -> Definition {
     decode(bytes)
         .author(application.workflow_spec())
         .expect("the draft authors against installed vocabulary")
@@ -211,7 +211,7 @@ fn round_trip(application: &BoundedDimensionWorkflowRuntime, bytes: &[u8]) -> De
         .expect("the authored draft is valid")
 }
 
-fn refusal(application: &BoundedDimensionWorkflowRuntime, bytes: &[u8]) -> DraftDenial {
+fn refusal(application: &DocumentWorkflowRuntime, bytes: &[u8]) -> DraftDenial {
     match decode(bytes).author(application.workflow_spec()) {
         Ok(_) => panic!("the draft must not author against installed vocabulary"),
         Err(denial) => denial.kind(),

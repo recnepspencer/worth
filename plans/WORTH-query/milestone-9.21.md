@@ -1,5 +1,7 @@
 # Milestone 9.21: Governed Decision Attachments And Summaries
 
+> **Status:** Not started.
+
 ## Goal
 
 Attach domain decisions and structural evidence to exact executions under

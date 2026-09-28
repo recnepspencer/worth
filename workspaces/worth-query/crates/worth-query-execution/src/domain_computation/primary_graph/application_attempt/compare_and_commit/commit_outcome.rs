@@ -53,6 +53,11 @@ pub use settlement_deferred::{
     WorthQueryApplicationSettlementDeferred, WorthQueryApplicationSettlementNextAction,
 };
 
+/// Evidence that a commit attempt was stale: the branch moved after the basis the
+/// candidate was built on, so nothing was committed.
+///
+/// Re-read from a fresh basis and retry with a fresh source. The runtime never
+/// retries or rebases for you.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationStaleAttempt {
     stale_fact_count: usize,
@@ -75,20 +80,48 @@ pub use denial::{
     WorthQueryApplicationCommitDenialStage,
 };
 
+/// Every way an application compare-and-commit can end.
+///
+/// `Committed` and `AlreadyCommitted` landed and carry the receipt. Every other
+/// variant did not land cleanly; see [`landed`](Self::landed) to split the two
+/// sides. Some of those variants did move the branch: `SettlementDeferred` is
+/// performed but not settled, and `Indeterminate` is unresolved, not failed.
+/// Neither calls for a blind retry.
 #[derive(Debug)]
 pub enum WorthQueryApplicationCommitOutcome {
+    /// The product branch moved after the attempt's basis. Nothing was committed;
+    /// re-read and retry.
     ProductStale(crate::domain_computation::WorthQueryProductStaleApplication),
+    /// Some component owners moved, but the product head did not. Recover the
+    /// product publication.
     ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
+    /// Nothing was written. The cause says why.
     NoEffect(WorthQueryApplicationNoEffect),
+    /// This attempt committed; the receipt says what landed.
     Committed(super::WorthQueryApplicationCommitReceipt),
+    /// The idempotency key had already committed the same intent; the receipt is
+    /// the earlier commit's, and the change was not made again.
     AlreadyCommitted(super::WorthQueryApplicationCommitReceipt),
+    /// The candidate's basis was stale at compare. Nothing was committed; re-read and
+    /// retry.
     Stale(WorthQueryApplicationStaleAttempt),
+    /// The attempt was cancelled before it landed.
     Cancelled,
+    /// The attempt reached its deadline before it landed.
     TimedOut,
+    /// The commit was refused before publication, with a typed kind and stage.
     Denied(WorthQueryApplicationCommitDenial),
+    /// The commit's answer was lost, and a re-read through the idempotency key found
+    /// that it never landed.
     Aborted,
+    /// A capacity or lifetime limit stopped the attempt before it landed. Retry
+    /// later.
     Deferred(WorthQueryApplicationCommitDeferred),
+    /// The branch moved, but durability or publication did not finish. Recover the
+    /// settlement; do not redo the change.
     SettlementDeferred(WorthQueryApplicationSettlementDeferred),
+    /// Whether the commit landed is unresolved. Recover in the direction the
+    /// evidence names.
     Indeterminate(WorthQueryApplicationUnresolvedCommitEvidence),
 }
 

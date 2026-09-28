@@ -63,9 +63,12 @@ pub struct WorthQueryGranularInvalidationDeliveryBatch {
     source_read_basis: Option<WorthQueryGranularSourceReadBasis>,
 }
 
+/// Why two granular invalidation batches could not be merged.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum WorthQueryGranularTransportMergeDenial {
+    /// The batches come from different installations.
     ForeignInstallation,
+    /// The batches were observed against different source read bases.
     SourceReadBasisMismatch,
 }
 

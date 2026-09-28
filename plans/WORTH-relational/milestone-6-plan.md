@@ -1,5 +1,7 @@
 # Milestone 6 Engineering Spec: Lineage and Correspondence Completion
 
+> **Status:** Completed. Closeout: [milestone-6-closeout.md](./milestone-6-closeout.md).
+
 ## Summary
 
 Milestone 6 makes identity evolution truth-grade. The runtime must move from

@@ -6,11 +6,11 @@
 >
 > **Lifecycle prerequisite:** [controller_scope_and_graph_lifecycle_plan.md](./controller_scope_and_graph_lifecycle_plan.md)
 >
-> **Core vision:** [plans/worth_signal/worth_signal_vision.md](../../../plans/worth_signal/worth_signal_vision.md)
+> **Core vision:** [plans/worth_signal/worth_signal_vision.md](../WORTH_signal/WORTH_signal_vision.md)
 >
-> **Core DX reference:** [plans/worth_signal/dx_plan.md](../../../plans/worth_signal/dx_plan.md)
+> **Core DX reference:** [plans/worth_signal/dx_plan.md](../WORTH_signal/dx_plan.md)
 >
-> **Core test requirements:** [plans/worth_signal/test-requirements.md](../../../plans/worth_signal/test-requirements.md)
+> **Core test requirements:** [plans/worth_signal/test-requirements.md](../WORTH_signal/test-requirements.md)
 
 ## Goal
 

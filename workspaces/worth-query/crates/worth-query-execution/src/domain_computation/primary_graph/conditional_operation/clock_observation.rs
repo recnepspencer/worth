@@ -12,13 +12,21 @@ pub(in crate::domain_computation::primary_graph) use erased::{
     ErasedClockObservationOutcome, ErasedClockObservationReceipt,
 };
 
+/// Why a clock observation port could not be opened.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryConditionalClockObservationDenialKind {
+    /// The clock handle is not installed in this runtime.
     ForeignRuntime,
+    /// The clock handle's binding is not installed.
     BindingNotInstalled,
+    /// The conditional binding could not be admitted on the selected product.
     ProductAdmission(super::installation::WorthQueryConditionalRuntimeInstallationDenialKind),
 }
 
+/// Refusal to open a clock observation port for a conditional operation.
+///
+/// No clock reading was taken. [`Self::kind`] says why and [`Self::subject`]
+/// names the binding.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryConditionalClockObservationDenial {
     kind: WorthQueryConditionalClockObservationDenialKind,
@@ -45,18 +53,28 @@ impl WorthQueryConditionalClockObservationDenial {
     }
 }
 
+/// Why a clock observation failed.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryConditionalClockObservationFailureKind {
+    /// The clock source was unavailable.
     SourceUnavailable,
+    /// The clock source failed to produce a reading.
     ObservationFailed,
+    /// The clock source panicked.
     SourcePanicked,
+    /// The runtime rejected the reading or could not process it.
     RuntimeRejected,
+    /// The installed limit on concurrently active snapshots was reached.
     ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
+    /// No capacity remains to retain a basis.
     RetentionCapacityExhausted,
+    /// The runtime ran out of basis-retention identities.
     RetentionIdentityExhausted,
+    /// The runtime ran out of snapshot identities.
     SnapshotIdentityExhausted,
 }
 
+/// A clock observation that failed, with its kind and a detail message.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryConditionalClockObservationFailure {
     kind: WorthQueryConditionalClockObservationFailureKind,
@@ -73,6 +91,12 @@ impl WorthQueryConditionalClockObservationFailure {
     }
 }
 
+/// Record of one accepted clock reading and what it caused.
+///
+/// Reports the observed time, the wakes that came due, how many were retained
+/// and in which state, how many operations committed, failed, or ended
+/// indeterminate, any capacity backpressure, and per-wake provenance. It is
+/// descriptive and grants nothing.
 pub struct WorthQueryConditionalClockObservationReceipt<Clock> {
     granular_invalidation_installation:
         crate::domain_computation::primary_graph::WorthQueryGranularInvalidationInstallation,
@@ -191,15 +215,27 @@ impl<Clock> WorthQueryConditionalClockObservationReceipt<Clock> {
     }
 }
 
+/// The result of one clock observation.
 pub enum WorthQueryConditionalClockObservationOutcome<Clock> {
+    /// The reading was accepted and processed.
     Accepted(WorthQueryConditionalClockObservationReceipt<Clock>),
+    /// The reading repeats one already accepted; the receipt describes it.
     Duplicate(WorthQueryConditionalClockObservationReceipt<Clock>),
+    /// The reading is older than one already accepted; nothing was processed.
     Stale,
+    /// The reading arrived out of order; nothing was processed.
     Reordered,
+    /// The clock binding or source is closed.
     Closed,
+    /// The observation failed.
     Failed(WorthQueryConditionalClockObservationFailure),
 }
 
+/// A port for feeding clock readings to one installed conditional operation.
+///
+/// Open it with `conditional_clock` on a selected product. Each `observe`
+/// reads the clock, processes any wakes that came due, and re-enters their
+/// operations through fresh admission.
 pub struct WorthQueryConditionalClockObservationPort<'runtime, Schema, Node, Clock> {
     runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     operation: WorthQueryConditionalOperationCell<Schema>,

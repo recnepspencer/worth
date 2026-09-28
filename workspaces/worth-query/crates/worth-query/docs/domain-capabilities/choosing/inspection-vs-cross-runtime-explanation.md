@@ -1,5 +1,7 @@
 # Inspection Vs Cross-Runtime Explanation
 
+> **Internal engine surface.** This page documents `WorthQueryWorkspace` (`worth_query::facade`), the engine surface that `worth-ui-query-binding` uses. Application code uses `worth-query-decl` and `worth-query-host`; start with the [application front door](../../foundations/ordinary-application-front-door.md).
+
 ## What This Page Helps You Choose
 
 Use when you need **evidence or explanation** after a run and are mixing up `workspace.inspections()?.inspect`, `CausalInspection`, and **explanation contributions**.

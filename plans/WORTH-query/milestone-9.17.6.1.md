@@ -1,11 +1,6 @@
 # Milestone 9.17.6.1: Shared Typed Expression Language
 
-> **Status:** Planned. Cross-runtime foundation after the workflow kernel in
-> [9.17.6](./milestone-9.17.6.md); required substrate for
-> [Worth UI 3.17](../worth-ui/worth_ui_roadmap.md#milestone-317-dsl-expressions-conditions-and-semantic-evaluation).
-> This document governs language semantics, portable evaluation, Query adoption,
-> and the shared-language portion of UI 3.17. It does not declare either milestone
-> implemented. Existing completed phases remain historical.
+> **Status:** Not started.
 
 ## Goal And Placement
 

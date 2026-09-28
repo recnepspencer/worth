@@ -418,7 +418,7 @@ Should not define the public product boundary:
 - runtime backdoors
 
 That includes the cleanup calls already made in
-[`dx_boundary_cleanup_list.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_boundary_cleanup_list.md).
+[`dx_boundary_cleanup_list.md`](./dx_boundary_cleanup_list.md).
 
 ---
 
@@ -457,7 +457,7 @@ Its job is:
 
 - to be the obvious construction entry
 - to reduce setup ambiguity
-- to give agents and humans a stable â€œstart hereâ€ anchor
+- to give agents and humans a stable “start here” anchor
 
 Its job is not:
 
@@ -489,7 +489,7 @@ Bad direction:
 
 - names that only make sense after reading internal architecture
 - public seams that expose empty wrappers
-- helper names that imply â€œofficial laneâ€ without actually being one
+- helper names that imply “official lane” without actually being one
 
 Specific direction from this pass:
 

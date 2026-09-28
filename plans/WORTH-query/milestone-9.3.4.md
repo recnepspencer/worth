@@ -1,6 +1,6 @@
 # Milestone 9.3.4 Engineering Spec: Declared Projection Consumption And Materialized Fact Receipts
 
-> **Status:** Draft
+> **Status:** Completed.
 >
 > **Roadmap parent:** [worth_query_roadmap.md](./worth_query_roadmap.md)
 >
@@ -617,7 +617,7 @@ The exact names may differ, but the mechanism is load-bearing:
 
 - the evaluator used by admission must be the evaluator used to generate the
   support matrix
-- support rows must be emitted by iterating source families Ã— fact families
+- support rows must be emitted by iterating source families × fact families
   through these evaluators
 - support output may cache or materialize results, but it must not invent a
   second semantic decision table

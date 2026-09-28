@@ -37,11 +37,11 @@ This is an inventory, not a promise that all of it should stay public.
 ## Live Code Scan Snapshot
 
 This inventory is anchored to the live code in
-[`facade.rs`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/facade.rs),
+[`facade.rs`](../../crates/worth-relational/src/facade.rs),
 not just older docs.
 
 The full symbol-level reference now lives in
-[`dx_export_exhaustive_audit.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_export_exhaustive_audit.md).
+[`dx_export_exhaustive_audit.md`](./dx_export_exhaustive_audit.md).
 
 Current public facade module count:
 
@@ -95,7 +95,7 @@ few things are now clearer.
 
 ### 1. The Crate Boundary Is Still Real
 
-From [`lib.rs`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/lib.rs),
+From [`lib.rs`](../../crates/worth-relational/src/lib.rs),
 the only root public module is:
 
 - `facade`
@@ -246,7 +246,7 @@ They mean:
 
 ## Root Public Entry
 
-From [`lib.rs`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/lib.rs):
+From [`lib.rs`](../../crates/worth-relational/src/lib.rs):
 
 - `worth_relational::facade`
 
@@ -257,7 +257,7 @@ stories. The cleanup problem is inside the facade, not at the crate root.
 
 Also relevant:
 
-- [`RelationalRuntimeApi`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/presentation/api.rs)
+- [`RelationalRuntimeApi`](../../crates/worth-relational/src/presentation/api.rs)
   - `builder()`
 
 Quick take:
@@ -271,7 +271,7 @@ Quick take:
 
 ## Big Picture
 
-Current facade modules from [`facade.rs`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/facade.rs):
+Current facade modules from [`facade.rs`](../../crates/worth-relational/src/facade.rs):
 
 - `config`
 - `commit_strategies`

@@ -20,6 +20,13 @@ use crate::domain_computation::application_contract_admission::{
 };
 use crate::domain_computation::authorization::WorthQueryElevationCloseBinding;
 
+/// The exact effect program that closes one approved elevation, ready to commit
+/// through the elevation close lane.
+///
+/// Built by a projected read set's `materialize_elevation_close_program`, which
+/// derives the close effects from the elevation binding and checks the read
+/// facts, rather than taking effects from the caller. Commit it with
+/// `compare_and_commit_elevation_close`.
 pub struct WorthQueryElevationCloseProgram<Schema, Operation, Input, Scope> {
     program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
 }

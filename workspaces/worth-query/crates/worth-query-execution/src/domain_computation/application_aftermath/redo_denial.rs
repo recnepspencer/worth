@@ -5,11 +5,13 @@
 pub enum WorthQueryRedoDenialKind {
     /// Binding or intent is stale against current truth.
     Stale,
-    ActiveSnapshotCapacityExhausted {
-        maximum_active_snapshots: usize,
-    },
+    /// The installed limit on concurrently active snapshots was reached.
+    ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
+    /// No capacity remains to retain the basis the redo needs.
     RetentionCapacityExhausted,
+    /// The runtime ran out of basis-retention identities.
     RetentionIdentityExhausted,
+    /// The runtime ran out of snapshot identities.
     SnapshotIdentityExhausted,
     /// Fresh capability/policy admission denied — proved undo is not current authority.
     NewlyUnauthorized,
@@ -27,6 +29,12 @@ pub enum WorthQueryRedoDenialKind {
     Conflicted,
 }
 
+/// Refusal to admit or progress a redo of a proved undo.
+///
+/// Returned by redo admission, progression, and continuation closing. A denial
+/// from admission or progression means the redo never reached the mutation
+/// lane. Read [`Self::kind`] for the exact cause; a redo is always admitted
+/// afresh against current truth.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryRedoDenial {
     kind: WorthQueryRedoDenialKind,

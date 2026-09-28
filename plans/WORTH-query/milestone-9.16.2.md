@@ -1,7 +1,6 @@
 # Milestone 9.16.2: Portable Query Packages And Fresh Readmission
 
-> **Status:** In progress — Phases 1 and 2 are committed; Phases 3 and 4 close
-> this milestone before Milestone 9.17.1 begins.
+> **Status:** Completed.
 >
 > **Product posture:** This milestone carries exact Query package meaning
 > across process, build, and storage boundaries. It does not persist application

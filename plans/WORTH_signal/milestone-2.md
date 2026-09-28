@@ -5,14 +5,14 @@
 > **Roadmap parent:** [performance.md](./performance.md)
 >
 > **Related implementation surfaces:**
-> - [trace.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/trace.rs)
-> - [effect.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/graph/runtime/effect.rs)
-> - [artifacts.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/graph/diagnostics_access/artifacts.rs)
-> - [recorder.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/diagnostics/runtime/recorder.rs)
-> - [resolver.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/explain/resolver.rs)
-> - [performance.md](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth_signal/performance.md)
-> - [milestone-3.md](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth_signal/milestone-3.md)
-> - [milestone-2-field-classification.md](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth_signal/milestone-2-field-classification.md)
+> - [trace.rs](../../crates/worth-signal/src/data/trace.rs)
+> - [effect.rs](../../crates/worth-signal/src/data/graph/runtime/effect.rs)
+> - [artifacts.rs](../../crates/worth-signal/src/data/graph/diagnostics_access/artifacts.rs)
+> - [recorder.rs](../../crates/worth-signal/src/diagnostics/runtime/recorder.rs)
+> - [resolver.rs](../../crates/worth-signal/src/logic/explain/resolver.rs)
+> - [performance.md](./performance.md)
+> - [milestone-3.md](./milestone-3.md)
+> - [milestone-2-field-classification.md](./milestone-2-field-classification.md)
 
 ## Goal
 

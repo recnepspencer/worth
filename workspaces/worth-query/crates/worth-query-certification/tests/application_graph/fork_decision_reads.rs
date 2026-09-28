@@ -8,10 +8,10 @@
 use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome;
 use worth_query_host::facade::product::WorthQueryProductBranch;
 
-use super::bounded_dimension_model::{
-    host::{publish_workflow_on_first_program, BoundedDimensionWorkflowRuntime, SEED_DIMENSION},
-    presented_request::set_dimension,
-    settled_verdict::{settle, DimensionVerdict},
+use super::document_retention_model::{
+    host::{publish_workflow_on_first_program, DocumentWorkflowRuntime, SEED_RETENTION},
+    presented_request::set_retention,
+    settled_verdict::{settle, RetentionVerdict},
     workflow::{link_review_requirement_on, unlink_review_requirement_on, ReviewRequirementDenial},
 };
 
@@ -87,7 +87,7 @@ fn a_parent_does_not_observe_a_relation_its_fork_added() {
 }
 
 fn fork_of(
-    application: &BoundedDimensionWorkflowRuntime,
+    application: &DocumentWorkflowRuntime,
     branch: WorthQueryProductBranch,
 ) -> WorthQueryProductBranch {
     application
@@ -102,17 +102,17 @@ fn fork_of(
 /// Commits an unrelated edit so the branch reads at a version newer than every
 /// write its sibling has made.
 fn advance_past_sibling(
-    application: &BoundedDimensionWorkflowRuntime,
+    application: &DocumentWorkflowRuntime,
     branch: WorthQueryProductBranch,
     idempotency: u64,
 ) {
     assert_eq!(
-        settle(set_dimension(
+        settle(set_retention(
             application.program_runtime(),
             branch,
-            SEED_DIMENSION + 1,
+            SEED_RETENTION + 1,
             idempotency,
         )),
-        DimensionVerdict::Performed(SEED_DIMENSION + 1),
+        RetentionVerdict::Performed(SEED_RETENTION + 1),
     );
 }

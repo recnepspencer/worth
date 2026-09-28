@@ -63,9 +63,9 @@ The direct closeout gates are:
 
 - [api_surface_plan.md](./api_surface_plan.md)
 - [test-requirements.md](./test-requirements.md)
-- [resource.runtime.test.mjs](../crates/worth-signal-wasm/package/product/resource.runtime.test.mjs)
-- [resource_surface_usage.ts](../crates/worth-signal-wasm/package/resource_types_smoke/resource_surface_usage.ts)
-- [resource_authoring_denials.ts](../crates/worth-signal-wasm/package/resource_types_smoke/resource_authoring_denials.ts)
+- [resource.runtime.test.mjs](../../crates/worth-signal-wasm/package/product/resource.runtime.test.mjs)
+- [resource_surface_usage.ts](../../crates/worth-signal-wasm/package/resource_types_smoke/resource_surface_usage.ts)
+- `resource_authoring_denials.ts`
 
 Those five surfaces matter together:
 
@@ -80,48 +80,48 @@ Those five surfaces matter together:
 
 Resource product surface and family model:
 
-- [package-src/product/signals.ts](../crates/worth-signal-wasm/package-src/product/signals.ts)
-- [package-src/product/resource/facade.ts](../crates/worth-signal-wasm/package-src/product/resource/facade.ts)
-- [package-src/product/resource/families/detail_family.ts](../crates/worth-signal-wasm/package-src/product/resource/families/detail_family.ts)
-- [package-src/product/resource/families/collection_family.ts](../crates/worth-signal-wasm/package-src/product/resource/families/collection_family.ts)
-- [package-src/product/resource/families/paged_family.ts](../crates/worth-signal-wasm/package-src/product/resource/families/paged_family.ts)
-- [package-src/product/resource/families/materialization/materialized_family_factory.ts](../crates/worth-signal-wasm/package-src/product/resource/families/materialization/materialized_family_factory.ts)
-- [package-src/product/resource/identity/runtime_line_identity.ts](../crates/worth-signal-wasm/package-src/product/resource/identity/runtime_line_identity.ts)
+- [package-src/product/signals.ts](../../crates/worth-signal-wasm/package-src/product/signals.ts)
+- [package-src/product/resource/facade.ts](../../crates/worth-signal-wasm/package-src/product/resource/facade.ts)
+- [package-src/product/resource/families/detail_family.ts](../../crates/worth-signal-wasm/package-src/product/resource/families/detail_family.ts)
+- [package-src/product/resource/families/collection_family.ts](../../crates/worth-signal-wasm/package-src/product/resource/families/collection_family.ts)
+- [package-src/product/resource/families/paged_family.ts](../../crates/worth-signal-wasm/package-src/product/resource/families/paged_family.ts)
+- [package-src/product/resource/families/materialization/materialized_family_factory.ts](../../crates/worth-signal-wasm/package-src/product/resource/families/materialization/materialized_family_factory.ts)
+- [package-src/product/resource/identity/runtime_line_identity.ts](../../crates/worth-signal-wasm/package-src/product/resource/identity/runtime_line_identity.ts)
 
 Canonical line execution, evidence, and history:
 
-- [package-src/product/resource/lines/line_handle.ts](../crates/worth-signal-wasm/package-src/product/resource/lines/line_handle.ts)
-- [package-src/product/resource/lines/line_patch_capable_handle.ts](../crates/worth-signal-wasm/package-src/product/resource/lines/line_patch_capable_handle.ts)
-- [package-src/product/resource/lines/actions/line_reload_execution.ts](../crates/worth-signal-wasm/package-src/product/resource/lines/actions/line_reload_execution.ts)
-- [package-src/product/resource/lines/actions/line_patch_execution.ts](../crates/worth-signal-wasm/package-src/product/resource/lines/actions/line_patch_execution.ts)
-- [package-src/product/resource/lines/actions/line_delivery_execution.ts](../crates/worth-signal-wasm/package-src/product/resource/lines/actions/line_delivery_execution.ts)
-- [package-src/product/resource/lines/history/line_history_restore.ts](../crates/worth-signal-wasm/package-src/product/resource/lines/history/line_history_restore.ts)
-- [package-src/product/resource/lines/history/line_history_replay.ts](../crates/worth-signal-wasm/package-src/product/resource/lines/history/line_history_replay.ts)
-- [package-src/product/resource/lines/history/line_verification_package.ts](../crates/worth-signal-wasm/package-src/product/resource/lines/history/line_verification_package.ts)
-- [package-src/product/resource/lines/reads/line_history_read.ts](../crates/worth-signal-wasm/package-src/product/resource/lines/reads/line_history_read.ts)
-- [package-src/product/resource/lines/reads/line_history_availability_read.ts](../crates/worth-signal-wasm/package-src/product/resource/lines/reads/line_history_availability_read.ts)
+- [package-src/product/resource/lines/line_handle.ts](../../crates/worth-signal-wasm/package-src/product/resource/lines/line_handle.ts)
+- [package-src/product/resource/lines/line_patch_capable_handle.ts](../../crates/worth-signal-wasm/package-src/product/resource/lines/line_patch_capable_handle.ts)
+- [package-src/product/resource/lines/actions/line_reload_execution.ts](../../crates/worth-signal-wasm/package-src/product/resource/lines/actions/line_reload_execution.ts)
+- [package-src/product/resource/lines/actions/line_patch_execution.ts](../../crates/worth-signal-wasm/package-src/product/resource/lines/actions/line_patch_execution.ts)
+- [package-src/product/resource/lines/actions/line_delivery_execution.ts](../../crates/worth-signal-wasm/package-src/product/resource/lines/actions/line_delivery_execution.ts)
+- [package-src/product/resource/lines/history/line_history_restore.ts](../../crates/worth-signal-wasm/package-src/product/resource/lines/history/line_history_restore.ts)
+- [package-src/product/resource/lines/history/line_history_replay.ts](../../crates/worth-signal-wasm/package-src/product/resource/lines/history/line_history_replay.ts)
+- [package-src/product/resource/lines/history/line_verification_package.ts](../../crates/worth-signal-wasm/package-src/product/resource/lines/history/line_verification_package.ts)
+- [package-src/product/resource/lines/reads/line_history_read.ts](../../crates/worth-signal-wasm/package-src/product/resource/lines/reads/line_history_read.ts)
+- [package-src/product/resource/lines/reads/line_history_availability_read.ts](../../crates/worth-signal-wasm/package-src/product/resource/lines/reads/line_history_availability_read.ts)
 
 Compatibility, downloads, and delivery:
 
-- [package-src/product/resource/compatibility/resource_compatibility_namespace.ts](../crates/worth-signal-wasm/package-src/product/resource/compatibility/resource_compatibility_namespace.ts)
-- [package-src/product/resource/compatibility/resource_external_definition.ts](../crates/worth-signal-wasm/package-src/product/resource/compatibility/resource_external_definition.ts)
-- [package-src/product/resource/compatibility/resource_external_delivery.ts](../crates/worth-signal-wasm/package-src/product/resource/compatibility/resource_external_delivery.ts)
-- [package-src/product/resource/delivery/resource_delivery.ts](../crates/worth-signal-wasm/package-src/product/resource/delivery/resource_delivery.ts)
-- [package-src/product/resource/downloads/resource_binary_descriptor.ts](../crates/worth-signal-wasm/package-src/product/resource/downloads/resource_binary_descriptor.ts)
-- [package-src/product/resource/downloads/resource_binary_value.ts](../crates/worth-signal-wasm/package-src/product/resource/downloads/resource_binary_value.ts)
-- [package-src/product/resource/downloads/resource_download.ts](../crates/worth-signal-wasm/package-src/product/resource/downloads/resource_download.ts)
+- [package-src/product/resource/compatibility/resource_compatibility_namespace.ts](../../crates/worth-signal-wasm/package-src/product/resource/compatibility/resource_compatibility_namespace.ts)
+- [package-src/product/resource/compatibility/resource_external_definition.ts](../../crates/worth-signal-wasm/package-src/product/resource/compatibility/resource_external_definition.ts)
+- [package-src/product/resource/compatibility/resource_external_delivery.ts](../../crates/worth-signal-wasm/package-src/product/resource/compatibility/resource_external_delivery.ts)
+- [package-src/product/resource/delivery/resource_delivery.ts](../../crates/worth-signal-wasm/package-src/product/resource/delivery/resource_delivery.ts)
+- [package-src/product/resource/downloads/resource_binary_descriptor.ts](../../crates/worth-signal-wasm/package-src/product/resource/downloads/resource_binary_descriptor.ts)
+- [package-src/product/resource/downloads/resource_binary_value.ts](../../crates/worth-signal-wasm/package-src/product/resource/downloads/resource_binary_value.ts)
+- [package-src/product/resource/downloads/resource_download.ts](../../crates/worth-signal-wasm/package-src/product/resource/downloads/resource_download.ts)
 
 Typed public surface:
 
-- [package/types/resource/resource_namespace.d.ts](../crates/worth-signal-wasm/package/types/resource/resource_namespace.d.ts)
-- [package/types/resource/resource_declarations.d.ts](../crates/worth-signal-wasm/package/types/resource/resource_declarations.d.ts)
-- [package/types/resource/resource_family_surfaces.d.ts](../crates/worth-signal-wasm/package/types/resource/resource_family_surfaces.d.ts)
-- [package/types/resource/resource_postures.d.ts](../crates/worth-signal-wasm/package/types/resource/resource_postures.d.ts)
-- [package/types/resource/resource_reconciliation.d.ts](../crates/worth-signal-wasm/package/types/resource/resource_reconciliation.d.ts)
-- [package/types/resource/resource_lifecycle.d.ts](../crates/worth-signal-wasm/package/types/resource/resource_lifecycle.d.ts)
-- [package/types/resource/resource_verification.d.ts](../crates/worth-signal-wasm/package/types/resource/resource_verification.d.ts)
-- [package/resource_types_smoke/resource_surface_usage.ts](../crates/worth-signal-wasm/package/resource_types_smoke/resource_surface_usage.ts)
-- [package/resource_types_smoke/resource_authoring_denials.ts](../crates/worth-signal-wasm/package/resource_types_smoke/resource_authoring_denials.ts)
+- [package/types/resource/resource_namespace.d.ts](../../crates/worth-signal-wasm/package/types/resource/resource_namespace.d.ts)
+- [package/types/resource/resource_declarations.d.ts](../../crates/worth-signal-wasm/package/types/resource/resource_declarations.d.ts)
+- [package/types/resource/resource_family_surfaces.d.ts](../../crates/worth-signal-wasm/package/types/resource/resource_family_surfaces.d.ts)
+- [package/types/resource/resource_postures.d.ts](../../crates/worth-signal-wasm/package/types/resource/resource_postures.d.ts)
+- [package/types/resource/resource_reconciliation.d.ts](../../crates/worth-signal-wasm/package/types/resource/resource_reconciliation.d.ts)
+- [package/types/resource/resource_lifecycle.d.ts](../../crates/worth-signal-wasm/package/types/resource/resource_lifecycle.d.ts)
+- [package/types/resource/resource_verification.d.ts](../../crates/worth-signal-wasm/package/types/resource/resource_verification.d.ts)
+- [package/resource_types_smoke/resource_surface_usage.ts](../../crates/worth-signal-wasm/package/resource_types_smoke/resource_surface_usage.ts)
+- `package/resource_types_smoke/resource_authoring_denials.ts`
 
 ## Must-Ship Acceptance Map
 
@@ -144,45 +144,45 @@ defines suites 1 through 28 plus suite 0 as the actual closure bar.
 Those obligations now map to two evidence classes:
 
 - runtime-hostile certification lanes under
-  [resource.runtime.test.mjs](../crates/worth-signal-wasm/package/product/resource.runtime.test.mjs)
+  [resource.runtime.test.mjs](../../crates/worth-signal-wasm/package/product/resource.runtime.test.mjs)
 - compile-time and declaration-boundary evidence under
-  [resource_surface_usage.ts](../crates/worth-signal-wasm/package/resource_types_smoke/resource_surface_usage.ts)
+  [resource_surface_usage.ts](../../crates/worth-signal-wasm/package/resource_types_smoke/resource_surface_usage.ts)
   and
-  [resource_authoring_denials.ts](../crates/worth-signal-wasm/package/resource_types_smoke/resource_authoring_denials.ts)
+  `resource_authoring_denials.ts`
 
 Representative closeout owners include:
 
 - Phase 1 identity/facade/view lanes:
-  - [family_identity_equivalence.test.mjs](../crates/worth-signal-wasm/package/product/resource_runtime/authoring/family_identity_equivalence.test.mjs)
-  - [line_facade_stability.test.mjs](../crates/worth-signal-wasm/package/product/resource_runtime/authoring/line_facade_stability.test.mjs)
-  - [line_view_ownership.test.mjs](../crates/worth-signal-wasm/package/product/resource_runtime/authoring/line_view_ownership.test.mjs)
+  - [family_identity_equivalence.test.mjs](../../crates/worth-signal-wasm/package/product/resource_runtime/authoring/family_identity_equivalence.test.mjs)
+  - [line_facade_stability.test.mjs](../../crates/worth-signal-wasm/package/product/resource_runtime/authoring/line_facade_stability.test.mjs)
+  - [line_view_ownership.test.mjs](../../crates/worth-signal-wasm/package/product/resource_runtime/authoring/line_view_ownership.test.mjs)
 - Phase 2 lifecycle/freshness/policy lanes:
-  - [lifecycle_and_refresh.test.mjs](../crates/worth-signal-wasm/package/product/resource_runtime/lifecycle/lifecycle_and_refresh.test.mjs)
-  - [retry_and_timeout.test.mjs](../crates/worth-signal-wasm/package/product/resource_runtime/lifecycle/retry_and_timeout.test.mjs)
-  - [invalidation.test.mjs](../crates/worth-signal-wasm/package/product/resource_runtime/lifecycle/invalidation.test.mjs)
-  - [async_first_history_parity.test.mjs](../crates/worth-signal-wasm/package/product/resource_runtime/lifecycle/async_first_history_parity.test.mjs)
+  - [lifecycle_and_refresh.test.mjs](../../crates/worth-signal-wasm/package/product/resource_runtime/lifecycle/lifecycle_and_refresh.test.mjs)
+  - [retry_and_timeout.test.mjs](../../crates/worth-signal-wasm/package/product/resource_runtime/lifecycle/retry_and_timeout.test.mjs)
+  - [invalidation.test.mjs](../../crates/worth-signal-wasm/package/product/resource_runtime/lifecycle/invalidation.test.mjs)
+  - [async_first_history_parity.test.mjs](../../crates/worth-signal-wasm/package/product/resource_runtime/lifecycle/async_first_history_parity.test.mjs)
 - Phase 3 request/deferred/upload lanes:
-  - [request_posture.test.mjs](../crates/worth-signal-wasm/package/product/resource_runtime/requests/request_posture.test.mjs)
-  - [continuation_posture.test.mjs](../crates/worth-signal-wasm/package/product/resource_runtime/requests/continuation_posture.test.mjs)
-  - [processing_job.test.mjs](../crates/worth-signal-wasm/package/product/resource_runtime/transfers/processing_job.test.mjs)
-  - [upload_transport.test.mjs](../crates/worth-signal-wasm/package/product/resource_runtime/transfers/upload_transport.test.mjs)
+  - [request_posture.test.mjs](../../crates/worth-signal-wasm/package/product/resource_runtime/requests/request_posture.test.mjs)
+  - [continuation_posture.test.mjs](../../crates/worth-signal-wasm/package/product/resource_runtime/requests/continuation_posture.test.mjs)
+  - [processing_job.test.mjs](../../crates/worth-signal-wasm/package/product/resource_runtime/transfers/processing_job.test.mjs)
+  - [upload_transport.test.mjs](../../crates/worth-signal-wasm/package/product/resource_runtime/transfers/upload_transport.test.mjs)
 - Phase 4 reconciliation lanes:
-  - [patch_reconciliation_hardening.test.mjs](../crates/worth-signal-wasm/package/product/resource_runtime/reconciliation/patch_reconciliation_hardening.test.mjs)
-  - [patch_reconciliation_mixed_history.test.mjs](../crates/worth-signal-wasm/package/product/resource_runtime/reconciliation/patch_reconciliation_mixed_history.test.mjs)
-  - [patch_reconciliation_paged_summary_scope.test.mjs](../crates/worth-signal-wasm/package/product/resource_runtime/reconciliation/patch_reconciliation_paged_summary_scope.test.mjs)
+  - [patch_reconciliation_hardening.test.mjs](../../crates/worth-signal-wasm/package/product/resource_runtime/reconciliation/patch_reconciliation_hardening.test.mjs)
+  - [patch_reconciliation_mixed_history.test.mjs](../../crates/worth-signal-wasm/package/product/resource_runtime/reconciliation/patch_reconciliation_mixed_history.test.mjs)
+  - [patch_reconciliation_paged_summary_scope.test.mjs](../../crates/worth-signal-wasm/package/product/resource_runtime/reconciliation/patch_reconciliation_paged_summary_scope.test.mjs)
 - Phase 5 diagnostics/history/restore/replay lanes:
-  - [phase5_history_closeout.test.mjs](../crates/worth-signal-wasm/package/product/resource_runtime/lifecycle/phase5_history_closeout.test.mjs)
-  - [branch_restore_action_surface.test.mjs](../crates/worth-signal-wasm/package/product/resource_runtime/inspection/branch_restore_action_surface.test.mjs)
-  - [replay_action_surface.test.mjs](../crates/worth-signal-wasm/package/product/resource_runtime/inspection/replay_action_surface.test.mjs)
+  - [phase5_history_closeout.test.mjs](../../crates/worth-signal-wasm/package/product/resource_runtime/lifecycle/history/phase5_history_closeout.test.mjs)
+  - [branch_restore_action_surface.test.mjs](../../crates/worth-signal-wasm/package/product/resource_runtime/inspection/branch_restore_action_surface.test.mjs)
+  - [replay_action_surface.test.mjs](../../crates/worth-signal-wasm/package/product/resource_runtime/inspection/replay_action_surface.test.mjs)
 - Phase 6 binary/download/delivery lanes:
-  - [binary_download_surface.test.mjs](../crates/worth-signal-wasm/package/product/resource_runtime/downloads/binary_download_surface.test.mjs)
-  - [live_delivery_convergence.test.mjs](../crates/worth-signal-wasm/package/product/resource_runtime/delivery/live_delivery_convergence.test.mjs)
-  - [delivery_basis_history_closeout.test.mjs](../crates/worth-signal-wasm/package/product/resource_runtime/delivery/delivery_basis_history_closeout.test.mjs)
+  - [binary_download_surface.test.mjs](../../crates/worth-signal-wasm/package/product/resource_runtime/downloads/binary_download_surface.test.mjs)
+  - `live_delivery_convergence.test.mjs`
+  - [delivery_basis_history_closeout.test.mjs](../../crates/worth-signal-wasm/package/product/resource_runtime/delivery/delivery_basis_history_closeout.test.mjs)
 - Phase 7 compatibility lanes:
-  - [external_definition_compatibility.test.mjs](../crates/worth-signal-wasm/package/product/resource_runtime/authoring/external_definition_compatibility.test.mjs)
-  - [external_basis_refresh_compatibility.test.mjs](../crates/worth-signal-wasm/package/product/resource_runtime/delivery/external_basis_refresh_compatibility.test.mjs)
+  - [external_definition_compatibility.test.mjs](../../crates/worth-signal-wasm/package/product/resource_runtime/authoring/external_definition_compatibility.test.mjs)
+  - [external_basis_refresh_compatibility.test.mjs](../../crates/worth-signal-wasm/package/product/resource_runtime/delivery/external_basis_refresh_compatibility.test.mjs)
 - Suite 0:
-  - [full_resource_hostile_convergence.test.mjs](../crates/worth-signal-wasm/package/product/resource_runtime/closeout/full_resource_hostile_convergence.test.mjs)
+  - [full_resource_hostile_convergence.test.mjs](../../crates/worth-signal-wasm/package/product/resource_runtime/closeout/full_resource_hostile_convergence.test.mjs)
 
 ## Closeout Matrix Coverage
 

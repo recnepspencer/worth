@@ -11,7 +11,13 @@ use super::lanes::{
 use super::taxonomy::{BasisAuthorityPosture, BasisFamily, BasisLifecyclePosture};
 
 macro_rules! scoped_basis {
-    ($name:ident) => {
+    ($(#[$doc:meta])* $name:ident) => {
+        $(#[$doc])*
+        ///
+        /// It records the family, authority posture, and lifecycle posture of
+        /// the admitted basis capability it was scoped from, with digests that
+        /// identify that capability and this scoped basis. It is usable only
+        /// in its own lane.
         #[derive(Clone, Debug, Eq, PartialEq)]
         pub struct $name {
             family: BasisFamily,
@@ -76,15 +82,45 @@ macro_rules! scoped_basis {
     };
 }
 
-scoped_basis!(ScopedObservationBasis);
-scoped_basis!(ScopedMutationPreparationBasis);
-scoped_basis!(ScopedReplayBasis);
-scoped_basis!(ScopedInspectionBasis);
-scoped_basis!(ScopedMaterializationBasis);
-scoped_basis!(ScopedSubscriptionDeclarationBasis);
-scoped_basis!(ScopedSubscriptionActivationBasis);
-scoped_basis!(ScopedPreviewCloseoutBasis);
-scoped_basis!(ScopedCertificationBasis);
+scoped_basis!(
+    /// An admitted basis scoped to the observation lane.
+    ScopedObservationBasis
+);
+scoped_basis!(
+    /// An admitted basis scoped to the mutation-preparation lane.
+    ScopedMutationPreparationBasis
+);
+scoped_basis!(
+    /// An admitted basis scoped to the replay lane, for certification replay.
+    ///
+    /// You get one from `BasisLifecycleIntentDraft::replay` once the basis is
+    /// admitted for replay.
+    ScopedReplayBasis
+);
+scoped_basis!(
+    /// An admitted basis scoped to the inspection lane.
+    ScopedInspectionBasis
+);
+scoped_basis!(
+    /// An admitted basis scoped to the materialization lane.
+    ScopedMaterializationBasis
+);
+scoped_basis!(
+    /// An admitted basis scoped to the subscription-declaration lane.
+    ScopedSubscriptionDeclarationBasis
+);
+scoped_basis!(
+    /// An admitted basis scoped to the subscription-activation lane.
+    ScopedSubscriptionActivationBasis
+);
+scoped_basis!(
+    /// An admitted basis scoped to the preview-closeout lane.
+    ScopedPreviewCloseoutBasis
+);
+scoped_basis!(
+    /// An admitted basis scoped to the certification lane.
+    ScopedCertificationBasis
+);
 
 pub trait ScopedBasisProof: Clone + std::fmt::Debug + Eq + PartialEq {
     fn family(&self) -> BasisFamily;

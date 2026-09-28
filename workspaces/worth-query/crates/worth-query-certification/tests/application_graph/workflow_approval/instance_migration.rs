@@ -9,8 +9,8 @@ use worth_query_host::facade::primary_graph::{
     WorthQueryWorkflowInstanceCustody, WorthQueryWorkflowInstanceDisposition,
 };
 
-use super::super::bounded_dimension_model::{
-    programs::DimensionProgramP1,
+use super::super::document_retention_model::{
+    programs::RetentionProgramP1,
     workflow::{migrate_instance, second_program_workflow_inventory, support_workflow_program},
 };
 use super::*;
@@ -128,7 +128,7 @@ fn a_performed_effect_carries_as_history_the_successor_never_repeats() {
     );
 
     perform_approved_effect(&application, &instance, 87_113);
-    assert_eq!(read_dimension(application.runtime(), instance.branch()), 8);
+    assert_eq!(read_retention(application.runtime(), instance.branch()), 8);
     assert_eq!(
         migration_denial(migrate_instance(
             &application,
@@ -172,7 +172,7 @@ fn a_performed_effect_carries_as_history_the_successor_never_repeats() {
     .instance()
     .clone();
 
-    support_workflow_program::<DimensionProgramP1>(&mut application);
+    support_workflow_program::<RetentionProgramP1>(&mut application);
     let inventory = second_program_workflow_inventory(&application, instance.branch());
     assert!(inventory.instance(instance.entity_id()).is_none());
     assert!(inventory.instance(first.entity_id()).is_none());
@@ -208,11 +208,11 @@ fn a_performed_effect_carries_as_history_the_successor_never_repeats() {
         WorthQueryApplicationAttemptDenialKind::WorkflowInstanceMigrationUnmapped,
         "a completed instance has no work left to migrate",
     );
-    assert_eq!(read_dimension(application.runtime(), instance.branch()), 8);
+    assert_eq!(read_retention(application.runtime(), instance.branch()), 8);
 }
 
 pub(super) fn supersede(
-    application: &BoundedDimensionWorkflowRuntime,
+    application: &DocumentWorkflowRuntime,
     definition: PublishedWorkflowDefinitionRef,
     completion: &str,
     key: u64,
@@ -220,16 +220,16 @@ pub(super) fn supersede(
     replace_definition(
         application,
         definition,
-        reviewed_geometry_definition(completion),
+        reviewed_document_definition(completion),
         key,
     )
 }
 
 pub(super) fn replace_definition(
-    application: &BoundedDimensionWorkflowRuntime,
+    application: &DocumentWorkflowRuntime,
     definition: PublishedWorkflowDefinitionRef,
     replacement: worth_query_host::facade::declaration::application_program::ValidatedWorkflowDefinition<
-        super::super::bounded_dimension_model::workflow::ReviewedGeometryWorkflow,
+        super::super::document_retention_model::workflow::ReviewedDocumentWorkflow,
     >,
     key: u64,
 ) -> PublishedWorkflowDefinitionRef {
@@ -249,7 +249,7 @@ pub(super) fn replace_definition(
 }
 
 pub(super) fn perform_approved_effect(
-    application: &BoundedDimensionWorkflowRuntime,
+    application: &DocumentWorkflowRuntime,
     instance: &PublishedWorkflowInstanceRef,
     key: u64,
 ) {
@@ -265,10 +265,10 @@ pub(super) fn perform_approved_effect(
     let effect = runtime
         .request(&principal, &scope)
         .on_branch(instance.branch())
-        .mutate(ReviewedSetPartDimensionIntent {
-            input: super::super::bounded_dimension_model::schema::SetPartDimensionInput {
-                identity: PART_IDENTITY.to_owned(),
-                dimension: 8,
+        .mutate(ReviewedSetRetentionIntent {
+            input: super::super::document_retention_model::schema::SetRetentionInput {
+                identity: DOCUMENT_IDENTITY.to_owned(),
+                retention_days: 8,
             },
         })
         .without_source()

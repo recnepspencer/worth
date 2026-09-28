@@ -18,22 +18,22 @@
 > ergonomics, or truth ownership
 >
 > **Related implementation surfaces:**
-> - [runtime_state.rs](/C:/Users/shepworth/Documents/programming/WORTH/crates/worth-signal/src/logic/transaction/runtime/state/runtime_state.rs)
-> - [builder.rs](/C:/Users/shepworth/Documents/programming/WORTH/crates/worth-signal/src/logic/transaction/runtime/state/builder.rs)
-> - [observer.rs](/C:/Users/shepworth/Documents/programming/WORTH/crates/worth-signal/src/logic/transaction/runtime/state/observer.rs)
-> - [transaction_types.rs](/C:/Users/shepworth/Documents/programming/WORTH/crates/worth-signal/src/logic/transaction/runtime/transaction/transaction_types.rs)
-> - [transaction_mutation.rs](/C:/Users/shepworth/Documents/programming/WORTH/crates/worth-signal/src/logic/transaction/runtime/transaction/transaction_mutation.rs)
-> - [commit_path.rs](/C:/Users/shepworth/Documents/programming/WORTH/crates/worth-signal/src/logic/transaction/runtime/transaction/transaction_commit/commit_path.rs)
-> - [rollback_path.rs](/C:/Users/shepworth/Documents/programming/WORTH/crates/worth-signal/src/logic/transaction/runtime/transaction/transaction_commit/rollback_path.rs)
-> - [runtime.rs](/C:/Users/shepworth/Documents/programming/WORTH/crates/worth-signal/src/logic/events/runtime.rs)
-> - [effect_mapping.rs](/C:/Users/shepworth/Documents/programming/WORTH/crates/worth-signal/src/data/effect_mapping.rs)
-> - [runtime.rs](/C:/Users/shepworth/Documents/programming/WORTH/crates/worth-signal/src/easy/runtime.rs)
-> - [compute.rs](/C:/Users/shepworth/Documents/programming/WORTH/crates/worth-signal/src/easy/compute.rs)
-> - [facade.rs](/C:/Users/shepworth/Documents/programming/WORTH/crates/worth-signal/src/facade.rs)
+> - [runtime_state.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/runtime_state/mod.rs)
+> - [builder.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/builder.rs)
+> - [observer.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/observer.rs)
+> - [transaction_types.rs](../../crates/worth-signal/src/logic/transaction/runtime/transaction/transaction_types.rs)
+> - [transaction_mutation.rs](../../crates/worth-signal/src/logic/transaction/runtime/transaction/transaction_mutation.rs)
+> - [commit_path.rs](../../crates/worth-signal/src/logic/transaction/runtime/transaction/transaction_commit/commit_path.rs)
+> - [rollback_path.rs](../../crates/worth-signal/src/logic/transaction/runtime/transaction/transaction_commit/rollback_path.rs)
+> - [runtime.rs](../../crates/worth-signal/src/logic/events/runtime.rs)
+> - [effect_mapping.rs](../../crates/worth-signal/src/data/effect_mapping.rs)
+> - [runtime.rs](../../crates/worth-signal/src/easy/runtime.rs)
+> - [compute.rs](../../crates/worth-signal/src/easy/compute.rs)
+> - [facade.rs](../../crates/worth-signal/src/facade.rs)
 > - [worth_signals2.md](./worth_signals2.md)
-> - [MENTALITY.md](/C:/Users/shepworth/Documents/programming/WORTH/docs/coding-guidelines/MENTALITY.md)
-> - [arch_laws.md](/C:/Users/shepworth/Documents/programming/WORTH/docs/coding-guidelines/arch_laws.md)
-> - [perf_laws.md](/C:/Users/shepworth/Documents/programming/WORTH/docs/coding-guidelines/perf_laws.md)
+> - [MENTALITY.md](../../docs/coding-guidelines/MENTALITY.md)
+> - [arch_laws.md](../../docs/coding-guidelines/arch_laws.md)
+> - [perf_laws.md](../../docs/coding-guidelines/perf_laws.md)
 
 ## Summary
 
@@ -336,15 +336,15 @@ Normative consequence:
 
 The runtime is already structurally ready for this milestone in several ways:
 
-- [`SignalRuntime`](C:/Users/shepworth/Documents/programming/WORTH/crates/worth-signal/src/logic/transaction/runtime/state/runtime_state.rs)
+- [`SignalRuntime`](../../crates/worth-signal/src/logic/transaction/runtime/state/runtime_state/mod.rs)
   already owns the right long-lived subsystems and is the natural owner of an
   observer registry
-- [`SignalTransaction`](C:/Users/shepworth/Documents/programming/WORTH/crates/worth-signal/src/logic/transaction/runtime/transaction/transaction_mutation.rs)
+- [`SignalTransaction`](../../crates/worth-signal/src/logic/transaction/runtime/transaction/transaction_mutation.rs)
   already stages commit-relevant work and is the natural place to stage
   observation candidates
-- [`commit_path.rs`](C:/Users/shepworth/Documents/programming/WORTH/crates/worth-signal/src/logic/transaction/runtime/transaction/transaction_commit/commit_path.rs)
+- [`commit_path.rs`](../../crates/worth-signal/src/logic/transaction/runtime/transaction/transaction_commit/commit_path.rs)
   already has the correct semantic boundary for post-commit delivery
-- [`rollback_path.rs`](C:/Users/shepworth/Documents/programming/WORTH/crates/worth-signal/src/logic/transaction/runtime/transaction/transaction_commit/rollback_path.rs)
+- [`rollback_path.rs`](../../crates/worth-signal/src/logic/transaction/runtime/transaction/transaction_commit/rollback_path.rs)
   already gives the correct hard boundary for suppressing delivery
 - the crate already has a strong extensibility pattern through frozen
   registries, policy resolution, and lowered execution artifacts

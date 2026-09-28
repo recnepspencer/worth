@@ -1,17 +1,17 @@
 # Milestone 13.3 Engineering Spec: Subscription Support Accuracy Taxonomy And Certification
 
-> **Status:** Planned
+> **Status:** Completed. Closeout: [milestone-13.3-closeout.md](./milestone-13.3-closeout.md).
 >
-> **Roadmap parent:** [worth_store_roadmap.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/worth_store_roadmap.md)
+> **Roadmap parent:** `worth_store_roadmap.md`
 >
-> **Vision parent:** [worth_store_vision.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/worth_store_vision.md)
+> **Vision parent:** [worth_store_vision.md](./worth_store_vision.md)
 >
-> **Test requirements:** [test-requirements.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/test-requirements.md)
+> **Test requirements:** [test-requirements.md](./test-requirements.md)
 >
 > **Prerequisite milestone:**
-> - [milestone-13.1.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-13.1.md)
-> - [milestone-13.1-closeout.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-13.1-closeout.md)
-> - [milestone-13.2.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-13.2.md)
+> - [milestone-13.1.md](./milestone-13.1.md)
+> - [milestone-13.1-closeout.md](./milestone-13.1-closeout.md)
+> - [milestone-13.2.md](./milestone-13.2.md)
 >
 > **Follow-on milestone:**
 > - `Roadmap 2 S.0` (`Shipped Store Reconciliation And Capability Reclassification`)

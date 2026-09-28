@@ -29,7 +29,7 @@ If the answer is no, the field does not become hot as a whole object. It either:
 
 Source:
 
-- [version.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/aspect/version.rs)
+- [version.rs](../../crates/worth-signal/src/data/aspect/version.rs)
 
 Current shape:
 
@@ -60,8 +60,8 @@ Phase 1 decision:
 
 Source:
 
-- [entry.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/node/entry.rs)
-- [output.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/output.rs)
+- [entry.rs](../../crates/worth-signal/src/data/node/entry.rs)
+- [output.rs](../../crates/worth-signal/src/data/output.rs)
 
 Current shape:
 
@@ -92,8 +92,8 @@ Phase 1 decision:
 
 Source:
 
-- [handles.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/graph/storage/handles.rs)
-- [segmented.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/graph/storage/segmented.rs)
+- [handles.rs](../../crates/worth-signal/src/data/graph/storage/handles.rs)
+- [segmented.rs](../../crates/worth-signal/src/data/graph/storage/segmented.rs)
 
 Current shape:
 
@@ -121,7 +121,7 @@ Phase 1 decision:
 
 Source:
 
-- [trace.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/trace.rs)
+- [trace.rs](../../crates/worth-signal/src/data/trace.rs)
 
 Candidate hot facts:
 

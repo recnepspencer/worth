@@ -62,8 +62,19 @@ impl<Query> super::WorthQueryObservedSource<Query> {
     }
 }
 
+/// A bounded, runtime-managed cache of values projected from one public query's
+/// rows, keyed by the rows' observed-source keys.
+///
+/// Open it with `open_managed_derived_view` on a product branch, fill it with
+/// `reconstruct_managed_derived_view`, and read through a snapshot. Commits mark
+/// affected entries for refresh; the view never serves content from a commit it
+/// did not observe. Dropping it disposes of its entries.
 pub type WorthQueryManagedDerivedView<Query, Value> =
     retention::WorthQueryManagedDerivedView<Query, WorthQueryManagedDerivedViewKey, Value>;
+/// A point-in-time read of a managed derived view at one observed commit.
+///
+/// Get one from `observe_managed_derived_view`. Reads are refused, never stale,
+/// once the view moves past that commit.
 pub type WorthQueryManagedDerivedViewSnapshot<Value> =
     retention::WorthQueryManagedDerivedViewSnapshot<WorthQueryManagedDerivedViewKey, Value>;
 

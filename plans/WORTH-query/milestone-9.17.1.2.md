@@ -1,7 +1,6 @@
 # Milestone 9.17.1.2: Final Owner Services And Signal Independent Progress
 
-> **Status:** Closed on 2026-09-01. The accepted production revision is
-> `95c9aa7455`.
+> **Status:** Completed.
 >
 > **Product posture:** This is a corrective predecessor to Milestone 9.17.2.
 > It does not reopen or reinterpret the closed 9.17.1 and 9.17.1.1 meanings.

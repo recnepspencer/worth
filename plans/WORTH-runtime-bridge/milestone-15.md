@@ -2,17 +2,17 @@
 
 > **Status:** Complete
 >
-> **Roadmap parent:** [worth_runtime_bridge_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/worth_runtime_bridge_roadmap.md)
+> **Roadmap parent:** [worth_runtime_bridge_roadmap.md](./WORTH_runtime_bridge_roadmap.md)
 >
-> **Vision parent:** [worth_runtime_bridge_vision.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/worth_runtime_bridge_vision.md)
+> **Vision parent:** [worth_runtime_bridge_vision.md](./WORTH_runtime_bridge_vision.md)
 >
-> **Prior milestone:** [milestone-14.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-14.md)
+> **Prior milestone:** [milestone-14.md](./milestone-14.md)
 >
-> **Prior closeout:** [milestone-14-closeout.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-14-closeout.md)
+> **Prior closeout:** [milestone-14-closeout.md](./milestone-14-closeout.md)
 >
-> **Shipped closeout:** [milestone-15-closeout.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-15-closeout.md)
+> **Shipped closeout:** [milestone-15-closeout.md](./milestone-15-closeout.md)
 >
-> **Bridge certification companion:** [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md)
+> **Bridge certification companion:** [test-requirements.md](./test-requirements.md)
 >
 > **Primary architectural driver:** turn Milestone 14's admitted subscription declarations and retained lifecycle artifacts into active bridge protocol entities whose delivery, sharing, continuation, checkpoint, replay, and preview behavior are canonical, typed, and certifiable without host-local caches or callback folklore.
 
@@ -183,7 +183,7 @@ Normative consequence:
 - continuation artifacts for replace, split, admitted merge-like, and branch-divergent truth evolution
 - preview-scoped active subscription basis, discard residue proof, and explicit promotion-boundary records
 - counters and diagnostics for fanout, coalescing, delivery, continuation, checkpoint, replay, preview discard, preview promotion, and rejected sharing or reuse attempts
-- certification satisfying suites 31 through 34 in [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md)
+- certification satisfying suites 31 through 34 in [test-requirements.md](./test-requirements.md)
 
 ### Explicitly Out Of Scope
 

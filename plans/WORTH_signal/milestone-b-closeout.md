@@ -68,19 +68,19 @@ Resource data model:
 - [declaration.rs](../../crates/worth-signal/src/data/resource/declaration.rs)
 - [descriptor.rs](../../crates/worth-signal/src/data/resource/descriptor.rs)
 - [policy.rs](../../crates/worth-signal/src/data/resource/policy.rs)
-- [policy_registry.rs](../../crates/worth-signal/src/data/resource/policy_registry.rs)
+- [policy_registry.rs](../../crates/worth-signal/src/data/resource/policy_registry/mod.rs)
 - [request.rs](../../crates/worth-signal/src/data/resource/request.rs)
 - [lifecycle.rs](../../crates/worth-signal/src/data/resource/lifecycle.rs)
 - [denial.rs](../../crates/worth-signal/src/data/resource/denial.rs)
 - [completion.rs](../../crates/worth-signal/src/data/resource/completion.rs)
-- [summary.rs](../../crates/worth-signal/src/data/resource/summary.rs)
+- [summary.rs](../../crates/worth-signal/src/data/resource/summary/mod.rs)
 - [diagnostics.rs](../../crates/worth-signal/src/data/resource/diagnostics.rs)
-- [certification.rs](../../crates/worth-signal/src/data/resource/certification.rs)
+- [certification.rs](../../crates/worth-signal/src/data/resource/certification/mod.rs)
 
 Runtime ownership and transaction integration:
 
 - [resource.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/resource.rs)
-- [runtime_state.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/runtime_state.rs)
+- [runtime_state.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/runtime_state/mod.rs)
 - [transaction_resource.rs](../../crates/worth-signal/src/logic/transaction/runtime/transaction/transaction_resource.rs)
 - [transaction_observation.rs](../../crates/worth-signal/src/logic/transaction/runtime/transaction/transaction_observation.rs)
 - [branching state](../../crates/worth-signal/src/logic/transaction/runtime/state/branching)
@@ -89,7 +89,7 @@ Diagnostics, counters, facade, and tests:
 
 - [telemetry.rs](../../crates/worth-signal/src/data/telemetry.rs)
 - [facade.rs](../../crates/worth-signal/src/facade.rs)
-- [resource_runtime.rs](../../crates/worth-signal/src/tests/resource_runtime.rs)
+- [resource_runtime.rs](../../crates/worth-signal/src/tests/resource_runtime/mod.rs)
 - [resource_api.rs](../../crates/worth-signal/src/tests/resource_api.rs)
 - [resource compile-fail fixtures](../../crates/worth-signal/tests/ui)
 

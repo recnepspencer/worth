@@ -1,5 +1,7 @@
 # Milestone 9.12: Query Public Authority Surface Cutover
 
+> **Status:** Completed.
+
 ## Goal
 
 Make the public `worth-query` facade expose one authority-preserving path for

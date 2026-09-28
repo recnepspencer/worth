@@ -2,28 +2,28 @@
 
 > **Status:** Closed engineering spec and shipped closeout reference
 >
-> **Roadmap parent:** [worth_runtime_bridge_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/worth_runtime_bridge_roadmap.md)
+> **Roadmap parent:** [worth_runtime_bridge_roadmap.md](./WORTH_runtime_bridge_roadmap.md)
 >
-> **Vision parent:** [worth_runtime_bridge_vision.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/worth_runtime_bridge_vision.md)
+> **Vision parent:** [worth_runtime_bridge_vision.md](./WORTH_runtime_bridge_vision.md)
 >
-> **Prior milestone:** [milestone-8.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-8.md)
+> **Prior milestone:** [milestone-8.md](./milestone-8.md)
 >
-> **Prior closeout:** [milestone-8-closeout.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-8-closeout.md)
+> **Prior closeout:** [milestone-8-closeout.md](./milestone-8-closeout.md)
 >
-> **Milestone closeout:** [milestone-9-closeout.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-9-closeout.md)
+> **Milestone closeout:** [milestone-9-closeout.md](./milestone-9-closeout.md)
 >
-> **Bridge certification companion:** [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md)
+> **Bridge certification companion:** [test-requirements.md](./test-requirements.md)
 >
 > **Primary architectural driver:** make ordered multi-parent truth history, merge ontology, causal frontier evidence, and schema-declared merge policy outcomes first-class bridge inputs so invalidation, continuity, remapping, explanation, and replay can remain deterministic without re-inventing merge semantics inside bridge or host code
 >
 > **Companion docs:**
-> - [worth_relational_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/worth_relational_roadmap.md)
-> - [worth_signal_vision.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth_signal/worth_signal_vision.md)
-> - [worth_signals2.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth_signal/worth_signals2.md)
-> - [MENTALITY.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/MENTALITY.md)
-> - [architectural_guidelines.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/architectural_guidelines.md)
-> - [domain_standards.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/domain_standards.md)
-> - [performance_guidelines.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/performance_guidelines.md)
+> - [worth_relational_roadmap.md](../WORTH-relational/WORTH_relational_roadmap.md)
+> - [worth_signal_vision.md](../WORTH_signal/WORTH_signal_vision.md)
+> - [worth_signals2.md](../WORTH_signal/WORTH_signals2.md)
+> - [MENTALITY.md](../../docs/coding-guidelines/MENTALITY.md)
+> - [architectural_guidelines.md](../../docs/coding-guidelines/arch_laws.md)
+> - [domain_standards.md](../../docs/coding-guidelines/domain_structure_laws.md)
+> - [performance_guidelines.md](../../docs/coding-guidelines/perf_laws.md)
 
 ## Summary
 
@@ -329,7 +329,7 @@ This document determines the cost model:
 - typed failures and counters for unsupported merge classes, parent-order drift,
   merge-policy mismatch, merge-aware continuity denial, and replay mismatch
 - harness certification for suites 10 through 12 in
-  [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md)
+  [test-requirements.md](./test-requirements.md)
 
 ### Explicitly Out Of Scope
 
@@ -675,7 +675,7 @@ This phase leaves the system in a coherent state where:
   evidence mismatch, causal frontier truncation, merge-aware continuity denial,
   merge explanation basis mismatch, and merge replay mismatch
 - harness certification satisfying Milestone 9 suites 10 through 12 in
-  [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md)
+  [test-requirements.md](./test-requirements.md)
 
 ## Must Preserve
 
@@ -709,7 +709,7 @@ Milestone 9 is complete only when the bridge harness can prove:
 - representative merge workloads prove bounded discovery cost rather than only
   bounded post-lowering execution cost
 - the Milestone 9 certification suites in
-  [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md)
+  [test-requirements.md](./test-requirements.md)
   pass with canonical machine-checkable bundles
 
 ## Architectural Notes
@@ -807,7 +807,7 @@ Rules:
 
 Milestone 9 must follow the same structural testing discipline as earlier
 bridge milestones and must satisfy the Milestone 9 certification suites in
-[test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md).
+[test-requirements.md](./test-requirements.md).
 
 Expected first-class test surfaces:
 
@@ -933,13 +933,13 @@ Design rules:
 
 ### Existing Files Expected To Change
 
-- [facade.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/facade.rs)
-- [lib.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/lib.rs)
-- [mod.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/diagnostics/mod.rs)
-- [mod.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/harness/mod.rs)
-- [mod.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/source/mod.rs)
-- [mod.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/historical/mod.rs)
-- [mod.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/structural/mod.rs)
+- [facade.rs](../../crates/worth-runtime-bridge/src/facade.rs)
+- [lib.rs](../../crates/worth-runtime-bridge/src/lib.rs)
+- [mod.rs](../../crates/worth-runtime-bridge/src/diagnostics/mod.rs)
+- [mod.rs](../../crates/worth-runtime-bridge/src/harness/mod.rs)
+- [mod.rs](../../crates/worth-runtime-bridge/src/source/mod.rs)
+- [mod.rs](../../crates/worth-runtime-bridge/src/historical/mod.rs)
+- [mod.rs](../../crates/worth-runtime-bridge/src/structural/mod.rs)
 
 ## Implementation Phases
 

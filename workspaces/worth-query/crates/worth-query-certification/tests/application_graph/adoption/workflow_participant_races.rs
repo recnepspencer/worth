@@ -13,7 +13,7 @@ use worth_query_host::facade::primary_graph::{
 use worth_query_host::facade::runtime::NoEffectCause;
 
 use super::workflow_participant::{expect_started, live_instance_on_first_program};
-use crate::bounded_dimension_model::workflow::{
+use crate::document_retention_model::workflow::{
     advance_instance, advance_instance_on, prepare_second_program_adoption, publish_adoption,
     second_program_workflow_inventory, start_instance,
 };

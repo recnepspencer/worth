@@ -2,6 +2,8 @@ use crate::domain_computation::authorization::WorthQueryAuthorizationDecisionFac
 use crate::domain_computation::authorization::WorthQueryRetainedCapabilityAuthorization;
 use worth_query_installation::facade::WorthQueryCanonicalWorkEvidence;
 
+/// Work authorization spent deciding one query read: requirements, paths,
+/// records and edges inspected, and product-branch security resolutions.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct WorthQueryApplicationAuthorizationWorkEvidence {
     requirement_count: usize,

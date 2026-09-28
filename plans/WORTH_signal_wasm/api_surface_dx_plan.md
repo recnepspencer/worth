@@ -8,7 +8,7 @@
 >
 > **Adjacent milestone:** [router_navigation_projection_plan.md](./router_navigation_projection_plan.md)
 >
-> **Core vision:** [plans/worth_signal/worth_signal_vision.md](../../../plans/worth_signal/worth_signal_vision.md)
+> **Core vision:** [plans/worth_signal/worth_signal_vision.md](../WORTH_signal/WORTH_signal_vision.md)
 >
 > **Resource certification parent:** [test-requirements.md](./test-requirements.md)
 

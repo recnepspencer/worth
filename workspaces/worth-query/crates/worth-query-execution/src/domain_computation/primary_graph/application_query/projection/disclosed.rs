@@ -17,15 +17,20 @@ use super::{
     WorthQueryApplicationProjectionRow, WorthQueryApplicationProjectionRows,
 };
 
+/// A value governed disclosure withheld: its classification and the disclosure
+/// it requires.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationOmission {
     classification: String,
     required_disclosure: AspectValue,
 }
 
+/// A result value under governed disclosure: either disclosed or withheld.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationDisclosed<Value> {
+    /// The value was disclosed to the caller.
     Disclosed(Value),
+    /// The value was withheld; the omission says why.
     Omitted(WorthQueryApplicationOmission),
 }
 

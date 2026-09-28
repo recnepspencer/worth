@@ -13,8 +13,8 @@ use worth_query_host::facade::primary_graph::{
     WorthQueryWorkflowInstanceCustody, WorthQueryWorkflowInstanceDisposition,
 };
 
-use super::super::bounded_dimension_model::{
-    programs::DimensionProgramP1,
+use super::super::document_retention_model::{
+    programs::RetentionProgramP1,
     workflow::{
         accept_early_assessment, advance_instance, approve_instance, cancel_instance,
         prepare_second_program_adoption, propose_instance, publish_adoption,
@@ -29,7 +29,7 @@ use super::*;
 #[test]
 fn a_carried_instance_refuses_evidence_collected_under_the_source_program() {
     let (mut application, _, instance, proposal, _, _) = approval_journey("approved", 86_000);
-    support_workflow_program::<DimensionProgramP1>(&mut application);
+    support_workflow_program::<RetentionProgramP1>(&mut application);
     let main = application.current_world();
     let inventory = second_program_workflow_inventory(&application, main);
     let waiting = inventory
@@ -63,12 +63,14 @@ fn a_carried_instance_refuses_evidence_collected_under_the_source_program() {
             == WorthQueryApplicationAttemptDenialKind::WorkflowAssessmentEvidenceMismatch
     ));
 
-    for (node, key) in [
-        ("checks/structural", 86_020),
-        ("checks/manufacturability", 86_030),
-    ] {
-        let settlement =
-            settle_early_assessment_for(&application, instance.clone(), node, key, PART_IDENTITY);
+    for (node, key) in [("checks/structural", 86_020), ("checks/compliance", 86_030)] {
+        let settlement = settle_early_assessment_for(
+            &application,
+            instance.clone(),
+            node,
+            key,
+            DOCUMENT_IDENTITY,
+        );
         match accept_early_assessment(&application, instance.clone(), node, &settlement, key + 1) {
             Ok(WorkflowProgressOutcome::Completed(_)) => {}
             other => panic!("{node} did not collect fresh P1 evidence: {other:?}"),
@@ -97,7 +99,7 @@ fn a_carried_instance_refuses_evidence_collected_under_the_source_program() {
 #[test]
 fn a_sibling_instance_keeps_its_program_after_its_parent_adopts() {
     let (mut application, definition, _, _, _, _) = approval_journey("approved", 86_300);
-    support_workflow_program::<DimensionProgramP1>(&mut application);
+    support_workflow_program::<RetentionProgramP1>(&mut application);
     let main = application.current_world();
     let sibling = fork_of(&application, main);
     let unaffected = match start_instance(&application, definition.held_on(sibling), 86_310)
@@ -145,7 +147,7 @@ fn an_outstanding_approval_requires_migration_before_adoption() {
         Ok(WorkflowProgressOutcome::Completed(_)) => {}
         other => panic!("expected approval to complete, got {other:?}"),
     }
-    support_workflow_program::<DimensionProgramP1>(&mut application);
+    support_workflow_program::<RetentionProgramP1>(&mut application);
     let main = application.current_world();
     let inventory = second_program_workflow_inventory(&application, main);
     let approved = inventory
@@ -196,7 +198,7 @@ fn an_outstanding_approval_requires_migration_before_adoption() {
 fn a_cancelled_instance_names_its_cancellation_to_every_request() {
     let (mut application, _, instance, proposal, required, _) =
         approval_journey("approved", 86_200);
-    support_workflow_program::<DimensionProgramP1>(&mut application);
+    support_workflow_program::<RetentionProgramP1>(&mut application);
     let main = application.current_world();
     publish_adoption(prepare_second_program_adoption(
         &application,

@@ -36,7 +36,7 @@ The bridge is not starting from scratch.
 The current baseline now includes:
 
 - milestones 1 through 12 landed as real bridge protocol work
-- [`milestone-12b.md`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-12b.md)
+- [`milestone-12b.md`](./milestone-12b.md)
   establishing bridge-native extensible writeback families and mapper
   containment
 - a strong internal subsystem decomposition
@@ -58,7 +58,7 @@ Without that execution order, the most likely failure mode is:
   parallel
 - Milestone 13 then certifies whichever seams happened to be convenient
 - and later cleanup becomes more expensive because tests, examples, and
-  integrations all depend on todayâ€™s accidental sequence
+  integrations all depend on today’s accidental sequence
 
 That is exactly the failure mode this plan is designed to prevent.
 
@@ -68,25 +68,25 @@ That is exactly the failure mode this plan is designed to prevent.
 
 This plan builds on:
 
-- [`plans/worth-runtime-bridge/worth_runtime_bridge_roadmap.md`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/worth_runtime_bridge_roadmap.md)
-- [`plans/worth-runtime-bridge/worth_runtime_bridge_vision.md`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/worth_runtime_bridge_vision.md)
-- [`plans/worth-runtime-bridge/test-requirements.md`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md)
-- [`plans/worth-runtime-bridge/milestone-12b.md`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-12b.md)
-- [`plans/worth-runtime-bridge/milestone-13.md`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-13.md)
-- [`plans/worth-runtime-bridge/dx_canonical_surface_spec.md`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/dx_canonical_surface_spec.md)
-- [`plans/worth-runtime-bridge/dx_boundary_spec.md`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/dx_boundary_spec.md)
-- [`plans/worth-runtime-bridge/dx_boundary_cleanup_spec.md`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/dx_boundary_cleanup_spec.md)
-- [`plans/worth-runtime-bridge/dx_standard_path_spec.md`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/dx_standard_path_spec.md)
-- [`plans/worth-runtime-bridge/dx_diagnostics_product_map.md`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/dx_diagnostics_product_map.md)
-- [`plans/worth-runtime-bridge/dx_wording_map.md`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/dx_wording_map.md)
-- [`plans/worth-runtime-bridge/dx_compatibility_transition_plan.md`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/dx_compatibility_transition_plan.md)
-- [`plans/worth-runtime-bridge/dx_public_surface_audit.md`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/dx_public_surface_audit.md)
-- [`plans/worth_signal/dx_plan.md`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth_signal/dx_plan.md)
-- [`plans/worth_signal/dx_boundary_spec.md`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth_signal/dx_boundary_spec.md)
-- [`plans/worth-relational/dx_plan.md`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_plan.md)
-- [`plans/worth-relational/dx_boundary_spec.md`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_boundary_spec.md)
-- [`crates/worth-runtime-bridge/src/lib.rs`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/lib.rs)
-- [`crates/worth-runtime-bridge/src/facade.rs`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/facade.rs)
+- [`plans/worth-runtime-bridge/worth_runtime_bridge_roadmap.md`](./WORTH_runtime_bridge_roadmap.md)
+- [`plans/worth-runtime-bridge/worth_runtime_bridge_vision.md`](./WORTH_runtime_bridge_vision.md)
+- [`plans/worth-runtime-bridge/test-requirements.md`](./test-requirements.md)
+- [`plans/worth-runtime-bridge/milestone-12b.md`](./milestone-12b.md)
+- [`plans/worth-runtime-bridge/milestone-13.md`](./milestone-13.md)
+- [`plans/worth-runtime-bridge/dx_canonical_surface_spec.md`](./dx_canonical_surface_spec.md)
+- [`plans/worth-runtime-bridge/dx_boundary_spec.md`](./dx_boundary_spec.md)
+- [`plans/worth-runtime-bridge/dx_boundary_cleanup_spec.md`](./dx_boundary_cleanup_spec.md)
+- [`plans/worth-runtime-bridge/dx_standard_path_spec.md`](./dx_standard_path_spec.md)
+- [`plans/worth-runtime-bridge/dx_diagnostics_product_map.md`](./dx_diagnostics_product_map.md)
+- [`plans/worth-runtime-bridge/dx_wording_map.md`](./dx_wording_map.md)
+- [`plans/worth-runtime-bridge/dx_compatibility_transition_plan.md`](./dx_compatibility_transition_plan.md)
+- [`plans/worth-runtime-bridge/dx_public_surface_audit.md`](./dx_public_surface_audit.md)
+- [`plans/worth_signal/dx_plan.md`](../WORTH_signal/dx_plan.md)
+- [`plans/worth_signal/dx_boundary_spec.md`](../WORTH_signal/dx_boundary_spec.md)
+- [`plans/worth-relational/dx_plan.md`](../WORTH-relational/dx_plan.md)
+- [`plans/worth-relational/dx_boundary_spec.md`](../WORTH-relational/dx_boundary_spec.md)
+- [`crates/worth-runtime-bridge/src/lib.rs`](../../crates/worth-runtime-bridge/src/lib.rs)
+- [`crates/worth-runtime-bridge/src/facade.rs`](../../crates/worth-runtime-bridge/src/facade.rs)
 
 ---
 
@@ -178,7 +178,7 @@ The DX work is only done when all of the following are true:
 - naming and grouping are coherent enough that new engineers and AI agents do
   not have to infer usage by subsystem vibes
 - examples and tests target the intended public bridge flows
-- Milestone 13â€™s pricing-shock reference workload can be expressed through the
+- Milestone 13’s pricing-shock reference workload can be expressed through the
   intended public bridge path
 - the bridge is hard enough to support publicly without embarrassment
 
@@ -223,7 +223,7 @@ If those jobs are not smooth, the bridge is not done from a DX perspective.
 
 The standard-path ergonomic target for those jobs is defined in:
 
-- [`dx_standard_path_spec.md`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/dx_standard_path_spec.md)
+- [`dx_standard_path_spec.md`](./dx_standard_path_spec.md)
 
 ---
 
@@ -332,7 +332,7 @@ certification breadth again.
 
 - treat the canonical surface, boundary, cleanup, wording, diagnostics, and
   compatibility docs as one active authority set
-- treat [`dx_public_surface_audit.md`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/dx_public_surface_audit.md)
+- treat [`dx_public_surface_audit.md`](./dx_public_surface_audit.md)
   as the authoritative classification of:
   - canonical
   - advanced
@@ -381,7 +381,7 @@ are describing a boundary we actually trust.
 
 - finish containment and intent-bearing rustdoc across the remaining advanced
   and specialist facade surfaces
-- keep [`facade.rs`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/facade.rs)
+- keep [`facade.rs`](../../crates/worth-runtime-bridge/src/facade.rs)
   as the single teaching surface, with standard-path, explicit-control, and
   specialist categories explained inside that one root API
 - de-emphasize compatibility-heavy flat exports rather than letting them become

@@ -1,5 +1,7 @@
 # Milestone 9.14: Installed Operation Semantics, Semantic Aspect Correspondence, Conditional Signal Authority, And Bound Downstream Authority
 
+> **Status:** Completed.
+
 > Platform carriage successor:
 > [WORTH Signal Milestone 13.1](../WORTH_signal/milestone-13.1-plan.md)
 

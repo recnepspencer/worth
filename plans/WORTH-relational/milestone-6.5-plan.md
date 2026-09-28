@@ -1,5 +1,7 @@
 # Milestone 6.5 Engineering Spec: Invariant Completion and Custom Invariant Support
 
+> **Status:** Completed. Closeout: [milestone-6.5-closeout.md](./milestone-6.5-closeout.md).
+
 ## Summary
 
 Milestone 6.5 completes the invariant subsystem as a truth-grade authority

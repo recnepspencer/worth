@@ -1,6 +1,6 @@
 # Milestone 9.13.1: Query Iteration Foundation
 
-Status: Phases 1-3 closed on 2026-07-18. Phases 4-8 are open.
+> **Status:** Completed.
 
 ## Goal
 

@@ -54,6 +54,8 @@ use crate::snapshots::FacadeVocabularyAuthority;
 use std::path::Path;
 
 pub(crate) use compiled_library_surface::observe_compiled_library_surface;
+pub(crate) use crate_modules::{parse_crate_modules_where, GovernedCrate, ModuleGraph};
+pub(crate) use path_dependencies::path_backed_dependency_roots;
 pub(crate) use raw_geometry::enforce_raw_geometry_denials;
 pub(crate) use source_reachability::enforce_workspace_source_reachability;
 pub(crate) use truth_types::enforce_truth_type_denials;

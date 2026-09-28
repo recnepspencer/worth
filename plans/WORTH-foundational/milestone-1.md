@@ -1,5 +1,7 @@
 # Milestone 1: Aspec-Native Canonical Value And Aspect State Substrate
 
+> **Status:** Completed. Closeout: [milestone-1-closeout.md](./milestone-1-closeout.md).
+
 ## Goal
 
 Establish the shared canonical value language and aspect-state vocabulary that

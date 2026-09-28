@@ -136,7 +136,7 @@ What is explicitly not claimed by Milestone 2:
 - domain-complete hostile rewiring certification
 
 That capability is deferred explicitly to
-[worth_relational_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/worth_relational_roadmap.md)
+[worth_relational_roadmap.md](./WORTH_relational_roadmap.md)
 `Milestone 7B: Authoritative Merge Execution`.
 
 ## Additional Hardening Added Before Close
@@ -163,7 +163,7 @@ Milestone 2 intentionally does not claim ownership of full first-class rewiring
 or merge/reconciliation semantics.
 
 Those are now explicitly deferred to
-[worth_relational_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/worth_relational_roadmap.md)
+[worth_relational_roadmap.md](./WORTH_relational_roadmap.md)
 `Milestone 7B: Authoritative Merge Execution`, including:
 
 - relation endpoint rewiring as a first-class authoritative capability
@@ -211,5 +211,5 @@ gaps are explicitly owned by later roadmap milestones rather than left as soft
 ambiguity.
 
 The next product milestone is
-[worth_relational_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/worth_relational_roadmap.md)
+[worth_relational_roadmap.md](./WORTH_relational_roadmap.md)
 `Milestone 3: Structural Identity, Introspection, and Historical Inspection`.

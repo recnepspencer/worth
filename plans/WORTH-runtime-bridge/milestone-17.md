@@ -1,6 +1,6 @@
 # Milestone 17 Engineering Spec: Temporal And Async Bridge Basis, Causality, And Certification
 
-> **Status:** Draft
+> **Status:** Completed. Closeout: [milestone-17-closeout.md](./milestone-17-closeout.md).
 >
 > **Roadmap parent:** [worth_runtime_bridge_roadmap.md](./worth_runtime_bridge_roadmap.md)
 >
@@ -64,7 +64,7 @@ Query and later Server work must inherit rather than redefine.
 - `composition_laws.md`: temporal basis binding, async source admission,
   completion causality, mixed-cause ordering, restart/resume, diagnostics, and
   certification are separate responsibilities and must not collapse into one
-  â€œtemporal async helperâ€ subsystem.
+  “temporal async helper” subsystem.
 - `domain_structure_laws.md`: the tree must preserve distinct homes for
   temporal basis, async lifecycle binding, mixed-cause delivery, restart
   basis, diagnostics, and certification instead of burying them in the earlier
@@ -78,7 +78,7 @@ Query and later Server work must inherit rather than redefine.
   coherent cross-runtime temporal/async integration surface, not four
   unrelated features.
 - `worth_signal_temporal_async_roadmap.md`: bridge temporal/async work must
-  consume Signalâ€™s closed substrate law. It may not redefine time, lifecycle,
+  consume Signal’s closed substrate law. It may not redefine time, lifecycle,
   policy, or async capability shape.
 - `milestone-15.md`: active subscription identity, delivery, fanout,
   continuation, checkpoint, replay, and preview residue are already real and
@@ -141,7 +141,7 @@ then this milestone has failed.
 - Mixed truth/time/async delivery ordering is part of this bridge milestone,
   not a later Query-only concern.
 - Restart/resume basis for temporal and inflight async state is part of this
-  bridge milestoneâ€™s runtime-backed contract, even if durable store-backed
+  bridge milestone’s runtime-backed contract, even if durable store-backed
   continuation remains later work.
 
 ## Phase Plan

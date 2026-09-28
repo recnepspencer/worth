@@ -1,8 +1,6 @@
 # Milestone 9.17.2: Composite Runtime-World History And Coordinated Publication
 
-> **Status:** Implementation and scoped closure complete on 2026-09-05.
-> The persistent Astra high gate approved Phases 5–7. Untouched dependency lint
-> debt remains explicitly recorded under the Phase 7 closure evidence.
+> **Status:** Completed.
 >
 > **Product posture:** This milestone establishes the memory-resident Runtime
 > World composition authority in the dedicated `worth-runtime-world` owner

@@ -32,11 +32,11 @@ Named suite:
 
 Primary test:
 
-- [sealed_minting_and_witness_authority_certification.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-proof/tests/sealed_minting_and_witness_authority_certification.rs)
+- [sealed_minting_and_witness_authority_certification.rs](../../crates/worth-proof/tests/sealed_minting_and_witness_authority_certification.rs)
 
 Supporting evidence module:
 
-- [tests/support/milestone2/mod.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-proof/tests/support/milestone2/mod.rs)
+- `tests/support/milestone2/mod.rs`
 
 Machine-checkable outputs:
 
@@ -58,11 +58,11 @@ the milestone:
 
 Compile-fail fixtures:
 
-- [stronger_proof_bearing_constructors_are_not_public.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-proof/tests/ui/stronger_proof_bearing_constructors_are_not_public.rs)
-- [observed_proofs_cannot_be_duplicated.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-proof/tests/ui/observed_proofs_cannot_be_duplicated.rs)
-- [witnesses_are_not_publicly_mintable.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-proof/tests/ui/witnesses_are_not_publicly_mintable.rs)
-- [witness_required_apis_reject_callers_without_witness.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-proof/tests/ui/witness_required_apis_reject_callers_without_witness.rs)
-- [recipe_stages_are_not_publicly_skippable.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-proof/tests/ui/recipe_stages_are_not_publicly_skippable.rs)
+- [stronger_proof_bearing_constructors_are_not_public.rs](../../crates/worth-proof/tests/ui/sealed_minting/stronger_proof_bearing_constructors_are_not_public.rs)
+- [observed_proofs_cannot_be_duplicated.rs](../../crates/worth-proof/tests/ui/sealed_minting/observed_proofs_cannot_be_duplicated.rs)
+- [witnesses_are_not_publicly_mintable.rs](../../crates/worth-proof/tests/ui/sealed_minting/witnesses_are_not_publicly_mintable.rs)
+- [witness_required_apis_reject_callers_without_witness.rs](../../crates/worth-proof/tests/ui/sealed_minting/witness_required_apis_reject_callers_without_witness.rs)
+- [recipe_stages_are_not_publicly_skippable.rs](../../crates/worth-proof/tests/ui/sealed_minting/recipe_stages_are_not_publicly_skippable.rs)
 
 ## Zero-Cost Posture
 

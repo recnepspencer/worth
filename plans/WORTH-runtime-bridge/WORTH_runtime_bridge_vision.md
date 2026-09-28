@@ -42,7 +42,7 @@ It is meant to support:
 - future multi-consumer platforms where one truth runtime may feed multiple
   derived systems through stable protocol contracts
 
-The real breakthrough is not â€œsignals can read relational data.â€ The
+The real breakthrough is not “signals can read relational data.” The
 breakthrough is that truth history, identity evolution, patch streams,
 snapshots, and derived execution can stay separate and still behave like one
 coherent, auditable system.
@@ -69,7 +69,7 @@ These are the architectural bets that make the bridge first-class:
 - end-to-end causality propagation
 - bridge diagnostics and certification artifacts
 
-The innovation is not only â€œtruth changes trigger compute.â€ The innovation is a
+The innovation is not only “truth changes trigger compute.” The innovation is a
 protocol boundary that lets truth and computation remain separate systems while
 still composing precisely, efficiently, historically, and causally.
 
@@ -202,7 +202,7 @@ The bridge coordinates between them.
 
 Why it is first-class:
 Each runtime can optimize for its real job rather than carrying the other
-runtimeâ€™s constraints.
+runtime’s constraints.
 
 What coupling problem it prevents:
 Fused designs make truth storage harder to branch and make compute scheduling
@@ -359,7 +359,7 @@ surfaces; signal evaluates against them.
 
 Why it is first-class:
 Derived computation should be able to evaluate against retained historical truth
-intentionally, not only against â€œlatest snapshot.â€
+intentionally, not only against “latest snapshot.”
 
 What coupling problem it prevents:
 Without a first-class contract, historical analysis becomes an ad hoc replay
@@ -544,13 +544,13 @@ failure scenarios, it is certification work.
 
 ## Companion Documents
 
-- [plans/worth-relational/worth_relational_vision.md](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/worth-relational/worth_relational_vision.md)
-- [plans/worth_signal/worth_signal_vision.md](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/worth_signal/worth_signal_vision.md)
-- [plans/worth_signal/worth_signals2.md](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/worth_signal/worth_signals2.md)
+- [plans/worth-relational/worth_relational_vision.md](../WORTH-relational/WORTH_relational_vision.md)
+- [plans/worth_signal/worth_signal_vision.md](../WORTH_signal/WORTH_signal_vision.md)
+- [plans/worth_signal/worth_signals2.md](../WORTH_signal/WORTH_signals2.md)
 
 Dual-graph architecture, lineage-aware continuity, snapshot and historical
 evaluation, speculative branch coordination, and end-to-end causality are what
-make this bridge more than â€œintegration code.â€ If those are weak, the system
+make this bridge more than “integration code.” If those are weak, the system
 either fuses into a monolith or falls back to manual invalidation and leaky
 abstractions. The bridge should therefore be designed as a strong coordination
 layer between generic libraries that need to work together without losing their

@@ -2,19 +2,19 @@
 
 > **Status:** Closed 2026-04-14
 >
-> **Roadmap parent:** [worth_store_roadmap.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/worth_store_roadmap.md)
+> **Roadmap parent:** `worth_store_roadmap.md`
 >
-> **Vision parent:** [worth_store_vision.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/worth_store_vision.md)
+> **Vision parent:** [worth_store_vision.md](./worth_store_vision.md)
 >
-> **Test requirements:** [test-requirements.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/test-requirements.md)
+> **Test requirements:** [test-requirements.md](./test-requirements.md)
 >
 > **Prerequisite milestones:**
-> - [milestone-1.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-1.md)
-> - [milestone-1-closeout.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-1-closeout.md)
-> - [milestone-2.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-2.md)
-> - [milestone-2-closeout.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-2-closeout.md)
+> - [milestone-1.md](./milestone-1.md)
+> - [milestone-1-closeout.md](./milestone-1-closeout.md)
+> - [milestone-2.md](./milestone-2.md)
+> - [milestone-2-closeout.md](./milestone-2-closeout.md)
 >
-> **Closeout:** [milestone-3-closeout.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-3-closeout.md)
+> **Closeout:** [milestone-3-closeout.md](./milestone-3-closeout.md)
 >
 > **Primary architectural driver:** make durable mode real without letting the
 > WAL, recovery path, or hosted runtime lifecycle become a second authority
@@ -1040,7 +1040,7 @@ Exit condition:
 - duplicate suppression across repeated crash-restart loops
 - typed durable recovery diagnostics and counters
 - Milestone 3 certification through the named suite in
-  [test-requirements.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/test-requirements.md)
+  [test-requirements.md](./test-requirements.md)
 
 ## Must Preserve
 

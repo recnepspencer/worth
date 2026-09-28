@@ -9,11 +9,11 @@ use worth_query_host::facade::application_installation::WorthQueryInMemoryApplic
 use worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition;
 use worth_query_host::facade::domain::WorthQueryProgramSupportDenial;
 
-use crate::bounded_dimension_model::host::{
+use crate::document_retention_model::host::{
     publish_first_program_alone, publish_with_foreign_rule_rostered,
 };
-use crate::bounded_dimension_model::programs::ForeignRuleDimensionProgram;
-use crate::bounded_dimension_model::schema::BoundedDimensionSchema;
+use crate::document_retention_model::programs::ForeignRuleRetentionProgram;
+use crate::document_retention_model::schema::DocumentRetentionSchema;
 
 #[test]
 fn a_roster_leaving_an_installed_rule_unclaimed_is_refused() {
@@ -30,7 +30,7 @@ fn a_roster_leaving_an_installed_rule_unclaimed_is_refused() {
     };
     assert_eq!(
         (rule.identity(), rule.major(), rule.minor()),
-        ("bounded-dimension-v2", 1, 0),
+        ("document-retention-v2", 1, 0),
         "the refusal must name the installed rule no rostered program reads as law"
     );
 }
@@ -52,12 +52,12 @@ fn a_program_claiming_an_uninstalled_rule_is_refused() {
     };
     assert_eq!(
         (rule.identity(), rule.major(), rule.minor()),
-        ("bounded-dimension-v3", 1, 0),
+        ("document-retention-v3", 1, 0),
         "the refusal must name the rule contract this host cannot support"
     );
     assert_eq!(
         claimant,
-        &<ForeignRuleDimensionProgram as ApplicationProgramDefinition<BoundedDimensionSchema>>::IDENTITY,
+        &<ForeignRuleRetentionProgram as ApplicationProgramDefinition<DocumentRetentionSchema>>::IDENTITY,
         "the refusal must name the program that claimed it"
     );
 }

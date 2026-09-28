@@ -21,6 +21,13 @@ mod work_evidence;
 pub use omission_posture::WorthQueryApplicationQueryOmissionPosture;
 pub use work_evidence::WorthQueryApplicationQueryWorkEvidence;
 
+/// Record of how one application query read was served: which query and
+/// parameters, on which basis, under which consistency and freshness, what it
+/// disclosed, and how much work it did.
+///
+/// Every query result, continuation page, and live update carries one through
+/// `receipt()`. It is descriptive evidence for audit and budgeting, not
+/// authority to read again.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationQueryAccessReceipt {
     query_identity: WorthQueryInstalledApplicationQueryIdentity,

@@ -8,7 +8,7 @@ use worth_query_host::facade::application_entry::WorthQueryWorkflowInstancePrepa
 use worth_query_host::facade::declaration::application_program::ApplicationWorkflowComponentLimits;
 use worth_query_installation::facade::WorthQueryApplicationWorkflowResourceCeiling;
 
-use super::super::bounded_dimension_model::{
+use super::super::document_retention_model::{
     host::publish_on_first_program,
     workflow::{
         cancel_instance, continue_on_fork, expect_capacity_refused, expect_superseded_start,
@@ -27,12 +27,7 @@ type StartResult =
     Result<WorkflowInstanceStartOutcome, WorthQueryWorkflowInstancePreparationDenial>;
 
 /// A workflow host whose lineages each hold at most `PINS` live instances.
-fn pinned(
-    key: u64,
-) -> (
-    BoundedDimensionWorkflowRuntime,
-    PublishedWorkflowDefinitionRef,
-) {
+fn pinned(key: u64) -> (DocumentWorkflowRuntime, PublishedWorkflowDefinitionRef) {
     let resources = WorthQueryApplicationWorkflowResourceCeiling::new(
         32,
         64,
@@ -47,7 +42,7 @@ fn pinned(
     let application = retain_workflow_with_resources(publish_on_first_program(), resources);
     let definition = match publish_definition(
         &application,
-        reviewed_geometry_definition("completed"),
+        reviewed_document_definition("completed"),
         WorkflowDefinitionExpectedPredecessor::Absent,
         key,
     )
@@ -62,7 +57,7 @@ fn pinned(
 }
 
 fn start(
-    application: &BoundedDimensionWorkflowRuntime,
+    application: &DocumentWorkflowRuntime,
     definition: &PublishedWorkflowDefinitionRef,
     key: u64,
 ) -> StartResult {
@@ -75,7 +70,7 @@ fn admitted(outcome: StartResult) -> (PublishedWorkflowInstanceRef, bool) {
     (performed.instance().clone(), performed.replayed())
 }
 
-fn release_everything(application: &BoundedDimensionWorkflowRuntime) {
+fn release_everything(application: &DocumentWorkflowRuntime) {
     let runtime = application.runtime();
     runtime.release_workflow_instance_progress_for_test();
     runtime.release_workflow_compilation_for_test();
@@ -119,7 +114,7 @@ fn publication_takes_no_pin_and_eviction_releases_none() {
     let successor = replace_definition(
         &application,
         definition.clone(),
-        reviewed_geometry_definition("applied"),
+        reviewed_document_definition("applied"),
         96_110,
     );
     expect_capacity_refused(start(&application, &successor, 96_111));
@@ -167,7 +162,7 @@ fn publication_with_a_free_pin_still_admits_one_start() {
     let successor = replace_definition(
         &application,
         definition,
-        reviewed_geometry_definition("applied"),
+        reviewed_document_definition("applied"),
         96_310,
     );
     let (_, replay) = admitted(start(&application, &successor, 96_311));
@@ -186,7 +181,7 @@ fn a_migration_exchanges_exactly_one_pin() {
     let successor = replace_definition(
         &application,
         definition,
-        reviewed_geometry_definition("applied"),
+        reviewed_document_definition("applied"),
         96_410,
     );
     let (migrated, _) = admitted(migrate_instance(
@@ -231,7 +226,7 @@ fn a_fork_continuation_exchanges_its_copys_pin() {
 }
 
 fn assert_awaiting_assessment(
-    application: &BoundedDimensionWorkflowRuntime,
+    application: &DocumentWorkflowRuntime,
     instance: &PublishedWorkflowInstanceRef,
     key: u64,
 ) {

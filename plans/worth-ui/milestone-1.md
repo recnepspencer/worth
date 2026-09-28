@@ -1,5 +1,7 @@
 # Milestone 1: Platform Skeleton, Facade, and Capability Registries
 
+> **Status:** Completed. Closeout: [milestone-1-closeout.md](./milestone-1-closeout.md).
+
 ## Goal
 
 Make Worth UI enter the codebase as one domain-agnostic platform subsystem with

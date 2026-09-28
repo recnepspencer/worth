@@ -1,6 +1,6 @@
 # Milestone 9.7 Engineering Spec: Concurrent Read Authority And Deterministic Submission
 
-> **Status:** Draft
+> **Status:** Completed. Closeout: [milestone-9.7-closeout.md](./milestone-9.7-closeout.md).
 >
 > **Roadmap parent:** [worth_query_roadmap.md](./worth_query_roadmap.md)
 >
@@ -8,7 +8,7 @@
 >
 > **Purpose:** decompose the Query runtime into authority-typed subsystems so
 > committed-snapshot reads scale concurrently across consumers while truth
-> mutation and derived maintenance remain single-owner and deterministic â€”
+> mutation and derived maintenance remain single-owner and deterministic —
 > before Milestone `10` freezes store-backed shapes around the current
 > single-borrow topology.
 
@@ -19,13 +19,13 @@ Give Query a real multi-consumer operating topology: sealed, basis-bound,
 guarantees; one deterministic submission seam through which all mutation and
 declaration work enters in total order; and a published-artifact rule that
 keeps derived computation single-owner so concurrent readers can never
-perturb evaluation â€” all without changing canonical query meaning or adding a
+perturb evaluation — all without changing canonical query meaning or adding a
 second semantics path beside the workspace.
 
 ## Why This Milestone Exists
 
-Every workspace operation today â€” including read-shaped ones like opening a
-preview â€” takes `&mut self`, and sessions are lifetime-bound borrows. The
+Every workspace operation today — including read-shaped ones like opening a
+preview — takes `&mut self`, and sessions are lifetime-bound borrows. The
 borrow checker therefore enforces one operation in flight per workspace,
 forever, regardless of how concurrent `worth-relational`'s MVCC substrate is
 underneath. Snapshot immutability is a structural fact the type system has
@@ -36,7 +36,7 @@ Without this milestone:
 - server-grade consumers must choose between a global lock (throughput cliff,
   MVCC wasted) and branch-per-connection (truth-fork semantics spent on a
   transport problem, subscription sharing defeated, abandoned forks to
-  collect) â€” both are exactly the consumer-invented runtime folklore the
+  collect) — both are exactly the consumer-invented runtime folklore the
   Query hard prohibitions exist to prevent
 - Milestone `10` freezes store-backed adapter and execution shapes around the
   single-borrow topology, making the `Send` boundary retrofit dramatically
@@ -51,7 +51,7 @@ the Query runtime.
 
 ## Governing Summaries
 
-- `MENTALITY.md`: solve the hard problem first â€” concurrency topology is
+- `MENTALITY.md`: solve the hard problem first — concurrency topology is
   load-bearing infrastructure that must precede the store-backed features
   that would otherwise freeze around its absence.
 - `arch_laws.md`: Law 1 (autonomous subsystems; read path borrows only
@@ -72,14 +72,14 @@ the Query runtime.
   refcount-quiet by structure.
 - `worth_query_roadmap.md`: Query owns typed expression, lowering, and result
   shaping; relational owns truth; signal owns reactive evaluation. This
-  milestone redistributes *access topology* only â€” no authority moves.
+  milestone redistributes *access topology* only — no authority moves.
 
 ## Adversarial Constraint
 
 N concurrent shared read contexts under sustained commit pressure, preview and
 branch session churn, and live maintenance load must produce byte-identical
 results and receipts for the same `(canonical declaration, basis capability)`
-pair as a fully serialized execution of the same schedule â€” while journal
+pair as a fully serialized execution of the same schedule — while journal
 replay of the submission stream reconstructs identical truth, identical
 published derived artifacts, and identical receipts, with zero locks acquired
 on the committed-read hot path and zero derived evaluations triggered by any
@@ -126,15 +126,15 @@ Phases **11 through 18** are the mandatory end-cap honesty program. They exist
 because an earlier pass claimed closure while still using snapshot-copy shared
 reads, `Mutex` on the read substrate, `commit_identity` string folklore for
 journal order, and serial-only hostile certification. Each end-cap phase owns
-its substrate **and** its proof obligations â€” inventory slices, forbidden-pattern
+its substrate **and** its proof obligations — inventory slices, forbidden-pattern
 scans, hostile schedules, and sabotage tests close **inside** the phase that
 ships the substrate, not in a later audit bucket. **Milestone `9.7` may not
 report `Closed` until Phase 18 passes with derived proof, not API presence.**
 
 ### Phase 1: Backend Adapter Authority-Lane Decomposition Boundary
 
-Split the backend adapter contracts by authority lane â€” committed read,
-declaration intake, patch consumption, mutation â€” so no trait object mixes
+Split the backend adapter contracts by authority lane — committed read,
+declaration intake, patch consumption, mutation — so no trait object mixes
 read access with mutation access, and place `Send + Sync` bounds on the read
 lane contracts. Zero behavior change.
 
@@ -144,9 +144,9 @@ lane contracts. Zero behavior change.
 - test-support and downstream adapter implementations
 
 **Relevant Query source surfaces**
-- [runtime/backend/contracts.rs](../../crates/worth-query/src/runtime/backend/contracts.rs)
-- [runtime/backend/parts.rs](../../crates/worth-query/src/runtime/backend/parts.rs)
-- [runtime/builder.rs](../../crates/worth-query/src/runtime/builder.rs)
+- [runtime/backend/contracts.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/backend/contracts.rs)
+- [runtime/backend/parts.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/backend/parts.rs)
+- [runtime/builder.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/builder.rs)
 
 **Relevant APIs and product surfaces**
 - `WORTHQueryRuntimeSourceAdapter` and sibling adapter contracts, decomposed
@@ -193,8 +193,8 @@ arch law 9.
 - construction lifecycle propagation
 
 **Relevant Query source surfaces**
-- [runtime/builder.rs](../../crates/worth-query/src/runtime/builder.rs)
-- [runtime/backend/parts.rs](../../crates/worth-query/src/runtime/backend/parts.rs)
+- [runtime/builder.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/builder.rs)
+- [runtime/backend/parts.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/backend/parts.rs)
 
 **Relevant APIs and product surfaces**
 - `WORTHQueryRuntime::builder()` lane-typed part intake
@@ -238,8 +238,8 @@ counting and without unbounded retention.
 - basis capability lifecycle
 
 **Relevant Query source surfaces**
-- [runtime/state_snapshot.rs](../../crates/worth-query/src/runtime/state_snapshot.rs)
-- [runtime/workspace.rs](../../crates/worth-query/src/runtime/workspace.rs)
+- [runtime/state_snapshot.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/state_snapshot.rs)
+- [runtime/workspace.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/workspace.rs)
 
 **Relevant APIs and product surfaces**
 - generation-indexed snapshot pin and retirement surfaces consumed by the
@@ -265,7 +265,7 @@ counting and without unbounded retention.
   on the covered scaffold harness.
 - Adversarial residue: prove that after a hostile pin/retire schedule, zero
   orphaned generations and zero unretired pins remain, as exact counter
-  assertions sourced from runtime-owned counters â€” not inferred values.
+  assertions sourced from runtime-owned counters — not inferred values.
 - This phase does **not** close hot-path lock posture; that is Phase 12.
 
 **Engineering decisions**
@@ -290,9 +290,9 @@ pinning substrate.
 - snapshot generation pinning (consumed from Phase 3)
 
 **Relevant Query source surfaces**
-- [runtime/workspace.rs](../../crates/worth-query/src/runtime/workspace.rs)
-- [runtime/workspace_queries.rs](../../crates/worth-query/src/runtime/workspace_queries.rs)
-- [runtime/state_snapshot.rs](../../crates/worth-query/src/runtime/state_snapshot.rs)
+- [runtime/workspace.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/workspace.rs)
+- [runtime/workspace_queries.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/workspace_queries.rs)
+- [runtime/state_snapshot.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/state_snapshot.rs)
 
 **Relevant APIs and product surfaces**
 - the sealed shared read context constructor on the workspace (the only legal
@@ -327,13 +327,13 @@ let reports: Vec<_> = std::thread::scope(|s| {
         .map(|handle| handle.join().unwrap())
         .collect()
 });
-// byte-identical receipts to serialized execution â€” certified in Phase 16
+// byte-identical receipts to serialized execution — certified in Phase 16
 ```
 
 **Warnings**
 - Do not let the read context be constructible from a raw snapshot id, branch
   id, or label; it exists only as the product of basis capability admission.
-- Do not give the read context any method whose execution writes â€” including
+- Do not give the read context any method whose execution writes — including
   "convenience" cache warming or lazy index repair.
 - Phase 4 may ship a serial-only read context over copied snapshot state.
   `Send + Sync`, real N-thread equivalence, and structural pinning honesty are
@@ -376,14 +376,14 @@ artifacts.
 - journal identity
 
 **Relevant Query source surfaces**
-- [runtime/workspace.rs](../../crates/worth-query/src/runtime/workspace.rs)
-- [runtime/workspace_declaration.rs](../../crates/worth-query/src/runtime/workspace_declaration.rs)
+- [runtime/workspace.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/workspace.rs)
+- [runtime/workspace_declaration.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/workspace_declaration.rs)
 
 **Relevant APIs and product surfaces**
 - the typed submission surface accepting canonical declarations and admitted
   intent families
 - ordered submission receipts carrying journal position identity
-- the existing admission, receipt, and envelope vocabulary â€” reused, not
+- the existing admission, receipt, and envelope vocabulary — reused, not
   duplicated
 
 **Target shape (illustrative, not frozen API)**
@@ -395,7 +395,7 @@ let receipt = workspace.submissions().submit(construction_declaration)?;
 assert!(receipt.journal_position().is_committed());
 
 // admission stops are the same typed lattice outcomes as today:
-// denied/advisory/violation with decision traces â€” submission adds ordering,
+// denied/advisory/violation with decision traces — submission adds ordering,
 // not a second admission vocabulary
 ```
 
@@ -413,7 +413,7 @@ assert!(receipt.journal_position().is_committed());
   [test-requirements.md](./test-requirements.md) and close it in this phase.
 - Adversarial equivalence: submit an interleaved multi-producer workload,
   record the journal, replay it, and prove identical truth, receipts, and
-  digests â€” including across process restart of the runtime-backed harness.
+  digests — including across process restart of the runtime-backed harness.
 - Adversarial rejection: duplicate submission of the same canonical identity
   and submission against a stale basis both stop typed at admission, with
   decision traces preserved, and leave no journal residue.
@@ -440,13 +440,13 @@ replay as consumer-side refolds because no runtime-owned replay lane exists.
 - journal segment identity
 
 **Relevant Query source surfaces**
-- [runtime/workspace.rs](../../crates/worth-query/src/runtime/workspace.rs)
-- [runtime/workspace_declaration.rs](../../crates/worth-query/src/runtime/workspace_declaration.rs)
+- [runtime/workspace.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/workspace.rs)
+- [runtime/workspace_declaration.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/workspace_declaration.rs)
 
 **Relevant APIs and product surfaces**
 - typed replay requests binding a basis capability to a journal segment
   identity
-- replay outputs as ordinary receipts and envelopes â€” not a parallel result
+- replay outputs as ordinary receipts and envelopes — not a parallel result
   vocabulary
 
 **Warnings**
@@ -461,7 +461,7 @@ replay as consumer-side refolds because no runtime-owned replay lane exists.
   [test-requirements.md](./test-requirements.md) and close it in this phase.
 - Adversarial equivalence: a consumer-shaped test replays a recorded journal
   segment through the public replay surface and proves the reconstructed
-  state, receipts, and digests match the original run exactly â€” without the
+  state, receipts, and digests match the original run exactly — without the
   consumer retaining or refolding any change artifacts of its own.
 - Adversarial denial: replay requests against a mismatched basis, an unknown
   segment identity, or a cross-scheme digest stop typed at admission and
@@ -488,8 +488,8 @@ order.
 - published artifact registry
 
 **Relevant Query source surfaces**
-- [runtime/workspace_queries.rs](../../crates/worth-query/src/runtime/workspace_queries.rs)
-- [projection_consumption/receipt.rs](../../crates/worth-query/src/projection_consumption/receipt.rs)
+- [runtime/workspace_queries.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/workspace_queries.rs)
+- [projection_consumption/receipt.rs](../../workspaces/worth-query/crates/worth-query/src/projection_consumption/receipt.rs)
 
 **Relevant APIs and product surfaces**
 - maintenance-owner publication receipts binding artifact digest to basis and
@@ -510,7 +510,7 @@ order.
   published artifact at basis B equals a from-authority recomputation at
   basis B (arch law 33 honesty).
 - Adversarial atomicity: prove an observer of the registry during
-  republication sees either the old artifact or the new one â€” never a blend â€”
+  republication sees either the old artifact or the new one — never a blend —
   and that publication order matches commit order exactly under hostile
   scheduling.
 
@@ -535,8 +535,8 @@ evaluation.
 - shared read context (from Phase 4)
 
 **Relevant Query source surfaces**
-- [projection_consumption/source.rs](../../crates/worth-query/src/projection_consumption/source.rs)
-- [projection_consumption/receipt.rs](../../crates/worth-query/src/projection_consumption/receipt.rs)
+- `projection_consumption/source.rs`
+- [projection_consumption/receipt.rs](../../workspaces/worth-query/crates/worth-query/src/projection_consumption/receipt.rs)
 
 **Relevant APIs and product surfaces**
 - published derived-artifact consumption through the shared read context
@@ -547,7 +547,7 @@ evaluation.
 
 ```rust
 // AFTER: a reader consuming a derivation gets the last published,
-// digest-stamped artifact through the projection-consumption lane â€”
+// digest-stamped artifact through the projection-consumption lane —
 // it can never trigger evaluation itself
 match read_ctx.consume_projection(derived_facts_declaration)? {
     WORTHQueryProjectionConsumption::Current(facts) => {
@@ -555,7 +555,7 @@ match read_ctx.consume_projection(derived_facts_declaration)? {
     }
     WORTHQueryProjectionConsumption::ResultState(state) => {
         // not-yet-published or republishing posture arrives as the existing
-        // async result-state vocabulary: pending / stale / revalidating â€”
+        // async result-state vocabulary: pending / stale / revalidating —
         // never as a reader-side recomputation
     }
 }
@@ -575,7 +575,7 @@ match read_ctx.consume_projection(derived_facts_declaration)? {
   [test-requirements.md](./test-requirements.md) and close it in this phase.
 - Adversarial equivalence: concurrent readers consuming a covered derived
   family during republication observe either the old artifact or the new one
-  with matching receipts â€” never a blend â€” and identical fact content to a
+  with matching receipts — never a blend — and identical fact content to a
   serialized consumer of the same schedule.
 - Adversarial leakage: exact-zero counter assertion that no reader execution
   path performed a signal-graph evaluation, plus a hostile probe proving a
@@ -604,13 +604,13 @@ is compile-enforced.
 - support/admission reporting for the new families
 
 **Relevant Query source surfaces**
-- [runtime/workspace.rs](../../crates/worth-query/src/runtime/workspace.rs)
-- [runtime/builder.rs](../../crates/worth-query/src/runtime/builder.rs)
-- [runtime/support/profile.rs](../../crates/worth-query/src/runtime/support/profile.rs)
-- [runtime/support_matrix.rs](../../crates/worth-query/src/runtime/support_matrix.rs)
+- [runtime/workspace.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/workspace.rs)
+- [runtime/builder.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/builder.rs)
+- [runtime/support/profile.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/support/profile.rs)
+- [runtime/support_matrix.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/support_matrix.rs)
 
 **Relevant APIs and product surfaces**
-- `WORTHQueryWorkspace` â€” unchanged signatures for existing families, plus
+- `WORTHQueryWorkspace` — unchanged signatures for existing families, plus
   mint points for shared read contexts and the submission seam
 - support matrix and admission rows for the new `SharedRead` and
   `Submission` facade families, fail-closed where a backend posture cannot
@@ -646,18 +646,18 @@ is compile-enforced.
 
 ### Phase 10: Interim Hostile Schedule Baseline Boundary
 
-Land an interim hostile schedule that exercises Phases 1â€“9 in one program and
+Land an interim hostile schedule that exercises Phases 1–9 in one program and
 records the gaps the end-cap phases must close. This phase proves the harness
 exists; it does **not** close the milestone.
 
 **Relevant subsystems**
 - runtime-backed certification harness (the Milestone `9.5` raw runtime read
   bootstrap is the required entry)
-- all Phase 1â€“9 boundaries
+- all Phase 1–9 boundaries
 
 **Relevant Query source surfaces**
-- [tests/support/public_bridge_runtime/mod.rs](../../crates/worth-query/tests/support/public_bridge_runtime/mod.rs)
-- [runtime/tests/support/bridge/runtime_support.rs](../../crates/worth-query/src/runtime/tests/support/bridge/runtime_support.rs)
+- [tests/support/public_bridge_runtime/mod.rs](../../workspaces/worth-query/crates/worth-query/tests/support/public_bridge_runtime/mod.rs)
+- [runtime/tests/support/bridge/runtime_support.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/tests/support/bridge/runtime_support.rs)
 
 **Warnings**
 - Do not treat a serial schedule as concurrent certification. Real N-thread
@@ -668,7 +668,7 @@ exists; it does **not** close the milestone.
 - Do not close this phase if journal gap counting parses `commit_identity`
   text, if pin residue is hard-coded zero, or if shared read mint copies
   derived rows into a side registry. Those are explicit debt markers for
-  Phases 11â€“18.
+  Phases 11–18.
 
 **Test requirements**
 - Add a `Milestone 9.7 Interim Hostile Schedule Baseline Test` to
@@ -678,7 +678,7 @@ exists; it does **not** close the milestone.
   on the covered harness.
 - Adversarial debt publication: the schedule artifact must record which
   guarantees are still modeled (snapshot copy, `Mutex` on read substrate,
-  string-derived journal order, serial-only readers) so Phases 11â€“18 cannot
+  string-derived journal order, serial-only readers) so Phases 11–18 cannot
   be skipped silently.
 
 **Engineering decisions**
@@ -704,10 +704,10 @@ slice proof before Phase 12 begins.
 - pinning inventory (registry and mint slice)
 
 **Relevant Query source surfaces**
-- [runtime/shared_read.rs](../../crates/worth-query/src/runtime/shared_read.rs)
-- [runtime/state.rs](../../crates/worth-query/src/runtime/state.rs)
-- [runtime/workspace_shared_read.rs](../../crates/worth-query/src/runtime/workspace_shared_read.rs)
-- [application/support/shared_read_pinning_inventory.rs](../../crates/worth-query/src/application/support/shared_read_pinning_inventory.rs) (new)
+- [runtime/shared_read.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/shared_read.rs)
+- [runtime/state.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/state.rs)
+- [runtime/workspace_shared_read.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/workspace_shared_read.rs)
+- `application/support/shared_read_pinning_inventory.rs` (new)
 
 **Relevant APIs and product surfaces**
 - runtime-owned published-artifact registry with generation-indexed entries
@@ -770,10 +770,10 @@ retire path and must close on pin-substrate proof before Phase 13 begins.
 - pinning inventory (pin and retire slice)
 
 **Relevant Query source surfaces**
-- [runtime/shared_read_pins/registry.rs](../../crates/worth-query/src/runtime/shared_read_pins/registry.rs)
-- [runtime/state_snapshot.rs](../../crates/worth-query/src/runtime/state_snapshot.rs)
-- [runtime/workspace.rs](../../crates/worth-query/src/runtime/workspace.rs)
-- [application/support/shared_read_pinning_inventory.rs](../../crates/worth-query/src/application/support/shared_read_pinning_inventory.rs)
+- [runtime/shared_read_pins/registry.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/shared_read_pins/registry.rs)
+- [runtime/state_snapshot.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/state_snapshot.rs)
+- [runtime/workspace.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/workspace.rs)
+- `application/support/shared_read_pinning_inventory.rs`
 
 **Relevant APIs and product surfaces**
 - typed pin and retire surfaces with runtime-owned residue counters
@@ -809,7 +809,7 @@ retire path and must close on pin-substrate proof before Phase 13 begins.
   generations and exact-zero unretired pins through runtime-owned counters.
 - Adversarial contention proof: exact-zero lock acquisitions on the shared-read
   hot path under a hostile read schedule, with measurement hooks compiled in
-  for release builds used by certification â€” not `#cfg(test)` fiction.
+  for release builds used by certification — not `#cfg(test)` fiction.
 - Adversarial sabotage: perturb pin-residue counters or inject a deliberate
   unretired pin and prove this phase's test fails.
 
@@ -824,8 +824,8 @@ retire path and must close on pin-substrate proof before Phase 13 begins.
 
 ### Phase 13: Shared Read Context And Pinning Boundary Closure
 
-Make `WORTHQuerySharedReadContext` the real product surface â€” sealed,
-basis-bound, `Send + Sync`, holding a registry lease and pinned generation â€”
+Make `WORTHQuerySharedReadContext` the real product surface — sealed,
+basis-bound, `Send + Sync`, holding a registry lease and pinned generation —
 and **close the entire pinning boundary end-to-end inside this phase**. No
 later phase re-audits pinning; journal and certification phases may assume
 pinning is honestly `Closed` when Phase 13 passes.
@@ -838,12 +838,12 @@ pinning is honestly `Closed` when Phase 13 passes.
 - hostile pinning certification
 
 **Relevant Query source surfaces**
-- [runtime/shared_read.rs](../../crates/worth-query/src/runtime/shared_read.rs)
-- [runtime/workspace_shared_read.rs](../../crates/worth-query/src/runtime/workspace_shared_read.rs)
-- [runtime/workspace_queries.rs](../../crates/worth-query/src/runtime/workspace_queries.rs)
-- [runtime/shared_read_pins/](../../crates/worth-query/src/runtime/shared_read_pins/)
-- [application/support/shared_read_pinning_inventory.rs](../../crates/worth-query/src/application/support/shared_read_pinning_inventory.rs)
-- [runtime/tests/shared_read_pinning/](../../crates/worth-query/src/runtime/tests/shared_read_pinning/) (new hostile matrix home)
+- [runtime/shared_read.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/shared_read.rs)
+- [runtime/workspace_shared_read.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/workspace_shared_read.rs)
+- [runtime/workspace_queries.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/workspace_queries.rs)
+- [runtime/shared_read_pins/](../../workspaces/worth-query/crates/worth-query/src/runtime/shared_read_pins/)
+- `application/support/shared_read_pinning_inventory.rs`
+- [runtime/tests/shared_read_pinning/](../../workspaces/worth-query/crates/worth-query/src/runtime/tests/shared_read_pinning/) (new hostile matrix home)
 
 **Relevant APIs and product surfaces**
 - `WORTHQuerySharedReadContext: Send + Sync` with compile-time proof tests
@@ -864,7 +864,7 @@ pinning is honestly `Closed` when Phase 13 passes.
 **Test requirements**
 - Add a `Shared Read Context And Pinning Boundary Closure Test` to
   [test-requirements.md](./test-requirements.md) and close it in this phase.
-- **Inventory completeness:** extend the Phase 11â€“12 inventory to every ordinary
+- **Inventory completeness:** extend the Phase 11–12 inventory to every ordinary
   path that executes reads through shared-read authority or consumes published
   artifacts on the shared lane. The merged inventory is the contract surface.
 - **Forbidden-pattern scans (full pinning boundary):** re-scan every
@@ -881,7 +881,7 @@ pinning is honestly `Closed` when Phase 13 passes.
   smoke proof on the real shared-read type.
 - Adversarial residue: exact-zero orphaned generations, exact-zero unretired
   pins, and exact-zero hot-path lock acquisitions after the hostile pinning
-  matrix â€” each from runtime-owned counters.
+  matrix — each from runtime-owned counters.
 - Adversarial sabotage: perturb each pinning residue counter and prove this
   phase's closure test fails. A proof that stays green under sabotage is
   invalid evidence.
@@ -895,7 +895,7 @@ pinning is honestly `Closed` when Phase 13 passes.
 - Receipts emitted through the shared lane record the basis proof and lower
   identity through the `9.6` evidence primitive.
 - Pinning honesty closes here in the same spirit as Milestone `9.6`'s
-  identity-boundary inventory: derived, adversarial, and end-to-end â€” but owned
+  identity-boundary inventory: derived, adversarial, and end-to-end — but owned
   by the pinning phases, not deferred.
 - Phase 13 must pass before journal or certification phases may claim closure.
 
@@ -915,13 +915,13 @@ close on journal-identity proof before Phase 15 begins.
 - journal inventory (submission and receipt slice)
 
 **Relevant Query source surfaces**
-- [runtime/workspace_submission.rs](../../crates/worth-query/src/runtime/workspace_submission.rs)
-- [runtime/backend/receipts.rs](../../crates/worth-query/src/runtime/backend/receipts.rs)
-- [application/support/journal_identity_inventory.rs](../../crates/worth-query/src/application/support/journal_identity_inventory.rs) (new)
+- [runtime/workspace_submission.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/workspace_submission.rs)
+- [runtime/backend/receipts.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/backend/receipts.rs)
+- `application/support/journal_identity_inventory.rs` (new)
 
 **Relevant APIs and product surfaces**
 - `WORTHQueryJournalPosition` (or equivalent sealed typed artifact) on receipts
-- typed accessors for journal order â€” never `commit_identity` suffix parsing
+- typed accessors for journal order — never `commit_identity` suffix parsing
 - versioned journal inventory listing every ordinary submission and receipt path
 
 **Warnings**
@@ -960,7 +960,7 @@ close on journal-identity proof before Phase 15 begins.
 ### Phase 15: Consumer Journal Segment Replay Surface Boundary
 
 Expose a first-class consumer replay lane: typed journal-segment identity in,
-replay outcome out â€” and **close the journal boundary end-to-end inside this
+replay outcome out — and **close the journal boundary end-to-end inside this
 phase**. No later phase re-audits journal identity.
 
 **Relevant subsystems**
@@ -970,9 +970,9 @@ phase**. No later phase re-audits journal identity.
 - journal inventory (completeness and closure posture)
 
 **Relevant Query source surfaces**
-- [runtime/public_api.rs](../../crates/worth-query/src/runtime/public_api.rs)
-- [runtime/workspace_submission.rs](../../crates/worth-query/src/runtime/workspace_submission.rs)
-- [application/support/journal_identity_inventory.rs](../../crates/worth-query/src/application/support/journal_identity_inventory.rs)
+- [runtime/public_api.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/public_api.rs)
+- [runtime/workspace_submission.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/workspace_submission.rs)
+- `application/support/journal_identity_inventory.rs`
 
 **Relevant APIs and product surfaces**
 - typed journal-segment / replay-request surfaces on the workspace facade
@@ -1009,7 +1009,7 @@ phase**. No later phase re-audits journal identity.
 **Engineering decisions**
 - Consumer replay is ordinary product surface because downstream refolds are
   the folklore this milestone eliminates.
-- Journal honesty closes here â€” owned by Phases 14â€“15, not deferred.
+- Journal honesty closes here — owned by Phases 14–15, not deferred.
 
 **Open questions**
 - None.
@@ -1018,7 +1018,7 @@ phase**. No later phase re-audits journal identity.
 
 Replace the interim serial schedule with a true concurrent hostile matrix: N
 reader threads, M submitter threads, derived republication, preview/branch
-churn, and replay â€” combined in one program. **Counter integrity and sabotage
+churn, and replay — combined in one program. **Counter integrity and sabotage
 proof close inside this phase**; there is no separate certification-audit phase.
 
 **Relevant subsystems**
@@ -1027,8 +1027,8 @@ proof close inside this phase**; there is no separate certification-audit phase.
 - runtime measurement counters
 
 **Relevant Query source surfaces**
-- [runtime/tests/support/bridge/hostile_certification_schedule.rs](../../crates/worth-query/src/runtime/tests/support/bridge/hostile_certification_schedule.rs)
-- [runtime/tests/support/bridge/hostile_certification.rs](../../crates/worth-query/src/runtime/tests/support/bridge/hostile_certification.rs)
+- [runtime/tests/support/bridge/hostile_certification_schedule.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/tests/support/bridge/hostile_certification_schedule.rs)
+- [runtime/tests/support/bridge/hostile_certification.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/tests/support/bridge/hostile_certification.rs)
 
 **Warnings**
 - Do not certify axes in isolation.
@@ -1050,7 +1050,7 @@ proof close inside this phase**; there is no separate certification-audit phase.
   concurrent submitter threads on the real shared-read and submission types.
 - Adversarial proof integrity: lock count, reader-evaluation count, pin
   residue, and journal-gap counters are read from runtime-owned measurement
-  state in the certification artifact â€” not constants or parsed strings.
+  state in the certification artifact — not constants or parsed strings.
 - Adversarial residue: after the schedule, exact-zero orphaned snapshot
   generations, exact-zero unretired read pins, exact-zero journal gaps, and
   exact-zero delivery residue.
@@ -1071,7 +1071,7 @@ proof close inside this phase**; there is no separate certification-audit phase.
 ### Phase 17: Public-Bridge Reader-Lane And Projection-Consumption Honesty Boundary
 
 Close the public-bridge certification path so it consumes published derived
-artifacts only through typed projection consumption â€” never through direct
+artifacts only through typed projection consumption — never through direct
 materialization row reads. **Inventory, compile-fail localization, and sabotage
 close inside this phase.**
 
@@ -1080,8 +1080,8 @@ close inside this phase.**
 - projection-consumption product lane
 
 **Relevant Query source surfaces**
-- [tests/support/public_bridge_runtime/hostile_certification.rs](../../crates/worth-query/tests/support/public_bridge_runtime/hostile_certification.rs)
-- [tests/support/public_bridge_runtime/mod.rs](../../crates/worth-query/tests/support/public_bridge_runtime/mod.rs)
+- `tests/support/public_bridge_runtime/hostile_certification.rs`
+- [tests/support/public_bridge_runtime/mod.rs](../../workspaces/worth-query/crates/worth-query/tests/support/public_bridge_runtime/mod.rs)
 
 **Relevant APIs and product surfaces**
 - public-bridge hostile certification artifact
@@ -1113,7 +1113,7 @@ close inside this phase.**
 ### Phase 18: Derived Milestone Closure Posture And Closeout Boundary
 
 Close Milestone `9.7` only when support/profile, docs, test-requirements, and
-hostile certification agree â€” with posture **aggregated from phase-local
+hostile certification agree — with posture **aggregated from phase-local
 closure proofs**, not re-audited here.
 
 **Relevant subsystems**
@@ -1122,7 +1122,7 @@ closure proofs**, not re-audited here.
 - test-requirements certification matrix
 
 **Relevant Query source surfaces**
-- [application/support/closure.rs](../../crates/worth-query/src/application/support/closure.rs)
+- `application/support/closure.rs`
 - [plans/worth-query/test-requirements.md](./test-requirements.md)
 - [plans/worth-query/milestone-9.7-closeout.md](./milestone-9.7-closeout.md) (new)
 
@@ -1132,7 +1132,7 @@ closure proofs**, not re-audited here.
 
 **Warnings**
 - Do not mark the milestone `Closed` in roadmap or spec status while any
-  Phase 11â€“17 gate is incomplete or red.
+  Phase 11–17 gate is incomplete or red.
 - Do not hard-code `Closed` in support/profile while any phase-local boundary
   (pinning, journal, certification, public-bridge) reports `Open` or `Partial`.
 - Do not re-run pinning or journal audits in this phase; those closed in Phases
@@ -1166,10 +1166,10 @@ is not enough for facade methods to exist, for a serial hostile schedule to
 pass, or for shared-read types to compile. The real closure question is whether
 Query can now be believed as the single ordinary-path owner of:
 
-- runtime-owned shared read authority backed by generation pinning â€” not copied
+- runtime-owned shared read authority backed by generation pinning — not copied
   snapshots
 - lock-free committed reads with exact-zero hot-path lock acquisitions
-- typed journal position and consumer replay identity â€” not `commit_identity`
+- typed journal position and consumer replay identity — not `commit_identity`
   string folklore
 - true concurrent reader/submitter certification with sabotage-sensitive counters
 - public-bridge consumption of published artifacts only through projection
@@ -1181,12 +1181,12 @@ same defect class survives, even when:
 - the surviving path sits outside the originally curated scan inventory
 - the surviving path is wrapped in a nominal type that still clones rows at mint
 - certification reports success through hard-coded zeros or parsed receipt strings
-- Phases 1â€“10 scaffolding is mistaken for end-cap closure
+- Phases 1–10 scaffolding is mistaken for end-cap closure
 - support/profile declares `Closed` while residue scans or sabotage tests are red
 
 The milestone is only **Closed** when all of the following hold together:
 
-1. **Pinning (Phases 11â€“13):** registry authority, pin substrate, and shared-read
+1. **Pinning (Phases 11–13):** registry authority, pin substrate, and shared-read
    context each closed with inventory slices, forbidden-pattern scans, hostile
    proof, and sabotage inside their owning phase; Phase 13 aggregates full
    pinning-boundary posture as `Closed`.
@@ -1195,12 +1195,12 @@ The milestone is only **Closed** when all of the following hold together:
    in place (Phase 13).
 3. **Hot-path lock freedom:** committed reads take exact-zero locks on the
    measured hot path in certification builds (Phase 12).
-4. **Journal identity (Phases 14â€“15):** typed journal position and consumer
+4. **Journal identity (Phases 14–15):** typed journal position and consumer
    replay each closed with inventory slices and scans inside their owning
    phase; Phase 15 aggregates journal-boundary posture as `Closed`.
 5. **Real concurrency (Phase 16):** N readers and M submitters with byte-
    identical equivalence to serialized replay; counters runtime-sourced;
-   sabotage tests fail on regression â€” all inside Phase 16.
+   sabotage tests fail on regression — all inside Phase 16.
 6. **Public-bridge honesty (Phase 17):** certification cannot compile with direct
    materialization-reading bypasses; sabotage fails on row-spelunking restore.
 7. **Derived posture (Phase 18):** support/profile, docs, and test-requirements
@@ -1214,21 +1214,21 @@ pinning, strings as journal order, or serial schedules as concurrent proof.
 ## Must Ship
 
 - authority-lane-decomposed backend contracts with `Send + Sync` read lanes
-  (Phases 1â€“2)
+  (Phases 1–2)
 - runtime-owned published-artifact registry authority with registry/mint
   inventory and scans (Phase 11)
 - generation-indexed pinning with explicit retirement, lock-free committed-read
   hot path, pin/retire inventory extension, and runtime-owned residue counters
   (Phase 12)
 - sealed basis-bound `Send + Sync` shared read contexts with full pinning-boundary
-  closure â€” inventory completeness, hostile matrix, sabotage, derived posture
+  closure — inventory completeness, hostile matrix, sabotage, derived posture
   (Phase 13)
 - typed journal position identity with journal inventory seed and scans
   (Phase 14)
 - consumer-facing journal-segment replay with journal-boundary closure
   (Phase 15)
 - the published derived-artifact rule with reader evaluation structurally
-  impossible (Phases 7â€“8, re-certified in Phases 13 and 17)
+  impossible (Phases 7–8, re-certified in Phases 13 and 17)
 - the re-expressed workspace facade with unchanged existing consumer surface
   and fail-closed admission for the new families (Phase 9)
 - real concurrent hostile certification matrix with runtime-owned counters and
@@ -1238,7 +1238,7 @@ pinning, strings as journal order, or serial schedules as concurrent proof.
 
 ## Must Preserve
 
-- canonical query meaning across serialized and concurrent execution â€”
+- canonical query meaning across serialized and concurrent execution —
   timing may change, values may not
 - lower-crate authority boundaries: relational owns truth, signal owns
   evaluation, the bridge owns causal routing; only access topology moves
@@ -1251,19 +1251,19 @@ pinning, strings as journal order, or serial schedules as concurrent proof.
 
 This milestone is complete only when `worth-query` can prove:
 
-- every Phase 10â€“18 certification suite added to
+- every Phase 10–18 certification suite added to
   [test-requirements.md](./test-requirements.md) passes with narrow
   machine-checkable artifacts
 - Phase 13 pinning-boundary posture is `Closed`: inventory complete across
-  Phases 11â€“13, forbidden-pattern scans green, hostile pinning matrix passed,
+  Phases 11–13, forbidden-pattern scans green, hostile pinning matrix passed,
   sabotage tests fail when pin residue or lock counters are perturbed
 - N concurrent reader threads and M concurrent submitter threads under write
   pressure produce byte-identical receipts and results to serialized execution,
   with exact-zero lock and reader-evaluation counters sourced from runtime
   measurement state (Phase 16, including in-phase sabotage)
 - shared-read authority is backed by runtime-owned registry leases and
-  generation pinning â€” not copied materialization snapshots â€” with typed
-  stale-basis denial and exact-zero residue counters (Phases 11â€“13)
+  generation pinning — not copied materialization snapshots — with typed
+  stale-basis denial and exact-zero residue counters (Phases 11–13)
 - Phase 15 journal-boundary posture is `Closed`: journal inventory complete,
   zero `commit_identity` parsing in runtime or certification crates, replay
   reconstructs identical truth, receipts, and published artifacts
@@ -1287,17 +1287,17 @@ This milestone is complete only when `worth-query` can prove:
   not retrofit `Send` boundaries through frozen store-backed shapes.
 - Durable journal persistence, store-backed replay reconstruction, and
   restart-stable published-artifact reload remain Milestone `10`/`11` scope.
-- Phases 1â€“10 may land incrementally and may keep prototype debt explicit.
-  Phases 11â€“18 are strictly sequential at the honesty layer:
-  **11 â†’ 12 â†’ 13** (pinning substrate and proof close together; Phase 13 is
-  the pinning hard gate), then **14 â†’ 15** (journal identity and proof close
-  together; Phase 15 is the journal hard gate), then **16 â†’ 17** (concurrent
+- Phases 1–10 may land incrementally and may keep prototype debt explicit.
+  Phases 11–18 are strictly sequential at the honesty layer:
+  **11 → 12 → 13** (pinning substrate and proof close together; Phase 13 is
+  the pinning hard gate), then **14 → 15** (journal identity and proof close
+  together; Phase 15 is the journal hard gate), then **16 → 17** (concurrent
   certification with in-phase sabotage, then public-bridge honesty), then **18**
-  (aggregated closeout only â€” no re-audit).
+  (aggregated closeout only — no re-audit).
 - Phase 13 is a hard gate: journal and certification phases may not claim
   closure while pinning-boundary posture is `Open` or `Partial`.
 - Phase 15 is a hard gate: certification may not claim closure while journal-
   boundary posture is `Open` or `Partial`.
 - If Milestone `9.6` journal-position typed artifacts are still incomplete,
   Phase 14 may require a small `9.6` follow-on slice before honest journal
-  closure â€” but Phase 14 must not fall back to `commit_identity` parsing.
+  closure — but Phase 14 must not fall back to `commit_identity` parsing.

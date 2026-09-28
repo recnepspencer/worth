@@ -212,7 +212,7 @@ phase labels:
   behavior into real harness-level certification bundles with exact bounded-cost
   assertions
 - the Milestone 9 QA loop surfaced and corrected proof-surface weaknesses
-  before closeout instead of leaving them as â€œtests still passâ€ debt
+  before closeout instead of leaving them as “tests still pass” debt
 
 These changes were made because the closeout bar was not "merge cases replay on
 fixtures." The closeout bar was deterministic ordered-parent truth

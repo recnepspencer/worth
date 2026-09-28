@@ -41,10 +41,10 @@ This audit reflects the current DX direction:
 ## Current State
 
 Right now `worth-relational` does not have a clean publish-facing docs set
-under [`crates/worth-relational`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational).
+under [`crates/worth-relational`](../../crates/worth-relational).
 
 Most of the meaningful writing lives under
-[`plans/worth-relational`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational).
+[`plans/worth-relational`](./).
 
 So this audit is doing two jobs:
 
@@ -59,7 +59,7 @@ These topics should absolutely be in the published docs set, but the existing
 material is too architecture-first or too execution-history-shaped to ship as
 the product story.
 
-### [`worth_relational_vision.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/worth_relational_vision.md)
+### [`worth_relational_vision.md`](./WORTH_relational_vision.md)
 
 Classification:
 
@@ -77,7 +77,7 @@ Target replacement:
 - `QUICKSTART.md`
 - `API_OVERVIEW.md`
 
-### [`worth_relational_roadmap.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/worth_relational_roadmap.md)
+### [`worth_relational_roadmap.md`](./WORTH_relational_roadmap.md)
 
 Classification:
 
@@ -93,7 +93,7 @@ Target replacement:
 
 - feature-status notes in reference docs where needed
 
-### [`relational_architecture.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/relational_architecture.md)
+### [`relational_architecture.md`](./relational_architecture.md)
 
 Classification:
 
@@ -109,7 +109,7 @@ Target replacement:
 - `API_OVERVIEW.md`
 - optional `ARCHITECTURE_REFERENCE.md`
 
-### [`test-requirements.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/test-requirements.md)
+### [`test-requirements.md`](./test-requirements.md)
 
 Classification:
 
@@ -133,7 +133,7 @@ Target replacement:
 These are useful and close enough to valid truth that they should remain
 available, but they should not carry the public onboarding load.
 
-### [`phase-8.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/phase-8.md)
+### [`phase-8.md`](./phase-8.md)
 
 Classification:
 
@@ -153,26 +153,26 @@ Classification:
 
 Files:
 
-- [`milestone-1-closeout.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/milestone-1-closeout.md)
-- [`milestone-2-plan.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/milestone-2-plan.md)
-- [`milestone-2-closeout.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/milestone-2-closeout.md)
-- [`milestone-3-closeout.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/milestone-3-closeout.md)
-- [`milestone-4-closeout.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/milestone-4-closeout.md)
-- [`milestone-5-plan.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/milestone-5-plan.md)
-- [`milestone-5-closeout.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/milestone-5-closeout.md)
-- [`milestone-6-plan.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/milestone-6-plan.md)
-- [`milestone-6-closeout.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/milestone-6-closeout.md)
-- [`milestone-6.5-plan.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/milestone-6.5-plan.md)
-- [`milestone-6.5-closeout.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/milestone-6.5-closeout.md)
-- [`milestone-7a.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/milestone-7a.md)
-- [`milestone-7b-plan.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/milestone-7b-plan.md)
-- [`milestone-7b-closeout.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/milestone-7b-closeout.md)
-- [`milestone-7c-authoritative-merge-execution-spec.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/milestone-7c-authoritative-merge-execution-spec.md)
-- [`milestone-7d-deletion-and-topology-merge-execution-spec.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/milestone-7d-deletion-and-topology-merge-execution-spec.md)
-- [`milestone-7d-closeout.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/milestone-7d-closeout.md)
-- [`milestone-8-plan.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/milestone-8-plan.md)
-- [`milestone-8-closeout.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/milestone-8-closeout.md)
-- [`milestone-8.5-plan.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/milestone-8.5-plan.md)
+- [`milestone-1-closeout.md`](./milestone-1-closeout.md)
+- [`milestone-2-plan.md`](./milestone-2-plan.md)
+- [`milestone-2-closeout.md`](./milestone-2-closeout.md)
+- [`milestone-3-closeout.md`](./milestone-3-closeout.md)
+- [`milestone-4-closeout.md`](./milestone-4-closeout.md)
+- [`milestone-5-plan.md`](./milestone-5-plan.md)
+- [`milestone-5-closeout.md`](./milestone-5-closeout.md)
+- [`milestone-6-plan.md`](./milestone-6-plan.md)
+- [`milestone-6-closeout.md`](./milestone-6-closeout.md)
+- [`milestone-6.5-plan.md`](./milestone-6.5-plan.md)
+- [`milestone-6.5-closeout.md`](./milestone-6.5-closeout.md)
+- [`milestone-7a.md`](./milestone-7a.md)
+- [`milestone-7b-plan.md`](./milestone-7b-plan.md)
+- [`milestone-7b-closeout.md`](./milestone-7b-closeout.md)
+- [`milestone-7c-authoritative-merge-execution-spec.md`](./milestone-7c-authoritative-merge-execution-spec.md)
+- [`milestone-7d-deletion-and-topology-merge-execution-spec.md`](./milestone-7d-deletion-and-topology-merge-execution-spec.md)
+- [`milestone-7d-closeout.md`](./milestone-7d-closeout.md)
+- [`milestone-8-plan.md`](./milestone-8-plan.md)
+- [`milestone-8-closeout.md`](./milestone-8-closeout.md)
+- [`milestone-8.5-plan.md`](./milestone-8.5-plan.md)
 
 Why:
 
@@ -180,7 +180,7 @@ Why:
 - good reference for advanced users and maintainers
 - too detailed and too roadmap-shaped for product onboarding
 
-### [`relational_compile_time_safety.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/relational_compile_time_safety.md)
+### [`relational_compile_time_safety.md`](./relational_compile_time_safety.md)
 
 Classification:
 
@@ -201,23 +201,23 @@ treated as public product docs.
 
 ### DX planning and review docs
 
-- [`dx_plan.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_plan.md)
-- [`dx_export_inventory.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_export_inventory.md)
-- [`dx_export_decision_matrix.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_export_decision_matrix.md)
-- [`dx_export_exhaustive_audit.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_export_exhaustive_audit.md)
-- [`dx_method_decision_matrix.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_method_decision_matrix.md)
-- [`dx_boundary_cleanup_list.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_boundary_cleanup_list.md)
-- [`dx_canonical_surface_spec.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_canonical_surface_spec.md)
-- [`dx_boundary_spec.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_boundary_spec.md)
-- [`dx_condensation_map.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_condensation_map.md)
-- [`dx_diagnostics_product_map.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_diagnostics_product_map.md)
-- [`dx_wording_map.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_wording_map.md)
-- [`dx_phase_0_5_review.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_phase_0_5_review.md)
-- [`dx_phase_1_plan.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_phase_1_plan.md)
-- [`dx_phase_1_boundary_delta.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_phase_1_boundary_delta.md)
-- [`dx_phase_1_review.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_phase_1_review.md)
-- [`dx_phase_2_review.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_phase_2_review.md)
-- [`dx_phase_3_review.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_phase_3_review.md)
+- [`dx_plan.md`](./dx_plan.md)
+- [`dx_export_inventory.md`](./dx_export_inventory.md)
+- [`dx_export_decision_matrix.md`](./dx_export_decision_matrix.md)
+- [`dx_export_exhaustive_audit.md`](./dx_export_exhaustive_audit.md)
+- [`dx_method_decision_matrix.md`](./dx_method_decision_matrix.md)
+- [`dx_boundary_cleanup_list.md`](./dx_boundary_cleanup_list.md)
+- [`dx_canonical_surface_spec.md`](./dx_canonical_surface_spec.md)
+- [`dx_boundary_spec.md`](./dx_boundary_spec.md)
+- [`dx_condensation_map.md`](./dx_condensation_map.md)
+- [`dx_diagnostics_product_map.md`](./dx_diagnostics_product_map.md)
+- [`dx_wording_map.md`](./dx_wording_map.md)
+- [`dx_phase_0_5_review.md`](./dx_phase_0_5_review.md)
+- [`dx_phase_1_plan.md`](./dx_phase_1_plan.md)
+- [`dx_phase_1_boundary_delta.md`](./dx_phase_1_boundary_delta.md)
+- [`dx_phase_1_review.md`](./dx_phase_1_review.md)
+- [`dx_phase_2_review.md`](./dx_phase_2_review.md)
+- [`dx_phase_3_review.md`](./dx_phase_3_review.md)
 
 Why:
 
@@ -226,9 +226,9 @@ Why:
 
 ### Architecture and future-history docs
 
-- [`worth_relational_vision.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/worth_relational_vision.md)
-- [`worth_relational_roadmap.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/worth_relational_roadmap.md)
-- [`relational_architecture.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/relational_architecture.md)
+- [`worth_relational_vision.md`](./WORTH_relational_vision.md)
+- [`worth_relational_roadmap.md`](./WORTH_relational_roadmap.md)
+- [`relational_architecture.md`](./relational_architecture.md)
 
 Why:
 

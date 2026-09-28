@@ -44,11 +44,11 @@ Named suite:
 
 Primary test:
 
-- [lowering_and_execution_readiness_boundary_certification.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-proof/tests/lowering_and_execution_readiness_boundary_certification.rs)
+- [lowering_and_execution_readiness_boundary_certification.rs](../../crates/worth-proof/tests/lowering_and_execution_readiness_boundary_certification.rs)
 
 Supporting evidence module:
 
-- [tests/support/milestone5/mod.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-proof/tests/support/milestone5/mod.rs)
+- `tests/support/milestone5/mod.rs`
 
 Machine-checkable outputs:
 
@@ -79,17 +79,17 @@ The closeout suite now owns the hostile lanes required by the milestone:
 
 Compile-fail fixtures:
 
-- [lowered_recipe_cannot_execute_without_readiness.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-proof/tests/ui/milestone5/compile_fail/lowered_recipe_cannot_execute_without_readiness.rs)
-- [resolved_recipe_cannot_enter_execution_readiness.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-proof/tests/ui/milestone5/compile_fail/resolved_recipe_cannot_enter_execution_readiness.rs)
-- [boundary_bridged_lowered_cannot_enter_execution_readiness.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-proof/tests/ui/milestone5/compile_fail/boundary_bridged_lowered_cannot_enter_execution_readiness.rs)
-- [shifted_basis_ready_recipe_cannot_be_treated_as_original_basis.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-proof/tests/ui/milestone5/compile_fail/shifted_basis_ready_recipe_cannot_be_treated_as_original_basis.rs)
+- [lowered_recipe_cannot_execute_without_readiness.rs](../../crates/worth-proof/tests/ui/milestone5/compile_fail/lowered_recipe_cannot_execute_without_readiness.rs)
+- [resolved_recipe_cannot_enter_execution_readiness.rs](../../crates/worth-proof/tests/ui/milestone5/compile_fail/resolved_recipe_cannot_enter_execution_readiness.rs)
+- [boundary_bridged_lowered_cannot_enter_execution_readiness.rs](../../crates/worth-proof/tests/ui/milestone5/compile_fail/boundary_bridged_lowered_cannot_enter_execution_readiness.rs)
+- [shifted_basis_ready_recipe_cannot_be_treated_as_original_basis.rs](../../crates/worth-proof/tests/ui/milestone5/compile_fail/shifted_basis_ready_recipe_cannot_be_treated_as_original_basis.rs)
 
 Compile-pass fixtures:
 
-- [explicit_lowered_ready_executed_progression_compiles.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-proof/tests/ui/milestone5/compile_pass/explicit_lowered_ready_executed_progression_compiles.rs)
-- [checked_readiness_progression_compiles.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-proof/tests/ui/milestone5/compile_pass/checked_readiness_progression_compiles.rs)
-- [same_basis_runtime_readmission_progression_compiles.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-proof/tests/ui/milestone5/compile_pass/same_basis_runtime_readmission_progression_compiles.rs)
-- [shifted_basis_readiness_progression_compiles.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-proof/tests/ui/milestone5/compile_pass/shifted_basis_readiness_progression_compiles.rs)
+- [explicit_lowered_ready_executed_progression_compiles.rs](../../crates/worth-proof/tests/ui/milestone5/compile_pass/explicit_lowered_ready_executed_progression_compiles.rs)
+- [checked_readiness_progression_compiles.rs](../../crates/worth-proof/tests/ui/milestone5/compile_pass/checked_readiness_progression_compiles.rs)
+- [same_basis_runtime_readmission_progression_compiles.rs](../../crates/worth-proof/tests/ui/milestone5/compile_pass/same_basis_runtime_readmission_progression_compiles.rs)
+- [shifted_basis_readiness_progression_compiles.rs](../../crates/worth-proof/tests/ui/milestone5/compile_pass/shifted_basis_readiness_progression_compiles.rs)
 
 ## Residual Debt
 

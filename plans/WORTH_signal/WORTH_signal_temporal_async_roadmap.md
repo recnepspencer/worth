@@ -652,7 +652,7 @@ The strict continuation order is intentional:
 - [MENTALITY.md](../../docs/coding-guidelines/MENTALITY.md)
 - [arch_laws.md](../../docs/coding-guidelines/arch_laws.md)
 - [perf_laws.md](../../docs/coding-guidelines/perf_laws.md)
-- [domain_laws.md](../../docs/coding-guidelines/domain_laws.md)
+- [domain_laws.md](../../docs/coding-guidelines/domain_structure_laws.md)
 
 The purpose of this roadmap is not to make `worth-signal` feel more modern by
 name. It is to make temporal and async/resource semantics part of the same

@@ -1,6 +1,6 @@
 # Milestone 9.10 Engineering Spec: Graph Read Access Planning And Declarative Index Admission
 
-> **Status:** Draft
+> **Status:** Completed.
 >
 > **Roadmap parent:** [worth_query_roadmap.md](./worth_query_roadmap.md)
 >

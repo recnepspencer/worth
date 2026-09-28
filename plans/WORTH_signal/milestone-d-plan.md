@@ -357,7 +357,7 @@ The runtime must preserve two distinct axes:
 - async lifecycle state
 
 They may influence each other, but they may not be collapsed into one enum or
-one faÃ§ade value that hides which truth actually changed.
+one façade value that hides which truth actually changed.
 
 ### 10.3 Conditions Govern Admission, Not Lifecycle
 

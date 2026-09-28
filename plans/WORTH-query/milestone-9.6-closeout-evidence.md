@@ -4,12 +4,12 @@
 >
 > **Date:** 2026-06-16
 >
-> **Verdict:** **CLOSED for non-spatial 9.6 identity-boundary scope** â€”
+> **Verdict:** **CLOSED for non-spatial 9.6 identity-boundary scope** —
 > `worth-spatial public_api_contract` postponed as a named external gate.
 
 ## Before / after (lib regression burn-down)
 
-| Gate | Before (2026-06-16 QA re-open) | After (WS-1â€“WS-4 closeout) |
+| Gate | Before (2026-06-16 QA re-open) | After (WS-1–WS-4 closeout) |
 |------|--------------------------------|----------------------------|
 | `cargo test -p worth-query --lib` | 2277 pass / **47 fail** | **2327 pass / 0 fail** |
 | `cargo test -p worth-kernel --lib construction` | folklore on basis/stop-class paths | **172 pass / 0 fail** |
@@ -25,21 +25,21 @@
 ## Verification matrix (2026-06-16)
 
 ```text
-cargo test -p worth-query session_label --lib          â†’ 21/21
-cargo test -p worth-query evidence_identity --lib      â†’ 19/19
-cargo test -p worth-query stop_class --lib             â†’ 22/22
-cargo test -p worth-query identity_boundary --lib      â†’ 27/27
-cargo test -p worth-query --lib --test-threads=2       â†’ 2327/0
-cargo test -p worth-kernel --lib construction          â†’ 172/0
-cargo check -p worth-query --lib                       â†’ ok
-cargo test -p worth-query application::support::identity_boundary_inventory::tests --lib â†’ 4/4
-cargo test -p worth-query application::support::tests::identity_boundary_support_report --lib â†’ 4/4
-cargo test -p worth-query public_doc_coverage::tests::identity_boundary_docs --lib â†’ 1/1
+cargo test -p worth-query session_label --lib          → 21/21
+cargo test -p worth-query evidence_identity --lib      → 19/19
+cargo test -p worth-query stop_class --lib             → 22/22
+cargo test -p worth-query identity_boundary --lib      → 27/27
+cargo test -p worth-query --lib --test-threads=2       → 2327/0
+cargo test -p worth-kernel --lib construction          → 172/0
+cargo check -p worth-query --lib                       → ok
+cargo test -p worth-query application::support::identity_boundary_inventory::tests --lib → 4/4
+cargo test -p worth-query application::support::tests::identity_boundary_support_report --lib → 4/4
+cargo test -p worth-query public_doc_coverage::tests::identity_boundary_docs --lib → 1/1
 ```
 
 `cargo fmt --check --all` reports pre-existing drift outside worth-query (worth-topo); worth-query sources were formatted with `cargo fmt -p worth-query`.
 
-## Hostile QA (Closure Gate Â§1â€“5)
+## Hostile QA (Closure Gate §1–5)
 
 | Check | Result |
 |-------|--------|
@@ -48,24 +48,24 @@ cargo test -p worth-query public_doc_coverage::tests::identity_boundary_docs --l
 | worth-kernel construction basis/stop-class consumer paths | Typed `admission_identity()` + `stop_class()` matching; string-matching scan clean |
 | Named exclusions | Documented in `EXCLUDED_FOLKLORE_DEFERRALS` (9.7/9.8 owners) |
 
-## Mandatory scope closeout (Phases 8â€“11 â€” Milestone 9.6, not 9.7)
+## Mandatory scope closeout (Phases 8–11 — Milestone 9.6, not 9.7)
 
 | Prefix | Phase | Attack plan |
 |--------|-------|-------------|
-| Bridge-truth Phase 10 | 8 | WS-5 **done** â€” spatial P10-4 postponed |
-| `projection_consumption/` | 9 | WS-6 **done** â€” removed from exclusions; 50 modules in inventory scan |
-| `workflow/` | 10 | WS-7 **done** â€” removed from exclusions; production files in inventory scan |
-| `domain_capabilities/` | 11 | WS-8 **done** â€” production files in inventory scan |
+| Bridge-truth Phase 10 | 8 | WS-5 **done** — spatial P10-4 postponed |
+| `projection_consumption/` | 9 | WS-6 **done** — removed from exclusions; 50 modules in inventory scan |
+| `workflow/` | 10 | WS-7 **done** — removed from exclusions; production files in inventory scan |
+| `domain_capabilities/` | 11 | WS-8 **done** — production files in inventory scan |
 
 **Invalid deferrals:** assigning worth-query integration dirs to Milestone 9.7 is
 prohibited. **worth-spatial `public_api_contract`** is the one valid postponement
-â€” separate agent, harness optimization, not part of this non-spatial closeout.
+— separate agent, harness optimization, not part of this non-spatial closeout.
 
-## Former deferrals (still out of scope â€” different milestone class)
+## Former deferrals (still out of scope — different milestone class)
 
 | Prefix | Owner |
 |--------|-------|
 | `harness/milestone_nine_five_` | Milestone 9.5 harness-only |
 | `runtime/intent/declaration.rs` | Milestone 9.8 intent declaration lowering |
 
-worth-kernel `prepare_branch_basis_digest` still composes typed admission digests via `digest_owned_parts` for test parity labels â€” scoped follow-on for 9.7/9.8 prep per closeout plan risk register, not ordinary-path production in worth-query.
+worth-kernel `prepare_branch_basis_digest` still composes typed admission digests via `digest_owned_parts` for test parity labels — scoped follow-on for 9.7/9.8 prep per closeout plan risk register, not ordinary-path production in worth-query.

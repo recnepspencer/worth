@@ -206,32 +206,51 @@ impl WorthQueryApprovedElevation {
     }
 }
 
+/// Every way committing an elevation approval can end.
+///
+/// This mirrors the application commit outcome. `Approved` and
+/// `AlreadyApproved` carry the move-only approved-elevation authority. Most
+/// variants that did not land hand the consumed requested elevation back, so it
+/// can be committed again.
 #[derive(Debug)]
 pub enum WorthQueryElevationApprovalOutcome {
+    /// The product branch moved after the basis. Nothing was committed.
     ProductStale(
         crate::domain_computation::WorthQueryProductStaleApplication,
         WorthQueryRequestedElevation,
     ),
+    /// Some owners moved, but the product head did not. Recover publication.
     ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
+    /// Nothing was written; the cause says why.
     NoEffect(
         super::WorthQueryApplicationNoEffect,
         WorthQueryRequestedElevation,
     ),
+    /// This attempt committed the approval.
     Approved(WorthQueryApprovedElevation),
+    /// The idempotency key had already committed this approval; nothing was redone.
     AlreadyApproved(WorthQueryApprovedElevation),
+    /// The basis was stale at compare. Nothing was committed; re-read and retry.
     Stale(
         WorthQueryApplicationStaleAttempt,
         WorthQueryRequestedElevation,
     ),
+    /// The attempt was cancelled before it landed.
     Cancelled(WorthQueryRequestedElevation),
+    /// The attempt reached its deadline before it landed.
     TimedOut,
+    /// The commit was refused before publication.
     Denied(
         WorthQueryApplicationCommitDenial,
         WorthQueryRequestedElevation,
     ),
+    /// The commit's answer was lost, and a re-read found it never landed.
     Aborted(WorthQueryRequestedElevation),
+    /// A capacity or lifetime limit stopped the attempt. Retry later.
     Deferred(super::WorthQueryApplicationCommitDeferred),
+    /// The branch moved, but settlement did not finish. Recover the settlement.
     SettlementDeferred(super::WorthQueryApplicationSettlementDeferred),
+    /// Whether the commit landed is unresolved. Do not retry blindly.
     Indeterminate,
 }
 

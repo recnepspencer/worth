@@ -67,7 +67,7 @@ Lowering, transaction evidence, and reconstructability:
 
 - [precompute/mod.rs](../../crates/worth-signal/src/logic/planner/precompute/mod.rs)
 - [transaction_types.rs](../../crates/worth-signal/src/logic/transaction/runtime/transaction/transaction_types.rs)
-- [finalize.rs](../../crates/worth-signal/src/logic/transaction/runtime/transaction/transaction_commit/finalize.rs)
+- [finalize.rs](../../crates/worth-signal/src/logic/transaction/runtime/transaction/transaction_commit/finalize/mod.rs)
 - [reconstructability.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/reconstructability.rs)
 
 Diagnostics, facade, and counters:

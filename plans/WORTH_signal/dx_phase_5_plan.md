@@ -25,12 +25,12 @@ This is a production-grade cleanup phase, not a documentation pass.
 
 This phase builds on:
 
-- [`plans/worth_signal/dx_plan.md`](/Users/spenstar/Documents/programming/WORTH/WORTH/plans/worth_signal/dx_plan.md)
-- [`plans/worth_signal/dx_export_decision_matrix.md`](/Users/spenstar/Documents/programming/WORTH/WORTH/plans/worth_signal/dx_export_decision_matrix.md)
-- [`plans/worth_signal/dx_canonical_surface_spec.md`](/Users/spenstar/Documents/programming/WORTH/WORTH/plans/worth_signal/dx_canonical_surface_spec.md)
-- [`plans/worth_signal/dx_condensation_map.md`](/Users/spenstar/Documents/programming/WORTH/WORTH/plans/worth_signal/dx_condensation_map.md)
-- [`plans/worth_signal/dx_boundary_spec.md`](/Users/spenstar/Documents/programming/WORTH/WORTH/plans/worth_signal/dx_boundary_spec.md)
-- [`plans/worth_signal/dx_phase_4_review.md`](/Users/spenstar/Documents/programming/WORTH/WORTH/plans/worth_signal/dx_phase_4_review.md)
+- [`plans/worth_signal/dx_plan.md`](./dx_plan.md)
+- [`plans/worth_signal/dx_export_decision_matrix.md`](./dx_export_decision_matrix.md)
+- [`plans/worth_signal/dx_canonical_surface_spec.md`](./dx_canonical_surface_spec.md)
+- [`plans/worth_signal/dx_condensation_map.md`](./dx_condensation_map.md)
+- [`plans/worth_signal/dx_boundary_spec.md`](./dx_boundary_spec.md)
+- [`plans/worth_signal/dx_phase_4_review.md`](./dx_phase_4_review.md)
 
 ---
 

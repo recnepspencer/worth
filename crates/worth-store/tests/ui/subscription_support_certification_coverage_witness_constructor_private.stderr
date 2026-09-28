@@ -1,7 +1,0 @@
-error[E0451]: field `summary` of struct `SupportCertificationCoverageWitness` is private
- --> tests/ui/subscription_support_certification_coverage_witness_constructor_private.rs:5:9
-  |
-4 |     let _ = SupportCertificationCoverageWitness {
-  |             ----------------------------------- in this type
-5 |         summary: WORTHd_summary(),
-  |         ^^^^^^^ private field

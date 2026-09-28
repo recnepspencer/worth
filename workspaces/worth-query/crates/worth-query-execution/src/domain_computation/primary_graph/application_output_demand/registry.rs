@@ -166,6 +166,11 @@ impl WorthQueryOutputDemandKey {
     }
 }
 
+/// Wake-up signal for one output demand's progress.
+///
+/// The generation counter advances whenever the demand's state changes. Read
+/// `generation()`, then block in `wait_after(observed)` until it moves, and
+/// advance the demand with a fresh request. It carries no demand state itself.
 #[derive(Clone)]
 pub struct WorthQueryOutputDemandNotifications {
     wake: Arc<DemandWake>,

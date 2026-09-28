@@ -6,9 +6,9 @@
 >
 > **React parent:** [react_adapter_spec.md](./react_adapter_spec.md)
 >
-> **Core vision:** [plans/worth_signal/worth_signal_vision.md](../../../plans/worth_signal/worth_signal_vision.md)
+> **Core vision:** [plans/worth_signal/worth_signal_vision.md](../WORTH_signal/WORTH_signal_vision.md)
 >
-> **Core test requirements:** [plans/worth_signal/test-requirements.md](../../../plans/worth_signal/test-requirements.md)
+> **Core test requirements:** [plans/worth_signal/test-requirements.md](../WORTH_signal/test-requirements.md)
 >
 > **Wasm follow-on roadmap:** [wasm_product_roadmap.md](./wasm_product_roadmap.md)
 >

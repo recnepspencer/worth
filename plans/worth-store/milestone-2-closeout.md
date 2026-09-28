@@ -1,5 +1,7 @@
 # Milestone 2 Closeout: Operating Modes And Lifecycle Contracts
 
+> **Note:** The legacy root crate `crates/worth-store` was removed on 2026-09-27. Paths into it below name its files as they were; they are no longer links. The store now lives in [`workspaces/worth-store`](../../workspaces/worth-store/README.md).
+
 ## Status
 
 Milestone 2 is closed as of 2026-04-13.
@@ -32,35 +34,35 @@ This is not "we added a couple builders." The store now owns:
 Milestone 2 delivered:
 
 - mode surfaces under
-  [modes](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/modes)
+  `crates/worth-store/src/modes`
 - a lifecycle proof subdomain under
-  [modes/lifecycle](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/modes/lifecycle)
+  `crates/worth-store/src/modes/lifecycle`
 - durable-mode hosted-runtime execution and commit extraction in
-  [modes/durable.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/modes/durable.rs)
+  `crates/worth-store/src/modes/durable.rs`
 - embedded-mode external commit intake, checkpoint classification, and
   checkpoint persistence in
-  [modes/embedded.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/modes/embedded.rs)
+  `crates/worth-store/src/modes/embedded.rs`
 - absent-mode semantic witness and certification lane support in
-  [modes/absent.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/modes/absent.rs)
+  `crates/worth-store/src/modes/absent.rs`
 - Milestone 2 certification evidence in
-  [evidence/milestone_2.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/evidence/milestone_2.rs)
+  `crates/worth-store/src/evidence/milestone_2.rs`
 - mode counter extensions in
-  [evidence/counters.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/evidence/counters.rs)
+  `crates/worth-store/src/evidence/counters.rs`
 - typed mode failures in
-  [failure/mod.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/failure/mod.rs)
+  `crates/worth-store/src/failure/mod.rs`
 - runtime-mode scenario coverage in
-  [tests/operating_modes.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/tests/operating_modes.rs)
+  `crates/worth-store/src/tests/operating_modes.rs`
   and
-  [tests/mode_certification.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/tests/mode_certification.rs)
+  `crates/worth-store/src/tests/mode_certification.rs`
 - compile-fail phase-boundary proof in
-  [tests/phase_boundaries_compile_fail.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/tests/phase_boundaries_compile_fail.rs)
+  `crates/worth-store/tests/phase_boundaries_compile_fail.rs`
   and
-  [tests/ui](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/tests/ui)
+  `crates/worth-store/tests/ui`
 
 ## Acceptance Mapping
 
 Milestone 2 is considered closed against the roadmap and
-[test-requirements.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/test-requirements.md)
+[test-requirements.md](./test-requirements.md)
 because the required acceptance surfaces are now covered directly.
 
 ### `Operating mode contract parity test`

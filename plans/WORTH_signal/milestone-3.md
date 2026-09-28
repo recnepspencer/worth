@@ -5,11 +5,11 @@
 > **Roadmap parent:** [performance.md](./performance.md)
 >
 > **Related implementation surfaces:**
-> - [apply.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/evaluation/engine/apply.rs)
-> - [serial_batch.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/planner/apply/serial_batch.rs)
-> - [entries.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/graph/storage/entries.rs)
-> - [dependency.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/dependency.rs)
-> - [proof.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/proof.rs)
+> - [apply.rs](../../crates/worth-signal/src/logic/evaluation/engine/apply.rs)
+> - [serial_batch.rs](../../crates/worth-signal/src/logic/planner/apply/serial_batch.rs)
+> - [entries.rs](../../crates/worth-signal/src/data/graph/storage/entries.rs)
+> - [dependency.rs](../../crates/worth-signal/src/data/dependency.rs)
+> - [proof.rs](../../crates/worth-signal/src/data/proof/mod.rs)
 
 ## Goal
 

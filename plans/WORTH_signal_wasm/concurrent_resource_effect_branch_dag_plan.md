@@ -183,8 +183,8 @@ path.
 ### Phase 3: Worker-First Live Branch Authority
 
 Expose explicit fork basis, targeted transactions, and retirement through the
-worker-owned runtime, and make the worker's live graph headÃ¢â‚¬â€not cached import
-contextÃ¢â‚¬â€the source of branch acquisition truth.
+worker-owned runtime, and make the worker's live graph head—not cached import
+context—the source of branch acquisition truth.
 
 **Relevant subsystems**
 
@@ -680,11 +680,11 @@ The workspace's 400-line default remains in force for feature code and tests.
 This milestone permits narrow edits to the following pre-existing aggregate
 surfaces without requiring an unrelated whole-file partition:
 
-- `package-src/product/signals.ts` Ã¢â‚¬â€ callable entrypoint and named-export
+- `package-src/product/signals.ts` — callable entrypoint and named-export
   compatibility aggregate; this milestone adds only the certification export.
-- `package/types-smoke.ts` Ã¢â‚¬â€ existing whole-package declaration smoke aggregate;
+- `package/types-smoke.ts` — existing whole-package declaration smoke aggregate;
   this milestone updates only the now-asynchronous form action assertion.
-- `package/types/resource/resource_reconciliation.d.ts` Ã¢â‚¬â€ existing public
+- `package/types/resource/resource_reconciliation.d.ts` — existing public
   reconciliation declaration aggregate; this milestone adds only the patch
   execution result and options re-exports.
 

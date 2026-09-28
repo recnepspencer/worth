@@ -42,7 +42,7 @@ Phase 5 is complete only if all of these are true:
 
 ### The Migration Policy Now Exists
 
-[`dx_compatibility_transition_plan.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_compatibility_transition_plan.md)
+[`dx_compatibility_transition_plan.md`](./dx_compatibility_transition_plan.md)
 now records:
 
 - cleanup principles

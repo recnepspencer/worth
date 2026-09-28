@@ -1,5 +1,7 @@
 # Carry Query Facts Into A Downstream Runtime
 
+> **Internal engine surface.** This page documents `WorthQueryWorkspace` (`worth_query::facade`), the engine surface that `worth-ui-query-binding` uses. Application code uses `worth-query-decl` and `worth-query-host`; start with the [application front door](../../foundations/ordinary-application-front-door.md).
+
 ## What This Recipe Covers
 
 Use this recipe when a downstream runtime must act on facts produced by a

@@ -29,7 +29,7 @@ invented relational semantics.
 - Native aspect meaning is `worth-foundational` meaning.
 - **Aspects aggressively.** If a value, failure, diagnostic, conflict, witness,
   or report field names or carries aspect keys, contract fields, patch targets,
-  or validated values, it must use foundational aspect carriers and masks â€” not
+  or validated values, it must use foundational aspect carriers and masks — not
   JSON bags, loose strings, or relational field maps. Human text is presentation;
   machine truth is aspect-shaped.
 - `serde_json` is compatibility debt, not canonical authority.
@@ -77,9 +77,9 @@ relational stand-ins because they feel easier in the moment.
 Default stance: **aspect-native unless proven external-only.**
 
 If touched code names an aspect key, contract, field path, validated value,
-patch target, denial reason, or â€œwhat changed on the record,â€ it must be
-represented with foundational aspect law â€” not a JSON object, not a generic
-string map, not a relational duplicate enum â€œfor convenience.â€
+patch target, denial reason, or “what changed on the record,” it must be
+represented with foundational aspect law — not a JSON object, not a generic
+string map, not a relational duplicate enum “for convenience.”
 
 This applies as hard as production truth:
 
@@ -96,14 +96,14 @@ Rules:
   `ContractValidationDenial`, foundational locators, masked diagnostic
   projections, and typed `AspectValue` (or struct/reference/opaque carriers) for
   the values that matter. Do not use `serde_json::Value`, `json!`,
-  `StructuredPayloadDocument`, or open `Map<String, â€¦>` as the canonical error
+  `StructuredPayloadDocument`, or open `Map<String, …>` as the canonical error
   payload.
 - **Diagnostic masks are mandatory for diagnostic emission.** Select what to
   expose through `DiagnosticMask` against the contract surface. Forbidden:
-  `json_fields.rs`-style â€œserialize every enum variant to JSONâ€ as the core
+  `json_fields.rs`-style “serialize every enum variant to JSON” as the core
   diagnostic model.
 - **Human strings are downstream.** Plain-language `detail` strings may exist
-  for logs/UI, but they must be rendered from aspect artifacts â€” not the only
+  for logs/UI, but they must be rendered from aspect artifacts — not the only
   storage of meaning. Forbidden: stuffing all structured failure data into one
   formatted string because it is easier.
 - **Denials stay typed end to end.** When a foundational API returns
@@ -117,23 +117,23 @@ Rules:
   allowed only where external input enters. Error **output** inside the crate is
   not an ingress exception.
 
-When unsure, ask: â€œCould this field be an aspect contract, mask-selected value,
-or locator?â€ If yes, it must be â€” not a JSON field.
+When unsure, ask: “Could this field be an aspect contract, mask-selected value,
+or locator?” If yes, it must be — not a JSON field.
 
 ### Public surfaces you must use
 
 | Relational job | Foundational surface | Do not substitute |
 | --- | --- | --- |
-| Declare aspect law | `worth_foundational::aspects()` â†’ contract builders | Relational aspect key enums, `StructuredDataContract*`, payload schema declarations |
+| Declare aspect law | `worth_foundational::aspects()` → contract builders | Relational aspect key enums, `StructuredDataContract*`, payload schema declarations |
 | Carry typed values | `AspectValue`, `StructAspectValue`, reference/opaque carriers | `serde_json::Value`, canonical strings, relational scalar enums |
 | Validate before authority | `validate_aspect_value` / validation front door | Ad-hoc JSON field checks, relational contract validators |
 | Hold commit truth | `AuthoritativeRecordAspectState`, admission artifacts | Payload rescans, `BindingEvidence` strings, relational delta-only truth |
 | Express commit diffs | `AuthoritativeRecordAspectPatch` (whole-aspect and field-level builders) | Relational patch records built directly from payload diffs |
 | Apply commit diffs | patch application / state front doors on `aspects()` | Manual merge of aspect maps, compatibility-only patch assembly |
-| Target reads/writes/diagnostics | `ProjectionMask`, `MutationMask`, `DiagnosticMask` | One generic â€œaspect setâ€, implicit full-record projection |
+| Target reads/writes/diagnostics | `ProjectionMask`, `MutationMask`, `DiagnosticMask` | One generic “aspect set”, implicit full-record projection |
 | Ingress from JSON/payload bytes | `worth_foundational::compatibility()` lowering | `structured_field_observation`, document rescans, loose object merge |
 | Deny/ admit transitions | `worth_proof::TransitionOutcome` on foundational APIs | Invented `Result` errors that hide denial categories |
-| Diagnostic / failure payloads | `DiagnosticMask` + masked aspect projections; typed denials | `json!`, `StructuredPayloadDocument`, variantâ†’JSON serializers |
+| Diagnostic / failure payloads | `DiagnosticMask` + masked aspect projections; typed denials | `json!`, `StructuredPayloadDocument`, variant→JSON serializers |
 | Conflict / witness / report fields | Aspect locators, keys, validated values, denial artifacts | Open JSON objects, stringly field bags, relational witness maps |
 
 Import from `worth_foundational::facade` or the documented front doors. Do not
@@ -148,24 +148,24 @@ is a thin newtype over the same artifact with no alternate semantics.
   through `aspects().contract()`), keyed by foundational `AspectKey`.
 - Lowered plans carry the same contract through to execution; do not lower to
   relational-only keys and re-derive law later.
-- Struct-shaped aspects use foundational field paths and field declarations â€”
+- Struct-shaped aspects use foundational field paths and field declarations —
   not JSON object field names as the authority model.
 
 **Payload ingress (only place JSON may enter)**
 
 - External payload/document input lowers through `compatibility()` into
   validated foundational values or admitted state fragments.
-- After ingress, core code sees `AspectValue` / authoritative state â€” not
+- After ingress, core code sees `AspectValue` / authoritative state — not
   `serde_json::Value` or relational structured documents.
 
 **Authority / commit evaluation**
 
 - Mutation evaluation must produce foundational patch/state meaning at the
-  choke point, not relational evidence that is â€œconverted later.â€
+  choke point, not relational evidence that is “converted later.”
 - Build patches with foundational patch builders
   (`whole_aspect`, `field_level` as contract shape requires).
 - Validate every set with `validate_aspect_value` (or equivalent validation
-  front door) using the **typed value matching the contract shape** â€” not a
+  front door) using the **typed value matching the contract shape** — not a
   stringified stand-in unless the contract is actually scalar string.
 - Use `admit_authoritative_record_aspect_state` when a slice owns live
   authoritative state, not a parallel relational aspect map.
@@ -173,7 +173,7 @@ is a thin newtype over the same artifact with no alternate semantics.
 **Publication / durable artifacts**
 
 - Durable commit/publication truth must be encoded from foundational patch/state
-  artifacts â€” not from a separate compatibility-only reconstruction that
+  artifacts — not from a separate compatibility-only reconstruction that
   discards the foundational patch after validation.
 - Relational `PatchRecord` / envelope fields may exist only as **projection or
   transport** of foundational truth for a not-yet-migrated consumer. They must
@@ -185,7 +185,7 @@ is a thin newtype over the same artifact with no alternate semantics.
 
 - Project from authoritative state or canonical patch history through
   **projection masks** declared against contracts.
-- Forbidden: re-parse payloads or JSON documents to â€œrecoverâ€ aspect meaning
+- Forbidden: re-parse payloads or JSON documents to “recover” aspect meaning
   after commit.
 
 **Validation / merge / diagnostics / errors**
@@ -197,16 +197,16 @@ is a thin newtype over the same artifact with no alternate semantics.
   artifact bodies carry **aspect keys, locators, and typed values** when the
   failure is about aspect meaning.
 - Delete JSON projection layers (`json_fields`, structured document error
-  envelopes, enumâ†’JSON witness serializers) when rewriting a slice; replace with
+  envelopes, enum→JSON witness serializers) when rewriting a slice; replace with
   mask-driven diagnostic projections from authoritative/aspect artifacts.
 - Merge and validation rejections that cite undeclared aspects, field mismatch,
   or contract denial must name the **`AspectContract` / `AspectKey` / field
-  path** â€” not a free-form JSON snapshot of the record.
+  path** — not a free-form JSON snapshot of the record.
 
 **Wire codecs (e.g. commit strategies)**
 
 - Strategy canonical bytes encode foundational carriers (`AspectValue`, native
-  ids) â€” not JSON object bytes.
+  ids) — not JSON object bytes.
 - A custom native codec is allowed at outer wire boundaries, but it must round-
   trip the same `AspectValue` families the contract admits; do not embed
   `serde_json::Value` inside native bytes except through explicit compatibility
@@ -241,7 +241,7 @@ These are hard failures for a migrated slice, not acceptable interim states:
 | Failure paths left on JSON while success path uses foundational | Success and failure rewritten in the same slice |
 | Human `detail` string as the only structured failure data | Aspect artifacts first; strings rendered from them |
 
-### Minimum bar for a slice to count as â€œon foundationalâ€
+### Minimum bar for a slice to count as “on foundational”
 
 A touched slice is not migrated until all of the following are true **in that
 slice**:
@@ -254,7 +254,7 @@ slice**:
 5. Old relational duplicate types and JSON authority paths in that slice are
    deleted, not bridged.
 6. Failure, conflict, diagnostic, and witness paths in that slice are
-   aspect-shaped â€” not JSON bags with a foundational success path bolted on.
+   aspect-shaped — not JSON bags with a foundational success path bolted on.
 
 ### Doc map (read before using an API)
 
@@ -285,7 +285,7 @@ Migrate in **large vertical rewrites**, not horizontal sweeps.
 ### Default batch unit
 
 One proof-bearing slice that moves a coherent truth path onto foundational in a
-single turn â€” production, coupled surfaces, and that slice's tests together:
+single turn — production, coupled surfaces, and that slice's tests together:
 
 ```
 schema registration / lowering
@@ -305,12 +305,12 @@ turns.
 
 Pick the order that **minimizes total work**. The usual fast path:
 
-1. Semantic spine â€” `schema` + `authority` + `publication/patch`
-2. Direct consumers â€” `history`, `replay`, `transactions`
-3. Read/project paths â€” `visibility`, `query`, `grouped_truth`, `inspection`
-4. Policy/validation â€” `validation`, `merge`, `lineage`
-5. Infrastructure â€” `storage`, `durability`, `indexes`, `snapshots`
-6. Outer surfaces last â€” `presentation`, `facade.rs`, `commit_strategies`,
+1. Semantic spine — `schema` + `authority` + `publication/patch`
+2. Direct consumers — `history`, `replay`, `transactions`
+3. Read/project paths — `visibility`, `query`, `grouped_truth`, `inspection`
+4. Policy/validation — `validation`, `merge`, `lineage`
+5. Infrastructure — `storage`, `durability`, `indexes`, `snapshots`
+6. Outer surfaces last — `presentation`, `facade.rs`, `commit_strategies`,
    `diagnostics`, `performance`, `simulation`
 
 ### Rewrite semantics
@@ -352,10 +352,10 @@ Follow **Foundational Usage Rules** and the foundational docs. Non-negotiables:
 - Contracts are law, not metadata.
 - Projection, mutation, and diagnostic masks stay distinct.
 - Absence, null, default, and clear keep explicit foundational semantics.
-- Struct aspects use declared field paths â€” not loose JSON object behavior.
+- Struct aspects use declared field paths — not loose JSON object behavior.
 - No post-authority payload rescans anywhere in a migrated slice.
 - Failures and diagnostics about aspect meaning use aspect carriers and diagnostic
-  masks â€” not JSON side channels.
+  masks — not JSON side channels.
 
 ## Testing Rule (Refactor Override)
 
@@ -385,7 +385,7 @@ This refactor **overrides** the usual "test after every batch" habit from
 ## Subsystem Map
 
 Reference layout under `crates/worth-relational/src`. Use to choose the next
-batch â€” not as mandatory serial order.
+batch — not as mandatory serial order.
 
 **Spine:** `symbols`, `identity`, `payloads`, `schema`, `authority`,
 `transactions`, `publication`, `logic`
@@ -425,13 +425,13 @@ deleted (not bridged).
 <vertical slice or subsystem>
 
 ### Foundational surfaces used
-<List each API: aspects(), validate_aspect_value, admit_â€¦, patch builders, masks, compatibility() â€” and where in the slice>
+<List each API: aspects(), validate_aspect_value, admit_…, patch builders, masks, compatibility() — and where in the slice>
 
 ### Forbidden hybrids removed
 <Which rows from the forbidden-hybrid table were deleted in this slice?>
 
 ### Failure/diagnostic paths rewritten
-<conflicts, validations, diagnostics, witnesses â€” now aspect-shaped how?>
+<conflicts, validations, diagnostics, witnesses — now aspect-shaped how?>
 
 ### Choke point replaced this turn
 <the exact relational truth path that now runs through foundational meaning>
@@ -446,5 +446,5 @@ deleted (not bridged).
 <explicitly deferred>
 
 ### End-of-turn verification (10m timeout)
-<exact cargo test/check commands â€” run only after batch is complete>
+<exact cargo test/check commands — run only after batch is complete>
 ```

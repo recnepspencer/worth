@@ -28,7 +28,7 @@ The runtime must answer that question with five non-negotiable properties:
 
 Diagnostics are not optional polish. `worth-signal` must assume there will be runtime bugs, host bugs, policy mistakes, and hard-to-reproduce invalidation pathologies. Provenance, inspection, and metrics are therefore part of the product contract, not just developer support tooling.
 
-The same is true for the test harness. `worth-signal` is now complex enough that scenario builders, regression seeders, parity drivers, and lifecycle-aware verification are no longer â€œnice test ergonomics.â€ They are part of how the runtime defends itself against future regressions.
+The same is true for the test harness. `worth-signal` is now complex enough that scenario builders, regression seeders, parity drivers, and lifecycle-aware verification are no longer “nice test ergonomics.” They are part of how the runtime defends itself against future regressions.
 
 ## Architectural Model
 
@@ -195,7 +195,7 @@ Status meanings:
 | Diagnostics contract | Implemented | Diagnostics are now a first-class public subsystem with profiles, summaries, diffs, flow/failure artifacts, and one public entrypoint |
 | End-to-end causality integration | Next | Signal explanation should be able to connect cleanly back through bridge-carried truth provenance |
 | Graph inspection tools | Implemented | Direct graph export and dependency-chain inspection exist; hot-path analysis can deepen later |
-| Dependency inspection | Implemented | Direct APIs now answer â€œwho depends on whatâ€ explicitly |
+| Dependency inspection | Implemented | Direct APIs now answer “who depends on what” explicitly |
 | Execution metrics | Implemented | Telemetry is now surfaced intentionally through graph/runtime metrics snapshots |
 
 #### Scheduling and execution
@@ -286,7 +286,7 @@ Major additions:
 
 Phase 1 established the public runtime surface. The current runtime is now legible and humane enough to build on without carrying forward the old public API clutter.
 
-See [plans/engineering/worth_signal_phase1_plan.md](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/engineering/worth_signal_phase1_plan.md) for the concrete execution plan.
+See `plans/engineering/worth_signal_phase1_plan.md` for the concrete execution plan.
 
 ### Phase 2: Observability and dependency inspection (Completed)
 
@@ -357,9 +357,9 @@ Major additions:
 - final callback-era execution cleanup so the harness rests on one truthful engine
 - scale-hardening plan so planner, diagnostics, storage locality, and executor work are tracked explicitly before aerospace-grade claims are made
 
-See [plans/engineering/worth_signal_scale_hardening_plan.md](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/engineering/worth_signal_scale_hardening_plan.md) for the strict follow-on plan covering planner hot-path cost, diagnostics overhead, node/snapshot locality, and executor maturation.
+See `plans/engineering/worth_signal_scale_hardening_plan.md` for the strict follow-on plan covering planner hot-path cost, diagnostics overhead, node/snapshot locality, and executor maturation.
 
-This is the phase that turns runtime self-inspection from â€œgood debugging supportâ€ into real trust infrastructure for hard software.
+This is the phase that turns runtime self-inspection from “good debugging support” into real trust infrastructure for hard software.
 
 ### Harness Foundation: Scenario Infrastructure Before Phase 5
 
@@ -387,7 +387,7 @@ Major additions:
 - replay-oriented inspection tooling
 - branchable evaluation-path foundations
 
-See [plans/engineering/worth_signal_state_lineage_design.md](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/engineering/worth_signal_state_lineage_design.md) for the concept lock on snapshots, replay, provenance, and signal lineage.
+See `plans/engineering/worth_signal_state_lineage_design.md` for the concept lock on snapshots, replay, provenance, and signal lineage.
 
 Phase 5 is the historical-provenance phase. It should extend provenance from current-state explanation into replayable, restorable, and time-aware understanding of how evaluation state and computed artifacts evolved.
 
@@ -467,4 +467,4 @@ The current concrete vocabulary remains the anchor for the runtime contract:
 - The current foundation execution plan should be treated as the implementation hardening path for the base runtime, not as the final product vision.
 - The remaining blocker before the harness is the last internal callback-era execution debt in the test substrate. Public execution is already on the prepared path; the final cleanup is about making the harness rest on one truthful engine model.
 - The next major leap is not inventing a new core model. It is finishing that cleanup, building the harness, and then pushing into snapshots, lineage, replay, and bridge-grade causality.
-- The state/replay/lineage concepts are now locked separately in [plans/engineering/worth_signal_state_lineage_design.md](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/engineering/worth_signal_state_lineage_design.md) so later phases do not drift into ad hoc semantics.
+- The state/replay/lineage concepts are now locked separately in `plans/engineering/worth_signal_state_lineage_design.md` so later phases do not drift into ad hoc semantics.

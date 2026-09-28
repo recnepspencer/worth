@@ -143,7 +143,7 @@ Raw path that may remain:
 - explicit dependency wiring
 - explicit prepared-plan execution
 
-But the raw path should be clearly lower-level, not a competing â€œnormalâ€ path
+But the raw path should be clearly lower-level, not a competing “normal” path
 
 ## 4. Canonical Batch Invalidation Flow
 

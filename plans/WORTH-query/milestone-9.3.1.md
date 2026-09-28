@@ -1,9 +1,6 @@
 # Milestone 9.3.1 Engineering Spec: Cross-Runtime Causal Diagnostics And Query Inspection
 
-> **Status:** Closed on 2026-05-12 for runtime-backed cross-runtime causal
-> diagnostics and Query inspection; durable causal archives, store-backed replay
-> reconstruction, and restart-stable expanded explanation reload remain later
-> milestone debt.
+> **Status:** Completed. Durable causal archives and store-backed replay reconstruction remain open for later milestones.
 >
 > **Closeout:** [milestone-9.3.1-closeout.md](./milestone-9.3.1-closeout.md)
 >

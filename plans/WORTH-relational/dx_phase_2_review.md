@@ -46,9 +46,9 @@ Phase 2 is complete only if all of these are true:
 
 The biggest remaining leak is now gone from the non-test facade:
 
-- [`facade::harness`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/facade.rs)
+- [`facade::harness`](../../crates/worth-relational/src/facade.rs)
   is now behind `#[cfg(test)]`
-- [`presentation::harness`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/presentation/mod.rs)
+- [`presentation::harness`](../../crates/worth-relational/src/presentation/mod.rs)
   is also test-only
 
 That means fixture loading, harness planning, and harness adapters no longer
@@ -59,9 +59,9 @@ show up as part of the normal product contract.
 The other clear certification-shaped leak is also gone from the non-test public
 surface:
 
-- [`HarnessAuditMode`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/logic/runtime/mod.rs)
+- `HarnessAuditMode`
   is only re-exported for tests
-- [`InvariantAccess::harness_audit()`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/validation/logic/invariant_access.rs)
+- `InvariantAccess::harness_audit()`
   is only available in test builds
 
 That matters because "harness audit" is exactly the kind of support and
@@ -69,7 +69,7 @@ certification language that should not sit in the normal runtime story.
 
 ### Follow-Up Audit Did Not Find Another Hidden Leak Cluster
 
-[`dx_phase_1_boundary_delta.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_phase_1_boundary_delta.md)
+[`dx_phase_1_boundary_delta.md`](./dx_phase_1_boundary_delta.md)
 confirmed that after the first cleanup pass:
 
 - there was not another equally bad batch of public helper backdoors waiting
@@ -90,7 +90,7 @@ But they are not Phase 2 leaks.
 
 ### The Setup Story Is Less Noisy
 
-[`RelationalRuntimeApi::runtime()`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/presentation/api.rs)
+[`RelationalRuntimeApi::runtime()`](../../crates/worth-relational/src/presentation/api.rs)
 is gone.
 
 That is partly a Phase 1 hierarchy fix, but it also reduces public noise by

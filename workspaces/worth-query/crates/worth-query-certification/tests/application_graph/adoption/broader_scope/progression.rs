@@ -6,12 +6,12 @@ use worth_query_host::facade::application_entry::{
 };
 use worth_query_host::facade::primary_graph::WorthQueryBranchAdoptionPreparationDenial;
 
-use super::{fork, target_revision, P0_ONLY_DIMENSION, P1_ONLY_DIMENSION};
-use crate::bounded_dimension_model::host::{publish_on_first_program, SEED_DIMENSION};
-use crate::bounded_dimension_model::operator_identity::{authenticate_operator, request_scope};
-use crate::bounded_dimension_model::presented_request::set_dimension;
-use crate::bounded_dimension_model::readback::observe_head;
-use crate::bounded_dimension_model::settled_verdict::{settle, DimensionVerdict};
+use super::{fork, target_revision, P0_ONLY_RETENTION, P1_ONLY_RETENTION};
+use crate::document_retention_model::host::{publish_on_first_program, SEED_RETENTION};
+use crate::document_retention_model::operator_identity::{authenticate_operator, request_scope};
+use crate::document_retention_model::presented_request::set_retention;
+use crate::document_retention_model::readback::observe_head;
+use crate::document_retention_model::settled_verdict::{settle, RetentionVerdict};
 
 #[test]
 fn one_incompatible_target_denies_preflight_before_any_branch_effect() {
@@ -20,8 +20,8 @@ fn one_incompatible_target_denies_preflight_before_any_branch_effect() {
     let b = fork(&host, a);
     let c = fork(&host, a);
     assert_eq!(
-        settle(set_dimension(&host, c, P0_ONLY_DIMENSION, 0x9175_4020)),
-        DimensionVerdict::Performed(P0_ONLY_DIMENSION)
+        settle(set_retention(&host, c, P0_ONLY_RETENTION, 0x9175_4020)),
+        RetentionVerdict::Performed(P0_ONLY_RETENTION)
     );
     let before_a = observe_head(host.runtime(), a);
     let before_b = observe_head(host.runtime(), b);
@@ -88,8 +88,8 @@ fn stale_middle_branch_stops_progress_and_cancellation_preserves_the_prefix() {
         .prepare(64)
         .expect("all three branches initially preflight");
     assert_eq!(
-        settle(set_dimension(&host, b, SEED_DIMENSION + 1, 0x9175_4030)),
-        DimensionVerdict::Performed(SEED_DIMENSION + 1)
+        settle(set_retention(&host, b, SEED_RETENTION + 1, 0x9175_4030)),
+        RetentionVerdict::Performed(SEED_RETENTION + 1)
     );
 
     assert!(matches!(
@@ -113,12 +113,12 @@ fn stale_middle_branch_stops_progress_and_cancellation_preserves_the_prefix() {
     assert_eq!(cancelled.progress().len(), 2);
 
     assert_eq!(
-        settle(set_dimension(&host, a, P1_ONLY_DIMENSION, 0x9175_4031)),
-        DimensionVerdict::Performed(P1_ONLY_DIMENSION)
+        settle(set_retention(&host, a, P1_ONLY_RETENTION, 0x9175_4031)),
+        RetentionVerdict::Performed(P1_ONLY_RETENTION)
     );
     assert_eq!(
-        settle(set_dimension(&host, c, P0_ONLY_DIMENSION, 0x9175_4032)),
-        DimensionVerdict::Performed(P0_ONLY_DIMENSION),
+        settle(set_retention(&host, c, P0_ONLY_RETENTION, 0x9175_4032)),
+        RetentionVerdict::Performed(P0_ONLY_RETENTION),
         "cancellation cannot relabel the unstarted suffix"
     );
 }

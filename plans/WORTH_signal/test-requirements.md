@@ -48,7 +48,7 @@ planning-independent in semantics
 
 serial/parallel equivalent
 
-This is the single hardest â€œsame world, same truth, same answerâ€ test.
+This is the single hardest “same world, same truth, same answer” test.
 
 Scenario
 
@@ -242,7 +242,7 @@ Pass condition
 
 Across all execution modes and replay modes, the explanation must be semantically identical after canonicalization.
 
-Not merely same final value â€” same causal explanation.
+Not merely same final value — same causal explanation.
 
 E. Lineage equivalence report
 
@@ -270,7 +270,7 @@ Because it proves the deepest claim in the vision:
 
 the runtime is not just usually correct; it is historically reproducible, causally inspectable, and planner-independent in semantics.
 
-If this fails, the â€œdeterministic transactional auditable derived runtimeâ€ claim is not yet real.
+If this fails, the “deterministic transactional auditable derived runtime” claim is not yet real.
 
 S9.16.5 alignment note
 
@@ -554,7 +554,7 @@ Also run a reference oracle beside it:
 
 either a brute-force full recompute engine
 
-or a â€œrecompute everything every timeâ€ correctness harness
+or a “recompute everything every time” correctness harness
 
 What this probes
 
@@ -605,7 +605,7 @@ downstream nodes propagated to
 
 Pass condition
 
-This matrix must exactly match the oracleâ€™s semantic necessity set:
+This matrix must exactly match the oracle’s semantic necessity set:
 
 every node that must recompute eventually does
 
@@ -637,7 +637,7 @@ full-recompute reference evaluation count
 
 Pass condition
 
-Not just â€œsmaller than brute force.â€
+Not just “smaller than brute force.”
 The runtime must show a stable and explainable suppression profile under adversarial conditions, and every suppression class must be attributable by provenance.
 
 In other words: optimization must stay explainable, not become mysterious magic.
@@ -1239,7 +1239,7 @@ Purpose
 
 Prove that Phase 5 is real: snapshots, lineage, replay, branchable evaluation, restore semantics, memoized reuse history, and future bridge-grade causality all behave coherently through time.
 
-This is the â€œtime and history are first-classâ€ test.
+This is the “time and history are first-class” test.
 
 Scenario
 
@@ -1418,9 +1418,9 @@ The current-state explanation and historical explanation must agree, but not col
 
 That proves the runtime can answer both:
 
-â€œwhy is it this way now?â€
+“why is it this way now?”
 
-â€œhow did it get here?â€
+“how did it get here?”
 
 Without Phase 5, this usually breaks.
 
@@ -1523,7 +1523,7 @@ bridge-ready causality threading
 
 The most important meta-rule
 
-For all three tests, the verification output must be based on canonicalized machine-checkable artifacts, not â€œdeveloper looked at logs and it seemed right.â€
+For all three tests, the verification output must be based on canonicalized machine-checkable artifacts, not “developer looked at logs and it seemed right.”
 
 That means every test should emit canonical digests for:
 
@@ -1621,7 +1621,7 @@ replay reproduces the same dependency shape history
 
 planner cost does not explode under churn
 
-This flushes out â€œdependency leakâ€ bugs fast.
+This flushes out “dependency leak” bugs fast.
 
 2. The fanout shockwave test
 
@@ -1629,7 +1629,7 @@ This targets huge invalidation blast radii.
 
 Why it matters
 
-In geometry and game workloads, some upstream nodes are effectively â€œstructural hubsâ€:
+In geometry and game workloads, some upstream nodes are effectively “structural hubs”:
 
 transform hierarchies
 
@@ -1669,7 +1669,7 @@ planner/runtime overhead grows acceptably with fanout
 
 no queue duplication, repeated re-dirtying, or pathological re-enqueue behavior
 
-This finds â€œworks in principle, collapses under breadthâ€ problems.
+This finds “works in principle, collapses under breadth” problems.
 
 3. The deep chain numerical stability test
 
@@ -1739,7 +1739,7 @@ A runtime can benchmark well on smooth graphs and still perform terribly under s
 
 What to stress
 
-a giant graph with 1â€“5% very hot nodes
+a giant graph with 1–5% very hot nodes
 
 repeated updates concentrated on hot regions
 
@@ -1769,7 +1769,7 @@ This targets lineage and snapshot correctness under deletion, replacement, and b
 
 Why it matters
 
-Geometry and game systems both produce lots of â€œthis thing used to matter, now it does notâ€ history:
+Geometry and game systems both produce lots of “this thing used to matter, now it does not” history:
 
 geometry entities disappear after a boolean
 
@@ -1807,7 +1807,7 @@ history for dead branches remains coherent if retained
 
 GC/compaction policies do not break historical explanation
 
-This is very important for â€œtruthful past, changing presentâ€ systems.
+This is very important for “truthful past, changing present” systems.
 
 6. The determinism under hostile scheduling test
 
@@ -1845,7 +1845,7 @@ no hidden race-dependent dependency capture
 
 no ordering-sensitive comparator or memoization behavior
 
-If this fails, the runtime is not really deterministic â€” it is just lucky.
+If this fails, the runtime is not really deterministic — it is just lucky.
 
 7. The corruption resistance test
 
@@ -1973,7 +1973,7 @@ Games and simulations do this constantly. Geometry tools do it whenever a user d
 
 What to stress
 
-repeated A â†” B â†” A â†” B updates
+repeated A ↔ B ↔ A ↔ B updates
 
 threshold-boundary oscillation
 
@@ -1991,7 +1991,7 @@ no lineage corruption from repeated revisit of similar states
 
 memoized reuse is correct, not stale reuse
 
-output suppression stays stable and does not â€œlearn the wrong thingâ€
+output suppression stays stable and does not “learn the wrong thing”
 
 replay reproduces oscillation exactly
 

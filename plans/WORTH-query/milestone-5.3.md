@@ -1,36 +1,36 @@
 # Milestone 5.3 Engineering Spec: Frontier-Aware Planning And Deterministic Parallel Admission
 
-> **Status:** Draft engineering spec
+> **Status:** Completed. Closeout: [milestone-5.3-closeout.md](./milestone-5.3-closeout.md).
 >
-> **Roadmap parent:** [worth_query_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/worth_query_roadmap.md)
+> **Roadmap parent:** [worth_query_roadmap.md](./WORTH_query_roadmap.md)
 >
-> **Vision parent:** [worth_query_vision.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/worth_query_vision.md)
+> **Vision parent:** [worth_query_vision.md](./WORTH_query_vision.md)
 >
-> **Prior milestone:** [milestone-5.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/milestone-5.md)
+> **Prior milestone:** [milestone-5.md](./milestone-5.md)
 >
 > **Adjacent milestone:** `milestone-5.2.md` is intentionally concurrent work and must remain authority-distinct from this milestone's planning/posture boundary.
 >
-> **Adjacent hardening milestone:** [milestone-5.1.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/milestone-5.1.md)
+> **Adjacent hardening milestone:** [milestone-5.1.md](./milestone-5.1.md)
 >
-> **Prior closeout:** [milestone-5-closeout.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/milestone-5-closeout.md)
+> **Prior closeout:** [milestone-5-closeout.md](./milestone-5-closeout.md)
 >
-> **Test requirements:** [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/test-requirements.md)
+> **Test requirements:** [test-requirements.md](./test-requirements.md)
 >
 > **Primary architectural driver:** make query planning consume lower-runtime frontier posture and deterministic parallel-admission proofs so serial versus parallel execution remains a plan-owned cost choice with identical canonical query meaning instead of an executor-side heuristic
 >
 > **Companion docs:**
-> - [MENTALITY.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/MENTALITY.md)
-> - [arch_laws.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/arch_laws.md)
-> - [perf_laws.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/perf_laws.md)
-> - [domain_laws.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/domain_laws.md)
-> - [worth_query_vision.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/worth_query_vision.md)
-> - [worth_query_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/worth_query_roadmap.md)
-> - [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/test-requirements.md)
-> - [milestone-4.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/milestone-4.md)
-> - [milestone-4-closeout.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/milestone-4-closeout.md)
-> - [milestone-5.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/milestone-5.md)
-> - [milestone-5-closeout.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/milestone-5-closeout.md)
-> - [milestone-5.1.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/milestone-5.1.md)
+> - [MENTALITY.md](../../docs/coding-guidelines/MENTALITY.md)
+> - [arch_laws.md](../../docs/coding-guidelines/arch_laws.md)
+> - [perf_laws.md](../../docs/coding-guidelines/perf_laws.md)
+> - [domain_laws.md](../../docs/coding-guidelines/domain_structure_laws.md)
+> - [worth_query_vision.md](./WORTH_query_vision.md)
+> - [worth_query_roadmap.md](./WORTH_query_roadmap.md)
+> - [test-requirements.md](./test-requirements.md)
+> - [milestone-4.md](./milestone-4.md)
+> - [milestone-4-closeout.md](./milestone-4-closeout.md)
+> - [milestone-5.md](./milestone-5.md)
+> - [milestone-5-closeout.md](./milestone-5-closeout.md)
+> - [milestone-5.1.md](./milestone-5.1.md)
 
 ## Goal
 
@@ -789,7 +789,7 @@ Minimum rejection rows should include:
 Milestone 5.3 is complete only when `worth-query` can prove:
 
 - the `Frontier Planning And Parallel Admission Parity Test` in
-  [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/test-requirements.md)
+  [test-requirements.md](./test-requirements.md)
   passes with canonical machine-checkable artifacts
 - frontier-aware planning decisions are explicit and digest-bearing
 - admitted serial and parallel-admitted routes remain semantically identical

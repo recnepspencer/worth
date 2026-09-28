@@ -32,9 +32,10 @@ you are intentionally doing proof-bearing protocol work or certification.
 Use this when you are wiring the bridge into a host application or harness.
 
 ```rust
+use worth_foundational::facade::{AspectKey, FieldKey, ScalarAspectType};
 use worth_runtime_bridge::facade::{
     BridgeMappingId, BridgeMappingRegistration, CoarseRoutingMode, MappingSelector,
-    RuntimeBridge, SignalInvalidationScope, TruthPatchScope,
+    RuntimeBridge, SignalInvalidationScope, SnapshotReadContract, TruthPatchScope,
 };
 
 let bridge = RuntimeBridge::builder()
@@ -42,13 +43,17 @@ let bridge = RuntimeBridge::builder()
     .with_truth_branch_head_source(relational_source)
     .with_compute_sink(signal_sink)
     .register_mapping(BridgeMappingRegistration::new(
-        BridgeMappingId::new("pricing:steel"),
-        TruthPatchScope::new(
-            MappingSelector::exact("component:steel"),
-            MappingSelector::exact("cost"),
-            MappingSelector::exact("usd"),
+        BridgeMappingId::from_stable_name("pricing:catalog"),
+        TruthPatchScope::for_entity_field(
+            MappingSelector::exact("item:widget"),
+            AspectKey::new("cost").expect("valid aspect key"),
+            FieldKey::new("usd".to_owned()).expect("valid field key"),
         ),
-        SignalInvalidationScope::new("price:bicycle"),
+        SnapshotReadContract::scalar(
+            AspectKey::new("cost").expect("valid aspect key"),
+            ScalarAspectType::String,
+        ),
+        SignalInvalidationScope::from_stable_name("order:total"),
         CoarseRoutingMode::Direct,
     ))
     .build()?;
@@ -68,7 +73,7 @@ Use this when new authoritative truth arrives and you want the bridge to fan it
 into compute invalidation.
 
 ```rust
-let route = bridge.route(crate::facade::TruthCommitIdentity::new("commit:steel-main"))?;
+let route = bridge.route(TruthCommitIdentity::from_relational_commit_id(commit_id))?;
 ```
 
 For standard usage, `route(...)` is the front door.
@@ -109,7 +114,9 @@ the default current view.
 use worth_runtime_bridge::facade::{BridgeTruthViewEvaluationRequest, TruthBranchIdentity};
 
 let main_eval = bridge.evaluate(
-    BridgeTruthViewEvaluationRequest::for_branch_head(TruthBranchIdentity::new("main")),
+    BridgeTruthViewEvaluationRequest::for_branch_head(
+        TruthBranchIdentity::from_relational_branch_id("main"),
+    ),
 )?;
 ```
 
@@ -136,7 +143,9 @@ If you want both sides as explicit evaluations:
 use worth_runtime_bridge::facade::TruthBranchIdentity;
 
 let main_eval = bridge.evaluate(
-    comparison.main_evaluation_request(TruthBranchIdentity::new("main")),
+    comparison.main_evaluation_request(
+        TruthBranchIdentity::from_relational_branch_id("main"),
+    ),
 )?;
 let speculative_eval = bridge.evaluate(
     comparison.speculative_evaluation_request(),

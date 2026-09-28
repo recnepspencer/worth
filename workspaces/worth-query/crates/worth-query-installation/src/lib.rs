@@ -72,6 +72,13 @@ mod domain_computation_workflow_test_support;
 #[cfg(test)]
 mod package_validation_tests;
 
+/// The installation surface: portable domain packages, installation of
+/// application programs, and read-only inspection of installed schemas,
+/// operations, queries, and their aftermath and graph obligations.
+/// Applications reach it as `worth_query_host::facade::domain`.
+///
+/// Inspection accessors describe retained installed meaning; they do not grant
+/// execution, correction, recovery, or external-effect authority.
 pub mod facade {
     pub use worth_foundational::facade::{
         AbsenceLaw, AspectBinding, AspectContract, AspectContractRevision, AspectEvolutionPolicy,

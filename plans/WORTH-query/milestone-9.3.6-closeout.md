@@ -44,7 +44,7 @@ Those remain explicit deferred neighbors exactly as the 9.3.6 spec declared.
 ## Governing Source Summary
 
 - `MENTALITY.md`: closure required executable truth, named adversarial proof,
-  and no ceremonial â€œclose enoughâ€ routing surface.
+  and no ceremonial “close enough” routing surface.
 - `arch_laws.md`: closure required a typed proof-bearing lifecycle, sealed
   construction, honest boundary envelopes, and stabilization-facing artifacts
   that consume the same proofs the runtime exports.
@@ -177,6 +177,6 @@ The runtime API public stabilization gate now inherits:
 - explicit deferred-neighbor rows for the later store/durable/temporal/async
   routing work that 9.3.6 intentionally did not close
 
-The stabilization gate must not reopen 9.3.6â€™s routing-shape or seam-coverage
+The stabilization gate must not reopen 9.3.6’s routing-shape or seam-coverage
 questions. It should consume the shipped closeout artifacts as the final
 lower-runtime routing authority for the frozen public runtime facade.

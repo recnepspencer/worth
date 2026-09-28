@@ -1,10 +1,6 @@
 # Milestone 9.17.4: Application Graph Authoring And Execution
 
-> **Status:** Planned. Former 9.17.4 Phase 1 and Pre-M0 certification remain
-> historical evidence. This spec owns graph authoring and the complete migration
-> of existing ordinary consumers. [9.17.5](./milestone-9.17.5.md) owns branch-scoped
-> program evolution; [9.17.6](./milestone-9.17.6.md) owns runtime-authored workflows.
-> These three specs replace the former combined plan without reducing its contracts.
+> **Status:** Completed.
 
 ## Goal, Entry And Completion
 

@@ -25,35 +25,35 @@ application helpers.
 Milestone 5.5 delivered:
 
 - query-owned workflow declaration, basis-binding, and admission surfaces in
-  [crates/worth-query/src/workflow/foundation.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/workflow/foundation.rs)
+  [crates/worth-query/src/workflow/foundation.rs](../../workspaces/worth-query/crates/worth-query/src/workflow/foundation.rs)
 - query-owned workflow lowering for relational mutation, relational merge, and
   bridge writeback in
-  [crates/worth-query/src/workflow/lowering.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/workflow/lowering.rs)
+  [crates/worth-query/src/workflow/lowering.rs](../../workspaces/worth-query/crates/worth-query/src/domain_capabilities/canonical_runtime/workflow/lowering.rs)
 - query-shaped conflict inspection, post-merge inspection, authority-outcome
   shaping, and replay-safe bundling in
-  [crates/worth-query/src/workflow/inspection.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/workflow/inspection.rs)
+  [crates/worth-query/src/workflow/inspection.rs](../../workspaces/worth-query/crates/worth-query/src/workflow/inspection.rs)
   and
-  [crates/worth-query/src/workflow/inspection_projection.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/workflow/inspection_projection.rs)
+  [crates/worth-query/src/workflow/inspection_projection.rs](../../workspaces/worth-query/crates/worth-query/src/workflow/inspection_projection.rs)
 - dedicated workflow performance and counter surfaces in
-  [crates/worth-query/src/workflow/performance.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/workflow/performance.rs)
+  [crates/worth-query/src/workflow/performance.rs](../../workspaces/worth-query/crates/worth-query/src/workflow/performance.rs)
 - relational authority-owned merge inspection proof minting in
-  [crates/worth-relational/src/merge/data/artifacts.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/merge/data/artifacts.rs)
+  [crates/worth-relational/src/merge/data/artifacts.rs](../../crates/worth-relational/src/merge/data/artifacts/mod.rs)
   and
-  [crates/worth-relational/src/merge/logic/mod.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/merge/logic/mod.rs)
+  `crates/worth-relational/src/merge/logic/mod.rs`
 - milestone-native workflow certification in
-  [crates/worth-query/src/harness/workflow_certification](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/workflow_certification)
+  [crates/worth-query/src/harness/workflow_certification](../../workspaces/worth-query/crates/worth-query/src/harness/workflow_certification)
 - compile-fail proof boundaries for workflow declarations, lowered artifacts,
   inspection artifacts, authority outcomes, replay bundles, and authority
   override in
-  [crates/worth-query/tests/ui](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/tests/ui)
+  `crates/worth-query/tests/ui`
 
 ## Acceptance Mapping
 
 Milestone 5.5 is considered closed against
-[milestone-5.5.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/milestone-5.5.md),
-[worth_query_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/worth_query_roadmap.md),
+[milestone-5.5.md](./milestone-5.5.md),
+[worth_query_roadmap.md](./WORTH_query_roadmap.md),
 and
-[test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/test-requirements.md)
+[test-requirements.md](./test-requirements.md)
 because the required workflow-lowering and workflow-inspection proof surfaces
 now exist directly.
 
@@ -61,11 +61,11 @@ now exist directly.
 
 Covered by:
 
-- [mod.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/workflow_certification/mod.rs)
-- [lane.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/workflow_certification/lane.rs)
-- [matrix.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/workflow_certification/matrix.rs)
-- [row_catalog.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/workflow_certification/row_catalog.rs)
-- [tests.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/workflow_certification/tests.rs)
+- [mod.rs](../../workspaces/worth-query/crates/worth-query/src/harness/workflow_certification/mod.rs)
+- [lane.rs](../../workspaces/worth-query/crates/worth-query/src/harness/workflow_certification/lane.rs)
+- `matrix.rs`
+- [row_catalog.rs](../../workspaces/worth-query/crates/worth-query/src/harness/workflow_certification/row_catalog.rs)
+- `tests.rs`
 
 What is proven:
 
@@ -111,11 +111,11 @@ What is proven:
 
 Covered by:
 
-- [crates/worth-query/src/workflow/inspection.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/workflow/inspection.rs)
-- [crates/worth-query/src/workflow/inspection_projection.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/workflow/inspection_projection.rs)
-- [crates/worth-query/src/workflow/tests/inspection.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/workflow/tests/inspection.rs)
-- [crates/worth-relational/src/merge/data/artifacts.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/merge/data/artifacts.rs)
-- [crates/worth-relational/src/tests/history/milestone_7d_phase_e.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/tests/history/milestone_7d_phase_e.rs)
+- [crates/worth-query/src/workflow/inspection.rs](../../workspaces/worth-query/crates/worth-query/src/workflow/inspection.rs)
+- [crates/worth-query/src/workflow/inspection_projection.rs](../../workspaces/worth-query/crates/worth-query/src/workflow/inspection_projection.rs)
+- [crates/worth-query/src/workflow/tests/inspection.rs](../../workspaces/worth-query/crates/worth-query/src/workflow/tests/inspection.rs)
+- [crates/worth-relational/src/merge/data/artifacts.rs](../../crates/worth-relational/src/merge/data/artifacts/mod.rs)
+- [crates/worth-relational/src/tests/history/milestone_7d_phase_e.rs](../../crates/worth-relational/src/tests/history/milestone_7d_phase_e.rs)
 
 What is proven:
 
@@ -133,9 +133,9 @@ What is proven:
 
 Covered by:
 
-- [crates/worth-query/src/workflow/lowering.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/workflow/lowering.rs)
-- [crates/worth-query/src/workflow/tests/lowering.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/workflow/tests/lowering.rs)
-- [crates/worth-query/src/harness/workflow_certification/matrix.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/workflow_certification/matrix.rs)
+- [crates/worth-query/src/workflow/lowering.rs](../../workspaces/worth-query/crates/worth-query/src/domain_capabilities/canonical_runtime/workflow/lowering.rs)
+- [crates/worth-query/src/workflow/tests/lowering.rs](../../workspaces/worth-query/crates/worth-query/src/workflow/tests/lowering.rs)
+- `crates/worth-query/src/harness/workflow_certification/matrix.rs`
 
 What is proven:
 

@@ -7,15 +7,15 @@ use worth_query_host::facade::application_entry::{
 use worth_query_host::facade::application_installation::WorthQueryProgramOwner;
 use worth_query_host::facade::primary_graph::WorthQueryApplicationUncommitted;
 
-use crate::bounded_dimension_model::host::{publish_on_first_program, SEED_DIMENSION};
-use crate::bounded_dimension_model::operator_identity::{authenticate_operator, request_scope};
-use crate::bounded_dimension_model::presented_request::set_dimension;
-use crate::bounded_dimension_model::programs::DimensionProgramP1;
-use crate::bounded_dimension_model::readback::read_dimension;
-use crate::bounded_dimension_model::settled_verdict::{settle, DimensionVerdict};
+use crate::document_retention_model::host::{publish_on_first_program, SEED_RETENTION};
+use crate::document_retention_model::operator_identity::{authenticate_operator, request_scope};
+use crate::document_retention_model::presented_request::set_retention;
+use crate::document_retention_model::programs::RetentionProgramP1;
+use crate::document_retention_model::readback::read_retention;
+use crate::document_retention_model::settled_verdict::{settle, RetentionVerdict};
 
-const P0_ONLY_DIMENSION: u64 = 3;
-const P1_ONLY_DIMENSION: u64 = 15;
+const P0_ONLY_RETENTION: u64 = 3;
+const P1_ONLY_RETENTION: u64 = 15;
 
 #[test]
 fn one_branch_adopts_p1_while_its_sibling_keeps_running_p0() {
@@ -33,7 +33,7 @@ fn one_branch_adopts_p1_while_its_sibling_keeps_running_p0() {
         .create()
         .expect("the sibling branch must publish");
     let target = *host
-        .supported_program::<DimensionProgramP1>()
+        .supported_program::<RetentionProgramP1>()
         .expect("P1 is rostered")
         .owned_revision();
     let scope = request_scope();
@@ -54,7 +54,7 @@ fn one_branch_adopts_p1_while_its_sibling_keeps_running_p0() {
     assert_eq!(
         prepared.selected_entity_count(),
         2,
-        "adoption validates both seeded parts, including the related workflow subject"
+        "adoption validates both seeded documents, including the related workflow subject"
     );
     let performed = match prepared.publish() {
         WorthQueryBranchAdoptionPublicationOutcome::Performed(performed) => performed,
@@ -74,37 +74,37 @@ fn one_branch_adopts_p1_while_its_sibling_keeps_running_p0() {
 
     let adopted = host.current_world();
     assert_eq!(
-        settle(set_dimension(
+        settle(set_retention(
             &host,
             adopted,
-            P0_ONLY_DIMENSION,
+            P0_ONLY_RETENTION,
             0x9175_1001
         )),
-        DimensionVerdict::violated("bounded-dimension-v2"),
+        RetentionVerdict::violated("document-retention-v2"),
         "P0's law no longer governs the adopted branch"
     );
     assert_eq!(
-        settle(set_dimension(
+        settle(set_retention(
             &host,
             adopted,
-            P1_ONLY_DIMENSION,
+            P1_ONLY_RETENTION,
             0x9175_1002
         )),
-        DimensionVerdict::Performed(P1_ONLY_DIMENSION)
+        RetentionVerdict::Performed(P1_ONLY_RETENTION)
     );
-    assert_eq!(read_dimension(host.runtime(), adopted), P1_ONLY_DIMENSION);
+    assert_eq!(read_retention(host.runtime(), adopted), P1_ONLY_RETENTION);
 
     assert_eq!(
-        settle(set_dimension(
+        settle(set_retention(
             &host,
             sibling,
-            P0_ONLY_DIMENSION,
+            P0_ONLY_RETENTION,
             0x9175_1003
         )),
-        DimensionVerdict::Performed(P0_ONLY_DIMENSION),
+        RetentionVerdict::Performed(P0_ONLY_RETENTION),
         "the sibling keeps the source program"
     );
-    assert_eq!(read_dimension(host.runtime(), sibling), P0_ONLY_DIMENSION);
+    assert_eq!(read_retention(host.runtime(), sibling), P0_ONLY_RETENTION);
 }
 
 #[test]
@@ -112,17 +112,17 @@ fn target_rule_rejects_existing_state_by_its_installed_identity() {
     let host = publish_on_first_program();
     let initial = host.current_world();
     assert_eq!(
-        settle(set_dimension(
+        settle(set_retention(
             &host,
             initial,
-            P0_ONLY_DIMENSION,
+            P0_ONLY_RETENTION,
             0x9175_1011
         )),
-        DimensionVerdict::Performed(P0_ONLY_DIMENSION)
+        RetentionVerdict::Performed(P0_ONLY_RETENTION)
     );
     let branch = host.current_world();
     let target = *host
-        .supported_program::<DimensionProgramP1>()
+        .supported_program::<RetentionProgramP1>()
         .expect("P1 is rostered")
         .owned_revision();
     let scope = request_scope();
@@ -145,8 +145,8 @@ fn target_rule_rejects_existing_state_by_its_installed_identity() {
     else {
         panic!("unexpected adoption denial: {denial:?}");
     };
-    assert_eq!(identity.rule_id.as_str(), "bounded-dimension-v2");
-    assert_eq!(read_dimension(host.runtime(), branch), P0_ONLY_DIMENSION);
+    assert_eq!(identity.rule_id.as_str(), "document-retention-v2");
+    assert_eq!(read_retention(host.runtime(), branch), P0_ONLY_RETENTION);
 }
 
 #[test]
@@ -154,7 +154,7 @@ fn prepared_adoption_refuses_a_branch_head_that_moved() {
     let host = publish_on_first_program();
     let branch = host.current_world();
     let target = *host
-        .supported_program::<DimensionProgramP1>()
+        .supported_program::<RetentionProgramP1>()
         .expect("P1 is rostered")
         .owned_revision();
     let scope = request_scope();
@@ -171,13 +171,13 @@ fn prepared_adoption_refuses_a_branch_head_that_moved() {
         .expect("the adoption must prepare against the selected head");
 
     assert_eq!(
-        settle(set_dimension(
+        settle(set_retention(
             &host,
             branch,
-            SEED_DIMENSION + 1,
+            SEED_RETENTION + 1,
             0x9175_1021
         )),
-        DimensionVerdict::Performed(SEED_DIMENSION + 1)
+        RetentionVerdict::Performed(SEED_RETENTION + 1)
     );
     match prepared.publish() {
         WorthQueryBranchAdoptionPublicationOutcome::NoEffect(no_effect) => assert_eq!(
@@ -198,7 +198,7 @@ fn affected_state_selection_refuses_an_understated_ceiling() {
     let host = publish_on_first_program();
     let branch = host.current_world();
     let target = *host
-        .supported_program::<DimensionProgramP1>()
+        .supported_program::<RetentionProgramP1>()
         .expect("P1 is rostered")
         .owned_revision();
     let scope = request_scope();
@@ -265,13 +265,13 @@ fn a_p0_candidate_prepared_before_adoption_cannot_publish_after_p1_activates() {
 
     std::thread::scope(|threads| {
         let old_writer = threads.spawn(|| {
-            set_dimension(&host, branch, SEED_DIMENSION + 1, 0x9175_1031)
+            set_retention(&host, branch, SEED_RETENTION + 1, 0x9175_1031)
                 .expect("the old P0 request must reach publication")
         });
         assert!(pause.wait_until_reached(std::time::Duration::from_secs(10)));
 
         let target = *host
-            .supported_program::<DimensionProgramP1>()
+            .supported_program::<RetentionProgramP1>()
             .expect("P1 is rostered")
             .owned_revision();
         let scope = request_scope();
@@ -302,8 +302,8 @@ fn a_p0_candidate_prepared_before_adoption_cannot_publish_after_p1_activates() {
     });
 
     assert_eq!(
-        read_dimension(host.runtime(), host.current_world()),
-        SEED_DIMENSION,
+        read_retention(host.runtime(), host.current_world()),
+        SEED_RETENTION,
         "the stale P0 candidate must not land after activation"
     );
 }
@@ -313,7 +313,7 @@ fn requirements_from_an_old_activation_cannot_authorize_a_later_adoption() {
     let host = publish_on_first_program();
     let branch = host.current_world();
     let target = *host
-        .supported_program::<DimensionProgramP1>()
+        .supported_program::<RetentionProgramP1>()
         .expect("P1 is rostered")
         .owned_revision();
     let scope = request_scope();

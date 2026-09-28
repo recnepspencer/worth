@@ -1676,12 +1676,12 @@ external-effect uncertainty, and code-version skew, it is certification work.
 
 ## Companion Documents
 
-- [worth_relational_vision.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/worth_relational_vision.md)
-- [worth_store_vision.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-store/worth_store_vision.md)
-- [worth_runtime_bridge_vision.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/worth_runtime_bridge_vision.md)
-- [worth_query_vision.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/worth_query_vision.md)
-- [worth_server_vision.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-server/worth_server_vision.md)
-- [WORTH_cloud_vision.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/WORTH-cloud/WORTH_cloud_vision.md)
+- [worth_relational_vision.md](../WORTH-relational/WORTH_relational_vision.md)
+- [worth_store_vision.md](../worth-store/worth_store_vision.md)
+- [worth_runtime_bridge_vision.md](../WORTH-runtime-bridge/WORTH_runtime_bridge_vision.md)
+- [worth_query_vision.md](../WORTH-query/WORTH_query_vision.md)
+- [worth_server_vision.md](../WORTH-server/WORTH_server_vision.md)
+- `WORTH_cloud_vision.md`
 
 The job runtime is where asynchronous work becomes trustworthy. If it is weak,
 every product built on WORTH will still need bespoke worker correctness glue:

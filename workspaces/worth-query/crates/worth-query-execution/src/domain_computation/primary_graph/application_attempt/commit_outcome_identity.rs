@@ -1,5 +1,11 @@
 use crate::domain_computation::application_outcome_identity::WorthQueryApplicationOutcomeIdentity;
 
+/// Runtime-assigned identity of one application commit outcome, read from a
+/// receipt's `outcome_identity()`.
+///
+/// It correlates a committed attempt with the dispatch outbox records and
+/// external-effect identities derived from it. It is a nonzero number that stays
+/// unique across checkpoint restore. It names an outcome and grants nothing.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct WorthQueryApplicationCommitOutcomeIdentity(WorthQueryApplicationOutcomeIdentity);
 

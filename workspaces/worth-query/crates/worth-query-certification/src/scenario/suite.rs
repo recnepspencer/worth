@@ -4,13 +4,21 @@ use super::{
 };
 use std::collections::BTreeSet;
 
+/// Why `WorthQueryCertificationSuite::complete` refused a set of scenarios.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryCertificationSuiteDenial {
+    /// Two scenarios share this identity.
     DuplicateScenarioIdentity(String),
+    /// No scenario covers these scenario kinds.
     MissingScenarioKinds(BTreeSet<WorthQueryCertificationScenarioKind>),
+    /// No scenario's kind requires these journey checkpoints.
     MissingJourneyCheckpoints(BTreeSet<WorthQueryCertificationJourneyCheckpoint>),
 }
 
+/// A complete certification suite: scenarios with distinct identities that
+/// together cover every scenario kind and every journey checkpoint.
+///
+/// Build it with `complete`, then pass it to `certify_provider_pair`.
 #[derive(Clone, Debug)]
 pub struct WorthQueryCertificationSuite {
     scenarios: Vec<WorthQueryCertificationScenario>,

@@ -2,8 +2,8 @@
 
 > **Status:** Phase 10 closeout **Closed** for worth-query bridge-truth scope
 > (`query-repair`, 2026-06-16). **One named deferral:** worth-spatial
-> `public_api_contract` integration harness â†’ separate optimization agent
-> ([phase-10-closeout-ledger.md](./phase-10-closeout-ledger.md) Â§Postponed).
+> `public_api_contract` integration harness → separate optimization agent
+> ([phase-10-closeout-ledger.md](./phase-10-closeout-ledger.md) §Postponed).
 >
 > **Prior closeout date:** 2026-06-15
 >
@@ -16,21 +16,21 @@ pass on branch `query-repair`. Phase 10 must complete **all** items below before
 status returns to `Closed`. See also `phase-10-closeout-ledger.md` and the Phase 10
 section in `milestone-9.6-bridge-truth-identity-lowering.md`.
 
-1. **Full compile-fail matrix** â€” every gate in Verification Gates below, plus all
+1. **Full compile-fail matrix** — every gate in Verification Gates below, plus all
    worth-query `phase_boundaries_*` suites and worth-topo Phase 8 + Phase 9 trybuild
    drivers.
-2. **worth-topo Phase 9 compile-fail extension** â€” `query_runtime_phase_nine`
+2. **worth-topo Phase 9 compile-fail extension** — `query_runtime_phase_nine`
    manifest, harness folklore scan (no `PHASE_EIGHT_EXCLUDED` skips), UI fixtures.
-3. **worth-runtime-bridge subscription replay** â€” migrate `replay_tests.rs` from
+3. **worth-runtime-bridge subscription replay** — migrate `replay_tests.rs` from
    label-based `truth_*_fixture` helpers to typed relational constructors; close
    matrix row in this milestone (no separate owner milestone).
-4. **worth-spatial `public_api_contract`** â€” **postponed** to separate
+4. **worth-spatial `public_api_contract`** — **postponed** to separate
    worth-spatial optimization agent (harness performance/flake under parallel;
    serial gate intended; `cargo test -p worth-spatial --lib` 72/72 green).
-   Does not block WS-6â€“8; blocks Phase 12 final 9.6 `Closed`.
-5. **Phase 9 closeout evidence** â€” append gate results from `query-repair` hostile
+   Does not block WS-6–8; blocks Phase 12 final 9.6 `Closed`.
+5. **Phase 9 closeout evidence** — append gate results from `query-repair` hostile
    QA and compile-fail runs to this document.
-6. **Compiler Failure Ledger** â€” no open in-scope rows without explicit fix path.
+6. **Compiler Failure Ledger** — no open in-scope rows without explicit fix path.
 
 ## Closure Summary
 
@@ -131,14 +131,14 @@ typed evidence identities:
 
 - `cargo test -p worth-spatial --test public_api_contract -- --test-threads=1`
   (serial harness required; default parallel run has shared-state flake unrelated to
-  identity authority â€” see phase-10-closeout-ledger P10-4)
+  identity authority — see phase-10-closeout-ledger P10-4)
 - `cargo test -p worth-spatial --lib`
 - `cargo test -p worth-topo --lib topology_read`
 - `cargo test -p worth-server --test WORTH_native_facade_entry`
 - `cargo test -p worth-server --test compat_http_phase_three`
 - `cargo test -p worth-runtime-bridge subscription::replay --lib`
 
-**Phase 7 certification lanes (2026-06-15 baseline â€” re-run for Phase 10)**
+**Phase 7 certification lanes (2026-06-15 baseline — re-run for Phase 10)**
 - `cargo test -p worth-query runtime::surface::mutation_evidence::batch --lib`
 - `cargo test -p worth-query runtime::tests::causal_inspection::certification::row_digest --lib`
 - `cargo test -p worth-query runtime::tests::causal_inspection::certification --lib`
@@ -152,14 +152,14 @@ Evidence files for the final pass are stored under `plans/worth-query/goal_mode_
 
 **Closed in Phase 10:**
 
-- ~~Subscription replay typed identity fixture cleanup~~ â†’ **P10-3** âœ“
-- ~~worth-topo Phase 9 compile-fail extension~~ â†’ **P10-2** âœ“
+- ~~Subscription replay typed identity fixture cleanup~~ → **P10-3** ✓
+- ~~worth-topo Phase 9 compile-fail extension~~ → **P10-2** ✓
 
-**Postponed (named owner â€” not worth-query 9.6 WS-6+):**
+**Postponed (named owner — not worth-query 9.6 WS-6+):**
 
-- worth-spatial `public_api_contract` integration harness â†’ **P10-4** â€” separate
+- worth-spatial `public_api_contract` integration harness → **P10-4** — separate
   worth-spatial optimization agent; see [phase-10-closeout-ledger.md](./phase-10-closeout-ledger.md)
-  Â§Postponed
+  §Postponed
 
 **Still out of scope:** ordinary local/display formatting in worth-kernel and
 WORTH-kernel unless a trace finds an authority path.

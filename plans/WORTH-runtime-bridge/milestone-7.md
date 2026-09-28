@@ -1,25 +1,25 @@
 # Milestone 7 Engineering Spec: Reactive Source Protocol And Clean Host Surfaces
 
-> **Status:** Planned engineering spec
+> **Status:** Completed. Closeout: [milestone-7-closeout.md](./milestone-7-closeout.md).
 >
-> **Roadmap parent:** [worth_runtime_bridge_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/worth_runtime_bridge_roadmap.md)
+> **Roadmap parent:** [worth_runtime_bridge_roadmap.md](./WORTH_runtime_bridge_roadmap.md)
 >
-> **Vision parent:** [worth_runtime_bridge_vision.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/worth_runtime_bridge_vision.md)
+> **Vision parent:** [worth_runtime_bridge_vision.md](./WORTH_runtime_bridge_vision.md)
 >
-> **Prior milestone:** [milestone-6.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-6.md)
+> **Prior milestone:** [milestone-6.md](./milestone-6.md)
 >
-> **Bridge certification companion:** [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md)
+> **Bridge certification companion:** [test-requirements.md](./test-requirements.md)
 >
 > **Primary architectural driver:** make truth-backed reads a first-class bridge protocol and construction surface so hosts and compute consumers stop learning relational storage details, capability folklore, and builder-order quirks directly
 >
 > **Companion docs:**
-> - [worth_relational_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/worth_relational_roadmap.md)
-> - [worth_signal_vision.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth_signal/worth_signal_vision.md)
-> - [worth_signals2.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth_signal/worth_signals2.md)
-> - [MENTALITY.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/MENTALITY.md)
-> - [architectural_guidelines.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/architectural_guidelines.md)
-> - [domain_standards.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/domain_standards.md)
-> - [performance_guidelines.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/performance_guidelines.md)
+> - [worth_relational_roadmap.md](../WORTH-relational/WORTH_relational_roadmap.md)
+> - [worth_signal_vision.md](../WORTH_signal/WORTH_signal_vision.md)
+> - [worth_signals2.md](../WORTH_signal/WORTH_signals2.md)
+> - [MENTALITY.md](../../docs/coding-guidelines/MENTALITY.md)
+> - [architectural_guidelines.md](../../docs/coding-guidelines/arch_laws.md)
+> - [domain_standards.md](../../docs/coding-guidelines/domain_structure_laws.md)
+> - [performance_guidelines.md](../../docs/coding-guidelines/perf_laws.md)
 
 ## Summary
 
@@ -698,7 +698,7 @@ It is not complete because:
 
 It is complete only when the Milestone 7 certification suites satisfy the
 global certification rules from
-[test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md)
+[test-requirements.md](./test-requirements.md)
 mechanically.
 
 For Milestone 7 that means every named certification suite must define, unless
@@ -892,7 +892,7 @@ Rules:
 
 Milestone 7 must follow the same structural testing discipline as earlier
 bridge milestones and must satisfy the Milestone 7 certification suites in
-[test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md).
+[test-requirements.md](./test-requirements.md).
 
 Expected first-class test surfaces:
 
@@ -918,7 +918,7 @@ Expected harness surfaces:
 
 Every named Milestone 7 certification suite must follow the certification
 discipline from
-[test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md)
+[test-requirements.md](./test-requirements.md)
 explicitly.
 
 Required lane structure unless the suite explicitly documents a narrower reason:
@@ -1076,15 +1076,15 @@ Rules:
 
 ### Existing Files Expected To Change
 
-- [adapter.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/adapter.rs)
-- [builder.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/builder.rs)
-- [facade.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/facade.rs)
-- [lib.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/lib.rs)
-- [mod.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/diagnostics/mod.rs)
-- [mod.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/harness/mod.rs)
-- [mod.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/snapshot/mod.rs)
-- [materialization.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/snapshot/materialization.rs)
-- [declaration.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/snapshot/declaration.rs)
+- [adapter.rs](../../crates/worth-runtime-bridge/src/adapter/mod.rs)
+- [builder.rs](../../crates/worth-runtime-bridge/src/builder/mod.rs)
+- [facade.rs](../../crates/worth-runtime-bridge/src/facade.rs)
+- [lib.rs](../../crates/worth-runtime-bridge/src/lib.rs)
+- [mod.rs](../../crates/worth-runtime-bridge/src/diagnostics/mod.rs)
+- [mod.rs](../../crates/worth-runtime-bridge/src/harness/mod.rs)
+- [mod.rs](../../crates/worth-runtime-bridge/src/snapshot/mod.rs)
+- [materialization.rs](../../crates/worth-runtime-bridge/src/snapshot/materialization.rs)
+- [declaration.rs](../../crates/worth-runtime-bridge/src/snapshot/declaration.rs)
 
 ## Implementation Phases
 

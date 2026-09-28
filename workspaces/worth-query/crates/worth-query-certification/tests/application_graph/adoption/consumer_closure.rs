@@ -1,10 +1,10 @@
 //! Public consumer closure for branch-selected program inspection and commit.
 
-use crate::bounded_dimension_model::host::publish_on_first_program;
-use crate::bounded_dimension_model::operator_identity::{authenticate_operator, request_scope};
-use crate::bounded_dimension_model::presented_request::set_dimension;
-use crate::bounded_dimension_model::programs::DimensionProgramP1;
-use crate::bounded_dimension_model::settled_verdict::{settle, DimensionVerdict};
+use crate::document_retention_model::host::publish_on_first_program;
+use crate::document_retention_model::operator_identity::{authenticate_operator, request_scope};
+use crate::document_retention_model::presented_request::set_retention;
+use crate::document_retention_model::programs::RetentionProgramP1;
+use crate::document_retention_model::settled_verdict::{settle, RetentionVerdict};
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationRequestExt, WorthQueryBranchAdoptionPublicationOutcome,
 };
@@ -25,7 +25,7 @@ fn public_entry_inspects_and_executes_each_branch_under_its_carried_program() {
         .create()
         .expect("the sibling branch publishes");
     let target = *host
-        .supported_program::<DimensionProgramP1>()
+        .supported_program::<RetentionProgramP1>()
         .expect("P1 is rostered")
         .owned_revision();
     let source = *host.owned_revision();
@@ -77,12 +77,12 @@ fn public_entry_inspects_and_executes_each_branch_under_its_carried_program() {
     assert_eq!(main_owner.owned_revision(), &target);
     assert_eq!(sibling_owner.owned_revision(), &source);
     assert_eq!(
-        settle(set_dimension(&host, main, 15, 0x9175_5001)),
-        DimensionVerdict::Performed(15)
+        settle(set_retention(&host, main, 15, 0x9175_5001)),
+        RetentionVerdict::Performed(15)
     );
     assert_eq!(
-        settle(set_dimension(&host, sibling, 3, 0x9175_5002)),
-        DimensionVerdict::Performed(3)
+        settle(set_retention(&host, sibling, 3, 0x9175_5002)),
+        RetentionVerdict::Performed(3)
     );
 }
 
@@ -111,8 +111,8 @@ fn selected_program_mutation_reuses_its_authorization_selection() {
     let before = observer.observe().acquisitions();
 
     assert_eq!(
-        settle(set_dimension(&host, branch, 3, 0x9175_5003)),
-        DimensionVerdict::Performed(3)
+        settle(set_retention(&host, branch, 3, 0x9175_5003)),
+        RetentionVerdict::Performed(3)
     );
 
     let contacts = observer.observe().acquisitions() - before;

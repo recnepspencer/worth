@@ -35,35 +35,35 @@ Milestone 1 delivered:
 
 - the `worth-query` crate wired into the workspace
 - a narrow public facade in
-  [facade.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/facade.rs)
+  [facade.rs](../../workspaces/worth-query/crates/worth-query/src/facade.rs)
 - typed admitted authoring families under
-  [authoring](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/authoring)
+  [authoring](../../workspaces/worth-query/crates/worth-query/src/authoring)
 - a decomposed request-entry subdomain under
-  [authoring/request](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/authoring/request)
+  [authoring/request](../../workspaces/worth-query/crates/worth-query-declaration/src/authoring/request)
 - canonical artifact construction, failure taxonomy, pipeline stages, and bundle
   proof state under
-  [canonicalization](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/canonicalization)
+  [canonicalization](../../workspaces/worth-query/crates/worth-query/src/canonicalization)
 - explicit canonical digests and equivalence contracts under
-  [identity](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/identity)
+  [identity](../../workspaces/worth-query/crates/worth-query/src/identity)
 - result-shape family, field, and compatibility helpers under
-  [result_shape](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/result_shape)
+  [result_shape](../../workspaces/worth-query/crates/worth-query-declaration/src/result_shape)
 - query-owned binding descriptors, slots, and metadata policy under
-  [binding](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/binding)
+  [binding](../../workspaces/worth-query/crates/worth-query/src/binding)
 - canonicalization reports, warnings, counters, and identity-freeze evidence
   under
-  [diagnostics](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/diagnostics)
+  [diagnostics](../../workspaces/worth-query/crates/worth-query/src/diagnostics)
 - milestone-native certification adapters, matrices, fixtures, and profiles
   under
-  [harness](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness)
+  [harness](../../workspaces/worth-query/crates/worth-query/src/harness)
 - compile-fail authority-boundary tests under
-  [tests](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/tests)
+  [tests](../../workspaces/worth-query/crates/worth-query/tests)
 
 ## Acceptance Mapping
 
 Milestone 1 is considered closed against
-[milestone-1.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/milestone-1.md)
+[milestone-1.md](./milestone-1.md)
 and
-[test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/test-requirements.md)
+[test-requirements.md](./test-requirements.md)
 because the required acceptance surfaces are now covered directly.
 
 ### `Canonical Query Normalization Parity Test`

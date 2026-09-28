@@ -1,3 +1,8 @@
+/// Work one invariant projection spent: equality lookups, index candidates,
+/// adjacency and endpoint reads, field reads, aggregate lookups and cache hits,
+/// and output-lineage lookups.
+///
+/// Descriptive evidence for budgeting; it grants nothing.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct WorthQueryInvariantProjectionWork {
     equality_lookups: usize,

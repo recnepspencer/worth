@@ -1,8 +1,8 @@
 # Read Composition Phase 1 Closeout
 
 This document freezes the `worth-query` graph-composition-for-reads Phase 1
-kernel boundary and the public answer to â€œis Worth allowed to begin Phase 2
-adoption yet?â€
+kernel boundary and the public answer to “is Worth allowed to begin Phase 2
+adoption yet?”
 
 ## Stable Surface
 

@@ -9,11 +9,11 @@ use worth_query_host::facade::{
     },
 };
 
-use super::bounded_dimension_model::{
-    dimension_entry::{PART_IDENTITY, RELATED_PART_IDENTITY},
-    host::{publish_workflow_on_first_program, SEED_DIMENSION},
-    presented_request::set_dimension,
-    settled_verdict::{settle, DimensionVerdict},
+use super::document_retention_model::{
+    host::{publish_workflow_on_first_program, SEED_RETENTION},
+    presented_request::set_retention,
+    retention_entry::{DOCUMENT_IDENTITY, RELATED_DOCUMENT_IDENTITY},
+    settled_verdict::{settle, RetentionVerdict},
     workflow::{
         accept_assessment, advance_instance, multi_subject_assessment_retry_definition,
         propose_instance, publish_definition, run_instance, settle_assessment,
@@ -50,13 +50,13 @@ fn ordinary_and_advanced_preserve_only_the_unedited_subjects_review() {
         ));
     }
     assert_eq!(
-        settle(set_dimension(
+        settle(set_retention(
             application.program_runtime(),
             application.current_world(),
             6,
             919_305,
         )),
-        DimensionVerdict::Performed(6)
+        RetentionVerdict::Performed(6)
     );
     for (instance, base) in [
         (advanced.clone(), 919_310_u64),
@@ -64,13 +64,13 @@ fn ordinary_and_advanced_preserve_only_the_unedited_subjects_review() {
     ] {
         for (subject, posture, settle_key, accept_key) in [
             (
-                PART_IDENTITY,
+                DOCUMENT_IDENTITY,
                 WorthQueryWorkflowAssessmentPosture::Failing,
                 base,
                 base + 1,
             ),
             (
-                RELATED_PART_IDENTITY,
+                RELATED_DOCUMENT_IDENTITY,
                 WorthQueryWorkflowAssessmentPosture::Passing,
                 base + 2,
                 base + 3,
@@ -90,13 +90,13 @@ fn ordinary_and_advanced_preserve_only_the_unedited_subjects_review() {
         ));
     }
     assert_eq!(
-        settle(set_dimension(
+        settle(set_retention(
             application.program_runtime(),
             application.current_world(),
-            SEED_DIMENSION,
+            SEED_RETENTION,
             919_330,
         )),
-        DimensionVerdict::Performed(SEED_DIMENSION)
+        RetentionVerdict::Performed(SEED_RETENTION)
     );
     let advanced_required = match advance_instance(&application, advanced.clone(), 919_331)
         .expect("advanced changed-subject wait prepares")

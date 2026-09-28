@@ -1,5 +1,7 @@
 # Milestone 9.17: Composite Runtime Branching And Branch-Local MVCC
 
+> **Status:** Completed.
+
 ## Governing Role
 
 Milestone 9.17 is the governing umbrella for the ordinary composite product-

@@ -25,12 +25,12 @@ It should be updated whenever we materially change the facade shape.
 
 This audit is based on:
 
-- [`crates/worth-runtime-bridge/src/facade.rs`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/facade.rs)
-- [`crates/worth-runtime-bridge/src/facade/request.rs`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/facade/request.rs)
-- [`crates/worth-runtime-bridge/src/facade/standard_path.rs`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/facade/standard_path.rs)
-- [`crates/worth-runtime-bridge/src/facade/runtime`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/facade/runtime)
+- [`crates/worth-runtime-bridge/src/facade.rs`](../../crates/worth-runtime-bridge/src/facade.rs)
+- [`crates/worth-runtime-bridge/src/facade/request.rs`](../../crates/worth-runtime-bridge/src/facade/request.rs)
+- [`crates/worth-runtime-bridge/src/facade/standard_path.rs`](../../crates/worth-runtime-bridge/src/facade/standard_path.rs)
+- [`crates/worth-runtime-bridge/src/facade/runtime`](../../crates/worth-runtime-bridge/src/facade/runtime)
 - the current public docs spine under
-  [`crates/worth-runtime-bridge`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge)
+  [`crates/worth-runtime-bridge`](../../crates/worth-runtime-bridge)
 
 ---
 

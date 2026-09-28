@@ -47,7 +47,9 @@ them directly.
 
 The higher application facade exposes a performed-publication terminal as:
 
-- `WorthQueryApplicationCommitOutcome::SettlementDeferred(...)`
+- `WorthQueryApplicationUncommitted::SettlementDeferred(...)`, returned as the
+  `Err` of `WorthQueryApplicationCommitOutcome::landed()` and carried by a
+  request lane's `WorthQueryApplicationMutationOutcome::Commit(...)`
 - `WorthQueryApplicationSettlementDeferred`
 - `WorthQueryApplicationSettlementNextAction::RecoverDeferredApplicationSettlement`
 - `WorthQueryPrimaryGraphApplicationRuntime::recover_deferred_application_settlement(...)`

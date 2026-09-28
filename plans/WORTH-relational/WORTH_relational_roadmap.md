@@ -8,7 +8,7 @@ It tracks only the work that still remains for `worth-relational`.
 Foundational architecture and Phase 8 are now shipped baseline. This roadmap
 exists to define the remaining product milestones and the acceptance path that
 must be satisfied before the runtime can be considered complete against
-[test-requirements.md](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/worth-relational/test-requirements.md).
+[test-requirements.md](./test-requirements.md).
 
 The operating rule remains:
 
@@ -72,7 +72,7 @@ The current shipped baseline includes:
 - `worth-harness` parity and certification substrate
 
 The shipped closeout reference for the latest major runtime milestone is
-[milestone-6-closeout.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/milestone-6-closeout.md).
+[milestone-6-closeout.md](./milestone-6-closeout.md).
 
 ## Roadmap Rules
 
@@ -86,14 +86,14 @@ Rules for every remaining item:
   observability, replay from canonical commit artifacts, and storage-visible
   fallback semantics
 - each milestone must name the exact acceptance requirements in
-  [test-requirements.md](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/worth-relational/test-requirements.md)
+  [test-requirements.md](./test-requirements.md)
 - the roadmap uses `test-requirements.md` as the authoritative source for what each named acceptance test demands
 - no milestone is complete until both implementation and acceptance requirements are closed
 
 ## Milestone 1: CDC and Subscriber Recovery
 
 Status: Closed on 2026-03-13. See
-[milestone-1-closeout.md](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/worth-relational/milestone-1-closeout.md).
+[milestone-1-closeout.md](./milestone-1-closeout.md).
 
 ### Goal
 
@@ -134,7 +134,7 @@ subscriber continuation across runtime schema changes.
 
 This milestone is complete only when the implementation satisfies the following
 named requirements from
-[test-requirements.md](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/worth-relational/test-requirements.md):
+[test-requirements.md](./test-requirements.md):
 
 - `Diff/CDC truth parity test`
 - `Hostile commit/replay equivalence test`
@@ -148,7 +148,7 @@ verification output, and pass condition those tests impose.
 ## Milestone 2: Relational Aspect Semantics
 
 Status: Closed on 2026-03-19. See
-[milestone-2-closeout.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/milestone-2-closeout.md).
+[milestone-2-closeout.md](./milestone-2-closeout.md).
 
 ### Goal
 
@@ -181,7 +181,7 @@ reads, and bulk queries, rather than only payload-derived change labels.
 
 This milestone is complete only when the implementation satisfies the following
 named requirements from
-[test-requirements.md](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/worth-relational/test-requirements.md):
+[test-requirements.md](./test-requirements.md):
 
 - `Diff/CDC truth parity test`
 - `Bulk query and traversal stress truth test`
@@ -219,7 +219,7 @@ ad hoc debug utilities.
 
 This milestone is complete only when the implementation satisfies the following
 named requirements from
-[test-requirements.md](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/worth-relational/test-requirements.md):
+[test-requirements.md](./test-requirements.md):
 
 - `Hostile commit/replay equivalence test`
 - `Snapshot pinning and reclaim correctness test`
@@ -231,7 +231,7 @@ named requirements from
 ## Milestone 4: Relation Integrity and Schema Contracts
 
 Status: Closed on 2026-03-21. See
-[milestone-4-closeout.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/milestone-4-closeout.md).
+[milestone-4-closeout.md](./milestone-4-closeout.md).
 
 ### Goal
 
@@ -260,7 +260,7 @@ truth rules instead of merely storing graph-shaped data.
 
 This milestone is complete only when the implementation satisfies the following
 named requirements from
-[test-requirements.md](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/worth-relational/test-requirements.md):
+[test-requirements.md](./test-requirements.md):
 
 - `Savepoint rollback fracture test`
 - `Hostile commit/replay equivalence test`
@@ -365,7 +365,7 @@ in these domains.
 
 This milestone is complete only when the implementation satisfies the
 following named requirements from
-[test-requirements.md](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/worth-relational/test-requirements.md),
+[test-requirements.md](./test-requirements.md),
 and any additional schema-evolution-specific certification requirements added
 there:
 
@@ -375,7 +375,7 @@ there:
 
 Additionally, this milestone must add and satisfy an explicit schema-evolution
 CDC certification requirement if
-[test-requirements.md](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/worth-relational/test-requirements.md)
+[test-requirements.md](./test-requirements.md)
 does not yet contain one.
 
 Additionally, this milestone must add and satisfy an explicit schema
@@ -386,7 +386,7 @@ policy-driven resolution.
 ## Milestone 6: Lineage and Correspondence Completion
 
 Status: Closed on 2026-03-23. See
-[milestone-6-closeout.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/milestone-6-closeout.md).
+[milestone-6-closeout.md](./milestone-6-closeout.md).
 
 ### Goal
 
@@ -416,7 +416,7 @@ a base graph plus advisory metadata.
 
 This milestone is complete only when the implementation satisfies the following
 named requirements from
-[test-requirements.md](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/worth-relational/test-requirements.md):
+[test-requirements.md](./test-requirements.md):
 
 - `Lineage/correspondence hardening test`
 - `Topology identity survival test`
@@ -433,8 +433,8 @@ extensibility surface so domain-specific structural invariants can participate
 in the same commit-time and publication-boundary enforcement pipeline as native
 rules.
 
-This milestone exists because the geometry kernel â€” the primary consumer of
-this runtime â€” requires both domain-agnostic topological invariants (acyclicity,
+This milestone exists because the geometry kernel — the primary consumer of
+this runtime — requires both domain-agnostic topological invariants (acyclicity,
 cardinality minimum) and domain-specific structural invariants (manifold edge,
 orientation consistency, face loop closure) that cannot be expressed as signal
 computations. These must be enforced at the relational layer, not deferred to
@@ -510,7 +510,7 @@ downstream consumers.
 
 This milestone is complete only when the implementation satisfies the following
 named requirements from
-[test-requirements.md](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/worth-relational/test-requirements.md):
+[test-requirements.md](./test-requirements.md):
 
 - `Hostile commit/replay equivalence test`
 - `Missing-twin / nonmanifold corruption localization test`
@@ -556,7 +556,7 @@ durability, diagnostics, and ancestry reasoning.
 
 This sub-milestone is complete only when the implementation satisfies the
 following named requirement from
-[test-requirements.md](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/worth-relational/test-requirements.md):
+[test-requirements.md](./test-requirements.md):
 
 - `Merge-ready history shape test`
 
@@ -725,7 +725,7 @@ Merge policy enforcement rules:
 This sub-milestone is complete only when:
 
 - the roadmap is paired with an explicit merge-ontology certification test or suite if
-  [test-requirements.md](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/worth-relational/test-requirements.md)
+  [test-requirements.md](./test-requirements.md)
   does not already contain one
 - merge-bearing histories can persist, replay, and recover the canonical merge
   artifact surfaces without authoritative merge execution enabled
@@ -769,7 +769,7 @@ Milestone 7B.
 This sub-milestone is complete only when:
 
 - the roadmap is paired with an explicit merge-execution certification test or suite if
-  [test-requirements.md](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/worth-relational/test-requirements.md)
+  [test-requirements.md](./test-requirements.md)
   does not already contain one
 - `Hostile commit/replay equivalence test` is satisfied for merge-bearing histories
 - `Durable recovery and schema mismatch test` is satisfied for merge-bearing histories
@@ -859,7 +859,7 @@ This sub-milestone is complete only when:
   - `Merge-ready history shape test`
 - the roadmap is paired with an explicit deletion/topology merge certification
   test or suite if
-  [test-requirements.md](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/worth-relational/test-requirements.md)
+  [test-requirements.md](./test-requirements.md)
   does not already contain one
 
 #### Must Not Fake
@@ -932,7 +932,7 @@ This sub-milestone is complete only when:
   merge-correspondence witness certification requirement
 - the roadmap is paired with an explicit retained collaboration merge
   certification requirement if
-  [test-requirements.md](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/worth-relational/test-requirements.md)
+  [test-requirements.md](./test-requirements.md)
   does not already contain one
 
 ## Milestone 8: Parallel Read, Bulk Mutation, and Scale Query Completion
@@ -969,7 +969,7 @@ commit-time preparation.
 
 This milestone is complete only when the implementation satisfies the following
 named requirements from
-[test-requirements.md](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/worth-relational/test-requirements.md):
+[test-requirements.md](./test-requirements.md):
 
 - `Bulk query and traversal stress truth test`
 - `Index non-authority corruption test`
@@ -981,8 +981,8 @@ named requirements from
 ### Goal
 
 Replace the hard-coded mutation-only commit model with an extensible commit
-strategy system so that domain-specific commit types â€” intent reconciliation,
-constraint solving, workflow advancement, bridge-mediated evaluation â€” compose
+strategy system so that domain-specific commit types — intent reconciliation,
+constraint solving, workflow advancement, bridge-mediated evaluation — compose
 with the full commit pipeline (transaction, invariant, merge, replay, publication)
 without modifying the runtime.
 
@@ -993,24 +993,24 @@ non-deterministic mutations, or silently violates schema constraints must not
 corrupt the runtime's authoritative state, break replay parity, or bypass the
 invariant pipeline. The commit pipeline must treat the strategy as an untrusted
 effect producer: its output is validated, its failures are contained, and its
-replay determinism is verified â€” not assumed.
+replay determinism is verified — not assumed.
 
 ### Motivation
 
 The mutation-only commit model ("here is what changed") does not capture
 higher-level semantic goals. Many real-world operations are strategy-driven:
 
-- A CAD assembly constraint says "these faces must be flush" â†’ constraint solver
+- A CAD assembly constraint says "these faces must be flush" → constraint solver
   produces mutations
-- A deployment manifest says "this service must have 3 replicas" â†’ intent differ
+- A deployment manifest says "this service must have 3 replicas" → intent differ
   produces mutations
-- A compliance rule says "this entity must satisfy GDPR" â†’ policy engine
+- A compliance rule says "this entity must satisfy GDPR" → policy engine
   produces mutations
 - A signal-relational bridge says "evaluate the signal graph and reflect results
-  into relational state" â†’ bridge evaluator produces mutations
+  into relational state" → bridge evaluator produces mutations
 
-These all share the same commit lifecycle (open transaction â†’ produce effects â†’
-validate invariants â†’ commit with causal metadata â†’ notify subscribers) but
+These all share the same commit lifecycle (open transaction → produce effects →
+validate invariants → commit with causal metadata → notify subscribers) but
 differ only in how effects are produced. Per Architectural Law 28, the shared
 lifecycle is the abstraction and the effect-production strategy is the parameter.
 
@@ -1049,7 +1049,7 @@ lifecycle is the abstraction and the effect-production strategy is the parameter
   the runtime must record the strategy input alongside the mutation output so
   replay can re-invoke the strategy and compare
 - strategies must not hold references into the runtime across transaction
-  boundaries; the strategy is invoked, produces output, and returns â€” it does
+  boundaries; the strategy is invoked, produces output, and returns — it does
   not persist state between commits
 
 #### Strategy-Aware Merge
@@ -1113,7 +1113,7 @@ This milestone is complete only when:
   histories
 - the roadmap is paired with an explicit extensible-commit-strategy
   certification test if
-  [test-requirements.md](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/worth-relational/test-requirements.md)
+  [test-requirements.md](./test-requirements.md)
   does not already contain one
 
 ## Milestone 9: Generic Certification Program
@@ -1127,12 +1127,12 @@ product milestones are implemented.
 
 This milestone is not for discovering missing features. It is for proving the
 completed runtime under the hostile scenarios already defined in
-[test-requirements.md](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/worth-relational/test-requirements.md).
+[test-requirements.md](./test-requirements.md).
 
 ### Acceptance Requirements
 
 This milestone is complete only when all ten generic named requirements in
-[test-requirements.md](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/worth-relational/test-requirements.md)
+[test-requirements.md](./test-requirements.md)
 are satisfied:
 
 - `Hostile commit/replay equivalence test`
@@ -1159,7 +1159,7 @@ Prove that the generic runtime is actually fit for the stated target domains.
 
 This milestone is complete only when all four domain-specific named
 requirements in
-[test-requirements.md](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/worth-relational/test-requirements.md)
+[test-requirements.md](./test-requirements.md)
 are satisfied:
 
 - `Topology identity survival test`
@@ -1181,8 +1181,16 @@ shape:
 - `Acceptance Requirements`
 
 The acceptance section deliberately references
-[test-requirements.md](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/worth-relational/test-requirements.md)
+[test-requirements.md](./test-requirements.md)
 explicitly rather than trying to restate those tests in weaker or shorter form.
+
+## Bridge Independence
+
+Relational must not depend on `worth-runtime-bridge`. The Bridge links
+Relational and Signal, so the Bridge depends on Relational.
+[Bridge Milestone 20](../WORTH-runtime-bridge/milestone-20.md) moves the
+adapter out of `presentation/bridge` and adds the Bridge-free change source
+API that Relational owns.
 
 ## Completion Standard
 
@@ -1190,13 +1198,13 @@ WORTH Relational is roadmap-complete only when:
 
 - all remaining product milestones are shipped
 - all ten generic named requirements in
-  [test-requirements.md](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/worth-relational/test-requirements.md)
+  [test-requirements.md](./test-requirements.md)
   are satisfied
 - both CAD named requirements in
-  [test-requirements.md](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/worth-relational/test-requirements.md)
+  [test-requirements.md](./test-requirements.md)
   are satisfied
 - both chip named requirements in
-  [test-requirements.md](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/worth-relational/test-requirements.md)
+  [test-requirements.md](./test-requirements.md)
   are satisfied
 - all certification runs emit canonical machine-checkable artifacts for truth,
   patches, diagnostics, lineage, replay, branch heads, and query surfaces

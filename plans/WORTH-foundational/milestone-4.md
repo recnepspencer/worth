@@ -1,5 +1,7 @@
 # Milestone 4: Boundary Artifact Taxonomy And Materialization Contracts
 
+> **Status:** Completed. Closeout: [milestone-4-closeout.md](./milestone-4-closeout.md).
+
 ## Goal
 
 Define the shared boundary artifact categories, role vocabulary, and

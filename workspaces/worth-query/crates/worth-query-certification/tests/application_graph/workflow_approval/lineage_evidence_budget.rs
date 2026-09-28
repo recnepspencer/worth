@@ -9,9 +9,9 @@ use worth_query_host::facade::application_entry::{
 use worth_query_host::facade::declaration::application_program::ApplicationWorkflowComponentLimits;
 use worth_query_installation::facade::WorthQueryApplicationWorkflowResourceCeiling;
 
-use super::super::bounded_dimension_model::{
+use super::super::document_retention_model::{
     host::publish_on_first_program,
-    schema::PartDimensionQuery,
+    schema::DocumentRetentionQuery,
     workflow::{cancel_instance, continue_on_fork, retain_workflow_with_resources},
 };
 use super::fork_continuation::fork_of;
@@ -22,7 +22,7 @@ use super::*;
 const UNBOUNDED: u64 = 256 * 1024;
 
 /// A workflow host whose lineages each retain at most `evidence_bytes`.
-fn bounded(evidence_bytes: u64) -> BoundedDimensionWorkflowRuntime {
+fn bounded(evidence_bytes: u64) -> DocumentWorkflowRuntime {
     let resources = WorthQueryApplicationWorkflowResourceCeiling::new(
         32,
         64,
@@ -39,12 +39,12 @@ fn bounded(evidence_bytes: u64) -> BoundedDimensionWorkflowRuntime {
 
 /// A proposed instance awaiting its first assessment.
 fn proposed(
-    application: &BoundedDimensionWorkflowRuntime,
+    application: &DocumentWorkflowRuntime,
     key: u64,
 ) -> (PublishedWorkflowDefinitionRef, PublishedWorkflowInstanceRef) {
     let definition = match publish_definition(
         application,
-        reviewed_geometry_definition("completed"),
+        reviewed_document_definition("completed"),
         WorkflowDefinitionExpectedPredecessor::Absent,
         key,
     )
@@ -65,11 +65,11 @@ fn proposed(
     (definition, instance)
 }
 
-type Settlement = WorthQueryWorkflowAssessmentDemandSettlement<PartDimensionQuery>;
+type Settlement = WorthQueryWorkflowAssessmentDemandSettlement<DocumentRetentionQuery>;
 
 /// Accepts `settlement` under `key` and reports whether it replayed.
 fn accept(
-    application: &BoundedDimensionWorkflowRuntime,
+    application: &DocumentWorkflowRuntime,
     instance: &PublishedWorkflowInstanceRef,
     settlement: &Settlement,
     key: u64,
@@ -82,7 +82,7 @@ fn accept(
 
 /// Settles and accepts the next assessment, returning its settlement.
 fn accepted(
-    application: &BoundedDimensionWorkflowRuntime,
+    application: &DocumentWorkflowRuntime,
     instance: &PublishedWorkflowInstanceRef,
     key: u64,
 ) -> Settlement {
@@ -92,7 +92,7 @@ fn accepted(
 }
 
 fn evidence_refused(
-    application: &BoundedDimensionWorkflowRuntime,
+    application: &DocumentWorkflowRuntime,
     instance: &PublishedWorkflowInstanceRef,
     key: u64,
 ) {
@@ -110,7 +110,7 @@ fn evidence_refused(
 }
 
 fn assert_awaiting(
-    application: &BoundedDimensionWorkflowRuntime,
+    application: &DocumentWorkflowRuntime,
     instance: &PublishedWorkflowInstanceRef,
     key: u64,
 ) {

@@ -6,7 +6,7 @@
 >
 > **Milestone parent:** [router_navigation_projection_plan.md](./router_navigation_projection_plan.md)
 >
-> **Core lineage:** [plans/worth_signal/test-requirements.md](../../../plans/worth_signal/test-requirements.md)
+> **Core lineage:** [plans/worth_signal/test-requirements.md](../WORTH_signal/test-requirements.md)
 
 ## Purpose
 

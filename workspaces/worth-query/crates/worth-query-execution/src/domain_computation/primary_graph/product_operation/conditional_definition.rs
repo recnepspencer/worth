@@ -16,17 +16,30 @@ use crate::domain_computation::primary_graph::conditional_operation::{
     QueryTemporalPredicateProvider, WorthQueryConditionalClockHandle,
 };
 
+/// Why a conditional definition was not admitted for an application change.
+/// Admission is a check, so nothing was published.
 #[derive(Debug)]
 pub enum WorthQueryApplicationConditionalDefinitionAdmissionDenial {
+    /// The clock handle's conditional operation is not live in this
+    /// application.
     ForeignConditionalOperation,
+    /// The bridge refused the conditional signal basis of the selected product.
     BridgePreparation(worth_runtime_bridge::facade::BridgeConditionalDenial),
 }
 
+/// Why publishing a conditional definition was refused before publication.
+/// Nothing was published.
 #[derive(Debug)]
 pub enum WorthQueryConditionalDefinitionPublicationDenial {
+    /// The clock handle's conditional operation is not live in this
+    /// application.
     ForeignConditionalOperation,
+    /// The product's active program refused the definition; the detail says
+    /// why.
     ProductActivation { detail: String },
+    /// The product world refused to prepare the publication.
     WorldPreparation(NoEffectCompositePublication),
+    /// The bridge refused the conditional signal basis of the selected product.
     BridgePreparation(worth_runtime_bridge::facade::BridgeConditionalDenial),
 }
 
@@ -47,12 +60,18 @@ impl From<super::super::product_activation::WorthQueryProductConditionalPublicat
     }
 }
 
+/// How a conditional definition publication that passed its checks ended.
 pub enum WorthQueryConditionalDefinitionPublicationOutcome {
+    /// The definition was published and the product head moved.
     Performed(WorthQueryPerformedConditionalDefinitionPublication),
+    /// Nothing was published; the publication says why.
     NoEffect(NoEffectCompositePublication),
+    /// Some owners moved, but the product head did not. Recover publication.
     ProductUnpublished(RuntimeWorldUnpublishedConditionalDefinition),
 }
 
+/// A performed conditional definition publication: the product branch and
+/// commit it landed on, and the signal definition generation it installed.
 pub struct WorthQueryPerformedConditionalDefinitionPublication {
     publication: worth_runtime_world::facade::ConsumedCompositePublication,
     definition_generation: u64,

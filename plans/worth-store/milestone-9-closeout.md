@@ -1,10 +1,12 @@
 # Milestone 9 Closeout: Deterministic Bulk Ingest And Bulk Transform Paths
 
+> **Note:** The legacy root crate `crates/worth-store` was removed on 2026-09-27. Paths into it below name its files as they were; they are no longer links. The store now lives in [`workspaces/worth-store`](../../workspaces/worth-store/README.md).
+
 Status: Completed on 2026-04-16
 
-Parent spec: [milestone-9.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-9.md)
+Parent spec: [milestone-9.md](./milestone-9.md)
 
-Roadmap: [worth_store_roadmap.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/worth_store_roadmap.md)
+Roadmap: `worth_store_roadmap.md`
 
 ## Summary
 
@@ -30,25 +32,25 @@ The closure claim is:
 ## What Shipped
 
 - proof-bearing planning and basis freezing for ingest and transform programs in
-  [crates/worth-store/src/bulk](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/bulk)
+  `crates/worth-store/src/bulk`
 - persisted bulk support artifacts for manifests, transform bases, partitions,
   deterministic plans, chunk witnesses, checkpoints, and per-program witness
   indexes
 - canonical and durable bulk execution surfaces in
-  [crates/worth-store/src/facade.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/facade.rs)
+  `crates/worth-store/src/facade.rs`
 - restart-path recovery, witness/checkpoint reconstruction, and recovered-resume
   admission backed by the existing recovery and bulk subsystems
 - machine-checkable Milestone 9 certification output in
-  [crates/worth-store/src/evidence/milestone_9.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/evidence/milestone_9.rs)
+  `crates/worth-store/src/evidence/milestone_9.rs`
 - named milestone certification coverage in
-  [crates/worth-store/src/tests/milestone_9_certification.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/tests/milestone_9_certification.rs)
+  `crates/worth-store/src/tests/milestone_9_certification.rs`
 
 ## Acceptance Mapping
 
 Milestone 9 is considered closed against
-[milestone-9.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-9.md)
+[milestone-9.md](./milestone-9.md)
 and
-[test-requirements.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/test-requirements.md)
+[test-requirements.md](./test-requirements.md)
 because the required named suite and the supporting hostile evidence now map
 directly to code and tests.
 
@@ -56,7 +58,7 @@ directly to code and tests.
 
 Covered by:
 
-- [crates/worth-store/src/tests/milestone_9_certification.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/tests/milestone_9_certification.rs)
+- `crates/worth-store/src/tests/milestone_9_certification.rs`
 
 What is proven:
 
@@ -80,8 +82,8 @@ What is proven:
 
 Covered by:
 
-- [crates/worth-store/src/tests/wal_recovery.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/tests/wal_recovery.rs)
-- [crates/worth-store/src/tests/bulk.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/tests/bulk.rs)
+- `crates/worth-store/src/tests/wal_recovery.rs`
+- `crates/worth-store/src/tests/bulk.rs`
 
 What is proven:
 
@@ -102,7 +104,7 @@ What is proven:
 
 Covered by:
 
-- [crates/worth-store/tests/phase_boundaries_compile_fail.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/tests/phase_boundaries_compile_fail.rs)
+- `crates/worth-store/tests/phase_boundaries_compile_fail.rs`
 - `tests/ui/milestone_9_reference_exposes_no_commit_authority.rs`
 - `tests/ui/partial_chunk_metadata_rejected.rs`
 

@@ -50,7 +50,7 @@ unexpected result.
 Use this when you need to understand a truth-to-compute invalidation outcome.
 
 ```rust
-let route = bridge.route(crate::facade::TruthCommitIdentity::new("commit:steel-main"))?;
+let route = bridge.route(TruthCommitIdentity::from_relational_commit_id(commit_id))?;
 
 let last_route = bridge.diagnostics().explain_last_route();
 let named_route = bridge.diagnostics().explain_route(route.id());

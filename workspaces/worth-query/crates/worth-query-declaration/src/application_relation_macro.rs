@@ -1,3 +1,12 @@
+/// Declares a typed relation marker between two entities of an application
+/// schema, with its integrity policy.
+///
+/// Input: `vis Relation in Schema, From => To; integrity = ..`, where the
+/// integrity is `same_context_unbounded_retain_dangling`,
+/// `same_context_no_self_edges_unbounded_retain_dangling`, or any
+/// `ApplicationRelationIntegrity` expression. It generates a unit struct
+/// `Relation` with a `const fn reference()` returning its typed
+/// `ApplicationRelationRef`.
 #[macro_export]
 macro_rules! worth_query_relation {
     ($vis:vis $Relation:ident in $Schema:ty, $From:ty => $To:ty; integrity = same_context_no_self_edges_unbounded_retain_dangling) => {

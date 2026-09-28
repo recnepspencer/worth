@@ -15,11 +15,11 @@
 >
 > **Core lineage:**
 >
-> - [plans/worth_signal/worth_signal_vision.md](../../../plans/worth_signal/worth_signal_vision.md)
-> - [plans/worth_signal/worth_signal_temporal_async_roadmap.md](../../../plans/worth_signal/worth_signal_temporal_async_roadmap.md)
-> - [plans/worth_signal/milestone-b-plan.md](../../../plans/worth_signal/milestone-b-plan.md)
-> - [plans/worth_signal/milestone-d-closeout.md](../../../plans/worth_signal/milestone-d-closeout.md)
-> - [plans/worth_signal/milestone-11-closeout.md](../../../plans/worth_signal/milestone-11-closeout.md)
+> - [plans/worth_signal/worth_signal_vision.md](../WORTH_signal/WORTH_signal_vision.md)
+> - [plans/worth_signal/worth_signal_temporal_async_roadmap.md](../WORTH_signal/WORTH_signal_temporal_async_roadmap.md)
+> - [plans/worth_signal/milestone-b-plan.md](../WORTH_signal/milestone-b-plan.md)
+> - [plans/worth_signal/milestone-d-closeout.md](../WORTH_signal/milestone-d-closeout.md)
+> - [plans/worth_signal/milestone-11-closeout.md](../WORTH_signal/milestone-11-closeout.md)
 >
 > **Test requirements:** [worker_runtime_test_requirements.md](./worker_runtime_test_requirements.md)
 >

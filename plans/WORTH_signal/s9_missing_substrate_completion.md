@@ -13,10 +13,10 @@ These are not polish tasks. They are the remaining places where the runtime is a
 
 This spec is governed by:
 
-- [MENTALITY.md](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/MENTALITY.md)
-- [architectural_guidelines.md](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/architectural_guidelines.md)
-- [performance_guidelines.md](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/performance_guidelines.md)
-- [signal_architecture2.md](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth_signal/signal_architecture2.md)
+- [MENTALITY.md](../../docs/coding-guidelines/MENTALITY.md)
+- [architectural_guidelines.md](../../docs/coding-guidelines/arch_laws.md)
+- [performance_guidelines.md](../../docs/coding-guidelines/perf_laws.md)
+- [signal_architecture2.md](./signal_architecture2.md)
 
 Primary adversarial constraint:
 
@@ -1172,10 +1172,10 @@ Rollback/lifecycle:
 
 When implemented, the following docs must be updated together:
 
-- [signal_architecture2.md](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth_signal/signal_architecture2.md)
-- [test-requirements.md](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth_signal/test-requirements.md)
-- [worth_signal_adversarial_testing_matrix.md](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/engineering/worth_signal_adversarial_testing_matrix.md)
-- [worth_signal_fintech_certification_matrix.md](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/engineering/worth_signal_fintech_certification_matrix.md)
+- [signal_architecture2.md](./signal_architecture2.md)
+- [test-requirements.md](./test-requirements.md)
+- `worth_signal_adversarial_testing_matrix.md`
+- `worth_signal_fintech_certification_matrix.md`
 
 Required closeout statement:
 

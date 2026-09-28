@@ -45,8 +45,8 @@ fn two_assessments_collect_before_the_cursor_and_replay_without_duplicate_eviden
     ));
 
     for (path, subject, demand_key, acceptance_key) in [
-        ("checks/second", PART_IDENTITY, 603, 604),
-        ("checks/related", RELATED_PART_IDENTITY, 605, 606),
+        ("checks/second", DOCUMENT_IDENTITY, 603, 604),
+        ("checks/related", RELATED_DOCUMENT_IDENTITY, 605, 606),
     ] {
         let settled = settle_early_assessment_for(
             &application,
@@ -97,18 +97,18 @@ fn two_assessments_collect_before_the_cursor_and_replay_without_duplicate_eviden
     {
         use worth_query_host::facade::application_entry::WorthQueryApplicationRequestExt;
         let runtime = application.runtime();
-        let scope = super::super::bounded_dimension_model::operator_identity::request_scope();
+        let scope = super::super::document_retention_model::operator_identity::request_scope();
         let principal =
-            super::super::bounded_dimension_model::operator_identity::authenticate_operator(
+            super::super::document_retention_model::operator_identity::authenticate_operator(
                 runtime.installed_schema(),
                 &scope,
             );
         let back = runtime
             .request(&principal, &scope)
             .mutate(
-                super::super::bounded_dimension_model::workflow::WorkflowAdvanceIntent {
-                    input: super::super::bounded_dimension_model::workflow::WorkflowAdvanceInput {
-                        part_identity: PART_IDENTITY.to_owned(),
+                super::super::document_retention_model::workflow::WorkflowAdvanceIntent {
+                    input: super::super::document_retention_model::workflow::WorkflowAdvanceInput {
+                        document_identity: DOCUMENT_IDENTITY.to_owned(),
                     },
                 },
             )

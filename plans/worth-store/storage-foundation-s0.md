@@ -2,13 +2,13 @@
 
 > **Status:** Planned
 >
-> **Roadmap parent:** [physical-database-roadmap.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/physical-database-roadmap.md)
+> **Roadmap parent:** [physical-database-roadmap.md](./physical-database-roadmap.md)
 >
-> **Vision parent:** [worth_store_vision.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/worth_store_vision.md)
+> **Vision parent:** [worth_store_vision.md](./worth_store_vision.md)
 >
 > **Test requirements:**
-> - [test-requirements.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/test-requirements.md)
-> - [test-requirements-2.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/test-requirements-2.md)
+> - [test-requirements.md](./test-requirements.md)
+> - [test-requirements-2.md](./test-requirements-2.md)
 >
 > **Prerequisite roadmap state:** `Milestone 13.3` semantic subscription-support
 > cleanup is closed and is the handoff point from Roadmap 1 into Roadmap 2.

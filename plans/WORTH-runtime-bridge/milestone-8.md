@@ -1,27 +1,27 @@
 # Milestone 8 Engineering Spec: Structural-Identity-Aware Remapping
 
-> **Status:** Planned engineering spec
+> **Status:** Completed. Closeout: [milestone-8-closeout.md](./milestone-8-closeout.md).
 >
-> **Roadmap parent:** [worth_runtime_bridge_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/worth_runtime_bridge_roadmap.md)
+> **Roadmap parent:** [worth_runtime_bridge_roadmap.md](./WORTH_runtime_bridge_roadmap.md)
 >
-> **Vision parent:** [worth_runtime_bridge_vision.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/worth_runtime_bridge_vision.md)
+> **Vision parent:** [worth_runtime_bridge_vision.md](./WORTH_runtime_bridge_vision.md)
 >
-> **Prior milestone:** [milestone-7.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-7.md)
+> **Prior milestone:** [milestone-7.md](./milestone-7.md)
 >
-> **Prior closeout:** [milestone-7-closeout.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-7-closeout.md)
+> **Prior closeout:** [milestone-7-closeout.md](./milestone-7-closeout.md)
 >
-> **Bridge certification companion:** [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md)
+> **Bridge certification companion:** [test-requirements.md](./test-requirements.md)
 >
 > **Primary architectural driver:** make structural fingerprints and structural comparison a first-class bridge proof surface for remapping, reuse, and branch comparison without ever allowing structural similarity to become identity authority
 >
 > **Companion docs:**
-> - [worth_relational_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/worth_relational_roadmap.md)
-> - [worth_signal_vision.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth_signal/worth_signal_vision.md)
-> - [worth_signals2.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth_signal/worth_signals2.md)
-> - [MENTALITY.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/MENTALITY.md)
-> - [architectural_guidelines.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/architectural_guidelines.md)
-> - [domain_standards.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/domain_standards.md)
-> - [performance_guidelines.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/performance_guidelines.md)
+> - [worth_relational_roadmap.md](../WORTH-relational/WORTH_relational_roadmap.md)
+> - [worth_signal_vision.md](../WORTH_signal/WORTH_signal_vision.md)
+> - [worth_signals2.md](../WORTH_signal/WORTH_signals2.md)
+> - [MENTALITY.md](../../docs/coding-guidelines/MENTALITY.md)
+> - [architectural_guidelines.md](../../docs/coding-guidelines/arch_laws.md)
+> - [domain_standards.md](../../docs/coding-guidelines/domain_structure_laws.md)
+> - [performance_guidelines.md](../../docs/coding-guidelines/perf_laws.md)
 
 ## Summary
 
@@ -317,7 +317,7 @@ This document determines the cost model:
 - typed failures and counters for ambiguity, mismatch, drift, and
   identity-fusion attempts
 - harness certification for suites 7 through 9 in
-  [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md)
+  [test-requirements.md](./test-requirements.md)
 
 ### Explicitly Out Of Scope
 
@@ -662,7 +662,7 @@ This phase leaves the system in a coherent state where:
   identity-authority conflict, branch-comparison drift mismatch, replay
   incompatibility, and structural materialization rejection
 - harness certification lanes satisfying Milestone 8 suites 7 through 9 in
-  [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md)
+  [test-requirements.md](./test-requirements.md)
 
 ## Must Preserve
 
@@ -691,7 +691,7 @@ Milestone 8 is complete only when the bridge harness can prove:
   unrelated publication
 - explanation surfaces can localize what changed structurally
 - the Milestone 8 certification suites in
-  [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md)
+  [test-requirements.md](./test-requirements.md)
   pass with canonical machine-checkable bundles
 
 ## Architectural Notes
@@ -776,7 +776,7 @@ Rules:
 
 Milestone 8 must follow the same structural testing discipline as earlier
 bridge milestones and must satisfy the Milestone 8 certification suites in
-[test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md).
+[test-requirements.md](./test-requirements.md).
 
 Expected first-class test surfaces:
 
@@ -888,12 +888,12 @@ Design rules:
 
 ### Existing Files Expected To Change
 
-- [facade.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/facade.rs)
-- [lib.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/lib.rs)
-- [mod.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/diagnostics/mod.rs)
-- [mod.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/harness/mod.rs)
-- [mod.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/source/mod.rs)
-- [mod.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/historical/mod.rs)
+- [facade.rs](../../crates/worth-runtime-bridge/src/facade.rs)
+- [lib.rs](../../crates/worth-runtime-bridge/src/lib.rs)
+- [mod.rs](../../crates/worth-runtime-bridge/src/diagnostics/mod.rs)
+- [mod.rs](../../crates/worth-runtime-bridge/src/harness/mod.rs)
+- [mod.rs](../../crates/worth-runtime-bridge/src/source/mod.rs)
+- [mod.rs](../../crates/worth-runtime-bridge/src/historical/mod.rs)
 
 ## Implementation Phases
 

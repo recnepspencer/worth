@@ -12,10 +12,18 @@ use crate::domain_computation::primary_graph::{
     WorthQueryOperationProjectionDenial, WorthQueryPrimaryGraphApplicationRuntime,
 };
 
+/// Refusal to run a mutation handler for an admitted operation.
+///
+/// No candidate was produced and nothing was committed. A domain denial,
+/// cancellation, or deadline from the handler is not here: it arrives inside
+/// the `Ok` `HandlerResult`.
 #[derive(Debug)]
 pub enum MutationHandlerExecutionDenial {
+    /// The projection that feeds the handler's decision could not be read.
     Projection(WorthQueryOperationProjectionDenial),
+    /// The read attempt, resource reservation, or candidate program failed.
     Attempt(WorthQueryApplicationAttemptDenial),
+    /// The handler returned `ExecutionDenied`.
     Handler(HandlerExecutionDenial),
     /// The binding is a workflow control step the workflow kernel records
     /// itself; no handler serves it, so this lane refuses it before any read.

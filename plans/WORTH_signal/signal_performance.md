@@ -1,4 +1,4 @@
-# worth-signal Performance Architecture â€” Multi-Domain Performance Viability Plan
+# worth-signal Performance Architecture — Multi-Domain Performance Viability Plan
 
 > **Status:** Pre-production. Breaking changes are expected and encouraged.
 >
@@ -24,14 +24,14 @@
 3. [Viability Gap](#viability-gap)
 4. [Current Code Map](#current-code-map)
 5. [Performance Profiles](#performance-profiles)
-6. [Phase P0 â€” Measurement Discipline](#phase-p0--measurement-discipline)
-7. [Phase P1 â€” Trace Cost Separation](#phase-p1--trace-cost-separation)
-8. [Phase P2 â€” Mutation Backend Redesign](#phase-p2--mutation-backend-redesign)
-9. [Phase P3 â€” Data Layout and Locality](#phase-p3--data-layout-and-locality)
-10. [Phase P4 â€” Allocation Discipline](#phase-p4--allocation-discipline)
-11. [Phase P5 â€” Parallel Scaling](#phase-p5--parallel-scaling)
-12. [Phase P6 â€” Maintenance and GC Policy](#phase-p6--maintenance-and-gc-policy)
-13. [Phase P7 â€” Domain Profile Packaging](#phase-p7--domain-profile-packaging)
+6. [Phase P0 — Measurement Discipline](#phase-p0--measurement-discipline)
+7. [Phase P1 — Trace Cost Separation](#phase-p1--trace-cost-separation)
+8. [Phase P2 — Mutation Backend Redesign](#phase-p2--mutation-backend-redesign)
+9. [Phase P3 — Data Layout and Locality](#phase-p3--data-layout-and-locality)
+10. [Phase P4 — Allocation Discipline](#phase-p4--allocation-discipline)
+11. [Phase P5 — Parallel Scaling](#phase-p5--parallel-scaling)
+12. [Phase P6 — Maintenance and GC Policy](#phase-p6--maintenance-and-gc-policy)
+13. [Phase P7 — Domain Profile Packaging](#phase-p7--domain-profile-packaging)
 14. [Numeric Targets](#numeric-targets)
 15. [Sequencing](#sequencing)
 16. [What Must Never Be Sacrificed](#what-must-never-be-sacrificed)
@@ -222,16 +222,16 @@ This section exists to keep the plan honest. These are the concrete code surface
 ### Measurement and current evidence
 
 - benchmark suite:
-  - [performance_profiles.rs](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/tests/performance_profiles.rs)
+  - [performance_profiles.rs](../../crates/worth-signal/src/tests/performance_profiles.rs)
 - recorded baseline and measured deltas:
-  - [signal_performance_baseline.md](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/worth_signal/signal_performance_baseline.md)
+  - [signal_performance_baseline.md](./signal_performance_baseline.md)
 
 ### Trace / effect hot path
 
 - effect application:
-  - [effect.rs](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/graph/runtime/effect.rs)
+  - [effect.rs](../../crates/worth-signal/src/data/graph/runtime/effect.rs)
 - graph-owned hot traversal state:
-  - [graph.rs](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/graph/runtime/graph.rs)
+  - [graph.rs](../../crates/worth-signal/src/data/graph/runtime/graph.rs)
 
 Confirmed current concerns:
 - `EvaluationEffect` size and allocation shape
@@ -241,12 +241,12 @@ Confirmed current concerns:
 ### Mutation backend and churn pressure
 
 - topology mutation and reconciliation:
-  - [mutation.rs](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/graph/topology/mutation.rs)
+  - [mutation.rs](../../crates/worth-signal/src/data/graph/topology/mutation.rs)
 - retirement cleanup:
-  - [retirement.rs](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/graph/lifecycle/retirement.rs)
+  - [retirement.rs](../../crates/worth-signal/src/data/graph/lifecycle/retirement.rs)
 - rollback repair:
-  - [patch_buffer.rs](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/transaction/patch_buffer.rs)
-  - [transaction_commit.rs](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/transaction/transaction_commit.rs)
+  - [patch_buffer.rs](../../crates/worth-signal/src/logic/transaction/patch_buffer.rs)
+  - [transaction_commit.rs](../../crates/worth-signal/src/logic/transaction/runtime/transaction/transaction_commit/mod.rs)
 
 Confirmed current concerns:
 - adjacency sets still rewrite too much under churn
@@ -256,12 +256,12 @@ Confirmed current concerns:
 ### Data layout / locality
 
 - node state:
-  - [entry.rs](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/node/entry.rs)
+  - [entry.rs](../../crates/worth-signal/src/data/node/entry.rs)
 - graph stores:
-  - [segmented.rs](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/graph/storage/segmented.rs)
-  - [handles.rs](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/graph/storage/handles.rs)
+  - [segmented.rs](../../crates/worth-signal/src/data/graph/storage/segmented.rs)
+  - [handles.rs](../../crates/worth-signal/src/data/graph/storage/handles.rs)
 - topology runtime access:
-  - [runtime.rs](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/data/graph/topology/runtime.rs)
+  - [runtime.rs](../../crates/worth-signal/src/data/graph/topology/runtime.rs)
 
 Confirmed current concerns:
 - `NodeEntry` hot/cold split can still go further
@@ -271,11 +271,11 @@ Confirmed current concerns:
 ### Parallel scaling and execution path collapse
 
 - shared runtime/transaction execution path:
-  - [shared.rs](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/execution/shared.rs)
+  - [shared.rs](../../crates/worth-signal/src/logic/transaction/runtime/execution/shared.rs)
 - planner execution:
-  - [mod.rs](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/planner/execution/mod.rs)
+  - [mod.rs](../../crates/worth-signal/src/logic/planner/execution/mod.rs)
 - precompute dispatch:
-  - [dispatch.rs](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/logic/planner/precompute/dispatch.rs)
+  - [dispatch.rs](../../crates/worth-signal/src/logic/planner/precompute/dispatch.rs)
 
 Confirmed current concerns:
 - parallel staging and post-apply bottlenecks still need deeper profiling
@@ -284,11 +284,11 @@ Confirmed current concerns:
 ### Observability and policy gating
 
 - diagnostics profile:
-  - [profile.rs](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/diagnostics/policy/profile.rs)
+  - [profile.rs](../../crates/worth-signal/src/diagnostics/policy/profile.rs)
 - runtime policy:
-  - [mod.rs](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/diagnostics/policy/mod.rs)
+  - [mod.rs](../../crates/worth-signal/src/diagnostics/policy/mod.rs)
 - deployment presets:
-  - [deployment.rs](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/crates/worth-signal/src/presentation/outputs/deployment.rs)
+  - [deployment.rs](../../crates/worth-signal/src/presentation/outputs/deployment.rs)
 
 Confirmed current concerns:
 - observability is profile-gated
@@ -343,7 +343,7 @@ The same computation must mean the same thing across profiles. Only cost model a
 
 ---
 
-## Phase P0 â€” Measurement Discipline
+## Phase P0 — Measurement Discipline
 
 ### Goal
 
@@ -387,7 +387,7 @@ This phase exists to prevent false comfort from isolated wins or losses. Kernel-
 
 ---
 
-## Phase P1 â€” Trace Cost Separation
+## Phase P1 — Trace Cost Separation
 
 ### Goal
 
@@ -430,7 +430,7 @@ Rich explanation / provenance objects become:
 
 ---
 
-## Phase P2 â€” Mutation Backend Redesign
+## Phase P2 — Mutation Backend Redesign
 
 ### Goal
 
@@ -445,7 +445,7 @@ Current churn-heavy mutation still overpays for:
 - whole-set reinterning
 - repeated per-source rewrites during reconciliation
 
-For aircraft-class geometry work, these costs are not â€œsuboptimal.â€ They are disqualifying if left as the default hot-path model.
+For aircraft-class geometry work, these costs are not “suboptimal.” They are disqualifying if left as the default hot-path model.
 
 ### Design
 
@@ -460,7 +460,7 @@ The redesign target is explicit:
 
 ### Subphases
 
-#### P2.1 â€” Bulk reconciliation as the default semantic shape
+#### P2.1 — Bulk reconciliation as the default semantic shape
 
 - dependency reconciliation
 - subscriber reconciliation
@@ -469,7 +469,7 @@ The redesign target is explicit:
 
 All should express work as **source-keyed final-state rewrites**, not repeated tiny edge edits.
 
-#### P2.2 â€” Transient mutable builders
+#### P2.2 — Transient mutable builders
 
 Add mutable transient builders for:
 
@@ -483,7 +483,7 @@ These builders should:
 
 This is the first major redesign gate. If this class of builder does not materially reduce churn-path cost, the storage backend needs a deeper replacement rather than more local cleanup.
 
-#### P2.3 â€” Backend selection by profile
+#### P2.3 — Backend selection by profile
 
 Examples:
 
@@ -496,7 +496,7 @@ Examples:
 - `Kernel`
   - aggressive bulk builder path with minimal hot-path observability
 
-#### P2.4 â€” Geometry-topology readiness
+#### P2.4 — Geometry-topology readiness
 
 The mutation backend must explicitly support workloads like:
 
@@ -506,7 +506,7 @@ The mutation backend must explicitly support workloads like:
 - repeated source replacement
 - localized topology healing analogs
 
-These are not â€œnice to haveâ€ benchmark shapes. They are minimum viability evidence for geometry-kernel credibility.
+These are not “nice to have” benchmark shapes. They are minimum viability evidence for geometry-kernel credibility.
 
 ### Acceptance
 
@@ -517,7 +517,7 @@ These are not â€œnice to haveâ€ benchmark shapes. They are minimum viab
 
 ---
 
-## Phase P3 â€” Data Layout and Locality
+## Phase P3 — Data Layout and Locality
 
 ### Goal
 
@@ -525,7 +525,7 @@ Make hot reads and writes cache-friendly enough for CAD/kernel and chip-sim scal
 
 ### Work
 
-#### P3.1 â€” Hot/cold separation
+#### P3.1 — Hot/cold separation
 
 Push `NodeEntry` further toward hot/cold separation:
 
@@ -539,7 +539,7 @@ Push `NodeEntry` further toward hot/cold separation:
   - causality
   - large optional metadata
 
-#### P3.2 â€” Edge/snapshot locality
+#### P3.2 — Edge/snapshot locality
 
 Audit:
 
@@ -549,11 +549,11 @@ Audit:
 
 Decide where SoA-like or more compact layouts are warranted.
 
-#### P3.3 â€” Token comparison fast paths
+#### P3.3 — Token comparison fast paths
 
 Support hash-first comparison with collision-safe fallback for hot partition matching.
 
-#### P3.4 â€” Scratch retention policy
+#### P3.4 — Scratch retention policy
 
 `TraversalScratch` must support profile-aware retention:
 
@@ -569,7 +569,7 @@ Support hash-first comparison with collision-safe fallback for hot partition mat
 
 ---
 
-## Phase P4 â€” Allocation Discipline
+## Phase P4 — Allocation Discipline
 
 ### Goal
 
@@ -577,7 +577,7 @@ Eliminate avoidable heap churn from the effect path and related hot loops.
 
 ### Work
 
-#### P4.1 â€” `EvaluationEffect` discipline
+#### P4.1 — `EvaluationEffect` discipline
 
 `EvaluationEffect` is now central architecture and must become allocation-aware:
 
@@ -586,7 +586,7 @@ Eliminate avoidable heap churn from the effect path and related hot loops.
 - avoid cloning snapshots and causality
 - keep compact region/label structures small-buffered where feasible
 
-#### P4.2 â€” Hot-path allocation audit
+#### P4.2 — Hot-path allocation audit
 
 Audit and remove:
 
@@ -595,7 +595,7 @@ Audit and remove:
 - per-node temporary vectors that can be reused
 - canonicalization helpers doing avoidable clone/sort work
 
-#### P4.3 â€” Builder / arena experiments
+#### P4.3 — Builder / arena experiments
 
 If needed, add:
 
@@ -611,7 +611,7 @@ If needed, add:
 
 ---
 
-## Phase P5 â€” Parallel Scaling
+## Phase P5 — Parallel Scaling
 
 ### Goal
 
@@ -619,7 +619,7 @@ Make multicore execution actually scale under realistic workloads.
 
 ### Work
 
-#### P5.1 â€” Shared staging audit
+#### P5.1 — Shared staging audit
 
 Identify and remove:
 
@@ -627,7 +627,7 @@ Identify and remove:
 - shared mutable staging bottlenecks
 - hidden serialization points
 
-#### P5.2 â€” Suppression propagation scaling
+#### P5.2 — Suppression propagation scaling
 
 Audit and redesign the sequential post-apply suppression walk where needed:
 
@@ -635,7 +635,7 @@ Audit and redesign the sequential post-apply suppression walk where needed:
 - bound per-effect propagation overhead
 - avoid erasing parallel gains with serial cleanup
 
-#### P5.3 â€” Profile-aware executor strategy
+#### P5.3 — Profile-aware executor strategy
 
 Parallel behavior should vary by domain:
 
@@ -652,7 +652,7 @@ Parallel behavior should vary by domain:
 
 ---
 
-## Phase P6 â€” Maintenance and GC Policy
+## Phase P6 — Maintenance and GC Policy
 
 ### Goal
 
@@ -660,7 +660,7 @@ Ensure maintenance never creates unacceptable latency cliffs.
 
 ### Work
 
-#### P6.1 â€” Explicit maintenance policy by profile
+#### P6.1 — Explicit maintenance policy by profile
 
 - `Debug`
   - richer checks, freer maintenance
@@ -673,13 +673,13 @@ Ensure maintenance never creates unacceptable latency cliffs.
 - `Kernel`
   - explicit maintenance phases only
 
-#### P6.2 â€” Compaction policy hardening
+#### P6.2 — Compaction policy hardening
 
 - profile-aware compaction cadence
 - bounded maintenance budgets
 - no surprise compaction in hot windows
 
-#### P6.3 â€” Scratch / retained state discipline
+#### P6.3 — Scratch / retained state discipline
 
 - bounded scratch reuse
 - controlled shrink/reset policy after spikes
@@ -691,7 +691,7 @@ Ensure maintenance never creates unacceptable latency cliffs.
 
 ---
 
-## Phase P7 â€” Domain Profile Packaging
+## Phase P7 — Domain Profile Packaging
 
 ### Goal
 
@@ -746,7 +746,7 @@ Each domain/mode combination should define:
 ### Acceptance
 
 - profiles are real and coherent
-- no domain pays permanently for another domainâ€™s debug burden
+- no domain pays permanently for another domain’s debug burden
 
 ---
 

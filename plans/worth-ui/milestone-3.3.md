@@ -2,7 +2,7 @@
 
 > **Status:** Planned
 >
-> **Roadmap parent:** [worth_ui_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/worth-ui/plans/worth-ui/worth_ui_roadmap.md)
+> **Roadmap parent:** [worth_ui_roadmap.md](./worth_ui_roadmap.md)
 >
 > **Primary prerequisite:** `Milestone 3.2 Canonical Declaration Artifacts And Aspect Contracts`
 >
@@ -79,7 +79,7 @@ meaning is canonical, the runtime must decide what actually exists at runtime
 and how later phases find it without rediscovering topology by walking
 declaration trees or renderer-owned structures.
 
-This is not â€œa tree representation of declarations.â€ It is runtime authority
+This is not “a tree representation of declarations.” It is runtime authority
 for node existence and bounded lookup:
 
 - 3.4 needs graph-owned node identity, participation posture, and declaration
@@ -547,7 +547,7 @@ equivalents.
 
 ## Graph And Index Transaction Law
 
-3.3 must turn â€œthe indexes match the graphâ€ into architecture.
+3.3 must turn “the indexes match the graph” into architecture.
 
 The implementation may choose internal transaction mechanics, but it must
 preserve these laws:
@@ -1097,7 +1097,7 @@ distinctions every later graph lane depends on.
 
 **Warnings**
 
-- Do not let the first graph snapshot be â€œjust a tree.â€
+- Do not let the first graph snapshot be “just a tree.”
 - Do not collapse declaration identity and runtime node identity.
 - Do not leave repeated-instance identity as a later cleanup item.
 
@@ -1509,8 +1509,8 @@ that still remains outside 3.3.
 
 ## Must Preserve
 
-- Milestone 3.1â€™s single public facade discipline
-- Milestone 3.2â€™s declaration authority and sealed graph handoff boundary
+- Milestone 3.1’s single public facade discipline
+- Milestone 3.2’s declaration authority and sealed graph handoff boundary
 - strict separation between declaration truth and graph truth
 - strict separation between graph truth and later obligation or observation
   truth
@@ -1599,7 +1599,7 @@ Before closeout, answer these with evidence:
 - Can repeated instances keep stable identity without relying on sibling
   position noise?
 - Can later phases name the graph authority surface they consume rather than
-  â€œthe current runtime treeâ€?
+  “the current runtime tree”?
 - Do mounted receipts and participation posture belong to graph authority
   rather than host or renderer side tables?
 

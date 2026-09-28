@@ -259,6 +259,26 @@ edition = "2021"
     );
 }
 
+/// A documented engine whose items the audience leaf facades re-export, so
+/// the facade documentation ratchet resolves every leaf name.
+const STUB_ENGINE: &str = r#"//! Stub Query engine.
+
+/// Stub engine facade.
+pub mod facade {
+    /// Stub foundation vocabulary.
+    pub mod foundation {
+        /// Stub canonical artifact.
+        pub struct CanonicalQueryArtifact;
+        /// Stub replay basis.
+        pub struct ScopedReplayBasis;
+    }
+    /// Stub domain namespace.
+    pub mod domain {}
+    /// Stub runtime namespace.
+    pub mod runtime {}
+}
+"#;
+
 pub fn write_query_stubs(root: &Path) {
     // Vendor stubs resolve Cargo metadata for governed Road 1 packages.
     write_stub_lib(root, "vendor/worth-query", "worth-query");
@@ -269,6 +289,7 @@ pub fn write_query_stubs(root: &Path) {
     // Root framework leaves must also exist under crates/ for production
     // audience-facade contract validation (engine-only dep + re-export shape).
     write_stub_lib(root, "crates/worth-query", "worth-query");
+    write_file(root, "crates/worth-query/src/lib.rs", STUB_ENGINE);
     write_leaf_facade(
         root,
         "worth-query-decl",

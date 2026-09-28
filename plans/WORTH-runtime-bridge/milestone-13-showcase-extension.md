@@ -2,13 +2,13 @@
 
 > **Status:** In Progress
 >
-> **Roadmap parent:** [worth_runtime_bridge_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/worth_runtime_bridge_roadmap.md)
+> **Roadmap parent:** [worth_runtime_bridge_roadmap.md](./WORTH_runtime_bridge_roadmap.md)
 >
-> **Milestone parent:** [milestone-13.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-13.md)
+> **Milestone parent:** [milestone-13.md](./milestone-13.md)
 >
-> **Closeout parent:** [milestone-13-closeout.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-13-closeout.md)
+> **Closeout parent:** [milestone-13-closeout.md](./milestone-13-closeout.md)
 >
-> **Certification companion:** [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md)
+> **Certification companion:** [test-requirements.md](./test-requirements.md)
 >
 > **Primary architectural driver:** take the now-closed Milestone 13 pricing certification surface and turn it into an executive-grade proof artifact that is still mechanically honest, replay-safe, provenance-complete, and impossible to dismiss as demo theater
 

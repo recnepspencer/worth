@@ -35,7 +35,7 @@ Milestone 13 delivered:
 - compile-checked rustdoc for the canonical bridge surface and important
   advanced flows
 - a real pricing-shock reference workload in
-  [pricing_shock.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/harness/tests/pricing_shock.rs)
+  [pricing_shock.rs](../../crates/worth-runtime-bridge/src/harness/tests/pricing_shock.rs)
 - real certification lanes covering:
   - ordinary route and evaluation
   - split-screen main versus speculative isolation
@@ -73,10 +73,10 @@ Milestone 13 delivered:
   - `counter_snapshot_json()`
   - `comparison_against(...)`
 - docs/spec alignment for the pricing workload bundle shape in:
-  - [milestone-13.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-13.md)
-  - [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md)
-  - [dx_plan.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/dx_plan.md)
-  - [CERTIFICATION_AND_HARNESS.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/CERTIFICATION_AND_HARNESS.md)
+  - [milestone-13.md](./milestone-13.md)
+  - [test-requirements.md](./test-requirements.md)
+  - [dx_plan.md](./dx_plan.md)
+  - [CERTIFICATION_AND_HARNESS.md](../../crates/worth-runtime-bridge/CERTIFICATION_AND_HARNESS.md)
 
 ## What The Pricing Bundle Proves
 

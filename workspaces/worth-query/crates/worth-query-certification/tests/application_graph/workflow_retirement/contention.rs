@@ -4,8 +4,8 @@
 
 use worth_query_host::facade::primary_graph::WorthQueryApplicationCommitDenialKind;
 
-use super::super::bounded_dimension_model::{
-    dimension_entry::PART_IDENTITY,
+use super::super::document_retention_model::{
+    retention_entry::DOCUMENT_IDENTITY,
     workflow::{WorkflowInstanceStartInput, WorkflowInstanceStartIntent},
 };
 use super::*;
@@ -109,7 +109,7 @@ fn only_one_of_two_prepared_reopens_commits() {
 }
 
 fn retire_after(
-    application: &BoundedDimensionWorkflowRuntime,
+    application: &DocumentWorkflowRuntime,
     definition: PublishedWorkflowDefinitionRef,
     idempotency: u64,
     between: impl FnOnce(),
@@ -131,8 +131,8 @@ fn retire_after(
 }
 
 fn publish_after(
-    application: &BoundedDimensionWorkflowRuntime,
-    definition: ValidatedWorkflowDefinition<ReviewedGeometryWorkflow>,
+    application: &DocumentWorkflowRuntime,
+    definition: ValidatedWorkflowDefinition<ReviewedDocumentWorkflow>,
     idempotency: u64,
     between: impl FnOnce(),
 ) -> Result<
@@ -179,7 +179,7 @@ fn a_successor_published_after_prepare_leaves_the_start_stale() {
         .on_branch(first.branch())
         .mutate(WorkflowInstanceStartIntent {
             input: WorkflowInstanceStartInput {
-                part_identity: PART_IDENTITY.to_owned(),
+                document_identity: DOCUMENT_IDENTITY.to_owned(),
             },
         })
         .without_source()

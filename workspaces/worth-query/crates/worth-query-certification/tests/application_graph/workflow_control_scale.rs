@@ -22,13 +22,13 @@ use worth_query_host::facade::{
 use worth_query_installation::facade::WorthQueryApplicationWorkflowResourceCeiling;
 use worth_query_replay::facade::WorthQueryCertificationCostRuntimeExt;
 
-use super::bounded_dimension_model::{
-    dimension_entry::PART_IDENTITY,
+use super::document_retention_model::{
     host::publish_on_first_program_for_workflow_scale,
     operator_identity::authenticate_operator,
-    schema::{PartDimensionConditionQuery, PartDimensionQuery},
+    retention_entry::DOCUMENT_IDENTITY,
+    schema::{DocumentRetentionConditionQuery, DocumentRetentionQuery},
     workflow::{
-        retain_workflow_with_resources, start_instance, ReviewedGeometryWorkflow,
+        retain_workflow_with_resources, start_instance, ReviewedDocumentWorkflow,
         WorkflowDefinitionAuthoringInput, WorkflowDefinitionAuthoringIntent,
         WorkflowDefinitionAuthoringOperation,
     },
@@ -37,7 +37,7 @@ use super::bounded_dimension_model::{
 const FRAGMENT_NODES: u16 = 9;
 const FRAGMENT_CONNECTIONS: u16 = 16;
 
-fn control_definition(occurrences: u16) -> AuthoredWorkflowDefinition<ReviewedGeometryWorkflow> {
+fn control_definition(occurrences: u16) -> AuthoredWorkflowDefinition<ReviewedDocumentWorkflow> {
     let nodes = occurrences * FRAGMENT_NODES + 1;
     let connections = occurrences * (FRAGMENT_CONNECTIONS + 1);
     let limits = ApplicationWorkflowDefinitionLimits::new(
@@ -49,19 +49,19 @@ fn control_definition(occurrences: u16) -> AuthoredWorkflowDefinition<ReviewedGe
     )
     .expect("finite control definition limits");
     let mut fragment =
-        ApplicationWorkflowComponentBuilder::<ReviewedGeometryWorkflow>::new("control-fragment")
+        ApplicationWorkflowComponentBuilder::<ReviewedDocumentWorkflow>::new("control-fragment")
             .expect("component identity");
     let proposal = fragment
         .operation::<WorkflowDefinitionAuthoringOperation>("proposal", false)
         .expect("proposal operation");
     let condition = fragment
-        .condition::<PartDimensionConditionQuery>("condition")
+        .condition::<DocumentRetentionConditionQuery>("condition")
         .expect("typed condition");
-    let geometry = fragment
-        .assessment::<PartDimensionQuery>("geometry")
+    let retention = fragment
+        .assessment::<DocumentRetentionQuery>("retention")
         .expect("resource assessment");
     let independent = fragment
-        .assessment_for::<PartDimensionQuery>(
+        .assessment_for::<DocumentRetentionQuery>(
             "independent",
             ApplicationWorkflowSubjectSelector::related(),
         )
@@ -100,7 +100,7 @@ fn control_definition(occurrences: u16) -> AuthoredWorkflowDefinition<ReviewedGe
         .control(
             &condition,
             ApplicationWorkflowControlOutcome::ConditionSatisfied,
-            &geometry,
+            &retention,
         )
         .unwrap()
         .control(
@@ -110,7 +110,7 @@ fn control_definition(occurrences: u16) -> AuthoredWorkflowDefinition<ReviewedGe
         )
         .unwrap()
         .control(
-            &geometry,
+            &retention,
             ApplicationWorkflowControlOutcome::Completed,
             &independent,
         )
@@ -155,18 +155,18 @@ fn control_definition(occurrences: u16) -> AuthoredWorkflowDefinition<ReviewedGe
         .unwrap()
         .condition_subject(&proposal, &condition)
         .unwrap()
-        .proposal_for_assessment(&proposal, &geometry)
+        .proposal_for_assessment(&proposal, &retention)
         .unwrap()
         .proposal_for_assessment(&proposal, &independent)
         .unwrap()
-        .assessment_evidence(&geometry, &join)
+        .assessment_evidence(&retention, &join)
         .unwrap()
         .assessment_evidence(&independent, &join)
         .unwrap();
     let input = fragment.input_port("input", &proposal).unwrap();
     let output = fragment.output_port("output", &last).unwrap();
     let fragment = fragment.finish().expect("control fragment closes");
-    let mut definition = ApplicationWorkflowDefinitionBuilder::<ReviewedGeometryWorkflow>::new(
+    let mut definition = ApplicationWorkflowDefinitionBuilder::<ReviewedDocumentWorkflow>::new(
         "repeated-control-fragment",
         limits,
     )
@@ -248,7 +248,7 @@ fn qualify(occurrences: u16, key: u64) {
         validated
             .nodes()
             .iter()
-            .filter(|node| matches!(node.kind(), ApplicationWorkflowNodeKind::Condition(condition) if condition.query_type() == TypeId::of::<PartDimensionConditionQuery>()))
+            .filter(|node| matches!(node.kind(), ApplicationWorkflowNodeKind::Condition(condition) if condition.query_type() == TypeId::of::<DocumentRetentionConditionQuery>()))
             .count(),
         usize::from(occurrences)
     );
@@ -273,7 +273,7 @@ fn qualify(occurrences: u16, key: u64) {
             validated
                 .nodes()
                 .iter()
-                .filter(|node| matches!(node.kind(), ApplicationWorkflowNodeKind::Assessment(assessment) if assessment.query_type() == TypeId::of::<PartDimensionQuery>() && assessment.subject() == &subject))
+                .filter(|node| matches!(node.kind(), ApplicationWorkflowNodeKind::Assessment(assessment) if assessment.query_type() == TypeId::of::<DocumentRetentionQuery>() && assessment.subject() == &subject))
                 .count(),
             usize::from(occurrences)
         );
@@ -305,8 +305,8 @@ fn qualify(occurrences: u16, key: u64) {
         .request(&principal, &scope)
         .mutate(WorkflowDefinitionAuthoringIntent {
             input: WorkflowDefinitionAuthoringInput {
-                identity: PART_IDENTITY.to_owned(),
-                dimension: 8,
+                identity: DOCUMENT_IDENTITY.to_owned(),
+                retention_days: 8,
             },
         })
         .workflow(&application, control_definition(occurrences))

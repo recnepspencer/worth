@@ -3,10 +3,10 @@ use super::*;
 #[test]
 fn older_approval_replays_after_the_same_node_settles_again() {
     let application =
-        super::super::bounded_dimension_model::host::publish_workflow_on_first_program();
+        super::super::document_retention_model::host::publish_workflow_on_first_program();
     let definition = match publish_definition(
         &application,
-        super::super::bounded_dimension_model::workflow::approval_retry_definition(),
+        super::super::document_retention_model::workflow::approval_retry_definition(),
         WorkflowDefinitionExpectedPredecessor::Absent,
         950,
     )
@@ -122,7 +122,7 @@ fn exact_approval_persists_replays_and_binds_decision_and_instance() {
             let mut actual_evidence = approval.evidence().to_vec();
             actual_evidence.sort_unstable();
             assert_eq!(actual_evidence, expected_evidence);
-            assert_eq!(approval.purpose(), "String(Raw(\"reviewed-geometry\"))");
+            assert_eq!(approval.purpose(), "String(Raw(\"reviewed-document\"))");
             assert_eq!(approval.expiry(), u64::MAX);
             let principal = performed.receipt().principal_scope().principal();
             assert_eq!(
@@ -182,7 +182,7 @@ fn exact_approval_persists_replays_and_binds_decision_and_instance() {
                     principal.generation(),
                 )
             );
-            assert_eq!(approval.purpose(), "String(Raw(\"reviewed-geometry\"))");
+            assert_eq!(approval.purpose(), "String(Raw(\"reviewed-document\"))");
             assert_eq!(approval.expiry(), u64::MAX);
         }
         other => panic!("expected a replayed workflow approval, got {other:?}"),
@@ -221,7 +221,7 @@ fn exact_approval_persists_replays_and_binds_decision_and_instance() {
 
     let foreign_definition = match publish_definition(
         &application,
-        reviewed_geometry_definition("foreign"),
+        reviewed_document_definition("foreign"),
         WorkflowDefinitionExpectedPredecessor::Published(definition),
         512,
     )

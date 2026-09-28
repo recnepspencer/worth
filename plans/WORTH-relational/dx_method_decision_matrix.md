@@ -5,18 +5,18 @@
 This is the method-level pass.
 
 The older matrix in
-[`dx_export_decision_matrix.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_export_decision_matrix.md)
+[`dx_export_decision_matrix.md`](./dx_export_decision_matrix.md)
 handles modules.
 
 This one handles verbs.
 
 That matters because the real public facade is not just the names re-exported in
-[`facade.rs`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/facade.rs).
+[`facade.rs`](../../crates/worth-relational/src/facade.rs).
 
 A lot of the real boundary also comes from public methods on
-[`RelationalRuntime`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/logic/runtime/state/runtime_state.rs),
-[`RelationalRuntimeBuilder`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/logic/builder.rs),
-[`RelationalTransaction`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/transactions/logic/mod.rs),
+`RelationalRuntime`,
+`RelationalRuntimeBuilder`,
+`RelationalTransaction`,
 and the access or authority helpers they hand back.
 
 The goal here is not to flatten hard stuff.
@@ -78,7 +78,7 @@ Example:
 ## Root Runtime
 
 Owner:
-[`RelationalRuntime`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/logic/runtime/state/runtime_state.rs)
+`RelationalRuntime`
 
 | Method | Boundary | Action | Decision |
 | --- | --- | --- | --- |
@@ -136,7 +136,7 @@ The remaining job is polish and consistency, not basic lane ownership.
 ## API Entry
 
 Owner:
-[`RelationalRuntimeApi`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/presentation/api.rs)
+[`RelationalRuntimeApi`](../../crates/worth-relational/src/presentation/api.rs)
 
 | Method | Boundary | Action | Decision |
 | --- | --- | --- | --- |
@@ -147,7 +147,7 @@ Owner:
 ## Builder
 
 Owner:
-[`RelationalRuntimeBuilder`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/logic/builder.rs)
+`RelationalRuntimeBuilder`
 
 ### Core Builder Spine
 
@@ -219,9 +219,9 @@ clear subsystem config story.
 
 Owners:
 
-- [`CommitStrategiesFacade`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/commit_strategies/facade.rs)
-- [`CommitStrategiesAuthorityFacade`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/commit_strategies/facade.rs)
-- [`FrozenCommitStrategyRegistry`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/commit_strategies/logic/frozen_registry.rs)
+- [`CommitStrategiesFacade`](../../crates/worth-relational/src/commit_strategies/facade.rs)
+- [`CommitStrategiesAuthorityFacade`](../../crates/worth-relational/src/commit_strategies/facade.rs)
+- [`FrozenCommitStrategyRegistry`](../../crates/worth-relational/src/commit_strategies/frozen_registry.rs)
 
 ### Read And Execution Entry
 
@@ -255,7 +255,7 @@ Owners:
 ## Transactions
 
 Owner:
-[`RelationalTransaction`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/transactions/logic/mod.rs)
+`RelationalTransaction`
 
 | Method | Boundary | Action | Decision |
 | --- | --- | --- | --- |
@@ -283,8 +283,8 @@ behind a better top-level workflow.
 
 Owners:
 
-- [`HistoryAccess`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/history/logic/access.rs)
-- [`HistoryAuthority`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/history/logic/authority.rs)
+- `HistoryAccess`
+- `HistoryAuthority`
 
 ### Read Lane
 
@@ -318,7 +318,7 @@ Owners:
 ## Inspection
 
 Owner:
-[`InspectionAccess`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/inspection/logic/access.rs)
+`InspectionAccess`
 
 | Method | Boundary | Action | Decision |
 | --- | --- | --- | --- |
@@ -353,7 +353,7 @@ recognize than it should be.
 ## Merge
 
 Owner:
-[`MergeAccess`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/merge/logic/mod.rs)
+`MergeAccess`
 
 | Method | Boundary | Action | Decision |
 | --- | --- | --- | --- |
@@ -368,8 +368,8 @@ Owner:
 
 Owners:
 
-- [`ReplayAccess`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/replay/logic/access.rs)
-- [`ReplayAuthority`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/replay/logic/authority.rs)
+- `ReplayAccess`
+- `ReplayAuthority`
 
 | Method | Boundary | Action | Decision |
 | --- | --- | --- | --- |
@@ -384,9 +384,9 @@ Owners:
 
 Owners:
 
-- [`PublicationAccess`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/publication/logic/access.rs)
-- [`RelationalDiagnosticsFacade`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/diagnostics/data/mod.rs)
-- [`PublicationError`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/publication/data/publication_error.rs)
+- `PublicationAccess`
+- [`RelationalDiagnosticsFacade`](../../crates/worth-relational/src/diagnostics/data/mod.rs)
+- [`PublicationError`](../../crates/worth-relational/src/publication/data/publication_error.rs)
 
 ### Publication Reads
 
@@ -421,10 +421,10 @@ Owners:
 
 Owners:
 
-- [`DurabilityAccess`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/durability/access.rs)
-- [`DurabilityAuthority`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/durability/authority.rs)
-- [`SnapshotGuard`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/logic/runtime/mod.rs)
-- [`VisibilityAuthority`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/visibility/authority.rs)
+- [`DurabilityAccess`](../../crates/worth-relational/src/durability/access/mod.rs)
+- [`DurabilityAuthority`](../../crates/worth-relational/src/durability/authority.rs)
+- `SnapshotGuard`
+- [`VisibilityAuthority`](../../crates/worth-relational/src/visibility/authority.rs)
 
 ### Durability Reads And Writes
 
@@ -453,8 +453,8 @@ Owners:
 
 Owners:
 
-- [`IndexAccess`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/indexes/logic/access.rs)
-- [`IndexAuthority`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/indexes/logic/authority.rs)
+- `IndexAccess`
+- `IndexAuthority`
 
 | Method | Boundary | Action | Decision |
 | --- | --- | --- | --- |
@@ -470,8 +470,8 @@ Owners:
 
 Owners:
 
-- [`StorageAccess`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/storage/logic/access.rs)
-- [`PerformanceAccess`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/performance/logic/access.rs)
+- `StorageAccess`
+- `PerformanceAccess`
 
 ### Storage Reads
 
@@ -555,11 +555,11 @@ verb surface, not just the noun inventory.
 Immediate follow-through:
 
 1. update
-   [`dx_export_decision_matrix.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_export_decision_matrix.md)
+   [`dx_export_decision_matrix.md`](./dx_export_decision_matrix.md)
    so it explicitly points at this method-level pass
 2. use this doc to write
-   [`dx_canonical_surface_spec.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_canonical_surface_spec.md)
+   [`dx_canonical_surface_spec.md`](./dx_canonical_surface_spec.md)
 3. use
-   [`dx_boundary_cleanup_list.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_boundary_cleanup_list.md)
+   [`dx_boundary_cleanup_list.md`](./dx_boundary_cleanup_list.md)
    as the resolved lane-ownership record before condensation and naming work
    continue

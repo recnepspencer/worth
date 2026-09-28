@@ -1,4 +1,4 @@
-# worth-relational Safety â€” Deferred and Follow-On Items
+# worth-relational Safety — Deferred and Follow-On Items
 
 > **Status as of March 11, 2026**: The post-refactor hardening items in sections 3-5 have now landed. The remaining deferred work is merge-specific (`ConflictKey`, `MergeParentList`) and only becomes relevant once lineage-aware merge conflict semantics are expanded.
 >
@@ -20,7 +20,7 @@
 
 **When it matters**: When branch merge conflict detection is built.
 
-**The Bug It Prevents**: Merge conflict detection compares records by `EntityId`. But if branch A modifies entity E1 and branch B deletes E1 and replaces it with E2 (with lineage E1â†’E2), the merge doesn't detect a conflict because E1 â‰  E2. Both changes apply, producing overlapping state.
+**The Bug It Prevents**: Merge conflict detection compares records by `EntityId`. But if branch A modifies entity E1 and branch B deletes E1 and replaces it with E2 (with lineage E1→E2), the merge doesn't detect a conflict because E1 ≠ E2. Both changes apply, producing overlapping state.
 
 **Design**:
 
@@ -55,7 +55,7 @@ pub fn detect_conflicts(
 
 ```rust
 /// A list of merge parents that is guaranteed to be sorted and deduplicated.
-/// The inner Vec is private â€” there is no push() method.
+/// The inner Vec is private — there is no push() method.
 /// The ONLY way to construct this is from_canonical(), which sorts + deduplicates.
 pub struct MergeParentList(Vec<BranchId>);
 
@@ -71,7 +71,7 @@ impl MergeParentList {
 }
 ```
 
-**Why deferred**: Already implied by the vision doc's "ordered parent commit lists." The smart constructor is additive â€” the underlying storage field doesn't change shape.
+**Why deferred**: Already implied by the vision doc's "ordered parent commit lists." The smart constructor is additive — the underlying storage field doesn't change shape.
 
 ---
 
@@ -162,5 +162,5 @@ fn all_invariant_rules_are_registered() {
 
 When these items are ready to be implemented, the recommended order is:
 
-1. **`MergeParentList`** (#2) â€” smart constructor, needed before merge ships
-2. **`ConflictKey`** (#1) â€” API design, needed before lineage-aware merge conflict detection ships
+1. **`MergeParentList`** (#2) — smart constructor, needed before merge ships
+2. **`ConflictKey`** (#1) — API design, needed before lineage-aware merge conflict detection ships

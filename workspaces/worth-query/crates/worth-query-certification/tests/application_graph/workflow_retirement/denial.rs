@@ -6,8 +6,8 @@ use worth_query_host::facade::{
     primary_graph::WorthQueryApplicationAttemptDenialKind,
 };
 
-use super::super::bounded_dimension_model::dimension_entry::PART_IDENTITY;
-use super::super::bounded_dimension_model::workflow::{
+use super::super::document_retention_model::retention_entry::DOCUMENT_IDENTITY;
+use super::super::document_retention_model::workflow::{
     WorkflowInstanceStartInput, WorkflowInstanceStartIntent,
 };
 use super::*;
@@ -44,7 +44,7 @@ fn retirement_denies_a_foreign_runtime_authority_or_branch_and_keeps_the_definit
         .request(&principal, &scope)
         .mutate(WorkflowInstanceStartIntent {
             input: WorkflowInstanceStartInput {
-                part_identity: PART_IDENTITY.to_owned(),
+                document_identity: DOCUMENT_IDENTITY.to_owned(),
             },
         })
         .without_source()

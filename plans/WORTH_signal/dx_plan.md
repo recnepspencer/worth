@@ -24,12 +24,12 @@ it.
 
 This plan builds on:
 
-- [`plans/worth_signal/worth_signals2.md`](/Users/spenstar/Documents/programming/WORTH/WORTH/plans/worth_signal/worth_signals2.md)
-- [`plans/worth_signal/signal_architecture2.md`](/Users/spenstar/Documents/programming/WORTH/WORTH/plans/worth_signal/signal_architecture2.md)
-- [`plans/worth_signal/dx_api_matrix.md`](/Users/spenstar/Documents/programming/WORTH/WORTH/plans/worth_signal/dx_api_matrix.md)
-- [`plans/worth_signal/dx_export_inventory.md`](/Users/spenstar/Documents/programming/WORTH/WORTH/plans/worth_signal/dx_export_inventory.md)
-- [`plans/worth_signal/dx_exposure_cleanup_strategy.md`](/Users/spenstar/Documents/programming/WORTH/WORTH/plans/worth_signal/dx_exposure_cleanup_strategy.md)
-- [`plans/worth_signal/dx_export_decision_matrix.md`](/Users/spenstar/Documents/programming/WORTH/WORTH/plans/worth_signal/dx_export_decision_matrix.md)
+- [`plans/worth_signal/worth_signals2.md`](./WORTH_signals2.md)
+- [`plans/worth_signal/signal_architecture2.md`](./signal_architecture2.md)
+- [`plans/worth_signal/dx_api_matrix.md`](./dx_api_matrix.md)
+- [`plans/worth_signal/dx_export_inventory.md`](./dx_export_inventory.md)
+- [`plans/worth_signal/dx_exposure_cleanup_strategy.md`](./dx_exposure_cleanup_strategy.md)
+- [`plans/worth_signal/dx_export_decision_matrix.md`](./dx_export_decision_matrix.md)
 
 ---
 
@@ -116,7 +116,7 @@ exposure.
 
 ### Tasks
 
-- treat [`dx_export_decision_matrix.md`](/Users/spenstar/Documents/programming/WORTH/WORTH/plans/worth_signal/dx_export_decision_matrix.md)
+- treat [`dx_export_decision_matrix.md`](./dx_export_decision_matrix.md)
   as the current source of truth
 - update it whenever public API decisions change
 - require every new public symbol to justify:
@@ -143,7 +143,7 @@ supposed to memorize.
 
 ### Required Deliverable
 
-- [`plans/worth_signal/dx_canonical_surface_spec.md`](/Users/spenstar/Documents/programming/WORTH/WORTH/plans/worth_signal/dx_canonical_surface_spec.md)
+- [`plans/worth_signal/dx_canonical_surface_spec.md`](./dx_canonical_surface_spec.md)
 
 ### It Must Define
 
@@ -227,7 +227,7 @@ Stop internal/certification/support surfaces from defining the public identity.
 
 ### Mandatory Cleanup
 
-- do not leave `P3` surfaces in the main facade â€œfor nowâ€
+- do not leave `P3` surfaces in the main facade “for now”
 - if they are not product API, remove them from the product boundary
 
 ### Exit Criteria
@@ -301,7 +301,7 @@ The required output is superior canonical workflow shapes.
 
 ### Required Deliverable
 
-- [`plans/worth_signal/dx_condensation_map.md`](/Users/spenstar/Documents/programming/WORTH/WORTH/plans/worth_signal/dx_condensation_map.md)
+- [`plans/worth_signal/dx_condensation_map.md`](./dx_condensation_map.md)
 
 ### The Condensation Map Must Specify
 
@@ -355,7 +355,7 @@ For each high-value workflow family:
 
 Primary execution doc:
 
-- [`plans/worth_signal/dx_phase_5_plan.md`](/Users/spenstar/Documents/programming/WORTH/WORTH/plans/worth_signal/dx_phase_5_plan.md)
+- [`plans/worth_signal/dx_phase_5_plan.md`](./dx_phase_5_plan.md)
 
 ### Goal
 
@@ -379,7 +379,7 @@ Make policy configuration powerful without becoming fragmented or noisy.
 
 ### Mandatory Cleanup
 
-- do not leave multiple equally â€œofficialâ€ ways to steer the same decision
+- do not leave multiple equally “official” ways to steer the same decision
 - make sure each policy layer has a coherent owner
 
 ### Compatibility Requirement
@@ -417,7 +417,7 @@ Diagnostics should be designed around user jobs, not around export families.
 
 ### Required Deliverable
 
-- [`plans/worth_signal/dx_diagnostics_product_map.md`](/Users/spenstar/Documents/programming/WORTH/WORTH/plans/worth_signal/dx_diagnostics_product_map.md)
+- [`plans/worth_signal/dx_diagnostics_product_map.md`](./dx_diagnostics_product_map.md)
 
 ### Mandatory Cleanup
 
@@ -604,7 +604,7 @@ Prevent cleanup work from stalling under fear of breakage.
 
 ### Required Deliverable
 
-- [`plans/worth_signal/dx_compatibility_transition_plan.md`](/Users/spenstar/Documents/programming/WORTH/WORTH/plans/worth_signal/dx_compatibility_transition_plan.md)
+- [`plans/worth_signal/dx_compatibility_transition_plan.md`](./dx_compatibility_transition_plan.md)
 
 ### Tasks
 

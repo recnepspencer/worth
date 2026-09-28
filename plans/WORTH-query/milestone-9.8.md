@@ -1,15 +1,15 @@
 # Milestone 9.8 Engineering Spec: Downstream Consumer Product Kit For Evidence Reports, Boundary Audits, And Support Pinning
 
-> **Status:** Closed
+> **Status:** Completed. Closeout: [milestone-9.8-closeout.md](./milestone-9.8-closeout.md).
 >
 > **Roadmap parent:** [worth_query_roadmap.md](./worth_query_roadmap.md)
 >
 > **Primary predecessors:** [milestone-9.7.md](./milestone-9.7.md), [milestone-9.6.md](./milestone-9.6.md), [milestone-9.5.md](./milestone-9.5.md)
 >
 > **Purpose:** ship the runtime-owned kit that eliminates consumer-side
-> folklore around Query's product contracts â€” declarative evidence-report
+> folklore around Query's product contracts — declarative evidence-report
 > scaffolding, a shipped boundary-bypass audit, exportable, pinnable support
-> snapshots, and a shipped in-memory consumer test backend â€” and prove
+> snapshots, and a shipped in-memory consumer test backend — and prove
 > closure by reference-consumer adoption rather than by API presence.
 
 ## Goal
@@ -34,7 +34,7 @@ the adoption curve is for every consumer after it:
   family coverage, compound parity support, and corpus replay support
 - the Query hard prohibitions are enforced downstream by a consumer-owned
   audit that `include_str!`s 27 source files and greps for forbidden
-  patterns like `.write(` â€” charming, unshippable, and reinvented (or
+  patterns like `.write(` — charming, unshippable, and reinvented (or
   skipped) by every future consumer
 - support posture reaches consumers as hand-assembled gap rows with no
   serialized, versioned, diffable snapshot a downstream CI can pin, so a
@@ -42,7 +42,7 @@ the adoption curve is for every consumer after it:
 
 Milestones `9.6` and `9.7` harden what Query *says*; this milestone hardens
 what Query *gives consumers to build with*. Per `MENTALITY.md`, foundations
-are slow and features are fast â€” this kit is what makes downstream features
+are slow and features are fast — this kit is what makes downstream features
 fast.
 
 ## Current Reference-Consumer Debt Refresh
@@ -54,7 +54,7 @@ Milestone `9.8` must target the current surfaces, not the stale illustrative
 paths.
 
 The current debt census for
-[crates/worth-kernel/src/construction](../../crates/worth-kernel/src/construction)
+`crates/worth-kernel/src/construction`
 found:
 
 - 81 local digest helper matches across 24 files
@@ -67,18 +67,18 @@ found:
 
 The live high-value reference surfaces are:
 
-- [tests/support/branch_preview_basis.rs](../../crates/worth-kernel/src/construction/tests/support/branch_preview_basis.rs):
+- `tests/support/branch_preview_basis.rs`:
   local Query-shaped report, local error/display, getter wall, and
   `digest_owned_parts` report digest assembly
-- [digest_protocol.rs](../../crates/worth-kernel/src/construction/digest_protocol.rs):
+- `digest_protocol.rs`:
   local construction digest sidecar; legitimate for worth-owned artifact
   identity only, not for Query evidence/support/report identities
-- [authoring.rs](../../crates/worth-kernel/src/construction/authoring.rs):
+- `authoring.rs`:
   `REQUIRED_QUERY_FAMILIES` plus a local loop over
   `workspace.admit_public_api_family(...)`
-- [tests/phase_eight_minimization.rs](../../crates/worth-kernel/src/construction/tests/phase_eight_minimization.rs),
-  [tests/boundary.rs](../../crates/worth-kernel/src/construction/tests/boundary.rs),
-  and [tests/boundary_phase_five/patterns.rs](../../crates/worth-kernel/src/construction/tests/boundary_phase_five/patterns.rs):
+- `tests/phase_eight_minimization.rs`,
+  `tests/boundary.rs`,
+  and `tests/boundary_phase_five/patterns.rs`:
   current source-string audit clusters; some rules are worth-domain hygiene,
   but the Query-prohibition subset is Query-owned and belongs in this kit
 
@@ -92,22 +92,22 @@ source scans, and support-pinning ceremony.
 
 ## Governing Summaries
 
-- `MENTALITY.md`: enforce mechanically, not by convention â€” a prohibition
+- `MENTALITY.md`: enforce mechanically, not by convention — a prohibition
   list enforced by consumer greps is category-3 enforcement owned by the
   wrong party; the kit moves enforcement to the runtime that owns the rule.
 - `arch_laws.md`: Law 6 (domain code returns what changed; the framework
   derives the ceremony), Law 26 (explicit equivalence contracts), Law 34
-  (the framework owns resource lifecycle â€” including the lifecycle of its
+  (the framework owns resource lifecycle — including the lifecycle of its
   own contract enforcement), Law 41 (sealed proof-carrying types).
 - `composition_laws.md`: the kit must produce named, predictable consumer
-  files â€” a derive that hides meaning would trade boilerplate for fog; the
+  files — a derive that hides meaning would trade boilerplate for fog; the
   kit names responsibilities, it does not bury them.
 - `domain_structure_laws.md`: shared code must earn its shared location by
-  shared authority â€” these three surfaces qualify precisely because every
+  shared authority — these three surfaces qualify precisely because every
   consumer depends on the same contracts for the same semantic reasons.
 - `perf_laws.md`: structural waste dominates constant waste; the per-consumer
   ceremony tax is structural waste at the platform boundary, and the kit
-  amortizes it across the largest semantically honest boundary â€” the runtime
+  amortizes it across the largest semantically honest boundary — the runtime
   itself.
 - `worth_query_roadmap.md`: the platform framework stance says ordinary
   developers stay inside `worth-query` for the majority of their work; that
@@ -118,7 +118,7 @@ source scans, and support-pinning ceremony.
 A downstream domain crate must be able to author a digest-bearing evidence
 report, enforce the no-bypass contract, pin its support-posture
 dependencies, and obtain a valid honestly-postured test runtime using only
-Query-shipped kit surfaces â€” and every divergence class must fail
+Query-shipped kit surfaces — and every divergence class must fail
 mechanically in the consumer's build: a report field that escapes digest
 participation, a bypass of a prohibited runtime seam, a support-posture
 regression against a pinned row, a test backend faking a lane it cannot
@@ -149,7 +149,7 @@ This milestone fails if any covered path:
 - Bypass enforcement prefers visibility and sealed types; the shipped audit
   artifact covers only what structure cannot reach, and it is runtime-owned.
 - Support snapshots are serialized, versioned, schema-stable projections of
-  the same support matrix the runtime answers from â€” one truth, derived
+  the same support matrix the runtime answers from — one truth, derived
   views, per arch law 33.
 - Closure is adoption-proven: the reference consumer deletes its folklore in
   the same change program, per the `MENTALITY.md` scope-expansion rule.
@@ -169,26 +169,26 @@ over the `9.6` primitive.
 
 **Relevant Query source surfaces**
 - the Milestone `9.6` evidence-identity primitive surface
-- [runtime/support_matrix.rs](../../crates/worth-query/src/runtime/support_matrix.rs) as the
+- [runtime/support_matrix.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/support_matrix.rs) as the
   house example of the report shape the kit must be able to express
 
 **Relevant downstream evidence (reference consumer)**
-- [worth-kernel tests/support/branch_preview_basis.rs](../../crates/worth-kernel/src/construction/tests/support/branch_preview_basis.rs)
-- [worth-kernel tests/support/projection_consumption.rs](../../crates/worth-kernel/src/construction/tests/support/projection_consumption.rs)
-- [worth-kernel tests/support/family_coverage.rs](../../crates/worth-kernel/src/construction/tests/support/family_coverage.rs)
-- [worth-kernel tests/support/compound_parity_support.rs](../../crates/worth-kernel/src/construction/tests/support/compound_parity_support.rs)
-- [worth-kernel tests/support/corpus_replay_digest.rs](../../crates/worth-kernel/src/construction/tests/support/corpus_replay_digest.rs)
+- worth-kernel tests/support/branch_preview_basis.rs
+- worth-kernel tests/support/projection_consumption.rs
+- worth-kernel tests/support/family_coverage.rs
+- worth-kernel tests/support/compound_parity_support.rs
+- worth-kernel tests/support/corpus_replay_digest.rs
 
 **Target shape (illustrative, not frozen API)**
 
-The reference consumer's reports today are ~250â€“350 lines each: a report
+The reference consumer's reports today are ~250–350 lines each: a report
 struct, a getter wall, hand-rolled digest plumbing, and a three-variant error
-enum with a hand-written `Display` â€” repeated nearly verbatim per report
+enum with a hand-written `Display` — repeated nearly verbatim per report
 file. The target shape collapses each to its semantic core:
 
 ```rust
 // AFTER: declare fields and semantics once; digest participation, accessors,
-// sealed construction, and error/display plumbing are derived â€” and the
+// sealed construction, and error/display plumbing are derived — and the
 // digest is canonical-scheme (9.6) by construction
 #[derive(WORTHQueryEvidenceReport)]
 #[evidence(scope = "worth-kernel.basis-lane")]
@@ -200,7 +200,7 @@ pub struct PrimitiveConstructionRuntimeBasisLaneReport {
     evidence: Vec<String>,
 }
 // a field missing its digest-participation posture does not silently skip
-// the digest â€” it fails to compile
+// the digest — it fails to compile
 ```
 
 **Warnings**
@@ -233,7 +233,7 @@ pub struct PrimitiveConstructionRuntimeBasisLaneReport {
   rejection rather than silently changing equivalence.
 - Adversarial rejection: prove a field that is declared but excluded from
   digest participation, or mutated after construction, cannot silently alter
-  the report digest â€” the misuse fails at compile time or constructs a typed
+  the report digest — the misuse fails at compile time or constructs a typed
   rejection, never a divergent digest.
 
 **Engineering decisions**
@@ -256,15 +256,15 @@ set as structure allows.
 - runtime seam visibility
 
 **Relevant Query source surfaces**
-- [runtime/workspace.rs](../../crates/worth-query/src/runtime/workspace.rs) (covered seams:
+- [runtime/workspace.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/workspace.rs) (covered seams:
   `write`, `batch`, existing-truth binding and probe surfaces named by the
   Milestone `9.5` Phase 4 seam-retirement list)
 
 **Relevant downstream evidence (reference consumer)**
-- [worth-kernel tests/boundary.rs](../../crates/worth-kernel/src/construction/tests/boundary.rs)
-- [worth-kernel tests/phase_eight_minimization.rs](../../crates/worth-kernel/src/construction/tests/phase_eight_minimization.rs)
-- [worth-kernel tests/boundary_phase_five/patterns.rs](../../crates/worth-kernel/src/construction/tests/boundary_phase_five/patterns.rs)
-- [worth-kernel certification/phase_five_boundary_closeout_tests.rs](../../crates/worth-kernel/src/construction/certification/phase_five_boundary_closeout_tests.rs)
+- worth-kernel tests/boundary.rs
+- worth-kernel tests/phase_eight_minimization.rs
+- worth-kernel tests/boundary_phase_five/patterns.rs
+- worth-kernel certification/phase_five_boundary_closeout_tests.rs
 
 **Warnings**
 - Do not solve this entirely with the Phase 3 audit; every seam that can be
@@ -277,7 +277,7 @@ set as structure allows.
 - Add a `Prohibition Registry And Seam Visibility Test` to
   [test-requirements.md](./test-requirements.md) and close it in this phase.
 - Adversarial localization: a compile-fail contract proving a consumer crate
-  cannot reach a sealed covered seam at all â€” the strongest enforcement tier
+  cannot reach a sealed covered seam at all — the strongest enforcement tier
   doing its job before any audit exists.
 - Adversarial agreement: prove the hard-prohibitions documentation and the
   registry name exactly the same seam set, so adding a prohibition in prose
@@ -306,9 +306,9 @@ and consumable from any downstream crate's test suite as one call.
 - the Phase 2 prohibition registry surface
 
 **Relevant downstream evidence (reference consumer)**
-- [worth-kernel tests/boundary.rs](../../crates/worth-kernel/src/construction/tests/boundary.rs)
-- [worth-kernel tests/phase_eight_minimization.rs](../../crates/worth-kernel/src/construction/tests/phase_eight_minimization.rs)
-- [worth-kernel tests/boundary_phase_five/patterns.rs](../../crates/worth-kernel/src/construction/tests/boundary_phase_five/patterns.rs)
+- worth-kernel tests/boundary.rs
+- worth-kernel tests/phase_eight_minimization.rs
+- worth-kernel tests/boundary_phase_five/patterns.rs
 
 **Target shape (illustrative, not frozen API)**
 
@@ -317,7 +317,7 @@ The consumer-owned enforcement this phase replaces, as it exists today in
 
 ```rust
 // BEFORE: 27 include_str!'d source files string-grepped for forbidden
-// patterns â€” trips on comments, misses aliased calls, reinvented per consumer
+// patterns — trips on comments, misses aliased calls, reinvented per consumer
 let violation_count = AUDITED_FILES
     .iter()
     .flat_map(|(_, source)| {
@@ -398,9 +398,9 @@ and CI can store, diff, and reason about outside a running workspace.
 - support matrix projection (new boundary home inside the consumer kit)
 
 **Relevant Query source surfaces**
-- [runtime/support_matrix.rs](../../crates/worth-query/src/runtime/support_matrix.rs)
-- [runtime/support/profile.rs](../../crates/worth-query/src/runtime/support/profile.rs)
-- [application/support/report.rs](../../crates/worth-query/src/application/support/report.rs)
+- [runtime/support_matrix.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/support_matrix.rs)
+- [runtime/support/profile.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/support/profile.rs)
+- [application/support/report.rs](../../workspaces/worth-query/crates/worth-query/src/application/support/report.rs)
 
 **Warnings**
 - Do not create a second support truth; the snapshot is a derived projection
@@ -412,8 +412,8 @@ and CI can store, diff, and reason about outside a running workspace.
 - Add a `Support Snapshot Projection Test` to
   [test-requirements.md](./test-requirements.md) and close it in this phase.
 - Adversarial equivalence: prove snapshot content equals live matrix content
-  for the same runtime version â€” row for row, posture for posture, digest
-  for digest â€” and that re-export is deterministic.
+  for the same runtime version — row for row, posture for posture, digest
+  for digest — and that re-export is deterministic.
 - Adversarial denial: prove comparing or loading a snapshot across a schema
   version boundary fails typed rather than silently coercing rows.
 
@@ -439,9 +439,9 @@ build fails with a localized typed finding when posture regresses.
 - the Phase 4 snapshot projection surface
 
 **Relevant downstream evidence (reference consumer)**
-- [worth-kernel authoring.rs](../../crates/worth-kernel/src/construction/authoring.rs)
+- worth-kernel authoring.rs
   (hand-built required-family admission)
-- [worth-kernel tests/phase_eight_minimization.rs](../../crates/worth-kernel/src/construction/tests/phase_eight_minimization.rs)
+- worth-kernel tests/phase_eight_minimization.rs
   (current residue guard for `PrimitiveConstructionQueryGapRow`)
 
 **Target shape (illustrative, not frozen API)**
@@ -449,7 +449,7 @@ build fails with a localized typed finding when posture regresses.
 The hand-rolled posture bookkeeping this phase replaces, as it exists today
 in `worth-kernel`, is the `REQUIRED_QUERY_FAMILIES` constant plus local
 runtime-admission loop in
-[authoring.rs](../../crates/worth-kernel/src/construction/authoring.rs).
+`authoring.rs`.
 Older gap-row machinery has already been mostly deleted; current tests still
 guard against `PrimitiveConstructionQueryGapRow` resurrection. The pinning
 surface should make both patterns unnecessary:
@@ -467,7 +467,7 @@ The target shape after this phase:
 
 ```rust
 // AFTER: a typed pin artifact; a posture regression in worth-query fails the
-// consumer's build with a finding naming the row â€” not a runtime admission
+// consumer's build with a finding naming the row — not a runtime admission
 // surprise
 worth_query::kit::support_pins! {
     workspace = "worth-kernel",
@@ -488,7 +488,7 @@ worth_query::kit::support_pins! {
 - Adversarial drift localization: regress one covered row's posture in a
   fixture runtime and prove exactly the consumers pinned to that row fail,
   with a typed finding naming the row, the pinned posture, and the actual
-  posture â€” and no unpinned consumer fails.
+  posture — and no unpinned consumer fails.
 - Adversarial rejection: prove a pin against a nonexistent row, or a pin
   whose declared posture vocabulary does not match the snapshot schema
   version, fails typed at pin evaluation rather than passing vacuously.
@@ -509,7 +509,7 @@ worth_query::kit::support_pins! {
 
 Ship the in-memory test runtime as kit surface: one public, honestly-postured
 backend a downstream crate can build a valid `WORTHQueryWorkspace` from for
-reads, writes, previews, and invariant registration â€” without implementing
+reads, writes, previews, and invariant registration — without implementing
 runtime-bridge adapter traits or fabricating receipts by hand.
 
 **Relevant subsystems**
@@ -520,10 +520,10 @@ runtime-bridge adapter traits or fabricating receipts by hand.
   phase generalizes for consumers)
 
 **Relevant Query source surfaces**
-- [memory_workspace/mod.rs](../../crates/worth-query/src/memory_workspace/mod.rs)
+- [memory_workspace/mod.rs](../../workspaces/worth-query/crates/worth-query/src/memory_workspace/mod.rs)
   (private today; the implementation seed for the shipped backend)
-- [runtime/builder.rs](../../crates/worth-query/src/runtime/builder.rs)
-- [runtime/backend/parts.rs](../../crates/worth-query/src/runtime/backend/parts.rs)
+- [runtime/builder.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/builder.rs)
+- [runtime/backend/parts.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/backend/parts.rs)
 
 **Relevant downstream evidence (external consumers)**
 - `workflow-editor` (`workflow_query_WORTH/src/workspace_reads/tests_support.rs`
@@ -568,7 +568,7 @@ let mut workspace = worth_query::kit::in_memory_test_runtime()
   backend as through the equivalent hand-assembled bridge-backed harness it
   replaces.
 - Adversarial denial: every family the backend cannot honor fails closed with
-  the same typed admission stops as a production backend â€” proven by
+  the same typed admission stops as a production backend — proven by
   exhaustively walking the support matrix rather than spot-checking.
 - Adversarial residue: an exact assertion that the covered consumer test
   suites contain zero hand-implemented runtime adapter traits and zero
@@ -580,7 +580,7 @@ let mut workspace = worth_query::kit::in_memory_test_runtime()
 **Engineering decisions**
 - The private `memory_workspace` machinery is promoted through the kit rather
   than duplicated; one in-memory truth implementation, one public posture.
-- The backend ships with honest support rows from birth â€” it is a first-class
+- The backend ships with honest support rows from birth — it is a first-class
   backend posture, not a mock.
 
 **Open questions**
@@ -597,12 +597,12 @@ hand-rolled report and digest plumbing in the same change program.
 - evidence report composition kit (from Phase 1)
 
 **Relevant downstream surfaces**
-- [worth-kernel tests/support/branch_preview_basis.rs](../../crates/worth-kernel/src/construction/tests/support/branch_preview_basis.rs)
-- [worth-kernel tests/support/projection_consumption.rs](../../crates/worth-kernel/src/construction/tests/support/projection_consumption.rs)
-- [worth-kernel tests/support/family_coverage.rs](../../crates/worth-kernel/src/construction/tests/support/family_coverage.rs)
-- [worth-kernel tests/support/compound_parity_support.rs](../../crates/worth-kernel/src/construction/tests/support/compound_parity_support.rs)
-- [worth-kernel tests/support/corpus_replay_digest.rs](../../crates/worth-kernel/src/construction/tests/support/corpus_replay_digest.rs)
-- [worth-kernel digest_protocol.rs](../../crates/worth-kernel/src/construction/digest_protocol.rs)
+- worth-kernel tests/support/branch_preview_basis.rs
+- worth-kernel tests/support/projection_consumption.rs
+- worth-kernel tests/support/family_coverage.rs
+- worth-kernel tests/support/compound_parity_support.rs
+- worth-kernel tests/support/corpus_replay_digest.rs
+- worth-kernel digest_protocol.rs
 
 **Warnings**
 - Do not preserve the old report scaffolding beside the kit "for safety";
@@ -630,7 +630,7 @@ hand-rolled report and digest plumbing in the same change program.
 - `worth-kernel` is the named reference consumer; its deletion diff is part
   of this milestone's acceptance evidence.
 - Kit gaps discovered during report adoption are fixed in Phase 1, not worked
-  around consumer-side â€” adoption is the kit's hostile review.
+  around consumer-side — adoption is the kit's hostile review.
 
 **Open questions**
 - None.
@@ -649,11 +649,11 @@ honest fit.
   (Phase 6)
 
 **Relevant downstream surfaces**
-- [worth-kernel authoring.rs](../../crates/worth-kernel/src/construction/authoring.rs)
-- [worth-kernel tests/boundary.rs](../../crates/worth-kernel/src/construction/tests/boundary.rs)
-- [worth-kernel tests/phase_eight_minimization.rs](../../crates/worth-kernel/src/construction/tests/phase_eight_minimization.rs)
-- [worth-kernel tests/boundary_phase_five/patterns.rs](../../crates/worth-kernel/src/construction/tests/boundary_phase_five/patterns.rs)
-- [worth-kernel certification/phase_five_boundary_closeout_tests.rs](../../crates/worth-kernel/src/construction/certification/phase_five_boundary_closeout_tests.rs)
+- worth-kernel authoring.rs
+- worth-kernel tests/boundary.rs
+- worth-kernel tests/phase_eight_minimization.rs
+- worth-kernel tests/boundary_phase_five/patterns.rs
+- worth-kernel certification/phase_five_boundary_closeout_tests.rs
 
 **Warnings**
 - Do not treat this phase as optional polish; per `MENTALITY.md`, cross-crate
@@ -682,7 +682,7 @@ honest fit.
 **Engineering decisions**
 - Adoption order follows kit dependency order: audit, then pins, then
   backend.
-- Kit gaps discovered during enforcement adoption are fixed in Phases 2â€“6,
+- Kit gaps discovered during enforcement adoption are fixed in Phases 2–6,
   not worked around consumer-side.
 
 **Open questions**
@@ -720,10 +720,10 @@ delimiter-formatted proof strings.
 - `worth-kernel` reference-consumer adoption checks
 
 **Relevant Query source surfaces**
-- [consumer_kit/test_backend/residue_audit](../../crates/worth-query/src/consumer_kit/test_backend/residue_audit)
-- [consumer_kit/boundary_audit/source_inventory](../../crates/worth-query/src/consumer_kit/boundary_audit/source_inventory)
-- [consumer_kit/graph_obligation_adoption/local_ceremony_audit](../../crates/worth-query/src/consumer_kit/graph_obligation_adoption/local_ceremony_audit)
-- [consumer_kit/evidence_report_adoption](../../crates/worth-query/src/consumer_kit/evidence_report_adoption)
+- `consumer_kit/test_backend/residue_audit`
+- `consumer_kit/boundary_audit/source_inventory`
+- `consumer_kit/graph_obligation_adoption/local_ceremony_audit`
+- `consumer_kit/evidence_report_adoption`
 
 **Required directory skeleton**
 - `crates/worth-query/src/consumer_kit/consumer_residue/`
@@ -952,11 +952,11 @@ milestone does not rely on any follow-on cleanup pass.
 
 - the `9.6` canonical evidence-identity scheme as the only digest authority
   the kit can express
-- the hard prohibitions' meaning â€” relocated into enforceable structure, not
+- the hard prohibitions' meaning — relocated into enforceable structure, not
   reworded
 - one support truth: the snapshot remains a digest-bound derived projection
   of the live matrix
-- `worth-kernel`'s evidence semantics through migration â€” re-expressed, never
+- `worth-kernel`'s evidence semantics through migration — re-expressed, never
   reduced
 - the Query facade as the only consumer surface; the kit adds no second
   entry path into runtime internals

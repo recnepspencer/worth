@@ -1,6 +1,6 @@
 # Milestone 9.9 Engineering Spec: Graph Touch Obligation Authority
 
-> **Status:** Closed via [milestone-9.9-closeout.md](./milestone-9.9-closeout.md)
+> **Status:** Completed.
 >
 > **Closeout:** [milestone-9.9-closeout.md](./milestone-9.9-closeout.md)
 >
@@ -9,10 +9,10 @@
 > **Primary predecessors:** [milestone-9.8.md](./milestone-9.8.md), [milestone-9.7.md](./milestone-9.7.md), [milestone-9.6.md](./milestone-9.6.md)
 >
 > **Purpose:** establish graph touch obligation authority as a complete Query
-> boundary â€” pure index-backed obligation selection, explicit dispatch plans,
+> boundary — pure index-backed obligation selection, explicit dispatch plans,
 > executor contracts, typed verdicts, canonical envelopes on receipts and
 > decision traces, relational execution bridge, duplicate-rule elimination, and
-> mechanical consumer anti-folklore â€” certified architecturally and proven by
+> mechanical consumer anti-folklore — certified architecturally and proven by
 > reference-consumer deletion of parallel legality.
 
 ## Goal
@@ -27,20 +27,20 @@ Investigation shows the real seams are not where the first draft assumed:
 
 - **`write_graph_batch` already flows through authoritative mutation batch intent
   admission** with graph program and breadth in
-  `WORTHQueryAuthoritativeMutationBatchIntentSeed` â€” obligation dispatch belongs
+  `WORTHQueryAuthoritativeMutationBatchIntentSeed` — obligation dispatch belongs
   there, not as a side callback before intent review.
 - **WORTH Query already freezes its covered intent-admission floor in tests and
-  docs** â€” authoritative mutation includes scalar write fronts,
+  docs** — authoritative mutation includes scalar write fronts,
   authoritative command-batch fronts, graph-composition fronts, and
   effect-triggered write-intent execution; read execution includes family,
   basis-context, and live-read paths. This spec must follow that shipped
   surface inventory rather than a narrower mental model.
 - **`ComposeGraph` is declared for primitive construction but never executed**
-  â€” kernel phase-chain legality is offline-only; worth-topo construction builds
+  — kernel phase-chain legality is offline-only; worth-topo construction builds
   handoffs without `compose_graph`.
 - **worth-topo operators already enter through configured domain handles and
   contribution orchestration** before graph composition or command submission
-  executes â€” kernel construction does not.
+  executes — kernel construction does not.
 
 This milestone builds the complete authority pipeline on those real seams.
 
@@ -48,7 +48,7 @@ This milestone builds the complete authority pipeline on those real seams.
 
 Query exposes graph composition, relational invariant registration, policy
 narrowing on read, configured domain handles, contribution orchestration,
-intent admission for authoritative mutations, and commit-boundary execution â€”
+intent admission for authoritative mutations, and commit-boundary execution —
 as separate folklore lanes downstream code re-stitches by hand.
 
 `worth-topo` calls graph composition and command-submission helpers yet
@@ -56,7 +56,7 @@ enforces loop wiring in three places. `worth-kernel` runs a full offline
 phase-chain legality pipeline while declaring `ComposeGraph`, without
 operating context and with motion sequencing guarded by `unreachable!`.
 
-Per `MENTALITY.md` Â§2 and Â§14: build the foundation that survives the
+Per `MENTALITY.md` §2 and §14: build the foundation that survives the
 adversarial constraint now; expand scope across crates until the blocker is
 gone.
 
@@ -64,7 +64,7 @@ gone.
 
 - `MENTALITY.md`: enforce mechanically; scope expands until blockers are gone;
   debt is not a substitute for building the real path.
-- `arch_laws.md`: Law 4, 5, 12, 17, 33 â€” shape determines checks; three-state
+- `arch_laws.md`: Law 4, 5, 12, 17, 33 — shape determines checks; three-state
   verdicts; applicability pre-solved at entry; one truth, derived views.
 - `composition_laws.md`: registration, indexing, dispatch, envelope, and denial
   projection remain distinct named surfaces.
@@ -117,11 +117,11 @@ mutation lanes that bypass dispatch.
 - Policy-aware graph mutation execution built so operating-context gates run
   on write authority.
 - Primitive construction birth **executes** `compose_graph` from admitted
-  handoffs â€” handoff-only receipts are not closure.
+  handoffs — handoff-only receipts are not closure.
 - Every dispatch materializes a canonical envelope; receipts and intent
   decision traces carry obligation evidence.
 - Closure = architectural certification + full reference adoption in
-  `worth-topo` and `worth-kernel` â€” not operator samples without birth
+  `worth-topo` and `worth-kernel` — not operator samples without birth
   execution.
 
 ## Terminology Lock
@@ -134,8 +134,8 @@ or semantic boundary it means.
   These are project-management boundaries only. They are not runtime surfaces.
 - **Authoritative mutation batch seam**: Query's canonical multi-command write
   authority path:
-  `review_authoritative_runtime_write_batch_with_graph_artifacts(...)` â†’
-  admitted handoff â†’ execution binding â†’
+  `review_authoritative_runtime_write_batch_with_graph_artifacts(...)` →
+  admitted handoff → execution binding →
   `execute_authoritative_mutation_batch_execution_binding(...)`.
   This is the central mutation seam for graph-composition write execution.
 - **Graph composition entry**: `workspace.compose_graph(...)` and
@@ -951,7 +951,7 @@ survives in docs after the code has moved.
 
 Freeze sealed obligation kinds, three-state verdicts (`Allow` / `Advise` /
 `Block`), execution statuses, dispatch plan rows, executor contracts, verdict
-aggregation, denial projection identity, and the canonical dispatch envelope â€”
+aggregation, denial projection identity, and the canonical dispatch envelope —
 including executor budget identity and multi-obligation recordings when
 several rules fire on one touch.
 
@@ -1042,7 +1042,7 @@ and touched aspect keys (including `.touches(...)` where present).
   `MaterializesDiagnostic`, and `RetainsLiveSubscription`.
 
 **Test requirements**
-- Adversarial parity: semantic-equivalent programs â†’ equal descriptors.
+- Adversarial parity: semantic-equivalent programs → equal descriptors.
 - Adversarial rejection: relation kind / lifecycle / aspect changes alter digest.
 - Adversarial breadth: multi-component graph programs derive all relevant
   collection, relation-kind, aspect-operation, mutation-family, and lifecycle
@@ -1128,7 +1128,7 @@ registration catalogs or consumer-local policy tables.
   execution phase that actually touches state.
 
 **Test requirements**
-- Adversarial parity: identical registration â†’ identical index digests.
+- Adversarial parity: identical registration → identical index digests.
 - Adversarial budget: dispatch selection counters prove O(matched obligations).
 - Adversarial no-match: unrelated selectors produce zero matched obligations,
   zero candidates, zero matched buckets, and zero catalog scan count.
@@ -1188,8 +1188,8 @@ to graph-composition + commit backstop with single rule identity.
 
 Integrate obligation dispatch into the canonical authoritative mutation
 intent-admission family. `compose_graph` anchors on
-`review_authoritative_runtime_write_batch_with_graph_artifacts(...)` â†’
-admitted handoff â†’ execution binding â†’ execution. Scalar-write,
+`review_authoritative_runtime_write_batch_with_graph_artifacts(...)` →
+admitted handoff → execution binding → execution. Scalar-write,
 command-batch, graph-composition, and effect-triggered write-intent fronts must
 lower covered graph touch meaning into the same touch vocabulary and obligation
 selection model rather than becoming separate obligation authorities.
@@ -1221,15 +1221,15 @@ selection model rather than becoming separate obligation authorities.
   `admit_next_effect_write_intent_for_execution`
 - `WORTHQueryGraphObligationDispatchEnvelope`
 
-**Target shape â€” before**
+**Target shape — before**
 
 ```rust
-// workspace_graph.rs â€” manual pack pre-hook, then intent admission underneath
+// workspace_graph.rs — manual pack pre-hook, then intent admission underneath
 invariant_gate(&invariant_context)?;
 self.runtime.write_graph_batch(commands, breadth, program)?;
 ```
 
-**Target shape â€” after**
+**Target shape — after**
 
 ```rust
 // obligation dispatch runs inside the authoritative mutation batch seam.
@@ -1252,7 +1252,7 @@ self.runtime.write_graph_batch(commands, breadth, program)?;
 
 **Test requirements**
 - Adversarial rejection: loop-wiring violation blocks during authoritative
-  mutation review/admit/execution with typed denial + envelope â€” not via manual
+  mutation review/admit/execution with typed denial + envelope — not via manual
   pre-hook only.
 - Adversarial equivalence: scalar mutation, authoritative command batch, and
   graph composition paths sharing the same covered touch shape produce
@@ -1290,7 +1290,7 @@ self.runtime.write_graph_batch(commands, breadth, program)?;
 ### Phase 7: Declaration-Entry And Contribution-Orchestration Dispatch
 
 Wire obligation dispatch at declaration-entry and contribution-composed
-orchestration boundaries â€” where worth-topo already stops mutations before
+orchestration boundaries — where worth-topo already stops mutations before
 the runner reaches graph composition, command submission, or explicit workspace
 mutation.
 
@@ -1434,7 +1434,7 @@ surface is intent-first.
 ### Phase 10: Policy-Aware Graph Mutation And Operating Context Gate Execution
 
 Build policy-aware graph mutation execution and operating-context gate
-dispatch on write authority â€” extending policy narrowing beyond read plans.
+dispatch on write authority — extending policy narrowing beyond read plans.
 
 **Relevant subsystems**
 - `crates/worth-query/src/policy_narrowing/`
@@ -1470,7 +1470,7 @@ invocation.
 
 **Test requirements**
 - Adversarial rejection: finish-before-witness sequencing blocks with typed
-  preflight denial â€” not `unreachable!`.
+  preflight denial — not `unreachable!`.
 - Adversarial equivalence: advisory obligations produce `Advise` verdicts in
   envelope.
 - Adversarial budget denial: a capability-gap or sequencing executor selected
@@ -1596,7 +1596,7 @@ selector coverage, in-memory proof, adoption manifests, or residue accounting.
 ### Phase 15: Kernel Construction Platform Operating Context Wiring
 
 Wire worth-kernel construction through configured domain handles and
-operating context â€” matching binding's platform entry pattern. worth-topo
+operating context — matching binding's platform entry pattern. worth-topo
 operator declaration entry already carries operating context; this phase
 targets kernel construction's naked `WORTHQueryWorkspace` authoring session.
 
@@ -1617,7 +1617,7 @@ targets kernel construction's naked `WORTHQueryWorkspace` authoring session.
 ### Phase 16: Primitive Construction Birth Compose Execution
 
 Build and execute primitive construction birth `compose_graph` programs from
-admitted handoffs â€” closing the gap where `ComposeGraph` is declared but never
+admitted handoffs — closing the gap where `ComposeGraph` is declared but never
 executed.
 
 **Relevant subsystems**
@@ -1632,21 +1632,21 @@ executed.
 
 **Test requirements**
 - Adversarial rejection: shell-with-hole layout violation blocks at compose
-  with typed obligation denial â€” not offline string-mapped `InvalidRequest`.
-- Adversarial equivalence: handoff synopsis â†’ compose program â†’ obligation
-  dispatch envelope â†’ committed topology state for representative families.
+  with typed obligation denial — not offline string-mapped `InvalidRequest`.
+- Adversarial equivalence: handoff synopsis → compose program → obligation
+  dispatch envelope → committed topology state for representative families.
 
 **Engineering decisions**
 - worth-topo construction lane executes compose; kernel consumes obligation
   denials from runtime execution instead of pre-checking offline only.
 - All seven birth families in `family_birth_input/families/` reach compose
-  execution or explicit certification exclusion with residue audit â€” no silent
+  execution or explicit certification exclusion with residue audit — no silent
   skip.
 
 **Open questions**
 - None.
 
-### Phase 17: Reference Adoption â€” worth-topo Operator Catalog
+### Phase 17: Reference Adoption — worth-topo Operator Catalog
 
 Migrate worth-topo topology operators: all `milestone_one_invariant_registrations()`
 with touch selectors, all covered graph-composition entries, all covered
@@ -1685,7 +1685,7 @@ Delete parallel enforcement.
 **Open questions**
 - None.
 
-### Phase 18: Reference Adoption â€” worth-kernel Construction Surfaces
+### Phase 18: Reference Adoption — worth-kernel Construction Surfaces
 
 Migrate worth-kernel construction: full phase-chain legality through registered
 obligations at compose boundary, motion sequencing through preflight obligations,
@@ -1761,7 +1761,7 @@ front doors so the milestone does not silently under-document real surfaces.
 ### Phase 20: Architectural Certification Closeout
 
 Property-based hostile matrices, complexity proofs, bypass audit closure,
-full kind Ã— lane Ã— touch certification matrix, adoption residue.
+full kind × lane × touch certification matrix, adoption residue.
 
 **Relevant subsystems**
 - `crates/worth-query/tests/`
@@ -1772,7 +1772,7 @@ full kind Ã— lane Ã— touch certification matrix, adoption residue.
 - Add `Milestone 9.9 Graph Touch Obligation Authority Hostile Certification
   Matrix` to [test-requirements.md](./test-requirements.md).
 - Property tests, false-fire/false-miss matrices, replay equivalence, every
-  obligation kind Ã— representative touch Ã— covered lane, adoption residue.
+  obligation kind × representative touch × covered lane, adoption residue.
 - Kind x lane matrix proves `Supported`, `Unsupported`, `NotApplicable`,
   `DiagnosticOnly`, and `DeferredToBackstop` rows without fake no-op executors.
 - Residue matrix proves every residue row has `introduced_in`,
@@ -2039,7 +2039,7 @@ This milestone is done only when:
   mutation lane plus covered read/live/preview-intent lanes
 - authoritative mutation intent admission carries obligation dispatch for
   graph composition, command-batch, scalar, explicit-submission, and
-  effect-triggered fronts where they carry covered graph touch meaning â€”
+  effect-triggered fronts where they carry covered graph touch meaning —
   manual invariant-pack pre-hook eliminated on covered compose paths
 - primitive construction birth executes compose_graph with obligation routing
   for covered families
@@ -2075,13 +2075,13 @@ This milestone is done only when:
 - After Milestone `9.8` (consumer backend + bypass audit machinery).
 - Before Milestone `10` (store-backed execution inherits complete obligation
   authority).
-- Phases 1â€“5: vocabulary, index, relational execution point.
+- Phases 1–5: vocabulary, index, relational execution point.
 - Phase 6: canonical dispatch seam (authoritative mutation intent admission)
-  before surface-specific wiring (7â€“9). Phase 6 must use the terminology lock:
+  before surface-specific wiring (7–9). Phase 6 must use the terminology lock:
   "batch" alone is never a sufficient surface name.
-- Phases 10â€“12: remaining executors and envelope attachment.
-- Phases 13â€“14: re-homing, consumer obligation kit, and bypass audit.
+- Phases 10–12: remaining executors and envelope attachment.
+- Phases 13–14: re-homing, consumer obligation kit, and bypass audit.
 - Phase 15: kernel operating context before birth compose (16).
-- Phases 17â€“18: adoption after execution surfaces exist (16) and platform
+- Phases 17–18: adoption after execution surfaces exist (16) and platform
   context (15).
-- Phases 19â€“20: docs then certification close strictly last.
+- Phases 19–20: docs then certification close strictly last.

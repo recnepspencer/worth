@@ -1,6 +1,6 @@
 # Milestone 9.15: Managed Domain Computation, Proposed State, And Invariant Execution
 
-**Status:** Complete through Phase 10.
+> **Status:** Completed.
 
 ## Goal
 

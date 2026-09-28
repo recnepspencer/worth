@@ -46,7 +46,7 @@ Phase 3 is complete only if all of these are true:
 
 ### Runtime Setup Is Now Condensed Around One Spine
 
-[`dx_condensation_map.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_condensation_map.md)
+[`dx_condensation_map.md`](./dx_condensation_map.md)
 locks the setup story to:
 
 - `RelationalRuntimeApi::builder()`
@@ -88,7 +88,7 @@ direction is now stable enough to teach as `read_truth`.
 
 ### Inspection And Publication Now Form The Operator Readback Story
 
-[`dx_diagnostics_product_map.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_diagnostics_product_map.md)
+[`dx_diagnostics_product_map.md`](./dx_diagnostics_product_map.md)
 does not fake a nonexistent unified diagnostics object.
 
 Instead it locks the honest operator story to:

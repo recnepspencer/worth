@@ -107,9 +107,10 @@ The executable configuration and resource setup live in
 [consumer installation](../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/installation.rs),
 with contribution inventory, ownership, and handler-completeness denials in
 [contribution denials](../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/contribution_denials.rs).
-The synchronous application foundation and branch-local program-evolution path
-are complete. The separately governed dynamic workflow-definition product
-remains outside this surface.
+The synchronous application foundation, branch-local program evolution, and
+authored workflow definitions (see the authored workflow example above) are
+available through this facade. The workflow surface exposes no callback,
+resume-message, or inbound-completion API.
 
 ## Branch-Local Program Evolution
 

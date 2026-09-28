@@ -1,6 +1,6 @@
 # Milestone 5.5 Engineering Spec: Query-Orchestrated Mutation, Merge, And Writeback Declarations
 
-> **Status:** Draft engineering spec
+> **Status:** Completed. Closeout: [milestone-5.5-closeout.md](./milestone-5.5-closeout.md).
 >
 > **Roadmap parent:** [worth_query_roadmap.md](./worth_query_roadmap.md)
 >
@@ -20,7 +20,7 @@
 > - [MENTALITY.md](../../docs/coding-guidelines/MENTALITY.md)
 > - [arch_laws.md](../../docs/coding-guidelines/arch_laws.md)
 > - [perf_laws.md](../../docs/coding-guidelines/perf_laws.md)
-> - [domain_laws.md](../../docs/coding-guidelines/domain_laws.md)
+> - [domain_laws.md](../../docs/coding-guidelines/domain_structure_laws.md)
 > - [worth_query_vision.md](./worth_query_vision.md)
 > - [worth_query_roadmap.md](./worth_query_roadmap.md)
 > - [test-requirements.md](./test-requirements.md)

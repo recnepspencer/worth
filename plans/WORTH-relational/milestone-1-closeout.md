@@ -117,7 +117,7 @@ Milestone 1 intentionally does not include:
 - schema renegotiation or dual-schema continuation for active CDC subscribers
 
 Those are now tracked explicitly in
-[worth_relational_roadmap.md](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/worth-relational/worth_relational_roadmap.md)
+[worth_relational_roadmap.md](./WORTH_relational_roadmap.md)
 under `Milestone 5: Schema Evolution and CDC Contract Evolution`.
 
 Milestone 1 guarantees explicit schema mismatch handling, not live schema
@@ -128,5 +128,5 @@ evolution.
 Milestone 1 can be treated as closed.
 
 The next product milestone is
-[worth_relational_roadmap.md](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/worth-relational/worth_relational_roadmap.md)
+[worth_relational_roadmap.md](./WORTH_relational_roadmap.md)
 `Milestone 2: Relational Aspect Semantics`.

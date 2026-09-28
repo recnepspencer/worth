@@ -26,15 +26,15 @@ whole program.
 
 This cleanup spec is based on the current method inventory in:
 
-- [`crates/worth-runtime-bridge/src/facade.rs`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/facade.rs)
-- [`crates/worth-runtime-bridge/src/facade/runtime.rs`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/facade/runtime.rs)
-- [`crates/worth-runtime-bridge/src/facade/runtime/routing_and_bulk.rs`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/facade/runtime/routing_and_bulk.rs)
-- [`crates/worth-runtime-bridge/src/facade/runtime/speculation.rs`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/facade/runtime/speculation.rs)
-- [`crates/worth-runtime-bridge/src/facade/runtime/writeback.rs`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/facade/runtime/writeback.rs)
-- [`crates/worth-runtime-bridge/src/facade/runtime/stream.rs`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/facade/runtime/stream.rs)
-- [`crates/worth-runtime-bridge/src/facade/runtime/source`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/facade/runtime/source)
-- [`crates/worth-runtime-bridge/src/diagnostics/facade`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/diagnostics/facade)
-- [`crates/worth-runtime-bridge/src/builder`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/builder)
+- [`crates/worth-runtime-bridge/src/facade.rs`](../../crates/worth-runtime-bridge/src/facade.rs)
+- [`crates/worth-runtime-bridge/src/facade/runtime.rs`](../../crates/worth-runtime-bridge/src/facade/runtime.rs)
+- [`crates/worth-runtime-bridge/src/facade/runtime/routing_and_bulk.rs`](../../crates/worth-runtime-bridge/src/facade/runtime/routing_and_bulk.rs)
+- [`crates/worth-runtime-bridge/src/facade/runtime/speculation.rs`](../../crates/worth-runtime-bridge/src/facade/runtime/speculation.rs)
+- [`crates/worth-runtime-bridge/src/facade/runtime/writeback.rs`](../../crates/worth-runtime-bridge/src/facade/runtime/writeback/mod.rs)
+- [`crates/worth-runtime-bridge/src/facade/runtime/stream.rs`](../../crates/worth-runtime-bridge/src/facade/runtime/stream.rs)
+- [`crates/worth-runtime-bridge/src/facade/runtime/source`](../../crates/worth-runtime-bridge/src/facade/runtime/source)
+- [`crates/worth-runtime-bridge/src/diagnostics/facade`](../../crates/worth-runtime-bridge/src/diagnostics/facade)
+- [`crates/worth-runtime-bridge/src/builder`](../../crates/worth-runtime-bridge/src/builder)
 
 ---
 
@@ -42,7 +42,7 @@ This cleanup spec is based on the current method inventory in:
 
 The cleanup must survive the following hostile condition:
 
-> Milestone 13â€™s pricing-shock reference workload must be implementable through
+> Milestone 13’s pricing-shock reference workload must be implementable through
 > a small number of bridge-owned request/session flows over the public facade,
 > without direct calls into low-level validation, lowering, replay, mapper, or
 > canonicalization phases unless the test is explicitly certifying those
@@ -56,7 +56,7 @@ This is the hard problem first.
 The point of the cleanup is not prettier names.
 The point is to prevent Milestone 13 from baking internal phase decomposition
 into the public testing contract and to prevent the wider bridge DX program
-from freezing todayâ€™s accidental shape.
+from freezing today’s accidental shape.
 
 ---
 
@@ -447,8 +447,8 @@ all of these concretely:
 2. Which existing raw methods remain public but specialist?
 3. Which existing raw method sequences are wrapped by guided flows?
 4. What exact diagnostics job methods will Milestone 13 call first?
-5. Which current Milestone 13 tests would fail the new â€œordinary jobs must use
-   canonical flowsâ€ rule?
+5. Which current Milestone 13 tests would fail the new “ordinary jobs must use
+   canonical flows” rule?
 
 If those answers are still fuzzy, the bridge is not ready to start the main
 Milestone 13 implementation work.

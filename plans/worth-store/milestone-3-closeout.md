@@ -1,5 +1,7 @@
 # Milestone 3 Closeout: WAL-Coordinated Durable Mode And Crash Recovery
 
+> **Note:** The legacy root crate `crates/worth-store` was removed on 2026-09-27. Paths into it below name its files as they were; they are no longer links. The store now lives in [`workspaces/worth-store`](../../workspaces/worth-store/README.md).
+
 ## Status
 
 Milestone 3 is closed as of 2026-04-14.
@@ -34,40 +36,40 @@ This is not "we added a log." The store now owns:
 Milestone 3 delivered:
 
 - WAL artifact families and integrity verification in
-  [wal/mod.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/wal/mod.rs)
+  `crates/worth-store/src/wal/mod.rs`
 - a dedicated publication subdomain with phase-bearing internal wrappers in
-  [publication/mod.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/publication/mod.rs)
+  `crates/worth-store/src/publication/mod.rs`
 - recovery planning and recovery execution subdomains in
-  [recovery/planning.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/recovery/planning.rs)
+  `crates/worth-store/src/recovery/planning.rs`
   and
-  [recovery/execution.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/recovery/execution.rs)
+  `crates/worth-store/src/recovery/execution.rs`
 - durable-mode lifecycle and recovery gating in
-  [modes/durable.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/modes/durable.rs)
+  `crates/worth-store/src/modes/durable.rs`
 - WAL-aware backend support in
-  [backend/engine.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/backend/engine.rs),
-  [backend/records.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/backend/records.rs),
+  `crates/worth-store/src/backend/engine.rs`,
+  `crates/worth-store/src/backend/records.rs`,
   and
-  [backend/sqlite.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/backend/sqlite.rs)
+  `crates/worth-store/src/backend/sqlite.rs`
 - WAL state persistence and integrity verification inside the backend state and
   integrity layers in
-  [backend/state/wal.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/backend/state/wal.rs)
+  `crates/worth-store/src/backend/state/wal.rs`
   and
-  [backend/integrity/verification.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/backend/integrity/verification.rs)
+  `crates/worth-store/src/backend/integrity/verification.rs`
 - Milestone 3 evidence surfaces in
-  [evidence/milestone_3.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/evidence/milestone_3.rs)
+  `crates/worth-store/src/evidence/milestone_3.rs`
   plus M3 counter extensions in
-  [evidence/counters.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/evidence/counters.rs)
+  `crates/worth-store/src/evidence/counters.rs`
 - typed recovery and durable-mode failure families in
-  [failure/mod.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/failure/mod.rs)
+  `crates/worth-store/src/failure/mod.rs`
 - crash-boundary scenario coverage in
-  [tests/wal_recovery.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/tests/wal_recovery.rs)
+  `crates/worth-store/src/tests/wal_recovery.rs`
 - Milestone 3 certification coverage in
-  [tests/milestone_3_certification.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/tests/milestone_3_certification.rs)
+  `crates/worth-store/src/tests/milestone_3_certification.rs`
 
 ## Acceptance Mapping
 
 Milestone 3 is considered closed against the roadmap and
-[test-requirements.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/test-requirements.md)
+[test-requirements.md](./test-requirements.md)
 because the required acceptance surfaces are now covered directly.
 
 ### `WAL crash boundary exactness test`
@@ -131,7 +133,7 @@ Covered by:
 
 - `tests::milestone_3_certification::milestone_3_certification_bundle_captures_typed_recovery_failure`
 - existing persistence corruption lanes in
-  [tests/persistence.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/tests/persistence.rs)
+  `crates/worth-store/src/tests/persistence.rs`
 
 What is proven:
 

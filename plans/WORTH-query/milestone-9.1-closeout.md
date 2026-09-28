@@ -69,42 +69,42 @@ callbacks, or generic subscription shortcuts.
 Milestone 9.1 delivered:
 
 - query-owned subscription family vocabulary in
-  [crates/worth-query/src/subscription/family.rs](../../crates/worth-query/src/subscription/family.rs)
+  [crates/worth-query/src/subscription/family.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/family.rs)
 - subscription family selection and dimension validation in
-  [crates/worth-query/src/subscription/selection.rs](../../crates/worth-query/src/subscription/selection.rs)
+  [crates/worth-query/src/subscription/selection.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/selection.rs)
 - subscription equivalence and meaning digests in
-  [crates/worth-query/src/subscription/equivalence.rs](../../crates/worth-query/src/subscription/equivalence.rs)
+  [crates/worth-query/src/subscription/equivalence.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/equivalence.rs)
 - live admission input and immutable policy/tenant/relationship-proof
   evidence accessors in
-  [crates/worth-query/src/subscription/input.rs](../../crates/worth-query/src/subscription/input.rs)
+  [crates/worth-query/src/subscription/input.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/input.rs)
 - query-owned declaration artifacts, declaration digests, delivery intent, and
   slice intent in
-  [crates/worth-query/src/subscription/declaration.rs](../../crates/worth-query/src/subscription/declaration.rs),
-  [crates/worth-query/src/subscription/declaration_digest.rs](../../crates/worth-query/src/subscription/declaration_digest.rs),
-  [crates/worth-query/src/subscription/delivery.rs](../../crates/worth-query/src/subscription/delivery.rs), and
-  [crates/worth-query/src/subscription/slice.rs](../../crates/worth-query/src/subscription/slice.rs)
+  [crates/worth-query/src/subscription/declaration.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/declaration.rs),
+  [crates/worth-query/src/subscription/declaration_digest.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/declaration_digest.rs),
+  [crates/worth-query/src/subscription/delivery.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/delivery.rs), and
+  [crates/worth-query/src/subscription/slice.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/slice.rs)
 - explicit query-to-bridge family and slice maps in
-  [crates/worth-query/src/subscription/bridge_family.rs](../../crates/worth-query/src/subscription/bridge_family.rs) and
-  [crates/worth-query/src/subscription/bridge_slice.rs](../../crates/worth-query/src/subscription/bridge_slice.rs)
+  [crates/worth-query/src/subscription/bridge_family.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/bridge_family.rs) and
+  [crates/worth-query/src/subscription/bridge_slice.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/bridge_slice.rs)
 - bridge lowering, basis binding requests, and signal strategy requests in
-  [crates/worth-query/src/subscription/bridge_lowering.rs](../../crates/worth-query/src/subscription/bridge_lowering.rs),
-  [crates/worth-query/src/subscription/basis_request.rs](../../crates/worth-query/src/subscription/basis_request.rs), and
-  [crates/worth-query/src/subscription/signal_strategy.rs](../../crates/worth-query/src/subscription/signal_strategy.rs)
+  [crates/worth-query/src/subscription/bridge_lowering.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/bridge_lowering.rs),
+  [crates/worth-query/src/subscription/basis_request.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/basis_request.rs), and
+  [crates/worth-query/src/subscription/signal_strategy.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/signal_strategy.rs)
 - runtime-backed admission, activation input, support profile, admission
   diagnostics, and certification in
-  [crates/worth-query/src/subscription/admission.rs](../../crates/worth-query/src/subscription/admission.rs),
-  [crates/worth-query/src/subscription/activation.rs](../../crates/worth-query/src/subscription/activation.rs),
-  [crates/worth-query/src/subscription/support.rs](../../crates/worth-query/src/subscription/support.rs),
-  [crates/worth-query/src/subscription/admission_diagnostics.rs](../../crates/worth-query/src/subscription/admission_diagnostics.rs), and
-  [crates/worth-query/src/subscription/certification.rs](../../crates/worth-query/src/subscription/certification.rs)
+  [crates/worth-query/src/subscription/admission.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/admission.rs),
+  [crates/worth-query/src/subscription/activation.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/activation.rs),
+  `crates/worth-query/src/subscription/support.rs`,
+  [crates/worth-query/src/subscription/admission_diagnostics.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/admission_diagnostics.rs), and
+  [crates/worth-query/src/subscription/certification.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/certification.rs)
 - exact declaration/admission counters in
-  [crates/worth-query/src/subscription/counters.rs](../../crates/worth-query/src/subscription/counters.rs)
+  [crates/worth-query/src/subscription/counters.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/counters.rs)
 - milestone certification in
-  [crates/worth-query/src/harness/milestone_nine_one_certification](../../crates/worth-query/src/harness/milestone_nine_one_certification)
+  [crates/worth-query/src/harness/milestone_nine_one_certification](../../workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_one_certification)
 - public facade exposure for the admitted subscription declaration surface in
-  [crates/worth-query/src/facade.rs](../../crates/worth-query/src/facade.rs)
+  [crates/worth-query/src/facade.rs](../../workspaces/worth-query/crates/worth-query/src/facade.rs)
 - compile-fail proof boundaries in
-  [crates/worth-query/tests/ui](../../crates/worth-query/tests/ui)
+  `crates/worth-query/tests/ui`
 
 The semantic center that now exists is:
 
@@ -131,9 +131,9 @@ exists directly and is certified by machine-checkable artifacts.
 
 Covered by:
 
-- [crates/worth-query/src/harness/milestone_nine_one_certification/mod.rs](../../crates/worth-query/src/harness/milestone_nine_one_certification/mod.rs)
-- [crates/worth-query/src/harness/milestone_nine_one_certification/tests.rs](../../crates/worth-query/src/harness/milestone_nine_one_certification/tests.rs)
-- [crates/worth-query/src/harness/certification/requirements.rs](../../crates/worth-query/src/harness/certification/requirements.rs)
+- [crates/worth-query/src/harness/milestone_nine_one_certification/mod.rs](../../workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_one_certification/mod.rs)
+- `crates/worth-query/src/harness/milestone_nine_one_certification/tests.rs`
+- [crates/worth-query/src/harness/certification/requirements.rs](../../workspaces/worth-query/crates/worth-query/src/harness/certification/requirements.rs)
 
 What is proven:
 
@@ -163,11 +163,11 @@ What is proven:
 
 Covered by:
 
-- [crates/worth-query/src/subscription/selection.rs](../../crates/worth-query/src/subscription/selection.rs)
-- [crates/worth-query/src/subscription/equivalence.rs](../../crates/worth-query/src/subscription/equivalence.rs)
-- [crates/worth-query/src/subscription/tests/family_selection.rs](../../crates/worth-query/src/subscription/tests/family_selection.rs)
-- [crates/worth-query/src/subscription/tests/equivalence.rs](../../crates/worth-query/src/subscription/tests/equivalence.rs)
-- [crates/worth-query/src/subscription/tests/diagnostics.rs](../../crates/worth-query/src/subscription/tests/diagnostics.rs)
+- [crates/worth-query/src/subscription/selection.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/selection.rs)
+- [crates/worth-query/src/subscription/equivalence.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/equivalence.rs)
+- [crates/worth-query/src/subscription/tests/family_selection.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/tests/selection/family_selection.rs)
+- `crates/worth-query/src/subscription/tests/equivalence.rs`
+- `crates/worth-query/src/subscription/tests/diagnostics.rs`
 
 What is proven:
 
@@ -186,12 +186,12 @@ What is proven:
 
 Covered by:
 
-- [crates/worth-query/src/subscription/declaration.rs](../../crates/worth-query/src/subscription/declaration.rs)
-- [crates/worth-query/src/subscription/slice.rs](../../crates/worth-query/src/subscription/slice.rs)
-- [crates/worth-query/src/subscription/delivery.rs](../../crates/worth-query/src/subscription/delivery.rs)
-- [crates/worth-query/src/subscription/tests/declaration_parity.rs](../../crates/worth-query/src/subscription/tests/declaration_parity.rs)
-- [crates/worth-query/src/subscription/tests/declaration_budget.rs](../../crates/worth-query/src/subscription/tests/declaration_budget.rs)
-- [crates/worth-query/src/subscription/tests/delivery_intent.rs](../../crates/worth-query/src/subscription/tests/delivery_intent.rs)
+- [crates/worth-query/src/subscription/declaration.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/declaration.rs)
+- [crates/worth-query/src/subscription/slice.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/slice.rs)
+- [crates/worth-query/src/subscription/delivery.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/delivery.rs)
+- [crates/worth-query/src/subscription/tests/declaration_parity.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/tests/declaration/declaration_parity.rs)
+- [crates/worth-query/src/subscription/tests/declaration_budget.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/tests/declaration/declaration_budget.rs)
+- [crates/worth-query/src/subscription/tests/delivery_intent.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/tests/declaration/delivery_intent.rs)
 
 What is proven:
 
@@ -211,12 +211,12 @@ What is proven:
 
 Covered by:
 
-- [crates/worth-query/src/subscription/bridge_lowering.rs](../../crates/worth-query/src/subscription/bridge_lowering.rs)
-- [crates/worth-query/src/subscription/bridge_family.rs](../../crates/worth-query/src/subscription/bridge_family.rs)
-- [crates/worth-query/src/subscription/bridge_slice.rs](../../crates/worth-query/src/subscription/bridge_slice.rs)
-- [crates/worth-query/src/subscription/basis_request.rs](../../crates/worth-query/src/subscription/basis_request.rs)
-- [crates/worth-query/src/subscription/signal_strategy.rs](../../crates/worth-query/src/subscription/signal_strategy.rs)
-- [crates/worth-query/src/subscription/tests/bridge_lowering.rs](../../crates/worth-query/src/subscription/tests/bridge_lowering.rs)
+- [crates/worth-query/src/subscription/bridge_lowering.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/bridge_lowering.rs)
+- [crates/worth-query/src/subscription/bridge_family.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/bridge_family.rs)
+- [crates/worth-query/src/subscription/bridge_slice.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/bridge_slice.rs)
+- [crates/worth-query/src/subscription/basis_request.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/basis_request.rs)
+- [crates/worth-query/src/subscription/signal_strategy.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/signal_strategy.rs)
+- `crates/worth-query/src/subscription/tests/bridge_lowering.rs`
 
 What is proven:
 
@@ -235,13 +235,13 @@ What is proven:
 
 Covered by:
 
-- [crates/worth-query/src/subscription/admission.rs](../../crates/worth-query/src/subscription/admission.rs)
-- [crates/worth-query/src/subscription/activation.rs](../../crates/worth-query/src/subscription/activation.rs)
-- [crates/worth-query/src/subscription/admission_diagnostics.rs](../../crates/worth-query/src/subscription/admission_diagnostics.rs)
-- [crates/worth-query/src/subscription/diagnostic.rs](../../crates/worth-query/src/subscription/diagnostic.rs)
-- [crates/worth-query/src/subscription/support.rs](../../crates/worth-query/src/subscription/support.rs)
-- [crates/worth-query/src/subscription/tests/admission.rs](../../crates/worth-query/src/subscription/tests/admission.rs)
-- [crates/worth-query/src/subscription/tests/diagnostics.rs](../../crates/worth-query/src/subscription/tests/diagnostics.rs)
+- [crates/worth-query/src/subscription/admission.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/admission.rs)
+- [crates/worth-query/src/subscription/activation.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/activation.rs)
+- [crates/worth-query/src/subscription/admission_diagnostics.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/admission_diagnostics.rs)
+- `crates/worth-query/src/subscription/diagnostic.rs`
+- `crates/worth-query/src/subscription/support.rs`
+- [crates/worth-query/src/subscription/tests/admission.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/tests/admission.rs)
+- `crates/worth-query/src/subscription/tests/diagnostics.rs`
 
 What is proven:
 
@@ -263,10 +263,10 @@ What is proven:
 
 Covered by:
 
-- [crates/worth-query/src/subscription/mod.rs](../../crates/worth-query/src/subscription/mod.rs)
-- [crates/worth-query/src/facade.rs](../../crates/worth-query/src/facade.rs)
-- [crates/worth-query/tests/phase_boundaries_compile_fail.rs](../../crates/worth-query/tests/phase_boundaries_compile_fail.rs)
-- [crates/worth-query/tests/ui](../../crates/worth-query/tests/ui)
+- [crates/worth-query/src/subscription/mod.rs](../../workspaces/worth-query/crates/worth-query/src/subscription/mod.rs)
+- [crates/worth-query/src/facade.rs](../../workspaces/worth-query/crates/worth-query/src/facade.rs)
+- `crates/worth-query/tests/phase_boundaries_compile_fail.rs`
+- `crates/worth-query/tests/ui`
 
 What is proven:
 

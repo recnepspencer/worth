@@ -23,7 +23,7 @@ mod subject_selector;
 mod validation;
 
 struct TestSchema;
-struct ReviewedGeometry;
+struct ReviewedChange;
 struct ProposalInput;
 struct ProposalInputBinding;
 struct AssessmentInput;
@@ -33,11 +33,11 @@ struct AssessmentResultBinding;
 struct BoolResultBinding;
 struct ProposeChange;
 struct ApplyChange;
-struct StructuralAssessment;
-struct ManufacturabilityAssessment;
-struct StructuralCondition;
-struct ManufacturabilityCondition;
-struct GeometryApprover;
+struct ConsistencyAssessment;
+struct ComplianceAssessment;
+struct ConsistencyCondition;
+struct ComplianceCondition;
+struct ChangeApprover;
 struct CollisionInputC;
 struct CollisionInputCBinding;
 struct CollisionInputBc;
@@ -57,10 +57,10 @@ impl ApplicationSchema for TestSchema {
     }
 }
 
-impl ApplicationWorkflowSpec for ReviewedGeometry {
+impl ApplicationWorkflowSpec for ReviewedChange {
     type Schema = TestSchema;
     const IDENTITY: ApplicationWorkflowSpecIdentity =
-        ApplicationWorkflowSpecIdentity::new("worth.query.tests.reviewed-geometry.v1");
+        ApplicationWorkflowSpecIdentity::new("worth.query.tests.reviewed-change.v1");
 }
 
 macro_rules! value_binding {
@@ -133,13 +133,13 @@ macro_rules! assessment_query {
 }
 
 assessment_query!(
-    StructuralAssessment,
-    "worth.query.tests.workflow.structural-assessment.v1"
+    ConsistencyAssessment,
+    "worth.query.tests.workflow.consistency-assessment.v1"
 );
 
 assessment_query!(
-    ManufacturabilityAssessment,
-    "worth.query.tests.workflow.manufacturability-assessment.v1"
+    ComplianceAssessment,
+    "worth.query.tests.workflow.compliance-assessment.v1"
 );
 
 macro_rules! condition_query {
@@ -155,21 +155,21 @@ macro_rules! condition_query {
     };
 }
 condition_query!(
-    StructuralCondition,
-    "worth.query.tests.workflow.structural-condition.v1"
+    ConsistencyCondition,
+    "worth.query.tests.workflow.consistency-condition.v1"
 );
 condition_query!(
-    ManufacturabilityCondition,
-    "worth.query.tests.workflow.manufacturability-condition.v1"
+    ComplianceCondition,
+    "worth.query.tests.workflow.compliance-condition.v1"
 );
 
-impl WorthQueryPortableType for GeometryApprover {
-    const PORTABLE_TYPE_NAME: &'static str = "worth.query.tests.workflow.geometry-approver.v1";
+impl WorthQueryPortableType for ChangeApprover {
+    const PORTABLE_TYPE_NAME: &'static str = "worth.query.tests.workflow.change-approver.v1";
 }
 
-impl ApplicationCapabilityMarkerIdentity for GeometryApprover {
+impl ApplicationCapabilityMarkerIdentity for ChangeApprover {
     type Schema = TestSchema;
-    const IDENTIFIER: &'static str = "worth.query.tests.workflow.geometry-approval.v1";
+    const IDENTIFIER: &'static str = "worth.query.tests.workflow.change-approval.v1";
 }
 
 fn limits() -> ApplicationWorkflowDefinitionLimits {
@@ -184,13 +184,13 @@ fn limits() -> ApplicationWorkflowDefinitionLimits {
 }
 
 fn primitive_definition(
-) -> Result<ValidatedWorkflowDefinition<ReviewedGeometry>, Box<dyn std::error::Error>> {
-    primitive_definition_named("reviewed-geometry")
+) -> Result<ValidatedWorkflowDefinition<ReviewedChange>, Box<dyn std::error::Error>> {
+    primitive_definition_named("reviewed-change")
 }
 
 fn primitive_definition_named(
     identity: &str,
-) -> Result<ValidatedWorkflowDefinition<ReviewedGeometry>, Box<dyn std::error::Error>> {
+) -> Result<ValidatedWorkflowDefinition<ReviewedChange>, Box<dyn std::error::Error>> {
     primitive_definition_named_with_policy(
         identity,
         ApplicationWorkflowEvidenceJoinPolicy::AllRequiredPassing,
@@ -200,7 +200,7 @@ fn primitive_definition_named(
 fn primitive_definition_named_with_policy(
     identity: &str,
     policy: ApplicationWorkflowEvidenceJoinPolicy,
-) -> Result<ValidatedWorkflowDefinition<ReviewedGeometry>, Box<dyn std::error::Error>> {
+) -> Result<ValidatedWorkflowDefinition<ReviewedChange>, Box<dyn std::error::Error>> {
     primitive_definition_with_limits(identity, policy, limits())
 }
 
@@ -208,23 +208,22 @@ fn primitive_definition_with_limits(
     identity: &str,
     policy: ApplicationWorkflowEvidenceJoinPolicy,
     limits: ApplicationWorkflowDefinitionLimits,
-) -> Result<ValidatedWorkflowDefinition<ReviewedGeometry>, Box<dyn std::error::Error>> {
+) -> Result<ValidatedWorkflowDefinition<ReviewedChange>, Box<dyn std::error::Error>> {
     let mut builder =
-        ApplicationWorkflowDefinitionBuilder::<ReviewedGeometry>::new(identity, limits)?;
+        ApplicationWorkflowDefinitionBuilder::<ReviewedChange>::new(identity, limits)?;
     let propose = builder.operation::<ProposeChange>("propose", false)?;
-    let structural = builder.assessment::<StructuralAssessment>("checks/structural")?;
-    let manufacturability =
-        builder.assessment::<ManufacturabilityAssessment>("checks/manufacturability")?;
+    let consistency = builder.assessment::<ConsistencyAssessment>("checks/consistency")?;
+    let compliance = builder.assessment::<ComplianceAssessment>("checks/compliance")?;
     let evidence = builder.evidence_join("checks/evidence", policy)?;
-    let approval = builder.approval::<GeometryApprover>("approval")?;
+    let approval = builder.approval::<ChangeApprover>("approval")?;
     let apply = builder.operation::<ApplyChange>("apply", true)?;
     let completed = builder.terminal("completed")?;
     let rejected = builder.terminal("rejected")?;
     connect_definition(
         &mut builder,
         &propose,
-        &structural,
-        &manufacturability,
+        &consistency,
+        &compliance,
         &evidence,
         &approval,
         &apply,
@@ -235,53 +234,49 @@ fn primitive_definition_with_limits(
 }
 
 fn component_definition(
-) -> Result<ValidatedWorkflowDefinition<ReviewedGeometry>, Box<dyn std::error::Error>> {
+) -> Result<ValidatedWorkflowDefinition<ReviewedChange>, Box<dyn std::error::Error>> {
     let mut component =
-        ApplicationWorkflowComponentBuilder::<ReviewedGeometry>::new("required-geometry-review")?;
-    let structural = component.assessment::<StructuralAssessment>("structural")?;
-    let manufacturability =
-        component.assessment::<ManufacturabilityAssessment>("manufacturability")?;
+        ApplicationWorkflowComponentBuilder::<ReviewedChange>::new("required-change-review")?;
+    let consistency = component.assessment::<ConsistencyAssessment>("consistency")?;
+    let compliance = component.assessment::<ComplianceAssessment>("compliance")?;
     let evidence = component.evidence_join(
         "evidence",
         ApplicationWorkflowEvidenceJoinPolicy::AllRequiredPassing,
     )?;
     component.control(
-        &structural,
+        &consistency,
         ApplicationWorkflowControlOutcome::Completed,
-        &manufacturability,
+        &compliance,
     )?;
     component.control(
-        &manufacturability,
+        &compliance,
         ApplicationWorkflowControlOutcome::Completed,
         &evidence,
     )?;
-    component.assessment_evidence(&structural, &evidence)?;
-    component.assessment_evidence(&manufacturability, &evidence)?;
-    let structural_input = component.input_port("structural-subject", &structural)?;
-    let manufacturability_input =
-        component.input_port("manufacturability-subject", &manufacturability)?;
+    component.assessment_evidence(&consistency, &evidence)?;
+    component.assessment_evidence(&compliance, &evidence)?;
+    let consistency_input = component.input_port("consistency-subject", &consistency)?;
+    let compliance_input = component.input_port("compliance-subject", &compliance)?;
     let evidence_output = component.output_port("reviewed-evidence", &evidence)?;
     let component = component.finish()?;
 
-    let mut builder = ApplicationWorkflowDefinitionBuilder::<ReviewedGeometry>::new(
-        "reviewed-geometry",
-        limits(),
-    )?;
+    let mut builder =
+        ApplicationWorkflowDefinitionBuilder::<ReviewedChange>::new("reviewed-change", limits())?;
     let propose = builder.operation::<ProposeChange>("propose", false)?;
-    let approval = builder.approval::<GeometryApprover>("approval")?;
+    let approval = builder.approval::<ChangeApprover>("approval")?;
     let apply = builder.operation::<ApplyChange>("apply", true)?;
     let completed = builder.terminal("completed")?;
     let rejected = builder.terminal("rejected")?;
     let checks = builder.expand_component("checks", &component)?;
-    let structural = checks.input(&structural_input)?;
-    let manufacturability = checks.input(&manufacturability_input)?;
+    let consistency = checks.input(&consistency_input)?;
+    let compliance = checks.input(&compliance_input)?;
     let evidence = checks.output(&evidence_output)?;
     builder
         .start(&propose)
         .control(
             &propose,
             ApplicationWorkflowControlOutcome::Completed,
-            &structural,
+            &consistency,
         )
         .control(
             &evidence,
@@ -308,8 +303,8 @@ fn component_definition(
             ApplicationWorkflowControlOutcome::Completed,
             &completed,
         )
-        .proposal_for_assessment(&propose, &structural)
-        .proposal_for_assessment(&propose, &manufacturability)
+        .proposal_for_assessment(&propose, &consistency)
+        .proposal_for_assessment(&propose, &compliance)
         .proposal_for_approval(&propose, &approval)
         .joined_evidence(&evidence, &approval)
         .approval_authority(&approval, &apply)
@@ -319,10 +314,10 @@ fn component_definition(
 
 #[allow(clippy::too_many_arguments)]
 fn connect_definition(
-    builder: &mut ApplicationWorkflowDefinitionBuilder<ReviewedGeometry>,
+    builder: &mut ApplicationWorkflowDefinitionBuilder<ReviewedChange>,
     propose: &ApplicationWorkflowNodeRef<ApplicationWorkflowOperationNode>,
-    structural: &ApplicationWorkflowNodeRef<ApplicationWorkflowAssessmentNode>,
-    manufacturability: &ApplicationWorkflowNodeRef<ApplicationWorkflowAssessmentNode>,
+    consistency: &ApplicationWorkflowNodeRef<ApplicationWorkflowAssessmentNode>,
+    compliance: &ApplicationWorkflowNodeRef<ApplicationWorkflowAssessmentNode>,
     evidence: &ApplicationWorkflowNodeRef<ApplicationWorkflowEvidenceJoinNode>,
     approval: &ApplicationWorkflowNodeRef<ApplicationWorkflowApprovalNode>,
     apply: &ApplicationWorkflowNodeRef<ApplicationWorkflowOperationNode>,
@@ -334,15 +329,15 @@ fn connect_definition(
         .control(
             propose,
             ApplicationWorkflowControlOutcome::Completed,
-            structural,
+            consistency,
         )
         .control(
-            structural,
+            consistency,
             ApplicationWorkflowControlOutcome::Completed,
-            manufacturability,
+            compliance,
         )
         .control(
-            manufacturability,
+            compliance,
             ApplicationWorkflowControlOutcome::Completed,
             evidence,
         )
@@ -367,10 +362,10 @@ fn connect_definition(
             ApplicationWorkflowControlOutcome::Completed,
             completed,
         )
-        .proposal_for_assessment(propose, structural)
-        .proposal_for_assessment(propose, manufacturability)
-        .assessment_evidence(structural, evidence)
-        .assessment_evidence(manufacturability, evidence)
+        .proposal_for_assessment(propose, consistency)
+        .proposal_for_assessment(propose, compliance)
+        .assessment_evidence(consistency, evidence)
+        .assessment_evidence(compliance, evidence)
         .proposal_for_approval(propose, approval)
         .joined_evidence(evidence, approval)
         .approval_authority(approval, apply)

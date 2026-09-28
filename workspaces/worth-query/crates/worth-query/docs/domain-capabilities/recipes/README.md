@@ -1,5 +1,7 @@
 # Recipes
 
+> **Internal engine surface.** This page documents `WorthQueryWorkspace` (`worth_query::facade`), the engine surface that `worth-ui-query-binding` uses. Application code uses `worth-query-decl` and `worth-query-host`; start with the [application front door](../../foundations/ordinary-application-front-door.md).
+
 These pages are short, copy-oriented examples for common Query jobs.
 
 Use this section when you already know roughly what you want to do and you want

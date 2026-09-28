@@ -200,11 +200,11 @@ by the spec:
 ## Tests Added Or Strengthened
 
 Milestone 15 has focused facade coverage under
-[crates/worth-runtime-bridge/src/facade/tests/subscription](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/facade/tests/subscription),
+[crates/worth-runtime-bridge/src/facade/tests/subscription](../../crates/worth-runtime-bridge/src/facade/tests/subscription),
 suite-shaped certification coverage under
-[crates/worth-runtime-bridge/src/harness/tests/subscription_certification](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/src/harness/tests/subscription_certification),
+[crates/worth-runtime-bridge/src/harness/tests/subscription_certification](../../crates/worth-runtime-bridge/src/harness/tests/subscription_certification),
 and compile-fail privacy coverage under
-[crates/worth-runtime-bridge/tests/ui](C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/tests/ui).
+[crates/worth-runtime-bridge/tests/ui](../../crates/worth-runtime-bridge/tests/ui).
 
 Key proof lanes include:
 

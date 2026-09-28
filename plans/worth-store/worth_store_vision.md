@@ -1613,10 +1613,10 @@ and scale scenarios, it is certification work.
 
 ## Companion Documents
 
-- [worth_relational_vision.md](file:///c:/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-relational/worth_relational_vision.md)
-- [worth_signals2.md](file:///c:/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth_signal/worth_signals2.md)
-- [worth_runtime_bridge_vision.md](file:///c:/Users/Esther/Documents/Programming/worth_workspace/worth/plans/engineering/worth_runtime_bridge_vision.md)
-- [worth_server_vision.md](file:///c:/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-server/worth_server_vision.md)
+- [worth_relational_vision.md](../WORTH-relational/WORTH_relational_vision.md)
+- [worth_signals2.md](../WORTH_signal/WORTH_signals2.md)
+- [worth_runtime_bridge_vision.md](../WORTH-runtime-bridge/WORTH_runtime_bridge_vision.md)
+- [worth_server_vision.md](../WORTH-server/WORTH_server_vision.md)
 
 The storage engine's structural delta model, branch delta layering, commit
 envelope persistence, and retention-aware compaction are what make durable

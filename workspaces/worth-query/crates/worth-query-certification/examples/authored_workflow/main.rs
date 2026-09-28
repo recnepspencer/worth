@@ -1,28 +1,28 @@
 //! Run with `cargo run -p worth-query-certification --example authored_workflow`.
 //!
-//! Authors a reviewed-geometry workflow from one reusable review component,
-//! publishes it, discovers it, rejects the first proposal so the loop asks for
-//! a revised one, approves the revision and completes. A second revision of
-//! the definition reuses the same component; discovery then names it, and a
-//! start from the superseded revision is refused naming the current one.
+//! Authors a reviewed-document workflow from one reusable review component:
+//! a proposed change to a document's retention period is checked twice and
+//! approved before it applies. The example publishes the definition,
+//! discovers it, rejects the first proposal so the loop asks for a revised
+//! one, approves the revision and completes. A second revision of the
+//! definition reuses the same component; discovery then names it, and a start
+//! from the superseded revision is refused naming the current one.
 
 #[allow(dead_code, unused_imports)]
-#[path = "../../tests/application_graph/bounded_dimension_model.rs"]
-mod bounded_dimension_model;
+#[path = "../../tests/application_graph/document_retention_model.rs"]
+mod document_retention_model;
 mod review;
 
-use bounded_dimension_model::{
-    dimension_entry::{
-        ReviewedSetPartDimensionBinding, ReviewedSetPartDimensionIntent, PART_IDENTITY,
-    },
-    host::{publish_workflow_on_first_program, BoundedDimensionWorkflowRuntime},
+use document_retention_model::{
+    host::{publish_workflow_on_first_program, DocumentWorkflowRuntime},
     operator_identity::{authenticate_operator, request_scope},
-    readback::read_dimension,
-    schema::SetPartDimensionInput,
+    readback::read_retention,
+    retention_entry::{ReviewedSetRetentionBinding, ReviewedSetRetentionIntent, DOCUMENT_IDENTITY},
+    schema::SetRetentionInput,
     workflow::{
         accept_assessment, advance_instance, approve_instance, definition_limits,
-        expect_superseded_start, propose_authoring_instance_with_dimension, publish_definition,
-        settle_assessment, start_instance, ReviewedGeometryWorkflow, WorkflowApprovalCapability,
+        expect_superseded_start, propose_authoring_instance_with_retention, publish_definition,
+        settle_assessment, start_instance, ReviewedDocumentWorkflow, WorkflowApprovalCapability,
         WorkflowDefinitionAuthoringOperation,
     },
 };
@@ -55,12 +55,12 @@ fn main() {
 
 /// A rejected approval asks for a revised proposal, at most twice; the
 /// completion terminal is all that differs between revisions.
-fn reviewed_geometry(
+fn reviewed_document(
     review: &Review,
     completion: &str,
-) -> ValidatedWorkflowDefinition<ReviewedGeometryWorkflow> {
-    let mut workflow = ApplicationWorkflowDefinitionBuilder::<ReviewedGeometryWorkflow>::new(
-        "authored-reviewed-geometry",
+) -> ValidatedWorkflowDefinition<ReviewedDocumentWorkflow> {
+    let mut workflow = ApplicationWorkflowDefinitionBuilder::<ReviewedDocumentWorkflow>::new(
+        "authored-reviewed-document",
         definition_limits(),
     )
     .expect("the workflow identity is valid");
@@ -71,7 +71,7 @@ fn reviewed_geometry(
         .approval::<WorkflowApprovalCapability>("approval")
         .expect("the approval is valid");
     let apply = workflow
-        .operation_binding::<ReviewedSetPartDimensionBinding>("apply")
+        .operation_binding::<ReviewedSetRetentionBinding>("apply")
         .expect("the guarded effect is valid");
     let completed = workflow
         .terminal(completion)
@@ -140,7 +140,7 @@ fn reviewed_geometry(
 fn run() {
     let application = publish_workflow_on_first_program();
     let review = review();
-    let first = reviewed_geometry(&review, "applied");
+    let first = reviewed_document(&review, "applied");
     let identity = first.identity().clone();
     assert_eq!(first.component_expansions().len(), 1);
     assert_eq!(
@@ -211,12 +211,12 @@ fn run() {
         }
         other => panic!("the approval must perform, got {other:?}"),
     }
-    apply_approved_dimension(&application, &instance, 9, 401);
+    apply_approved_retention(&application, &instance, 9, 401);
     assert_eq!(advance(&application, &instance, 403), "applied");
 
     let second = publish(
         &application,
-        reviewed_geometry(&review, "settled"),
+        reviewed_document(&review, "settled"),
         WorkflowDefinitionExpectedPredecessor::Published(first.clone()),
         500,
     );
@@ -233,8 +233,8 @@ fn run() {
 }
 
 fn publish(
-    application: &BoundedDimensionWorkflowRuntime,
-    definition: ValidatedWorkflowDefinition<ReviewedGeometryWorkflow>,
+    application: &DocumentWorkflowRuntime,
+    definition: ValidatedWorkflowDefinition<ReviewedDocumentWorkflow>,
     predecessor: WorkflowDefinitionExpectedPredecessor,
     key: u64,
 ) -> PublishedWorkflowDefinitionRef {
@@ -249,7 +249,7 @@ fn publish(
 }
 
 fn discover(
-    application: &BoundedDimensionWorkflowRuntime,
+    application: &DocumentWorkflowRuntime,
     identity: &ApplicationWorkflowDefinitionIdentity,
 ) -> WorthQueryWorkflowDefinitionDiscovery {
     application
@@ -257,11 +257,11 @@ fn discover(
         .on_branch(application.runtime().current_world())
         .select()
         .expect("the main branch selects its exact occurrence")
-        .discover_workflow_definition::<ReviewedGeometryWorkflow>(identity)
+        .discover_workflow_definition::<ReviewedDocumentWorkflow>(identity)
         .expect("the workflow lineage reads within its bound")
 }
 
-/// A proposal of `dimension` reviewed up to its approval.
+/// A proposed retention reviewed up to its approval.
 struct Reviewed {
     proposal: PublishedWorkflowProposalRef,
     required: RequiredWorkflowApproval,
@@ -269,26 +269,22 @@ struct Reviewed {
     assessed: Vec<String>,
 }
 
-/// Proposes `dimension`, then follows the instance through the review until
-/// it awaits approval, collecting evidence wherever a review demands it.
-/// Uses keys from `key` upward.
+/// Proposes a retention of `days`, then follows the instance through the
+/// review until it awaits approval, collecting evidence wherever a review
+/// demands it. Uses keys from `key` upward.
 fn review_proposal(
-    application: &BoundedDimensionWorkflowRuntime,
+    application: &DocumentWorkflowRuntime,
     instance: &PublishedWorkflowInstanceRef,
-    dimension: u64,
+    days: u64,
     key: u64,
 ) -> Reviewed {
-    let proposal = match propose_authoring_instance_with_dimension(
-        application,
-        instance.clone(),
-        key,
-        dimension,
-    )
-    .expect("the proposal prepares")
-    {
-        WorkflowProposalOutcome::Published(published) => published.proposal().clone(),
-        other => panic!("the proposal must publish, got {other:?}"),
-    };
+    let proposal =
+        match propose_authoring_instance_with_retention(application, instance.clone(), key, days)
+            .expect("the proposal prepares")
+        {
+            WorkflowProposalOutcome::Published(published) => published.proposal().clone(),
+            other => panic!("the proposal must publish, got {other:?}"),
+        };
     let mut assessed = Vec::new();
     for key in (key + 1..).step_by(2).take(8) {
         match advance_instance(application, instance.clone(), key).expect("the review prepares") {
@@ -314,12 +310,12 @@ fn review_proposal(
     panic!("the review must reach its approval within its bounded steps")
 }
 
-/// Performs the approved effect through the requirement the instance awaits;
-/// the effect's commit also settles the `apply` step.
-fn apply_approved_dimension(
-    application: &BoundedDimensionWorkflowRuntime,
+/// Applies the approved retention through the requirement the instance
+/// awaits; the change's commit also settles the `apply` step.
+fn apply_approved_retention(
+    application: &DocumentWorkflowRuntime,
     instance: &PublishedWorkflowInstanceRef,
-    dimension: u64,
+    days: u64,
     key: u64,
 ) {
     let required = match advance_instance(application, instance.clone(), key)
@@ -334,10 +330,10 @@ fn apply_approved_dimension(
     let effect = runtime
         .request(&principal, &scope)
         .on_branch(instance.branch())
-        .mutate(ReviewedSetPartDimensionIntent {
-            input: SetPartDimensionInput {
-                identity: PART_IDENTITY.to_owned(),
-                dimension,
+        .mutate(ReviewedSetRetentionIntent {
+            input: SetRetentionInput {
+                identity: DOCUMENT_IDENTITY.to_owned(),
+                retention_days: days,
             },
         })
         .without_source()
@@ -350,12 +346,12 @@ fn apply_approved_dimension(
         effect,
         WorthQueryApplicationMutationOutcome::Committed { .. }
     ));
-    assert_eq!(read_dimension(runtime, instance.branch()), dimension);
+    assert_eq!(read_retention(runtime, instance.branch()), days);
 }
 
 /// Advances one step and names the node it completed.
 fn advance(
-    application: &BoundedDimensionWorkflowRuntime,
+    application: &DocumentWorkflowRuntime,
     instance: &PublishedWorkflowInstanceRef,
     key: u64,
 ) -> String {

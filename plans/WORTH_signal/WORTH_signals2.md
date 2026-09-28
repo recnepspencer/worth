@@ -81,7 +81,7 @@ These are not optional add-ons. They are the capabilities that make
 - adaptive tolerance propagation
 - snapshot, replay, and time-travel-ready execution state
 
-If these are treated as â€œnice to have later,â€ the runtime collapses back into a
+If these are treated as “nice to have later,” the runtime collapses back into a
 basic invalidation engine and loses the leverage needed for industrial-grade
 derived computation.
 
@@ -201,9 +201,9 @@ separate diagnostic stories.
 
 `worth-signal` should expose two public faces built on one runtime.
 
-The product requirement is not only â€œeasy mode for simple cases.â€ The
+The product requirement is not only “easy mode for simple cases.” The
 full-power surface must also be beautiful for expert users who need explicit
-control. In WORTH, â€œbeautifulâ€ means explicit without boilerplate, powerful
+control. In WORTH, “beautiful” means explicit without boilerplate, powerful
 without generic noise, and predictable without ambient magic.
 
 Both surfaces must remain directly usable without `worth-relational` or the
@@ -318,8 +318,8 @@ What this enables:
 #### Maybe-stale state
 
 Technical role:
-The runtime must distinguish â€œmust recompute nowâ€ from â€œmay need recompute if
-asked.â€
+The runtime must distinguish “must recompute now” from “may need recompute if
+asked.”
 
 What this enables:
 
@@ -581,7 +581,7 @@ What this enables:
 
 - speculative branch evaluation
 - structural memoization over repeated problem shapes
-- execution causality for â€œwhy did this result change?â€
+- execution causality for “why did this result change?”
 - replayable evaluation over retained truth snapshots
 
 Revolutionary use:
@@ -598,7 +598,7 @@ substrate instead of relying on opaque chains of ad hoc cached functions.
 - replayable explanation of why geometric derived state changed
 
 Revolutionary use:
-geometry kernels can move from â€œrebuild and hopeâ€ toward a runtime that can
+geometry kernels can move from “rebuild and hope” toward a runtime that can
 selectively refresh, explain, and certify geometric recomputation under
 aggressive model change.
 
@@ -697,12 +697,12 @@ not become semantic vocabulary or authority inside `worth-signal`.
 
 ## Companion Documents
 
-- [plans/worth_signal/worth_signal_vision.md](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/worth_signal/worth_signal_vision.md)
-- [plans/engineering/worth_signal_phase1_plan.md](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/engineering/worth_signal_phase1_plan.md)
-- [plans/engineering/worth_signal_scale_hardening_plan.md](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/engineering/worth_signal_scale_hardening_plan.md)
-- [plans/worth-relational/worth_relational_vision.md](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/worth-relational/worth_relational_vision.md)
+- [plans/worth_signal/worth_signal_vision.md](./WORTH_signal_vision.md)
+- `plans/engineering/worth_signal_phase1_plan.md`
+- `plans/engineering/worth_signal_scale_hardening_plan.md`
+- [plans/worth-relational/worth_relational_vision.md](../WORTH-relational/WORTH_relational_vision.md)
 
-The signal runtime becomes strategically important when it stops being â€œa
-reactive graphâ€ and becomes a certifiable execution substrate: branchable,
+The signal runtime becomes strategically important when it stops being “a
+reactive graph” and becomes a certifiable execution substrate: branchable,
 explainable, replayable, and precise enough to carry hard derived computation
 for serious systems.

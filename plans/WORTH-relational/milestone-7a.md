@@ -32,7 +32,7 @@ Those are Milestone 7B-and-later concerns.
 
 The current runtime already contains substantial merge-ready history shape:
 
-- [`CommitReference`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/history/data/mod.rs)
+- [`CommitReference`](../../crates/worth-relational/src/history/data/mod.rs)
   already carries `parents: Vec<CommitId>`
 - commit construction already preserves deterministic parent ordering
 - canonical commit envelopes already persist ordered parent lists
@@ -45,7 +45,7 @@ The current runtime already contains substantial merge-ready history shape:
 That means Milestone 7A should be approached honestly:
 
 - not as greenfield history design
-- not as â€œimplement mergesâ€
+- not as “implement merges”
 - not as a mini merge framework
 - but as a whole-system certification pass plus targeted assumption removal
 
@@ -82,15 +82,15 @@ metadata, and which are derived or convenience views?
 These surfaces are authoritative in the current implementation and must remain
 so in Milestone 7A:
 
-- [`CommitReference.parents`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/history/data/mod.rs)
+- [`CommitReference.parents`](../../crates/worth-relational/src/history/data/mod.rs)
   is the sole authoritative ordered-parent surface
-- [`CanonicalCommitEnvelope.commit.parents`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/replay/data/mod.rs)
+- [`CanonicalCommitEnvelope.commit.parents`](../../crates/worth-relational/src/replay/data/mod.rs)
   is the persisted/published authority carrier for ordered parent truth
 - commit construction in
-  [`authority/commit/plan_building.rs`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/authority/commit/plan_building.rs)
+  `authority/commit/plan_building.rs`
   is the only phase that canonically assembles parent order
 - history storage and branch-head state in
-  [`logic/runtime/state/subsystems/history.rs`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/logic/runtime/state/subsystems/history.rs)
+  [`logic/runtime/state/subsystems/history.rs`](../../crates/worth-relational/src/runtime/state/subsystems/history.rs)
   preserve committed ordered parent truth without reinterpretation
 
 ### Contextual merge metadata surfaces
@@ -133,7 +133,7 @@ The audit found the following:
 2. replay parity already compares ordered parent lists as order-sensitive
    history truth
 3. durability already fails explicitly on missing authoritative parent-closure conditions
-4. the biggest remaining risk is not â€œparents are unsupportedâ€; it is
+4. the biggest remaining risk is not “parents are unsupported”; it is
    convenience logic, diagnostics wording, and helper naming drifting back
    toward linear-history assumptions
 5. ancestor-selection naming was previously looser than the actual algorithm;
@@ -155,7 +155,7 @@ Step 1.1 is considered complete when:
 
 The authoritative parent-order surface is:
 
-- [`CommitReference.parents`](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/history/data/mod.rs)
+- [`CommitReference.parents`](../../crates/worth-relational/src/history/data/mod.rs)
 
 Nothing else is allowed to compete with that authority.
 
@@ -241,15 +241,15 @@ parent lists:
 
 The failure mode this milestone is hunting is:
 
-â€œthe type supports multiple parents, but some helper, replay path, or
-diagnostic summary still behaves as though parent count is 0 or 1.â€
+“the type supports multiple parents, but some helper, replay path, or
+diagnostic summary still behaves as though parent count is 0 or 1.”
 
 ### 3. DAG ancestry reasoning remains mechanically honest
 
 Milestone 7A must certify ancestry behavior over merge-bearing histories, but
 the document must use precise language.
 
-Do **not** use vague graph shorthand like â€œlatest common ancestorâ€ unless that
+Do **not** use vague graph shorthand like “latest common ancestor” unless that
 is exactly the algorithm being certified.
 
 The current implementation should be described in terms of the actual runtime
@@ -367,7 +367,7 @@ Specifically:
 - diagnostics summaries are views over canonical diagnostics artifacts
 - replay reports are views unless replay parity requires a distinct proof
   artifact not already covered by certification digests
-- generic â€œhistory shape artifactâ€ wrappers should be avoided unless they carry
+- generic “history shape artifact” wrappers should be avoided unless they carry
   proof data not already represented above
 
 ## Phased Implementation Plan
@@ -471,7 +471,7 @@ Must preserve:
 
 Goal:
 
-- make parent-order failures precise rather than vaguely â€œhistory driftedâ€
+- make parent-order failures precise rather than vaguely “history drifted”
 
 Milestone 7A should explicitly classify these drift modes:
 
@@ -577,7 +577,7 @@ That test must prove all of the following as machine-checkable outputs:
 
 - ordered parent lists persist through durability, replay, diagnostics, and
   branch reasoning
-- APIs do not assume â€œsingle parent or noneâ€
+- APIs do not assume “single parent or none”
 - parent order is canonical and stable
 - ancestry queries remain correct under the runtime's actual DAG reasoning rule
 
@@ -683,7 +683,7 @@ Rules for using it:
 
 ### Phase 2 TODOs: Remove linear-history assumptions from runtime surfaces
 
-- [ ] Audit history access for any â€œsingle parent or noneâ€ assumptions hidden
+- [ ] Audit history access for any “single parent or none” assumptions hidden
   behind convenience logic
 - [ ] Audit replay planning for any parent-chain logic that assumes linear
   history rather than ordered multi-parent reachability
@@ -694,7 +694,7 @@ Rules for using it:
 - [ ] Audit branch-head reasoning helpers and branch-unique commit reasoning for
   correctness on merge-bearing DAGs
 - [ ] Audit diagnostics emission for vague or semantically unsafe role language
-  such as â€œprimary parentâ€ or â€œtarget parentâ€
+  such as “primary parent” or “target parent”
 - [ ] Replace diagnostics wording with literal history language:
   `authoritative_parent_list`, `ordered_parent_index`, `parent_count`, and
   `ancestry-derived merge-base candidates` where appropriate
@@ -783,8 +783,8 @@ Rules for using it:
   ordered parent lists
 - [ ] Ensure the certification run covers branch comparison and ancestry
   reasoning on merge-bearing histories
-- [ ] Ensure the certification run proves APIs do not collapse to â€œsingle parent
-  or noneâ€
+- [ ] Ensure the certification run proves APIs do not collapse to “single parent
+  or none”
 - [ ] Ensure the certification run emits all required machine-checkable digests
 - [ ] Ensure the certification run is deterministic across repeated execution
 

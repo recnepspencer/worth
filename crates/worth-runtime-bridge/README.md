@@ -46,10 +46,11 @@ installation surfaces Query uses. Do not import implementation modules.
 ## Standard Standalone Path
 
 ```rust
+use worth_foundational::facade::{AspectKey, FieldKey, ScalarAspectType};
 use worth_runtime_bridge::facade::{
     BridgeMappingId, BridgeMappingRegistration, CoarseRoutingMode,
-    MappingSelector, RuntimeBridge, SignalInvalidationScope, TruthCommitIdentity,
-    TruthPatchScope,
+    MappingSelector, RuntimeBridge, SignalInvalidationScope, SnapshotReadContract,
+    TruthCommitIdentity, TruthPatchScope,
 };
 
 let bridge = RuntimeBridge::builder()
@@ -57,18 +58,23 @@ let bridge = RuntimeBridge::builder()
     .with_truth_branch_head_source(branch_heads)
     .with_compute_sink(compute_sink)
     .register_mapping(BridgeMappingRegistration::new(
-        BridgeMappingId::new("pricing:steel"),
-        TruthPatchScope::new(
-            MappingSelector::exact("component:steel"),
-            MappingSelector::exact("cost"),
-            MappingSelector::exact("usd"),
+        BridgeMappingId::from_stable_name("pricing:catalog"),
+        TruthPatchScope::for_entity_field(
+            MappingSelector::exact("item:widget"),
+            AspectKey::new("cost").expect("valid aspect key"),
+            FieldKey::new("usd".to_owned()).expect("valid field key"),
         ),
-        SignalInvalidationScope::new("price:bicycle"),
+        SnapshotReadContract::scalar(
+            AspectKey::new("cost").expect("valid aspect key"),
+            ScalarAspectType::String,
+        ),
+        SignalInvalidationScope::from_stable_name("order:total"),
         CoarseRoutingMode::Direct,
     ))
     .build()?;
 
-let route = bridge.route(TruthCommitIdentity::new("commit:steel-main"))?;
+// `commit_id` is the `u64` id of the Relational commit that carried the change.
+let route = bridge.route(TruthCommitIdentity::from_relational_commit_id(commit_id))?;
 let evaluation = bridge.evaluate_current(route.target())?;
 let explanation = bridge.diagnostics().explain_last_route();
 ```

@@ -1,5 +1,7 @@
 # Milestone 6: Diagnostics And Explanation Ontology
 
+> **Status:** Completed. Closeout: [milestone-6-closeout.md](./milestone-6-closeout.md).
+
 ## Goal
 
 Define one shared diagnostics and explanation language so WORTH crates can
@@ -199,7 +201,7 @@ What to keep:
 - derived diagnostics are anchored to concrete basis evidence, touched aspects,
   fallback counts, and mutation origin instead of free-form topology prose
 - hostile certification categories can be `Certified` or `Partial`, with named
-  gap labels rather than vague â€œnot done yetâ€ folklore
+  gap labels rather than vague “not done yet” folklore
 - failure locality and widened fallout are tracked separately from the primary
   rejection class
 
@@ -298,8 +300,8 @@ This milestone fails if:
 - explanation breadth or fallback debt silently widens beyond the declared
   locality/scope without becoming structured evidence
 - explanation rows and evidence-origin rows collapse together so later
-  provenance work cannot tell â€œwhy this was reportedâ€ from â€œwhere this came
-  fromâ€
+  provenance work cannot tell “why this was reported” from “where this came
+  from”
 - partial diagnostics or certification surfaces claim simple admitted/denied
   status without explicit named gaps
 
@@ -633,7 +635,7 @@ These sketches imply concrete constraints:
   to survive only as counters with no typed explanation surface
 - using one denial surface for domain refusal, policy refusal, unsupported
   scope, evidence absence, and structural reporting corruption
-- making â€œpartial but honestâ€ bundles through comments or strings instead of
+- making “partial but honest” bundles through comments or strings instead of
   one typed named-gap lane
 
 - using one generic diagnostic row with a `family` tag and optional payload
@@ -994,7 +996,7 @@ Practical implementation order:
 2. Write feature documentation that teaches the common path, advanced plan
    path, partial-with-named-gaps path, certified path, and proof-lane
    boundaries using the real crate API.
-3. Add that documentation to the crateâ€™s developer-facing docs in the
+3. Add that documentation to the crate’s developer-facing docs in the
    appropriate documentation home instead of leaving it only in milestone or
    closeout files.
 4. Verify that examples, terminology, and guarantees match the implemented

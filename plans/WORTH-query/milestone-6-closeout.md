@@ -25,36 +25,36 @@ Milestone 6 delivered:
 
 - query-context basis declaration, basis binding, admission, execution,
   metadata shaping, result bundling, and support truth in
-  [crates/worth-query/src/query_context](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/query_context)
+  [crates/worth-query/src/query_context](../../workspaces/worth-query/crates/worth-query/src/query_context)
 - unified-facade composition for basis and diff result bundles through
-  [crates/worth-query/src/application/capability/witnesses.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/application/capability/witnesses.rs)
+  [crates/worth-query/src/application/capability/witnesses.rs](../../workspaces/worth-query/crates/worth-query/src/application/capability/witnesses.rs)
   and
-  [crates/worth-query/src/application/support/report.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/application/support/report.rs)
+  [crates/worth-query/src/application/support/report.rs](../../workspaces/worth-query/crates/worth-query/src/application/support/report.rs)
 - milestone-native certification in
-  [crates/worth-query/src/harness/historical_diff_certification](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/historical_diff_certification)
+  [crates/worth-query/src/harness/historical_diff_certification](../../workspaces/worth-query/crates/worth-query/src/harness/historical_diff_certification)
 - compile-fail proof boundaries for admitted basis contexts, admitted diff
   contexts, result bundles, metadata artifacts, execution artifacts, and
   query-context support truth in
-  [crates/worth-query/tests/ui](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/tests/ui)
+  `crates/worth-query/tests/ui`
 
 ## Acceptance Mapping
 
 Milestone 6 is considered closed against
-[milestone-6.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/milestone-6.md),
-[worth_query_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/worth_query_roadmap.md),
+[milestone-6.md](./milestone-6.md),
+[worth_query_roadmap.md](./WORTH_query_roadmap.md),
 and
-[test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/test-requirements.md)
+[test-requirements.md](./test-requirements.md)
 because the required basis/diff proof surface now exists directly.
 
 ### `Historical / Diff / Basis Parity Test`
 
 Covered by:
 
-- [mod.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/historical_diff_certification/mod.rs)
-- [lane.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/historical_diff_certification/lane.rs)
-- [matrix.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/historical_diff_certification/matrix.rs)
-- [row_catalog.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/historical_diff_certification/row_catalog.rs)
-- [tests.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/historical_diff_certification/tests.rs)
+- [mod.rs](../../workspaces/worth-query/crates/worth-query/src/harness/historical_diff_certification/mod.rs)
+- `lane.rs`
+- `matrix.rs`
+- [row_catalog.rs](../../workspaces/worth-query/crates/worth-query/src/harness/historical_diff_certification/row_catalog.rs)
+- [tests.rs](../../workspaces/worth-query/crates/worth-query/src/harness/historical_diff_certification/tests.rs)
 
 What is proven:
 
@@ -98,11 +98,11 @@ What is proven:
 
 Covered by:
 
-- [basis.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/query_context/basis.rs)
-- [execution.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/query_context/execution.rs)
-- [comparison.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/query_context/comparison.rs)
-- [metadata.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/query_context/metadata.rs)
-- [support.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/query_context/support.rs)
+- `basis.rs`
+- `execution.rs`
+- [comparison.rs](../../workspaces/worth-query/crates/worth-query/src/query_context/comparison.rs)
+- `metadata.rs`
+- [support.rs](../../workspaces/worth-query/crates/worth-query/src/query_context/support.rs)
 
 What is proven:
 
@@ -123,10 +123,10 @@ What is proven:
 
 Covered by:
 
-- [witnesses.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/application/capability/witnesses.rs)
-- [report.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/application/support/report.rs)
-- [matrix.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/unified_facade_certification/matrix.rs)
-- [tests.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/application/tests.rs)
+- [witnesses.rs](../../workspaces/worth-query/crates/worth-query/src/application/capability/witnesses.rs)
+- [report.rs](../../workspaces/worth-query/crates/worth-query/src/application/support/report.rs)
+- `matrix.rs`
+- `tests.rs`
 
 What is proven:
 
@@ -141,17 +141,17 @@ What is proven:
 
 Covered by:
 
-- [tests/ui/query_basis_context_binding_constructor_private.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/tests/ui/query_basis_context_binding_constructor_private.rs)
-- [tests/ui/admitted_query_basis_context_constructor_private.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/tests/ui/admitted_query_basis_context_constructor_private.rs)
-- [tests/ui/admitted_diff_query_context_constructor_private.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/tests/ui/admitted_diff_query_context_constructor_private.rs)
-- [tests/ui/query_basis_result_bundle_constructor_private.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/tests/ui/query_basis_result_bundle_constructor_private.rs)
-- [tests/ui/query_diff_result_bundle_constructor_private.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/tests/ui/query_diff_result_bundle_constructor_private.rs)
-- [tests/ui/query_basis_metadata_constructor_private.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/tests/ui/query_basis_metadata_constructor_private.rs)
-- [tests/ui/diff_query_metadata_constructor_private.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/tests/ui/diff_query_metadata_constructor_private.rs)
-- [tests/ui/query_context_execution_artifact_constructor_private.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/tests/ui/query_context_execution_artifact_constructor_private.rs)
-- [tests/ui/query_context_support_profile_constructor_private.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/tests/ui/query_context_support_profile_constructor_private.rs)
-- [tests/ui/historical_materialization_metadata_is_not_query_basis_result_bundle.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/tests/ui/historical_materialization_metadata_is_not_query_basis_result_bundle.rs)
-- [tests/ui/preview_workflow_foundation_is_not_query_basis_result_bundle.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/tests/ui/preview_workflow_foundation_is_not_query_basis_result_bundle.rs)
+- `tests/ui/query_basis_context_binding_constructor_private.rs`
+- `tests/ui/admitted_query_basis_context_constructor_private.rs`
+- `tests/ui/admitted_diff_query_context_constructor_private.rs`
+- `tests/ui/query_basis_result_bundle_constructor_private.rs`
+- `tests/ui/query_diff_result_bundle_constructor_private.rs`
+- `tests/ui/query_basis_metadata_constructor_private.rs`
+- `tests/ui/diff_query_metadata_constructor_private.rs`
+- `tests/ui/query_context_execution_artifact_constructor_private.rs`
+- `tests/ui/query_context_support_profile_constructor_private.rs`
+- `tests/ui/historical_materialization_metadata_is_not_query_basis_result_bundle.rs`
+- `tests/ui/preview_workflow_foundation_is_not_query_basis_result_bundle.rs`
 
 What is proven:
 

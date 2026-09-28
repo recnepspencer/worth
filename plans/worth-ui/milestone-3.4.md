@@ -2,7 +2,7 @@
 
 > **Status:** Planned
 >
-> **Roadmap parent:** [worth_ui_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/worth-ui/plans/worth-ui/worth_ui_roadmap.md)
+> **Roadmap parent:** [worth_ui_roadmap.md](./worth_ui_roadmap.md)
 >
 > **Primary prerequisite:** `Milestone 3.3 UI Authority Graph, Identity, Participation, And Core Indexes`
 >
@@ -928,7 +928,7 @@ family rules instead of ad hoc validators.
   family catalog.
 - Rejection test: unknown or contradictory obligation-family claims fail
   through family admission rather than late dispatch.
-- Drift test: adding a new family or expanding one familyâ€™s support posture
+- Drift test: adding a new family or expanding one family’s support posture
   forces explicit compiler and certification updates at every selection site.
 
 **Engineering decisions**

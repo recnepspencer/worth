@@ -1,24 +1,24 @@
 # Milestone 12 Engineering Spec: Artifact Format Evolution And Rolling Compatibility
 
-> **Status:** Closed via [milestone-12-closeout.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-12-closeout.md)
+> **Status:** Closed via [milestone-12-closeout.md](./milestone-12-closeout.md)
 >
-> **Closeout:** [milestone-12-closeout.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-12-closeout.md)
+> **Closeout:** [milestone-12-closeout.md](./milestone-12-closeout.md)
 >
-> **Roadmap parent:** [worth_store_roadmap.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/worth_store_roadmap.md)
+> **Roadmap parent:** `worth_store_roadmap.md`
 >
-> **Vision parent:** [worth_store_vision.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/worth_store_vision.md)
+> **Vision parent:** [worth_store_vision.md](./worth_store_vision.md)
 >
-> **Test requirements:** [test-requirements.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/test-requirements.md)
+> **Test requirements:** [test-requirements.md](./test-requirements.md)
 >
 > **Prerequisite milestones:**
-> - [milestone-7.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-7.md)
-> - [milestone-8.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-8.md)
-> - [milestone-9.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-9.md)
-> - [milestone-10.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-10.md)
-> - [milestone-11.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-11.md)
+> - [milestone-7.md](./milestone-7.md)
+> - [milestone-8.md](./milestone-8.md)
+> - [milestone-9.md](./milestone-9.md)
+> - [milestone-10.md](./milestone-10.md)
+> - [milestone-11.md](./milestone-11.md)
 >
 > **Concurrent milestone context:**
-> - [milestone-13.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-13.md) is already closed and supplies placement and recall vocabulary that compatibility must preserve.
+> - [milestone-13.md](./milestone-13.md) is already closed and supplies placement and recall vocabulary that compatibility must preserve.
 >
 > **Impacted later milestones:**
 > - `Milestone 14` (`Replication, Capsules, And Integrity Verification`)

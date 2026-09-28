@@ -236,7 +236,7 @@ Required machine-checkable outputs are now explicitly owned by tests:
 ## Performance QA and Hardening
 
 Milestone 5 closeout explicitly audited the implementation against
-[docs/coding-guidelines/performance_guidelines.md](C:\Users\Esther\Documents\Programming\WORTH_workspace\WORTH\docs\coding-guidelines\performance_guidelines.md),
+[docs/coding-guidelines/performance_guidelines.md](../../docs/coding-guidelines/perf_laws.md),
 not just against semantic requirements.
 
 The closeout-standard claims now backed by code and tests are:

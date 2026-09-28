@@ -1,5 +1,7 @@
 # Milestone 7: Lineage, Provenance, And Receipt Vocabulary
 
+> **Status:** Completed. Closeout: [milestone-7-closeout.md](./milestone-7-closeout.md).
+
 ## Goal
 
 Define one shared language for lineage, provenance, receipts, support-truth,
@@ -464,7 +466,7 @@ Phase 1 is complete only when:
 ### Phase 2: Provenance Layering And Freshness Law
 
 Build provenance next, on top of Phase 1 primitives. The goal of this phase is
-to make â€œunder what basis, path, and retained context was this produced?â€
+to make “under what basis, path, and retained context was this produced?”
 answerable without yet solving continuity or executed-boundary truth.
 
 Practical implementation order:
@@ -500,7 +502,7 @@ Phase 2 is complete only when:
 ### Phase 3: Receipt Families And Closeout Truth
 
 Only after provenance is stable should executed-boundary and closeout truth be
-frozen. This phase answers â€œwhat actually happened?â€ and separates that from
+frozen. This phase answers “what actually happened?” and separates that from
 planning, denial, or support followthrough.
 
 Practical implementation order:
@@ -537,8 +539,8 @@ Phase 3 is complete only when:
 ### Phase 4: Lineage, Continuity, And Divergence Outcomes
 
 Only after completed-boundary truth exists should the milestone define
-continuity claims. This phase answers â€œwhat survived, split, merged,
-reconstructed, diverged, or failed to continue?â€
+continuity claims. This phase answers “what survived, split, merged,
+reconstructed, diverged, or failed to continue?”
 
 Practical implementation order:
 
@@ -579,8 +581,8 @@ Phase 4 is complete only when:
 ### Phase 5: Support-Truth, Recovery, And Degraded Operation
 
 Only after continuity and receipts are frozen should support-grade truth be
-built. This phase answers â€œwhat support evidence exists, how strong is it, how
-fresh is it, and what degraded or recovery posture applies?â€
+built. This phase answers “what support evidence exists, how strong is it, how
+fresh is it, and what degraded or recovery posture applies?”
 
 Practical implementation order:
 
@@ -615,9 +617,9 @@ Phase 5 is complete only when:
 ### Phase 6: Attachment, Canonical Participation, And Materialization
 
 Only after all four semantic families are stable should the milestone define
-how they travel together. This phase answers â€œhow do these artifacts attach to
+how they travel together. This phase answers “how do these artifacts attach to
 real boundary surfaces, participate in canonical/digest identity, and materialize
-under profiles?â€
+under profiles?”
 
 Practical implementation order:
 

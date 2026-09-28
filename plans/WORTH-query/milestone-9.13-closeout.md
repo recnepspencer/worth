@@ -248,11 +248,11 @@ durable artifacts and continuations belong to Milestone 11.
 
 Product discovery starts at:
 
-- [`crates/worth-query/docs/AI_README.md`](../../crates/worth-query/docs/AI_README.md)
-- [Declarative Query Experience](../../crates/worth-query/docs/capabilities/declarative-query-experience.md)
-- [Collections, Ordering, Aggregates, And Cursors](../../crates/worth-query/docs/authoring/collections-cursors-ordering-and-aggregations.md)
-- [Native Aspect Values](../../crates/worth-query/docs/capabilities/native-aspect-values.md)
-- [Projection Consumption](../../crates/worth-query/docs/capabilities/projection-consumption.md)
+- [`crates/worth-query/docs/AI_README.md`](../../workspaces/worth-query/crates/worth-query/docs/AI_README.md)
+- [Declarative Query Experience](../../workspaces/worth-query/crates/worth-query/docs/capabilities/declarative-query-experience.md)
+- [Collections, Ordering, Aggregates, And Cursors](../../workspaces/worth-query/crates/worth-query/docs/authoring/collections-cursors-ordering-and-aggregations.md)
+- [Native Aspect Values](../../workspaces/worth-query/crates/worth-query/docs/capabilities/native-aspect-values.md)
+- [Projection Consumption](../../workspaces/worth-query/crates/worth-query/docs/capabilities/projection-consumption.md)
 
 These documents teach the current product surface. Historical phase assembly
 belongs in milestone and certification records, not ordinary discovery.

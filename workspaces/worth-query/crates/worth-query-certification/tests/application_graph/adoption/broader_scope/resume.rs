@@ -6,11 +6,11 @@ use worth_query_host::facade::application_entry::{
 };
 use worth_query_host::facade::primary_graph::WorthQueryBranchAdoptionPreparationDenial;
 
-use super::{fork, target_revision, P0_ONLY_DIMENSION, P1_ONLY_DIMENSION};
-use crate::bounded_dimension_model::host::{publish_on_first_program, SEED_DIMENSION};
-use crate::bounded_dimension_model::operator_identity::{authenticate_operator, request_scope};
-use crate::bounded_dimension_model::presented_request::set_dimension;
-use crate::bounded_dimension_model::settled_verdict::{settle, DimensionVerdict};
+use super::{fork, target_revision, P0_ONLY_RETENTION, P1_ONLY_RETENTION};
+use crate::document_retention_model::host::{publish_on_first_program, SEED_RETENTION};
+use crate::document_retention_model::operator_identity::{authenticate_operator, request_scope};
+use crate::document_retention_model::presented_request::set_retention;
+use crate::document_retention_model::settled_verdict::{settle, RetentionVerdict};
 
 #[test]
 fn stale_suffix_resumes_only_after_exact_fresh_coverage_and_preflight() {
@@ -33,8 +33,8 @@ fn stale_suffix_resumes_only_after_exact_fresh_coverage_and_preflight() {
         .expect("the initial target set preflights");
     let d = fork(&host, a);
     assert_eq!(
-        settle(set_dimension(&host, b, SEED_DIMENSION + 1, 0x9175_4060)),
-        DimensionVerdict::Performed(SEED_DIMENSION + 1)
+        settle(set_retention(&host, b, SEED_RETENTION + 1, 0x9175_4060)),
+        RetentionVerdict::Performed(SEED_RETENTION + 1)
     );
     assert!(matches!(
         adoption.advance().unwrap().unwrap(),
@@ -91,18 +91,18 @@ fn stale_suffix_resumes_only_after_exact_fresh_coverage_and_preflight() {
 
     for (ordinal, branch) in [a, b, c].into_iter().enumerate() {
         assert_eq!(
-            settle(set_dimension(
+            settle(set_retention(
                 &host,
                 branch,
-                P1_ONLY_DIMENSION,
+                P1_ONLY_RETENTION,
                 0x9175_4061 + ordinal as u64
             )),
-            DimensionVerdict::Performed(P1_ONLY_DIMENSION)
+            RetentionVerdict::Performed(P1_ONLY_RETENTION)
         );
     }
     assert_eq!(
-        settle(set_dimension(&host, d, P0_ONLY_DIMENSION, 0x9175_4064)),
-        DimensionVerdict::Performed(P0_ONLY_DIMENSION),
+        settle(set_retention(&host, d, P0_ONLY_RETENTION, 0x9175_4064)),
+        RetentionVerdict::Performed(P0_ONLY_RETENTION),
         "fresh coverage cannot absorb a branch created outside the original operation"
     );
 }
@@ -151,13 +151,13 @@ fn exhausted_preflight_releases_reservations_and_cancel_before_effect_is_exact()
 
     for (ordinal, branch) in [a, b, c].into_iter().enumerate() {
         assert_eq!(
-            settle(set_dimension(
+            settle(set_retention(
                 &host,
                 branch,
-                P0_ONLY_DIMENSION,
+                P0_ONLY_RETENTION,
                 0x9175_4070 + ordinal as u64
             )),
-            DimensionVerdict::Performed(P0_ONLY_DIMENSION),
+            RetentionVerdict::Performed(P0_ONLY_RETENTION),
             "preflight and cancellation cannot activate the target"
         );
     }
@@ -182,8 +182,8 @@ fn cancellation_after_fresh_resume_counts_each_unperformed_branch_once() {
         .prepare(64)
         .expect("the initial target set preflights");
     assert_eq!(
-        settle(set_dimension(&host, b, SEED_DIMENSION + 1, 0x9175_4080)),
-        DimensionVerdict::Performed(SEED_DIMENSION + 1)
+        settle(set_retention(&host, b, SEED_RETENTION + 1, 0x9175_4080)),
+        RetentionVerdict::Performed(SEED_RETENTION + 1)
     );
     assert!(matches!(
         adoption.advance().unwrap().unwrap(),
@@ -231,8 +231,8 @@ fn historical_no_effect_cannot_stop_a_freshly_resumed_suffix_again() {
         .prepare(64)
         .expect("the initial target set preflights");
     assert_eq!(
-        settle(set_dimension(&host, b, SEED_DIMENSION + 1, 0x9175_4090)),
-        DimensionVerdict::Performed(SEED_DIMENSION + 1)
+        settle(set_retention(&host, b, SEED_RETENTION + 1, 0x9175_4090)),
+        RetentionVerdict::Performed(SEED_RETENTION + 1)
     );
     assert!(matches!(
         adoption.advance().unwrap().unwrap(),
@@ -294,8 +294,8 @@ fn repeated_staleness_replaces_superseded_no_effect_history() {
     let initial_work = adoption.total_selection_work_units();
 
     assert_eq!(
-        settle(set_dimension(&host, b, SEED_DIMENSION + 1, 0x9175_40a0)),
-        DimensionVerdict::Performed(SEED_DIMENSION + 1)
+        settle(set_retention(&host, b, SEED_RETENTION + 1, 0x9175_40a0)),
+        RetentionVerdict::Performed(SEED_RETENTION + 1)
     );
     assert!(matches!(
         adoption.advance().unwrap().unwrap(),
@@ -323,8 +323,8 @@ fn repeated_staleness_replaces_superseded_no_effect_history() {
     assert!(first_resumed_work > initial_work);
 
     assert_eq!(
-        settle(set_dimension(&host, b, SEED_DIMENSION + 2, 0x9175_40a1)),
-        DimensionVerdict::Performed(SEED_DIMENSION + 2)
+        settle(set_retention(&host, b, SEED_RETENTION + 2, 0x9175_40a1)),
+        RetentionVerdict::Performed(SEED_RETENTION + 2)
     );
     assert!(matches!(
         resumed.advance().unwrap().unwrap(),
@@ -358,8 +358,8 @@ fn repeated_staleness_replaces_superseded_no_effect_history() {
 }
 
 fn coverage(
-    host: &crate::bounded_dimension_model::host::BoundedDimensionRuntime<
-        crate::bounded_dimension_model::programs::DimensionProgramP0,
+    host: &crate::document_retention_model::host::DocumentRetentionRuntime<
+        crate::document_retention_model::programs::RetentionProgramP0,
     >,
     branches: &[worth_query_host::facade::product::WorthQueryProductBranch],
 ) -> worth_query_host::facade::application_entry::WorthQueryProgramAdoptionCoverage {

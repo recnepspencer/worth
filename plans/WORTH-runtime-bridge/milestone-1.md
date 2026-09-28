@@ -2,21 +2,21 @@
 
 > **Status:** Closed engineering spec and shipped closeout reference
 >
-> **Roadmap parent:** [worth_runtime_bridge_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/worth_runtime_bridge_roadmap.md)
+> **Roadmap parent:** [worth_runtime_bridge_roadmap.md](./WORTH_runtime_bridge_roadmap.md)
 >
-> **Vision parent:** [worth_runtime_bridge_vision.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/worth_runtime_bridge_vision.md)
+> **Vision parent:** [worth_runtime_bridge_vision.md](./WORTH_runtime_bridge_vision.md)
 >
-> **Shipped closeout:** [milestone-1-closeout.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-1-closeout.md)
+> **Shipped closeout:** [milestone-1-closeout.md](./milestone-1-closeout.md)
 >
 > **Primary architectural driver:** establish the first real causal protocol boundary between `worth-relational` and `worth-signal`
 >
 > **Companion docs:**
-> - [worth_relational_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/worth_relational_roadmap.md)
-> - [worth_signal_vision.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth_signal/worth_signal_vision.md)
-> - [worth_signals2.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth_signal/worth_signals2.md)
-> - [architectural_guidelines.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/architectural_guidelines.md)
-> - [performance_guidelines.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/performance_guidelines.md)
-> - [MENTALITY.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/MENTALITY.md)
+> - [worth_relational_roadmap.md](../WORTH-relational/WORTH_relational_roadmap.md)
+> - [worth_signal_vision.md](../WORTH_signal/WORTH_signal_vision.md)
+> - [worth_signals2.md](../WORTH_signal/WORTH_signals2.md)
+> - [architectural_guidelines.md](../../docs/coding-guidelines/arch_laws.md)
+> - [performance_guidelines.md](../../docs/coding-guidelines/perf_laws.md)
+> - [MENTALITY.md](../../docs/coding-guidelines/MENTALITY.md)
 
 ## Summary
 
@@ -506,6 +506,10 @@ Rules:
 
 ### 5.8 Bridge-Owned Adapter Traits
 
+> **Superseded for Relational by [Milestone 20](./milestone-20.md).** The
+> Bridge depends on Relational and Signal; Relational does not implement
+> Bridge traits. Signal already has that shape.
+
 The bridge must depend on narrow bridge-owned contracts implemented by the
 parent runtimes, not broad parent facades.
 
@@ -902,11 +906,11 @@ Required implication:
 
 ### 9.2 Existing Files Expected To Change
 
-- [Cargo.toml](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/Cargo.toml)
-- [facade.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/facade.rs)
-- [facade.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/facade.rs)
-- [bridge.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/presentation/harness/bridge.rs)
-- [harness_bridge.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/tests/harness_bridge.rs)
+- [Cargo.toml](../../Cargo.toml)
+- [facade.rs](../../crates/worth-relational/src/facade.rs)
+- [facade.rs](../../crates/worth-signal/src/facade.rs)
+- [bridge.rs](../../crates/worth-signal/src/presentation/harness/bridge.rs)
+- [harness_bridge.rs](../../crates/worth-signal/src/tests/harness_bridge.rs)
 
 Expected change types:
 

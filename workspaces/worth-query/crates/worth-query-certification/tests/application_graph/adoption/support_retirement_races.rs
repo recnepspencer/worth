@@ -12,12 +12,12 @@ use worth_query_host::facade::primary_graph::{
 };
 
 use super::support_retirement::adopt;
-use crate::bounded_dimension_model::host::{publish_on_first_program, SEED_DIMENSION};
-use crate::bounded_dimension_model::presented_request::set_dimension;
-use crate::bounded_dimension_model::programs::{
-    DimensionProgramP1, RemovedOperationDimensionProgram,
+use crate::document_retention_model::host::{publish_on_first_program, SEED_RETENTION};
+use crate::document_retention_model::presented_request::set_retention;
+use crate::document_retention_model::programs::{
+    RemovedOperationRetentionProgram, RetentionProgramP1,
 };
-use crate::bounded_dimension_model::readback::{observe_head, read_dimension};
+use crate::document_retention_model::readback::{observe_head, read_retention};
 
 #[test]
 fn retirement_barrier_refuses_a_new_fork_of_that_program() {
@@ -77,7 +77,7 @@ fn adopted_source_forks_with_world_carried_program_after_old_support_retires() {
     let source_branch = host.current_world();
     let source_program = *host.owned_revision();
     let target = *host
-        .supported_program::<DimensionProgramP1>()
+        .supported_program::<RetentionProgramP1>()
         .expect("P1 is rostered")
         .owned_revision();
     adopt(&host, source_branch, &target);
@@ -128,7 +128,7 @@ fn a_retired_program_action_is_refused_at_the_commit_gate_without_effect() {
     let branch = host.current_world();
     let source = *host.owned_revision();
     let removal = *host
-        .supported_program::<RemovedOperationDimensionProgram>()
+        .supported_program::<RemovedOperationRetentionProgram>()
         .expect("the removal target is rostered")
         .owned_revision();
     adopt(&host, branch, &removal);
@@ -140,7 +140,7 @@ fn a_retired_program_action_is_refused_at_the_commit_gate_without_effect() {
     for attempt in 0..2 {
         let WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationUncommitted::Denied(
             denial,
-        )) = set_dimension(&host, branch, SEED_DIMENSION + 1, 0x9176_5331)
+        )) = set_retention(&host, branch, SEED_RETENTION + 1, 0x9176_5331)
             .expect("the removed action's request reaches the commit gate")
         else {
             panic!("a retired program must be refused at the commit gate (attempt {attempt})");
@@ -151,7 +151,7 @@ fn a_retired_program_action_is_refused_at_the_commit_gate_without_effect() {
             "the refusal names retirement, not the occurrence mismatch"
         );
     }
-    assert_eq!(read_dimension(host.runtime(), branch), SEED_DIMENSION);
+    assert_eq!(read_retention(host.runtime(), branch), SEED_RETENTION);
     assert_eq!(
         before.selected_commit(),
         observe_head(host.runtime(), branch).selected_commit(),

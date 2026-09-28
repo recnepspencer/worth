@@ -92,16 +92,16 @@ Current public exposure is broader than the likely product surface.
 
 Notable current conditions:
 
-- [`crates/worth-signal/src/facade.rs`](/Users/spenstar/Documents/programming/WORTH/WORTH/crates/worth-signal/src/facade.rs)
+- [`crates/worth-signal/src/facade.rs`](../../crates/worth-signal/src/facade.rs)
   already groups exports by namespace, which is directionally correct.
 - The grouped facade still exposes a very large amount of machinery, including
   proof-bearing forms, merge surfaces, harness surfaces, and certification-ish
   utilities.
-- [`crates/worth-signal/src/easy/mod.rs`](/Users/spenstar/Documents/programming/WORTH/WORTH/crates/worth-signal/src/easy/mod.rs)
+- [`crates/worth-signal/src/easy/mod.rs`](../../crates/worth-signal/src/easy/mod.rs)
   is explicitly convenience-only, but it is public and could become the wrong
   default story if not positioned carefully.
 - Harness and deployment surfaces are currently exported via
-  [`crates/worth-signal/src/facade.rs`](/Users/spenstar/Documents/programming/WORTH/WORTH/crates/worth-signal/src/facade.rs)
+  [`crates/worth-signal/src/facade.rs`](../../crates/worth-signal/src/facade.rs)
   even though they are unlikely to be part of the main product promise.
 
 Working hypothesis:
@@ -191,7 +191,7 @@ Expose after that:
 
 This is advanced public API.
 
-### Story 4: "Iâ€™m building infrastructure on top"
+### Story 4: "I’m building infrastructure on top"
 
 Expose last:
 

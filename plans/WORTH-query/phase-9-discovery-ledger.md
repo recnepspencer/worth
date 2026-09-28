@@ -1,7 +1,7 @@
 # Phase 9 Discovery Ledger
 
 **Branch:** `query-repair`
-**Slice:** S0â€“S6 (workspace green + gate verification)
+**Slice:** S0–S6 (workspace green + gate verification)
 **Date:** 2026-06-15 (hostile QA pass)
 
 This ledger classifies Phase 9 identity folklore and compile blockers per crate.
@@ -16,8 +16,8 @@ surface changed; not folklore but blocks workspace green).
 
 | Crate | `cargo check` | Error count | Primary cause |
 |-------|---------------|-------------|---------------|
-| worth-query | Green | 0 | â€” |
-| worth-topo | Green | 0 | â€” |
+| worth-query | Green | 0 | — |
+| worth-topo | Green | 0 | — |
 | WORTH-kernel | Green | 0 | Transitive fixes landed via spatial/topo |
 | worth-server | Green | 0 | S2 harness migrated |
 | hadwiger-research | Green | 0 | S6 `terminal_projection_for_reporting` migration |
@@ -34,45 +34,45 @@ surface changed; not folklore but blocks workspace green).
 - Migrated `runtime/tests/support` adapters + stateful bridge backend to
   `from_authoritative_parts` / `from_bridge_authoritative_parts`
 
-## S1â€“S2 worth-server
+## S1–S2 worth-server
 
 - **Done:** `src/` API drift migration (remask/evidence identity, `snapshot_identity()`)
 - **Done:** `schema.rs` uses `RelationalBridgeRecordIdentityParts` via `worth-query` facade
-- **Done (S2):** test harness â€” `runtime_mutation_support` pattern, `current_snapshot_identity()`,
+- **Done (S2):** test harness — `runtime_mutation_support` pattern, `current_snapshot_identity()`,
   typed entity targets, `support_evidence_identity`, `admit_preview_basis` label type;
   `WORTH_native_facade_entry` + `compat_http_phase_three` green; added
   `worth-runtime-bridge` dev-dep for harness relational identity parts
 
 ## S3 worth-spatial
 
-- **Done:** `planar_diagnostics/evidence.rs` â€” `anchor_for_reporting()` / `request_for_reporting()`
-- **Done (S3b):** `certification/.../causal_runtime.rs` â€” typed Truth* mint,
+- **Done:** `planar_diagnostics/evidence.rs` — `anchor_for_reporting()` / `request_for_reporting()`
+- **Done (S3b):** `certification/.../causal_runtime.rs` — typed Truth* mint,
   `from_authoritative_parts` receipt, removed `snapshot_token` adapter,
   `support_evidence_identity`, typed bridge mapping/signal scope constructors
-- **Done (S3c):** `local_frame_selection/receipt_test_support` â€” admission imports
+- **Done (S3c):** `local_frame_selection/receipt_test_support` — admission imports
   via `facade::planar_contracts`, `pub(crate)` receipt helper visibility;
   `structure_guard` scoped to production deps + non-certification sources
 
 ## S4 worth-topo harness
 
-- **Done:** `public_api_contract` â€” split entry (`public_api_contract_entry.rs`) +
+- **Done:** `public_api_contract` — split entry (`public_api_contract_entry.rs`) +
   lib-test workload-seed module with `crate::facade` imports (8/8 pass)
-- **Phase 10 (required):** Phase 9 compile-fail manifest extension â€” see
+- **Phase 10 (required):** Phase 9 compile-fail manifest extension — see
   `phase-10-closeout-ledger.md` P10-2; Phase 8 suite remains production guard
 
 ## S0b worth-query harness
 
-- **Done:** `runtime/backend/receipts_tests.rs` â€” `from_authoritative_parts` /
+- **Done:** `runtime/backend/receipts_tests.rs` — `from_authoritative_parts` /
   `from_bridge_authoritative_parts`
 - **Done:** `harness/runtime_api_stabilization/transcript_runtime*.rs`
 - **Done:** `intent_admission/certification/fixtures/*.rs`
 - **Done (residual pass):** intent execution, lower-runtime cert fixtures,
   write_receipt accessors test helper, domain_capabilities DX tests,
-  runtime_backend adapter tests â€” all typed receipt constructors
+  runtime_backend adapter tests — all typed receipt constructors
 
 ## S6 hadwiger-research
 
-- **Done:** lib + test `as_str()` â†’ `terminal_projection_for_reporting()`
+- **Done:** lib + test `as_str()` → `terminal_projection_for_reporting()`
 - **Done:** `research_graph_invariants` integration test (10/10 pass)
 
 ## S6 worth-ui
@@ -91,14 +91,14 @@ surface changed; not folklore but blocks workspace green).
 
 ## Folklore scan results (residual)
 
-### `Truth*Identity::new(` â€” CompileFail only
+### `Truth*Identity::new(` — CompileFail only
 
 | Path | Tag | Notes |
 |------|-----|-------|
 | `worth-topo/tests/ui/query_runtime_phase_eight/*` | CompileFail | Phase 8 trybuild |
 | `worth-runtime-bridge/tests/ui/*` | CompileFail | Bridge truth identity trybuild |
 
-### `WORTHQueryMutationReceipt {` struct literal â€” cleared
+### `WORTHQueryMutationReceipt {` struct literal — cleared
 
 All gate-path struct literals migrated to `from_authoritative_parts` /
 `from_bridge_authoritative_parts`. Intentional compile-fail UI fixtures unchanged.
@@ -113,7 +113,7 @@ All gate-path struct literals migrated to `from_authoritative_parts` /
 
 Residual struct literals remain only in compile-fail UI fixtures under `worth-query/tests/ui/`.
 
-### `snapshot_token(` â€” cleared in gate surfaces
+### `snapshot_token(` — cleared in gate surfaces
 
 No open gate-path `snapshot_token()` adapters in worth-server tests or worth-spatial
 certification causal harness.
@@ -132,7 +132,7 @@ certification causal harness.
 | worth-spatial `cargo test --lib` | **Met** (72/72 pass; local-frame receipt drift + structure_guard aligned) |
 | hadwiger research_graph_invariants | **Met** (10/10 pass) |
 | worth-ui query binding evidence | **Met** (2/2 unit tests pass) |
-| Phase 9 compile-fail per crate | **Met** â€” `intent_admission_dx_boundaries_hold` 46/46 pass |
+| Phase 9 compile-fail per crate | **Met** — `intent_admission_dx_boundaries_hold` 46/46 pass |
 | Hostile QA CLEARED | **CLEARED** |
 
 ---
@@ -156,10 +156,10 @@ certification causal harness.
 
 **Pulled into Phase 10 (zero-deferral policy):**
 
-- worth-topo Phase 9 compile-fail manifest extension â†’ P10-2
-- worth-spatial `public_api_contract` integration failures â†’ P10-4
-- worth-runtime-bridge subscription replay label fixtures â†’ P10-3
-- Full compile-fail matrix + hostile QA + closeout doc â†’ P10-1, P10-5, P10-6
+- worth-topo Phase 9 compile-fail manifest extension → P10-2
+- worth-spatial `public_api_contract` integration failures → P10-4
+- worth-runtime-bridge subscription replay label fixtures → P10-3
+- Full compile-fail matrix + hostile QA + closeout doc → P10-1, P10-5, P10-6
 
 **Cleared surfaces:**
 

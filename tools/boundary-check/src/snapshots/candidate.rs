@@ -1,41 +1,61 @@
-use super::baseline::compare_exact_sets;
-use super::commit::commit_snapshot_pair;
+use super::baseline::{compare_exact_sets, dag_path, facade_path};
+use super::commit::commit_snapshots;
 use super::crate_dag::crate_dag_document;
 use super::document::{CrateDagDocument, FacadeDocument};
 use super::facade_surface_observation::{
     observe_facade_document, ConfiguredFacadeSurface, ObservedFacadeExports,
 };
 use crate::diagnostics::Diagnostic;
+use crate::facade_docs::{
+    debt_from_observation, debt_path, facade_doc_diagnostics, observe_facade_docs, render_debt,
+    FacadeDocObservation,
+};
 use crate::manifest_types::Road1Package;
 use std::path::{Path, PathBuf};
 
 pub(crate) struct ConstitutionSnapshots {
     dag: CrateDagDocument,
     facades: FacadeDocument,
+    facade_docs: FacadeDocObservation,
 }
 
 impl ConstitutionSnapshots {
     pub(crate) fn observe(
+        root: &Path,
         packages: &[Road1Package],
         configured_surfaces: &[ConfiguredFacadeSurface],
     ) -> Result<Self, String> {
+        let facades = observe_facade_document(packages, configured_surfaces)?;
+        let facade_docs = observe_facade_docs(root, packages, &facades)?;
         Ok(Self {
             dag: crate_dag_document(packages),
-            facades: observe_facade_document(packages, configured_surfaces)?,
+            facades,
+            facade_docs,
         })
     }
 
     pub(crate) fn check(&self, root: &Path) -> Vec<Diagnostic> {
-        compare_exact_sets(root, &self.dag, &self.facades)
+        let mut diagnostics = compare_exact_sets(root, &self.dag, &self.facades);
+        diagnostics.extend(facade_doc_diagnostics(root, &self.facade_docs));
+        diagnostics
     }
 
     pub(crate) fn write(&self, root: &Path) -> Result<Vec<PathBuf>, String> {
-        commit_snapshot_pair(root, &self.dag, &self.facades)
+        let debt = debt_from_observation(&self.facade_docs)?;
+        commit_snapshots(&[
+            (dag_path(root), render(&self.dag)?),
+            (facade_path(root), render(&self.facades)?),
+            (debt_path(root), render_debt(&debt)?),
+        ])
     }
 
     pub(crate) fn observed_facade_exports(&self) -> ObservedFacadeExports {
         ObservedFacadeExports::from_document(&self.facades)
     }
+}
+
+fn render<T: serde::Serialize>(document: &T) -> Result<String, String> {
+    toml::to_string_pretty(document).map_err(|error| error.to_string())
 }
 
 #[cfg(test)]
@@ -70,6 +90,7 @@ mod tests {
                     exports: vec!["Identity".into()],
                 }],
             },
+            facade_docs: FacadeDocObservation::default(),
         }
     }
 
@@ -116,6 +137,7 @@ mod tests {
                 schema_version: SCHEMA_VERSION,
                 facades: vec![],
             },
+            facade_docs: FacadeDocObservation::default(),
         };
         assert!(!empty.check(&root).is_empty());
     }

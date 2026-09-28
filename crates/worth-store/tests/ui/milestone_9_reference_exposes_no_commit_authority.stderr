@@ -1,5 +1,0 @@
-error[E0599]: no method named `branch_id` found for struct `Milestone9PhysicalChunkReference` in the current scope
- --> tests/ui/milestone_9_reference_exposes_no_commit_authority.rs:4:23
-  |
-4 |     let _ = reference.branch_id();
-  |                       ^^^^^^^^^ method not found in `Milestone9PhysicalChunkReference`

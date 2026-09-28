@@ -2,19 +2,19 @@
 
 > **Status:** Implemented and closed 2026-04-21
 >
-> **Roadmap parent:** [worth_runtime_bridge_roadmap.md](/Users/shepworth/Documents/programming/WORTH/plans/worth-runtime-bridge/worth_runtime_bridge_roadmap.md)
+> **Roadmap parent:** [worth_runtime_bridge_roadmap.md](./WORTH_runtime_bridge_roadmap.md)
 >
-> **Vision parent:** [worth_runtime_bridge_vision.md](/Users/shepworth/Documents/programming/WORTH/plans/worth-runtime-bridge/worth_runtime_bridge_vision.md)
+> **Vision parent:** [worth_runtime_bridge_vision.md](./WORTH_runtime_bridge_vision.md)
 >
-> **Prior milestone:** [milestone-13.md](/Users/shepworth/Documents/programming/WORTH/plans/worth-runtime-bridge/milestone-13.md)
+> **Prior milestone:** [milestone-13.md](./milestone-13.md)
 >
-> **Prior closeout:** [milestone-13-closeout.md](/Users/shepworth/Documents/programming/WORTH/plans/worth-runtime-bridge/milestone-13-closeout.md)
+> **Prior closeout:** [milestone-13-closeout.md](./milestone-13-closeout.md)
 >
-> **Bridge certification companion:** [test-requirements.md](/Users/shepworth/Documents/programming/WORTH/plans/worth-runtime-bridge/test-requirements.md)
+> **Bridge certification companion:** [test-requirements.md](./test-requirements.md)
 >
-> **Signal companion:** [milestone-11-plan.md](/Users/shepworth/Documents/programming/WORTH/plans/worth_signal/milestone-11-plan.md)
+> **Signal companion:** [milestone-11-plan.md](../WORTH_signal/milestone-11-plan.md)
 >
-> **Earlier subscription substrate companions:** [milestone-2.md](/Users/shepworth/Documents/programming/WORTH/plans/worth-runtime-bridge/milestone-2.md), [milestone-3.md](/Users/shepworth/Documents/programming/WORTH/plans/worth-runtime-bridge/milestone-3.md)
+> **Earlier subscription substrate companions:** [milestone-2.md](./milestone-2.md), [milestone-3.md](./milestone-3.md)
 >
 > **Primary architectural driver:** turn fine-grained subscription slices, basis-aware bridge artifacts, and `worth-signal` observation strategies into one bridge-owned subscription declaration framework that a manual host can admit, activate, diagnose, and replay without host-local folklore
 
@@ -248,7 +248,7 @@ Normative consequence:
 - diagnostics and replay artifacts explaining declaration meaning, basis
   binding, family selection, slice lowering, and signal-strategy selection
 - harness coverage satisfying suites 28 through 30 in
-  [test-requirements.md](/Users/shepworth/Documents/programming/WORTH/plans/worth-runtime-bridge/test-requirements.md)
+  [test-requirements.md](./test-requirements.md)
 
 ### Explicitly Out Of Scope
 

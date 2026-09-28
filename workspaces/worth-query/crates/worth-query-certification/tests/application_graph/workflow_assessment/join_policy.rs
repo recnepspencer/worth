@@ -5,25 +5,22 @@ use worth_query_host::facade::{
     declaration::application_program::ApplicationWorkflowEvidenceJoinPolicy,
 };
 
-use crate::bounded_dimension_model::host::BoundedDimensionWorkflowRuntime;
+use crate::document_retention_model::host::DocumentWorkflowRuntime;
 
 fn failing_join(
     policy: ApplicationWorkflowEvidenceJoinPolicy,
     key: u64,
-) -> (
-    BoundedDimensionWorkflowRuntime,
-    PublishedWorkflowInstanceRef,
-) {
-    const FAILING_DIMENSION: u64 = 6;
+) -> (DocumentWorkflowRuntime, PublishedWorkflowInstanceRef) {
+    const FAILING_RETENTION: u64 = 6;
     let application = publish_workflow_on_first_program();
     assert_eq!(
-        settle(set_dimension(
+        settle(set_retention(
             application.program_runtime(),
             application.program_runtime().current_world(),
-            FAILING_DIMENSION,
+            FAILING_RETENTION,
             key
         )),
-        DimensionVerdict::Performed(FAILING_DIMENSION)
+        RetentionVerdict::Performed(FAILING_RETENTION)
     );
     let definition = match publish_definition(
         &application,

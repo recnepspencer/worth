@@ -13,13 +13,20 @@ use crate::domain_computation::primary_graph::{
     WorthQueryInvariantRelation,
 };
 
+/// Why a decision read in an operation projection was refused.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryInvariantDecisionPlanDenialKind {
+    /// The operation does not declare this target as a decision read.
     UndeclaredDecisionTarget,
+    /// The identity came from a different projection authority.
     ForeignIdentity,
+    /// The field is not installed.
     FieldNotInstalled,
 }
 
+/// Refusal of a decision read in an operation projection.
+///
+/// [`Self::kind`] says why and [`Self::subject`] names the target.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryInvariantDecisionPlanDenial {
     kind: WorthQueryInvariantDecisionPlanDenialKind,

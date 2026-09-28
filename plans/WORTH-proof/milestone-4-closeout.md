@@ -47,11 +47,11 @@ Named suite:
 
 Primary test:
 
-- [transition_outcome_algebra_certification.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-proof/tests/transition_outcome_algebra_certification.rs)
+- [transition_outcome_algebra_certification.rs](../../crates/worth-proof/tests/transition_outcome_algebra_certification.rs)
 
 Supporting evidence module:
 
-- [tests/support/milestone4/mod.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-proof/tests/support/milestone4/mod.rs)
+- `tests/support/milestone4/mod.rs`
 
 Machine-checkable outputs:
 
@@ -77,19 +77,19 @@ The closeout suite now owns the hostile lanes required by the milestone:
 
 Compile-fail fixtures:
 
-- [unresolved_recipe_cannot_lower_through_transition_contract.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-proof/tests/ui/milestone4/unresolved_recipe_cannot_lower_through_transition_contract.rs)
-- [resolved_recipe_cannot_admit_through_transition_contract.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-proof/tests/ui/milestone4/resolved_recipe_cannot_admit_through_transition_contract.rs)
-- [resolved_recipe_cannot_enter_checked_resolution_pipeline.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-proof/tests/ui/milestone4/resolved_recipe_cannot_enter_checked_resolution_pipeline.rs)
-- [lowered_recipe_cannot_enter_checked_lowering_pipeline.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-proof/tests/ui/milestone4/lowered_recipe_cannot_enter_checked_lowering_pipeline.rs)
-- [resolved_recipe_cannot_enter_checked_admission_pipeline.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-proof/tests/ui/milestone4/resolved_recipe_cannot_enter_checked_admission_pipeline.rs)
+- [unresolved_recipe_cannot_lower_through_transition_contract.rs](../../crates/worth-proof/tests/ui/milestone4/unresolved_recipe_cannot_lower_through_transition_contract.rs)
+- [resolved_recipe_cannot_admit_through_transition_contract.rs](../../crates/worth-proof/tests/ui/milestone4/resolved_recipe_cannot_admit_through_transition_contract.rs)
+- [resolved_recipe_cannot_enter_checked_resolution_pipeline.rs](../../crates/worth-proof/tests/ui/milestone4/resolved_recipe_cannot_enter_checked_resolution_pipeline.rs)
+- [lowered_recipe_cannot_enter_checked_lowering_pipeline.rs](../../crates/worth-proof/tests/ui/milestone4/lowered_recipe_cannot_enter_checked_lowering_pipeline.rs)
+- [resolved_recipe_cannot_enter_checked_admission_pipeline.rs](../../crates/worth-proof/tests/ui/milestone4/resolved_recipe_cannot_enter_checked_admission_pipeline.rs)
 
 Compile-pass fixtures:
 
-- [explicit_transition_contract_progression_compiles.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-proof/tests/ui/milestone4/explicit_transition_contract_progression_compiles.rs)
-- [typed_transition_outcomes_preserve_non_success_categories.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-proof/tests/ui/milestone4/typed_transition_outcomes_preserve_non_success_categories.rs)
-- [checked_resolution_and_composition_progression_compiles.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-proof/tests/ui/milestone4/checked_resolution_and_composition_progression_compiles.rs)
-- [freshness_and_failure_checked_progression_compiles.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-proof/tests/ui/milestone4/freshness_and_failure_checked_progression_compiles.rs)
-- [equivalent_admitted_checked_progression_compiles.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-proof/tests/ui/milestone4/equivalent_admitted_checked_progression_compiles.rs)
+- [explicit_transition_contract_progression_compiles.rs](../../crates/worth-proof/tests/ui/milestone4/explicit_transition_contract_progression_compiles.rs)
+- [typed_transition_outcomes_preserve_non_success_categories.rs](../../crates/worth-proof/tests/ui/milestone4/typed_transition_outcomes_preserve_non_success_categories.rs)
+- [checked_resolution_and_composition_progression_compiles.rs](../../crates/worth-proof/tests/ui/milestone4/checked_resolution_and_composition_progression_compiles.rs)
+- [freshness_and_failure_checked_progression_compiles.rs](../../crates/worth-proof/tests/ui/milestone4/freshness_and_failure_checked_progression_compiles.rs)
+- [equivalent_admitted_checked_progression_compiles.rs](../../crates/worth-proof/tests/ui/milestone4/equivalent_admitted_checked_progression_compiles.rs)
 
 ## Residual Debt
 

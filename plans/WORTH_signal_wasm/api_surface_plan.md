@@ -10,16 +10,16 @@
 >
 > - [opaque_identity_and_ergonomic_authoring_plan.md](./opaque_identity_and_ergonomic_authoring_plan.md)
 >
-> **Core vision:** [\plans/worth_signal/worth_signal_vision.md](../../../plans/worth_signal/worth_signal_vision.md)
+> **Core vision:** [\plans/worth_signal/worth_signal_vision.md](../WORTH_signal/WORTH_signal_vision.md)
 >
 > **Core async roadmap lineage:**
 >
-> - [\plans/worth_signal/milestone-a-plan.md](../../../plans/worth_signal/milestone-a-plan.md)
-> - [\plans/worth_signal/milestone-b-plan.md](../../../plans/worth_signal/milestone-b-plan.md)
-> - [\plans/worth_signal/milestone-c-plan.md](../../../plans/worth_signal/milestone-c-plan.md)
-> - [\plans/worth_signal/milestone-d-plan.md](../../../plans/worth_signal/milestone-d-plan.md)
+> - [\plans/worth_signal/milestone-a-plan.md](../WORTH_signal/milestone-a-plan.md)
+> - [\plans/worth_signal/milestone-b-plan.md](../WORTH_signal/milestone-b-plan.md)
+> - [\plans/worth_signal/milestone-c-plan.md](../WORTH_signal/milestone-c-plan.md)
+> - [\plans/worth_signal/milestone-d-plan.md](../WORTH_signal/milestone-d-plan.md)
 >
-> **Core test requirements:** [\plans/worth_signal/test-requirements.md](../../../plans/worth_signal/test-requirements.md)
+> **Core test requirements:** [\plans/worth_signal/test-requirements.md](../WORTH_signal/test-requirements.md)
 
 ## Goal
 
@@ -1102,7 +1102,7 @@ This slice is intentionally out of scope for:
 - timeout policy
 - replay/history-integrated reload diagnostics
 
-The explicit intent is to move async reloads out of the Ã¢â‚¬Å“denied foreverÃ¢â‚¬Â lane
+The explicit intent is to move async reloads out of the “denied forever” lane
 without pretending that all broader runtime policy has already landed.
 
 #### Phase 2 implementation slice D

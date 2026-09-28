@@ -28,48 +28,48 @@ type system and the certification surface.
 Milestone 2 delivered:
 
 - a query-owned schema-view boundary under
-  [crates/worth-query/src/schema_view](C:\Users\Esther\Documents\Programming\WORTH_workspace\WORTH\crates\worth-query\src\schema_view)
+  [crates/worth-query/src/schema_view](../../workspaces/worth-query/crates/worth-query/src/schema_view)
 - proof-bearing validated artifacts under
-  [crates/worth-query/src/validation/artifacts](C:\Users\Esther\Documents\Programming\WORTH_workspace\WORTH\crates\worth-query\src\validation\artifacts)
+  [crates/worth-query/src/validation/artifacts](../../workspaces/worth-query/crates/worth-query-declaration/src/validation/artifacts)
 - a decomposed validation pipeline under
-  [crates/worth-query/src/validation](C:\Users\Esther\Documents\Programming\WORTH_workspace\WORTH\crates\worth-query\src\validation)
+  [crates/worth-query/src/validation](../../workspaces/worth-query/crates/worth-query/src/validation)
   covering:
-  - [projection.rs](C:\Users\Esther\Documents\Programming\WORTH_workspace\WORTH\crates\worth-query\src\validation\projection.rs)
-  - [predicates.rs](C:\Users\Esther\Documents\Programming\WORTH_workspace\WORTH\crates\worth-query\src\validation\predicates.rs)
-  - [predicate_state](C:\Users\Esther\Documents\Programming\WORTH_workspace\WORTH\crates\worth-query\src\validation\predicate_state)
-  - [traversal.rs](C:\Users\Esther\Documents\Programming\WORTH_workspace\WORTH\crates\worth-query\src\validation\traversal.rs)
-  - [ordering.rs](C:\Users\Esther\Documents\Programming\WORTH_workspace\WORTH\crates\worth-query\src\validation\ordering.rs)
-  - [result_shape.rs](C:\Users\Esther\Documents\Programming\WORTH_workspace\WORTH\crates\worth-query\src\validation\result_shape.rs)
-  - [pipeline.rs](C:\Users\Esther\Documents\Programming\WORTH_workspace\WORTH\crates\worth-query\src\validation\pipeline.rs)
+  - [projection.rs](../../workspaces/worth-query/crates/worth-query-declaration/src/validation/projection.rs)
+  - [predicates.rs](../../workspaces/worth-query/crates/worth-query-declaration/src/validation/predicates.rs)
+  - [predicate_state](../../workspaces/worth-query/crates/worth-query-declaration/src/validation/predicate_state)
+  - [traversal.rs](../../workspaces/worth-query/crates/worth-query-declaration/src/validation/traversal.rs)
+  - [ordering.rs](../../workspaces/worth-query/crates/worth-query-declaration/src/validation/ordering.rs)
+  - [result_shape.rs](../../workspaces/worth-query/crates/worth-query-declaration/src/validation/result_shape.rs)
+  - [pipeline.rs](../../workspaces/worth-query/crates/worth-query-declaration/src/validation/pipeline.rs)
 - canonical predicate and ordering authority threaded through
-  [crates/worth-query/src/canonicalization](C:\Users\Esther\Documents\Programming\WORTH_workspace\WORTH\crates\worth-query\src\canonicalization)
+  [crates/worth-query/src/canonicalization](../../workspaces/worth-query/crates/worth-query/src/canonicalization)
 - schema-derived typed query APIs under
-  [crates/worth-query/src/typed](C:\Users\Esther\Documents\Programming\WORTH_workspace\WORTH\crates\worth-query\src\typed)
+  [crates/worth-query/src/typed](../../workspaces/worth-query/crates/worth-query/src/typed)
 - a schema DSL that derives typed tokens and runtime schema views from one
   declaration in
-  [crates/worth-query/src/schema_macro.rs](C:\Users\Esther\Documents\Programming\WORTH_workspace\WORTH\crates\worth-query\src\schema_macro.rs)
+  [crates/worth-query/src/schema_macro.rs](../../workspaces/worth-query/crates/worth-query/src/schema_macro.rs)
 - Milestone 2 validation certification artifacts under
-  [crates/worth-query/src/harness/validation_certification](C:\Users\Esther\Documents\Programming\WORTH_workspace\WORTH\crates\worth-query\src\harness\validation_certification)
+  `crates/worth-query/src/harness/validation_certification`
   and
-  [crates/worth-query/src/harness/validation_matrix](C:\Users\Esther\Documents\Programming\WORTH_workspace\WORTH\crates\worth-query\src\harness\validation_matrix)
+  `crates/worth-query/src/harness/validation_matrix`
 - compile-fail proof-boundary tests under
-  [crates/worth-query/tests](C:\Users\Esther\Documents\Programming\WORTH_workspace\WORTH\crates\worth-query\tests)
+  [crates/worth-query/tests](../../workspaces/worth-query/crates/worth-query/tests)
 
 ## Acceptance Mapping
 
 Milestone 2 is considered closed against
-[milestone-2.md](C:\Users\Esther\Documents\Programming\WORTH_workspace\WORTH\plans\worth-query\milestone-2.md)
+[milestone-2.md](./milestone-2.md)
 and
-[test-requirements.md](C:\Users\Esther\Documents\Programming\WORTH_workspace\WORTH\plans\worth-query\test-requirements.md)
+[test-requirements.md](./test-requirements.md)
 because the required acceptance surfaces are now covered directly.
 
 ### `Schema-Aware Rejection And Projection Legality Test`
 
 Covered by:
 
-- [crates/worth-query/src/harness/validation_certification/mod.rs](C:\Users\Esther\Documents\Programming\WORTH_workspace\WORTH\crates\worth-query\src\harness\validation_certification\mod.rs)
-- [crates/worth-query/src/harness/validation_certification/tests.rs](C:\Users\Esther\Documents\Programming\WORTH_workspace\WORTH\crates\worth-query\src\harness\validation_certification\tests.rs)
-- [crates/worth-query/src/harness/validation_matrix](C:\Users\Esther\Documents\Programming\WORTH_workspace\WORTH\crates\worth-query\src\harness\validation_matrix)
+- `crates/worth-query/src/harness/validation_certification/mod.rs`
+- `crates/worth-query/src/harness/validation_certification/tests.rs`
+- `crates/worth-query/src/harness/validation_matrix`
 
 What is proven:
 
@@ -126,7 +126,7 @@ Covered by:
   - `workflow-context-illegality`
   - `forbidden-widening-case`
 - direct hostile validation tests under
-  [crates/worth-query/src/harness/validation_cases](C:\Users\Esther\Documents\Programming\WORTH_workspace\WORTH\crates\worth-query\src\harness\validation_cases)
+  [crates/worth-query/src/harness/validation_cases](../../workspaces/worth-query/crates/worth-query/src/harness/validation_cases)
 
 What is proven:
 
@@ -142,11 +142,11 @@ What is proven:
 Covered by:
 
 - `ValidationFailureArtifact` and `ValidationRejectionMatrix` emission in
-  [crates/worth-query/src/validation](C:\Users\Esther\Documents\Programming\WORTH_workspace\WORTH\crates\worth-query\src\validation)
+  [crates/worth-query/src/validation](../../workspaces/worth-query/crates/worth-query/src/validation)
 - exact counter and report assertions in
-  [crates/worth-query/src/harness/validation_cases](C:\Users\Esther\Documents\Programming\WORTH_workspace\WORTH\crates\worth-query\src\harness\validation_cases)
+  [crates/worth-query/src/harness/validation_cases](../../workspaces/worth-query/crates/worth-query/src/harness/validation_cases)
 - aggregate certification accounting in
-  [crates/worth-query/src/harness/validation_matrix/completeness.rs](C:\Users\Esther\Documents\Programming\WORTH_workspace\WORTH\crates\worth-query\src\harness\validation_matrix\completeness.rs)
+  `crates/worth-query/src/harness/validation_matrix/completeness.rs`
 
 What is proven:
 
@@ -162,12 +162,12 @@ What is proven:
 Covered by:
 
 - public sealed validated artifact construction through
-  [crates/worth-query/src/validation](C:\Users\Esther\Documents\Programming\WORTH_workspace\WORTH\crates\worth-query\src\validation)
+  [crates/worth-query/src/validation](../../workspaces/worth-query/crates/worth-query/src/validation)
 - compile-fail tests:
-  - [private_validated_query_artifact_fields.rs](C:\Users\Esther\Documents\Programming\WORTH_workspace\WORTH\crates\worth-query\tests\ui\private_validated_query_artifact_fields.rs)
-  - [private_validated_query_bundle_fields.rs](C:\Users\Esther\Documents\Programming\WORTH_workspace\WORTH\crates\worth-query\tests\ui\private_validated_query_bundle_fields.rs)
-  - [typed_contains_requires_string_field.rs](C:\Users\Esther\Documents\Programming\WORTH_workspace\WORTH\crates\worth-query\tests\ui\typed_contains_requires_string_field.rs)
-  - [typed_project_rejects_foreign_schema_field.rs](C:\Users\Esther\Documents\Programming\WORTH_workspace\WORTH\crates\worth-query\tests\ui\typed_project_rejects_foreign_schema_field.rs)
+  - `private_validated_query_artifact_fields.rs`
+  - `private_validated_query_bundle_fields.rs`
+  - `typed_contains_requires_string_field.rs`
+  - `typed_project_rejects_foreign_schema_field.rs`
 
 What is proven:
 

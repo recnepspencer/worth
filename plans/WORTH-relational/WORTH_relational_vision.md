@@ -78,7 +78,7 @@ These are not optional add-ons. They are the capabilities that make
 - schema-defined relation integrity and typed relation contracts
 - structural fingerprint surfaces
 
-If these are treated as â€œnice to have later,â€ the runtime collapses back into
+If these are treated as “nice to have later,” the runtime collapses back into
 ordinary mutable graph storage and loses the leverage needed for high-assurance
 systems.
 
@@ -202,13 +202,13 @@ The derivation rule is:
 
 - each capability pillar below implies concrete runtime surfaces that must exist
 - each technical role implies constraints that implementation must preserve
-- each â€œwhat this enablesâ€ section implies real product use cases the runtime
+- each “what this enables” section implies real product use cases the runtime
   must serve, not marketing examples
 - if a capability is named here but not yet fully present in code, it belongs on
   the roadmap as remaining engineering work
 - if a capability is present in code but not yet proven under the hostile
   scenarios in
-  [test-requirements.md](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/worth-relational/test-requirements.md),
+  [test-requirements.md](./test-requirements.md),
   it belongs on the roadmap as certification work
 
 In other words:
@@ -244,8 +244,8 @@ What this enables:
 #### Structural identity hooks
 
 Technical role:
-Storage identity alone is not enough when systems need to recognize â€œthe same
-structureâ€ across rebuilds, branches, or host-driven reinterpretation.
+Storage identity alone is not enough when systems need to recognize “the same
+structure” across rebuilds, branches, or host-driven reinterpretation.
 
 What this enables:
 
@@ -282,7 +282,7 @@ identity, and optional semantic identity.
 
 What this enables:
 
-- AI branch exploration where â€œsame conceptâ€ and â€œsame stored recordâ€ are not
+- AI branch exploration where “same concept” and “same stored record” are not
   the same question
 - chip and geometry workflows where historical continuity matters more than raw
   storage slot reuse
@@ -399,7 +399,7 @@ What this enables:
 - AI-native editing and alternate solution branches
 - branch-local chip or geometry experiments
 - collaborative design flows
-- web/data review and â€œwhat-ifâ€ workflows that need more than linear undo
+- web/data review and “what-if” workflows that need more than linear undo
 
 #### Deterministic replay
 
@@ -596,7 +596,7 @@ opaque behind one-off helper paths.
 #### Branch-aware correspondence hooks
 
 Technical role:
-Branches need a way to express â€œthese are probably the same thingâ€ without
+Branches need a way to express “these are probably the same thing” without
 silently making that authoritative.
 
 What this enables:
@@ -783,10 +783,10 @@ graph instead of a pile of mutable tool state and post-hoc logs.
 - branch-local edits with explicit lineage and correspondence
 - replayable historical truth for review and audit
 - deterministic diff and CDC surfaces for collaboration tooling
-- retained snapshots and historical resolution for â€œwhat changed?â€ workflows
+- retained snapshots and historical resolution for “what changed?” workflows
 
 Revolutionary use:
-collaboration can move from â€œbest effort merge and undoâ€ to true
+collaboration can move from “best effort merge and undo” to true
 branch-native editing where identity, history, and change semantics survive
 divergence cleanly.
 
@@ -861,8 +861,8 @@ around ad hoc node stores.
 - large-scale bulk query surfaces over canonical truth
 
 Revolutionary use:
-web and data systems can promote their source of truth from â€œapplication state
-plus infrastructure accidentsâ€ to a branchable, replayable, audit-grade truth
+web and data systems can promote their source of truth from “application state
+plus infrastructure accidents” to a branchable, replayable, audit-grade truth
 runtime with first-class change feeds.
 
 ## Non-Goals
@@ -875,10 +875,10 @@ runtime with first-class change feeds.
 
 ## Companion Documents
 
-- [worth_relational_roadmap.md](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/worth-relational/worth_relational_roadmap.md)
-- [test-requirements.md](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/worth-relational/test-requirements.md)
-- [plans/engineering/worth_signal_vision.md](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/engineering/worth_signal_vision.md)
-- [plans/engineering/worth_runtime_bridge_vision.md](/Users/spenstar/Documents/programming/WORTH%20workspace/WORTH/plans/engineering/worth_runtime_bridge_vision.md)
+- [worth_relational_roadmap.md](./WORTH_relational_roadmap.md)
+- [test-requirements.md](./test-requirements.md)
+- [plans/engineering/worth_signal_vision.md](../WORTH_signal/WORTH_signal_vision.md)
+- [plans/engineering/worth_runtime_bridge_vision.md](../WORTH-runtime-bridge/WORTH_runtime_bridge_vision.md)
 
 The truth runtime's MVCC, CDC, lineage, replay, and bulk query architecture are
 what make the rest of the stack viable. If these are weak, every projection,

@@ -27,9 +27,9 @@ access pattern named here or to an explicitly added matrix update.
 
 Primary files:
 
-- [apply.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/evaluation/engine/apply.rs)
-- [prepared_apply.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/evaluation/engine/prepared_apply.rs)
-- [effect.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/graph/runtime/effect.rs)
+- [apply.rs](../../crates/worth-signal/src/logic/evaluation/engine/apply.rs)
+- [prepared_apply.rs](../../crates/worth-signal/src/logic/evaluation/engine/prepared_apply.rs)
+- [effect.rs](../../crates/worth-signal/src/data/graph/runtime/effect.rs)
 
 Current field accesses:
 
@@ -71,9 +71,9 @@ Current compatibility pressure:
 
 Primary files:
 
-- [serial_batch.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/planner/apply/serial_batch.rs)
-- [stage.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/planner/apply/stage.rs)
-- [semantic/mod.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/planner/semantic/mod.rs)
+- [serial_batch.rs](../../crates/worth-signal/src/logic/planner/apply/serial_batch.rs)
+- [stage.rs](../../crates/worth-signal/src/logic/planner/apply/stage.rs)
+- [semantic/mod.rs](../../crates/worth-signal/src/logic/planner/semantic/mod.rs)
 
 Current field accesses:
 
@@ -114,8 +114,8 @@ Current compatibility pressure:
 
 Primary files:
 
-- [planning/mod.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/planner/planning/mod.rs)
-- [precompute/mod.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/planner/precompute/mod.rs)
+- [planning/mod.rs](../../crates/worth-signal/src/logic/planner/planning/mod.rs)
+- [precompute/mod.rs](../../crates/worth-signal/src/logic/planner/precompute/mod.rs)
 
 Current field accesses:
 
@@ -156,8 +156,8 @@ Current compatibility pressure:
 
 Primary files:
 
-- [entries.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/graph/storage/entries.rs)
-- [apply.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/evaluation/engine/apply.rs)
+- [entries.rs](../../crates/worth-signal/src/data/graph/storage/entries.rs)
+- [apply.rs](../../crates/worth-signal/src/logic/evaluation/engine/apply.rs)
 
 Current field accesses:
 
@@ -190,7 +190,7 @@ Current compatibility pressure:
 
 Primary file:
 
-- [execute.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/state/merge/execute.rs)
+- [execute.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/merge/execute.rs)
 
 Current broad access patterns:
 
@@ -207,9 +207,9 @@ Current classification:
 
 Primary files:
 
-- [graph.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/graph/runtime/graph.rs)
-- [snapshotting.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/state/branching/snapshotting.rs)
-- [mod.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/state/mod.rs)
+- [graph.rs](../../crates/worth-signal/src/data/graph/runtime/graph.rs)
+- [snapshotting.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/branching/snapshotting.rs)
+- [mod.rs](../../crates/worth-signal/src/state/mod.rs)
 
 Current field accesses:
 
@@ -234,17 +234,17 @@ The following modules still contain important broad `get_entry` / `get_entry_mut
 usage after Phase 1 closure. They are now explicit residual dependencies, not
 unknown debt:
 
-- [effect.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/graph/runtime/effect.rs)
+- [effect.rs](../../crates/worth-signal/src/data/graph/runtime/effect.rs)
   residual: two known broad mutable writes
-- [entries.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/graph/storage/entries.rs)
+- [entries.rs](../../crates/worth-signal/src/data/graph/storage/entries.rs)
   residual: storage-boundary snapshot id writes and broad storage assembly
-- [execute.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/transaction/runtime/state/merge/execute.rs)
+- [execute.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/merge/execute.rs)
   residual: merge still clones broad entries and carries warm/cold payload
-- [observer.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/graph/runtime/observer.rs)
+- [observer.rs](../../crates/worth-signal/src/data/graph/runtime/observer.rs)
   residual: observer and inspection APIs intentionally consume broad and cold surfaces
-- [context_resolution.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/logic/evaluation/reuse/context_resolution.rs)
+- [context_resolution.rs](../../crates/worth-signal/src/logic/evaluation/reuse/context_resolution.rs)
   residual: reuse context resolution still uses broad entry access
-- [graph.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/data/graph/runtime/graph.rs)
+- [graph.rs](../../crates/worth-signal/src/data/graph/runtime/graph.rs)
   residual: restore and snapshot authority internals still straddle broad graph mutation boundaries
 
 ## Phase 0 Closure Decisions
@@ -286,15 +286,15 @@ These Gate 3 decisions are now in force:
 
 Phase 1 closure is certified in code by:
 
-- [phase1_api.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/tests/phase1_api.rs)
+- [phase1_api.rs](../../crates/worth-signal/src/tests/phase1_api.rs)
   `hot_apply_modules_do_not_use_broad_entry_accessors_for_reads`
-- [phase1_api.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/tests/phase1_api.rs)
+- [phase1_api.rs](../../crates/worth-signal/src/tests/phase1_api.rs)
   `hot_effect_runtime_path_avoids_broad_entry_reads`
-- [phase1_api.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/tests/phase1_api.rs)
+- [phase1_api.rs](../../crates/worth-signal/src/tests/phase1_api.rs)
   `hot_stage_path_avoids_broad_entry_reads`
-- [phase1_api.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/tests/phase1_api.rs)
+- [phase1_api.rs](../../crates/worth-signal/src/tests/phase1_api.rs)
   `maybe_stale_validation_path_uses_narrowed_hot_accessors`
-- [phase1_api.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-signal/src/tests/phase1_api.rs)
+- [phase1_api.rs](../../crates/worth-signal/src/tests/phase1_api.rs)
   `gate3_finalize_paths_use_compact_artifact_images_instead_of_broad_runtime_state_snapshots`
 
 These tests do not prove the final storage split. They prove the narrower but

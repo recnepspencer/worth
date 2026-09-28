@@ -1,11 +1,6 @@
 # Milestone 9.17.1: Exact Owner Bases And Relational Branch-Local MVCC
 
-Status: Closed on 2026-08-28. Phases 1-13 are implemented, independently
-reviewed, and verified. Milestone 9.17.1.1 is the required corrective
-prerequisite discovered after closure; Milestone 9.17.1.2 is the final
-owner-service correction. Milestone 9.17.2 must consume both
-corrected owner-component surfaces and may not recreate component currentness,
-retention, mutation, publication, or settlement authority in Runtime World.
+> **Status:** Completed.
 
 ## Goal
 

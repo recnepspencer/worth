@@ -1,10 +1,12 @@
 # Milestone 13 Closeout: Tiering And Durable Working-Set Intelligence
 
+> **Note:** The legacy root crate `crates/worth-store` was removed on 2026-09-27. Paths into it below name its files as they were; they are no longer links. The store now lives in [`workspaces/worth-store`](../../workspaces/worth-store/README.md).
+
 Status: Completed on 2026-04-21
 
-Parent spec: [milestone-13.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-13.md)
+Parent spec: [milestone-13.md](./milestone-13.md)
 
-Roadmap: [worth_store_roadmap.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/worth_store_roadmap.md)
+Roadmap: `worth_store_roadmap.md`
 
 ## Summary
 
@@ -33,39 +35,39 @@ The closure claim is:
 ## What Shipped
 
 - public tiering vocabulary and proof-bearing placement types in
-  [crates/worth-store/src/tiering](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/tiering)
+  `crates/worth-store/src/tiering`
 - backend tiering planning, execution, observation, recall, interleaving, and
   recovery logic in
-  [crates/worth-store/src/backend/tiering](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/backend/tiering)
+  `crates/worth-store/src/backend/tiering`
 - scalar SQLite tiering persistence for residency, transfer, observation, and
   recall records in
-  [crates/worth-store/src/backend/sqlite](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/backend/sqlite)
+  `crates/worth-store/src/backend/sqlite`
 - typed placement, recall, witness-misuse, manifest, and open-failure taxonomy
   in
-  [crates/worth-store/src/failure/mod.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/failure/mod.rs)
+  `crates/worth-store/src/failure/mod.rs`
 - milestone-specific counters, complexity surfaces, artifact reports, and
   certification bundles in
-  [crates/worth-store/src/evidence/milestone_13.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/evidence/milestone_13.rs)
+  `crates/worth-store/src/evidence/milestone_13.rs`
 - public store surfaces for tier planning, tier execution, cold recall,
   working-set observation, placement-bound read resolution, and Milestone 13
   evidence in
-  [crates/worth-store/src/facade.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/facade.rs)
+  `crates/worth-store/src/facade.rs`
 - named certification coverage in
-  [crates/worth-store/src/tests/milestone_13_certification.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/tests/milestone_13_certification.rs)
+  `crates/worth-store/src/tests/milestone_13_certification.rs`
 - phase-scoped hostile coverage in
-  [crates/worth-store/src/tests/tiering_phase1.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/tests/tiering_phase1.rs),
-  [crates/worth-store/src/tests/tiering_phase2.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/tests/tiering_phase2.rs),
-  [crates/worth-store/src/tests/tiering_phase3.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/tests/tiering_phase3.rs),
-  [crates/worth-store/src/tests/tiering_phase4_recall_coalescing.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/tests/tiering_phase4_recall_coalescing.rs),
+  `crates/worth-store/src/tests/tiering_phase1.rs`,
+  `crates/worth-store/src/tests/tiering_phase2.rs`,
+  `crates/worth-store/src/tests/tiering_phase3.rs`,
+  `crates/worth-store/src/tests/tiering_phase4_recall_coalescing.rs`,
   and
-  [crates/worth-store/src/tests/tiering_phase5_interleaving.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/tests/tiering_phase5_interleaving.rs)
+  `crates/worth-store/src/tests/tiering_phase5_interleaving.rs`
 
 ## Acceptance Mapping
 
 Milestone 13 is considered closed against
-[milestone-13.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-13.md)
+[milestone-13.md](./milestone-13.md)
 and
-[test-requirements.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/test-requirements.md)
+[test-requirements.md](./test-requirements.md)
 because the required named suite and supporting phase tests now map directly to
 code and machine-checkable evidence.
 
@@ -73,10 +75,10 @@ code and machine-checkable evidence.
 
 Covered by:
 
-- [crates/worth-store/src/tests/milestone_13_certification.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/tests/milestone_13_certification.rs)
-- [crates/worth-store/src/tests/tiering_phase3.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/tests/tiering_phase3.rs)
-- [crates/worth-store/src/tests/tiering_phase4_recall_coalescing.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/tests/tiering_phase4_recall_coalescing.rs)
-- [crates/worth-store/src/tests/tiering_phase5_interleaving.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/tests/tiering_phase5_interleaving.rs)
+- `crates/worth-store/src/tests/milestone_13_certification.rs`
+- `crates/worth-store/src/tests/tiering_phase3.rs`
+- `crates/worth-store/src/tests/tiering_phase4_recall_coalescing.rs`
+- `crates/worth-store/src/tests/tiering_phase5_interleaving.rs`
 
 What is proven:
 
@@ -99,7 +101,7 @@ What is proven:
 
 Covered by:
 
-- [crates/worth-store/src/tests/tiering_phase3.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/tests/tiering_phase3.rs)
+- `crates/worth-store/src/tests/tiering_phase3.rs`
 
 What is proven:
 
@@ -118,10 +120,10 @@ What is proven:
 
 Covered by:
 
-- [crates/worth-store/tests/phase_boundaries_compile_fail.rs](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/tests/phase_boundaries_compile_fail.rs)
-- [crates/worth-store/tests/ui](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/tests/ui)
+- `crates/worth-store/tests/phase_boundaries_compile_fail.rs`
+- `crates/worth-store/tests/ui`
 - focused unit tests in
-  [crates/worth-store/src/tiering](/Users/Esther/Documents/Programming/worth_workspace/worth/crates/worth-store/src/tiering)
+  `crates/worth-store/src/tiering`
 
 What is proven:
 

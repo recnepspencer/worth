@@ -1,15 +1,6 @@
 # Milestone 9.13: Declarative Query Experience And Phase-Surface Cutover
 
-Status: Complete. Core Phases 1-12 closed on 2026-07-14. Add-on Phases 13-30
-closed on 2026-07-15. The completed boundary includes the runtime-backed
-declarative product surface, runtime-installed domain packages and
-runtime-affine handles, one canonical domain-capability authority, and exact
-Foundational-native aspect values across Query authoring, predicates, schema
-semantics, materialization, projection consumption, and ordinary consumer DX.
-Store-backed execution parity, durable restore, saved-artifact survival, and
-durable continuation remain Milestones 10 and 11. See
-[milestone-9.13-closeout.md](./milestone-9.13-closeout.md) for closure evidence
-for all 30 phases.
+> **Status:** Completed. Store-backed execution parity and durable restore belong to Milestones 10 and 11. Closeout: [milestone-9.13-closeout.md](./milestone-9.13-closeout.md).
 
 ## Goal
 

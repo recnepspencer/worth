@@ -1,37 +1,37 @@
 # Milestone 5.2 Engineering Spec: Preview Session Query Contexts And Branch Workflow Foundations
 
-> **Status:** Closed on 2026-04-16 for the runtime-backed preview, preview-live, promotion-parity comparison, and workflow-foundation scope
+> **Status:** Completed. Closeout: [milestone-5.2-closeout.md](./milestone-5.2-closeout.md).
 >
-> **Roadmap parent:** [worth_query_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/worth_query_roadmap.md)
+> **Roadmap parent:** [worth_query_roadmap.md](./WORTH_query_roadmap.md)
 >
-> **Vision parent:** [worth_query_vision.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/worth_query_vision.md)
+> **Vision parent:** [worth_query_vision.md](./WORTH_query_vision.md)
 >
-> **Prior milestone:** [milestone-5.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/milestone-5.md)
+> **Prior milestone:** [milestone-5.md](./milestone-5.md)
 >
-> **Adjacent milestone:** [milestone-5.1.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/milestone-5.1.md)
+> **Adjacent milestone:** [milestone-5.1.md](./milestone-5.1.md)
 >
 > **Next concurrent milestone:** `milestone-5.3.md` is not yet written; this spec treats Milestone 5.3 as parallel planning hardening rather than a dependency for preview semantics
 >
-> **Prior closeout:** [milestone-5-closeout.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/milestone-5-closeout.md)
+> **Prior closeout:** [milestone-5-closeout.md](./milestone-5-closeout.md)
 >
-> **Test requirements:** [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/test-requirements.md)
+> **Test requirements:** [test-requirements.md](./test-requirements.md)
 >
 > **Primary architectural driver:** make preview-session basis identity, preview lifecycle identity, and preview-versus-promoted comparison first-class query artifacts so branch-native evaluation stays inside canonical query planning and result shaping instead of collapsing into ambient bridge orchestration or host-local branch aliases
 >
 > **Companion docs:**
-> - [MENTALITY.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/MENTALITY.md)
-> - [arch_laws.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/arch_laws.md)
-> - [perf_laws.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/perf_laws.md)
-> - [domain_laws.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/domain_laws.md)
-> - [worth_query_vision.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/worth_query_vision.md)
-> - [worth_query_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/worth_query_roadmap.md)
-> - [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/test-requirements.md)
-> - [milestone-5.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/milestone-5.md)
-> - [milestone-5.1.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/milestone-5.1.md)
-> - [milestone-5-closeout.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/milestone-5-closeout.md)
-> - [worth-runtime-bridge milestone-10.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-10.md)
-> - [worth-runtime-bridge milestone-12.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-12.md)
-> - [BRANCHING_AND_SPECULATION.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-runtime-bridge/BRANCHING_AND_SPECULATION.md)
+> - [MENTALITY.md](../../docs/coding-guidelines/MENTALITY.md)
+> - [arch_laws.md](../../docs/coding-guidelines/arch_laws.md)
+> - [perf_laws.md](../../docs/coding-guidelines/perf_laws.md)
+> - [domain_laws.md](../../docs/coding-guidelines/domain_structure_laws.md)
+> - [worth_query_vision.md](./WORTH_query_vision.md)
+> - [worth_query_roadmap.md](./WORTH_query_roadmap.md)
+> - [test-requirements.md](./test-requirements.md)
+> - [milestone-5.md](./milestone-5.md)
+> - [milestone-5.1.md](./milestone-5.1.md)
+> - [milestone-5-closeout.md](./milestone-5-closeout.md)
+> - [worth-runtime-bridge milestone-10.md](../WORTH-runtime-bridge/milestone-10.md)
+> - [worth-runtime-bridge milestone-12.md](../WORTH-runtime-bridge/milestone-12.md)
+> - [BRANCHING_AND_SPECULATION.md](../../crates/worth-runtime-bridge/BRANCHING_AND_SPECULATION.md)
 
 ## Goal
 
@@ -1182,7 +1182,7 @@ Minimum rejection rows should include:
 Milestone 5.2 is complete only when `worth-query` can prove:
 
 - the `Preview Session Basis And Promotion Parity Test` in
-  [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/test-requirements.md)
+  [test-requirements.md](./test-requirements.md)
   passes with canonical machine-checkable artifacts
 - preview-session-bound queries preserve explicit basis and lifecycle identity
 - preview-bound results preserve canonical query meaning apart from the

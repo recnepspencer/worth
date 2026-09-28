@@ -98,7 +98,7 @@ that would have undermined milestone honesty if left in place:
   explicit lineage-bearing promotion before replay capture and require lineage
   authority to be present
 - lineage access/runtime bypasses and public raw authority artifact fields were
-  sealed behind faÃ§ade-owned access surfaces and read-only accessors
+  sealed behind façade-owned access surfaces and read-only accessors
 
 ## Phase Completion Map
 
@@ -119,7 +119,7 @@ What is proven:
 
 - lineage responsibilities are split by phase/domain rather than collected
   into monolithic lineage files
-- faÃ§ade and module visibility now enforce the intended public surface
+- façade and module visibility now enforce the intended public surface
 - lineage data modules expose named concepts rather than generic manager/helper
   blobs
 
@@ -380,7 +380,7 @@ Required machine-checkable outputs are now explicitly owned by tests:
 ## Performance QA and Hardening
 
 Milestone 6 closeout explicitly audited the implementation against
-[docs/coding-guidelines/performance_guidelines.md](C:\Users\Esther\Documents\Programming\WORTH_workspace\WORTH\docs\coding-guidelines\performance_guidelines.md),
+[docs/coding-guidelines/performance_guidelines.md](../../docs/coding-guidelines/perf_laws.md),
 not just against semantic requirements.
 
 The closeout-standard claims now backed by code and tests are:
@@ -428,7 +428,7 @@ into stronger type-shaped or constructor-shaped surfaces:
   accessor-shaped authority/read surfaces
 - `LineageAccess` no longer exposes crate-wide runtime bypass through its read
   surface
-- lineage faÃ§ade and data re-exports are now explicit rather than blind glob
+- lineage façade and data re-exports are now explicit rather than blind glob
   leaks
 
 These changes matter for Milestone 6 because they make "the type must encode
@@ -468,7 +468,7 @@ Milestone 6 intentionally does not claim ownership of:
 - domain-complete CAD merge semantics
 - domain-complete chip/netlist merge or reconciliation semantics
 - user-facing lineage product tooling beyond the runtime, certification, and
-  faÃ§ade surfaces shipped here
+  façade surfaces shipped here
 - custom invariant families and domain-specific structural invariant authoring
   beyond what Milestone 6 depends on from earlier milestones
 

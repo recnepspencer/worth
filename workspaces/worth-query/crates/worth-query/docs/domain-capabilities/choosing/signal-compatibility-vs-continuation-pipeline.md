@@ -1,5 +1,7 @@
 # Signal Compatibility Vs Continuation Pipeline
 
+> **Internal engine surface.** This page documents `WorthQueryWorkspace` (`worth_query::facade`), the engine surface that `worth-ui-query-binding` uses. Application code uses `worth-query-decl` and `worth-query-host`; start with the [application front door](../../foundations/ordinary-application-front-door.md).
+
 ## What This Page Helps You Choose
 
 Use this page when you have retained declaration truth and need to choose

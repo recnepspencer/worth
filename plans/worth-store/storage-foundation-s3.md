@@ -2,7 +2,7 @@
 
 > **Status:** Planned
 >
-> **Roadmap parent:** [physical-database-roadmap.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/physical-database-roadmap.md)
+> **Roadmap parent:** [physical-database-roadmap.md](./physical-database-roadmap.md)
 >
 > **Primary prerequisite:** `S.2 Buffer Pool, Memory Budgets, And Zero-Copy Record Access`
 >

@@ -2,18 +2,18 @@
 
 > **Status:** Draft
 >
-> **Roadmap parent:** [worth_store_roadmap.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/worth_store_roadmap.md)
+> **Roadmap parent:** `worth_store_roadmap.md`
 >
-> **Vision parent:** [worth_store_vision.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/worth_store_vision.md)
+> **Vision parent:** [worth_store_vision.md](./worth_store_vision.md)
 >
-> **Test requirements:** [test-requirements.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/test-requirements.md)
+> **Test requirements:** [test-requirements.md](./test-requirements.md)
 >
 > **Prerequisite milestones:**
-> - [milestone-4.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-4.md)
-> - [milestone-5.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-5.md)
-> - [milestone-5-closeout.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-5-closeout.md)
-> - [milestone-6.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-6.md)
-> - [milestone-6-closeout.md](/Users/Esther/Documents/Programming/worth_workspace/worth/plans/worth-store/milestone-6-closeout.md)
+> - [milestone-4.md](./milestone-4.md)
+> - [milestone-5.md](./milestone-5.md)
+> - [milestone-5-closeout.md](./milestone-5-closeout.md)
+> - [milestone-6.md](./milestone-6.md)
+> - [milestone-6-closeout.md](./milestone-6-closeout.md)
 >
 > **Concurrent milestones:**
 > - `Milestone 8` (`Live-Query Substrate And Durable Sync Basis`)

@@ -1,18 +1,9 @@
 # Milestone 9.16 Runtime Phase 8: Application Aftermath, External Effects, And Recovery
 
+> **Status:** Completed. Its undo and redo sections are provisional; [Milestone 9.18](./milestone-9.18.md) owns their final semantics.
+
 **Owner:** Runtime Hardening Track, Phase 8
-**Status:** **CLOSED (2026-08-12).** The accepted Phase 8 foundation is proved
-through corrections C1-C8 against the final source record in the
-[`Runtime Phase 8 Finish Plan`](./milestone-9.16-runtime-phase-8-finish-plan.md).
-Developer guidance lives in
-[`Application Aftermath, External Effects, And Recovery`](../../workspaces/worth-query/crates/worth-query/docs/execution/application-aftermath-and-recovery.md).
-The finish plan and closure ledger contain the final source-bound evidence.
-This specification records the broader historical Phase 8 design, but its undo
-and redo product sections are **provisional** and form no part of the accepted
-closure. Their final semantics belong to
-[Milestone 9.18](./milestone-9.18.md). Existing code may remain while that decision is
-pending; it may not become a second history authority or a settled public
-contract by implication.
+**Developer guide:** [`Application Aftermath, External Effects, And Recovery`](../../workspaces/worth-query/crates/worth-query/docs/execution/application-aftermath-and-recovery.md)
 **Canonical milestone:** [`milestone-9.16.md`](./milestone-9.16.md)
 **Predecessor:** Runtime Phase 7, closed through Gate 7.7 Gate D
 ([`milestone-9.16-runtime-phase-7-closure-ledger.md`](./milestone-9.16-runtime-phase-7-closure-ledger.md))

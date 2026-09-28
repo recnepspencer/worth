@@ -46,9 +46,9 @@ Phase 1 is complete only if all of these are true:
 
 These docs now define the intended boundary directly:
 
-- [`dx_canonical_surface_spec.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_canonical_surface_spec.md)
-- [`dx_boundary_spec.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_boundary_spec.md)
-- [`dx_phase_1_plan.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_phase_1_plan.md)
+- [`dx_canonical_surface_spec.md`](./dx_canonical_surface_spec.md)
+- [`dx_boundary_spec.md`](./dx_boundary_spec.md)
+- [`dx_phase_1_plan.md`](./dx_phase_1_plan.md)
 
 That means the hierarchy is no longer implied.
 
@@ -63,15 +63,15 @@ It is written down as:
 
 The accepted removals are real in code:
 
-- [`publication_authority()`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/publication/logic/authority.rs)
+- `publication_authority()`
   is crate-only
-- [`storage_authority()`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/storage/logic/authority.rs)
+- `storage_authority()`
   is crate-only
-- [`lineage_access()`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/lineage/logic/access/mod.rs)
+- `lineage_access()`
   is crate-only
-- [`lineage_authority()`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/lineage/logic/authority/mod.rs)
+- `lineage_authority()`
   is crate-only
-- [`MergeAccess::runtime()`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/merge/logic/mod.rs)
+- `MergeAccess::runtime()`
   is gone
 
 That was the highest-value boundary cleanup in the crate.
@@ -80,11 +80,11 @@ That was the highest-value boundary cleanup in the crate.
 
 The runtime-facing exports now openly acknowledge these real lanes:
 
-- [`InvariantAccess`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/validation/logic/mod.rs)
-- [`SimulationAccess`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/simulation/logic/access.rs)
-- [`SimulationAuthority`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/simulation/logic/authority.rs)
-- [`VisibilityReadContext`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/visibility/materialization/read_records/mod.rs)
-- [`VisibilityRetentionAuthority`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/visibility/retention/retention_authority.rs)
+- `InvariantAccess`
+- `SimulationAccess`
+- `SimulationAuthority`
+- [`VisibilityReadContext`](../../crates/worth-relational/src/visibility/materialization/read_records/mod.rs)
+- [`VisibilityRetentionAuthority`](../../crates/worth-relational/src/visibility/retention/retention_authority.rs)
 
 The naming is not final yet.
 
@@ -100,17 +100,17 @@ Their lane ownership is now also resolved in the DX docs:
 
 That ownership now lives in:
 
-- [`dx_boundary_spec.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_boundary_spec.md)
-- [`dx_boundary_cleanup_list.md`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/dx_boundary_cleanup_list.md)
+- [`dx_boundary_spec.md`](./dx_boundary_spec.md)
+- [`dx_boundary_cleanup_list.md`](./dx_boundary_cleanup_list.md)
 
 ### The Setup Story Is Cleaner
 
-[`RelationalRuntimeApi`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/presentation/api.rs)
+[`RelationalRuntimeApi`](../../crates/worth-relational/src/presentation/api.rs)
 now exposes only:
 
 - `builder()`
 
-[`RelationalRuntimeApi::runtime()`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/presentation/api.rs)
+[`RelationalRuntimeApi::runtime()`](../../crates/worth-relational/src/presentation/api.rs)
 was removed.
 
 That matters because it kills the second quasi-official setup path and leaves
@@ -120,7 +120,7 @@ the builder flow as the one obvious setup door.
 
 This work also crossed into the Phase 2 area, but it matters for Phase 1 too:
 
-- [`facade::harness`](/C:/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-relational/src/facade.rs)
+- [`facade::harness`](../../crates/worth-relational/src/facade.rs)
   is now `#[cfg(test)]`
 
 That means the non-test public facade no longer treats harness support as a

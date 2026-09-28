@@ -27,27 +27,27 @@ Milestone 5 delivered:
 
 - live promotion, live execution, replay, patch envelopes, replay bundles, and
   live policy counters in
-  [crates/worth-query/src/live](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/live)
+  [crates/worth-query/src/live](../../workspaces/worth-query/crates/worth-query/src/live)
 - live performance contracts, width budgets, coalescing admission, and refresh
   status vocabulary in
-  [crates/worth-query/src/live_performance](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/live_performance)
+  [crates/worth-query/src/live_performance](../../workspaces/worth-query/crates/worth-query/src/live_performance)
 - planning-to-live lowering through `ExecutionPlanBundle` in
-  [crates/worth-query/src/planning](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/planning)
+  [crates/worth-query/src/planning](../../workspaces/worth-query/crates/worth-query/src/planning)
 - milestone-native live certification artifacts and matrix coverage under
-  [crates/worth-query/src/harness/live_certification](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/live_certification)
+  [crates/worth-query/src/harness/live_certification](../../workspaces/worth-query/crates/worth-query/src/harness/live_certification)
 - live fixtures and hostile preflights under
-  [crates/worth-query/src/harness/fixtures](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/fixtures)
+  [crates/worth-query/src/harness/fixtures](../../workspaces/worth-query/crates/worth-query/src/harness/fixtures)
 - compile-fail proof-boundary tests for live artifacts and forbidden raw-CDC
   live payload leakage under
-  [crates/worth-query/tests/ui](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/tests/ui)
+  `crates/worth-query/tests/ui`
 
 ## Acceptance Mapping
 
 Milestone 5 is considered closed against
-[milestone-5.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/milestone-5.md),
-[worth_query_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/worth_query_roadmap.md),
+[milestone-5.md](./milestone-5.md),
+[worth_query_roadmap.md](./WORTH_query_roadmap.md),
 and
-[test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-query/test-requirements.md)
+[test-requirements.md](./test-requirements.md)
 because the required runtime-backed live-promotion acceptance surface now
 exists directly.
 
@@ -55,9 +55,9 @@ exists directly.
 
 Covered by:
 
-- [live_certification/mod.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/live_certification/mod.rs)
-- [live_certification/tests.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/live_certification/tests.rs)
-- [live_certification/model.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/harness/live_certification/model.rs)
+- [live_certification/mod.rs](../../workspaces/worth-query/crates/worth-query/src/harness/live_certification/mod.rs)
+- [live_certification/tests.rs](../../workspaces/worth-query/crates/worth-query/src/harness/live_certification/tests.rs)
+- `live_certification/model.rs`
 
 What is proven:
 
@@ -93,7 +93,7 @@ Covered by:
 - `live::promote_preflight_bundle_to_live`
 - `planning::ExecutionPlanBundle::live_promotion`
 - live promotion tests in
-  [crates/worth-query/src/live/mod.rs](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/crates/worth-query/src/live/mod.rs)
+  [crates/worth-query/src/live/mod.rs](../../workspaces/worth-query/crates/worth-query/src/live/mod.rs)
 
 What is proven:
 

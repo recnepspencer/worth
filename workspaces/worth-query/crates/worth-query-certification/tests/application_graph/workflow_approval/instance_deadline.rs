@@ -11,11 +11,11 @@ use worth_query_host::facade::application_entry::{
     WorthQueryApplicationRequestMutationDenial, WorthQueryWorkflowProposalPreparationDenial,
 };
 
-use super::super::bounded_dimension_model::{
+use super::super::document_retention_model::{
     host::{publish_on_first_program_with_trusted_time, CertificationTrustedTime},
     workflow::{
         cancel_instance, continue_on_fork, migrate_instance, retain_workflow,
-        reviewed_geometry_definition_with_deadline,
+        reviewed_document_definition_with_deadline,
     },
 };
 use super::fork_continuation::fork_of;
@@ -35,7 +35,7 @@ fn deadline_instance(
     key: u64,
 ) -> (
     CertificationTrustedTime,
-    BoundedDimensionWorkflowRuntime,
+    DocumentWorkflowRuntime,
     PublishedWorkflowDefinitionRef,
     PublishedWorkflowInstanceRef,
 ) {
@@ -43,7 +43,7 @@ fn deadline_instance(
     let application = retain_workflow(publish_on_first_program_with_trusted_time(time.clone()));
     let definition = match publish_definition(
         &application,
-        reviewed_geometry_definition_with_deadline("applied", DEADLINE),
+        reviewed_document_definition_with_deadline("applied", DEADLINE),
         WorkflowDefinitionExpectedPredecessor::Absent,
         key,
     )
@@ -75,7 +75,7 @@ fn advance_denial(
     }
 }
 
-fn warm_and_cold(application: &BoundedDimensionWorkflowRuntime, mut check: impl FnMut(&str)) {
+fn warm_and_cold(application: &DocumentWorkflowRuntime, mut check: impl FnMut(&str)) {
     check("warm");
     application
         .runtime()
@@ -139,9 +139,9 @@ fn an_approval_or_back_after_the_deadline_is_refused() {
         let back = runtime
             .request(&principal, &scope)
             .mutate(
-                super::super::bounded_dimension_model::workflow::WorkflowAdvanceIntent {
-                    input: super::super::bounded_dimension_model::workflow::WorkflowAdvanceInput {
-                        part_identity: PART_IDENTITY.to_owned(),
+                super::super::document_retention_model::workflow::WorkflowAdvanceIntent {
+                    input: super::super::document_retention_model::workflow::WorkflowAdvanceInput {
+                        document_identity: DOCUMENT_IDENTITY.to_owned(),
                     },
                 },
             )
@@ -226,10 +226,10 @@ fn overdue_operation(
     let effect = runtime
         .request(&principal, &scope)
         .on_branch(instance.branch())
-        .mutate(ReviewedSetPartDimensionIntent {
-            input: super::super::bounded_dimension_model::schema::SetPartDimensionInput {
-                identity: PART_IDENTITY.to_owned(),
-                dimension: 8,
+        .mutate(ReviewedSetRetentionIntent {
+            input: super::super::document_retention_model::schema::SetRetentionInput {
+                identity: DOCUMENT_IDENTITY.to_owned(),
+                retention_days: 8,
             },
         })
         .without_source()
@@ -237,7 +237,7 @@ fn overdue_operation(
         .for_workflow_operation(&application, &operation)
         .expect("the request matches the requirement it was issued")
         .execute_in_program(application.program_runtime());
-    assert_eq!(read_dimension(runtime, instance.branch()), SEED_DIMENSION);
+    assert_eq!(read_retention(runtime, instance.branch()), SEED_RETENTION);
     match effect {
         Ok(WorthQueryApplicationMutationOutcome::Commit(
             WorthQueryApplicationUncommitted::Denied(denial),
@@ -265,7 +265,7 @@ fn a_successor_keeps_the_earlier_deadline_and_an_overdue_source_cannot_migrate()
     let target = replace_definition(
         &application,
         definition,
-        reviewed_geometry_definition_with_deadline("done", DEADLINE),
+        reviewed_document_definition_with_deadline("done", DEADLINE),
         93_410,
     );
     let successor = started(migrate_instance(
@@ -290,7 +290,7 @@ fn a_successor_keeps_the_earlier_deadline_and_an_overdue_source_cannot_migrate()
     let next = replace_definition(
         &application,
         target,
-        reviewed_geometry_definition_with_deadline("finished", DEADLINE),
+        reviewed_document_definition_with_deadline("finished", DEADLINE),
         93_420,
     );
     assert_eq!(

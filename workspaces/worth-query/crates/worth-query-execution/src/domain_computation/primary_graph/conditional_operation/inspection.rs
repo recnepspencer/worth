@@ -3,6 +3,12 @@ use worth_query_installation::facade::ApplicationSchema;
 use super::WorthQueryConditionalRuntimeInstallationDenial;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
+/// Point-in-time counts of the resources the conditional runtime holds:
+/// bindings, managed clocks, retained wakes, reconstructed intents, providers,
+/// leases, retained attempts, and signal graphs.
+///
+/// Get one from `inspect_conditional_runtime`; `is_empty` is true once every
+/// resource has been released.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorthQueryConditionalRuntimeInspection {
     installed_binding_count: usize,

@@ -1,6 +1,6 @@
 # Milestone 13.1 Engineering Spec: Cross-Runtime Granular Invalidation
 
-> **Status:** Implemented; final frozen-source review pending
+> **Status:** Completed. Closeout: [milestone-13.1-closeout.md](./milestone-13.1-closeout.md).
 >
 > **Prerequisite:** [Milestone 13](./milestone-13-plan.md) and its
 > [closeout](./milestone-13-closeout.md)

@@ -202,18 +202,18 @@ surfaces now exist directly and are certified by machine-checkable artifacts.
 
 Covered by:
 
-- [crates/worth-query/src/runtime/tests/mutation/graph_composition.rs](../../crates/worth-query/src/runtime/tests/mutation/graph_composition.rs)
-- [crates/worth-query/src/runtime/tests/mutation/graph_composition_lifecycle.rs](../../crates/worth-query/src/runtime/tests/mutation/graph_composition_lifecycle.rs)
-- [crates/worth-query/src/runtime/tests/mutation/graph_composition_followup.rs](../../crates/worth-query/src/runtime/tests/mutation/graph_composition_followup.rs)
-- [crates/worth-query/src/runtime/tests/mutation/graph_composition_mixed_existing.rs](../../crates/worth-query/src/runtime/tests/mutation/graph_composition_mixed_existing.rs)
-- [crates/worth-query/src/runtime/tests/mutation/graph_composition_verified_existing.rs](../../crates/worth-query/src/runtime/tests/mutation/graph_composition_verified_existing.rs)
-- [crates/worth-query/src/runtime/tests/mutation/graph_composition_retarget_existing.rs](../../crates/worth-query/src/runtime/tests/mutation/graph_composition_retarget_existing.rs)
-- [crates/worth-query/src/runtime/tests/mutation/graph_composition_supersede_existing.rs](../../crates/worth-query/src/runtime/tests/mutation/graph_composition_supersede_existing.rs)
-- [crates/worth-query/src/runtime/tests/mutation/graph_composition_denial.rs](../../crates/worth-query/src/runtime/tests/mutation/graph_composition_denial.rs)
-- [crates/worth-query/src/runtime/tests/mutation/graph_composition_existing_binding_denial.rs](../../crates/worth-query/src/runtime/tests/mutation/graph_composition_existing_binding_denial.rs)
-- [crates/worth-query/src/runtime/tests/mutation/graph_composition_retarget_existing_denial.rs](../../crates/worth-query/src/runtime/tests/mutation/graph_composition_retarget_existing_denial.rs)
-- [crates/worth-query/src/runtime/tests/mutation/graph_composition_boundary.rs](../../crates/worth-query/src/runtime/tests/mutation/graph_composition_boundary.rs)
-- [crates/worth-query/src/runtime/tests/mutation/graph_composition_lineage_summary_boundary.rs](../../crates/worth-query/src/runtime/tests/mutation/graph_composition_lineage_summary_boundary.rs)
+- [crates/worth-query/src/runtime/tests/mutation/graph_composition.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/tests/mutation/graph_composition.rs)
+- [crates/worth-query/src/runtime/tests/mutation/graph_composition_lifecycle.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/tests/mutation/graph_composition_lifecycle.rs)
+- [crates/worth-query/src/runtime/tests/mutation/graph_composition_followup.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/tests/mutation/graph_composition_followup.rs)
+- [crates/worth-query/src/runtime/tests/mutation/graph_composition_mixed_existing.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/tests/mutation/graph_composition_mixed_existing.rs)
+- [crates/worth-query/src/runtime/tests/mutation/graph_composition_verified_existing.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/tests/mutation/graph_composition_verified_existing.rs)
+- [crates/worth-query/src/runtime/tests/mutation/graph_composition_retarget_existing.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/tests/mutation/graph_composition_retarget_existing.rs)
+- [crates/worth-query/src/runtime/tests/mutation/graph_composition_supersede_existing.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/tests/mutation/graph_composition_supersede_existing.rs)
+- [crates/worth-query/src/runtime/tests/mutation/graph_composition_denial.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/tests/mutation/graph_composition_denial.rs)
+- [crates/worth-query/src/runtime/tests/mutation/graph_composition_existing_binding_denial.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/tests/mutation/graph_composition_existing_binding_denial.rs)
+- [crates/worth-query/src/runtime/tests/mutation/graph_composition_retarget_existing_denial.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/tests/mutation/graph_composition_retarget_existing_denial.rs)
+- [crates/worth-query/src/runtime/tests/mutation/graph_composition_boundary.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/tests/mutation/graph_composition_boundary.rs)
+- [crates/worth-query/src/runtime/tests/mutation/graph_composition_lineage_summary_boundary.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/tests/mutation/graph_composition_lineage_summary_boundary.rs)
 
 What is proven:
 
@@ -235,10 +235,10 @@ What is proven:
 
 Covered by:
 
-- [crates/worth-query/src/runtime/tests/mutation/graph_composition_geometry_pressure.rs](../../crates/worth-query/src/runtime/tests/mutation/graph_composition_geometry_pressure.rs)
-- [crates/worth-query/src/runtime/tests/mutation/graph_composition_face_inner_loop.rs](../../crates/worth-query/src/runtime/tests/mutation/graph_composition_face_inner_loop.rs)
-- [crates/worth-query/src/runtime/tests/mutation/graph_composition_invariant_pack.rs](../../crates/worth-query/src/runtime/tests/mutation/graph_composition_invariant_pack.rs)
-- [crates/worth-query/src/runtime/tests/mutation/graph_composition_edge_split.rs](../../crates/worth-query/src/runtime/tests/mutation/graph_composition_edge_split.rs)
+- [crates/worth-query/src/runtime/tests/mutation/graph_composition_geometry_pressure.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/tests/mutation/graph_composition_geometry_pressure.rs)
+- [crates/worth-query/src/runtime/tests/mutation/graph_composition_face_inner_loop.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/tests/mutation/graph_composition_face_inner_loop.rs)
+- `crates/worth-query/src/runtime/tests/mutation/graph_composition_invariant_pack.rs`
+- [crates/worth-query/src/runtime/tests/mutation/graph_composition_edge_split.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/tests/mutation/graph_composition_edge_split.rs)
 
 What is proven:
 
@@ -257,10 +257,10 @@ What is proven:
 
 Covered by:
 
-- [crates/worth-query/src/runtime/tests/assembly/support_profile/graph_composition_capabilities.rs](../../crates/worth-query/src/runtime/tests/assembly/support_profile/graph_composition_capabilities.rs)
-- [crates/worth-query/src/runtime/tests/assembly/support_profile/authority_evidence_closeout.rs](../../crates/worth-query/src/runtime/tests/assembly/support_profile/authority_evidence_closeout.rs)
-- [crates/worth-query/src/runtime/authoritative_mutation_evidence_support.rs](../../crates/worth-query/src/runtime/authoritative_mutation_evidence_support.rs)
-- [crates/worth-query/src/runtime/authoritative_mutation_evidence_closeout.rs](../../crates/worth-query/src/runtime/authoritative_mutation_evidence_closeout.rs)
+- [crates/worth-query/src/runtime/tests/assembly/support_profile/graph_composition_capabilities.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/tests/assembly/support_profile/graph_composition_capabilities.rs)
+- `crates/worth-query/src/runtime/tests/assembly/support_profile/authority_evidence_closeout.rs`
+- [crates/worth-query/src/runtime/authoritative_mutation_evidence_support.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/authoritative_mutation_evidence_support.rs)
+- [crates/worth-query/src/runtime/authoritative_mutation_evidence_closeout.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/authoritative_mutation_evidence_closeout.rs)
 
 What is proven:
 
@@ -277,10 +277,10 @@ What is proven:
 
 The public teaching surface is now updated in:
 
-- [crates/worth-query/docs/graph-composition-authoring.md](../../crates/worth-query/docs/graph-composition-authoring.md)
-- [crates/worth-query/docs/existing-truth-verified-updates.md](../../crates/worth-query/docs/existing-truth-verified-updates.md)
-- [crates/worth-query/docs/existing-truth-verified-deletes.md](../../crates/worth-query/docs/existing-truth-verified-deletes.md)
-- [crates/worth-query/docs/writes-and-intents.md](../../crates/worth-query/docs/writes-and-intents.md)
+- [crates/worth-query/docs/graph-composition-authoring.md](../../workspaces/worth-query/crates/worth-query/docs/authoring/graph-composition-authoring.md)
+- `crates/worth-query/docs/existing-truth-verified-updates.md`
+- `crates/worth-query/docs/existing-truth-verified-deletes.md`
+- [crates/worth-query/docs/writes-and-intents.md](../../workspaces/worth-query/crates/worth-query/docs/execution/writes-and-intents.md)
 - [runtime-authoritative-mutation-evidence-closeout.md](./runtime-authoritative-mutation-evidence-closeout.md)
 
 Those docs now teach the ordinary admitted graph-authoring story directly

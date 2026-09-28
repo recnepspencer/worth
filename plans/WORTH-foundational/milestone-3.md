@@ -1,5 +1,7 @@
 # Milestone 3: Profile And Policy Vocabulary
 
+> **Status:** Completed. Closeout: [milestone-3-closeout.md](./milestone-3-closeout.md).
+
 ## Goal
 
 Define the shared profile and profile-driven policy vocabulary that lets WORTH
@@ -629,7 +631,7 @@ Must preserve:
 - profile identity is derived from canonical basis, not display labels
 - family ordering and composition order cannot drift semantic identity
 - raw digest values cannot masquerade as profile identity
-- structural profile differences cannot be hidden behind â€œsame enoughâ€ labels
+- structural profile differences cannot be hidden behind “same enough” labels
 
 - admitted profile identity and materialization-plan identity remain distinct;
   target-scoped planning output must not silently become the semantic identity

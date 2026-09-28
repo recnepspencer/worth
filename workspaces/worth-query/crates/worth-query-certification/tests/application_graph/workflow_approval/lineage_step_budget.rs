@@ -8,7 +8,7 @@ use worth_query_host::facade::application_entry::{
 use worth_query_host::facade::declaration::application_program::ApplicationWorkflowComponentLimits;
 use worth_query_installation::facade::WorthQueryApplicationWorkflowResourceCeiling;
 
-use super::super::bounded_dimension_model::{
+use super::super::document_retention_model::{
     host::publish_on_first_program,
     workflow::{
         bounded_retry_definition_with_attempts, cancel_instance, continue_on_fork,
@@ -24,7 +24,7 @@ const BUDGET: u64 = 4;
 const RESUME_AT: &str = "proposal/first";
 
 /// A workflow host whose lineages each have `BUDGET` steps.
-fn budgeted() -> BoundedDimensionWorkflowRuntime {
+fn budgeted() -> DocumentWorkflowRuntime {
     let resources = WorthQueryApplicationWorkflowResourceCeiling::new(
         32,
         64,
@@ -44,7 +44,7 @@ fn after_steps(
     key: u64,
     steps: u64,
 ) -> (
-    BoundedDimensionWorkflowRuntime,
+    DocumentWorkflowRuntime,
     PublishedWorkflowDefinitionRef,
     PublishedWorkflowInstanceRef,
 ) {
@@ -73,7 +73,7 @@ fn after_steps(
 }
 
 fn take_steps(
-    application: &BoundedDimensionWorkflowRuntime,
+    application: &DocumentWorkflowRuntime,
     instance: &PublishedWorkflowInstanceRef,
     key: u64,
     steps: u64,
@@ -213,7 +213,7 @@ fn a_retry_of_the_step_that_spent_the_budget_replays() {
     let application = budgeted();
     let definition = match publish_definition(
         &application,
-        reviewed_geometry_definition("completed"),
+        reviewed_document_definition("completed"),
         WorkflowDefinitionExpectedPredecessor::Absent,
         91_200,
     )

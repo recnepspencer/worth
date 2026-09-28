@@ -1,16 +1,8 @@
 # Milestone 9.6 Engineering Spec: Product Boundary Debt Closure For Evidence Identity, Typed Stop Classes, And Session Label Identity
 
-> **Status:** Closed for non-spatial identity-boundary scope on `query-repair`;
-> `worth-spatial public_api_contract` remains a named postponed external gate.
+> **Status:** Completed. One postponed external contract gate is outside this milestone's scope.
 >
 > **Attack plan:** [milestone-9.6-attack-plan.md](./milestone-9.6-attack-plan.md)
->
-> **Closeout note (2026-06-16, branch `query-repair`):** WS-1â€“WS-8 restored
-> honest non-spatial closure: curated ordinary runtime paths, bridge-truth
-> gates except postponed spatial integration, `projection_consumption/`,
-> `workflow/`, and `domain_capabilities/` are covered by exact-zero inventory
-> scans and typed evidence identity helpers. These slices are **9.6 work**, not
-> 9.7 deferrals.
 >
 > **Roadmap parent:** [worth_query_roadmap.md](./worth_query_roadmap.md)
 >
@@ -52,8 +44,8 @@ defects that are invisible from inside `worth-query` but obvious from outside:
   semantics, and no canonical identity participation, in a system whose core
   rule is that repeatable work carries canonical declaration identity
 
-Milestone `9.5` closes lane debt â€” unfinished productization surfaces.
-This milestone closes identity and diagnostic boundary debt â€” places where a
+Milestone `9.5` closes lane debt — unfinished productization surfaces.
+This milestone closes identity and diagnostic boundary debt — places where a
 finished lane still leaks folklore into consumers. It must land before
 Milestone `9.7` builds concurrency receipts on top of evidence identity and
 before Milestone `9.8` ships consumer-facing report scaffolding that would
@@ -65,7 +57,7 @@ otherwise freeze the string-folklore digest scheme into a public kit.
   taxonomy documented as "please don't string-match" is category-5 hope;
   this milestone moves both to compiler- and test-enforced contracts.
 - `arch_laws.md`: Law 12 (typed, queryable error topologies), Law 26
-  (explicit equivalence contracts for every reuse surface â€” digests are
+  (explicit equivalence contracts for every reuse surface — digests are
   equivalence contracts), Law 40 (names and identities mean exactly one
   thing), Law 41 (proof-carrying types with sealed constructors).
 - `composition_laws.md`: digest construction, stop classification, and label
@@ -78,13 +70,13 @@ otherwise freeze the string-folklore digest scheme into a public kit.
   identity is the equivalence basis for receipts, suppression, and
   certification comparison, so it must be stable, canonical, and cheap.
 - `worth_query_roadmap.md`: declare once, lower once, execute through
-  canonical artifacts â€” identity is part of declaration, so identity
+  canonical artifacts — identity is part of declaration, so identity
   construction is runtime work, not consumer folklore.
 
 ## Adversarial Constraint
 
-For the same runtime fact â€” an admission denial, a basis admission, a
-receipt, a support row, a session identity â€” Query must produce the same
+For the same runtime fact — an admission denial, a basis admission, a
+receipt, a support row, a session identity — Query must produce the same
 canonical evidence identity and the same typed stop-class meaning under
 hostile drift pressure: `Debug` derive reordering, field renaming, message
 rewording, separator injection inside field values, and session label
@@ -107,7 +99,7 @@ This milestone fails if any covered path:
 - This is a debt-closure milestone for identity and diagnostic boundaries,
   not a new capability family.
 - The canonical digest basis is a runtime-owned structural encoding with
-  field tagging and scheme versioning â€” never format strings.
+  field tagging and scheme versioning — never format strings.
 - Error message text is presentation. Stop-class matching is a type-level
   operation with typed context payloads.
 - Session labels become canonical identity artifacts with explicit namespace
@@ -131,11 +123,11 @@ cannot exist without passing through the canonical encoder.
 - canonical field encoding
 
 **Relevant Query source surfaces**
-- [runtime/support_matrix.rs](../../crates/worth-query/src/runtime/support_matrix.rs)
-- [runtime/state_snapshot.rs](../../crates/worth-query/src/runtime/state_snapshot.rs)
-- [runtime/workspace_contracts.rs](../../crates/worth-query/src/runtime/workspace_contracts.rs)
-- [runtime/intent/preview.rs](../../crates/worth-query/src/runtime/intent/preview.rs)
-- [runtime/intent/denial.rs](../../crates/worth-query/src/runtime/intent/denial.rs)
+- [runtime/support_matrix.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/support_matrix.rs)
+- [runtime/state_snapshot.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/state_snapshot.rs)
+- [runtime/workspace_contracts.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/workspace_contracts.rs)
+- [runtime/intent/preview.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/intent/preview.rs)
+- [runtime/intent/denial.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/intent/denial.rs)
 
 **Relevant APIs and product surfaces**
 - the new canonical evidence-identity constructor surface (sealed; the only
@@ -174,7 +166,7 @@ let admission_digest = WORTHQueryEvidenceIdentity::compose(EvidenceScope::BasisA
     .field(evidence_tag::AUTHORITY_LANE, admission.authority_lane())
     .field_seq(evidence_tag::EVIDENCE, admission.evidence())
     .seal();
-// admission_digest.scheme_version() â€” comparable only against same-scheme
+// admission_digest.scheme_version() — comparable only against same-scheme
 // digests; cross-version comparison is a typed error, not a byte mismatch
 ```
 
@@ -232,9 +224,9 @@ let admission_digest = WORTHQueryEvidenceIdentity::compose(EvidenceScope::BasisA
 
 ### Phase 2: Query-Owned Digest Surface Migration Boundary
 
-Migrate Query's own covered digest emission â€” public API family contract
+Migrate Query's own covered digest emission — public API family contract
 digests, support matrix row digests, state snapshot digests, and runtime
-certification digests â€” onto the Phase 1 primitive, so the runtime stops
+certification digests — onto the Phase 1 primitive, so the runtime stops
 teaching the folklore scheme by example.
 
 **Relevant subsystems**
@@ -243,11 +235,11 @@ teaching the folklore scheme by example.
 - certification digest emission
 
 **Relevant Query source surfaces**
-- [runtime/support_matrix.rs](../../crates/worth-query/src/runtime/support_matrix.rs)
-- [runtime/support/profile.rs](../../crates/worth-query/src/runtime/support/profile.rs)
-- [runtime/state_snapshot.rs](../../crates/worth-query/src/runtime/state_snapshot.rs)
-- [runtime/public_api_transcript.rs](../../crates/worth-query/src/runtime/public_api_transcript.rs)
-- [application/support/report.rs](../../crates/worth-query/src/application/support/report.rs)
+- [runtime/support_matrix.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/support_matrix.rs)
+- [runtime/support/profile.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/support/profile.rs)
+- [runtime/state_snapshot.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/state_snapshot.rs)
+- [runtime/public_api_transcript.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/public_api_transcript.rs)
+- [application/support/report.rs](../../workspaces/worth-query/crates/worth-query/src/application/support/report.rs)
 
 **Warnings**
 - Do not preserve old digest values by re-implementing the old string scheme
@@ -288,8 +280,8 @@ rich denial payloads.
 - stop-class taxonomy and accessor
 
 **Relevant Query source surfaces**
-- [runtime/error.rs](../../crates/worth-query/src/runtime/error.rs)
-- [runtime/support/profile.rs](../../crates/worth-query/src/runtime/support/profile.rs)
+- [runtime/error.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/error.rs)
+- [runtime/support/profile.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/support/profile.rs)
 
 **Relevant APIs and product surfaces**
 - `WORTHQueryRuntimeError` and its covered denial payloads
@@ -332,8 +324,8 @@ covered stop class is handleable end to end with zero string operations.
 - consumer-shaped matching certification
 
 **Relevant Query source surfaces**
-- [runtime/error.rs](../../crates/worth-query/src/runtime/error.rs)
-- [runtime/workspace.rs](../../crates/worth-query/src/runtime/workspace.rs)
+- [runtime/error.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/error.rs)
+- [runtime/workspace.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/workspace.rs)
 
 **Relevant APIs and product surfaces**
 - `workspace.admit_public_api_family(...)` denial surface
@@ -376,8 +368,8 @@ assert_eq!(
 - Add a `Typed Stop Class Matching Closure Test` to
   [test-requirements.md](./test-requirements.md) and close it in this phase.
 - Adversarial equivalence: a consumer-shaped test that handles every covered
-  stop class â€” including unsupported-family admission denial with the family
-  value extracted â€” using only type-level matching, with zero string
+  stop class — including unsupported-family admission denial with the family
+  value extracted — using only type-level matching, with zero string
   operations.
 - Adversarial drift: reword every covered denial message and prove the typed
   matching suite still passes while a message-matching probe fails, proving
@@ -403,7 +395,7 @@ typed identity value rather than a display string.
 - canonical evidence identity (from Phase 1)
 
 **Relevant Query source surfaces**
-- [runtime/workspace.rs](../../crates/worth-query/src/runtime/workspace.rs)
+- [runtime/workspace.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/workspace.rs)
   (the label intake the artifact will replace in Phase 6)
 
 **Relevant APIs and product surfaces**
@@ -445,7 +437,7 @@ canonical label identity recorded in basis admission evidence.
 - basis admission evidence
 
 **Relevant Query source surfaces**
-- [runtime/workspace.rs](../../crates/worth-query/src/runtime/workspace.rs)
+- [runtime/workspace.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/workspace.rs)
 
 **Relevant APIs and product surfaces**
 - `workspace.preview_with_options(...)` and `workspace.branch_with_options(...)`
@@ -493,7 +485,7 @@ let preview = workspace.preview_with_options(
   admission evidence and digest participation across preview, branch, and
   replayed admission of the covered session families.
 - Adversarial collision: prove admitting a second session with an equivalent
-  label identity stops with a typed collision class â€” never a silent merge â€”
+  label identity stops with a typed collision class — never a silent merge —
   and that the raw-string intake lane carries zero remaining ordinary-path
   call sites.
 
@@ -511,7 +503,7 @@ Close the **ordinary-path** slice with support/profile honesty, documentation
 follow-through, and one hostile certification program proving the three
 boundaries hold on curated runtime surfaces under combined drift pressure.
 
-**This phase does not close Milestone `9.6`.** Phases 8â€“11 must report
+**This phase does not close Milestone `9.6`.** Phases 8–11 must report
 `Closed` before Phase 12 may aggregate final milestone posture.
 
 **Relevant subsystems**
@@ -520,9 +512,9 @@ boundaries hold on curated runtime surfaces under combined drift pressure.
 - milestone certification
 
 **Relevant Query source surfaces**
-- [application/support/report.rs](../../crates/worth-query/src/application/support/report.rs)
-- [application/tests.rs](../../crates/worth-query/src/application/tests.rs)
-- [public_doc_coverage/tests/support.rs](../../crates/worth-query/src/public_doc_coverage/tests/support.rs)
+- [application/support/report.rs](../../workspaces/worth-query/crates/worth-query/src/application/support/report.rs)
+- `application/tests.rs`
+- `public_doc_coverage/tests/support.rs`
 
 **Documentation follow-through**
 - Evidence-identity, stop-class, and session-label contracts enter the public
@@ -579,7 +571,7 @@ boundaries hold on curated runtime surfaces under combined drift pressure.
 ### Phase 8: Bridge-Truth Phase 10 Zero-Deferral Closeout Boundary
 
 Close every remaining Law 42 authority-lifecycle defect in the bridge-truth
-track. This is Milestone `9.6` scope â€” not a separate milestone and not
+track. This is Milestone `9.6` scope — not a separate milestone and not
 deferrable to `9.7`.
 
 **Governing docs:** [milestone-9.6-bridge-truth-identity-lowering.md](./milestone-9.6-bridge-truth-identity-lowering.md),
@@ -592,7 +584,7 @@ worth-topo, worth-spatial, worth-kernel, hadwiger-research, worth-ui
 **Warnings**
 - Do not treat ordinary-path Phase 7 closure as bridge-truth closure.
 - Do not leave compile-fail ledger rows open with unnamed owners.
-- **worth-spatial `public_api_contract` is postponed** â€” separate optimization
+- **worth-spatial `public_api_contract` is postponed** — separate optimization
   agent; `worth-spatial --lib` must stay green; integration harness is Phase 12
   blocker only, not WS-6+ blocker.
 
@@ -610,7 +602,7 @@ worth-topo, worth-spatial, worth-kernel, hadwiger-research, worth-ui
 Eliminate same-class digest and authority folklore across the entire
 `projection_consumption/` subtree.
 
-**Relevant Query source surfaces:** [projection_consumption/](../../crates/worth-query/src/projection_consumption/)
+**Relevant Query source surfaces:** [projection_consumption/](../../workspaces/worth-query/crates/worth-query/src/projection_consumption/)
 
 **Warnings**
 - Do not migrate only `receipt.rs` / `source.rs` while certification oracle
@@ -630,9 +622,9 @@ Eliminate same-class digest and authority folklore across the entire
 
 Eliminate same-class digest and authority folklore across `workflow/` and
 cross-boundary parity in
-[domain_capabilities/canonical_runtime/workflow/](../../crates/worth-query/src/domain_capabilities/canonical_runtime/workflow/).
+[domain_capabilities/canonical_runtime/workflow/](../../workspaces/worth-query/crates/worth-query/src/domain_capabilities/canonical_runtime/workflow/).
 
-**Relevant Query source surfaces:** [workflow/](../../crates/worth-query/src/workflow/)
+**Relevant Query source surfaces:** [workflow/](../../workspaces/worth-query/crates/worth-query/src/workflow/)
 
 **Warnings**
 - Do not fix only `lowering/writeback.rs` while foundation or inspection paths
@@ -648,10 +640,10 @@ cross-boundary parity in
 ### Phase 11: Domain-Capabilities Identity Boundary Closure
 
 Eliminate same-class digest and authority folklore across the entire
-`domain_capabilities/` subtree. Largest remaining slice â€” ships as ordered
+`domain_capabilities/` subtree. Largest remaining slice — ships as ordered
 sub-slices in the attack plan (DC-1 through DC-6), not one pass.
 
-**Relevant Query source surfaces:** [domain_capabilities/](../../crates/worth-query/src/domain_capabilities/)
+**Relevant Query source surfaces:** [domain_capabilities/](../../workspaces/worth-query/crates/worth-query/src/domain_capabilities/)
 
 **Warnings**
 - Do not close after `canonical_runtime/` alone while `certification/reports/`
@@ -667,20 +659,20 @@ sub-slices in the attack plan (DC-1 through DC-6), not one pass.
 
 ### Phase 12: Milestone Re-Close And Final Hostile Certification Boundary
 
-Aggregate Phases 7â€“11 into honest non-spatial milestone `Closed` posture.
+Aggregate Phases 7–11 into honest non-spatial milestone `Closed` posture.
 Support/profile, docs, roadmap, and test-requirements must agree; no same-class
 exclusions remain for worth-query integration subtrees.
 
 **Warnings**
-- Do not mark non-spatial `Closed` while any Phase 8â€“11 worth-query gate is
+- Do not mark non-spatial `Closed` while any Phase 8–11 worth-query gate is
   `Open` or `Partial`.
 - Deferring `projection_consumption/`, `workflow/`, or `domain_capabilities/`
-  to Milestone `9.7` is prohibited â€” they are same-class 9.6 debt.
+  to Milestone `9.7` is prohibited — they are same-class 9.6 debt.
 - `worth-spatial public_api_contract` is postponed as an external spatial
   integration gate; it does not reopen worth-query identity-boundary closure.
 
 **Test requirements**
-- Re-run Phase 7 hostile matrix with expanded inventory covering Phases 9â€“11.
+- Re-run Phase 7 hostile matrix with expanded inventory covering Phases 9–11.
 - Support `Closed` derives only from zero residue across all non-spatial
   worth-query phases.
 
@@ -727,10 +719,10 @@ The milestone is only **Closed** when all of the following hold together:
 5. Any exclusion is defended as a genuinely different milestone-class boundary
    with a named owner; "not in the original inventory" is not a valid reason.
    **Same-class folklore in `projection_consumption/`, `workflow/`, or
-   `domain_capabilities/` is not excludable** â€” deferral to `9.7` is invalid.
+   `domain_capabilities/` is not excludable** — deferral to `9.7` is invalid.
 6. Bridge-truth Phase 10 closeout (Phase 8) is `Closed` with zero unnamed
    ledger deferrals.
-7. Phase 12 aggregates non-spatial `Closed` posture only when Phases 8â€“11 each
+7. Phase 12 aggregates non-spatial `Closed` posture only when Phases 8–11 each
    report `Closed` with phase-local inventory and hostile proof, excluding the
    named postponed `worth-spatial public_api_contract` integration gate.
 
@@ -758,14 +750,14 @@ boundaries.
 - support/profile, docs, and hostile certification closure for all three
   boundaries on the ordinary runtime path (Phase 7)
 - bridge-truth Phase 10 zero-deferral closeout (Phase 8)
-- projection-consumption identity boundary closure â€” full prefix (Phase 9)
-- workflow identity boundary closure â€” full prefix (Phase 10)
-- domain-capabilities identity boundary closure â€” six sub-slices (Phase 11)
+- projection-consumption identity boundary closure — full prefix (Phase 9)
+- workflow identity boundary closure — full prefix (Phase 10)
+- domain-capabilities identity boundary closure — six sub-slices (Phase 11)
 - final milestone re-close with expanded inventory (Phase 12)
 
 ## Must Preserve
 
-- the existing rich error topology â€” extended into matchability, never
+- the existing rich error topology — extended into matchability, never
   flattened
 - existing public facade shape; no parallel digest, error, or label APIs
 - canonical declaration identity semantics everywhere the new label and
@@ -804,7 +796,7 @@ This milestone is complete only when `worth-query` can prove:
   flow from strings
 - docs, support profiles, and certification agree the three boundaries are
   closed ordinary product surface **including** projection consumption,
-  workflow, and domain-capability integration feeders (Phases 9â€“11)
+  workflow, and domain-capability integration feeders (Phases 9–11)
 - bridge-truth Law 42 authority graph closed with compile-fail matrix and
   downstream certification green (Phase 8)
 - `EXCLUDED_FOLKLORE_PATHS` contains no same-class worth-query integration
@@ -817,9 +809,9 @@ This milestone is complete only when `worth-query` can prove:
   boundaries refreeze on canonical contracts.
 - It belongs before Milestone `9.7` because concurrency receipts, journal
   identity, and published-artifact digests must be born on the canonical
-  evidence-identity scheme â€” and because `9.7` must not inherit unclean
+  evidence-identity scheme — and because `9.7` must not inherit unclean
   projection-consumption, workflow, or domain-capability identity debt.
-- Phases 8â€“11 are hard gates before Phase 12 and before Milestone `9.7`
+- Phases 8–11 are hard gates before Phase 12 and before Milestone `9.7`
   may start.
 - It belongs before Milestone `9.8` because the consumer product kit ships
   report scaffolding directly on the Phase 1 primitive.

@@ -188,7 +188,7 @@ This plan does not cover:
 
 ### What Is Still Weak
 
-- [facade.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/facade.rs)
+- [facade.rs](../../crates/worth-foundational/src/facade.rs)
   is too export-dense for Milestones 1-3.
 - Common-path entry is not obvious enough from the public surface alone.
 - Lower lanes and stronger lanes are visible, but recommended lanes are not
@@ -351,14 +351,14 @@ requirement.
 
 Milestone 1 now has a real common lane through:
 
-- [crates/worth-foundational/src/aspects/front_doors/mod.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/aspects/front_doors/mod.rs)
-- [crates/worth-foundational/src/aspects/front_doors/contract.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/aspects/front_doors/contract.rs)
-- [crates/worth-foundational/src/aspects/front_doors/masks.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/aspects/front_doors/masks.rs)
-- [crates/worth-foundational/src/aspects/front_doors/validation.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/aspects/front_doors/validation.rs)
-- [crates/worth-foundational/src/aspects/front_doors/state.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/aspects/front_doors/state.rs)
-- [crates/worth-foundational/src/aspects/front_doors/patches.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/aspects/front_doors/patches.rs)
-- [crates/worth-foundational/src/aspects/front_doors/values.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/aspects/front_doors/values.rs)
-- [crates/worth-foundational/src/compatibility/front_doors.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/compatibility/front_doors.rs)
+- [crates/worth-foundational/src/aspects/front_doors/mod.rs](../../crates/worth-foundational/src/aspects/front_doors/mod.rs)
+- [crates/worth-foundational/src/aspects/front_doors/contract.rs](../../crates/worth-foundational/src/aspects/front_doors/contract/mod.rs)
+- [crates/worth-foundational/src/aspects/front_doors/masks.rs](../../crates/worth-foundational/src/aspects/front_doors/masks/mod.rs)
+- [crates/worth-foundational/src/aspects/front_doors/validation.rs](../../crates/worth-foundational/src/aspects/front_doors/validation/mod.rs)
+- [crates/worth-foundational/src/aspects/front_doors/state.rs](../../crates/worth-foundational/src/aspects/front_doors/state/mod.rs)
+- [crates/worth-foundational/src/aspects/front_doors/patches.rs](../../crates/worth-foundational/src/aspects/front_doors/patches/mod.rs)
+- `crates/worth-foundational/src/aspects/front_doors/values.rs`
+- [crates/worth-foundational/src/compatibility/front_doors.rs](../../crates/worth-foundational/src/compatibility/front_doors.rs)
 
 The common lane now honestly covers:
 
@@ -379,15 +379,15 @@ The common lane now honestly covers:
 
 The surface is mechanically frozen into the Milestone 1 readiness contract in:
 
-- [crates/worth-foundational/src/boundary/milestone1_readiness.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary/milestone1_readiness.rs)
-- [crates/worth-foundational/src/boundary/milestone1_readiness_certification.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/boundary/milestone1_readiness_certification.rs)
+- [crates/worth-foundational/src/boundary/milestone1_readiness.rs](../../crates/worth-foundational/src/boundary/milestone1_readiness.rs)
+- [crates/worth-foundational/src/boundary/milestone1_readiness_certification.rs](../../crates/worth-foundational/src/boundary/milestone1_readiness_certification.rs)
 
 And it is externally proven by:
 
-- [crates/worth-foundational/tests/certification/aspects/front_doors.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/aspects/front_doors.rs)
-- [crates/worth-foundational/tests/certification/compatibility/front_doors.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/compatibility/front_doors.rs)
-- [crates/worth-foundational/tests/ui/aspect_front_doors](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/ui/aspect_front_doors)
-- [crates/worth-foundational/tests/ui/compatibility_front_doors](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/ui/compatibility_front_doors)
+- [crates/worth-foundational/tests/certification/aspects/front_doors.rs](../../crates/worth-foundational/tests/certification/aspects/front_doors.rs)
+- [crates/worth-foundational/tests/certification/compatibility/front_doors.rs](../../crates/worth-foundational/tests/certification/compatibility/front_doors.rs)
+- [crates/worth-foundational/tests/ui/aspect_front_doors](../../crates/worth-foundational/tests/ui/aspect_front_doors)
+- [crates/worth-foundational/tests/ui/compatibility_front_doors](../../crates/worth-foundational/tests/ui/compatibility_front_doors)
 
 ### Non-Goals
 
@@ -486,12 +486,12 @@ these lanes clearly.
 
 Milestone 2 now has a real grouped public surface through:
 
-- [crates/worth-foundational/src/canonicalization/front_doors](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/canonicalization/front_doors)
-- [crates/worth-foundational/src/canonicalization_api/mod.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/canonicalization_api/mod.rs)
-- [crates/worth-foundational/src/canonicalization_api/common_path.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/canonicalization_api/common_path.rs)
-- [crates/worth-foundational/src/canonicalization_api/lower_lane](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/canonicalization_api/lower_lane)
-- [crates/worth-foundational/src/canonicalization_api/stronger_lane](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/canonicalization_api/stronger_lane)
-- [crates/worth-foundational/src/canonicalization_api/inventory.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/canonicalization_api/inventory.rs)
+- [crates/worth-foundational/src/canonicalization/front_doors](../../crates/worth-foundational/src/canonicalization/front_doors)
+- [crates/worth-foundational/src/canonicalization_api/mod.rs](../../crates/worth-foundational/src/canonicalization_api/mod.rs)
+- [crates/worth-foundational/src/canonicalization_api/common_path.rs](../../crates/worth-foundational/src/canonicalization_api/common_path.rs)
+- [crates/worth-foundational/src/canonicalization_api/lower_lane](../../crates/worth-foundational/src/canonicalization_api/lower_lane)
+- [crates/worth-foundational/src/canonicalization_api/stronger_lane](../../crates/worth-foundational/src/canonicalization_api/stronger_lane)
+- [crates/worth-foundational/src/canonicalization_api/inventory.rs](../../crates/worth-foundational/src/canonicalization_api/inventory.rs)
 
 The implemented public grammar now provides:
 
@@ -504,11 +504,11 @@ The implemented public grammar now provides:
 
 The grouped surface is externally proven by:
 
-- [crates/worth-foundational/tests/certification/canonicalization/front_doors.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/canonicalization/front_doors.rs)
-- [crates/worth-foundational/tests/certification/canonicalization/grouped_surface.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/canonicalization/grouped_surface.rs)
-- [crates/worth-foundational/tests/certification/canonicalization/production_readiness/public_surface_inventory.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/canonicalization/production_readiness/public_surface_inventory.rs)
-- [crates/worth-foundational/tests/ui/canonicalization/front_doors](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/ui/canonicalization/front_doors)
-- [crates/worth-foundational/tests/ui/canonicalization/grouped_surface](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/ui/canonicalization/grouped_surface)
+- [crates/worth-foundational/tests/certification/canonicalization/front_doors.rs](../../crates/worth-foundational/tests/certification/canonicalization/front_doors.rs)
+- [crates/worth-foundational/tests/certification/canonicalization/grouped_surface.rs](../../crates/worth-foundational/tests/certification/canonicalization/grouped_surface.rs)
+- [crates/worth-foundational/tests/certification/canonicalization/production_readiness/public_surface_inventory.rs](../../crates/worth-foundational/tests/certification/canonicalization/production_readiness/public_surface_inventory.rs)
+- [crates/worth-foundational/tests/ui/canonicalization/front_doors](../../crates/worth-foundational/tests/ui/canonicalization/front_doors)
+- [crates/worth-foundational/tests/ui/canonicalization/grouped_surface](../../crates/worth-foundational/tests/ui/canonicalization/grouped_surface)
 
 ### Non-Goals
 
@@ -600,20 +600,20 @@ let plan = profiles::materialization()
 
 Milestone 3 now has a real common lane through:
 
-- [crates/worth-foundational/src/profiles/front_doors/mod.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/profiles/front_doors/mod.rs)
-- [crates/worth-foundational/src/profiles/front_doors/set.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/profiles/front_doors/set.rs)
-- [crates/worth-foundational/src/profiles/front_doors/progression.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/profiles/front_doors/progression.rs)
-- [crates/worth-foundational/src/profiles/front_doors/attachment.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/profiles/front_doors/attachment.rs)
-- [crates/worth-foundational/src/profiles/front_doors/materialization.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/profiles/front_doors/materialization.rs)
-- [crates/worth-foundational/src/profiles/front_doors/certification.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/profiles/front_doors/certification.rs)
+- [crates/worth-foundational/src/profiles/front_doors/mod.rs](../../crates/worth-foundational/src/profiles/front_doors/mod.rs)
+- [crates/worth-foundational/src/profiles/front_doors/set.rs](../../crates/worth-foundational/src/profiles/front_doors/set.rs)
+- [crates/worth-foundational/src/profiles/front_doors/progression.rs](../../crates/worth-foundational/src/profiles/front_doors/progression.rs)
+- [crates/worth-foundational/src/profiles/front_doors/attachment.rs](../../crates/worth-foundational/src/profiles/front_doors/attachment.rs)
+- [crates/worth-foundational/src/profiles/front_doors/materialization.rs](../../crates/worth-foundational/src/profiles/front_doors/materialization.rs)
+- [crates/worth-foundational/src/profiles/front_doors/certification.rs](../../crates/worth-foundational/src/profiles/front_doors/certification.rs)
 
 Milestone 3 now also has a grouped public surface through:
 
-- [crates/worth-foundational/src/profiles_api/mod.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/profiles_api/mod.rs)
-- [crates/worth-foundational/src/profiles_api/common_path.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/profiles_api/common_path.rs)
-- [crates/worth-foundational/src/profiles_api/lower_lane](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/profiles_api/lower_lane)
-- [crates/worth-foundational/src/profiles_api/stronger_lane](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/profiles_api/stronger_lane)
-- [crates/worth-foundational/src/profiles_api/inventory.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/profiles_api/inventory.rs)
+- [crates/worth-foundational/src/profiles_api/mod.rs](../../crates/worth-foundational/src/profiles_api/mod.rs)
+- [crates/worth-foundational/src/profiles_api/common_path.rs](../../crates/worth-foundational/src/profiles_api/common_path.rs)
+- [crates/worth-foundational/src/profiles_api/lower_lane](../../crates/worth-foundational/src/profiles_api/lower_lane)
+- [crates/worth-foundational/src/profiles_api/stronger_lane](../../crates/worth-foundational/src/profiles_api/stronger_lane)
+- [crates/worth-foundational/src/profiles_api/inventory.rs](../../crates/worth-foundational/src/profiles_api/inventory.rs)
 
 The implemented public grammar now provides:
 
@@ -629,16 +629,16 @@ The implemented public grammar now provides:
 The shaped surface is mechanically frozen into the Milestone 3 readiness
 contract in:
 
-- [crates/worth-foundational/src/profiles/readiness/inventory.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/profiles/readiness/inventory.rs)
-- [crates/worth-foundational/src/profiles/readiness/report.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/src/profiles/readiness/report.rs)
+- [crates/worth-foundational/src/profiles/readiness/inventory.rs](../../crates/worth-foundational/src/profiles/readiness/inventory.rs)
+- [crates/worth-foundational/src/profiles/readiness/report.rs](../../crates/worth-foundational/src/profiles/readiness/report.rs)
 
 And it is externally proven by:
 
-- [crates/worth-foundational/tests/certification/profiles/front_doors.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/profiles/front_doors.rs)
-- [crates/worth-foundational/tests/certification/profiles/grouped_surface.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/profiles/grouped_surface.rs)
-- [crates/worth-foundational/tests/certification/profiles/readiness.rs](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/certification/profiles/readiness.rs)
-- [crates/worth-foundational/tests/ui/profiles/front_doors](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/ui/profiles/front_doors)
-- [crates/worth-foundational/tests/ui/profiles/grouped_surface](/C:/Users/Esther/Documents/Programming/WORTH_workspace/worktree_3/crates/worth-foundational/tests/ui/profiles/grouped_surface)
+- [crates/worth-foundational/tests/certification/profiles/front_doors.rs](../../crates/worth-foundational/tests/certification/profiles/front_doors.rs)
+- [crates/worth-foundational/tests/certification/profiles/grouped_surface.rs](../../crates/worth-foundational/tests/certification/profiles/grouped_surface.rs)
+- [crates/worth-foundational/tests/certification/profiles/readiness.rs](../../crates/worth-foundational/tests/certification/profiles/readiness.rs)
+- [crates/worth-foundational/tests/ui/profiles/front_doors](../../crates/worth-foundational/tests/ui/profiles/front_doors)
+- [crates/worth-foundational/tests/ui/profiles/grouped_surface](../../crates/worth-foundational/tests/ui/profiles/grouped_surface)
 
 ### Non-Goals
 

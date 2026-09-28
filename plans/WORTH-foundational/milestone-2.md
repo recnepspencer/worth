@@ -1,5 +1,7 @@
 # Milestone 2: Canonical Digest And Canonicalization Substrate
 
+> **Status:** Completed. Closeout: [milestone-2-closeout.md](./milestone-2-closeout.md).
+
 ## Goal
 
 Define the shared canonicalization and digest-basis substrate that makes

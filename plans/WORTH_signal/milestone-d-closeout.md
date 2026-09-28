@@ -103,9 +103,9 @@ Runtime ownership and lowering:
 - [async_capability/keyed_history.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/async_capability/keyed_history.rs)
 - [async_capability/keyed_equivalence.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/async_capability/keyed_equivalence.rs)
 - [async_capability/hierarchy_history.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/async_capability/hierarchy_history.rs)
-- [runtime_state.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/runtime_state.rs)
+- [runtime_state.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/runtime_state/mod.rs)
 - [resource.rs](../../crates/worth-signal/src/logic/transaction/runtime/state/resource.rs)
-- [summary.rs](../../crates/worth-signal/src/data/resource/summary.rs)
+- [summary.rs](../../crates/worth-signal/src/data/resource/summary/mod.rs)
 - [telemetry.rs](../../crates/worth-signal/src/data/telemetry.rs)
 - [facade.rs](../../crates/worth-signal/src/facade.rs)
 
@@ -196,8 +196,8 @@ by section `14.2` of the spec.
 
 ## Direct Strict-Suite Ownership
 
-The strict Milestone D suites that turned the milestone from â€œfeature-completeâ€
-into â€œcloseout-completeâ€ are:
+The strict Milestone D suites that turned the milestone from “feature-complete”
+into “closeout-complete” are:
 
 - `async_node_nightmare_workload_preserves_combined_capability_truth_across_restore`
 - `async_node_nightmare_restore_lineage_keeps_hierarchy_honest_and_rebinds_keyed_explanations`

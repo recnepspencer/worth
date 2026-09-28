@@ -3,18 +3,26 @@ use worth_query_declaration::facade::application_query::ApplicationQueryResultSl
 
 use crate::domain_computation::application_outcome_identity::WorthQueryApplicationOutcomeIdentity;
 
+/// Whether a query result's disclosure was public or governed by authorization.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationDisclosureReceiptPosture {
+    /// The query has no governed disclosure; nothing was withheld by policy.
     Public,
+    /// Disclosure was decided per result slot under a capability authorization.
     Governed,
 }
 
+/// The decision made for one result slot under governed disclosure.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationDisclosureOutcome {
+    /// The slot's value was disclosed to the caller.
     Disclosed,
+    /// The slot's value was withheld from the caller.
     Omitted,
 }
 
+/// One governed disclosure decision: a result slot, the disclosure it
+/// requires, and whether it was disclosed or omitted.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationDisclosureDecisionFact {
     slot: ApplicationQueryResultSlotKey,
@@ -22,6 +30,13 @@ pub struct WorthQueryApplicationDisclosureDecisionFact {
     outcome: WorthQueryApplicationDisclosureOutcome,
 }
 
+/// Record of what a query result disclosed and withheld, and under what
+/// authorization.
+///
+/// Read it from a query access receipt's `disclosure()`. A public receipt is
+/// empty. A governed receipt lists each slot decision, the disclosed and
+/// omitted disclosure values, and the capability authorization that decided
+/// them. It is descriptive evidence, not authority.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationDisclosureReceipt {
     outcome_identity: Option<WorthQueryApplicationDisclosureOutcomeIdentity>,
@@ -147,6 +162,7 @@ impl WorthQueryApplicationDisclosureDecisionFact {
         self.outcome
     }
 }
+/// Process-local identity of one governed disclosure outcome, for correlation.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct WorthQueryApplicationDisclosureOutcomeIdentity(WorthQueryApplicationOutcomeIdentity);
 

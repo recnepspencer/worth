@@ -1,25 +1,25 @@
 # Milestone 10 Engineering Spec: Speculative Truth-Branch To Signal-Branch Coordination And Preview Flows
 
-> **Status:** Planned engineering spec
+> **Status:** Completed. Closeout: [milestone-10-closeout.md](./milestone-10-closeout.md).
 >
-> **Roadmap parent:** [worth_runtime_bridge_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/worth_runtime_bridge_roadmap.md)
+> **Roadmap parent:** [worth_runtime_bridge_roadmap.md](./WORTH_runtime_bridge_roadmap.md)
 >
-> **Vision parent:** [worth_runtime_bridge_vision.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/worth_runtime_bridge_vision.md)
+> **Vision parent:** [worth_runtime_bridge_vision.md](./WORTH_runtime_bridge_vision.md)
 >
-> **Prior milestone:** [milestone-9.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/milestone-9.md)
+> **Prior milestone:** [milestone-9.md](./milestone-9.md)
 >
-> **Bridge certification companion:** [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md)
+> **Bridge certification companion:** [test-requirements.md](./test-requirements.md)
 >
 > **Primary architectural driver:** make speculative truth branches, speculative signal branches, preview sessions, discard boundaries, and explicit promotion-to-authority records first-class bridge protocol surfaces so preview and branch-local evaluation remain deterministic, replay-safe, and fail-closed without collapsing the two runtimes into one speculative model
 >
 > **Companion docs:**
-> - [worth_relational_roadmap.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-relational/worth_relational_roadmap.md)
-> - [worth_signal_vision.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth_signal/worth_signal_vision.md)
-> - [worth_signals2.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth_signal/worth_signals2.md)
-> - [MENTALITY.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/MENTALITY.md)
-> - [architectural_guidelines.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/architectural_guidelines.md)
-> - [domain_standards.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/domain_standards.md)
-> - [performance_guidelines.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/docs/coding-guidelines/performance_guidelines.md)
+> - [worth_relational_roadmap.md](../WORTH-relational/WORTH_relational_roadmap.md)
+> - [worth_signal_vision.md](../WORTH_signal/WORTH_signal_vision.md)
+> - [worth_signals2.md](../WORTH_signal/WORTH_signals2.md)
+> - [MENTALITY.md](../../docs/coding-guidelines/MENTALITY.md)
+> - [architectural_guidelines.md](../../docs/coding-guidelines/arch_laws.md)
+> - [domain_standards.md](../../docs/coding-guidelines/domain_structure_laws.md)
+> - [performance_guidelines.md](../../docs/coding-guidelines/perf_laws.md)
 
 ## Summary
 
@@ -626,7 +626,7 @@ Milestone 10 must finally ship:
   preview churn isolation
 - proof tests for the named complexity contracts
 - machine-checkable canonical bundles satisfying suites 13 through 15 in
-  [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md)
+  [test-requirements.md](./test-requirements.md)
 
 This is the authority-crossing and closure workload bucket. It should end with
 explicit preview-to-authority promotion, replay-safe lifecycle records,
@@ -695,7 +695,7 @@ Milestone 10 is complete only when the bridge harness can prove:
   counter proof tests
 - diagnostics-tier variation changes retained detail only, not preview meaning
 - the Milestone 10 certification suites in
-  [test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md)
+  [test-requirements.md](./test-requirements.md)
   pass with canonical machine-checkable bundles
 
 ## Architectural Notes
@@ -765,7 +765,7 @@ These names are illustrative, but the separation is mandatory:
 
 Milestone 10 must follow the same structural testing discipline as earlier
 bridge milestones and must satisfy the Milestone 10 certification suites in
-[test-requirements.md](/Users/Esther/Documents/Programming/WORTH_workspace/WORTH/plans/worth-runtime-bridge/test-requirements.md).
+[test-requirements.md](./test-requirements.md).
 
 The harness should expose an execution request shape able to vary:
 
