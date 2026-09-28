@@ -14,5 +14,6 @@ fn bridge_phase_boundaries_are_compile_time_private() {
     t.pass("tests/pass/conditional_signal_basis.rs");
     t.compile_fail("tests/ui/causal_envelope/*.rs");
     t.compile_fail("tests/ui/writeback_contract/*.rs");
+    t.compile_fail("tests/ui/relational_identity/*.rs");
     t.compile_fail("tests/ui/*.rs");
 }

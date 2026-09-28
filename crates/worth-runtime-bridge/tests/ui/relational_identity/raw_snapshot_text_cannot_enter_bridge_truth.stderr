@@ -1,5 +1,5 @@
 error[E0308]: mismatched types
- --> tests/ui/phase_2a/raw_snapshot_text_cannot_enter_bridge_truth.rs:5:57
+ --> tests/ui/relational_identity/raw_snapshot_text_cannot_enter_bridge_truth.rs:5:57
   |
 5 |         TruthSnapshotIdentity::from_relational_snapshot("relational-snapshot:7:version:7");
   |         ----------------------------------------------- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `RelationalBridgeSnapshotIdentityParts`, found `&str`
@@ -7,7 +7,7 @@ error[E0308]: mismatched types
   |         arguments to this function are incorrect
   |
 note: associated function defined here
- --> $WORKSPACE/crates/worth-runtime-bridge/src/relational_identity.rs
+ --> src/relational_identity.rs
   |
   |     pub fn from_relational_snapshot(parts: RelationalBridgeSnapshotIdentityParts) -> Self {
   |            ^^^^^^^^^^^^^^^^^^^^^^^^

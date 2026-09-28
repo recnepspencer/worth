@@ -1,5 +1,5 @@
 error[E0308]: mismatched types
- --> tests/ui/phase_2a/raw_record_text_cannot_enter_bridge_record_authority.rs:4:84
+ --> tests/ui/relational_identity/raw_record_text_cannot_enter_bridge_record_authority.rs:4:84
   |
 4 |     let _identity = BridgeHistoricalResolvedRecordIdentity::from_relational_record("entity:0:4:2");
   |                     -------------------------------------------------------------- ^^^^^^^^^^^^^^ expected `RelationalBridgeRecordIdentityParts`, found `&str`
@@ -7,7 +7,7 @@ error[E0308]: mismatched types
   |                     arguments to this function are incorrect
   |
 note: associated function defined here
- --> $WORKSPACE/crates/worth-runtime-bridge/src/relational_identity.rs
+ --> src/relational_identity.rs
   |
   |     pub fn from_relational_record(parts: RelationalBridgeRecordIdentityParts) -> Self {
   |            ^^^^^^^^^^^^^^^^^^^^^^
