@@ -1,7 +1,6 @@
 use sha2::{Digest, Sha256};
 use worth_query::facade::foundation::WorthQueryAsyncRequestIdentityPart as Part;
 
-use super::raster_key_set::raster_source_ordinal;
 use super::{
     WorthUiPresentationMechanicBasis, WorthUiPresentationPinBasis, WorthUiPresentationRequestBasis,
 };
@@ -9,7 +8,7 @@ use super::{
 impl WorthUiPresentationRequestBasis {
     pub(crate) fn identity_parts(&self) -> Vec<Part> {
         vec![
-            Part::unsigned("identity-schema", 3),
+            Part::unsigned("identity-schema", 4),
             Part::unsigned("mounted-frame", self.mounted_frame.diagnostic_value()),
             Part::unsigned("semantic-surface", self.semantic_surface.diagnostic_value()),
             Part::unsigned("host-surface", self.host_surface.diagnostic_value()),
@@ -179,51 +178,10 @@ fn encode_pin(digest: &mut Sha256, pin: WorthUiPresentationPinBasis) {
     encode_raster_key(digest, pin.key());
 }
 
+/// A key enters the digest as its canonical evidence: every profile field in
+/// fixed widths plus the axis count, so one length-prefixed field is injective.
 fn encode_raster_key(digest: &mut Sha256, key: worth_ui_host_contract::UiGlyphRasterKey) {
-    let face = key.face();
-    let origin = key.fractional_origin();
-    encode_u64(
-        digest,
-        b"raster-font-generation",
-        key.font_collection_generation().get(),
-    );
-    encode_bytes(
-        digest,
-        b"raster-font-lineage",
-        &key.font_collection_lineage().digest(),
-    );
-    encode_u64(digest, b"raster-profile", key.profile_generation().get());
-    encode_bytes(digest, b"raster-font-bytes", &face.font_bytes_digest());
-    encode_u64(digest, b"raster-face-index", u64::from(face.face_index()));
-    encode_bytes(digest, b"raster-selection", &face.selection_digest());
-    encode_u64(digest, b"raster-glyph", u64::from(key.glyph_id()));
-    encode_u64(digest, b"raster-palette", u64::from(key.palette().index()));
-    encode_u64(digest, b"raster-size", u64::from(key.size().millipoints()));
-    encode_u64(
-        digest,
-        b"raster-source",
-        raster_source_ordinal(key.source()),
-    );
-    encode_u32(digest, b"raster-dpi", key.dpi_milli());
-    encode_u64(
-        digest,
-        b"raster-origin-x",
-        u64::from(origin.x_over_64() as u16),
-    );
-    encode_u64(
-        digest,
-        b"raster-origin-y",
-        u64::from(origin.y_over_64() as u16),
-    );
-    encode_count(digest, key.variations().len());
-    for axis in key.variations().records() {
-        encode_bytes(digest, b"raster-axis-tag", &axis.axis());
-        encode_u64(
-            digest,
-            b"raster-axis-value",
-            u64::from(axis.value_milli() as u32),
-        );
-    }
+    encode_bytes(digest, b"raster-key", &key.canonical_evidence_bytes());
 }
 
 fn fingerprint(domain: &[u8]) -> Sha256 {

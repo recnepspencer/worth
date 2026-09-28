@@ -61,13 +61,13 @@ impl UiGlyphRasterKeyEvidence {
         evidence
     }
 
+    /// Appends one field as a single slice copy.
     const fn put(&mut self, part: &[u8]) {
-        let mut index = 0;
-        while index < part.len() {
-            self.bytes[self.len as usize] = part[index];
-            self.len += 1;
-            index += 1;
-        }
+        let start = self.len as usize;
+        let (_, free) = self.bytes.split_at_mut(start);
+        let (slot, _) = free.split_at_mut(part.len());
+        slot.copy_from_slice(part);
+        self.len = (start + part.len()) as u8;
     }
 
     /// A 64-bit digest of the evidence for hashing only. Equal keys encode
