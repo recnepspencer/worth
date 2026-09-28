@@ -17,7 +17,8 @@ Read these in order the first time. Keep the Glossary open as a reference while 
 | 2 | [Philosophy](philosophy.md) | Why is the platform shaped this way? Why are truth, state, and authority kept apart? |
 | 3 | [How WORTH Works](how-it-works.md) | What happens to a request, from declaration to publication? What do the runtimes guarantee? |
 | 4 | [Glossary](glossary.md) | What exactly does a term such as *basis*, *admission*, *performed*, or *settled* mean? |
-| 5 | [API Map](api.md) | Which crate do I import for my job? Where is the reference documentation? |
+| 5 | [Build an Application](build-an-application.md) | What exactly do I call to declare features and a program, install the application graph, author and run workflows, and adopt a new program? |
+| 6 | [API Map](api.md) | Which crate do I import for my job? Where is the reference documentation? |
 
 ## Find a document by task
 
@@ -25,7 +26,12 @@ Read these in order the first time. Keep the Glossary open as a reference while 
 |---|---|
 | Understand the platform in five minutes | [Platform README](../README.md) |
 | Understand the reasons behind a rule | [Philosophy](philosophy.md) |
-| Build an application on WORTH | [API Map](api.md), then the Query crate guides it links |
+| Build an application on WORTH | [Build an Application](build-an-application.md) |
+| Declare features and a program | [Build an Application §3](build-an-application.md#3-declare-features-and-the-program) |
+| Install the application graph | [Build an Application §4](build-an-application.md#4-install-the-application-graph) |
+| Author, publish, and run workflows | [Build an Application §6](build-an-application.md#6-author-publish-and-run-workflows) |
+| Move a branch to a new program revision | [Build an Application §7](build-an-application.md#7-adopt-a-new-program-on-a-branch) |
+| Find which crate to import for any other job | [API Map](api.md) |
 | Understand what the runtimes guarantee to my code | [How WORTH Works](how-it-works.md) |
 | Look up a term | [Glossary](glossary.md) |
 | Contribute code to the platform | [Coding Guidelines](coding-guidelines/) and [AGENTS.md](../AGENTS.md) |
@@ -51,6 +57,10 @@ The engineering laws that bind every change to the platform:
 - Read in this order: [Philosophy](philosophy.md), then
   [How WORTH Works](how-it-works.md) (its section 17 is a summary for you),
   then [API Map §1](api.md#1-the-rule-in-one-sentence).
+- To write an application, work from
+  [Build an Application](build-an-application.md). It is the centerpiece: the
+  real calls for features, programs, installation, workflows, and adoption,
+  with a do/don't list and a table of plan names that do not exist.
 - Treat [Philosophy](philosophy.md) and [How WORTH Works](how-it-works.md) as
   the platform's mental model. Crate guides add API detail but do not change
   that model.

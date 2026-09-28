@@ -22,7 +22,8 @@ explained). Rust names are given where a type embodies the term.
   Adoption across a set of branches is not atomic: each branch publishes on
   its own, and progress can be resumed.
   **Not** an automatic upgrade when the host changes.
-  **See** [How WORTH Works §12](how-it-works.md#12-branches-programs-and-adoption).
+  **See** [Build an Application §7](build-an-application.md#7-adopt-a-new-program-on-a-branch)
+  and [How WORTH Works §12](how-it-works.md#12-branches-programs-and-adoption).
 
 **Admission**
 : The owner's check that a request or value may proceed *now*, against
@@ -125,6 +126,13 @@ explained). Rust names are given where a type embodies the term.
 : A pure predicate over declared inputs. In a workflow, a condition node
   decides a branch in the graph. It is never an effect.
 
+**Contribution**
+: One named slice of an application schema, plus the host setup it needs:
+  handlers, invariants, and conditional nodes
+  (`worth_query_application_contribution!`, `WorthQueryApplicationContribution`).
+  A program lists the contributions it installs.
+  **See** [Build an Application §2](build-an-application.md#2-declare-the-schema-and-its-contributions).
+
 **Correspondence**
 : The installed mapping from a portable truth dependency to exact Signal
   targets (graph, node, partition, aspect), with `Exact` or
@@ -195,6 +203,17 @@ explained). Rust names are given where a type embodies the term.
   `Unresolved`) is tracked separately from the commit.
 
 ## F
+
+**Feature**
+: A named unit of application meaning inside a program (`ApplicationFeature`).
+  A feature owns actions (mutations and operations), declared with an
+  `ApplicationFeatureSpec`, and may provide or require typed ports that
+  connections bind. A connection between ports whose values differ does not
+  compile. On a runtime installed with a program, every mutation runs
+  through a program lane (`execute_in_program` and its capability,
+  retained, and performed variants), never through plain `execute()`.
+  **Not** a runtime switch or flag.
+  **See** [Build an Application §3](build-an-application.md#3-declare-features-and-the-program).
 
 **Footprint**
 : The recorded set of entities, field revisions, and adjacency revisions that
@@ -310,6 +329,9 @@ explained). Rust names are given where a type embodies the term.
   (`ApplicationProgramRevision`). A program has three separate identities: the
   *revision* (what it means), *support* (a host can run it), and *activation*
   (a branch runs it). A mutation never names its program. The branch decides.
+  Declared as an `ApplicationProgramDefinition` (contributions, features,
+  output graph, rules) and validated into a `ValidatedApplicationProgram`.
+  **See** [Build an Application §3](build-an-application.md#3-declare-features-and-the-program).
 
 **Proof**
 : Type-level evidence that a fact holds, minted only by an authority that
@@ -344,8 +366,13 @@ explained). Rust names are given where a type embodies the term.
 ## S
 
 **Scope**
-: The entity a request acts within (`WorthQueryRequestScope`), resolved at
-  admission and used in authorization.
+: The entity a request acts on. A mutation intent names it through its
+  binding's scope field (`scope_field()`, read from the intent by
+  `scope_binding()`); a query carries its own scope.
+  It is resolved at admission and used in authorization.
+  **Not** `WorthQueryRequestScope`, which carries only a request's deadline
+  and cancellation token.
+  **See** [Build an Application §5](build-an-application.md#5-run-the-program).
 
 **Settled**
 : Performed, and also made durable and published by Query. A commit that
@@ -404,7 +431,8 @@ explained). Rust names are given where a type embodies the term.
   **Not** `worth_query::facade::workflow` (preview, promotion, writeback, and
   branch merge) or `worth_query::facade::installed::workflow` (staged runs of
   installed domain operations).
-  **See** [How WORTH Works §13](how-it-works.md#13-workflows).
+  **See** [Build an Application §6](build-an-application.md#6-author-publish-and-run-workflows)
+  and [How WORTH Works §13](how-it-works.md#13-workflows).
 
 **World (Runtime World)**
 : The runtime that composes exact component bases into product branches and
