@@ -7,9 +7,10 @@
 //! depth ceilings, identifiers, and normalized decimal text.
 //!
 //! Layout, little-endian: magic `WXDR`, wire version `u16`, language version
-//! `u16`, node count `u32`, then nodes in post-order. Each node is a tag byte
-//! and its payload; children are `u32` indices of earlier nodes, each used
-//! exactly once, and the last node is the root.
+//! `u16`, node count `u32`, then nodes in canonical post-order: each node's
+//! children, in order, are the subtrees immediately before it. Each node is
+//! a tag byte and its payload; children are `u32` node indices, and the last
+//! node is the root.
 
 mod decode;
 mod encode;

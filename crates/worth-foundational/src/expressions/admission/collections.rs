@@ -78,9 +78,10 @@ impl Checker<'_> {
             self.schema().record(&name).cloned().ok_or_else(|| {
                 self.deny(id, ExpressionDenialDetail::UnknownBinding(name.clone()))
             })?;
-        // Field lookup is linear in the declaration; charge the matching work.
-        self.meter
-            .charge((fields.len() as u64).saturating_mul(declaration.fields().len() as u64))?;
+        self.probe(self.schema().nominal_count())?;
+        for _ in fields {
+            self.probe(declaration.fields().len())?;
+        }
         let mut authored = BTreeMap::new();
         for (field, value) in fields {
             if authored.insert(&**field, *value).is_some() {

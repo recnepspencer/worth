@@ -52,13 +52,15 @@ pub(crate) enum Builtin {
     BitsAdd,
     WrappingAdd,
     LogicEq,
+    /// `case_equal(a, b)`: exact symbol equality of `Logic4` buses as Bool.
+    CaseEqual,
     Mux,
 }
 
 /// Every single-segment callable name, including literal constructors.
 ///
 /// Let binders and installed functions cannot use these names.
-pub(crate) const RESERVED_CALLABLES: [&str; 51] = [
+pub(crate) const RESERVED_CALLABLES: [&str; 52] = [
     "min",
     "max",
     "abs",
@@ -95,6 +97,7 @@ pub(crate) const RESERVED_CALLABLES: [&str; 51] = [
     "bits_add",
     "wrapping_add",
     "logic_eq",
+    "case_equal",
     "mux",
     "int8",
     "int16",
@@ -159,6 +162,7 @@ impl Builtin {
             Self::BitsAdd => "bits_add",
             Self::WrappingAdd => "wrapping_add",
             Self::LogicEq => "logic_eq",
+            Self::CaseEqual => "case_equal",
             Self::Mux => "mux",
         };
         name.to_string()

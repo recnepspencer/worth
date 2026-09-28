@@ -5,7 +5,7 @@
 //! construction. Each function carries its expanded instruction count and call
 //! depth, so callers check expansion before anything is flattened.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
 use crate::expressions::admission::{check_tree, AdmissionContext, Scope};
@@ -16,7 +16,7 @@ use crate::expressions::denial::{
 use crate::expressions::draft::ExpressionDraft;
 use crate::expressions::profile::{check_limit, ExpressionProfile};
 use crate::expressions::program::ExpressionProgram;
-use crate::expressions::syntax::ExpressionSourceMap;
+use crate::expressions::syntax::{ExpressionSourceMap, GENERIC_INTRINSICS};
 use crate::expressions::types::{ExpressionSchema, ExpressionType, ExpressionTypeName};
 
 /// One installed function: exact signature, checked body, and identity.
@@ -30,6 +30,8 @@ pub struct InstalledExpressionFunction {
     identity: Arc<ExpressionProgramIdentity>,
     expanded_instructions: u64,
     call_depth: u32,
+    /// The widest bus in the body or any callee.
+    bit_width: u32,
 }
 
 impl InstalledExpressionFunction {
@@ -79,6 +81,10 @@ impl InstalledExpressionFunction {
 
     pub(crate) fn call_depth(&self) -> u32 {
         self.call_depth
+    }
+
+    pub(crate) fn bit_width(&self) -> u32 {
+        self.bit_width
     }
 
     /// Canonical closure order: name, then version, then body digest.
@@ -197,6 +203,7 @@ impl ExpressionFunctionCatalogBuilder {
             identity: Arc::new(identity),
             expanded_instructions: checked.expanded_instructions,
             call_depth: checked.call_depth,
+            bit_width: checked.bit_width,
         };
         let index = self.catalog.functions.len();
         self.catalog
@@ -228,16 +235,16 @@ fn check_signature(
             ),
         ));
     }
-    for (index, (parameter, ty)) in parameters.iter().enumerate() {
+    let mut seen = BTreeSet::new();
+    for (parameter, ty) in parameters {
         if !crate::expressions::types::is_identifier(parameter) {
             return Err(ExpressionDenial::new(ExpressionDenialDetail::Syntax(
                 SyntaxDenial::InvalidIdentifier,
             )));
         }
-        if parameters[..index]
-            .iter()
-            .any(|(earlier, _)| earlier == parameter)
-        {
+        // Like schema operands, parameters cannot take generic intrinsic
+        // names, which would read ambiguously as `name<...>(...)` calls.
+        if !seen.insert(&**parameter) || GENERIC_INTRINSICS.contains(&&**parameter) {
             return Err(ExpressionDenial::new(
                 ExpressionDenialDetail::AmbiguousBinding(parameter.to_string()),
             ));

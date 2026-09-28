@@ -28,6 +28,7 @@ impl Checker<'_> {
             "bits_add" => Builtin::BitsAdd,
             "wrapping_add" => Builtin::WrappingAdd,
             "logic_eq" => Builtin::LogicEq,
+            "case_equal" => Builtin::CaseEqual,
             "mux" => Builtin::Mux,
             _ => return None,
         };
@@ -60,6 +61,7 @@ impl Checker<'_> {
                 (*a).clone()
             }
             (Builtin::LogicEq, [a @ T::Logic4(_), b]) if a == b => T::Logic4(1),
+            (Builtin::CaseEqual, [a @ T::Logic4(_), b]) if a == b => T::Bool,
             (Builtin::Mux, [T::Logic4(1), a @ T::Logic4(_), b]) if a == b => (*a).clone(),
             (Builtin::Concat, [T::Bits(high), T::Bits(low)]) => {
                 T::Bits(self.concat_width(*high, *low)?)

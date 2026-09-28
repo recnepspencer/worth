@@ -36,7 +36,7 @@ pub(super) fn finish(checker: Checker<'_>, root: u32) -> ExpressionResult<Checke
     let mut renumbered = vec![u32::MAX; nodes.len()];
     let mut pending: Vec<Option<ProgramNode>> = nodes.into_iter().map(Some).collect();
     let mut linear = Vec::with_capacity(order.len());
-    let (mut expanded, mut call_depth) = (0_u64, 0_u32);
+    let (mut expanded, mut call_depth, mut bit_width) = (0_u64, 0_u32, 0_u32);
     let profile = context.profile;
     for old in order {
         let mut node = pending[old].take().expect("checked nodes form a tree");
@@ -51,15 +51,12 @@ pub(super) fn finish(checker: Checker<'_>, root: u32) -> ExpressionResult<Checke
                 let callee = catalog.function(*index as usize);
                 expanded = expanded.saturating_add(callee.expanded_instructions());
                 call_depth = call_depth.max(callee.call_depth() + 1);
+                bit_width = bit_width.max(callee.bit_width());
                 *index = call_of[&(*index as usize)];
             }
             _ => {}
         }
-        check_limit(
-            profile,
-            ExpressionResource::BitWidth,
-            u64::from(widest_bus(&node.ty)),
-        )?;
+        bit_width = bit_width.max(context.schema.widest_bus(&node.ty));
         renumbered[old] = linear.len() as u32;
         linear.push(node);
     }
@@ -70,6 +67,7 @@ pub(super) fn finish(checker: Checker<'_>, root: u32) -> ExpressionResult<Checke
         ExpressionResource::CallDepth,
         u64::from(call_depth),
     )?;
+    check_limit(profile, ExpressionResource::BitWidth, u64::from(bit_width))?;
     Ok(CheckedProgram {
         program: ExpressionProgram::new(linear),
         slots,
@@ -77,6 +75,7 @@ pub(super) fn finish(checker: Checker<'_>, root: u32) -> ExpressionResult<Checke
         work: meter.used(),
         expanded_instructions: expanded,
         call_depth,
+        bit_width,
     })
 }
 
@@ -131,16 +130,4 @@ fn post_order(nodes: &[ProgramNode], root: u32) -> Vec<usize> {
         }
     }
     order
-}
-
-/// The widest bus anywhere in `ty`; zero when it carries none.
-fn widest_bus(ty: &ExpressionType) -> u32 {
-    match ty {
-        ExpressionType::Bits(width) | ExpressionType::Logic4(width) => *width,
-        ExpressionType::Option(inner) | ExpressionType::List(inner) => widest_bus(inner),
-        ExpressionType::Map(key, value) | ExpressionType::MapEntry(key, value) => {
-            widest_bus(key).max(widest_bus(value))
-        }
-        _ => 0,
-    }
 }

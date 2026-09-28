@@ -31,6 +31,10 @@ pub(crate) const ROUNDING_VARIANTS: [&str; 4] = [
 pub struct ExpressionRecordDeclaration {
     name: ExpressionTypeName,
     fields: Vec<(Box<str>, ExpressionType)>,
+    /// Field positions by name, so lookups cost a logarithmic probe.
+    positions: BTreeMap<Box<str>, usize>,
+    /// The widest bus in any field, through nested records.
+    widest_bus: u32,
 }
 
 impl ExpressionRecordDeclaration {
@@ -43,10 +47,8 @@ impl ExpressionRecordDeclaration {
     }
 
     pub(crate) fn field(&self, name: &str) -> Option<(usize, &ExpressionType)> {
-        self.fields
-            .iter()
-            .position(|(field, _)| &**field == name)
-            .map(|index| (index, &self.fields[index].1))
+        let index = *self.positions.get(name)?;
+        Some((index, &self.fields[index].1))
     }
 }
 
@@ -55,6 +57,8 @@ impl ExpressionRecordDeclaration {
 pub struct ExpressionEnumDeclaration {
     name: ExpressionTypeName,
     variants: Vec<Box<str>>,
+    /// Variant positions by name, so lookups cost a logarithmic probe.
+    positions: BTreeMap<Box<str>, usize>,
 }
 
 impl ExpressionEnumDeclaration {
@@ -67,7 +71,7 @@ impl ExpressionEnumDeclaration {
     }
 
     pub(crate) fn variant(&self, name: &str) -> Option<usize> {
-        self.variants.iter().position(|variant| &**variant == name)
+        self.positions.get(name).copied()
     }
 }
 
@@ -81,13 +85,15 @@ pub struct ExpressionSchema {
     records: BTreeMap<Box<str>, ExpressionRecordDeclaration>,
     enums: BTreeMap<Box<str>, ExpressionEnumDeclaration>,
     ids: BTreeMap<Box<str>, ExpressionTypeName>,
-    operands: BTreeMap<Box<str>, ExpressionType>,
+    /// Operands sorted by name; a slot is a position in this order.
+    operands: Vec<(Box<str>, ExpressionType)>,
 }
 
 impl ExpressionSchema {
     pub fn builder() -> ExpressionSchemaBuilder {
         ExpressionSchemaBuilder {
             schema: Self::default(),
+            operands: BTreeMap::new(),
         }
     }
 
@@ -109,23 +115,26 @@ impl ExpressionSchema {
     }
 
     pub fn operand(&self, name: &str) -> Option<&ExpressionType> {
-        self.operands.get(name)
+        self.operand_index(name)
+            .map(|index| &self.operands[index].1)
     }
 
-    /// The position of `name` in canonical operand order.
+    /// The position of `name` in canonical operand order, by binary search.
     pub(crate) fn operand_index(&self, name: &str) -> Option<usize> {
-        self.operands.keys().position(|operand| &**operand == name)
+        self.operands
+            .binary_search_by(|(operand, _)| (**operand).cmp(name))
+            .ok()
     }
 
     pub(crate) fn operand_at(&self, index: usize) -> Option<(&str, &ExpressionType)> {
-        self.operands().nth(index)
+        self.operands.get(index).map(|(name, ty)| (&**name, ty))
     }
 
     /// This schema's type declarations without its operands: the vocabulary
     /// installed function signatures and bodies resolve against.
     pub(crate) fn declarations_only(&self) -> Self {
         Self {
-            operands: BTreeMap::new(),
+            operands: Vec::new(),
             ..self.clone()
         }
     }
@@ -133,6 +142,28 @@ impl ExpressionSchema {
     /// Whether both schemas declare exactly the same records, enums, and IDs.
     pub(crate) fn same_declarations(&self, other: &Self) -> bool {
         self.records == other.records && self.enums == other.enums && self.ids == other.ids
+    }
+
+    /// The widest `Bits` or `Logic4` width `ty` carries anywhere inside it,
+    /// record fields included; zero without buses.
+    pub(crate) fn widest_bus(&self, ty: &ExpressionType) -> u32 {
+        match ty {
+            ExpressionType::Bits(width) | ExpressionType::Logic4(width) => *width,
+            ExpressionType::Option(inner) | ExpressionType::List(inner) => self.widest_bus(inner),
+            ExpressionType::Map(key, value) | ExpressionType::MapEntry(key, value) => {
+                self.widest_bus(key).max(self.widest_bus(value))
+            }
+            ExpressionType::Record(name) => self
+                .records
+                .get(name.name())
+                .map_or(0, |record| record.widest_bus),
+            _ => 0,
+        }
+    }
+
+    /// Declared records, enums, and IDs: the size of the nominal lookup table.
+    pub(crate) fn nominal_count(&self) -> usize {
+        self.records.len() + self.enums.len() + self.ids.len()
     }
 
     /// The nominal kind declared under `name`, or the built-in `Rounding` enum.
@@ -207,6 +238,7 @@ pub(crate) fn rounding_type() -> ExpressionType {
 #[derive(Debug, Clone)]
 pub struct ExpressionSchemaBuilder {
     schema: ExpressionSchema,
+    operands: BTreeMap<Box<str>, ExpressionType>,
 }
 
 impl ExpressionSchemaBuilder {
@@ -219,20 +251,26 @@ impl ExpressionSchemaBuilder {
     ) -> Result<Self, ExpressionDenial> {
         let name = self.nominal_name(name, version)?;
         let mut declared: Vec<(Box<str>, ExpressionType)> = Vec::new();
+        let mut positions = BTreeMap::new();
         for (field, ty) in fields {
-            check_member(
-                field,
-                declared.iter().any(|(existing, _)| &**existing == field),
-            )?;
+            check_member(field, positions.contains_key(field))?;
             self.schema.check_type(&ty)?;
+            positions.insert(field.into(), declared.len());
             declared.push((field.into(), ty));
         }
         let key: Box<str> = name.name().into();
+        let widest_bus = declared
+            .iter()
+            .map(|(_, ty)| self.schema.widest_bus(ty))
+            .max()
+            .unwrap_or(0);
         self.schema.records.insert(
             key,
             ExpressionRecordDeclaration {
                 name,
                 fields: declared,
+                positions,
+                widest_bus,
             },
         );
         Ok(self)
@@ -247,11 +285,10 @@ impl ExpressionSchemaBuilder {
     ) -> Result<Self, ExpressionDenial> {
         let name = self.nominal_name(name, version)?;
         let mut declared: Vec<Box<str>> = Vec::new();
+        let mut positions = BTreeMap::new();
         for variant in variants {
-            check_member(
-                variant,
-                declared.iter().any(|existing| &**existing == variant),
-            )?;
+            check_member(variant, positions.contains_key(variant))?;
+            positions.insert(variant.into(), declared.len());
             declared.push(variant.into());
         }
         if declared.is_empty() {
@@ -265,6 +302,7 @@ impl ExpressionSchemaBuilder {
             ExpressionEnumDeclaration {
                 name,
                 variants: declared,
+                positions,
             },
         );
         Ok(self)
@@ -285,15 +323,16 @@ impl ExpressionSchemaBuilder {
                 ExpressionDenialDetail::AmbiguousBinding(name.to_string()),
             ));
         }
-        if self.schema.operands.contains_key(name) {
+        if self.operands.contains_key(name) {
             return Err(duplicate(name));
         }
         self.schema.check_type(&ty)?;
-        self.schema.operands.insert(name.into(), ty);
+        self.operands.insert(name.into(), ty);
         Ok(self)
     }
 
-    pub fn build(self) -> ExpressionSchema {
+    pub fn build(mut self) -> ExpressionSchema {
+        self.schema.operands = self.operands.into_iter().collect();
         self.schema
     }
 

@@ -15,6 +15,7 @@ use super::{Checker, Scope};
 impl Checker<'_> {
     pub(super) fn name(&mut self, id: NodeId, name: &QualifiedName) -> ExpressionResult<u32> {
         if let Some(single) = name.single() {
+            self.meter.charge(self.binders.len() as u64)?;
             if let Some(position) = self
                 .binders
                 .iter()
@@ -26,8 +27,9 @@ impl Checker<'_> {
             }
         }
         let text = name.text();
-        let operand = self.lookup_operand(&text);
-        let variant = self.lookup_variant(name);
+        self.meter.charge(text.len() as u64)?;
+        let operand = self.lookup_operand(&text)?;
+        let variant = self.lookup_variant(name)?;
         match (operand, variant) {
             (Some(_), Some(_)) => {
                 Err(self.deny(id, ExpressionDenialDetail::AmbiguousBinding(text)))
@@ -41,33 +43,51 @@ impl Checker<'_> {
         }
     }
 
-    fn lookup_operand(&self, name: &str) -> Option<(usize, ExpressionType)> {
+    fn lookup_operand(&mut self, name: &str) -> ExpressionResult<Option<(usize, ExpressionType)>> {
         match self.scope {
             Scope::Operands => {
-                let index = self.schema().operand_index(name)?;
-                let (_, ty) = self.schema().operand_at(index)?;
-                Some((index, ty.clone()))
+                self.probe(self.schema().operands().len())?;
+                let schema = self.schema();
+                Ok(schema
+                    .operand_index(name)
+                    .and_then(|index| Some((index, schema.operand_at(index)?.1.clone()))))
             }
-            Scope::Parameters(parameters) => parameters
-                .iter()
-                .position(|(parameter, _)| &**parameter == name)
-                .map(|index| (index, parameters[index].1.clone())),
+            Scope::Parameters(parameters) => {
+                self.meter.charge(parameters.len() as u64)?;
+                Ok(parameters
+                    .iter()
+                    .position(|(parameter, _)| &**parameter == name)
+                    .map(|index| (index, parameters[index].1.clone())))
+            }
         }
     }
 
-    fn lookup_variant(&self, name: &QualifiedName) -> Option<(u32, ExpressionType)> {
-        let (variant, prefix) = name.0.split_last()?;
+    fn lookup_variant(
+        &mut self,
+        name: &QualifiedName,
+    ) -> ExpressionResult<Option<(u32, ExpressionType)>> {
+        let Some((variant, prefix)) = name.0.split_last() else {
+            return Ok(None);
+        };
         if prefix.is_empty() {
-            return None;
+            return Ok(None);
         }
         let enumeration = prefix.join("::");
+        self.probe(self.schema().nominal_count())?;
+        if let Some(declaration) = self.schema().enumeration(&enumeration) {
+            self.probe(declaration.variants().len())?;
+        }
+        Ok(self.resolve_variant(variant, &enumeration))
+    }
+
+    fn resolve_variant(&self, variant: &str, enumeration: &str) -> Option<(u32, ExpressionType)> {
         if enumeration == ROUNDING_NAME {
             let index = ROUNDING_VARIANTS
                 .iter()
-                .position(|known| **known == **variant)?;
+                .position(|known| *known == variant)?;
             return Some((index as u32, rounding_type()));
         }
-        let declaration = self.schema().enumeration(&enumeration)?;
+        let declaration = self.schema().enumeration(enumeration)?;
         let index = declaration.variant(variant)?;
         Some((
             index as u32,
@@ -77,6 +97,14 @@ impl Checker<'_> {
 
     pub(super) fn field(&mut self, id: NodeId, base: NodeId, field: &str) -> ExpressionResult<u32> {
         let base = self.check(base, None)?;
+        if let ExpressionType::Record(name) = self.ty(base) {
+            let fields = self
+                .schema()
+                .record(name.name())
+                .map_or(0, |record| record.fields().len());
+            self.probe(self.schema().nominal_count())?;
+            self.probe(fields)?;
+        }
         let resolved = match self.ty(base) {
             ExpressionType::Record(name) => self
                 .schema()
@@ -162,12 +190,13 @@ impl Checker<'_> {
 
     /// Binders are nonshadowing: they cannot reuse an in-scope binder, an
     /// operand or parameter, or a reserved callable name.
-    fn check_binder(&self, id: NodeId, binder: &str) -> ExpressionResult<()> {
+    fn check_binder(&mut self, id: NodeId, binder: &str) -> ExpressionResult<()> {
+        self.meter.charge(self.binders.len() as u64)?;
         let shadows = self
             .binders
             .iter()
             .any(|(existing, _)| &**existing == binder)
-            || self.lookup_operand(binder).is_some()
+            || self.lookup_operand(binder)?.is_some()
             || is_reserved_callable(binder)
             || GENERIC_INTRINSICS.contains(&binder);
         if shadows {

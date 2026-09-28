@@ -21,6 +21,23 @@ use super::Checker;
 const DECIMAL_DIGITS: usize = 38;
 const DECIMAL_SCALE: usize = 18;
 
+/// Integer constructor names, in `IntegerType::ALL` order. Names are
+/// case-sensitive like every other name.
+const INTEGER_CONSTRUCTORS: [&str; 8] = [
+    "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64",
+];
+
+/// Constructors that take no type arguments; `bits<N>` takes its width.
+const PLAIN_CONSTRUCTORS: [&str; 7] = [
+    "float32",
+    "float64",
+    "decimal",
+    "bytes",
+    "logic4",
+    "quantity",
+    "magnitude",
+];
+
 /// A numeric literal read directly from syntax, sign included.
 enum NumberLiteral<'a> {
     Integer(bool, u128),
@@ -35,9 +52,16 @@ impl Checker<'_> {
         type_arguments: &[TypeArgument],
         arguments: &[NodeId],
     ) -> Option<ExpressionResult<u32>> {
-        let integer = IntegerType::ALL
-            .into_iter()
-            .find(|integer| integer.name().eq_ignore_ascii_case(name));
+        let integer = INTEGER_CONSTRUCTORS
+            .iter()
+            .position(|constructor| *constructor == name)
+            .map(|index| IntegerType::ALL[index]);
+        if !type_arguments.is_empty() && (integer.is_some() || PLAIN_CONSTRUCTORS.contains(&name)) {
+            return Some(Err(self.deny(
+                id,
+                ExpressionDenialDetail::UnsupportedFeature("this call takes no type arguments"),
+            )));
+        }
         let result = match (name, arguments) {
             (_, [argument]) if integer.is_some() => self.integer_literal(id, integer?, *argument),
             ("float32" | "float64", [argument]) => {
@@ -155,6 +179,8 @@ impl Checker<'_> {
         let SyntaxNode::String(text) = self.tree.node(argument) else {
             return Err(self.literal_required(id));
         };
+        // Parsing reads and copies the text; charge it first.
+        self.meter.charge(text.len() as u64)?;
         let (literal, ty) = parse(text)
             .map_err(|reason| self.deny(id, ExpressionDenialDetail::InvalidValue(reason)))?;
         if let ExpressionType::Bits(width) | ExpressionType::Logic4(width) = ty {
@@ -164,7 +190,6 @@ impl Checker<'_> {
                 u64::from(width),
             )?;
         }
-        self.meter.charge(text.len() as u64)?;
         self.literal(id, literal, ty)
     }
 

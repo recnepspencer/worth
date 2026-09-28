@@ -18,6 +18,7 @@ impl Checker<'_> {
         arguments: &[NodeId],
     ) -> ExpressionResult<u32> {
         let Some(name) = function.single() else {
+            self.no_type_arguments(id, type_arguments)?;
             return self.installed(id, function, arguments);
         };
         if let Some(result) = self.constructor(id, name, type_arguments, arguments) {
@@ -26,16 +27,28 @@ impl Checker<'_> {
         if let Some(result) = self.width_intrinsic(id, name, type_arguments, arguments) {
             return result;
         }
-        if !type_arguments.is_empty() {
-            return Err(self.deny(
-                id,
-                ExpressionDenialDetail::UnsupportedFeature("this call takes no type arguments"),
-            ));
-        }
+        self.no_type_arguments(id, type_arguments)?;
         if let Some(result) = self.bitwise(id, name, arguments) {
             return result;
         }
         self.builtin(id, name, arguments)
+    }
+
+    /// Builtins and installed functions have exact signatures without type
+    /// parameters, so a type argument cannot mean anything.
+    fn no_type_arguments(
+        &self,
+        id: NodeId,
+        type_arguments: &[TypeArgument],
+    ) -> ExpressionResult<()> {
+        if type_arguments.is_empty() {
+            Ok(())
+        } else {
+            Err(self.deny(
+                id,
+                ExpressionDenialDetail::UnsupportedFeature("this call takes no type arguments"),
+            ))
+        }
     }
 
     fn builtin(&mut self, id: NodeId, name: &str, arguments: &[NodeId]) -> ExpressionResult<u32> {
@@ -76,16 +89,17 @@ impl Checker<'_> {
         if catalog.overloads(&name).next().is_none() {
             return Err(self.deny(id, ExpressionDenialDetail::UnknownBinding(name)));
         }
+        // An argument checks against its parameter type only where every
+        // same-arity overload declares that type, so the denial family for a
+        // mismatch depends on the declared signatures, not on their count.
         let mut children = Vec::with_capacity(arguments.len());
-        if let [only] = candidates.as_slice() {
-            let parameters = catalog.function(*only).parameters();
-            for (argument, (_, ty)) in arguments.iter().zip(parameters) {
-                children.push(self.check(*argument, Some(ty))?);
-            }
-        } else {
-            for argument in arguments {
-                children.push(self.check(*argument, None)?);
-            }
+        for (position, argument) in arguments.iter().enumerate() {
+            let mut declared = candidates
+                .iter()
+                .map(|index| &catalog.function(*index).parameters()[position].1);
+            let first = declared.next();
+            let expected = first.filter(|first| declared.all(|ty| ty == *first));
+            children.push(self.check(*argument, expected)?);
         }
         let matched = candidates.into_iter().find(|index| {
             let parameters = catalog.function(*index).parameters();

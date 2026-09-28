@@ -100,14 +100,18 @@ fn digital_buses_check_widths_statically() {
     assert_eq!(admitted_type("slice<2, 6>(bus)"), ExpressionType::Bits(4));
     assert_eq!(admitted_type("extend<16>(bus)"), ExpressionType::Bits(16));
     assert_eq!(
-        admitted_type(r#"enable == logic4("X")"#),
+        admitted_type(r#"case_equal(enable, logic4("X"))"#),
         ExpressionType::Bool
+    );
+    assert_eq!(
+        denied_family(r#"enable == logic4("X")"#),
+        Family::FunctionContractMismatch
     );
     assert_eq!(
         admitted_type(r#"logic_eq(enable, logic4("1"))"#),
         ExpressionType::Logic4(1)
     );
-    assert_ne!(denied_family(r#"bits<8>("0101")"#), Family::Syntax);
+    assert_eq!(denied_family(r#"bits<8>("0101")"#), Family::InvalidValue);
     assert_eq!(denied_family("truncate<8>(bus)"), Family::Bounds);
     assert_eq!(denied_family("slice<4, 9>(bus)"), Family::Bounds);
     assert_eq!(
@@ -141,7 +145,10 @@ fn installed_functions_resolve_exact_signatures() {
         Family::TypeMismatch
     );
     let reserved = function("sqrt", &[], ExpressionType::Float64, "1.0");
-    assert!(builder.install(reserved).is_err());
+    assert_eq!(
+        builder.install(reserved).unwrap_err().family(),
+        Family::UnsupportedFeature
+    );
     let catalog = builder.build();
     assert_eq!(catalog.functions().len(), 1);
 
@@ -192,15 +199,17 @@ fn expected_result_types_are_enforced() {
     ));
     let record = ExpressionType::Record(nominal("Frame"));
     let unknown = ExpressionType::Record(nominal("Door"));
-    assert!(draft
-        .admit_as(
-            &schema,
-            &catalog,
-            ExpressionProfile::interactive(),
-            &unknown
-        )
-        .is_err());
-    assert!(draft
-        .admit_as(&schema, &catalog, ExpressionProfile::interactive(), &record)
-        .is_err());
+    let family = |expected: &ExpressionType| {
+        draft
+            .admit_as(
+                &schema,
+                &catalog,
+                ExpressionProfile::interactive(),
+                expected,
+            )
+            .unwrap_err()
+            .family()
+    };
+    assert_eq!(family(&unknown), Family::UnknownBinding);
+    assert_eq!(family(&record), Family::TypeMismatch);
 }

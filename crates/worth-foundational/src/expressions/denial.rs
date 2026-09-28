@@ -6,6 +6,12 @@ use super::syntax::SourceSpan;
 ///
 /// Families are the machine-stable classification. The typed
 /// [`ExpressionDenialDetail`] carries the specific cause.
+///
+/// Widths show how three families divide one concern: a width no type can
+/// have, such as `Bits<0>` or a literal of the wrong length, is
+/// `InvalidValue`; a valid width above the profile ceiling is
+/// `ResourceExceeded`; an operation's bounds on valid widths, such as a
+/// slice past the bus or a non-narrowing `truncate`, are `Bounds`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum ExpressionDenialFamily {
     Syntax,

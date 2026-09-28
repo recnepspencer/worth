@@ -86,6 +86,16 @@ impl Checker<'_> {
             BinaryOp::Coalesce => self.coalesce(id, left, right),
             BinaryOp::Equal | BinaryOp::NotEqual => {
                 let (left, right) = self.same_type(left, right)?;
+                if let ExpressionType::Logic4(_) = self.ty(left) {
+                    // Four-valued buses have two equalities; neither is implied.
+                    return Err(self.deny(
+                        id,
+                        ExpressionDenialDetail::FunctionContractMismatch {
+                            function: "==".to_string(),
+                            reason: "compare Logic4 buses with case_equal or logic_eq",
+                        },
+                    ));
+                }
                 self.emit(id, Op::Binary(op), ExpressionType::Bool, vec![left, right])
             }
             BinaryOp::Less | BinaryOp::LessEqual | BinaryOp::Greater | BinaryOp::GreaterEqual => {
@@ -136,12 +146,6 @@ impl Checker<'_> {
             }
             (BinaryOp::Multiply | BinaryOp::Divide, Quantity(a), Float64) => Ok(Quantity(*a)),
             (BinaryOp::Multiply, Float64, Quantity(b)) => Ok(Quantity(*b)),
-            (BinaryOp::Divide, Float64, Quantity(b)) => {
-                crate::expressions::types::ExpressionDimension::DIMENSIONLESS
-                    .divide(*b)
-                    .map(Quantity)
-                    .ok_or_else(bounds)
-            }
             _ if left != right => Err(mismatch()),
             (BinaryOp::Remainder, Integer(_), _) => Ok(left.clone()),
             (BinaryOp::Remainder, ..) => Err(ExpressionDenialDetail::TypeMismatch {

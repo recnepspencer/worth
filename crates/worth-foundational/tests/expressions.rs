@@ -16,6 +16,9 @@ mod conformance;
 #[path = "expressions/generated.rs"]
 mod generated;
 
+#[path = "expressions/denials.rs"]
+mod denials;
+
 use worth_foundational::expression_api::{
     expressions, AdmittedExpression, BaseDimension, ExpressionDenial, ExpressionDenialFamily,
     ExpressionDimension, ExpressionDraft, ExpressionFunctionCatalog, ExpressionFunctionDeclaration,

@@ -2,9 +2,27 @@
 //! input denies or round-trips exactly, and source and decoded drafts agree
 //! on admission; failures reproduce from the fixed seeds.
 
-use worth_foundational::expression_api::{expressions, ExpressionProfile};
+use worth_foundational::expression_api::{
+    expressions, ExpressionFunctionCatalog, ExpressionProfile, ExpressionSchema, ExpressionType,
+};
 
-use super::{draft, empty_catalog, schema};
+use super::{draft, empty_catalog, function, schema};
+
+/// One installed overload, so generated calls exercise installed resolution.
+fn catalog(schema: &ExpressionSchema) -> ExpressionFunctionCatalog {
+    let mut builder = ExpressionFunctionCatalog::builder(schema, ExpressionProfile::interactive());
+    let area = function(
+        "geometry::area",
+        &[
+            ("w", ExpressionType::Float64),
+            ("h", ExpressionType::Float64),
+        ],
+        ExpressionType::Float64,
+        "w * h",
+    );
+    builder.install(area).expect("area installs");
+    builder.build()
+}
 
 /// A deterministic xorshift stream, so every failure reproduces from its seed.
 struct Seeded(u64);
@@ -52,7 +70,14 @@ fn mutated_encodings_deny_or_round_trip_exactly() {
             if let Ok(decoded) = expressions().decode(&bytes) {
                 decoded_count += 1;
                 assert_eq!(decoded.encode(), bytes, "{source}, round {round}");
-                let _ = decoded.admit(&schema, &catalog, ExpressionProfile::interactive());
+                // Admission of a mutated draft is deterministic either way.
+                let first = decoded.admit(&schema, &catalog, ExpressionProfile::interactive());
+                let again = decoded.admit(&schema, &catalog, ExpressionProfile::interactive());
+                match (first, again) {
+                    (Ok(first), Ok(again)) => assert_eq!(first.identity(), again.identity()),
+                    (Err(first), Err(again)) => assert_eq!(first.detail(), again.detail()),
+                    _ => panic!("{source}, round {round}: admission is not deterministic"),
+                }
             }
         }
     }
@@ -62,7 +87,7 @@ fn mutated_encodings_deny_or_round_trip_exactly() {
     );
 }
 
-const ATOMS: [&str; 18] = [
+const ATOMS: [&str; 21] = [
     "width",
     "depth",
     "count",
@@ -81,6 +106,9 @@ const ATOMS: [&str; 18] = [
     "v",
     "m.thickness",
     "none<Float64>",
+    "int8(5)",
+    "bits<4>(\"1010\")",
+    "decimal(\"1.25\")",
 ];
 const BINARY: [&str; 12] = [
     "+", "-", "*", "/", "%", "<", "<=", "==", "!=", "&&", "||", "??",
@@ -104,7 +132,7 @@ fn generate(random: &mut Seeded, depth: u32) -> String {
     let a = generate(random, depth - 1);
     let b = generate(random, depth - 1);
     let c = generate(random, depth - 1);
-    match random.below(7) {
+    match random.below(10) {
         0 => format!("({a} {} {b})", BINARY[random.below(BINARY.len())]),
         1 => format!("{}{a}", ["!", "-"][random.below(2)]),
         2 => format!("({a} ? {b} : {c})"),
@@ -114,6 +142,11 @@ fn generate(random: &mut Seeded, depth: u32) -> String {
             ["map", "filter", "all", "any"][random.below(4)]
         ),
         5 => format!("[{a}, {b}]"),
+        6 if random.below(2) == 0 => format!("Frame {{ thickness: {a}, material: {b} }}"),
+        6 => format!("Frame {{ material: {b}, thickness: {a} }}"),
+        7 => format!("{{\"k\": {a}, \"j\": {b}}}"),
+        8 if random.below(4) == 0 => format!("geometry::area<Int8>({a}, {b})"),
+        8 => format!("geometry::area({a}, {b})"),
         _ => format!("{}({a})", CALLS[random.below(CALLS.len())]),
     }
 }
@@ -121,7 +154,7 @@ fn generate(random: &mut Seeded, depth: u32) -> String {
 #[test]
 fn generated_sources_deny_or_admit_consistently() {
     let schema = schema();
-    let catalog = empty_catalog(&schema);
+    let catalog = catalog(&schema);
     let mut random = Seeded(0x5EED_70CE_0000_0002);
     let (mut parsed_count, mut admitted_count) = (0, 0);
     for round in 0..10_000 {

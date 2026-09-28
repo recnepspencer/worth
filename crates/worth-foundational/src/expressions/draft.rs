@@ -56,7 +56,8 @@ impl ExpressionDraft {
     }
 
     /// The versioned encoding of this draft, without source spans. Decoding
-    /// it yields an equal draft with the same admitted identity.
+    /// it yields the same syntax, without spans, and the same admitted
+    /// identity.
     pub fn encode(&self) -> Vec<u8> {
         encode_draft(&self.tree)
     }

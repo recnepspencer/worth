@@ -56,25 +56,33 @@ pub(crate) fn decode_draft(
     }
     reader.fits(count, MIN_NODE)?;
     let mut tree = SyntaxTree::new(false);
-    let mut used = vec![false; count];
+    // The roots of the finished subtrees, which tile the nodes read so far.
+    // Canonical post-order makes each node's children exactly the newest
+    // roots, in order, so every draft has one encoding.
+    let mut roots: Vec<usize> = Vec::new();
     for index in 0..count {
         let node = reader.node()?;
-        for child in node.children() {
-            let slot = used
-                .get_mut(child.index())
-                .filter(|_| child.index() < index)
-                .ok_or_else(|| invalid("a child must be an earlier node"))?;
-            if std::mem::replace(slot, true) {
-                return Err(invalid("a node has exactly one parent"));
-            }
+        let children = node.children();
+        let first = roots
+            .len()
+            .checked_sub(children.len())
+            .ok_or_else(|| invalid("a node's children are the subtrees just before it"))?;
+        if !roots[first..]
+            .iter()
+            .copied()
+            .eq(children.iter().map(|child| child.index()))
+        {
+            return Err(invalid("a node's children are the subtrees just before it"));
         }
+        roots.truncate(first);
+        roots.push(index);
         let (_, depth) = tree.push(node, None);
         check_limit(profile, ExpressionResource::SyntaxDepth, u64::from(depth))?;
     }
     if reader.at != bytes.len() {
         return Err(invalid("input continues past the root"));
     }
-    if used[..count - 1].contains(&false) {
+    if roots.len() != 1 {
         return Err(invalid("only the last node may be the root"));
     }
     Ok(tree)

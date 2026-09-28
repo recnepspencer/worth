@@ -54,6 +54,8 @@ pub(crate) struct CheckedProgram {
     /// Own nodes plus every call site's callee expansion.
     pub(crate) expanded_instructions: u64,
     pub(crate) call_depth: u32,
+    /// The widest bus any node or callee carries, record fields included.
+    pub(crate) bit_width: u32,
 }
 
 /// Checks `tree` against `context`; `expected` constrains the result type.
@@ -106,8 +108,8 @@ pub(super) struct Checker<'a> {
     functions: BTreeSet<usize>,
 }
 
-impl Checker<'_> {
-    fn schema(&self) -> &ExpressionSchema {
+impl<'a> Checker<'a> {
+    fn schema(&self) -> &'a ExpressionSchema {
         self.context.schema
     }
 
@@ -142,6 +144,13 @@ impl Checker<'_> {
             origin,
         });
         Ok((self.nodes.len() - 1) as u32)
+    }
+
+    /// Charges a lookup in an indexed table of `entries`: one unit per
+    /// binary-search step.
+    fn probe(&mut self, entries: usize) -> ExpressionResult<()> {
+        self.meter
+            .charge(u64::from(usize::BITS - entries.leading_zeros()) + 1)
     }
 
     fn literal(
@@ -219,6 +228,8 @@ impl Checker<'_> {
                 )
             }
             SyntaxNode::String(text) => {
+                // Drafts from builders carry no input measure; charge the copy.
+                self.meter.charge(text.len() as u64)?;
                 self.literal(id, Literal::String(text.clone()), ExpressionType::String)
             }
             SyntaxNode::Name(name) => self.name(id, name),

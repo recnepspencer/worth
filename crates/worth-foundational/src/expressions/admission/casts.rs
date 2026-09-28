@@ -85,6 +85,12 @@ impl Checker<'_> {
         width: u32,
         value: NodeId,
     ) -> ExpressionResult<u32> {
+        if width == 0 {
+            return Err(self.deny(
+                id,
+                ExpressionDenialDetail::InvalidValue("bit widths are at least one"),
+            ));
+        }
         check_limit(
             self.context.profile,
             ExpressionResource::BitWidth,
@@ -99,13 +105,13 @@ impl Checker<'_> {
         let valid = if extend {
             width > current
         } else {
-            width < current && width > 0
+            width < current
         };
         if !valid {
             let reason = if extend {
                 "extend widens to a strictly greater width"
             } else {
-                "truncate narrows to a strictly smaller nonzero width"
+                "truncate narrows to a strictly smaller width"
             };
             return Err(self.deny(id, ExpressionDenialDetail::Bounds(reason)));
         }
@@ -123,7 +129,7 @@ impl Checker<'_> {
         if width == 0 {
             return Err(self.deny(
                 id,
-                ExpressionDenialDetail::Bounds("bit widths are at least one"),
+                ExpressionDenialDetail::InvalidValue("bit widths are at least one"),
             ));
         }
         check_limit(

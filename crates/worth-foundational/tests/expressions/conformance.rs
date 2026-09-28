@@ -30,7 +30,7 @@ fn embedded_ui_slices_admit() {
         ExpressionType::Bool
     );
     assert_eq!(
-        admitted_type(r#"enable == logic4("1")"#),
+        admitted_type(r#"case_equal(enable, logic4("1"))"#),
         ExpressionType::Bool
     );
 }
