@@ -59,6 +59,7 @@ impl UiNativePreparedPresentation {
         if graphics.surface_suspended() {
             return Err(UiNativeSurfaceAcquireFailure::Occluded);
         }
+        graphics.configure_pending_surface();
         let output = match graphics.surface().get_current_texture() {
             wgpu::CurrentSurfaceTexture::Success(output) => output,
             wgpu::CurrentSurfaceTexture::Suboptimal(_) => {

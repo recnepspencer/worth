@@ -75,9 +75,9 @@ fn host_events_parse_by_kind() {
     let text = "worth-ui-resize-trace 1 frequency 10000000\n\
                 5 observed 800 600\n6 consumed 800 600\n\
                 7 submitted 42 800 600\n8 accepted 42\n\
-                9 target 800 600\n10 text 42 1 2 3 4 5\n\
+                9 target 800 600\n9 swapchain 1024 768\n10 text 42 1 2 3 4 5\n\
                 11 adapter NVIDIA GeForce (driver 1)\n12 peak textures 3\n\
-                13 minimum 1200 900\n";
+                13 minimum 1200 900\n14 stage draw 11\n";
     let trace = parse_host(text).expect("the trace parses");
     assert_eq!(trace.frequency, 10_000_000);
     let kinds: Vec<HostKind> = trace.events.iter().map(|event| event.kind).collect();
@@ -92,9 +92,14 @@ fn host_events_parse_by_kind() {
             },
             HostKind::Accepted(42),
             HostKind::Target([800, 600]),
+            HostKind::Swapchain([1024, 768]),
             HostKind::Text {
                 frame: 42,
                 work: [1, 2, 3, 4, 5]
+            },
+            HostKind::Stage {
+                stage: 8,
+                start: 11
             },
         ]
     );
@@ -107,6 +112,8 @@ fn host_events_parse_by_kind() {
     assert_eq!(bare.minimum, None);
     assert!(parse_host("5 observed 1 1").is_err());
     assert!(parse_host("worth-ui-resize-trace 1 frequency 1\n5 moved 1 1").is_err());
+    assert!(parse_host("worth-ui-resize-trace 1 frequency 1\n5 stage paint 1").is_err());
+    assert!(parse_host("worth-ui-resize-trace 1 frequency 1\n5 stage draw 6").is_err());
 }
 
 #[test]

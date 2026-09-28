@@ -205,6 +205,7 @@ fn row(
             [0.0, 0.0, 10.0, 10.0],
             UiMountedCoordinateSpace::HostSurface,
         ),
+        painted_bounds: None,
         order: UiMountedHitTestOrder::from_runtime_plan(rank),
     })
     .unwrap()
@@ -224,6 +225,7 @@ fn geometry(
         node_receipt: row.node_receipt(),
         bounds: bounds(allocation, space),
         clip_bounds: bounds(clip, space),
+        painted_bounds: None,
         order: row.order(),
     })
 }

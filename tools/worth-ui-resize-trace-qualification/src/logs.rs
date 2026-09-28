@@ -18,10 +18,18 @@ pub enum HostKind {
     Accepted(u64),
     /// A render target allocated at an extent.
     Target([u32; 2]),
+    /// The swapchain configured at an extent.
+    Swapchain([u32; 2]),
     /// A frame's text work, counted as [`crate::work::TEXT_WORK`] names.
     Text {
         frame: u64,
         work: [u64; 5],
+    },
+    /// A stage of a frame's work, [`crate::work::STAGES`] naming it by
+    /// index, that began at `start` and ended at the event's counter.
+    Stage {
+        stage: usize,
+        start: i64,
     },
 }
 
@@ -128,6 +136,7 @@ pub fn parse_host(text: &str) -> Parsed<HostTrace> {
             },
             Some("accepted") => HostKind::Accepted(field(&words, 2, line)?),
             Some("target") => HostKind::Target(extent(2)?),
+            Some("swapchain") => HostKind::Swapchain(extent(2)?),
             Some("text") => {
                 let mut work = [0; 5];
                 for (at, count) in work.iter_mut().enumerate() {
@@ -138,6 +147,13 @@ pub fn parse_host(text: &str) -> Parsed<HostTrace> {
                     work,
                 }
             }
+            Some("stage") => HostKind::Stage {
+                stage: words
+                    .get(2)
+                    .and_then(|name| crate::work::STAGES.iter().position(|stage| stage == name))
+                    .ok_or_else(|| format!("line {line}: unknown stage `{text}`"))?,
+                start: field(&words, 3, line)?,
+            },
             Some("adapter") => {
                 adapter = Some(words[2..].join(" "));
                 continue;
@@ -157,10 +173,13 @@ pub fn parse_host(text: &str) -> Parsed<HostTrace> {
             }
             _ => return Err(format!("line {line}: unknown host event `{text}`")),
         };
-        events.push(HostEvent {
-            counter: field(&words, 0, line)?,
-            kind,
-        });
+        let counter = field(&words, 0, line)?;
+        if matches!(kind, HostKind::Stage { start, .. } if start > counter) {
+            return Err(format!(
+                "line {line}: a stage ends before it starts `{text}`"
+            ));
+        }
+        events.push(HostEvent { counter, kind });
     }
     Ok(HostTrace {
         frequency,

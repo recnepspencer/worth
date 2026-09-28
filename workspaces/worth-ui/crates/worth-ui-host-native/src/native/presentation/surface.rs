@@ -135,11 +135,10 @@ impl UiNativeOwnedPresentationSurface {
         successor_owner: crate::native::UiNativeResourceOwner,
         scale_factor: f64,
         extent: [u32; 2],
-        device: &wgpu::Device,
         registry: &mut crate::native::UiNativeResourceRegistry,
     ) -> Result<(), ()> {
         let successor_basis_generation = self.basis_generation.checked_add(1).ok_or(())?;
-        self.state.commit_basis(scale_factor, extent, device);
+        self.state.commit_basis(scale_factor, extent);
         self.replace_target(successor, successor_owner, registry)?;
         self.basis_generation = successor_basis_generation;
         self.occluded = false;

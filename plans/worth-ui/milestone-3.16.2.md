@@ -244,6 +244,15 @@ Reuse paths consume dependency equivalence; assembly alone grants no presentatio
 Retain device, pipelines, and unchanged resources across ordinary size changes;
 allocate extent-dependent targets only for consumed work. No hidden readback,
 busy loop, source interpretation, Query evaluation, or replay on ordinary resize.
+A composition swapchain, which the window clips, may exceed the window by bounded
+slack so a drag reconfigures it only when the window outgrows or leaves that
+slack; frames still draw and scissor exactly to the consumed extent. The Pulse
+binary selects mimalloc (pinned, default features off) as its global allocator at
+its composition root; library crates never select an allocator.
+While the platform runs a modal resize loop, a deadline watch posts one wake
+per armed deadline the loop misses, sleeping precisely for its last
+millisecond; its wake cost across a drag is a known trade against timer-tick
+lateness, to revisit if a later budget needs the idle core back.
 
 Acceptance commits those prepared results and retires predecessor resources only
 after physical completion. Pre-effect rejection preserves accepted application
@@ -299,6 +308,7 @@ crates/worth-ui-host-native/src/native/
   lifecycle/surface_succession.rs               [extend consumed target replacement]
   graphics/backend/                            [reuse device and extent-dependent resources]
 apps/platform-pulse/src/
+  main.rs                                      [global allocator at the binary root]
   application/mosaic.rs                        [extend responsive product declarations]
   native_application/layout.rs                 [replace dashboard rectangle orchestration]
 ```

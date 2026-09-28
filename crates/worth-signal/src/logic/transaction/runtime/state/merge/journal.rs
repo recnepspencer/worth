@@ -87,17 +87,7 @@ impl BranchMutationLedger {
         records: impl IntoIterator<Item = (NodeId, BranchMutationRecord)>,
     ) {
         for (node, record) in records {
-            let entry = self.pending.entry(node).or_default();
-            entry.introduced |= record.introduced;
-            entry.state_changed |= record.state_changed;
-            entry.dependencies_changed |= record.dependencies_changed;
-            entry.dependency_snapshot_changed |= record.dependency_snapshot_changed;
-            entry.runtime_artifact_changed |= record.runtime_artifact_changed;
-            entry.retained_artifact_changed |= record.retained_artifact_changed;
-            entry.causality_changed |= record.causality_changed;
-            entry
-                .structural_deltas
-                .extend(record.structural_deltas.into_iter());
+            self.pending.entry(node).or_default().absorb(record);
         }
     }
 

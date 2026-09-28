@@ -2,7 +2,10 @@
 
 mod native;
 #[doc(hidden)]
-pub use native::{trace_resize_text_work, UiNativeResizeTraceTextWork};
+pub use native::{
+    trace_resize_stage, trace_resize_text_work, UiNativeResizeTraceSpan, UiNativeResizeTraceStage,
+    UiNativeResizeTraceTextWork,
+};
 pub use native::{UiNativeInputRecoveryAcknowledgement, UiNativeInputRecoveryGrant};
 mod native_profile;
 mod prepared_host;

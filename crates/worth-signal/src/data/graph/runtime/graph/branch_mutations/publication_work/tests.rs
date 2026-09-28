@@ -118,7 +118,8 @@ fn producer_branch_records_admit_payload_copies_before_publication() {
             .unwrap()
             .structural_deltas
             .len(),
-        before + 5
+        // The runtime artifact change folds into the one the fixture recorded.
+        before + 4
     );
     assert_eq!(
         prior_view.get(&node).unwrap().structural_deltas.len(),

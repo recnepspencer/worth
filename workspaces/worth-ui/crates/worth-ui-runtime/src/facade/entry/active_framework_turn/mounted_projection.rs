@@ -134,6 +134,9 @@ impl<'session> WorthUiActiveFrameworkTurnExecution<'session> {
         crate::mounting::UiPreparedMountedFrame,
         crate::mounting::UiMountedFramePreparationDenial,
     > {
+        let _stage = worth_ui_host_native::trace_resize_stage(
+            worth_ui_host_native::UiNativeResizeTraceStage::Projection,
+        );
         let virtualized_range = request.virtualized_range();
         let plan = self.execution.runtime.active.active_plan_ref();
         let lanes = lane_participation::mounted_lanes(plan, request.virtualized_range().is_some());
@@ -176,6 +179,9 @@ impl<'session> WorthUiActiveFrameworkTurnExecution<'session> {
         crate::mounting::UiPreparedMountedFrame,
         crate::mounting::UiMountedFramePreparationDenial,
     > {
+        let _stage = worth_ui_host_native::trace_resize_stage(
+            worth_ui_host_native::UiNativeResizeTraceStage::Projection,
+        );
         let virtualized_range = request.virtualized_range();
         let plan = self.execution.runtime.active.active_plan_ref();
         let lanes = lane_participation::mounted_lanes(plan, request.virtualized_range().is_some());
@@ -205,6 +211,9 @@ impl<'session> WorthUiActiveFrameworkTurnExecution<'session> {
         crate::mounting::UiPreparedMountedFrame,
         crate::mounting::UiMountedFramePreparationDenial,
     > {
+        let _stage = worth_ui_host_native::trace_resize_stage(
+            worth_ui_host_native::UiNativeResizeTraceStage::Projection,
+        );
         let virtualized_range = request.virtualized_range();
         let plan = self.execution.runtime.active.active_plan_ref();
         let lanes = lane_participation::mounted_lanes(plan, request.virtualized_range().is_some());
@@ -237,6 +246,9 @@ impl<'session> WorthUiActiveFrameworkTurnExecution<'session> {
         ),
         crate::mounting::UiMountedFramePreparationDenial,
     > {
+        let _stage = worth_ui_host_native::trace_resize_stage(
+            worth_ui_host_native::UiNativeResizeTraceStage::Projection,
+        );
         let virtualized_range = request.virtualized_range();
         let plan = self.execution.runtime.active.active_plan_ref();
         let lanes = lane_participation::mounted_lanes(plan, request.virtualized_range().is_some());

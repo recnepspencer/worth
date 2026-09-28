@@ -6,7 +6,7 @@ use std::fmt::Write;
 use crate::analysis::{Analysis, MOVING_PAUSE_MS};
 use crate::coverage::{BREAKPOINT_WIDTH, LARGE_EXTENT, SMALL_EXTENT};
 use crate::logs::CaptureLog;
-use crate::work::{Work, TEXT_WORK};
+use crate::work::{Work, STAGES, TEXT_WORK};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Verdict {
@@ -204,9 +204,32 @@ fn work(text: &mut String, work: &Work) {
     }
     let _ = writeln!(
         text,
+        "stage spans ending during the drag (spans: median, p95, max, total):"
+    );
+    for (name, spans) in STAGES.iter().zip(&work.stage_ms) {
+        if !spans.is_empty() {
+            let _ = writeln!(
+                text,
+                "  {name}: {}: {}, {}, {}, {:.1} ms",
+                spans.len(),
+                shown(percentile(spans, 0.5)),
+                shown(percentile(spans, 0.95)),
+                shown(percentile(spans, 1.0)),
+                spans.iter().sum::<f64>()
+            );
+        }
+    }
+    let _ = writeln!(
+        text,
         "render targets allocated during the drag: {} {:?}",
         work.targets.len(),
         work.targets
+    );
+    let _ = writeln!(
+        text,
+        "swapchain configurations during the drag: {} {:?}",
+        work.swapchains.len(),
+        work.swapchains
     );
     if work.peaks.is_empty() {
         let _ = writeln!(

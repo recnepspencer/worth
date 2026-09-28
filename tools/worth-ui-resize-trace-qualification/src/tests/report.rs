@@ -59,6 +59,17 @@ fn passing(interval: f64) -> Analysis {
 }
 
 #[test]
+fn the_report_lists_only_the_stages_traced() {
+    let mut analysis = passing(16.0);
+    analysis.work.stage_ms[8] = vec![4.0, 2.0, 6.0];
+    analysis.work.swapchains = vec![[1024, 768]];
+    let report = render(&analysis, &capture(true, 60)).0;
+    assert!(report.contains("  draw: 3: 4.0 ms, 6.0 ms, 6.0 ms, 12.0 ms\n"));
+    assert!(report.contains("swapchain configurations during the drag: 1 [[1024, 768]]\n"));
+    assert!(!report.contains("  frame: "));
+}
+
+#[test]
 fn a_run_meeting_every_threshold_passes() {
     assert_eq!(render(&passing(16.0), &capture(true, 60)).1, Verdict::Pass);
 }

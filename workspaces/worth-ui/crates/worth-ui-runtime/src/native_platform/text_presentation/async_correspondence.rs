@@ -64,6 +64,9 @@ impl UiPresentationAsyncRuntime {
         worth_ui_query_binding::WorthUiPresentationPendingReceipt,
         UiPresentationAsyncPendingDenial,
     > {
+        let _stage = worth_ui_host_native::trace_resize_stage(
+            worth_ui_host_native::UiNativeResizeTraceStage::Async,
+        );
         let correspondence = self
             .correspondence
             .issue(basis)
