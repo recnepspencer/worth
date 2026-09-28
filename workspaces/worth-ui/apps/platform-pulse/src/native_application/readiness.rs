@@ -325,7 +325,7 @@ impl worth_ui_native_platform::UiNativeApplicationRuntime for PlatformPulseAppli
     fn native_viewport_ready(
         &mut self,
         application: worth_ui::facade::app::WorthUiNativeApplicationShell,
-        surface_basis_successor: bool,
+        surface_succession: Option<worth_ui_native_platform::UiNativeSurfaceSuccession>,
     ) -> Result<
         (
             worth_ui::facade::app::WorthUiNativeApplicationShell,
@@ -335,7 +335,7 @@ impl worth_ui_native_platform::UiNativeApplicationRuntime for PlatformPulseAppli
     > {
         self.shell = Some(application);
         if self.startup_ready {
-            self.present_for_surface_basis(surface_basis_successor);
+            self.present_for_surface(surface_succession);
             self.advance_visual_identity();
         }
         let directive = self.native_runtime_directive();

@@ -43,6 +43,7 @@ pub(crate) fn present_unchanged_appearance<Port: UiNativePresentationPort>(
     lifecycle: &mut crate::native::lifecycle::UiNativeLifecycleOrchestrator,
 ) -> Result<UiNativeUnchangedPresentation, UiNativePresentationFailure> {
     let basis = super::raster::UiNativeRasterBasis::from_presentation_access(graphics);
+    super::retained_raster::prepare_target(graphics, basis, retained)?;
     let mut undo = retained
         .stage_unchanged(unchanged)
         .map_err(|_| malformed())?;
@@ -104,6 +105,7 @@ pub(crate) fn present_unchanged_appearance<Port: UiNativePresentationPort>(
         ),
     ) {
         Ok(observation) => {
+            retained.settle_target();
             let (pixels, cost, port_crossings) = observation.into_parts();
             Ok(UiNativeUnchangedPresentation {
                 cost,
@@ -112,13 +114,16 @@ pub(crate) fn present_unchanged_appearance<Port: UiNativePresentationPort>(
                 effects,
             })
         }
-        Err(UiNativePresentationFailure::Pending(pending)) => Err(
-            UiNativePresentationFailure::Pending(pending.with_settlement(
-                super::UiNativePendingSurfaceSettlement::Unchanged(Box::new(
-                    super::UiNativePendingUnchangedSettlement::new(undo, effects),
+        Err(UiNativePresentationFailure::Pending(pending)) => {
+            retained.settle_target();
+            Err(UiNativePresentationFailure::Pending(
+                pending.with_settlement(super::UiNativePendingSurfaceSettlement::Unchanged(
+                    Box::new(super::UiNativePendingUnchangedSettlement::new(
+                        undo, effects,
+                    )),
                 )),
-            )),
-        ),
+            ))
+        }
         Err(failure) => {
             retained
                 .rollback_unchanged(undo)
@@ -136,7 +141,14 @@ fn stage_appearance(
     retained: &mut UiNativeRetainedDrawList,
     undo: &mut super::retained_draw_list::UiNativeRetainedUnchangedUndo,
 ) -> Result<(), UiNativePresentationFailure> {
-    let work = view.appearance_work().ok_or_else(malformed)?;
+    // Without appearance work, an unchanged frame only repaints a successor target.
+    let Some(work) = view.appearance_work() else {
+        return if retained.repaint_owed() {
+            Ok(())
+        } else {
+            Err(malformed())
+        };
+    };
     if work.frame() != view.frame() || work.requirement() != view.requirement() {
         return Err(malformed());
     }

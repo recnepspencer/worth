@@ -17,8 +17,8 @@ pub use worth_ui_runtime::native_platform::{
     UiNativeComponentPresenceChange, UiNativeComponentSemanticTextChange,
     UiNativePlatformCloseReceipt, UiNativePlatformOutcome, UiNativePlatformPreparationDenial,
     UiNativePlatformProfile, UiNativePlatformStopReason, UiNativePlatformStopReport,
-    UiNativeWindowSpec, UiPreparedNativeApplication, UiPreparedNativePlatform,
-    WorthUiNativePlatform,
+    UiNativeSurfaceSuccession, UiNativeWindowSpec, UiPreparedNativeApplication,
+    UiPreparedNativePlatform, WorthUiNativePlatform,
 };
 #[cfg(feature = "certification-support")]
 pub use worth_ui_runtime::native_platform::{

@@ -232,6 +232,73 @@ fn assert_premature_commit_mutant_loses_rollback() {
     assert_ne!(retained.frame(), frame_zero);
 }
 
+/// A predecessor staged into an earlier, wider target rolls back coverage
+/// clipped to that extent. When no successor commits, the rollback clips it
+/// anew to the successor target the list now carries.
+#[test]
+fn a_superseded_rollback_is_clipped_to_the_carried_target() {
+    use crate::native::presentation::raster::UiNativeRasterBasis;
+    let world = DrawListWorld::new();
+    let atlas = crate::native::text_atlas::UiNativeTextAtlas::new();
+    let wide = UiNativeRasterBasis::new([100, 100], 1.25);
+    let narrow = UiNativeRasterBasis::new([60, 80], 1.25);
+    let frame_zero = UiMountedFrameIdentity::mint_unbound().unwrap();
+    // 40..72 points at 1.25 is 50..90 device pixels, past the narrow extent.
+    let zero = world.rect(
+        frame_zero,
+        world.first,
+        40.0,
+        UiMountedRgba8::new(10, 20, 30, 255),
+    );
+    let initial = world.initial(frame_zero, [zero]);
+    let mut retained = UiNativeRetainedDrawList::initial(&initial, &[]).unwrap();
+    retained.initialize_physical_coverage(wide, &atlas).unwrap();
+    retained.paint_target(1);
+
+    let frame_one = UiMountedFrameIdentity::mint_unbound().unwrap();
+    let one = world.rect(
+        frame_one,
+        world.first,
+        40.0,
+        UiMountedRgba8::new(40, 50, 60, 255),
+    );
+    let delta = replacement_delta(&world, frame_zero, zero, frame_one, one);
+    let (mut replay, mut undo) = retained.stage_delta(&delta, &[]).unwrap();
+    retained
+        .refresh_physical_delta(&delta, &mut undo, wide, &atlas, &mut replay)
+        .unwrap();
+    retained.prepare_target(narrow, 2).unwrap();
+    let identity = command(zero).identity();
+    let carried = |retained: &UiNativeRetainedDrawList| {
+        retained
+            .physical_coverage
+            .as_ref()
+            .and_then(|coverage| coverage.get(identity))
+            .map(|record| record.current.clone())
+    };
+    // 50..90 device pixels clipped to the 60 pixel target.
+    let clipped: Box<[[f32; 4]]> = Box::new([[50.0, 0.0, 10.0, 30.0]]);
+    assert_eq!(carried(&retained), Some(clipped.clone()));
+
+    let mut state = crate::native::UiNativeHostState::new();
+    let basis = physical_basis(&world, &initial);
+    let binding = basis.binding().diagnostic_value();
+    state.retained_draw_lists.insert(binding, retained);
+    UiNativePendingSurfaceSettlement::Delta(UiNativePendingDeltaSettlement::new(
+        undo,
+        UiNativePresentationEffects::default(),
+    ))
+    .rollback_superseded_predecessor(&mut state, basis);
+
+    let retained = state
+        .retained_draw_lists
+        .get(&binding)
+        .expect("a restorable rollback keeps the list");
+    assert!(!state.lifecycle.recovery_required(binding));
+    assert_eq!(retained.frame(), frame_zero);
+    assert_eq!(carried(retained), Some(clipped));
+}
+
 fn physical_basis(
     world: &DrawListWorld,
     initial: &UiMountedPresentationInitial,

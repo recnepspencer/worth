@@ -106,12 +106,17 @@ impl UiNativePendingSurfaceSettlement {
         basis: crate::native::physical_work_signal::UiNativePhysicalPresentationBasis,
     ) {
         let key = basis.binding().diagnostic_value();
+        // The predecessor may have been staged before the list carried onto a
+        // successor target, so restored coverage is clipped anew.
         match self {
             Self::Delta(lineage) => {
                 let restored = state
                     .retained_draw_lists
                     .get_mut(&key)
-                    .is_some_and(|retained| lineage.rollback(retained).is_ok());
+                    .is_some_and(|retained| {
+                        lineage.rollback(retained).is_ok()
+                            && retained.reclip_physical_coverage().is_ok()
+                    });
                 if !restored {
                     state.retained_draw_lists.remove(&key);
                     state.lifecycle.require_recovery(
@@ -124,7 +129,10 @@ impl UiNativePendingSurfaceSettlement {
                 let restored = state
                     .retained_draw_lists
                     .get_mut(&key)
-                    .is_some_and(|retained| settlement.rollback(retained).is_ok());
+                    .is_some_and(|retained| {
+                        settlement.rollback(retained).is_ok()
+                            && retained.reclip_physical_coverage().is_ok()
+                    });
                 if !restored {
                     state.retained_draw_lists.remove(&key);
                     state.lifecycle.require_recovery(
@@ -137,7 +145,10 @@ impl UiNativePendingSurfaceSettlement {
                 let restored = state
                     .retained_draw_lists
                     .get_mut(&key)
-                    .is_some_and(|retained| retained.rollback_sample(undo).is_ok());
+                    .is_some_and(|retained| {
+                        retained.rollback_sample(undo).is_ok()
+                            && retained.reclip_physical_coverage().is_ok()
+                    });
                 if !restored {
                     state.retained_draw_lists.remove(&key);
                     state.lifecycle.require_recovery(

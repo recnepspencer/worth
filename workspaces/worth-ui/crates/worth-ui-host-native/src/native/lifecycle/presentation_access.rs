@@ -38,6 +38,10 @@ impl<'owners> UiNativePresentationAccess<'owners> {
         self.surface.state().extent()
     }
 
+    pub(crate) const fn target_generation(&self) -> u64 {
+        self.surface.target_generation()
+    }
+
     pub(crate) fn device_generation_identity(&self) -> u64 {
         self.device.state().generation_identity()
     }

@@ -25,6 +25,16 @@ pub enum UiNativeApplicationReadinessSignalDenial {
     EventLoopClosed,
 }
 
+/// What a host surface succession asks of the application's next frame.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum UiNativeSurfaceSuccession {
+    /// The host kept the retained presentation on a successor target:
+    /// present, and the host repaints the target whole.
+    Repaint,
+    /// The host owes the surface binding a reconstruction.
+    Reconstruct,
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum UiNativeApplicationRuntimeDirective {
     Continue,
@@ -135,7 +145,7 @@ pub trait UiNativeApplicationRuntime: 'static {
     fn native_viewport_ready(
         &mut self,
         application: crate::facade::WorthUiNativeApplicationShell,
-        _surface_basis_successor: bool,
+        _surface_succession: Option<UiNativeSurfaceSuccession>,
     ) -> Result<
         (
             crate::facade::WorthUiNativeApplicationShell,

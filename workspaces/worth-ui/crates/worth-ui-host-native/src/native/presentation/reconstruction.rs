@@ -79,6 +79,7 @@ pub(crate) fn present_cold_reconstruction<Port: UiNativePresentationPort>(
     {
         return Err(before_effects(malformed_denial(), recovery, None));
     }
+    retained.paint_target(graphics.target_generation());
     let plan = match build_plan(
         super::raster::UiNativeRasterBasis::from_presentation_access(graphics),
         atlas,

@@ -44,6 +44,10 @@ impl UiNativePresentationEffects {
         Self::new(false, self.identity_overlay)
     }
 
+    pub(crate) const fn with_native_paint(self) -> Self {
+        Self::new(true, self.identity_overlay)
+    }
+
     pub(crate) fn completion(self) -> UiMountedCompletedEffects {
         let mut families =
             Vec::with_capacity(usize::from(self.native_paint) + usize::from(self.identity_overlay));

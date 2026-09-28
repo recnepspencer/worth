@@ -48,18 +48,20 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
             self.fail(event_loop, UiNativeEventLoopRunDenial::GraphicsPreparation);
             return true;
         }
-        let cause = match successor.change() {
-            crate::qualification::UiNativeQualificationSurfaceBasisChange::ClientPhysicalWidthDelta(_) => {
-                crate::native::UiNativeRecoveryCause::Resize
-            }
-            crate::qualification::UiNativeQualificationSurfaceBasisChange::DpiScaleMultiplierMilli(_) => {
-                crate::native::UiNativeRecoveryCause::Dpi
-            }
+        // The qualified successor takes the production decision: a width
+        // change keeps the retained draw lists, a scale change reconstructs.
+        let transition = match successor.change() {
+            crate::qualification::UiNativeQualificationSurfaceBasisChange::ClientPhysicalWidthDelta(
+                _,
+            ) => crate::native::UiNativeSurfaceBasisTransition::Resize,
+            crate::qualification::UiNativeQualificationSurfaceBasisChange::DpiScaleMultiplierMilli(
+                _,
+            ) => crate::native::UiNativeSurfaceBasisTransition::Dpi,
         };
-        {
-            let mut state = self.shared.borrow_mut();
-            state.require_surface_reconstruction(cause);
-        }
+        let _directive = self
+            .shared
+            .borrow_mut()
+            .observe_surface_basis_transition(transition);
         self.commit_visible_surface_readiness(event_loop);
         false
     }

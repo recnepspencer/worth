@@ -88,8 +88,14 @@ impl UiProtocolExecution {
                 Some(1),
             );
         }
+        if directive == UiNativeLifecycleDirective::Repaint {
+            return match self.run_attempt(None, None, UiNativeProtocolReadback::Complete) {
+                Ok(_) => self.completed_report(None),
+                Err(_) => unreachable!("a surface-basis repaint has no injected port denial"),
+            };
+        }
         let UiNativeLifecycleDirective::Reconstruct(recovery) = directive else {
-            unreachable!("surface transitions produce visibility or reconstruction directives")
+            unreachable!("surface transitions produce visibility, repaint or reconstruction")
         };
         self.recover(recovery);
         match self.run_attempt(None, None, UiNativeProtocolReadback::Complete) {
@@ -169,6 +175,9 @@ impl UiProtocolExecution {
                 UiNativeProtocolPredecessor::Retained,
                 None,
             ),
+            UiNativeLifecycleDirective::Repaint => {
+                unreachable!("presentation faults never carry the retained target onward")
+            }
             UiNativeLifecycleDirective::Reconstruct(recovery) => {
                 if !self.schedule.recovers() {
                     return self.open_report(
