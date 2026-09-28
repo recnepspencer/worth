@@ -108,33 +108,30 @@ pub(super) fn create_node(
         );
     }
     if let ApplicationWorkflowNodeKind::Condition(condition) = node.kind() {
-        // The installed contract binds every operand; a record missing one
-        // would not reconstruct, so none is written.
+        // Installation admits a definition only when every operand has a
+        // binding, so a published condition always records all of them.
         let operands = condition
             .operands()
             .iter()
             .map(|operand| {
                 let query = operand.query();
-                condition_bindings
+                let binding = condition_bindings
                     .iter()
                     .find(|binding| &*binding.operand == operand.name())
-                    .map(|binding| {
-                        [
-                            operand.name(),
-                            query.identifier(),
-                            query.parameter_type().as_str(),
-                            query.result_type().as_str(),
-                            binding.binding,
-                        ]
-                    })
+                    .expect("installed condition binds every operand");
+                [
+                    operand.name(),
+                    query.identifier(),
+                    query.parameter_type().as_str(),
+                    query.result_type().as_str(),
+                    binding.binding,
+                ]
             })
-            .collect::<Option<Vec<_>>>();
-        if let Some(operands) = operands {
-            fields.insert(
-                layout.node.condition_operands.clone(),
-                text(encode_operands(operands)),
-            );
-        }
+            .collect::<Vec<_>>();
+        fields.insert(
+            layout.node.condition_operands.clone(),
+            text(encode_operands(operands)),
+        );
     }
     if let ApplicationWorkflowNodeKind::Assessment(assessment) = node.kind() {
         fields.insert(

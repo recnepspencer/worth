@@ -5,6 +5,8 @@
 mod currentness;
 mod evaluation;
 mod inputs;
+#[cfg(test)]
+mod tests;
 
 pub(in crate::domain_computation::primary_graph) use currentness::supporting_identity;
 pub(in crate::domain_computation::primary_graph) use evaluation::evaluate_condition;

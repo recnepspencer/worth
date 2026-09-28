@@ -394,3 +394,6 @@ fn foreign_world_operands_are_refused() {
     );
     court.assert_still_awaiting(9_176_811);
 }
+
+#[path = "condition_races.rs"]
+mod races;

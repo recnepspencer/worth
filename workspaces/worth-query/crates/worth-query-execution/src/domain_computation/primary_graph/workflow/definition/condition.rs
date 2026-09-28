@@ -142,7 +142,7 @@ pub(in crate::domain_computation::primary_graph) fn encode_draft(draft: &[u8]) -
 }
 
 fn decode_draft(member: &str) -> Option<Box<[u8]>> {
-    if member.is_empty() || member.len() % 2 != 0 {
+    if member.is_empty() || !member.len().is_multiple_of(2) {
         return None;
     }
     member

@@ -528,7 +528,27 @@ let condition = builder.condition(
 `condition` admits the source against the operand types, so a type error is
 an authoring denial and never reaches an instance. Integer literals are
 `Int64` and the language has no implicit widening, so a `u64` operand such as
-`days` compares with typed literals like `uint64(5)`. When the instance returns
+`days` compares with typed literals like `uint64(5)`.
+
+An operand's result type must implement `ApplicationExpressionOperandValue`,
+which gives its expression type and converts a value exactly. `bool`, the
+fixed-width integers, `f32`, `f64`, `String`, `Option<T>`, and `Vec<T>` are
+provided. A domain type states its own reading; a money amount, for example,
+reads as its exact count of minor units so comparisons never round:
+
+```rust,ignore
+impl ApplicationExpressionOperandValue for Money<USD> {
+    fn expression_type() -> ExpressionType {
+        ExpressionType::INT64
+    }
+
+    fn expression_value(&self) -> Result<ExpressionValue, ExpressionDenial> {
+        Ok(ExpressionValue::integer(i128::from(self.minor_units())))
+    }
+}
+```
+
+When the instance returns
 `AwaitingCondition(required)`, run each operand's query with an ordinary query
 request on the instance's branch, then supply every published result by name to
 a fresh advance request:
@@ -545,8 +565,16 @@ let outcome = request
 `required.operands()` lists each operand's name, query, parameter type, result
 type, and binding. The supplied operands must be exactly those; an omitted,
 extra, or renamed operand is `RequirementMismatch`. Every source is checked for
-currentness before any value is read, so a stale or foreign source is refused
-as such, never as an expression result. An evaluation error, such as division
+currentness before any value is read, so a bad source is refused as such, never
+as an expression result:
+
+| Source | Outcome |
+|---|---|
+| Changed since it was read | `Attempt(..)` with `WorkflowAssessmentEvidenceMismatch`; read again and resubmit |
+| From another world, branch, or instance, or not exactly one row | `Attempt(..)` with `WorkflowTransitionAffinityMismatch` |
+| Changed after acceptance was admitted, before publication | `Ok(WorkflowProgressOutcome::Application(Denied(..)))` with commit kind `ProductBasisStale`; nothing is published and the same request key can be retried |
+
+An evaluation error, such as division
 by zero, is the attempt denial `WorkflowConditionExpressionDenied`, whose
 `expression()` carries the language denial; it selects neither successor.
 Refusals are `WorthQueryWorkflowConditionAcceptanceDenial`
@@ -767,6 +795,7 @@ Read with `WorthQueryApplicationAttemptDenial::kind()` and `subject()`.
 | Instance lifecycle | `WorkflowInstanceCancelled`, `WorkflowInstanceCompleted`, `WorkflowInstanceMigrated`, `WorkflowInstanceMigrationUnmapped`, `WorkflowInstanceHistoryUnavailable`, `WorkflowOperationInOwnerCustody` |
 | Budgets and time | `WorkflowInstanceCapacityUnavailable`, `WorkflowInstanceEvidenceCapacityUnavailable`, `WorkflowLineageCapacityUnavailable`, `WorkflowInstanceDeadlineElapsed`, `WorkflowTrustedTimeUnavailable`, `WorkflowHistoryReconstructionBudgetExceeded` |
 | Evidence | `WorkflowAssessmentEvidenceIncomplete`, `WorkflowAssessmentEvidenceMismatch` |
+| Condition | `WorkflowConditionExpressionDenied` |
 | Approval | `WorkflowApprovalPrincipalStale`, `WorkflowApprovalGrantUnavailable`, `WorkflowApprovalExpired`, `WorkflowApprovalDelegationChanged`, `WorkflowApprovalAuthorityDenied` |
 | Transition | `WorkflowTransitionAlreadySettled`, `WorkflowTransitionNodeUnsupported`, `WorkflowTransitionOperationUnsettled`, `WorkflowTransitionIdentityUnavailable` |
 | Affinity and authority | `WorkflowInstanceAffinityMismatch`, `WorkflowInstanceAuthorityMismatch`, `WorkflowInstanceIntentIdentityUnavailable`, `WorkflowTransitionAffinityMismatch`, `WorkflowTransitionAuthorityMismatch` |
