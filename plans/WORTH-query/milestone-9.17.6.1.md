@@ -2,7 +2,12 @@
 
 > **Status:** Phase 1 completed: bounded parser, typed builder, draft codec, pure
 > admission, installed functions, and canonical identity behind
-> `worth_foundational::expression_api`. Phases 2-5 not started.
+> `worth_foundational::expression_api`. Phase 2 completed: pure evaluator with
+> resumable slices, shared nested budgets, consumed-read recording, fixed numeric
+> vectors, exhaustive digital tables, an independent reference evaluator, and the
+> classified CEL intersection; the suite passes on x86-64 and wasm32 (wasmtime).
+> Not completed in Phase 2: AArch64 parity is build-only because no AArch64 runner
+> is available on the current host. Phases 3-5 not started.
 
 ## Goal And Placement
 

@@ -7,9 +7,10 @@ use super::canonical::{derive_identity, ExpressionProgramIdentity, IdentityInput
 use super::denial::{ExpressionDenial, ExpressionDenialDetail, ExpressionResult};
 use super::draft::ExpressionDraft;
 use super::functions::InstalledExpressionFunction;
+use super::profile::ExpressionProfile;
 use super::program::ExpressionProgram;
 use super::syntax::ExpressionSourceMap;
-use super::types::ExpressionType;
+use super::types::{ExpressionSchema, ExpressionType};
 
 /// A checked expression: resolved slots, types, function closure, and
 /// canonical identity. Only [`ExpressionDraft::admit`] constructs one; it
@@ -21,6 +22,9 @@ pub struct AdmittedExpression {
     closure: Box<[Arc<InstalledExpressionFunction>]>,
     identity: ExpressionProgramIdentity,
     source_map: ExpressionSourceMap,
+    /// The type declarations operand values are checked against.
+    declarations: ExpressionSchema,
+    profile: ExpressionProfile,
     work: u64,
     expanded_instructions: u64,
     call_depth: u32,
@@ -81,6 +85,8 @@ pub(crate) fn admit(
         closure,
         identity,
         source_map,
+        declarations: schema.declarations_only(),
+        profile: *profile,
         work: checked.work,
         expanded_instructions: checked.expanded_instructions,
         call_depth: checked.call_depth,
@@ -124,5 +130,19 @@ impl AdmittedExpression {
 
     pub fn call_depth(&self) -> u32 {
         self.call_depth
+    }
+
+    /// The profile the expression was admitted under; evaluation never
+    /// exceeds it.
+    pub fn profile(&self) -> &ExpressionProfile {
+        &self.profile
+    }
+
+    pub(crate) fn program(&self) -> &ExpressionProgram {
+        &self.program
+    }
+
+    pub(crate) fn declarations(&self) -> &ExpressionSchema {
+        &self.declarations
     }
 }

@@ -118,6 +118,15 @@ impl ExpressionProfile {
         Ok(self)
     }
 
+    /// The tighter of `self` and `other` for every resource.
+    pub(crate) fn meet(&self, other: &Self) -> Self {
+        let mut limits = self.limits;
+        for (limit, other) in limits.iter_mut().zip(other.limits) {
+            *limit = (*limit).min(other);
+        }
+        Self { limits }
+    }
+
     /// Every resource with its ceiling, in declaration order.
     pub fn limits(&self) -> impl Iterator<Item = (ExpressionResource, u64)> + '_ {
         RESOURCES.iter().copied().zip(self.limits.iter().copied())

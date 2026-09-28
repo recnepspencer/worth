@@ -1,7 +1,8 @@
 //! A minimal arbitrary-precision natural number for exact rounding.
 //!
-//! Only what correctly rounded rational conversion needs: construction,
-//! multiplication, shifts, comparison, and subtraction. Callers bound sizes.
+//! Only what exact rational rounding and checked decimals need: construction,
+//! addition, multiplication, shifts, comparison, subtraction, and division.
+//! Callers bound sizes.
 
 use std::cmp::Ordering;
 
@@ -132,6 +133,67 @@ impl Natural {
         }
         debug_assert_eq!(borrow, 0, "subtraction underflow");
         self.trim();
+    }
+
+    pub(crate) fn add(&self, other: &Self) -> Self {
+        let (long, short) = if self.limbs.len() >= other.limbs.len() {
+            (self, other)
+        } else {
+            (other, self)
+        };
+        let mut carry = 0_u64;
+        let mut limbs: Vec<u32> = long
+            .limbs
+            .iter()
+            .enumerate()
+            .map(|(index, limb)| {
+                let sum = u64::from(*limb)
+                    + u64::from(short.limbs.get(index).copied().unwrap_or(0))
+                    + carry;
+                carry = sum >> 32;
+                sum as u32
+            })
+            .collect();
+        if carry != 0 {
+            limbs.push(carry as u32);
+        }
+        Self { limbs }
+    }
+
+    /// `(self / divisor, self % divisor)` by binary long division; callers
+    /// guarantee a nonzero divisor.
+    pub(crate) fn divmod(&self, divisor: &Self) -> (Self, Self) {
+        debug_assert!(!divisor.is_zero(), "division by zero");
+        let mut remainder = self.clone();
+        let mut quotient = vec![0_u32; self.limbs.len()];
+        let shift = self.bit_len() as i64 - divisor.bit_len() as i64;
+        for bit in (0..=shift.max(-1)).rev() {
+            let shifted = divisor.shl(bit as u64);
+            if remainder >= shifted {
+                remainder.sub_assign(&shifted);
+                quotient[(bit / 32) as usize] |= 1 << (bit % 32);
+            }
+        }
+        let mut quotient = Self { limbs: quotient };
+        quotient.trim();
+        (quotient, remainder)
+    }
+
+    /// The value when it fits in 128 bits.
+    pub(crate) fn to_u128(&self) -> Option<u128> {
+        if self.limbs.len() > 4 {
+            return None;
+        }
+        Some(
+            self.limbs
+                .iter()
+                .rev()
+                .fold(0_u128, |value, limb| (value << 32) | u128::from(*limb)),
+        )
+    }
+
+    pub(crate) fn is_odd(&self) -> bool {
+        self.limbs.first().is_some_and(|limb| limb & 1 == 1)
     }
 
     fn trim(&mut self) {

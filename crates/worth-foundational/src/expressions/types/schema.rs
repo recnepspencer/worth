@@ -1,6 +1,7 @@
 //! Closed operand schemas: nominal declarations plus typed operands.
 
 use std::collections::BTreeMap;
+use std::sync::Arc;
 
 use crate::expressions::denial::{ExpressionDenial, ExpressionDenialDetail, SyntaxDenial};
 use crate::expressions::syntax::GENERIC_INTRINSICS;
@@ -84,11 +85,17 @@ impl ExpressionEnumDeclaration {
 /// record types are acyclic by construction.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct ExpressionSchema {
+    /// Shared by everything derived from one build, so agreement is a pointer check.
+    declarations: Arc<Declarations>,
+    /// Operands sorted by name; a slot is a position in this order.
+    operands: Vec<(Box<str>, ExpressionType)>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+struct Declarations {
     records: BTreeMap<Box<str>, ExpressionRecordDeclaration>,
     enums: BTreeMap<Box<str>, ExpressionEnumDeclaration>,
     ids: BTreeMap<Box<str>, ExpressionTypeName>,
-    /// Operands sorted by name; a slot is a position in this order.
-    operands: Vec<(Box<str>, ExpressionType)>,
 }
 
 impl ExpressionSchema {
@@ -100,15 +107,15 @@ impl ExpressionSchema {
     }
 
     pub fn record(&self, name: &str) -> Option<&ExpressionRecordDeclaration> {
-        self.records.get(name)
+        self.declarations.records.get(name)
     }
 
     pub fn enumeration(&self, name: &str) -> Option<&ExpressionEnumDeclaration> {
-        self.enums.get(name)
+        self.declarations.enums.get(name)
     }
 
     pub fn identifier(&self, name: &str) -> Option<&ExpressionTypeName> {
-        self.ids.get(name)
+        self.declarations.ids.get(name)
     }
 
     /// Declared operands in canonical name order.
@@ -136,14 +143,15 @@ impl ExpressionSchema {
     /// installed function signatures and bodies resolve against.
     pub(crate) fn declarations_only(&self) -> Self {
         Self {
+            declarations: self.declarations.clone(),
             operands: Vec::new(),
-            ..self.clone()
         }
     }
 
     /// Whether both schemas declare exactly the same records, enums, and IDs.
     pub(crate) fn same_declarations(&self, other: &Self) -> bool {
-        self.records == other.records && self.enums == other.enums && self.ids == other.ids
+        Arc::ptr_eq(&self.declarations, &other.declarations)
+            || self.declarations == other.declarations
     }
 
     /// The widest `Bits` or `Logic4` width `ty` carries anywhere inside it,
@@ -156,6 +164,7 @@ impl ExpressionSchema {
                 self.widest_bus(key).max(self.widest_bus(value))
             }
             ExpressionType::Record(name) => self
+                .declarations
                 .records
                 .get(name.name())
                 .map_or(0, |record| record.widest_bus),
@@ -173,6 +182,7 @@ impl ExpressionSchema {
                 self.four_valued(key) || self.four_valued(value)
             }
             ExpressionType::Record(name) => self
+                .declarations
                 .records
                 .get(name.name())
                 .is_some_and(|record| record.four_valued),
@@ -182,18 +192,19 @@ impl ExpressionSchema {
 
     /// Declared records, enums, and IDs: the size of the nominal lookup table.
     pub(crate) fn nominal_count(&self) -> usize {
-        self.records.len() + self.enums.len() + self.ids.len()
+        let declarations = &self.declarations;
+        declarations.records.len() + declarations.enums.len() + declarations.ids.len()
     }
 
     /// The nominal kind declared under `name`, or the built-in `Rounding` enum.
     pub(crate) fn nominal(&self, name: &str) -> Option<ExpressionType> {
-        if let Some(record) = self.records.get(name) {
+        if let Some(record) = self.declarations.records.get(name) {
             return Some(ExpressionType::Record(record.name.clone()));
         }
-        if let Some(enumeration) = self.enums.get(name) {
+        if let Some(enumeration) = self.declarations.enums.get(name) {
             return Some(ExpressionType::Enum(enumeration.name.clone()));
         }
-        if let Some(id) = self.ids.get(name) {
+        if let Some(id) = self.declarations.ids.get(name) {
             return Some(ExpressionType::Id(id.clone()));
         }
         (name == ROUNDING_NAME).then(rounding_type)
@@ -284,7 +295,7 @@ impl ExpressionSchemaBuilder {
             .max()
             .unwrap_or(0);
         let four_valued = declared.iter().any(|(_, ty)| self.schema.four_valued(ty));
-        self.schema.records.insert(
+        Arc::make_mut(&mut self.schema.declarations).records.insert(
             key,
             ExpressionRecordDeclaration {
                 name,
@@ -318,7 +329,7 @@ impl ExpressionSchemaBuilder {
             )));
         }
         let key: Box<str> = name.name().into();
-        self.schema.enums.insert(
+        Arc::make_mut(&mut self.schema.declarations).enums.insert(
             key,
             ExpressionEnumDeclaration {
                 name,
@@ -332,7 +343,9 @@ impl ExpressionSchemaBuilder {
     /// Declares an opaque nominal identifier type.
     pub fn identifier(mut self, name: &str, version: u32) -> Result<Self, ExpressionDenial> {
         let name = self.nominal_name(name, version)?;
-        self.schema.ids.insert(name.name().into(), name);
+        Arc::make_mut(&mut self.schema.declarations)
+            .ids
+            .insert(name.name().into(), name);
         Ok(self)
     }
 

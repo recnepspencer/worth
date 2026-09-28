@@ -75,6 +75,10 @@ impl InstalledExpressionFunction {
         self.closure.iter()
     }
 
+    pub(crate) fn program(&self) -> &ExpressionProgram {
+        &self.program
+    }
+
     pub(crate) fn expanded_instructions(&self) -> u64 {
         self.expanded_instructions
     }

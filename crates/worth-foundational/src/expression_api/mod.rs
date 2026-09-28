@@ -21,6 +21,8 @@
 
 mod admission;
 mod authoring;
+mod evaluation;
 
 pub use admission::*;
 pub use authoring::*;
+pub use evaluation::*;
