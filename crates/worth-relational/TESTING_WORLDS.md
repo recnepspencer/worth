@@ -506,14 +506,14 @@ maps, and guessed ids are not valid oracles. Every failure must be typed and
 must compare branch-cell checkpoints, catalog length, and artifact identity
 before and after the attempted operation.
 
-The Phase-4 target does not call the then-existing historical-read, Bridge,
-application-commit, or replay compatibility surfaces. Direct behavior and
-compiler-boundary tests keep those surfaces outside the transaction path. The
-application-commit compatibility case additionally confirms that exact lease
-admission does not move branch currentness. Phase 6 has now removed the
-consumer-facing current/latest adapters: snapshot, history, merge-basis, and
-Bridge reads require an admitted exact observation, while replay remains a
-separate cert-only lane.
+The Phase-4 target does not call the then-existing historical-read,
+downstream-publication, application-commit, or replay compatibility surfaces.
+Direct behavior and compiler-boundary tests keep those surfaces outside the
+transaction path. The application-commit compatibility case additionally
+confirms that exact lease admission does not move branch currentness. Phase 6
+has now removed the consumer-facing current/latest adapters: snapshot,
+history, merge-basis, and change-source reads require an admitted exact
+observation, while replay remains a separate cert-only lane.
 
 The current boundary evidence commands are:
 

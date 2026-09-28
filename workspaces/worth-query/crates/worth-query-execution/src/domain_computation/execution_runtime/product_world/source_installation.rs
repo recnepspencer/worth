@@ -2,7 +2,7 @@ use worth_relational::facade::branch::{
     AdmittedRelationalBranchBasis, RelationalBranchBasisDenial, RelationalBranchIdentity,
     RelationalOwnerServicePorts,
 };
-use worth_relational::facade::bridge::RuntimeBridgeRelationalSource;
+use worth_runtime_bridge::facade::RuntimeBridgeRelationalSource;
 
 use super::WorthQueryRelationalSourceOwner;
 

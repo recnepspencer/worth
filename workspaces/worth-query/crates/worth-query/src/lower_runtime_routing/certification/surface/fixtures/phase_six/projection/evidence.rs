@@ -3,11 +3,11 @@ use crate::evidence_identity::{
 };
 use crate::projection_consumption::ProjectionConsumptionSource;
 use worth_foundational::facade::{AspectKey, AspectValue, ScalarAspectType};
-use worth_relational::facade::grouped_truth::{
-    encode_snapshot_aspect_read_value, GroupedProjectionContract,
-};
 use worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts;
 use worth_runtime_bridge::facade::RelationalBridgeSnapshotIdentityParts;
+use worth_runtime_bridge::facade::{
+    encode_snapshot_aspect_read_value, RelationalGroupedProjectionContract,
+};
 use worth_runtime_bridge::facade::{
     BridgeIdentityEvidence, SnapshotReadPacket, SnapshotReadRecord, SnapshotReadRequest,
     TruthSnapshotIdentity,
@@ -123,8 +123,8 @@ pub(super) fn grouped_projection_contract(
     grouping_aspect: &str,
     identity_binding_aspect: &str,
     grouping_binding_aspect: &str,
-) -> GroupedProjectionContract {
-    GroupedProjectionContract::new(
+) -> RelationalGroupedProjectionContract {
+    RelationalGroupedProjectionContract::new(
         aspect_key(grouping_aspect),
         aspect_key(identity_binding_aspect),
         aspect_key(grouping_binding_aspect),

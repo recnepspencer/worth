@@ -67,6 +67,7 @@ use crate::subscription::FrozenSubscriptionFamilyRegistry;
 use preview_session_liveness::BridgePreviewSessionLivenessOwner;
 
 mod exports_core;
+mod exports_relational;
 mod exports_subscription;
 mod preview_session_liveness;
 mod request;
@@ -90,6 +91,7 @@ pub use crate::correspondence::{
 };
 pub use crate::identity_authority::*;
 pub use exports_core::*;
+pub use exports_relational::*;
 pub use exports_subscription::*;
 pub use preview_session_liveness::{
     BridgePreviewSessionLivenessGuard, BridgePreviewSessionLivenessObserver,

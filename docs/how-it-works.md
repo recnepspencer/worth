@@ -116,23 +116,21 @@ These are the real `[dependencies]` edges between workspace crates.
 | `worth-proof` | nothing |
 | `worth-foundational` | `worth-proof` (plus `serde`, `serde_json`, `sha2`) |
 | `worth-signal` | proof, foundational |
-| `worth-runtime-bridge` | proof, foundational, signal |
-| `worth-relational` | proof, foundational, runtime-bridge |
+| `worth-relational` | proof, foundational |
+| `worth-runtime-bridge` | proof, foundational, relational, signal |
 | `worth-runtime-world` | proof, foundational, relational, runtime-bridge, signal |
 | Query engine crates | foundational at minimum; `worth-query-execution`, `worth-query-publication`, and the internal `worth-query` engine also depend on the runtimes |
 | `worth-query-decl` | `worth-query-declaration` only |
 | `worth-query-host` | Query admission, declaration, execution, installation, and publication |
 
-Two edges surprise people:
+Two edges are worth knowing:
 
-- **Relational depends on the Bridge, not the reverse.** Today the Bridge
+- **Truth knows nothing of the computation it feeds.** Relational and Signal
+  do not depend on each other or on the Bridge. The Bridge depends on both: it
   defines the contracts a truth source must satisfy (`CommittedPatchSource`,
-  `SnapshotReadSource`, `TruthBranchHeadSource`), and Relational implements
-  them. This is the reverse of the intended direction. The Bridge is meant to
-  depend on both Relational and Signal, so that truth knows nothing of the
-  computation it feeds. Signal already has no dependency on any truth runtime.
-  [Bridge Milestone 20](../plans/WORTH-runtime-bridge/milestone-20.md) plans
-  the correction.
+  `SnapshotReadSource`, `TruthBranchHeadSource`) and owns the Relational
+  adapter that satisfies them through Relational's public `change_source`
+  API.
 - **The consumer facades do not depend directly on `worth-proof`.**
   `worth-query-decl` and `worth-query-host` do not list Proof as a
   dependency. Application code receives authority from the owners that mint
@@ -374,6 +372,13 @@ current. The runtime also provides forking, canonical commit history,
 replay from canonical commit envelopes, and a contained merge lane.
 Automatic rebase and semantic merge are not provided.
 
+**Change source.** `facade::change_source` is how another runtime reads what
+a commit changed. It selects a commit reachable from an observation, checks
+the commit's published aspect changes against its patch, and only then mints
+a `RelationalChangeReceipt`. A receipt cannot be built any other way, so
+holding one proves the checks passed. The API names no consumer: Relational
+does not know who reads it.
+
 **Today's limits.** Relational is memory-resident. Durability across
 restarts belongs to Store ([section 15](#15-durability-and-the-other-surfaces)).
 
@@ -432,6 +437,11 @@ causality. It does not become a second truth runtime or a second scheduler.
   Signal's evidence without restamping it.
 - **Indexes.** The correspondence allocation index can be rebuilt. It is
   acceleration, not authority.
+- **The Relational adapter.** The Bridge depends on Relational, never the
+  reverse. `RuntimeBridgeRelationalSource` implements the Bridge's source
+  contracts over Relational's public `change_source` API. It lowers each
+  change receipt into a Bridge envelope and never re-derives what a commit
+  meant.
 
 Application code never calls the Bridge directly for Query-installed
 operations.

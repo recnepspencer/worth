@@ -2,7 +2,6 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use worth_foundational::facade::{AspectKey, FieldKey, ScalarAspectType};
-use worth_relational::facade::bridge::RuntimeBridgeRelationalSource;
 use worth_relational::facade::identity::{KindId, PartitionId};
 use worth_relational::facade::runtime::{RelationalRuntime, RelationalRuntimeApi};
 use worth_relational::facade::schema::{
@@ -23,9 +22,10 @@ use worth_runtime_bridge::facade::{
     BridgeTruthViewSelector, CoarseRoutingMode, CommittedPatchSource,
     HistoricalEvaluationDeclaration, InvalidationSink, MappingSelector,
     RelationalBridgeSourceError, RelationalCommittedPatchRequest, RuntimeBridge,
-    RuntimeBridgeBuilder, SignalBridgeSinkError, SignalInvalidationScope, SnapshotReadContract,
-    SnapshotReadPacket, SnapshotReadSource, SourceDeclaration, SourceDeclarationIdentity,
-    TruthBranchIdentity, TruthPatchScope, TruthSnapshotIdentity, TruthSnapshotReader,
+    RuntimeBridgeBuilder, RuntimeBridgeRelationalSource, SignalBridgeSinkError,
+    SignalInvalidationScope, SnapshotReadContract, SnapshotReadPacket, SnapshotReadSource,
+    SourceDeclaration, SourceDeclarationIdentity, TruthBranchIdentity, TruthPatchScope,
+    TruthSnapshotIdentity, TruthSnapshotReader,
 };
 
 use super::super::{WorthQueryManagedRelationalObservation, WorthQueryManagedTruthReadRequest};
@@ -39,7 +39,7 @@ pub(crate) struct CausalManagedAdmissionContext {
     pub bridge: RuntimeBridge,
     pub relational: RuntimeBridgeRelationalSource,
     pub descriptor: worth_relational::facade::branch::RelationalBranchBasisDescriptor,
-    _registration: worth_relational::facade::bridge::RelationalBridgeObservationLease,
+    _registration: worth_runtime_bridge::facade::RelationalBridgeObservationLease,
 }
 
 pub(super) struct SourceProfileSubstitutionContext {
@@ -47,7 +47,7 @@ pub(super) struct SourceProfileSubstitutionContext {
     pub exact_bridge: RuntimeBridge,
     pub relational: RuntimeBridgeRelationalSource,
     pub descriptor: worth_relational::facade::branch::RelationalBranchBasisDescriptor,
-    _registration: worth_relational::facade::bridge::RelationalBridgeObservationLease,
+    _registration: worth_runtime_bridge::facade::RelationalBridgeObservationLease,
 }
 
 impl CausalManagedAdmissionContext {

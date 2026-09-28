@@ -5,9 +5,10 @@ This document freezes the Relational component boundary that Query Milestone
 not access to Relational internals and not a composite commit implementation.
 
 This file is the normative component contract for the 9.17.2 Runtime World
-composition owner above Runtime Bridge. The complete caller mental model is in
+composition owner. The complete caller mental model is in
 [`BRANCH_LOCAL_MVCC.md`](./BRANCH_LOCAL_MVCC.md), which explains the model to
-ordinary Relational callers without assigning product authority to Bridge.
+ordinary Relational callers without assigning product authority to any
+consumer.
 The executable publication flow is
 [`examples/branch_local_mvcc.rs`](./examples/branch_local_mvcc.rs). Certification
 lanes are documented in [`TESTING_WORLDS.md`](./TESTING_WORLDS.md).
@@ -496,7 +497,7 @@ Milestone 9.17.2 may not:
 - settle a component movement by editing history, or relabel an unsettled
   movement as rollback because a sibling component failed;
 - call private root, branch-cell, history-catalog, or raw publication mutation;
-- create a second Relational currentness table inside Runtime World, Bridge, or Query;
+- create a second Relational currentness table inside any consumer runtime;
 - construct a compatibility representation of an owner artifact, or expose a
   combined component authority as though Relational issued it;
 - wrap an owner runtime in a global lock or otherwise reintroduce whole-runtime

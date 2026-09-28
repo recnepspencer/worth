@@ -8,7 +8,6 @@ use worth_foundational::facade::{
     AspectKey, AspectValue, ContractValidatedAspectValueView, FieldKey,
 };
 use worth_proof::TransitionOutcome;
-use worth_runtime_bridge::facade::TruthDeltaSurfaceKind;
 
 #[test]
 fn update_entity_fields_applies_struct_contract_field_patch() {
@@ -116,27 +115,19 @@ fn update_entity_fields_applies_struct_contract_field_patch() {
     );
     assert!(field_clears.is_empty());
 
-    let TransitionOutcome::Success(bridge_envelope) =
-        crate::presentation::bridge::patch_envelopes::commit_envelope_to_bridge_envelope(
-            outcome.envelope(),
-            outcome.patch_position(),
-        )
-    else {
-        panic!("real field patch must retain enough authority for Bridge publication");
+    let (_, basis) = runtime
+        .observe_branch(&runtime.main_branch_identity())
+        .unwrap();
+    let selected = runtime
+        .select_exact_commit(&basis.observation(), outcome.commit.commit_id)
+        .into_outcome()
+        .unwrap();
+    let TransitionOutcome::Success(receipt) = runtime.mint_change_receipt(selected, None) else {
+        panic!("a real field patch mints a change receipt");
     };
-    let bridge_items = bridge_envelope.patch_body().canonical_items();
-    assert_eq!(bridge_items.len(), 1);
     assert_eq!(
-        bridge_items[0].surface_kind(),
-        TruthDeltaSurfaceKind::EntityField
-    );
-    assert_eq!(
-        bridge_items[0]
-            .field_locator()
-            .expect("field-precise bridge target")
-            .field_path()
-            .fields(),
-        &[FieldKey::new("title").unwrap()]
+        receipt.patch().authoritative_record_patches[0].authoritative_patch,
+        patch_record.authoritative_patch
     );
 }
 

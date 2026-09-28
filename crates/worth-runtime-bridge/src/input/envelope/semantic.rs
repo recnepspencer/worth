@@ -3,7 +3,7 @@ use worth_foundational::facade::{
     AuthoritativeAspectChangeKind, CanonicalFieldPath,
 };
 
-use crate::relational_identity::RelationalBridgeRecordIdentityParts;
+use crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum BridgeAspectChangePrecision {
@@ -216,6 +216,12 @@ pub struct BridgeCommittedRecordChange {
 }
 
 impl BridgeCommittedRecordChange {
+    /// A record change as Relational published it.
+    ///
+    /// This is public because it is data, not authority. An envelope carrying
+    /// it is delivered as authoritative only when the runtime loaded the
+    /// envelope from its registered source and the envelope's provenance
+    /// matches that source's installed profile.
     pub fn from_relational_publication(
         record_identity: RelationalBridgeRecordIdentityParts,
         kind: BridgeCommittedRecordChangeKind,

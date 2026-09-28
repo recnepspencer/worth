@@ -3,7 +3,7 @@ use super::{BridgeConditionalDenial, BridgeConditionalDenialKind};
 #[derive(Clone)]
 struct BridgeConditionalSemanticObservationRead {
     ordinal: usize,
-    record: Option<crate::relational_identity::RelationalBridgeRecordIdentityParts>,
+    record: Option<crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts>,
     managed_record: bool,
     contract: worth_foundational::facade::AspectContract,
     projection_mask:
@@ -75,7 +75,9 @@ impl BridgeConditionalSemanticObservationPlan {
 
     pub(super) fn packet(
         &self,
-        managed_record: Option<crate::relational_identity::RelationalBridgeRecordIdentityParts>,
+        managed_record: Option<
+            crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts,
+        >,
     ) -> Result<crate::snapshot::SnapshotReadPacket, BridgeConditionalDenial> {
         let reads = self
             .reads
@@ -89,7 +91,9 @@ impl BridgeConditionalSemanticObservationPlan {
 impl BridgeConditionalSemanticObservationRead {
     fn snapshot_request(
         &self,
-        managed_record: Option<crate::relational_identity::RelationalBridgeRecordIdentityParts>,
+        managed_record: Option<
+            crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts,
+        >,
     ) -> Result<crate::snapshot::SnapshotReadRequest, BridgeConditionalDenial> {
         let record = self
             .record
@@ -197,9 +201,13 @@ mod tests {
     fn managed_temporal_plan_binds_each_exact_source_record_at_execution() {
         let plan = managed_plan();
         let first =
-            crate::relational_identity::RelationalBridgeRecordIdentityParts::entity(1, 7, 2);
+            crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts::entity(
+                1, 7, 2,
+            );
         let second =
-            crate::relational_identity::RelationalBridgeRecordIdentityParts::entity(1, 9, 3);
+            crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts::entity(
+                1, 9, 3,
+            );
 
         let first_packet = plan.packet(Some(first)).unwrap();
         let second_packet = plan.packet(Some(second)).unwrap();
@@ -227,7 +235,9 @@ mod tests {
     #[test]
     fn managed_temporal_plan_always_reads_current_authoritative_posture() {
         let record =
-            crate::relational_identity::RelationalBridgeRecordIdentityParts::entity(1, 7, 2);
+            crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts::entity(
+                1, 7, 2,
+            );
         let packet = managed_plan().packet(Some(record)).unwrap();
 
         assert_eq!(packet.reads().len(), 1);
@@ -256,7 +266,9 @@ mod tests {
                 .to_vec(),
         };
         let record =
-            crate::relational_identity::RelationalBridgeRecordIdentityParts::entity(1, 7, 2);
+            crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts::entity(
+                1, 7, 2,
+            );
 
         let packet = plan.packet(Some(record)).unwrap();
 

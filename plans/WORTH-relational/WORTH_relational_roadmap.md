@@ -1188,9 +1188,11 @@ explicitly rather than trying to restate those tests in weaker or shorter form.
 
 Relational must not depend on `worth-runtime-bridge`. The Bridge links
 Relational and Signal, so the Bridge depends on Relational.
-[Bridge Milestone 20](../WORTH-runtime-bridge/milestone-20.md) moves the
-adapter out of `presentation/bridge` and adds the Bridge-free change source
-API that Relational owns.
+`tools/boundary-check/config/road1.toml` denies the reverse edge. A runtime
+that reacts to committed changes reads them through
+`worth_relational::facade::change_source`, which names no consumer.
+[Bridge Milestone 20](../WORTH-runtime-bridge/milestone-20.md) moved the
+adapter into the Bridge and added that API.
 
 ## Completion Standard
 

@@ -1,7 +1,8 @@
 use std::sync::Arc;
 
-use worth_relational::facade::bridge::RuntimeBridgeRelationalSource;
-use worth_runtime_bridge::facade::{BridgeBuildError, RuntimeBridge};
+use worth_runtime_bridge::facade::{
+    BridgeBuildError, RuntimeBridge, RuntimeBridgeRelationalSource,
+};
 
 use super::{WorthQueryRuntimeBuilder, WorthQueryRuntimeError};
 

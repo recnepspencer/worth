@@ -1,7 +1,7 @@
-mod bridge_counters;
 mod inspection_counters;
 mod lineage_counters;
 mod merge_counters;
+mod observation_counters;
 mod preparation_counters;
 mod query_projection_counters;
 mod replay_authority_basis_counters;

@@ -94,7 +94,8 @@ pub struct BridgeManagedTemporalIntentReconciliationParts<'a> {
     pub revision: u64,
     pub due_coordinate: u64,
     pub idempotency_identity: Arc<str>,
-    pub source_record_identity: crate::relational_identity::RelationalBridgeRecordIdentityParts,
+    pub source_record_identity:
+        crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts,
     pub lifecycle: BridgeManagedTemporalIntentLifecycle,
 }
 
@@ -124,7 +125,7 @@ pub struct BridgeManagedDueWake {
     pub(super) revision: u64,
     pub(super) idempotency_identity: Arc<str>,
     pub(super) source_record_identity:
-        crate::relational_identity::RelationalBridgeRecordIdentityParts,
+        crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts,
     pub(super) due_coordinate: u64,
     pub(super) ready_coordinate: u64,
     pub(in crate::conditional_execution) signal_wake_id: TemporalWakeId,
@@ -154,7 +155,7 @@ impl BridgeManagedDueWake {
 
     pub fn source_record_identity(
         &self,
-    ) -> crate::relational_identity::RelationalBridgeRecordIdentityParts {
+    ) -> crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts {
         self.source_record_identity
     }
 

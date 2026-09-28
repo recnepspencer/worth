@@ -1,0 +1,13 @@
+error[E0308]: mismatched types
+ --> tests/ui/relational_identity/raw_commit_text_cannot_enter_bridge_truth.rs:4:68
+  |
+4 |     let _identity = TruthCommitIdentity::from_relational_commit_id("commit-7");
+  |                     ---------------------------------------------- ^^^^^^^^^^ expected `u64`, found `&str`
+  |                     |
+  |                     arguments to this function are incorrect
+  |
+note: associated function defined here
+ --> src/relational_source/identity_parts.rs
+  |
+  |     pub fn from_relational_commit_id(commit_id: u64) -> Self {
+  |            ^^^^^^^^^^^^^^^^^^^^^^^^^

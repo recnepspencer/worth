@@ -1,5 +1,0 @@
-error[E0599]: no method named `publish_commit_for_bridge` found for struct `RelationalRuntime` in the current scope
- --> tests/ui/branch_reference/raw_commit_cannot_publish_bridge.rs:6:21
-  |
-6 |     let _ = runtime.publish_commit_for_bridge(CommitId(1), "model");
-  |                     ^^^^^^^^^^^^^^^^^^^^^^^^^ method not found in `RelationalRuntime`

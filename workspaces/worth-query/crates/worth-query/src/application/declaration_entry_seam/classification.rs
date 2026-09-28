@@ -22,6 +22,10 @@ impl WorthQueryDeclarationEntrySeamClassification {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryDeclarationEntryLowerOwnerCrate {
     Query,
+    /// The truth authority a relational routing row lowers to. Every
+    /// `RelationalTruthRouting` row names it, including grouped truth, whose
+    /// artifact the Bridge now builds over Relational reads: the row records
+    /// whose truth is routed, not which crate hosts the adapter.
     WorthRelational,
     WorthRuntimeBridge,
     WorthSignal,

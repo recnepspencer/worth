@@ -1632,6 +1632,7 @@ dependencies = [
  "rayon",
  "rmp-serde",
  "serde",
+ "serde_json",
  "sha2",
  "smallvec",
  "stats_alloc",
@@ -1639,19 +1640,20 @@ dependencies = [
  "worth-foundational",
  "worth-harness",
  "worth-proof",
- "worth-runtime-bridge",
 ]
 
 [[package]]
 name = "worth-runtime-bridge"
 version = "0.1.0"
 dependencies = [
+ "serde",
  "serde_json",
  "sha2",
  "trybuild",
  "worth-foundational",
  "worth-harness",
  "worth-proof",
+ "worth-relational",
  "worth-signal",
 ]
 

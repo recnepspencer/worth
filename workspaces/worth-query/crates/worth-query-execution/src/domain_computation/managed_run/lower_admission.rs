@@ -1,12 +1,11 @@
 use std::sync::Arc;
 
 use worth_query_installation::facade::WorthQueryExecutionResourceEnvelope;
-use worth_relational::facade::bridge::RuntimeBridgeRelationalSource;
 use worth_runtime_bridge::facade::{
     BridgeAsyncRequestTruthViewBasis, BridgeBoundExecutionBasis, BridgeManagedExecutionIntent,
     BridgeManagedExecutionPartialEffectPosture, BridgeManagedExecutionStepContract,
     BridgeManagedExecutionStepLimits, BridgeTruthViewSelector, HistoricalEvaluationDeclaration,
-    RuntimeBridge,
+    RuntimeBridge, RuntimeBridgeRelationalSource,
 };
 
 use super::WorthQueryManagedRelationalObservation;

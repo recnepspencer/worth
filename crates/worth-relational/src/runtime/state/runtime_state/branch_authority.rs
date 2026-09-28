@@ -88,7 +88,9 @@ impl RelationalRuntime {
             .map_err(map_basis_denial)
     }
 
-    pub(crate) fn runtime_instance_id(&self) -> u64 {
+    /// The id of this runtime instance, unique within the process. Every
+    /// runtime-affine value this runtime issues carries it.
+    pub fn runtime_instance_id(&self) -> u64 {
         self.services.runtime_instance_id()
     }
 }

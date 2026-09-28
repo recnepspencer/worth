@@ -32,9 +32,9 @@ pub struct BridgeSemanticDependencyCandidateParts {
     pub graph_participation_identity: Arc<str>,
     pub graph_adapter_identity: Arc<str>,
     pub source_record_identity:
-        Option<crate::relational_identity::RelationalBridgeRecordIdentityParts>,
+        Option<crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts>,
     pub observation_record_identity:
-        Option<crate::relational_identity::RelationalBridgeRecordIdentityParts>,
+        Option<crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts>,
     pub contract: AspectContract,
     pub projection_mask: AspectMask<ProjectionMask>,
     pub binding: AspectBinding,
@@ -56,9 +56,9 @@ pub struct BridgeSemanticDependencyCandidate {
     pub(crate) graph_participation_identity: Arc<str>,
     pub(crate) graph_adapter_identity: Arc<str>,
     pub(crate) source_record_identity:
-        Option<crate::relational_identity::RelationalBridgeRecordIdentityParts>,
+        Option<crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts>,
     pub(crate) observation_record_identity:
-        Option<crate::relational_identity::RelationalBridgeRecordIdentityParts>,
+        Option<crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts>,
     pub(crate) contract: AspectContract,
     pub(crate) projection_mask: AspectMask<ProjectionMask>,
     pub(crate) binding: AspectBinding,
@@ -172,7 +172,7 @@ impl BridgeSemanticDependencyCandidate {
 
     pub const fn source_record_identity(
         &self,
-    ) -> Option<crate::relational_identity::RelationalBridgeRecordIdentityParts> {
+    ) -> Option<crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts> {
         self.source_record_identity
     }
 
@@ -186,7 +186,7 @@ impl BridgeSemanticDependencyCandidate {
 
     pub const fn observation_record_identity(
         &self,
-    ) -> Option<crate::relational_identity::RelationalBridgeRecordIdentityParts> {
+    ) -> Option<crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts> {
         self.observation_record_identity
     }
 
@@ -320,7 +320,7 @@ impl PartialEq for BridgeSemanticDependencyCandidate {
 impl Eq for BridgeSemanticDependencyCandidate {}
 
 fn source_record_identity_token(
-    identity: Option<crate::relational_identity::RelationalBridgeRecordIdentityParts>,
+    identity: Option<crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts>,
 ) -> String {
     identity
         .map(|identity| identity.bridge_entity_identity())

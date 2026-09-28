@@ -21,24 +21,11 @@ impl RelationalSourceTruthIdentityPhaseOneRootBreakTarget {
 }
 
 const RELATIONAL_SOURCE_TRUTH_IDENTITY_PHASE_ONE_ROOT_BREAK_TARGETS:
-    &[RelationalSourceTruthIdentityPhaseOneRootBreakTarget] = &[
-    RelationalSourceTruthIdentityPhaseOneRootBreakTarget::new(
-        "presentation::bridge::bridge_snapshot_identity_for_commit",
-        "mint bridge snapshot identity from relational source-truth authority only",
-    ),
-    RelationalSourceTruthIdentityPhaseOneRootBreakTarget::new(
-        "presentation::bridge::bridge_snapshot_identity_for_handle",
-        "mint bridge snapshot identity from relational source-truth authority only",
-    ),
-    RelationalSourceTruthIdentityPhaseOneRootBreakTarget::new(
-        "runtime::RelationalRuntime::publish_commit_for_bridge",
-        "admit Bridge publication only from a commit owned by the live Relational runtime",
-    ),
-    RelationalSourceTruthIdentityPhaseOneRootBreakTarget::new(
-        "presentation::bridge::RuntimeBridgeRelationalSource",
-        "carry relational source-truth authority through bridge presentation export",
-    ),
-];
+    &[RelationalSourceTruthIdentityPhaseOneRootBreakTarget] =
+    &[RelationalSourceTruthIdentityPhaseOneRootBreakTarget::new(
+        "runtime::RelationalRuntime::mint_change_receipt",
+        "mint a change receipt only from a commit the live Relational runtime selected",
+    )];
 
 pub const fn relational_source_truth_identity_phase_one_root_break_targets(
 ) -> &'static [RelationalSourceTruthIdentityPhaseOneRootBreakTarget] {

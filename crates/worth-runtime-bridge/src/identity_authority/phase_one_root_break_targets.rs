@@ -62,6 +62,18 @@ const BRIDGE_TRUTH_IDENTITY_PHASE_ONE_ROOT_BREAK_TARGETS:
         "BridgeIdentity::<Tag>::bridge_trust_boundary",
         "allowed boundary export for current bridge truth only when the source tag implements a tag-specific bridge identity family kind",
     ),
+    BridgeTruthIdentityPhaseOneRootBreakTarget::new(
+        "relational_source::bridge_snapshot_identity_for_commit",
+        "mint bridge snapshot identity from relational source-truth authority only",
+    ),
+    BridgeTruthIdentityPhaseOneRootBreakTarget::new(
+        "relational_source::bridge_snapshot_identity_for_handle",
+        "mint bridge snapshot identity from relational source-truth authority only",
+    ),
+    BridgeTruthIdentityPhaseOneRootBreakTarget::new(
+        "relational_source::RuntimeBridgeRelationalSource",
+        "carry relational source-truth authority only from a change receipt the live Relational runtime minted",
+    ),
 ];
 
 pub const fn bridge_truth_identity_phase_one_root_break_targets(

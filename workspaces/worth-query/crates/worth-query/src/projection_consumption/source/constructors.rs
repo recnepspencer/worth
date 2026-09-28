@@ -7,11 +7,11 @@ use crate::runtime::{
     WorthQueryMutationTargetClass, WorthQueryReadExecutionEngine, WorthQueryReadReceipt,
     WorthQueryWriteReceipt,
 };
-use worth_relational::facade::grouped_truth::{
-    RelationalAuthoritativeRowSetArtifact, RelationalGroupedProjectionArtifact,
-};
 use worth_runtime_bridge::facade::{
     BridgeGroupedTruthViewArtifact, BridgeMaterializedRowSetArtifact, TruthSnapshotIdentity,
+};
+use worth_runtime_bridge::facade::{
+    RelationalAuthoritativeRowSetArtifact, RelationalGroupedProjectionArtifact,
 };
 
 use super::{

@@ -106,10 +106,10 @@ guidance = "Runtime World is memory-resident composition authority and cannot de
 
 [[dependency_denials]]
 workspace_manifest = "Cargo.toml"
-sources = ["worth-runtime-bridge"]
-forbidden_targets = ["worth-relational"]
+sources = ["worth-relational"]
+forbidden_targets = ["worth-runtime-bridge"]
 forbidden_target_prefixes = []
-guidance = "Runtime Bridge is the neutral crossing owner and cannot acquire a direct Relational runtime dependency"
+guidance = "The Bridge owns the Relational adapter and depends on Relational; Relational never names the Bridge"
 
 [[source_dependency_allowlists]]
 workspace_manifest = "Cargo.toml"

@@ -10,7 +10,9 @@ pub(super) fn read_condition_observations(
     snapshot: Option<&TruthSnapshotContext>,
     lowering: &BridgeInstalledConditionalLowering,
     previous: &super::observation_retention::BridgeRetainedObservations,
-    managed_source_record: Option<crate::relational_identity::RelationalBridgeRecordIdentityParts>,
+    managed_source_record: Option<
+        crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts,
+    >,
     ledger: &std::sync::Arc<super::retention::BridgeRetentionLedger>,
 ) -> Result<super::observation_retention::BridgeRetainedObservations, BridgeConditionalDenial> {
     let condition = lowering.contract.condition();

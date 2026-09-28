@@ -72,6 +72,7 @@ mod builder;
 mod canonical_basis;
 #[cfg(feature = "certification-construction")]
 pub mod certification;
+mod certification_constructor;
 mod clone_budget;
 mod conditional_execution;
 mod continuity;
@@ -88,7 +89,8 @@ mod input;
 mod mapping;
 mod merge;
 mod policy;
-mod relational_identity;
+mod relational_grouped_truth;
+mod relational_source;
 mod routing;
 mod snapshot;
 mod source;

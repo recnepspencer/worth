@@ -65,6 +65,13 @@ pub struct BridgeHistoricalLineageAuthority {
 }
 
 impl BridgeHistoricalLineageAuthority {
+    /// The answer a `ContinuityLineageSource` gives for one lineage request.
+    ///
+    /// This is public because the trait is: any source, including a
+    /// certification fake inside Query's public acceptance suite, must be able
+    /// to build its answer. The authority basis comes from the request being
+    /// answered, and the identities and event ids must be canonical and free of
+    /// duplicates, or construction fails.
     pub fn try_new(
         authority_basis: continuity::BridgeContinuityAuthorityBasis,
         canonical_resolved_lineage_identities: Vec<BridgeHistoricalResolvedLineageIdentity>,

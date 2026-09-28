@@ -256,8 +256,8 @@ pub fn basis_lifecycle_reuse_matrix() -> BasisLifecycleReuseMatrix {
         ),
         row(
             RelationalBridgeAdapterBasis,
-            "worth-relational",
-            "worth_relational::facade::RuntimeBridgeRelationalSource",
+            "worth-runtime-bridge",
+            "worth_runtime_bridge::facade::RuntimeBridgeRelationalSource",
             "RuntimeBridgeRelationalSource",
             "LowerRuntimeBasisEvidence",
             "adapter identity and bridge-facing digest",

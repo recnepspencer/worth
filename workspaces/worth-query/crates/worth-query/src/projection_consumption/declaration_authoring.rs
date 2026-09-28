@@ -5,11 +5,11 @@ use crate::runtime::{
     WorthQueryDerivedArtifactBinding, WorthQueryLiveArtifactBinding, WorthQueryReadReceipt,
     WorthQueryWriteReceipt,
 };
-use worth_relational::facade::grouped_truth::{
-    RelationalAuthoritativeRowSetArtifact, RelationalGroupedProjectionArtifact,
-};
 use worth_runtime_bridge::facade::{
     BridgeGroupedTruthViewArtifact, BridgeMaterializedRowSetArtifact,
+};
+use worth_runtime_bridge::facade::{
+    RelationalAuthoritativeRowSetArtifact, RelationalGroupedProjectionArtifact,
 };
 
 use super::declaration::{

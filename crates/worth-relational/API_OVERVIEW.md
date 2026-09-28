@@ -80,9 +80,14 @@ of a committed change. `PublishedAuthoritativeAspectChange` retains aspect
 identity and revision, Relational binding, change kind, optional field path,
 and exact or declared-widening precision.
 
-Runtime Bridge consumes this publication for Query-installed semantic
-correspondence. Downstream callers should not derive their own aspect-change
-taxonomy from raw patch fields.
+Downstream callers should not derive their own aspect-change taxonomy from raw
+patch fields.
+
+#### Who consumes this
+
+The Bridge carries Query-installed semantic correspondence. It reads this
+publication through `facade::change_source`, which checks the publication
+before minting a change receipt.
 
 ### Past truth
 

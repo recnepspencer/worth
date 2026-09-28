@@ -3,7 +3,7 @@ use std::sync::Arc;
 use sha2::{Digest, Sha256};
 use worth_foundational::facade::{AspectKey, AuthoritativeRecordAspectPatch, CanonicalFieldPath};
 
-use crate::relational_identity::RelationalBridgeRecordIdentityParts;
+use crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts;
 use crate::writeback::BridgeWritebackEffectIntent;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -227,11 +227,15 @@ fn mutation_subject_digest(
 }
 
 const fn record_kind_label(
-    kind: crate::relational_identity::RelationalBridgeRecordIdentityKind,
+    kind: crate::relational_source::identity_parts::RelationalBridgeRecordIdentityKind,
 ) -> &'static str {
     match kind {
-        crate::relational_identity::RelationalBridgeRecordIdentityKind::Entity => "entity",
-        crate::relational_identity::RelationalBridgeRecordIdentityKind::Relation => "relation",
+        crate::relational_source::identity_parts::RelationalBridgeRecordIdentityKind::Entity => {
+            "entity"
+        }
+        crate::relational_source::identity_parts::RelationalBridgeRecordIdentityKind::Relation => {
+            "relation"
+        }
     }
 }
 

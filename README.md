@@ -214,13 +214,13 @@ run-time flow in the diagram above.
 ```text
 worth-proof
   └─ worth-foundational
+       ├─ worth-relational
        └─ worth-signal
-            └─ worth-runtime-bridge      (defines the truth-source contracts)
-                 └─ worth-relational     (implements them)
-                      └─ worth-runtime-world
-                           └─ Query authority crates
-                                └─ worth-query-host, worth-query (engine)
-                                     └─ worth-server, worth-ui, reference apps
+            └─ worth-runtime-bridge      (depends on Relational and Signal)
+                 └─ worth-runtime-world
+                      └─ Query authority crates
+                           └─ worth-query-host, worth-query (engine)
+                                └─ worth-server, worth-ui, reference apps
 ```
 
 `worth-query-decl` depends only on `worth-query-declaration`.
@@ -229,13 +229,10 @@ on the internal engine. Neither consumer facade depends directly on
 `worth-proof`. Applications receive authority from its owners; they never
 construct it.
 
-Today `worth-relational` depends on `worth-runtime-bridge`: the Bridge defines
-truth-source traits (`CommittedPatchSource`, `SnapshotReadSource`,
-`TruthBranchHeadSource`), and Relational implements them. That is the reverse
-of the intended direction, in which the Bridge depends on both Relational and
-Signal and truth knows nothing of its consumers.
-[Bridge Milestone 20](plans/WORTH-runtime-bridge/milestone-20.md) plans the
-correction.
+Relational and Signal know nothing of each other or of the Bridge. The Bridge
+depends on both. It defines the truth-source traits (`CommittedPatchSource`,
+`SnapshotReadSource`, `TruthBranchHeadSource`) and owns the Relational adapter
+that implements them over Relational's public `change_source` API.
 
 ## Repository map
 

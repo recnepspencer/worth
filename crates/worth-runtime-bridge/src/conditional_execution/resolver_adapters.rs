@@ -13,7 +13,8 @@ pub(super) struct ConditionAdapter<'a> {
         &'a crate::snapshot::AdmittedSnapshotContext<Box<dyn crate::snapshot::TruthSnapshotReader>>,
     >,
     previous: &'a super::observation_retention::BridgeRetainedObservations,
-    managed_source_record: Option<crate::relational_identity::RelationalBridgeRecordIdentityParts>,
+    managed_source_record:
+        Option<crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts>,
     truth_branch_identity: Option<&'a str>,
     truth_snapshot_identity: &'a str,
     observations: super::observation_retention::BridgeRetainedObservations,
@@ -32,7 +33,7 @@ impl<'a> ConditionAdapter<'a> {
         >,
         previous: &'a super::observation_retention::BridgeRetainedObservations,
         managed_source_record: Option<
-            crate::relational_identity::RelationalBridgeRecordIdentityParts,
+            crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts,
         >,
         truth_branch_identity: Option<&'a str>,
         truth_snapshot_identity: &'a str,

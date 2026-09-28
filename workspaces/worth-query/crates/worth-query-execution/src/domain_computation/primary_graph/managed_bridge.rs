@@ -1,17 +1,16 @@
 use worth_query_installation::facade::{
     ApplicationSchema, ApplicationSchemaMember, WorthQueryInstalledApplicationSchema,
 };
-use worth_relational::facade::bridge::RuntimeBridgeRelationalSource;
 use worth_runtime_bridge::facade::{
     AspectKeySelector, BridgeAspectRegistration, BridgeAspectRegistrationId,
     BridgeConditionalRuntimeBuilder, BridgeDeliveryReceipt, BridgeMappingId,
     BridgeMappingRegistration, BridgeRuntimePolicy, BridgeSealedRuntimeAssembly,
     BridgeSourceAdapter, BridgeSourceCapability, BridgeSourceCapabilitySet,
     BridgeTruthViewSelector, CoarseRoutingMode, InvalidationSink, MappingSelector, RuntimeBridge,
-    RuntimeBridgeBuilder, SignalBridgeSinkError, SignalInvalidationScope, SliceWideningPolicy,
-    SnapshotReadContract, SnapshotReadSource, SourceDeclaration, SourceDeclarationIdentity,
-    SubscriptionSliceKind, TruthDeltaSurfaceKind, TruthPatchScope, TruthPatchTargetSelector,
-    TruthSnapshotIdentity, TruthSnapshotReader,
+    RuntimeBridgeBuilder, RuntimeBridgeRelationalSource, SignalBridgeSinkError,
+    SignalInvalidationScope, SliceWideningPolicy, SnapshotReadContract, SnapshotReadSource,
+    SourceDeclaration, SourceDeclarationIdentity, SubscriptionSliceKind, TruthDeltaSurfaceKind,
+    TruthPatchScope, TruthPatchTargetSelector, TruthSnapshotIdentity, TruthSnapshotReader,
 };
 
 use super::{

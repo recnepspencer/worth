@@ -322,7 +322,9 @@ already 380 lines. Planned contents:
 
 0. **Runtime handle.** A public handle over a Relational runtime that covers
    both of today's sharing modes, `Immutable(Arc)` and `Shared(Arc<Mutex>)`.
-   It states its locking rules and exposes a typed runtime instance id. It
+   It states its locking rules and exposes the runtime instance id as the
+   `u64` every public Relational accessor already uses; a newtype on the
+   handle alone would give one value two vocabularies. It
    replaces the adapter's use of the crate-private
    `RelationalVisibilityRuntimeAuthority`, `with_runtime`, and
    `runtime_instance_id`. It needs a live runtime, so by the three-question
@@ -337,8 +339,11 @@ already 380 lines. Planned contents:
      - the commit, version, branch, and snapshot ids;
      - the runtime instance id;
      - the partition;
-     - the source basis;
+     - the Relational parts of the source basis;
      - the source-truth authority identity.
+   - The provenance `source_basis` string interleaves Relational fields with
+     the graph role and truth partition, so the Bridge assembles it, byte for
+     byte, from the receipt fields and its own concepts.
    - It does not carry the graph role, `TruthPartitionRole`, or the adapter
      semantic identity (`relational_bridge_adapter_semantic_identity()`).
      Those are Bridge concepts. The Bridge owns them and supplies them when
@@ -363,9 +368,11 @@ already 380 lines. Planned contents:
 3. **No widening admission in Relational.**
    `RelationalOpaqueAspectWideningAdmission` is used only in tests, and the
    precision loss it records happens in Bridge lowering. The Bridge mints its
-   own widening admission over a receipt, and
+   own widening admission from its Relational source, scoped to a runtime and
+   a graph role exactly as today, and
    `admit_opaque_aspect_bridge_widening` is deleted from
-   `impl RelationalRuntime`.
+   `impl RelationalRuntime`. Minting it from a receipt would narrow it to one
+   commit and reorder every call site, which is a change in meaning.
 4. **Exact reads at an observation.** Aspect values, lifecycle, relation
    endpoints, and the declared-aspect check for one record, at an exact
    retained observation.
@@ -389,17 +396,18 @@ that decision in the Phase 3 closeout.
 
 ### Bridge: the Relational adapter
 
-The adapter moves to one Bridge module, provisionally
-`worth_runtime_bridge::facade::relational` (source under
-`crates/worth-runtime-bridge/src/relational_source/`).
+The adapter moves to one Bridge module,
+`crates/worth-runtime-bridge/src/relational_source/`, and its public items
+are exported flat from `worth_runtime_bridge::facade`.
 
 The Bridge facade has hidden `everyday`, `advanced`, and `specialist` modules
 that re-export everything with `pub use super::*`. A new top-level
 `pub mod relational` would get three alias paths automatically, and the
-no-alias rule forbids that. So the final path is settled in the Phase 3 DX
-review, together with how the exports avoid those aliases. The existing export
-files are near the cap (`facade/exports_core.rs` is 375 lines), so the new
-exports get their own `#[path]` export file.
+no-alias rule forbids that. The Phase 3 DX review settled on the flat export,
+the same shape Phase 2 gave grouped truth: it adds no module path, and every
+exported name already says `Relational`. The existing export files are near
+the cap (`facade/exports_core.rs` is 375 lines), so the new exports get their
+own `#[path]` export file, `facade/exports_relational.rs`.
 
 The adapter keeps its existing homes:
 
@@ -440,7 +448,7 @@ It then:
 in Bridge terms. Only its path changes:
 
 - before: `worth_relational::facade::bridge::RuntimeBridgeRelationalSource`
-- after: `worth_runtime_bridge::facade::relational::RuntimeBridgeRelationalSource`
+- after: `worth_runtime_bridge::facade::RuntimeBridgeRelationalSource`
 
 The same applies to the lease, receipt, and configuration-error types.
 
@@ -485,9 +493,10 @@ function produces the same bytes before and after the move.
 | D6 | No re-export of the old path | Leave `worth_relational::facade::bridge` re-exporting for a while | That would be a compatibility surface, which the constitution forbids. It would also need a Relational dependency on the Bridge, which is the edge being removed. |
 | D7 | Relational's Bridge-using tests move into the Bridge | Keep them in Relational behind a dev-dependency | A dev-dependency would create duplicate types, and the boundary checker counts it. |
 | D8 | Milestone 1 §5.8 is superseded for Relational only | Rewrite §5.8 wholesale | Signal already has the target shape. §5.8's intent, keeping the Bridge off wide facades, still holds; the Bridge consumes only the narrow change source module. |
-| D9 | Query's `GroupedTruth` and `BridgeSource` variants keep their names. Their rustdoc states that "relational" names the truth source, not the owning crate. | Rename the variants in this milestone | The variants classify where truth comes from, and that is still Relational. Renaming would change the host facade and the declaration digests with no change in meaning. Phase 2 checks `declaration_entry_seam/digest.rs` to confirm that no declaration digest changes. |
+| D9 | Query's `GroupedTruth` and `BridgeSource` variants keep their names. Their rustdoc states that "relational" names the truth source, not the owning crate. | Rename the variants in this milestone | The variants classify where truth comes from, and that is still Relational. Renaming would change the host facade and the declaration digests with no change in meaning. For the same reason `WorthQueryDeclarationEntryLowerOwnerCrate::WorthRelational` stays on every `RelationalTruthRouting` row, grouped truth included, and its rustdoc says it names the truth authority. Phase 2 checks `declaration_entry_seam/digest.rs` to confirm that no declaration digest changes beyond D12. |
 | D10 | The `basis_lifecycle/reuse.rs` matrix digest changes, and the change is accepted | Keep the stale path string to preserve the digest | The string is already wrong (`worth_relational::facade::RuntimeBridgeRelationalSource`). Keeping a wrong path to protect a digest would make the digest certify a falsehood. |
 | D11 | Constructors that only the adapter calls become `pub(crate)`. Constructors that Query tests or public-trait fakes need go behind the `certification-construction` feature. | Make all of them `pub(crate)` | Query tests and `ContinuityLineageSource` fakes build these values today. The feature already gates `pub mod certification` (`lib.rs:73-74`). |
+| D12 | The relational routing digest of `GroupedTruth` and `BridgeSource` rows changes, and so does the declaration-entry inspection digest that folds it in (`relational:{routing_digest}`). The change is accepted. | Keep the old binding strings in `declaration_relational_routing/lower.rs` to preserve the digests | The strings name where the bound type lives, and `lower.rs:31` and `:41` name paths that this milestone deletes. As with D10, a digest that certifies a deleted path certifies a falsehood. For the common-lane `GroupedTruth` route over `edge:42`, the routing digest moves from `36e3b23db193c977071144a65974dab7ab44a5930c087ae0ec2769ffdc7fac65` to `f5c2328a993b679c819074ccef1e9851fa3a64596051a4bf526c59ebe8d8733d`. `:41` changes in Phase 4, when its path moves. |
 
 ## Phases
 
@@ -563,9 +572,10 @@ tree no longer names the Bridge.
 - Split `patch_semantic_validation.rs` (D2). The consistency checks move into
   receipt minting and report Relational denials. The widening gate and the
   lowering counters stay in `RA/**`, ready to move with the adapter.
-- Delete `admit_opaque_aspect_bridge_widening` and
-  `RelationalOpaqueAspectWideningAdmission`. The Bridge-side widening
-  admission is minted from a receipt inside `RA/**`.
+- Delete `admit_opaque_aspect_bridge_widening` from `impl RelationalRuntime`.
+  The widening admission becomes Bridge-side, inside `RA/**`: the Relational
+  source mints it for its own runtime and graph role, and publication checks
+  both exactly as today.
 - Rename `count_bridge_observation_commit_selection` and the
   `bridge_observation_commit_*` counter fields to neutral names, and return
   the typed work receipt from commit selection (item 6).
@@ -740,8 +750,10 @@ tree no longer names the Bridge.
   provenance strings and `BridgeAuthoritativePatchLoweringCounters`),
   snapshot identities, grouped-truth digests, declaration digests, route
   records, and replay bundles. Any change is a failure, not a re-baseline.
-  The one planned exception is the `basis_lifecycle/reuse.rs` matrix digest
-  (D10), which changes because its input string is corrected.
+  The planned exceptions are the `basis_lifecycle/reuse.rs` matrix digest
+  (D10) and the relational routing and declaration-entry inspection digests
+  of `GroupedTruth` and `BridgeSource` rows (D12). Each changes only because
+  an input string that names a type's path is corrected.
 - **Every outcome family survives.** Today's publication outcomes (`Stale`,
   `RebindRequired`, `Deferred`, `Denied`, `Failed`) and source errors keep
   their meaning.
@@ -806,5 +818,222 @@ This milestone is complete only when:
 ## Completion Note
 
 Phase 0 is complete: `worth-harness` is a Bridge dev-dependency, and
-`cargo tree -p worth-runtime-bridge -e normal` no longer lists it. Phases 1 to 5
-are not started.
+`cargo tree -p worth-runtime-bridge -e normal` no longer lists it.
+
+Phase 1 is complete, with one deferral. The Bridge-only compile-fail tests
+moved, except `raw_commit_cannot_publish_bridge.rs` and
+`fork_basis_cannot_publish.rs`. Both name `publish_commit_for_bridge`, which
+Phase 3 replaces, so Phase 3 rewrites them against the change receipt.
+
+Phase 2 is complete.
+
+- Grouped truth lives in `worth_runtime_bridge::relational_grouped_truth`,
+  with the D4 names `RelationalGroupedProjectionContract`,
+  `RelationalGroupedProjectionDigest`, and `RelationalRowSetDigest`.
+- The Bridge exports it flat from its facade. The flat export adds no new
+  module path; the `everyday`, `advanced`, and `specialist` exposure
+  predates this change.
+- Canonical digests are byte-identical. `canonical_digests_match_the_pinned_bytes`
+  pins the row-set and grouped-projection digests captured on the pre-move
+  commit, and passes unchanged in the Bridge.
+- The routing digests change as D12 records. `lower.rs:31` is updated;
+  `lower.rs:41` still names `worth_relational::facade::bridge`, which exists
+  until Phase 4, so it changes there.
+- The grouped-truth identity scan is a Bridge unit test beside the code it
+  guards, and also bans the crate-private identity minters.
+
+Phase 3 is complete.
+
+- `worth_relational::facade::change_source` holds items 0 to 7. It names no
+  Bridge concept, and every public item has rustdoc. The publication proof
+  chain, partition projection, and consistency checks live there; receipt
+  minting runs the checks, so holding a `RelationalChangeReceipt` proves they
+  passed.
+- The adapter uses only the Relational facade, the Bridge facade,
+  `worth_foundational::facade`, and `worth_proof`. The probe crate
+  `tools/relational-adapter-probe` compiles the adapter and its tests as an
+  outside crate, and all 46 adapter tests pass there.
+- Compile-fail tests in `tests/ui/change_source` prove that a raw
+  `CommitId` or a fork basis cannot mint a receipt (E0308), and that the
+  receipt, the selected commit, and the retained observation have no
+  struct-literal constructor, `Default`, or `Clone`.
+  `tests/ui/change_source_pass` holds the valid counterpart. These replace
+  the two Phase 1 deferrals.
+- `struct_field_patch_authority.rs` and `read_cutover.rs` are split. Each
+  Relational half asserts on Relational state: the change receipt for the
+  first, and history and visibility at both observations for the second.
+  The Bridge halves are adapter tests
+  (`bridge_source_tests/struct_field_patch.rs` and `read_cutover.rs`), built
+  on the adapter's own support module instead of the supply-chain world.
+
+**DX review.** The change source names say what each item is in Relational
+terms: `RelationalRuntimeHandle`; `select_reachable_commit` and
+`select_exact_commit`, which return a `RelationalCommitSelection` holding a
+`RelationalSelectedCommit` or a `RelationalCommitSelectionDenial`, plus a
+`RelationalCommitSelectionWork`; `mint_change_receipt`, which returns a
+`RelationalChangeReceiptOutcome`; `RelationalChangeConsistencyDenial` and
+`RelationalChangeConsistencyWork`; `retain_observation_snapshot`, which
+returns a `RelationalRetainedObservation`; and the four runtime reads at an
+observation, which refuse a foreign observation with
+`RelationalObservationReadDenial`. The facade module's doc lists these entry
+points in the order a consumer uses them. The Bridge-side path is the flat
+facade export described above. `bridge_snapshot_identity_for_commit` and
+`bridge_snapshot_identity_for_handle` keep their names: their parameters are
+Relational types, and Query callers already use them.
+
+**Destinations.** Every remaining `RA/**` file moves in Phase 4 to the same
+relative path under `crates/worth-runtime-bridge/src/relational_source/`:
+`mod.rs`, `change_publication.rs`, `identities.rs`, `lowering_precision.rs`,
+`patch_envelopes.rs`, `publication_outcome.rs`, `snapshot_reading.rs`,
+`runtime_source/**`, and `snapshot_values/**`. The test modules
+(`*_tests.rs`, `bridge_source_tests/**`), `relational_test_support/**`, and
+`test_catalog.rs` move beside them as Bridge test code. Nothing stays in
+Relational. `partition_projection.rs`, `patch_semantic_validation.rs`,
+`authoritative_patch_publication.rs`, and
+`authoritative_publication_witness.rs` no longer exist in `RA/**`; Phase 3
+moved their Relational meaning into the change source and their Bridge
+meaning into `change_publication.rs` and `lowering_precision.rs`.
+
+Deviations from the plan:
+
+- Publication no longer re-checks for an empty graph role (the old
+  `UnsupportedProducerEnvelope` denial). The source refuses a blank or padded
+  role when it is built, so the check could not fire.
+- The widening publication path ignores the source's partition, as it did
+  before.
+- The receipt carries the selected branch as well as the authoring branch,
+  so a fork publication keeps the branch it was selected on.
+- `RelationalCommitSelectionDenial::ForeignObservation` is new. Commit
+  selection refuses an observation another runtime issued, before it reads
+  any history. The exact reads and the lineage reads do the same with
+  `RelationalObservationReadDenial::ForeignObservation`; before, they resolved
+  a foreign commit against this runtime's lineage and ancestry and answered
+  wrongly. The two `*_kind_declares_aspect` reads take no runtime; they read
+  the observation's own retained schema.
+- The receipt carries commit, version, and branch ids but not the snapshot
+  id. The snapshot id belongs to the retained observation, and the adapter
+  carries it beside the receipt in `RelationalBridgeSelectedCommitObservation`.
+- The adapter mints the receipt under the runtime lock and lowers it
+  outside the lock.
+- The consistency checks all run at receipt minting, over every record,
+  before any lowering check. The old per-record order was count, opaque
+  gate, match and widened claim, coverage, posture. Two cases now report
+  `InvalidAuthoritativePatchSemantics` with Relational's work where they
+  reported `UnsupportedAuthoritativePatchPrecision` with lowering's: one
+  record with an unadmitted opaque change and any later breach, and an
+  unadmitted opaque record followed by an inconsistent one. A count mismatch
+  still wins, as before. `consistency_lowering_tests.rs` pins both cases and
+  one mapping per rule.
+- `PublishedAuthoritativePatchEnvelope::check_change_consistency` is public,
+  so a patch held by another route is checked by the same rules. The
+  adapter's decoded-publication lowering applies them first, as receipt
+  minting does.
+- `UncoveredOperation` is gone. Equal counts and one expected change
+  consumed per matched change leave nothing uncovered, so it could not
+  fire; an uncovered operation shows as an unjustified change.
+- The adapter source sums its commit selections' work across clones. The
+  cost tests assert those sums after each real `load_*` call, against the
+  3N - 1 work of one walk down an N-commit linear history.
+- `RelationalRuntimeHandle` reads the runtime instance id once when it is
+  made, so the id and `Debug` take no lock. The source no longer keeps its
+  own copy.
+- `RecordStructuralChange` is non-exhaustive outside Relational, so lowering
+  denies an unknown structural change with `InvalidLoweringContract` instead
+  of guessing. Inside Relational that arm is unreachable and carries
+  `#[allow(unreachable_patterns)]`, which Phase 4 drops.
+- The copied-metadata and endpoint-label consistency tests moved from the
+  adapter to `change_source/consistency_tests.rs`, because receipt minting
+  owns those checks. The fork-lineage scale test moved to
+  `tests/lineage/fork_scale.rs`, because it measures Relational internals.
+- Lowering tests that need patches no commit produces decode them from
+  Relational's wire shape (`relational_test_support/publication.rs`), rather
+  than widening Relational's constructors.
+- The adapter's retention assertions use the public
+  `branch_retention_cost_counters`.
+
+Follow-up outside this milestone: an earlier Phase 3 run saw six Relational
+wall-clock timing tests fail under concurrent machine load. The full suite
+passes at the Phase 3 commit.
+
+Phase 4 is complete.
+
+- The adapter lives in `crates/worth-runtime-bridge/src/relational_source/`,
+  at the destinations above. `relational_identity.rs` became
+  `relational_source/identity_parts.rs`. The Bridge facade exports the
+  adapter, grouped truth, and the identity parts from one module,
+  `facade/exports_relational.rs`; downstream callers import them from
+  `worth_runtime_bridge::facade`.
+- Relational no longer has `facade::bridge`, `presentation::bridge`,
+  `tests/bridge_identity_boundary.rs`, or the `worth-runtime-bridge`
+  dependency. The probe crate is deleted: the adapter now compiles as Bridge
+  code against the Relational facade, which is the property the probe proved.
+  The identity scan is the Bridge unit test
+  `relational_source/identity_boundary_tests.rs`.
+- `road1.toml` denies `worth-relational -> worth-runtime-bridge`, and
+  `configured_fence_keeps_relational_off_the_bridge_and_lets_the_bridge_read_relational`
+  proves the denial and that the reverse edge passes.
+- All eight lock files carry the flipped edges. The two UI certification
+  fixture locks are already stale for reasons outside this milestone, so only
+  the two edges were changed there.
+- The performance mock is renamed for what it mocks: a downstream runtime
+  (`downstream_runtime_support.rs`, `downstream_runtime_mock_matrix/`, and
+  `geometry_commit_downstream_wave_*` scenario ids).
+- `RelationalBridgePresentation{ExportIdentityKind,DigestIdentityBasis}` and
+  the `bridge_presentation_export` family were deleted here rather than in
+  Phase 5, because the family map named the moved paths. The family-map
+  frontier strings now name the change source.
+- D10 and D12: `basis_lifecycle/reuse.rs` and
+  `declaration_relational_routing/lower.rs` name
+  `worth_runtime_bridge::facade::RuntimeBridgeRelationalSource`. Neither
+  digest is pinned; both are computed from these strings.
+- `tools/boundary-check/snapshots/facades.toml` does not change: it lists no
+  Bridge path, and `RelationalBridgeRecordIdentityParts` keeps its name.
+
+Hunks that are not a move or a path rewrite:
+
+- `fork_ancestry_selection.rs` asserts the work after evaluation.
+- `patch_envelopes.rs` drops a stale doc paragraph and the
+  `#[allow(unreachable_patterns)]`, which is no longer needed outside
+  Relational.
+- `consistency_lowering_tests.rs` adds
+  `a_consistent_unadmitted_opaque_record_is_unsupported_precision`, the
+  single-fault baseline for the two double-fault cases.
+- `relational_source/mod.rs` declares `identity_parts` and the identity scan.
+- Four Runtime World test fixtures import `RelationalRuntimeApi` from
+  Relational and the adapter from the Bridge.
+- Relational's README and `API_OVERVIEW.md` move the Bridge flow into "Who
+  consumes this" sections.
+
+Phase 5 is complete.
+
+- Crate-private: `BridgeCommittedPatchEnvelope::new_with_authoritative_lowering`,
+  `BridgeCommittedPatchItem::with_relational_semantic_change`, and
+  `BridgeProducerMetadata::new`. The spec did not list `new`, but a public
+  `new(RegisteredAuthoritativeSource, ..)` would have bypassed the gate on
+  `registered_authoritative_source`; only Bridge code calls it.
+- Behind `certification-construction`:
+  `BridgeAuthoritativeSourceProvenance::from_owner_publication` and
+  `from_owner_partition_publication`, and
+  `BridgeProducerMetadata::registered_authoritative_source` and
+  `with_authoritative_source`. The `certification_constructor!` macro
+  (`src/certification_constructor.rs`) emits each one as `pub` with the
+  feature and `pub(crate)` without it. Query and the UI certification crates
+  already enable the feature.
+- `BridgeHistoricalLineageAuthority::try_new` stays public, which departs
+  from D11. Its caller is Query's public acceptance suite
+  (`worth_query_lower_runtime_acceptance_suite`, through the phase-six
+  readmission fixtures), not a test-only path, so a feature gate would have
+  put it behind a dev-dependency it cannot use. It validates that the
+  identities are canonical and distinct, and the authority basis comes from
+  the request.
+- `from_relational_commit_id`, `from_relational_lineage_id`, and
+  `from_relational_publication` stay public, with rustdoc saying why.
+- Compile-fail tests: `tests/ui/crate_private_constructors/` and, without
+  the feature, `tests/ui/certification_constructors/`. With the feature,
+  `tests/pass/certification_constructors_with_feature.rs` must compile.
+  `committed_patch_item_literal_private.stderr` regenerated unchanged.
+- The two `&str` record-identity compile-fail cases were the same case; the
+  grouped-row-label copy is deleted.
+- The dead presentation kinds were already deleted in Phase 4.
+- The docs listed above now show one direction, and this roadmap marks the
+  milestone complete.

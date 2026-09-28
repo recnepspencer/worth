@@ -77,7 +77,7 @@ pub(crate) fn match_envelope(
 
 struct SemanticMatchBasis<'a> {
     dependency: &'a BridgeSemanticDependencyCandidate,
-    record: Option<crate::relational_identity::RelationalBridgeRecordIdentityParts>,
+    record: Option<crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts>,
     source_partition: Option<&'a worth_foundational::facade::TruthPartitionRole>,
 }
 
@@ -276,8 +276,10 @@ mod structural_kind_tests {
 
 fn locality_matches(
     locality: &super::BridgeSemanticLocality,
-    source_record_identity: Option<crate::relational_identity::RelationalBridgeRecordIdentityParts>,
-    record: Option<crate::relational_identity::RelationalBridgeRecordIdentityParts>,
+    source_record_identity: Option<
+        crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts,
+    >,
+    record: Option<crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts>,
     source_partition: Option<&worth_foundational::facade::TruthPartitionRole>,
 ) -> bool {
     match locality {

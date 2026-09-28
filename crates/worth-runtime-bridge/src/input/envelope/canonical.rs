@@ -1,7 +1,7 @@
 use super::*;
 use crate::error::BridgeRouteError;
 use crate::mapping::TruthDeltaSurfaceKind;
-use crate::relational_identity::RelationalBridgeRecordIdentityParts;
+use crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BridgeCommittedPatchItem {
@@ -209,7 +209,7 @@ impl BridgeCommittedPatchEnvelope {
         )
     }
 
-    pub fn new_with_authoritative_lowering(
+    pub(crate) fn new_with_authoritative_lowering(
         envelope_identity: BridgeCommittedPatchEnvelopeIdentity,
         patch_items: Vec<BridgeCommittedPatchItem>,
         record_changes: Vec<BridgeCommittedRecordChange>,
