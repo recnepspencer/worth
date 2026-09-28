@@ -25,6 +25,7 @@ mod entity_key;
 mod entity_resolution;
 mod entity_resolution_denial;
 mod exact_basis_access;
+mod expression;
 mod freshness;
 mod granular_invalidation;
 mod handler;

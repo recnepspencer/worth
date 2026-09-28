@@ -17,8 +17,9 @@ use super::{
 };
 use crate::application_program::workflow::{
     ApplicationWorkflowComponentIdentity, ApplicationWorkflowComponentLimits,
-    ApplicationWorkflowDefinitionLimits, ApplicationWorkflowEvidenceJoinPolicy,
-    ApplicationWorkflowNodeIdentity, ApplicationWorkflowSpec, ApplicationWorkflowSubjectSelector,
+    ApplicationWorkflowConditionOperands, ApplicationWorkflowDefinitionLimits,
+    ApplicationWorkflowEvidenceJoinPolicy, ApplicationWorkflowNodeIdentity,
+    ApplicationWorkflowSpec, ApplicationWorkflowSubjectSelector,
 };
 
 mod connections;
@@ -156,21 +157,18 @@ where
             })
     }
 
-    pub fn condition<Query>(
+    pub fn condition(
         &mut self,
         identity: impl Into<String>,
+        source: &str,
+        operands: ApplicationWorkflowConditionOperands<Spec>,
     ) -> Result<
         ApplicationWorkflowComponentNodeRef<ApplicationWorkflowConditionNode>,
         ApplicationWorkflowAuthoringDenial,
-    >
-    where
-        Query: ApplicationQueryMarkerIdentity<Spec::Schema> + 'static,
-        Query::ResultBinding:
-            crate::application_schema::ApplicationStructuredValueBinding<Value = bool>,
-    {
+    > {
         self.require_node_capacity()?;
         self.graph
-            .condition::<Query>(identity)
+            .condition(identity, source, operands)
             .map(|inner| ApplicationWorkflowComponentNodeRef {
                 inner,
                 owner: Arc::clone(&self.owner),

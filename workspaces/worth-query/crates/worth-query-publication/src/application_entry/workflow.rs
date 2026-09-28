@@ -10,6 +10,7 @@ mod progress;
 mod proposal;
 
 pub use approval::WorthQueryWorkflowApprovalSigningRequest;
+pub use condition::WorthQueryWorkflowConditionAcceptance;
 
 pub use assessment::{
     WorthQueryWorkflowAssessmentDemandHandle, WorthQueryWorkflowAssessmentDemandPreparationDenial,
@@ -57,8 +58,8 @@ pub use worth_query_execution::publication_boundary::workflow_advance::{
     PerformedWorkflowApproval, PerformedWorkflowAssessmentEvidence, PerformedWorkflowTransition,
     RequiredWorkflowActor, RequiredWorkflowApproval, RequiredWorkflowAssessment,
     RequiredWorkflowCondition, RequiredWorkflowEvidence, RequiredWorkflowOperation,
-    WorkflowApprovalDecision, WorkflowProgressOutcome, WorkflowTransitionBindingDenial,
-    WorkflowTransitionPreparationDenial,
+    WorkflowApprovalDecision, WorkflowConditionOperand, WorkflowProgressOutcome,
+    WorkflowTransitionBindingDenial, WorkflowTransitionPreparationDenial,
 };
 pub use worth_query_execution::publication_boundary::workflow_definition_publication::{
     PerformedWorkflowDefinitionPublication, PreparedWorkflowDefinitionPublication,

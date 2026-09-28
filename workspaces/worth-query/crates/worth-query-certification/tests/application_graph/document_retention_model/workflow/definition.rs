@@ -11,15 +11,17 @@ use worth_query_host::facade::{
         WorthQueryWorkflowInstancePreparationDenial, WorthQueryWorkflowProposalPreparationDenial,
     },
     declaration::application_program::{
-        ApplicationWorkflowComponentLimits, ApplicationWorkflowControlOutcome,
-        ApplicationWorkflowDefinitionBuilder, ApplicationWorkflowDefinitionLimits,
-        AuthoredWorkflowDefinition, ValidatedWorkflowDefinition,
+        ApplicationWorkflowComponentLimits, ApplicationWorkflowConditionOperands,
+        ApplicationWorkflowControlOutcome, ApplicationWorkflowDefinitionBuilder,
+        ApplicationWorkflowDefinitionLimits, AuthoredWorkflowDefinition,
+        ValidatedWorkflowDefinition,
     },
 };
 
 use super::super::{
     host::DocumentWorkflowRuntime,
     operator_identity::{authenticate_operator, block_on, request_scope},
+    retention_days::DocumentRetentionDaysQuery,
     retention_entry::{ReviewedSetRetentionBinding, DOCUMENT_IDENTITY},
     schema::{DocumentRetentionConditionQuery, DocumentRetentionQuery, DocumentRetentionSchema},
 };
@@ -270,6 +272,32 @@ pub fn condition_terminal_definition() -> ValidatedWorkflowDefinition<ReviewedDo
 }
 
 pub fn condition_terminal_draft() -> AuthoredWorkflowDefinition<ReviewedDocumentWorkflow> {
+    condition_draft(
+        "retained",
+        ApplicationWorkflowConditionOperands::new()
+            .query::<DocumentRetentionConditionQuery>("retained"),
+    )
+}
+
+/// The condition terminal deciding by `source` over the Bool read `retained`
+/// and the unsigned day count `days` of the same document.
+pub fn expression_condition_terminal_definition(
+    source: &str,
+) -> ValidatedWorkflowDefinition<ReviewedDocumentWorkflow> {
+    condition_draft(
+        source,
+        ApplicationWorkflowConditionOperands::new()
+            .query::<DocumentRetentionConditionQuery>("retained")
+            .query::<DocumentRetentionDaysQuery>("days"),
+    )
+    .validate()
+    .expect("the expression condition definition is valid")
+}
+
+fn condition_draft(
+    source: &str,
+    operands: ApplicationWorkflowConditionOperands<ReviewedDocumentWorkflow>,
+) -> AuthoredWorkflowDefinition<ReviewedDocumentWorkflow> {
     let mut builder = ApplicationWorkflowDefinitionBuilder::<ReviewedDocumentWorkflow>::new(
         "condition-terminal",
         definition_limits(),
@@ -279,7 +307,7 @@ pub fn condition_terminal_draft() -> AuthoredWorkflowDefinition<ReviewedDocument
         .operation::<WorkflowDefinitionAuthoringOperation>("proposal", false)
         .expect("the proposal node is valid");
     let condition = builder
-        .condition::<DocumentRetentionConditionQuery>("positive-retention")
+        .condition("positive-retention", source, operands)
         .expect("the condition node is valid");
     let satisfied = builder
         .terminal("satisfied")

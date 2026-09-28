@@ -52,7 +52,9 @@ fn accept_condition(
         .idempotency(&key)
         .prepare_workflow_advance(application, instance)
         .expect("typed condition acceptance prepares")
-        .accept_condition::<DocumentRetentionConditionQueryBinding>(required, result)
+        .condition(required)
+        .operand::<DocumentRetentionConditionQueryBinding, _>("retained", result)
+        .accept()
         .expect("exact typed condition is accepted")
 }
 
@@ -156,16 +158,7 @@ fn assert_condition_path_parity(expected_positive: bool) {
         ordinary_required.occurrence(),
         advanced_required.occurrence()
     );
-    assert_eq!(ordinary_required.query(), advanced_required.query());
-    assert_eq!(
-        ordinary_required.parameter_type(),
-        advanced_required.parameter_type()
-    );
-    assert_eq!(
-        ordinary_required.result_type(),
-        advanced_required.result_type()
-    );
-    assert_eq!(ordinary_required.binding(), advanced_required.binding());
+    assert_eq!(ordinary_required.operands(), advanced_required.operands());
     let advanced_accepted = accept_condition(
         &advanced,
         advanced_instance.clone(),

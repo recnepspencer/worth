@@ -6,7 +6,7 @@ use worth_foundational::facade::{
 };
 
 use super::{
-    ApplicationWorkflowConnection, ApplicationWorkflowConnectionKind,
+    ApplicationWorkflowCondition, ApplicationWorkflowConnection, ApplicationWorkflowConnectionKind,
     ApplicationWorkflowControlOutcome, ApplicationWorkflowDataFlow,
     ApplicationWorkflowDefinitionContentIdentity, ApplicationWorkflowDefinitionLimits,
     ApplicationWorkflowNode, ApplicationWorkflowNodeKind, ApplicationWorkflowSpec,
@@ -133,15 +133,7 @@ fn node_record(node: &ApplicationWorkflowNode) -> String {
                 &assessment_applicability_record(assessment.applicability()),
             ],
         ),
-        ApplicationWorkflowNodeKind::Condition(condition) => framed_record(
-            "condition",
-            &[
-                node.identity().as_str(),
-                condition.identifier(),
-                condition.parameter_type().as_str(),
-                condition.result_type().as_str(),
-            ],
-        ),
+        ApplicationWorkflowNodeKind::Condition(condition) => condition_record(node, condition),
         ApplicationWorkflowNodeKind::Approval(approval) => framed_record(
             "approval",
             &[
@@ -158,6 +150,36 @@ fn node_record(node: &ApplicationWorkflowNode) -> String {
             framed_record("terminal", &[node.identity().as_str()])
         }
     }
+}
+
+/// The program's canonical meaning and each operand's query and type. The
+/// draft encoding is not meaning, so reformatted or alpha-renamed source keeps
+/// the definition's identity.
+fn condition_record(
+    node: &ApplicationWorkflowNode,
+    condition: &ApplicationWorkflowCondition,
+) -> String {
+    let digest: String = condition
+        .identity()
+        .digest()
+        .value()
+        .bytes()
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
+    let mut fields = vec![node.identity().as_str().to_owned(), digest];
+    for operand in condition.operands() {
+        let query = operand.query();
+        fields.extend([
+            operand.name().to_owned(),
+            query.identifier().to_owned(),
+            query.parameter_type().as_str().to_owned(),
+            query.result_type().as_str().to_owned(),
+            query.expression_type().to_string(),
+        ]);
+    }
+    let fields: Vec<&str> = fields.iter().map(String::as_str).collect();
+    framed_record("condition-expression", &fields)
 }
 
 fn subject_selector_record(selector: &super::ApplicationWorkflowSubjectSelector) -> String {

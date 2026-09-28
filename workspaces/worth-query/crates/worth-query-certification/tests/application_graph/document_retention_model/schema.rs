@@ -24,7 +24,7 @@ pub use document_retention_invariants::{
 };
 pub use document_retention_query::{
     document_retention_condition_query_definition, document_retention_query_definition,
-    DocumentQueryParametersBinding, DocumentRetentionConditionBinding,
+    DocumentQueryParameters, DocumentQueryParametersBinding, DocumentRetentionConditionBinding,
     DocumentRetentionConditionQuery, DocumentRetentionQuery, DocumentRetentionRow,
     DocumentRetentionRowBinding,
 };
@@ -70,8 +70,11 @@ worth_query_application_contribution! {
                 .invariant(document_retention_invariants::first_definition())
                 .invariant(document_retention_invariants::second_definition())
                 .application_query(document_retention_query_definition())
-                .application_query(document_retention_condition_query_definition());
-            super::workflow::declare(super::assessment_output::declare(super::retention_entry::declare(schema)))
+                .application_query(document_retention_condition_query_definition())
+                .application_query(super::retention_days::document_retention_days_query_definition());
+            super::workflow::declare(super::assessment_output::declare(super::retention_days::declare(
+                super::retention_entry::declare(schema),
+            )))
         }
     }
 }

@@ -59,9 +59,10 @@ pub mod workflow_advance {
         PreparedWorkflowOperation, PublishedWorkflowInstanceRef, PublishedWorkflowProposalRef,
         RequiredWorkflowActor, RequiredWorkflowApproval, RequiredWorkflowAssessment,
         RequiredWorkflowCondition, RequiredWorkflowEvidence, RequiredWorkflowOperation,
-        WorkflowApprovalDecision, WorkflowOperationAuthority, WorkflowOperationAuthoritySlot,
-        WorkflowProgressOutcome, WorkflowTransitionBindingDenial,
+        WorkflowApprovalDecision, WorkflowConditionOperand, WorkflowOperationAuthority,
+        WorkflowOperationAuthoritySlot, WorkflowProgressOutcome, WorkflowTransitionBindingDenial,
         WorkflowTransitionPreparationDenial, WorthQueryWorkflowAdvanceAdapter,
+        WorthQueryWorkflowConditionSources,
     };
 }
 

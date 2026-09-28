@@ -9,7 +9,15 @@
 > and other targets are refused at build time. Peak scratch is enforced as a
 > ceiling on cumulative allocation, a deterministic upper bound on the peak.
 > Not completed in Phase 2: AArch64 parity is type-check only because the current
-> host has no AArch64 linker or runner. Phases 3-5 not started.
+> host has no AArch64 linker or runner. Phase 3 completed: workflow conditions
+> are Bool expressions over named typed query operands, evaluated by the shared
+> evaluator after every source is proven current; version-1 conditions migrate
+> with their identity, and the single-query condition path is retired. Bank
+> gates approval on an amount-limit condition, and proprietary House accepts its
+> reviewed-geometry condition through the same entry. Not completed in Phase 3:
+> the House unit-bearing clearance and member-selection courts and the digital
+> snapshot court move to Phase 5 with the other CAD/digital courts. Phases 4-5
+> not started.
 
 ## Goal And Placement
 

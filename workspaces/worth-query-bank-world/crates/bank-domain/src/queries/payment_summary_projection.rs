@@ -25,7 +25,7 @@ use crate::schema::{
 
 pub(super) struct PaymentIdentitySlot;
 worth_query_decl::facade::worth_query_portable_type!(PaymentIdentitySlot => "PaymentIdentitySlot");
-struct PaymentAmountSlot;
+pub(super) struct PaymentAmountSlot;
 worth_query_decl::facade::worth_query_portable_type!(PaymentAmountSlot => "PaymentAmountSlot");
 struct PaymentStatusSlot;
 worth_query_decl::facade::worth_query_portable_type!(PaymentStatusSlot => "PaymentStatusSlot");
@@ -65,7 +65,7 @@ type PaymentIdentitySelector<Query> = ApplicationQueryResultFieldRef<
     NoApplicationUnit,
 >;
 
-type PaymentAmountSelector<Query> = ApplicationQueryResultFieldRef<
+pub(super) type PaymentAmountSelector<Query> = ApplicationQueryResultFieldRef<
     Query,
     PaymentAmountSlot,
     BankSchema,
@@ -228,7 +228,7 @@ pub(super) fn payment_identity<Query>() -> PaymentIdentitySelector<Query> {
     ApplicationQueryResultFieldRef::new("payment", PaymentIdentityField::reference())
 }
 
-fn payment_amount<Query>() -> PaymentAmountSelector<Query> {
+pub(super) fn payment_amount<Query>() -> PaymentAmountSelector<Query> {
     ApplicationQueryResultFieldRef::new("amount", PaymentAmount::reference())
 }
 

@@ -6,6 +6,7 @@
 
 mod authoring;
 mod canonical;
+mod expression;
 mod identity;
 mod limits;
 mod model;
@@ -28,6 +29,12 @@ pub use authoring::{
     ApplicationWorkflowNodeRef, ApplicationWorkflowOperationNode, ApplicationWorkflowOutputBinding,
     ApplicationWorkflowTerminalNode, AuthoredWorkflowComponent, ExpandedWorkflowComponent,
     ExpandedWorkflowComponentInComponent,
+};
+pub use expression::{
+    ApplicationExpressionOperandValue, ApplicationWorkflowCondition,
+    ApplicationWorkflowConditionDenial, ApplicationWorkflowConditionOperand,
+    ApplicationWorkflowConditionOperands, ApplicationWorkflowConditionQuery,
+    MIGRATED_WORKFLOW_CONDITION_OPERAND,
 };
 pub use identity::{
     ApplicationWorkflowComponentIdentity, ApplicationWorkflowDefinitionContentIdentity,
@@ -53,6 +60,6 @@ pub use validation::{
 };
 pub use vocabulary::{
     ApplicationWorkflowApprovalRef, ApplicationWorkflowAssessmentApplicability,
-    ApplicationWorkflowAssessmentRef, ApplicationWorkflowConditionRef,
-    ApplicationWorkflowOperationRef, ApplicationWorkflowSpec, ApplicationWorkflowSubjectSelector,
+    ApplicationWorkflowAssessmentRef, ApplicationWorkflowOperationRef, ApplicationWorkflowSpec,
+    ApplicationWorkflowSubjectSelector,
 };

@@ -49,12 +49,13 @@ pub(crate) use definition::definition_limits;
 pub use definition::{
     advance_instance, advance_instance_on, approval_retry_definition, approve_instance,
     authoring_intent, cancel_instance, condition_terminal_definition, condition_terminal_draft,
-    continue_on_fork, migrate_instance, prepare_cancellation, prepare_cancellation_on,
-    proposal_terminal_definition, propose_authoring_instance,
-    propose_authoring_instance_with_retention, propose_instance, propose_instance_on_branch,
-    publish_definition, repeated_proposal_definition, reproposing_document_definition,
-    retire_definition, reviewed_document_definition, reviewed_document_definition_with_deadline,
-    reviewed_document_definition_with_join_policy, start_instance, terminal_definition,
+    continue_on_fork, expression_condition_terminal_definition, migrate_instance,
+    prepare_cancellation, prepare_cancellation_on, proposal_terminal_definition,
+    propose_authoring_instance, propose_authoring_instance_with_retention, propose_instance,
+    propose_instance_on_branch, publish_definition, repeated_proposal_definition,
+    reproposing_document_definition, retire_definition, reviewed_document_definition,
+    reviewed_document_definition_with_deadline, reviewed_document_definition_with_join_policy,
+    start_instance, terminal_definition,
 };
 pub use grant_status::{
     WorkflowGrantStatusBinding, WorkflowGrantStatusHandler, WorkflowGrantStatusInput,

@@ -64,10 +64,8 @@ pub(in crate::domain_computation::primary_graph) struct SelectedWorkflowAssessme
 
 #[derive(Clone)]
 pub(in crate::domain_computation::primary_graph) struct SelectedWorkflowCondition {
-    pub(in crate::domain_computation::primary_graph) query: String,
-    pub(in crate::domain_computation::primary_graph) parameter_type: String,
-    pub(in crate::domain_computation::primary_graph) result_type: String,
-    pub(in crate::domain_computation::primary_graph) binding: String,
+    pub(in crate::domain_computation::primary_graph) condition:
+        crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowCondition,
 }
 
 impl SelectedWorkflowTransition {
@@ -157,17 +155,11 @@ pub(in crate::domain_computation::primary_graph) fn select_current_transition(
             binding: binding.clone(),
             subject: subject.clone(),
         }),
-        CompiledWorkflowNodeKind::Condition {
-            query,
-            parameter_type,
-            result_type,
-            binding,
-        } => SelectedWorkflowTransitionKind::Condition(SelectedWorkflowCondition {
-            query: query.clone(),
-            parameter_type: parameter_type.clone(),
-            result_type: result_type.clone(),
-            binding: binding.clone(),
-        }),
+        CompiledWorkflowNodeKind::Condition(condition) => {
+            SelectedWorkflowTransitionKind::Condition(SelectedWorkflowCondition {
+                condition: condition.clone(),
+            })
+        }
         CompiledWorkflowNodeKind::Approval {
             capability,
             capability_type,

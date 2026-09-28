@@ -9,6 +9,7 @@ use worth_query_host::facade::domain::{
 use super::super::{
     host::{DocumentRetentionRuntime, DocumentWorkflowRuntime},
     programs::RetentionProgramP0,
+    retention_days::DocumentRetentionDaysQueryBinding,
     retention_entry::{
         DocumentRetentionConditionQueryBinding, DocumentRetentionQueryBinding,
         ReviewedSetRetentionBinding,
@@ -72,8 +73,10 @@ where
     .expect("the workflow apply operation is installed")
     .assessment::<DocumentRetentionQueryBinding>()
     .expect("the workflow assessment is installed")
-    .condition::<DocumentRetentionConditionQueryBinding>()
+    .condition_operand::<DocumentRetentionConditionQueryBinding>()
     .expect("the workflow condition is installed")
+    .condition_operand::<DocumentRetentionDaysQueryBinding>()
+    .expect("the workflow days operand is installed")
     .approval::<WorkflowApprovalCapability, WorkflowAdvanceOperation, WorkflowAdvanceInput>()
     .expect("the workflow approval capability is installed")
     .authoring_capability::<WorkflowDefinitionAuthoringCapability, WorkflowDefinitionAuthoringOperation, WorkflowDefinitionAuthoringInput>()

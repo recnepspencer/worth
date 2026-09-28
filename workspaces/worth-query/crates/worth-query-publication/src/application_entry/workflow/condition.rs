@@ -1,15 +1,48 @@
-use worth_query_declaration::facade::application_query::{
-    ApplicationQueryBinding, ApplicationQueryMarkerIdentity,
+use worth_query_declaration::facade::{
+    application_program::{ApplicationExpressionOperandValue, ApplicationWorkflowSpec},
+    application_query::{ApplicationQueryBinding, ApplicationQueryMarkerIdentity},
+    application_schema::ApplicationStructuredValueBinding,
 };
 use worth_query_execution::publication_boundary::workflow_advance::{
     PreparedWorkflowAdvance, RequiredWorkflowCondition, WorkflowProgressOutcome,
-    WorthQueryWorkflowAdvanceAdapter,
+    WorthQueryWorkflowAdvanceAdapter, WorthQueryWorkflowConditionSources,
 };
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::progress::{
     WorthQueryWorkflowAdvanceRequest, WorthQueryWorkflowConditionAcceptanceDenial,
 };
+
+/// A condition being accepted: each operand's published result is supplied
+/// by name, then [`accept`](Self::accept) evaluates the condition's
+/// expression over them and settles the transition it selects.
+pub struct WorthQueryWorkflowConditionAcceptance<
+    'application,
+    'principal,
+    'scope,
+    'required,
+    Schema,
+    Spec,
+    Operation,
+    Input,
+    Scope,
+> where
+    Schema: ApplicationSchema,
+    Spec: ApplicationWorkflowSpec<Schema = Schema>,
+{
+    request: WorthQueryWorkflowAdvanceRequest<
+        'application,
+        'principal,
+        'scope,
+        Schema,
+        Spec,
+        Operation,
+        Input,
+        Scope,
+    >,
+    required: &'required RequiredWorkflowCondition,
+    sources: WorthQueryWorkflowConditionSources<Schema>,
+}
 
 impl<'application, 'principal, 'scope, Schema, Spec, Operation, Input, Scope>
     WorthQueryWorkflowAdvanceRequest<
@@ -24,48 +57,100 @@ impl<'application, 'principal, 'scope, Schema, Spec, Operation, Input, Scope>
     >
 where
     Schema: ApplicationSchema,
-    Spec: worth_query_declaration::facade::application_program::ApplicationWorkflowSpec<
-        Schema = Schema,
-    >,
+    Spec: ApplicationWorkflowSpec<Schema = Schema>,
     Operation: 'static,
     Input: Clone + Send + Sync + 'static,
 {
-    pub fn accept_condition<Binding>(
+    /// Begins accepting `required`, the condition this request awaits.
+    pub fn condition<'required>(
         self,
-        required: &RequiredWorkflowCondition,
+        required: &'required RequiredWorkflowCondition,
+    ) -> WorthQueryWorkflowConditionAcceptance<
+        'application,
+        'principal,
+        'scope,
+        'required,
+        Schema,
+        Spec,
+        Operation,
+        Input,
+        Scope,
+    > {
+        WorthQueryWorkflowConditionAcceptance {
+            request: self,
+            required,
+            sources: WorthQueryWorkflowConditionSources::new(),
+        }
+    }
+}
+
+impl<'application, 'principal, 'scope, 'required, Schema, Spec, Operation, Input, Scope>
+    WorthQueryWorkflowConditionAcceptance<
+        'application,
+        'principal,
+        'scope,
+        'required,
+        Schema,
+        Spec,
+        Operation,
+        Input,
+        Scope,
+    >
+where
+    Schema: ApplicationSchema,
+    Spec: ApplicationWorkflowSpec<Schema = Schema>,
+    Operation: 'static,
+    Input: Clone + Send + Sync + 'static,
+{
+    /// Supplies operand `name` from `Binding`'s published result, which must
+    /// be exactly one row.
+    pub fn operand<Binding, Value>(
+        mut self,
+        name: &str,
         result: crate::domain_computation::WorthQueryPublishedApplicationResult<
             Binding::Query,
-            bool,
+            Value,
         >,
-    ) -> Result<WorkflowProgressOutcome, WorthQueryWorkflowConditionAcceptanceDenial>
+    ) -> Self
     where
-        Binding: ApplicationQueryBinding<Schema> + 'static,
-        Binding::Query: ApplicationQueryMarkerIdentity<Schema> + 'static,
+        Binding: ApplicationQueryBinding<Schema>,
+        Binding::Query: ApplicationQueryMarkerIdentity<Schema>,
         <Binding::Query as ApplicationQueryMarkerIdentity<Schema>>::ResultBinding:
-            worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding<
-                Value = bool,
-            >,
+            ApplicationStructuredValueBinding<Value = Value>,
+        Value: ApplicationExpressionOperandValue,
     {
-        if required.query() != Binding::Query::IDENTIFIER
-            || required.parameter_type() != Binding::Query::PARAMETER_TYPE_IDENTITY.as_str()
-            || required.result_type() != Binding::Query::RESULT_TYPE_IDENTITY.as_str()
-            || required.binding() != Binding::IDENTITY
-        {
+        self.sources = self
+            .sources
+            .operand::<Binding, Value>(name, result.into_output_demand_source());
+        self
+    }
+
+    /// Settles the condition. The supplied operands must be exactly the
+    /// required ones; true and false select their successors, and a denied
+    /// expression selects neither.
+    pub fn accept(
+        self,
+    ) -> Result<WorkflowProgressOutcome, WorthQueryWorkflowConditionAcceptanceDenial> {
+        let Self {
+            request,
+            required,
+            sources,
+        } = self;
+        if !sources.supplies(required) {
             return Err(WorthQueryWorkflowConditionAcceptanceDenial::RequirementMismatch);
         }
-        let source = result.into_output_demand_source();
         if let Some(replayed) = WorthQueryWorkflowAdvanceAdapter::resolve_condition_replay(
-            self.application,
-            &self.prepared,
+            request.application,
+            &request.prepared,
             required,
-            &source,
-            self.idempotency,
+            &sources,
+            request.idempotency,
         )
         .map_err(WorthQueryWorkflowConditionAcceptanceDenial::Replay)?
         {
             return Ok(replayed);
         }
-        let prepared = match self.prepared {
+        let prepared = match request.prepared {
             PreparedWorkflowAdvance::AwaitingCondition(prepared) => prepared,
             PreparedWorkflowAdvance::Transition { .. }
             | PreparedWorkflowAdvance::AwaitingAssessment(_)
@@ -76,27 +161,15 @@ where
                 return Err(WorthQueryWorkflowConditionAcceptanceDenial::NotAwaitingCondition)
             }
         };
-        if !same_requirement(prepared.required(), required) {
+        if prepared.required() != required {
             return Err(WorthQueryWorkflowConditionAcceptanceDenial::RequirementMismatch);
         }
-        WorthQueryWorkflowAdvanceAdapter::compare_and_commit_condition::<
-            Schema,
-            Operation,
-            Input,
-            Scope,
-            Binding,
-        >(self.application, prepared, source, self.idempotency)
+        WorthQueryWorkflowAdvanceAdapter::compare_and_commit_condition(
+            request.application,
+            prepared,
+            sources,
+            request.idempotency,
+        )
         .map_err(WorthQueryWorkflowConditionAcceptanceDenial::Attempt)
     }
-}
-
-fn same_requirement(left: &RequiredWorkflowCondition, right: &RequiredWorkflowCondition) -> bool {
-    left.instance() == right.instance()
-        && left.node_path() == right.node_path()
-        && left.transition_identity() == right.transition_identity()
-        && left.occurrence() == right.occurrence()
-        && left.query() == right.query()
-        && left.parameter_type() == right.parameter_type()
-        && left.result_type() == right.result_type()
-        && left.binding() == right.binding()
 }

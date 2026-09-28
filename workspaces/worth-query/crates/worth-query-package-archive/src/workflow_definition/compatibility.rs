@@ -4,7 +4,8 @@
 
 use worth_query_declaration::facade::application_program::{
     ApplicationWorkflowAuthoringCommand, ApplicationWorkflowAuthoringDenial,
-    ApplicationWorkflowCommandAdapter, ApplicationWorkflowConnectionKind,
+    ApplicationWorkflowCommandAdapter, ApplicationWorkflowCondition,
+    ApplicationWorkflowConditionOperand, ApplicationWorkflowConnectionKind,
     ApplicationWorkflowEvidenceJoinPolicy, ApplicationWorkflowNodeIdentity,
     ApplicationWorkflowNodeKind, ApplicationWorkflowSpec, ApplicationWorkflowSubjectSelector,
     AuthoredWorkflowDefinition,
@@ -14,7 +15,10 @@ use worth_query_declaration::facade::application_schema::{
 };
 use worth_query_installation::facade::WorthQueryInstalledApplicationWorkflowSpec;
 
-use super::{DraftConnection, DraftMember, DraftNode, WorthQueryUntrustedWorkflowDefinitionDraft};
+use super::{
+    DraftCondition, DraftConditionOperand, DraftConnection, DraftMember, DraftNode,
+    WorthQueryUntrustedWorkflowDefinitionDraft,
+};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryWorkflowDefinitionDraftDenialKind {
@@ -191,19 +195,9 @@ where
                 }
             })
         }
-        DraftMember::Condition {
-            identifier,
-            parameter_type,
-            result_type,
-        } => {
-            let condition = installed.draft_condition(identifier).ok_or_else(unknown)?;
-            if condition.parameter_type().as_str() != parameter_type
-                || condition.result_type().as_str() != result_type
-            {
-                return Err(changed());
-            }
-            ApplicationWorkflowNodeKind::Condition(condition)
-        }
+        DraftMember::Condition(condition) => ApplicationWorkflowNodeKind::Condition(
+            resolve_condition(subject, condition, installed)?,
+        ),
         DraftMember::Approval {
             identifier,
             capability_type,
@@ -219,6 +213,49 @@ where
                 .ok_or_else(|| denial(Kind::UnknownEvidenceJoinPolicy, subject))?,
         ),
         DraftMember::Terminal => ApplicationWorkflowNodeKind::Terminal,
+    })
+}
+
+/// Every operand resolves to an installed query with its authored types, then
+/// the expression readmits over them. A version-1 condition readmits as the
+/// migrated expression over its one query.
+fn resolve_condition<Schema, Spec>(
+    subject: &str,
+    condition: &DraftCondition,
+    installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
+) -> Result<ApplicationWorkflowCondition, Denial>
+where
+    Schema: ApplicationSchema,
+    Spec: ApplicationWorkflowSpec<Schema = Schema>,
+{
+    let resolve = |operand: &DraftConditionOperand| {
+        let query = installed
+            .draft_condition_operand(&operand.identifier)
+            .ok_or_else(|| denial(Kind::UnknownMember, subject))?;
+        if query.parameter_type().as_str() != operand.parameter_type
+            || query.result_type().as_str() != operand.result_type
+        {
+            return Err(denial(Kind::ChangedMember, subject));
+        }
+        Ok(ApplicationWorkflowConditionOperand::new(
+            operand.name.as_str(),
+            query,
+        ))
+    };
+    let admitted = match condition {
+        DraftCondition::Expression { draft, operands } => ApplicationWorkflowCondition::decode(
+            draft,
+            operands.iter().map(resolve).collect::<Result<_, _>>()?,
+        ),
+        DraftCondition::Migrated(operand) => {
+            ApplicationWorkflowCondition::migrated(resolve(operand)?.query().clone())
+        }
+    };
+    admitted.map_err(|refused| {
+        authoring(
+            subject,
+            ApplicationWorkflowAuthoringDenial::Condition(refused),
+        )
     })
 }
 

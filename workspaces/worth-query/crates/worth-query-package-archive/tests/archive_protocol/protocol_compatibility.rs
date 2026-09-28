@@ -37,8 +37,10 @@ fn current_reader_profile_is_derived_from_every_public_version_constant() {
         profile.application_program_description_window(),
         WORTH_QUERY_APPLICATION_PROGRAM_ARCHIVE_PROTOCOL_VERSION,
     );
-    assert_exact_window(
+    // Version-1 drafts still read: their conditions readmit as expressions.
+    assert_window(
         profile.workflow_definition_draft_window(),
+        WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_OLDEST_READABLE_VERSION,
         WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION,
     );
 }
@@ -164,8 +166,12 @@ fn unsupported_headers_win_before_hostile_body_claims() {
 }
 
 fn assert_exact_window(window: BoundaryProtocolCompatibilityWindow, expected: u16) {
-    assert_eq!(window.earliest().get(), u32::from(expected));
-    assert_eq!(window.latest().get(), u32::from(expected));
+    assert_window(window, expected, expected);
+}
+
+fn assert_window(window: BoundaryProtocolCompatibilityWindow, earliest: u16, latest: u16) {
+    assert_eq!(window.earliest().get(), u32::from(earliest));
+    assert_eq!(window.latest().get(), u32::from(latest));
     assert_eq!(window.retired_before(), None);
 }
 
@@ -181,14 +187,12 @@ fn assert_compatibility(
     assert_eq!(compatibility.layer(), expected_layer);
     assert_eq!(compatibility.observed_version(), expected_version);
     assert_eq!(compatibility.posture(), expected_posture);
-    assert_exact_window(
-        compatibility.supported_window(),
-        supported_version(expected_layer),
-    );
+    let (earliest, latest) = supported_window(expected_layer);
+    assert_window(compatibility.supported_window(), earliest, latest);
 }
 
-fn supported_version(layer: WorthQueryPackageArchiveProtocolLayer) -> u16 {
-    match layer {
+fn supported_window(layer: WorthQueryPackageArchiveProtocolLayer) -> (u16, u16) {
+    let current = match layer {
         WorthQueryPackageArchiveProtocolLayer::ReleaseEnvelope => {
             WORTH_QUERY_PACKAGE_RELEASE_ENVELOPE_PROTOCOL_VERSION
         }
@@ -205,9 +209,13 @@ fn supported_version(layer: WorthQueryPackageArchiveProtocolLayer) -> u16 {
             WORTH_QUERY_APPLICATION_PROGRAM_ARCHIVE_PROTOCOL_VERSION
         }
         WorthQueryPackageArchiveProtocolLayer::WorkflowDefinitionDraft => {
-            WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION
+            return (
+                WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_OLDEST_READABLE_VERSION,
+                WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION,
+            )
         }
-    }
+    };
+    (current, current)
 }
 
 fn assert_layer(

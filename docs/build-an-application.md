@@ -774,6 +774,7 @@ let workflow = WorthQueryApplicationWorkflowSpecInstallation::<
 .operation::<ApprovedBusinessPaymentAuthoringBinding>()?
 .operation::<ApprovePaymentMutationBinding>()?
 .assessment::<PaymentDetailQueryBinding>()?
+.condition_operand::<PaymentAmountQueryBinding>()?
 .approval::<ApprovedBusinessPaymentApproval, ApprovedBusinessPaymentApprovalOperation, ApprovePayment>()?
 .authoring_capability::<ApprovedBusinessPaymentAuthoring, ApprovedBusinessPaymentAuthoringOperation, ApprovePayment>()?
 .instance_start_capability::<ApprovedBusinessPaymentInstanceStart, ApprovedBusinessPaymentInstanceStartOperation, ApprovePayment>()?
@@ -784,7 +785,8 @@ let workflow_runtime = runtime.retain_workflow_spec(workflow, approval_authentic
 ```
 
 - `.operation::<Binding>()`, `.assessment::<Binding>()`, and
-  `.condition::<Binding>()` admit the actions and reads a definition may use.
+  `.condition_operand::<Binding>()` admit the actions and reads a definition
+  may use.
 - `approval` and the three `*_capability` calls each take three types:
   `<Capability, Operation, Input>`. `Capability` is the capability marker the
   caller must hold. `Operation` is the control operation it gates, declared
@@ -851,16 +853,17 @@ connects them. This is Bank's approved-payment workflow, complete:
 ```rust
 // workspaces/worth-query-bank-world/crates/bank-server/src/application_definition/workflows.rs
 use worth_query_host::facade::declaration::application_program::{
-    ApplicationWorkflowComponentLimits, ApplicationWorkflowControlOutcome,
-    ApplicationWorkflowDefinitionBuilder, ApplicationWorkflowDefinitionLimits,
-    ApplicationWorkflowEvidenceJoinPolicy, ValidatedWorkflowDefinition,
+    ApplicationWorkflowComponentLimits, ApplicationWorkflowConditionOperands,
+    ApplicationWorkflowControlOutcome, ApplicationWorkflowDefinitionBuilder,
+    ApplicationWorkflowDefinitionLimits, ApplicationWorkflowEvidenceJoinPolicy,
+    ValidatedWorkflowDefinition,
 };
 
 let mut builder = ApplicationWorkflowDefinitionBuilder::<ApprovedBusinessPaymentWorkflow>::new(
     "approved-business-payment",
     ApplicationWorkflowDefinitionLimits::new(
-        8,                                                   // nodes
-        16,                                                  // connections
+        9,                                                   // nodes
+        20,                                                  // connections
         2,                                                   // effects
         ApplicationWorkflowComponentLimits::new(8, 2, 16, 32, 32).unwrap(),
         8 * 1_024,                                           // canonical bytes
@@ -877,6 +880,11 @@ let evidence = builder.evidence_join(
     "review/evidence",
     ApplicationWorkflowEvidenceJoinPolicy::AllRequiredPassing,
 )?;
+let limit = builder.condition(
+    "approval/limit",
+    "amount_cents <= 15000",
+    ApplicationWorkflowConditionOperands::new().query::<PaymentAmountQuery>("amount_cents"),
+)?;
 let approval = builder.approval::<ApprovedBusinessPaymentApproval>("approval")?;
 let apply = builder.operation_binding::<ApprovePaymentMutationBinding>("apply")?;
 let completed = builder.terminal("completed")?;
@@ -888,7 +896,9 @@ builder
     .control(&propose, ApplicationWorkflowControlOutcome::Completed, &payment)
     .control(&payment, ApplicationWorkflowControlOutcome::Completed, &independent)
     .control(&independent, ApplicationWorkflowControlOutcome::Completed, &evidence)
-    .control(&evidence, ApplicationWorkflowControlOutcome::EvidenceSatisfied, &approval)
+    .control(&evidence, ApplicationWorkflowControlOutcome::EvidenceSatisfied, &limit)
+    .control(&limit, ApplicationWorkflowControlOutcome::ConditionSatisfied, &approval)
+    .control(&limit, ApplicationWorkflowControlOutcome::ConditionUnsatisfied, &rejected)
     .control(&evidence, ApplicationWorkflowControlOutcome::EvidenceFailed, &rejected)
     .control(&approval, ApplicationWorkflowControlOutcome::Approved, &apply)
     .control(&approval, ApplicationWorkflowControlOutcome::Rejected, &rejected)
@@ -898,6 +908,7 @@ builder
     .proposal_for_assessment(&propose, &independent)
     .assessment_evidence(&payment, &evidence)
     .assessment_evidence(&independent, &evidence)
+    .condition_subject(&propose, &limit)
     .proposal_for_approval(&propose, &approval)
     .joined_evidence(&evidence, &approval)
     .approval_authority(&approval, &apply)
@@ -913,7 +924,7 @@ let definition: ValidatedWorkflowDefinition<ApprovedBusinessPaymentWorkflow> =
 |---|---|---|
 | `operation::<Op>(id, requires_workflow_authority)` / `operation_binding::<Binding>(id)` | Operation | A governed mutation. `operation_binding` takes the authority flag from the binding. |
 | `assessment::<Query>(id)`, `assessment_for`, `assessment_when_related_relation_present` | Assessment | A query whose settled result becomes evidence |
-| `condition::<Query>(id)` | Condition | A query whose result binding is `bool` |
+| `condition(id, source, operands)` | Condition | A Bool expression over named, typed query results |
 | `approval::<Capability>(id)` | Approval | A signed human decision under a capability |
 | `evidence_join(id, policy)` | Evidence join | `AllRequiredPassing` or `AllRequiredCompleted` |
 | `terminal(id)` | Terminal | An end state |
@@ -1103,8 +1114,9 @@ recorded outcome instead of performing a second step.
 
 **Assessments and conditions.** Turn an advance into an assessment demand
 with `.into_assessment_demand(demand)`, settle it, then accept it with
-`.accept_assessment(&settlement)`. A condition is accepted with
-`accept_condition::<Binding>(&required, result)`.
+`.accept_assessment(&settlement)`. A condition is accepted by naming each
+operand's published result:
+`.condition(&required).operand::<Binding, _>("name", result).accept()`.
 
 **Approve or reject.** An approval needs a fresh authentication event and a
 signature. Replaying a recorded key is the only exception.

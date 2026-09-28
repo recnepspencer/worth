@@ -5,7 +5,9 @@ use std::marker::PhantomData;
 use worth_query_declaration::facade::{
     application_capability::{ApplicationCapabilityMarkerIdentity, ApplicationCapabilityRef},
     application_operation::ApplicationMutationBinding,
-    application_program::{ApplicationWorkflowApprovalRef, ApplicationWorkflowSpec},
+    application_program::{
+        ApplicationExpressionOperandValue, ApplicationWorkflowApprovalRef, ApplicationWorkflowSpec,
+    },
     application_query::{ApplicationQueryBinding, ApplicationQueryMarkerIdentity},
     application_schema::{
         ApplicationOperationMarkerIdentity, ApplicationOperationRef, ApplicationSchema,
@@ -131,14 +133,16 @@ where
         Ok(self)
     }
 
-    pub fn condition<Binding>(
+    /// Installs a query whose result condition expressions may read as an
+    /// operand.
+    pub fn condition_operand<Binding>(
         mut self,
     ) -> Result<Self, WorthQueryApplicationWorkflowInstallationDenial>
     where
         Binding: ApplicationQueryBinding<Schema> + 'static,
         Binding::Query: ApplicationQueryMarkerIdentity<Schema> + 'static,
-        <Binding::Query as ApplicationQueryMarkerIdentity<Schema>>::ResultBinding:
-            ApplicationStructuredValueBinding<Value = bool>,
+        <<Binding::Query as ApplicationQueryMarkerIdentity<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value:
+            ApplicationExpressionOperandValue,
     {
         self.insert_marker(
             6,

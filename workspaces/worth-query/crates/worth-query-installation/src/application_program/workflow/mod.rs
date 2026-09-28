@@ -7,8 +7,8 @@ mod vocabulary;
 mod tests;
 
 pub use definition_contract::{
-    WorthQueryInstalledWorkflowApprovalBinding, WorthQueryInstalledWorkflowDefinitionContract,
-    WorthQueryInstalledWorkflowDefinitionParts,
+    WorthQueryInstalledWorkflowApprovalBinding, WorthQueryInstalledWorkflowConditionBinding,
+    WorthQueryInstalledWorkflowDefinitionContract, WorthQueryInstalledWorkflowDefinitionParts,
 };
 pub use vocabulary::{
     WorthQueryApplicationWorkflowInstallationDenial,

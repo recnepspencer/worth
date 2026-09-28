@@ -64,12 +64,7 @@ pub(in crate::domain_computation::primary_graph) enum CompiledWorkflowNodeKind {
         subject: worth_query_declaration::facade::application_program::ApplicationWorkflowSubjectSelector,
         applicability: CompiledWorkflowAssessmentApplicability,
     },
-    Condition {
-        query: String,
-        parameter_type: String,
-        result_type: String,
-        binding: String,
-    },
+    Condition(super::super::CompiledWorkflowCondition),
     Approval {
         capability: String,
         capability_type: String,

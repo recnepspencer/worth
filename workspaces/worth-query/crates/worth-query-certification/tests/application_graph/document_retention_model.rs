@@ -20,6 +20,8 @@ pub mod presented_request;
 pub mod programs;
 #[path = "document_retention_model/readback.rs"]
 pub mod readback;
+#[path = "document_retention_model/retention_days.rs"]
+pub mod retention_days;
 #[path = "document_retention_model/retention_entry.rs"]
 pub mod retention_entry;
 #[path = "document_retention_model/rules.rs"]

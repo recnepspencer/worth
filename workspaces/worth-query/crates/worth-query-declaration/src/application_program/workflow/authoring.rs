@@ -11,8 +11,8 @@ use crate::{
 };
 
 use super::{
-    ApplicationWorkflowApprovalRef, ApplicationWorkflowAssessmentRef,
-    ApplicationWorkflowConditionRef, ApplicationWorkflowConnection,
+    ApplicationWorkflowApprovalRef, ApplicationWorkflowAssessmentRef, ApplicationWorkflowCondition,
+    ApplicationWorkflowConditionOperands, ApplicationWorkflowConnection,
     ApplicationWorkflowDefinitionIdentity, ApplicationWorkflowDefinitionLimits,
     ApplicationWorkflowEvidenceJoinPolicy, ApplicationWorkflowNode,
     ApplicationWorkflowNodeIdentity, ApplicationWorkflowNodeKind, ApplicationWorkflowOperationRef,
@@ -243,25 +243,20 @@ where
         )
     }
 
-    pub fn condition<Query>(
+    /// A condition node deciding by the Bool expression `source` over the
+    /// query results `operands` name.
+    pub fn condition(
         &mut self,
         identity: impl Into<String>,
+        source: &str,
+        operands: ApplicationWorkflowConditionOperands<Spec>,
     ) -> Result<
         ApplicationWorkflowNodeRef<ApplicationWorkflowConditionNode>,
         ApplicationWorkflowAuthoringDenial,
-    >
-    where
-        Query: ApplicationQueryMarkerIdentity<Spec::Schema> + 'static,
-        Query::ResultBinding:
-            crate::application_schema::ApplicationStructuredValueBinding<Value = bool>,
-    {
-        self.push_node(
-            identity,
-            ApplicationWorkflowNodeKind::Condition(ApplicationWorkflowConditionRef::declared::<
-                Spec,
-                Query,
-            >()),
-        )
+    > {
+        let condition = ApplicationWorkflowCondition::parse(source, operands.into_operands())
+            .map_err(ApplicationWorkflowAuthoringDenial::Condition)?;
+        self.push_node(identity, ApplicationWorkflowNodeKind::Condition(condition))
     }
 
     pub fn approval<Capability>(

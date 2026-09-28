@@ -74,7 +74,9 @@ fn newly_required_related_review_stales_after_relation_away_and_back() {
             .idempotency(&765_u64)
             .prepare_workflow_advance(&application, instance.clone())
             .expect("condition acceptance prepares")
-            .accept_condition::<DocumentRetentionConditionQueryBinding>(&condition, result)
+            .condition(&condition)
+            .operand::<DocumentRetentionConditionQueryBinding, _>("retained", result)
+            .accept()
             .expect("false condition settles"),
         WorkflowProgressOutcome::Completed(_),
     ));

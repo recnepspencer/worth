@@ -14,6 +14,7 @@ use crate::domain_computation::primary_graph::workflow::{
             CompiledWorkflowAssessmentApplicability, CompiledWorkflowNode,
             CompiledWorkflowNodeKind, CompiledWorkflowNodeMeaning,
         },
+        CompiledWorkflowCondition,
     },
     schema::WorthQueryWorkflowLayout,
 };
@@ -134,6 +135,14 @@ pub(super) fn compile_node(
         &node.condition_binding,
         facts,
     )?;
+    let condition_operands = observed_optional_text(
+        runtime,
+        snapshot,
+        entity,
+        node.entity_kind,
+        &node.condition_operands,
+        facts,
+    )?;
     let capability_type = observed_optional_text(
         runtime,
         snapshot,
@@ -179,6 +188,7 @@ pub(super) fn compile_node(
         assessment_applicability_from,
         assessment_applicability_to,
         condition_binding,
+        condition_operands,
         capability_type,
         approval_operation,
         approval_capability_identity,
@@ -204,6 +214,7 @@ fn decode_kind(
     assessment_applicability_from: Option<String>,
     assessment_applicability_to: Option<String>,
     condition_binding: Option<String>,
+    condition_operands: Option<String>,
     capability_type: Option<String>,
     approval_operation: Option<String>,
     approval_capability_identity: Option<String>,
@@ -250,6 +261,7 @@ fn decode_kind(
                 && assessment_binding.is_none()
                 && assessment_subject.is_none()
                 && condition_binding.is_none()
+                && condition_operands.is_none()
                 && capability_type.is_none()
                 && approval_operation.is_none()
                 && approval_capability_identity.is_none() =>
@@ -267,6 +279,7 @@ fn decode_kind(
                 && approval_operation.is_none()
                 && approval_capability_identity.is_none()
                 && condition_binding.is_none()
+                && condition_operands.is_none()
                 && !requires_workflow_authority =>
         {
             let subject = worth_query_declaration::facade::application_program::ApplicationWorkflowSubjectSelector::from_persistence_identity(
@@ -296,12 +309,15 @@ fn decode_kind(
                 && approval_capability_identity.is_none()
                 && !requires_workflow_authority =>
         {
-            Ok(CompiledWorkflowNodeKind::Condition {
-                query: member,
-                parameter_type: parameter_type.ok_or_else(invalid_node)?,
-                result_type: result_type.ok_or_else(invalid_node)?,
-                binding: condition_binding.ok_or_else(invalid_node)?,
-            })
+            CompiledWorkflowCondition::from_record(
+                member,
+                parameter_type,
+                result_type,
+                condition_binding,
+                condition_operands,
+            )
+            .map(CompiledWorkflowNodeKind::Condition)
+            .ok_or_else(invalid_node)
         }
         Some(WorkflowNodeTag::Approval)
             if input_type.is_none()
@@ -310,6 +326,7 @@ fn decode_kind(
                 && assessment_binding.is_none()
                 && assessment_subject.is_none()
                 && condition_binding.is_none()
+                && condition_operands.is_none()
                 && !requires_workflow_authority =>
         {
             Ok(CompiledWorkflowNodeKind::Approval {
@@ -328,6 +345,7 @@ fn decode_kind(
                 &assessment_binding,
                 &assessment_subject,
                 &condition_binding,
+                &condition_operands,
                 &capability_type,
                 &approval_operation,
                 &approval_capability_identity,
@@ -347,6 +365,7 @@ fn decode_kind(
                 &assessment_binding,
                 &assessment_subject,
                 &condition_binding,
+                &condition_operands,
                 &capability_type,
                 &approval_operation,
                 &approval_capability_identity,

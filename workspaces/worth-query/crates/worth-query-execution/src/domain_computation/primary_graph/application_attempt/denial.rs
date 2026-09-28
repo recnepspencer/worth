@@ -116,6 +116,11 @@ pub enum WorthQueryApplicationAttemptDenialKind {
     /// been consumed by a receipted settlement.
     WorkflowTransitionOperationUnsettled,
     WorkflowTransitionIdentityUnavailable,
+    /// A condition's expression denied over its current operand values, or a
+    /// value could not be read as its declared type. The expression decided
+    /// neither outcome; [`expression`](WorthQueryApplicationAttemptDenial::expression)
+    /// carries the language denial.
+    WorkflowConditionExpressionDenied,
     WorkflowAssessmentEvidenceIncomplete,
     WorkflowAssessmentEvidenceMismatch,
     WorkflowApprovalPrincipalStale,
@@ -134,6 +139,7 @@ pub enum WorthQueryApplicationAttemptDenialKind {
 pub struct WorthQueryApplicationAttemptDenial {
     kind: WorthQueryApplicationAttemptDenialKind,
     subject: String,
+    expression: Option<worth_foundational::expression_api::ExpressionDenial>,
 }
 
 impl WorthQueryApplicationAttemptDenial {
@@ -144,6 +150,18 @@ impl WorthQueryApplicationAttemptDenial {
         Self {
             kind,
             subject: subject.into(),
+            expression: None,
+        }
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn condition_expression(
+        subject: impl Into<String>,
+        denial: worth_foundational::expression_api::ExpressionDenial,
+    ) -> Self {
+        Self {
+            kind: WorthQueryApplicationAttemptDenialKind::WorkflowConditionExpressionDenied,
+            subject: subject.into(),
+            expression: Some(denial),
         }
     }
 
@@ -153,6 +171,13 @@ impl WorthQueryApplicationAttemptDenial {
 
     pub fn subject(&self) -> &str {
         &self.subject
+    }
+
+    /// The language denial behind `WorkflowConditionExpressionDenied`.
+    pub const fn expression(
+        &self,
+    ) -> Option<&worth_foundational::expression_api::ExpressionDenial> {
+        self.expression.as_ref()
     }
 }
 

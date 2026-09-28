@@ -101,7 +101,8 @@ pub enum WorthQueryWorkflowAssessmentAcceptanceDenial {
     Attempt(worth_query_execution::facade::primary_graph::WorthQueryApplicationAttemptDenial),
 }
 
-/// Why `accept_condition` refused a published condition result.
+/// Why a [`WorthQueryWorkflowConditionAcceptance`](super::WorthQueryWorkflowConditionAcceptance)
+/// refused its operands.
 #[derive(Debug)]
 pub enum WorthQueryWorkflowConditionAcceptanceDenial {
     NotAwaitingCondition,

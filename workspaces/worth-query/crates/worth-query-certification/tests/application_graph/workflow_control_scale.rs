@@ -13,10 +13,11 @@ use worth_query_host::facade::{
     },
     declaration::application_program::{
         ApplicationWorkflowComponentBuilder, ApplicationWorkflowComponentLimits,
-        ApplicationWorkflowConnectionKind, ApplicationWorkflowControlOutcome,
-        ApplicationWorkflowDefinitionBuilder, ApplicationWorkflowDefinitionLimits,
-        ApplicationWorkflowEvidenceJoinPolicy, ApplicationWorkflowNodeKind,
-        ApplicationWorkflowRetry, ApplicationWorkflowSubjectSelector, AuthoredWorkflowDefinition,
+        ApplicationWorkflowConditionOperands, ApplicationWorkflowConnectionKind,
+        ApplicationWorkflowControlOutcome, ApplicationWorkflowDefinitionBuilder,
+        ApplicationWorkflowDefinitionLimits, ApplicationWorkflowEvidenceJoinPolicy,
+        ApplicationWorkflowNodeKind, ApplicationWorkflowRetry, ApplicationWorkflowSubjectSelector,
+        AuthoredWorkflowDefinition,
     },
 };
 use worth_query_installation::facade::WorthQueryApplicationWorkflowResourceCeiling;
@@ -55,7 +56,12 @@ fn control_definition(occurrences: u16) -> AuthoredWorkflowDefinition<ReviewedDo
         .operation::<WorkflowDefinitionAuthoringOperation>("proposal", false)
         .expect("proposal operation");
     let condition = fragment
-        .condition::<DocumentRetentionConditionQuery>("condition")
+        .condition(
+            "condition",
+            "retained",
+            ApplicationWorkflowConditionOperands::new()
+                .query::<DocumentRetentionConditionQuery>("retained"),
+        )
         .expect("typed condition");
     let retention = fragment
         .assessment::<DocumentRetentionQuery>("retention")
@@ -248,7 +254,7 @@ fn qualify(occurrences: u16, key: u64) {
         validated
             .nodes()
             .iter()
-            .filter(|node| matches!(node.kind(), ApplicationWorkflowNodeKind::Condition(condition) if condition.query_type() == TypeId::of::<DocumentRetentionConditionQuery>()))
+            .filter(|node| matches!(node.kind(), ApplicationWorkflowNodeKind::Condition(condition) if condition.operands().iter().any(|operand| operand.query().query_type() == TypeId::of::<DocumentRetentionConditionQuery>())))
             .count(),
         usize::from(occurrences)
     );
