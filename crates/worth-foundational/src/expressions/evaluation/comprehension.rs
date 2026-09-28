@@ -11,6 +11,7 @@ use crate::expressions::denial::ExpressionResult;
 use crate::expressions::program::Op;
 use crate::expressions::syntax::ast::ComprehensionKind;
 
+use super::apply::parts;
 use super::machine::{Frame, Held, Machine};
 use super::paths::{ExpressionReadKind, Origin};
 use super::value::{Composite, ExpressionValue, Repr};
@@ -133,7 +134,7 @@ impl Machine {
                 self.runtime.meter.allocate(16)?;
                 Held {
                     value: ExpressionValue::list(iteration.output),
-                    origin: Origin::Parts(iteration.origins.into()),
+                    origin: parts(iteration.origins),
                 }
             }
         };

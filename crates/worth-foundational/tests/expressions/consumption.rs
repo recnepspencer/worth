@@ -98,6 +98,23 @@ fn collection_builtins_record_length_prefix_or_element() {
 }
 
 #[test]
+fn constructed_maps_keep_each_value_origin() {
+    assert_eq!(
+        reads(r#"get({"w": width, "d": depth}, "w")"#),
+        [read("width", &[], Kind::Value)]
+    );
+    assert_eq!(
+        reads(r#"entries({"w": width, "d": depth}).map(e, e.key)"#),
+        Vec::new()
+    );
+    // Keys decide a map's shape, so building it reads every key whole.
+    assert_eq!(
+        reads("contains({count: width}, 7)"),
+        [read("count", &[], Kind::Value)]
+    );
+}
+
+#[test]
 fn unbound_operands_deny_only_when_read() {
     let inputs = ExpressionInputs::builder(&schema())
         .bind("ready", ExpressionValue::bool(true))

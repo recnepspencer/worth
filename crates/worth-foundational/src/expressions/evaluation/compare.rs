@@ -175,13 +175,13 @@ impl Comparison {
             | (Repr::Map(x), Repr::Map(y))
             | (Repr::Record(x), Repr::Record(y))
             | (Repr::Entry(x), Repr::Entry(y)) => {
-                if !Arc::ptr_eq(x, y) {
-                    self.tasks.push(Task::Items {
-                        a: x.clone(),
-                        b: y.clone(),
-                        next: 0,
-                    });
-                }
+                // Always structural: a shared allocation costs what an equal,
+                // separately built value costs.
+                self.tasks.push(Task::Items {
+                    a: x.clone(),
+                    b: y.clone(),
+                    next: 0,
+                });
                 Ordering::Equal
             }
             _ => unreachable!("admission compares only values of one type"),

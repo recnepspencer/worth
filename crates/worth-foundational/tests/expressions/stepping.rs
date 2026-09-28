@@ -4,11 +4,11 @@
 
 use worth_foundational::expression_api::{
     expressions, ExpressionCost, ExpressionDenialDetail, ExpressionEvaluation,
-    ExpressionFunctionCatalog, ExpressionProfile, ExpressionResource, ExpressionStep,
-    ExpressionType, MAX_SLICE_QUANTUM,
+    ExpressionFunctionCatalog, ExpressionInputs, ExpressionProfile, ExpressionResource,
+    ExpressionSchema, ExpressionStep, ExpressionType, ExpressionValue, MAX_SLICE_QUANTUM,
 };
 
-use super::{admit, evaluate, function, inputs, schema};
+use super::{admit, empty_catalog, evaluate, function, inputs, schema};
 
 /// Sources that exercise every resumable step: comparisons, folds, sorts,
 /// lookups, text scans, copies, comprehensions, calls, and denials.
@@ -215,16 +215,19 @@ fn exhaustion_is_identical_under_every_quantum() {
 }
 
 #[test]
-fn allocation_limits_deny_at_the_same_safe_point_under_every_quantum() {
-    let source = r#"[1, 2, 3, 4, 5, 6, 7, 8].map(x, "item")"#;
-    let compiled = admit(source).expect("admits").compile();
-    let whole = compiled.evaluate(&inputs(), &ExpressionProfile::interactive());
-    for resource in [
-        ExpressionResource::OutputBytes,
-        ExpressionResource::ScratchBytes,
+fn byte_limits_deny_at_the_same_safe_point_under_every_quantum() {
+    let built = r#"[1, 2, 3, 4, 5, 6, 7, 8].map(x, "item")"#;
+    let read = "members.filter(m, m.material == Material::Steel).map(m, m.thickness * 2.0)";
+    for (source, resource) in [
+        (built, ExpressionResource::OutputBytes),
+        (built, ExpressionResource::ScratchBytes),
+        (read, ExpressionResource::InputBytes),
+        (read, ExpressionResource::RetainedConsumptionBytes),
     ] {
+        let compiled = admit(source).expect("admits").compile();
+        let whole = compiled.evaluate(&inputs(), &ExpressionProfile::interactive());
         let used = whole.cost().used(resource);
-        assert!(used > 0, "{resource:?} is charged");
+        assert!(used > 1, "{resource:?} is charged");
         let profile = narrowed(resource, used / 2);
         let expected = compiled.evaluate(&inputs(), &profile);
         assert_eq!(exceeded(&expected), (resource, used / 2));
@@ -272,5 +275,52 @@ fn cancelling_between_slices_leaves_nothing_behind() {
         assert_eq!(again.result(), whole.result());
         assert_eq!(again.consumption(), whole.consumption());
         assert_eq!(counters(again.cost()), counters(whole.cost()));
+    }
+}
+
+/// Equal lists cost the same to compare whether they share one allocation or
+/// were built separately, so no outcome depends on how a caller built inputs.
+#[test]
+fn shared_and_separate_values_compare_at_one_cost() {
+    let ty = ExpressionType::list(ExpressionType::INT64);
+    let schema = ExpressionSchema::builder()
+        .operand("a", ty.clone())
+        .and_then(|builder| builder.operand("b", ty))
+        .expect("operands declare")
+        .build();
+    let list = || ExpressionValue::list((0..1_000).map(ExpressionValue::integer).collect());
+    let bind = |a, b| {
+        ExpressionInputs::builder(&schema)
+            .bind("a", a)
+            .and_then(|inputs| inputs.bind("b", b))
+            .expect("lists bind")
+            .build()
+    };
+    let shared = list();
+    let bindings = [bind(shared.clone(), shared), bind(list(), list())];
+    for source in ["a == b", "contains([a], b)"] {
+        let profile = ExpressionProfile::interactive();
+        let compiled = expressions()
+            .parse(source)
+            .and_then(|draft| draft.admit(&schema, &empty_catalog(&schema), profile))
+            .expect("admits")
+            .compile();
+        let [same, separate] = bindings
+            .each_ref()
+            .map(|inputs| compiled.evaluate(inputs, &profile));
+        assert_eq!(same.result(), separate.result(), "{source}");
+        assert_eq!(counters(same.cost()), counters(separate.cost()), "{source}");
+        let visited = same.cost().used(ExpressionResource::VisitedElements);
+        assert!(visited >= 1_000, "{source} visits every pair: {visited}");
+        let tight = narrowed(ExpressionResource::VisitedElements, visited / 2);
+        let [same, separate] = bindings
+            .each_ref()
+            .map(|inputs| compiled.evaluate(inputs, &tight));
+        assert_eq!(
+            exceeded(&same),
+            (ExpressionResource::VisitedElements, visited / 2)
+        );
+        assert_eq!(same.result(), separate.result(), "{source}");
+        assert_eq!(counters(same.cost()), counters(separate.cost()), "{source}");
     }
 }

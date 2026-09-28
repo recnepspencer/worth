@@ -1,4 +1,4 @@
-# case	disposition	refusal or governing rule
+# case	disposition	refusal, Worth denial, or rule -> Worth outcome
 basic/self_eval_zeroish/self_eval_int_zero	equivalent	
 basic/self_eval_zeroish/self_eval_uint_zero	unsupported	parse:Syntax
 basic/self_eval_zeroish/self_eval_uint_alias_zero	unsupported	parse:Syntax
@@ -41,7 +41,7 @@ basic/functions/unbound	unsupported	admission:UnknownBinding
 basic/functions/unbound_is_runtime_error	unsupported	admission:UnknownBinding
 basic/reserved_const/false	unsupported	environment:Syntax
 basic/reserved_const/true	unsupported	environment:Syntax
-basic/reserved_const/null	divergent	no-null
+basic/reserved_const/null	divergent	no-null -> ExpressionValue(Bool(true))
 comparisons/eq_literal/eq_int	equivalent	
 comparisons/eq_literal/not_eq_int	equivalent	
 comparisons/eq_literal/eq_int_uint	unsupported	parse:Syntax
@@ -56,7 +56,7 @@ comparisons/eq_literal/eq_uint_double	unsupported	parse:Syntax
 comparisons/eq_literal/not_eq_uint_double	unsupported	parse:Syntax
 comparisons/eq_literal/eq_double	equivalent	
 comparisons/eq_literal/not_eq_double	equivalent	
-comparisons/eq_literal/not_eq_double_nan	divergent	finite-floats
+comparisons/eq_literal/not_eq_double_nan	divergent	finite-floats -> denied DivisionByZero
 comparisons/eq_literal/not_eq_int_double_nan	unsupported	admission:UnknownBinding
 comparisons/eq_literal/not_eq_uint_double_nan	unsupported	parse:Syntax
 comparisons/eq_literal/eq_double_int	unsupported	admission:UnknownBinding
@@ -195,7 +195,7 @@ comparisons/ne_literal/not_ne_uint	unsupported	parse:Syntax
 comparisons/ne_literal/ne_uint_double	unsupported	parse:Syntax
 comparisons/ne_literal/not_ne_uint_double	unsupported	parse:Syntax
 comparisons/ne_literal/ne_double	equivalent	
-comparisons/ne_literal/not_ne_double_nan	divergent	finite-floats
+comparisons/ne_literal/not_ne_double_nan	divergent	finite-floats -> denied DivisionByZero
 comparisons/ne_literal/not_ne_int_double_nan	unsupported	admission:UnknownBinding
 comparisons/ne_literal/not_ne_uint_double_nan	unsupported	parse:Syntax
 comparisons/ne_literal/not_ne_double	equivalent	
@@ -203,7 +203,7 @@ comparisons/ne_literal/ne_double_int	unsupported	admission:UnknownBinding
 comparisons/ne_literal/not_ne_double_int	unsupported	admission:UnknownBinding
 comparisons/ne_literal/ne_double_uint	unsupported	parse:Syntax
 comparisons/ne_literal/not_ne_double_uint	unsupported	parse:Syntax
-comparisons/ne_literal/ne_double_nan	divergent	finite-floats
+comparisons/ne_literal/ne_double_nan	divergent	finite-floats -> denied DivisionByZero
 comparisons/ne_literal/ne_string	unsupported	parse:Syntax
 comparisons/ne_literal/not_ne_string	unsupported	parse:Syntax
 comparisons/ne_literal/ne_string_unicode	unsupported	parse:Syntax
@@ -573,7 +573,7 @@ fp_math/fp_math/mod_not_support	unsupported	admission:TypeMismatch
 fp_math/fp_math/negative	equivalent	
 fp_math/fp_math/double_negative	equivalent	
 fp_math/fp_math/negative_zero	equivalent	
-fp_math/fp_math/divide_zero	divergent	finite-floats
+fp_math/fp_math/divide_zero	divergent	finite-floats -> denied DivisionByZero
 fp_math/fp_math/multiply_zero	equivalent	
 fp_math/fp_math/add_left_identity	equivalent	
 fp_math/fp_math/add_right_identity	equivalent	
@@ -584,8 +584,8 @@ fp_math/fp_math/mul_right_identity	equivalent
 fp_math/fp_math/mul_commutative	equivalent	
 fp_math/fp_math/mul_associative	equivalent	
 fp_math/fp_math/add_mul_distribute	equivalent	
-fp_math/fp_math/fp_overflow_positive	divergent	finite-floats
-fp_math/fp_math/fp_overflow_negative	divergent	finite-floats
+fp_math/fp_math/fp_overflow_positive	divergent	finite-floats -> denied ArithmeticOverflow
+fp_math/fp_math/fp_overflow_negative	divergent	finite-floats -> denied ArithmeticOverflow
 fp_math/fp_math/fp_underflow	equivalent	
 integer_math/int64_math/add_positive_positive	equivalent	
 integer_math/int64_math/add_positive_negative	equivalent	
@@ -607,10 +607,10 @@ integer_math/int64_math/unary_minus_pos	equivalent
 integer_math/int64_math/unary_minus_neg	equivalent	
 integer_math/int64_math/unary_minus_no_overload	unsupported	parse:Syntax
 integer_math/int64_math/unary_minus_not_bool	unsupported	admission:TypeMismatch
-integer_math/int64_math/mod_zero	equivalent	
+integer_math/int64_math/mod_zero	equivalent	denied DivisionByZero
 integer_math/int64_math/negative_zero	equivalent	
 integer_math/int64_math/double_negative	equivalent	
-integer_math/int64_math/divide_zero	equivalent	
+integer_math/int64_math/divide_zero	equivalent	denied DivisionByZero
 integer_math/int64_math/multiply_zero	equivalent	
 integer_math/int64_math/add_left_identity	equivalent	
 integer_math/int64_math/add_right_identity	equivalent	
@@ -621,15 +621,15 @@ integer_math/int64_math/mul_right_identity	equivalent
 integer_math/int64_math/mul_commutative	equivalent	
 integer_math/int64_math/mul_associative	equivalent	
 integer_math/int64_math/add_mul_distribute	equivalent	
-integer_math/int64_math/int64_overflow_positive	equivalent	
-integer_math/int64_math/int64_overflow_negative	equivalent	
-integer_math/int64_math/int64_overflow_add_negative	equivalent	
-integer_math/int64_math/int64_overflow_sub_positive	equivalent	
-integer_math/int64_math/int64_min_negate	equivalent	
-integer_math/int64_math/int64_min_negate_mul	equivalent	
-integer_math/int64_math/int64_min_negate_div	equivalent	
-integer_math/int64_math/int64_overflow_mul_positive	equivalent	
-integer_math/int64_math/int64_overflow_mul_negative	equivalent	
+integer_math/int64_math/int64_overflow_positive	equivalent	denied ArithmeticOverflow
+integer_math/int64_math/int64_overflow_negative	equivalent	denied ArithmeticOverflow
+integer_math/int64_math/int64_overflow_add_negative	equivalent	denied ArithmeticOverflow
+integer_math/int64_math/int64_overflow_sub_positive	equivalent	denied ArithmeticOverflow
+integer_math/int64_math/int64_min_negate	equivalent	denied ArithmeticOverflow
+integer_math/int64_math/int64_min_negate_mul	equivalent	denied ArithmeticOverflow
+integer_math/int64_math/int64_min_negate_div	equivalent	denied ArithmeticOverflow
+integer_math/int64_math/int64_overflow_mul_positive	equivalent	denied ArithmeticOverflow
+integer_math/int64_math/int64_overflow_mul_negative	equivalent	denied ArithmeticOverflow
 integer_math/int64_math/uint64_overflow_positive	unsupported	parse:Syntax
 integer_math/int64_math/uint64_overflow_negative	unsupported	parse:Syntax
 integer_math/int64_math/uint64_overflow_mul_positive	unsupported	parse:Syntax
@@ -702,9 +702,9 @@ logic/AND/false_right	equivalent
 logic/AND/short_circuit_type_left	unsupported	admission:TypeMismatch
 logic/AND/short_circuit_type_right	unsupported	parse:Syntax
 logic/AND/short_circuit_error_left	equivalent	
-logic/AND/short_circuit_error_right	divergent	left-to-right-errors
-logic/AND/error_right	equivalent	
-logic/AND/error_left	equivalent	
+logic/AND/short_circuit_error_right	divergent	left-to-right-errors -> denied DivisionByZero
+logic/AND/error_right	equivalent	denied DivisionByZero
+logic/AND/error_left	equivalent	denied DivisionByZero
 logic/AND/no_overload	unsupported	parse:Syntax
 logic/OR/all_true	equivalent	
 logic/OR/all_false	equivalent	
@@ -713,9 +713,9 @@ logic/OR/false_right	equivalent
 logic/OR/short_circuit_type_left	unsupported	admission:TypeMismatch
 logic/OR/short_circuit_type_right	unsupported	parse:Syntax
 logic/OR/short_circuit_error_left	equivalent	
-logic/OR/short_circuit_error_right	divergent	left-to-right-errors
-logic/OR/error_right	equivalent	
-logic/OR/error_left	equivalent	
+logic/OR/short_circuit_error_right	divergent	left-to-right-errors -> denied DivisionByZero
+logic/OR/error_right	equivalent	denied DivisionByZero
+logic/OR/error_left	equivalent	denied DivisionByZero
 logic/OR/no_overload	unsupported	parse:Syntax
 logic/NOT/not_true	equivalent	
 logic/NOT/not_false	equivalent	
@@ -736,8 +736,8 @@ macros/all/list_elem_some_true	equivalent
 macros/all/list_elem_none_true	equivalent	
 macros/all/list_elem_type_shortcircuit	unsupported	parse:Syntax
 macros/all/list_elem_type_exhaustive	unsupported	parse:Syntax
-macros/all/list_elem_error_shortcircuit	divergent	left-to-right-errors
-macros/all/list_elem_error_exhaustive	equivalent	
+macros/all/list_elem_error_shortcircuit	divergent	left-to-right-errors -> denied DivisionByZero
+macros/all/list_elem_error_exhaustive	equivalent	denied DivisionByZero
 macros/all/list_empty	unsupported	admission:TypeMismatch
 macros/all/map_key	unsupported	parse:Syntax
 macros/exists_one/list_empty	unsupported	parse:Syntax
@@ -752,7 +752,7 @@ macros/exists_one/map_one	unsupported	parse:Syntax
 macros/map/list_empty	unsupported	admission:TypeMismatch
 macros/map/list_one	equivalent	
 macros/map/list_many	equivalent	
-macros/map/list_error	equivalent	
+macros/map/list_error	equivalent	denied DivisionByZero
 macros/map/map_extract_keys	unsupported	parse:Syntax
 macros/filter/list_empty	unsupported	admission:TypeMismatch
 macros/filter/list_one_true	equivalent	
@@ -760,7 +760,7 @@ macros/filter/list_one_false	equivalent
 macros/filter/list_none	equivalent	
 macros/filter/list_some	equivalent	
 macros/filter/list_all	equivalent	
-macros/filter/list_no_shortcircuit	equivalent	
+macros/filter/list_no_shortcircuit	equivalent	denied DivisionByZero
 macros/filter/map_filter_keys	unsupported	parse:Syntax
 macros/nested/filter_all	unsupported	parse:Syntax
 macros/nested/all_all	unsupported	parse:Syntax

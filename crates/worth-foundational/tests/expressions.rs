@@ -141,14 +141,14 @@ pub(crate) fn float(value: f64) -> ExpressionValue {
     ExpressionValue::float64(CanonicalF64::from_f64(value)).expect("fixture floats are finite")
 }
 
-/// A length in metres.
-pub(crate) fn metres(value: f64) -> ExpressionValue {
+/// A length in meters.
+pub(crate) fn meters(value: f64) -> ExpressionValue {
     ExpressionValue::quantity(CanonicalF64::from_f64(value)).expect("fixture lengths are finite")
 }
 
-/// A `Frame` record: thickness in metres and a `Material` variant.
+/// A `Frame` record: thickness in meters and a `Material` variant.
 pub(crate) fn frame(thickness: f64, material: u32) -> ExpressionValue {
-    ExpressionValue::record(vec![metres(thickness), ExpressionValue::variant(material)])
+    ExpressionValue::record(vec![meters(thickness), ExpressionValue::variant(material)])
 }
 
 /// Values for every fixture operand except `label`, which stays absent.
@@ -157,7 +157,7 @@ pub(crate) fn inputs() -> ExpressionInputs {
         Ok(ExpressionInputs::builder(&schema())
             .bind("width", float(2.5))?
             .bind("depth", float(0.5))?
-            .bind("clear_width", metres(0.9))?
+            .bind("clear_width", meters(0.9))?
             .bind("frame", frame(0.01, 0))?
             .bind(
                 "members",

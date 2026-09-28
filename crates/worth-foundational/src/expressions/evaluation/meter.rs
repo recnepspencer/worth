@@ -8,6 +8,11 @@
 //! fit the rest of a slice waits for the next one, and a fresh slice always
 //! admits its first step, which never exceeds [`MAX_SLICE_QUANTUM`]. Charges
 //! never depend on where a slice ends.
+//!
+//! Scratch is charged for every allocation and never credited back, so the
+//! peak-scratch ceiling bounds everything an evaluation allocates. That is a
+//! deterministic upper bound on peak scratch: it cannot depend on when a host
+//! frees memory, and an evaluation it admits never holds more at once.
 
 use std::task::Poll;
 
@@ -65,8 +70,8 @@ impl ExpressionCost {
         self.comparisons
     }
 
-    /// Values allocated. Allocated bytes are charged as scratch, which bounds
-    /// peak scratch from above.
+    /// Values allocated. Allocated bytes are charged as scratch and never
+    /// credited back, which bounds peak scratch from above.
     pub fn allocations(&self) -> u64 {
         self.allocations
     }

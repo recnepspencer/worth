@@ -14,6 +14,7 @@ use std::task::Poll;
 
 use crate::expressions::denial::{ExpressionDenial, ExpressionDenialDetail, ExpressionResult};
 
+use super::apply::parts;
 use super::compare::Comparison;
 use super::cost::words;
 use super::jobs::{ready, Job};
@@ -25,7 +26,7 @@ use super::value::{Composite, ExpressionValue, Repr};
 #[derive(Debug)]
 pub(super) struct MapSort {
     keys: Vec<ExpressionValue>,
-    values: Vec<ExpressionValue>,
+    values: Vec<Held>,
     /// Entry indices sorted in runs of `width`.
     order: Vec<usize>,
     /// The next pass's runs of `2 * width`.
@@ -43,11 +44,11 @@ pub(super) struct MapSort {
 
 impl MapSort {
     /// `items` alternate key and value in source order.
-    pub(super) fn new(items: Vec<ExpressionValue>) -> Self {
+    pub(super) fn new(items: Vec<Held>) -> Self {
         let (mut keys, mut values) = (Vec::new(), Vec::new());
         let mut items = items.into_iter();
         while let (Some(key), Some(value)) = (items.next(), items.next()) {
-            keys.push(key);
+            keys.push(key.value);
             values.push(value);
         }
         let entries = keys.len();
@@ -66,10 +67,7 @@ impl MapSort {
         }
     }
 
-    pub(super) fn step(
-        &mut self,
-        meter: &mut EvaluationMeter,
-    ) -> ExpressionResult<Poll<ExpressionValue>> {
+    pub(super) fn step(&mut self, meter: &mut EvaluationMeter) -> ExpressionResult<Poll<Held>> {
         let entries = self.keys.len();
         loop {
             if self.width >= entries {
@@ -126,13 +124,19 @@ impl MapSort {
         }
     }
 
-    fn finish(&mut self, meter: &mut EvaluationMeter) -> ExpressionResult<ExpressionValue> {
+    /// The canonical map; its origin keeps each value's, in entry order.
+    fn finish(&mut self, meter: &mut EvaluationMeter) -> ExpressionResult<Held> {
         meter.allocate(16 + 16 * self.keys.len() as u64)?;
-        let items = self
-            .order
-            .iter()
-            .flat_map(|index| [self.keys[*index].clone(), self.values[*index].clone()]);
-        Ok(ExpressionValue(Repr::Map(Composite::new(items.collect()))))
+        let (mut items, mut origins) = (Vec::new(), Vec::new());
+        for index in &self.order {
+            let value = &self.values[*index];
+            items.extend([self.keys[*index].clone(), value.value.clone()]);
+            origins.extend([Origin::Computed, value.origin.clone()]);
+        }
+        Ok(Held {
+            value: ExpressionValue(Repr::Map(Composite::new(items))),
+            origin: parts(origins),
+        })
     }
 }
 
@@ -156,6 +160,15 @@ fn key_path(
         .recorder
         .read(entry, presence, key, &mut runtime.meter)?;
     Ok(Poll::Ready(Origin::Path(entry)))
+}
+
+/// The origin of entry `index`'s value: its recorded path under an operand
+/// map, or the part a constructed map kept for it.
+fn value_origin(map: &Held, index: usize, path: Origin) -> Origin {
+    match &map.origin {
+        Origin::Parts(parts) => parts[2 * index + 1].clone(),
+        _ => path,
+    }
 }
 
 /// Map `get` or `contains`.
@@ -222,11 +235,11 @@ impl Lookup {
         };
         runtime.meter.allocate(16)?;
         let value = ExpressionValue::some(self.items.items[2 * index + 1].clone());
-        let origin = match origin {
-            Origin::Computed => Origin::Computed,
-            origin => Origin::Parts(Arc::from([origin])),
-        };
-        Ok(Poll::Ready(Held { value, origin }))
+        let origin = value_origin(&self.map, index, origin);
+        Ok(Poll::Ready(Held {
+            value,
+            origin: parts(vec![origin]),
+        }))
     }
 }
 
@@ -276,18 +289,12 @@ impl Entries {
             runtime.meter.scratch(8)?;
             let value = self.items.items[2 * self.next + 1].clone();
             self.output.push(ExpressionValue::entry(key.clone(), value));
-            self.origins.push(match origin {
-                Origin::Computed => Origin::Computed,
-                origin => Origin::Parts(Arc::from([Origin::Computed, origin])),
-            });
+            let origin = value_origin(&self.map, self.next, origin);
+            self.origins.push(parts(vec![Origin::Computed, origin]));
             self.next += 1;
         }
         runtime.meter.allocate(16)?;
-        let origin = if self.map.origin.path().is_some() {
-            Origin::Parts(std::mem::take(&mut self.origins).into())
-        } else {
-            Origin::Computed
-        };
+        let origin = parts(std::mem::take(&mut self.origins));
         let value = ExpressionValue::list(std::mem::take(&mut self.output));
         Ok(Poll::Ready(Held { value, origin }))
     }

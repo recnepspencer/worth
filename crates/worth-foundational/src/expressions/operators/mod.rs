@@ -1,5 +1,6 @@
-//! Value operators for the evaluator: each computes one operation exactly and
-//! reports the semantic work it performed, so evaluation can charge it.
+//! Value operators for the evaluator: each computes one operation exactly.
+//! Their work is charged by the evaluator, statically in `evaluation::cost`
+//! or as contents are visited, not reported by the operators.
 
 pub(crate) mod conversion;
 pub(crate) mod decimal;

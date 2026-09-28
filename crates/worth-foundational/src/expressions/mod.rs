@@ -1,6 +1,19 @@
 //! The shared typed expression language: bounded parsing, pure admission into
 //! canonical typed meaning, installed expression functions, and pure budgeted
 //! evaluation over sealed input snapshots.
+//!
+//! Evaluation is byte-identical only where binary64 arithmetic rounds once per
+//! operation with no extended intermediates: x86-64 (SSE2), AArch64, and
+//! wasm32, whatever the operating system, so Linux, Windows, and macOS on
+//! Intel or Apple silicon are all covered. Other targets are refused at build
+//! time rather than silently weakening determinism.
+
+#[cfg(not(any(
+    target_arch = "x86_64",
+    target_arch = "aarch64",
+    target_arch = "wasm32"
+)))]
+compile_error!("Worth expressions support only x86-64, AArch64, and wasm32 targets");
 
 mod admission;
 mod admitted;

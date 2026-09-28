@@ -95,7 +95,7 @@ impl Job {
             Self::Fold(fold) => ready!(fold.step(meter)),
             Self::Lookup(lookup) => return lookup.step(runtime),
             Self::Entries(entries) => return entries.step(runtime),
-            Self::Sort(sort) => ready!(sort.step(meter)),
+            Self::Sort(sort) => return sort.step(meter),
             Self::Text(text) => ready!(text.step(meter)),
         };
         Ok(Poll::Ready(Held::computed(value)))
@@ -223,27 +223,24 @@ impl Fold {
                 return self.finish(meter).map(Poll::Ready);
             }
             let item = &items[self.index];
+            let units = match &self.kind {
+                FoldKind::Sum { ty, .. } if *ty == ExpressionType::Decimal => DECIMAL_WORK,
+                _ => 1,
+            };
+            if meter.work(units)?.is_pending() {
+                return Ok(Poll::Pending);
+            }
+            meter.visit(1)?;
             match &mut self.kind {
                 FoldKind::Extreme { best, .. } => {
-                    meter.visit(1)?;
                     if self.index > 0 {
                         self.comparison = Some(Comparison::new(item.clone(), items[*best].clone()));
                     }
                 }
                 FoldKind::Sum { ty, total } => {
-                    let units = if *ty == ExpressionType::Decimal {
-                        DECIMAL_WORK
-                    } else {
-                        1
-                    };
-                    if meter.work(units)?.is_pending() {
-                        return Ok(Poll::Pending);
-                    }
-                    meter.visit(1)?;
                     *total = numbers::arithmetic(BinaryOp::Add, ty, total, item)?;
                 }
                 FoldKind::Member { probe } => {
-                    meter.visit(1)?;
                     self.comparison = Some(Comparison::new(item.clone(), probe.clone()));
                 }
             }

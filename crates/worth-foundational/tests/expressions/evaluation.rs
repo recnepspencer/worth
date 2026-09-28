@@ -6,7 +6,7 @@ use worth_foundational::expression_api::{
     ExpressionDenialDetail, ExpressionDenialFamily as Family, ExpressionOccurrence, ExpressionValue,
 };
 
-use super::{evaluation_denial, float, metres, value};
+use super::{evaluation_denial, float, meters, value};
 
 fn int(value: i128) -> ExpressionValue {
     ExpressionValue::integer(value)
@@ -18,6 +18,15 @@ fn text(value: &str) -> ExpressionValue {
 
 fn some(value: ExpressionValue) -> ExpressionValue {
     ExpressionValue::some(value)
+}
+
+/// A canonical decimal from its coefficient and scale.
+fn decimal(coefficient: i128, scale: u8) -> ExpressionValue {
+    ExpressionValue::decimal_parts(coefficient, scale).expect("canonical fixture decimal")
+}
+
+fn ints(values: [i128; 3]) -> ExpressionValue {
+    ExpressionValue::list(values.into_iter().map(int).collect())
 }
 
 fn family(source: &str) -> Family {
@@ -52,19 +61,19 @@ fn arithmetic_is_checked_and_exact() {
 fn decimals_round_only_where_named() {
     assert_eq!(
         value(r#"decimal("1.10") + decimal("2.205")"#),
-        value(r#"decimal("3.305")"#)
+        decimal(3305, 3)
     );
     assert_eq!(
         value(r#"decimal_div(decimal("1"), decimal("3"), 4, Rounding::NearestEven)"#),
-        value(r#"decimal("0.3333")"#)
+        decimal(3333, 4)
     );
     assert_eq!(
         value(r#"quantize(decimal("2.345"), 2, Rounding::NearestEven)"#),
-        value(r#"decimal("2.34")"#)
+        decimal(234, 2)
     );
     assert_eq!(
         value(r#"quantize(decimal("-2.345"), 2, Rounding::TowardNegative)"#),
-        value(r#"decimal("-2.35")"#)
+        decimal(-235, 2)
     );
     assert_eq!(
         family(r#"decimal_div(decimal("1"), decimal("0"), 2, Rounding::TowardZero)"#),
@@ -79,7 +88,7 @@ fn quantities_convert_at_the_boundary() {
         value("quantity(900.0, mm) <= clear_width"),
         ExpressionValue::bool(true)
     );
-    assert_eq!(value("clear_width - frame.thickness * 2.0"), metres(0.88));
+    assert_eq!(value("clear_width - frame.thickness * 2.0"), meters(0.88));
     assert_eq!(
         value("near(clear_width, quantity(0.9000001, m), quantity(1.0, mm), 0.0)"),
         ExpressionValue::bool(true)
@@ -120,7 +129,7 @@ fn absence_is_explicit() {
 fn comprehensions_keep_order() {
     assert_eq!(
         value("members.filter(m, m.material == Material::Steel).map(m, m.thickness)"),
-        ExpressionValue::list(vec![metres(0.01), metres(0.03)])
+        ExpressionValue::list(vec![meters(0.01), meters(0.03)])
     );
     assert_eq!(
         value("members.all(m, m.thickness > quantity(1.0, mm))"),
@@ -132,7 +141,7 @@ fn comprehensions_keep_order() {
     );
     assert_eq!(
         value("[1, 2, 3].map(x, [1, 2, 3].map(y, x * y))"),
-        value("[[1, 2, 3], [2, 4, 6], [3, 6, 9]]")
+        ExpressionValue::list(vec![ints([1, 2, 3]), ints([2, 4, 6]), ints([3, 6, 9])])
     );
 }
 

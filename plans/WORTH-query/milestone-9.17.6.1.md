@@ -5,9 +5,11 @@
 > `worth_foundational::expression_api`. Phase 2 completed: pure evaluator with
 > resumable slices, shared nested budgets, consumed-read recording, fixed numeric
 > vectors, exhaustive digital tables, an independent reference evaluator, and the
-> classified CEL intersection; the suite passes on x86-64 and wasm32 (wasmtime).
-> Not completed in Phase 2: AArch64 parity is build-only because no AArch64 runner
-> is available on the current host. Phases 3-5 not started.
+> classified CEL intersection; the suite passes on x86-64 and wasm32 (wasmtime),
+> and other targets are refused at build time. Peak scratch is enforced as a
+> ceiling on cumulative allocation, a deterministic upper bound on the peak.
+> Not completed in Phase 2: AArch64 parity is type-check only because the current
+> host has no AArch64 linker or runner. Phases 3-5 not started.
 
 ## Goal And Placement
 

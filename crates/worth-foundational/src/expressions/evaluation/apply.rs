@@ -90,11 +90,11 @@ impl Machine {
                 }));
             }
             Op::Map => {
-                for held in &arguments {
-                    self.runtime.consume(held)?;
+                // Sorting reads every key whole; values keep their origins.
+                for key in arguments.iter().step_by(2) {
+                    self.runtime.consume(key)?;
                 }
-                let values = arguments.into_iter().map(|held| held.value).collect();
-                return Ok(Applied::Job(Job::Sort(Box::new(MapSort::new(values)))));
+                return Ok(Applied::Job(Job::Sort(Box::new(MapSort::new(arguments)))));
             }
             Op::Call(callee) => {
                 return Ok(Applied::Call {

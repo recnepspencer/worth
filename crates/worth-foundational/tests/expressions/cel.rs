@@ -2,9 +2,11 @@
 //! Worth source and must keep the disposition `cel/classification.tsv`
 //! records for it: `equivalent` cases are a differential oracle whose
 //! expected values come from CEL, `divergent` cases name the Worth rule that
-//! decides them, and `unsupported` cases record the stage and denial family
-//! that refuse them. Set `WORTH_CEL_CLASSIFICATION=overwrite` to rewrite the
-//! table from the current outcomes; hand-written rules are kept.
+//! decides them and the exact Worth outcome, and `unsupported` cases record
+//! the stage and denial family that refuse them. An equivalent case CEL
+//! expects to fail also pins the Worth denial family. Set
+//! `WORTH_CEL_CLASSIFICATION=overwrite` to rewrite the table from the current
+//! outcomes; hand-written rules are kept.
 
 use std::collections::BTreeMap;
 use std::fmt::Write as _;
@@ -213,20 +215,21 @@ fn expectation(case: &Message) -> Expected {
     }
 }
 
-/// `(disposition, detail)`: the refusal for unsupported cases, a
-/// description of both outcomes for divergent ones.
-fn classify(case: &Message) -> (&'static str, String) {
-    match (run(case), expectation(case)) {
-        (Outcome::Refused(refusal), _) => ("unsupported", refusal),
+/// `(disposition, detail, context)`: the detail is the refusal for
+/// unsupported cases and the Worth outcome otherwise; the context describes
+/// CEL's expectation for failure messages.
+fn classify(case: &Message) -> (&'static str, String, String) {
+    let cel = expectation(case);
+    let context = cel.describe();
+    let (disposition, worth) = match (run(case), cel) {
+        (Outcome::Refused(refusal), _) => return ("unsupported", refusal, context),
         (Outcome::Value(worth), Expected::Value(cel)) if worth == cel => {
-            ("equivalent", String::new())
+            return ("equivalent", String::new(), context)
         }
-        (Outcome::Denied(_), Expected::Error) => ("equivalent", String::new()),
-        (worth, cel) => (
-            "divergent",
-            format!("worth {}, cel {}", describe(&worth), cel.describe()),
-        ),
-    }
+        (worth @ Outcome::Denied(_), Expected::Error) => ("equivalent", worth),
+        (worth, _) => ("divergent", worth),
+    };
+    (disposition, describe(&worth), context)
 }
 
 fn describe(outcome: &Outcome) -> String {
@@ -287,30 +290,34 @@ fn recorded() -> BTreeMap<String, (String, String)> {
 fn every_cel_case_keeps_its_recorded_disposition() {
     let recorded = recorded();
     let overwrite = std::env::var("WORTH_CEL_CLASSIFICATION").as_deref() == Ok("overwrite");
-    let mut table = String::from("# case\tdisposition\trefusal or governing rule\n");
+    let mut table =
+        String::from("# case\tdisposition\trefusal, Worth denial, or rule -> Worth outcome\n");
     let mut failures = Vec::new();
     let mut counts = BTreeMap::<&str, usize>::new();
     let cases = cases();
     for (key, case) in &cases {
-        let (disposition, detail) = classify(case);
+        let (disposition, detail, context) = classify(case);
         *counts.entry(disposition).or_default() += 1;
         let previous = recorded.get(key);
         let note = match disposition {
             "divergent" => {
                 let rule = previous
                     .filter(|(recorded, _)| recorded == "divergent")
-                    .map(|(_, rule)| rule.clone())
-                    .unwrap_or_default();
+                    .and_then(|(_, note)| note.split(" -> ").next())
+                    .unwrap_or_default()
+                    .to_string();
                 if !RULES.iter().any(|(name, _)| *name == rule) {
-                    failures.push(format!("{key}: divergent without a known rule; {detail}"));
+                    failures.push(format!("{key}: divergent without a known rule"));
                 }
-                rule
+                format!("{rule} -> {detail}")
             }
             _ => detail,
         };
         let row = (disposition.to_string(), note.clone());
         if previous != Some(&row) {
-            failures.push(format!("{key}: recorded {previous:?}, now {row:?}"));
+            failures.push(format!(
+                "{key}: recorded {previous:?}, now {row:?}; cel {context}"
+            ));
         }
         writeln!(table, "{key}\t{disposition}\t{note}").expect("string write");
     }

@@ -83,8 +83,5 @@ fn decimals_have_fixed_parts() {
     for (source, expected) in cases {
         assert_eq!(parts(source), expected, "{source}");
     }
-    assert_eq!(
-        value(r#"decimal("0.1") + decimal("0.2")"#),
-        value(r#"decimal("0.3")"#)
-    );
+    assert_eq!(parts(r#"decimal("0.1") + decimal("0.2")"#), (3, 1));
 }
