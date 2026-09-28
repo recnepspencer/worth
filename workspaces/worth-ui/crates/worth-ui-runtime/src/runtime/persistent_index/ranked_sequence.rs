@@ -133,7 +133,7 @@ fn insert<T>(
     work: &mut UiPersistentIndexMutationWork,
 ) -> Rc<Node<T>> {
     let Some(node) = node else {
-        work.record_node_copy();
+        work.record_node_copy(true);
         return Rc::new(Node::new(value, None, None));
     };
     work.record_key_probe();
@@ -215,7 +215,7 @@ fn remove_min<T>(node: Rc<Node<T>>, work: &mut UiPersistentIndexMutationWork) ->
 }
 
 fn balance<T>(node: Node<T>, work: &mut UiPersistentIndexMutationWork) -> Rc<Node<T>> {
-    work.record_node_copy();
+    work.record_node_copy(true);
     let factor = i32::from(height(&node.left)) - i32::from(height(&node.right));
     if factor > 1 {
         let left = node.left.as_ref().expect("left-heavy node has a child");
@@ -253,7 +253,7 @@ fn balance<T>(node: Node<T>, work: &mut UiPersistentIndexMutationWork) -> Rc<Nod
 fn rotate_left<T>(node: Node<T>, work: &mut UiPersistentIndexMutationWork) -> Rc<Node<T>> {
     let right = node.right.expect("left rotation has a right child");
     let left = Rc::new(Node::new(node.value, node.left, right.left.clone()));
-    work.record_node_copy();
+    work.record_node_copy(true);
     Rc::new(Node::new(
         right.value.clone(),
         Some(left),
@@ -264,7 +264,7 @@ fn rotate_left<T>(node: Node<T>, work: &mut UiPersistentIndexMutationWork) -> Rc
 fn rotate_right<T>(node: Node<T>, work: &mut UiPersistentIndexMutationWork) -> Rc<Node<T>> {
     let left = node.left.expect("right rotation has a left child");
     let right = Rc::new(Node::new(node.value, left.right.clone(), node.right));
-    work.record_node_copy();
+    work.record_node_copy(true);
     Rc::new(Node::new(
         left.value.clone(),
         left.left.clone(),
@@ -273,6 +273,8 @@ fn rotate_right<T>(node: Node<T>, work: &mut UiPersistentIndexMutationWork) -> R
 }
 
 fn rotate_left_rc<T>(node: Rc<Node<T>>, work: &mut UiPersistentIndexMutationWork) -> Rc<Node<T>> {
+    // The inner half of a double rotation copies the child too.
+    work.record_node_copy(true);
     rotate_left(
         Node::new(node.value.clone(), node.left.clone(), node.right.clone()),
         work,
@@ -280,6 +282,8 @@ fn rotate_left_rc<T>(node: Rc<Node<T>>, work: &mut UiPersistentIndexMutationWork
 }
 
 fn rotate_right_rc<T>(node: Rc<Node<T>>, work: &mut UiPersistentIndexMutationWork) -> Rc<Node<T>> {
+    // The inner half of a double rotation copies the child too.
+    work.record_node_copy(true);
     rotate_right(
         Node::new(node.value.clone(), node.left.clone(), node.right.clone()),
         work,
@@ -372,5 +376,15 @@ mod tests {
         assert_eq!(rows.get(10), Some(&9_999));
         assert_eq!(rows.len(), 4_096);
         assert_eq!(rows.iter().count(), 4_096);
+    }
+
+    #[test]
+    fn a_double_rotation_records_every_node_it_allocates() {
+        let mut rows = UiPersistentRankedSequence::default();
+        rows.insert(0, 'a').unwrap();
+        rows.insert(0, 'b').unwrap();
+        let work = rows.insert(1, 'c').unwrap();
+        assert_eq!((work.node_copies(), work.node_allocations()), (6, 6));
+        assert_eq!(rows.iter().copied().collect::<String>(), "bca");
     }
 }
