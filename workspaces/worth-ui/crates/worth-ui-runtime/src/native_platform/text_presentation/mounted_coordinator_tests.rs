@@ -50,6 +50,13 @@ fn pins_the_host_committed_before_a_pending_surface_are_the_successors_basis() {
         let (_, pending, _, _, _) = observation.into_parts();
 
         assert_eq!(pending.is_some(), atlas_pending);
+        let (work, complete) = coordinator.take_work_observations();
+        assert!(complete);
+        assert_eq!(
+            work.is_empty(),
+            !cfg!(feature = "certification-support"),
+            "only certification builds keep text work evidence"
+        );
         let successor = coordinator.pins.candidate(requirement.binding(), &prepared);
         assert_eq!(successor.has_no_pin_churn(), !atlas_pending);
     }
@@ -96,19 +103,17 @@ fn qualified_text_coordinator_reuses_paint_only_work_and_denies_layout_twin() {
     let (_, pending, _, _, reuse) = initial_observation.into_parts();
     assert!(pending.is_none());
     coordinator.commit_foreground_reuse(reuse.expect("presented text retains a reuse receipt"));
-    let (observations, complete) = coordinator.take_work_observations();
-    assert!(complete);
-    assert_eq!(observations.len(), 1);
-    let initial_counts = observations[0].work_counts();
-    assert!(
-        initial_counts[6] > 0,
-        "initial presentation rasterizes misses"
-    );
-    assert!(
-        initial_counts[9] > 0,
-        "initial presentation adds atlas pins"
-    );
-    assert!(initial_counts[13..].iter().any(|value| *value != 0));
+    if let Some(initial_counts) = certified_work_counts(&mut coordinator) {
+        assert!(
+            initial_counts[6] > 0,
+            "initial presentation rasterizes misses"
+        );
+        assert!(
+            initial_counts[9] > 0,
+            "initial presentation adds atlas pins"
+        );
+        assert!(initial_counts[13..].iter().any(|value| *value != 0));
+    }
 
     let color_frame = worth_ui_host_contract::UiMountedFrameIdentity::mint_unbound().unwrap();
     let color = text_command(
@@ -154,14 +159,13 @@ fn qualified_text_coordinator_reuses_paint_only_work_and_denies_layout_twin() {
     let (_, pending, _, _, reuse) = color_observation.into_parts();
     assert!(pending.is_none());
     coordinator.commit_foreground_reuse(reuse.expect("color repaint retains a reuse receipt"));
-    let (observations, complete) = coordinator.take_work_observations();
-    assert!(complete);
-    let color_counts = observations[0].work_counts();
-    assert_eq!(color_counts[4], 0, "reuse skips demand record planning");
-    assert_eq!(color_counts[6], 0, "reuse selects no raster misses");
-    assert_eq!(color_counts[9], 0, "reuse adds no atlas pins");
-    assert_eq!(color_counts[10], 0, "reuse releases no atlas pins");
-    assert!(color_counts[13..].iter().all(|value| *value == 0));
+    if let Some(color_counts) = certified_work_counts(&mut coordinator) {
+        assert_eq!(color_counts[4], 0, "reuse skips demand record planning");
+        assert_eq!(color_counts[6], 0, "reuse selects no raster misses");
+        assert_eq!(color_counts[9], 0, "reuse adds no atlas pins");
+        assert_eq!(color_counts[10], 0, "reuse releases no atlas pins");
+        assert!(color_counts[13..].iter().all(|value| *value == 0));
+    }
 
     let changed_text = Arc::from("ONLINE longer");
     let changed_layout =
@@ -190,4 +194,17 @@ fn qualified_text_coordinator_reuses_paint_only_work_and_denies_layout_twin() {
         layout_prepared.demand_batches()[0].layout_identity(),
         initial_demand.layout_identity()
     );
+}
+
+/// The one turn's work counts in certification builds. Ordinary builds keep
+/// no text work evidence, which this checks instead.
+fn certified_work_counts(coordinator: &mut UiNativeMountedTextCoordinator) -> Option<[u64; 30]> {
+    let (observations, complete) = coordinator.take_work_observations();
+    assert!(complete);
+    if !cfg!(feature = "certification-support") {
+        assert!(observations.is_empty());
+        return None;
+    }
+    assert_eq!(observations.len(), 1);
+    Some(observations[0].work_counts())
 }

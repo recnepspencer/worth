@@ -150,35 +150,15 @@ impl UiNativeMountedTextCoordinator {
                 present,
             );
         drop(transaction);
-        let work_observation = request_bases.first().map(|basis| {
-            let key = [
-                basis.mounted_frame().diagnostic_value(),
-                basis.binding().diagnostic_value(),
-            ];
-            let layout_work = if self.admit_layout_work(key) {
-                prepared.performed_layout_work()
-            } else {
-                [0; 17]
-            };
-            let (active_mechanics, removed_mechanics) = self.advance_mechanic_evidence(basis);
-            super::UiNativeTextPresentationWorkObservation::after_mounted_work(
-                basis,
-                prepared,
-                raster_work,
-                layout_work,
-                active_mechanics,
-                removed_mechanics,
-            )
-        });
+        if let Some(basis) = request_bases.first() {
+            self.observe_work(basis, prepared, raster_work);
+        }
         if reconstruction_required {
             self.raster_cache = reconstructed_cache;
             self.raster_cache_reconstruction_required = false;
         }
         self.peak_raster_cache_entries =
             self.peak_raster_cache_entries.max(self.raster_cache.len());
-        if let Some(observation) = work_observation {
-            self.record_work_observation(observation);
-        }
         let pending_candidate = match &outcome {
             UiHostSurfacePresentationOutcome::Presented(_) => {
                 self.pins.commit_presented(candidate);
@@ -302,75 +282,6 @@ impl UiNativeMountedTextCoordinator {
     ) -> UiMountedTextPinCandidate {
         self.pins.deregistration_candidate(binding)
     }
-
-    pub(crate) fn take_work_observations(
-        &mut self,
-    ) -> (Box<[super::UiNativeTextPresentationWorkObservation]>, bool) {
-        (
-            std::mem::take(&mut self.work_observations).into_boxed_slice(),
-            !std::mem::take(&mut self.work_observation_overflowed),
-        )
-    }
-
-    fn record_work_observation(
-        &mut self,
-        observation: super::UiNativeTextPresentationWorkObservation,
-    ) {
-        observation.trace_resize_work();
-        if self.work_observations.len() == TEXT_WORK_OBSERVATION_CAPACITY {
-            self.work_observation_overflowed = true;
-            return;
-        }
-        self.work_observations.push(observation);
-    }
-
-    fn admit_layout_work(&mut self, key: [u64; 2]) -> bool {
-        if self.reported_layout_work.contains(&key) {
-            return false;
-        }
-        if self.reported_layout_work.len() == TEXT_WORK_OBSERVATION_CAPACITY {
-            self.reported_layout_work.pop_front();
-        }
-        self.reported_layout_work.push_back(key);
-        true
-    }
-
-    fn advance_mechanic_evidence(
-        &mut self,
-        basis: &worth_ui_query_binding::WorthUiPresentationRequestBasis,
-    ) -> (
-        Box<[super::UiNativeTextPresentationMechanicObservation]>,
-        Box<[super::UiNativeTextPresentationMechanicObservation]>,
-    ) {
-        let mut removed = if basis.complete() {
-            std::mem::take(&mut self.retained_mechanics)
-                .into_values()
-                .collect::<Vec<_>>()
-        } else {
-            basis
-                .removed_mechanics()
-                .iter()
-                .filter_map(|identity| self.retained_mechanics.remove(identity))
-                .collect::<Vec<_>>()
-        };
-        let active = basis
-            .mechanics()
-            .iter()
-            .map(super::UiNativeTextPresentationMechanicObservation::from_basis)
-            .collect::<Vec<_>>();
-        for mechanic in &active {
-            self.retained_mechanics
-                .insert(mechanic.mechanic(), *mechanic);
-        }
-        removed.sort_by_key(|mechanic| {
-            let identity = mechanic.mechanic();
-            let (slot, row) = identity
-                .semantic_text_identity_parts()
-                .expect("retained text mechanic preserves semantic-text identity");
-            (identity.mounted_instance().diagnostic_value(), slot, row)
-        });
-        (active.into_boxed_slice(), removed.into_boxed_slice())
-    }
 }
 
 impl UiNativeMountedSurfaceTextObservation {
@@ -392,6 +303,9 @@ impl UiNativeMountedSurfaceTextObservation {
         )
     }
 }
+
+#[path = "mounted_coordinator/work_evidence.rs"]
+mod work_evidence;
 
 #[cfg(test)]
 #[path = "mounted_coordinator_tests.rs"]

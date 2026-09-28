@@ -1,6 +1,6 @@
 use worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition;
 use worth_query_host::facade::declaration::application_program::ApplicationWorkflowComponentLimits;
-use worth_query_installation::facade::{
+use worth_query_host::facade::domain::{
     WorthQueryApplicationWorkflowResourceCeiling, WorthQueryApplicationWorkflowSpecInstallation,
     WorthQueryInstalledApplicationProgram, WorthQueryInstalledApplicationSchema,
     WorthQueryInstalledApplicationWorkflowSpec,

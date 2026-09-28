@@ -13,6 +13,13 @@ The host facade exposes the production Query authority graph without exposing
 Query implementation modules, certification-only replay, or raw lower-runtime
 internals.
 
+**Writing an application?** Start with
+[Build an Application](../../../../docs/build-an-application.md). It shows the real calls, in order: install
+the application graph (`application_installation::in_memory_program`), run
+program-owned actions (`execute_in_program`), install a workflow vocabulary
+and publish, start, and advance workflows, and adopt a new program on a
+branch. This README covers the host's deeper contracts.
+
 ## Contribution-Composed Applications
 
 Pure domain value crates own their values and validation without importing Query.
@@ -131,6 +138,9 @@ let prepared = programs
     .prepare(maximum_selection_work)?;
 let outcome = prepared.publish();
 ```
+
+Migrations, workflow dispositions, and every outcome are shown with real code
+in [Build an Application §7](../../../../docs/build-an-application.md#7-adopt-a-new-program-on-a-branch).
 
 Inspection and semantic comparison are descriptive. Preparation consumes exact
 branch, source-program, target-support, target-rule, migration, resource, and
@@ -325,6 +335,9 @@ admission, and currentness checks.
 
 ## Related Docs
 
+- [Build an Application](../../../../docs/build-an-application.md): the centerpiece guide
+- [Programs And Adoption](../worth-query/docs/foundations/programs-and-adoption.md)
+- [Workflows](../worth-query/docs/foundations/workflows.md)
 - [Ordinary Application Front Door](../worth-query/docs/foundations/ordinary-application-front-door.md)
 - [WORTH Query Orientation](../worth-query/docs/AI_README.md)
 - [Application Authorization And Emergency Elevation](../worth-query/docs/capabilities/application-authorization-and-emergency-elevation.md)

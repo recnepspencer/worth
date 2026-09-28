@@ -43,8 +43,9 @@ pub use raster_demand_view::{
     UiGlyphRasterLane,
 };
 pub use raster_key::{
-    UiGlyphRasterFractionalOrigin, UiGlyphRasterKey, UiGlyphRasterKeyInput, UiGlyphRasterPalette,
-    UiGlyphRasterSize, UiGlyphRasterSource, UiGlyphVariationCoordinates,
+    UiGlyphRasterFractionalOrigin, UiGlyphRasterKey, UiGlyphRasterKeyEvidence,
+    UiGlyphRasterKeyInput, UiGlyphRasterPalette, UiGlyphRasterSize, UiGlyphRasterSource,
+    UiGlyphVariationCoordinates,
 };
 pub use raster_transaction::{
     UiGlyphRasterBatchSink, UiGlyphRasterBatchSubmissionDenial, UiGlyphRasterCallbackDenial,

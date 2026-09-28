@@ -588,8 +588,15 @@ publish.
 - Capabilities and policy: `worth_query_capability`, `worth_query_ability`,
   `worth_query_policy`, `worth_query_principal_binding`.
 - Workflows: `worth_query_workflow`.
-- Programs: an `ApplicationProgramDefinition<Schema>` validates into an
-  `ApplicationProgramRevision`.
+- Features and programs: each `ApplicationFeature` owns actions through an
+  `ApplicationFeatureSpec`. An `ApplicationProgramDefinition<Schema>` lists
+  its contributions, features, output graph, and rules.
+  `ApplicationProgramAuthoring::<Schema, Program>::begin().validated_program()`
+  returns a `ValidatedApplicationProgram`, whose `revision()` is the
+  content-addressed `ApplicationProgramRevision`.
+
+The exact calls, with real code, are in
+[Build an Application §2–§3](build-an-application.md#2-declare-the-schema-and-its-contributions).
 
 **Guaranteed.**
 
@@ -623,6 +630,8 @@ let runtime = in_memory_program(
   installed schema.
 - `in_memory` installs schema meaning without a program.
 - `*_from_checkpoint` variants restore from a `WorthQueryApplicationCheckpoint`.
+- Worked installs with real limits and a roster:
+  [Build an Application §4](build-an-application.md#4-install-the-application-graph).
 
 Contribution setup registers handlers (`setup.handler::<Binding, _>(..)`),
 invariants, producers, and conditional nodes.
@@ -671,7 +680,9 @@ Admission resolves the request against the installed binding, in a fixed order:
 
 1. Select the branch snapshot.
 2. Resolve the authenticated principal.
-3. Resolve the scope entity.
+3. Resolve the scope entity: the entity the intent names through its
+   binding's scope field. (`WorthQueryRequestScope` is different: it carries
+   only the request's deadline and cancellation token.)
 4. Authorize the operation, including declared preconditions.
 5. Bind the source expectation and the idempotency key.
 
@@ -688,7 +699,7 @@ let outcome = request
     .mutate(ApproveOrder { order })
     .expect_source(observed_source)   // or .expect_result_set(..) / .without_source()
     .idempotency(&key)
-    .execute()?;
+    .execute()?;   // runtime installed without a program; see "Ways to execute" below
 ```
 
 - **Source expectation.** A `WorthQueryObservedSource<Query>` comes from a
@@ -738,10 +749,10 @@ impl OperationHandler<Schema, ApproveOrderBinding> for ApproveOrderHandler {
 
 | Lane | Use it when |
 |---|---|
-| `execute()` | The operation needs no program. |
-| `execute_in_program(&program_runtime)` | The operation runs under the branch's program. The runtime reads which program the branch runs. The caller never names it. |
+| `execute()` | The runtime was installed without a program (`in_memory`). On a runtime installed with a program, it refuses every mutation with `ApplicationProgramRequired`. |
+| `execute_in_program(&program_runtime)` | The runtime was installed with a program (`in_memory_program` or `in_memory_rostered_program`). Every mutation on such a runtime uses this lane or one of the program lanes below. The runtime reads which program the branch runs; the caller never names it. |
 | `execute_capability_in_program` | As above, through a capability. |
-| `execute_retained` / `execute_retained_in_program` | You want to commit and keep a retained read of the result. |
+| `execute_retained` / `execute_retained_in_program` | You want to commit and keep a retained read of the result. `execute_retained` is for a runtime without a program, like `execute()`; on a program runtime use `execute_retained_in_program`. |
 | `execute_performed` / `execute_performed_discovered` | You need the program outputs the operation requires to be produced after commit. |
 
 `commit_for_program`, reached through `WorthQueryProductEntry::transaction()`,
@@ -895,7 +906,8 @@ an `Approval`.
 WORTH never collapses "didn't work" into one error. Each family calls for a
 different response.
 
-`execute()` returns `Result<WorthQueryApplicationMutationOutcome, ..RequestMutationDenial>`:
+`execute()` and `execute_in_program(..)` both return
+`Result<WorthQueryApplicationMutationOutcome, ..RequestMutationDenial>`:
 
 - The `Err` side covers refusals **before any effect**: binding, principal,
   scope, authorization, source, idempotency, capability installation, product
@@ -941,6 +953,8 @@ The two most important rules:
 
 ## 12. Branches, programs, and adoption
 
+The calls, with real code:
+[Build an Application §7](build-an-application.md#7-adopt-a-new-program-on-a-branch).
 Full guide:
 [Programs and Adoption](../workspaces/worth-query/crates/worth-query/docs/foundations/programs-and-adoption.md).
 See also
@@ -1007,6 +1021,8 @@ let outcome      = prepared.publish();                  // Performed | NoEffect 
 
 ## 13. Workflows
 
+The calls, with real code:
+[Build an Application §6](build-an-application.md#6-author-publish-and-run-workflows).
 Full guide:
 [Workflows](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md).
 
@@ -1243,6 +1259,9 @@ to see the two facades used end to end.
 - Import only `worth-query-decl` (to declare) and `worth-query-host` (to
   install and run). Everything in this document below Query is how the
   platform keeps its promises. You do not call it directly.
+- Write application code from
+  [Build an Application](build-an-application.md): features, program,
+  installation, workflows, and adoption, with real calls.
 - Declare exactly what each operation reads and touches. The declaration is
   the ceiling, and admission enforces it.
 - Build every mutation from an observed source (`expect_source`) unless the
@@ -1265,6 +1284,7 @@ to see the two facades used end to end.
 
 - [Philosophy](philosophy.md): why the platform is shaped this way
 - [Glossary](glossary.md): exact definitions of every term used here
+- [Build an Application](build-an-application.md): the application story, end to end, in real code
 - [API Map](api.md): which crate to import, and where the reference documentation is
 - [Platform README](../README.md): the crate map
 - [Query engine architecture map](../workspaces/worth-query/crates/worth-query/docs/AI_README.md): internal; where each request stage lives inside the Query crates, for maintainers

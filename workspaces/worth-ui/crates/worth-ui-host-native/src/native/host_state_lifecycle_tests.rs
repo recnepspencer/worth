@@ -94,7 +94,11 @@ pub(crate) fn pending_external_work_retains_cleanup_authority_until_it_settles()
 }
 
 #[test]
-fn production_observation_history_is_bounded_and_reports_overflow() {
+#[cfg_attr(
+    not(feature = "certification-support"),
+    ignore = "frame pin histories are recorded only with certification-support"
+)]
+fn certified_pin_frame_history_is_bounded_and_reports_overflow() {
     let mut state = UiNativeHostState::new();
     for _ in 0..=super::host_state::NATIVE_OBSERVATION_HISTORY_CAPACITY {
         state.record_text_pin_frame_observation();
@@ -113,6 +117,21 @@ fn production_observation_history_is_bounded_and_reports_overflow() {
         state.compiler_total_peak().text_pin_frame_observations,
         super::host_state::NATIVE_OBSERVATION_HISTORY_CAPACITY
     );
+    assert!(state.close().is_zero());
+}
+
+#[test]
+fn frame_histories_are_recorded_only_with_certification_support() {
+    let mut state = UiNativeHostState::new();
+    state.record_text_pin_frame_observation();
+    state.record_text_atlas_plan_observation(
+        super::text_atlas::UiNativeTextAtlasPlanObservation::empty(),
+    );
+    let recorded = usize::from(cfg!(feature = "certification-support"));
+    assert_eq!(state.text_pin_frame_counts.len(), recorded);
+    assert_eq!(state.text_pin_frame_observations.len(), recorded);
+    assert_eq!(state.text_atlas_model_frame_digests.len(), recorded);
+    assert_eq!(state.text_atlas_plan_observations.len(), recorded);
     assert!(state.close().is_zero());
 }
 

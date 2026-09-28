@@ -232,7 +232,12 @@ impl UiNativeHostState {
         }
     }
 
+    /// Frame pin histories are certification evidence. Ordinary builds keep
+    /// none: each frame's pin and atlas digests would cost that frame.
     pub(crate) fn record_text_pin_frame_observation(&mut self) {
+        if !cfg!(feature = "certification-support") {
+            return;
+        }
         let observations = self.text_atlas.pin_observations();
         self.make_observation_history_room();
         self.text_pin_frame_counts
@@ -254,10 +259,15 @@ impl UiNativeHostState {
         self.retained_frame_observations.push(observation);
     }
 
+    /// Atlas plan histories are certification evidence too; ordinary
+    /// builds keep none.
     pub(crate) fn record_text_atlas_plan_observation(
         &mut self,
         observation: super::text_atlas::UiNativeTextAtlasPlanObservation,
     ) {
+        if !cfg!(feature = "certification-support") {
+            return;
+        }
         if self.text_atlas_plan_observations.len() == NATIVE_OBSERVATION_HISTORY_CAPACITY {
             self.text_atlas_plan_observations.remove(0);
             self.observation_history_overflowed = true;

@@ -19,8 +19,8 @@ use worth_query_host::facade::declaration::application_program::{
 use worth_query_host::facade::declaration::application_schema::{
     ApplicationInvariantExecutionPoint, ApplicationInvariantMarkerIdentity,
 };
+use worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema;
 use worth_query_host::facade::{declaration, primary_graph, runtime};
-use worth_query_installation::facade::WorthQueryInstalledApplicationSchema;
 
 use super::assessment_output::{
     RetentionAssessmentBinding, RetentionAssessmentHandler, RetentionAssessmentProducer,

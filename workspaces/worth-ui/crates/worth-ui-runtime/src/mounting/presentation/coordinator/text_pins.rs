@@ -41,9 +41,12 @@ impl UiMountedTextPinState {
         binding: UiSurfaceBindingGeneration,
         prepared: &UiNativeTextPresentationPrepared,
     ) -> UiMountedTextPinCandidate {
-        let previous = self.committed.get(&binding).cloned().unwrap_or_default();
-        let edits = prepared_pin_edits(prepared);
-        let next_binding = projected_binding(previous.clone(), prepared.pin_set_complete(), &edits);
+        let previous = self.committed.get(&binding);
+        let start = match previous {
+            Some(previous) if !prepared.pin_set_complete() => previous.clone(),
+            _ => UiMountedBindingPins::default(),
+        };
+        let next_binding = projected_binding(start, &prepared_pin_edits(prepared));
         self.candidate_from_next(binding, previous, next_binding)
     }
 
@@ -51,22 +54,24 @@ impl UiMountedTextPinState {
         &self,
         binding: UiSurfaceBindingGeneration,
     ) -> UiMountedTextPinCandidate {
-        let previous = self.committed.get(&binding).cloned().unwrap_or_default();
-        self.candidate_from_next(binding, previous, UiMountedBindingPins::default())
+        self.candidate_from_next(
+            binding,
+            self.committed.get(&binding),
+            UiMountedBindingPins::default(),
+        )
     }
 
     fn candidate_from_next(
         &self,
         binding: UiSurfaceBindingGeneration,
-        previous: UiMountedBindingPins,
+        previous: Option<&UiMountedBindingPins>,
         next_binding: UiMountedBindingPins,
     ) -> UiMountedTextPinCandidate {
         #[cfg(test)]
-        let binding_changed = previous.by_command != next_binding.by_command;
-        let (binding_additions, binding_releases) = transition_difference(
-            &all_pins(&previous).collect::<Vec<_>>(),
-            &all_pins(&next_binding).collect::<Vec<_>>(),
-        );
+        let binding_changed = previous.map_or(!next_binding.by_command.is_empty(), |previous| {
+            previous.by_command != next_binding.by_command
+        });
+        let (binding_additions, binding_releases) = transition_difference(previous, &next_binding);
         let additions = binding_additions
             .iter()
             .copied()
@@ -98,14 +103,8 @@ impl UiMountedTextPinState {
     /// was prepared against, so each binding counts its pins once whatever
     /// landed in between.
     pub(crate) fn commit_presented(&mut self, candidate: UiMountedTextPinCandidate) {
-        let previous = self
-            .committed
-            .remove(&candidate.binding)
-            .unwrap_or_default();
-        let (added, released) = transition_difference(
-            &all_pins(&previous).collect::<Vec<_>>(),
-            &all_pins(&candidate.next_binding).collect::<Vec<_>>(),
-        );
+        let previous = self.committed.remove(&candidate.binding);
+        let (added, released) = transition_difference(previous.as_ref(), &candidate.next_binding);
         remove_pin_owners(&mut self.global_pin_owners, &released);
         add_pin_owners(&mut self.global_pin_owners, &added);
         if !candidate.next_binding.by_command.is_empty() {
@@ -188,12 +187,8 @@ fn prepared_pin_edits(prepared: &UiNativeTextPresentationPrepared) -> Vec<UiMoun
 
 fn projected_binding(
     mut state: UiMountedBindingPins,
-    replace_complete_set: bool,
     edits: &[UiMountedTextPinEdit],
 ) -> UiMountedBindingPins {
-    if replace_complete_set {
-        state = UiMountedBindingPins::default();
-    }
     for edit in edits {
         if let Some(previous) = state.by_command.remove(&edit.command) {
             remove_pin_owners(&mut state.pin_owners, &previous);
@@ -206,26 +201,25 @@ fn projected_binding(
     state
 }
 
+/// The pins `current` holds that `previous` does not, then the reverse, each
+/// found by lookup in the other binding's owner counts.
 fn transition_difference(
-    previous: &[UiGlyphRasterPinRequest],
-    current: &[UiGlyphRasterPinRequest],
+    previous: Option<&UiMountedBindingPins>,
+    current: &UiMountedBindingPins,
 ) -> (
     Box<[UiGlyphRasterPinRequest]>,
     Box<[UiGlyphRasterPinRequest]>,
 ) {
+    let held_before = |pin: &UiGlyphRasterPinRequest| {
+        previous.is_some_and(|state| state.pin_owners.contains_key(pin))
+    };
     (
-        current
-            .iter()
-            .copied()
-            .filter(|pin| !previous.contains(pin))
-            .collect::<Vec<_>>()
-            .into_boxed_slice(),
+        all_pins(current).filter(|pin| !held_before(pin)).collect(),
         previous
-            .iter()
-            .copied()
-            .filter(|pin| !current.contains(pin))
-            .collect::<Vec<_>>()
-            .into_boxed_slice(),
+            .into_iter()
+            .flat_map(all_pins)
+            .filter(|pin| !current.pin_owners.contains_key(pin))
+            .collect(),
     )
 }
 

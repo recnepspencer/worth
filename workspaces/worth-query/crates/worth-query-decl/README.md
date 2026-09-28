@@ -23,9 +23,40 @@ integration belongs in the application entry band.
 
 ## Application Program Meaning
 
+**Writing an application?** Start with [Build an Application](../../../../docs/build-an-application.md). Its
+sections 3 and 6 show features, the program, and workflow authoring with real
+code.
+
+A program is built from features. Each `ApplicationFeature` owns actions,
+declared with an `ApplicationFeatureSpec`:
+
+```rust,ignore
+use worth_query_decl::facade::application_program::*;
+
+impl ApplicationProgramDefinition<MySchema> for MyProgram {
+    type Contributions = (MyContribution,);
+    type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
+    type Rules = ApplicationRuleLeaf;
+    const IDENTITY: ApplicationProgramIdentity =
+        ApplicationProgramIdentity::new("example.program.v1");
+
+    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
+        vec![ApplicationFeatureSpec::root::<MySchema, MyFeature>()
+            .mutation::<MyMutationBinding>()
+            .operation::<MyOperation>()
+            .finish()]
+    }
+}
+
+let validated = ApplicationProgramAuthoring::<MySchema, MyProgram>::begin()
+    .validated_program()?;          // ValidatedApplicationProgram<MySchema, MyProgram>
+let revision = validated.revision(); // ApplicationProgramRevision
+```
+
 `ApplicationProgramDefinition<Schema>` owns canonical authored program meaning.
-Validation produces a declaration-owned `ApplicationProgramRevision` and a
-deterministic versioned description. The revision includes feature/composition
+Validation produces a `ValidatedApplicationProgram`, whose `revision()` is the
+declaration-owned `ApplicationProgramRevision`, and a deterministic versioned
+description. The revision includes feature/composition
 identity, ports and connections, action contracts, rule owner/scope/version,
 output lineage, derived-resource posture, and continuation/effect meaning.
 Rust file names, registration order, diagnostics, and generated text do not
@@ -54,6 +85,9 @@ step by step.
 
 ## Related Docs
 
+- [Build an Application](../../../../docs/build-an-application.md): the centerpiece guide
+- [Programs And Adoption](../worth-query/docs/foundations/programs-and-adoption.md)
+- [Workflows](../worth-query/docs/foundations/workflows.md)
 - [Ordinary Application Front Door](../worth-query/docs/foundations/ordinary-application-front-door.md)
 - [Branches And Previews](../worth-query/docs/foundations/branches-and-previews.md)
 - [WORTH Query Orientation](../worth-query/docs/AI_README.md)

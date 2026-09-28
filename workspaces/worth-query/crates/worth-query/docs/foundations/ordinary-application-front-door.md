@@ -290,7 +290,7 @@ let programs = application
     .programs();
 
 let selected = programs.inspect()?;
-let requirements = programs.compare(target_revision)?;
+let requirements = programs.compare(&target_revision)?;
 let prepared = programs
     .adopt(&requirements)
     .prepare(maximum_selection_work)?;

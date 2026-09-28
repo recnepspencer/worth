@@ -3,7 +3,7 @@
 //! Native does not invent raster meaning. It only admits or denies a key that
 //! already names every profile identity field.
 
-use worth_ui_host_contract::UiGlyphRasterKey;
+use worth_ui_host_contract::{UiGlyphRasterKey, UiGlyphRasterKeyEvidence};
 
 use super::recovery::UiNativeTextAtlasDenial;
 
@@ -31,7 +31,7 @@ impl UiNativeValidatedRasterKey {
 
 /// Encodes every profile field in a stable byte order for deterministic
 /// eviction.  This is a comparator representation, never a second identity.
-pub(crate) fn canonical_raster_key_bytes(key: UiGlyphRasterKey) -> Vec<u8> {
+pub(crate) fn canonical_raster_key_bytes(key: UiGlyphRasterKey) -> UiGlyphRasterKeyEvidence {
     key.canonical_evidence_bytes()
 }
 

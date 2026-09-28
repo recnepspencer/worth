@@ -1,13 +1,11 @@
 //! Deterministic unpinned atlas eviction policy.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
-use worth_ui_host_contract::UiGlyphRasterKey;
+use worth_ui_host_contract::{UiGlyphRasterKey, UiGlyphRasterKeyEvidence};
 
-use super::entry::UiAtlasEntry;
 use super::key::canonical_raster_key_bytes;
 use super::ownership::AtlasStore;
-use super::UiAtlasEntryIdentity;
 
 pub(crate) fn evict_one(
     alpha: &mut AtlasStore,
@@ -37,16 +35,13 @@ pub(crate) fn evict_one(
 fn first_candidate(
     store: &AtlasStore,
     protected: &HashSet<UiGlyphRasterKey>,
-) -> Option<(u64, Vec<u8>, UiGlyphRasterKey)> {
-    ordered_candidates(&store.entries, protected)
-        .into_iter()
-        .next()
-        .and_then(|identity| {
-            store
-                .entries
-                .values()
-                .find(|entry| entry.identity == identity)
-        })
+) -> Option<(u64, UiGlyphRasterKeyEvidence, UiGlyphRasterKey)> {
+    // One pass, one encoding per entry: the oldest epoch wins and the key's
+    // canonical evidence breaks ties. Distinct keys never share evidence.
+    store
+        .entries
+        .values()
+        .filter(|entry| !entry.pinned() && !protected.contains(&entry.key))
         .map(|entry| {
             (
                 entry.completed_use_epoch,
@@ -54,21 +49,5 @@ fn first_candidate(
                 entry.key,
             )
         })
-}
-
-pub(crate) fn ordered_candidates(
-    entries: &HashMap<UiGlyphRasterKey, UiAtlasEntry>,
-    protected: &HashSet<UiGlyphRasterKey>,
-) -> Vec<UiAtlasEntryIdentity> {
-    let mut candidates = entries
-        .values()
-        .filter(|entry| !entry.pinned() && !protected.contains(&entry.key))
-        .collect::<Vec<_>>();
-    candidates.sort_by_key(|entry| {
-        (
-            entry.completed_use_epoch,
-            canonical_raster_key_bytes(entry.key),
-        )
-    });
-    candidates.into_iter().map(|entry| entry.identity).collect()
+        .min_by(|left, right| (left.0, &left.1).cmp(&(right.0, &right.1)))
 }
