@@ -3,10 +3,16 @@
 //! These values identify raster equivalence. They do not grant cache, atlas,
 //! pin, upload, or raster-production authority.
 
+use std::hash::{Hash, Hasher};
+
 use super::{
     UiFontCollectionGeneration, UiFontCollectionLineageIdentity, UiQualifiedFontFaceIdentity,
     UiQualifiedTextVariationRecord, UiTextProfileGeneration,
 };
+
+mod evidence;
+
+pub use evidence::UiGlyphRasterKeyEvidence;
 
 const MAX_VARIATION_AXES: usize = 8;
 
@@ -40,8 +46,11 @@ pub struct UiGlyphVariationCoordinates {
     len: u8,
 }
 
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct UiGlyphRasterKey {
+    /// Derived from every other field, so it is the only part hashed, and
+    /// declared first so unequal keys usually differ at the first compare.
+    fingerprint: u64,
     font_collection: UiFontCollectionGeneration,
     font_collection_lineage: UiFontCollectionLineageIdentity,
     profile: UiTextProfileGeneration,
@@ -155,7 +164,8 @@ impl UiGlyphRasterKey {
         if input.dpi_milli == 0 {
             None
         } else {
-            Some(Self {
+            let mut key = Self {
+                fingerprint: 0,
                 font_collection: input.font_collection,
                 font_collection_lineage: input.font_collection_lineage,
                 profile: input.profile,
@@ -167,7 +177,9 @@ impl UiGlyphRasterKey {
                 source: input.source,
                 dpi_milli: input.dpi_milli,
                 origin: input.origin,
-            })
+            };
+            key.fingerprint = UiGlyphRasterKeyEvidence::encode(&key).fingerprint();
+            Some(key)
         }
     }
 
@@ -216,34 +228,16 @@ impl UiGlyphRasterKey {
     }
 
     /// Stable boundary representation used to join the same qualified key
-    /// across Runtime and the native atlas owner. It is evidence, not a
-    /// second identity or an ordering authority.
-    pub fn canonical_evidence_bytes(self) -> Vec<u8> {
-        let mut bytes = Vec::with_capacity(128);
-        bytes.extend_from_slice(&self.font_collection_generation().get().to_le_bytes());
-        bytes.extend_from_slice(&self.font_collection_lineage().digest());
-        bytes.extend_from_slice(&self.profile_generation().get().to_le_bytes());
-        bytes.extend_from_slice(&self.face().font_bytes_digest());
-        bytes.extend_from_slice(&self.face().face_index().to_le_bytes());
-        bytes.extend_from_slice(&self.face().selection_digest());
-        bytes.extend_from_slice(&self.glyph_id().to_le_bytes());
-        bytes.push(u8::try_from(self.variations().len()).unwrap_or(u8::MAX));
-        for variation in self.variations().records() {
-            bytes.extend_from_slice(&variation.axis());
-            bytes.extend_from_slice(&variation.value_milli().to_le_bytes());
-        }
-        bytes.extend_from_slice(&self.palette().index().to_le_bytes());
-        bytes.extend_from_slice(&self.size().millipoints().to_le_bytes());
-        bytes.push(match self.source() {
-            UiGlyphRasterSource::ColorOutline => 0,
-            UiGlyphRasterSource::ColorBitmap => 1,
-            UiGlyphRasterSource::AlphaOutline => 2,
-            UiGlyphRasterSource::LastResort => 3,
-        });
-        bytes.extend_from_slice(&self.dpi_milli().to_le_bytes());
-        bytes.extend_from_slice(&self.fractional_origin().x_over_64().to_le_bytes());
-        bytes.extend_from_slice(&self.fractional_origin().y_over_64().to_le_bytes());
-        bytes
+    /// across Runtime and the native atlas owner. Its byte order is a
+    /// deterministic tie-break, never a second identity.
+    pub const fn canonical_evidence_bytes(self) -> UiGlyphRasterKeyEvidence {
+        UiGlyphRasterKeyEvidence::encode(&self)
+    }
+}
+
+impl Hash for UiGlyphRasterKey {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        state.write_u64(self.fingerprint);
     }
 }
 

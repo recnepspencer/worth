@@ -9,7 +9,9 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 use sha2::{Digest, Sha256};
 
-use worth_ui_host_contract::{UiGlyphRasterKey, UiQualifiedTextLayoutIdentity};
+use worth_ui_host_contract::{
+    UiGlyphRasterKey, UiGlyphRasterKeyEvidence, UiQualifiedTextLayoutIdentity,
+};
 
 use super::entry::UiAtlasEntry;
 use super::key::canonical_raster_key_bytes;
@@ -86,8 +88,7 @@ impl AtlasStore {
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub(crate) struct PinIdentity {
     layout: [u8; 32],
-    key: [u8; 256],
-    key_len: u16,
+    key: UiGlyphRasterKeyEvidence,
 }
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -100,20 +101,14 @@ pub struct UiNativeTextPinObservation {
 
 impl PinIdentity {
     pub(crate) fn new(layout: UiQualifiedTextLayoutIdentity, key: UiGlyphRasterKey) -> Self {
-        let bytes = canonical_raster_key_bytes(key);
-        let mut key_buffer = [0; 256];
-        let length = bytes.len().min(key_buffer.len());
-        key_buffer[..length].copy_from_slice(&bytes[..length]);
         Self {
             layout: layout.digest(),
-            key: key_buffer,
-            key_len: u16::try_from(length).unwrap_or(u16::MAX),
+            key: canonical_raster_key_bytes(key),
         }
     }
 
     fn raster_key_digest(self) -> [u8; 32] {
-        let length = usize::from(self.key_len);
-        Sha256::digest(&self.key[..length]).into()
+        Sha256::digest(self.key).into()
     }
 }
 
