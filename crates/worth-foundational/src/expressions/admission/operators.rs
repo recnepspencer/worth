@@ -86,16 +86,8 @@ impl Checker<'_> {
             BinaryOp::Coalesce => self.coalesce(id, left, right),
             BinaryOp::Equal | BinaryOp::NotEqual => {
                 let (left, right) = self.same_type(left, right)?;
-                if let ExpressionType::Logic4(_) = self.ty(left) {
-                    // Four-valued buses have two equalities; neither is implied.
-                    return Err(self.deny(
-                        id,
-                        ExpressionDenialDetail::FunctionContractMismatch {
-                            function: "==".to_string(),
-                            reason: "compare Logic4 buses with case_equal or logic_eq",
-                        },
-                    ));
-                }
+                let function = if op == BinaryOp::Equal { "==" } else { "!=" };
+                self.implied_equality(id, function, left)?;
                 self.emit(id, Op::Binary(op), ExpressionType::Bool, vec![left, right])
             }
             BinaryOp::Less | BinaryOp::LessEqual | BinaryOp::Greater | BinaryOp::GreaterEqual => {
@@ -228,5 +220,25 @@ impl Checker<'_> {
                 found: self.ty(found).to_string(),
             },
         )
+    }
+
+    /// Denies implied equality on a value that carries a `Logic4` bus
+    /// anywhere: four-valued buses have two equalities and neither is implied.
+    pub(super) fn implied_equality(
+        &self,
+        id: NodeId,
+        function: &str,
+        operand: u32,
+    ) -> ExpressionResult<()> {
+        if !self.schema().four_valued(self.ty(operand)) {
+            return Ok(());
+        }
+        Err(self.deny(
+            id,
+            ExpressionDenialDetail::FunctionContractMismatch {
+                function: function.to_string(),
+                reason: "compare Logic4 buses with case_equal or logic_eq",
+            },
+        ))
     }
 }

@@ -71,6 +71,10 @@ impl Checker<'_> {
             };
             return Err(self.deny(id, detail));
         };
+        if let (Builtin::Contains, [_, probe]) = (builtin, &children[..]) {
+            // List membership is element equality.
+            self.implied_equality(id, name, *probe)?;
+        }
         self.emit(id, Op::Builtin(builtin), ty, children)
     }
 
@@ -82,13 +86,20 @@ impl Checker<'_> {
     ) -> ExpressionResult<u32> {
         let name = function.text();
         let catalog = self.context.catalog;
+        self.probe(catalog.name_count())?;
+        let overloads = catalog.overloads(&name).count();
+        if overloads == 0 {
+            return Err(self.deny(id, ExpressionDenialDetail::UnknownBinding(name)));
+        }
+        self.meter.charge(overloads as u64)?;
         let candidates: Vec<usize> = catalog
             .overloads(&name)
             .filter(|index| catalog.function(*index).parameters().len() == arguments.len())
             .collect();
-        if catalog.overloads(&name).next().is_none() {
-            return Err(self.deny(id, ExpressionDenialDetail::UnknownBinding(name)));
-        }
+        // The agreement scan below and the signature match each visit every
+        // candidate parameter once.
+        let scan = (candidates.len() as u64).saturating_mul(arguments.len() as u64);
+        self.meter.charge(scan.saturating_mul(2))?;
         // An argument checks against its parameter type only where every
         // same-arity overload declares that type, so the denial family for a
         // mismatch depends on the declared signatures, not on their count.

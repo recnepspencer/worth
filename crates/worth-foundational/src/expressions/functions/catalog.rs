@@ -128,6 +128,11 @@ impl ExpressionFunctionCatalog {
         &self.schema
     }
 
+    /// Distinct installed names: the size of the name lookup table.
+    pub(crate) fn name_count(&self) -> usize {
+        self.by_name.len()
+    }
+
     pub(crate) fn overloads(&self, name: &str) -> impl Iterator<Item = usize> + '_ {
         self.by_name.get(name).into_iter().flatten().copied()
     }

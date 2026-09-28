@@ -3,7 +3,8 @@
 
 use worth_foundational::expression_api::{
     expressions, ExpressionBuilder, ExpressionDenial, ExpressionDenialDetail,
-    ExpressionFunctionCatalog, ExpressionProfile, ExpressionResource, ExpressionType,
+    ExpressionFunctionCatalog, ExpressionProfile, ExpressionResource, ExpressionSchema,
+    ExpressionType,
 };
 
 use super::{draft, empty_catalog, function, schema};
@@ -226,4 +227,66 @@ fn catalog_entries_and_bit_widths_are_bounded() {
         .admit(&wide, &catalog, narrowed(ExpressionResource::BitWidth, 16))
         .unwrap_err();
     assert_eq!(exceeded(&denial), ExpressionResource::BitWidth);
+}
+
+#[test]
+fn operand_lookups_charge_logarithmic_probes() {
+    let work = |operands: usize| {
+        let mut builder = ExpressionSchema::builder();
+        for index in 0..operands {
+            builder = builder
+                .operand(&format!("x{index:04}"), ExpressionType::Float64)
+                .expect("fixture operands are valid");
+        }
+        let schema = builder.build();
+        let source = format!("[{}x0000]", "x0000, ".repeat(99));
+        draft(&source)
+            .admit(
+                &schema,
+                &empty_catalog(&schema),
+                ExpressionProfile::engineering(),
+            )
+            .expect("admits")
+            .admission_work()
+    };
+    let (small, large) = (work(1), work(1024));
+    assert!(large > small, "probes into a larger table cost more");
+    assert!(
+        large - small <= 100 * 11,
+        "each probe is logarithmic: {small} vs {large}"
+    );
+}
+
+#[test]
+fn installed_overload_resolution_is_metered() {
+    let schema = schema();
+    let work = |overloads: u32| {
+        let mut builder =
+            ExpressionFunctionCatalog::builder(&schema, ExpressionProfile::engineering());
+        for width in 1..=overloads {
+            let bus = ExpressionType::Bits(width);
+            let declaration = function(
+                "digital::same",
+                &[("a", bus.clone()), ("b", bus)],
+                ExpressionType::Bool,
+                "true",
+            );
+            builder
+                .install(declaration)
+                .expect("overloads differ by width");
+        }
+        let catalog = builder.build();
+        let source = format!(
+            "[{}digital::same(bus, bus)]",
+            "digital::same(bus, bus), ".repeat(9)
+        );
+        draft(&source)
+            .admit(&schema, &catalog, ExpressionProfile::engineering())
+            .expect("admits")
+            .admission_work()
+    };
+    let (few, many) = (work(8), work(512));
+    // Ten calls, each visiting 504 more candidates for the name and two
+    // parameters twice.
+    assert!(many - few >= 10 * 504 * 5, "{few} vs {many}");
 }

@@ -97,20 +97,15 @@ impl Checker<'_> {
 
     pub(super) fn field(&mut self, id: NodeId, base: NodeId, field: &str) -> ExpressionResult<u32> {
         let base = self.check(base, None)?;
-        if let ExpressionType::Record(name) = self.ty(base) {
-            let fields = self
-                .schema()
-                .record(name.name())
-                .map_or(0, |record| record.fields().len());
-            self.probe(self.schema().nominal_count())?;
-            self.probe(fields)?;
-        }
         let resolved = match self.ty(base) {
-            ExpressionType::Record(name) => self
-                .schema()
-                .record(name.name())
-                .and_then(|record| record.field(field))
-                .map(|(index, ty)| (index as u32, ty.clone())),
+            ExpressionType::Record(name) => {
+                let record = self.schema().record(name.name());
+                self.probe(self.schema().nominal_count())?;
+                self.probe(record.map_or(0, |record| record.fields().len()))?;
+                record
+                    .and_then(|record| record.field(field))
+                    .map(|(index, ty)| (index as u32, ty.clone()))
+            }
             ExpressionType::MapEntry(key, value) => match field {
                 "key" => Some((0, (**key).clone())),
                 "value" => Some((1, (**value).clone())),

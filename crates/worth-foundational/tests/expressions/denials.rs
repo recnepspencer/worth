@@ -112,6 +112,34 @@ fn type_arguments_are_denied_where_callees_take_none() {
             .unwrap_err();
         assert_eq!(denial.family(), Family::UnsupportedFeature, "{function}");
     }
+    // Every reserved constructor but `bits<N>` denies type arguments.
+    let constructors = [
+        "int8",
+        "int16",
+        "int32",
+        "int64",
+        "uint8",
+        "uint16",
+        "uint32",
+        "uint64",
+        "float32",
+        "float64",
+        "decimal",
+        "bytes",
+        "logic4",
+        "quantity",
+        "magnitude",
+    ];
+    for function in constructors {
+        let mut builder = ExpressionBuilder::new();
+        let argument = builder.int(5).dynamic();
+        let call = builder.generic_call(function, std::slice::from_ref(&int8), &[argument]);
+        let denial = builder
+            .finish(call)
+            .and_then(|draft| draft.admit(&schema, &catalog, ExpressionProfile::interactive()))
+            .unwrap_err();
+        assert_eq!(denial.family(), Family::UnsupportedFeature, "{function}");
+    }
     assert_eq!(denied_family("INT8(5)"), Family::UnknownBinding);
     assert_eq!(denied_family("Int8(5)"), Family::UnknownBinding);
 }
@@ -248,31 +276,53 @@ fn admission_work_and_canonical_bytes_are_exhausted() {
 }
 
 #[test]
-fn operand_lookups_charge_logarithmic_probes() {
-    let work = |operands: usize| {
-        let mut builder = ExpressionSchema::builder();
-        for index in 0..operands {
-            builder = builder
-                .operand(&format!("x{index:04}"), ExpressionType::Float64)
-                .expect("fixture operands are valid");
-        }
-        let schema = builder.build();
-        let source = format!("[{}x0000]", "x0000, ".repeat(99));
-        draft(&source)
+fn four_valued_values_have_no_implied_equality() {
+    let schema = ExpressionSchema::builder()
+        .record("Sig", 1, [("line", ExpressionType::Logic4(1))])
+        .and_then(|builder| builder.operand("enable", ExpressionType::Logic4(1)))
+        .and_then(|builder| {
+            builder.operand(
+                "sig",
+                ExpressionType::Record(ExpressionTypeName::new("Sig", 1)?),
+            )
+        })
+        .expect("fixture schema is valid")
+        .build();
+    let denied = |source: &str| {
+        draft(source)
             .admit(
                 &schema,
                 &empty_catalog(&schema),
-                ExpressionProfile::engineering(),
+                ExpressionProfile::interactive(),
             )
-            .expect("admits")
-            .admission_work()
+            .expect_err(source)
     };
-    let (small, large) = (work(1), work(1024));
-    assert!(large > small, "probes into a larger table cost more");
-    assert!(
-        large - small <= 100 * 11,
-        "each probe is logarithmic: {small} vs {large}"
-    );
+    for (source, function) in [
+        ("enable == enable", "=="),
+        ("enable != enable", "!="),
+        ("some(enable) == some(enable)", "=="),
+        ("[enable] != [enable]", "!="),
+        ("sig == sig", "=="),
+        ("contains([enable], enable)", "contains"),
+    ] {
+        match denied(source).detail() {
+            ExpressionDenialDetail::FunctionContractMismatch {
+                function: named, ..
+            } => {
+                assert_eq!(named, function, "{source}");
+            }
+            other => panic!("{source} denied with {other:?}"),
+        }
+    }
+    let admitted = |source: &str| {
+        draft(source).admit(
+            &schema,
+            &empty_catalog(&schema),
+            ExpressionProfile::interactive(),
+        )
+    };
+    assert!(admitted("case_equal(sig.line, enable)").is_ok());
+    assert!(admitted("logic_eq(sig.line, enable) == logic_eq(enable, enable)").is_err());
 }
 
 #[test]

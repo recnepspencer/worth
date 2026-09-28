@@ -35,6 +35,8 @@ pub struct ExpressionRecordDeclaration {
     positions: BTreeMap<Box<str>, usize>,
     /// The widest bus in any field, through nested records.
     widest_bus: u32,
+    /// Whether any field carries a `Logic4` bus, through nested records.
+    four_valued: bool,
 }
 
 impl ExpressionRecordDeclaration {
@@ -161,6 +163,23 @@ impl ExpressionSchema {
         }
     }
 
+    /// Whether `ty` carries a `Logic4` bus anywhere inside it, record fields
+    /// included. Such values have no implied equality.
+    pub(crate) fn four_valued(&self, ty: &ExpressionType) -> bool {
+        match ty {
+            ExpressionType::Logic4(_) => true,
+            ExpressionType::Option(inner) | ExpressionType::List(inner) => self.four_valued(inner),
+            ExpressionType::Map(key, value) | ExpressionType::MapEntry(key, value) => {
+                self.four_valued(key) || self.four_valued(value)
+            }
+            ExpressionType::Record(name) => self
+                .records
+                .get(name.name())
+                .is_some_and(|record| record.four_valued),
+            _ => false,
+        }
+    }
+
     /// Declared records, enums, and IDs: the size of the nominal lookup table.
     pub(crate) fn nominal_count(&self) -> usize {
         self.records.len() + self.enums.len() + self.ids.len()
@@ -264,6 +283,7 @@ impl ExpressionSchemaBuilder {
             .map(|(_, ty)| self.schema.widest_bus(ty))
             .max()
             .unwrap_or(0);
+        let four_valued = declared.iter().any(|(_, ty)| self.schema.four_valued(ty));
         self.schema.records.insert(
             key,
             ExpressionRecordDeclaration {
@@ -271,6 +291,7 @@ impl ExpressionSchemaBuilder {
                 fields: declared,
                 positions,
                 widest_bus,
+                four_valued,
             },
         );
         Ok(self)

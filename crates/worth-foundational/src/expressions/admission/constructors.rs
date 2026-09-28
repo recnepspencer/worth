@@ -27,16 +27,40 @@ const INTEGER_CONSTRUCTORS: [&str; 8] = [
     "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64",
 ];
 
-/// Constructors that take no type arguments; `bits<N>` takes its width.
-const PLAIN_CONSTRUCTORS: [&str; 7] = [
-    "float32",
-    "float64",
-    "decimal",
-    "bytes",
-    "logic4",
-    "quantity",
-    "magnitude",
-];
+/// The reserved constructors. Dispatch goes through this table, so every
+/// constructor is subject to the one type-argument rule.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Constructor {
+    Integer(IntegerType),
+    Float32,
+    Float64,
+    Decimal,
+    Bytes,
+    Logic4,
+    /// `bits<N>`: the only constructor with a type argument.
+    Bits,
+    Quantity,
+    Magnitude,
+}
+
+impl Constructor {
+    fn named(name: &str) -> Option<Self> {
+        if let Some(index) = INTEGER_CONSTRUCTORS.iter().position(|c| *c == name) {
+            return Some(Self::Integer(IntegerType::ALL[index]));
+        }
+        Some(match name {
+            "float32" => Self::Float32,
+            "float64" => Self::Float64,
+            "decimal" => Self::Decimal,
+            "bytes" => Self::Bytes,
+            "logic4" => Self::Logic4,
+            "bits" => Self::Bits,
+            "quantity" => Self::Quantity,
+            "magnitude" => Self::Magnitude,
+            _ => return None,
+        })
+    }
+}
 
 /// A numeric literal read directly from syntax, sign included.
 enum NumberLiteral<'a> {
@@ -52,25 +76,24 @@ impl Checker<'_> {
         type_arguments: &[TypeArgument],
         arguments: &[NodeId],
     ) -> Option<ExpressionResult<u32>> {
-        let integer = INTEGER_CONSTRUCTORS
-            .iter()
-            .position(|constructor| *constructor == name)
-            .map(|index| IntegerType::ALL[index]);
-        if !type_arguments.is_empty() && (integer.is_some() || PLAIN_CONSTRUCTORS.contains(&name)) {
+        let constructor = Constructor::named(name)?;
+        if !type_arguments.is_empty() && constructor != Constructor::Bits {
             return Some(Err(self.deny(
                 id,
                 ExpressionDenialDetail::UnsupportedFeature("this call takes no type arguments"),
             )));
         }
-        let result = match (name, arguments) {
-            (_, [argument]) if integer.is_some() => self.integer_literal(id, integer?, *argument),
-            ("float32" | "float64", [argument]) => {
-                self.float_literal(id, name == "float32", *argument)
+        let result = match (constructor, arguments) {
+            (Constructor::Integer(integer), [argument]) => {
+                self.integer_literal(id, integer, *argument)
             }
-            ("decimal", [argument]) => self.text_literal(id, *argument, decimal_literal),
-            ("bytes", [argument]) => self.text_literal(id, *argument, bytes_literal),
-            ("logic4", [argument]) => self.text_literal(id, *argument, logic4_literal),
-            ("bits", [argument]) => match type_arguments {
+            (Constructor::Float32 | Constructor::Float64, [argument]) => {
+                self.float_literal(id, constructor == Constructor::Float32, *argument)
+            }
+            (Constructor::Decimal, [argument]) => self.text_literal(id, *argument, decimal_literal),
+            (Constructor::Bytes, [argument]) => self.text_literal(id, *argument, bytes_literal),
+            (Constructor::Logic4, [argument]) => self.text_literal(id, *argument, logic4_literal),
+            (Constructor::Bits, [argument]) => match type_arguments {
                 [TypeArgument::Width(width)] => {
                     let width = *width;
                     self.text_literal(id, *argument, move |text| bits_literal(text, width))
@@ -80,8 +103,8 @@ impl Checker<'_> {
                     ExpressionDenialDetail::TypeRequired("bits<N>(\"binary\")"),
                 )),
             },
-            ("quantity", [magnitude, unit]) => self.quantity(id, *magnitude, *unit),
-            ("magnitude", [quantity, unit]) => self.magnitude(id, *quantity, *unit),
+            (Constructor::Quantity, [magnitude, unit]) => self.quantity(id, *magnitude, *unit),
+            (Constructor::Magnitude, [quantity, unit]) => self.magnitude(id, *quantity, *unit),
             _ => return None,
         };
         Some(result)
