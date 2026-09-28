@@ -140,7 +140,17 @@ impl<Query> std::fmt::Debug for WorthQueryObservedSource<Query> {
 
 impl<Query> Clone for WorthQueryObservedSource<Query> {
     fn clone(&self) -> Self {
-        Self {
+        self.retyped()
+    }
+}
+
+impl<Query> WorthQueryObservedSource<Query> {
+    /// The same source under another query marker. Only a caller that has
+    /// already checked the query this source names may change its marker.
+    pub(in crate::domain_computation::primary_graph) fn retyped<Other>(
+        &self,
+    ) -> WorthQueryObservedSource<Other> {
+        WorthQueryObservedSource {
             runtime_authority: self.runtime_authority,
             schema_binding: self.schema_binding.clone(),
             query_identity: self.query_identity.clone(),
@@ -154,9 +164,7 @@ impl<Query> Clone for WorthQueryObservedSource<Query> {
             _marker: PhantomData,
         }
     }
-}
 
-impl<Query> WorthQueryObservedSource<Query> {
     pub(in crate::domain_computation::primary_graph) fn has_complete_output_dependencies(
         &self,
     ) -> bool {

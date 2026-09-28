@@ -26,6 +26,8 @@ use crate::{
 
 #[path = "approved_payment_workflow/assessment.rs"]
 mod assessment;
+#[path = "approved_payment_workflow/condition.rs"]
+mod condition;
 #[path = "approved_payment_workflow/error.rs"]
 mod error;
 #[path = "approved_payment_workflow/owner.rs"]

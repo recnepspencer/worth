@@ -2,8 +2,7 @@ use std::collections::BTreeMap;
 
 use worth_foundational::facade::AspectValue;
 use worth_query_declaration::facade::application_program::{
-    ApplicationProgramRevision, ApplicationWorkflowNodeKind, ApplicationWorkflowSpec,
-    ValidatedWorkflowDefinition,
+    ApplicationProgramRevision, ApplicationWorkflowSpec, ValidatedWorkflowDefinition,
 };
 use worth_relational::facade::identity::{EntityId, PartitionId, RelationId};
 use worth_relational::facade::transactions::{CreatedEntityRef, EntityReference};
@@ -13,11 +12,13 @@ use super::super::super::application_attempt::{
 };
 use super::super::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION;
 use super::super::schema::WorthQueryWorkflowLayout;
-use super::codec::WorkflowNodeTag;
 
 #[path = "facts/encoding.rs"]
 mod encoding;
 use encoding::*;
+#[path = "facts/node.rs"]
+mod node;
+use node::create_node;
 
 #[derive(Clone, Copy)]
 pub(in crate::domain_computation::primary_graph) enum WorkflowLineagePublicationTarget {
@@ -40,7 +41,7 @@ pub(in crate::domain_computation::primary_graph) fn visit_definition_facts<Spec,
     program_revision: &ApplicationProgramRevision,
     definition: &ValidatedWorkflowDefinition<Spec>,
     assessment_bindings: &[(String, &'static str)],
-    condition_bindings: &[(String, &'static str)],
+    condition_bindings: &[worth_query_installation::facade::WorthQueryInstalledWorkflowConditionBinding],
     approval_bindings: &[worth_query_installation::facade::WorthQueryInstalledWorkflowApprovalBinding],
     lineage: WorkflowLineagePublicationTarget,
     mut emit: impl FnMut(WorthQueryApplicationRealizedEffect) -> Result<(), Error>,
@@ -129,15 +130,16 @@ where
         let approval_binding = approval_bindings
             .iter()
             .find(|binding| binding.node_path == node.identity().as_str());
-        let condition_binding = condition_bindings
+        let condition_bindings = condition_bindings
             .iter()
-            .find_map(|(path, binding)| (path == node.identity().as_str()).then_some(*binding));
+            .filter(|binding| binding.node_path == node.identity().as_str())
+            .collect::<Vec<_>>();
         emit(create_node(
             layout,
             &node_ref,
             node,
             assessment_binding,
-            condition_binding,
+            &condition_bindings,
             approval_binding,
             publication.creation_partition,
         ))?;
@@ -262,124 +264,5 @@ fn stage_lineage<Spec: ApplicationWorkflowSpec, Error>(
                 symbolic_partition: lineage.partition_id,
             })
         }
-    }
-}
-
-fn create_node(
-    layout: &WorthQueryWorkflowLayout,
-    reference: &CreatedEntityRef,
-    node: &worth_query_declaration::facade::application_program::ApplicationWorkflowNode,
-    assessment_binding: Option<&str>,
-    condition_binding: Option<&str>,
-    approval_binding: Option<
-        &worth_query_installation::facade::WorthQueryInstalledWorkflowApprovalBinding,
-    >,
-    creation_partition: WorthQueryApplicationCreationPartition,
-) -> WorthQueryApplicationRealizedEffect {
-    let kind = WorkflowNodeTag::from_declared(node.kind()).persisted();
-    let (member, input_type, parameter_type, result_type, capability_type, requires_authority) =
-        match node.kind() {
-            ApplicationWorkflowNodeKind::Operation {
-                operation,
-                requires_workflow_authority,
-            } => (
-                operation.identifier(),
-                Some(operation.input_type().as_str()),
-                None,
-                None,
-                None,
-                *requires_workflow_authority,
-            ),
-            ApplicationWorkflowNodeKind::Assessment(assessment) => (
-                assessment.identifier(),
-                None,
-                Some(assessment.parameter_type().as_str()),
-                Some(assessment.result_type().as_str()),
-                None,
-                false,
-            ),
-            ApplicationWorkflowNodeKind::Condition(condition) => (
-                condition.identifier(),
-                None,
-                Some(condition.parameter_type().as_str()),
-                Some(condition.result_type().as_str()),
-                None,
-                false,
-            ),
-            ApplicationWorkflowNodeKind::Approval(approval) => (
-                approval.identifier(),
-                None,
-                None,
-                None,
-                Some(approval.capability_type().as_str()),
-                false,
-            ),
-            ApplicationWorkflowNodeKind::EvidenceJoin(policy) => {
-                (policy.identity(), None, None, None, None, false)
-            }
-            ApplicationWorkflowNodeKind::Terminal => ("", None, None, None, None, false),
-        };
-    let mut fields = BTreeMap::from([
-        (layout.node.path.clone(), text(node.identity().as_str())),
-        (layout.node.kind.clone(), AspectValue::UInt64(kind)),
-        (layout.node.member.clone(), text(member)),
-        (
-            layout.node.requires_authority.clone(),
-            AspectValue::Bool(requires_authority),
-        ),
-    ]);
-    for (locator, value) in [
-        (&layout.node.input_type, input_type),
-        (
-            &layout.node.operation_binding,
-            match node.kind() {
-                ApplicationWorkflowNodeKind::Operation { operation, .. } => {
-                    operation.binding().map(|(identity, _, _)| identity)
-                }
-                _ => None,
-            },
-        ),
-        (&layout.node.parameter_type, parameter_type),
-        (&layout.node.result_type, result_type),
-        (&layout.node.assessment_binding, assessment_binding),
-        (&layout.node.condition_binding, condition_binding),
-        (&layout.node.capability_type, capability_type),
-        (
-            &layout.node.approval_operation,
-            approval_binding.map(|binding| binding.operation),
-        ),
-    ] {
-        if let Some(value) = value {
-            fields.insert(locator.clone(), text(value));
-        }
-    }
-    if let Some(binding) = approval_binding {
-        fields.insert(
-            layout.node.approval_capability_identity.clone(),
-            text(hex(binding.installed_capability_identity)),
-        );
-    }
-    if let ApplicationWorkflowNodeKind::Assessment(assessment) = node.kind() {
-        fields.insert(
-            layout.node.assessment_subject.clone(),
-            text(assessment.subject().persistence_identity()),
-        );
-        if let Some((relation, from, to)) = assessment.applicability().relation() {
-            fields.insert(
-                layout.node.assessment_applicability_relation.clone(),
-                text(relation),
-            );
-            fields.insert(
-                layout.node.assessment_applicability_from.clone(),
-                text(from),
-            );
-            fields.insert(layout.node.assessment_applicability_to.clone(), text(to));
-        }
-    }
-    WorthQueryApplicationRealizedEffect::CreateEntity {
-        kind: reference.kind_id,
-        key: raw_key(reference),
-        fields,
-        partition: creation_partition,
     }
 }

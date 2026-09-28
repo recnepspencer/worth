@@ -75,6 +75,7 @@ pub enum BankApplicationAttemptDenialKind {
     WorkflowTransitionNodeUnsupported,
     WorkflowTransitionOperationUnsettled,
     WorkflowTransitionIdentityUnavailable,
+    WorkflowConditionExpressionDenied,
     WorkflowAssessmentEvidenceIncomplete,
     WorkflowAssessmentEvidenceMismatch,
     WorkflowApprovalPrincipalStale,
@@ -288,6 +289,9 @@ const fn application_attempt_kind(
         }
         Query::WorkflowTransitionIdentityUnavailable => {
             BankApplicationAttemptDenialKind::WorkflowTransitionIdentityUnavailable
+        }
+        Query::WorkflowConditionExpressionDenied => {
+            BankApplicationAttemptDenialKind::WorkflowConditionExpressionDenied
         }
         Query::WorkflowAssessmentEvidenceIncomplete => {
             BankApplicationAttemptDenialKind::WorkflowAssessmentEvidenceIncomplete

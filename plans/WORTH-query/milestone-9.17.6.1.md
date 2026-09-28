@@ -1,6 +1,24 @@
 # Milestone 9.17.6.1: Shared Typed Expression Language
 
-> **Status:** Not started.
+> **Status:** Phase 1 completed: bounded parser, typed builder, draft codec, pure
+> admission, installed functions, and canonical identity behind
+> `worth_foundational::expression_api`. Phase 2 completed: pure evaluator with
+> resumable slices, shared nested budgets, consumed-read recording, fixed numeric
+> vectors, exhaustive digital tables, an independent reference evaluator, and the
+> classified CEL intersection; the suite passes on x86-64 and wasm32 (wasmtime),
+> and other targets are refused at build time. Peak scratch is enforced as a
+> ceiling on cumulative allocation, a deterministic upper bound on the peak.
+> Not completed in Phase 2: AArch64 parity is type-check only because the current
+> host has no AArch64 linker or runner. Phase 3 completed: workflow conditions
+> are Bool expressions over named typed query operands, evaluated by the shared
+> evaluator after every source is proven current; already-published version-1
+> conditions keep their identity (re-authoring one yields an expression condition
+> with a new content identity), and the single-query condition path is retired. Bank
+> gates approval on an amount-limit condition, and proprietary House accepts its
+> reviewed-geometry condition through the same entry. Not completed in Phase 3:
+> the House unit-bearing clearance and member-selection courts and the digital
+> snapshot court move to Phase 5 with the other CAD/digital courts. Phases 4-5
+> not started; they move to Worth UI and will be completed at the end of 3.17.
 
 ## Goal And Placement
 

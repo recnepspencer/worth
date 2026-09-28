@@ -46,13 +46,12 @@ impl WorthQueryWorkflowAdvanceAdapter {
         idempotency.bind_guarded_workflow_effect(transition_identity)
     }
 
-    pub fn resolve_condition_replay<Schema, Operation, Input, Scope, Query>(
+    pub fn resolve_condition_replay<Schema, Operation, Input, Scope>(
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         prepared: &PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
         required: &super::super::RequiredWorkflowCondition,
-        source: &crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource<
-            Query,
-            bool,
+        sources: &crate::domain_computation::primary_graph::WorthQueryWorkflowConditionSources<
+            Schema,
         >,
         idempotency: WorthQueryApplicationIdempotencyBinding,
     ) -> Result<
@@ -64,7 +63,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
-        prepared.resolve_condition_replay(runtime, required, source, idempotency)
+        prepared.resolve_condition_replay(runtime, required, sources, idempotency)
     }
 
     pub fn resolve_operation_replay<Schema, Operation, Input, Scope, Binding>(

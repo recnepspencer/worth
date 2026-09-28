@@ -2,6 +2,8 @@
 mod actor_handoff;
 #[path = "approved_payment_workflow/approval.rs"]
 mod approval;
+#[path = "approved_payment_workflow/approval_limit.rs"]
+mod approval_limit;
 #[path = "approved_payment_workflow/assertions.rs"]
 mod assertions;
 #[path = "approved_payment_workflow/assessment_settlement.rs"]

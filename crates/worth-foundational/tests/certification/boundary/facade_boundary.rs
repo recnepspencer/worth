@@ -22,6 +22,7 @@ fn facade_exposes_named_responsibility_topology() {
             "diagnostics",
             "boundary_evidence",
             "performance",
+            "expressions",
         ]
     );
 

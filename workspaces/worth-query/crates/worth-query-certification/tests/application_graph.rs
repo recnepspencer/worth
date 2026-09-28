@@ -5,6 +5,8 @@
 mod adoption;
 #[path = "application_graph/document_retention_model.rs"]
 mod document_retention_model;
+#[path = "application_graph/expressions/conditions.rs"]
+mod expression_conditions;
 #[path = "application_graph/fork_decision_reads.rs"]
 mod fork_decision_reads;
 #[path = "application_graph/workflow.rs"]

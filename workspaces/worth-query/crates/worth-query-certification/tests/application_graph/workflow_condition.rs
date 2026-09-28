@@ -79,7 +79,9 @@ fn false_typed_query_condition_routes_to_unsatisfied_terminal() {
         .idempotency(&915_u64)
         .prepare_workflow_advance(&application, instance.clone())
         .expect("condition acceptance must prepare")
-        .accept_condition::<DocumentRetentionConditionQueryBinding>(&required, condition_result)
+        .condition(&required)
+        .operand::<DocumentRetentionConditionQueryBinding, _>("retained", condition_result)
+        .accept()
         .expect("the false typed condition result must be accepted");
     assert!(matches!(outcome, WorkflowProgressOutcome::Completed(_)));
     match advance_instance(&application, instance, 916)
@@ -149,7 +151,9 @@ fn typed_query_condition_routes_and_duplicate_acceptance_replays() {
         .idempotency(&904_u64)
         .prepare_workflow_advance(&application, instance.clone())
         .expect("condition acceptance must prepare")
-        .accept_condition::<DocumentRetentionConditionQueryBinding>(&required, condition_result)
+        .condition(&required)
+        .operand::<DocumentRetentionConditionQueryBinding, _>("retained", condition_result)
+        .accept()
         .expect("the exact typed condition result must be accepted");
     match outcome {
         WorkflowProgressOutcome::Completed(performed) => {
@@ -177,7 +181,9 @@ fn typed_query_condition_routes_and_duplicate_acceptance_replays() {
         .idempotency(&904_u64)
         .prepare_workflow_advance(&application, instance.clone())
         .expect("condition replay must prepare")
-        .accept_condition::<DocumentRetentionConditionQueryBinding>(&required, replay_result)
+        .condition(&required)
+        .operand::<DocumentRetentionConditionQueryBinding, _>("retained", replay_result)
+        .accept()
         .expect("the duplicate condition acceptance must resolve");
     match replay {
         WorkflowProgressOutcome::Completed(performed) => {

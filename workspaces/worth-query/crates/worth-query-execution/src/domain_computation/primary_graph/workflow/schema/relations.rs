@@ -166,6 +166,7 @@ pub(super) fn lower_node(
     let assessment_applicability_to =
         planned_field_locator(NODE_ASPECT, "assessment-applicability-to")?;
     let condition_binding = planned_field_locator(NODE_ASPECT, "condition-binding")?;
+    let condition_operands = planned_field_locator(NODE_ASPECT, "condition-operands")?;
     let capability_type = planned_field_locator(NODE_ASPECT, "capability-type")?;
     let approval_operation = planned_field_locator(NODE_ASPECT, "approval-operation")?;
     let approval_capability_identity =
@@ -189,6 +190,7 @@ pub(super) fn lower_node(
         .optional("assessment-applicability-from", ScalarAspectType::String)
         .optional("assessment-applicability-to", ScalarAspectType::String)
         .optional("condition-binding", ScalarAspectType::String)
+        .optional("condition-operands", ScalarAspectType::String)
         .optional("capability-type", ScalarAspectType::String)
         .optional("approval-operation", ScalarAspectType::String)
         .optional("approval-capability-identity", ScalarAspectType::String)
@@ -222,6 +224,7 @@ pub(super) fn lower_node(
             assessment_applicability_from,
             assessment_applicability_to,
             condition_binding,
+            condition_operands,
             capability_type,
             approval_operation,
             approval_capability_identity,

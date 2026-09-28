@@ -7,8 +7,8 @@ use crate::{
 
 use super::{ApplicationWorkflowAuthoringDenial, ApplicationWorkflowDefinitionBuilder};
 use crate::application_program::workflow::{
-    ApplicationWorkflowApprovalRef, ApplicationWorkflowAssessmentRef,
-    ApplicationWorkflowConditionRef, ApplicationWorkflowConnection,
+    ApplicationWorkflowApprovalRef, ApplicationWorkflowAssessmentRef, ApplicationWorkflowCondition,
+    ApplicationWorkflowConditionOperands, ApplicationWorkflowConnection,
     ApplicationWorkflowConnectionKind, ApplicationWorkflowControlOutcome,
     ApplicationWorkflowDataFlow, ApplicationWorkflowDefinitionLimits,
     ApplicationWorkflowEvidenceJoinPolicy, ApplicationWorkflowNodeIdentity,
@@ -82,22 +82,14 @@ impl ApplicationWorkflowAuthoringCommand {
         )
     }
 
-    pub fn condition<Spec, Query>(
+    pub fn condition<Spec: ApplicationWorkflowSpec>(
         identity: impl Into<String>,
-    ) -> Result<Self, ApplicationWorkflowAuthoringDenial>
-    where
-        Spec: ApplicationWorkflowSpec,
-        Query: ApplicationQueryMarkerIdentity<Spec::Schema> + 'static,
-        Query::ResultBinding:
-            crate::application_schema::ApplicationStructuredValueBinding<Value = bool>,
-    {
-        Self::node(
-            identity,
-            ApplicationWorkflowNodeKind::Condition(ApplicationWorkflowConditionRef::declared::<
-                Spec,
-                Query,
-            >()),
-        )
+        source: &str,
+        operands: ApplicationWorkflowConditionOperands<Spec>,
+    ) -> Result<Self, ApplicationWorkflowAuthoringDenial> {
+        let condition = ApplicationWorkflowCondition::parse(source, operands.into_operands())
+            .map_err(ApplicationWorkflowAuthoringDenial::Condition)?;
+        Self::node(identity, ApplicationWorkflowNodeKind::Condition(condition))
     }
 
     pub fn approval<Spec, Capability>(

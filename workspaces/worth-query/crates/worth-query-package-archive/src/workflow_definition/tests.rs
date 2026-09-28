@@ -5,6 +5,9 @@ use crate::compatibility::{
 };
 use crate::denial::WorthQueryPackageArchiveDenialKind as Kind;
 use crate::limits::WorthQueryPackageArchiveLimits;
+use worth_query_declaration::facade::application_program::MIGRATED_WORKFLOW_CONDITION_OPERAND;
+
+mod condition;
 
 const TERMINAL: u8 = 6;
 const OPERATION: u8 = 1;

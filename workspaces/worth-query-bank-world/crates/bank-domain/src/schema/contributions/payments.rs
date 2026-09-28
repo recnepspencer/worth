@@ -97,6 +97,8 @@ worth_query_application_contribution! {
                 .application_mutation_binding::<ApprovePaymentMutationBinding>()
                 .application_mutation_binding::<RejectPaymentMutationBinding>()
                 .application_query_binding::<crate::queries::PaymentDetailQueryBinding>()
+                .application_query(crate::queries::payment_amount_definition())
+                .application_query_binding::<crate::queries::PaymentAmountQueryBinding>()
                 .application_query(crate::queries::pending_payments_definition())
                 .application_query_binding::<crate::queries::PendingPaymentsQueryBinding>();
             install_payment_operation_abilities(install_payment_ability_policies(schema))

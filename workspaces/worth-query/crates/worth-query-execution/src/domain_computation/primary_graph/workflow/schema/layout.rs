@@ -190,6 +190,8 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowNodeLayout {
     pub(in crate::domain_computation::primary_graph) assessment_applicability_to:
         AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) condition_binding: AspectFieldLocator,
+    /// Present exactly on expression conditions; see `definition::condition`.
+    pub(in crate::domain_computation::primary_graph) condition_operands: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) capability_type: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) approval_operation: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) approval_capability_identity:

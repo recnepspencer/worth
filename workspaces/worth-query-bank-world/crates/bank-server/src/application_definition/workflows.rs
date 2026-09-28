@@ -1,14 +1,22 @@
-use bank_domain::queries::PaymentDetailQuery;
+use bank_domain::queries::{PaymentAmountQuery, PaymentDetailQuery};
 use bank_domain::schema::{
     ApprovePaymentMutationBinding, ApprovedBusinessPaymentApproval,
     ApprovedBusinessPaymentAuthoringOperation, ApprovedBusinessPaymentWorkflow,
 };
 use worth_query_host::facade::declaration::application_program::{
     ApplicationWorkflowAuthoringDenial, ApplicationWorkflowComponentLimits,
-    ApplicationWorkflowControlOutcome, ApplicationWorkflowDefinitionBuilder,
-    ApplicationWorkflowDefinitionLimits, ApplicationWorkflowEvidenceJoinPolicy,
-    ApplicationWorkflowValidationDenial, ValidatedWorkflowDefinition,
+    ApplicationWorkflowConditionOperands, ApplicationWorkflowControlOutcome,
+    ApplicationWorkflowDefinitionBuilder, ApplicationWorkflowDefinitionLimits,
+    ApplicationWorkflowEvidenceJoinPolicy, ApplicationWorkflowValidationDenial,
+    ValidatedWorkflowDefinition,
 };
+
+/// The operand the approval limit reads: the payment's amount in cents.
+pub const APPROVAL_LIMIT_OPERAND: &str = "amount_cents";
+
+/// Workflow approval covers payments up to $150.00; a larger payment is
+/// rejected before any approver is asked.
+pub const APPROVAL_LIMIT: &str = "amount_cents <= 15000";
 
 pub fn approved_business_payment_definition() -> Result<
     ValidatedWorkflowDefinition<ApprovedBusinessPaymentWorkflow>,
@@ -17,8 +25,8 @@ pub fn approved_business_payment_definition() -> Result<
     let mut builder = ApplicationWorkflowDefinitionBuilder::<ApprovedBusinessPaymentWorkflow>::new(
         "approved-business-payment",
         ApplicationWorkflowDefinitionLimits::new(
-            8,
-            16,
+            9,
+            20,
             2,
             ApplicationWorkflowComponentLimits::new(8, 2, 16, 32, 32).unwrap(),
             8 * 1_024,
@@ -33,6 +41,12 @@ pub fn approved_business_payment_definition() -> Result<
     let evidence = builder.evidence_join(
         "review/evidence",
         ApplicationWorkflowEvidenceJoinPolicy::AllRequiredPassing,
+    )?;
+    let limit = builder.condition(
+        "approval/limit",
+        APPROVAL_LIMIT,
+        ApplicationWorkflowConditionOperands::new()
+            .query::<PaymentAmountQuery>(APPROVAL_LIMIT_OPERAND),
     )?;
     let approval = builder.approval::<ApprovedBusinessPaymentApproval>("approval")?;
     let apply = builder.operation_binding::<ApprovePaymentMutationBinding>("apply")?;
@@ -59,7 +73,17 @@ pub fn approved_business_payment_definition() -> Result<
         .control(
             &evidence,
             ApplicationWorkflowControlOutcome::EvidenceSatisfied,
+            &limit,
+        )
+        .control(
+            &limit,
+            ApplicationWorkflowControlOutcome::ConditionSatisfied,
             &approval,
+        )
+        .control(
+            &limit,
+            ApplicationWorkflowControlOutcome::ConditionUnsatisfied,
+            &rejected,
         )
         .control(
             &evidence,
@@ -85,6 +109,7 @@ pub fn approved_business_payment_definition() -> Result<
         .proposal_for_assessment(&propose, &independent)
         .assessment_evidence(&payment, &evidence)
         .assessment_evidence(&independent, &evidence)
+        .condition_subject(&propose, &limit)
         .proposal_for_approval(&propose, &approval)
         .joined_evidence(&evidence, &approval)
         .approval_authority(&approval, &apply)
@@ -144,8 +169,8 @@ mod tests {
     fn approved_business_payment_uses_the_real_payment_operation() {
         let definition = super::approved_business_payment_definition()
             .expect("the approved-payment definition validates");
-        assert_eq!(definition.nodes().len(), 8);
-        assert_eq!(definition.connections().len(), 16);
+        assert_eq!(definition.nodes().len(), 9);
+        assert_eq!(definition.connections().len(), 19);
         assert!(definition.nodes().iter().any(|node| {
             node.identity().as_str() == "apply"
                 && matches!(

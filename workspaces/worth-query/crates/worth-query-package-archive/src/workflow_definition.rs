@@ -18,6 +18,7 @@ mod tests;
 
 pub use codec::{
     decode_workflow_definition_draft, encode_workflow_definition_draft,
+    WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_OLDEST_READABLE_VERSION,
     WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION,
 };
 pub use compatibility::{
@@ -84,11 +85,7 @@ pub(crate) enum DraftMember {
         subject: String,
         related_relation: Option<[String; 3]>,
     },
-    Condition {
-        identifier: String,
-        parameter_type: String,
-        result_type: String,
-    },
+    Condition(DraftCondition),
     Approval {
         identifier: String,
         capability_type: String,
@@ -97,6 +94,27 @@ pub(crate) enum DraftMember {
         policy: String,
     },
     Terminal,
+}
+
+/// A condition as the draft names it.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(crate) enum DraftCondition {
+    /// An encoded expression over operands in name order.
+    Expression {
+        draft: Box<[u8]>,
+        operands: Box<[DraftConditionOperand]>,
+    },
+    /// A version-1 condition: one Bool query read as the whole decision.
+    Migrated(DraftConditionOperand),
+}
+
+/// One named operand and the installed query it reads.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(crate) struct DraftConditionOperand {
+    name: String,
+    identifier: String,
+    parameter_type: String,
+    result_type: String,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

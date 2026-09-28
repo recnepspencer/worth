@@ -38,16 +38,7 @@ impl CompiledWorkflowNodeKind {
                         .saturating_add(from.len())
                         .saturating_add(to.len()),
                 }),
-            Self::Condition {
-                query,
-                parameter_type,
-                result_type,
-                binding,
-            } => query
-                .len()
-                .saturating_add(parameter_type.len())
-                .saturating_add(result_type.len())
-                .saturating_add(binding.len()),
+            Self::Condition(condition) => condition.retained_string_bytes(),
             Self::Approval {
                 capability,
                 capability_type,

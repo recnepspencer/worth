@@ -9,6 +9,7 @@ use worth_query_installation::facade::WorthQueryWorkflowNodeDependency;
 use worth_relational::facade::identity::EntityId;
 
 use super::codec::{WorkflowConnectionTag, WorkflowNodeTag};
+use super::CompiledWorkflowCondition;
 use crate::domain_computation::primary_graph::workflow::adoption::{
     WorkflowAdoptionReadDenial, WorkflowAdoptionTruth,
 };
@@ -17,10 +18,10 @@ use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkfl
 pub(in crate::domain_computation::primary_graph) struct WorkflowRetainedNode {
     pub(in crate::domain_computation::primary_graph) entity: EntityId,
     pub(in crate::domain_computation::primary_graph) path: String,
-    /// `None` for evidence joins and terminals, which act through no program
-    /// member.
-    pub(in crate::domain_computation::primary_graph) dependency:
-        Option<WorthQueryWorkflowNodeDependency>,
+    /// Empty for evidence joins and terminals, which act through no program
+    /// member; one per operand for a condition; otherwise one.
+    pub(in crate::domain_computation::primary_graph) dependencies:
+        Vec<WorthQueryWorkflowNodeDependency>,
 }
 
 pub(in crate::domain_computation::primary_graph) struct WorkflowDefinitionDependencies {
@@ -93,13 +94,13 @@ pub(in crate::domain_computation::primary_graph) fn read_definition_dependencies
             matches!(
                 dependencies
                     .node(*approval)
-                    .and_then(|node| node.dependency.as_ref()),
-                Some(WorthQueryWorkflowNodeDependency::Approval { .. })
+                    .map(|node| node.dependencies.as_slice()),
+                Some([WorthQueryWorkflowNodeDependency::Approval { .. }])
             ) && matches!(
                 dependencies
                     .node(*operation)
-                    .and_then(|node| node.dependency.as_ref()),
-                Some(WorthQueryWorkflowNodeDependency::Operation { .. })
+                    .map(|node| node.dependencies.as_slice()),
+                Some([WorthQueryWorkflowNodeDependency::Operation { .. }])
             )
         });
     if !joined {
@@ -121,39 +122,51 @@ fn read_node(
     let required = |locator: &worth_foundational::facade::AspectFieldLocator| {
         record.optional_text(locator)?.ok_or(unreadable)
     };
-    let dependency = match WorkflowNodeTag::from_persisted(record.u64(&node.kind)?) {
-        Some(WorkflowNodeTag::Operation) => Some(WorthQueryWorkflowNodeDependency::Operation {
+    let dependencies = match WorkflowNodeTag::from_persisted(record.u64(&node.kind)?) {
+        Some(WorkflowNodeTag::Operation) => vec![WorthQueryWorkflowNodeDependency::Operation {
             input_type: required(&node.input_type)?,
             binding: record
                 .optional_text(&node.operation_binding)?
                 .filter(|binding| !binding.is_empty()),
             requires_authority: record.bool(&node.requires_authority)?,
             identifier,
-        }),
-        Some(WorkflowNodeTag::Assessment) => Some(WorthQueryWorkflowNodeDependency::Assessment {
+        }],
+        Some(WorkflowNodeTag::Assessment) => vec![WorthQueryWorkflowNodeDependency::Assessment {
             parameter_type: required(&node.parameter_type)?,
             result_type: required(&node.result_type)?,
             binding: required(&node.assessment_binding)?,
             identifier,
-        }),
-        Some(WorkflowNodeTag::Condition) => Some(WorthQueryWorkflowNodeDependency::Condition {
-            parameter_type: required(&node.parameter_type)?,
-            result_type: required(&node.result_type)?,
-            binding: required(&node.condition_binding)?,
+        }],
+        Some(WorkflowNodeTag::Condition) => CompiledWorkflowCondition::from_record(
             identifier,
-        }),
-        Some(WorkflowNodeTag::Approval) => Some(WorthQueryWorkflowNodeDependency::Approval {
+            record.optional_text(&node.parameter_type)?,
+            record.optional_text(&node.result_type)?,
+            record.optional_text(&node.condition_binding)?,
+            record.optional_text(&node.condition_operands)?,
+        )
+        .ok_or(unreadable)?
+        .operands
+        .into_vec()
+        .into_iter()
+        .map(|operand| WorthQueryWorkflowNodeDependency::Condition {
+            identifier: operand.query,
+            parameter_type: operand.parameter_type,
+            result_type: operand.result_type,
+            binding: operand.binding,
+        })
+        .collect(),
+        Some(WorkflowNodeTag::Approval) => vec![WorthQueryWorkflowNodeDependency::Approval {
             capability_type: required(&node.capability_type)?,
             operation: required(&node.approval_operation)?,
             capability_identity: required(&node.approval_capability_identity)?,
             identifier,
-        }),
-        Some(WorkflowNodeTag::EvidenceJoin | WorkflowNodeTag::Terminal) => None,
+        }],
+        Some(WorkflowNodeTag::EvidenceJoin | WorkflowNodeTag::Terminal) => Vec::new(),
         None => return Err(unreadable),
     };
     Ok(WorkflowRetainedNode {
         entity,
         path,
-        dependency,
+        dependencies,
     })
 }

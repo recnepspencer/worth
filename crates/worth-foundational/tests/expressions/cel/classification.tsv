@@ -1,0 +1,817 @@
+# case	disposition	refusal, Worth denial, or rule -> Worth outcome
+basic/self_eval_zeroish/self_eval_int_zero	equivalent	
+basic/self_eval_zeroish/self_eval_uint_zero	unsupported	parse:Syntax
+basic/self_eval_zeroish/self_eval_uint_alias_zero	unsupported	parse:Syntax
+basic/self_eval_zeroish/self_eval_float_zero	equivalent	
+basic/self_eval_zeroish/self_eval_float_zerowithexp	equivalent	
+basic/self_eval_zeroish/self_eval_string_empty	unsupported	parse:Syntax
+basic/self_eval_zeroish/self_eval_string_empty_quotes	equivalent	
+basic/self_eval_zeroish/self_eval_string_raw_prefix	unsupported	parse:Syntax
+basic/self_eval_zeroish/self_eval_bytes_empty	unsupported	parse:Syntax
+basic/self_eval_zeroish/self_eval_bool_false	equivalent	
+basic/self_eval_zeroish/self_eval_null	unsupported	admission:UnknownBinding
+basic/self_eval_zeroish/self_eval_empty_list	unsupported	admission:TypeMismatch
+basic/self_eval_zeroish/self_eval_empty_map	unsupported	admission:TypeMismatch
+basic/self_eval_zeroish/self_eval_string_raw_prefix_triple_double	unsupported	parse:Syntax
+basic/self_eval_zeroish/self_eval_string_raw_prefix_triple_single	unsupported	parse:Syntax
+basic/self_eval_nonzeroish/self_eval_int_nonzero	equivalent	
+basic/self_eval_nonzeroish/self_eval_uint_nonzero	unsupported	parse:Syntax
+basic/self_eval_nonzeroish/self_eval_uint_alias_nonzero	unsupported	parse:Syntax
+basic/self_eval_nonzeroish/self_eval_int_negative_min	equivalent	
+basic/self_eval_nonzeroish/self_eval_float_negative_exp	equivalent	
+basic/self_eval_nonzeroish/self_eval_string_excl	equivalent	
+basic/self_eval_nonzeroish/self_eval_string_escape	unsupported	parse:Syntax
+basic/self_eval_nonzeroish/self_eval_bytes_escape	unsupported	parse:Syntax
+basic/self_eval_nonzeroish/self_eval_bytes_invalid_utf8	unsupported	parse:Syntax
+basic/self_eval_nonzeroish/self_eval_list_singleitem	equivalent	
+basic/self_eval_nonzeroish/self_eval_map_singleitem	equivalent	
+basic/self_eval_nonzeroish/self_eval_bool_true	equivalent	
+basic/self_eval_nonzeroish/self_eval_int_hex	equivalent	
+basic/self_eval_nonzeroish/self_eval_int_hex_negative	equivalent	
+basic/self_eval_nonzeroish/self_eval_uint_hex	unsupported	parse:Syntax
+basic/self_eval_nonzeroish/self_eval_uint_alias_hex	unsupported	parse:Syntax
+basic/self_eval_nonzeroish/self_eval_unicode_escape_four	unsupported	parse:Syntax
+basic/self_eval_nonzeroish/self_eval_unicode_escape_eight	unsupported	parse:Syntax
+basic/self_eval_nonzeroish/self_eval_ascii_escape_seq	unsupported	parse:Syntax
+basic/variables/self_eval_bound_lookup	equivalent	
+basic/variables/self_eval_unbound_lookup	unsupported	admission:UnknownBinding
+basic/variables/unbound_is_runtime_error	unsupported	admission:UnknownBinding
+basic/functions/binop	equivalent	
+basic/functions/unbound	unsupported	admission:UnknownBinding
+basic/functions/unbound_is_runtime_error	unsupported	admission:UnknownBinding
+basic/reserved_const/false	unsupported	environment:Syntax
+basic/reserved_const/true	unsupported	environment:Syntax
+basic/reserved_const/null	divergent	no-null -> ExpressionValue(Bool(true))
+comparisons/eq_literal/eq_int	equivalent	
+comparisons/eq_literal/not_eq_int	equivalent	
+comparisons/eq_literal/eq_int_uint	unsupported	parse:Syntax
+comparisons/eq_literal/not_eq_int_uint	unsupported	parse:Syntax
+comparisons/eq_literal/eq_int_double	unsupported	admission:UnknownBinding
+comparisons/eq_literal/not_eq_int_double	unsupported	admission:UnknownBinding
+comparisons/eq_literal/eq_uint	unsupported	parse:Syntax
+comparisons/eq_literal/not_eq_uint	unsupported	parse:Syntax
+comparisons/eq_literal/eq_uint_int	unsupported	parse:Syntax
+comparisons/eq_literal/not_eq_uint_int	unsupported	parse:Syntax
+comparisons/eq_literal/eq_uint_double	unsupported	parse:Syntax
+comparisons/eq_literal/not_eq_uint_double	unsupported	parse:Syntax
+comparisons/eq_literal/eq_double	equivalent	
+comparisons/eq_literal/not_eq_double	equivalent	
+comparisons/eq_literal/not_eq_double_nan	divergent	finite-floats -> denied DivisionByZero
+comparisons/eq_literal/not_eq_int_double_nan	unsupported	admission:UnknownBinding
+comparisons/eq_literal/not_eq_uint_double_nan	unsupported	parse:Syntax
+comparisons/eq_literal/eq_double_int	unsupported	admission:UnknownBinding
+comparisons/eq_literal/not_eq_double_int	unsupported	admission:UnknownBinding
+comparisons/eq_literal/eq_double_uint	unsupported	parse:Syntax
+comparisons/eq_literal/not_eq_double_uint	unsupported	parse:Syntax
+comparisons/eq_literal/eq_string	unsupported	parse:Syntax
+comparisons/eq_literal/not_eq_string	unsupported	parse:Syntax
+comparisons/eq_literal/eq_raw_string	unsupported	parse:Syntax
+comparisons/eq_literal/not_eq_string_case	unsupported	parse:Syntax
+comparisons/eq_literal/eq_string_unicode	unsupported	parse:Syntax
+comparisons/eq_literal/not_eq_string_unicode_ascii	unsupported	parse:Syntax
+comparisons/eq_literal/no_string_normalization	unsupported	parse:Syntax
+comparisons/eq_literal/eq_null	unsupported	admission:UnknownBinding
+comparisons/eq_literal/eq_bool	equivalent	
+comparisons/eq_literal/not_eq_bool	equivalent	
+comparisons/eq_literal/eq_bytes	unsupported	parse:Syntax
+comparisons/eq_literal/not_eq_bytes	unsupported	parse:Syntax
+comparisons/eq_literal/eq_list_empty	unsupported	admission:TypeMismatch
+comparisons/eq_literal/eq_list_null	unsupported	admission:UnknownBinding
+comparisons/eq_literal/not_eq_list_null	unsupported	parse:Syntax
+comparisons/eq_literal/eq_list_numbers	equivalent	
+comparisons/eq_literal/eq_list_mixed_type_numbers	unsupported	parse:Syntax
+comparisons/eq_literal/not_eq_list_mixed_type_numbers	unsupported	parse:Syntax
+comparisons/eq_literal/not_eq_list_order	equivalent	
+comparisons/eq_literal/not_eq_list_string_case	unsupported	parse:Syntax
+comparisons/eq_literal/not_eq_list_length	unsupported	parse:Syntax
+comparisons/eq_literal/not_eq_list_false_vs_types	unsupported	parse:Syntax
+comparisons/eq_literal/eq_map_empty	unsupported	admission:TypeMismatch
+comparisons/eq_literal/eq_map_null	unsupported	parse:Syntax
+comparisons/eq_literal/not_eq_map_null	unsupported	parse:Syntax
+comparisons/eq_literal/eq_map_onekey	unsupported	parse:Syntax
+comparisons/eq_literal/eq_map_double_value	unsupported	parse:Syntax
+comparisons/eq_literal/eq_map_mixed_type_numbers	unsupported	parse:Syntax
+comparisons/eq_literal/not_eq_map_value	unsupported	parse:Syntax
+comparisons/eq_literal/not_eq_map_extra_key	unsupported	parse:Syntax
+comparisons/eq_literal/eq_map_key_order	unsupported	parse:Syntax
+comparisons/eq_literal/not_eq_map_key_casing	unsupported	parse:Syntax
+comparisons/eq_literal/not_eq_map_false_vs_types	unsupported	parse:Syntax
+comparisons/eq_literal/eq_mixed_types	unsupported	admission:TypeMismatch
+comparisons/eq_literal/eq_list_elem_mixed_types	unsupported	admission:TypeMismatch
+comparisons/eq_literal/eq_map_value_mixed_types	unsupported	parse:Syntax
+comparisons/eq_literal/eq_dyn_json_null	unsupported	parse:Syntax
+comparisons/eq_literal/not_eq_dyn_bool_null	unsupported	admission:UnknownBinding
+comparisons/eq_literal/not_eq_dyn_bytes_null	unsupported	parse:Syntax
+comparisons/eq_literal/not_eq_dyn_double_null	unsupported	admission:UnknownBinding
+comparisons/eq_literal/not_eq_dyn_duration_null	unsupported	parse:Syntax
+comparisons/eq_literal/not_eq_dyn_int_null	unsupported	admission:UnknownBinding
+comparisons/eq_literal/not_eq_dyn_list_null	unsupported	admission:TypeMismatch
+comparisons/eq_literal/not_eq_dyn_map_null	unsupported	admission:TypeMismatch
+comparisons/eq_literal/not_eq_dyn_proto2_msg_null	unsupported	admission:UnknownBinding
+comparisons/eq_literal/not_eq_dyn_proto3_msg_null	unsupported	admission:UnknownBinding
+comparisons/eq_literal/not_eq_dyn_string_null	unsupported	parse:Syntax
+comparisons/eq_literal/not_eq_dyn_timestamp_null	unsupported	admission:UnknownBinding
+comparisons/eq_literal/not_eq_list_elem_null	unsupported	admission:UnknownBinding
+comparisons/eq_literal/not_eq_map_value_null	unsupported	parse:Syntax
+comparisons/eq_literal/eq_dyn_int_uint	unsupported	parse:Syntax
+comparisons/eq_literal/eq_dyn_int_double	unsupported	admission:UnknownBinding
+comparisons/eq_literal/eq_dyn_uint_int	unsupported	parse:Syntax
+comparisons/eq_literal/eq_dyn_uint_double	unsupported	parse:Syntax
+comparisons/eq_literal/eq_dyn_double_int	unsupported	admission:UnknownBinding
+comparisons/eq_literal/eq_dyn_double_uint	unsupported	parse:Syntax
+comparisons/eq_literal/not_eq_dyn_int_uint	unsupported	parse:Syntax
+comparisons/eq_literal/not_eq_dyn_int_double	unsupported	admission:UnknownBinding
+comparisons/eq_literal/not_eq_dyn_uint_int	unsupported	parse:Syntax
+comparisons/eq_literal/not_eq_dyn_uint_double	unsupported	parse:Syntax
+comparisons/eq_literal/not_eq_dyn_double_int	unsupported	admission:UnknownBinding
+comparisons/eq_literal/not_eq_dyn_double_uint	unsupported	parse:Syntax
+comparisons/eq_wrapper/eq_bool	unsupported	parse:Syntax
+comparisons/eq_wrapper/eq_bool_empty	unsupported	parse:Syntax
+comparisons/eq_wrapper/eq_bool_not_null	unsupported	parse:Syntax
+comparisons/eq_wrapper/eq_bool_proto2_null	unsupported	admission:UnknownBinding
+comparisons/eq_wrapper/eq_bool_proto3_null	unsupported	admission:UnknownBinding
+comparisons/eq_wrapper/eq_bytes	unsupported	parse:Syntax
+comparisons/eq_wrapper/eq_bytes_empty	unsupported	parse:Syntax
+comparisons/eq_wrapper/eq_bytes_not_null	unsupported	parse:Syntax
+comparisons/eq_wrapper/eq_bytes_proto2_null	unsupported	admission:UnknownBinding
+comparisons/eq_wrapper/eq_bytes_proto3_null	unsupported	admission:UnknownBinding
+comparisons/eq_wrapper/eq_double	unsupported	parse:Syntax
+comparisons/eq_wrapper/eq_double_empty	unsupported	parse:Syntax
+comparisons/eq_wrapper/eq_double_not_null	unsupported	parse:Syntax
+comparisons/eq_wrapper/eq_double_proto2_null	unsupported	admission:UnknownBinding
+comparisons/eq_wrapper/eq_double_proto3_null	unsupported	admission:UnknownBinding
+comparisons/eq_wrapper/eq_float	unsupported	parse:Syntax
+comparisons/eq_wrapper/eq_float_empty	unsupported	parse:Syntax
+comparisons/eq_wrapper/eq_float_not_null	unsupported	parse:Syntax
+comparisons/eq_wrapper/eq_float_proto2_null	unsupported	admission:UnknownBinding
+comparisons/eq_wrapper/eq_float_proto3_null	unsupported	admission:UnknownBinding
+comparisons/eq_wrapper/eq_int32	unsupported	parse:Syntax
+comparisons/eq_wrapper/eq_int32_empty	unsupported	parse:Syntax
+comparisons/eq_wrapper/eq_int32_not_null	unsupported	parse:Syntax
+comparisons/eq_wrapper/eq_int32_proto2_null	unsupported	admission:UnknownBinding
+comparisons/eq_wrapper/eq_int32_proto3_null	unsupported	admission:UnknownBinding
+comparisons/eq_wrapper/eq_int64	unsupported	parse:Syntax
+comparisons/eq_wrapper/eq_int64_empty	unsupported	parse:Syntax
+comparisons/eq_wrapper/eq_int64_not_null	unsupported	parse:Syntax
+comparisons/eq_wrapper/eq_int64_proto2_null	unsupported	admission:UnknownBinding
+comparisons/eq_wrapper/eq_int64_proto3_null	unsupported	admission:UnknownBinding
+comparisons/eq_wrapper/eq_string	unsupported	parse:Syntax
+comparisons/eq_wrapper/eq_string_empty	unsupported	parse:Syntax
+comparisons/eq_wrapper/eq_string_not_null	unsupported	parse:Syntax
+comparisons/eq_wrapper/eq_string_proto2_null	unsupported	admission:UnknownBinding
+comparisons/eq_wrapper/eq_string_proto3_null	unsupported	admission:UnknownBinding
+comparisons/eq_wrapper/eq_uint32	unsupported	parse:Syntax
+comparisons/eq_wrapper/eq_uint32_empty	unsupported	parse:Syntax
+comparisons/eq_wrapper/eq_uint32_not_null	unsupported	parse:Syntax
+comparisons/eq_wrapper/eq_uint32_proto2_null	unsupported	admission:UnknownBinding
+comparisons/eq_wrapper/eq_uint32_proto3_null	unsupported	admission:UnknownBinding
+comparisons/eq_wrapper/eq_uint64	unsupported	parse:Syntax
+comparisons/eq_wrapper/eq_uint64_empty	unsupported	parse:Syntax
+comparisons/eq_wrapper/eq_uint64_not_null	unsupported	parse:Syntax
+comparisons/eq_wrapper/eq_uint64_proto2_null	unsupported	admission:UnknownBinding
+comparisons/eq_wrapper/eq_uint64_proto3_null	unsupported	admission:UnknownBinding
+comparisons/eq_wrapper/eq_proto2	unsupported	parse:Syntax
+comparisons/eq_wrapper/eq_proto3	unsupported	parse:Syntax
+comparisons/eq_wrapper/eq_proto2_missing_fields_neq	unsupported	parse:Syntax
+comparisons/eq_wrapper/eq_proto3_missing_fields_neq	unsupported	parse:Syntax
+comparisons/eq_wrapper/eq_proto_nan_equal	unsupported	parse:Syntax
+comparisons/eq_wrapper/eq_proto_different_types	unsupported	admission:UnknownBinding
+comparisons/eq_wrapper/eq_proto2_any_unpack_equal	unsupported	parse:Syntax
+comparisons/eq_wrapper/eq_proto2_any_unpack_not_equal	unsupported	parse:Syntax
+comparisons/eq_wrapper/eq_proto2_any_unpack_bytewise_fallback_not_equal	unsupported	parse:Syntax
+comparisons/eq_wrapper/eq_proto2_any_unpack_bytewise_fallback_equal	unsupported	parse:Syntax
+comparisons/eq_wrapper/eq_proto3_any_unpack_equal	unsupported	parse:Syntax
+comparisons/eq_wrapper/eq_proto3_any_unpack_not_equal	unsupported	parse:Syntax
+comparisons/eq_wrapper/eq_proto3_any_unpack_bytewise_fallback_not_equal	unsupported	parse:Syntax
+comparisons/eq_wrapper/eq_proto3_any_unpack_bytewise_fallback_equal	unsupported	parse:Syntax
+comparisons/ne_literal/ne_int	equivalent	
+comparisons/ne_literal/not_ne_int	equivalent	
+comparisons/ne_literal/ne_int_double	unsupported	admission:UnknownBinding
+comparisons/ne_literal/not_ne_int_double	unsupported	admission:UnknownBinding
+comparisons/ne_literal/ne_int_uint	unsupported	parse:Syntax
+comparisons/ne_literal/not_ne_int_uint	unsupported	parse:Syntax
+comparisons/ne_literal/ne_uint	unsupported	parse:Syntax
+comparisons/ne_literal/not_ne_uint	unsupported	parse:Syntax
+comparisons/ne_literal/ne_uint_double	unsupported	parse:Syntax
+comparisons/ne_literal/not_ne_uint_double	unsupported	parse:Syntax
+comparisons/ne_literal/ne_double	equivalent	
+comparisons/ne_literal/not_ne_double_nan	divergent	finite-floats -> denied DivisionByZero
+comparisons/ne_literal/not_ne_int_double_nan	unsupported	admission:UnknownBinding
+comparisons/ne_literal/not_ne_uint_double_nan	unsupported	parse:Syntax
+comparisons/ne_literal/not_ne_double	equivalent	
+comparisons/ne_literal/ne_double_int	unsupported	admission:UnknownBinding
+comparisons/ne_literal/not_ne_double_int	unsupported	admission:UnknownBinding
+comparisons/ne_literal/ne_double_uint	unsupported	parse:Syntax
+comparisons/ne_literal/not_ne_double_uint	unsupported	parse:Syntax
+comparisons/ne_literal/ne_double_nan	divergent	finite-floats -> denied DivisionByZero
+comparisons/ne_literal/ne_string	unsupported	parse:Syntax
+comparisons/ne_literal/not_ne_string	unsupported	parse:Syntax
+comparisons/ne_literal/ne_string_unicode	unsupported	parse:Syntax
+comparisons/ne_literal/not_ne_string_unicode	unsupported	parse:Syntax
+comparisons/ne_literal/ne_bytes	unsupported	parse:Syntax
+comparisons/ne_literal/not_ne_bytes	unsupported	parse:Syntax
+comparisons/ne_literal/ne_bool	equivalent	
+comparisons/ne_literal/not_ne_bool	equivalent	
+comparisons/ne_literal/not_ne_null	unsupported	admission:UnknownBinding
+comparisons/ne_literal/ne_list_empty	equivalent	
+comparisons/ne_literal/not_ne_list_empty	unsupported	admission:TypeMismatch
+comparisons/ne_literal/ne_list_bool	equivalent	
+comparisons/ne_literal/not_ne_list_bool	equivalent	
+comparisons/ne_literal/not_ne_list_of_list	unsupported	admission:TypeMismatch
+comparisons/ne_literal/ne_map_by_value	unsupported	parse:Syntax
+comparisons/ne_literal/ne_map_by_key	unsupported	parse:Syntax
+comparisons/ne_literal/not_ne_map_int_to_float	equivalent	
+comparisons/ne_literal/not_ne_map_key_order	unsupported	parse:Syntax
+comparisons/ne_literal/ne_mixed_types	unsupported	parse:Syntax
+comparisons/ne_literal/ne_proto2	unsupported	parse:Syntax
+comparisons/ne_literal/ne_proto3	unsupported	parse:Syntax
+comparisons/ne_literal/ne_proto2_missing_fields_neq	unsupported	parse:Syntax
+comparisons/ne_literal/ne_proto3_missing_fields_neq	unsupported	parse:Syntax
+comparisons/ne_literal/ne_proto_nan_not_equal	unsupported	parse:Syntax
+comparisons/ne_literal/ne_proto_different_types	unsupported	admission:UnknownBinding
+comparisons/ne_literal/ne_proto2_any_unpack	unsupported	parse:Syntax
+comparisons/ne_literal/ne_proto2_any_unpack_bytewise_fallback	unsupported	parse:Syntax
+comparisons/ne_literal/ne_proto3_any_unpack	unsupported	parse:Syntax
+comparisons/ne_literal/ne_proto3_any_unpack_bytewise_fallback	unsupported	parse:Syntax
+comparisons/lt_literal/lt_int	equivalent	
+comparisons/lt_literal/not_lt_int	equivalent	
+comparisons/lt_literal/lt_uint	unsupported	parse:Syntax
+comparisons/lt_literal/not_lt_uint	unsupported	parse:Syntax
+comparisons/lt_literal/lt_double	equivalent	
+comparisons/lt_literal/not_lt_double	equivalent	
+comparisons/lt_literal/lt_string	unsupported	parse:Syntax
+comparisons/lt_literal/lt_string_empty_to_nonempty	unsupported	parse:Syntax
+comparisons/lt_literal/lt_string_case	unsupported	parse:Syntax
+comparisons/lt_literal/lt_string_length	unsupported	parse:Syntax
+comparisons/lt_literal/lt_string_diacritical_mark_sensitive	unsupported	parse:Syntax
+comparisons/lt_literal/not_lt_string_empty	unsupported	parse:Syntax
+comparisons/lt_literal/not_lt_string_same	unsupported	parse:Syntax
+comparisons/lt_literal/not_lt_string_case_length	unsupported	parse:Syntax
+comparisons/lt_literal/unicode_order_lexical	unsupported	parse:Syntax
+comparisons/lt_literal/lt_bytes	unsupported	parse:Syntax
+comparisons/lt_literal/not_lt_bytes_same	unsupported	parse:Syntax
+comparisons/lt_literal/not_lt_bytes_width	unsupported	parse:Syntax
+comparisons/lt_literal/lt_bool_false_first	unsupported	admission:TypeMismatch
+comparisons/lt_literal/not_lt_bool_same	unsupported	admission:TypeMismatch
+comparisons/lt_literal/not_lt_bool_true_first	unsupported	admission:TypeMismatch
+comparisons/lt_literal/lt_list_unsupported	unsupported	admission:TypeMismatch
+comparisons/lt_literal/lt_map_unsupported	unsupported	parse:Syntax
+comparisons/lt_literal/lt_null_unsupported	unsupported	admission:UnknownBinding
+comparisons/lt_literal/lt_mixed_types_error	unsupported	parse:Syntax
+comparisons/lt_literal/lt_dyn_int_uint	unsupported	parse:Syntax
+comparisons/lt_literal/lt_dyn_int_double	unsupported	admission:UnknownBinding
+comparisons/lt_literal/lt_dyn_uint_int	unsupported	parse:Syntax
+comparisons/lt_literal/lt_dyn_uint_double	unsupported	parse:Syntax
+comparisons/lt_literal/lt_dyn_double_int	unsupported	admission:UnknownBinding
+comparisons/lt_literal/lt_dyn_double_uint	unsupported	parse:Syntax
+comparisons/lt_literal/not_lt_dyn_int_uint	unsupported	parse:Syntax
+comparisons/lt_literal/not_lt_dyn_int_double	unsupported	admission:UnknownBinding
+comparisons/lt_literal/not_lt_dyn_uint_int	unsupported	parse:Syntax
+comparisons/lt_literal/not_lt_dyn_uint_double	unsupported	parse:Syntax
+comparisons/lt_literal/not_lt_dyn_double_int	unsupported	admission:UnknownBinding
+comparisons/lt_literal/not_lt_dyn_double_uint	unsupported	parse:Syntax
+comparisons/lt_literal/lt_dyn_int_big_uint	unsupported	parse:Syntax
+comparisons/lt_literal/lt_dyn_small_int_uint	unsupported	parse:Syntax
+comparisons/lt_literal/not_lt_dyn_int_big_lossy_double	unsupported	admission:UnknownBinding
+comparisons/lt_literal/lt_dyn_int_big_lossy_double	unsupported	admission:UnknownBinding
+comparisons/lt_literal/not_lt_dyn_int_small_double	unsupported	admission:UnknownBinding
+comparisons/lt_literal/not_lt_dyn_int_small_lossy_double	unsupported	admission:UnknownBinding
+comparisons/lt_literal/not_lt_dyn_uint_small_int	unsupported	parse:Syntax
+comparisons/lt_literal/not_lt_dyn_big_uint_int	unsupported	parse:Syntax
+comparisons/lt_literal/not_lt_dyn_uint_small_double	unsupported	parse:Syntax
+comparisons/lt_literal/lt_dyn_uint_big_double	unsupported	parse:Syntax
+comparisons/lt_literal/not_lt_dyn_big_double_uint	unsupported	parse:Syntax
+comparisons/lt_literal/not_lt_dyn_big_double_int	unsupported	admission:UnknownBinding
+comparisons/lt_literal/not_lt_dyn_small_double_int	unsupported	admission:UnknownBinding
+comparisons/gt_literal/gt_int	equivalent	
+comparisons/gt_literal/not_gt_int	equivalent	
+comparisons/gt_literal/gt_uint	unsupported	parse:Syntax
+comparisons/gt_literal/not_gt_uint	unsupported	parse:Syntax
+comparisons/gt_literal/gt_double	equivalent	
+comparisons/gt_literal/not_gt_double	unsupported	parse:Syntax
+comparisons/gt_literal/gt_string_case	unsupported	parse:Syntax
+comparisons/gt_literal/gt_string_to_empty	unsupported	parse:Syntax
+comparisons/gt_literal/not_gt_string_empty_to_empty	unsupported	parse:Syntax
+comparisons/gt_literal/gt_string_unicode	unsupported	parse:Syntax
+comparisons/gt_literal/gt_bytes_one	unsupported	parse:Syntax
+comparisons/gt_literal/gt_bytes_one_to_empty	unsupported	parse:Syntax
+comparisons/gt_literal/not_gt_bytes_sorting	unsupported	parse:Syntax
+comparisons/gt_literal/gt_bool_true_false	unsupported	admission:TypeMismatch
+comparisons/gt_literal/not_gt_bool_false_true	unsupported	admission:TypeMismatch
+comparisons/gt_literal/not_gt_bool_same	unsupported	admission:TypeMismatch
+comparisons/gt_literal/gt_null_unsupported	unsupported	admission:UnknownBinding
+comparisons/gt_literal/gt_list_unsupported	unsupported	admission:TypeMismatch
+comparisons/gt_literal/gt_map_unsupported	unsupported	parse:Syntax
+comparisons/gt_literal/gt_mixed_types_error	unsupported	parse:Syntax
+comparisons/gt_literal/gt_dyn_int_uint	unsupported	parse:Syntax
+comparisons/gt_literal/gt_dyn_int_double	unsupported	admission:UnknownBinding
+comparisons/gt_literal/gt_dyn_uint_int	unsupported	parse:Syntax
+comparisons/gt_literal/gt_dyn_uint_double	unsupported	parse:Syntax
+comparisons/gt_literal/gt_dyn_double_int	unsupported	admission:UnknownBinding
+comparisons/gt_literal/gt_dyn_double_uint	unsupported	parse:Syntax
+comparisons/gt_literal/not_gt_dyn_int_uint	unsupported	parse:Syntax
+comparisons/gt_literal/not_gt_dyn_int_double	unsupported	admission:UnknownBinding
+comparisons/gt_literal/not_gt_dyn_uint_int	unsupported	parse:Syntax
+comparisons/gt_literal/not_gt_dyn_uint_double	unsupported	parse:Syntax
+comparisons/gt_literal/not_gt_dyn_double_int	unsupported	admission:UnknownBinding
+comparisons/gt_literal/not_gt_dyn_double_uint	unsupported	parse:Syntax
+comparisons/gt_literal/not_gt_dyn_int_big_uint	unsupported	parse:Syntax
+comparisons/gt_literal/not_gt_dyn_small_int_uint	unsupported	parse:Syntax
+comparisons/gt_literal/not_gt_dyn_int_big_double	unsupported	admission:UnknownBinding
+comparisons/gt_literal/not_gt_dyn_int_small_lossy_double	unsupported	admission:UnknownBinding
+comparisons/gt_literal/gt_dyn_int_small_lossy_double_greater	unsupported	admission:UnknownBinding
+comparisons/gt_literal/gt_dyn_uint_small_int	unsupported	parse:Syntax
+comparisons/gt_literal/gt_dyn_big_uint_int	unsupported	parse:Syntax
+comparisons/gt_literal/gt_dyn_uint_small_double	unsupported	parse:Syntax
+comparisons/gt_literal/not_gt_dyn_uint_big_double	unsupported	parse:Syntax
+comparisons/gt_literal/gt_dyn_big_double_uint	unsupported	parse:Syntax
+comparisons/gt_literal/not_gt_dyn_big_double_int	unsupported	admission:UnknownBinding
+comparisons/gt_literal/not_gt_dyn_small_double_int	unsupported	admission:UnknownBinding
+comparisons/lte_literal/lte_int_lt	equivalent	
+comparisons/lte_literal/lte_int_eq	equivalent	
+comparisons/lte_literal/not_lte_int_gt	equivalent	
+comparisons/lte_literal/lte_uint_lt	unsupported	parse:Syntax
+comparisons/lte_literal/lte_uint_eq	unsupported	parse:Syntax
+comparisons/lte_literal/not_lte_uint_gt	unsupported	parse:Syntax
+comparisons/lte_literal/lte_double_lt	equivalent	
+comparisons/lte_literal/lte_double_eq	equivalent	
+comparisons/lte_literal/not_lte_double_gt	equivalent	
+comparisons/lte_literal/lte_string_empty	unsupported	parse:Syntax
+comparisons/lte_literal/lte_string_from_empty	unsupported	parse:Syntax
+comparisons/lte_literal/not_lte_string_to_empty	unsupported	parse:Syntax
+comparisons/lte_literal/lte_string_lexicographical	unsupported	parse:Syntax
+comparisons/lte_literal/lte_string_unicode_eq	unsupported	parse:Syntax
+comparisons/lte_literal/lte_string_unicode_lt	unsupported	parse:Syntax
+comparisons/lte_literal/not_lte_string_unicode	unsupported	parse:Syntax
+comparisons/lte_literal/lte_bytes_empty	unsupported	parse:Syntax
+comparisons/lte_literal/not_lte_bytes_length	unsupported	parse:Syntax
+comparisons/lte_literal/lte_bool_false_true	unsupported	admission:TypeMismatch
+comparisons/lte_literal/lte_bool_false_false	unsupported	admission:TypeMismatch
+comparisons/lte_literal/lte_bool_true_false	unsupported	admission:TypeMismatch
+comparisons/lte_literal/lte_null_unsupported	unsupported	admission:UnknownBinding
+comparisons/lte_literal/lte_list_unsupported	unsupported	admission:TypeMismatch
+comparisons/lte_literal/lte_map_unsupported	unsupported	parse:Syntax
+comparisons/lte_literal/lte_mixed_types_error	unsupported	parse:Syntax
+comparisons/lte_literal/lte_dyn_int_uint	unsupported	parse:Syntax
+comparisons/lte_literal/lte_dyn_int_double	unsupported	admission:UnknownBinding
+comparisons/lte_literal/lte_dyn_uint_int	unsupported	parse:Syntax
+comparisons/lte_literal/lte_dyn_uint_double	unsupported	parse:Syntax
+comparisons/lte_literal/lte_dyn_double_int	unsupported	admission:UnknownBinding
+comparisons/lte_literal/lte_dyn_double_uint	unsupported	parse:Syntax
+comparisons/lte_literal/not_lte_dyn_int_uint	unsupported	parse:Syntax
+comparisons/lte_literal/not_lte_dyn_int_double	unsupported	admission:UnknownBinding
+comparisons/lte_literal/not_lte_dyn_uint_int	unsupported	parse:Syntax
+comparisons/lte_literal/not_lte_dyn_uint_double	unsupported	parse:Syntax
+comparisons/lte_literal/not_lte_dyn_double_int	unsupported	admission:UnknownBinding
+comparisons/lte_literal/not_lte_dyn_double_uint	unsupported	parse:Syntax
+comparisons/lte_literal/lte_dyn_int_big_uint	unsupported	parse:Syntax
+comparisons/lte_literal/lte_dyn_small_int_uint	unsupported	parse:Syntax
+comparisons/lte_literal/lte_dyn_int_big_double	unsupported	admission:UnknownBinding
+comparisons/lte_literal/lte_dyn_int_small_lossy_double	unsupported	admission:UnknownBinding
+comparisons/lte_literal/not_lte_dyn_int_small_lossy_double_less	unsupported	admission:UnknownBinding
+comparisons/lte_literal/not_lte_dyn_uint_small_int	unsupported	parse:Syntax
+comparisons/lte_literal/not_lte_dyn_big_uint_int	unsupported	parse:Syntax
+comparisons/lte_literal/not_lte_dyn_uint_small_double	unsupported	parse:Syntax
+comparisons/lte_literal/lte_dyn_uint_big_double	unsupported	parse:Syntax
+comparisons/lte_literal/not_lte_dyn_big_double_uint	unsupported	parse:Syntax
+comparisons/lte_literal/lte_dyn_big_double_int	unsupported	admission:UnknownBinding
+comparisons/lte_literal/lte_dyn_small_double_int	unsupported	admission:UnknownBinding
+comparisons/gte_literal/gte_int_gt	equivalent	
+comparisons/gte_literal/gte_int_eq	equivalent	
+comparisons/gte_literal/not_gte_int_lt	equivalent	
+comparisons/gte_literal/gte_uint_gt	unsupported	parse:Syntax
+comparisons/gte_literal/gte_uint_eq	unsupported	parse:Syntax
+comparisons/gte_literal/not_gte_uint_lt	unsupported	parse:Syntax
+comparisons/gte_literal/gte_double_gt	equivalent	
+comparisons/gte_literal/gte_double_eq	equivalent	
+comparisons/gte_literal/not_gte_double_lt	equivalent	
+comparisons/gte_literal/gte_string_empty	unsupported	parse:Syntax
+comparisons/gte_literal/gte_string_to_empty	unsupported	parse:Syntax
+comparisons/gte_literal/gte_string_empty_to_nonempty	unsupported	parse:Syntax
+comparisons/gte_literal/gte_string_length	unsupported	parse:Syntax
+comparisons/gte_literal/not_gte_string_lexicographical	unsupported	parse:Syntax
+comparisons/gte_literal/gte_string_unicode_eq	unsupported	parse:Syntax
+comparisons/gte_literal/gte_string_unicode_gt	unsupported	parse:Syntax
+comparisons/gte_literal/not_get_string_unicode	unsupported	parse:Syntax
+comparisons/gte_literal/gte_bytes_to_empty	unsupported	parse:Syntax
+comparisons/gte_literal/not_gte_bytes_empty_to_nonempty	unsupported	parse:Syntax
+comparisons/gte_literal/gte_bytes_samelength	unsupported	parse:Syntax
+comparisons/gte_literal/gte_bool_gt	unsupported	admission:TypeMismatch
+comparisons/gte_literal/gte_bool_eq	unsupported	admission:TypeMismatch
+comparisons/gte_literal/not_gte_bool_lt	unsupported	admission:TypeMismatch
+comparisons/gte_literal/gte_null_unsupported	unsupported	admission:UnknownBinding
+comparisons/gte_literal/gte_list_unsupported	unsupported	parse:Syntax
+comparisons/gte_literal/gte_map_unsupported	unsupported	parse:Syntax
+comparisons/gte_literal/gte_mixed_types_error	unsupported	parse:Syntax
+comparisons/gte_literal/gte_dyn_int_uint	unsupported	parse:Syntax
+comparisons/gte_literal/gte_dyn_int_double	unsupported	admission:UnknownBinding
+comparisons/gte_literal/gte_dyn_uint_int	unsupported	parse:Syntax
+comparisons/gte_literal/gte_dyn_uint_double	unsupported	parse:Syntax
+comparisons/gte_literal/gte_dyn_double_int	unsupported	admission:UnknownBinding
+comparisons/gte_literal/gte_dyn_double_uint	unsupported	parse:Syntax
+comparisons/gte_literal/not_gte_dyn_int_uint	unsupported	parse:Syntax
+comparisons/gte_literal/not_gte_dyn_int_double	unsupported	admission:UnknownBinding
+comparisons/gte_literal/not_gte_dyn_uint_int	unsupported	parse:Syntax
+comparisons/gte_literal/not_gte_dyn_uint_double	unsupported	parse:Syntax
+comparisons/gte_literal/not_gte_dyn_double_int	unsupported	admission:UnknownBinding
+comparisons/gte_literal/not_gte_dyn_double_uint	unsupported	parse:Syntax
+comparisons/gte_literal/not_gte_dyn_int_big_uint	unsupported	parse:Syntax
+comparisons/gte_literal/not_gte_dyn_small_int_uint	unsupported	parse:Syntax
+comparisons/gte_literal/gte_dyn_int_big_lossy_double	unsupported	admission:UnknownBinding
+comparisons/gte_literal/not_gte_dyn_int_big_double	unsupported	admission:UnknownBinding
+comparisons/gte_literal/gte_dyn_int_small_lossy_double_equal	unsupported	admission:UnknownBinding
+comparisons/gte_literal/gte_dyn_int_small_lossy_double_greater	unsupported	admission:UnknownBinding
+comparisons/gte_literal/gte_dyn_uint_small_int	unsupported	parse:Syntax
+comparisons/gte_literal/gte_dyn_big_uint_int	unsupported	parse:Syntax
+comparisons/gte_literal/gte_dyn_uint_small_double	unsupported	parse:Syntax
+comparisons/gte_literal/not_gte_dyn_uint_big_double	unsupported	parse:Syntax
+comparisons/gte_literal/gte_dyn_big_double_uint	unsupported	parse:Syntax
+comparisons/gte_literal/gte_dyn_big_double_int	unsupported	admission:UnknownBinding
+comparisons/gte_literal/gte_dyn_small_double_int	unsupported	admission:UnknownBinding
+comparisons/in_list_literal/elem_not_in_empty_list	unsupported	parse:Syntax
+comparisons/in_list_literal/elem_in_list	unsupported	parse:Syntax
+comparisons/in_list_literal/elem_not_in_list	unsupported	parse:Syntax
+comparisons/in_list_literal/elem_in_mixed_type_list	unsupported	parse:Syntax
+comparisons/in_list_literal/elem_in_mixed_type_list_cross_type	unsupported	parse:Syntax
+comparisons/in_map_literal/key_not_in_empty_map	unsupported	parse:Syntax
+comparisons/in_map_literal/key_in_map	unsupported	parse:Syntax
+comparisons/in_map_literal/key_not_in_map	unsupported	parse:Syntax
+comparisons/in_map_literal/key_in_mixed_key_type_map	unsupported	parse:Syntax
+comparisons/in_map_literal/key_in_mixed_key_type_map_cross_type	unsupported	parse:Syntax
+comparisons/bound/bytes_gt_left_false	unsupported	parse:Syntax
+comparisons/bound/int_lte_right_true	equivalent	
+comparisons/bound/bool_lt_right_true	unsupported	admission:TypeMismatch
+comparisons/bound/double_ne_left_false	equivalent	
+comparisons/bound/map_ne_right_false	unsupported	environment:Type
+comparisons/bound/null_eq_left_true	unsupported	environment:Type
+comparisons/bound/list_eq_right_false	unsupported	environment:Type
+comparisons/bound/string_gte_right_true	unsupported	parse:Syntax
+comparisons/bound/uint_eq_right_false	unsupported	environment:Type
+comparisons/bound/null_lt_right_no_such_overload	unsupported	environment:Value
+conversions/bytes/string_empty	unsupported	parse:Syntax
+conversions/bytes/string	unsupported	parse:Syntax
+conversions/bytes/string_unicode	unsupported	parse:Syntax
+conversions/bytes/string_unicode_vs_literal	unsupported	parse:Syntax
+conversions/double/int_zero	unsupported	admission:UnknownBinding
+conversions/double/int_pos	unsupported	admission:UnknownBinding
+conversions/double/int_neg	unsupported	admission:UnknownBinding
+conversions/double/int_min_exact	unsupported	admission:UnknownBinding
+conversions/double/int_max_exact	unsupported	admission:UnknownBinding
+conversions/double/int_range	unsupported	admission:UnknownBinding
+conversions/double/uint_zero	unsupported	parse:Syntax
+conversions/double/uint_pos	unsupported	parse:Syntax
+conversions/double/uint_max_exact	unsupported	parse:Syntax
+conversions/double/uint_range	unsupported	parse:Syntax
+conversions/double/string_zero	unsupported	parse:Syntax
+conversions/double/string_zero_dec	unsupported	parse:Syntax
+conversions/double/string_neg_zero	unsupported	parse:Syntax
+conversions/double/string_no_dec	unsupported	parse:Syntax
+conversions/double/string_pos	unsupported	parse:Syntax
+conversions/double/string_neg	unsupported	parse:Syntax
+conversions/double/string_exp_pos_pos	unsupported	parse:Syntax
+conversions/double/string_exp_pos_neg	unsupported	parse:Syntax
+conversions/double/string_exp_neg_pos	unsupported	parse:Syntax
+conversions/double/string_exp_neg_neg	unsupported	parse:Syntax
+conversions/dyn/dyn_heterogeneous_list	unsupported	parse:Syntax
+conversions/int/uint	unsupported	parse:Syntax
+conversions/int/uint_zero	unsupported	parse:Syntax
+conversions/int/uint_max_exact	unsupported	parse:Syntax
+conversions/int/uint_range	unsupported	parse:Syntax
+conversions/int/double_round_neg	unsupported	admission:UnknownBinding
+conversions/int/double_truncate	unsupported	admission:UnknownBinding
+conversions/int/double_truncate_neg	unsupported	admission:UnknownBinding
+conversions/int/double_half_pos	unsupported	admission:UnknownBinding
+conversions/int/double_half_neg	unsupported	admission:UnknownBinding
+conversions/int/double_big_exact	unsupported	admission:UnknownBinding
+conversions/int/double_big_precision	unsupported	admission:UnknownBinding
+conversions/int/double_int_max_range	unsupported	admission:UnknownBinding
+conversions/int/double_int_min_range	unsupported	admission:UnknownBinding
+conversions/int/double_range	unsupported	admission:UnknownBinding
+conversions/int/string	unsupported	parse:Syntax
+conversions/int/timestamp	unsupported	parse:Syntax
+conversions/string/int	unsupported	admission:UnknownBinding
+conversions/string/int_neg	unsupported	admission:UnknownBinding
+conversions/string/uint	unsupported	parse:Syntax
+conversions/string/double	unsupported	admission:UnknownBinding
+conversions/string/double_hard	unsupported	admission:UnknownBinding
+conversions/string/bytes	unsupported	parse:Syntax
+conversions/string/bytes_unicode	unsupported	parse:Syntax
+conversions/string/bytes_invalid	unsupported	parse:Syntax
+conversions/type/bool	unsupported	admission:UnknownBinding
+conversions/type/bool_denotation	unsupported	admission:UnknownBinding
+conversions/type/dyn_no_denotation	unsupported	admission:UnknownBinding
+conversions/type/int	unsupported	admission:UnknownBinding
+conversions/type/int_denotation	unsupported	admission:UnknownBinding
+conversions/type/eq_same	unsupported	admission:UnknownBinding
+conversions/type/uint	unsupported	parse:Syntax
+conversions/type/uint_denotation	unsupported	admission:UnknownBinding
+conversions/type/double	unsupported	admission:UnknownBinding
+conversions/type/double_denotation	unsupported	admission:UnknownBinding
+conversions/type/null_type	unsupported	admission:UnknownBinding
+conversions/type/null_type_denotation	unsupported	admission:UnknownBinding
+conversions/type/string	unsupported	parse:Syntax
+conversions/type/string_denotation	unsupported	admission:UnknownBinding
+conversions/type/bytes	unsupported	parse:Syntax
+conversions/type/bytes_denotation	unsupported	admission:UnknownBinding
+conversions/type/list	unsupported	admission:UnknownBinding
+conversions/type/list_denotation	unsupported	admission:UnknownBinding
+conversions/type/lists_monomorphic	unsupported	parse:Syntax
+conversions/type/map	unsupported	admission:UnknownBinding
+conversions/type/map_denotation	unsupported	admission:UnknownBinding
+conversions/type/map_monomorphic	unsupported	parse:Syntax
+conversions/type/eq_diff	unsupported	parse:Syntax
+conversions/type/neq_same	unsupported	admission:UnknownBinding
+conversions/type/neq_diff	unsupported	admission:UnknownBinding
+conversions/type/meta	unsupported	parse:Syntax
+conversions/type/type	unsupported	admission:UnknownBinding
+conversions/type/type_denotation	unsupported	admission:UnknownBinding
+conversions/type/type_type	unsupported	admission:UnknownBinding
+conversions/uint/int	unsupported	admission:UnknownBinding
+conversions/uint/int_max	unsupported	admission:UnknownBinding
+conversions/uint/int_neg	unsupported	admission:UnknownBinding
+conversions/uint/double	unsupported	admission:UnknownBinding
+conversions/uint/double_truncate	unsupported	admission:UnknownBinding
+conversions/uint/double_half	unsupported	admission:UnknownBinding
+conversions/uint/double_big_exact	unsupported	parse:Syntax
+conversions/uint/double_big_precision	unsupported	parse:Syntax
+conversions/uint/double_uint_max_range	unsupported	admission:UnknownBinding
+conversions/uint/double_range_beyond_uint	unsupported	admission:UnknownBinding
+conversions/uint/string	unsupported	parse:Syntax
+conversions/bool/string_1	unsupported	parse:Syntax
+conversions/bool/string_t	unsupported	parse:Syntax
+conversions/bool/string_true_lowercase	unsupported	parse:Syntax
+conversions/bool/string_true_uppercase	unsupported	parse:Syntax
+conversions/bool/string_true_pascalcase	unsupported	parse:Syntax
+conversions/bool/string_0	unsupported	parse:Syntax
+conversions/bool/string_f	unsupported	parse:Syntax
+conversions/bool/string_false_lowercase	unsupported	parse:Syntax
+conversions/bool/string_false_uppercase	unsupported	parse:Syntax
+conversions/bool/string_false_pascalcase	unsupported	parse:Syntax
+conversions/bool/string_true_badcase	unsupported	parse:Syntax
+conversions/bool/string_false_badcase	unsupported	parse:Syntax
+conversions/identity/bool	unsupported	admission:UnknownBinding
+conversions/identity/int	unsupported	admission:UnknownBinding
+conversions/identity/uint	unsupported	parse:Syntax
+conversions/identity/double	unsupported	admission:UnknownBinding
+conversions/identity/string	unsupported	parse:Syntax
+conversions/identity/bytes	unsupported	parse:Syntax
+conversions/identity/duration	unsupported	parse:Syntax
+conversions/identity/timestamp	unsupported	admission:UnknownBinding
+fp_math/fp_math/add_positive_positive	equivalent	
+fp_math/fp_math/add_positive_negative	equivalent	
+fp_math/fp_math/add_negative_negative	equivalent	
+fp_math/fp_math/sub_positive_positive	equivalent	
+fp_math/fp_math/sub_positive_negative	equivalent	
+fp_math/fp_math/sub_negative_negative	equivalent	
+fp_math/fp_math/multiply_positive_positive	equivalent	
+fp_math/fp_math/multiply_positive_negative	equivalent	
+fp_math/fp_math/multiply_negative_negative	equivalent	
+fp_math/fp_math/divide_positive_positive	equivalent	
+fp_math/fp_math/divide_positive_negative	equivalent	
+fp_math/fp_math/divide_negative_negative	equivalent	
+fp_math/fp_math/mod_not_support	unsupported	admission:TypeMismatch
+fp_math/fp_math/negative	equivalent	
+fp_math/fp_math/double_negative	equivalent	
+fp_math/fp_math/negative_zero	equivalent	
+fp_math/fp_math/divide_zero	divergent	finite-floats -> denied DivisionByZero
+fp_math/fp_math/multiply_zero	equivalent	
+fp_math/fp_math/add_left_identity	equivalent	
+fp_math/fp_math/add_right_identity	equivalent	
+fp_math/fp_math/add_commutative	equivalent	
+fp_math/fp_math/add_associative	equivalent	
+fp_math/fp_math/mul_left_identity	equivalent	
+fp_math/fp_math/mul_right_identity	equivalent	
+fp_math/fp_math/mul_commutative	equivalent	
+fp_math/fp_math/mul_associative	equivalent	
+fp_math/fp_math/add_mul_distribute	equivalent	
+fp_math/fp_math/fp_overflow_positive	divergent	finite-floats -> denied ArithmeticOverflow
+fp_math/fp_math/fp_overflow_negative	divergent	finite-floats -> denied ArithmeticOverflow
+fp_math/fp_math/fp_underflow	equivalent	
+integer_math/int64_math/add_positive_positive	equivalent	
+integer_math/int64_math/add_positive_negative	equivalent	
+integer_math/int64_math/add_negative_negative	equivalent	
+integer_math/int64_math/sub_positive_positive	equivalent	
+integer_math/int64_math/sub_positive_negative	equivalent	
+integer_math/int64_math/sub_negative_negative	equivalent	
+integer_math/int64_math/multiply_positive_positive	equivalent	
+integer_math/int64_math/multiply_positive_negative	equivalent	
+integer_math/int64_math/multiply_negative_negative	equivalent	
+integer_math/int64_math/divide_positive_positive	equivalent	
+integer_math/int64_math/divide_positive_negative	equivalent	
+integer_math/int64_math/divide_negative_negative	equivalent	
+integer_math/int64_math/mod_positive_positive	equivalent	
+integer_math/int64_math/mod_positive_negative	equivalent	
+integer_math/int64_math/mod_negative_negative	equivalent	
+integer_math/int64_math/mod_negative_positive	equivalent	
+integer_math/int64_math/unary_minus_pos	equivalent	
+integer_math/int64_math/unary_minus_neg	equivalent	
+integer_math/int64_math/unary_minus_no_overload	unsupported	parse:Syntax
+integer_math/int64_math/unary_minus_not_bool	unsupported	admission:TypeMismatch
+integer_math/int64_math/mod_zero	equivalent	denied DivisionByZero
+integer_math/int64_math/negative_zero	equivalent	
+integer_math/int64_math/double_negative	equivalent	
+integer_math/int64_math/divide_zero	equivalent	denied DivisionByZero
+integer_math/int64_math/multiply_zero	equivalent	
+integer_math/int64_math/add_left_identity	equivalent	
+integer_math/int64_math/add_right_identity	equivalent	
+integer_math/int64_math/add_commutative	equivalent	
+integer_math/int64_math/add_associative	equivalent	
+integer_math/int64_math/mul_left_identity	equivalent	
+integer_math/int64_math/mul_right_identity	equivalent	
+integer_math/int64_math/mul_commutative	equivalent	
+integer_math/int64_math/mul_associative	equivalent	
+integer_math/int64_math/add_mul_distribute	equivalent	
+integer_math/int64_math/int64_overflow_positive	equivalent	denied ArithmeticOverflow
+integer_math/int64_math/int64_overflow_negative	equivalent	denied ArithmeticOverflow
+integer_math/int64_math/int64_overflow_add_negative	equivalent	denied ArithmeticOverflow
+integer_math/int64_math/int64_overflow_sub_positive	equivalent	denied ArithmeticOverflow
+integer_math/int64_math/int64_min_negate	equivalent	denied ArithmeticOverflow
+integer_math/int64_math/int64_min_negate_mul	equivalent	denied ArithmeticOverflow
+integer_math/int64_math/int64_min_negate_div	equivalent	denied ArithmeticOverflow
+integer_math/int64_math/int64_overflow_mul_positive	equivalent	denied ArithmeticOverflow
+integer_math/int64_math/int64_overflow_mul_negative	equivalent	denied ArithmeticOverflow
+integer_math/int64_math/uint64_overflow_positive	unsupported	parse:Syntax
+integer_math/int64_math/uint64_overflow_negative	unsupported	parse:Syntax
+integer_math/int64_math/uint64_overflow_mul_positive	unsupported	parse:Syntax
+integer_math/uint64_math/add	unsupported	parse:Syntax
+integer_math/uint64_math/sub	unsupported	parse:Syntax
+integer_math/uint64_math/multiply	unsupported	parse:Syntax
+integer_math/uint64_math/divide	unsupported	parse:Syntax
+integer_math/uint64_math/mod	unsupported	parse:Syntax
+integer_math/uint64_math/negative_no_overload	unsupported	parse:Syntax
+integer_math/uint64_math/mod_zero	unsupported	parse:Syntax
+integer_math/uint64_math/divide_zero	unsupported	parse:Syntax
+integer_math/uint64_math/multiply_zero	unsupported	parse:Syntax
+integer_math/uint64_math/add_left_identity	unsupported	parse:Syntax
+integer_math/uint64_math/add_right_identity	unsupported	parse:Syntax
+integer_math/uint64_math/add_commutative	unsupported	parse:Syntax
+integer_math/uint64_math/add_associative	unsupported	parse:Syntax
+integer_math/uint64_math/mul_left_identity	unsupported	parse:Syntax
+integer_math/uint64_math/mul_right_identity	unsupported	parse:Syntax
+integer_math/uint64_math/mul_commutative	unsupported	parse:Syntax
+integer_math/uint64_math/mul_associative	unsupported	parse:Syntax
+integer_math/uint64_math/add_mul_distribute	unsupported	parse:Syntax
+lists/concatenation/list_append	unsupported	admission:TypeMismatch
+lists/concatenation/list_not_commutative	unsupported	admission:TypeMismatch
+lists/concatenation/list_repeat	unsupported	admission:TypeMismatch
+lists/concatenation/empty_empty	unsupported	admission:TypeMismatch
+lists/concatenation/left_unit	unsupported	admission:TypeMismatch
+lists/concatenation/right_unit	unsupported	admission:TypeMismatch
+lists/index/zero_based	unsupported	parse:Syntax
+lists/index/zero_based_double	unsupported	parse:Syntax
+lists/index/zero_based_double_error	unsupported	parse:Syntax
+lists/index/zero_based_uint	unsupported	parse:Syntax
+lists/index/singleton	unsupported	parse:Syntax
+lists/index/middle	unsupported	parse:Syntax
+lists/index/last	unsupported	parse:Syntax
+lists/index/index_out_of_bounds	unsupported	parse:Syntax
+lists/index/index_out_of_bounds_or_false	unsupported	parse:Syntax
+lists/index/index_out_of_bounds_or_true	unsupported	parse:Syntax
+lists/index/index_out_of_bounds_and_false	unsupported	parse:Syntax
+lists/index/index_out_of_bounds_and_true	unsupported	parse:Syntax
+lists/index/bad_index_type	unsupported	parse:Syntax
+lists/index/bad_index_type_or_false	unsupported	parse:Syntax
+lists/index/bad_index_type_or_true	unsupported	parse:Syntax
+lists/index/bad_index_type_and_false	unsupported	parse:Syntax
+lists/index/bad_index_type_and_true	unsupported	parse:Syntax
+lists/in/empty	unsupported	parse:Syntax
+lists/in/singleton	unsupported	parse:Syntax
+lists/in/first	unsupported	parse:Syntax
+lists/in/middle	unsupported	parse:Syntax
+lists/in/last	unsupported	parse:Syntax
+lists/in/double_in_ints	unsupported	parse:Syntax
+lists/in/uint_in_ints	unsupported	parse:Syntax
+lists/in/int_in_doubles	unsupported	parse:Syntax
+lists/in/uint_in_doubles	unsupported	parse:Syntax
+lists/in/int_in_uints	unsupported	parse:Syntax
+lists/in/double_in_uints	unsupported	parse:Syntax
+lists/in/missing	unsupported	parse:Syntax
+lists/size/list_empty	unsupported	admission:TypeMismatch
+lists/size/list	unsupported	admission:UnknownBinding
+lists/size/map_empty	unsupported	admission:TypeMismatch
+lists/size/map	unsupported	parse:Syntax
+logic/conditional/true_case	equivalent	
+logic/conditional/false_case	unsupported	parse:Syntax
+logic/conditional/error_case	unsupported	parse:Syntax
+logic/conditional/mixed_type	unsupported	parse:Syntax
+logic/conditional/bad_type	unsupported	parse:Syntax
+logic/AND/all_true	equivalent	
+logic/AND/all_false	equivalent	
+logic/AND/false_left	equivalent	
+logic/AND/false_right	equivalent	
+logic/AND/short_circuit_type_left	unsupported	admission:TypeMismatch
+logic/AND/short_circuit_type_right	unsupported	parse:Syntax
+logic/AND/short_circuit_error_left	equivalent	
+logic/AND/short_circuit_error_right	divergent	left-to-right-errors -> denied DivisionByZero
+logic/AND/error_right	equivalent	denied DivisionByZero
+logic/AND/error_left	equivalent	denied DivisionByZero
+logic/AND/no_overload	unsupported	parse:Syntax
+logic/OR/all_true	equivalent	
+logic/OR/all_false	equivalent	
+logic/OR/false_left	equivalent	
+logic/OR/false_right	equivalent	
+logic/OR/short_circuit_type_left	unsupported	admission:TypeMismatch
+logic/OR/short_circuit_type_right	unsupported	parse:Syntax
+logic/OR/short_circuit_error_left	equivalent	
+logic/OR/short_circuit_error_right	divergent	left-to-right-errors -> denied DivisionByZero
+logic/OR/error_right	equivalent	denied DivisionByZero
+logic/OR/error_left	equivalent	denied DivisionByZero
+logic/OR/no_overload	unsupported	parse:Syntax
+logic/NOT/not_true	equivalent	
+logic/NOT/not_false	equivalent	
+logic/NOT/no_overload	unsupported	admission:TypeMismatch
+macros/exists/list_elem_all_true	unsupported	parse:Syntax
+macros/exists/list_elem_some_true	unsupported	parse:Syntax
+macros/exists/list_elem_none_true	unsupported	parse:Syntax
+macros/exists/list_elem_type_shortcircuit	unsupported	parse:Syntax
+macros/exists/list_elem_type_exhaustive	unsupported	parse:Syntax
+macros/exists/list_elem_exists_error	unsupported	parse:Syntax
+macros/exists/list_empty	unsupported	parse:Syntax
+macros/exists/map_key	unsupported	parse:Syntax
+macros/exists/not_map_key	unsupported	parse:Syntax
+macros/exists/map_key_type_shortcircuit	unsupported	parse:Syntax
+macros/exists/map_key_type_exhaustive	unsupported	parse:Syntax
+macros/all/list_elem_all_true	equivalent	
+macros/all/list_elem_some_true	equivalent	
+macros/all/list_elem_none_true	equivalent	
+macros/all/list_elem_type_shortcircuit	unsupported	parse:Syntax
+macros/all/list_elem_type_exhaustive	unsupported	parse:Syntax
+macros/all/list_elem_error_shortcircuit	divergent	left-to-right-errors -> denied DivisionByZero
+macros/all/list_elem_error_exhaustive	equivalent	denied DivisionByZero
+macros/all/list_empty	unsupported	admission:TypeMismatch
+macros/all/map_key	unsupported	parse:Syntax
+macros/exists_one/list_empty	unsupported	parse:Syntax
+macros/exists_one/list_one_true	unsupported	parse:Syntax
+macros/exists_one/list_one_false	unsupported	parse:Syntax
+macros/exists_one/list_none	unsupported	parse:Syntax
+macros/exists_one/list_one	unsupported	parse:Syntax
+macros/exists_one/list_many	unsupported	parse:Syntax
+macros/exists_one/list_all	unsupported	parse:Syntax
+macros/exists_one/list_no_shortcircuit	unsupported	parse:Syntax
+macros/exists_one/map_one	unsupported	parse:Syntax
+macros/map/list_empty	unsupported	admission:TypeMismatch
+macros/map/list_one	equivalent	
+macros/map/list_many	equivalent	
+macros/map/list_error	equivalent	denied DivisionByZero
+macros/map/map_extract_keys	unsupported	parse:Syntax
+macros/filter/list_empty	unsupported	admission:TypeMismatch
+macros/filter/list_one_true	equivalent	
+macros/filter/list_one_false	equivalent	
+macros/filter/list_none	equivalent	
+macros/filter/list_some	equivalent	
+macros/filter/list_all	equivalent	
+macros/filter/list_no_shortcircuit	equivalent	denied DivisionByZero
+macros/filter/map_filter_keys	unsupported	parse:Syntax
+macros/nested/filter_all	unsupported	parse:Syntax
+macros/nested/all_all	unsupported	parse:Syntax
+string/size/empty	unsupported	parse:Syntax
+string/size/one_ascii	unsupported	parse:Syntax
+string/size/one_unicode	unsupported	parse:Syntax
+string/size/ascii	unsupported	parse:Syntax
+string/size/unicode	unsupported	parse:Syntax
+string/size/bytes_empty	unsupported	parse:Syntax
+string/size/bytes	unsupported	parse:Syntax
+string/starts_with/basic_true	unsupported	parse:Syntax
+string/starts_with/basic_false	unsupported	parse:Syntax
+string/starts_with/empty_target	unsupported	parse:Syntax
+string/starts_with/empty_arg	unsupported	parse:Syntax
+string/starts_with/empty_empty	unsupported	parse:Syntax
+string/starts_with/unicode	unsupported	parse:Syntax
+string/starts_with/unicode_smp	unsupported	parse:Syntax
+string/ends_with/basic_true	unsupported	parse:Syntax
+string/ends_with/basic_false	unsupported	parse:Syntax
+string/ends_with/empty_target	unsupported	parse:Syntax
+string/ends_with/empty_arg	unsupported	parse:Syntax
+string/ends_with/empty_empty	unsupported	parse:Syntax
+string/ends_with/unicode	unsupported	parse:Syntax
+string/ends_with/unicode_smp	unsupported	parse:Syntax
+string/matches/basic	unsupported	parse:Syntax
+string/matches/empty_target	unsupported	parse:Syntax
+string/matches/empty_arg	unsupported	parse:Syntax
+string/matches/empty_empty	unsupported	parse:Syntax
+string/matches/re_concat	unsupported	parse:Syntax
+string/matches/re_alt	unsupported	parse:Syntax
+string/matches/re_rep	unsupported	parse:Syntax
+string/matches/unicode	unsupported	parse:Syntax
+string/matches/unicode_smp	unsupported	parse:Syntax
+string/concatenation/concat_true	unsupported	parse:Syntax
+string/concatenation/concat_with_spaces	unsupported	parse:Syntax
+string/concatenation/concat_empty_string_beginning	unsupported	parse:Syntax
+string/concatenation/concat_empty_string_end	unsupported	parse:Syntax
+string/concatenation/concat_empty_with_empty	unsupported	parse:Syntax
+string/concatenation/unicode_unicode	unsupported	parse:Syntax
+string/concatenation/ascii_unicode	unsupported	parse:Syntax
+string/concatenation/ascii_unicode_unicode_smp	unsupported	parse:Syntax
+string/concatenation/empty_unicode	unsupported	parse:Syntax
+string/contains/contains_true	unsupported	parse:Syntax
+string/contains/contains_empty	unsupported	parse:Syntax
+string/contains/contains_false	unsupported	parse:Syntax
+string/contains/contains_multiple	unsupported	parse:Syntax
+string/contains/contains_unicode	unsupported	parse:Syntax
+string/contains/contains_unicode_smp	unsupported	parse:Syntax
+string/contains/empty_contains	unsupported	parse:Syntax
+string/contains/empty_empty	unsupported	parse:Syntax
+string/bytes_concat/concat	unsupported	parse:Syntax
+string/bytes_concat/left_unit	unsupported	parse:Syntax
+string/bytes_concat/right_unit	unsupported	parse:Syntax
+string/bytes_concat/empty_empty	unsupported	parse:Syntax

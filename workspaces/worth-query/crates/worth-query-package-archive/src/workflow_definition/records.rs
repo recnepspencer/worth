@@ -9,6 +9,8 @@ use worth_query_declaration::facade::application_program::{
 };
 
 use super::{DraftConnection, DraftMember, DraftNode};
+
+mod condition;
 use crate::binary_input::BinaryInput;
 use crate::binary_output::BinaryOutput;
 use crate::denial::{
@@ -41,14 +43,7 @@ pub(super) fn encode_node(
                 assessment.result_type().as_str(),
             ],
         ),
-        ApplicationWorkflowNodeKind::Condition(condition) => (
-            3,
-            vec![
-                condition.identifier(),
-                condition.parameter_type().as_str(),
-                condition.result_type().as_str(),
-            ],
-        ),
+        ApplicationWorkflowNodeKind::Condition(_) => (3, Vec::new()),
         ApplicationWorkflowNodeKind::Approval(approval) => (
             4,
             vec![approval.identifier(), approval.capability_type().as_str()],
@@ -77,12 +72,16 @@ pub(super) fn encode_node(
                 text(output, field)?;
             }
         }
+        ApplicationWorkflowNodeKind::Condition(condition) => {
+            condition::encode_condition(output, condition)?;
+        }
         _ => {}
     }
     Ok(())
 }
 
-pub(super) fn decode_node(input: &mut BinaryInput<'_>) -> Result<DraftNode, Denial> {
+/// Decodes one node record written under draft protocol `version`.
+pub(super) fn decode_node(input: &mut BinaryInput<'_>, version: u16) -> Result<DraftNode, Denial> {
     let tag = input.u8()?;
     let identity = nonempty_text(input)?;
     let member = match tag {
@@ -119,11 +118,8 @@ pub(super) fn decode_node(input: &mut BinaryInput<'_>) -> Result<DraftNode, Deni
                 related_relation,
             }
         }
-        3 => DraftMember::Condition {
-            identifier: nonempty_text(input)?,
-            parameter_type: nonempty_text(input)?,
-            result_type: nonempty_text(input)?,
-        },
+        3 if version == 1 => DraftMember::Condition(condition::decode_version_1_condition(input)?),
+        3 => DraftMember::Condition(condition::decode_condition(input)?),
         4 => DraftMember::Approval {
             identifier: nonempty_text(input)?,
             capability_type: nonempty_text(input)?,
@@ -213,7 +209,7 @@ fn boolean(input: &mut BinaryInput<'_>) -> Result<bool, Denial> {
     }
 }
 
-// Wire tags are part of the v1 draft format: each is written out by hand so
+// Wire tags are part of the draft format since v1: each is written out by hand so
 // no reordering can move one, and a new variant fails to compile here.
 
 pub(super) const fn control_tag(outcome: ApplicationWorkflowControlOutcome) -> u8 {

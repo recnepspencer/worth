@@ -177,17 +177,7 @@ pub(super) fn bind_currentness_facts<Schema, Operation, Input, Scope>(
             subject,
         ));
     }
-    let currentness_matches = read_set.lease.handle().with_runtime(|runtime| {
-        currentness_facts
-            .iter()
-            .all(|fact| fact.remains_equal_in(runtime, read_set.lease.snapshot()))
-    });
-    if !currentness_matches {
-        return Err(WorthQueryApplicationAttemptDenial::new(
-            WorthQueryApplicationAttemptDenialKind::WorkflowAssessmentEvidenceMismatch,
-            subject,
-        ));
-    }
+    ensure_current(read_set, currentness_facts, subject)?;
     let mut merged = std::collections::BTreeMap::new();
     for fact in std::mem::take(&mut read_set.facts) {
         let locator = fact.locator_identity();
@@ -218,6 +208,34 @@ pub(super) fn bind_currentness_facts<Schema, Operation, Input, Scope>(
     }
     read_set.facts = merged.into_values().collect();
     Ok(())
+}
+
+/// Denies unless every currentness fact still holds in the read set's
+/// snapshot: evidence observed before a later write is stale.
+pub(super) fn ensure_current<Schema, Operation, Input, Scope>(
+    read_set: &super::super::WorthQueryCompleteApplicationReadSet<
+        Schema,
+        Operation,
+        Input,
+        Scope,
+        super::super::WorthQueryProjectedApplicationMutation,
+    >,
+    currentness_facts: &[crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact],
+    subject: &str,
+) -> Result<(), WorthQueryApplicationAttemptDenial> {
+    let current = read_set.lease.handle().with_runtime(|runtime| {
+        currentness_facts
+            .iter()
+            .all(|fact| fact.remains_equal_in(runtime, read_set.lease.snapshot()))
+    });
+    if current {
+        Ok(())
+    } else {
+        Err(WorthQueryApplicationAttemptDenial::new(
+            WorthQueryApplicationAttemptDenialKind::WorkflowAssessmentEvidenceMismatch,
+            subject,
+        ))
+    }
 }
 
 fn validate<Schema, Operation, Input, Scope, Query>(

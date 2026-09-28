@@ -52,18 +52,11 @@ impl CompiledWorkflowNode {
                     ),
                 },
             ],
-            CompiledWorkflowNodeKind::Condition {
-                query,
-                parameter_type,
-                result_type,
-                binding,
-            } => vec![
-                WorkflowNodeTag::Condition.identity().to_owned(),
-                query.clone(),
-                parameter_type.clone(),
-                result_type.clone(),
-                binding.clone(),
-            ],
+            CompiledWorkflowNodeKind::Condition(condition) => {
+                std::iter::once(WorkflowNodeTag::Condition.identity().to_owned())
+                    .chain(condition.identity_fields())
+                    .collect()
+            }
             CompiledWorkflowNodeKind::Approval {
                 capability,
                 capability_type,

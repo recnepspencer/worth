@@ -1,15 +1,12 @@
 use super::*;
 
 impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation, Input, Scope> {
-    pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) fn resolve_condition_replay<
-        Query,
-    >(
+    pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) fn resolve_condition_replay(
         &self,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         required: &RequiredWorkflowCondition,
-        source: &crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource<
-            Query,
-            bool,
+        sources: &crate::domain_computation::primary_graph::WorthQueryWorkflowConditionSources<
+            Schema,
         >,
         idempotency: WorthQueryApplicationIdempotencyBinding,
     ) -> Result<Option<WorkflowProgressOutcome>, WorthQueryApplicationIdempotencyResolutionDenial>
@@ -102,29 +99,46 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
         else {
             return Ok(None);
         };
-        let [observed] = source.observed_sources() else {
+        // A replay proves nothing new, so it needs only that each supplied
+        // source is the runtime's own observation of the required operand;
+        // the landed transition already bound their identities.
+        if !crate::domain_computation::primary_graph::expression::supplies(
+            sources.operands(),
+            required.operands(),
+        ) {
             return Ok(None);
-        };
-        let Some(expected_query_identity) = runtime
-            .installed_schema()
-            .installed_query_identity_by_name(required.query())
-        else {
-            return Ok(None);
-        };
-        if source.rows().len() != 1
-            || observed.runtime_authority != runtime.runtime.authority_identity().as_u64()
-            || observed.schema_binding != runtime.installed_schema().binding_identity()
-            || observed.query_identifier != required.query()
-            || observed.query_identity != *expected_query_identity
-            || observed.source_root() != admission.scope_entity_id()
-            || observed.selected_product_occurrence() != Some(selected_occurrence)
-            || &observed.branch != admission.graph_work_branch()
-        {
-            return Ok(None);
+        }
+        let mut identities = Vec::with_capacity(sources.operands().len());
+        for operand in sources.operands() {
+            let Some((_, observed)) = &operand.observed else {
+                return Ok(None);
+            };
+            let Some(expected_query_identity) = runtime
+                .installed_schema()
+                .installed_query_identity_by_name(operand.query)
+            else {
+                return Ok(None);
+            };
+            if observed.runtime_authority != runtime.runtime.authority_identity().as_u64()
+                || observed.schema_binding != runtime.installed_schema().binding_identity()
+                || observed.query_identifier != operand.query
+                || observed.query_identity != *expected_query_identity
+                || observed.source_root() != admission.scope_entity_id()
+                || observed.selected_product_occurrence() != Some(selected_occurrence)
+                || &observed.branch != admission.graph_work_branch()
+            {
+                return Ok(None);
+            }
+            identities.push((&*operand.name, observed.idempotency_identity().bytes()));
         }
         let binding = idempotency
             .bind_workflow_transition(&replay.identity_bytes)
-            .bind_workflow_condition(&observed.idempotency_identity().bytes());
+            .bind_workflow_condition(
+                &crate::domain_computation::primary_graph::expression::supporting_identity(
+                    &required.condition.expression,
+                    identities,
+                ),
+            );
         let [resolution] = runtime
             .resolve_admitted_application_idempotencies(admission, [binding])?
             .try_into()

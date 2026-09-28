@@ -1,6 +1,6 @@
 use bank_domain::{
     model::BankPrincipalId,
-    queries::PaymentDetailQueryBinding,
+    queries::{PaymentAmountQueryBinding, PaymentDetailQueryBinding},
     schema::{
         ApprovePayment, ApprovePaymentMutationBinding, ApprovedBusinessPaymentAdvance,
         ApprovedBusinessPaymentAdvanceOperation, ApprovedBusinessPaymentApproval,
@@ -122,6 +122,8 @@ pub(super) fn install_prepared(
     .operation::<ApprovePaymentMutationBinding>()
     .map_err(BankIdentityRuntimeBuildError::WorkflowInstallation)?
     .assessment::<PaymentDetailQueryBinding>()
+    .map_err(BankIdentityRuntimeBuildError::WorkflowInstallation)?
+    .condition_operand::<PaymentAmountQueryBinding>()
     .map_err(BankIdentityRuntimeBuildError::WorkflowInstallation)?
     .approval::<
         ApprovedBusinessPaymentApproval,

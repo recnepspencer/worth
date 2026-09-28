@@ -35,6 +35,7 @@ fn assessment_subject_is_rejected_for_every_non_assessment_shape_that_uses_empty
             None,
             None,
             None,
+            None,
             false,
         );
 

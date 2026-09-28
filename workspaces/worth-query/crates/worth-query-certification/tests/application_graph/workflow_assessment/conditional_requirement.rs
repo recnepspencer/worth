@@ -86,10 +86,9 @@ fn native_relation_insertion_makes_an_authored_related_review_newly_required() {
         .idempotency(&685_u64)
         .prepare_workflow_advance(&application, instance.clone())
         .expect("condition acceptance must prepare")
-        .accept_condition::<DocumentRetentionConditionQueryBinding>(
-            &required_condition,
-            condition_result,
-        )
+        .condition(&required_condition)
+        .operand::<DocumentRetentionConditionQueryBinding, _>("retained", condition_result)
+        .accept()
         .expect("typed false condition must settle");
     assert!(matches!(condition, WorkflowProgressOutcome::Completed(_)));
 
@@ -279,10 +278,9 @@ fn settled_join_cannot_authorize_approval_after_requirement_insertion() {
             .idempotency(&715_u64)
             .prepare_workflow_advance(&application, instance.clone())
             .unwrap()
-            .accept_condition::<DocumentRetentionConditionQueryBinding>(
-                &condition,
-                condition_result
-            )
+            .condition(&condition)
+            .operand::<DocumentRetentionConditionQueryBinding, _>("retained", condition_result)
+            .accept()
             .unwrap(),
         WorkflowProgressOutcome::Completed(_),
     ));

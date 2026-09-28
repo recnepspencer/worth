@@ -25,8 +25,13 @@ use crate::limits::WorthQueryPackageArchiveLimits;
 
 const MAGIC: &[u8; 4] = b"WQWD";
 
-/// Current deterministic workflow definition draft protocol.
-pub const WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION: u16 = 1;
+/// Current deterministic workflow definition draft protocol. Version 2
+/// carries expression-backed conditions.
+pub const WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION: u16 = 2;
+
+/// The oldest draft protocol still read. Its conditions readmit as migrated
+/// expressions; nothing writes it.
+pub const WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_OLDEST_READABLE_VERSION: u16 = 1;
 
 /// Encodes one validated definition's authored meaning. Only the draft
 /// travels: nothing about instances, approvals or publication is read.
@@ -71,10 +76,11 @@ pub fn decode_workflow_definition_draft(
     if &input.array::<4>()? != MAGIC {
         return Err(Denial::new(Kind::InvalidMagic));
     }
+    let version = input.u16()?;
     WorthQueryPackageArchiveCompatibilityProfile::CURRENT
         .admit(
             WorthQueryPackageArchiveProtocolLayer::WorkflowDefinitionDraft,
-            input.u16()?,
+            version,
         )
         .map_err(|compatibility| {
             Denial::incompatible(
@@ -95,7 +101,7 @@ pub fn decode_workflow_definition_draft(
     )?;
     let mut nodes = Vec::with_capacity(node_count);
     for _ in 0..node_count {
-        let node = records::decode_node(&mut input)?;
+        let node = records::decode_node(&mut input, version)?;
         if nodes
             .last()
             .is_some_and(|previous: &super::DraftNode| previous.identity >= node.identity)

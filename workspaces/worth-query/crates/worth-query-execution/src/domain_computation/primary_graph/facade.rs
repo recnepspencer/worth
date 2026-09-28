@@ -169,6 +169,7 @@ pub use super::entity_resolution::WorthQueryApplicationEntityIdentity;
 pub use super::entity_resolution_denial::{
     WorthQueryEntityResolutionDenial, WorthQueryEntityResolutionDenialKind,
 };
+pub use super::expression::WorthQueryWorkflowConditionSources;
 pub use super::granular_invalidation::{
     WorthQueryBridgeGranularDeliveryCounters, WorthQueryGranularInvalidationDeliveryBatch,
     WorthQueryGranularInvalidationInstallation, WorthQueryGranularInvalidationObservation,
@@ -266,7 +267,9 @@ pub use super::settlement_repair::WorthQueryApplicationSettlementRecoveryError;
 pub use super::typed_bootstrap::{
     WorthQueryApplicationEntitySeed, WorthQueryApplicationRelationSeed,
 };
-pub use super::workflow::definition::WorthQueryWorkflowCompilationReuseCounters;
+pub use super::workflow::definition::{
+    WorkflowConditionOperand, WorthQueryWorkflowCompilationReuseCounters,
+};
 pub use super::workflow::{
     WorkflowDefinitionBindingDenial, WorkflowDefinitionPreparationDenial,
     WorthQueryWorkflowDefinitionPublicationAdapter, WorthQueryWorkflowDefinitionRetirementAdapter,
