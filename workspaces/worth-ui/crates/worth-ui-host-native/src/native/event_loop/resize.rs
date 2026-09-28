@@ -52,6 +52,7 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
         // The scale transition reads the window's current extent, so it
         // prepares the target any pending extent was waiting for.
         self.pending_resize.supersede();
+        super::window_port::trace_minimum(&self.configuration, scale_factor);
         let physical_size = self
             .shared
             .borrow()

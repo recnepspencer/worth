@@ -17,7 +17,7 @@
 use std::collections::BTreeSet;
 
 use crate::coverage::{coverage, Coverage};
-use crate::gaps::{gaps, Gap};
+use crate::gaps::{gaps, Drag, Gap};
 use crate::logs::{CaptureLog, HostEvent, HostKind, HostTrace, Sample};
 use crate::stamp::Reading;
 use crate::work::{during, Work};
@@ -311,7 +311,14 @@ pub fn analyze(host: &HostTrace, capture: &CaptureLog) -> Result<Analysis, Strin
         }
     }
 
-    analysis.gaps = gaps(samples, &sightings, events, [first, released], &clock);
+    let drag = Drag {
+        samples,
+        events,
+        minimum: host.minimum,
+        grip: capture.grip,
+        span: [first, released],
+    };
+    analysis.gaps = gaps(&drag, &sightings, &clock);
 
     let last = samples.last().ok_or("the capture holds no samples")?;
     analysis.final_extent = last.client;

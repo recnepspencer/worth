@@ -380,3 +380,7 @@ mod currentness_tests;
 #[cfg(test)]
 #[path = "preparation/pin_continuity_tests.rs"]
 mod pin_continuity_tests;
+
+#[cfg(test)]
+#[path = "preparation/snapping_tests.rs"]
+mod snapping_tests;

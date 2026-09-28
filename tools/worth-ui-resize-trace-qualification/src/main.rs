@@ -83,7 +83,12 @@ fn capture(out: &str, options: &[String]) -> Result<(), String> {
     println!(
         "capturing `{title}` for {seconds} s; drag a window edge for at least 10 s, then release"
     );
-    capture::run(out.as_ref(), Duration::from_secs(seconds), &title)?;
+    capture::run(
+        out.as_ref(),
+        Duration::from_secs(seconds),
+        &title,
+        logs::Grip::Unknown,
+    )?;
     println!("wrote {out}");
     Ok(())
 }

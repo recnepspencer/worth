@@ -91,15 +91,12 @@ impl UiUnpublishedAppearanceFragment {
         surface_binding: crate::UiMountedSurfaceBindingRequirement,
         presentation_affinity: crate::UiMountedPresentationAffinity,
     ) -> Result<Self, UiUnpublishedAppearanceFrameProjectionDenial> {
-        let mut admitted_candidates =
-            Vec::with_capacity(crate::UiMountedSemanticTextTable::MAX_ROWS + 1);
-        for candidate in text_candidates
+        // Collecting through the bound sizes the rows to what arrived, so a
+        // fragment never reserves the table's capacity only to shrink it.
+        let text_candidates = text_candidates
             .into_iter()
             .take(crate::UiMountedSemanticTextTable::MAX_ROWS + 1)
-        {
-            admitted_candidates.push(candidate);
-        }
-        let text_candidates = admitted_candidates;
+            .collect::<Vec<_>>();
         if text_candidates.len() > crate::UiMountedSemanticTextTable::MAX_ROWS {
             return Err(
                 UiUnpublishedAppearanceFrameProjectionDenial::TextCandidateCapacityExceeded,
@@ -149,15 +146,10 @@ impl UiUnpublishedAppearanceFrameProjection {
         presentation: crate::UiMountedPresentationAttemptIdentity,
         fragments: impl IntoIterator<Item = UiUnpublishedAppearanceFragment>,
     ) -> Result<Self, UiUnpublishedAppearanceFrameProjectionDenial> {
-        let mut admitted_fragments =
-            Vec::with_capacity(UI_UNPUBLISHED_APPEARANCE_FRAGMENT_CAPACITY + 1);
-        for fragment in fragments
+        let fragments = fragments
             .into_iter()
             .take(UI_UNPUBLISHED_APPEARANCE_FRAGMENT_CAPACITY + 1)
-        {
-            admitted_fragments.push(fragment);
-        }
-        let fragments = admitted_fragments;
+            .collect::<Vec<_>>();
         if fragments.is_empty() {
             return Err(UiUnpublishedAppearanceFrameProjectionDenial::EmptyFragments);
         }

@@ -231,12 +231,11 @@ impl UiMountedTextForegroundReuseReceipt {
     }
 
     fn raster_demand_matches(&self, mechanic: &UiMountedSemanticTextMechanic) -> bool {
-        let Some(placement) = worth_ui_text::UiGlyphRasterPlacement::from_mounted_logical(
-            mechanic.origin_x(),
-            mechanic.origin_y(),
-        ) else {
+        let Some(origin) = mechanic.presented_origin_millipoints(self.demand.scale().dpi_milli())
+        else {
             return false;
         };
+        let placement = worth_ui_text::UiGlyphRasterPlacement::from_millipoints(origin);
         self.demand.layout_identity() == mechanic.qualified_layout_identity()
             && self.demand.scope()
                 == worth_ui_host_contract::UiGlyphRasterDemandScope::CompleteLayout

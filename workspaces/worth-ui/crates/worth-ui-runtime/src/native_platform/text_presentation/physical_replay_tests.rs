@@ -40,8 +40,7 @@ fn physical_replay_includes_unchanged_overhanging_text_before_its_occluder() {
             selection: worth_ui_text::UiGlyphRasterDemandSelection::CompleteLayout,
             scale: worth_ui_text::UiGlyphRasterScale::new(1_250, text.qualified_layout_scale())
                 .unwrap(),
-            placement: worth_ui_text::UiGlyphRasterPlacement::from_mounted_logical(0.0, 0.0)
-                .unwrap(),
+            placement: worth_ui_text::UiGlyphRasterPlacement::from_millipoints([0, 0]),
             lane: UiGlyphRasterLane::Ordinary,
         },
     )

@@ -236,8 +236,14 @@ pub fn run(host: &Path, prefix: &str, duration: Duration, title: &str) -> Result
     let cursor = w::GetCursorPos().map_err(failed("reading the cursor"))?;
     let driven = wait_until_ready(&mut child, &host_trace, title).and_then(|window| {
         let (log, name) = (capture.clone(), title.to_owned());
-        let capturing =
-            std::thread::spawn(move || crate::capture::run(&log, LEAD + duration + SETTLE, &name));
+        let capturing = std::thread::spawn(move || {
+            crate::capture::run(
+                &log,
+                LEAD + duration + SETTLE,
+                &name,
+                crate::logs::Grip::BottomRight,
+            )
+        });
         pause(LEAD);
         let dragged = drag(&window, duration);
         let captured = capturing

@@ -1,4 +1,5 @@
 use super::*;
+use crate::logs::Grip;
 
 /// One count per millisecond keeps the expected values readable.
 const FREQUENCY: i64 = 1000;
@@ -12,6 +13,7 @@ pub(crate) fn host(events: &[(i64, HostKind)]) -> HostTrace {
             .collect(),
         peaks: Vec::new(),
         adapter: None,
+        minimum: None,
     }
 }
 
@@ -51,6 +53,7 @@ pub(crate) fn capture(trace: &HostTrace, reading: impl Fn(i64) -> Reading) -> Ca
         refresh_hz: 60,
         dpi: 96,
         windows_build: "26200.1".to_owned(),
+        grip: Grip::Unknown,
         samples,
         complete: true,
     }

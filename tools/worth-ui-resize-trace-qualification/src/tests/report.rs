@@ -2,6 +2,7 @@ use super::*;
 use crate::analysis::Latency;
 use crate::coverage::Coverage;
 use crate::gaps::Gap;
+use crate::logs::Grip;
 
 #[test]
 fn percentiles_use_the_nearest_rank() {
@@ -20,6 +21,7 @@ fn capture(complete: bool, refresh_hz: u32) -> CaptureLog {
         refresh_hz,
         dpi: 96,
         windows_build: "26200.1".to_owned(),
+        grip: Grip::Unknown,
         samples: Vec::new(),
         complete,
     }

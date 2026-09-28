@@ -39,6 +39,10 @@ pub struct HostTrace {
     pub peaks: Vec<(String, u64)>,
     /// The graphics adapter the host presented with.
     pub adapter: Option<String>,
+    /// The least client extent the window allows, if the host traced one
+    /// that held for the whole trace. A scale change that moved it leaves
+    /// none, since the trace cannot say which applied to which movement.
+    pub minimum: Option<[u32; 2]>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -56,12 +60,23 @@ pub struct Sample {
     pub reading: Reading,
 }
 
+/// Which part of the window a capture's drag held, when the capture knows.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum Grip {
+    /// Not known: a person dragged whichever edge or corner they chose.
+    #[default]
+    Unknown,
+    /// The bottom-right corner, which a driven drag holds.
+    BottomRight,
+}
+
 pub struct CaptureLog {
     pub frequency: i64,
     pub refresh_hz: u32,
     pub dpi: u32,
     /// The Windows build and revision.
     pub windows_build: String,
+    pub grip: Grip,
     pub samples: Vec<Sample>,
     /// Whether the capture wrote its closing line.
     pub complete: bool,
@@ -97,6 +112,7 @@ pub fn parse_host(text: &str) -> Parsed<HostTrace> {
     let mut lines = text.lines();
     let frequency = named(&header_words(lines.next(), HOST_HEADER)?, "frequency")?;
     let (mut events, mut peaks, mut adapter) = (Vec::new(), Vec::new(), None);
+    let (mut minimum, mut minimum_moved) = (None, false);
     for (index, text) in lines.enumerate() {
         let line = index + 2;
         let words: Vec<&str> = text.split_whitespace().collect();
@@ -126,6 +142,12 @@ pub fn parse_host(text: &str) -> Parsed<HostTrace> {
                 adapter = Some(words[2..].join(" "));
                 continue;
             }
+            Some("minimum") => {
+                let least = extent(2)?;
+                minimum_moved |= minimum.is_some_and(|earlier| earlier != least);
+                minimum = Some(least);
+                continue;
+            }
             Some("peak") => {
                 let name = words
                     .get(2)
@@ -145,14 +167,38 @@ pub fn parse_host(text: &str) -> Parsed<HostTrace> {
         events,
         peaks,
         adapter,
+        minimum: minimum.filter(|_| !minimum_moved),
     })
 }
 
-/// The capture log's first line.
-pub fn capture_header(frequency: i64, refresh_hz: u32, dpi: u32, windows_build: &str) -> String {
+/// The capture log's first line. The grip is written only when known.
+pub fn capture_header(
+    frequency: i64,
+    refresh_hz: u32,
+    dpi: u32,
+    windows_build: &str,
+    grip: Grip,
+) -> String {
+    let grip = match grip {
+        Grip::Unknown => "",
+        Grip::BottomRight => " grip bottom-right",
+    };
     format!(
-        "{CAPTURE_HEADER} frequency {frequency} refresh_hz {refresh_hz} dpi {dpi} windows_build {windows_build}"
+        "{CAPTURE_HEADER} frequency {frequency} refresh_hz {refresh_hz} dpi {dpi} windows_build {windows_build}{grip}"
     )
+}
+
+fn grip(header: &[String]) -> Parsed<Grip> {
+    let Some(index) = header.iter().position(|word| word == "grip") else {
+        return Ok(Grip::Unknown);
+    };
+    match header.get(index + 1).map(String::as_str) {
+        Some("bottom-right") => Ok(Grip::BottomRight),
+        other => Err(format!(
+            "the header's grip `{}` is not one this tool knows",
+            other.unwrap_or_default()
+        )),
+    }
 }
 
 /// One capture log line.
@@ -182,6 +228,7 @@ pub fn parse_capture(text: &str) -> Parsed<CaptureLog> {
         refresh_hz: named(&header, "refresh_hz")?,
         dpi: named(&header, "dpi")?,
         windows_build: named(&header, "windows_build")?,
+        grip: grip(&header)?,
         samples: Vec::new(),
         complete: false,
     };
@@ -223,99 +270,5 @@ pub fn parse_capture(text: &str) -> Parsed<CaptureLog> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn capture_lines_read_back_as_written() {
-        let samples = [
-            Sample {
-                before: 10,
-                after: 12,
-                client: [1536, 1024],
-                pressed: true,
-                cursor: [1540, 900],
-                reading: Reading::Frame(513),
-            },
-            Sample {
-                before: 13,
-                after: 15,
-                client: [1500, 1000],
-                pressed: false,
-                cursor: [-3, 0],
-                reading: Reading::Stretched([9, 8]),
-            },
-            Sample {
-                before: 16,
-                after: 18,
-                client: [1500, 1000],
-                pressed: false,
-                cursor: [0, 0],
-                reading: Reading::Unreadable,
-            },
-        ];
-        let mut text = capture_header(10_000_000, 60, 96, "26200.1");
-        for sample in &samples {
-            text.push('\n');
-            text.push_str(&capture_line(sample));
-        }
-        text.push_str("\nend 3\n");
-        let log = parse_capture(&text).expect("the capture parses");
-        assert_eq!(log.samples, samples);
-        assert_eq!(
-            (
-                log.frequency,
-                log.refresh_hz,
-                log.dpi,
-                log.windows_build.as_str()
-            ),
-            (10_000_000, 60, 96, "26200.1")
-        );
-        assert!(log.complete);
-    }
-
-    #[test]
-    fn a_capture_without_its_closing_line_is_incomplete() {
-        let text = format!(
-            "{}\n1 2 800 600 1 5 5 unreadable\n",
-            capture_header(1, 60, 96, "26200.1")
-        );
-        assert!(!parse_capture(&text).expect("the capture parses").complete);
-    }
-
-    #[test]
-    fn host_events_parse_by_kind() {
-        let text = "worth-ui-resize-trace 1 frequency 10000000\n\
-                    5 observed 800 600\n6 consumed 800 600\n\
-                    7 submitted 42 800 600\n8 accepted 42\n\
-                    9 target 800 600\n10 text 42 1 2 3 4 5\n\
-                    11 adapter NVIDIA GeForce (driver 1)\n12 peak textures 3\n";
-        let trace = parse_host(text).expect("the trace parses");
-        assert_eq!(trace.frequency, 10_000_000);
-        let kinds: Vec<HostKind> = trace.events.iter().map(|event| event.kind).collect();
-        assert_eq!(
-            kinds,
-            [
-                HostKind::Observed([800, 600]),
-                HostKind::Consumed([800, 600]),
-                HostKind::Submitted {
-                    frame: 42,
-                    extent: [800, 600]
-                },
-                HostKind::Accepted(42),
-                HostKind::Target([800, 600]),
-                HostKind::Text {
-                    frame: 42,
-                    work: [1, 2, 3, 4, 5]
-                },
-            ]
-        );
-        assert_eq!(trace.peaks, [("textures".to_owned(), 3)]);
-        assert_eq!(trace.adapter.as_deref(), Some("NVIDIA GeForce (driver 1)"));
-        let bare = parse_host("worth-ui-resize-trace 1 frequency 1\n5 adapter NVIDIA GeForce\n")
-            .expect("an adapter with no driver parses");
-        assert_eq!(bare.adapter.as_deref(), Some("NVIDIA GeForce"));
-        assert!(parse_host("5 observed 1 1").is_err());
-        assert!(parse_host("worth-ui-resize-trace 1 frequency 1\n5 moved 1 1").is_err());
-    }
-}
+#[path = "tests/logs.rs"]
+mod tests;

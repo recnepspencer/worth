@@ -16,7 +16,7 @@ use uiautomation::screenshots::Screenshot;
 use uiautomation::types::Rect;
 use winsafe::{self as w, co};
 
-use crate::logs::{capture_header, capture_line, Sample};
+use crate::logs::{capture_header, capture_line, Grip, Sample};
 use crate::stamp::{self, Image, Reading};
 
 /// The capture covers twice the stamp so a scaled stamp still shows its pitch.
@@ -118,8 +118,13 @@ fn sample(window: &w::HWND, button: co::VK, dpi: u32) -> Result<Sample, String> 
 }
 
 /// Captures the window titled `title` for `duration`, writing the capture log
-/// to `out`.
-pub fn run(out: &std::path::Path, duration: Duration, title: &str) -> Result<(), String> {
+/// to `out`. `grip` is what the drag holds, if the caller knows.
+pub fn run(
+    out: &std::path::Path,
+    duration: Duration,
+    title: &str,
+    grip: Grip,
+) -> Result<(), String> {
     w::SetProcessDPIAware().map_err(failed("becoming DPI aware"))?;
     let window = w::HWND::FindWindow(None, Some(title))
         .map_err(failed("finding the window"))?
@@ -141,7 +146,7 @@ pub fn run(out: &std::path::Path, duration: Duration, title: &str) -> Result<(),
     };
     write(
         &mut log,
-        capture_header(frequency, refresh_hz()?, dpi, &windows_build()?),
+        capture_header(frequency, refresh_hz()?, dpi, &windows_build()?, grip),
     )?;
     let started = Instant::now();
     let mut count = 0_usize;
