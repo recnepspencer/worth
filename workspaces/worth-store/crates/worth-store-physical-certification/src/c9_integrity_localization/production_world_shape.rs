@@ -10,7 +10,7 @@ pub(super) fn require_shape(
     profile: ProductionWorldProfile,
 ) {
     let mut segments = 0;
-    let mut extents = 0;
+    let mut arenas = 0;
     let mut wal_segments = 0;
     let mut page_frames = 0;
     let mut root_branch = false;
@@ -27,8 +27,8 @@ pub(super) fn require_shape(
                 .filter(|frame| frame.starts_with(b"WRC5FRM\0") && frame[8] == 3)
                 .count();
         }
-        if name.ends_with(".data") && name.starts_with("extent-") {
-            extents += 1;
+        if name.ends_with(".data") && name.starts_with("arena-") {
+            arenas += 1;
         }
         if bytes.starts_with(b"WORTHWAL") {
             wal_segments += 1;
@@ -70,7 +70,7 @@ pub(super) fn require_shape(
         ProductionWorldProfile::Primary16KiB | ProductionWorldProfile::ReusedTails16KiB
     ) {
         assert!(segments >= 3, "three production data segments required");
-        assert!(extents >= 1, "production extent required");
+        assert!(arenas >= 1, "production extent arena required");
         assert!(
             wal_segments >= 2,
             "two production WAL segments required: {wal_segments}"
@@ -85,5 +85,5 @@ pub(super) fn require_shape(
             "all five production checkpoint record families required"
         );
     }
-    println!("C9 topology profile={} segments={segments} pages={page_frames} extents={extents} wal_segments={wal_segments} root_branch={root_branch} segment_branch={segment_branch} free_space_branch={free_space_branch} checkpoint_kinds={checkpoint_kinds:?}", profile.label());
+    println!("C9 topology profile={} segments={segments} pages={page_frames} arenas={arenas} wal_segments={wal_segments} root_branch={root_branch} segment_branch={segment_branch} free_space_branch={free_space_branch} checkpoint_kinds={checkpoint_kinds:?}", profile.label());
 }

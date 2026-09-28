@@ -60,6 +60,9 @@ pub(crate) fn free_space_header(
         projection.next_segment,
         projection.next_page,
         projection.next_extent,
+        projection.next_arena,
+        projection.arena_capacity,
+        projection.arena_alignment,
         projection.next_block,
         projection.root,
     )

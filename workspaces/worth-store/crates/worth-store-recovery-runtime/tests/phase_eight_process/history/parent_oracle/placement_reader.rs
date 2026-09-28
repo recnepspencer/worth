@@ -15,12 +15,16 @@ pub(super) enum Placement {
         page_generation: u64,
         slot_generation: u64,
         slot: u16,
+        segment_page_capacity: u32,
         payload_bytes: u64,
     },
     Extent {
         record: RecordIdentity,
+        arena: u64,
         extent: u64,
         generation: u64,
+        arena_offset: u64,
+        arena_length: u64,
         payload_bytes: u64,
     },
 }
@@ -56,16 +60,23 @@ pub(super) fn parse_placement(entry: &[u8]) -> Result<Placement, String> {
             slot_generation: super::read_u64(entry, 64)
                 .ok_or("inline slot generation is truncated")?,
             slot: super::read_u16(entry, 84).ok_or("inline slot is truncated")?,
+            segment_page_capacity: super::read_u32(entry, 80)
+                .filter(|capacity| *capacity > 0)
+                .ok_or("inline segment page capacity is missing")?,
             payload_bytes: super::read_u64(entry, 72)
                 .ok_or("inline payload length is truncated")?,
         }),
-        2 => Ok(Placement::Extent {
+        2 if entry[80..86] == [0; 6] => Ok(Placement::Extent {
             record,
+            arena: super::read_u64(entry, 32).ok_or("arena identity is truncated")?,
             extent: super::read_u64(entry, 40).ok_or("extent identity is truncated")?,
             generation: super::read_u64(entry, 48).ok_or("extent generation is truncated")?,
+            arena_offset: super::read_u64(entry, 56).ok_or("arena offset is truncated")?,
+            arena_length: super::read_u64(entry, 64).ok_or("arena length is truncated")?,
             payload_bytes: super::read_u64(entry, 72)
                 .ok_or("extent payload length is truncated")?,
         }),
+        2 => Err("parent oracle extent route has nonzero reserved bytes".to_owned()),
         _ => Err("parent oracle root leaf entry has an unknown placement kind".to_owned()),
     }
 }
@@ -73,6 +84,7 @@ pub(super) fn parse_placement(entry: &[u8]) -> Result<Placement, String> {
 pub(super) fn read_placement(
     files: &[(String, Vec<u8>)],
     placement: Placement,
+    expected_format: [u8; 10],
 ) -> Result<(RecordIdentity, Vec<u8>), String> {
     match placement {
         Placement::Inline {
@@ -83,6 +95,7 @@ pub(super) fn read_placement(
             page_generation,
             slot_generation,
             slot,
+            segment_page_capacity,
             payload_bytes,
         } => inline::read_inline(
             files,
@@ -93,13 +106,28 @@ pub(super) fn read_placement(
             page_generation,
             slot_generation,
             slot,
+            segment_page_capacity,
             payload_bytes,
+            expected_format,
         ),
         Placement::Extent {
             record,
+            arena,
             extent,
             generation,
+            arena_offset,
+            arena_length,
             payload_bytes,
-        } => extent::read_extent(files, record, extent, generation, payload_bytes),
+        } => extent::read_extent(
+            files,
+            record,
+            arena,
+            extent,
+            generation,
+            arena_offset,
+            arena_length,
+            payload_bytes,
+            expected_format,
+        ),
     }
 }

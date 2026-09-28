@@ -133,12 +133,17 @@ fn inspection_targets(
         } else {
             target.family == "extent_chunk"
                 && candidate.family == "extent_manifest"
-                && matches!((candidate.target,target.target),
-                    (worth_store_physical_format::PhysicalArtifactReadTarget::Record(
-                        worth_store_physical_format::RecordArtifactFile::ExtentManifest{extent:a,generation:b}),
-                     worth_store_physical_format::PhysicalArtifactReadTarget::Record(
-                        worth_store_physical_format::RecordArtifactFile::Extent{extent:c,generation:d}))
-                     if a==c && b==d)
+                && matches!(
+                    (
+                        candidate.scope.extent_manifest_placement(),
+                        target.scope.extent_chunk_coordinate(),
+                    ),
+                    (Some(placement), Some(chunk))
+                        if placement.record() == chunk.record()
+                            && placement.extent_cell() == chunk.extent_cell()
+                            && candidate.scope.extent_arena_range()
+                                == target.scope.extent_arena_range()
+                )
         };
         if matches!(
             request.operator,

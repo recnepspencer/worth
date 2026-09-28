@@ -254,13 +254,15 @@ fn record_artifact_path(
     root: &Path,
     artifact: worth_store_physical_format::RecordArtifactFile,
 ) -> PathBuf {
-    let family = match artifact {
-        worth_store_physical_format::RecordArtifactFile::Segment { .. } => "segments",
-        worth_store_physical_format::RecordArtifactFile::Extent { .. } => "extents",
-        _ => panic!("prefix proof stages a data artifact"),
-    };
+    assert!(
+        matches!(
+            artifact,
+            worth_store_physical_format::RecordArtifactFile::Segment { .. }
+        ),
+        "prefix proof stages a segment data artifact"
+    );
     root.join("families/records")
-        .join(family)
+        .join("segments")
         .join(artifact.file_name())
 }
 

@@ -1,10 +1,7 @@
 mod payload_projection;
 
 use crate::record_framing::{decode_durable_frame, encode_durable_frame};
-use crate::{
-    DurableFrameKind, PhysicalRecordFormatDeclaration, RecordAllocationClass,
-    RecordFreeSpaceManifestEntry,
-};
+use crate::{DurableFrameKind, PhysicalRecordFormatDeclaration, RecordFreeSpaceManifestEntry};
 
 use super::free_space_routing::{
     decode_reference, encode_reference, FreeSpaceBlockReference, FreeSpaceKey,
@@ -12,7 +9,7 @@ use super::free_space_routing::{
 };
 
 const BLOCK_PREFIX_BYTES: usize = 40;
-const REFERENCE_BYTES: usize = 56;
+const REFERENCE_BYTES: usize = 72;
 const ENTRY_BYTES: usize = 40;
 
 #[cfg(test)]
@@ -70,7 +67,7 @@ impl PhysicalFreeSpaceMembershipBlock {
             && entries.len() <= usize::from(capacity)
             && entries
                 .windows(2)
-                .all(|pair| FreeSpaceKey::from(pair[0]) < FreeSpaceKey::from(pair[1])))
+                .all(|pair| canonical_successor(pair[0], pair[1])))
         .then_some(Self::Leaf {
             tree_identity,
             generation,
@@ -227,8 +224,14 @@ impl PhysicalFreeSpaceMembershipBlock {
 fn encode_entry(target: &mut [u8], entry: RecordFreeSpaceManifestEntry) {
     target[0] = entry.class() as u8;
     target[8..16].copy_from_slice(&entry.owner().to_le_bytes());
-    target[16..24].copy_from_slice(&entry.first_unallocated().to_le_bytes());
-    target[24..32].copy_from_slice(&entry.unallocated_count().to_le_bytes());
+    let (start, length) = match entry.region() {
+        crate::RecordFreeSpaceRegion::Inline(value) => {
+            (value.first_unallocated(), value.unallocated_count())
+        }
+        crate::RecordFreeSpaceRegion::Arena(range) => (range.offset(), range.length()),
+    };
+    target[16..24].copy_from_slice(&start.to_le_bytes());
+    target[24..32].copy_from_slice(&length.to_le_bytes());
     target[32..40].copy_from_slice(&entry.generation().to_le_bytes());
 }
 
@@ -236,18 +239,36 @@ fn decode_entry(bytes: &[u8]) -> Option<RecordFreeSpaceManifestEntry> {
     if bytes[1..8] != [0; 7] {
         return None;
     }
-    let class = match bytes[0] {
-        1 => RecordAllocationClass::InlinePage,
-        2 => RecordAllocationClass::Extent,
-        _ => return None,
-    };
-    RecordFreeSpaceManifestEntry::new(
-        class,
-        read_u64(bytes, 8),
-        read_u64(bytes, 16),
-        read_u64(bytes, 24),
-        read_u64(bytes, 32),
-    )
+    match bytes[0] {
+        1 => RecordFreeSpaceManifestEntry::inline_frontier(
+            read_u64(bytes, 8),
+            read_u64(bytes, 16),
+            read_u64(bytes, 24),
+            read_u64(bytes, 32),
+        ),
+        2 => RecordFreeSpaceManifestEntry::arena_range(
+            crate::ExtentArenaRange::new(
+                crate::ExtentArenaId::new(read_u64(bytes, 8))?,
+                read_u64(bytes, 16),
+                read_u64(bytes, 24),
+            )?,
+            read_u64(bytes, 32),
+        ),
+        _ => None,
+    }
+}
+
+fn canonical_successor(
+    left: RecordFreeSpaceManifestEntry,
+    right: RecordFreeSpaceManifestEntry,
+) -> bool {
+    if FreeSpaceKey::from(left) >= FreeSpaceKey::from(right) {
+        return false;
+    }
+    match (left.arena_free_range(), right.arena_free_range()) {
+        (Some(left), Some(right)) if left.arena() == right.arena() => left.end() < right.offset(),
+        _ => true,
+    }
 }
 
 fn read_u64(bytes: &[u8], offset: usize) -> u64 {

@@ -172,8 +172,7 @@ mod tests {
             StoreNamespaceVersion,
         },
         DurablePhysicalRootManifest, DurableRootSelector, FreeSpaceBlockReference, FreeSpaceKey,
-        PhysicalRecordFormatDeclaration, RecordAllocationClass, RootSelectorIdentity,
-        RootSelectorRole,
+        PhysicalRecordFormatDeclaration, RootSelectorIdentity, RootSelectorRole,
     };
 
     use super::*;
@@ -330,7 +329,10 @@ mod tests {
     }
 
     fn manifest(generation: u64) -> DurablePhysicalRootManifest {
-        let key = FreeSpaceKey::new(RecordAllocationClass::Extent, 1).unwrap();
+        let key = FreeSpaceKey::arena(
+            worth_store_physical_format::ExtentArenaId::new(1).unwrap(),
+            0,
+        );
         let free = FreeSpaceBlockReference::new(generation, 1, 0, 17, key, key).unwrap();
         DurablePhysicalRootManifest::builder(generation, 7, 4, 19)
             .free_space_root(Some(free))

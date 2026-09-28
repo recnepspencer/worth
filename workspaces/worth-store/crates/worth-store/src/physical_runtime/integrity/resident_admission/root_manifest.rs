@@ -114,6 +114,35 @@ pub(in crate::physical_runtime) fn admit_loaded_root_manifest<'frame>(
     source.admit(input, validated, context)
 }
 
+/// Admits a historical root through the same integrity boundary as bootstrap.
+pub(in crate::physical_runtime) fn project_loaded_root_manifest(
+    lease: &PhysicalFrameLease,
+    store: StableStoreIdentity,
+    format: PhysicalRecordFormatDeclaration,
+    generation: u64,
+    context: ResidentAdmissionContext<'_>,
+) -> Result<DurablePhysicalRootManifest, RootProtocolAdmissionDenial> {
+    let source = BoundResidentRootManifestSource::bind(lease, store, format, generation)?;
+    let input = context
+        .exact_input(lease, source.scope)
+        .map_err(map_resident_denial)?;
+    context.observe_fresh_validation();
+    let validated = match validate_root_manifest(input, source.scope).0 {
+        RootManifestIntegrityValidation::Intact(validated) => validated,
+        RootManifestIntegrityValidation::Rejected(rejection) => {
+            let _ = context.validation_rejected::<()>(rejection);
+            return Err(RootProtocolAdmissionDenial::from_validation(rejection));
+        }
+    };
+    let admitted = source.admit(input, validated, context.clone())?;
+    let projection = admitted
+        .projection
+        .ok_or(RootProtocolAdmissionDenial::OwnerProjectionRejected)?;
+    context
+        .with_owner_decoder(admitted.source, |_, _| projection.project())
+        .map_err(map_resident_denial)?
+}
+
 impl<'frame> BoundResidentRootManifestSource<'frame> {
     fn bind(
         lease: &'frame PhysicalFrameLease,

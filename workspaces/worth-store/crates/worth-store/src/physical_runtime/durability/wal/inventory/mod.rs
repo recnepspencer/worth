@@ -1,7 +1,11 @@
+mod copy_publication;
 mod live_segment_inventory;
 mod reopen;
 mod reopened_member;
+mod retained_maintenance;
 mod snapshot;
+pub(super) use copy_publication::observe_bound as observe_bound_copy_publication;
+pub(super) use retained_maintenance::RetainedMaintenanceIntent;
 
 use worth_store_physical_backend::ArtifactTreeFile;
 use worth_store_wal::{WalAppendFrontier, WalArtifactStoreDenial, WalTopologyDenialKind};
@@ -32,12 +36,18 @@ pub enum PhysicalWalOpenFailure {
 }
 
 pub(in crate::physical_runtime) struct ReopenedPhysicalWalInventory {
+    pub(super) record_format: worth_store_physical_format::PhysicalRecordFormatDeclaration,
+    pub(super) copy_obligations: Vec<super::RetainedExtentCopyObligation>,
+    pub(super) checkpoint_cutoff: u64,
     pub(super) frontier: WalAppendFrontier,
     pub(super) active_artifact: ArtifactTreeFile,
     pub(super) segment_count: u32,
     pub(super) frame_count: u64,
     /// Mutation frames still retained; each one's publication stays charged.
     pub(super) publication_frames: u64,
+    /// Candidate root, exact charge, and the retained intent's WAL segment/generation.
+    pub(super) release_metadata: Vec<(u64, u64, u64, u64)>,
+    pub(super) retained_maintenance: Vec<RetainedMaintenanceIntent>,
     pub(super) byte_count: u64,
     pub(super) peak_buffer_bytes: u64,
     pub(super) requires_inspection: bool,

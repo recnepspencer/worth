@@ -165,7 +165,7 @@ fn decode_member(
         });
     }
     let projection =
-        PersistedPhysicalRecoveryProjection::decode(cursor.field()?, projection_limits)
+        PersistedPhysicalRecoveryProjection::decode_frames(cursor.field()?, projection_limits)
             .map_err(|_| PhysicalRedoPlanningDenial::InvalidRecoveryProjection)?;
     cursor.require_end()?;
     validate_projection(&records, &projection)?;
@@ -188,13 +188,15 @@ fn validate_projection(
     records: &[PhysicalRedoRecord],
     projection: &PersistedPhysicalRecoveryProjection,
 ) -> Result<(), PhysicalRedoPlanningDenial> {
+    let frames = projection
+        .frames()
+        .ok_or(PhysicalRedoPlanningDenial::InvalidRecoveryProjection)?;
     let targets = records
         .iter()
         .flat_map(|record| record.targets())
         .collect::<Vec<_>>();
     for target in &targets {
-        let matches = projection
-            .frames()
+        let matches = frames
             .iter()
             .filter(|frame| materialization_matches(target, frame))
             .count();
@@ -202,7 +204,7 @@ fn validate_projection(
             return Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection);
         }
     }
-    if projection.frames().iter().any(|frame| {
+    if frames.iter().any(|frame| {
         !targets
             .iter()
             .any(|target| materialization_matches(target, frame))

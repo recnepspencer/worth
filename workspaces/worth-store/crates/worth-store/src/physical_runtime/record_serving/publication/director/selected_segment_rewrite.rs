@@ -40,6 +40,9 @@ impl RecordPublicationDirector {
             return false;
         }
         let (root, _) = self.root_owner.snapshot();
+        if let Some(source) = prepared.extent_copy_source() {
+            return self.current_extent_source(&root, source.record()).ok() != Some(source);
+        }
         root.generation() != prepared.source_root_generation()
     }
 
@@ -311,6 +314,7 @@ impl RecordPublicationDirector {
             .map_err(|_| damaged())?
             .with_rewrite(rewrite);
         let root = PreparedPhysicalRootProjection {
+            arena_reservations: Vec::new(),
             root_publication_allocation_bytes: NonZeroU64::new(bytes).ok_or_else(damaged)?,
             source_root: current_root,
             manifest_capacity_transition: prepared.manifest_capacity_transition(),

@@ -113,18 +113,19 @@ pub(in crate::physical_runtime::record_serving) fn write_root_candidate_artifact
 ) -> Result<WrittenRootCandidateArtifacts, RootCandidateWriteFailure> {
     let mut written = Vec::with_capacity(plan.manifests.len() + 2);
     for index in 0..plan.manifests.len() {
-        let (artifact, bytes) = &mut plan.manifests[index];
-        let artifact = *artifact;
+        let (target, bytes) = &mut plan.manifests[index];
+        let coordinate = CandidateFrameCoordinate::new(target.artifact(), target.offset());
+        let artifact = target.artifact();
+        let role = if matches!(artifact, RecordArtifactFile::ExtentArena { .. }) {
+            CandidateFrameRole::ExtentManifest
+        } else {
+            CandidateFrameRole::ManifestBlock
+        };
         let bytes = std::mem::take(bytes);
-        if let Err(cause) = write_candidate(
-            artifacts,
-            &mut plan,
-            residency,
-            artifact,
-            CandidateFrameRole::ManifestBlock,
-            bytes,
-        ) {
-            return Err(write_failure(plan, written, artifact, cause));
+        if let Err(cause) =
+            write_candidate(artifacts, &mut plan, residency, coordinate, role, bytes)
+        {
+            return Err(write_failure(plan, written, coordinate, cause));
         }
         written.push(artifact);
     }
@@ -134,11 +135,16 @@ pub(in crate::physical_runtime::record_serving) fn write_root_candidate_artifact
         artifacts,
         &mut plan,
         residency,
-        root,
+        CandidateFrameCoordinate::new(root, 0),
         CandidateFrameRole::RootManifest,
         root_bytes,
     ) {
-        return Err(write_failure(plan, written, root, cause));
+        return Err(write_failure(
+            plan,
+            written,
+            CandidateFrameCoordinate::new(root, 0),
+            cause,
+        ));
     }
     written.push(root);
     let previous_selector = plan.previous_selector_candidate;
@@ -147,11 +153,16 @@ pub(in crate::physical_runtime::record_serving) fn write_root_candidate_artifact
         artifacts,
         &mut plan,
         residency,
-        previous_selector,
+        CandidateFrameCoordinate::new(previous_selector, 0),
         CandidateFrameRole::RootSelectorCandidate,
         previous_selector_bytes,
     ) {
-        return Err(write_failure(plan, written, previous_selector, cause));
+        return Err(write_failure(
+            plan,
+            written,
+            CandidateFrameCoordinate::new(previous_selector, 0),
+            cause,
+        ));
     }
     written.push(previous_selector);
     let current_selector = plan.current_selector_candidate;
@@ -160,11 +171,16 @@ pub(in crate::physical_runtime::record_serving) fn write_root_candidate_artifact
         artifacts,
         &mut plan,
         residency,
-        current_selector,
+        CandidateFrameCoordinate::new(current_selector, 0),
         CandidateFrameRole::RootSelectorCandidate,
         current_selector_bytes,
     ) {
-        return Err(write_failure(plan, written, current_selector, cause));
+        return Err(write_failure(
+            plan,
+            written,
+            CandidateFrameCoordinate::new(current_selector, 0),
+            cause,
+        ));
     }
     written.push(current_selector);
     let candidate = plan.candidate;
@@ -173,13 +189,22 @@ pub(in crate::physical_runtime::record_serving) fn write_root_candidate_artifact
         artifacts,
         &mut plan,
         residency,
-        candidate,
+        CandidateFrameCoordinate::new(candidate, 0),
         CandidateFrameRole::CatalogCandidate,
         catalog_bytes,
     ) {
-        return Err(write_failure(plan, written, candidate, cause));
+        return Err(write_failure(
+            plan,
+            written,
+            CandidateFrameCoordinate::new(candidate, 0),
+            cause,
+        ));
     }
     written.push(candidate);
+    // Many manifest frames can inhabit one arena; synchronize the artifact
+    // once after all its admitted frame effects have completed.
+    written.sort_unstable();
+    written.dedup();
     Ok(WrittenRootCandidateArtifacts {
         plan,
         artifacts: written.into_boxed_slice(),
@@ -190,16 +215,15 @@ fn write_candidate(
     artifacts: &PublicationRecordArtifacts<'_>,
     plan: &mut PublicationPlan,
     residency: &mut StoreCandidateFramePublicationSession<'_>,
-    artifact: RecordArtifactFile,
+    coordinate: CandidateFrameCoordinate,
     role: CandidateFrameRole,
     bytes: Vec<u8>,
 ) -> Result<(), RootCandidateFrameWriteFailure> {
-    let frame = CandidateFrame::new(role, CandidateFrameCoordinate::new(artifact, 0), bytes);
+    let frame = CandidateFrame::new(role, coordinate, bytes);
     let completion = artifacts.write_new_candidate_recoverable(
         RecordPublicationStage::ManifestSynchronization,
         residency,
         frame,
-        artifact,
     )?;
     plan.observation
         .observe_transfer(completion.frame_bytes() as usize);
@@ -209,11 +233,12 @@ fn write_candidate(
 fn write_failure(
     mut plan: PublicationPlan,
     completed_artifacts: Vec<RecordArtifactFile>,
-    failed_artifact: RecordArtifactFile,
+    failed_coordinate: CandidateFrameCoordinate,
     cause: RootCandidateFrameWriteFailure,
 ) -> RootCandidateWriteFailure {
     let (cause, failed_bytes) = cause.into_parts();
-    restore_failed_bytes(&mut plan, failed_artifact, failed_bytes);
+    restore_failed_bytes(&mut plan, failed_coordinate, failed_bytes);
+    let failed_artifact = failed_coordinate.artifact();
     let kind = project_failure_kind(&cause);
     if completed_artifacts.is_empty() && proves_no_effect(&cause) {
         RootCandidateWriteFailure::RetryableNoEffect {
@@ -231,12 +256,15 @@ fn write_failure(
     }
 }
 
-fn restore_failed_bytes(plan: &mut PublicationPlan, artifact: RecordArtifactFile, bytes: Vec<u8>) {
-    if let Some((_, target)) = plan
-        .manifests
-        .iter_mut()
-        .find(|(candidate, _)| *candidate == artifact)
-    {
+fn restore_failed_bytes(
+    plan: &mut PublicationPlan,
+    coordinate: CandidateFrameCoordinate,
+    bytes: Vec<u8>,
+) {
+    let artifact = coordinate.artifact();
+    if let Some((_, target)) = plan.manifests.iter_mut().find(|(candidate, _)| {
+        candidate.artifact() == artifact && candidate.offset() == coordinate.offset()
+    }) {
         debug_assert!(target.is_empty());
         *target = bytes;
     } else if plan.root == artifact {

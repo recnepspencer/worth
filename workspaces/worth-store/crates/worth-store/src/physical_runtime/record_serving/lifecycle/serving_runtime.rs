@@ -138,8 +138,8 @@ impl ServingPhysicalRuntime {
         let Some(displaced) = self.parts.publication.commit_retirement_intent()? else {
             return Ok(());
         };
-        let captured = match self.checkpoint_displaced_retirement(displaced.artifact) {
-            Ok(captured) => captured,
+        let checkpoint = match self.checkpoint_displaced_retirement(displaced.artifact) {
+            Ok(completed) => completed,
             Err(denial) => {
                 self.parts
                     .publication
@@ -147,7 +147,14 @@ impl ServingPhysicalRuntime {
                 return Err(denial);
             }
         };
-        if captured <= displaced.source_root {
+        let captured = checkpoint.basis().source().root().generation();
+        let checkpoint_covers_source = match displaced.artifact {
+            crate::physical_runtime::durability::RetiredArtifact::Arena { .. } => {
+                captured >= displaced.source_root
+            }
+            _ => captured > displaced.source_root,
+        };
+        if !checkpoint_covers_source {
             self.parts
                 .publication
                 .revert_retirement_claim(displaced.artifact);
@@ -155,13 +162,18 @@ impl ServingPhysicalRuntime {
         }
         #[cfg(feature = "certification-test-authority")]
         self.parts.publication.pause_retirement_kill(1);
-        self.parts.publication.finish_retirement(displaced)
+        self.parts
+            .publication
+            .finish_retirement(displaced, &checkpoint)
     }
 
     fn checkpoint_displaced_retirement(
         &self,
         artifact: crate::physical_runtime::durability::RetiredArtifact,
-    ) -> Result<u64, crate::physical_runtime::PhysicalRetirementDenial> {
+    ) -> Result<
+        crate::physical_runtime::CompletedPhysicalCheckpoint,
+        crate::physical_runtime::PhysicalRetirementDenial,
+    > {
         use worth_proof::TransitionOutcome;
 
         use crate::physical_runtime::{
@@ -185,9 +197,7 @@ impl ServingPhysicalRuntime {
             return Err(PhysicalRetirementDenial::Checkpoint);
         };
         match handle.wait() {
-            PhysicalCheckpointOutcome::Completed(completed) => {
-                Ok(completed.basis().source().root().generation())
-            }
+            PhysicalCheckpointOutcome::Completed(completed) => Ok(completed),
             PhysicalCheckpointOutcome::ProvenNoEffect(_)
             | PhysicalCheckpointOutcome::Indeterminate(_) => {
                 Err(PhysicalRetirementDenial::Checkpoint)

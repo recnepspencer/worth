@@ -5,6 +5,7 @@ pub(super) const FRAME_BYTES: usize = 48;
 #[derive(Debug, Clone, Copy)]
 pub(super) struct Frame<'a> {
     pub(super) kind: u8,
+    pub(super) format: [u8; 10],
     pub(super) identity: u64,
     pub(super) payload: &'a [u8],
 }
@@ -41,6 +42,9 @@ pub(super) fn decode_frame(bytes: &[u8]) -> Option<Frame<'_>> {
         || bytes[..8] != *b"WRC5FRM\0"
         || !matches!(bytes[8], 1..=11)
         || bytes[9] != 2
+        || read_u16(bytes, 10)? != 2
+        || !matches!(read_u32(bytes, 12)?, 16_384 | 32_768 | 65_536)
+        || bytes[16..20] != [1, 1, 1, 24]
         || read_u16(bytes, 20)? as usize != FRAME_BYTES
         || bytes[22..24] != [0; 2]
         || bytes.len() != FRAME_BYTES + read_u32(bytes, 24)? as usize
@@ -52,6 +56,7 @@ pub(super) fn decode_frame(bytes: &[u8]) -> Option<Frame<'_>> {
     covered.extend_from_slice(&bytes[FRAME_BYTES..]);
     (crc32c(&covered) == read_u32(bytes, 44)?).then_some(Frame {
         kind: bytes[8],
+        format: bytes[10..20].try_into().ok()?,
         identity: read_u64(bytes, 28)?,
         payload: &bytes[FRAME_BYTES..],
     })

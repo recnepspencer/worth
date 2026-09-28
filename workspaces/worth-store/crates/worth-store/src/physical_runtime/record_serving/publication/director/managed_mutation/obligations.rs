@@ -43,9 +43,10 @@ pub(super) fn keep_unresolved(
     mut growth: RewriteGrowthGuard<'_>,
     pending: PendingPublicationLease,
     terminal: PhysicalMutationTerminalFact,
+    copy: Option<&super::super::extent_copy::CopyFailureObligation>,
 ) -> PhysicalMutationTerminalFact {
     let unresolved = matches!(&terminal, PhysicalMutationTerminalFact::Indeterminate(_));
-    if unresolved {
+    if unresolved && !copy.is_some_and(|copy| copy.permits_root_release()) {
         growth.retain_unresolved();
         pending.retain_unresolved();
     }

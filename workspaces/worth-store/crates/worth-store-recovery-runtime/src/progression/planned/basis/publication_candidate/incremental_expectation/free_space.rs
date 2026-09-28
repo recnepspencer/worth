@@ -72,6 +72,9 @@ pub(super) fn derive(
         final_inventory.next_segment,
         final_inventory.next_page,
         final_inventory.next_extent,
+        final_inventory.next_arena,
+        current.arena_capacity(),
+        current.arena_alignment(),
         planner.next_block,
         roots.pop(),
     )

@@ -18,7 +18,6 @@ use crate::physical_runtime::{
     WalDurablePhysicalMutation,
 };
 
-mod candidate_cleanup;
 mod candidate_verification;
 mod effect_progression;
 mod failure_outcome;
@@ -36,6 +35,13 @@ impl RecordPublicationDirector {
         };
         if let Some(cause) = self.dispatch_admission_failure(&durable) {
             return PhysicalDataDispatchOutcome::NotStarted { durable, cause };
+        }
+        // This lane adopts already-executed, synchronized copy receipts. The
+        // typed plan owns the nonclone capability; no frame write is invented.
+        if durable.source_copy().is_some() {
+            return PhysicalDataDispatchOutcome::Dispatched(
+                crate::physical_runtime::DataDispatchedPhysicalMutation::from_source_copy(durable),
+            );
         }
         let declaration = match candidate_declaration(&durable, self.current_root().generation()) {
             Some(declaration) => declaration,
@@ -119,8 +125,9 @@ fn candidate_declaration(
     root_generation: u64,
 ) -> Option<CandidateFrameSet> {
     let frames = durable
-        .data_frames()
+        .data_frames()?
         .iter()
+        .skip(durable.completed_data_frames())
         .map(|frame| {
             let target = frame.basis().target();
             let coordinate = target.coordinate();

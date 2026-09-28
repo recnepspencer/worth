@@ -12,7 +12,10 @@ use crate::{
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct ArtifactNewWriteRange(u64);
+pub struct ArtifactNewWriteRange {
+    offset: u64,
+    byte_count: u64,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CompletedArtifactNewWrite {
@@ -73,12 +76,27 @@ impl ArtifactNewWriteRange {
         if byte_count == 0 {
             None
         } else {
-            Some(Self(byte_count))
+            Some(Self {
+                offset: 0,
+                byte_count,
+            })
         }
     }
 
     pub const fn byte_count(self) -> u64 {
-        self.0
+        self.byte_count
+    }
+
+    pub const fn at(offset: u64, byte_count: u64) -> Option<Self> {
+        if byte_count == 0 || offset.checked_add(byte_count).is_none() {
+            None
+        } else {
+            Some(Self { offset, byte_count })
+        }
+    }
+
+    pub const fn offset(self) -> u64 {
+        self.offset
     }
 }
 
@@ -114,7 +132,7 @@ impl ArtifactTreeMedia<'_> {
             }
         };
         let create_operation = file.create_operation();
-        match file.write_exact_artifact_chunk(bytes) {
+        match file.write_exact_artifact_chunk(range.offset(), bytes) {
             ArtifactNewFileWriteOutcome::Completed(write_operation) => {
                 ArtifactNewWriteOutcome::Completed(CompletedArtifactNewWrite::new(
                     self.owner.identity(),

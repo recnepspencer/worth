@@ -1,6 +1,7 @@
 mod access;
 mod access_policy;
 mod admission;
+mod arena;
 mod canonical_read_execution;
 mod evidence;
 mod identity;
@@ -8,6 +9,8 @@ mod lifecycle;
 mod mutation_work_port;
 mod planning;
 mod publication;
+mod retirement_retry;
+pub(in crate::physical_runtime) use retirement_retry::RetirementCandidateRetryScope;
 mod read_work_port;
 mod record_queue_policy;
 pub(in crate::physical_runtime) mod residency;
@@ -57,6 +60,7 @@ pub use admission::residency_policy::{
     PhysicalRecordResidencyPolicyDenial, PhysicalRecordResidencyPolicyOutcome,
     PhysicalResidencyDimension, PhysicalSpeculativeWorkKind,
 };
+pub use arena::{ArenaEvacuationThreshold, ExtentArenaCapacity, ExtentArenaPolicyDenial};
 use canonical_read_execution::PreparedCanonicalMetadataRead;
 pub(in crate::physical_runtime) use canonical_read_execution::PreparedCanonicalRecordRead;
 #[cfg(feature = "certification-test-authority")]
@@ -109,20 +113,25 @@ pub use publication::streaming::{
 #[cfg(feature = "certification-test-authority")]
 pub use publication::CertificationPhysicalRecordSubmission;
 pub use publication::RecordPublicationStage;
-pub use publication::{
-    InlineArtifactRewritePlanDenial, PhysicalManifestCapacityTransition,
-    PhysicalMutationAdmissionDisposition, PhysicalMutationPreparationDeferred,
-    PhysicalMutationPreparationDenial, PhysicalMutationPreparationFailure,
-    PhysicalMutationPreparationOutcome, PhysicalMutationPreparationRebindRequired,
-    PhysicalMutationPreparationStale, PhysicalMutationPreparationSuccess,
-    PhysicalMutationResourceShape, PhysicalPreSealCancellationDenial,
-    PhysicalPreSealCancellationOutcome, PhysicalRecordSubmission, PlannedInlineRewriteArtifact,
-    PreparedPhysicalMutation, RootPublicationCandidatePlan, RootPublicationPlanningMembers,
-};
 pub(in crate::physical_runtime) use publication::{
+    AdoptedExtentCopy, CompletedExtentCopy, ExtentCopySynchronization, ExtentCopyWriteEvidence,
     PlannedPhysicalMutationParts, PreparedPhysicalMutationContext, PreparedPhysicalRootCandidate,
     PreparedRecordCompletionProjection, RecordPublicationDirector, RecordPublicationFoundation,
     WrittenRootPublicationCandidate,
+};
+pub use publication::{
+    InlineArtifactRewritePlanDenial, PhysicalArenaEvacuationPreparationOutcome,
+    PhysicalManifestCapacityTransition, PhysicalMutationAdmissionDisposition,
+    PhysicalMutationPreparationDeferred, PhysicalMutationPreparationDenial,
+    PhysicalMutationPreparationFailure, PhysicalMutationPreparationOutcome,
+    PhysicalMutationPreparationRebindRequired, PhysicalMutationPreparationStale,
+    PhysicalMutationPreparationSuccess, PhysicalMutationResourceShape,
+    PhysicalPreSealCancellationDenial, PhysicalPreSealCancellationOutcome,
+    PhysicalRecordSubmission, PlannedInlineRewriteArtifact, PreparedPhysicalMutation,
+    RootPublicationCandidatePlan, RootPublicationPlanningMembers,
+};
+pub use publication::{
+    PhysicalExtentCopyPhase, PhysicalExtentCopyProgress, PhysicalExtentCopyResolutionProgress,
 };
 pub(in crate::physical_runtime) use publication::{
     RootCandidateWriteFailureKind, RootCandidateWriteFailurePosture,
@@ -131,8 +140,8 @@ pub(in crate::physical_runtime) use read_work_port::{
     CanonicalRecordReadFailure, CanonicalRecordReadPort,
 };
 pub(in crate::physical_runtime) use record_queue_policy::{
-    admit_checkpoint_background_policy, admit_record_queue_policy,
-    admit_wal_reclamation_background_policy,
+    admit_checkpoint_background_policy, admit_compaction_background_policy,
+    admit_record_queue_policy, admit_wal_reclamation_background_policy,
 };
 pub use residency::candidate_frame_residency::CandidateFrameContractViolation;
 pub(in crate::physical_runtime) use residency::candidate_frame_residency::{

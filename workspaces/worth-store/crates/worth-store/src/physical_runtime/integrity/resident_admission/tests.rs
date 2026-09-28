@@ -1,6 +1,6 @@
 use worth_store_buffer_pool::{PhysicalFrameAccess, PhysicalFrameKey};
 use worth_store_physical_format::{
-    DurablePhysicalRootManifest, FreeSpaceBlockReference, FreeSpaceKey, RecordAllocationClass,
+    DurablePhysicalRootManifest, FreeSpaceBlockReference, FreeSpaceKey,
 };
 
 use super::load::ResidentAdmissionContext;
@@ -198,7 +198,7 @@ fn exact_binding_rejects_same_scope_record_replacement() {
     )
     .unwrap();
 
-    let key = FreeSpaceKey::new(RecordAllocationClass::InlinePage, 1).unwrap();
+    let key = FreeSpaceKey::inline(1).unwrap();
     let free_space_root = FreeSpaceBlockReference::new(11, 1, 0, 41, key, key).unwrap();
     let replacement_bytes = DurablePhysicalRootManifest::builder(11, 99, 2, 43)
         .free_space_root(Some(free_space_root))

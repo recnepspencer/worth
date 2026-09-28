@@ -87,6 +87,8 @@ mod residency_pressure_processes;
 mod residency_writeback_fresh_reopen;
 #[path = "physical_record_journeys/resident_checksum_cost.rs"]
 mod resident_checksum_cost;
+#[path = "physical_record_journeys/retirement_charge_oracle.rs"]
+mod retirement_charge_oracle;
 #[path = "c5/scale_invalid_worlds.rs"]
 mod scale_invalid_worlds;
 #[path = "c5/scale_policy_evolution.rs"]

@@ -24,6 +24,7 @@ pub(in crate::physical_runtime) use inventory::{
 };
 pub use member_basis::{PhysicalWalMemberBasis, PhysicalWalMemberIdentity};
 pub use observation::PhysicalWalObservation;
+pub(in crate::physical_runtime) use port::DurableMaintenanceReceipt;
 pub use port::{
     IndeterminatePhysicalWalGroupAppend, PhysicalWalAppendFailureCause,
     PhysicalWalGroupAppendContinuation, PhysicalWalGroupAppendFailureCause,
@@ -36,3 +37,5 @@ pub(in crate::physical_runtime) use reclamation::{
 };
 pub use reclamation::{PhysicalWalReclamationObservation, PhysicalWalReclamationReport};
 pub(in crate::physical_runtime) use runtime_owner::PhysicalWalRuntimeOwner;
+mod copy_obligation;
+pub(in crate::physical_runtime) use copy_obligation::RetainedExtentCopyObligation;

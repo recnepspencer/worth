@@ -267,6 +267,7 @@ fn valid_dirty_basis(payload: &[u8]) -> Option<()> {
     let artifact_valid = match kind {
         1 | 12 | 13 => first == 0 && second == 0,
         2 | 3 | 10 | 14 | 15 => second == 0,
+        16 => first != 0 && second == 0,
         4..=9 | 11 => true,
         _ => false,
     };
@@ -332,4 +333,23 @@ fn crc32c(bytes: &[u8]) -> u32 {
         }
     }
     !crc
+}
+
+#[cfg(test)]
+mod tests {
+    use super::valid_dirty_basis;
+
+    #[test]
+    fn arena_dirty_basis_requires_a_real_arena_and_no_second_identity() {
+        let mut payload = [0_u8; 48];
+        payload[0] = 16;
+        payload[8..16].copy_from_slice(&1_u64.to_le_bytes());
+        payload[32..36].copy_from_slice(&1_u32.to_le_bytes());
+        assert!(valid_dirty_basis(&payload).is_some());
+        payload[8..16].fill(0);
+        assert!(valid_dirty_basis(&payload).is_none());
+        payload[8..16].copy_from_slice(&1_u64.to_le_bytes());
+        payload[16..24].copy_from_slice(&1_u64.to_le_bytes());
+        assert!(valid_dirty_basis(&payload).is_none());
+    }
 }

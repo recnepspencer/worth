@@ -20,6 +20,7 @@ pub use executor::{
 };
 pub(in crate::physical_runtime) use parts::PhysicalStoreInstanceParts;
 pub(in crate::physical_runtime) use residency_owner::PhysicalResidencyOwner;
+pub(in crate::physical_runtime) use scheduler_admission::CompactionFrameAdmission;
 pub(in crate::physical_runtime) use scheduler_admission::PhysicalSchedulerAdmissionOwner;
 pub(in crate::physical_runtime) use scheduler_admission::PhysicalScrubSchedulerAdmissionDenial;
 #[cfg(feature = "recovery-runtime-owner")]

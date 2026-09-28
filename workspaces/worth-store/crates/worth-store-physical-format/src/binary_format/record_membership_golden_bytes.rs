@@ -43,7 +43,7 @@ fn membership_authority_artifacts_match_independent_golden_bytes() {
         .record_extent_cell(PhysicalExtentId::from_raw(4).unwrap())
         .with_extent_generation(generation(5));
     let extent_manifest =
-        DurableExtentManifest::new(format(), record, extent, 100, 16_384, 1).unwrap();
+        DurableExtentManifest::new(format(), record, extent, 100, 16_384, 1, 4096).unwrap();
     let mut extent_payload = vec![0_u8; 56];
     extent_payload[..16].copy_from_slice(&[0x22; 16]);
     extent_payload[16..24].copy_from_slice(&7_u64.to_le_bytes());
@@ -51,14 +51,19 @@ fn membership_authority_artifacts_match_independent_golden_bytes() {
     extent_payload[32..40].copy_from_slice(&100_u64.to_le_bytes());
     extent_payload[40..44].copy_from_slice(&16_384_u32.to_le_bytes());
     extent_payload[44..48].copy_from_slice(&1_u32.to_le_bytes());
+    extent_payload[48..56].copy_from_slice(&4096_u64.to_le_bytes());
     assert_eq!(
         extent_manifest.encode(format()),
         independent_frame(6, 5, &extent_payload)
     );
 
     let entries = vec![
-        RecordFreeSpaceManifestEntry::new(RecordAllocationClass::InlinePage, 7, 4, 2, 3).unwrap(),
-        RecordFreeSpaceManifestEntry::new(RecordAllocationClass::Extent, 5, 5, 100, 1).unwrap(),
+        RecordFreeSpaceManifestEntry::inline_frontier(7, 4, 2, 3).unwrap(),
+        RecordFreeSpaceManifestEntry::arena_range(
+            ExtentArenaRange::new(ExtentArenaId::new(5).unwrap(), 0, 8192).unwrap(),
+            1,
+        )
+        .unwrap(),
     ];
     let free_block = PhysicalFreeSpaceMembershipBlock::leaf(8, 6, 1, entries, 2).unwrap();
     let mut free_block_payload = vec![0_u8; 120];
@@ -68,19 +73,32 @@ fn membership_authority_artifacts_match_independent_golden_bytes() {
     free_block_payload[20] = 1;
     free_block_payload[24..32].copy_from_slice(&6_u64.to_le_bytes());
     encode_free_entry(&mut free_block_payload[40..80], 1, 7, 4, 2, 3);
-    encode_free_entry(&mut free_block_payload[80..120], 2, 5, 5, 100, 1);
+    encode_free_entry(&mut free_block_payload[80..120], 2, 5, 0, 8192, 1);
     let free_block_bytes = independent_frame(10, 1, &free_block_payload);
     assert_eq!(free_block.encode(format()), free_block_bytes);
 
     let block_checksum = independent_crc32c(&[&free_block_bytes]);
-    let first = FreeSpaceKey::new(RecordAllocationClass::InlinePage, 7).unwrap();
-    let last = FreeSpaceKey::new(RecordAllocationClass::Extent, 5).unwrap();
+    let first = FreeSpaceKey::inline(7).unwrap();
+    let last = FreeSpaceKey::arena(ExtentArenaId::new(5).unwrap(), 0);
     let free_reference =
         FreeSpaceBlockReference::new(6, 1, 0, block_checksum, first, last).unwrap();
-    let free_header =
-        DurableFreeSpaceManifestHeader::new(6, 8, 2, 4, 2, 8, 10, 5, 2, Some(free_reference))
-            .unwrap();
-    let mut free_header_payload = vec![0_u8; 128];
+    let free_header = DurableFreeSpaceManifestHeader::new(
+        6,
+        8,
+        2,
+        4,
+        2,
+        8,
+        10,
+        5,
+        6,
+        65536,
+        4096,
+        2,
+        Some(free_reference),
+    )
+    .unwrap();
+    let mut free_header_payload = vec![0_u8; 168];
     free_header_payload[..8].copy_from_slice(&6_u64.to_le_bytes());
     free_header_payload[8..16].copy_from_slice(&8_u64.to_le_bytes());
     free_header_payload[16..18].copy_from_slice(&2_u16.to_le_bytes());
@@ -91,7 +109,10 @@ fn membership_authority_artifacts_match_independent_golden_bytes() {
     free_header_payload[48..56].copy_from_slice(&5_u64.to_le_bytes());
     free_header_payload[56..64].copy_from_slice(&2_u64.to_le_bytes());
     free_header_payload[64] = 1;
-    encode_free_reference(&mut free_header_payload[72..128], free_reference);
+    encode_free_reference(&mut free_header_payload[72..144], free_reference);
+    free_header_payload[144..152].copy_from_slice(&6_u64.to_le_bytes());
+    free_header_payload[152..160].copy_from_slice(&65536_u64.to_le_bytes());
+    free_header_payload[160..168].copy_from_slice(&4096_u64.to_le_bytes());
     let free_header_bytes = independent_frame(7, 6, &free_header_payload);
     assert_eq!(free_header.encode(format()), free_header_bytes);
 
@@ -141,13 +162,14 @@ fn encode_free_reference(target: &mut [u8], reference: FreeSpaceBlockReference) 
     target[8..16].copy_from_slice(&reference.block().to_le_bytes());
     target[16..18].copy_from_slice(&reference.level().to_le_bytes());
     target[20..24].copy_from_slice(&reference.checksum().to_le_bytes());
-    encode_free_key(&mut target[24..40], reference.first());
-    encode_free_key(&mut target[40..56], reference.last());
+    encode_free_key(&mut target[24..48], reference.first());
+    encode_free_key(&mut target[48..72], reference.last());
 }
 
 fn encode_free_key(target: &mut [u8], key: FreeSpaceKey) {
     target[0] = key.class() as u8;
     target[8..16].copy_from_slice(&key.owner().to_le_bytes());
+    target[16..24].copy_from_slice(&key.offset().to_le_bytes());
 }
 
 const INDEPENDENT_FRAME_HEADER_BYTES: usize = 48;
@@ -158,7 +180,7 @@ fn independent_frame(kind: u8, identity: u64, payload: &[u8]) -> Vec<u8> {
     bytes[..8].copy_from_slice(b"WRC5FRM\0");
     bytes[8] = kind;
     bytes[9] = 2;
-    bytes[10..20].copy_from_slice(&[1, 0, 0, 64, 0, 0, 1, 1, 1, 24]);
+    bytes[10..20].copy_from_slice(&[2, 0, 0, 64, 0, 0, 1, 1, 1, 24]);
     bytes[20..22].copy_from_slice(&(INDEPENDENT_FRAME_HEADER_BYTES as u16).to_le_bytes());
     bytes[24..28].copy_from_slice(&(payload.len() as u32).to_le_bytes());
     bytes[28..36].copy_from_slice(&identity.to_le_bytes());

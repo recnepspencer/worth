@@ -26,7 +26,12 @@ pub(super) fn admit_scratch_bytes(
         })
         .ok_or(PhysicalRedoPlanningDenial::CounterOverflow)?;
     let observed = targets
-        .checked_add(projection.frames().len() as u64)
+        .checked_add(
+            projection
+                .frames()
+                .expect("frame-only recovery projection admitted before planning")
+                .len() as u64,
+        )
         .and_then(|count| count.checked_add(projection.placements().len() as u64))
         .and_then(|count| count.checked_mul(4096))
         .and_then(|bytes| retained.checked_add(bytes))
@@ -163,7 +168,11 @@ fn published_image(
     let Ok(image) = inline_image(&members[claim.member], claim.target) else {
         return false;
     };
-    let bytes = members[claim.member].projection.frames()[image.frame_index].bytes();
+    let bytes = members[claim.member]
+        .projection
+        .frames()
+        .expect("frame-only recovery projection admitted before planning")[image.frame_index]
+        .bytes();
     let Ok(format) =
         worth_store_physical_format::PhysicalRecordFormatDeclaration::builder().admit()
     else {
@@ -262,8 +271,16 @@ fn require_preserved_records(
 ) -> Result<(), PhysicalRedoPlanningDenial> {
     let before = inline_image(prior, prior_target)?;
     let after = inline_image(next, next_target)?;
-    let before_bytes = prior.projection.frames()[before.frame_index].bytes();
-    let after_bytes = next.projection.frames()[after.frame_index].bytes();
+    let before_bytes = prior
+        .projection
+        .frames()
+        .expect("frame-only recovery projection admitted before planning")[before.frame_index]
+        .bytes();
+    let after_bytes = next
+        .projection
+        .frames()
+        .expect("frame-only recovery projection admitted before planning")[after.frame_index]
+        .bytes();
     for (placement, range) in &before.records {
         let Some((_, after_range)) = after.records.iter().find(|(candidate, _)| {
             candidate.record() == placement.record()
@@ -288,7 +305,12 @@ fn inline_image<'a>(
         .inline_frames
         .iter()
         .find(|image| {
-            let coordinate = member.projection.frames()[image.frame_index].coordinate();
+            let coordinate = member
+                .projection
+                .frames()
+                .expect("frame-only recovery projection admitted before planning")
+                [image.frame_index]
+                .coordinate();
             coordinate.artifact() == target.artifact()
                 && coordinate.offset() == target.artifact_offset()
                 && coordinate.length() == target.artifact_length()

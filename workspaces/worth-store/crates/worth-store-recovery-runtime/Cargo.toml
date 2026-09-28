@@ -23,6 +23,7 @@ serde_json = "1"
 worth-store = { workspace = true, features = ["certification-test-authority"] }
 worth-store-authority.workspace = true
 worth-store-offline-verifier.workspace = true
+worth-store-offline-integrity-observer.workspace = true
 worth-store-test-support = { workspace = true, features = ["recovery-runtime-fixtures"] }
 
 [features]

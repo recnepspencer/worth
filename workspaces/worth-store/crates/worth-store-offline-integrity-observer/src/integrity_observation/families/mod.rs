@@ -3,6 +3,7 @@ pub(crate) mod checkpoint;
 mod current_selector;
 pub(crate) mod durable_frame;
 pub(crate) mod extent;
+pub(crate) mod extent_arena;
 #[cfg(test)]
 mod family_vectors;
 pub(crate) mod free_space;

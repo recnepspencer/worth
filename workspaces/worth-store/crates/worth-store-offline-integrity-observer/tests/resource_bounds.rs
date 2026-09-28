@@ -36,7 +36,7 @@ fn entry_bound_preserves_indeterminate_addressed_root_and_exact_work() {
     let counters = report.counters();
     assert_eq!(counters.entries_visited(), 4);
     assert_eq!(counters.bytes_read(), 286);
-    assert_eq!(counters.files_opened(), 11);
+    assert_eq!(counters.files_opened(), if cfg!(windows) { 20 } else { 11 });
     assert_eq!(counters.maximum_depth_reached(), 3);
     assert_eq!(counters.checksum_calculations(), 3);
     assert_eq!(counters.namespace_identity_payload_decoder_entries(), 1);
@@ -135,8 +135,11 @@ fn partial_directory_prefix_is_reported_without_loss() {
         OfflineIntegrityReportCompleteness::BoundExhausted
     );
     assert_eq!(report.counters().entries_visited(), 6);
-    assert_eq!(report.counters().bytes_read(), 663);
-    assert_eq!(report.counters().files_opened(), 20);
+    assert_eq!(report.counters().bytes_read(), 679);
+    assert_eq!(
+        report.counters().files_opened(),
+        if cfg!(windows) { 35 } else { 20 }
+    );
     assert_eq!(report.counters().selector_payload_decoder_entries(), 2);
     assert_eq!(report.counters().root_manifest_payload_decoder_entries(), 1);
 }
@@ -167,7 +170,10 @@ fn byte_and_depth_bounds_stop_before_open_or_decode() {
     let byte_counters = byte_report.counters();
     assert_eq!(byte_counters.entries_visited(), 5);
     assert_eq!(byte_counters.bytes_read(), 72);
-    assert_eq!(byte_counters.files_opened(), 3);
+    assert_eq!(
+        byte_counters.files_opened(),
+        if cfg!(windows) { 6 } else { 3 }
+    );
     assert_eq!(byte_counters.checksum_calculations(), 1);
     assert_eq!(byte_counters.exhausted_bounds(), 1);
 
@@ -191,7 +197,10 @@ fn byte_and_depth_bounds_stop_before_open_or_decode() {
     let depth_counters = depth_report.counters();
     assert_eq!(depth_counters.entries_visited(), 5);
     assert_eq!(depth_counters.bytes_read(), 286);
-    assert_eq!(depth_counters.files_opened(), 11);
+    assert_eq!(
+        depth_counters.files_opened(),
+        if cfg!(windows) { 20 } else { 11 }
+    );
     assert_eq!(depth_counters.maximum_depth_reached(), 4);
     assert_eq!(depth_counters.root_manifest_payload_decoder_entries(), 0);
     assert_eq!(depth_counters.exhausted_bounds(), 1);
@@ -203,7 +212,7 @@ fn open_file_bound_is_typed_before_deepest_root_acquisition() {
     let limits = OfflineIntegrityObservationLimits::new(
         100,
         16 * 1024,
-        4,
+        if cfg!(windows) { 5 } else { 4 },
         8,
         0,
         crate::support::FIXTURE_ELAPSED_MILLISECONDS,
@@ -228,8 +237,11 @@ fn open_file_bound_is_typed_before_deepest_root_acquisition() {
     );
     let counters = report.counters();
     assert_eq!(counters.bytes_read(), 286);
-    assert_eq!(counters.files_opened(), 15);
-    assert_eq!(counters.open_file_high_water(), 4);
+    assert_eq!(counters.files_opened(), if cfg!(windows) { 25 } else { 15 });
+    assert_eq!(
+        counters.open_file_high_water(),
+        if cfg!(windows) { 5 } else { 4 }
+    );
     assert_eq!(counters.root_manifest_payload_decoder_entries(), 0);
     assert_eq!(counters.exhausted_bounds(), 1);
 }
@@ -240,7 +252,7 @@ fn report_bound_refuses_emission_without_creating_output() {
     let limits = OfflineIntegrityObservationLimits::new(
         100,
         16 * 1024,
-        5,
+        crate::support::FIXTURE_OPEN_FILE_HANDLES,
         8,
         0,
         crate::support::FIXTURE_ELAPSED_MILLISECONDS,
@@ -266,7 +278,7 @@ fn limits(
     OfflineIntegrityObservationLimits::new(
         entries,
         bytes,
-        5,
+        crate::support::FIXTURE_OPEN_FILE_HANDLES,
         depth,
         symlinks,
         crate::support::FIXTURE_ELAPSED_MILLISECONDS,

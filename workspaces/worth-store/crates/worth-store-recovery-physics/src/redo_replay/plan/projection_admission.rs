@@ -48,6 +48,9 @@ pub(super) fn admit_projection<'projection>(
     store: StableStoreIdentity,
     format: PhysicalRecordFormatDeclaration,
 ) -> Result<IntegrityAdmittedRecoveryProjection<'projection>, PhysicalRedoPlanningDenial> {
+    if projection.frames().is_none() {
+        return invalid();
+    }
     let mut admitted = IntegrityAdmittedRecoveryProjection {
         projection,
         inline_frames: Vec::new(),
@@ -61,10 +64,10 @@ pub(super) fn admit_projection<'projection>(
             .filter_map(|placement| match placement {
                 CurrentPhysicalRecordPlacement::Extent(value)
                     if source.artifact()
-                        == worth_store_physical_format::RecordArtifactFile::ExtentManifest {
-                            extent: value.extent().get(),
-                            generation: value.extent_generation(),
-                        } =>
+                        == (worth_store_physical_format::RecordArtifactFile::ExtentArena {
+                            arena: value.arena_range().arena().get(),
+                        })
+                        && source.coordinate().offset() == value.arena_range().offset() =>
                 {
                     Some(*value)
                 }
@@ -79,7 +82,7 @@ pub(super) fn admit_projection<'projection>(
             store,
             format,
             placements[0],
-            range(0, source.bytes().len())?,
+            coordinate_range(source.coordinate())?,
         );
         let (validation, _) = validate_extent_manifest(input, scope);
         let ExtentManifestIntegrityValidation::Intact(validated) = validation else {
@@ -92,6 +95,7 @@ pub(super) fn admit_projection<'projection>(
             validated.logical_bytes(),
             validated.maximum_frame_bytes(),
             validated.chunk_count(),
+            validated.alignment(),
         )
         .ok_or(PhysicalRedoPlanningDenial::InvalidRecoveryProjection)?;
         admitted.extent_manifests.push(AdmittedExtentManifest {
@@ -99,7 +103,12 @@ pub(super) fn admit_projection<'projection>(
             membership: validated.membership(),
         });
     }
-    for (frame_index, frame) in projection.frames().iter().enumerate() {
+    for (frame_index, frame) in projection
+        .frames()
+        .expect("frame-only recovery projection admitted before planning")
+        .iter()
+        .enumerate()
+    {
         match frame.subject() {
             PersistedPhysicalDataFrameSubject::InlinePage(page) => {
                 admit_inline(&mut admitted, frame_index, page, store, format)?;
@@ -119,7 +128,10 @@ fn admit_inline(
     store: StableStoreIdentity,
     format: PhysicalRecordFormatDeclaration,
 ) -> Result<(), PhysicalRedoPlanningDenial> {
-    let frame = &admitted.projection.frames()[frame_index];
+    let frame = &admitted
+        .projection
+        .frames()
+        .expect("frame-only recovery projection admitted before planning")[frame_index];
     let input = UntrustedPhysicalArtifact::from_bounded_bytes(frame.bytes());
     let scope = PhysicalArtifactScope::inline_page(
         store,
@@ -162,7 +174,10 @@ fn admit_chunk(
     store: StableStoreIdentity,
     format: PhysicalRecordFormatDeclaration,
 ) -> Result<(), PhysicalRedoPlanningDenial> {
-    let frame = &admitted.projection.frames()[frame_index];
+    let frame = &admitted
+        .projection
+        .frames()
+        .expect("frame-only recovery projection admitted before planning")[frame_index];
     let manifest = admitted
         .extent_manifests
         .iter()
@@ -177,6 +192,7 @@ fn admit_chunk(
         format,
         coordinate,
         coordinate_range(frame.coordinate())?,
+        manifest.membership.arena_range(),
     );
     let (validation, _) = validate_extent_chunk_membership(input, scope, manifest.membership);
     let ExtentChunkIntegrityValidation::Intact(validated) = validation else {
@@ -205,7 +221,10 @@ impl IntegrityAdmittedRecoveryProjection<'_> {
         &self.extent_manifests
     }
     pub fn frame_bytes(&self, index: usize) -> &[u8] {
-        self.projection.frames()[index].bytes()
+        self.projection
+            .frames()
+            .expect("frame-only recovery projection admitted before planning")[index]
+            .bytes()
     }
 }
 
@@ -213,11 +232,6 @@ fn coordinate_range(
     coordinate: worth_store_physical_format::RecordFrameCoordinate,
 ) -> Result<PhysicalByteRange, PhysicalRedoPlanningDenial> {
     PhysicalByteRange::new(coordinate.offset(), u64::from(coordinate.length()))
-        .map_err(|_| PhysicalRedoPlanningDenial::InvalidRecoveryProjection)
-}
-
-fn range(offset: u64, length: usize) -> Result<PhysicalByteRange, PhysicalRedoPlanningDenial> {
-    PhysicalByteRange::new(offset, length as u64)
         .map_err(|_| PhysicalRedoPlanningDenial::InvalidRecoveryProjection)
 }
 
@@ -280,8 +294,18 @@ mod tests {
         let extent = authority
             .record_extent_cell(PhysicalExtentId::from_raw(7).unwrap())
             .with_extent_generation(PhysicalGeneration::from_raw(2).unwrap());
-        let placement =
-            DurableExtentRecordPlacement::new(record, extent, PAYLOAD.len() as u64).unwrap();
+        let placement = DurableExtentRecordPlacement::new(
+            record,
+            extent,
+            PAYLOAD.len() as u64,
+            worth_store_physical_format::ExtentArenaRange::new(
+                worth_store_physical_format::ExtentArenaId::new(3).unwrap(),
+                4096,
+                20480,
+            )
+            .unwrap(),
+        )
+        .unwrap();
         let coordinate =
             ExtentChunkCoordinate::new(record, extent, PAYLOAD.len() as u64, 0, 1).unwrap();
         let mut unsealed = prepare_extent_chunk(format, coordinate, PAYLOAD.len()).unwrap();
@@ -297,13 +321,10 @@ mod tests {
             let last = bytes.len() - 1;
             bytes[last] ^= 1;
         }
-        let artifact = RecordArtifactFile::Extent {
-            extent: 7,
-            generation: 2,
-        };
+        let artifact = RecordArtifactFile::ExtentArena { arena: 3 };
         let frame = PersistedPhysicalRecoveryFrame::new(
             PersistedPhysicalDataFrameSubject::ExtentChunk(coordinate),
-            RecordFrameCoordinate::new(artifact, 0, bytes.len() as u32).unwrap(),
+            RecordFrameCoordinate::new(artifact, 8192, bytes.len() as u32).unwrap(),
             &bytes,
         )
         .unwrap();
@@ -321,13 +342,11 @@ mod tests {
             PAYLOAD.len() as u64,
             format.page_size().bytes(),
             1,
+            4096,
         )
         .unwrap();
         let manifest = PersistedPhysicalRecoveryManifest::new(
-            RecordArtifactFile::ExtentManifest {
-                extent: 7,
-                generation: 2,
-            },
+            RecordFrameCoordinate::new(artifact, 4096, 104).unwrap(),
             &manifest.encode(format),
         )
         .unwrap();

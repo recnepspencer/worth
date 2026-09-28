@@ -98,7 +98,10 @@ mod tests {
             bytes: bytes.to_vec().into_boxed_slice(),
             payload_digest: [0; 32],
         };
-        let key = FreeSpaceKey::new(RecordAllocationClass::Extent, 1).unwrap();
+        let key = FreeSpaceKey::arena(
+            worth_store_physical_format::ExtentArenaId::new(1).unwrap(),
+            0,
+        );
         let free = FreeSpaceBlockReference::new(1, 1, 0, 17, key, key).unwrap();
         let candidate = super::super::publication_candidate::RecoveryCandidateBasis {
             root: DurablePhysicalRootManifest::builder(1, 7, 4, 19)

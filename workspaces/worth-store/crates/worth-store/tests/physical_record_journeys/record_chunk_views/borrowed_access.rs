@@ -137,14 +137,12 @@ fn extent_views_stream_one_resident_frame_at_a_time_without_pool_copies() {
         .unwrap();
     let mut logical_offset = 0_u64;
     let mut frame_index = 0_u64;
-    let artifact = RecordArtifactFile::Extent {
-        extent: 1,
-        generation: 1,
-    };
-    assert!(root
-        .join("families/records/extents")
-        .join(artifact.file_name())
-        .is_file());
+    let artifact = RecordArtifactFile::ExtentArena { arena: 1 };
+    let arena_bytes = std::fs::read(
+        root.join("families/records/arenas")
+            .join(artifact.file_name()),
+    )
+    .unwrap();
     let residency = serving.certification_physical_residency();
 
     while let Some(chunk) = session.next_chunk().unwrap() {
@@ -155,7 +153,7 @@ fn extent_views_stream_one_resident_frame_at_a_time_without_pool_copies() {
             (expected.len() - expected_payload_start).min(fixture::CHUNK_PAYLOAD_BYTES);
         let coordinate = RecordFrameCoordinate::new(
             artifact,
-            frame_index * fixture::FRAME_BYTES,
+            super::super::durable_frame_oracle::first_arena_chunk_offset(&arena_bytes, frame_index),
             (decoded_payload_offset + expected_payload_bytes) as u32,
         )
         .unwrap();

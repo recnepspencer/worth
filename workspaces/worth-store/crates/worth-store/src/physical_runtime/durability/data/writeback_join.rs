@@ -131,7 +131,24 @@ impl CompletionBoundPhysicalDataSettlement {
 fn validate(
     dispatched: &DataDispatchedPhysicalMutation,
 ) -> Result<(), PhysicalDataSettlementFailureCause> {
-    let expected = dispatched.durable().data_frames();
+    let Some(expected) = dispatched.durable().data_frames() else {
+        let (copy, publication) = dispatched
+            .durable()
+            .source_copy()
+            .ok_or(PhysicalDataSettlementFailureCause::BasisSubstitution)?;
+        if !dispatched.effects().is_empty()
+            || copy.require_live_source().is_err()
+            || copy.writes().last_work().runtime()
+                != dispatched.mutation_identity().runtime_identity()
+            || copy.writes().frames() != copy.intent().chunk_count() + 1
+            || !copy.synchronization().matches_writes(copy.writes())
+            || publication != dispatched.durable().member_basis().lsn_range()
+            || publication.start().get() <= copy.durable_intent_lsn()
+        {
+            return Err(PhysicalDataSettlementFailureCause::BasisSubstitution);
+        }
+        return Ok(());
+    };
     let effects = dispatched.effects();
     if expected.is_empty() || effects.is_empty() {
         return Err(PhysicalDataSettlementFailureCause::EmptyEffectSet);
@@ -173,7 +190,11 @@ fn validate(
             return Err(PhysicalDataSettlementFailureCause::DuplicateWorkIdentity);
         }
         let count = artifact_counts.entry(target.artifact()).or_default();
-        let expected_source = if *count == 0 && target.offset() == 0 {
+        let expected_source = if matches!(
+            target.artifact(),
+            worth_store_physical_format::RecordArtifactFile::ExtentArena { .. }
+        ) || (*count == 0 && target.offset() == 0)
+        {
             PhysicalDataEffectSource::NewArtifact
         } else {
             PhysicalDataEffectSource::ExistingArtifactWriteback

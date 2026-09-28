@@ -226,13 +226,12 @@ fn ordinary_limits() -> PhysicalRecoveryLimits {
 }
 
 fn record_artifact_path(root: &Path, artifact: RecordArtifactFile) -> PathBuf {
-    let family = match artifact {
-        RecordArtifactFile::Segment { .. } => "segments",
-        RecordArtifactFile::Extent { .. } => "extents",
-        _ => panic!("Phase 5 test stages a data frame"),
-    };
+    assert!(
+        matches!(artifact, RecordArtifactFile::Segment { .. }),
+        "Phase 5 test stages a segment data frame"
+    );
     root.join("families/records")
-        .join(family)
+        .join("segments")
         .join(artifact.file_name())
 }
 

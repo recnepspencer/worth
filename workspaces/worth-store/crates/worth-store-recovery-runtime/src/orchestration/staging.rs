@@ -44,9 +44,9 @@ pub(crate) enum RecoveryStagingCancellation {
 }
 
 pub(crate) fn stage_recovery(
-    input: RecoveryStagingInput,
+    mut input: RecoveryStagingInput,
 ) -> Result<StagedPhysicalRecovery, PhysicalRecoveryOutcome> {
-    match execution::run(&input) {
+    match execution::run(&mut input) {
         Ok(execution) => complete(input, execution),
         Err(execution) => Err(block(input, execution)),
     }

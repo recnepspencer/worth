@@ -353,6 +353,14 @@ per resident frame. `bytes()` excludes frame headers, extent metadata, and
 neighboring inline slots. `logical_range()` names the exact range of the
 logical record represented by those bytes.
 
+Extent-backed records are routed through packed arena files, not a private
+data file and manifest file per extent. The protected root names the extent's
+arena, allocated offset and length, and extent generation. Its manifest and
+payload frames occupy that one aligned arena range; a chunk's
+`frame_coordinate()` names the exact frame within it. The reader admits the
+manifest before its chunks and still holds at most one current resident frame,
+regardless of how many other extents share the arena file.
+
 The chunk mutably borrows its session. The compiler therefore rejects
 advancing, copying from, moving, or dropping the session while either the
 chunk or its borrowed byte slice remains live. The chunk and its basis have no
@@ -597,9 +605,10 @@ the unit classification without embedding evidence in the denial enum.
   retains that registration and at most one current frame. There is no owning
   whole-record convenience or direct pool-control API.
 - Stable: a live protection blocks retirement of any generation its root still
-  reads, so a displaced segment stays readable, even when cold, until the last
-  protecting reader and session release. `retire_displaced_segment()` then
-  reports `Protected` rather than deleting it.
+  reads, so a displaced inline segment or extent arena range stays readable,
+  even when cold, until the last protecting reader and session release.
+  `retire_displaced_segment()` reports `Protected` rather than releasing the
+  range or deleting an emptied arena.
 - Stable for physical adapters: exact Recovery, Scrub, Maintenance,
   Verification, and Blob allocations borrow the Store runtime and grant only
   bounded temporary-byte ownership.

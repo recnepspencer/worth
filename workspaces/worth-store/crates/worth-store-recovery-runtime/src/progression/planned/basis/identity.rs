@@ -58,8 +58,17 @@ pub(super) fn plan_identity(
     for command in &staging.commands {
         digest.update(command.ordinal.to_le_bytes());
         digest.update(command.artifact.file_name().as_bytes());
+        digest.update(command.offset.to_le_bytes());
         digest.update(command.payload_digest);
         digest.update((command.bytes.len() as u64).to_le_bytes());
+    }
+    for copy in &staging.source_copies {
+        digest.update(b"source-copy");
+        digest.update(
+            worth_store_physical_format::PhysicalExtentCopyRecord::Intent(copy.intent()).encode(),
+        );
+        digest.update(copy.intent_lsn().to_le_bytes());
+        digest.update(copy.intent_digest());
     }
     for action in &staging.base.actions {
         digest.update([u8::from(action.is_projected())]);
@@ -79,6 +88,8 @@ pub(super) fn plan_identity(
     for action in &staging.base.manifests {
         digest.update(action.ordinal().to_le_bytes());
         digest.update(action.artifact().file_name().as_bytes());
+        digest.update(action.coordinate().offset().to_le_bytes());
+        digest.update(action.coordinate().length().to_le_bytes());
     }
     for state in &staging.base.root_states {
         digest.update(state.root_publication_allocation_bytes().to_le_bytes());

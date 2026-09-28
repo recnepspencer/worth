@@ -19,6 +19,9 @@ pub struct IntegrityValidatedFreeSpaceHeader<'media> {
     next_segment: u64,
     next_page: u64,
     next_extent: u64,
+    next_arena: u64,
+    arena_capacity: u64,
+    arena_alignment: u64,
     next_block: u64,
     validation_record: PhysicalIntegrityValidationRecord,
     inspected: UntrustedPhysicalArtifact<'media>,
@@ -58,6 +61,9 @@ impl<'media> IntegrityValidatedFreeSpaceHeader<'media> {
             next_segment: header.next_segment(),
             next_page: header.next_page(),
             next_extent: header.next_extent(),
+            next_arena: header.next_arena(),
+            arena_capacity: header.arena_capacity(),
+            arena_alignment: header.arena_alignment(),
             next_block: header.next_block(),
             validation_record,
             inspected,
@@ -110,6 +116,18 @@ impl<'media> IntegrityValidatedFreeSpaceHeader<'media> {
 
     pub const fn next_block(&self) -> u64 {
         self.next_block
+    }
+
+    pub const fn next_arena(&self) -> u64 {
+        self.next_arena
+    }
+
+    pub const fn arena_capacity(&self) -> u64 {
+        self.arena_capacity
+    }
+
+    pub const fn arena_alignment(&self) -> u64 {
+        self.arena_alignment
     }
 
     pub const fn into_validation_record(self) -> PhysicalIntegrityValidationRecord {

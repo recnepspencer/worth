@@ -29,13 +29,8 @@ pub enum RecordArtifactFile {
         generation: u64,
         block: u64,
     },
-    Extent {
-        extent: u64,
-        generation: u64,
-    },
-    ExtentManifest {
-        extent: u64,
-        generation: u64,
+    ExtentArena {
+        arena: u64,
     },
     FreeSpaceManifest {
         generation: u64,
@@ -82,11 +77,8 @@ impl RecordArtifactFile {
             Self::SegmentMembershipBlock { generation, block } => {
                 format!("segments-{generation:016x}-block-{block:016x}.manifest")
             }
-            Self::Extent { extent, generation } => {
-                format!("extent-{extent:016x}-{generation:016x}.data")
-            }
-            Self::ExtentManifest { extent, generation } => {
-                format!("extent-{extent:016x}-{generation:016x}.manifest")
+            Self::ExtentArena { arena } => {
+                format!("arena-{arena:016x}.data")
             }
             Self::FreeSpaceManifest { generation } => {
                 format!("free-space-{generation:016x}.manifest")

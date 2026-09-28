@@ -7,6 +7,7 @@ mod reopen;
 mod semantics;
 mod settlement;
 mod source_admission;
+mod source_copy_read;
 mod staging;
 mod wal_admission;
 

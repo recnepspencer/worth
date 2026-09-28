@@ -33,7 +33,7 @@ pub(in crate::physical_runtime::record_serving) struct ExtentReadState {
     artifacts: super::super::residency::record_frame_reader::RecordFrameReader<'static>,
     artifact: RecordArtifactFile,
     manifest: DurableExtentManifest,
-    artifact_bytes: std::num::NonZeroU64,
+    arena_range: worth_store_physical_format::ExtentArenaRange,
     integrity_membership: IntegrityValidatedExtentMembership,
     store: worth_store_physical_format::store_namespace::StableStoreIdentity,
     format: PhysicalRecordFormatDeclaration,
@@ -50,7 +50,7 @@ impl ExtentReadState {
         artifacts: super::super::residency::record_frame_reader::RecordFrameReader<'static>,
         artifact: RecordArtifactFile,
         manifest: DurableExtentManifest,
-        artifact_bytes: std::num::NonZeroU64,
+        arena_range: worth_store_physical_format::ExtentArenaRange,
         integrity_membership: IntegrityValidatedExtentMembership,
         store: worth_store_physical_format::store_namespace::StableStoreIdentity,
         format: PhysicalRecordFormatDeclaration,
@@ -59,13 +59,19 @@ impl ExtentReadState {
             artifacts,
             artifact,
             manifest,
-            artifact_bytes,
+            arena_range,
             integrity_membership,
             store,
             format,
             next_ordinal: 1,
             logical_offset: 0,
-            artifact_offset: 0,
+            artifact_offset: arena_range.offset()
+                + worth_store_physical_format::ExtentArenaFrameLayout::new(
+                    format,
+                    manifest.alignment(),
+                )
+                .expect("admitted extent arena geometry")
+                .manifest_stride(),
             frame: None,
             payload: 0..0,
             payload_offset: 0,
@@ -170,8 +176,8 @@ impl ExtentReadState {
                 self.artifact,
                 self.artifact_offset,
                 plan.frame_bytes as u32,
-                super::super::residency::frame_loading::ExactFrameSourceExtent::CompleteArtifact(
-                    self.artifact_bytes,
+                super::super::residency::frame_loading::ExactFrameSourceExtent::ArenaRange(
+                    self.arena_range,
                 ),
             )
             .map_err(|failure| {
@@ -268,7 +274,12 @@ impl ExtentReadState {
         self.payload = payload;
         self.payload_offset = 0;
         self.frame = Some(frame);
-        self.artifact_offset += plan.frame_bytes as u64;
+        self.artifact_offset += worth_store_physical_format::ExtentArenaFrameLayout::new(
+            self.format,
+            self.manifest.alignment(),
+        )
+        .expect("admitted extent arena geometry")
+        .chunk_stride();
         self.logical_offset = next_logical_offset;
         self.next_ordinal = next_ordinal;
         Ok(())

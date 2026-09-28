@@ -19,6 +19,9 @@ pub(crate) struct FreeSpaceHeaderProjection {
     pub next_segment: u64,
     pub next_page: u64,
     pub next_extent: u64,
+    pub next_arena: u64,
+    pub arena_capacity: u64,
+    pub arena_alignment: u64,
     pub next_block: u64,
 }
 
@@ -47,6 +50,9 @@ impl<'media> IntegrityAdmittedFreeSpaceHeader<'media> {
             next_segment: self.validated.next_segment(),
             next_page: self.validated.next_page(),
             next_extent: self.validated.next_extent(),
+            next_arena: self.validated.next_arena(),
+            arena_capacity: self.validated.arena_capacity(),
+            arena_alignment: self.validated.arena_alignment(),
             next_block: self.validated.next_block(),
         }
     }

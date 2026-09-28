@@ -16,6 +16,7 @@ pub(super) fn family(
         PageFrame => "page_frame",
         ExtentManifest => "extent_manifest",
         ExtentChunk => "extent_chunk_frame",
+        ExtentArenaFrame => "extent_arena_frame",
         FreeSpaceHeader => "free_space_header",
         FreeSpaceMembershipBlock => "free_space_membership_block",
         WalFrame => "wal_frame",

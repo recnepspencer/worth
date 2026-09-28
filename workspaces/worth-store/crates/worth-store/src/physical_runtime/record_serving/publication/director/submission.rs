@@ -18,7 +18,7 @@ use crate::physical_runtime::{
 
 #[derive(Clone)]
 pub struct PhysicalRecordSubmission {
-    director: Weak<RecordPublicationDirector>,
+    pub(super) director: Weak<RecordPublicationDirector>,
 }
 
 #[cfg_attr(not(feature = "certification-test-authority"), allow(dead_code))]

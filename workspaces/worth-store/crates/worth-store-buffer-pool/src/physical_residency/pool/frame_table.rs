@@ -29,6 +29,13 @@ pub(super) struct FrameTable {
 }
 
 impl FrameTable {
+    pub(super) fn exact_coordinate_at(&self, slot: usize) -> Option<RecordFrameCoordinate> {
+        match self.slots.get(slot)?.as_ref()? {
+            FrameSlot::Exact { coordinate, .. } => Some(*coordinate),
+            FrameSlot::Bounded { .. } => None,
+        }
+    }
+
     pub(super) fn minimum_metadata_bytes(frame_count: usize) -> Option<usize> {
         frame_count
             .checked_mul(exact_index_bytes())

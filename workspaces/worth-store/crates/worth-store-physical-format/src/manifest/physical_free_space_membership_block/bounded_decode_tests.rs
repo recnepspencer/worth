@@ -1,8 +1,5 @@
 use crate::record_framing::{decode_durable_frame, encode_durable_frame};
-use crate::{
-    DurableFrameKind, PhysicalRecordFormatDeclaration, RecordAllocationClass,
-    RecordFreeSpaceManifestEntry,
-};
+use crate::{DurableFrameKind, PhysicalRecordFormatDeclaration, RecordFreeSpaceManifestEntry};
 
 use super::{
     BoundedFreeSpaceMembershipBlockDecodeDenial, FreeSpaceMembershipBlockDecodeLimits,
@@ -88,10 +85,10 @@ fn format() -> PhysicalRecordFormatDeclaration {
 }
 
 fn entry(owner: u64) -> RecordFreeSpaceManifestEntry {
-    RecordFreeSpaceManifestEntry::new(RecordAllocationClass::InlinePage, owner, 1, 1, 1).unwrap()
+    RecordFreeSpaceManifestEntry::inline_frontier(owner, 1, 1, 1).unwrap()
 }
 
 fn reference(owner: u64, block: u64) -> FreeSpaceBlockReference {
-    let key = FreeSpaceKey::new(RecordAllocationClass::InlinePage, owner).unwrap();
+    let key = FreeSpaceKey::inline(owner).unwrap();
     FreeSpaceBlockReference::new(1, block, 0, 1, key, key).unwrap()
 }

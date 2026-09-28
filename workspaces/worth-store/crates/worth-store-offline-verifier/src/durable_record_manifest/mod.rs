@@ -1,3 +1,4 @@
+mod arena_ranges;
 mod free_space_tree;
 mod independent_frame;
 mod observation;
@@ -5,7 +6,8 @@ mod payload_validation;
 mod root_tree;
 mod segment_tree;
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
+use std::io::{Read, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 
 use worth_store_physical_format::PhysicalRecordFormatDeclaration;
@@ -158,10 +160,12 @@ fn walk_selected_durable_record_manifest(
         walk_root_tree(store_root, &root, expected_format)?;
     let (segment_pages, segment_blocks, segment_bytes) =
         segment_tree::walk_segment_tree(store_root, &root, expected_format)?;
-    let (free_space, free_blocks, free_bytes) =
+    let (free_space, free_blocks, free_bytes, arena) =
         free_space_tree::walk_free_space_tree(store_root, &root, expected_format)?;
+    arena_ranges::validate(&placements, &free_space, arena)?;
     validate_reachable_membership(store_root, expected_format, &placements, &segment_pages)?;
-    let extent_bytes = validate_extent_manifests(store_root, expected_format, &placements)?;
+    let (extent_bytes, extent_geometry) =
+        validate_extent_manifests(store_root, expected_format, &placements)?;
     let payload_validation::OfflinePayloadWalk {
         frames_read,
         payload_bytes,
@@ -172,6 +176,7 @@ fn walk_selected_durable_record_manifest(
         expected_format,
         &placements,
         &segment_pages,
+        &extent_geometry,
     )?;
     Ok(OfflineDurableManifestWalk {
         store_identity,
@@ -269,28 +274,35 @@ fn validate_extent_manifests(
     store_root: &Path,
     format: PhysicalRecordFormatDeclaration,
     placements: &[OfflineRecordPlacement],
-) -> Result<u64, OfflineDurableManifestDenial> {
+) -> Result<(u64, BTreeMap<(u64, u64), (u64, u64)>), OfflineDurableManifestDenial> {
     let mut bytes_read = 0_u64;
+    let mut geometry = BTreeMap::new();
     for placement in placements {
         let OfflineRecordPlacement::Extent {
             record,
             extent,
             generation,
             payload_bytes,
+            arena,
+            arena_offset,
+            arena_length,
         } = placement
         else {
             continue;
         };
-        let path = store_root.join(format!(
-            "families/records/extent-manifests/extent-{extent:016x}-{generation:016x}.manifest"
-        ));
-        let bytes = read_artifact(&path)?;
+        let path = store_root.join(format!("families/records/arenas/arena-{arena:016x}.data"));
+        let mut file = std::fs::File::open(&path)
+            .map_err(|error| OfflineDurableManifestDenial::Io(error.kind()))?;
+        file.seek(SeekFrom::Start(*arena_offset))
+            .map_err(|error| OfflineDurableManifestDenial::Io(error.kind()))?;
+        let mut bytes = [0_u8; 104];
+        file.read_exact(&mut bytes)
+            .map_err(|error| OfflineDurableManifestDenial::Io(error.kind()))?;
         bytes_read = bytes_read.saturating_add(bytes.len() as u64);
         let frame = decode_frame(&bytes, 6, format)?;
         let chunk_payload_bytes = format.page_size().bytes() as u64 - 48 - 64;
         let expected_chunks = payload_bytes.div_ceil(chunk_payload_bytes);
         if frame.payload.len() != 56
-            || frame.payload[48..56] != [0; 8]
             || frame.identity != *generation
             || observation::OfflineRecordIdentity::decode(&frame.payload[..24]) != Some(*record)
             || read_u64(frame.payload, 24) != *extent
@@ -300,8 +312,32 @@ fn validate_extent_manifests(
         {
             return Err(OfflineDurableManifestDenial::ReachabilityMismatch);
         }
+        let alignment = read_u64(frame.payload, 48);
+        if !alignment.is_power_of_two() || !arena_offset.is_multiple_of(alignment) {
+            return Err(OfflineDurableManifestDenial::ReachabilityMismatch);
+        }
+        let aligned = |bytes: u64| {
+            bytes
+                .checked_add(alignment - 1)
+                .map(|bytes| bytes / alignment * alignment)
+        };
+        let manifest_stride =
+            aligned(104).ok_or(OfflineDurableManifestDenial::ReachabilityMismatch)?;
+        let chunk_stride = aligned(format.page_size().bytes() as u64)
+            .ok_or(OfflineDurableManifestDenial::ReachabilityMismatch)?;
+        if chunk_stride
+            .checked_mul(expected_chunks)
+            .and_then(|chunks| manifest_stride.checked_add(chunks))
+            != Some(*arena_length)
+            || arena_offset.checked_add(*arena_length).is_none()
+            || geometry
+                .insert((*arena, *arena_offset), (manifest_stride, chunk_stride))
+                .is_some()
+        {
+            return Err(OfflineDurableManifestDenial::ReachabilityMismatch);
+        }
     }
-    Ok(bytes_read)
+    Ok((bytes_read, geometry))
 }
 
 pub(super) fn read_artifact(path: &PathBuf) -> Result<Vec<u8>, OfflineDurableManifestDenial> {

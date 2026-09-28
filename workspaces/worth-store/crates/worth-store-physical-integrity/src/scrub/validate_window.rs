@@ -77,7 +77,10 @@ pub fn inspect_physical_integrity_window(
             CheckpointBindingIntegrityValidation
         ),
         // A footer envelope alone cannot establish its stream's selective aggregates.
-        Family::ExtentChunk | Family::CheckpointFooter | Family::NamespaceIdentity => {
+        Family::ExtentArenaFrame
+        | Family::ExtentChunk
+        | Family::CheckpointFooter
+        | Family::NamespaceIdentity => {
             let rejection =
                 PhysicalIntegrityRejection::Unknown(UnknownPhysicalIntegrityPosture::new(
                     scope,

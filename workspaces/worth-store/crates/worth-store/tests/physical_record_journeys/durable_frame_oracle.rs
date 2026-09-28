@@ -5,6 +5,18 @@ use std::path::Path;
 pub(super) const HEADER_BYTES: usize = 48;
 const CHECKSUM_OFFSET: usize = 44;
 
+/// Byte geometry of the first allocation in an arena, independently decoded
+/// from the manifest's wire fields. Ordinal zero denotes its first chunk.
+pub(super) fn first_arena_chunk_offset(bytes: &[u8], ordinal: u64) -> u64 {
+    assert!(bytes.len() >= 104);
+    let alignment = u64::from_le_bytes(bytes[96..104].try_into().unwrap());
+    let maximum_frame = u32::from_le_bytes(bytes[88..92].try_into().unwrap()) as u64;
+    assert!(alignment.is_power_of_two());
+    assert!(maximum_frame > 112);
+    104_u64.div_ceil(alignment) * alignment
+        + ordinal * maximum_frame.div_ceil(alignment) * alignment
+}
+
 pub(super) fn payload(bytes: &[u8]) -> &[u8] {
     &bytes[HEADER_BYTES..]
 }

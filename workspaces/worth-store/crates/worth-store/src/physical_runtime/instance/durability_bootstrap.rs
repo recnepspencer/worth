@@ -35,6 +35,7 @@ pub(in crate::physical_runtime) fn reopen_durability_basis(
     runtime: RuntimeIdentity,
     signal_profile: PhysicalSignalProfileIdentity,
     durability: &PhysicalDurabilityRuntimeOwner,
+    record_format: worth_store_physical_format::PhysicalRecordFormatDeclaration,
 ) -> Result<PhysicalDurabilityReopenBasis, PhysicalDurabilityStateReopenFailure> {
     let observation = durability.observation();
     let checkpoint = reopen_binding_compaction(media)
@@ -47,8 +48,19 @@ pub(in crate::physical_runtime) fn reopen_durability_basis(
             PhysicalWalBindingReopenCutoff::after_checkpoint(reopened.wal_cutoff_lsn_exclusive())
         }
     };
-    let mut inventory = reopen_wal_inventory(media, observation.wal_policy(), cutoff)
-        .map_err(PhysicalDurabilityStateReopenFailure::Wal)?;
+    let binding_context = crate::physical_runtime::durability::PhysicalBindingDecodingContext::new(
+        media.store_identity(),
+        observation.policy_identity(),
+        observation.idempotency_policy(),
+    );
+    let mut inventory = reopen_wal_inventory(
+        media,
+        observation.wal_policy(),
+        cutoff,
+        record_format,
+        binding_context,
+    )
+    .map_err(PhysicalDurabilityStateReopenFailure::Wal)?;
     let members = inventory.take_members();
     let retirement_spans = inventory.take_retirement_spans();
     let records = inventory.take_retirement_records();

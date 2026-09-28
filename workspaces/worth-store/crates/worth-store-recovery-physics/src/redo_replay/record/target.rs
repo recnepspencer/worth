@@ -64,16 +64,8 @@ impl PhysicalRedoTarget {
                 logical_bytes: coordinate.logical_bytes,
                 logical_offset: coordinate.logical_offset,
                 chunk,
-                artifact_extent: match self.artifact {
-                    worth_store_physical_format::RecordArtifactFile::Extent { extent, .. } => {
-                        extent
-                    }
-                    _ => unreachable!("decoded extent targets retain an extent artifact"),
-                },
-                artifact_generation: match self.artifact {
-                    worth_store_physical_format::RecordArtifactFile::Extent {
-                        generation, ..
-                    } => generation,
+                artifact_arena: match self.artifact {
+                    worth_store_physical_format::RecordArtifactFile::ExtentArena { arena } => arena,
                     _ => unreachable!("decoded extent targets retain an extent artifact"),
                 },
                 artifact_offset: self.artifact_offset,
@@ -105,8 +97,7 @@ pub(super) enum PhysicalRedoTargetCanonicalOrder {
         logical_bytes: u64,
         logical_offset: u64,
         chunk: u32,
-        artifact_extent: u64,
-        artifact_generation: u64,
+        artifact_arena: u64,
         artifact_offset: u64,
         artifact_length: u32,
         resulting_digest: [u8; 32],

@@ -10,11 +10,15 @@ pub(super) enum ClassifiedWalPayload<'payload> {
         redo: &'payload [u8],
     },
     Retirement(RetirementRecord),
+    ExtentCopy(&'payload [u8]),
 }
 
 pub(super) fn classify_wal_payload(
     payload: &[u8],
 ) -> Result<ClassifiedWalPayload<'_>, StoreRecoveryBindingSampleDenial> {
+    if payload.starts_with(worth_store_physical_format::EXTENT_COPY_DOMAIN) {
+        return Ok(ClassifiedWalPayload::ExtentCopy(payload));
+    }
     if payload_is_retirement(payload) {
         return decode_retirement(payload)
             .map(ClassifiedWalPayload::Retirement)
@@ -72,6 +76,7 @@ mod tests {
             false,
             4,
             16,
+            None,
         );
         let ClassifiedWalPayload::Retirement(record) = classify_wal_payload(&payload).unwrap()
         else {
@@ -91,6 +96,7 @@ mod tests {
             false,
             4,
             16,
+            None,
         );
         payload.pop();
         assert!(matches!(

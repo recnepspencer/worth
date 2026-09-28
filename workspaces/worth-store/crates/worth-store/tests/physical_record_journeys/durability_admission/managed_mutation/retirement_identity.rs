@@ -9,6 +9,7 @@ use super::super::independent_wal_oracle::produced_retirement_payloads;
 use super::published_segments::segment_names;
 use super::selected_segment_rewrite::prepare_rewrite;
 use super::*;
+use crate::retirement_charge_oracle::{assert_one_page_released_net_of_wal, wal_bytes};
 
 #[test]
 fn another_segments_generation_does_not_drop_an_unresolved_retirement() {
@@ -49,13 +50,17 @@ fn another_segments_generation_does_not_drop_an_unresolved_retirement() {
     assert!(serving.records().is_ok());
     assert_eq!(segment_names(&root), retained);
     let held = serving.certification_charged_growth_bytes();
+    let wal_before = wal_bytes(&root);
     serving.retire_displaced_segment().unwrap();
     assert!(segment_names(&root)
         .iter()
         .any(|name| name == other_generation));
-    assert_eq!(
-        held - serving.certification_charged_growth_bytes(),
-        page_bytes
+    assert_one_page_released_net_of_wal(
+        &root,
+        wal_before,
+        held,
+        serving.certification_charged_growth_bytes(),
+        page_bytes,
     );
     serving.retire_displaced_segment().unwrap();
     assert!(segment_names(&root)
@@ -79,6 +84,7 @@ fn a_second_caller_cannot_resurrect_a_completed_retirement() {
     completed(prepare_rewrite(&serving, placement, [22; 32]).execute());
     let before = segment_names(&root);
     let charged = serving.certification_charged_growth_bytes();
+    let wal_before = wal_bytes(&root);
     serving.certification_pause_before_retirement_intent();
     thread::scope(|threads| {
         let owner = threads.spawn(|| serving.retire_displaced_segment());
@@ -96,9 +102,12 @@ fn a_second_caller_cannot_resurrect_a_completed_retirement() {
     assert!(before
         .iter()
         .any(|name| !segment_names(&root).contains(name)));
-    assert_eq!(
-        charged - serving.certification_charged_growth_bytes(),
-        page_bytes
+    assert_one_page_released_net_of_wal(
+        &root,
+        wal_before,
+        charged,
+        serving.certification_charged_growth_bytes(),
+        page_bytes,
     );
     serving.close();
     let serving = crate::serving_from_open(&root);

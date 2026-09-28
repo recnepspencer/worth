@@ -1,6 +1,9 @@
 use super::*;
 
 impl StoreRecoveryBindingFreshnessSample {
+    pub fn extent_copy_frames(&self) -> &[(WalLsnRange, Box<[u8]>)] {
+        &self.extent_copy_frames
+    }
     pub const fn store_identity(&self) -> StableStoreIdentity {
         self.store
     }

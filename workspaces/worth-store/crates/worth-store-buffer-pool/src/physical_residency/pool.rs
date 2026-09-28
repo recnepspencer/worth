@@ -38,6 +38,7 @@ mod integrity_validation;
 mod operation_accounting;
 mod pin_lifecycle;
 mod public_api;
+mod range_invalidation;
 mod writeback_claim;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

@@ -62,6 +62,12 @@ fn wal_state(lsn_start: u64, lsn_end: u64) -> PhysicalWalRuntimeState {
         )
         .unwrap();
     PhysicalWalRuntimeState {
+        record_format: worth_store_physical_format::PhysicalRecordFormatDeclaration::builder()
+            .admit()
+            .unwrap(),
+        copy_obligations: Vec::new(),
+        reopened_checkpoint_cutoff: 0,
+        retained_maintenance: Vec::new(),
         frontier: WalAppendFrontier::observed(
             segment,
             generation,
@@ -86,6 +92,7 @@ fn wal_state(lsn_start: u64, lsn_end: u64) -> PhysicalWalRuntimeState {
         reclaimed_bytes: 0,
         reopened_frames: 0,
         reopened_publications: 0,
+        reopened_release_metadata: Vec::new(),
         maintenance: None,
         awaiting_barrier: false,
         unresolved_retirement_spans: Vec::new(),

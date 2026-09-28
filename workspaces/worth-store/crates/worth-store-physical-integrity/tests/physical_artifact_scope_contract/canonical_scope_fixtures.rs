@@ -2,12 +2,12 @@ use worth_store_physical_format::store_namespace::{
     ProposedStoreIdentity, StableStoreIdentity, StoreNamespaceIdentityRecord, StoreNamespaceVersion,
 };
 use worth_store_physical_format::{
-    DurableArtifactCrc32c, DurableExtentRecordPlacement, ExtentChunkCoordinate,
-    FreeSpaceBlockReference, FreeSpaceHeaderScopeIdentity, FreeSpaceKey,
+    DurableArtifactCrc32c, DurableExtentRecordPlacement, ExtentArenaId, ExtentArenaRange,
+    ExtentChunkCoordinate, FreeSpaceBlockReference, FreeSpaceHeaderScopeIdentity, FreeSpaceKey,
     FreeSpaceMembershipBlockScopeIdentity, ManifestBlockReference, PageGenerationCell,
     PersistedRecordIdentity, PhysicalExtentId, PhysicalGeneration, PhysicalGenerationAuthority,
     PhysicalPageId, PhysicalRecordFormatDeclaration, PhysicalSegmentId, PhysicalTreeIdentity,
-    RecordAllocationClass, RootRoutingBlockScopeIdentity, SegmentManifestBlockReference,
+    RootRoutingBlockScopeIdentity, SegmentManifestBlockReference,
     SegmentMembershipBlockScopeIdentity, SegmentPageKey,
 };
 use worth_store_physical_integrity::PhysicalByteRange;
@@ -45,7 +45,11 @@ pub(super) fn extent_placement() -> DurableExtentRecordPlacement {
     let extent = PhysicalGenerationAuthority::for_canonical_physical_format()
         .record_extent_cell(PhysicalExtentId::from_raw(5).unwrap())
         .with_extent_generation(PhysicalGeneration::from_raw(6).unwrap());
-    DurableExtentRecordPlacement::new(record(7), extent, 1024).unwrap()
+    DurableExtentRecordPlacement::new(record(7), extent, 1024, arena_range()).unwrap()
+}
+
+pub(super) fn arena_range() -> ExtentArenaRange {
+    ExtentArenaRange::new(ExtentArenaId::new(1).unwrap(), 32_768, 32_768).unwrap()
 }
 
 pub(super) fn extent_chunk() -> ExtentChunkCoordinate {
@@ -80,8 +84,8 @@ fn free_space_block() -> FreeSpaceBlockReference {
         18,
         0,
         19,
-        FreeSpaceKey::new(RecordAllocationClass::InlinePage, 1).unwrap(),
-        FreeSpaceKey::new(RecordAllocationClass::Extent, 2).unwrap(),
+        FreeSpaceKey::inline(1).unwrap(),
+        FreeSpaceKey::arena(ExtentArenaId::new(2).unwrap(), 0),
     )
     .unwrap()
 }

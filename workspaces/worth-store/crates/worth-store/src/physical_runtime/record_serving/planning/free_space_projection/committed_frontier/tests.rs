@@ -1,6 +1,7 @@
 use worth_store_physical_format::{
     CurrentPhysicalRecordPlacement, DurableExtentRecordPlacement, DurableInlineRecordPlacement,
-    PersistedRecordIdentity, PhysicalGeneration, PhysicalGenerationAuthority, PhysicalRecordSlot,
+    ExtentArenaId, ExtentArenaRange, PersistedRecordIdentity, PhysicalGeneration,
+    PhysicalGenerationAuthority, PhysicalRecordSlot,
 };
 
 use super::*;
@@ -10,7 +11,9 @@ use crate::physical_runtime::record_serving::planning::{
 
 #[test]
 fn unpublished_reservations_do_not_enter_any_committed_identity_frontier() {
-    let current = DurableFreeSpaceManifestHeader::new(1, 1, 16, 4, 0, 1, 1, 1, 1, None).unwrap();
+    let current =
+        DurableFreeSpaceManifestHeader::new(1, 1, 16, 4, 0, 1, 1, 1, 1, 131072, 4096, 1, None)
+            .unwrap();
     let mut live = RecordAllocationFrontier::new(&current);
     let mut publishing = live.reserve(64, 64, 8).unwrap();
     let mut abandoned = live.reserve(64, 64, 8).unwrap();
@@ -55,6 +58,7 @@ fn unpublished_reservations_do_not_enter_any_committed_identity_frontier() {
             PersistedRecordIdentity::new([0x31; 16], 5).unwrap(),
             extent,
             65536,
+            ExtentArenaRange::new(ExtentArenaId::new(1).unwrap(), 0, 86016).unwrap(),
         )
         .unwrap(),
     ));
@@ -87,8 +91,10 @@ fn unpublished_reservations_do_not_enter_any_committed_identity_frontier() {
 
 #[test]
 fn no_materialization_preserves_the_previous_durable_frontier() {
-    let current =
-        DurableFreeSpaceManifestHeader::new(1, 1, 16, 4, 0, 200, 300, 400, 1, None).unwrap();
+    let current = DurableFreeSpaceManifestHeader::new(
+        1, 1, 16, 4, 0, 200, 300, 400, 1, 131072, 4096, 1, None,
+    )
+    .unwrap();
     let committed =
         CommittedAllocationFrontier::from_publication(&current, &[], std::iter::empty()).unwrap();
     assert_eq!(
@@ -108,7 +114,9 @@ fn no_materialization_preserves_the_previous_durable_frontier() {
 
 #[test]
 fn later_concrete_publication_preserves_gaps_left_by_abandoned_reservations() {
-    let current = DurableFreeSpaceManifestHeader::new(1, 1, 16, 4, 0, 1, 1, 1, 1, None).unwrap();
+    let current =
+        DurableFreeSpaceManifestHeader::new(1, 1, 16, 4, 0, 1, 1, 1, 1, 131072, 4096, 1, None)
+            .unwrap();
     let mut live = RecordAllocationFrontier::new(&current);
     let _abandoned = live.reserve(64, 64, 8).unwrap();
     let mut later = live.reserve(4, 4, 2).unwrap();
@@ -142,6 +150,7 @@ fn later_concrete_publication_preserves_gaps_left_by_abandoned_reservations() {
             .record_extent_cell(later.allocate_extent().unwrap())
             .with_extent_generation(generation),
         65536,
+        ExtentArenaRange::new(ExtentArenaId::new(2).unwrap(), 0, 86016).unwrap(),
     )
     .unwrap();
     let allocation = WorkingSegment {

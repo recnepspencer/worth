@@ -10,7 +10,10 @@ pub(super) struct ProjectedMaterializationBasis {
     pub(super) placements: BTreeMap<PersistedRecordIdentity, CurrentPhysicalRecordPlacement>,
     pub(super) projected_records: BTreeSet<PersistedRecordIdentity>,
     pub(super) segment_updates: BTreeMap<(u64, u64), RecordSegmentPageManifestEntry>,
-    pub(super) manifests: BTreeMap<RecordArtifactFile, PersistedPhysicalRecoveryManifest>,
+    pub(super) manifests: BTreeMap<
+        worth_store_physical_format::RecordFrameCoordinate,
+        PersistedPhysicalRecoveryManifest,
+    >,
     pub(super) root_states: Vec<PersistedPhysicalRecoveryRootState>,
 }
 
@@ -26,7 +29,10 @@ pub(super) fn collect(pending: &PendingProjectionBasis<'_>) -> ProjectedMaterial
     for projection in &pending.projections {
         let materialization = projection.materialization();
         basis.root_states.push(materialization.root_state().clone());
-        for frame in materialization.frames() {
+        for frame in materialization
+            .frames()
+            .expect("frame-only replay projection admitted before planning")
+        {
             basis
                 .frames
                 .insert(frame_identity(frame.subject()), frame.clone());
@@ -44,7 +50,15 @@ pub(super) fn collect(pending: &PendingProjectionBasis<'_>) -> ProjectedMaterial
         for manifest in materialization.manifests() {
             basis
                 .manifests
-                .insert(manifest.artifact(), manifest.clone());
+                .insert(manifest.coordinate(), manifest.clone());
+        }
+    }
+    for copy in &pending.source_copies {
+        let projection = copy.projection();
+        basis.root_states.push(projection.root_state().clone());
+        for placement in projection.placements() {
+            basis.projected_records.insert(placement.record());
+            basis.placements.insert(placement.record(), *placement);
         }
     }
     basis

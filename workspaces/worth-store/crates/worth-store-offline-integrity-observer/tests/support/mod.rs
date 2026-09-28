@@ -11,11 +11,13 @@ pub(crate) use fixtures::{
 pub(crate) use json::parse_json;
 pub(crate) use temporary_root::TemporaryRoot;
 
-/// Wall-clock budget for fixture observations. Windows file identity launches two
-/// processes per artifact, so parallel suite load must never surface as a bound.
+/// Wall-clock budget for fixture observations under parallel suite load.
 pub(crate) const FIXTURE_ELAPSED_MILLISECONDS: u64 = 120_000;
 /// The same budget as a command-line argument.
 pub(crate) const FIXTURE_ELAPSED_ARGUMENT: &str = "120000";
+/// Windows charges one transient identity handle above the held read path.
+pub(crate) const FIXTURE_OPEN_FILE_HANDLES: u32 = if cfg!(windows) { 6 } else { 5 };
+pub(crate) const FIXTURE_OPEN_FILE_ARGUMENT: &str = if cfg!(windows) { "6" } else { "5" };
 
 use std::path::PathBuf;
 
@@ -30,7 +32,7 @@ pub(crate) fn request(fixture: &StoreFixture) -> OfflineIntegrityObservationRequ
         OfflineIntegrityObservationLimits::new(
             100,
             16 * 1024,
-            5,
+            FIXTURE_OPEN_FILE_HANDLES,
             8,
             0,
             FIXTURE_ELAPSED_MILLISECONDS,

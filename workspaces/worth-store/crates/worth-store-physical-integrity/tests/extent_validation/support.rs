@@ -4,9 +4,10 @@ use worth_store_physical_format::store_namespace::{
 };
 use worth_store_physical_format::{
     encode_extent_chunk, DurableExtentManifest, DurableExtentRecordPlacement,
-    ExtentChunkCoordinate, PersistedRecordIdentity, PhysicalExtentId, PhysicalGeneration,
-    PhysicalGenerationAuthority, PhysicalPageSizeClass, PhysicalRecordFormatDeclaration,
-    RecordExtentGenerationCell, DURABLE_EXTENT_FRAME_HEADER_BYTES, EXTENT_CHUNK_METADATA_BYTES,
+    ExtentArenaFrameLayout, ExtentArenaId, ExtentArenaRange, ExtentChunkCoordinate,
+    PersistedRecordIdentity, PhysicalExtentId, PhysicalGeneration, PhysicalGenerationAuthority,
+    PhysicalPageSizeClass, PhysicalRecordFormatDeclaration, RecordExtentGenerationCell,
+    DURABLE_EXTENT_FRAME_HEADER_BYTES, EXTENT_CHUNK_METADATA_BYTES,
 };
 use worth_store_physical_integrity::{
     validate_extent_manifest, ExtentManifestIntegrityValidation, IntegrityValidatedExtentManifest,
@@ -15,8 +16,8 @@ use worth_store_physical_integrity::{
     PhysicalIntegrityRejection, PhysicalIntegrityRejectionClass, UntrustedPhysicalArtifact,
 };
 
-pub const MANIFEST_OFFSET: u64 = 8_192;
-pub const CHUNK_OFFSET: u64 = 16_384;
+pub const MANIFEST_OFFSET: u64 = 65_536;
+pub const CHUNK_OFFSET: u64 = 98_304;
 
 #[derive(Debug, Clone, Copy)]
 pub struct ExtentFixture {
@@ -41,7 +42,26 @@ impl ExtentFixture {
     }
 
     pub fn placement(self) -> DurableExtentRecordPlacement {
-        DurableExtentRecordPlacement::new(self.record, self.extent, self.logical_bytes).unwrap()
+        DurableExtentRecordPlacement::new(
+            self.record,
+            self.extent,
+            self.logical_bytes,
+            self.arena_range(),
+        )
+        .unwrap()
+    }
+
+    pub fn arena_range(self) -> ExtentArenaRange {
+        let layout =
+            ExtentArenaFrameLayout::new(self.format, u64::from(self.format.page_size().bytes()))
+                .unwrap();
+        let count = self.manifest().chunk_count();
+        ExtentArenaRange::new(
+            ExtentArenaId::new(1).unwrap(),
+            MANIFEST_OFFSET,
+            layout.allocated_bytes(count).unwrap(),
+        )
+        .unwrap()
     }
 
     pub fn manifest(self) -> DurableExtentManifest {
@@ -52,6 +72,7 @@ impl ExtentFixture {
             self.logical_bytes,
             self.format.page_size().bytes(),
             2,
+            u64::from(self.format.page_size().bytes()),
         )
         .unwrap()
     }
@@ -145,12 +166,38 @@ pub fn chunk_scope(
     coordinate: ExtentChunkCoordinate,
     byte_count: u64,
 ) -> PhysicalArtifactScope {
+    let layout =
+        ExtentArenaFrameLayout::new(format, u64::from(format.page_size().bytes())).unwrap();
+    let capacity = chunk_payload_capacity(format);
+    let count = u32::try_from(coordinate.logical_bytes().div_ceil(capacity)).unwrap();
+    let arena_range = ExtentArenaRange::new(
+        ExtentArenaId::new(1).unwrap(),
+        MANIFEST_OFFSET,
+        layout.allocated_bytes(count).unwrap(),
+    )
+    .unwrap();
     PhysicalArtifactScope::extent_chunk(
         store,
         format,
         coordinate,
-        PhysicalByteRange::new(CHUNK_OFFSET, byte_count).unwrap(),
+        PhysicalByteRange::new(
+            MANIFEST_OFFSET + layout.chunk_offset(coordinate.ordinal()).unwrap(),
+            byte_count,
+        )
+        .unwrap(),
+        arena_range,
     )
+}
+
+pub fn literal_arena_range(format: PhysicalRecordFormatDeclaration) -> ExtentArenaRange {
+    let layout =
+        ExtentArenaFrameLayout::new(format, u64::from(format.page_size().bytes())).unwrap();
+    ExtentArenaRange::new(
+        ExtentArenaId::new(1).unwrap(),
+        MANIFEST_OFFSET,
+        layout.allocated_bytes(1).unwrap(),
+    )
+    .unwrap()
 }
 
 pub fn validated_manifest<'media>(

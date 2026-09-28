@@ -49,7 +49,7 @@ pub fn lower_offline_record_publication_canonical_basis(
     });
     for free in free_space {
         let class = allocation_class(free.class());
-        let prefix = format!("free.{class}.{}", free.owner());
+        let prefix = format!("free.{class}.{}.{}", free.owner(), free.first_unallocated());
         entries.extend([
             unsigned(
                 format!("{prefix}.first_unallocated"),
@@ -63,7 +63,7 @@ pub fn lower_offline_record_publication_canonical_basis(
         ]);
     }
     prepare_canonical_basis_sequence(
-        CanonicalizationRuleVersion::new("store.physical.record-topology.v1").unwrap(),
+        CanonicalizationRuleVersion::new("store.physical.record-topology.v2").unwrap(),
         DOMAIN,
         entries,
     )
@@ -112,6 +112,19 @@ fn append_placement(entries: &mut Vec<CanonicalBasisEntry>, placement: OfflineRe
         unsigned(format!("{prefix}.capacity"), fields.capacity),
         unsigned(format!("{prefix}.payload_bytes"), fields.payload_bytes),
     ]);
+    if let OfflineRecordPlacement::Extent {
+        arena,
+        arena_offset,
+        arena_length,
+        ..
+    } = placement
+    {
+        entries.extend([
+            unsigned(format!("{prefix}.arena"), arena),
+            unsigned(format!("{prefix}.arena_offset"), arena_offset),
+            unsigned(format!("{prefix}.arena_length"), arena_length),
+        ]);
+    }
 }
 
 struct PlacementFields {
@@ -157,6 +170,7 @@ impl From<OfflineRecordPlacement> for PlacementFields {
                 extent,
                 generation,
                 payload_bytes,
+                ..
             } => Self {
                 allocation_epoch: record.allocation_epoch(),
                 ordinal: record.ordinal(),
@@ -185,7 +199,7 @@ fn placement_order(placement: &OfflineRecordPlacement) -> ([u8; 16], u64) {
 const fn allocation_class(class: OfflineAllocationClass) -> u64 {
     match class {
         OfflineAllocationClass::InlinePage => 1,
-        OfflineAllocationClass::Extent => 2,
+        OfflineAllocationClass::ExtentArena => 2,
     }
 }
 

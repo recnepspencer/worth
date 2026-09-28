@@ -9,7 +9,7 @@ use super::{
     PerformedRecoveryPhysicalEffect, PhysicalRecoveryCoordination, RecoveryFreshReopenAction,
 };
 
-mod admission;
+pub(super) mod admission;
 mod execution;
 
 pub struct PhysicalRecoveryFreshReopenCommand {

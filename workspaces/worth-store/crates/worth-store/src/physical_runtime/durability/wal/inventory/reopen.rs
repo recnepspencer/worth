@@ -2,8 +2,7 @@ use worth_store_physical_backend::{
     ArtifactTreeDirectory, ArtifactTreeFile, QualifiedFilesystemMedia,
 };
 use worth_store_wal::{
-    WalAppendFrontier, WalSegmentArtifactIdentity, WalSegmentGeneration, WalSegmentId,
-    WalSegmentScanRecord, WalTopologyScan,
+    WalAppendFrontier, WalSegmentArtifactIdentity, WalSegmentScanRecord, WalTopologyScan,
 };
 
 use crate::physical_runtime::PhysicalWalPolicy;
@@ -14,13 +13,17 @@ use super::{
     ReopenedPhysicalWalMember,
 };
 
+mod empty;
 mod interrupted_active_tail;
 mod trailing_empty_segment;
+use empty::empty_inventory;
 
 pub(in crate::physical_runtime) fn reopen_wal_inventory(
     media: &QualifiedFilesystemMedia,
     policy: PhysicalWalPolicy,
     cutoff: PhysicalWalBindingReopenCutoff,
+    record_format: worth_store_physical_format::PhysicalRecordFormatDeclaration,
+    binding_context: crate::physical_runtime::durability::PhysicalBindingDecodingContext,
 ) -> Result<ReopenedPhysicalWalInventory, PhysicalWalOpenFailure> {
     let directory = wal_directory();
     let tree = media.artifact_tree();
@@ -37,7 +40,7 @@ pub(in crate::physical_runtime) fn reopen_wal_inventory(
         .list_file_names_bounded(&directory, inventory_limit)
         .map_err(map_listing_failure)?;
     if names.is_empty() {
-        return empty_inventory(&directory, cutoff);
+        return empty_inventory(&directory, cutoff, record_format);
     }
 
     let mut segments = names
@@ -64,7 +67,10 @@ pub(in crate::physical_runtime) fn reopen_wal_inventory(
     let mut active_lsn_end = None;
     let mut members = Vec::new();
     let mut retirement_spans = Vec::new();
+    let mut copy_obligations = Vec::new();
     let mut retirement_records = Vec::new();
+    let mut retained_maintenance = Vec::new();
+    let mut release_metadata = std::collections::BTreeMap::new();
     let mut retirement_locations = Vec::new();
     let mut interrupted_tail = None;
     let mut interrupted_segment = None;
@@ -116,14 +122,69 @@ pub(in crate::physical_runtime) fn reopen_wal_inventory(
         if let Some(repair) = repair {
             interrupted_tail = Some(repair);
         }
+        let mut frame_offset = 0_u64;
         for frame in verified.frames().iter().copied() {
+            let offset = frame_offset;
+            frame_offset = frame_offset
+                .checked_add(frame.encoded_bytes())
+                .ok_or(PhysicalWalOpenFailure::CounterOverflow)?;
+            if frame
+                .payload()
+                .starts_with(worth_store_physical_format::EXTENT_COPY_DOMAIN)
+            {
+                let record = worth_store_physical_format::PhysicalExtentCopyRecord::decode(
+                    frame.payload(),
+                    record_format,
+                )
+                .map_err(|_| PhysicalWalOpenFailure::MemberPayloadRejected)?;
+                let range = frame.lsn_range();
+                let start = range.start().get();
+                let end = range.end_exclusive().get();
+                let checkpoint = cutoff.lsn().map_or(0, |lsn| lsn.get());
+                super::super::copy_obligation::observe_copy_record(
+                    &mut copy_obligations,
+                    record,
+                    identity.segment().get(),
+                    identity.generation().get(),
+                    start,
+                    end,
+                    checkpoint,
+                )
+                .map_err(|_| PhysicalWalOpenFailure::MemberPayloadRejected)?;
+                if start >= checkpoint {
+                    retirement_spans.push((start, end));
+                } else if end > checkpoint {
+                    return Err(PhysicalWalOpenFailure::MemberPayloadRejected);
+                }
+                continue;
+            }
             if super::super::super::retention::payload_is_retirement(frame.payload()) {
                 let Some(record) =
                     super::super::super::retention::decode_retirement(frame.payload())
                 else {
                     return Err(PhysicalWalOpenFailure::MemberPayloadRejected);
                 };
+                if let Some(release) = record.release {
+                    let entry = release_metadata
+                        .entry(release.candidate_generation())
+                        .or_insert((release, None));
+                    if entry.0 != release {
+                        return Err(PhysicalWalOpenFailure::MemberPayloadRejected);
+                    }
+                    if !record.completion && entry.1.is_none() {
+                        entry.1 = Some((identity.segment().get(), identity.generation().get()));
+                    }
+                }
                 retirement_records.push(record);
+                if let Some(intent) = super::RetainedMaintenanceIntent::from_verified(
+                    artifact.clone(),
+                    identity.segment().get(),
+                    identity.generation().get(),
+                    offset,
+                    frame,
+                ) {
+                    retained_maintenance.push(intent);
+                }
                 retirement_locations.push((
                     frame.lsn_range().start().get(),
                     frame.lsn_range().end_exclusive().get(),
@@ -139,6 +200,15 @@ pub(in crate::physical_runtime) fn reopen_wal_inventory(
                 continue;
             }
             publication_frames = publication_frames.saturating_add(1);
+            super::copy_publication::observe(
+                frame.payload(),
+                frame.lsn_range(),
+                record_format,
+                binding_context,
+                &mut copy_obligations,
+                cutoff.lsn().map_or(0, |lsn| lsn.get()),
+            )
+            .map_err(|_| PhysicalWalOpenFailure::MemberPayloadRejected)?;
             if let Some(member) = ReopenedPhysicalWalMember::decode_retained_frame(cutoff, frame)
                 .map_err(|_denial| PhysicalWalOpenFailure::MemberPayloadRejected)?
             {
@@ -196,6 +266,9 @@ pub(in crate::physical_runtime) fn reopen_wal_inventory(
     let requires_inspection =
         cutoff.lsn().is_none() && !segment_inventory.retains_canonical_wal_origin();
     Ok(ReopenedPhysicalWalInventory {
+        record_format,
+        copy_obligations,
+        checkpoint_cutoff: cutoff.lsn().map_or(0, |lsn| lsn.get()),
         frontier: WalAppendFrontier::observed(
             active.segment(),
             active.generation(),
@@ -206,6 +279,16 @@ pub(in crate::physical_runtime) fn reopen_wal_inventory(
         segment_count,
         frame_count: total_frames,
         publication_frames,
+        release_metadata: release_metadata
+            .into_values()
+            .map(|(release, intent)| {
+                let (bytes, segment, generation) = intent
+                    .map_or((0, 0, 0), |(segment, generation)| {
+                        (release.metadata_bytes(), segment, generation)
+                    });
+                (release.candidate_generation(), bytes, segment, generation)
+            })
+            .collect(),
         byte_count: total_bytes,
         peak_buffer_bytes,
         requires_inspection,
@@ -214,6 +297,7 @@ pub(in crate::physical_runtime) fn reopen_wal_inventory(
         retirement_spans,
         retirement_records,
         retirement_locations,
+        retained_maintenance,
     })
 }
 
@@ -252,35 +336,6 @@ fn map_inventory_failure(
         }
     };
     PhysicalWalOpenFailure::Topology(kind)
-}
-
-fn empty_inventory(
-    directory: &ArtifactTreeDirectory,
-    cutoff: PhysicalWalBindingReopenCutoff,
-) -> Result<ReopenedPhysicalWalInventory, PhysicalWalOpenFailure> {
-    if cutoff.lsn().is_some() {
-        return Err(PhysicalWalOpenFailure::CheckpointCutoffOutsideRetainedWal);
-    }
-    let segment = WalSegmentId::new(1).expect("the initial WAL segment is nonzero");
-    let generation = WalSegmentGeneration::new(1).expect("the initial WAL generation is nonzero");
-    Ok(ReopenedPhysicalWalInventory {
-        frontier: WalAppendFrontier::empty(segment, generation),
-        active_artifact: artifact(
-            directory,
-            WalSegmentArtifactIdentity::new(segment, generation),
-        ),
-        segment_count: 0,
-        frame_count: 0,
-        publication_frames: 0,
-        byte_count: 0,
-        peak_buffer_bytes: 0,
-        requires_inspection: false,
-        segments: PhysicalWalSegmentInventory::empty(),
-        members: Vec::new(),
-        retirement_spans: Vec::new(),
-        retirement_records: Vec::new(),
-        retirement_locations: Vec::new(),
-    })
 }
 
 fn wal_directory() -> ArtifactTreeDirectory {

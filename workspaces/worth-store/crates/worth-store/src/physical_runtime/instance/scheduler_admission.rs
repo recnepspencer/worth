@@ -10,6 +10,8 @@ mod background_dispatch;
 mod background_head;
 mod capacity;
 mod checkpoint;
+mod compaction;
+pub(in crate::physical_runtime) use compaction::CompactionFrameAdmission;
 mod foreground_budget;
 use foreground_budget::{
     metadata_budget, read_budget, wal_append_budget, wal_barrier_budget, write_budget,

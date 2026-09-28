@@ -16,6 +16,9 @@ pub struct DurableFreeSpaceManifestHeader {
     next_segment: u64,
     next_page: u64,
     next_extent: u64,
+    next_arena: u64,
+    arena_capacity: u64,
+    arena_alignment: u64,
     next_block: u64,
     root: Option<FreeSpaceBlockReference>,
 }
@@ -31,6 +34,9 @@ impl DurableFreeSpaceManifestHeader {
         next_segment: u64,
         next_page: u64,
         next_extent: u64,
+        next_arena: u64,
+        arena_capacity: u64,
+        arena_alignment: u64,
         next_block: u64,
         root: Option<FreeSpaceBlockReference>,
     ) -> Option<Self> {
@@ -42,10 +48,14 @@ impl DurableFreeSpaceManifestHeader {
             && next_segment != 0
             && next_page != 0
             && next_extent != 0
+            && next_arena != 0
+            && arena_alignment.is_power_of_two()
+            && arena_capacity != 0
+            && arena_capacity % arena_alignment == 0
             && next_block != 0
             && shape
             && root.is_none_or(|reference| {
-                required_tree_level(next_segment, node_capacity)
+                required_tree_level(entry_count, node_capacity)
                     .is_some_and(|maximum| reference.level() <= maximum)
                     && reference.generation() <= generation
                     && reference.block() < next_block
@@ -59,6 +69,9 @@ impl DurableFreeSpaceManifestHeader {
             next_segment,
             next_page,
             next_extent,
+            next_arena,
+            arena_capacity,
+            arena_alignment,
             next_block,
             root,
         })
@@ -87,14 +100,23 @@ impl DurableFreeSpaceManifestHeader {
     pub const fn next_extent(&self) -> u64 {
         self.next_extent
     }
+    pub const fn next_arena(&self) -> u64 {
+        self.next_arena
+    }
     pub const fn next_block(&self) -> u64 {
         self.next_block
+    }
+    pub const fn arena_capacity(&self) -> u64 {
+        self.arena_capacity
+    }
+    pub const fn arena_alignment(&self) -> u64 {
+        self.arena_alignment
     }
     pub const fn root(&self) -> Option<FreeSpaceBlockReference> {
         self.root
     }
     pub fn encode(&self, format: PhysicalRecordFormatDeclaration) -> Vec<u8> {
-        let mut payload = vec![0_u8; 128];
+        let mut payload = vec![0_u8; 168];
         payload[..8].copy_from_slice(&self.generation.to_le_bytes());
         payload[8..16].copy_from_slice(&self.tree_identity.to_le_bytes());
         payload[16..18].copy_from_slice(&self.node_capacity.to_le_bytes());
@@ -104,9 +126,12 @@ impl DurableFreeSpaceManifestHeader {
         payload[40..48].copy_from_slice(&self.next_page.to_le_bytes());
         payload[48..56].copy_from_slice(&self.next_extent.to_le_bytes());
         payload[56..64].copy_from_slice(&self.next_block.to_le_bytes());
+        payload[144..152].copy_from_slice(&self.next_arena.to_le_bytes());
+        payload[152..160].copy_from_slice(&self.arena_capacity.to_le_bytes());
+        payload[160..168].copy_from_slice(&self.arena_alignment.to_le_bytes());
         if let Some(root) = self.root {
             payload[64] = 1;
-            encode_reference(&mut payload[72..128], root);
+            encode_reference(&mut payload[72..144], root);
         }
         encode_durable_frame(
             DurableFrameKind::FreeSpaceManifest,
@@ -132,17 +157,17 @@ impl DurableFreeSpaceManifestHeader {
         format: PhysicalRecordFormatDeclaration,
         maximum_capacity: u16,
     ) -> Result<Self, FreeSpaceRoutingDenial> {
-        if payload.len() != 128 || payload[22..24] != [0; 2] || payload[65..72] != [0; 7] {
+        if payload.len() != 168 || payload[22..24] != [0; 2] || payload[65..72] != [0; 7] {
             return Err(FreeSpaceRoutingDenial::Malformed);
         }
         let generation = read_u64(payload, 0);
         let capacity = u16::from_le_bytes(payload[16..18].try_into().unwrap());
         let segment_page_capacity = u32::from_le_bytes(payload[18..22].try_into().unwrap());
         let root = match payload[64] {
-            0 if payload[72..128].iter().all(|byte| *byte == 0) => None,
+            0 if payload[72..144].iter().all(|byte| *byte == 0) => None,
             0 => return Err(FreeSpaceRoutingDenial::Malformed),
             1 => Some(
-                decode_reference(&payload[72..128])
+                decode_reference(&payload[72..144])
                     .ok_or(FreeSpaceRoutingDenial::InvalidReference)?,
             ),
             _ => return Err(FreeSpaceRoutingDenial::Malformed),
@@ -162,6 +187,9 @@ impl DurableFreeSpaceManifestHeader {
             read_u64(payload, 32),
             read_u64(payload, 40),
             read_u64(payload, 48),
+            read_u64(payload, 144),
+            read_u64(payload, 152),
+            read_u64(payload, 160),
             read_u64(payload, 56),
             root,
         )

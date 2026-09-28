@@ -12,7 +12,7 @@ pub struct ObservedRecoveryArtifact {
 }
 
 impl ObservedRecoveryArtifact {
-    pub(super) fn new(
+    pub(in crate::recovery_media) fn new(
         store: StableStoreIdentity,
         artifact: RecoveryDiscoveryArtifact,
         offset: u64,

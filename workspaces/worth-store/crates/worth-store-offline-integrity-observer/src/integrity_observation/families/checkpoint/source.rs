@@ -67,7 +67,8 @@ pub(super) fn read_dirty(payload: &[u8]) -> Result<(), Outcome> {
     let valid = match payload[0] {
         1 | 12 | 13 => first == 0 && second == 0,
         2 | 3 | 10 | 14 | 15 => second == 0,
-        4..=9 | 11 => true,
+        4..=7 | 11 => true,
+        16 => first != 0 && second == 0,
         _ => false,
     };
     scope(valid, 16, 24, Field::IdentityField)?;

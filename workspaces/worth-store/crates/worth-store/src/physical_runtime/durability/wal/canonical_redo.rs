@@ -13,6 +13,7 @@ pub struct RedoRecord {
     lsn: LogSequenceNumber,
     targets: CanonicalVec<PhysicalRedoTargetClaim>,
     bytes: Vec<u8>,
+    source_copy: Option<worth_store_physical_format::PersistedExtentCopyRecipe>,
 }
 
 impl Ord for RedoRecord {
@@ -22,6 +23,15 @@ impl Ord for RedoRecord {
             .then_with(|| self.lsn.cmp(&other.lsn))
             .then_with(|| self.targets.as_slice().cmp(other.targets.as_slice()))
             .then_with(|| self.bytes.cmp(&other.bytes))
+            .then_with(|| {
+                self.source_copy
+                    .map(|recipe| (recipe.intent_digest(), recipe.intent_lsn()))
+                    .cmp(
+                        &other
+                            .source_copy
+                            .map(|recipe| (recipe.intent_digest(), recipe.intent_lsn())),
+                    )
+            })
     }
 }
 
@@ -78,6 +88,7 @@ impl CanonicalRedoRecords {
                     )
                     .expect("the bound data plan supplies canonical nonempty targets"),
                     bytes,
+                    source_copy: None,
                 }
             })
             .collect::<Vec<_>>();
@@ -94,6 +105,38 @@ impl CanonicalRedoRecords {
 
     pub fn records(&self) -> &[RedoRecord] {
         self.records.as_slice()
+    }
+
+    /// Root publication adopts the distinct source-copy recipe. The record's
+    /// frame target observation is empty because data belongs to intent LSN;
+    /// recovery is governed by this explicitly tagged recipe, not that list.
+    pub(in crate::physical_runtime) fn from_source_copy(
+        range: WalLsnRange,
+        projection: &PersistedPhysicalRecoveryProjection,
+    ) -> Self {
+        let worth_store_physical_format::PersistedPhysicalRecoveryPayload::SourceCopy(recipe) =
+            projection.payload()
+        else {
+            unreachable!("copy redo requires a typed source-copy projection")
+        };
+        let record = RedoRecord {
+            ordinal: 0,
+            lsn: range.start(),
+            targets: CanonicalVec::try_from_sorted(Vec::new())
+                .expect("empty frame observation is canonical"),
+            bytes: vec![0],
+            source_copy: Some(*recipe),
+        };
+        let mut encoded = Vec::new();
+        write_field(&mut encoded, b"store.physical.extent-copy-publication.v1");
+        encoded.extend_from_slice(&range.start().get().to_le_bytes());
+        write_field(&mut encoded, &projection.encode());
+        Self {
+            records: CanonicalVec::try_from_sorted(vec![record])
+                .expect("one copy record is canonical"),
+            digest: Sha256::digest(&encoded).into(),
+            encoded,
+        }
     }
 
     pub fn encoded(&self) -> &[u8] {
@@ -121,6 +164,11 @@ impl CanonicalRedoRecords {
 }
 
 impl RedoRecord {
+    pub const fn source_copy_recipe(
+        &self,
+    ) -> Option<worth_store_physical_format::PersistedExtentCopyRecipe> {
+        self.source_copy
+    }
     pub const fn ordinal(&self) -> u32 {
         self.ordinal
     }

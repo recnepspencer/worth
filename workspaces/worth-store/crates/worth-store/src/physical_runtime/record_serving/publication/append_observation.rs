@@ -1,4 +1,4 @@
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub(in crate::physical_runtime::record_serving) struct PublicationObservation {
     pub(in crate::physical_runtime::record_serving) records: u64,
     pub(in crate::physical_runtime::record_serving) logical_bytes: u64,
@@ -29,12 +29,12 @@ impl PublicationObservation {
         self.peak_scratch_bytes = self.peak_scratch_bytes.max(bytes as u64);
     }
 
-    pub(in crate::physical_runtime::record_serving) fn settle_data_effects(
+    pub(in crate::physical_runtime::record_serving) fn settle_data_transfers(
         &mut self,
-        effect_count: usize,
+        transfer_count: u64,
     ) {
         self.completed_bytes = self.logical_bytes;
-        self.transfer_count = u64::try_from(effect_count).unwrap_or(u64::MAX);
+        self.transfer_count = transfer_count;
     }
 }
 

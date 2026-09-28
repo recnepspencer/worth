@@ -21,8 +21,20 @@ pub(super) fn preflight_staging_cost(
         StagingCostAdmission::new(root_bytes, maximum_staging_bytes, maximum_dirty_frames)?;
     let mut frames = BTreeMap::new();
     let mut manifests = BTreeSet::new();
+    let mut arena_ranges = BTreeSet::new();
     for projection in pending {
-        for frame in projection.materialization().frames() {
+        for placement in projection.materialization().placements() {
+            if let CurrentPhysicalRecordPlacement::Extent(extent) = placement {
+                if arena_ranges.insert(extent.arena_range()) {
+                    admission.admit_bytes(extent.arena_range().length())?;
+                }
+            }
+        }
+        for frame in projection
+            .materialization()
+            .frames()
+            .ok_or(ExecutionBasisDenial::Invalid)?
+        {
             let identity = frame_identity(frame.subject());
             if let Some(retained) = frames.get(&identity) {
                 if *retained != frame {
@@ -30,14 +42,24 @@ pub(super) fn preflight_staging_cost(
                 }
                 continue;
             }
-            admission.admit(identity, frame.bytes().len() as u64)?;
+            let bytes = if matches!(
+                frame.coordinate().artifact(),
+                RecordArtifactFile::ExtentArena { .. }
+            ) {
+                0
+            } else {
+                frame.bytes().len() as u64
+            };
+            admission.admit(identity, bytes)?;
             frames.insert(identity, frame);
         }
         for manifest in projection.materialization().manifests() {
-            if !manifests.insert(manifest.artifact()) {
+            if !manifests.insert(manifest.coordinate()) {
                 return Err(ExecutionBasisDenial::Invalid);
             }
-            admission.admit_bytes(manifest.bytes().len() as u64)?;
+            if !matches!(manifest.artifact(), RecordArtifactFile::ExtentArena { .. }) {
+                admission.admit_bytes(manifest.bytes().len() as u64)?;
+            }
         }
     }
     Ok(admission.allocated_bytes)

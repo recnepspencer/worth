@@ -30,6 +30,7 @@ pub(in crate::physical_runtime::record_serving) struct FreeSpaceSuccessorRequest
     pub(in crate::physical_runtime::record_serving) next_segment: u64,
     pub(in crate::physical_runtime::record_serving) next_page: u64,
     pub(in crate::physical_runtime::record_serving) next_extent: u64,
+    pub(in crate::physical_runtime::record_serving) next_arena: u64,
     pub(in crate::physical_runtime::record_serving) updates:
         BTreeMap<FreeSpaceKey, FreeSpaceUpdate>,
 }
@@ -71,7 +72,11 @@ pub(in crate::physical_runtime::record_serving) fn plan_free_space_successor(
             planner.rewrite_all(root, &request.updates)?
         }
         Some(root) => planner.rewrite(root, &request.updates)?,
-        None => planner.write_leaves(available_entries(request.updates))?,
+        None => {
+            let mut entries = BTreeMap::new();
+            planner.apply_updates(&mut entries, &request.updates);
+            planner.write_leaves(entries.into_values().collect())?
+        }
     };
     while roots.len() > 1 {
         roots = planner.write_branches(roots)?;
@@ -90,6 +95,9 @@ pub(in crate::physical_runtime::record_serving) fn plan_free_space_successor(
         request.next_segment,
         request.next_page,
         request.next_extent,
+        request.next_arena,
+        current.arena_capacity(),
+        current.arena_alignment(),
         planner.next_block,
         roots.pop(),
     )
@@ -286,16 +294,4 @@ impl FreeSpacePlanner<'_> {
         ));
         reference
     }
-}
-
-fn available_entries(
-    updates: BTreeMap<FreeSpaceKey, FreeSpaceUpdate>,
-) -> Vec<RecordFreeSpaceManifestEntry> {
-    updates
-        .into_values()
-        .filter_map(|update| match update {
-            FreeSpaceUpdate::Available(entry) => Some(entry),
-            FreeSpaceUpdate::Exhausted => None,
-        })
-        .collect()
 }

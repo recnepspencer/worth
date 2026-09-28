@@ -1,5 +1,5 @@
 use sha2::{Digest, Sha256};
-use worth_store_physical_backend::CompletedArtifactNewWrite;
+use worth_store_physical_backend::{CompletedArtifactNewWrite, CompletedArtifactRangeWrite};
 use worth_store_physical_format::{store_namespace::StableStoreIdentity, RecordFrameCoordinate};
 
 use crate::physical_runtime::record_serving::RecordAppendDenial;
@@ -9,9 +9,18 @@ use crate::physical_runtime::{
 };
 
 pub(in crate::physical_runtime::record_serving) struct CandidateFramePhysicalWrite {
-    receipt: CompletedArtifactNewWrite,
+    receipt: CandidateWriteReceipt,
     coordinate: RecordFrameCoordinate,
     settlement: crate::physical_runtime::record_serving::CanonicalRecordMutationSettlement,
+}
+
+enum CandidateWriteReceipt {
+    New(CompletedArtifactNewWrite),
+    ArenaRange(CompletedArtifactRangeWrite),
+    RetirementRetry(
+        CompletedArtifactRangeWrite,
+        crate::physical_runtime::record_serving::RetirementCandidateRetryScope,
+    ),
 }
 
 pub(in crate::physical_runtime::record_serving) struct CandidateFrameResidencySettlement {
@@ -36,14 +45,36 @@ pub(in crate::physical_runtime) struct CandidateFrameEffectSettlement {
 }
 
 impl CandidateFramePhysicalWrite {
+    pub(in crate::physical_runtime::record_serving) fn completed_retirement_retry(
+        receipt: CompletedArtifactRangeWrite,
+        settlement: crate::physical_runtime::record_serving::CanonicalRecordMutationSettlement,
+        scope: crate::physical_runtime::record_serving::RetirementCandidateRetryScope,
+    ) -> Self {
+        Self {
+            coordinate: receipt.coordinate(),
+            receipt: CandidateWriteReceipt::RetirementRetry(receipt, scope),
+            settlement,
+        }
+    }
     pub(in crate::physical_runtime::record_serving) fn completed(
         receipt: CompletedArtifactNewWrite,
         coordinate: RecordFrameCoordinate,
         settlement: crate::physical_runtime::record_serving::CanonicalRecordMutationSettlement,
     ) -> Self {
         Self {
-            receipt,
+            receipt: CandidateWriteReceipt::New(receipt),
             coordinate,
+            settlement,
+        }
+    }
+
+    pub(in crate::physical_runtime::record_serving) fn completed_arena_range(
+        receipt: CompletedArtifactRangeWrite,
+        settlement: crate::physical_runtime::record_serving::CanonicalRecordMutationSettlement,
+    ) -> Self {
+        Self {
+            coordinate: receipt.coordinate(),
+            receipt: CandidateWriteReceipt::ArenaRange(receipt),
             settlement,
         }
     }
@@ -59,8 +90,29 @@ impl CandidateFramePhysicalWrite {
         let coordinate =
             RecordFrameCoordinate::new(coordinate.artifact(), coordinate.offset(), length)
                 .ok_or(CandidateFrameContractViolation::PhysicalWriteMismatch)?;
-        if !completed_new_artifact_matches(&self.receipt, self.coordinate, store, coordinate, bytes)
-        {
+        let exact = match &self.receipt {
+            CandidateWriteReceipt::RetirementRetry(receipt, scope) => {
+                scope.admits(coordinate, bytes)
+                    && receipt.store() == store
+                    && receipt.coordinate() == coordinate
+                    && receipt.completed_bytes() == bytes.len() as u64
+                    && receipt.payload_digest() == <[u8; 32]>::from(Sha256::digest(bytes))
+            }
+            CandidateWriteReceipt::New(receipt) => {
+                completed_new_artifact_matches(receipt, self.coordinate, store, coordinate, bytes)
+            }
+            CandidateWriteReceipt::ArenaRange(receipt) => {
+                let digest: [u8; 32] = Sha256::digest(bytes).into();
+                matches!(
+                    coordinate.artifact(),
+                    worth_store_physical_format::RecordArtifactFile::ExtentArena { .. }
+                ) && receipt.store() == store
+                    && receipt.coordinate() == coordinate
+                    && receipt.completed_bytes() == bytes.len() as u64
+                    && receipt.payload_digest() == digest
+            }
+        };
+        if !exact {
             return Err(CandidateFrameContractViolation::PhysicalWriteMismatch);
         }
         Ok(CandidateFrameResidencySettlement {
@@ -79,6 +131,7 @@ pub(super) fn completed_new_artifact_matches(
     let digest: [u8; 32] = Sha256::digest(bytes).into();
     receipt.store() == store
         && receipt_coordinate == coordinate
+        && receipt.range().offset() == coordinate.offset()
         && receipt.range().byte_count() == bytes.len() as u64
         && receipt.completed_bytes() == bytes.len() as u64
         && receipt.payload_digest() == digest

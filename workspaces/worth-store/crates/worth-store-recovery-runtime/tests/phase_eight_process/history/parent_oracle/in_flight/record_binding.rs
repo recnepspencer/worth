@@ -6,7 +6,7 @@ use super::super::canonical_membership::ExpectedCanonicalRecord;
 use super::super::canonical_membership_placement::RecordIdentity;
 
 const REDO_DOMAIN: &[u8] = b"store.physical.wal.canonical-redo.v3";
-const PROJECTION_DOMAIN: &[u8] = b"store.physical.recovery-projection.v3";
+const PROJECTION_DOMAIN: &[u8] = b"store.physical.recovery-projection.v5";
 
 pub(crate) fn require_bound_records(
     files: &[(String, Vec<u8>)],
@@ -145,6 +145,9 @@ fn projection_contains_record(
         let record = cursor.record()?;
         identity_present |= record == expected_record;
     }
+    if cursor.byte()? != 0 {
+        return Ok(false);
+    }
     let frame_count = cursor.u64()?;
     if frame_count == 0 {
         return Ok(false);
@@ -174,9 +177,21 @@ fn projection_contains_record(
                 placement.u64()?;
             }
             2 => {
-                placement.u64()?;
-                placement.u64()?;
-                placement.u64()?;
+                let extent = placement.u64()?;
+                let generation = placement.u64()?;
+                let payload_bytes = placement.u64()?;
+                let arena = placement.u64()?;
+                let offset = placement.u64()?;
+                let length = placement.u64()?;
+                if extent == 0
+                    || generation == 0
+                    || payload_bytes == 0
+                    || arena == 0
+                    || length == 0
+                    || offset.checked_add(length).is_none()
+                {
+                    return Ok(false);
+                }
             }
             _ => return Ok(false),
         }
@@ -282,5 +297,51 @@ impl<'bytes> Cursor<'bytes> {
 
     const fn is_empty(&self) -> bool {
         self.offset == self.bytes.len()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{projection_contains_record, RecordIdentity, PROJECTION_DOMAIN};
+
+    #[test]
+    fn selected_binding_requires_v5_frame_tag_and_exact_arena_route_fields() {
+        let record = RecordIdentity {
+            allocation_epoch: [7; 16],
+            ordinal: 9,
+        };
+        let mut encoded = Vec::new();
+        field(&mut encoded, PROJECTION_DOMAIN);
+        encoded.extend_from_slice(&1_u64.to_le_bytes());
+        field(&mut encoded, b"root-state");
+        encoded.extend_from_slice(&1_u64.to_le_bytes());
+        let mut identity = Vec::from(record.allocation_epoch);
+        identity.extend_from_slice(&record.ordinal.to_le_bytes());
+        field(&mut encoded, &identity);
+        let tag_offset = encoded.len();
+        encoded.push(0);
+        encoded.extend_from_slice(&1_u64.to_le_bytes());
+        field(&mut encoded, b"frame");
+        encoded.extend_from_slice(&1_u64.to_le_bytes());
+        let mut placement = vec![2];
+        placement.extend_from_slice(&identity);
+        for value in [3_u64, 4, 1024, 5, 4096, 8192] {
+            placement.extend_from_slice(&value.to_le_bytes());
+        }
+        field(&mut encoded, &placement);
+        encoded.extend_from_slice(&0_u64.to_le_bytes());
+        encoded.extend_from_slice(&0_u64.to_le_bytes());
+        assert!(projection_contains_record(&encoded, record).unwrap());
+
+        encoded[tag_offset] = 1;
+        assert!(!projection_contains_record(&encoded, record).unwrap());
+        encoded[tag_offset] = 0;
+        encoded.truncate(encoded.len() - 8);
+        assert!(projection_contains_record(&encoded, record).is_err());
+    }
+
+    fn field(target: &mut Vec<u8>, value: &[u8]) {
+        target.extend_from_slice(&(value.len() as u64).to_le_bytes());
+        target.extend_from_slice(value);
     }
 }

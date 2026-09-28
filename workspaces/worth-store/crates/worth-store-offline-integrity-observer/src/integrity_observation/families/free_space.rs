@@ -21,7 +21,7 @@ pub(crate) fn read_free_space_header(
 ) -> Result<Vec<ChildExpectation>, OfflineIntegrityOutcome> {
     let frame = read_durable_frame(
         bytes,
-        176,
+        216,
         7,
         FREE_SPACE_HEADER_INTEGRITY_DECLARATION,
         counters,
@@ -31,6 +31,16 @@ pub(crate) fn read_free_space_header(
         unreachable!()
     };
     let payload = frame.payload;
+    let arena_capacity = read_u64(payload, 152);
+    let arena_alignment = read_u64(payload, 160);
+    scope(
+        arena_alignment.is_power_of_two()
+            && arena_capacity != 0
+            && arena_capacity % arena_alignment == 0,
+        200,
+        16,
+        Field::ManifestPointer,
+    )?;
     scope(
         frame.identity == expected.generation && read_u64(payload, 0) == expected.generation,
         28,
@@ -53,7 +63,7 @@ pub(crate) fn read_free_space_header(
         read_u32(payload, 18) != 0
             && u64::from(read_u32(payload, 18))
                 <= u64::from(read_u32(&expected.format, 2) - 72) / 40
-            && [32, 40, 48, 56]
+            && [32, 40, 48, 56, 144]
                 .iter()
                 .all(|offset| read_u64(payload, *offset) != 0),
         66,
@@ -66,7 +76,7 @@ pub(crate) fn read_free_space_header(
     }
     scope(read_u64(payload, 24) != 0, 72, 8, Field::ManifestPointer)?;
     let child = reference(
-        &payload[72..128],
+        &payload[72..144],
         PhysicalArtifactFamily::FreeSpaceMembershipBlock,
         tree,
         capacity,
@@ -85,7 +95,7 @@ pub(crate) fn read_free_space_header(
             && *block < read_u64(payload, 56)
             && ordered(child.family, first, last, false),
         120,
-        56,
+        72,
         Field::ManifestPointer,
     )?;
     Ok(vec![child])
@@ -110,8 +120,8 @@ pub(crate) fn read_free_space_membership(
         unreachable!()
     };
     scope(
-        &frame.body[..16] == first.as_slice()
-            && &frame.body[frame.body.len() - 40..frame.body.len() - 24] == last.as_slice(),
+        entry_key_matches(&frame.body[..40], first)
+            && entry_key_matches(&frame.body[frame.body.len() - 40..], last),
         88,
         frame.body.len(),
         Field::ManifestPointer,
@@ -123,7 +133,8 @@ pub(crate) fn read_free_space_membership(
             matches!(entry[0], 1 | 2)
                 && entry[1..8] == [0; 7]
                 && read_u64(entry, 8) != 0
-                && read_u64(entry, 16) != 0
+                && (entry[0] == 2 || read_u64(entry, 16) != 0)
+                && (entry[0] == 1 || read_u64(entry, 24) != 0)
                 && read_u64(entry, 32) != 0
                 && read_u64(entry, 16)
                     .checked_add(read_u64(entry, 24))
@@ -136,11 +147,21 @@ pub(crate) fn read_free_space_membership(
             scope(
                 ordered(expected.family, previous, entry, true),
                 start,
-                16,
+                24,
                 Field::ManifestPointer,
             )?;
         }
         previous = Some(entry);
     }
     Ok(Vec::new())
+}
+
+fn entry_key_matches(entry: &[u8], key: &[u8]) -> bool {
+    entry[..16] == key[..16]
+        && read_u64(key, 16)
+            == if entry[0] == 1 {
+                0
+            } else {
+                read_u64(entry, 16)
+            }
 }

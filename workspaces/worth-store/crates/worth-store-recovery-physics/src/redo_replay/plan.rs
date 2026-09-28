@@ -28,6 +28,7 @@ pub struct AdmittedPhysicalRedoMembers {
     group_allocations: BTreeMap<[u8; 32], u64>,
     rewrites: Box<[PhysicalRewriteRedo]>,
     rewrite_admissions: Box<[PhysicalRewriteAdmission]>,
+    source_copies: Box<[PhysicalExtentCopyAdmission]>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -49,7 +50,9 @@ mod group_admission;
 mod projection_admission;
 mod projection_materialization;
 mod projection_validation;
+mod source_copy;
 mod supersession;
+pub use source_copy::PhysicalExtentCopyAdmission;
 
 pub use admission::{
     admit_physical_redo_members, physical_redo_observation_target_identities,
@@ -90,6 +93,7 @@ pub struct ImmutablePhysicalRedoPlan {
     counters: PhysicalRedoPlanCounters,
     rewrites: Box<[PhysicalRewriteRedo]>,
     rewrite_admissions: Box<[PhysicalRewriteAdmission]>,
+    source_copies: Box<[PhysicalExtentCopyAdmission]>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

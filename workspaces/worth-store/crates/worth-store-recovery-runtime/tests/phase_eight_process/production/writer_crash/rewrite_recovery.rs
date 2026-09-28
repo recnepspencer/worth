@@ -1,6 +1,10 @@
 use std::fs;
 use std::path::Path;
 
+use sha2::{Digest, Sha256};
+use worth_store_physical_format::{
+    DurableFrameKind, PhysicalRewriteRedo, RecordArtifactFile, REWRITE_REDO_DOMAIN,
+};
 use worth_store_recovery_runtime::{RecoveryReportEnvelope, RecoveryReportOutcome};
 
 use super::super::harness::{
@@ -15,7 +19,8 @@ fn fresh_recovery_applies_a_wal_durable_segment_rewrite() {
         0xC8_09_00_13,
         0xC8_19_00_13,
     );
-    let before = segment_files(&world.writer.root);
+    let rewrite = wal_rewrite(&world.writer.root).expect("wal rewrite redo");
+    let segment = source_segment(&world.writer.root, rewrite);
     let temporary = world
         .writer
         .root
@@ -38,28 +43,7 @@ fn fresh_recovery_applies_a_wal_durable_segment_rewrite() {
         "rewrite recovery denial: {:?}",
         report.denial_cause()
     );
-    let after = segment_files(&world.writer.root);
-    let published = after
-        .difference(&before)
-        .next()
-        .expect("recovery must publish the rewritten segment generation");
-    let page = fs::read(
-        world
-            .writer
-            .root
-            .join("families")
-            .join("records")
-            .join("segments")
-            .join(published),
-    )
-    .expect("recovered segment bytes");
-    let page_lsn = worth_store_physical_format::decode_data_frame_page_lsn(
-        &page,
-        worth_store_physical_format::DurableFrameKind::InlinePage,
-    )
-    .expect("recovered page frame")
-    .get();
-    let rewrite = wal_rewrite(&world.writer.root).expect("wal rewrite redo");
+    let page_lsn = destination_page_lsn(&world.writer.root, segment, rewrite);
     assert_eq!(page_lsn, rewrite.page_lsn());
 }
 
@@ -72,7 +56,8 @@ fn fresh_recovery_applies_a_multi_page_source_rewrite() {
         0xC8_19_00_14,
     )
     .expect("production writer must leave a killed multi-page rewrite");
-    let before = segment_files(&root);
+    let rewrite = wal_rewrite(&root).expect("wal rewrite redo");
+    let segment = source_segment(&root, rewrite);
     let report_path = parent.path().join("rewrite-multi-page-runtime-report.bin");
     let (_process_id, output) =
         run_recovery_with_profile(&root, &report_path, parent.path(), "c8-phase2-admission-v1");
@@ -85,25 +70,7 @@ fn fresh_recovery_applies_a_multi_page_source_rewrite() {
         "multi-page rewrite recovery denial: {:?}",
         report.denial_cause()
     );
-    let published = segment_files(&root)
-        .difference(&before)
-        .next()
-        .expect("recovery must publish the rewritten segment generation")
-        .clone();
-    let page = fs::read(
-        root.join("families")
-            .join("records")
-            .join("segments")
-            .join(&published),
-    )
-    .expect("recovered segment bytes");
-    let page_lsn = worth_store_physical_format::decode_data_frame_page_lsn(
-        &page,
-        worth_store_physical_format::DurableFrameKind::InlinePage,
-    )
-    .expect("recovered page frame")
-    .get();
-    let rewrite = wal_rewrite(&root).expect("wal rewrite redo");
+    let page_lsn = destination_page_lsn(&root, segment, rewrite);
     assert_ne!(
         rewrite.source_offset(),
         0,
@@ -112,8 +79,8 @@ fn fresh_recovery_applies_a_multi_page_source_rewrite() {
     assert_eq!(page_lsn, rewrite.page_lsn());
 }
 
-fn wal_rewrite(root: &Path) -> Option<worth_store_physical_format::PhysicalRewriteRedo> {
-    let domain = worth_store_physical_format::REWRITE_REDO_DOMAIN;
+fn wal_rewrite(root: &Path) -> Option<PhysicalRewriteRedo> {
+    let domain = REWRITE_REDO_DOMAIN;
     let mut stack = vec![root.join("families").join("wal")];
     while let Some(directory) = stack.pop() {
         let Ok(entries) = fs::read_dir(directory) else {
@@ -128,34 +95,72 @@ fn wal_rewrite(root: &Path) -> Option<worth_store_physical_format::PhysicalRewri
             let Ok(bytes) = fs::read(&path) else {
                 continue;
             };
-            let Some(index) = bytes
+            for (index, _) in bytes
                 .windows(domain.len())
-                .position(|window| window == domain)
-            else {
-                continue;
-            };
-            let start = index.checked_sub(8)?;
-            let end = start + 8 + domain.len() + 216;
-            let encoded = bytes.get(start..end)?;
-            if let Ok(redo) =
-                worth_store_physical_format::PhysicalRewriteRedo::decode(encoded, u64::MAX)
+                .enumerate()
+                .filter(|(_, window)| *window == domain)
             {
-                return Some(redo);
+                let Some(start) = index.checked_sub(8) else {
+                    continue;
+                };
+                // The separately versioned v2 redo has a 280-byte fixed body.
+                let Some(encoded) = bytes.get(start..start + 8 + domain.len() + 280) else {
+                    continue;
+                };
+                if let Ok(redo) = PhysicalRewriteRedo::decode(encoded, u64::MAX) {
+                    return Some(redo);
+                }
             }
         }
     }
     None
 }
 
-fn segment_files(root: &Path) -> std::collections::BTreeSet<String> {
+fn source_segment(root: &Path, rewrite: PhysicalRewriteRedo) -> u64 {
     let directory = root.join("families").join("records").join("segments");
-    let mut names = std::collections::BTreeSet::new();
-    if let Ok(entries) = fs::read_dir(directory) {
-        for entry in entries.flatten() {
-            if let Some(name) = entry.file_name().to_str() {
-                names.insert(name.to_owned());
+    let start = usize::try_from(rewrite.source_offset()).expect("source offset fits host");
+    let end = start + rewrite.source_length() as usize;
+    fs::read_dir(directory)
+        .expect("source segment directory")
+        .flatten()
+        .filter_map(|entry| {
+            let name = entry.file_name().into_string().ok()?;
+            let stem = name.strip_prefix("segment-")?.strip_suffix(".pages")?;
+            let (segment, generation) = stem.split_once('-')?;
+            if u64::from_str_radix(generation, 16).ok()? != rewrite.source_generation() {
+                return None;
             }
+            Some((u64::from_str_radix(segment, 16).ok()?, entry.path()))
+        })
+        .find_map(|(segment, path)| {
+            let bytes = fs::read(path).ok()?;
+            (Sha256::digest(bytes.get(start..end)?)[..] == rewrite.source_digest())
+                .then_some(segment)
+        })
+        .expect("one source segment must match WAL rewrite generation and digest")
+}
+
+fn destination_page_lsn(root: &Path, segment: u64, rewrite: PhysicalRewriteRedo) -> u64 {
+    const PAGE_BYTES: usize = 16 * 1024;
+    let path = root.join("families/records/segments").join(
+        RecordArtifactFile::Segment {
+            segment,
+            generation: rewrite.destination_generation(),
         }
-    }
-    names
+        .file_name(),
+    );
+    let bytes = fs::read(path).expect("recovered destination segment");
+    let start =
+        usize::try_from(rewrite.destination_offset()).expect("destination offset fits host");
+    let length = rewrite.destination_length() as usize;
+    assert!(length >= PAGE_BYTES && length.is_multiple_of(PAGE_BYTES));
+    let final_page = bytes
+        .get(start + length - PAGE_BYTES..start + length)
+        .expect("rewritten destination range must exist");
+    worth_store_physical_format::decode_data_frame_page_lsn(
+        final_page,
+        DurableFrameKind::InlinePage,
+    )
+    .expect("recovered destination page frame")
+    .get()
 }

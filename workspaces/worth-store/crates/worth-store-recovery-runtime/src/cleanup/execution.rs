@@ -20,7 +20,8 @@ pub(crate) fn execute(
         base: &reopened.state.base,
         publication: &reopened.expectation,
         fates: &reopened.state.fates,
-        unresolved_retirement: !reopened.state.freshness.retirements().is_empty(),
+        unresolved_retirement: !reopened.state.freshness.retirements().is_empty()
+            || !reopened.state.freshness.extent_copy_frames().is_empty(),
         limits,
     });
     let command_basis = RecoveryCleanupCommandBasis::from_reopened(

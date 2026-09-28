@@ -46,6 +46,9 @@ pub(crate) fn family(value: OfflineArtifactFamily) -> &'static str {
         OfflineArtifactFamily::Declared(PhysicalArtifactFamily::ExtentChunkFrame) => {
             "extent_chunk_frame"
         }
+        OfflineArtifactFamily::Declared(PhysicalArtifactFamily::ExtentArenaFrame) => {
+            "extent_arena_frame"
+        }
         OfflineArtifactFamily::Declared(PhysicalArtifactFamily::FreeSpaceHeader) => {
             "free_space_header"
         }

@@ -45,6 +45,7 @@ pub struct StoreRecoveryBindingFreshnessSample {
     operations: Box<[StoreRecoveryOperationEvidence]>,
     wal_members: Box<[StoreRecoveryWalMember]>,
     retirements: Box<[StoreRecoveryRetirementObligation]>,
+    extent_copy_frames: Box<[(WalLsnRange, Box<[u8]>)]>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -150,6 +151,7 @@ fn sample_binding_from_frames<'frame, Frame: RecoveryWalFrameInput + 'frame>(
     let mut wal_members = Vec::new();
     let mut wal_group_bindings = Vec::new();
     let mut retirement_records = Vec::new();
+    let mut extent_copy_frames = Vec::new();
     let mut redo_bytes = 0_u64;
     for frame in wal_frames {
         let classified = wal_payload::classify_wal_payload(frame.recovery_payload())
@@ -161,6 +163,17 @@ fn sample_binding_from_frames<'frame, Frame: RecoveryWalFrameInput + 'frame>(
         else {
             if let ClassifiedWalPayload::Retirement(record) = classified {
                 retirement_records.push(record);
+            }
+            if let ClassifiedWalPayload::ExtentCopy(payload) = classified {
+                if extent_copy_frames.len() as u64 >= maximum_operation_bindings {
+                    return Err(sample_failure(
+                        StoreRecoveryBindingSampleDenial::OperationBindingLimit,
+                        &operations,
+                        wal_members.len(),
+                        redo_bytes,
+                    ));
+                }
+                extent_copy_frames.push((frame.recovery_lsn_range(), payload.into()));
             }
             continue;
         };
@@ -280,6 +293,7 @@ fn sample_binding_from_frames<'frame, Frame: RecoveryWalFrameInput + 'frame>(
             .into_boxed_slice(),
         wal_members: wal_members.into_boxed_slice(),
         retirements: retirement_obligations(retirement_records),
+        extent_copy_frames: extent_copy_frames.into_boxed_slice(),
     })
 }
 

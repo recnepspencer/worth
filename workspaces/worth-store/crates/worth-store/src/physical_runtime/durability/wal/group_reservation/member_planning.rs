@@ -164,12 +164,15 @@ fn plan_member(
         .into_fresh_binding()
         .expect("fresh disposition carries one unallocated WAL binding");
     let projection = recovery_projection(&data, &root);
-    let redo = CanonicalRedoRecords::from_prepared_records(
-        batch.into_prepared_record_bytes(),
-        lsn_range,
-        data.redo_targets(),
-        &projection,
-    );
+    let redo = match data.redo_targets() {
+        Some(targets) => CanonicalRedoRecords::from_prepared_records(
+            batch.into_prepared_record_bytes(),
+            lsn_range,
+            targets,
+            &projection,
+        ),
+        None => CanonicalRedoRecords::from_source_copy(lsn_range, &projection),
+    };
     let redo = match data.rewrite() {
         Some(rewrite) => redo.with_encoded_payload(
             rewrite
@@ -254,26 +257,6 @@ fn recovery_projection(
     data: &crate::physical_runtime::durability::WalBoundPhysicalDataPlan,
     root: &PreparedPhysicalRootProjection,
 ) -> PersistedPhysicalRecoveryProjection {
-    let frames = data
-        .frames()
-        .iter()
-        .map(|frame| {
-            let target = frame.basis().target();
-            PersistedPhysicalRecoveryFrame::new(
-                target.persisted_subject(),
-                target.coordinate(),
-                frame.bytes(),
-            )
-            .expect("the WAL-bound frame retains its exact admitted materialization")
-        })
-        .collect();
-    let manifests = root
-        .recovery_payload_manifests()
-        .map(|(artifact, bytes)| {
-            PersistedPhysicalRecoveryManifest::new(*artifact, bytes)
-                .expect("the payload projection retains only governed recovery manifests")
-        })
-        .collect();
     let root_state = PersistedPhysicalRecoveryRootState::new(
         root.root_publication_allocation_bytes().get(),
         root.manifest_capacity_transition().identity_code(),
@@ -292,6 +275,41 @@ fn recovery_projection(
         root.recovery_last_inline_segment(),
     )
     .expect("the prepared root retains an exact recovery root state");
+    if let Some((copy, _)) = data.source_copy() {
+        let recipe = worth_store_physical_format::PersistedExtentCopyRecipe::new(
+            copy.intent(),
+            copy.durable_intent_lsn(),
+            copy.intent_digest(),
+        )
+        .expect("sealed copy proof retains its canonical durable intent");
+        return PersistedPhysicalRecoveryProjection::from_source_copy(
+            root.source_root_generation(),
+            root_state,
+            recipe,
+        )
+        .expect("copy adoption names a current root no older than its protected source");
+    }
+    let frames = data
+        .frames()
+        .expect("non-copy plan carries admitted frames")
+        .iter()
+        .map(|frame| {
+            let target = frame.basis().target();
+            PersistedPhysicalRecoveryFrame::new(
+                target.persisted_subject(),
+                target.coordinate(),
+                frame.bytes(),
+            )
+            .expect("the WAL-bound frame retains its exact admitted materialization")
+        })
+        .collect();
+    let manifests = root
+        .recovery_payload_manifests()
+        .map(|(coordinate, bytes)| {
+            PersistedPhysicalRecoveryManifest::new(*coordinate, bytes)
+                .expect("the payload projection retains only governed recovery manifests")
+        })
+        .collect();
     PersistedPhysicalRecoveryProjection::new(
         root.source_root_generation(),
         root_state,

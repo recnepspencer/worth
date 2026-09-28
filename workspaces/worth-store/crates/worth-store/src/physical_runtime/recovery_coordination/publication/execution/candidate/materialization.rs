@@ -64,6 +64,7 @@ pub(super) fn execute(
     };
     match media.stage_recovery_artifact_scheduled(
         candidate.artifact(),
+        0,
         candidate.bytes(),
         plan.backend_completion_binding()
             .backend_execution_binding(),
@@ -126,6 +127,7 @@ pub(super) fn execute(
             }
             let materialization = match physical.disposition() {
                 RecoveryStagingWriteDisposition::Created
+                | RecoveryStagingWriteDisposition::RangeWritten
                 | RecoveryStagingWriteDisposition::CompletedFromExactPrefix => {
                     let completed_from_prefix = physical.disposition()
                         == RecoveryStagingWriteDisposition::CompletedFromExactPrefix;

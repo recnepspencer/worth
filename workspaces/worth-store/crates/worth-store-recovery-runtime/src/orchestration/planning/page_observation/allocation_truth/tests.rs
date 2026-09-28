@@ -40,8 +40,7 @@ fn committed_frontiers_allow_reserved_gaps_but_not_reused_or_unordered_ids() {
 
 #[test]
 fn reusable_capacity_requires_selected_free_space_truth() {
-    let exact =
-        RecordFreeSpaceManifestEntry::new(RecordAllocationClass::InlinePage, 3, 3, 2, 8).unwrap();
+    let exact = RecordFreeSpaceManifestEntry::inline_frontier(3, 3, 2, 8).unwrap();
     assert_eq!(reusable_capacity(exact, 8, 2, 4), Some(2));
     assert_eq!(reusable_capacity(exact, 7, 2, 4), None);
     assert_eq!(reusable_capacity(exact, 8, 1, 4), None);

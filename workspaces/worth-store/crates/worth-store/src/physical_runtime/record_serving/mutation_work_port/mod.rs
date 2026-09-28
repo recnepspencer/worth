@@ -13,6 +13,7 @@ use crate::physical_runtime::{
 use super::{residency::FrameWritebackPort, RecordFramePorts, RecordWorkAdmission};
 
 mod admission;
+mod compaction;
 mod settlement;
 mod settlement_fact;
 

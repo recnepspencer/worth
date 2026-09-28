@@ -1,6 +1,6 @@
 use worth_store_physical_format::{
     store_namespace::StableStoreIdentity, DurableExtentManifest, DurableExtentRecordPlacement,
-    RecordArtifactFile, DURABLE_EXTENT_FRAME_HEADER_BYTES, EXTENT_CHUNK_METADATA_BYTES,
+    RecordArtifactFile,
 };
 
 use super::extent_read_session::ExtentReadState;
@@ -38,22 +38,62 @@ pub(in crate::physical_runtime::record_serving) fn load_extent_rewrite_source(
     request: ExtentRewriteSourceRequest<'_>,
     placement: DurableExtentRecordPlacement,
 ) -> Result<ExtentRewriteSource, ()> {
+    let allocation = request.allocation;
+    let mut cursor = open_extent_rewrite_source(request, placement)?;
+    let manifest = cursor.manifest();
+    let mut payload = Vec::with_capacity(manifest.logical_bytes() as usize);
+    while let Some(chunk) = cursor.next_chunk(allocation).map_err(|_| ())? {
+        payload.extend_from_slice(chunk);
+    }
+    Ok(ExtentRewriteSource {
+        manifest,
+        payload,
+        artifact_bytes: placement.arena_range().length(),
+    })
+}
+
+/// One admitted source frame at a time. The caller owns the C10 root lease and
+/// allocation grant for the complete traversal; no payload-sized buffer is held.
+pub(in crate::physical_runtime::record_serving) struct ExtentRewriteCursor {
+    manifest: DurableExtentManifest,
+    state: ExtentReadState,
+    identity: RecordReadIdentity,
+    observation: RecordReadObservation,
+}
+
+impl ExtentRewriteCursor {
+    pub(in crate::physical_runtime::record_serving) fn manifest(&self) -> DurableExtentManifest {
+        self.manifest
+    }
+
+    pub(in crate::physical_runtime::record_serving) fn next_chunk(
+        &mut self,
+        allocation: &worth_store_buffer_pool::OperationAllocationGrant,
+    ) -> Result<Option<&[u8]>, crate::physical_runtime::record_serving::RecordStreamFailure> {
+        self.state
+            .next_chunk(allocation, &mut self.observation, self.identity)
+            .map(|chunk| chunk.map(|chunk| chunk.bytes))
+    }
+}
+
+pub(in crate::physical_runtime::record_serving) fn open_extent_rewrite_source(
+    request: ExtentRewriteSourceRequest<'_>,
+    placement: DurableExtentRecordPlacement,
+) -> Result<ExtentRewriteCursor, ()> {
     let reader = RecordFrameReader::serving(request.residency.clone());
     let manifest_frame = reader
-        .load_bounded(
+        .load_exact(
             request.allocation,
-            RecordArtifactFile::ExtentManifest {
-                extent: placement.extent().get(),
-                generation: placement.extent_generation(),
+            RecordArtifactFile::ExtentArena {
+                arena: placement.arena_range().arena().get(),
             },
-            request
-                .access
-                .transfer_limit()
-                .get()
-                .min(request.format.declaration().page_size().bytes()),
+            placement.arena_range().offset(),
+            104,
+            super::super::residency::frame_loading::ExactFrameSourceExtent::ArenaRange(
+                placement.arena_range(),
+            ),
         )
         .map_err(|_| ())?;
-    let manifest_bytes = manifest_frame.len() as u64;
     let context = reader.resident_admission_context().ok_or(())?;
     let admitted = admit_extent_manifest(
         &manifest_frame,
@@ -70,12 +110,8 @@ pub(in crate::physical_runtime::record_serving) fn load_extent_rewrite_source(
     {
         return Err(());
     }
-    let extent_bytes = manifest.logical_bytes()
-        + u64::from(manifest.chunk_count())
-            * (DURABLE_EXTENT_FRAME_HEADER_BYTES + EXTENT_CHUNK_METADATA_BYTES) as u64;
-    let artifact = RecordArtifactFile::Extent {
-        extent: placement.extent().get(),
-        generation: placement.extent_generation(),
+    let artifact = RecordArtifactFile::ExtentArena {
+        arena: placement.arena_range().arena().get(),
     };
     let identity = RecordReadIdentity::for_extent(
         request.store,
@@ -83,36 +119,19 @@ pub(in crate::physical_runtime::record_serving) fn load_extent_rewrite_source(
         PhysicalRecordId::from_persisted(placement.record()),
         placement.extent_cell(),
     );
-    let mut state = ExtentReadState::new(
+    let state = ExtentReadState::new(
         RecordFrameReader::serving(request.residency),
         artifact,
         manifest,
-        std::num::NonZeroU64::new(extent_bytes).ok_or(())?,
+        placement.arena_range(),
         admitted.membership,
         request.store,
         request.format.declaration(),
     );
-    let length = usize::try_from(manifest.logical_bytes()).map_err(|_| ())?;
-    let mut payload = vec![0; length];
-    let mut observation = RecordReadObservation::default();
-    let mut filled = 0;
-    while filled < length {
-        let count = state
-            .read_next(
-                request.allocation,
-                &mut payload[filled..],
-                &mut observation,
-                identity,
-            )
-            .map_err(|_| ())?;
-        if count == 0 {
-            return Err(());
-        }
-        filled += count;
-    }
-    Ok(ExtentRewriteSource {
+    Ok(ExtentRewriteCursor {
         manifest,
-        payload,
-        artifact_bytes: extent_bytes.saturating_add(manifest_bytes),
+        state,
+        identity,
+        observation: RecordReadObservation::default(),
     })
 }

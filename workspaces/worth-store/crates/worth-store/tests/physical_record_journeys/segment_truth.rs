@@ -133,12 +133,10 @@ fn checksum_valid_extent_generation_drift_is_stale_membership() {
     let record = published.settled_members()[0].record_id(0).unwrap();
     serving.close();
 
-    let manifest = root.join(
-        "families/records/extent-manifests/extent-0000000000000001-0000000000000001.manifest",
-    );
+    let manifest = root.join("families/records/arenas/arena-0000000000000001.data");
     let mut bytes = std::fs::read(&manifest).unwrap();
     bytes[28..36].copy_from_slice(&2_u64.to_le_bytes());
-    super::durable_frame_oracle::reseal(&mut bytes);
+    super::durable_frame_oracle::reseal(&mut bytes[..104]);
     std::fs::write(manifest, bytes).unwrap();
 
     let reopened = success(open_record_store!(media(&root), |durability| {
@@ -178,7 +176,7 @@ fn dishonest_inline_tail_owner_is_denied_before_candidate_effects() {
 
     let manifest = root.join("families/records/roots/root-0000000000000002.manifest");
     let mut bytes = std::fs::read(&manifest).unwrap();
-    super::durable_frame_oracle::payload_mut(&mut bytes)[304..312]
+    super::durable_frame_oracle::payload_mut(&mut bytes)[320..328]
         .copy_from_slice(&2_u64.to_le_bytes());
     super::durable_frame_oracle::reseal(&mut bytes);
     std::fs::write(&manifest, bytes).unwrap();

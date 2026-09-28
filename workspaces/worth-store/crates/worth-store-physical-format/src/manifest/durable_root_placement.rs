@@ -81,6 +81,7 @@ pub struct DurableExtentRecordPlacement {
     record: PersistedRecordIdentity,
     extent: RecordExtentGenerationCell,
     payload_bytes: u64,
+    arena_range: crate::ExtentArenaRange,
 }
 
 impl DurableExtentRecordPlacement {
@@ -88,6 +89,7 @@ impl DurableExtentRecordPlacement {
         record: PersistedRecordIdentity,
         extent: RecordExtentGenerationCell,
         payload_bytes: u64,
+        arena_range: crate::ExtentArenaRange,
     ) -> Option<Self> {
         if payload_bytes > u32::MAX as u64 {
             return None;
@@ -96,6 +98,7 @@ impl DurableExtentRecordPlacement {
             record,
             extent,
             payload_bytes,
+            arena_range,
         })
     }
 
@@ -104,6 +107,9 @@ impl DurableExtentRecordPlacement {
     }
     pub const fn extent(self) -> PhysicalExtentId {
         self.extent.extent_id()
+    }
+    pub const fn arena_range(self) -> crate::ExtentArenaRange {
+        self.arena_range
     }
     pub const fn extent_cell(self) -> RecordExtentGenerationCell {
         self.extent

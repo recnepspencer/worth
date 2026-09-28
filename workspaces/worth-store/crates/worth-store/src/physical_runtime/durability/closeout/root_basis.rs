@@ -22,6 +22,13 @@ pub enum PhysicalRootNamespaceDurabilityEvidence {
         replacement: PhysicalEffectIdentity,
         namespace_synchronization: PhysicalEffectIdentity,
     },
+    RetirementCurrentRoot {
+        operation: crate::physical_runtime::PhysicalMutationIdentity,
+        source_generation: u64,
+        current_generation: u64,
+        replacement: PhysicalEffectIdentity,
+        namespace_synchronization: PhysicalEffectIdentity,
+    },
 }
 
 impl PhysicalRecoveryRootBasis {

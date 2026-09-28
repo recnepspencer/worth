@@ -1,7 +1,7 @@
 use std::{collections::BTreeSet, num::NonZeroU64};
 
 use worth_proof::NonEmpty;
-use worth_store_physical_format::{PersistedRecordIdentity, RecordArtifactFile};
+use worth_store_physical_format::{PersistedRecordIdentity, RecordFrameCoordinate};
 
 use super::{prepared_payload::PreparedRecordPayloadPlan, PreparedPhysicalRootProjection};
 
@@ -12,6 +12,7 @@ pub enum SettledRootProjectionMergeDenial {
     ManifestCapacityTransitionMismatch,
     DuplicateRecord,
     DuplicatePayloadManifest,
+    OverlappingPayloadManifest,
     DuplicatePlacement,
     DuplicateSegmentUpdate,
     AllocationBudgetOverflow,
@@ -59,6 +60,9 @@ pub(in crate::physical_runtime::record_serving) fn merge_settled_root_projection
         .expect("NonEmpty settled root projections contain one member");
     let mut merged = first.into_payload_plan();
     for projection in projections {
+        merged
+            .arena_reservations
+            .extend(projection.arena_reservations);
         merged.records.extend(projection.records);
         merged
             .payload_manifests
@@ -87,7 +91,7 @@ fn validate(
     let first = projections.first();
     let mut allocation_bytes = 0_u64;
     let mut records = BTreeSet::<PersistedRecordIdentity>::new();
-    let mut payload_artifacts = BTreeSet::<RecordArtifactFile>::new();
+    let mut payload_artifacts = BTreeSet::<RecordFrameCoordinate>::new();
     let mut placements = BTreeSet::new();
     let mut segment_updates = BTreeSet::new();
     for projection in projections.as_slice() {
@@ -109,9 +113,7 @@ fn validate(
             }
         }
         for (artifact, _) in &projection.payload_manifests {
-            if !payload_artifacts.insert(*artifact) {
-                return Err(SettledRootProjectionMergeDenial::DuplicatePayloadManifest);
-            }
+            insert_payload_range(&mut payload_artifacts, *artifact)?;
         }
         for record in projection.placements.keys() {
             if !placements.insert(*record) {
@@ -126,6 +128,57 @@ fn validate(
     }
     NonZeroU64::new(allocation_bytes)
         .ok_or(SettledRootProjectionMergeDenial::AllocationBudgetOverflow)
+}
+
+fn insert_payload_range(
+    ranges: &mut BTreeSet<RecordFrameCoordinate>,
+    coordinate: RecordFrameCoordinate,
+) -> Result<(), SettledRootProjectionMergeDenial> {
+    if ranges.contains(&coordinate) {
+        return Err(SettledRootProjectionMergeDenial::DuplicatePayloadManifest);
+    }
+    let overlaps = |other: &RecordFrameCoordinate| {
+        other.artifact() == coordinate.artifact()
+            && other.offset() < coordinate.offset() + u64::from(coordinate.length())
+            && coordinate.offset() < other.offset() + u64::from(other.length())
+    };
+    if ranges.range(..coordinate).next_back().is_some_and(overlaps)
+        || ranges.range(coordinate..).next().is_some_and(overlaps)
+    {
+        return Err(SettledRootProjectionMergeDenial::OverlappingPayloadManifest);
+    }
+    ranges.insert(coordinate);
+    Ok(())
+}
+
+#[cfg(test)]
+mod payload_range_tests {
+    use super::*;
+    use worth_store_physical_format::RecordArtifactFile;
+
+    #[test]
+    fn shared_arena_accepts_disjoint_manifests_but_rejects_partial_overlap() {
+        let range = |arena, offset, length| {
+            RecordFrameCoordinate::new(RecordArtifactFile::ExtentArena { arena }, offset, length)
+                .unwrap()
+        };
+        let mut ranges = BTreeSet::new();
+        insert_payload_range(&mut ranges, range(1, 4096, 104)).unwrap();
+        insert_payload_range(&mut ranges, range(1, 8192, 104)).unwrap();
+        insert_payload_range(&mut ranges, range(2, 4096, 104)).unwrap();
+        assert_eq!(
+            insert_payload_range(&mut ranges, range(1, 4096, 104)),
+            Err(SettledRootProjectionMergeDenial::DuplicatePayloadManifest)
+        );
+        assert_eq!(
+            insert_payload_range(&mut ranges, range(1, 4097, 104)),
+            Err(SettledRootProjectionMergeDenial::OverlappingPayloadManifest)
+        );
+        assert_eq!(
+            insert_payload_range(&mut ranges, range(1, 4080, 104)),
+            Err(SettledRootProjectionMergeDenial::OverlappingPayloadManifest)
+        );
+    }
 }
 
 fn merge_observation(

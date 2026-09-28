@@ -52,9 +52,9 @@ rationale. A reviewer who disagrees changes the decision here before implementat
 | --- | --- | --- |
 | D1 | This document is `physical-reconstruction-c11-layout-index-and-native-blob-adoption.md`; the roadmap's spec list is corrected to this name. | The requested name states the native-blob priority; the roadmap listed a shorter placeholder name before the spec existed. |
 | D2 | Blob chunk bytes, chunk-tree nodes and generation publications are stored as C.5 extent-backed physical records (`RecordArtifactFile::Extent`/`ExtentManifest`, `PhysicalExtentRecordAuthority`), not a new media file family. | Extents already run through append, WAL, group commit, root publication, `ExtentChunk` integrity, `rewrite_selected_extent_record`, retirement, recovery and offline walk. A packed blob-segment family would be exactly the parallel path C.11 exists to remove. The file-per-extent cost is not accepted; it is repaired in the extent platform itself (D16), so blobs, LSM runs and every large row share the fix. |
-| D3 | Chunk identity is SHA-256 over the stored chunk frame; the current 64-bit FNV-1a `ChunkTreeRoot` fold in `worth-store-blob-chunks::chunk_integrity` is demoted to comparison evidence and denied as native authority. | The roadmap requires content-addressed chunk trees; a 64-bit non-cryptographic fold is neither collision-resistant nor content addressing. `sha2` is already a dependency of `worth-store` and `worth-store-blob-chunks`. |
-| D4 | Chunking is fixed-size in C.11 with an admitted `BlobChunkSize` of 64 KiB to 256 KiB (default 256 KiB); content-defined chunking is a Part II customization. | S.7 leaves the rule open. Fixed size makes every chunk one extent record with a bounded frame, bounded resident window, and exact counters. Larger sizes exceed the extent payload limit that the durability doc states for `rewrite_selected_extent_record`. |
-| D5 | The chunk tree is a real durable tree: leaf nodes list ordered chunk digests plus record identities, interior nodes list child-node digests plus record identities, and the generation root is the SHA-256 of the root node frame. | A flat manifest for a blob above memory does not fit one record and cannot be verified with a bounded window. A tree gives bounded verification, byte-range seeking and localized corruption. |
+| D3 | `StoredChunkDigest` is SHA-256 over a versioned canonical stored-content subframe (chunk rule and bytes), excluding session, object, ordinal, placement and RecordId. Every newly written prepublication chunk or tree-node C.5 record also carries a separately authenticated occurrence claim: declared session, kind, ordinal or level/index, length and canonical digest; the selected C.5 route binds it to record identity. The current 64-bit FNV-1a `ChunkTreeRoot` fold in `worth-store-blob-chunks::chunk_integrity` is comparison evidence only. | Content identity remains stable across occurrences for Phase 4 dedupe, while claims make both chunk and partial-tree custody decidable after WAL truncation. A 64-bit non-cryptographic fold cannot be native content authority. |
+| D4 | Chunking is fixed-size in C.11 with an admitted `BlobChunkSize` of 64 KiB to 256 KiB (default 256 KiB); content-defined chunking is a Part II customization. | S.7 leaves the rule open. Fixed size gives bounded frames and exact counters. A 256 KiB chunk plus its frame overhead exceeds the ordinary 256 KiB record-preserving rewrite ceiling, so movement uses the bounded C.10 SourceCopy lane, not `rewrite_selected_extent_record`. |
+| D5 | The chunk tree is a real durable tree: leaf nodes list ordered chunk digests plus record identities, interior nodes list child-node digests plus record identities, and the generation root is the SHA-256 of the root node frame. `ChunkTreeRoot` is Store-local physical-layout identity; `LogicalContentDigest` is portable plaintext identity. | A flat manifest for a blob above memory does not fit one record and cannot be verified with a bounded window. Record identities legitimately change after cross-Store import, so its physical tree root is not a portable equality claim. |
 | D6 | The blob catalog (object identity to published generation) is a derived B-tree index over the authoritative generation-publication records; it is rebuildable and never authority. | This keeps blob identity in WAL-replayable publication records, and makes the first index adoption load-bearing for the blob path instead of a separate demo. |
 | D7 | Dedupe scope in C.11 is `SameStoreSameKeyScope` (new; built over `worth_store_security::StoreKeyScope`) only; cross-scope reuse stays a typed denial through the existing `ScopeMismatchCase` law, with no executable branch. | S.7 leaves the first index scope open; tenant and key policy are Part II inputs the Store may enforce but not decide. |
 | D8 | `worth-store-blob-chunks` drops its `worth-store` dependency, normal and dev, and every Store-importing file is cut over as enumerated in [Cycle removal](#cycle-removal-blob-chunks-to-worth-store); `worth-store` then depends on `worth-store-blob-chunks`, `worth-store-layout-indexes` and `worth-store-lsm-authority` as downward mechanism crates. | This is the C.10 precedent for `worth-store-physical-isolation`. `cargo tree -i worth-store -e normal` shows the single edge `worth-store-blob-chunks -> worth-store`; `worth-store-layout-indexes` reaches the Store only through it and `worth-store-lsm-authority` not at all, so removing that one edge is sufficient. The dev edge must go too: a dev cycle compiles a second copy of `worth-store-blob-chunks` whose types do not unify with the Store's. Decision Lock 15 keeps the mechanism crates Signal-agnostic; live owners are Store parts. |
@@ -204,6 +204,7 @@ runtime access APIs.
 ### World and scale axes
 
 - Blob axis: one blob of at least 4 x the admitted Blob allocation window
+  and strictly larger than the full `W + 5 MiB` ingest residency ceiling
   (default window 64 MiB against the 256 MiB scope; the heavy lane uses a 4 GiB
   blob against a 64 MiB window) generated from a deterministic seeded pattern
   with repeated 256 KiB regions for dedupe. Sparse or zero-filled sources are
@@ -221,16 +222,21 @@ runtime access APIs.
 
 Ingest the blob with a window smaller than the blob; kill the writer after
 the frontier passes half the chunks; resume from the durable resume-session
-record in a fresh process; finish and publish; ingest the same bytes again and
-prove dedupe reuses chunk records within scope; build the blob catalog and
-dedupe index; corrupt one chunk frame and one B-tree leaf on media; scrub;
-rebuild the leaf from authority; stream the byte range that crosses the
-corrupted chunk and receive a localized typed denial, not zeros; present a
-release proof for the first generation while the reader session still holds
-it; prove reclaim is deferred; release the reader; reclaim; crash between the
-drop publication and retirement; reopen fresh; prove the dropped chunks are
-neither served nor counted as orphans, and the deduplicated generation still
-streams byte-exact.
+record in a fresh process; finish and publish; build the blob catalog and
+dedupe index from the authoritative publication and tree. Ingest the same
+bytes again and prove that live dedupe lookup reuses chunk records within
+scope. Add a third generation with one unique probe chunk; corrupt that
+unique chunk frame and one B-tree leaf on media; scrub; rebuild only the
+derived leaf from intact publication authority. A range crossing the probe
+chunk gets a localized typed denial, not zeros, while both identical
+deduplicated generations remain byte-exact; a raw outer-CRC failure cannot
+fabricate an observed inner digest. Present a release proof for the first
+generation while the reader session still holds it; prove reclaim is
+deferred; release the reader; reclaim; crash between drop publication and
+retirement; reopen fresh; prove dropped records are neither served nor
+counted as orphans, and the surviving deduplicated generation still streams
+byte-exact. Corrupting a shared chunk instead must deny both generations,
+never be described as healed by a derived-index rebuild.
 
 ## Required Test-Case Matrix
 
@@ -241,10 +247,10 @@ streams byte-exact.
 | No allocation over a protected range | Allocation owner | An adversarial allocation request that best-fits into a range routed by a held root is refused; the injected defect of ignoring protection is caught by the offline overlap check. |
 | Stale bytes in a reused range | Frame validation | A reader routed to a reused range sees only the new extent's frame; a forged route to the old identity or generation is rejected by frame identity, not accepted as data. |
 | Arena evacuation | Compaction producer + rewrite + retirement | A sparse arena's live extents move with stable record ids and exact bytes; the empty arena file is deleted through retirement; space amplification stays within the admitted bound. |
-| Bounded ingest above window | Store blob owner + executor + media | Peak resident bytes stay under window + 2 node frames + 1 publication frame across the whole ingest; every chunk is one durable extent record; counters equal observed backend writes. |
-| Whole-object substitution | Store blob owner | A frame at or above the declared total, a `Vec<u8>` full blob, and a window at or above the object are typed denials before any effect. |
+| Bounded ingest above window | Store blob owner + executor + media | Peak charged resident bytes stay under the single ingest ceiling defined below, including source window, pending C.5 frame/redo, node frames, publication frame and scheduler head; every newly written chunk is one durable extent record; counters equal observed backend writes. |
+| Whole-object substitution | Store blob owner | A declaration or window at or above the object is denied before declaration effects. A whole-object frame or full-blob `Vec<u8>` supplied after `begin_ingest` is denied before any chunk effect; the already published declaration remains identifiable retained unfinished work, never misreported as `ProvenNoEffect`. |
 | Interrupted ingest and resume | Writer process + WAL + recovery | Resume continues from the last durable frontier record; readmission re-verifies the last chunk digest; a forged token, changed rule or changed declared total is denied; no chunk is written twice. |
-| Abandoned ingest residue | Recovery + reclaim | An ingest with no resume within its declared session limit is classified abandoned by its own session records; its chunks are reclaimed with no external proof; published generations are untouched. |
+| Abandoned ingest residue | Recovery + reclaim | A completed durable checkpoint crossing the declaration's maximum checkpoint sequence, or explicit durable abort, establishes abandonment only when no publication or protected hold wins. Phase 3 then reclaims records proven exclusive to that failed operation without external semantic proof; shared and published records remain untouched. |
 | Generation publication | Publication owner + WAL + root | `BlobGenerationPublished` exists only after the root advances; a crash before that yields resume or abandon, never a partial generation; the catalog index entry is derived from the publication record. |
 | Streaming range read | Protected read session + blob owner | Any byte range returns exact bytes reading only the chunks the range touches plus the node path; read amplification is at most one chunk per side; the session holds root protection for its life. |
 | Dedupe honesty | Store dedupe owner | Same bytes in scope reuse chunk records with a byte comparison on the first hit; the same bytes in another key scope are denied for reuse; a forced digest collision with unequal bytes yields `DigestCollisionDenied` and quarantines the digest basis. |
@@ -257,7 +263,7 @@ streams byte-exact.
 | Reclaim with live reader | Reclaim + protection + retirement | Reclaim of a generation held by a reader is deferred with a typed reason; after release the drop publication is durable, retirement deletes the extents, the retained-byte charge falls, and a second reclaim proves no effect. |
 | Reclaim without proof | Reclaim | A published generation with no admitted release proof cannot be reclaimed regardless of reachability, absence of references, or age. |
 | Tier movement | Placement + rewrite | Moving a chunk between placements yields a stable read, typed retry or typed denial; no read observes a half-moved chunk. |
-| Export and import | Blob owner + streaming | Export streams chunks with a manifest under the window; import re-ingests through the ordinary path and yields a new generation whose root equals the export root. |
+| Export and import | Blob owner + streaming | Export streams chunks with a manifest under the window; import re-ingests through the ordinary path and yields a new generation with byte-exact content and the same portable `LogicalContentDigest`. The importing Store publishes its own physical `ChunkTreeRoot`; equality with the export Store's root is not required. |
 | Fresh-process reopen | C.8 recovery | Every case above reopens fresh with the same lookups, digests, counters and orphan sets as the observer computed offline. |
 
 ### Crash-seam matrix
@@ -267,11 +273,11 @@ offline. The required fate is exact.
 
 | Seam | Durable at kill | Required fate |
 | --- | --- | --- |
-| Arena range written, root not published | Arena bytes | Range is free in the published free map; nothing routes it; no residue scan runs; the next allocation may reuse it. |
+| Managed arena append data settled, root not published | The append WAL member and barrier are durable before the arena frames are written | Kill after data settlement and before root publication. The pre-reopen offline walk may classify the unrooted arena file `Unknown`, never `Intact` or a published route. C.8 fresh-process redo publishes the exact record and route once; the range is not free or reusable, and the post-redo offline walk finds no competing route/free claim. No residue scan substitutes for the WAL authority. |
 | Range release in WAL, releasing root not published | WAL retirement intent | The range stays routed-or-held until the root publishes; redo completes the release exactly once. |
-| Evacuation copies durable, root not published | Destination ranges | Source arena stays current; destination ranges are free by construction. |
+| Evacuation copies durable, root not published | Copy intent and destination ranges, but no final copy publication | Source arena stays current and destination ranges are unrouted in the published root. Fresh-process recovery restores the exact private destination claim, preventing ordinary reuse until durable cancellation or publication resolves the intent. |
 | Arena empty in every root, file deletion partial | Retirement intent | C.10 retirement completion; a missing arena file is a completed deletion, not corruption. |
-| Chunk record appended, frontier record not | Extent record | Chunk is resume-verified or abandoned residue; never orphan candidate for external proof. |
+| Session declaration published, chunk record appended, frontier record not | Declared session plus authenticated chunk occurrence claim in a C.5 record | Phase 2 retains identifiable unfinished-operation custody; Phase 3 resume verifies and reuses the exact selected occurrence or independently reclaims abandoned residue. A valid chunk digest without a matching occurrence claim is not session authority. |
 | Frontier record durable, next chunk partial | WAL frontier | Resume from frontier; partial extent is failed-op residue reclaimed independently. |
 | All chunks durable, tree nodes partial | Chunks + some nodes | Resume rebuilds the missing nodes from chunk records; no re-ingest. |
 | Tree root durable, publication WAL not | Nodes | Session resumable; no generation visible. |
@@ -281,6 +287,14 @@ offline. The required fate is exact.
 | Rebuild partially published | Some index pages | Rebuild candidate is discarded; the previous derived generation or `Absent` posture is reported; no mixed index. |
 | Memtable WAL durable, run not sealed | WAL entries | Memtable replays from WAL; unsealed run extent is failed-op residue. |
 | Compaction output durable, membership not | Run extents | Old membership stays current; output runs are failed-op residue. |
+
+The managed append seam follows the installed WAL-first progression:
+`append_managed_wal` → `synchronize_managed_wal` → `settle_managed_data`
+→ root publication. Arena bytes written by that path cannot have the
+"free and immediately reusable" fate after a crash without contradicting
+the durable WAL. The distinct evacuation-copy seam above tests durable
+destination bytes before the final copy publication: its source stays current
+and the unpublished destination cannot become a routed record.
 
 ## Architecture And Authority Lock
 
@@ -324,15 +338,25 @@ only blob records.
   no reader lease or recovery obligation references a root that routes it.
   This is the C.10 retirement protocol with "release range" in place of
   "delete file".
-- **Crash law.** A range written but never published is free by construction
-  in the published free map, so recovery needs no residue scan for it. A
-  reader follows routes only from a published root, and frame identity plus
-  generation plus checksum reject stale bytes. Torn writes can only affect
-  unpublished ranges, so no double-write buffer or full-page image is needed.
+- **Crash law.** Publication absence alone never proves a range reusable.
+  A durable append WAL member or evacuation-copy intent holds its range until
+  recovery publishes or durably cancels that exact effect, even when the
+  published free map has not yet incorporated it. Only unpublished bytes
+  without a live WAL or recovery claim may remain free; recovery derives
+  claims from durable authority, never a residue scan. Readers follow only
+  published routes, and frame identity, generation and checksum reject stale
+  bytes. Torn writes can affect only unpublished ranges, so no double-write
+  buffer or full-page image is needed.
 - **Fragmentation and evacuation.** An arena whose live ratio falls below its
   admitted evacuation threshold is evacuated by the `CompactionRewrite`
-  producer through `rewrite_selected_extent_record`, which moves live extents
-  to other arenas. Once empty in every protected root, the arena file is
+  producer through `PhysicalRecordSubmission::prepare_arena_evacuation`.
+  `advance_extent_copy` copies and verifies bounded frames under a durable
+  source-copy intent and source-root protection;
+  `prepare_completed_extent_copy` hands the completed destination to the
+  ordinary WAL/root publication owner. This preserves stable record identity
+  and exact payload bytes without the non-streaming
+  `rewrite_selected_extent_record` payload ceiling. Once empty in every
+  protected root, the arena file is
   retired as a whole through the existing retirement owner. That is the only
   case in which an extent retirement deletes a file. Space amplification is
   bounded by the evacuation threshold plus one filling arena per writer lane.
@@ -348,37 +372,87 @@ only blob records.
 
 All blob families are C.5 extent-backed physical records with a
 `worth-store-physical-format::blob_record` frame prefix (new): a kind byte, a
-format version, a length, the payload and a SHA-256 over the frame.
+format version, a length, the payload and authenticated frame integrity.
+The C.5 outer frame and root route remain the physical record authority; a
+blob digest alone cannot establish selected-record custody.
 
-- `BlobChunkFrame` (authoritative): the stored chunk bytes for one
-  `BlobChunkOrdinal` under one admitted `BlobChunkSize`. Identity is its
-  SHA-256 (`StoredChunkDigest`). Record identity binds the digest to one
-  `PersistedRecordIdentity`.
+- `BlobChunkFrame` (authoritative): one versioned canonical content subframe
+  with admitted rule and stored bytes. Its SHA-256 is `StoredChunkDigest` and
+  excludes Store, session, object, ordinal, placement and RecordId. A distinct
+  occurrence envelope in each newly written C.5 record binds Store scope,
+  declared session ID, ordinal, length and canonical digest under the outer
+  frame integrity. Its selected route supplies `PersistedRecordIdentity`
+  without a self-referential hash. Phase 4 reuse adds an authoritative tree or
+  frontier edge to an existing selected record; it does not rewrite the
+  original occurrence envelope. A missing or mismatched claim is corruption,
+  even when the inner digest and outer C.5 checksum are valid.
 - `BlobTreeNode` (authoritative): leaf nodes carry up to 4096 ordered
   (digest, record identity, byte length) entries; interior nodes carry up to
   4096 (child digest, record identity, covered bytes) entries. A node's
-  identity is the SHA-256 of its frame. A 4 GiB blob at 256 KiB chunks is
-  16 384 chunks, four leaves and one root.
+  canonical identity is the SHA-256 of its content frame. Each newly written
+  node's separate occurrence envelope binds the declared session, node kind,
+  level/index, length and canonical digest under C.5 outer integrity and
+  selected routing. Partially built nodes therefore remain attributable to
+  the unfinished session after WAL pruning; an unclaimed node is not safe
+  residue. A 4 GiB blob at 256 KiB chunks is 16 384 chunks, four leaves and
+  one root.
 - `BlobGenerationPublication` (authoritative): `BlobObjectId`,
   `BlobGeneration`, root node record identity and digest, total bytes,
   `LogicalContentDigest` (SHA-256 of plaintext), chunking rule version,
-  dedupe scope, and the resume-session identity it closes. Its WAL payload is
-  `store.physical.blob-generation.v1` (new).
-- `BlobResumeSession` (authoritative for its own fate): declaration, admitted
-  rule, declared total, frontier ordinal, last durable chunk record identity
-  and digest, session limit. WAL payload `store.physical.blob-resume.v1`
-  (new). Terminal states are `Published`, `Abandoned`, `Reclaimed`.
-- `BlobExportManifest` (authoritative for one export): root digest, chunk
-  count and export custody identity. Not a backup artifact.
+  dedupe scope, and the declared session identity it closes.
+- `BlobResumeSession` (authoritative for its own fate): Phase 2 installs a
+  minimal `Declared` record, root-published before the first chunk effect.
+  It binds a Store-issued fresh 128-bit attempt ID (checked against selected
+  sessions before publication, never caller- or S.7-deterministically
+  minted), object ID, Store/key scope, admitted rule, declared total,
+  memory/resource limit, declaration digest and maximum durable checkpoint
+  sequence. The Store admits that limit from its selected checkpoint sequence
+  plus a bounded caller-requested horizon; the caller cannot assert an
+  absolute sequence or a wall-clock deadline. Phase 3 adds versioned frontier
+  ordinal, last durable chunk identity/digest, explicit abort and terminal
+  `Published`, `Abandoned`, `Reclaimed` transitions. A durable checkpoint
+  crossing the declared sequence, or a durable explicit abort, may establish
+  abandonment only if no publication and no protected hold wins under the
+  same root owner; process-local time and wall-clock jumps never do. With no
+  advancing checkpoint or abort, unfinished bytes remain retained.
+- `BlobExportManifest` (authoritative for one export): Store-local physical
+  root digest, portable `LogicalContentDigest`, chunk count and export
+  custody identity. Import verifies the portable digest and bytes, then
+  constructs its own physical tree. Not a backup artifact.
+
+Phase 2 extends `PersistedPhysicalRecoveryProjection` from v5 to v6 with
+one bounded typed blob semantic member: `None`, `SessionDeclared` or
+`GenerationPublished`, with non-`None` members bound to exact C.5 record
+identities, payload digest and root candidate. All newly encoded ordinary
+recovery projections use v6, with `None` for non-blob operations; the reader
+continues to admit v5 `Frames` and `SourceCopy` as `None` without
+reinterpreting their bytes. The v6 physical-target variants retain both
+`Frames` and `SourceCopy` semantics. The producer, C.8 replay, C.9
+validator and independent offline observer recognize the coordinated format
+cutover. The semantic descriptor is a nested member of the existing C.8
+canonical redo, not a second WAL lane, and remains within 1 KiB; the entire
+redo may carry separately bounded physical frame bytes and is not claimed to
+fit 1 KiB. C.8 replays declaration before chunk admission and publication
+only after all claimed records. Phase 3 adds versioned
+`store.physical.blob-resume.v1` frontier/terminal semantics to the same
+envelope, preserving SourceCopy and v5 compatibility. After checkpoint WAL
+pruning, selected declaration, claims and publication records still suffice
+for independent custody classification of chunks and partial tree nodes;
+unselected arena bytes are not authority.
 
 Derived blob structures: blob catalog (`BlobObjectId` to publication record
 identity), dedupe index (`StoredChunkDigest` and scope to chunk record
 identity), reachability edge set (generation to chunk and node record
 identities, plus resume, export, read-plan and quarantine holds), and orphan
 classification. Each is a B-tree family over inline pages with a rebuild
-basis of "bounded scan of `BlobGenerationPublication` and `BlobResumeSession`
-records". Corruption of any derived family is `DerivedProjectionCorruption`
-and rebuilds; corruption of an authoritative family is localized and reported.
+basis over the full authoritative closure: selected generation publications,
+session declarations/frontiers and occurrence claims, their tree nodes and
+chunk edges, selected export manifests, and C.10 read/recovery protection
+plus quarantine hold authorities. The catalog needs publications; dedupe and
+reachability additionally traverse verified trees and selected claims. No
+report, JSON row or derived index supplies missing authority. Corruption of
+any derived family is `DerivedProjectionCorruption` and rebuilds from this
+closure; corruption of an authoritative family is localized and reported.
 
 ### Index families
 
@@ -396,8 +470,9 @@ and rebuilds; corruption of an authoritative family is localized and reported.
   `store.physical.lsm-membership.v1` (new) through the Store WAL; replacement
   is a root-changing publication.
 - Derived index families rebuild only from a declared physical authority:
-  routed records of the indexed family, or for the blob families the
-  publication records. `DerivedIndexRebuildSourceInput::{CertificationRows,
+  routed records of the indexed family, or for the blob families the selected
+  publication/session records, occurrence claims, verified tree edges and
+  admitted hold authorities named above. `DerivedIndexRebuildSourceInput::{CertificationRows,
   DiagnosticReport, JsonProjection}` become typed denials at the Store boundary.
 
 ### Artifact-family registry
@@ -420,20 +495,35 @@ Store owner executes in C.11 are not registered.
 Ingest is a `BlobIngestSession` (new, Store-owned) holding a
 `BlobPhysicalAllocation`, root protection through `records()`, a
 `PhysicalRecordSubmission`, and a scheduler reservation under
-`BlobIngestPressure`. Each source frame is at most the window; the session
-digests the frame, consults the dedupe index within scope, appends a
-`BlobChunkFrame` record (or binds a reused record after byte comparison),
-appends leaf entries, and periodically publishes a frontier record. Finishing
-seals leaves and interior nodes as records, then publishes the generation
-through the sole publication owner as a root-changing member. Memory ceiling:
-one window, the open leaf node, one interior node under construction, and one
-frame buffer.
+`BlobIngestPressure`. `begin_ingest` first durably publishes its minimal
+`BlobResumeSession::Declared` record through the C.5 WAL/root owner; it
+cannot return an effect-bearing session or append the first chunk before that
+publication. Phase 2 installs the actual bounded ingest-pressure producer,
+retained head and foreground-preservation admission, not just its vocabulary.
+Its admitted I/O shape is the Store's real buffered-file write, fsync,
+directory-sync and root-publication sequence; it does not label synchronous
+file effects as an imaginary async-I/O worker.
+Each source frame is at most the window and may cross fixed chunk boundaries;
+the session incrementally hashes and splits it into canonical chunks. For
+each new chunk it appends a C.5 record with an authenticated occurrence claim;
+Phase 4 may instead bind a previously selected, byte-compared record through
+the tree edge in the same scope. Phase 3 periodically publishes frontier
+records. Finishing seals leaves and interior nodes as records, then publishes
+the single blob generation through the sole publication owner. Memory
+accounting includes the source frame, pending frame/redo bytes, node frames,
+writeback and scheduler head; no full-object batch or copied blob-sized WAL
+payload is admitted.
 
-Resume opens the session from the last durable `BlobResumeSession` record,
-re-reads and re-digests the last durable chunk, and continues. A session that
-misses its declared limit is abandoned by the Store, which then reclaims its
-records independently because they belong only to a failed physical
-operation.
+Phase 2 can classify an interrupted prepublication session as retained
+unfinished work but does not offer a resume or reclaim API. Phase 3 first
+reconciles pending C.8 WAL effects, scans selected occurrence claims beyond
+the frontier, re-reads and re-digests the last durable chunk, then reuses the
+exact selected record or denies a conflict; it never appends one ordinal
+twice. A durable checkpoint crossing the declaration's limit or explicit
+durable abort establishes `Abandoned` under the same publication owner;
+only then may the Store independently reclaim records proven exclusive to
+that failed operation. Shared deduped records and published or protected
+generations are never eligible through this rule.
 
 ### Read and verification
 
@@ -441,8 +531,12 @@ operation.
 index, walks the tree nodes with protected reads, and yields chunks in order
 for the requested byte range. It holds a `BlobPhysicalAllocation` of one
 window and the root protection of its `RecordReadSession`. Verification is
-per chunk against the leaf digest; a mismatch is `BlobChunkCorruption` with
-ordinal, record identity, and both digests, reported to C.9 disposition.
+per chunk against the leaf digest; a readable inner mismatch is
+`BlobChunkCorruption` with ordinal, record identity, expected and observed
+digests, reported to C.9 disposition. If the outer C.5 frame fails integrity,
+the inner observed digest is unavailable rather than fabricated; data-record
+damage localizes to its dependent ranges, while root/routing/manifest damage
+retains global serving revocation.
 Whole-object verification is a streaming pass over the same session with the
 same window.
 
@@ -450,7 +544,8 @@ same window.
 
 Dedupe is a derived index consulted during ingest; the first reuse of a digest
 performs a byte comparison under a bounded window. Reachability traversal is
-a bounded walk of publication records, resume records and holds that yields
+a bounded walk of publication and session records, authoritative tree nodes
+and holds (never the derived dedupe index as liveness truth) that yields
 per-record `Reachable`, `HeldOnly`, `FailedOperationResidue`,
 `DerivedResidue`, or `Unreferenced`. Only the last three classes are orphan
 candidates, and only the first two of those are Store-reclaimable without
@@ -458,9 +553,21 @@ proof. `Unreferenced` records of a published generation are never reclaimed
 without an `AdmittedBlobReleaseProof`.
 
 Reclaim executes as: eligibility (reader and recovery pins through C.10
-retention; proof admission), one `drop_reclaimed_records` publication naming
-each dropped record under `store.physical.blob-reclaim.v1` (new), then
-retirement of the displaced extents through the existing retirement owner.
+retention; proof admission), a sorted extent-backed `DropSetManifest`
+containing at most 1024 dropped record identities with count and digest,
+then one `drop_reclaimed_records` publication whose bounded
+`store.physical.blob-reclaim.v1` semantic WAL descriptor names that
+manifest and proof/source basis, then retirement of the displaced extents
+through the existing retirement owner. The descriptor stays within 1 KiB;
+the manifest is C.5-routed, retained and charged until the drop and C.8
+recovery frontier make it safe to retire. Recovery independently validates
+the manifest before un-routing any record.
+The manifest carries a Store-issued reclaim-attempt ID and the admitted
+proof/source digest. If its drop descriptor is not durable, it remains
+selected failed-operation residue with exact custody; recovery does not
+infer a drop from the manifest alone. A later bounded owner publication
+retires that residue after the pending WAL fate is reconciled. If the
+descriptor is durable but the root is not, C.8 replays the exact drop.
 Effects are exact: dropped record identities, displaced generations, bytes
 released, and dedupe entries removed. Reclaim never deletes a file directly.
 
@@ -493,54 +600,93 @@ subject to the same foreground floor and owed-background-turn bound.
 ### Lifecycle and outcome topology
 
 Every session (ingest, read, rebuild, reclaim, compaction) carries the
-lifecycle of the runtime part that owns it: cancellation before its first
-effect is `ProvenNoEffect`; after an effect it settles to an exact fate;
-close revokes protection and allocation; shutdown drains through the C.3
-sealed lifecycle. Outcomes are typed: `Published`, `Resumable`, `Abandoned`,
-`Denied(kind)`, `Deferred(reason)`, `Indeterminate(stage)`.
+lifecycle of the runtime part that owns it: cancellation before any admitted
+effect attempt is `ProvenNoEffect`. Once a WAL write or later effect has
+been attempted, even a sync failure cannot prove absence; uncertain
+durability is typed `Indeterminate` until exact C.8 reconciliation, while
+known durable effects follow their pending/redo fate. No failure claims
+`ProvenNoEffect` merely because the root has not published. Close
+revokes protection and allocation; shutdown drains through the C.3 sealed
+lifecycle. `begin_ingest` returns an effect-bearing session only after the
+declaration root is selected, but a mid-declaration failure returns a typed
+pending/indeterminate identity that fresh-process recovery settles. Phase 2
+therefore identifies retained unfinished work even before the first chunk.
+Outcomes are typed: `Published`, `RetainedUnfinished` (Phase 2),
+`Resumable`/`Abandoned` (Phase 3), `Denied(kind)`,
+`Deferred(reason)`, `Indeterminate(stage)`.
 
 ## Public DX Target
 
 ```rust
+use worth_proof::AdmittedBlobReleaseProof;
 use worth_store::physical_runtime::{
-    BlobChunkSize, BlobIngestDeclaration, BlobIngestOutcome, BlobObjectId,
-    BlobReadRange, BlobReclaimRequest, BlobStreamingWindow, IndexFamily,
-    PhysicalKeyRange, ServingPhysicalRuntime,
+    AdmittedBlobScope, BlobCheckpointLimit, BlobChunkSize,
+    BlobIngestDeclaration, BlobIngestOutcome, BlobReadRange, BlobReclaimReceipt,
+    BlobReclaimRequest, BlobResumeToken, BlobStreamingWindow, IndexFamily,
+    PhysicalBlobDenial, PhysicalKeyRange, PhysicalLayoutDenial,
+    PublishedBlobGeneration, ServingPhysicalRuntime,
 };
 
-fn ingest_and_read(store: &ServingPhysicalRuntime, source: impl BlobFrameSource)
-    -> Result<(), PhysicalBlobDenial> {
-    let blobs = store.blobs()?;                       // protection + allocation admitted here
-    let window = BlobStreamingWindow::bounded(64 << 20)?;
+trait BlobFrameSource {
+    fn declared_bytes(&self) -> u64;
+    fn next_frame(&mut self, max_bytes: u64) -> Result<Option<&[u8]>, PhysicalBlobDenial>;
+    fn seek(&mut self, byte_offset: u64) -> Result<(), PhysicalBlobDenial>;
+}
+trait BlobByteSink {
+    fn write(&mut self, bytes: &[u8]) -> Result<(), PhysicalBlobDenial>;
+}
+
+// Phase 2 API illustration only: a 4 MiB source fits this 1 MiB window,
+// but certification uses >6 MiB so full materialization exceeds W + 5 MiB.
+fn ingest_and_read(
+    store: &ServingPhysicalRuntime,
+    scope: AdmittedBlobScope,
+    limit: BlobCheckpointLimit,
+    source: &mut impl BlobFrameSource,
+    sink: &mut impl BlobByteSink,
+) -> Result<(), PhysicalBlobDenial> {
+    let blobs = store.blobs()?;
+    let window = BlobStreamingWindow::bounded(1 << 20)?;
+    let object = blobs.issue_object_id()?; // opaque physical ID, not semantic identity
     let declaration = BlobIngestDeclaration::new(
-        BlobObjectId::fresh(), BlobChunkSize::KIB_256, source.declared_bytes())?;
+        object, BlobChunkSize::from_bytes(256 << 10)?,
+        source.declared_bytes(), scope, limit,
+    )?;
     let mut ingest = blobs.begin_ingest(declaration, window)?;
-    while let Some(frame) = source.next_frame(window)? {     // frame <= window, never whole object
-        ingest.push_frame(frame)?;                            // one chunk record per full chunk
+    // begin_ingest has already root-published the durable session declaration.
+    while let Some(frame) = source.next_frame(window.bytes())? {
+        ingest.push_frame(frame)?; // arbitrary source frames split across chunk boundaries
     }
     let published = match ingest.finish()? {
         BlobIngestOutcome::Published(generation) => generation,
-        BlobIngestOutcome::Resumable(token) => return Err(PhysicalBlobDenial::Interrupted(token)),
+        BlobIngestOutcome::RetainedUnfinished(session) =>
+            return Err(PhysicalBlobDenial::RetainedUnfinished(session)),
     };
 
-    let mut read = blobs.read(published.generation(), BlobReadRange::bytes(1 << 30, 3 << 20)?, window)?;
-    while let Some(chunk) = read.next_chunk()? {              // protected, verified, bounded
-        consume(chunk.bytes());
+    let mut read = blobs.read(
+        object, published.generation(), BlobReadRange::bytes(1 << 20, 1 << 20)?, window,
+    )?;
+    while let Some(chunk) = read.next_chunk()? {
+        sink.write(chunk.bytes())?;
     }
-    let receipt = read.finish();                              // exact chunk/byte/node counters
-    assert_eq!(receipt.chunks_read(), 12);                    // 3 MiB at a chunk-aligned offset / 256 KiB
+    let receipt = read.finish();
+    assert_eq!(receipt.chunks_read(), 4);
     Ok(())
 }
 
-fn resume(store: &ServingPhysicalRuntime, token: BlobResumeToken, source: impl BlobFrameSource)
+// Phase 3: this API does not exist in the Phase 2 MVP.
+fn resume(store: &ServingPhysicalRuntime, token: BlobResumeToken, source: &mut impl BlobFrameSource)
     -> Result<PublishedBlobGeneration, PhysicalBlobDenial> {
     let blobs = store.blobs()?;
-    let mut ingest = blobs.resume_ingest(token, BlobStreamingWindow::bounded(64 << 20)?)?;
+    let mut ingest = blobs.resume_ingest(token, BlobStreamingWindow::bounded(1 << 20)?)?;
     source.seek(ingest.frontier().bytes())?;
-    while let Some(frame) = source.next_frame(ingest.window())? { ingest.push_frame(frame)?; }
+    while let Some(frame) = source.next_frame(ingest.window().bytes())? {
+        ingest.push_frame(frame)?;
+    }
     ingest.finish()?.published().ok_or(PhysicalBlobDenial::StillResumable)
 }
 
+// Phase 6: published-generation release still requires an admitted proof.
 fn reclaim(store: &ServingPhysicalRuntime, proof: AdmittedBlobReleaseProof)
     -> Result<BlobReclaimReceipt, PhysicalBlobDenial> {
     store.blobs()?.reclaim(BlobReclaimRequest::released(proof))?.wait()
@@ -704,19 +850,32 @@ crates; none of them imports `worth-store`; `worth-store-recovery-runtime`,
 
 ## Cost Contracts
 
+The single Phase 2 ingest residency ceiling is `W + 5 MiB`, where `W` is
+the admitted source window (at most 64 MiB). The 5 MiB allowance includes
+one encoded chunk frame (at most 1 MiB), one pending canonical-redo copy
+(at most 1 MiB), one writeback buffer (at most 1 MiB), two encoded tree
+nodes (at most 512 KiB each), one publication frame (at most 64 KiB), one
+retained scheduler head (at most 64 KiB), and remaining bounded digest and
+bookkeeping scratch. The format codecs and producer enforce each component
+maximum before effect; the allocation and process-level high-water probe
+charge simultaneously live buffers, including a caller-supplied source
+frame. No full-blob `Vec`, batch, or uncharged frame clone is permitted.
+If a later format exceeds a component maximum, its phase must revise the
+contract and proof before admitting it.
+
 | Path | Ordinary cost | Ceiling and scale axis |
 | --- | --- | --- |
-| Blob ingest | One chunk record write per chunk, one leaf write per 4096 chunks, one WAL frontier per admitted interval (default every 64 chunks), one root publication | Resident bytes <= window + 2 node frames + 1 frame buffer; arena files = ceil(bytes / arena capacity) + 1, independent of chunk count |
+| Blob ingest | One durable declaration before the first chunk; one C.5 chunk-record append/root progression per newly written chunk; one leaf write per 4096 chunks; one blob-generation publication. Phase 3 adds one frontier transition per admitted interval (default every 64 chunks). | Peak charged resident bytes <= `W + 5 MiB` by the component accounting above; arena files = ceil(bytes / arena capacity) + 1, independent of chunk count. "One blob-generation publication" never means one physical-root update for the entire ingest. |
 | Extent allocation | Best-fit lookup in the published free map, or append to the filling arena | O(log free runs); no media read; free runs per arena bounded by the evacuation threshold |
 | Blob range read | Node path (height <= 3 for 2^36 chunks) plus chunks touched | Read amplification <= 1 chunk per side; resident <= window |
 | Dedupe hit | 1 B-tree probe plus 1 bounded byte comparison on first reuse | No whole-object comparison; comparison window = chunk size |
-| Publication | 1 WAL payload + root member | Payload bytes <= 1 KiB |
-| Catalog/dedupe rebuild | Bounded scan of publication and resume records | Pages touched = records / entries per page; resident <= rebuild allocation |
+| Publication | 1 typed semantic WAL member + root member, with physical frame bytes separately bounded | Semantic descriptor <= 1 KiB; do not apply this cap to the whole canonical redo |
+| Catalog/dedupe rebuild | Bounded traversal of selected publications, sessions, occurrence claims, verified tree edges and admitted holds | Record/node visits and pages touched measured from the full authority closure; resident <= rebuild allocation |
 | B-tree point | Height page touches | Height <= 4 for 2^32 entries at fanout >= 256 |
 | B-tree range | Height + leaves spanned | Budgeted by caller; envelope violation is denial |
 | LSM point | Memtable probe + 1 probe per run in membership | Runs per level bounded by compaction policy |
 | Reclaim | 1 drop publication per batch + retirement per displaced extent | Batch <= 1024 records; retained bytes fall by dropped bytes after retirement |
-| Reachability | One pass over publication and resume records plus holds | Resident <= verification allocation; never loads chunk bytes |
+| Reachability | One bounded pass over selected publication/session records, occurrence claims, authoritative tree nodes and admitted holds | Resident <= verification allocation; never loads chunk bytes merely to infer liveness |
 
 Every ceiling is an assertion in the matrix, measured from real observations,
 never from planned envelopes alone.
@@ -739,7 +898,10 @@ length, generation) placement in root routing, published free-range truth,
 copy-on-write best-fit allocation fenced by C.10 protection, range release
 through the existing retirement protocol, recovery redo for release, the
 offline overlap and accounting walk, and arena evacuation through
-`rewrite_selected_extent_record` with whole-arena retirement. The C.10 extent
+`prepare_arena_evacuation`, `advance_extent_copy`, and
+`prepare_completed_extent_copy` with ordinary WAL/root publication and
+whole-arena retirement. Evacuation must remain bounded for extents larger
+than the non-streaming selected-record rewrite ceiling. The C.10 extent
 rewrite, retirement, reopen-recharge and crash tests keep passing unchanged
 in intent, with their file-existence assertions rewritten as range and
 route assertions.
@@ -755,40 +917,58 @@ range fails the offline overlap check.
 ### Phase 2: Dependency inversion and the first native blob — the working MVP
 
 Invert the crate direction (D8), install `blob_record` frames, the
-`BlobChunkFrame`/`BlobTreeNode`/`BlobGenerationPublication` families with
-their C.9 declarations and validators, the Store `BlobIngestSession` over
-`PhysicalRecordSubmission`, the generation publication payload, and the
-`BlobReadSession` over protected reads. No registry, dedupe, resume,
-reclaim or index yet; the catalog lookup for this phase is a bounded scan of
-publication records admitted as the `Rebuild` lane shape, and it is replaced
-in Phase 4. `CapabilityAvailability::Present` (D12) lands here together with
-`blobs()`, so the capability status and the accessor become real in the same
-change; `layouts()` and Layout `Present` land together in Phase 4.
+`BlobResumeSession::Declared`/`BlobChunkFrame`/`BlobTreeNode`/
+`BlobGenerationPublication` families with their C.9 declarations and
+validators, and the v6 typed recovery transition with v5 read admission.
+The Store-issued session declaration is root-published before any chunk;
+each new chunk has its distinct authenticated occurrence claim. Install the
+real `BlobIngestPressure` producer and bounded retained head together with
+the Store `BlobIngestSession` over `PhysicalRecordSubmission`, generation
+publication through the existing C.8 owner, and `BlobReadSession` over
+protected reads. No registry, dedupe, resume, reclaim or index yet; the
+catalog lookup for this phase is a bounded scan of publication records
+admitted as the `Rebuild` lane shape, replaced in Phase 4.
+`CapabilityAvailability::Present` (D12) lands here together with
+`blobs()`, so status and accessor become real in the same change;
+`layouts()` and Layout `Present` land together in Phase 4.
 
-Closeout gate: a blob of 4 x the window ingests through the production path
-with measured resident bytes under the ceiling, publishes exactly once,
+Closeout gate: a blob of at least 4 x the window and strictly larger than
+`W + 5 MiB` ingests through the production path with measured resident bytes
+under the ceiling; the injected whole-object materialization breaches the
+same measured bound. It publishes exactly once,
 survives a fresh-process reopen, and streams a range byte-exact with
 counters equal to observed I/O; the whole-object substitutions are typed or
 compile-time denials; the three cycle-removal proofs hold (no `cargo tree` path, no `worth_store::` import in
 `worth-store-blob-chunks`, boundary-check
 DAG snapshot) and every file in the cycle-removal table has its disposition;
-the offline observer walks the new families without runtime APIs. Proof obligation:
-the controlled defect of hiding a full materialization fails the residency
-predicate.
+the offline observer walks the new families without runtime APIs. Kill after
+declaration publication and after a claimed chunk but before generation,
+then require fresh C.8 reopen plus independent observer to identify retained
+unfinished custody without an invented orphan or published blob. Kill after
+generation WAL durability but before root publication and require exact
+once-only redo; v5 projection readmission and v6/SourceCopy coexistence stay
+valid. Proof obligation: hiding a full materialization fails the residency
+predicate, while omitting an occurrence claim despite valid C.5 checksum and
+inner SHA fails offline custody validation.
 
 ### Phase 3: Interrupted ingest, resume, and independent residue reclaim
 
-Add `BlobResumeSession` records and payload, frontier publication, resume
-readmission, session limits, abandonment, and the Store-independent reclaim
-of failed-operation residue through `drop_reclaimed_records` plus existing
-retirement. This phase installs the record-dropping publication because
+Extend Phase 2's durable `BlobResumeSession` declaration with versioned
+frontier and terminal records, resume readmission, checkpoint-sequence
+expiry arbitration, explicit abort and Store-independent reclaim of
+failed-operation residue through `drop_reclaimed_records` plus existing
+retirement. This phase installs record-dropping publication because
 abandoned residue is the first legitimate consumer; published generations
-are never eligible here.
+and shared deduped chunks are never eligible here.
 
-Closeout gate: the writer process is killed at the first four crash seams;
-each reopens to the exact required fate; resumed ingest writes no chunk
-twice; abandoned residue is reclaimed with retained bytes falling and no
-external proof; forged or mismatched tokens are denied.
+Closeout gate: kill distinct writer processes after a selected declaration
+and claimed chunk before frontier, after frontier before the next complete
+chunk, after all chunks with only partial tree nodes, and after the tree root
+before generation publication. Each fresh reopen has the exact declared,
+claimed, frontier or partial-tree fate from the blob seam rows; resumed ingest
+reuses selected records and writes no ordinal twice. Abandoned exclusive
+residue is reclaimed with retained bytes falling and no external proof;
+forged or mismatched tokens are denied.
 
 ### Phase 4: Artifact-family registry and the first derived index
 
@@ -844,8 +1024,8 @@ bounded export/import.
 Closeout gate: LSM point/range equal the model across memtable and runs;
 compaction publishes membership only after runs are durable and retires
 stale runs through retirement; the two LSM crash seams reopen correctly;
-export streams under the window and import produces a generation with the
-same root.
+export streams under the window and import reproduces the portable logical
+digest and bytes while publishing its own Store-local physical tree root.
 
 ### Phase 8: Full matrix, heavy lane, cutover and successor handoff
 
@@ -872,9 +1052,9 @@ docs compile their examples.
 | Offline observer families | After format frames are frozen | Phase 2 closeout |
 | Dependency inversion of `worth-store-blob-chunks` | Immediately | Phase 2 closeout; boundary-check snapshot |
 | Mechanism-crate cleanup (baseline tree, InMemory runtime, fs repair) | After Phase 2 | Phase 4 closeout |
-| Recovery-physics payload kinds | After payload versions are frozen | Phase 3 (resume, reclaim), Phase 7 (LSM) |
+| Recovery-physics payload kinds | After payload versions are frozen | Phase 2 (v6 declaration and generation), Phase 3 (frontier, terminal and reclaim), Phase 7 (LSM) |
 | Writer binary and heavy generator | Immediately | First use in Phase 2 |
-| Scheduler producers | After Phase 2 | Phase 3 (ingest head), Phase 6, Phase 7 |
+| Scheduler producers | Before their effects | Phase 2 (`BlobIngestPressure` and bounded ingest head), Phase 6, Phase 7 |
 
 ## QA Considerations And Verification
 

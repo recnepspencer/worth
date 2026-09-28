@@ -55,8 +55,8 @@ pub(super) fn background_idle_for_held_quantum(
     held: worth_store_io_scheduler::foreground_reservation::ForegroundResourceBudget,
 ) -> worth_store_io_scheduler::BackgroundResourceBudget {
     use worth_store_io_scheduler::{
-        BackgroundResourceBudget, BandwidthToken, FlushPermit, QueueSlot, ReclaimPermit, SyncDebt,
-        WorkerPermit,
+        BackgroundResourceBudget, BandwidthToken, DirtyPageBudget, FlushPermit, QueueSlot,
+        ReclaimPermit, SyncDebt, WorkerPermit, WriteBackWindow,
     };
     let mut idle = BackgroundResourceBudget::new();
     if let Ok(unit) = QueueSlot::new(
@@ -100,6 +100,20 @@ pub(super) fn background_idle_for_held_quantum(
             .saturating_add(held.reclaim_permits()),
     ) {
         idle = idle.with_reclaim_permits(unit);
+    }
+    if let Ok(unit) = WriteBackWindow::pages(
+        available_after_reservation
+            .write_back_window()
+            .saturating_add(held.write_back_window()),
+    ) {
+        idle = idle.with_write_back(unit);
+    }
+    if let Ok(unit) = DirtyPageBudget::pages(
+        available_after_reservation
+            .dirty_page_budget()
+            .saturating_add(held.dirty_page_budget()),
+    ) {
+        idle = idle.with_dirty_pages(unit);
     }
     idle
 }

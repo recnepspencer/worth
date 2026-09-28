@@ -13,6 +13,10 @@ impl<'segment> VerifiedWalFramePayload<'segment> {
         self.payload
     }
 
+    pub const fn encoded_bytes(self) -> u64 {
+        self.encoded_bytes
+    }
+
     pub fn to_owned_verified(self) -> super::VerifiedWalFrame {
         super::VerifiedWalFrame {
             lsn_range: self.lsn_range,

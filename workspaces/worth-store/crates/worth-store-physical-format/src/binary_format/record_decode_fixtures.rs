@@ -77,7 +77,7 @@ fn independent_decode_fixtures_recover_every_phase_one_artifact() {
     let block_bytes = independent_frame(8, 1, &block_payload);
     let block_checksum = durable_artifact_checksum(&block_bytes);
 
-    let mut manifest_payload = vec![0_u8; 320];
+    let mut manifest_payload = vec![0_u8; 336];
     manifest_payload[..8].copy_from_slice(&5_u64.to_le_bytes());
     manifest_payload[8..16].copy_from_slice(&9_u64.to_le_bytes());
     manifest_payload[16..18].copy_from_slice(&2_u16.to_le_bytes());
@@ -102,11 +102,11 @@ fn independent_decode_fixtures_recover_every_phase_one_artifact() {
     manifest_payload[260..264].copy_from_slice(&0x0102_0304_u32.to_le_bytes());
     manifest_payload[264] = 2;
     manifest_payload[272..280].copy_from_slice(&1_u64.to_le_bytes());
-    manifest_payload[280] = 2;
-    manifest_payload[288..296].copy_from_slice(&1_u64.to_le_bytes());
-    manifest_payload[296] = 1;
-    manifest_payload[304..312].copy_from_slice(&1_u64.to_le_bytes());
-    manifest_payload[312..320].copy_from_slice(&1_u64.to_le_bytes());
+    manifest_payload[288] = 2;
+    manifest_payload[296..304].copy_from_slice(&1_u64.to_le_bytes());
+    manifest_payload[312] = 1;
+    manifest_payload[320..328].copy_from_slice(&1_u64.to_le_bytes());
+    manifest_payload[328..336].copy_from_slice(&1_u64.to_le_bytes());
     let manifest_bytes = independent_frame(2, 5, &manifest_payload);
     let manifest = DurablePhysicalRootManifest::decode(&manifest_bytes, 2)
         .unwrap()
@@ -188,7 +188,7 @@ fn inline_page_rejects_checksummed_noncanonical_gap_bytes() {
 }
 
 fn canonical_format_bytes() -> [u8; 10] {
-    [1, 0, 0, 64, 0, 0, 1, 1, 1, 24]
+    [2, 0, 0, 64, 0, 0, 1, 1, 1, 24]
 }
 
 const INDEPENDENT_FRAME_HEADER_BYTES: usize = 48;

@@ -14,7 +14,7 @@ pub enum OfflineIntegrityReportCompleteness {
     Indeterminate,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum OfflineArtifactFamily {
     Declared(PhysicalArtifactFamily),
     Unrecognized,
@@ -130,6 +130,19 @@ impl OfflineIntegrityReport {
         completeness: OfflineIntegrityReportCompleteness,
         artifacts: Vec<OfflineArtifactObservation>,
     ) -> Self {
+        // Reconciliation may discover source uncertainty after acquisition.
+        // Reflect it in completeness without inventing an additional read.
+        let completeness = if completeness == OfflineIntegrityReportCompleteness::Complete
+            && artifacts.iter().any(|artifact| {
+                matches!(
+                    artifact.outcome(),
+                    OfflineIntegrityOutcome::Indeterminate(_)
+                )
+            }) {
+            OfflineIntegrityReportCompleteness::Indeterminate
+        } else {
+            completeness
+        };
         Self {
             protocol_context,
             store_identity,

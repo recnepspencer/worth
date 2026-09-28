@@ -23,6 +23,8 @@ use super::super::{
 };
 
 pub(in crate::physical_runtime::record_serving) struct PreparedRecordPayloadPlan {
+    pub(in crate::physical_runtime::record_serving) arena_reservations:
+        Vec<super::super::arena::ArenaReservation>,
     pub(in crate::physical_runtime::record_serving) source_root: DurablePhysicalRootManifest,
     pub(in crate::physical_runtime::record_serving) manifest_capacity_transition:
         super::super::publication::PhysicalManifestCapacityTransition,
@@ -31,7 +33,7 @@ pub(in crate::physical_runtime::record_serving) struct PreparedRecordPayloadPlan
     pub(in crate::physical_runtime::record_serving) records: Vec<PersistedRecordIdentity>,
     pub(in crate::physical_runtime::record_serving) data: Vec<CandidateDataArtifact>,
     pub(in crate::physical_runtime::record_serving) payload_manifests:
-        Vec<(RecordArtifactFile, Vec<u8>)>,
+        Vec<(worth_store_physical_format::RecordFrameCoordinate, Vec<u8>)>,
     pub(in crate::physical_runtime::record_serving) placements:
         BTreeMap<PersistedRecordIdentity, CurrentPhysicalRecordPlacement>,
     pub(in crate::physical_runtime::record_serving) segment_updates:
@@ -61,6 +63,7 @@ pub(in crate::physical_runtime::record_serving) fn prepare_payload_plan(
         frontier,
         placement,
         residency,
+        arena_owner,
     } = context;
     let mut data = Vec::new();
     let mut payload_manifests = Vec::new();
@@ -81,9 +84,10 @@ pub(in crate::physical_runtime::record_serving) fn prepare_payload_plan(
         },
         classified.inline,
     )?;
-    lower_extents(
+    let arena_reservations = lower_extents(
         format,
         frontier,
+        &arena_owner,
         classified.extents,
         &mut data,
         &mut payload_manifests,
@@ -107,6 +111,7 @@ pub(in crate::physical_runtime::record_serving) fn prepare_payload_plan(
         manifest_bytes_read: 0,
     };
     Ok(PreparedRecordPayloadPlan {
+        arena_reservations,
         source_root: current_root.clone(),
         manifest_capacity_transition:
             super::super::publication::PhysicalManifestCapacityTransition::PreserveCurrent,

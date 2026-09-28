@@ -2,11 +2,11 @@ use std::collections::BTreeMap;
 
 use worth_store_physical_format::{
     CurrentPhysicalRecordPlacement, FreeSpaceKey, PersistedPhysicalRecoveryRootState,
-    RecordAllocationClass, RecordFreeSpaceManifestEntry, RecordSegmentPageManifestEntry,
-    SegmentPageKey,
+    RecordFreeSpaceManifestEntry, RecordSegmentPageManifestEntry, SegmentPageKey,
 };
 
 use super::CandidateBuildDenial;
+mod arenas;
 use crate::progression::{
     RecoveryBaseImageAction, RecoverySegmentRoutingAction, RecoverySelectedSourceInventory,
 };
@@ -18,6 +18,7 @@ pub(super) struct FinalInventory {
     pub(super) next_segment: u64,
     pub(super) next_page: u64,
     pub(super) next_extent: u64,
+    pub(super) next_arena: u64,
     pub(super) capacity: u16,
     pub(super) last_inline_record: Option<worth_store_physical_format::PersistedRecordIdentity>,
     pub(super) last_inline_segment: Option<worth_store_physical_format::SegmentGenerationCell>,
@@ -29,6 +30,8 @@ pub(super) fn finalize(
     updates: &[RecoverySegmentRoutingAction],
     root_states: &[PersistedPhysicalRecoveryRootState],
     selected_capacity: u16,
+    generation: u64,
+    maximum_entries: u64,
 ) -> Result<FinalInventory, CandidateBuildDenial> {
     let capacity = common_capacity(root_states, selected_capacity)?;
     let mut placements = actions
@@ -60,14 +63,10 @@ pub(super) fn finalize(
     for state in root_states {
         for allocation in state.inline_allocations() {
             let segment = allocation.segment();
-            let key = FreeSpaceKey::new(
-                RecordAllocationClass::InlinePage,
-                segment.segment_id().get(),
-            )
-            .ok_or(CandidateBuildDenial::Invalid)?;
+            let key = FreeSpaceKey::inline(segment.segment_id().get())
+                .ok_or(CandidateBuildDenial::Invalid)?;
             if allocation.used_pages() < allocation.page_capacity() {
-                let entry = RecordFreeSpaceManifestEntry::new(
-                    RecordAllocationClass::InlinePage,
+                let entry = RecordFreeSpaceManifestEntry::inline_frontier(
                     segment.segment_id().get(),
                     u64::from(allocation.used_pages() + 1),
                     u64::from(allocation.page_capacity() - allocation.used_pages()),
@@ -83,23 +82,7 @@ pub(super) fn finalize(
     let next_segment = next_segment(source, root_states)?;
     let next_page = next_page(source, &placements)?;
     let next_extent = next_extent(source, &placements)?;
-    let extent_key =
-        FreeSpaceKey::new(RecordAllocationClass::Extent, 1).ok_or(CandidateBuildDenial::Invalid)?;
-    if next_extent < u64::MAX {
-        free.insert(
-            extent_key,
-            RecordFreeSpaceManifestEntry::new(
-                RecordAllocationClass::Extent,
-                1,
-                next_extent,
-                u64::MAX - next_extent,
-                1,
-            )
-            .ok_or(CandidateBuildDenial::Invalid)?,
-        );
-    } else {
-        free.remove(&extent_key);
-    }
+    let next_arena = arenas::subtract(source, actions, generation, maximum_entries, &mut free)?;
     let (last_inline_record, last_inline_segment) = root_states
         .iter()
         .rev()
@@ -114,6 +97,7 @@ pub(super) fn finalize(
         next_segment,
         next_page,
         next_extent,
+        next_arena,
         capacity,
         last_inline_record,
         last_inline_segment,

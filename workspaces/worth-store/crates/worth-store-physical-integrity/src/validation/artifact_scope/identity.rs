@@ -36,6 +36,7 @@ pub(super) enum PhysicalArtifactScopeIdentity {
     ExtentChunk {
         record_format: PhysicalRecordFormatDeclaration,
         coordinate: ExtentChunkCoordinate,
+        arena_range: worth_store_physical_format::ExtentArenaRange,
     },
     WalFrame(WalSegmentIdentity),
     CheckpointStreamHeader(CheckpointStreamHeaderScopeIdentity),

@@ -39,6 +39,27 @@ impl RecordPublicationDirector {
         durable: RootNamespaceDurablePhysicalMutationMembers,
     ) -> PhysicalCurrentRootAdvanceOutcome {
         let outcome = self.root_owner.advance(durable);
+        if let PhysicalCurrentRootAdvanceOutcome::Advanced(completed) = &outcome {
+            for member in completed.settled_members() {
+                if let Some(copy) = member.source_copy_evidence() {
+                    if self
+                        .observe_published_extent_copy(
+                            copy.operation(),
+                            completed.current_root().generation(),
+                            copy.publication_lsn(),
+                        )
+                        .is_err()
+                    {
+                        // The root is already durably published. Preserve that
+                        // fact while revoking further work; the copy obligation
+                        // remains held for inspection rather than disappearing.
+                        if let Some(runtime) = self.runtime.upgrade() {
+                            runtime.health.revoke();
+                        }
+                    }
+                }
+            }
+        }
         if matches!(
             outcome,
             PhysicalCurrentRootAdvanceOutcome::InspectionRequired(_)

@@ -26,8 +26,11 @@ pub(super) fn encode_entry(target: &mut [u8], entry: CurrentPhysicalRecordPlacem
         }
         CurrentPhysicalRecordPlacement::Extent(value) => {
             target[24] = 2;
+            target[32..40].copy_from_slice(&value.arena_range().arena().get().to_le_bytes());
             target[40..48].copy_from_slice(&value.extent().get().to_le_bytes());
             target[48..56].copy_from_slice(&value.extent_generation().to_le_bytes());
+            target[56..64].copy_from_slice(&value.arena_range().offset().to_le_bytes());
+            target[64..72].copy_from_slice(&value.arena_range().length().to_le_bytes());
             target[72..80].copy_from_slice(&value.payload_bytes().to_le_bytes());
         }
     }
@@ -90,7 +93,7 @@ fn decode_extent_entry(
     record: PersistedRecordIdentity,
     authority: PhysicalGenerationAuthority,
 ) -> Result<CurrentPhysicalRecordPlacement, RootManifestDenial> {
-    if bytes[32..40] != [0; 8] || bytes[56..72] != [0; 16] || bytes[80..86] != [0; 6] {
+    if bytes[80..86] != [0; 6] {
         return Err(RootManifestDenial::ReservedFieldNonZero);
     }
     let extent = PhysicalExtentId::from_raw(u64::from_le_bytes(bytes[40..48].try_into().unwrap()))
@@ -101,6 +104,13 @@ fn decode_extent_entry(
             .record_extent_cell(extent)
             .with_extent_generation(generation(bytes, 48)?),
         u64::from_le_bytes(bytes[72..80].try_into().unwrap()),
+        crate::ExtentArenaRange::new(
+            crate::ExtentArenaId::new(u64::from_le_bytes(bytes[32..40].try_into().unwrap()))
+                .ok_or(RootManifestDenial::InvalidPlacement)?,
+            u64::from_le_bytes(bytes[56..64].try_into().unwrap()),
+            u64::from_le_bytes(bytes[64..72].try_into().unwrap()),
+        )
+        .ok_or(RootManifestDenial::InvalidPlacement)?,
     )
     .map(CurrentPhysicalRecordPlacement::Extent)
     .ok_or(RootManifestDenial::InvalidPlacement)

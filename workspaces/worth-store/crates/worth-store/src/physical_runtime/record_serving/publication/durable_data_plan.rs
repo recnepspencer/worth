@@ -58,6 +58,7 @@ pub(in crate::physical_runtime::record_serving) fn materialize_durable_data(
     let requires_maintenance_protocol = payload.source_root.requires_maintenance_protocol();
     let inserted_records = payload.records.len() as u64;
     let root = PreparedPhysicalRootProjection {
+        arena_reservations: payload.arena_reservations,
         root_publication_allocation_bytes,
         source_root: payload.source_root,
         requires_maintenance_protocol,
@@ -145,7 +146,12 @@ fn materialize_extent(
         .ok_or_else(invalid_plan)?;
     let transfer = extent.manifest.chunk_payload_capacity() as usize;
     let mut completed = 0_u64;
-    let mut artifact_offset = 0_u64;
+    let layout = worth_store_physical_format::ExtentArenaFrameLayout::new(
+        format.declaration(),
+        extent.manifest.alignment(),
+    )
+    .ok_or_else(invalid_plan)?;
+    let mut artifact_offset = extent.range.offset() + layout.manifest_stride();
     for ordinal in 1..=extent.manifest.chunk_count() {
         let expected =
             usize::try_from((extent.manifest.logical_bytes() - completed).min(transfer as u64))
@@ -175,6 +181,7 @@ fn materialize_extent(
             extent.artifact,
             artifact_offset,
             length,
+            extent.range,
         )
         .ok_or_else(invalid_plan)?;
         frames.push(
@@ -189,7 +196,7 @@ fn materialize_extent(
         );
         completed = completed.saturating_add(expected as u64);
         artifact_offset = artifact_offset
-            .checked_add(u64::from(length))
+            .checked_add(layout.chunk_stride())
             .ok_or_else(invalid_plan)?;
     }
     reject_trailing_source(&mut *extent.source, completed)?;

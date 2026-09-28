@@ -29,15 +29,27 @@ impl PhysicalArtifactScope {
         record_format: PhysicalRecordFormatDeclaration,
         coordinate: ExtentChunkCoordinate,
         range: PhysicalByteRange,
+        arena_range: worth_store_physical_format::ExtentArenaRange,
     ) -> Self {
         Self::new(
             store,
             PhysicalArtifactScopeIdentity::ExtentChunk {
                 record_format,
                 coordinate,
+                arena_range,
             },
             range,
         )
+    }
+
+    pub const fn extent_arena_range(self) -> Option<worth_store_physical_format::ExtentArenaRange> {
+        match self.identity {
+            PhysicalArtifactScopeIdentity::ExtentManifest { placement, .. } => {
+                Some(placement.arena_range())
+            }
+            PhysicalArtifactScopeIdentity::ExtentChunk { arena_range, .. } => Some(arena_range),
+            _ => None,
+        }
     }
 
     pub const fn extent_manifest_placement(self) -> Option<DurableExtentRecordPlacement> {
@@ -69,7 +81,7 @@ impl PhysicalArtifactScope {
     }
 
     pub(crate) fn exact_extent_scope_digest(self) -> u32 {
-        let mut bytes = [0_u8; 103];
+        let mut bytes = [0_u8; 127];
         bytes[..16].copy_from_slice(&self.store.bytes());
         bytes[16] = if self.is_extent_manifest() {
             1
@@ -103,7 +115,16 @@ impl PhysicalArtifactScope {
             }
             _ => unreachable!("extent-family predicate was checked above"),
         };
-        durable_artifact_checksum(&bytes[..preimage_length])
+        let arena = self
+            .extent_arena_range()
+            .expect("extent scope carries arena range");
+        bytes[preimage_length..preimage_length + 8]
+            .copy_from_slice(&arena.arena().get().to_le_bytes());
+        bytes[preimage_length + 8..preimage_length + 16]
+            .copy_from_slice(&arena.offset().to_le_bytes());
+        bytes[preimage_length + 16..preimage_length + 24]
+            .copy_from_slice(&arena.length().to_le_bytes());
+        durable_artifact_checksum(&bytes[..preimage_length + 24])
     }
 }
 
@@ -177,6 +198,7 @@ mod tests {
                 baseline.record_format(),
                 baseline.extent_chunk_coordinate().unwrap(),
                 baseline.byte_range(),
+                baseline.extent_arena_range().unwrap(),
             ),
             chunk_scope(
                 format(PhysicalPageSizeClass::KiB32),
@@ -223,7 +245,7 @@ mod tests {
         coordinate: ExtentChunkCoordinate,
         range: PhysicalByteRange,
     ) -> PhysicalArtifactScope {
-        PhysicalArtifactScope::extent_chunk(store(7), format, coordinate, range)
+        PhysicalArtifactScope::extent_chunk(store(7), format, coordinate, range, arena_range())
     }
 
     fn chunk_variant(
@@ -246,7 +268,16 @@ mod tests {
         extent: RecordExtentGenerationCell,
         payload_bytes: u64,
     ) -> DurableExtentRecordPlacement {
-        DurableExtentRecordPlacement::new(record, extent, payload_bytes).unwrap()
+        DurableExtentRecordPlacement::new(record, extent, payload_bytes, arena_range()).unwrap()
+    }
+
+    fn arena_range() -> worth_store_physical_format::ExtentArenaRange {
+        worth_store_physical_format::ExtentArenaRange::new(
+            worth_store_physical_format::ExtentArenaId::new(1).unwrap(),
+            8192,
+            36864,
+        )
+        .unwrap()
     }
 
     fn coordinate(

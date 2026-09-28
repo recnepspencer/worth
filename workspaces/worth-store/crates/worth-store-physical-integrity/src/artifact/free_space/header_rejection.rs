@@ -21,10 +21,13 @@ impl HeaderField {
     const NEXT_EXTENT: DurableFrameFieldRange = DurableFrameFieldRange::new(96, 8);
     const NEXT_BLOCK: DurableFrameFieldRange = DurableFrameFieldRange::new(104, 8);
     const ROOT_PRESENCE: DurableFrameFieldRange = DurableFrameFieldRange::new(112, 1);
-    pub(super) const ROOT_REFERENCE: DurableFrameFieldRange = DurableFrameFieldRange::new(112, 64);
+    pub(super) const ROOT_REFERENCE: DurableFrameFieldRange = DurableFrameFieldRange::new(112, 80);
     const RESERVED_PREFIX: DurableFrameFieldRange = DurableFrameFieldRange::new(70, 2);
     const RESERVED_ROOT: DurableFrameFieldRange = DurableFrameFieldRange::new(113, 7);
-    const ABSENT_ROOT_REFERENCE: DurableFrameFieldRange = DurableFrameFieldRange::new(120, 56);
+    const ABSENT_ROOT_REFERENCE: DurableFrameFieldRange = DurableFrameFieldRange::new(120, 72);
+    const NEXT_ARENA: DurableFrameFieldRange = DurableFrameFieldRange::new(192, 8);
+    const ARENA_CAPACITY: DurableFrameFieldRange = DurableFrameFieldRange::new(200, 8);
+    const ARENA_ALIGNMENT: DurableFrameFieldRange = DurableFrameFieldRange::new(208, 8);
 }
 
 pub(super) fn free_space_header_denial(
@@ -48,7 +51,7 @@ pub(super) fn free_space_header_denial(
 }
 
 fn malformed_header(scope: PhysicalArtifactScope, bytes: &[u8]) -> PhysicalIntegrityRejection {
-    if bytes.len() != 176 {
+    if bytes.len() != 216 {
         return field_damage(
             scope,
             PhysicalDamageCause::FramingLengthMismatch,
@@ -74,6 +77,24 @@ fn malformed_header(scope: PhysicalArtifactScope, bytes: &[u8]) -> PhysicalInteg
     }
     if let Some(rejection) = required_header_field_damage(scope, bytes) {
         return rejection;
+    }
+    let alignment = read_u64(bytes, HeaderField::ARENA_ALIGNMENT);
+    let capacity = read_u64(bytes, HeaderField::ARENA_CAPACITY);
+    let invalid_geometry = if !alignment.is_power_of_two() {
+        Some(HeaderField::ARENA_ALIGNMENT)
+    } else if capacity == 0 || !capacity.is_multiple_of(alignment) {
+        Some(HeaderField::ARENA_CAPACITY)
+    } else {
+        None
+    };
+    if let Some(field) = invalid_geometry {
+        return field_damage(
+            scope,
+            PhysicalDamageCause::MalformedStructure,
+            field,
+            PhysicalFormatField::Payload,
+            PhysicalBlastRadius::CompleteArtifact,
+        );
     }
     header_shape_damage(scope, bytes)
 }
@@ -105,6 +126,10 @@ fn required_header_field_damage(
     bytes: &[u8],
 ) -> Option<PhysicalIntegrityRejection> {
     let required_nonzero = [
+        (
+            HeaderField::NEXT_ARENA,
+            PhysicalFormatField::AllocationFrontier,
+        ),
         (
             HeaderField::GENERATION,
             PhysicalFormatField::PhysicalGeneration,
@@ -204,7 +229,7 @@ fn header_identity_or_capacity(
     scope: PhysicalArtifactScope,
     bytes: &[u8],
 ) -> PhysicalIntegrityRejection {
-    if bytes.len() == 176 {
+    if bytes.len() == 216 {
         if let Some(rejection) = header_scope_identity_damage(scope, bytes) {
             return rejection;
         }

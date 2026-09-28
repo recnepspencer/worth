@@ -117,10 +117,11 @@ impl RecordReadPartition {
             | RecordArtifactFile::CatalogCandidate { .. }
             | RecordArtifactFile::RootManifest { .. }
             | RecordArtifactFile::RootRoutingBlock { .. } => Self::Root,
-            RecordArtifactFile::Segment { .. } | RecordArtifactFile::Extent { .. } => Self::Frame,
+            RecordArtifactFile::Segment { .. } | RecordArtifactFile::ExtentArena { .. } => {
+                Self::Frame
+            }
             RecordArtifactFile::SegmentManifest { .. }
             | RecordArtifactFile::SegmentMembershipBlock { .. }
-            | RecordArtifactFile::ExtentManifest { .. }
             | RecordArtifactFile::FreeSpaceManifest { .. }
             | RecordArtifactFile::FreeSpaceMembershipBlock { .. } => Self::Artifact,
         }
@@ -229,10 +230,7 @@ mod tests {
             RecordReadPartition::Artifact
         );
         assert_eq!(
-            RecordReadPartition::for_range(RecordArtifactFile::Extent {
-                extent: 9,
-                generation: 3,
-            }),
+            RecordReadPartition::for_range(RecordArtifactFile::ExtentArena { arena: 9 }),
             RecordReadPartition::Frame
         );
     }

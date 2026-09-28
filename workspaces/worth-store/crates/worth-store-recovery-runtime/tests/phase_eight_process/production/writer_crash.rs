@@ -44,7 +44,7 @@ const MUTATION_CRASH_SCENARIOS: [(&str, u64, u64); 7] = [
     ("after-group-seal", 0xC8_09_00_02, 0xC8_19_00_02),
     ("after-wal-durability", 0xC8_09_00_03, 0xC8_19_00_03),
     (
-        "after-writeback-admission-before-effect",
+        "after-arena-write-admission-before-effect",
         0xC8_09_00_04,
         0xC8_19_00_04,
     ),
@@ -58,9 +58,6 @@ const MUTATION_CRASH_SCENARIOS: [(&str, u64, u64); 7] = [
 fn killed_writer_recovers_after_each_mutation_effect_boundary() {
     for (stage, schedule_seed, perturbation_seed) in MUTATION_CRASH_SCENARIOS {
         assert_ne!(schedule_seed, perturbation_seed);
-        eprintln!(
-            "C8 mutation crash stage={stage} schedule={schedule_seed} perturbation={perturbation_seed}"
-        );
         let world = ProcessWorld::start_mutation_crash(
             stage,
             MutationCrashWorkload::ExtentWriteback,
@@ -218,10 +215,16 @@ fn hostile_successor_candidates_block_before_recovery_effects() {
             !output.status.success(),
             "blocked recovery must not report success"
         );
-        let report = RecoveryReportEnvelope::decode(
-            &std::fs::read(report_path).expect("read hostile recovery report"),
-        )
-        .expect("decode hostile recovery report");
+        let report_bytes = std::fs::read(&report_path).unwrap_or_else(|error| {
+            panic!(
+                "read hostile recovery report for {hostile}: {error}; child status={}; stdout={}; stderr={}",
+                output.status,
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr),
+            )
+        });
+        let report =
+            RecoveryReportEnvelope::decode(&report_bytes).expect("decode hostile recovery report");
         assert_eq!(report.outcome(), RecoveryReportOutcome::Blocked);
         assert_eq!(report.counters().recovery_effects(), 0);
         let media_after = raw_media_snapshot(&root);

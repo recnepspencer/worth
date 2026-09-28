@@ -38,6 +38,26 @@ impl ServingPhysicalRuntime {
         self.parts.publication.pending_publication_count()
     }
 
+    /// Reports an exact recovered copy hold: either deferred before allocator
+    /// exposure or installed as a private allocator reservation.
+    pub fn certification_holds_recovered_copy_destination(
+        &self,
+        arena: u64,
+        offset: u64,
+        length: u64,
+    ) -> bool {
+        let Some(arena) = worth_store_physical_format::ExtentArenaId::new(arena) else {
+            return false;
+        };
+        let Some(range) = worth_store_physical_format::ExtentArenaRange::new(arena, offset, length)
+        else {
+            return false;
+        };
+        self.parts
+            .publication
+            .certification_holds_recovered_copy_destination(range)
+    }
+
     /// Retained-storage bytes currently charged against the growth ceiling.
     pub fn certification_charged_growth_bytes(&self) -> u64 {
         self.parts.publication.charged_growth_bytes()

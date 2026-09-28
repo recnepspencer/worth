@@ -149,7 +149,7 @@ fn embedded_format_denial(
         .try_into()
         .expect("selector framing fixes the embedded format width");
     let observed_version = u16::from_le_bytes([encoded[0], encoded[1]]);
-    if observed_version != PhysicalRecordFormatVersion::V1 as u16 {
+    if observed_version != PhysicalRecordFormatVersion::V2 as u16 {
         return PhysicalIntegrityRejection::Unsupported(UnsupportedPhysicalIntegrityVersion::new(
             scope,
             PhysicalIntegrityVersionAxis::PhysicalFormat,

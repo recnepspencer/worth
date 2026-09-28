@@ -45,7 +45,17 @@ impl RootPublicationPlanningMembers {
         let mut projections = Vec::with_capacity(settled_members.len());
         for settled_member in settled_members.into_vec() {
             let (settled_basis, mut projection) = settled_member.into_root_publication_parts();
-            projection.settle_data_observation(settled_basis.data_effects().len());
+            let transfer_count = settled_basis.source_copy_evidence().map_or_else(
+                || u64::try_from(settled_basis.data_effects().len()).unwrap_or(u64::MAX),
+                |copy| {
+                    u64::from(
+                        copy.frame_writes()
+                            .checked_sub(1)
+                            .expect("validated source copy writes include its manifest"),
+                    )
+                },
+            );
+            projection.settle_data_observation(transfer_count);
             let completion = projection.completion_projection();
             members.push(RootPublicationPhysicalMutationMember::new(
                 settled_basis,

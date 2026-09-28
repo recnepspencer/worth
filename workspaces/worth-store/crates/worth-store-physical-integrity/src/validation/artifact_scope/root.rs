@@ -163,7 +163,7 @@ mod tests {
 
         assert_eq!(
             baseline.selector_or_manifest_exact_scope_digest(),
-            1_585_574_697
+            110_561_591
         );
         assert_ne!(
             baseline.selector_or_manifest_exact_scope_digest(),

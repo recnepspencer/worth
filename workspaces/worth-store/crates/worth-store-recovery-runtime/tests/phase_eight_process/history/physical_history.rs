@@ -112,6 +112,21 @@ impl ParentPhysicalHistory {
         self.publication_artifact_set_digest != before.publication_artifact_set_digest
     }
 
+    pub(crate) fn root_candidate_materialized_from(&self, before: &Self) -> bool {
+        self.artifacts.iter().any(|(path, bytes, digest)| {
+            path.starts_with("staging/records/root-current-")
+                && path.ends_with(".candidate")
+                && *bytes > 0
+                && before
+                    .artifacts
+                    .iter()
+                    .find(|(candidate, _, _)| candidate == path)
+                    .is_none_or(|(_, old_bytes, old_digest)| {
+                        old_bytes != bytes || old_digest != digest
+                    })
+        })
+    }
+
     pub(crate) fn changed_paths_from(&self, before: &Self) -> Vec<String> {
         let mut paths = std::collections::BTreeSet::new();
         for (path, bytes, digest) in self.artifacts.iter() {

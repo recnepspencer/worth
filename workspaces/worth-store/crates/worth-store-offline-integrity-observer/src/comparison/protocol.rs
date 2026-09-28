@@ -217,6 +217,7 @@ pub(super) fn family(value: &str) -> Option<worth_foundational::PhysicalArtifact
         "page_frame" => PageFrame,
         "extent_manifest" => ExtentManifest,
         "extent_chunk_frame" => ExtentChunkFrame,
+        "extent_arena_frame" => ExtentArenaFrame,
         "free_space_header" => FreeSpaceHeader,
         "free_space_membership_block" => FreeSpaceMembershipBlock,
         "wal_frame" => WalFrame,

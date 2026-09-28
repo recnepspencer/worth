@@ -62,4 +62,10 @@ impl PreparedPhysicalRootCandidate {
             observation,
         )
     }
+
+    pub(in crate::physical_runtime) fn commit_arena_reservations(&mut self) {
+        for reservation in std::mem::take(&mut self.plan.arena_reservations) {
+            reservation.publish();
+        }
+    }
 }

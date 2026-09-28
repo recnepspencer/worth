@@ -58,12 +58,12 @@ fn held_readers_block_retirement_without_scanning_every_root() {
     );
     let extent = append(&serving, policy, ordinal, &[0x5A; 20_000]);
     assert!(
-        root.join("families/records/extents")
+        root.join("families/records/arenas")
             .read_dir()
             .unwrap()
             .next()
             .is_some(),
-        "the large record must land in an extent"
+        "the large record must land in an arena"
     );
     assert!(segment_ids(&root).len() >= 8);
     assert!(payload >= 32 * 64 * 1024);

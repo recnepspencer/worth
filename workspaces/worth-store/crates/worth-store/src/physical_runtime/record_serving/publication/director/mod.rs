@@ -13,11 +13,18 @@ use super::super::{
     RecordPublicationResidueObservation,
 };
 
+mod arena_allocation;
+mod arena_evacuation;
+mod arena_evacuation_producer;
+mod arena_retirement;
 mod artifact_scope;
+#[cfg(feature = "certification-test-authority")]
+mod certification_hooks;
 #[cfg(feature = "certification-test-authority")]
 mod certification_submission;
 mod durable_data;
 mod durable_preparation;
+pub(in crate::physical_runtime) mod extent_copy;
 mod extent_record_rewrite;
 mod group_wal_planning;
 mod lifecycle;
@@ -25,6 +32,9 @@ mod managed_mutation;
 mod pre_seal_cancellation;
 mod record_append_fingerprint;
 mod retirement;
+mod retirement_release;
+pub(in crate::physical_runtime::record_serving) use arena_evacuation::ArenaEvacuationSelection;
+pub use arena_evacuation_producer::PhysicalArenaEvacuationPreparationOutcome;
 mod rewrite_anchor;
 mod rewrite_pages;
 mod rewrite_source_liveness;
@@ -61,6 +71,10 @@ pub(in crate::physical_runtime) struct RecordPublicationDirector {
     residue: RecordPublicationResidueObservation,
     preparation: Mutex<RecordPreparationState>,
     retirement_owner: Mutex<()>,
+    retirement_release: Mutex<Option<retirement_release::PendingRetirementRelease>>,
+    arena_evacuation: Mutex<Option<arena_evacuation::ArenaEvacuationProgress>>,
+    extent_copy: Mutex<Option<extent_copy::ExtentCopySession>>,
+    copy_obligation: Mutex<Option<extent_copy::SharedCopyObligation>>,
     mutations: Arc<crate::physical_runtime::PhysicalMutationRuntimeOwner>,
     #[cfg(feature = "certification-test-authority")]
     retirement_intent_gate: retirement::RetirementIntentGate,
@@ -111,7 +125,7 @@ pub(in crate::physical_runtime) struct RecordPublicationFoundation {
         Vec<crate::physical_runtime::durability::DisplacedArtifact>,
     pub(in crate::physical_runtime) unresolved_retirements:
         Vec<crate::physical_runtime::durability::RetirementRecord>,
-    pub(in crate::physical_runtime) publication_overheads: Vec<u64>,
+    pub(in crate::physical_runtime) publication_overheads: Vec<(u64, u64)>,
     pub(in crate::physical_runtime) free_space: DurableFreeSpaceManifestHeader,
     pub(in crate::physical_runtime) allocation_frontier: RecordAllocationFrontier,
     pub(in crate::physical_runtime) residue: RecordPublicationResidueObservation,
@@ -123,6 +137,9 @@ pub(in crate::physical_runtime) struct RecordPublicationFoundation {
 
 struct RecordPreparationState {
     allocation_frontier: RecordAllocationFrontier,
+    arenas: Option<super::super::arena::SharedArenaAllocationOwner>,
+    recovered_retiring_arena: Option<worth_store_physical_format::ExtentArenaId>,
+    recovered_copy_destination: Option<extent_copy::SharedCopyDestination>,
 }
 
 impl RecordPublicationDirector {
@@ -134,6 +151,9 @@ impl RecordPublicationDirector {
     ) -> Arc<Self> {
         let writeback = mutation.frame_writeback_port(foundation.frame_ports.clone());
         let displaced = foundation.displaced_artifacts.clone();
+        let unresolved_retirements = foundation.unresolved_retirements.clone();
+        let bootstrap_frame_ports = foundation.frame_ports.clone();
+        let bootstrap_lifecycle = Arc::clone(&foundation.lifecycle);
         let root_owner = crate::physical_runtime::durability::PhysicalCurrentRootOwner::new(
             runtime,
             foundation.current_root.clone(),
@@ -155,14 +175,30 @@ impl RecordPublicationDirector {
         // obsolete bytes. Reopen charges unreclaimed WAL, the overhead of each
         // publication whose WAL frame remains, and displaced generations.
         let publications = foundation.wal.reopened_publications();
+        let release_metadata = foundation.wal.reopened_release_metadata();
         let mut retained = foundation
             .publication_overheads
             .iter()
             .rev()
+            .filter(|(generation, _)| {
+                release_metadata
+                    .binary_search_by_key(generation, |(generation, ..)| *generation)
+                    .is_err()
+            })
             .take(usize::try_from(publications).unwrap_or(usize::MAX))
-            .fold(0_u64, |total, bytes| total.saturating_add(*bytes));
+            .fold(0_u64, |total, (_, bytes)| total.saturating_add(*bytes));
+        retained = release_metadata
+            .iter()
+            .fold(retained, |total, (_, bytes, ..)| {
+                total.saturating_add(*bytes)
+            });
         retained = retained.saturating_add(foundation.wal.observation().reopened_bytes());
         root_owner.reconstruct_retained_bytes(retained);
+        for (_, bytes, segment, generation) in release_metadata {
+            root_owner
+                .publication_admission()
+                .note_sealed_publication(segment, generation, bytes);
+        }
         for charge in &displaced {
             root_owner.restore_displaced(charge.source_root, charge.artifact, charge.bytes);
         }
@@ -178,7 +214,7 @@ impl RecordPublicationDirector {
         foundation
             .wal
             .bind_publication_admission(root_owner.publication_admission());
-        Arc::new_cyclic(|director| Self {
+        let director = Arc::new_cyclic(|director| Self {
             runtime: Arc::downgrade(runtime),
             mutation_identity: runtime.submission.mutation_submission(),
             idempotency: foundation.idempotency,
@@ -203,8 +239,15 @@ impl RecordPublicationDirector {
             residue: foundation.residue,
             preparation: Mutex::new(RecordPreparationState {
                 allocation_frontier: foundation.allocation_frontier,
+                arenas: None,
+                recovered_retiring_arena: None,
+                recovered_copy_destination: None,
             }),
             retirement_owner: Mutex::new(()),
+            retirement_release: Mutex::new(None),
+            arena_evacuation: Mutex::new(None),
+            extent_copy: Mutex::new(None),
+            copy_obligation: Mutex::new(None),
             mutations: crate::physical_runtime::PhysicalMutationRuntimeOwner::new(director.clone()),
             #[cfg(feature = "certification-test-authority")]
             retirement_intent_gate: retirement::RetirementIntentGate::new(),
@@ -216,7 +259,25 @@ impl RecordPublicationDirector {
             stop_before_retirement_delete: AtomicBool::new(false),
             #[cfg(feature = "certification-test-authority")]
             stop_after_retirement_delete: AtomicBool::new(false),
-        })
+        });
+        if director
+            .seed_extent_release(&unresolved_retirements)
+            .is_err()
+        {
+            runtime.health.revoke();
+        }
+        if director
+            .seed_extent_copy(
+                &displaced,
+                runtime.executor.record_serving_media(),
+                &bootstrap_frame_ports,
+                bootstrap_lifecycle,
+            )
+            .is_err()
+        {
+            runtime.health.revoke();
+        }
+        director
     }
 
     pub(in crate::physical_runtime) fn submission(
@@ -282,87 +343,10 @@ impl RecordPublicationDirector {
         }
     }
 
-    #[cfg(feature = "certification-test-authority")]
-    pub(in crate::physical_runtime) fn charged_growth_bytes(&self) -> u64 {
-        self.root_owner.charged_growth_bytes()
-    }
-
-    #[cfg(feature = "certification-test-authority")]
-    pub(in crate::physical_runtime) fn certification_owe_before_maintenance_barrier(&self) {
-        self.wal.certification_owe_before_maintenance_barrier();
-    }
-
-    #[cfg(feature = "certification-test-authority")]
-    pub(in crate::physical_runtime) fn certification_stop_before_retirement_delete(&self) {
-        self.stop_before_retirement_delete
-            .store(true, std::sync::atomic::Ordering::Relaxed);
-    }
-
-    #[cfg(feature = "certification-test-authority")]
-    pub(in crate::physical_runtime) fn certification_stop_after_retirement_delete(&self) {
-        self.stop_after_retirement_delete
-            .store(true, std::sync::atomic::Ordering::Relaxed);
-    }
-
-    #[cfg(feature = "certification-test-authority")]
-    pub(in crate::physical_runtime) fn certification_public_segment_removal_rejected(
-        &self,
-    ) -> bool {
-        let Some(displaced) = self.root_owner.next_displaced() else {
-            return false;
-        };
-        self.root_work
-            .certification_public_removal_rejected(displaced.artifact.files()[0])
-            .unwrap_or(false)
-    }
-
-    #[cfg(feature = "certification-test-authority")]
-    pub(in crate::physical_runtime) fn pending_publication_count(&self) -> usize {
-        self.root_owner.pending_publication_count()
-    }
-
-    #[cfg(feature = "certification-test-authority")]
-    pub(in crate::physical_runtime) fn limit_candidate_growth_bytes(
-        &self,
-        usable_growth_bytes: u64,
-    ) {
-        let headroom_bytes = 64 * 1024;
-        let profile = crate::physical_runtime::durability::PhysicalRetentionProfile::new(
-            usable_growth_bytes
-                .checked_add(headroom_bytes)
-                .expect("usable growth plus headroom fits u64"),
-            4_096,
-            headroom_bytes,
-            8,
-        )
-        .expect("growth limits withhold nonzero progress headroom");
-        self.root_owner.install_retention_profile(profile);
-    }
-
-    #[cfg(feature = "certification-test-authority")]
-    pub(in crate::physical_runtime) fn planning_snapshot(
-        &self,
-    ) -> (DurablePhysicalRootManifest, DurableFreeSpaceManifestHeader) {
-        self.root_owner.snapshot()
-    }
-
     pub(in crate::physical_runtime) fn pause_mutation_at(
         &self,
         checkpoint: crate::physical_runtime::durability::PhysicalMutationCheckpoint,
     ) -> crate::physical_runtime::durability::PhysicalMutationPauseGate {
-        self.mutations.pause_at(checkpoint)
-    }
-
-    #[cfg(feature = "certification-test-authority")]
-    pub(in crate::physical_runtime) fn fail_next_wal_member_before_effect(&self) {
-        self.wal.fail_next_member_before_effect();
-    }
-
-    #[cfg(feature = "certification-test-authority")]
-    pub(in crate::physical_runtime) fn pause_mutation_at_for_certification(
-        &self,
-        checkpoint: crate::physical_runtime::durability::CertificationPhysicalMutationCheckpoint,
-    ) -> crate::physical_runtime::durability::CertificationPhysicalMutationPauseGate {
         self.mutations.pause_at(checkpoint)
     }
 }

@@ -24,6 +24,8 @@ impl DispatchedPhysicalWork {
             return false;
         }
         match physical.disposition() {
+            worth_store_physical_backend::RecoveryStagingWriteDisposition::RangeWritten => physical
+                .range_written().is_some_and(|written| self.matches_write(written)),
             worth_store_physical_backend::RecoveryStagingWriteDisposition::Created => physical
                 .created()
                 .is_some_and(|created| self.matches_new_artifact_binding(created, coordinate)),
@@ -52,6 +54,9 @@ impl DispatchedPhysicalWork {
                 return false;
             }
             match physical.evidence() {
+                RecoveryStagingIndeterminatePhysical::Range(written) => {
+                    self.matches_indeterminate(*written)
+                }
                 RecoveryStagingIndeterminatePhysical::NewArtifact(new_artifact) => {
                     self.matches_new_artifact_indeterminate_binding(new_artifact, coordinate)
                 }

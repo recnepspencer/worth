@@ -2,10 +2,12 @@ mod admission;
 mod profile;
 mod retired_artifact;
 mod retirement;
+mod retirement_release;
+pub use retirement_release::RetirementReleaseProjection;
 
 pub(in crate::physical_runtime) use admission::{
     CandidateGrowthLease, DisplacedArtifact, GarbageClaim, PendingPublicationLease,
-    PhysicalPublicationAdmission, PhysicalPublicationAdmissionDenial,
+    PhysicalPublicationAdmission, PhysicalPublicationAdmissionDenial, RetainedByteLease,
 };
 pub(in crate::physical_runtime) use profile::PhysicalRetentionProfile;
 pub(in crate::physical_runtime) use retired_artifact::RetiredArtifact;

@@ -30,14 +30,16 @@ fn streamed_read_damage_retains_the_completed_logical_range() {
             .build()
             .unwrap(),
     );
-    let path = root.join("families/records/extents/extent-0000000000000001-0000000000000001.data");
+    let path = root.join("families/records/arenas/arena-0000000000000001.data");
+    let arena = std::fs::read(&path).unwrap();
+    let second_chunk = super::super::durable_frame_oracle::first_arena_chunk_offset(&arena, 1);
     let mut file = std::fs::OpenOptions::new().write(true).open(path).unwrap();
     const EXTENT_METADATA_BYTES: usize = 64;
     const EXTENT_PAYLOAD_CAPACITY: usize =
         16_384 - super::super::durable_frame_oracle::HEADER_BYTES - EXTENT_METADATA_BYTES;
     file.seek(SeekFrom::Start(
-        (16_384 + super::super::durable_frame_oracle::HEADER_BYTES + EXTENT_METADATA_BYTES + 8)
-            as u64,
+        second_chunk
+            + (super::super::durable_frame_oracle::HEADER_BYTES + EXTENT_METADATA_BYTES + 8) as u64,
     ))
     .unwrap();
     file.write_all(&[0xa5]).unwrap();

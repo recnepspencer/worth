@@ -75,11 +75,11 @@ const fn expected_background_work_class(
     class: crate::BackgroundIoPressureClass,
 ) -> FoundationalPerformanceWorkClass {
     match class {
-        crate::BackgroundIoPressureClass::CheckpointFlush => {
+        crate::BackgroundIoPressureClass::CheckpointFlush
+        | crate::BackgroundIoPressureClass::CompactionRewrite => {
             FoundationalPerformanceWorkClass::AuthoritativeMutation
         }
-        crate::BackgroundIoPressureClass::CompactionRewrite
-        | crate::BackgroundIoPressureClass::ScrubScan
+        crate::BackgroundIoPressureClass::ScrubScan
         | crate::BackgroundIoPressureClass::ReplicationPrepRead
         | crate::BackgroundIoPressureClass::IngestPressure
         | crate::BackgroundIoPressureClass::MigrationPressure
@@ -100,6 +100,10 @@ mod tests {
     fn checkpoint_is_authoritative_mutation_not_validation_planning() {
         assert_eq!(
             expected_background_work_class(BackgroundIoPressureClass::CheckpointFlush),
+            FoundationalPerformanceWorkClass::AuthoritativeMutation
+        );
+        assert_eq!(
+            expected_background_work_class(BackgroundIoPressureClass::CompactionRewrite),
             FoundationalPerformanceWorkClass::AuthoritativeMutation
         );
         assert_eq!(

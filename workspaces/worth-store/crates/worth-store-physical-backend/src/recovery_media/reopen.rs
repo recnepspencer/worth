@@ -9,9 +9,11 @@ use crate::{
 };
 
 use super::AdmittedRecoveryFilesystemMedia;
+mod range;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CompletedScheduledRecoveryReopenRead {
+    store: worth_store_physical_format::store_namespace::StableStoreIdentity,
     artifact: RecordArtifactFile,
     bytes: Box<[u8]>,
     physical: CompletedArtifactRangeRead,
@@ -79,6 +81,7 @@ impl AdmittedRecoveryFilesystemMedia {
         match result {
             ArtifactRangeReadOutcome::Completed(physical) => {
                 RecoveryReopenReadOutcome::Completed(CompletedScheduledRecoveryReopenRead {
+                    store: self.parts.store_identity,
                     artifact,
                     bytes: bytes.into_boxed_slice(),
                     physical,
@@ -97,6 +100,15 @@ impl AdmittedRecoveryFilesystemMedia {
 }
 
 impl CompletedScheduledRecoveryReopenRead {
+    /// Preserve backend read provenance for the recovery integrity ingress.
+    pub fn observed(&self) -> super::ObservedRecoveryArtifact {
+        super::ObservedRecoveryArtifact::new(
+            self.store,
+            super::RecoveryDiscoveryArtifact::Record(self.artifact),
+            self.physical.coordinate().offset(),
+            Some(self.bytes.to_vec()),
+        )
+    }
     pub const fn artifact(&self) -> RecordArtifactFile {
         self.artifact
     }

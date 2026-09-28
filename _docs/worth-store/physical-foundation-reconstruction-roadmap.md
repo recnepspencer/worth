@@ -1528,6 +1528,11 @@ inversion of the S.7/S.8 mechanism crates, the artifact-family registry, the
 proof-consuming reclaim protocol, the crash-seam matrix, and the phase plan
 that reaches a native blob above the residency window before any registry,
 dedupe, LSM or reclaim machinery exists.
+The first chunk is preceded by a durable root-published session declaration;
+authenticated per-record occurrence claims preserve prepublication custody
+after WAL truncation. Phase 3 adds frontier-based resume and independent
+residue reclaim. Chunk-tree roots are Store-local physical layout identity;
+the plaintext logical digest is the portable export/import equality claim.
 
 ### Goal
 
@@ -1556,7 +1561,9 @@ derive or decide them.
 - deterministic index rebuild and corruption fallback whose cost and support
   posture are explicit
 - native content-addressed chunk-tree storage through the same media, WAL/root,
-  integrity, lease, C.5.1 work, scheduling, and recovery boundaries
+  integrity, lease, C.5.1 work, scheduling, and recovery boundaries, with the
+  real bounded `BlobIngestPressure` producer installed in the first native
+  blob phase and v5/v6 recovery-projection readmission
 - constant-memory streaming ingest/read/verify/export/import and interrupted
   ingest recovery
 - collision handling plus physically scoped dedupe, reachability traversal,
@@ -1585,7 +1592,11 @@ derive or decide them.
   roots, reachability, and orphan sets without using runtime access APIs.
 - **Assertions:** input-model byte parity, constant-memory slope, exact access and
   amplification counters, rebuild parity, corruption localization, safe lease
-  preservation, dedupe scope honesty, and no sidecar or whole-object path.
+  preservation, dedupe scope honesty, portable logical-digest parity on
+  cross-Store import, and no sidecar or whole-object path. A selected chunk
+  without its authenticated session/ordinal claim is rejected even with a
+  valid inner content digest; Phase 2 replay preserves v5 SourceCopy and
+  applies v6 declaration/generation transitions through the existing owner.
 - **Controlled defect:** hide a full blob materialization and separately accept
   a corrupted derived index as authority. Allocation and rebuild-basis
   predicates must fail.

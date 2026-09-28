@@ -89,6 +89,7 @@ pub(super) fn project_artifact_family(
         Source::NamespaceIdentity => Target::NamespaceIdentity,
         Source::PhysicalWorkObligation => Target::PhysicalWorkObligation,
         Source::PageFrame => Target::PageFrame,
+        Source::ExtentArenaFrame => Target::ExtentArenaFrame,
         Source::ExtentChunk => Target::ExtentChunk,
         Source::WalFrame => Target::WalFrame,
         Source::CheckpointStreamHeader => Target::CheckpointStreamHeader,

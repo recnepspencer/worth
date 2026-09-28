@@ -23,14 +23,14 @@ fn later_extent_damage_through_a_view_revokes_health_and_releases_read_authority
         RecordAppendBatch::try_from_iter([expected.as_slice()]).unwrap(),
     );
     let record = publication.settled_members()[0].record_id(0).unwrap();
-    let extent =
-        root.join("families/records/extents/extent-0000000000000001-0000000000000001.data");
+    let extent = root.join("families/records/arenas/arena-0000000000000001.data");
+    let arena = std::fs::read(&extent).unwrap();
+    let second_chunk = super::super::durable_frame_oracle::first_arena_chunk_offset(&arena, 1);
     let mut file = std::fs::OpenOptions::new()
         .write(true)
         .open(extent)
         .unwrap();
-    file.seek(SeekFrom::Start(fixture::FRAME_BYTES + 120))
-        .unwrap();
+    file.seek(SeekFrom::Start(second_chunk + 120)).unwrap();
     file.write_all(&[0xa5]).unwrap();
     file.sync_all().unwrap();
     assert!(

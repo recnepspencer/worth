@@ -24,6 +24,14 @@ impl BackgroundIoPressureShape {
         )
     }
 
+    /// Store-owned arena evacuation on qualified buffered-file media.
+    pub const fn buffered_file_compaction_rewrite() -> Self {
+        Self::new(
+            BackgroundIoPressureClass::CompactionRewrite,
+            IoSchedulerBackendCapabilityRequirement::BufferedFile,
+        )
+    }
+
     pub const fn checkpoint_flush() -> Self {
         Self::new(
             BackgroundIoPressureClass::CheckpointFlush,

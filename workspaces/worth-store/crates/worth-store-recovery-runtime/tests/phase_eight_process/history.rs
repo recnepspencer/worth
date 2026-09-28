@@ -23,7 +23,8 @@ pub(super) const ARTIFACT_IDENTITY_DOMAIN: &[u8] =
 pub(super) const DEFAULT_OPERATION_COUNT: usize = 96;
 
 pub(super) use parent_oracle::{
-    capture_cleanup_candidate, verify_cleanup_preserved, verify_cleanup_transition,
+    capture_cleanup_candidate, classify_in_flight_artifacts, current_root_payloads,
+    select_recovery_basis, verify_cleanup_preserved, verify_cleanup_transition,
     CleanupCandidateProof, CleanupTransitionProof,
 };
 pub(super) use persisted_fates::classify_persisted_fates;

@@ -224,9 +224,7 @@ fn validly_framed_extra_free_space_claim_is_not_accepted_as_truth() {
 
     let free = super::manifest_fixture::decode_free_space_tree(&root, 2, format.declaration(), 128);
     let mut entries = free.entries;
-    entries.push(
-        RecordFreeSpaceManifestEntry::new(RecordAllocationClass::InlinePage, 999, 1, 1, 1).unwrap(),
-    );
+    entries.push(RecordFreeSpaceManifestEntry::inline_frontier(999, 1, 1, 1).unwrap());
     entries.sort_by_key(|entry| worth_store_physical_format::FreeSpaceKey::from(*entry));
     overwrite_free_space_root_block(&root, format.declaration(), &free.header, entries);
 
@@ -261,11 +259,11 @@ fn altered_free_range_and_generation_cannot_be_readmitted_as_authority() {
             .iter_mut()
             .find(|entry| entry.class() == RecordAllocationClass::InlinePage)
             .unwrap();
-        *inline = RecordFreeSpaceManifestEntry::new(
-            inline.class(),
+        let frontier = inline.inline_free_frontier().unwrap();
+        *inline = RecordFreeSpaceManifestEntry::inline_frontier(
             inline.owner(),
-            inline.first_unallocated(),
-            inline.unallocated_count() + count_delta,
+            frontier.first_unallocated(),
+            frontier.unallocated_count() + count_delta,
             inline.generation() + generation_delta,
         )
         .unwrap();

@@ -84,7 +84,7 @@ impl PhysicalCurrentRootOwner {
         let Some(displaced) = self.publication.next_displaced() else {
             return Err(PhysicalRetirementDenial::Absent);
         };
-        if let Some(denial) = retirement_blocked(self, &state, &displaced) {
+        if let Some(denial) = retirement_blocked(self, &state, &displaced, None) {
             return Err(denial);
         }
         match self.publication.claim_displaced(displaced.artifact) {
@@ -99,11 +99,34 @@ impl PhysicalCurrentRootOwner {
         displaced: &DisplacedArtifact,
     ) -> Option<PhysicalRetirementDenial> {
         let state = self.lock_publication_state();
-        retirement_blocked(self, &state, displaced)
+        retirement_blocked(self, &state, displaced, None)
+    }
+
+    pub(in crate::physical_runtime) fn blocked_retirement_release(
+        &self,
+        displaced: &DisplacedArtifact,
+        pending: &crate::physical_runtime::durability::PendingPublicationLease,
+    ) -> Option<PhysicalRetirementDenial> {
+        retirement_blocked(
+            self,
+            &self.lock_publication_state(),
+            displaced,
+            Some(pending),
+        )
     }
 
     pub(in crate::physical_runtime) fn revert_displaced_claim(&self, artifact: RetiredArtifact) {
         self.publication.revert_displaced_claim(artifact);
+    }
+
+    /// Restores the precise claim carried by a durable retirement intent.
+    /// The pending release still performs the protected-root check before any
+    /// publication or removal effect.
+    pub(in crate::physical_runtime) fn claim_recovered_retirement(
+        &self,
+        displaced: DisplacedArtifact,
+    ) -> bool {
+        self.publication.claim_recovered_displaced_exact(displaced)
     }
 
     pub(in crate::physical_runtime) fn complete_displaced(&self, artifact: RetiredArtifact) {
@@ -127,6 +150,7 @@ fn retirement_blocked(
     owner: &PhysicalCurrentRootOwner,
     state: &PhysicalCurrentRootState,
     displaced: &DisplacedArtifact,
+    own: Option<&crate::physical_runtime::durability::PendingPublicationLease>,
 ) -> Option<PhysicalRetirementDenial> {
     let protected = match displaced.artifact {
         RetiredArtifact::Segment {
@@ -143,6 +167,9 @@ fn retirement_blocked(
         RetiredArtifact::Extent { .. } => owner
             .read_protection
             .protects_root_at_or_below(displaced.source_root),
+        RetiredArtifact::Arena { .. } => owner
+            .read_protection
+            .protects_root_at_or_below(displaced.source_root.saturating_sub(1)),
     };
     if protected {
         return Some(PhysicalRetirementDenial::Protected);
@@ -150,7 +177,11 @@ fn retirement_blocked(
     if still_published(state, displaced) {
         return Some(PhysicalRetirementDenial::Retained);
     }
-    if owner.publication.pending_len() > 0 {
+    let unresolved = own.map_or_else(
+        || owner.publication.pending_len() > 0,
+        |lease| owner.publication.pending_except(lease),
+    );
+    if unresolved {
         return Some(PhysicalRetirementDenial::Unresolved);
     }
     None
@@ -171,5 +202,6 @@ fn still_published(state: &PhysicalCurrentRootState, displaced: &DisplacedArtifa
         // the root after source_root. Extent generations only move forward, so
         // once the current root is past the source root it no longer reads it.
         RetiredArtifact::Extent { .. } => state.current_root.generation() <= displaced.source_root,
+        RetiredArtifact::Arena { generation, .. } => state.current_root.generation() < generation,
     }
 }

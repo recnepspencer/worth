@@ -9,6 +9,7 @@ use crate::physical_runtime::{
 };
 
 use super::CanonicalPayloadMaterializationObservation;
+mod extent_copy;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PhysicalMutationAdmissionDisposition {
@@ -28,6 +29,7 @@ pub struct PhysicalMutationResourceShape {
 pub(in crate::physical_runtime) enum PreparedRewriteAnchor {
     Inline(DurableInlineRecordPlacement),
     Extent(DurableExtentRecordPlacement),
+    ExtentCopy(DurableExtentRecordPlacement),
 }
 
 pub struct PreparedPhysicalMutation {
@@ -75,6 +77,7 @@ enum PreparedPhysicalMutationData {
     Unplanned {
         batch: RecordAppendBatch,
         materialization: CanonicalPayloadMaterializationObservation,
+        copy: Option<crate::physical_runtime::record_serving::CompletedExtentCopy>,
     },
     Planned {
         batch: RecordAppendBatch,
@@ -120,6 +123,7 @@ impl PreparedPhysicalMutation {
             data: PreparedPhysicalMutationData::Unplanned {
                 batch,
                 materialization,
+                copy: None,
             },
             placement: context.placement,
             manifest_capacity_transition: context.manifest_capacity_transition,

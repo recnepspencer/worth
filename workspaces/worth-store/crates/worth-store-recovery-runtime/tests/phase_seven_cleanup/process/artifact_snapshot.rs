@@ -199,8 +199,7 @@ fn record_artifact_path(root: &Path, artifact: RecordArtifactFile) -> PathBuf {
         RecordArtifactFile::Segment { .. } => records.join("segments"),
         RecordArtifactFile::SegmentManifest { .. }
         | RecordArtifactFile::SegmentMembershipBlock { .. } => records.join("segment-manifests"),
-        RecordArtifactFile::Extent { .. } => records.join("extents"),
-        RecordArtifactFile::ExtentManifest { .. } => records.join("extent-manifests"),
+        RecordArtifactFile::ExtentArena { .. } => records.join("arenas"),
         RecordArtifactFile::FreeSpaceManifest { .. }
         | RecordArtifactFile::FreeSpaceMembershipBlock { .. } => records.join("free-space"),
     };

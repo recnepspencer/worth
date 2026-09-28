@@ -226,11 +226,8 @@ fn artifact_to_format(artifact: RecordArtifactFile) -> PhysicalWorkArtifactCode 
         RecordArtifactFile::SegmentMembershipBlock { generation, block } => {
             PhysicalWorkArtifactCode::SegmentMembershipBlock { generation, block }
         }
-        RecordArtifactFile::Extent { extent, generation } => {
-            PhysicalWorkArtifactCode::Extent { extent, generation }
-        }
-        RecordArtifactFile::ExtentManifest { extent, generation } => {
-            PhysicalWorkArtifactCode::ExtentManifest { extent, generation }
+        RecordArtifactFile::ExtentArena { arena } => {
+            PhysicalWorkArtifactCode::ExtentArena { arena }
         }
         RecordArtifactFile::FreeSpaceManifest { generation } => {
             PhysicalWorkArtifactCode::FreeSpaceManifest { generation }
@@ -282,11 +279,8 @@ fn artifact_from_format(artifact: PhysicalWorkArtifactCode) -> Option<RecordArti
         PhysicalWorkArtifactCode::SegmentMembershipBlock { generation, block } => {
             RecordArtifactFile::SegmentMembershipBlock { generation, block }
         }
-        PhysicalWorkArtifactCode::Extent { extent, generation } => {
-            RecordArtifactFile::Extent { extent, generation }
-        }
-        PhysicalWorkArtifactCode::ExtentManifest { extent, generation } => {
-            RecordArtifactFile::ExtentManifest { extent, generation }
+        PhysicalWorkArtifactCode::ExtentArena { arena } => {
+            RecordArtifactFile::ExtentArena { arena }
         }
         PhysicalWorkArtifactCode::FreeSpaceManifest { generation } => {
             RecordArtifactFile::FreeSpaceManifest { generation }

@@ -166,7 +166,7 @@ fn target_bytes(
                 (old.len() - 20) as u32 + 1
             }
         ),
-        Op::EnvelopeVersion => assert_eq!(new[8], 2),
+        Op::EnvelopeVersion => assert_eq!(new[8], 3),
         Op::ScopeSubstitution if kind == 5 => assert_eq!(read64(new, 32), read64(old, 32) + 1),
         Op::ScopeSubstitution => {
             assert_eq!(new[9], 4);

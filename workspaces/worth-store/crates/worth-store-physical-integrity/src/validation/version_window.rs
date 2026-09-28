@@ -139,6 +139,7 @@ const fn artifact_version_axis(
         | Family::PageFrame
         | Family::ExtentManifest
         | Family::ExtentChunk
+        | Family::ExtentArenaFrame
         | Family::FreeSpaceHeader
         | Family::FreeSpaceMembershipBlock => PhysicalIntegrityVersionAxis::PhysicalFormat,
         Family::NamespaceIdentity => {
@@ -204,7 +205,7 @@ mod tests {
             PhysicalIntegrityVersionAxis::CheckpointRecordSchema,
             1,
         );
-        assert_adapter(durable, PhysicalIntegrityVersionAxis::PhysicalFormat, 1);
+        assert_adapter(durable, PhysicalIntegrityVersionAxis::PhysicalFormat, 2);
         assert!(PhysicalIntegrityEnvelopeVersionAdapter::for_scope(work).is_none());
         assert!(PhysicalIntegrityEnvelopeVersionAdapter::for_scope(wal).is_none());
         assert!(PhysicalIntegrityEnvelopeVersionAdapter::for_scope(checkpoint).is_none());
@@ -221,7 +222,7 @@ mod tests {
         );
         let adapter = PhysicalIntegrityArtifactVersionAdapter::for_scope(scope);
 
-        let PhysicalIntegrityVersionWindowOutcome::Unsupported(unsupported) = adapter.observe(2)
+        let PhysicalIntegrityVersionWindowOutcome::Unsupported(unsupported) = adapter.observe(3)
         else {
             panic!("future format version must remain unsupported");
         };
@@ -230,9 +231,9 @@ mod tests {
             unsupported.axis(),
             PhysicalIntegrityVersionAxis::PhysicalFormat
         );
-        assert_eq!(unsupported.observed(), 2);
+        assert_eq!(unsupported.observed(), 3);
 
-        let PhysicalIntegrityVersionWindowOutcome::Supported(supported) = adapter.observe(1) else {
+        let PhysicalIntegrityVersionWindowOutcome::Supported(supported) = adapter.observe(2) else {
             panic!("current format version must be supported");
         };
         assert_eq!(supported.scope(), scope);
@@ -240,7 +241,7 @@ mod tests {
             supported.axis(),
             PhysicalIntegrityVersionAxis::PhysicalFormat
         );
-        assert_eq!(supported.observed(), 1);
+        assert_eq!(supported.observed(), 2);
     }
 
     fn assert_adapter(

@@ -34,6 +34,17 @@ fn foreign_real_receipt_cannot_settle_candidate_residency() {
         ),
         "C5_PREDICATE:candidate-clean-without-exact-receipt"
     );
+    let displaced = RecordFrameCoordinate::new(artifact, 4096, 8).unwrap();
+    assert!(
+        !super::super::write_evidence::completed_new_artifact_matches(
+            &receipt,
+            displaced,
+            media.store_identity(),
+            displaced,
+            &[0xA5; 8],
+        ),
+        "a receipt at file zero cannot settle a candidate at another arena offset"
+    );
     assert!(matches!(owned.close(), MediaShutdownOutcome::Released(_)));
 }
 

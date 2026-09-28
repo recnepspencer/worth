@@ -23,10 +23,11 @@ cannot substitute for any of these owner admissions.
 
 The current families include bootstrap catalogs, current/previous selectors,
 root manifests, routing and membership nodes, free-space header/nodes, pages,
-extent manifests/chunks, WAL records, physical-work obligations, and checkpoint
-header/dirty-basis/compaction/binding/footer records. Unsupported format versions
-are not damaged bytes. Version changes require a declaration and explicit
-compatibility handling, not silently accepting a new layout.
+extent manifests/chunks, extent arena frames, WAL records, physical-work
+obligations, and checkpoint header/dirty-basis/compaction/binding/footer
+records. Unsupported format versions are not damaged bytes. Version changes
+require a declaration and explicit compatibility handling, not silently
+accepting a new layout.
 
 `Intact` covers the exact inspected scope. `Damaged` includes the artifact,
 range, failed relation/field, and defensible blast radius. `Unknown` means an
@@ -101,6 +102,17 @@ Terminal pulls are idempotent. Close/abort stops admissions and waits for the
 single in-flight scrub window before media teardown. Retained handles then
 report `Closed` and cannot reopen the old generation. A deadline cannot interrupt
 an OS call: late reads are counted and reported indeterminate, not intact.
+
+An `ExtentArenaFrame` validator inspects a frame at its absolute offset in the
+arena file. The selected root supplies the manifest placement; only an
+integrity-admitted manifest supplies chunk membership. Alignment padding is
+part of the allocated range, not the frame checksum or decoded payload. The
+offline observer independently compares each selected root's routed ranges
+with its free-range membership and retained historical coverage. Overlapping
+routes, a routed-and-free range, or genuinely unaccounted bytes with complete
+parent evidence are damage. A gap needing unavailable historical evidence
+remains `Unknown`, never invented as intact. An unrooted copy destination is
+not promoted to a published route by a successful checksum.
 
 Extent chunks require the matching previously inspected manifest. Checkpoint
 aggregate validation requires an ordered, contiguous header-to-footer sequence.

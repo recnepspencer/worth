@@ -11,6 +11,7 @@ pub(super) fn seal(
     successor_candidate: Option<RecoveryObservedSuccessorCandidate>,
     pending: PendingProjectionBasis<'_>,
     staging: RecoveryStagingLayoutPlan,
+    maximum_staging_bytes: u64,
 ) -> Result<
     (
         RecoveryStagingLayoutPlan,
@@ -31,7 +32,7 @@ pub(super) fn seal(
         &staging,
     );
     let publication_identity = publication_identity(basis_identity);
-    let candidate = if pending.projections.is_empty() {
+    let candidate = if pending.projections.is_empty() && pending.source_copies.is_empty() {
         super::super::publication_candidate::RecoveryCandidateBasis {
             root: selection.root().selected().manifest().clone(),
             referenced_artifacts: Box::new([]),
@@ -52,7 +53,9 @@ pub(super) fn seal(
                 .selected()
                 .manifest()
                 .requires_maintenance_protocol()
-                || !redo.rewrites().is_empty(),
+                || !redo.rewrites().is_empty()
+                || !redo.source_copies().is_empty(),
+            maximum_staging_bytes,
         )
         .map_err(|denial| match denial {
             super::super::publication_candidate::CandidateBuildDenial::SuccessorCandidate(
@@ -71,9 +74,7 @@ pub(super) fn seal(
         &candidate.artifacts,
     );
     let actions = publication_actions(&candidate.artifacts);
-    let staging_commands = (staging.commands.len() as u64)
-        .checked_mul(2)
-        .ok_or(ExecutionBasisDenial::Invalid)?;
+    let staging_commands = staging.scheduler_command_count();
     let (current_selector, root_protocol_counters) =
         super::selector_closeout::select_staged_current(
             &candidate,
@@ -122,6 +123,14 @@ fn created_artifacts(
 ) -> Box<[RecordArtifactFile]> {
     let mut artifacts = BTreeSet::new();
     artifacts.extend(staging.commands().iter().map(|command| command.artifact()));
+    artifacts.extend(
+        staging
+            .source_copies()
+            .iter()
+            .map(|copy| RecordArtifactFile::ExtentArena {
+                arena: copy.intent().destination().arena_range().arena().get(),
+            }),
+    );
     artifacts.extend(candidates.iter().map(|candidate| candidate.artifact()));
     artifacts.into_iter().collect::<Vec<_>>().into_boxed_slice()
 }

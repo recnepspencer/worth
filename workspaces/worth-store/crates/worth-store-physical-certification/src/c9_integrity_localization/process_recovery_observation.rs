@@ -264,6 +264,7 @@ pub(crate) enum ProcessIntegrityArtifactFamily {
     NamespaceIdentity,
     PhysicalWorkObligation,
     PageFrame,
+    ExtentArenaFrame,
     ExtentChunk,
     WalFrame,
     CheckpointStreamHeader,

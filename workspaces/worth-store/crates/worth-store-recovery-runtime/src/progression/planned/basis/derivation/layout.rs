@@ -16,13 +16,46 @@ pub(super) fn assemble(
         materialization
             .manifests
             .values()
-            .map(|manifest| (manifest.artifact(), manifest.bytes().into())),
+            .map(|manifest| (manifest.coordinate(), manifest.bytes().into())),
         &source_artifacts,
+        &selected_arena_ranges(selection),
+        &materialization
+            .placements
+            .values()
+            .filter_map(|placement| match placement {
+                CurrentPhysicalRecordPlacement::Extent(extent) => Some(extent.arena_range()),
+                _ => None,
+            })
+            .filter(|range| {
+                !pending
+                    .source_copies
+                    .iter()
+                    .any(|copy| copy.recipe().intent().destination().arena_range() == *range)
+            })
+            .collect::<Vec<_>>(),
     )?;
     let write_bytes = commands.iter().try_fold(0_u64, |bytes, command| {
         bytes.checked_add(command.byte_count())
     });
     let write_bytes = write_bytes.ok_or(ExecutionBasisDenial::Invalid)?;
+    let write_bytes = pending
+        .source_copies
+        .iter()
+        .try_fold(write_bytes, |bytes, copy| {
+            let intent = copy.recipe().intent();
+            bytes
+                .checked_add(intent.source().payload_bytes())
+                .and_then(|bytes| {
+                    bytes.checked_add(
+                        u64::from(intent.chunk_count())
+                            * (worth_store_physical_format::DURABLE_EXTENT_FRAME_HEADER_BYTES
+                                + worth_store_physical_format::EXTENT_CHUNK_METADATA_BYTES)
+                                as u64
+                            + 104,
+                    )
+                })
+        })
+        .ok_or(ExecutionBasisDenial::Invalid)?;
     let base = base_image(selection, pending, materialization, source_artifacts);
     Ok(RecoveryStagingLayoutPlan {
         source_generation: pending.source_generation,
@@ -30,6 +63,12 @@ pub(super) fn assemble(
         base,
         actions: actions.actions.into_boxed_slice(),
         commands,
+        source_copies: pending
+            .source_copies
+            .iter()
+            .map(|copy| copy.recipe())
+            .collect::<Vec<_>>()
+            .into_boxed_slice(),
         allocated_targets: actions.allocated_targets.into_boxed_slice(),
         allocated_bytes: pending.allocated_bytes,
         write_bytes,
@@ -87,7 +126,7 @@ fn base_image(
             .enumerate()
             .map(|(ordinal, manifest)| RecoveryPayloadManifestAction {
                 ordinal: ordinal as u64,
-                artifact: manifest.artifact(),
+                coordinate: manifest.coordinate(),
             })
             .collect::<Vec<_>>()
             .into_boxed_slice(),
@@ -158,18 +197,31 @@ fn placement_artifacts(
             segment: inline.segment().get(),
             generation: inline.segment_generation(),
         }],
-        CurrentPhysicalRecordPlacement::Extent(extent) => vec![
-            RecordArtifactFile::Extent {
-                extent: extent.extent().get(),
-                generation: extent.extent_generation(),
-            },
-            RecordArtifactFile::ExtentManifest {
-                extent: extent.extent().get(),
-                generation: extent.extent_generation(),
-            },
-        ],
+        CurrentPhysicalRecordPlacement::Extent(extent) => vec![RecordArtifactFile::ExtentArena {
+            arena: extent.arena_range().arena().get(),
+        }],
     };
     artifacts.into_iter()
+}
+
+fn selected_arena_ranges(
+    selection: &PhysicalSourceSelection,
+) -> Vec<worth_store_physical_format::ExtentArenaRange> {
+    selection
+        .page_facts()
+        .placements()
+        .iter()
+        .chain(
+            selection
+                .retained_previous_page_facts()
+                .into_iter()
+                .flat_map(|facts| facts.placements()),
+        )
+        .filter_map(|placement| match placement {
+            CurrentPhysicalRecordPlacement::Extent(extent) => Some(extent.arena_range()),
+            _ => None,
+        })
+        .collect()
 }
 
 fn base_action(

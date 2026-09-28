@@ -32,11 +32,14 @@ pub(crate) enum ChildScope {
         pages: u32,
     },
     ExtentManifest {
+        arena: u64,
         extent: u64,
         record: [u8; 24],
         logical_bytes: u64,
+        allocated_bytes: u64,
     },
     ExtentChunk {
+        arena: u64,
         extent: u64,
         record: [u8; 24],
         logical_bytes: u64,
@@ -51,10 +54,15 @@ impl ChildExpectation {
             ChildScope::Tree { block, .. } => format!("block:{block:016x}"),
             ChildScope::FreeSpace { .. } => format!("free-space:{:016x}", self.generation),
             ChildScope::Page { segment, page, .. } => format!("page:{segment:016x}:{page:016x}"),
-            ChildScope::ExtentManifest { extent, .. } => format!("extent:{extent:016x}"),
+            ChildScope::ExtentManifest { arena, extent, .. } => {
+                format!("arena:{arena:016x}:extent:{extent:016x}")
+            }
             ChildScope::ExtentChunk {
-                extent, ordinal, ..
-            } => format!("extent:{extent:016x}:chunk:{ordinal}"),
+                arena,
+                extent,
+                ordinal,
+                ..
+            } => format!("arena:{arena:016x}:extent:{extent:016x}:chunk:{ordinal}"),
         }
     }
 }

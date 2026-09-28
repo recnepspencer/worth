@@ -1,5 +1,6 @@
 mod artifact_walk;
 mod child_expectation;
+mod copy_evidence;
 mod counters;
 mod crc32c;
 mod duplicate_identity;
@@ -19,6 +20,7 @@ mod report_protocol;
 mod report_wire;
 mod report_wire_vocabulary;
 mod request;
+mod retirement_evidence;
 mod root_protocol_declarations;
 mod root_protocol_identity;
 mod root_protocol_paths;

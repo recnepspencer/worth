@@ -1,4 +1,5 @@
 pub mod checkpoint;
+mod extent_arena;
 mod extent_chunk;
 mod extent_manifest;
 pub mod free_space;
@@ -9,6 +10,7 @@ pub mod root;
 mod segment_membership;
 mod wal;
 
+pub use extent_arena::EXTENT_ARENA_FRAME_INTEGRITY_DECLARATION;
 pub use extent_chunk::EXTENT_CHUNK_INTEGRITY_DECLARATION;
 pub use extent_manifest::EXTENT_MANIFEST_INTEGRITY_DECLARATION;
 pub use namespace_identity::NAMESPACE_IDENTITY_INTEGRITY_DECLARATION;
@@ -33,7 +35,7 @@ const fn durable_frame_declaration(
 ) -> PhysicalIntegrityFormatDeclaration {
     PhysicalIntegrityFormatDeclaration::new(
         family,
-        PhysicalIntegrityFormatVersion::new(1, Some(2)),
+        PhysicalIntegrityFormatVersion::new(2, Some(2)),
         DURABLE_FRAME_V2_CHECKSUMS,
     )
 }

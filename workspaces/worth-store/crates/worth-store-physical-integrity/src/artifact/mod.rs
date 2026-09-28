@@ -1,6 +1,7 @@
 pub(crate) mod checkpoint;
 mod durable_frame_rejection;
 pub(crate) mod extent;
+mod extent_arena;
 pub(crate) mod free_space;
 pub(crate) mod page;
 pub(crate) mod physical_work_obligation;
@@ -23,6 +24,9 @@ pub use checkpoint::{
 pub use extent::{
     validate_extent_chunk, validate_extent_chunk_membership, validate_extent_manifest,
     ExtentChunkIntegrityValidation, ExtentManifestIntegrityValidation,
+};
+pub use extent_arena::{
+    validate_extent_arena_frame, ExtentArenaFrameExpectation, ExtentArenaFrameIntegrityValidation,
 };
 pub use free_space::{
     validate_free_space_header, validate_free_space_membership_block,

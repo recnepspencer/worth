@@ -44,9 +44,22 @@ impl RecordPublicationDirector {
     pub(in crate::physical_runtime) fn commit_retirement_intent(
         &self,
     ) -> Result<Option<DisplacedArtifact>, PhysicalRetirementDenial> {
+        if self.has_pending_extent_release() {
+            return self.commit_extent_release_intent().map(Some);
+        }
         let Some(displaced) = self.root_owner.claim_retirement()? else {
             return Ok(None);
         };
+        if matches!(
+            displaced.artifact,
+            RetiredArtifact::Extent { .. } | RetiredArtifact::Arena { .. }
+        ) {
+            if let Err(denial) = self.prepare_extent_release(displaced) {
+                self.root_owner.revert_displaced_claim(displaced.artifact);
+                return Err(denial);
+            }
+            return self.commit_extent_release_intent().map(Some);
+        }
         #[cfg(feature = "certification-test-authority")]
         self.wait_retirement_intent_gate();
         let intent = encode_retirement(
@@ -54,6 +67,7 @@ impl RecordPublicationDirector {
             false,
             displaced.source_root,
             displaced.bytes,
+            None,
         );
         if let Err(denial) = self.append_retirement(&intent) {
             if denial != PhysicalRetirementDenial::Waiting {
@@ -71,7 +85,22 @@ impl RecordPublicationDirector {
     pub(in crate::physical_runtime) fn finish_retirement(
         &self,
         displaced: DisplacedArtifact,
+        checkpoint: &crate::physical_runtime::CompletedPhysicalCheckpoint,
     ) -> Result<(), PhysicalRetirementDenial> {
+        let captured = checkpoint.basis().source().root().generation();
+        let covered = match displaced.artifact {
+            RetiredArtifact::Arena { .. } => captured >= displaced.source_root,
+            _ => captured > displaced.source_root,
+        };
+        if !covered {
+            return Err(PhysicalRetirementDenial::Checkpoint);
+        }
+        if matches!(
+            displaced.artifact,
+            RetiredArtifact::Extent { .. } | RetiredArtifact::Arena { .. }
+        ) {
+            return self.finish_extent_release(displaced);
+        }
         if let Some(denial) = self.root_owner.blocked_retirement(&displaced) {
             self.root_owner.revert_displaced_claim(displaced.artifact);
             return Err(denial);
@@ -96,6 +125,7 @@ impl RecordPublicationDirector {
             true,
             displaced.source_root,
             displaced.bytes,
+            None,
         );
         self.append_retirement(&completion)?;
         self.root_owner.complete_displaced(displaced.artifact);
@@ -188,15 +218,21 @@ impl RecordPublicationDirector {
                 Err(PhysicalRetirementDenial::WalPlan)
             }
             Err(ScheduledMaintenanceDenial::Write) => Err(PhysicalRetirementDenial::WalWrite),
+            Err(ScheduledMaintenanceDenial::WrittenAwaitingBarrier { .. }) => {
+                Err(PhysicalRetirementDenial::Waiting)
+            }
             Err(ScheduledMaintenanceDenial::Sync) => Err(PhysicalRetirementDenial::WalSync),
             Err(ScheduledMaintenanceDenial::Finish) => Err(PhysicalRetirementDenial::WalFinish),
         }
     }
 
     /// Deletes every file of the claimed generation, then synchronizes the
-    /// record family once. A crash between files leaves the durable intent,
+    /// containing directory. A crash between files leaves the durable intent,
     /// and resumption treats an already-absent file as removed.
-    fn delete_displaced(&self, artifact: RetiredArtifact) -> Result<(), PhysicalRetirementDenial> {
+    pub(super) fn delete_displaced(
+        &self,
+        artifact: RetiredArtifact,
+    ) -> Result<(), PhysicalRetirementDenial> {
         let permit = self
             .root_owner
             .removal_permit(artifact)
@@ -210,11 +246,9 @@ impl RecordPublicationDirector {
         }
         #[cfg(feature = "certification-test-authority")]
         self.pause_retirement_kill(2);
-        self.execute_record_effect(
-            RecordArtifactFile::BootstrapCatalog,
-            PhysicalPublicationEffect::SynchronizeRecordFamily,
-            None,
-        )
+        // RemoveArtifact completes only after its backend has synchronized the
+        // actual containing directory (including an already-absent retry).
+        Ok(())
     }
 }
 

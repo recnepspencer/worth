@@ -13,6 +13,8 @@ pub(in crate::physical_runtime) use retention::PendingPublicationLease;
 pub(in crate::physical_runtime) use retention::PhysicalPublicationAdmissionDenial;
 pub(in crate::physical_runtime) use retention::PhysicalRetentionProfile;
 pub use retention::PhysicalRetirementDenial;
+pub(in crate::physical_runtime) use retention::RetainedByteLease;
+pub use retention::RetirementReleaseProjection;
 #[cfg(feature = "recovery-runtime-owner")]
 pub(in crate::physical_runtime) use retention::{decode_retirement, payload_is_retirement};
 pub(in crate::physical_runtime) use retention::{
@@ -21,6 +23,7 @@ pub(in crate::physical_runtime) use retention::{
 };
 mod settlement;
 mod wal;
+pub(in crate::physical_runtime) use wal::DurableMaintenanceReceipt;
 
 pub use admission::{
     AdmittedPhysicalDurabilityPolicy, CheckpointMemoryLimit, GroupCommitDelay, GroupCommitLimit,
@@ -73,12 +76,12 @@ pub(in crate::physical_runtime) use data::{
     WalBoundPhysicalDataPlan,
 };
 pub use data::{
-    CertifiedPriorPageBasis, CertifiedPriorPageImage, CleanedPhysicalDataDispatchRetry,
-    IndeterminatePhysicalDataDispatch, PageWalBasis, PhysicalDataDispatchFailureCause,
-    PhysicalDataDispatchOutcome, PhysicalDataEffectSettlement, PhysicalDataEffectSource,
-    PhysicalDataFrameIdentity, PhysicalDataFrameKind, PhysicalDataFrameSubject,
-    PhysicalDataSettlementFailureCause, PhysicalDataSettlementOutcome, PhysicalRedoLsn,
-    PhysicalRedoTargetClaim,
+    CertifiedPriorPageBasis, CertifiedPriorPageImage, IndeterminatePhysicalDataDispatch,
+    PageWalBasis, PhysicalDataDispatchFailureCause, PhysicalDataDispatchOutcome,
+    PhysicalDataEffectSettlement, PhysicalDataEffectSource, PhysicalDataFrameIdentity,
+    PhysicalDataFrameKind, PhysicalDataFrameSubject, PhysicalDataSettlementFailureCause,
+    PhysicalDataSettlementOutcome, PhysicalExtentCopySettlementObservation, PhysicalRedoLsn,
+    PhysicalRedoTargetClaim, SuspendedPhysicalDataDispatch,
 };
 pub use evidence_projection::{
     lower_physical_durability_performance_receipt, CheckpointPerformanceExpectation,
@@ -125,6 +128,7 @@ pub(in crate::physical_runtime) use lifecycle::{
     PhysicalMutationCostSnapshot, PhysicalMutationRuntimeOwner, PhysicalMutationStartPort,
     PhysicalMutationTerminalState,
 };
+pub(in crate::physical_runtime) use mutation::PhysicalBindingDecodingContext;
 pub(in crate::physical_runtime) use mutation::{
     rebuild_idempotency, AdmittedPhysicalMutation, AllocatedPhysicalMutationAttemptBinding,
     CompletedPhysicalMutationFact, PersistedPhysicalMutationAttemptBinding,
@@ -158,7 +162,6 @@ pub use mutation::{
 #[cfg(feature = "recovery-runtime-owner")]
 pub(in crate::physical_runtime) use mutation::{
     DecodedPhysicalMutationBindingRecord, PersistedPhysicalMutationFate,
-    PhysicalBindingDecodingContext,
 };
 pub use observation::PhysicalMutationObservation;
 pub use observation::{PhysicalDurabilityObservation, PhysicalDurabilityReopenObservation};
@@ -167,11 +170,11 @@ pub(in crate::physical_runtime) use observation::{
     PhysicalMutationTerminalClass,
 };
 pub(in crate::physical_runtime) use publication::{
-    replace_root_candidate, synchronize_root_namespace, PhysicalCurrentRootOwner,
-    PhysicalRootPublicationIdentity, PhysicalRootPublicationPreparationFailure,
-    PhysicalRootPublicationPreparationNotStartedCause, PhysicalRootPublicationTransition,
-    PhysicalRootPublicationWorkFailure, PhysicalRootPublicationWorkPort,
-    RootCandidateSynchronizationFailure,
+    publish_retirement_candidate, replace_root_candidate, synchronize_root_namespace,
+    NamespaceDurableRetirementRoot, PhysicalCurrentRootOwner, PhysicalRootPublicationIdentity,
+    PhysicalRootPublicationPreparationFailure, PhysicalRootPublicationPreparationNotStartedCause,
+    PhysicalRootPublicationTransition, PhysicalRootPublicationWorkFailure,
+    PhysicalRootPublicationWorkPort, RootCandidateSynchronizationFailure,
 };
 #[cfg(feature = "certification-test-authority")]
 pub use publication::{CertificationReadRootCapturePauseGate, CertificationReadRootCaptureStage};

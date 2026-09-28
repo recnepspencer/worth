@@ -55,6 +55,7 @@ pub(crate) struct AddressedRootExpectation {
 pub(crate) struct ObservedRootProtocol {
     pub(crate) artifacts: Vec<OfflineArtifactObservation>,
     pub(crate) roots: Vec<OfflineRootManifestFacts>,
+    pub(crate) current_generation: Option<u64>,
 }
 
 pub(crate) fn observe_root_protocol(
@@ -80,6 +81,15 @@ pub(crate) fn observe_root_protocol(
         })
         .filter_map(|entry| entry.facts)
         .collect();
+    let current_generation = selectors
+        .iter()
+        .find(|entry| {
+            entry.canonical
+                && entry.role == SelectorRole::Current
+                && entry.outcome == OfflineIntegrityOutcome::Intact
+        })
+        .and_then(|entry| entry.facts.as_ref())
+        .map(|facts| facts.root_generation);
     let mut observations = selector_observations(selectors);
     observations.extend(root_observations(&addressed, roots, root_incomplete));
     observations.extend(unknowns);
@@ -87,6 +97,7 @@ pub(crate) fn observe_root_protocol(
     Ok(ObservedRootProtocol {
         artifacts: observations,
         roots: admitted_roots,
+        current_generation,
     })
 }
 
@@ -109,8 +120,7 @@ fn read_selector_entries(
                     "bootstrap.catalog",
                     "segments",
                     "segment-manifests",
-                    "extents",
-                    "extent-manifests",
+                    "arenas",
                     "free-space",
                 ]
                 .iter()

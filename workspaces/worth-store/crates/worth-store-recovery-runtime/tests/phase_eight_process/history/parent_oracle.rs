@@ -47,8 +47,9 @@ pub(super) use artifact_facts::{
     empty_facts, observe_artifact_at_path, read_u16, read_u32, read_u64, residue, ArtifactFacts,
     CheckpointFacts, ManifestFacts, PageFacts, SelectorFacts, WalFacts,
 };
+pub(crate) use canonical_membership::current_root_payloads;
 pub(super) use canonical_membership::{
-    current_root_payloads, current_root_records, require_current_root_membership,
+    current_root_records, require_current_root_membership,
     require_current_root_membership_with_unresolved_payload, ExpectedCanonicalRecord,
 };
 pub(super) use canonical_membership_placement::RecordIdentity;
@@ -60,7 +61,8 @@ pub(crate) use cleanup_candidate::{
 pub(crate) use derivation::derive;
 pub(crate) use evidence::ParentPhysicalEvidence;
 pub(super) use evidence_digest::{DigestBuilder, DigestObservation};
-pub(super) use in_flight::{classify as classify_in_flight_artifacts, require_bound_records};
+pub(crate) use in_flight::classify as classify_in_flight_artifacts;
+pub(super) use in_flight::require_bound_records;
 pub(crate) use operation_binding::bind as bind_submitted_operations;
-pub(super) use selected_basis::select as select_recovery_basis;
+pub(crate) use selected_basis::select as select_recovery_basis;
 pub(super) use terminal::contains_persisted_no_effect_terminal;

@@ -175,6 +175,7 @@ pub(in crate::physical_runtime::record_serving) fn admit_extent_chunk(
         format,
         coordinate,
         coordinate_range(frame.coordinate()).map_err(|_| CleanExtentAdmissionDenial::Damaged)?,
+        membership.arena_range(),
     );
     let admitted = admit_resident_extent_chunk(frame.lease(), scope, membership, context.clone())
         .map_err(classify_extent_integrity)?;

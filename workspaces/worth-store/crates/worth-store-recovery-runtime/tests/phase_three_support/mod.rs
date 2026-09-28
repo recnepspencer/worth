@@ -9,15 +9,21 @@ use worth_store_physical_format::{
     durable_artifact_checksum, CheckpointBindingCompactionHeader, CheckpointRootBasis,
     CheckpointStreamEncoder, CheckpointWalSourceRange, CurrentPhysicalRecordPlacement,
     DurableExtentRecordPlacement, DurableFreeSpaceManifestHeader, DurablePhysicalRootManifest,
-    DurableRootSelector, FreeSpaceBlockReference, FreeSpaceKey, PersistedRecordIdentity,
-    PhysicalCheckpointIdentity, PhysicalCheckpointSource, PhysicalExtentId,
-    PhysicalFreeSpaceMembershipBlock, PhysicalGeneration, PhysicalGenerationAuthority,
-    PhysicalRecordFormatDeclaration, PhysicalRootRoutingBlock, RecordAllocationClass,
+    DurableRootSelector, ExtentArenaId, ExtentArenaRange, FreeSpaceBlockReference, FreeSpaceKey,
+    PersistedRecordIdentity, PhysicalCheckpointIdentity, PhysicalCheckpointSource,
+    PhysicalExtentId, PhysicalFreeSpaceMembershipBlock, PhysicalGeneration,
+    PhysicalGenerationAuthority, PhysicalRecordFormatDeclaration, PhysicalRootRoutingBlock,
     RecordArtifactFile, RecordFreeSpaceManifestEntry, RootSelectorIdentity, RootSelectorRole,
 };
 use worth_store_recovery_runtime::{
     PhysicalRecoveryLimitDeclaration, PhysicalRecoveryLimits, PhysicalRecoveryOpenRequest,
     PhysicalRecoveryPlatformAuthority, PhysicalRecoveryStaticConfiguration,
+};
+
+#[path = "synthetic_topology.rs"]
+mod synthetic_topology;
+pub(crate) use synthetic_topology::{
+    publish_synthetic_branched_genesis, publish_synthetic_nonempty_genesis,
 };
 
 pub(crate) fn expect_blocked(
@@ -116,8 +122,11 @@ pub(crate) fn publish_synthetic_genesis_for_format(
     store: worth_store_physical_format::store_namespace::StableStoreIdentity,
     format: PhysicalRecordFormatDeclaration,
 ) {
-    let free_entry =
-        RecordFreeSpaceManifestEntry::new(RecordAllocationClass::Extent, 1, 1, 1, 1).unwrap();
+    let free_entry = RecordFreeSpaceManifestEntry::arena_range(
+        ExtentArenaRange::new(ExtentArenaId::new(1).unwrap(), 0, 64 << 20).unwrap(),
+        1,
+    )
+    .unwrap();
     let free_block = PhysicalFreeSpaceMembershipBlock::leaf(7, 1, 1, vec![free_entry], 4).unwrap();
     let free_block_bytes = free_block.encode(format);
     let free_space = DurableFreeSpaceManifestHeader::new(
@@ -129,6 +138,9 @@ pub(crate) fn publish_synthetic_genesis_for_format(
         1,
         1,
         2,
+        2,
+        64 << 20,
+        4096,
         2,
         Some(free_block.reference(durable_artifact_checksum(&free_block_bytes))),
     )
@@ -200,127 +212,6 @@ pub(crate) fn publish_synthetic_checkpoint(
     bytes.extend_from_slice(&footer);
     std::fs::write(root.join("families").join("checkpoint.current"), bytes).unwrap();
     checkpoint
-}
-
-pub(crate) fn publish_synthetic_nonempty_genesis(
-    root: &Path,
-    store: worth_store_physical_format::store_namespace::StableStoreIdentity,
-) {
-    let format = PhysicalRecordFormatDeclaration::builder().admit().unwrap();
-    let placements = [1_u64, 2]
-        .into_iter()
-        .map(|ordinal| {
-            let record = PersistedRecordIdentity::new([9; 16], ordinal).unwrap();
-            let extent = PhysicalGenerationAuthority::for_canonical_physical_format()
-                .record_extent_cell(PhysicalExtentId::from_raw(ordinal).unwrap())
-                .with_extent_generation(PhysicalGeneration::from_raw(1).unwrap());
-            CurrentPhysicalRecordPlacement::Extent(
-                DurableExtentRecordPlacement::new(record, extent, 23).unwrap(),
-            )
-        })
-        .collect();
-    let block = PhysicalRootRoutingBlock::leaf(7, 1, 1, placements, 4).unwrap();
-    let block_bytes = block.encode(format);
-    let reference = block.reference(durable_artifact_checksum(&block_bytes));
-    let free_key = FreeSpaceKey::new(RecordAllocationClass::Extent, 1).unwrap();
-    let free_space =
-        FreeSpaceBlockReference::new(1, 1, 0, 0x0102_0304, free_key, free_key).unwrap();
-    let manifest = DurablePhysicalRootManifest::builder(1, 7, 4, 0x8a9b_acbd)
-        .record_count(2)
-        .next_block(2)
-        .routing_root(Some(reference))
-        .free_space_root(Some(free_space))
-        .admit()
-        .unwrap();
-    let selector = DurableRootSelector::new(
-        store,
-        format,
-        RootSelectorIdentity::new(1).unwrap(),
-        RootSelectorRole::Current,
-        1,
-        None,
-        None,
-    )
-    .unwrap();
-    let records = root.join("families").join("records");
-    let roots = records.join("roots");
-    std::fs::create_dir_all(&roots).unwrap();
-    std::fs::write(records.join("root-current.selector"), selector.encode()).unwrap();
-    std::fs::write(
-        roots.join("root-0000000000000001.manifest"),
-        manifest.encode(format),
-    )
-    .unwrap();
-    std::fs::write(
-        roots.join("root-0000000000000001-block-0000000000000001.manifest"),
-        block_bytes,
-    )
-    .unwrap();
-}
-
-pub(crate) fn publish_synthetic_branched_genesis(
-    root: &Path,
-    store: worth_store_physical_format::store_namespace::StableStoreIdentity,
-) {
-    let format = PhysicalRecordFormatDeclaration::builder().admit().unwrap();
-    let left = PhysicalRootRoutingBlock::leaf(7, 1, 1, vec![placement(1)], 2).unwrap();
-    let right =
-        PhysicalRootRoutingBlock::leaf(7, 1, 2, vec![placement(2), placement(3)], 2).unwrap();
-    let left_bytes = left.encode(format);
-    let right_bytes = right.encode(format);
-    let left_reference = left.reference(durable_artifact_checksum(&left_bytes));
-    let right_reference = right.reference(durable_artifact_checksum(&right_bytes));
-    let branch =
-        PhysicalRootRoutingBlock::branch(7, 1, 3, 1, vec![left_reference, right_reference], 2)
-            .unwrap();
-    let branch_bytes = branch.encode(format);
-    let branch_reference = branch.reference(durable_artifact_checksum(&branch_bytes));
-    let free_key = FreeSpaceKey::new(RecordAllocationClass::Extent, 1).unwrap();
-    let free_space =
-        FreeSpaceBlockReference::new(1, 1, 0, 0x0102_0304, free_key, free_key).unwrap();
-    let manifest = DurablePhysicalRootManifest::builder(1, 7, 2, 0x8a9b_acbd)
-        .record_count(3)
-        .next_block(4)
-        .routing_root(Some(branch_reference))
-        .free_space_root(Some(free_space))
-        .admit()
-        .unwrap();
-    let selector = DurableRootSelector::new(
-        store,
-        format,
-        RootSelectorIdentity::new(1).unwrap(),
-        RootSelectorRole::Current,
-        1,
-        None,
-        None,
-    )
-    .unwrap();
-    let records = root.join("families").join("records");
-    let roots = records.join("roots");
-    std::fs::create_dir_all(&roots).unwrap();
-    std::fs::write(records.join("root-current.selector"), selector.encode()).unwrap();
-    std::fs::write(
-        roots.join("root-0000000000000001.manifest"),
-        manifest.encode(format),
-    )
-    .unwrap();
-    for (block, bytes) in [(1, left_bytes), (2, right_bytes), (3, branch_bytes)] {
-        std::fs::write(
-            roots.join(format!("root-0000000000000001-block-{block:016}.manifest")),
-            bytes,
-        )
-        .unwrap();
-    }
-}
-
-fn placement(ordinal: u64) -> CurrentPhysicalRecordPlacement {
-    let record = PersistedRecordIdentity::new([9; 16], ordinal).unwrap();
-    let extent = PhysicalGenerationAuthority::for_canonical_physical_format()
-        .record_extent_cell(PhysicalExtentId::from_raw(ordinal).unwrap())
-        .with_extent_generation(PhysicalGeneration::from_raw(1).unwrap());
-    CurrentPhysicalRecordPlacement::Extent(
-        DurableExtentRecordPlacement::new(record, extent, 23).unwrap(),
-    )
 }
 
 pub(crate) fn publish_synthetic_wal_tail(root: &Path) {

@@ -100,6 +100,8 @@ pub struct PhysicalInspectionExecutorCommand {
 }
 
 pub struct PhysicalWriteExecutorCommand {
+    pub(in crate::physical_runtime) retirement_retry:
+        Option<crate::physical_runtime::record_serving::RetirementCandidateRetryScope>,
     pub(in crate::physical_runtime) work: ResourceAdmittedPhysicalWork,
     pub(in crate::physical_runtime) coordinate: RecordFrameCoordinate,
     pub(in crate::physical_runtime) payload: Box<[u8]>,

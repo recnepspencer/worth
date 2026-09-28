@@ -170,6 +170,24 @@ impl PhysicalPublicationAdmission {
         self.lock().pending.len()
     }
 
+    pub(in crate::physical_runtime) fn pending_except(
+        &self,
+        lease: &PendingPublicationLease,
+    ) -> bool {
+        let Some(admission) = lease.admission.upgrade() else {
+            return true;
+        };
+        if !std::ptr::eq(self, std::sync::Arc::as_ptr(&admission)) {
+            return true;
+        }
+        let state = self.lock();
+        !state.pending.contains_key(&lease.identity)
+            || state
+                .pending
+                .keys()
+                .any(|identity| *identity != lease.identity)
+    }
+
     #[cfg(any(test, feature = "certification-test-authority"))]
     pub(in crate::physical_runtime) fn charged_growth_bytes(&self) -> u64 {
         self.lock().charged_bytes
@@ -204,90 +222,6 @@ impl PhysicalPublicationAdmission {
     #[cfg(test)]
     pub(in crate::physical_runtime) fn remaining_growth_bytes(&self) -> u64 {
         self.lock().remaining_bytes()
-    }
-
-    pub(in crate::physical_runtime) fn retain_displaced(&self, displaced: DisplacedArtifact) {
-        let mut state = self.lock();
-        if state.garbage.contains_key(&displaced.artifact) {
-            return;
-        }
-        state.charged_bytes = state.charged_bytes.saturating_add(displaced.bytes);
-        state.garbage.insert(
-            displaced.artifact,
-            RetainedGarbage {
-                bytes: displaced.bytes,
-                source_root: displaced.source_root,
-                claimed: false,
-                completed: false,
-            },
-        );
-    }
-
-    pub(in crate::physical_runtime) fn next_displaced(&self) -> Option<DisplacedArtifact> {
-        let state = self.lock();
-        state.garbage.iter().find_map(|(artifact, garbage)| {
-            (!garbage.completed).then_some(DisplacedArtifact {
-                source_root: garbage.source_root,
-                artifact: *artifact,
-                bytes: garbage.bytes,
-            })
-        })
-    }
-
-    pub(in crate::physical_runtime) fn claim_displaced(
-        &self,
-        artifact: RetiredArtifact,
-    ) -> GarbageClaim {
-        let mut state = self.lock();
-        let Some(garbage) = state.garbage.get_mut(&artifact) else {
-            return GarbageClaim::Absent;
-        };
-        if garbage.completed {
-            return GarbageClaim::Completed;
-        }
-        let displaced = DisplacedArtifact {
-            source_root: garbage.source_root,
-            artifact,
-            bytes: garbage.bytes,
-        };
-        if garbage.claimed {
-            return GarbageClaim::AlreadyClaimed(displaced);
-        }
-        garbage.claimed = true;
-        GarbageClaim::Claimed(displaced)
-    }
-
-    pub(in crate::physical_runtime) fn removal_permit(
-        &self,
-        artifact: RetiredArtifact,
-    ) -> Option<super::RetirementRemovalPermit> {
-        let state = self.lock();
-        let garbage = state.garbage.get(&artifact)?;
-        (garbage.claimed && !garbage.completed)
-            .then_some(super::RetirementRemovalPermit::issued(artifact))
-    }
-
-    pub(in crate::physical_runtime) fn revert_displaced_claim(&self, artifact: RetiredArtifact) {
-        let mut state = self.lock();
-        if let Some(garbage) = state.garbage.get_mut(&artifact) {
-            if !garbage.completed {
-                garbage.claimed = false;
-            }
-        }
-    }
-
-    pub(in crate::physical_runtime) fn complete_displaced(&self, artifact: RetiredArtifact) {
-        let mut state = self.lock();
-        let Some(garbage) = state.garbage.get_mut(&artifact) else {
-            return;
-        };
-        if garbage.completed {
-            return;
-        }
-        let bytes = garbage.bytes;
-        garbage.completed = true;
-        garbage.claimed = true;
-        state.charged_bytes = state.charged_bytes.saturating_sub(bytes);
     }
 
     fn lock(&self) -> std::sync::MutexGuard<'_, AdmissionState> {
@@ -361,8 +295,12 @@ impl Drop for CandidateGrowthLease {
     }
 }
 
+#[path = "admission/garbage.rs"]
+mod garbage;
+
 #[path = "retained_bytes.rs"]
 mod retained_bytes;
+pub(in crate::physical_runtime) use retained_bytes::RetainedByteLease;
 
 #[cfg(test)]
 #[path = "admission_tests.rs"]

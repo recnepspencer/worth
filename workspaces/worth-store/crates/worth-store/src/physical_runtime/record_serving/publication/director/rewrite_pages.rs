@@ -234,6 +234,7 @@ impl RecordPublicationDirector {
             data_pages: Vec::new(),
         };
         let root = PreparedPhysicalRootProjection {
+            arena_reservations: Vec::new(),
             root_publication_allocation_bytes: NonZeroU64::new(source_bytes).ok_or_else(damaged)?,
             source_root: current_root,
             manifest_capacity_transition: prepared.manifest_capacity_transition(),

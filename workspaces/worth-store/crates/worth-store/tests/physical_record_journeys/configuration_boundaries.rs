@@ -123,11 +123,9 @@ fn extent_geometry_is_format_owned_and_survives_access_policy_narrowing() {
     let record = published.settled_members()[0].record_id(0).unwrap();
     serving.close();
 
-    let manifest_bytes = std::fs::read(root.join(
-        "families/records/extent-manifests/extent-0000000000000001-0000000000000001.manifest",
-    ))
-    .unwrap();
-    let (manifest, _) = DurableExtentManifest::decode(&manifest_bytes).unwrap();
+    let manifest_bytes =
+        std::fs::read(root.join("families/records/arenas/arena-0000000000000001.data")).unwrap();
+    let (manifest, _) = DurableExtentManifest::decode(&manifest_bytes[..104]).unwrap();
     assert_eq!(manifest.maximum_frame_bytes(), 16_384);
 
     let (_, _, narrow_access) = configuration();

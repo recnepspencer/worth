@@ -32,6 +32,27 @@ const _: () =
     assert!(std::mem::size_of::<PhysicalResidencyWorkPort>() <= std::mem::size_of::<usize>() * 4);
 
 impl PhysicalResidencyWorkPort {
+    pub(in crate::physical_runtime::record_serving) fn read_fresh_exact(
+        &self,
+        coordinate: RecordFrameCoordinate,
+    ) -> Result<
+        (
+            Box<[u8]>,
+            crate::physical_runtime::instance::PhysicalProjectionFailureCapability,
+        ),
+        crate::physical_runtime::record_serving::read_work_port::CanonicalRecordReadFailureEvidence,
+    > {
+        self.source.read_fresh_exact(coordinate)
+    }
+    pub(in crate::physical_runtime::record_serving) fn invalidate_released_arena_range(
+        &self,
+        range: worth_store_physical_format::ExtentArenaRange,
+    ) -> Result<(), worth_store_buffer_pool::PhysicalResidencyDenial> {
+        self.access
+            .frame_ports
+            .invalidate_released_arena_range(range)
+    }
+
     pub(in crate::physical_runtime::record_serving) fn store_identity(
         &self,
     ) -> worth_store_physical_format::store_namespace::StableStoreIdentity {

@@ -44,17 +44,18 @@ impl PhysicalDataFrameIdentity {
         artifact: RecordArtifactFile,
         offset: u64,
         length: u32,
+        range: worth_store_physical_format::ExtentArenaRange,
     ) -> Option<Self> {
-        let RecordArtifactFile::Extent { extent, generation } = artifact else {
+        let RecordArtifactFile::ExtentArena { arena } = artifact else {
             return None;
         };
-        let cell = chunk.extent_cell();
-        (extent == cell.extent_id().get() && generation == cell.generation().get()).then_some(
-            Self {
-                subject: PhysicalDataFrameSubject::ExtentChunk(chunk),
-                coordinate: RecordFrameCoordinate::new(artifact, offset, length)?,
-            },
-        )
+        (arena == range.arena().get()
+            && offset >= range.offset()
+            && offset.checked_add(u64::from(length))? <= range.end())
+        .then_some(Self {
+            subject: PhysicalDataFrameSubject::ExtentChunk(chunk),
+            coordinate: RecordFrameCoordinate::new(artifact, offset, length)?,
+        })
     }
 
     pub const fn kind(self) -> PhysicalDataFrameKind {

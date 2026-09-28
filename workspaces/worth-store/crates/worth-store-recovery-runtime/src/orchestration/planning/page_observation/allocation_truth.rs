@@ -112,11 +112,12 @@ fn reusable_capacity(
     selected_pages: u64,
     capacity: u32,
 ) -> Option<u64> {
+    let frontier = entry.inline_free_frontier()?;
     (entry.generation() == selected_generation
-        && entry.first_unallocated() == selected_pages.saturating_add(1)
-        && entry
+        && frontier.first_unallocated() == selected_pages.saturating_add(1)
+        && frontier
             .first_unallocated()
-            .checked_add(entry.unallocated_count())
+            .checked_add(frontier.unallocated_count())
             == Some(u64::from(capacity) + 1))
-    .then_some(entry.unallocated_count())
+    .then_some(frontier.unallocated_count())
 }

@@ -27,7 +27,12 @@ pub(super) fn validate_projection_semantics(
             return Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection);
         }
     }
-    for (frame_index, frame) in projection.frames().iter().enumerate() {
+    for (frame_index, frame) in projection
+        .frames()
+        .expect("frame-only recovery projection admitted before planning")
+        .iter()
+        .enumerate()
+    {
         match frame.subject() {
             PersistedPhysicalDataFrameSubject::InlinePage(page) => {
                 let descriptors = admitted
@@ -93,6 +98,7 @@ fn validate_bidirectional_closure(
             CurrentPhysicalRecordPlacement::Inline(value) => {
                 let matching = projection
                     .frames()
+                    .expect("frame-only recovery projection admitted before planning")
                     .iter()
                     .filter(|frame| {
                         frame.subject()
@@ -101,6 +107,7 @@ fn validate_bidirectional_closure(
                     .filter_map(|frame| {
                         projection
                             .frames()
+                            .expect("frame-only recovery projection admitted before planning")
                             .iter()
                             .position(|candidate| core::ptr::eq(candidate, frame))
                     })
@@ -125,6 +132,7 @@ fn validate_bidirectional_closure(
     for update in projection.segment_updates() {
         let matching = projection
             .frames()
+            .expect("frame-only recovery projection admitted before planning")
             .iter()
             .filter(|frame| {
                 frame.subject() == PersistedPhysicalDataFrameSubject::InlinePage(update.page_cell())
@@ -152,7 +160,10 @@ fn validate_segment_frame_cardinality(
     projection: &PersistedPhysicalRecoveryProjection,
 ) -> Result<(), PhysicalRedoPlanningDenial> {
     let mut exact_counts = BTreeMap::<(u64, u64), u32>::new();
-    for frame in projection.frames() {
+    for frame in projection
+        .frames()
+        .expect("frame-only recovery projection admitted before planning")
+    {
         let PersistedPhysicalDataFrameSubject::InlinePage(_) = frame.subject() else {
             continue;
         };
@@ -224,7 +235,12 @@ fn validate_resulting_lsns(
     projection: &PersistedPhysicalRecoveryProjection,
     admitted: &IntegrityAdmittedRecoveryProjection<'_>,
 ) -> Result<(), PhysicalRedoPlanningDenial> {
-    for (index, frame) in projection.frames().iter().enumerate() {
+    for (index, frame) in projection
+        .frames()
+        .expect("frame-only recovery projection admitted before planning")
+        .iter()
+        .enumerate()
+    {
         let matching = records
             .iter()
             .filter(|record| {

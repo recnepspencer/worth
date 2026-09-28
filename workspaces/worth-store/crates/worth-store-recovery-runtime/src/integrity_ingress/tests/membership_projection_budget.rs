@@ -216,10 +216,7 @@ fn free_space_nodes(
     format: PhysicalRecordFormatDeclaration,
 ) -> [PhysicalFreeSpaceMembershipBlock; 2] {
     let entries = (1..=2)
-        .map(|owner| {
-            RecordFreeSpaceManifestEntry::new(RecordAllocationClass::InlinePage, owner, owner, 1, 8)
-                .unwrap()
-        })
+        .map(|owner| RecordFreeSpaceManifestEntry::inline_frontier(owner, owner, 1, 8).unwrap())
         .collect::<Vec<_>>();
     let children = entries
         .iter()

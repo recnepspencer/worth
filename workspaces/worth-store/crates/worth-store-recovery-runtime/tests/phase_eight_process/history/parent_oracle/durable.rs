@@ -64,7 +64,7 @@ fn decode(bytes: &[u8]) -> Option<RawFrame<'_>> {
         return None;
     }
     let format: [u8; 10] = bytes[10..20].try_into().ok()?;
-    if read_u16(&format, 0)? != 1
+    if read_u16(&format, 0)? != 2
         || !matches!(read_u32(&format, 2)?, 16_384 | 32_768 | 65_536)
         || format[6..10] != [1, 1, 1, 24]
     {
@@ -112,10 +112,11 @@ fn semantic(frame: &RawFrame<'_>) -> Option<Semantic> {
         ROOT_SELECTOR_KIND => selector(frame),
         ROOT_MANIFEST_KIND => root_manifest(frame),
         SEGMENT_MANIFEST_KIND => counted_manifest(frame, 24, 40),
-        EXTENT_MANIFEST_KIND => fixed_manifest(frame, 56, 48),
+        EXTENT_MANIFEST_KIND => extent_manifest(frame),
         FREE_SPACE_MANIFEST_KIND => free_space_manifest(frame),
         ROOT_ROUTING_KIND => routing_manifest(frame, 88, 72),
-        SEGMENT_MEMBERSHIP_KIND | FREE_SPACE_MEMBERSHIP_KIND => routing_manifest(frame, 40, 56),
+        SEGMENT_MEMBERSHIP_KIND => routing_manifest(frame, 40, 56),
+        FREE_SPACE_MEMBERSHIP_KIND => routing_manifest(frame, 40, 72),
         _ => None,
     }
 }
@@ -160,7 +161,7 @@ fn selector(frame: &RawFrame<'_>) -> Option<Semantic> {
 
 fn root_manifest(frame: &RawFrame<'_>) -> Option<Semantic> {
     let payload = frame.payload;
-    if payload.len() != 320
+    if payload.len() != 336
         || frame.identity == 0
         || read_u64(payload, 0)? != frame.identity
         || payload[18..24] != [0; 6]
@@ -169,20 +170,20 @@ fn root_manifest(frame: &RawFrame<'_>) -> Option<Semantic> {
         || payload[156..160] != [0; 4]
         || payload[161..168] != [0; 7]
         || payload[233..240] != [0; 7]
-        || payload[297..304] != [0; 7]
-        || [40, 120, 160, 232, 296]
+        || payload[313..320] != [0; 7]
+        || [40, 120, 160, 232, 312]
             .iter()
             .any(|offset| payload[*offset] > 1)
     {
         return None;
     }
-    let members = [40, 120, 160, 232, 296]
+    let members = [40, 120, 160, 232, 312]
         .into_iter()
         .filter(|offset| payload[*offset] == 1)
         .count() as u64;
     let mut generation = DigestBuilder::new(b"worth.store.recovery-observer.generation-link.v1");
     generation.record(&payload[..40]);
-    for offset in [40, 120, 160, 232, 296] {
+    for offset in [40, 120, 160, 232, 312] {
         if payload[offset] == 1 {
             generation.record(&payload[offset..reference_end(offset)]);
         }
@@ -227,15 +228,13 @@ fn counted_manifest(frame: &RawFrame<'_>, header: usize, member_width: usize) ->
     })
 }
 
-fn fixed_manifest(frame: &RawFrame<'_>, length: usize, generation_end: usize) -> Option<Semantic> {
-    if frame.payload.len() != length
-        || frame.payload[generation_end..] != [0; 8]
-        || frame.identity == 0
-    {
+fn extent_manifest(frame: &RawFrame<'_>) -> Option<Semantic> {
+    let alignment = read_u64(frame.payload, 48)?;
+    if frame.payload.len() != 56 || !alignment.is_power_of_two() || frame.identity == 0 {
         return None;
     }
     let mut generation = DigestBuilder::new(b"worth.store.recovery-observer.generation-link.v1");
-    generation.record(&frame.payload[..generation_end]);
+    generation.record(&frame.payload[..48]);
     Some(Semantic {
         generation: true,
         generation_links: generation.finish(),
@@ -250,12 +249,16 @@ fn fixed_manifest(frame: &RawFrame<'_>, length: usize, generation_end: usize) ->
 
 fn free_space_manifest(frame: &RawFrame<'_>) -> Option<Semantic> {
     let payload = frame.payload;
-    if payload.len() != 128
+    if payload.len() != 168
         || frame.identity == 0
         || read_u64(payload, 0)? != frame.identity
         || payload[22..24] != [0; 2]
         || payload[65..72] != [0; 7]
         || payload[64] > 1
+        || read_u64(payload, 144)? == 0
+        || read_u64(payload, 152)? == 0
+        || !read_u64(payload, 160)?.is_power_of_two()
+        || read_u64(payload, 152)? % read_u64(payload, 160)? != 0
     {
         return None;
     }
@@ -270,7 +273,7 @@ fn free_space_manifest(frame: &RawFrame<'_>) -> Option<Semantic> {
         selector: None,
         manifest: Some(ManifestFacts {
             count: 1,
-            members: read_u64(payload, 24)? + u64::from(payload[64]),
+            members: read_u64(payload, 24)?.checked_add(u64::from(payload[64]))?,
             digest: membership.finish().digest(),
         }),
     })
@@ -323,8 +326,8 @@ fn reference_end(offset: usize) -> usize {
         40 => 120,
         120 => 152,
         160 => 224,
-        232 => 296,
-        296 => 320,
+        232 => 312,
+        312 => 336,
         _ => offset,
     }
 }
@@ -339,4 +342,52 @@ fn crc32c(bytes: &[u8]) -> u32 {
         }
     }
     !value
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{root_manifest, RawFrame, ROOT_MANIFEST_KIND};
+
+    #[test]
+    fn root_generation_link_covers_the_last_arena_free_space_reference_bytes() {
+        let mut payload = [0_u8; 336];
+        payload[..8].copy_from_slice(&1_u64.to_le_bytes());
+        payload[232] = 1;
+        fn frame(payload: &[u8]) -> RawFrame<'_> {
+            RawFrame {
+                kind: ROOT_MANIFEST_KIND,
+                format: [2, 0, 0, 64, 0, 0, 1, 1, 1, 24],
+                identity: 1,
+                page_lsn: 1,
+                payload,
+            }
+        }
+        let before = root_manifest(&frame(&payload))
+            .expect("root reference shape")
+            .generation_links;
+        payload[304] = 1;
+        let after = root_manifest(&frame(&payload))
+            .expect("root reference shape")
+            .generation_links;
+        assert_ne!(before, after);
+    }
+
+    #[test]
+    fn free_space_member_count_overflow_is_not_valid_semantic_evidence() {
+        let mut payload = [0_u8; 168];
+        payload[..8].copy_from_slice(&1_u64.to_le_bytes());
+        payload[24..32].copy_from_slice(&u64::MAX.to_le_bytes());
+        payload[64] = 1;
+        payload[144..152].copy_from_slice(&1_u64.to_le_bytes());
+        payload[152..160].copy_from_slice(&4096_u64.to_le_bytes());
+        payload[160..168].copy_from_slice(&4096_u64.to_le_bytes());
+        let frame = RawFrame {
+            kind: super::FREE_SPACE_MANIFEST_KIND,
+            format: [2, 0, 0, 64, 0, 0, 1, 1, 1, 24],
+            identity: 1,
+            page_lsn: 1,
+            payload: &payload,
+        };
+        assert!(super::free_space_manifest(&frame).is_none());
+    }
 }

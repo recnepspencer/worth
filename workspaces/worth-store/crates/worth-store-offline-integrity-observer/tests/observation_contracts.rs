@@ -47,10 +47,10 @@ fn literal_root_protocol_goldens_are_fixed() {
     );
     assert_eq!(current.len(), 107);
     assert_eq!(previous.len(), 107);
-    assert_eq!(root.len(), 368);
-    assert_eq!(&current[44..48], &[0x4b, 0x44, 0xe9, 0x52]);
-    assert_eq!(&previous[44..48], &[0x3c, 0xba, 0x79, 0xa7]);
-    assert_eq!(&root[44..48], &[0xca, 0xbf, 0xb3, 0x37]);
+    assert_eq!(root.len(), 384);
+    assert_eq!(&current[44..48], &[0x84, 0x20, 0x6a, 0x5d]);
+    assert_eq!(&previous[44..48], &[0xf3, 0xde, 0xfa, 0xa8]);
+    assert_eq!(&root[44..48], &[0x6e, 0xd4, 0x20, 0xc3]);
 }
 
 #[test]
@@ -96,9 +96,12 @@ fn clean_root_protocol_observation_and_counters_are_exact() {
     let counters = report.counters();
     assert_eq!(counters.entries_visited(), 8);
     assert_eq!(counters.missing_artifacts(), 3);
-    assert_eq!(counters.bytes_read(), 654);
-    assert_eq!(counters.files_opened(), 16);
-    assert_eq!(counters.open_file_high_water(), 5);
+    assert_eq!(counters.bytes_read(), 670);
+    assert_eq!(counters.files_opened(), if cfg!(windows) { 28 } else { 16 });
+    assert_eq!(
+        counters.open_file_high_water(),
+        if cfg!(windows) { 6 } else { 5 }
+    );
     assert_eq!(counters.maximum_depth_reached(), 4);
     assert_eq!(counters.checksum_calculations(), 4);
     assert_eq!(counters.namespace_identity_payload_decoder_entries(), 1);
@@ -185,7 +188,7 @@ fn root_slice_imports_only_declaration_facade_facts() {
         ),
     ] {
         assert_eq!(declaration.family(), family);
-        assert_eq!(declaration.version().format_version(), 1);
+        assert_eq!(declaration.version().format_version(), 2);
         assert_eq!(declaration.version().envelope_schema(), Some(2));
         assert_eq!(declaration.checksums().len(), 1);
         let checksum = declaration.checksums()[0];

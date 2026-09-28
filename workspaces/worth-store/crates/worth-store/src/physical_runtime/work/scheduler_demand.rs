@@ -16,6 +16,7 @@ use super::{
     ResourceAdmittedPhysicalWork,
 };
 
+mod compaction;
 mod locality;
 mod residency;
 mod scrub;
@@ -36,6 +37,11 @@ pub enum PhysicalSchedulerDenial {
     EffectConflict,
     EffectSlotsExhausted,
     OwedBackgroundTurn,
+    BackgroundCapacity(
+        worth_store_io_scheduler::foreground_reservation::PhysicalInstanceForegroundAdmissionDenial,
+    ),
+    BackgroundPacing(worth_store_io_scheduler::BackgroundPacingDenial),
+    CompactionAdmissionMismatch,
 }
 
 pub struct PhysicalSchedulerDemand {

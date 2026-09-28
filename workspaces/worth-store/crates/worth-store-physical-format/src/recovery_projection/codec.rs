@@ -2,6 +2,10 @@ use super::*;
 
 mod cursor;
 use cursor::*;
+mod manifest;
+use manifest::{read_manifest, write_manifest};
+mod frame_coordinate;
+use frame_coordinate::{read_subject_coordinate, write_subject_coordinate};
 
 impl PersistedPhysicalRecoveryProjection {
     pub fn encode(&self) -> Vec<u8> {
@@ -12,7 +16,21 @@ impl PersistedPhysicalRecoveryProjection {
         write_sequence(&mut target, &self.record_identities, |target, record| {
             write_record(target, *record)
         });
-        write_sequence(&mut target, &self.frames, write_frame);
+        match &self.payload {
+            PersistedPhysicalRecoveryPayload::Frames(frames) => {
+                target.push(0);
+                write_sequence(&mut target, frames, write_frame);
+            }
+            PersistedPhysicalRecoveryPayload::SourceCopy(recipe) => {
+                target.push(1);
+                field(
+                    &mut target,
+                    &crate::PhysicalExtentCopyRecord::Intent(recipe.intent()).encode(),
+                );
+                target.extend_from_slice(&recipe.intent_lsn().to_le_bytes());
+                target.extend_from_slice(&recipe.intent_digest());
+            }
+        }
         write_sequence(&mut target, &self.placements, write_placement);
         write_sequence(&mut target, &self.segment_updates, write_segment_update);
         write_sequence(&mut target, &self.manifests, write_manifest);
@@ -22,6 +40,24 @@ impl PersistedPhysicalRecoveryProjection {
     pub fn decode(
         bytes: &[u8],
         limits: PhysicalRecoveryProjectionDecodeLimits,
+        format: crate::PhysicalRecordFormatDeclaration,
+    ) -> Result<Self, PhysicalRecoveryProjectionDenial> {
+        Self::decode_payload(bytes, limits, Some(format))
+    }
+
+    /// Frame-only protocol owners cannot admit source-copy geometry without the
+    /// bootstrap format. Reject that variant rather than inventing a default.
+    pub fn decode_frames(
+        bytes: &[u8],
+        limits: PhysicalRecoveryProjectionDecodeLimits,
+    ) -> Result<Self, PhysicalRecoveryProjectionDenial> {
+        Self::decode_payload(bytes, limits, None)
+    }
+
+    fn decode_payload(
+        bytes: &[u8],
+        limits: PhysicalRecoveryProjectionDecodeLimits,
+        format: Option<crate::PhysicalRecordFormatDeclaration>,
     ) -> Result<Self, PhysicalRecoveryProjectionDenial> {
         let mut cursor = Cursor::new(bytes);
         if cursor.field()? != DOMAIN {
@@ -37,7 +73,30 @@ impl PersistedPhysicalRecoveryProjection {
             cursor.end()?;
             Ok(record)
         })?;
-        let frames = read_sequence(&mut cursor, limits.frames, read_frame)?;
+        let payload = match cursor.byte()? {
+            0 => PersistedPhysicalRecoveryPayload::Frames(
+                read_sequence(&mut cursor, limits.frames, read_frame)?.into_boxed_slice(),
+            ),
+            1 => {
+                let format = format.ok_or(PhysicalRecoveryProjectionDenial::Malformed)?;
+                let crate::PhysicalExtentCopyRecord::Intent(intent) =
+                    crate::PhysicalExtentCopyRecord::decode(cursor.field()?, format)
+                        .map_err(|_| PhysicalRecoveryProjectionDenial::Malformed)?
+                else {
+                    return Err(PhysicalRecoveryProjectionDenial::Malformed);
+                };
+                let lsn = cursor.u64()?;
+                let digest = cursor
+                    .take(32)?
+                    .try_into()
+                    .map_err(|_| PhysicalRecoveryProjectionDenial::Malformed)?;
+                PersistedPhysicalRecoveryPayload::SourceCopy(
+                    PersistedExtentCopyRecipe::new(intent, lsn, digest)
+                        .ok_or(PhysicalRecoveryProjectionDenial::Malformed)?,
+                )
+            }
+            _ => return Err(PhysicalRecoveryProjectionDenial::Malformed),
+        };
         let mut remaining_entries = limits.total_entries;
         let placements = read_bounded_sequence(
             &mut cursor,
@@ -58,15 +117,26 @@ impl PersistedPhysicalRecoveryProjection {
             read_manifest,
         )?;
         cursor.end()?;
-        Self::new(
-            source_root_generation,
-            root_state,
-            record_identities,
-            frames,
-            placements,
-            segment_updates,
-            manifests,
-        )
+        match payload {
+            PersistedPhysicalRecoveryPayload::Frames(frames) => Self::new(
+                source_root_generation,
+                root_state,
+                record_identities,
+                frames.into_vec(),
+                placements,
+                segment_updates,
+                manifests,
+            ),
+            PersistedPhysicalRecoveryPayload::SourceCopy(recipe) => {
+                let expected = Self::from_source_copy(source_root_generation, root_state, recipe)
+                    .ok_or(PhysicalRecoveryProjectionDenial::Malformed)?;
+                (record_identities.as_slice() == expected.record_identities()
+                    && placements.as_slice() == expected.placements()
+                    && segment_updates.is_empty()
+                    && manifests.is_empty())
+                .then_some(expected)
+            }
+        }
         .ok_or(PhysicalRecoveryProjectionDenial::Malformed)
     }
 }
@@ -150,6 +220,9 @@ fn write_placement(target: &mut Vec<u8>, placement: &CurrentPhysicalRecordPlacem
             target.extend_from_slice(&value.extent().get().to_le_bytes());
             target.extend_from_slice(&value.extent_generation().to_le_bytes());
             target.extend_from_slice(&value.payload_bytes().to_le_bytes());
+            target.extend_from_slice(&value.arena_range().arena().get().to_le_bytes());
+            target.extend_from_slice(&value.arena_range().offset().to_le_bytes());
+            target.extend_from_slice(&value.arena_range().length().to_le_bytes());
         }
     }
 }
@@ -197,6 +270,10 @@ fn read_placement(
                 .map_err(|_| PhysicalRecoveryProjectionDenial::InvalidPlacement)?;
             let extent_generation = generation(cursor.u64()?)?;
             let payload = cursor.u64()?;
+            let arena = ExtentArenaId::new(cursor.u64()?)
+                .ok_or(PhysicalRecoveryProjectionDenial::InvalidPlacement)?;
+            let range = ExtentArenaRange::new(arena, cursor.u64()?, cursor.u64()?)
+                .ok_or(PhysicalRecoveryProjectionDenial::InvalidPlacement)?;
             CurrentPhysicalRecordPlacement::Extent(
                 DurableExtentRecordPlacement::new(
                     record,
@@ -204,6 +281,7 @@ fn read_placement(
                         .record_extent_cell(extent)
                         .with_extent_generation(extent_generation),
                     payload,
+                    range,
                 )
                 .ok_or(PhysicalRecoveryProjectionDenial::InvalidPlacement)?,
             )
@@ -248,119 +326,4 @@ fn read_segment_update(
         index,
     )
     .ok_or(PhysicalRecoveryProjectionDenial::InvalidSegmentUpdate)
-}
-
-fn write_manifest(target: &mut Vec<u8>, manifest: &PersistedPhysicalRecoveryManifest) {
-    let RecordArtifactFile::ExtentManifest { extent, generation } = manifest.artifact else {
-        unreachable!()
-    };
-    target.extend_from_slice(&extent.to_le_bytes());
-    target.extend_from_slice(&generation.to_le_bytes());
-    field(target, manifest.bytes());
-}
-
-fn read_manifest(
-    bytes: &[u8],
-) -> Result<PersistedPhysicalRecoveryManifest, PhysicalRecoveryProjectionDenial> {
-    let mut cursor = Cursor::new(bytes);
-    let artifact = RecordArtifactFile::ExtentManifest {
-        extent: cursor.u64()?,
-        generation: cursor.u64()?,
-    };
-    let payload = cursor.field()?;
-    cursor.end()?;
-    PersistedPhysicalRecoveryManifest::new(artifact, payload)
-        .ok_or(PhysicalRecoveryProjectionDenial::InvalidManifest)
-}
-
-fn write_subject_coordinate(
-    target: &mut Vec<u8>,
-    subject: PersistedPhysicalDataFrameSubject,
-    coordinate: RecordFrameCoordinate,
-) {
-    match subject {
-        PersistedPhysicalDataFrameSubject::InlinePage(page) => {
-            target.push(1);
-            target.extend_from_slice(&page.segment_id().get().to_le_bytes());
-            target.extend_from_slice(&page.page_id().get().to_le_bytes());
-            target.extend_from_slice(&page.generation().get().to_le_bytes());
-            let RecordArtifactFile::Segment {
-                segment,
-                generation,
-            } = coordinate.artifact()
-            else {
-                unreachable!("an admitted inline projection frame owns a segment coordinate")
-            };
-            debug_assert_eq!(segment, page.segment_id().get());
-            target.extend_from_slice(&generation.to_le_bytes());
-        }
-        PersistedPhysicalDataFrameSubject::ExtentChunk(chunk) => {
-            target.push(2);
-            write_record(target, chunk.record());
-            target.extend_from_slice(&chunk.extent_cell().extent_id().get().to_le_bytes());
-            target.extend_from_slice(&chunk.extent_cell().generation().get().to_le_bytes());
-            target.extend_from_slice(&chunk.logical_bytes().to_le_bytes());
-            target.extend_from_slice(&chunk.logical_offset().to_le_bytes());
-            target.extend_from_slice(&chunk.ordinal().to_le_bytes());
-        }
-    }
-    target.extend_from_slice(&coordinate.offset().to_le_bytes());
-    target.extend_from_slice(&coordinate.length().to_le_bytes());
-}
-
-fn read_subject_coordinate(
-    cursor: &mut Cursor<'_>,
-) -> Result<
-    (PersistedPhysicalDataFrameSubject, RecordFrameCoordinate),
-    PhysicalRecoveryProjectionDenial,
-> {
-    let kind = cursor.byte()?;
-    let authority = PhysicalGenerationAuthority::for_canonical_physical_format();
-    let (subject, artifact) = match kind {
-        1 => {
-            let segment = PhysicalSegmentId::from_raw(cursor.u64()?)
-                .map_err(|_| PhysicalRecoveryProjectionDenial::InvalidFrame)?;
-            let page = PhysicalPageId::from_raw(cursor.u64()?)
-                .map_err(|_| PhysicalRecoveryProjectionDenial::InvalidFrame)?;
-            let page_generation = generation(cursor.u64()?)?;
-            let artifact_generation = generation(cursor.u64()?)?;
-            (
-                PersistedPhysicalDataFrameSubject::InlinePage(
-                    authority
-                        .page_cell(segment, page)
-                        .with_page_generation(page_generation),
-                ),
-                RecordArtifactFile::Segment {
-                    segment: segment.get(),
-                    generation: artifact_generation.get(),
-                },
-            )
-        }
-        2 => {
-            let record = read_record(cursor)?;
-            let extent = PhysicalExtentId::from_raw(cursor.u64()?)
-                .map_err(|_| PhysicalRecoveryProjectionDenial::InvalidFrame)?;
-            let generation = generation(cursor.u64()?)?;
-            let logical_bytes = cursor.u64()?;
-            let logical_offset = cursor.u64()?;
-            let ordinal = cursor.u32()?;
-            let cell = authority
-                .record_extent_cell(extent)
-                .with_extent_generation(generation);
-            let chunk =
-                ExtentChunkCoordinate::new(record, cell, logical_bytes, logical_offset, ordinal)
-                    .ok_or(PhysicalRecoveryProjectionDenial::InvalidFrame)?;
-            (
-                PersistedPhysicalDataFrameSubject::ExtentChunk(chunk),
-                RecordArtifactFile::Extent {
-                    extent: extent.get(),
-                    generation: generation.get(),
-                },
-            )
-        }
-        _ => return Err(PhysicalRecoveryProjectionDenial::InvalidFrame),
-    };
-    let coordinate = RecordFrameCoordinate::new(artifact, cursor.u64()?, cursor.u32()?)
-        .ok_or(PhysicalRecoveryProjectionDenial::InvalidFrame)?;
-    Ok((subject, coordinate))
 }

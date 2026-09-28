@@ -14,6 +14,7 @@ const COMPACTION_DOMAIN: &[u8] =
     worth_store_physical_format::PHYSICAL_MUTATION_BINDING_COMPACTION_RECORD_DOMAIN;
 const ATTEMPT_DOMAIN: &[u8] = b"store.physical.mutation-attempt-binding.v1";
 const KEY_DOMAIN: &[u8] = b"store.physical.mutation.idempotency-key.v1";
+const REDO_DOMAIN: &[u8] = b"store.physical.wal.canonical-redo.v3";
 
 pub(crate) fn classify(
     files: &[(String, Vec<u8>)],
@@ -22,49 +23,18 @@ pub(crate) fn classify(
 ) -> Result<(bool, bool), String> {
     let mut identity_present = false;
     let mut payload_present = false;
-    for (path, bytes) in files {
+    for (_, bytes) in files {
         let (identity, payload) = if bytes.starts_with(b"WORTHWAL") {
             scan_wal(bytes, identity, payload)?
         } else if bytes.starts_with(b"WCP7REC\0") {
             scan_checkpoint(bytes, identity)?
         } else {
-            (false, record_payload_present(path, bytes, payload)?)
+            (false, false)
         };
         identity_present |= identity;
         payload_present |= payload;
     }
     Ok((identity_present, payload_present))
-}
-
-fn record_payload_present(path: &str, bytes: &[u8], payload: &[u8]) -> Result<bool, String> {
-    if !is_record_artifact(path) {
-        return Ok(false);
-    }
-    let mut offset = 0;
-    let mut found = false;
-    while offset < bytes.len() {
-        let frame = super::canonical_membership_frame::frame_at(bytes, offset)
-            .ok_or_else(|| format!("semantic record oracle found a malformed frame: {path}"))?;
-        found |= contains_bytes(frame.payload, payload);
-        offset = offset
-            .checked_add(super::canonical_membership_frame::frame_total(
-                bytes, offset,
-            )?)
-            .ok_or_else(|| "semantic record oracle frame offset overflowed".to_owned())?;
-    }
-    Ok(found)
-}
-
-fn is_record_artifact(path: &str) -> bool {
-    (path.starts_with("families/records/segments/") && path.ends_with(".pages"))
-        || (path.starts_with("families/records/extents/") && path.ends_with(".data"))
-}
-
-fn contains_bytes(haystack: &[u8], needle: &[u8]) -> bool {
-    !needle.is_empty()
-        && haystack
-            .windows(needle.len())
-            .any(|window| window == needle)
 }
 
 fn scan_wal(bytes: &[u8], identity: &[u8], payload: &[u8]) -> Result<(bool, bool), String> {
@@ -100,11 +70,43 @@ fn scan_wal(bytes: &[u8], identity: &[u8], payload: &[u8]) -> Result<(bool, bool
         if !remaining.is_empty() {
             return Err("semantic WAL oracle found trailing member payload".to_owned());
         }
-        found_identity |= binding_matches(binding, identity, Some(redo));
-        found_payload |= binding_matches(binding, identity, Some(payload)) && redo == payload;
+        let bound = binding_matches(binding, identity, Some(redo));
+        found_identity |= bound;
+        found_payload |= bound && canonical_redo_payload_matches(redo, payload);
         offset += total;
     }
     Ok((found_identity, found_payload))
+}
+
+fn canonical_redo_payload_matches(redo: &[u8], payload: &[u8]) -> bool {
+    let mut cursor = Cursor::new(redo);
+    if cursor.field() != Some(REDO_DOMAIN)
+        || cursor.u64() != Some(1)
+        || cursor.u32() != Some(0)
+        || cursor.u64().is_none_or(|sequence| sequence == 0)
+    {
+        return false;
+    }
+    let Some(target_count) = cursor.u64().filter(|count| *count > 0) else {
+        return false;
+    };
+    for _ in 0..target_count {
+        if cursor.field().is_none_or(|target| target.is_empty()) {
+            return false;
+        }
+        let Some((digest, remaining)) = cursor.remaining.split_at_checked(32) else {
+            return false;
+        };
+        if digest.iter().all(|byte| *byte == 0) {
+            return false;
+        }
+        cursor.remaining = remaining;
+    }
+    cursor.field() == Some(payload)
+        && cursor
+            .field()
+            .is_some_and(|projection| !projection.is_empty())
+        && cursor.is_empty()
 }
 
 fn scan_checkpoint(bytes: &[u8], identity: &[u8]) -> Result<(bool, bool), String> {

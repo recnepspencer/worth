@@ -14,6 +14,7 @@ pub enum PhysicalArtifactFamily {
     PageFrame,
     ExtentManifest,
     ExtentChunkFrame,
+    ExtentArenaFrame,
     FreeSpaceHeader,
     FreeSpaceMembershipBlock,
     WalFrame,

@@ -1,4 +1,7 @@
-use worth_store_physical_format::{encode_extent_chunk, PhysicalPageSizeClass};
+use worth_store_physical_format::{
+    encode_extent_chunk, DurableExtentRecordPlacement, ExtentArenaFrameLayout, ExtentArenaRange,
+    PhysicalPageSizeClass,
+};
 use worth_store_physical_integrity::{
     validate_extent_chunk, ExtentChunkIntegrityValidation, PhysicalArtifactScope,
     PhysicalByteRange, PhysicalIntegrityValidationRecord, UntrustedPhysicalArtifact,
@@ -6,7 +9,7 @@ use worth_store_physical_integrity::{
 
 use super::support::{
     chunk_payload_capacity, chunk_scope, extent_cell, format, record, store, validated_manifest,
-    ExtentFixture, CHUNK_OFFSET,
+    ExtentFixture,
 };
 
 #[test]
@@ -79,13 +82,40 @@ fn identical_bytes_keep_byte_digest_but_bind_store_and_range() {
         other_store_fixture.tail_chunk_scope(),
         &other_manifest,
     );
+    let arena = fixture.arena_range();
+    let shifted_arena =
+        ExtentArenaRange::new(arena.arena(), arena.offset() + 65_536, arena.length()).unwrap();
+    let shifted_placement = DurableExtentRecordPlacement::new(
+        fixture.record,
+        fixture.extent,
+        fixture.logical_bytes,
+        shifted_arena,
+    )
+    .unwrap();
+    let shifted_manifest_scope = PhysicalArtifactScope::extent_manifest(
+        fixture.store,
+        fixture.format,
+        shifted_placement,
+        PhysicalByteRange::new(shifted_arena.offset(), manifest_bytes.len() as u64).unwrap(),
+    );
+    let shifted_manifest = validated_manifest(&manifest_bytes, shifted_manifest_scope);
+    let layout = ExtentArenaFrameLayout::new(
+        fixture.format,
+        u64::from(fixture.format.page_size().bytes()),
+    )
+    .unwrap();
     let shifted_scope = PhysicalArtifactScope::extent_chunk(
         fixture.store,
         fixture.format,
         fixture.chunk_coordinate(2),
-        PhysicalByteRange::new(CHUNK_OFFSET + 4096, chunk_bytes.len() as u64).unwrap(),
+        PhysicalByteRange::new(
+            shifted_arena.offset() + layout.chunk_offset(2).unwrap(),
+            chunk_bytes.len() as u64,
+        )
+        .unwrap(),
+        shifted_arena,
     );
-    let shifted = chunk_record(&chunk_bytes, shifted_scope, &baseline_manifest);
+    let shifted = chunk_record(&chunk_bytes, shifted_scope, &shifted_manifest);
 
     for changed in [other_store, shifted] {
         assert_eq!(baseline.byte_range_digest(), changed.byte_range_digest());

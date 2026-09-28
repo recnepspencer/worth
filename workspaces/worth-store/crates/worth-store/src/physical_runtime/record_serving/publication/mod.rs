@@ -4,6 +4,12 @@ pub(super) mod batch;
 mod completion_projection;
 mod data_image;
 mod director;
+pub(in crate::physical_runtime) use director::extent_copy::{
+    AdoptedExtentCopy, CompletedExtentCopy, ExtentCopySynchronization, ExtentCopyWriteEvidence,
+};
+pub use director::extent_copy::{
+    PhysicalExtentCopyPhase, PhysicalExtentCopyProgress, PhysicalExtentCopyResolutionProgress,
+};
 mod durable_data_plan;
 mod durable_preparation;
 pub(super) mod extent_publication;
@@ -20,7 +26,8 @@ pub(in crate::physical_runtime::record_serving) use data_image::ExistingDataFram
 #[cfg(feature = "certification-test-authority")]
 pub use director::CertificationPhysicalRecordSubmission;
 pub use director::{
-    InlineArtifactRewritePlanDenial, PhysicalRecordSubmission, PlannedInlineRewriteArtifact,
+    InlineArtifactRewritePlanDenial, PhysicalArenaEvacuationPreparationOutcome,
+    PhysicalRecordSubmission, PlannedInlineRewriteArtifact,
 };
 pub(in crate::physical_runtime) use director::{
     RecordPublicationDirector, RecordPublicationFoundation,

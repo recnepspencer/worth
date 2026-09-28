@@ -31,13 +31,29 @@ pub(in crate::physical_runtime) struct PhysicalRecordArtifactTree<'media> {
     root_manifests: ArtifactTreeDirectory,
     page_segments: ArtifactTreeDirectory,
     segment_manifests: ArtifactTreeDirectory,
-    extents: ArtifactTreeDirectory,
-    extent_manifests: ArtifactTreeDirectory,
+    arenas: ArtifactTreeDirectory,
     free_space_manifests: ArtifactTreeDirectory,
     record_staging: ArtifactTreeDirectory,
 }
 
 impl<'media> PhysicalRecordArtifactTree<'media> {
+    pub(in crate::physical_runtime) fn write_retirement_candidate_retry(
+        &self,
+        coordinate: RecordFrameCoordinate,
+        bytes: &[u8],
+        binding: BackendQueueExecutionPlanBinding,
+        adaptation: BackendQueueExecutionAdaptation,
+        durability: ArtifactRangeWriteDurabilityRequirement,
+    ) -> ScheduledArtifactRangeWriteOutcome {
+        self.tree.write_candidate_prefix_scheduled_exact(
+            &self.artifact(coordinate.artifact()),
+            coordinate,
+            bytes,
+            binding,
+            adaptation,
+            durability,
+        )
+    }
     pub(in crate::physical_runtime) fn new(media: &'media QualifiedFilesystemMedia) -> Self {
         let families = ArtifactTreeDirectory::families();
         let staging = ArtifactTreeDirectory::staging();
@@ -49,11 +65,8 @@ impl<'media> PhysicalRecordArtifactTree<'media> {
         let segment_manifests = record_family
             .child("segment-manifests")
             .expect("portable Store layout");
-        let extents = record_family
-            .child("extents")
-            .expect("portable Store layout");
-        let extent_manifests = record_family
-            .child("extent-manifests")
+        let arenas = record_family
+            .child("arenas")
             .expect("portable Store layout");
         let free_space_manifests = record_family
             .child("free-space")
@@ -67,8 +80,7 @@ impl<'media> PhysicalRecordArtifactTree<'media> {
             root_manifests,
             page_segments,
             segment_manifests,
-            extents,
-            extent_manifests,
+            arenas,
             free_space_manifests,
             record_staging,
         }
@@ -89,18 +101,11 @@ impl<'media> PhysicalRecordArtifactTree<'media> {
         self.tree.file_length(&self.artifact(artifact))
     }
 
-    pub(in crate::physical_runtime::record_serving) fn file_exists(
+    pub(in crate::physical_runtime) fn file_exists(
         &self,
         artifact: RecordArtifactFile,
     ) -> Result<bool, ArtifactTreeFailure> {
         self.tree.file_exists(&self.artifact(artifact))
-    }
-
-    pub(in crate::physical_runtime::record_serving) fn remove_file_durably(
-        &self,
-        artifact: RecordArtifactFile,
-    ) -> Result<(), ArtifactTreeFailure> {
-        self.tree.remove_file_durably(&self.artifact(artifact))
     }
 
     pub(in crate::physical_runtime::record_serving) fn read_exact_at(
@@ -194,6 +199,19 @@ impl<'media> PhysicalRecordArtifactTree<'media> {
         adaptation: BackendQueueExecutionAdaptation,
         durability: ArtifactRangeWriteDurabilityRequirement,
     ) -> ScheduledArtifactRangeWriteOutcome {
+        if matches!(
+            coordinate.artifact(),
+            RecordArtifactFile::ExtentArena { .. }
+        ) {
+            return self.tree.write_arena_scheduled_foreground_exact_at(
+                &self.artifact(coordinate.artifact()),
+                coordinate,
+                bytes,
+                binding,
+                adaptation,
+                durability,
+            );
+        }
         self.tree.write_scheduled_foreground_exact_at(
             &self.artifact(coordinate.artifact()),
             coordinate,
@@ -213,7 +231,7 @@ impl<'media> PhysicalRecordArtifactTree<'media> {
     ) -> ScheduledArtifactNewWriteOutcome {
         self.tree.write_scheduled_new_exact(
             &self.artifact(coordinate.artifact()),
-            ArtifactNewWriteRange::new(u64::from(coordinate.length()))
+            ArtifactNewWriteRange::at(coordinate.offset(), u64::from(coordinate.length()))
                 .expect("record frame coordinates are nonempty"),
             bytes,
             binding,
@@ -359,8 +377,7 @@ impl<'media> PhysicalRecordArtifactTree<'media> {
             RecordArtifactFile::Segment { .. } => &self.page_segments,
             RecordArtifactFile::SegmentManifest { .. }
             | RecordArtifactFile::SegmentMembershipBlock { .. } => &self.segment_manifests,
-            RecordArtifactFile::Extent { .. } => &self.extents,
-            RecordArtifactFile::ExtentManifest { .. } => &self.extent_manifests,
+            RecordArtifactFile::ExtentArena { .. } => &self.arenas,
             RecordArtifactFile::FreeSpaceManifest { .. }
             | RecordArtifactFile::FreeSpaceMembershipBlock { .. } => &self.free_space_manifests,
         }

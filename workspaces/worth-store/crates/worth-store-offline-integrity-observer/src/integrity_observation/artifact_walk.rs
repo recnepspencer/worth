@@ -38,15 +38,19 @@ pub fn observe_store(
         .map(|identity| hex_bytes(&identity).into_boxed_str());
     let mut observations = namespace.observations;
     observations.extend(root_observations.artifacts);
+    let mut retirements = super::retirement_evidence::RetirementEvidence::default();
+    observations.extend(super::journal_walk::observe_journals(
+        &store_root,
+        namespace.expected_store_identity,
+        &mut walk,
+        &mut retirements,
+    ));
     observations.extend(super::record_walk::observe_records(
         &store_root,
         namespace.expected_store_identity,
         &root_observations.roots,
-        &mut walk,
-    ));
-    observations.extend(super::journal_walk::observe_journals(
-        &store_root,
-        namespace.expected_store_identity,
+        root_observations.current_generation,
+        retirements,
         &mut walk,
     ));
     let residue = super::namespace_inventory::observe_namespace_residue(

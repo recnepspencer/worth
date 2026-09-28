@@ -17,12 +17,24 @@ pub(in crate::physical_runtime) struct PhysicalRootPublicationIdentity {
     store: StableStoreIdentity,
     runtime: RuntimeIdentity,
     policy: PhysicalDurabilityPolicyIdentity,
-    group: PhysicalDurabilityGroupIdentity,
-    membership: [u8; 32],
-    member_count: u32,
+    basis: PublicationBasis,
     source_generation: u64,
     candidate_generation: u64,
     catalog_candidate: RecordArtifactFile,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum PublicationBasis {
+    Group {
+        identity: PhysicalDurabilityGroupIdentity,
+        membership: [u8; 32],
+        count: u32,
+    },
+    Retirement {
+        operation: PhysicalMutationIdentity,
+        release: crate::physical_runtime::durability::RetirementReleaseProjection,
+        wal_digest: [u8; 32],
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -47,9 +59,11 @@ impl PhysicalRootPublicationIdentity {
             store,
             runtime,
             policy,
-            group: group.identity(),
-            membership: group.membership_digest(),
-            member_count: group.member_count().get(),
+            basis: PublicationBasis::Group {
+                identity: group.identity(),
+                membership: group.membership_digest(),
+                count: group.member_count().get(),
+            },
             source_generation,
             candidate_generation,
             catalog_candidate: RecordArtifactFile::CatalogCandidate {
@@ -58,16 +72,55 @@ impl PhysicalRootPublicationIdentity {
         })
     }
 
-    pub(in crate::physical_runtime) const fn group(self) -> PhysicalDurabilityGroupIdentity {
-        self.group
+    pub(in crate::physical_runtime) fn matches_group(
+        self,
+        group: PhysicalDurabilityGroupBasis,
+        count: usize,
+    ) -> bool {
+        matches!(self.basis, PublicationBasis::Group { identity, membership, count: members }
+            if identity == group.identity() && membership == group.membership_digest()
+                && members == group.member_count().get() && usize::try_from(members).ok() == Some(count))
     }
 
-    pub(in crate::physical_runtime) const fn membership(self) -> [u8; 32] {
-        self.membership
+    pub(in crate::physical_runtime) fn from_retirement(
+        policy: PhysicalDurabilityPolicyIdentity,
+        operation: PhysicalMutationIdentity,
+        release: crate::physical_runtime::durability::RetirementReleaseProjection,
+        wal_digest: [u8; 32],
+        candidate_publication: u64,
+    ) -> Option<Self> {
+        (candidate_publication == release.publication() && wal_digest != [0; 32]).then_some(Self {
+            store: operation.store_identity(),
+            runtime: operation.runtime_identity(),
+            policy,
+            basis: PublicationBasis::Retirement {
+                operation,
+                release,
+                wal_digest,
+            },
+            source_generation: release.source_generation(),
+            candidate_generation: release.candidate_generation(),
+            catalog_candidate: RecordArtifactFile::CatalogCandidate {
+                publication: candidate_publication,
+            },
+        })
     }
 
-    pub(in crate::physical_runtime) const fn member_count(self) -> u32 {
-        self.member_count
+    pub(in crate::physical_runtime) fn retirement_basis(
+        self,
+    ) -> Option<(
+        PhysicalMutationIdentity,
+        crate::physical_runtime::durability::RetirementReleaseProjection,
+        [u8; 32],
+    )> {
+        match self.basis {
+            PublicationBasis::Retirement {
+                operation,
+                release,
+                wal_digest,
+            } => Some((operation, release, wal_digest)),
+            _ => None,
+        }
     }
 
     pub(in crate::physical_runtime) const fn source_generation(self) -> u64 {
@@ -84,13 +137,34 @@ impl PhysicalRootPublicationIdentity {
 
     pub(in crate::physical_runtime) fn stable_digest(self) -> [u8; 32] {
         let mut digest = Sha256::new();
-        digest.update(b"worth-store.root-publication-identity.v1");
+        digest.update(b"worth-store.root-publication-identity.v2");
         digest.update(self.store.bytes());
         digest.update(self.runtime.get().to_le_bytes());
         digest.update(self.policy.bytes());
-        digest.update(self.group.bytes());
-        digest.update(self.membership);
-        digest.update(self.member_count.to_le_bytes());
+        match self.basis {
+            PublicationBasis::Group {
+                identity,
+                membership,
+                count,
+            } => {
+                digest.update([1]);
+                digest.update(identity.bytes());
+                digest.update(membership);
+                digest.update(count.to_le_bytes());
+            }
+            PublicationBasis::Retirement {
+                operation,
+                release,
+                wal_digest,
+            } => {
+                digest.update([2]);
+                digest.update(operation.operation_identity().get().to_le_bytes());
+                digest.update(operation.lifecycle_generation().to_le_bytes());
+                digest.update(release.candidate_digest());
+                digest.update(release.metadata_bytes().to_le_bytes());
+                digest.update(wal_digest);
+            }
+        }
         digest.update(self.source_generation.to_le_bytes());
         digest.update(self.candidate_generation.to_le_bytes());
         let RecordArtifactFile::CatalogCandidate { publication } = self.catalog_candidate else {

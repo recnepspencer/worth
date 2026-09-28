@@ -85,6 +85,11 @@ impl DataSettledPhysicalMutation {
 }
 
 impl SettledPhysicalMutationBasis {
+    pub(in crate::physical_runtime) fn source_copy_evidence(
+        &self,
+    ) -> Option<crate::physical_runtime::PhysicalExtentCopySettlementObservation> {
+        self.reserved.source_copy_evidence()
+    }
     pub(in crate::physical_runtime) const fn mutation_identity(&self) -> PhysicalMutationIdentity {
         self.reserved.mutation_identity()
     }

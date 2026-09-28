@@ -4,10 +4,10 @@ use std::num::NonZeroU64;
 use sha2::{Digest, Sha256};
 use worth_proof::TransitionOutcome;
 use worth_store_physical_format::{
-    prepare_extent_chunk, CurrentPhysicalRecordPlacement, DurableExtentManifest,
-    DurableExtentRecordPlacement, DurablePhysicalRootManifest, ExtentChunkCoordinate,
-    PersistedRecordIdentity, PhysicalGeneration, PhysicalGenerationAuthority, PhysicalRewriteRedo,
-    RecordArtifactFile,
+    CurrentPhysicalRecordPlacement, DurableExtentManifest, DurableExtentRecordPlacement,
+    ExtentArenaFrameLayout, PersistedRecordIdentity, PhysicalExtentArenaRewrite,
+    PhysicalGeneration, PhysicalGenerationAuthority, PhysicalRewriteRedo, RecordArtifactFile,
+    RecordFrameCoordinate,
 };
 
 use super::super::durable_preparation::CanonicalPayloadMaterializationObservation;
@@ -15,28 +15,27 @@ use super::durable_preparation::{map_record_denial, PhysicalMutationPreparationA
 use super::selected_segment_rewrite::{admitted_terminal, damaged, record_identity_bytes};
 use super::RecordPublicationDirector;
 use crate::physical_runtime::durability::{
-    PhysicalMutationOperationFamily, PreparedPhysicalDataFrame, PreparedPhysicalDataPlan,
-    RetiredArtifact,
+    PhysicalMutationOperationFamily, PreparedPhysicalDataPlan, RetiredArtifact,
 };
 use crate::physical_runtime::record_serving::access::extent_rewrite_source::{
     load_extent_rewrite_source, ExtentRewriteSourceRequest,
 };
-use crate::physical_runtime::record_serving::access::manifest_routing::{
-    ManifestDiscoveryCounterSnapshot, ManifestReader,
-};
-use crate::physical_runtime::record_serving::planning::inline_plan_failure::manifest_lookup_failure;
 use crate::physical_runtime::record_serving::publication::append_observation::PublicationObservation;
 use crate::physical_runtime::record_serving::{
     PreparedPhysicalRootProjection, RecordAppendBatch, RecordAppendDenial, RecordAppendError,
 };
 use crate::physical_runtime::{
-    CertifiedPriorPageBasis, PhysicalDataFrameIdentity, PhysicalMutationPreparationOutcome,
-    PhysicalMutationPreparationSuccess, PhysicalMutationRequest, PhysicalMutationResourceShape,
-    PreparedPhysicalMutation, PreparedPhysicalMutationContext,
+    PhysicalMutationPreparationOutcome, PhysicalMutationPreparationSuccess,
+    PhysicalMutationRequest, PhysicalMutationResourceShape, PreparedPhysicalMutation,
+    PreparedPhysicalMutationContext,
 };
 
 /// The largest extent payload one copy-on-write rewrite may select.
 const MAXIMUM_EXTENT_REWRITE_BYTES: u64 = 256 * 1024;
+
+mod frames;
+mod source;
+use source::extent_rewrite_basis_digest;
 
 impl RecordPublicationDirector {
     pub(super) fn prepare_extent_record_rewrite(
@@ -44,6 +43,25 @@ impl RecordPublicationDirector {
         placement: crate::physical_runtime::AdmittedRecordPlacementPolicy,
         request: PhysicalMutationRequest,
         record: PersistedRecordIdentity,
+    ) -> PhysicalMutationPreparationOutcome {
+        self.prepare_extent_rewrite_request(placement, request, record, false)
+    }
+
+    pub(super) fn prepare_extent_copy_request(
+        &self,
+        placement: crate::physical_runtime::AdmittedRecordPlacementPolicy,
+        request: PhysicalMutationRequest,
+        record: PersistedRecordIdentity,
+    ) -> PhysicalMutationPreparationOutcome {
+        self.prepare_extent_rewrite_request(placement, request, record, true)
+    }
+
+    fn prepare_extent_rewrite_request(
+        &self,
+        placement: crate::physical_runtime::AdmittedRecordPlacementPolicy,
+        request: PhysicalMutationRequest,
+        record: PersistedRecordIdentity,
+        streaming: bool,
     ) -> PhysicalMutationPreparationOutcome {
         if let Err(outcome) = self.require_preparation_health() {
             return outcome;
@@ -57,7 +75,7 @@ impl RecordPublicationDirector {
             Err(RecordAppendError::Denied(denial)) => return map_record_denial(denial),
             Err(_) => return map_record_denial(RecordAppendDenial::PublishedLayoutDamaged),
         };
-        if source.payload_bytes() > MAXIMUM_EXTENT_REWRITE_BYTES {
+        if !streaming && source.payload_bytes() > MAXIMUM_EXTENT_REWRITE_BYTES {
             return map_record_denial(RecordAppendDenial::PhysicalPressure);
         }
         let digest = extent_rewrite_basis_digest(source);
@@ -95,7 +113,7 @@ impl RecordPublicationDirector {
                     durability_policy_basis: self.durability_policy_basis.clone(),
                     resources: PhysicalMutationResourceShape::prepared(
                         1,
-                        source.payload_bytes().max(page_bytes),
+                        if streaming { page_bytes * 3 } else { source.payload_bytes().max(page_bytes) },
                     ),
                     start: crate::physical_runtime::PhysicalMutationRuntimeOwner::start_port(
                         &self.mutations,
@@ -116,7 +134,7 @@ impl RecordPublicationDirector {
         prepared: &PreparedPhysicalMutation,
         prepared_source: DurableExtentRecordPlacement,
     ) -> Result<(PreparedPhysicalDataPlan, PreparedPhysicalRootProjection), RecordAppendError> {
-        let (current_root, _) = self.root_owner.snapshot();
+        let (current_root, current_free_space) = self.root_owner.snapshot();
         if current_root.generation() != prepared.source_root_generation() {
             return Err(damaged());
         }
@@ -159,6 +177,22 @@ impl RecordPublicationDirector {
             .with_extent_generation(
                 PhysicalGeneration::from_raw(destination_generation).map_err(|_| damaged())?,
             );
+        let arena_owner =
+            self.arena_allocation_owner(&allocation, prepared.placement(), &current_free_space)?;
+        let alignment = arena_owner
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .alignment();
+        let layout = ExtentArenaFrameLayout::new(format, alignment).ok_or_else(damaged)?;
+        let reservation =
+            crate::physical_runtime::record_serving::arena::ArenaReservation::reserve(
+                &arena_owner,
+                layout
+                    .allocated_bytes(loaded.manifest.chunk_count())
+                    .ok_or_else(damaged)?,
+            )
+            .map_err(|_| RecordAppendError::Denied(RecordAppendDenial::PhysicalPressure))?;
+        let destination_range = reservation.range();
         let manifest = DurableExtentManifest::new(
             format,
             source.record(),
@@ -166,14 +200,14 @@ impl RecordPublicationDirector {
             loaded.manifest.logical_bytes(),
             format.page_size().bytes(),
             loaded.manifest.chunk_count(),
+            alignment,
         )
         .ok_or_else(damaged)?;
-        let destination = RecordArtifactFile::Extent {
-            extent: source.extent().get(),
-            generation: destination_generation,
+        let destination = RecordArtifactFile::ExtentArena {
+            arena: destination_range.arena().get(),
         };
         let (frames, written_bytes) =
-            self.encode_extent_frames(&manifest, destination, &loaded.payload)?;
+            self.encode_extent_frames(&manifest, destination, destination_range, &loaded.payload)?;
         let resulting_root =
             current_root
                 .generation()
@@ -197,6 +231,11 @@ impl RecordPublicationDirector {
             source.extent().get(),
             resulting_root,
         )
+        .ok_or_else(damaged)?
+        .with_extent_arena(
+            PhysicalExtentArenaRewrite::new(source.arena_range(), destination_range, alignment)
+                .ok_or_else(damaged)?,
+        )
         .ok_or_else(damaged)?;
         let manifest_bytes = manifest.encode(format);
         self.root_owner
@@ -212,6 +251,7 @@ impl RecordPublicationDirector {
             RetiredArtifact::Extent {
                 extent: source.extent().get(),
                 generation: source.extent_generation(),
+                range: source.arena_range(),
             },
             loaded.artifact_bytes,
         );
@@ -219,6 +259,7 @@ impl RecordPublicationDirector {
             source.record(),
             destination_cell,
             source.payload_bytes(),
+            destination_range,
         )
         .ok_or_else(damaged)?;
         let mut placements = BTreeMap::new();
@@ -231,6 +272,7 @@ impl RecordPublicationDirector {
             .map_err(|_| damaged())?
             .with_rewrite(rewrite);
         let root = PreparedPhysicalRootProjection {
+            arena_reservations: vec![reservation],
             root_publication_allocation_bytes: allocation_bytes,
             source_root: current_root,
             manifest_capacity_transition: prepared.manifest_capacity_transition(),
@@ -238,10 +280,12 @@ impl RecordPublicationDirector {
             records: vec![source.record()],
             inserted_records: 0,
             payload_manifests: vec![(
-                RecordArtifactFile::ExtentManifest {
-                    extent: source.extent().get(),
-                    generation: destination_generation,
-                },
+                RecordFrameCoordinate::new(
+                    destination,
+                    destination_range.offset(),
+                    manifest_bytes.len() as u32,
+                )
+                .ok_or_else(damaged)?,
                 manifest_bytes,
             )],
             placements,
@@ -269,103 +313,4 @@ impl RecordPublicationDirector {
         };
         Ok((data, root))
     }
-
-    fn current_extent_source(
-        &self,
-        root: &DurablePhysicalRootManifest,
-        record: PersistedRecordIdentity,
-    ) -> Result<DurableExtentRecordPlacement, RecordAppendError> {
-        let page_bytes = u64::from(self.format.declaration().page_size().bytes());
-        let allocation = self
-            .residency
-            .begin_foreground_write_operation(NonZeroU64::new(page_bytes).ok_or_else(damaged)?)
-            .map_err(|denial| {
-                RecordAppendError::Denied(RecordAppendDenial::from_residency(denial))
-            })?;
-        let located = ManifestReader::serving(
-            self.residency.clone(),
-            self.format,
-            self.access,
-            root.clone(),
-        )
-        .locate(
-            &allocation,
-            record,
-            &mut ManifestDiscoveryCounterSnapshot::default(),
-        )
-        .map_err(manifest_lookup_failure)?;
-        match located {
-            Some(CurrentPhysicalRecordPlacement::Extent(source)) => Ok(source),
-            _ => Err(RecordAppendError::Denied(
-                RecordAppendDenial::RewriteSpanNotLive,
-            )),
-        }
-    }
-
-    fn encode_extent_frames(
-        &self,
-        manifest: &DurableExtentManifest,
-        destination: RecordArtifactFile,
-        payload: &[u8],
-    ) -> Result<(Vec<PreparedPhysicalDataFrame>, u64), RecordAppendError> {
-        let format = self.format.declaration();
-        let transfer = manifest.chunk_payload_capacity() as usize;
-        let mut frames = Vec::with_capacity(manifest.chunk_count() as usize);
-        let mut completed = 0_usize;
-        let mut artifact_offset = 0_u64;
-        for ordinal in 1..=manifest.chunk_count() {
-            let expected = (payload.len() - completed).min(transfer);
-            let coordinate = ExtentChunkCoordinate::new(
-                manifest.record(),
-                manifest.extent_cell(),
-                manifest.logical_bytes(),
-                completed as u64,
-                ordinal,
-            )
-            .ok_or_else(damaged)?;
-            let mut chunk =
-                prepare_extent_chunk(format, coordinate, expected).map_err(|_| damaged())?;
-            chunk
-                .payload_mut()
-                .copy_from_slice(&payload[completed..completed + expected]);
-            let bytes = chunk.seal();
-            let length = u32::try_from(bytes.len()).map_err(|_| damaged())?;
-            let target = PhysicalDataFrameIdentity::extent_chunk(
-                coordinate,
-                destination,
-                artifact_offset,
-                length,
-            )
-            .ok_or_else(damaged)?;
-            frames.push(
-                PreparedPhysicalDataFrame::new(
-                    target,
-                    CertifiedPriorPageBasis::for_unmaterialized_target(target),
-                    vec![0],
-                    bytes,
-                    format,
-                )
-                .map_err(|_| damaged())?,
-            );
-            completed += expected;
-            artifact_offset = artifact_offset
-                .checked_add(u64::from(length))
-                .ok_or_else(damaged)?;
-        }
-        if completed != payload.len() {
-            return Err(damaged());
-        }
-        Ok((frames, artifact_offset))
-    }
-}
-
-fn extent_rewrite_basis_digest(source: DurableExtentRecordPlacement) -> [u8; 32] {
-    let mut digest = Sha256::new();
-    digest.update(b"store.physical.extent-rewrite-basis.v1");
-    digest.update(source.record().allocation_epoch());
-    digest.update(source.record().ordinal().to_le_bytes());
-    digest.update(source.extent().get().to_le_bytes());
-    digest.update(source.extent_generation().to_le_bytes());
-    digest.update(source.payload_bytes().to_le_bytes());
-    digest.finalize().into()
 }

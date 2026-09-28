@@ -46,7 +46,7 @@ impl PhysicalRecordReader {
                 artifacts,
                 admitted.artifact,
                 admitted.manifest,
-                admitted.artifact_bytes,
+                admitted.range,
                 admitted.integrity_membership,
                 self.store,
                 self.format.declaration(),

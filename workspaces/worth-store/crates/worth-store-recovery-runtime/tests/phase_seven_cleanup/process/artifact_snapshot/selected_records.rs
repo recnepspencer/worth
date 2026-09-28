@@ -108,19 +108,8 @@ fn collect_placement(
             collect_file(
                 &record_artifact_path(
                     root,
-                    RecordArtifactFile::Extent {
-                        extent: extent.extent().get(),
-                        generation: extent.extent_generation(),
-                    },
-                ),
-                paths,
-            );
-            collect_file(
-                &record_artifact_path(
-                    root,
-                    RecordArtifactFile::ExtentManifest {
-                        extent: extent.extent().get(),
-                        generation: extent.extent_generation(),
+                    RecordArtifactFile::ExtentArena {
+                        arena: extent.arena_range().arena().get(),
                     },
                 ),
                 paths,

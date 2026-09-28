@@ -101,7 +101,7 @@ impl CanonicalRecordReadFailureEvidence {
         }
     }
 
-    pub(super) const fn during_work(
+    pub(in crate::physical_runtime::record_serving) const fn during_work(
         failure: CanonicalRecordReadFailure,
         identity: PhysicalWorkIdentity,
     ) -> Self {

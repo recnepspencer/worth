@@ -9,12 +9,14 @@ use worth_store_io_scheduler::{BackgroundPacingOutcome, PhysicalDispatchSelectio
 pub(super) struct RetainedBackgroundHeads {
     checkpoint: AtomicBool,
     reclamation: AtomicBool,
+    compaction: AtomicBool,
 }
 
 #[derive(Clone, Copy)]
 pub(super) enum BackgroundHeadKind {
     Checkpoint,
     Reclamation,
+    Compaction,
 }
 
 impl RetainedBackgroundHeads {
@@ -22,6 +24,7 @@ impl RetainedBackgroundHeads {
         match kind {
             BackgroundHeadKind::Checkpoint => &self.checkpoint,
             BackgroundHeadKind::Reclamation => &self.reclamation,
+            BackgroundHeadKind::Compaction => &self.compaction,
         }
     }
 

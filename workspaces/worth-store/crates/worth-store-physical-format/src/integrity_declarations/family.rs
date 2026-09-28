@@ -7,6 +7,7 @@ pub enum PhysicalIntegrityArtifactFamily {
     PhysicalWorkObligation,
     PageFrame,
     ExtentChunk,
+    ExtentArenaFrame,
     WalFrame,
     CheckpointStreamHeader,
     CheckpointDirtyBasis,

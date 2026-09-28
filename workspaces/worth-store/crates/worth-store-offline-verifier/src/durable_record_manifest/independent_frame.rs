@@ -22,7 +22,7 @@ pub(super) fn decode_frame(
     }
     if &bytes[..8] != FRAME_MAGIC
         || bytes[8] != expected_kind
-        || bytes[9] != 2
+        || !(bytes[9] == 2 || (expected_kind == 2 && bytes[9] == 3))
         || bytes[10..20] != expected_format.canonical_identity_bytes()
         || bytes[22..24] != [0; 2]
         || (expected_kind != 3

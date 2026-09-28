@@ -33,13 +33,10 @@ impl DurablePhysicalRootManifest {
 #[cfg(test)]
 mod tests {
     use super::DurablePhysicalRootManifest;
-    use crate::{
-        FreeSpaceBlockReference, FreeSpaceKey, PhysicalRecordFormatDeclaration,
-        RecordAllocationClass,
-    };
+    use crate::{FreeSpaceBlockReference, FreeSpaceKey, PhysicalRecordFormatDeclaration};
 
     fn manifest(maintenance: bool) -> DurablePhysicalRootManifest {
-        let key = FreeSpaceKey::new(RecordAllocationClass::InlinePage, 1).unwrap();
+        let key = FreeSpaceKey::inline(1).unwrap();
         let free = FreeSpaceBlockReference::new(1, 1, 0, 41, key, key).unwrap();
         let root = DurablePhysicalRootManifest::builder(1, 9, 2, 43)
             .free_space_root(Some(free))

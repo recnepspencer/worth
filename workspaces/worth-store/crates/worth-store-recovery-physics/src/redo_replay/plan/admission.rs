@@ -12,6 +12,7 @@ pub fn admit_physical_redo_members(
     let mut admitted = Vec::with_capacity(members.len());
     let mut rewrites = Vec::new();
     let mut rewrite_admissions = Vec::new();
+    let mut source_copies = Vec::new();
     let mut targets = 0_u64;
     let mut scratch_bytes = 0_u64;
     let mut distinct = BTreeSet::new();
@@ -22,6 +23,13 @@ pub fn admit_physical_redo_members(
             return Err(PhysicalRedoPlanningDenial::LsnRangeMismatch);
         }
         prior_end = Some(member.lsn_range.end_exclusive());
+        if let Some(copy) = super::source_copy::admit(&member, format, projection)? {
+            scratch_bytes =
+                super::source_copy::charge(scratch_bytes, &copy, limits.recovery_memory_bytes)?;
+            consume_projection_limits(&mut projection, copy.projection())?;
+            source_copies.push(copy);
+            continue;
+        }
         if let Some(rewrite) = admitted_rewrite(&member, limits.recovery_memory_bytes)? {
             scratch_bytes = scratch_bytes
                 .checked_add(rewrite.candidate_bytes())
@@ -74,13 +82,14 @@ pub fn admit_physical_redo_members(
             inline_frames,
         });
     }
-    let group_allocations = validate_admitted_groups(&admitted)?;
+    let group_allocations = validate_admitted_groups(&admitted, &source_copies)?;
     Ok(AdmittedPhysicalRedoMembers {
         scratch_bytes,
         members: admitted.into_boxed_slice(),
         group_allocations,
         rewrites: rewrites.into_boxed_slice(),
         rewrite_admissions: rewrite_admissions.into_boxed_slice(),
+        source_copies: source_copies.into_boxed_slice(),
     })
 }
 
@@ -151,8 +160,12 @@ impl AdmittedPhysicalRedoMembers {
                 planned_records.push(record);
             }
         }
-        let recovery_root_allocation_bytes =
-            applied_group_allocation(&group_allocations, &projections, &decisions)?;
+        let recovery_root_allocation_bytes = applied_group_allocation(
+            &group_allocations,
+            &projections,
+            &decisions,
+            &self.source_copies,
+        )?;
         Ok(ImmutablePhysicalRedoPlan {
             scratch_bytes: self.scratch_bytes,
             records: planned_records.into_boxed_slice(),
@@ -162,11 +175,15 @@ impl AdmittedPhysicalRedoMembers {
             counters,
             rewrites: self.rewrites,
             rewrite_admissions: self.rewrite_admissions,
+            source_copies: self.source_copies,
         })
     }
 }
 
 fn rewrite_payload(member: &PhysicalRedoMemberInput) -> Result<bool, PhysicalRedoPlanningDenial> {
+    if super::source_copy::is_copy(member.canonical_redo()) {
+        return Ok(true);
+    }
     match worth_store_physical_format::PhysicalRewriteRedo::decode(
         member.canonical_redo(),
         u64::MAX,
@@ -283,7 +300,12 @@ fn consume_projection_limits(
 ) -> Result<(), PhysicalRedoPlanningDenial> {
     remaining.frames = remaining
         .frames
-        .checked_sub(projection.frames().len() as u64)
+        .checked_sub(match projection.payload() {
+            worth_store_physical_format::PersistedPhysicalRecoveryPayload::Frames(frames) => {
+                frames.len() as u64
+            }
+            worth_store_physical_format::PersistedPhysicalRecoveryPayload::SourceCopy(_) => 0,
+        })
         .ok_or(PhysicalRedoPlanningDenial::InvalidRecoveryProjection)?;
     remaining.record_identities = remaining
         .record_identities

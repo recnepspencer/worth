@@ -7,10 +7,10 @@ use super::super::planning::sealed_publication_overhead;
 ///
 /// A publication's charge is released when its WAL segment is reclaimed, so
 /// reopen charges only the newest publications whose WAL frames remain.
-pub(super) fn publication_overheads(roots: &[DurablePhysicalRootManifest]) -> Vec<u64> {
+pub(super) fn publication_overheads(roots: &[DurablePhysicalRootManifest]) -> Vec<(u64, u64)> {
     roots
         .iter()
         .filter(|root| root.generation() > 1)
-        .map(sealed_publication_overhead)
+        .map(|root| (root.generation(), sealed_publication_overhead(root)))
         .collect()
 }

@@ -14,7 +14,7 @@ use crate::physical_runtime::record_serving::{
 impl RecordPublicationDirector {
     pub(super) fn plan_prepared_data_for_wal(
         &self,
-        prepared: PreparedPhysicalMutation,
+        mut prepared: PreparedPhysicalMutation,
     ) -> Result<PreparedPhysicalMutation, (PreparedPhysicalMutation, RecordAppendDenial)> {
         let identity = prepared.mutation_identity();
         if identity.store_identity() != self.durability.store_identity()
@@ -23,12 +23,40 @@ impl RecordPublicationDirector {
         {
             return Ok(prepared);
         }
-        if prepared.data_is_planned()
-            || prepared.disposition() == PhysicalMutationAdmissionDisposition::DuplicateUnresolved
-        {
+        if prepared.disposition() == PhysicalMutationAdmissionDisposition::DuplicateUnresolved {
             return Ok(prepared);
         }
-        let planned = if let Some(source) = prepared.extent_rewrite_source() {
+        if prepared.data_is_planned() {
+            if let Some(source) = prepared.extent_copy_source() {
+                let (current, _) = self.root_owner.snapshot();
+                if self.current_extent_source(&current, source.record()).ok() != Some(source)
+                    || prepared
+                        .refresh_planned_extent_copy(current.clone())
+                        .is_err()
+                {
+                    return Err((prepared, RecordAppendDenial::RewriteSpanNotLive));
+                }
+                self.root_owner.note_displaced(
+                    current.generation(),
+                    crate::physical_runtime::durability::RetiredArtifact::Extent {
+                        extent: source.extent().get(),
+                        generation: source.extent_generation(),
+                        range: source.arena_range(),
+                    },
+                    source.arena_range().length(),
+                );
+            }
+            return Ok(prepared);
+        }
+        let planned = if let Some(copy) = prepared.take_completed_extent_copy() {
+            match self.build_extent_copy_adoption(&mut prepared, copy) {
+                Ok(plans) => Ok(plans),
+                Err((copy, error)) => {
+                    prepared = prepared.attach_completed_extent_copy(copy);
+                    Err(error)
+                }
+            }
+        } else if let Some(source) = prepared.extent_rewrite_source() {
             self.build_extent_record_rewrite(&prepared, source)
         } else if prepared.selected_segment_rewrite() {
             self.build_selected_segment_rewrite(&prepared)
@@ -96,8 +124,11 @@ impl RecordPublicationDirector {
                 RecordAppendDenial::PhysicalIdentityExhausted,
             ))?;
         drop(preparation);
+        let arena_owner =
+            self.arena_allocation_owner(&allocation, prepared.placement(), &current_free_space)?;
         let mut payload = prepare_payload_plan(
             PlacementPlanningContext {
+                arena_owner,
                 allocation: &allocation,
                 media: runtime.executor.record_serving_media(),
                 format: self.format,

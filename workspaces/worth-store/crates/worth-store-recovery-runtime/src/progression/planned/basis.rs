@@ -23,10 +23,15 @@ mod frame_identity;
 mod identity;
 mod publication_accessors;
 mod publication_candidate;
+mod source_inventory;
 mod staging_cost;
 
 pub(crate) use derivation::{derive_execution_basis, requires_successor_candidate};
 pub(crate) use publication_candidate::CandidateMaterializationCost;
+pub(crate) use source_inventory::{
+    RecoveryObservedCandidateArtifact, RecoveryObservedSuccessorCandidate,
+    RecoverySelectedSegmentPage, RecoverySelectedSourceInventory,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum ExecutionBasisDenial {
@@ -46,48 +51,13 @@ pub(crate) enum ExecutionBasisDenial {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct RecoverySelectedSourceInventory {
-    pub(crate) free_space: DurableFreeSpaceManifestHeader,
-    pub(crate) segment_pages: BTreeMap<(u64, u64), RecoverySelectedSegmentPage>,
-    pub(crate) segment_topology:
-        BTreeMap<(u64, u64), worth_store_physical_format::PhysicalSegmentMembershipBlock>,
-    pub(crate) free_entries: Box<[RecordFreeSpaceManifestEntry]>,
-    pub(crate) free_topology:
-        BTreeMap<(u64, u64), worth_store_physical_format::PhysicalFreeSpaceMembershipBlock>,
-    pub(crate) source_artifacts: Box<[RecordArtifactFile]>,
-}
-
-#[derive(Debug, PartialEq, Eq)]
-pub(crate) struct RecoveryObservedSuccessorCandidate {
-    pub(crate) root: DurablePhysicalRootManifest,
-    pub(crate) free_space: DurableFreeSpaceManifestHeader,
-    pub(crate) placements: Box<[CurrentPhysicalRecordPlacement]>,
-    pub(crate) segment_entries: Box<[RecordSegmentPageManifestEntry]>,
-    pub(crate) free_entries: Box<[RecordFreeSpaceManifestEntry]>,
-    pub(crate) referenced_artifacts: Box<[RecordArtifactFile]>,
-    pub(crate) artifacts: Box<[RecoveryObservedCandidateArtifact]>,
-}
-
-#[derive(Debug, PartialEq, Eq)]
-pub(crate) struct RecoveryObservedCandidateArtifact {
-    pub(crate) artifact: RecordArtifactFile,
-    pub(crate) bytes: Box<[u8]>,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct RecoverySelectedSegmentPage {
-    pub(crate) entry: RecordSegmentPageManifestEntry,
-    pub(crate) routing_identity: [u8; 32],
-    pub(crate) membership_artifact: RecordArtifactFile,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RecoveryStagingLayoutPlan {
     source_generation: u64,
     staging_generation: u64,
     base: RecoveryBaseImagePlan,
     actions: Box<[RecoveryStagingAction]>,
     commands: Box<[RecoveryStagingCommandPlan]>,
+    source_copies: Box<[worth_store_physical_format::PersistedExtentCopyRecipe]>,
     allocated_targets: Box<[PhysicalRedoTargetIdentity]>,
     allocated_bytes: u64,
     write_bytes: u64,
@@ -102,6 +72,7 @@ pub struct RecoveryStagingLayoutPlan {
 pub struct RecoveryStagingCommandPlan {
     ordinal: u64,
     artifact: RecordArtifactFile,
+    offset: u64,
     bytes: Box<[u8]>,
     payload_digest: [u8; 32],
 }
@@ -140,7 +111,7 @@ pub struct RecoverySegmentRoutingAction {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RecoveryPayloadManifestAction {
     ordinal: u64,
-    artifact: RecordArtifactFile,
+    coordinate: worth_store_physical_format::RecordFrameCoordinate,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -214,6 +185,27 @@ pub struct RecoveryQuiescencePlan {
 }
 
 impl RecoveryStagingLayoutPlan {
+    pub(crate) fn source_copies(
+        &self,
+    ) -> &[worth_store_physical_format::PersistedExtentCopyRecipe] {
+        &self.source_copies
+    }
+    pub(crate) fn materialization_count(&self) -> u64 {
+        self.commands.len() as u64
+            + self
+                .source_copies
+                .iter()
+                .map(|copy| u64::from(copy.intent().chunk_count()) + 1)
+                .sum::<u64>()
+    }
+    pub(crate) fn scheduler_command_count(&self) -> u64 {
+        self.materialization_count() * 2
+            + self
+                .source_copies
+                .iter()
+                .map(|copy| u64::from(copy.intent().chunk_count()) + 1)
+                .sum::<u64>()
+    }
     pub const fn source_generation(&self) -> u64 {
         self.source_generation
     }
@@ -253,6 +245,9 @@ impl RecoveryStagingCommandPlan {
     }
     pub const fn artifact(&self) -> RecordArtifactFile {
         self.artifact
+    }
+    pub const fn offset(&self) -> u64 {
+        self.offset
     }
     pub fn bytes(&self) -> &[u8] {
         &self.bytes
@@ -327,7 +322,10 @@ impl RecoveryPayloadManifestAction {
         self.ordinal
     }
     pub const fn artifact(&self) -> RecordArtifactFile {
-        self.artifact
+        self.coordinate.artifact()
+    }
+    pub const fn coordinate(&self) -> worth_store_physical_format::RecordFrameCoordinate {
+        self.coordinate
     }
 }
 

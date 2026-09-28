@@ -25,12 +25,12 @@ pub(super) fn read_record<'a>(
     if &bytes[..8] != b"WCP7REC\0" {
         return Err(damaged_field(Cause::Framing, 0, 8, Field::Magic));
     }
-    if bytes[8] != 1 {
+    if !matches!(bytes[8], 1 | 2) {
         return Err(Outcome::Unsupported(
             OfflineUnsupportedPhysicalVersion::new(
                 OfflineUnsupportedVersionAxis::CheckpointRecord,
                 u64::from(bytes[8]),
-                "1",
+                "1|2",
                 PhysicalByteRange::new(8, 1).unwrap(),
             ),
         ));

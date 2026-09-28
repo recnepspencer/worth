@@ -23,7 +23,7 @@ pub(crate) fn expected_counters(target: Target, operator: Operator) -> ExpectedC
     let mut expected = match operator {
         Operator::B | Operator::K => ExpectedCounters {
             entries: 5,
-            bytes: 654,
+            bytes: 670,
             files: 16,
             open_high_water: 5,
             checksums: 4,
@@ -37,7 +37,7 @@ pub(crate) fn expected_counters(target: Target, operator: Operator) -> ExpectedC
         },
         Operator::L => ExpectedCounters {
             entries: 5,
-            bytes: 654,
+            bytes: 670,
             files: 16,
             open_high_water: 5,
             checksums: 3,
@@ -51,7 +51,7 @@ pub(crate) fn expected_counters(target: Target, operator: Operator) -> ExpectedC
         },
         Operator::S | Operator::P => ExpectedCounters {
             entries: 5,
-            bytes: 654,
+            bytes: 670,
             files: 16,
             open_high_water: 5,
             checksums: 4,
@@ -65,7 +65,7 @@ pub(crate) fn expected_counters(target: Target, operator: Operator) -> ExpectedC
         },
         Operator::T => ExpectedCounters {
             entries: 5,
-            bytes: 653,
+            bytes: 669,
             files: 16,
             open_high_water: 5,
             checksums: 3,
@@ -79,7 +79,7 @@ pub(crate) fn expected_counters(target: Target, operator: Operator) -> ExpectedC
         },
         Operator::R if selector => ExpectedCounters {
             entries: 4,
-            bytes: 547,
+            bytes: 563,
             files: 12,
             open_high_water: 5,
             checksums: 3,
@@ -107,7 +107,7 @@ pub(crate) fn expected_counters(target: Target, operator: Operator) -> ExpectedC
         },
         Operator::D if selector => ExpectedCounters {
             entries: 6,
-            bytes: 654,
+            bytes: 670,
             files: 20,
             open_high_water: 5,
             checksums: 4,
@@ -121,7 +121,7 @@ pub(crate) fn expected_counters(target: Target, operator: Operator) -> ExpectedC
         },
         Operator::D => ExpectedCounters {
             entries: 6,
-            bytes: 654,
+            bytes: 670,
             files: 21,
             open_high_water: 5,
             checksums: 4,
@@ -135,7 +135,7 @@ pub(crate) fn expected_counters(target: Target, operator: Operator) -> ExpectedC
         },
         Operator::USchema | Operator::UFormat => ExpectedCounters {
             entries: 5,
-            bytes: 654,
+            bytes: 670,
             files: 16,
             open_high_water: 5,
             checksums: 3,
@@ -156,6 +156,16 @@ pub(crate) fn expected_counters(target: Target, operator: Operator) -> ExpectedC
     } else {
         1
     };
+    if cfg!(windows) {
+        // Each fully read file makes three high-resolution path queries;
+        // a cached hard-link alias returns after the first two.
+        expected.files += match operator {
+            Operator::R => 9,
+            Operator::D => 14,
+            _ => 12,
+        };
+        expected.open_high_water += 1;
+    }
     expected
 }
 

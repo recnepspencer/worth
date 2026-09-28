@@ -173,7 +173,6 @@ pub(in crate::physical_runtime::record_serving) fn load_current_root(
         displaced.extend(super::displaced_extents::retained_displaced_extents(
             &prior_roots,
             &current_root,
-            &artifacts,
             |root| {
                 super::super::access::manifest_routing::ManifestReader::with_loader(
                     media,
@@ -183,6 +182,16 @@ pub(in crate::physical_runtime::record_serving) fn load_current_root(
                     root,
                     std::sync::Arc::clone(&admission.lifecycle),
                     resident_integrity_counters,
+                )
+            },
+            |root, range, source_root| {
+                super::displaced_extents::range_was_published_free(
+                    &admission,
+                    root,
+                    range,
+                    source_root,
+                    bootstrap.format,
+                    bootstrap.access,
                 )
             },
             allocation,

@@ -1,6 +1,7 @@
 use worth_store_physical_backend::QualifiedFilesystemMedia;
 
 mod record_serving;
+mod retirement_residue;
 mod work_runtime;
 
 use record_serving::PhysicalRecordServingAssembly;
@@ -61,31 +62,10 @@ impl PhysicalStoreInstanceParts {
         let runtime_identity = core.runtime_identity();
         let lifecycle_generation = core.lifecycle_generation();
         let record_owner = RecordServingOwner::new();
-        let prepared_work = match prepare_work_runtime(
-            &media,
-            &core,
-            work_profile,
-            durability.observation(),
-            !bootstrap.publication_residue.is_empty(),
-        ) {
-            Ok(prepared) => prepared,
-            Err(cause) => {
-                return Err(PhysicalStoreInstanceConstructionFailure {
-                    termination,
-                    read_protection,
-                    media,
-                    core,
-                    residency,
-                    durability,
-                    cause,
-                })
-            }
-        };
-        let signal_profile = prepared_work.signal_profile();
-        let durability_reopen =
-            match reopen_durability_basis(&media, runtime_identity, signal_profile, &durability) {
-                Ok(reopened) => reopened,
-                Err(failure) => {
+        let prepared_work =
+            match prepare_work_runtime(&media, &core, work_profile, durability.observation()) {
+                Ok(prepared) => prepared,
+                Err(cause) => {
                     return Err(PhysicalStoreInstanceConstructionFailure {
                         termination,
                         read_protection,
@@ -93,13 +73,37 @@ impl PhysicalStoreInstanceParts {
                         core,
                         residency,
                         durability,
-                        cause: PhysicalSignalConstructionFailure::DurabilityStateReopenRejected(
-                            failure,
-                        ),
+                        cause,
                     })
                 }
             };
+        let signal_profile = prepared_work.signal_profile();
+        let durability_reopen = match reopen_durability_basis(
+            &media,
+            runtime_identity,
+            signal_profile,
+            &durability,
+            bootstrap.format.declaration(),
+        ) {
+            Ok(reopened) => reopened,
+            Err(failure) => {
+                return Err(PhysicalStoreInstanceConstructionFailure {
+                    termination,
+                    read_protection,
+                    media,
+                    core,
+                    residency,
+                    durability,
+                    cause: PhysicalSignalConstructionFailure::DurabilityStateReopenRejected(
+                        failure,
+                    ),
+                })
+            }
+        };
         let reopened = durability_reopen.install(durability);
+        prepared_work.admit_publication_residue(
+            retirement_residue::PublicationResidueAdmission::classify(&bootstrap, &reopened),
+        );
         let installed_work = prepared_work.install(media);
         let lifecycle_state = core.lifecycle_state();
         let record_serving = PhysicalRecordServingAssembly::new(

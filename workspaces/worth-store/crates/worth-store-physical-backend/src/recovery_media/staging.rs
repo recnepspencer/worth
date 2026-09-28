@@ -13,6 +13,7 @@ use crate::{
 
 use super::AdmittedRecoveryFilesystemMedia;
 
+mod arena_range;
 mod exact_prefix;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -20,6 +21,7 @@ pub enum RecoveryStagingWriteDisposition {
     Created,
     AlreadyMaterialized,
     CompletedFromExactPrefix,
+    RangeWritten,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -32,6 +34,7 @@ pub struct CompletedRecoveryStagingWrite {
     verified: Option<CompletedArtifactRangeRead>,
     prefix_verified: Option<CompletedArtifactRangeRead>,
     appended: Option<CompletedArtifactAppend>,
+    range_written: Option<crate::filesystem_media::CompletedArtifactRangeWrite>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -44,6 +47,7 @@ pub struct IndeterminateRecoveryStagingWrite {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RecoveryStagingIndeterminatePhysical {
     NewArtifact(IndeterminateArtifactNewWrite),
+    Range(crate::filesystem_media::IndeterminateArtifactRangeWrite),
     Append {
         prefix_verified: Option<CompletedArtifactRangeRead>,
         append: IndeterminateArtifactAppend,
@@ -101,12 +105,13 @@ impl AdmittedRecoveryFilesystemMedia {
     pub fn stage_recovery_artifact_scheduled(
         &self,
         artifact: RecordArtifactFile,
+        offset: u64,
         bytes: &[u8],
         binding: BackendQueueExecutionPlanBinding,
     ) -> RecoveryStagingWriteOutcome {
         let Some(coordinate) = u32::try_from(bytes.len())
             .ok()
-            .and_then(|length| RecordFrameCoordinate::new(artifact, 0, length))
+            .and_then(|length| RecordFrameCoordinate::new(artifact, offset, length))
         else {
             return denied_without_queue();
         };
@@ -125,7 +130,13 @@ impl AdmittedRecoveryFilesystemMedia {
         let media = self.parts.artifact_tree();
         let completed = match media.file_exists(&physical) {
             Ok(true) => {
-                exact_prefix::complete_existing(&media, artifact, physical, coordinate, bytes)
+                if matches!(artifact, RecordArtifactFile::ExtentArena { .. }) {
+                    arena_range::complete_existing(&media, artifact, physical, coordinate, bytes)
+                } else if offset == 0 {
+                    exact_prefix::complete_existing(&media, artifact, physical, coordinate, bytes)
+                } else {
+                    Err(RecoveryStagingPhysicalFailure::Denied(structural_denial()))
+                }
             }
             Ok(false) => exact_prefix::create(&media, artifact, physical, coordinate, bytes),
             Err(failure) => Err(RecoveryStagingPhysicalFailure::Denied(failure)),
@@ -298,6 +309,11 @@ impl CompletedRecoveryStagingWrite {
     }
     pub const fn appended(&self) -> Option<&CompletedArtifactAppend> {
         self.appended.as_ref()
+    }
+    pub const fn range_written(
+        &self,
+    ) -> Option<&crate::filesystem_media::CompletedArtifactRangeWrite> {
+        self.range_written.as_ref()
     }
 }
 

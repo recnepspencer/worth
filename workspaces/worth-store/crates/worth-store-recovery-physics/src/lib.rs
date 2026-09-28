@@ -26,12 +26,12 @@ pub use redo_replay::{
     admit_physical_redo_members, decode_physical_redo_records,
     physical_redo_observation_target_identities, physical_redo_observation_targets,
     physical_redo_target_identities, plan_physical_redo, AdmittedPhysicalRedoMembers,
-    ImmutablePhysicalRedoPlan, PhysicalRedoAdmissionLimits, PhysicalRedoDecision,
-    PhysicalRedoDecisionKind, PhysicalRedoDecisionPrior, PhysicalRedoDecisionView,
-    PhysicalRedoExtentCoordinate, PhysicalRedoGroupBinding, PhysicalRedoMemberInput,
-    PhysicalRedoPlanCounters, PhysicalRedoPlanningDenial, PhysicalRedoProjection,
-    PhysicalRedoRecord, PhysicalRedoTarget, PhysicalRedoTargetIdentity, PhysicalRewriteAdmission,
-    RecoveryPageObservation, RecoveryPageSource,
+    ImmutablePhysicalRedoPlan, PhysicalExtentCopyAdmission, PhysicalRedoAdmissionLimits,
+    PhysicalRedoDecision, PhysicalRedoDecisionKind, PhysicalRedoDecisionPrior,
+    PhysicalRedoDecisionView, PhysicalRedoExtentCoordinate, PhysicalRedoGroupBinding,
+    PhysicalRedoMemberInput, PhysicalRedoPlanCounters, PhysicalRedoPlanningDenial,
+    PhysicalRedoProjection, PhysicalRedoRecord, PhysicalRedoTarget, PhysicalRedoTargetIdentity,
+    PhysicalRewriteAdmission, RecoveryPageObservation, RecoveryPageSource,
 };
 pub use source_precedence::{
     admit_physical_page_facts, admit_physical_wal_tail, classify_admitted_wal_segment,

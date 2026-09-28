@@ -9,6 +9,7 @@ pub mod integrity_declarations;
 pub mod physical_work_obligation;
 pub mod wal_frame;
 
+mod arena_frame;
 mod backup_bundle;
 mod binary_format;
 mod blob_manifest;
@@ -32,12 +33,17 @@ mod payload;
 mod physical_artifact_read_range;
 mod physical_data_frame_identity;
 pub use physical_artifact_read_range::{PhysicalArtifactReadRange, PhysicalArtifactReadTarget};
+mod extent_copy;
 mod placement;
 mod record_framing;
 mod record_identity;
 mod recovery_projection;
 mod reference;
 mod rewrite_redo;
+pub use extent_copy::{
+    PhysicalExtentCopyDenial, PhysicalExtentCopyIntent, PhysicalExtentCopyRecord,
+    PhysicalExtentCopyResolution, PhysicalExtentCopyResolutionKind, EXTENT_COPY_DOMAIN,
+};
 mod root_selector;
 mod security_metadata;
 pub mod store_namespace;
@@ -47,6 +53,9 @@ pub use access::counters::PhysicalLayoutAccessCounterSnapshot;
 pub use access::grammar::{
     PhysicalLayoutAccessConstraint, PhysicalLayoutAccessFamily, PhysicalLayoutAccessPattern,
     UnsupportedPhysicalLayoutAccess,
+};
+pub use arena_frame::{
+    ExtentArenaFrameLayout, ExtentArenaId, ExtentArenaRange, EXTENT_ARENA_MANIFEST_FRAME_BYTES,
 };
 pub use backup_bundle::{
     backup_canonical_artifact_closure_digest, BackupBundleArtifactCoverage,
@@ -173,19 +182,20 @@ pub use manifest::{
     ExtentManifestEntry, ExtentManifestVocabulary, FreeSpaceBlockReference,
     FreeSpaceHeaderScopeIdentity, FreeSpaceKey, FreeSpaceManifestEntry,
     FreeSpaceMembershipBlockDecodeLimits, FreeSpaceMembershipBlockScopeIdentity,
-    FreeSpaceRoutingDenial, ManifestBlockReference, ManifestDiscoveryAuthority,
-    ManifestDiscoveryCounterSnapshot, ManifestDiscoveryDenial, ManifestDiscoveryDenialKind,
-    ManifestDiscoveryReport, ManifestVocabularyKind, MembershipManifestDenial,
-    PhysicalCurrentReachabilitySource, PhysicalFreeSpaceMembershipBlock,
+    FreeSpaceRoutingDenial, InlinePageFreeFrontier, ManifestBlockReference,
+    ManifestDiscoveryAuthority, ManifestDiscoveryCounterSnapshot, ManifestDiscoveryDenial,
+    ManifestDiscoveryDenialKind, ManifestDiscoveryReport, ManifestVocabularyKind,
+    MembershipManifestDenial, PhysicalCurrentReachabilitySource, PhysicalFreeSpaceMembershipBlock,
     PhysicalManifestUniverseBuilder, PhysicalReclaimRegion, PhysicalReclaimRegionDenial,
     PhysicalRootManifest, PhysicalRootManifestRebuildRow, PhysicalRootManifestRebuildSource,
     PhysicalRootManifestRebuildWitness, PhysicalRootManifestVocabulary, PhysicalRootRoutingBlock,
     PhysicalSegmentMembershipBlock, PhysicalTreeIdentity, ReclaimedByteInterpretation,
-    RecordAllocationClass, RecordFreeSpaceManifestEntry, RecordSegmentPageManifestEntry,
-    RootManifestDenial, RootRoutingBlockDecodeLimits, RootRoutingBlockDenial,
-    RootRoutingBlockScopeIdentity, SegmentManifestBlockReference, SegmentManifestEntry,
-    SegmentManifestVocabulary, SegmentMembershipBlockDecodeLimits, SegmentMembershipBlockDenial,
-    SegmentMembershipBlockScopeIdentity, SegmentPageKey, SegmentPageManifestEntry,
+    RecordAllocationClass, RecordFreeSpaceManifestEntry, RecordFreeSpaceRegion,
+    RecordSegmentPageManifestEntry, RootManifestDenial, RootRoutingBlockDecodeLimits,
+    RootRoutingBlockDenial, RootRoutingBlockScopeIdentity, SegmentManifestBlockReference,
+    SegmentManifestEntry, SegmentManifestVocabulary, SegmentMembershipBlockDecodeLimits,
+    SegmentMembershipBlockDenial, SegmentMembershipBlockScopeIdentity, SegmentPageKey,
+    SegmentPageManifestEntry,
 };
 pub use offline_verifier::{
     InMemoryModelLayoutObservation, InMemoryModelLayoutObservationSource, ManifestTraversalReport,
@@ -218,10 +228,10 @@ pub use record_framing::{
 };
 pub use record_identity::PersistedRecordIdentity;
 pub use recovery_projection::{
-    PersistedInlineSegmentAllocation, PersistedPhysicalRecoveryFrame,
-    PersistedPhysicalRecoveryManifest, PersistedPhysicalRecoveryProjection,
-    PersistedPhysicalRecoveryRootState, PhysicalRecoveryProjectionDecodeLimits,
-    PhysicalRecoveryProjectionDenial,
+    PersistedExtentCopyRecipe, PersistedInlineSegmentAllocation, PersistedPhysicalRecoveryFrame,
+    PersistedPhysicalRecoveryManifest, PersistedPhysicalRecoveryPayload,
+    PersistedPhysicalRecoveryProjection, PersistedPhysicalRecoveryRootState,
+    PhysicalRecoveryProjectionDecodeLimits, PhysicalRecoveryProjectionDenial,
 };
 pub use reference::{
     CheckpointAdjacencyPosture, CurrentRootManifestAdmission, ManifestMembershipDenial,
@@ -232,7 +242,9 @@ pub use reference::{
     PhysicalReferenceValidationDenial, PhysicalReferenceValidationWitness, PhysicalScopeFamily,
     RootManifestIntegrityPosture, RootPublicationValidationWitness, StalePhysicalReference,
 };
-pub use rewrite_redo::{PhysicalRewriteRedo, PhysicalRewriteRedoDenial, REWRITE_REDO_DOMAIN};
+pub use rewrite_redo::{
+    PhysicalExtentArenaRewrite, PhysicalRewriteRedo, PhysicalRewriteRedoDenial, REWRITE_REDO_DOMAIN,
+};
 pub use root_selector::{
     DurableRootSelector, RootSelectorDecodeDenial, RootSelectorIdentity, RootSelectorRole,
     ROOT_SELECTOR_BYTES,

@@ -1318,6 +1318,7 @@ dependencies = [
  "worth-store-buffer-pool",
  "worth-store-contracts",
  "worth-store-io-scheduler",
+ "worth-store-offline-integrity-observer",
  "worth-store-offline-verifier",
  "worth-store-physical-backend",
  "worth-store-physical-format",
@@ -1597,6 +1598,7 @@ dependencies = [
 name = "worth-store-offline-integrity-observer"
 version = "0.1.0"
 dependencies = [
+ "file-id",
  "serde",
  "serde_json",
  "worth-foundational",
@@ -1805,6 +1807,7 @@ dependencies = [
  "worth-proof",
  "worth-store",
  "worth-store-authority",
+ "worth-store-offline-integrity-observer",
  "worth-store-offline-verifier",
  "worth-store-physical-format",
  "worth-store-physical-integrity",

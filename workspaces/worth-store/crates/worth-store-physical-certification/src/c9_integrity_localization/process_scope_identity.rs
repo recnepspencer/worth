@@ -60,6 +60,9 @@ pub(crate) enum ProcessScopeIdentity {
 pub(super) fn project(scope: PhysicalArtifactScope) -> ProcessScopeIdentity {
     match scope.artifact_family() {
         Family::NamespaceIdentity => unreachable!("C.4 owns namespace admission"),
+        Family::ExtentArenaFrame => {
+            unreachable!("typed manifest/chunk scopes identify frames inside the arena")
+        }
         Family::BootstrapCatalog => ProcessScopeIdentity::Bootstrap,
         Family::CurrentRootSelector => ProcessScopeIdentity::CurrentSelector,
         Family::PreviousRootSelector => ProcessScopeIdentity::PreviousSelector,

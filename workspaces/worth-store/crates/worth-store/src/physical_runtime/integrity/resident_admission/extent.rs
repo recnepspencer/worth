@@ -1,9 +1,9 @@
 use worth_store_buffer_pool::PhysicalFrameLease;
 use worth_store_physical_integrity::{
-    validate_extent_chunk_membership, validate_extent_manifest, ExtentChunkIntegrityValidation,
-    ExtentChunkProjectionDenial, ExtentManifestIntegrityValidation,
-    IntegrityValidatedExtentChunkFrame, IntegrityValidatedExtentManifest,
-    IntegrityValidatedExtentMembership, PhysicalArtifactScope, UntrustedPhysicalArtifact,
+    validate_extent_arena_frame, ExtentArenaFrameExpectation, ExtentArenaFrameIntegrityValidation,
+    ExtentChunkProjectionDenial, IntegrityValidatedExtentChunkFrame,
+    IntegrityValidatedExtentManifest, IntegrityValidatedExtentMembership, PhysicalArtifactScope,
+    UntrustedPhysicalArtifact,
 };
 
 use super::{
@@ -22,6 +22,7 @@ pub(in crate::physical_runtime) struct IntegrityAdmittedResidentExtentChunk<'fra
 
 pub(in crate::physical_runtime) struct IntegrityAdmittedResidentExtentManifestView {
     scope: PhysicalArtifactScope,
+    membership: IntegrityValidatedExtentMembership,
 }
 
 pub(in crate::physical_runtime) struct IntegrityAdmittedResidentExtentChunkView<'frame> {
@@ -45,13 +46,14 @@ pub(in crate::physical_runtime) fn admit_resident_extent_manifest<'frame>(
     }
     let input = context.exact_input(lease, scope)?;
     context.observe_fresh_validation();
-    match validate_extent_manifest(input, scope).0 {
-        ExtentManifestIntegrityValidation::Intact(validated) => {
+    match validate_extent_arena_frame(input, ExtentArenaFrameExpectation::Manifest(scope)).0 {
+        ExtentArenaFrameIntegrityValidation::Manifest(validated) => {
             bind_extent_manifest(lease, input, validated, context)
         }
-        ExtentManifestIntegrityValidation::Rejected(rejection) => {
+        ExtentArenaFrameIntegrityValidation::Rejected(rejection) => {
             context.validation_rejected(rejection)
         }
+        ExtentArenaFrameIntegrityValidation::Chunk(_) => unreachable!("manifest expectation"),
     }
 }
 
@@ -66,13 +68,22 @@ pub(in crate::physical_runtime) fn admit_resident_extent_chunk<'frame>(
     }
     let input = context.exact_input(lease, scope)?;
     context.observe_fresh_validation();
-    match validate_extent_chunk_membership(input, scope, manifest).0 {
-        ExtentChunkIntegrityValidation::Intact(validated) => {
+    match validate_extent_arena_frame(
+        input,
+        ExtentArenaFrameExpectation::Chunk {
+            scope,
+            membership: manifest,
+        },
+    )
+    .0
+    {
+        ExtentArenaFrameIntegrityValidation::Chunk(validated) => {
             bind_extent_chunk(lease, input, validated, context)
         }
-        ExtentChunkIntegrityValidation::Rejected(rejection) => {
+        ExtentArenaFrameIntegrityValidation::Rejected(rejection) => {
             context.validation_rejected(rejection)
         }
+        ExtentArenaFrameIntegrityValidation::Manifest(_) => unreachable!("chunk expectation"),
     }
 }
 
@@ -118,7 +129,10 @@ impl<'frame> IntegrityAdmittedResidentExtentManifest<'frame> {
         decoder: impl FnOnce(IntegrityAdmittedResidentExtentManifestView) -> T,
     ) -> Result<T, ResidentIntegrityAdmissionDenial> {
         context.with_owner_decoder(self.source, |_, scope| {
-            decoder(IntegrityAdmittedResidentExtentManifestView { scope })
+            decoder(IntegrityAdmittedResidentExtentManifestView {
+                scope,
+                membership: self.membership,
+            })
         })
     }
 }
@@ -157,6 +171,7 @@ impl IntegrityAdmittedResidentExtentManifestView {
             placement.payload_bytes(),
             maximum_frame_bytes,
             chunk_count,
+            self.membership.alignment(),
         )
     }
 }

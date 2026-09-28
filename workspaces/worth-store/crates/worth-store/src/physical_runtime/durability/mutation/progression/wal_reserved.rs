@@ -206,6 +206,15 @@ impl WalRangeReservedPhysicalMutation {
 }
 
 impl WalRangeReservedPhysicalMutationBasis {
+    pub(in crate::physical_runtime) fn source_copy_evidence(
+        &self,
+    ) -> Option<crate::physical_runtime::PhysicalExtentCopySettlementObservation> {
+        self.data.source_copy().map(|(copy, range)| {
+            crate::physical_runtime::PhysicalExtentCopySettlementObservation::from_capability(
+                copy, range,
+            )
+        })
+    }
     pub(in crate::physical_runtime) const fn mutation_identity(&self) -> PhysicalMutationIdentity {
         self.member.mutation_identity()
     }

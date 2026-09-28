@@ -2,27 +2,35 @@ use std::collections::BTreeSet;
 
 use crate::{
     CurrentPhysicalRecordPlacement, DurableExtentRecordPlacement, DurableInlineRecordPlacement,
-    ExtentChunkCoordinate, PersistedPhysicalDataFrameSubject, PersistedRecordIdentity,
-    PhysicalExtentId, PhysicalGeneration, PhysicalGenerationAuthority, PhysicalPageId,
-    PhysicalRecordSlot, PhysicalSegmentId, RecordArtifactFile, RecordFrameCoordinate,
-    RecordSegmentPageManifestEntry,
+    ExtentArenaId, ExtentArenaRange, ExtentChunkCoordinate, PersistedPhysicalDataFrameSubject,
+    PersistedRecordIdentity, PhysicalExtentId, PhysicalGeneration, PhysicalGenerationAuthority,
+    PhysicalPageId, PhysicalRecordSlot, PhysicalSegmentId, RecordArtifactFile,
+    RecordFrameCoordinate, RecordSegmentPageManifestEntry,
 };
 
 mod codec;
 mod root_state;
+mod source_copy;
 pub use root_state::{PersistedInlineSegmentAllocation, PersistedPhysicalRecoveryRootState};
+pub use source_copy::PersistedExtentCopyRecipe;
 
-const DOMAIN: &[u8] = b"store.physical.recovery-projection.v3";
+const DOMAIN: &[u8] = b"store.physical.recovery-projection.v5";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PersistedPhysicalRecoveryProjection {
     source_root_generation: u64,
     root_state: PersistedPhysicalRecoveryRootState,
     record_identities: Box<[PersistedRecordIdentity]>,
-    frames: Box<[PersistedPhysicalRecoveryFrame]>,
+    payload: PersistedPhysicalRecoveryPayload,
     placements: Box<[CurrentPhysicalRecordPlacement]>,
     segment_updates: Box<[RecordSegmentPageManifestEntry]>,
     manifests: Box<[PersistedPhysicalRecoveryManifest]>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PersistedPhysicalRecoveryPayload {
+    Frames(Box<[PersistedPhysicalRecoveryFrame]>),
+    SourceCopy(PersistedExtentCopyRecipe),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -34,7 +42,7 @@ pub struct PersistedPhysicalRecoveryFrame {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PersistedPhysicalRecoveryManifest {
-    artifact: RecordArtifactFile,
+    coordinate: RecordFrameCoordinate,
     bytes: Box<[u8]>,
 }
 
@@ -80,12 +88,12 @@ impl PersistedPhysicalRecoveryProjection {
                     .iter()
                     .map(|entry| (entry.page_cell().segment_id().get(), entry.page().get())),
             )
-            && strictly_ordered(manifests.iter().map(|manifest| manifest.artifact)))
+            && strictly_ordered(manifests.iter().map(|manifest| manifest.coordinate)))
         .then_some(Self {
             source_root_generation,
             root_state,
             record_identities: record_identities.into_boxed_slice(),
-            frames: frames.into_boxed_slice(),
+            payload: PersistedPhysicalRecoveryPayload::Frames(frames.into_boxed_slice()),
             placements: placements.into_boxed_slice(),
             segment_updates: segment_updates.into_boxed_slice(),
             manifests: manifests.into_boxed_slice(),
@@ -101,8 +109,14 @@ impl PersistedPhysicalRecoveryProjection {
     pub fn record_identities(&self) -> &[PersistedRecordIdentity] {
         &self.record_identities
     }
-    pub fn frames(&self) -> &[PersistedPhysicalRecoveryFrame] {
-        &self.frames
+    pub fn payload(&self) -> &PersistedPhysicalRecoveryPayload {
+        &self.payload
+    }
+    pub fn frames(&self) -> Option<&[PersistedPhysicalRecoveryFrame]> {
+        match &self.payload {
+            PersistedPhysicalRecoveryPayload::Frames(frames) => Some(frames),
+            PersistedPhysicalRecoveryPayload::SourceCopy(_) => None,
+        }
     }
     pub fn placements(&self) -> &[CurrentPhysicalRecordPlacement] {
         &self.placements
@@ -150,14 +164,21 @@ impl PersistedPhysicalRecoveryFrame {
 }
 
 impl PersistedPhysicalRecoveryManifest {
-    pub fn new(artifact: RecordArtifactFile, bytes: &[u8]) -> Option<Self> {
-        matches!(artifact, RecordArtifactFile::ExtentManifest { .. }).then_some(Self {
-            artifact,
+    pub fn new(coordinate: RecordFrameCoordinate, bytes: &[u8]) -> Option<Self> {
+        (matches!(
+            coordinate.artifact(),
+            RecordArtifactFile::ExtentArena { .. }
+        ) && coordinate.length() as usize == bytes.len())
+        .then_some(Self {
+            coordinate,
             bytes: bytes.into(),
         })
     }
     pub const fn artifact(&self) -> RecordArtifactFile {
-        self.artifact
+        self.coordinate.artifact()
+    }
+    pub const fn coordinate(&self) -> RecordFrameCoordinate {
+        self.coordinate
     }
     pub fn bytes(&self) -> &[u8] {
         &self.bytes
@@ -177,12 +198,9 @@ fn subject_matches(
             },
         ) => page.segment_id().get() == segment,
         (
-            PersistedPhysicalDataFrameSubject::ExtentChunk(chunk),
-            RecordArtifactFile::Extent { extent, generation },
-        ) => {
-            chunk.extent_cell().extent_id().get() == extent
-                && chunk.extent_cell().generation().get() == generation
-        }
+            PersistedPhysicalDataFrameSubject::ExtentChunk(_),
+            RecordArtifactFile::ExtentArena { arena },
+        ) => arena != 0,
         _ => false,
     }
 }

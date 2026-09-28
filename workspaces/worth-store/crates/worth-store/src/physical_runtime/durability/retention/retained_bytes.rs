@@ -10,9 +10,10 @@ pub(in crate::physical_runtime) struct RetainedByteLease {
 impl PhysicalPublicationAdmission {
     /// Charges bytes that are not keyed by an artifact generation.
     ///
-    /// WAL frames and root-publication metadata are new retained bytes on every
-    /// publication. The charge stays until the WAL segment that carried the frames
-    /// is reclaimed.
+    /// The caller owns the release boundary. Physical copy candidates keep this
+    /// lease until publication transfers retention to the displaced source, or
+    /// cancellation is durable. WAL frames and root-publication metadata instead
+    /// seal the lease and link its release to their retained WAL segment.
     pub(in crate::physical_runtime) fn reserve_retained_bytes(
         self: &Arc<Self>,
         bytes: u64,

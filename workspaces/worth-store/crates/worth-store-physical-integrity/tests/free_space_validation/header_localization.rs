@@ -69,7 +69,7 @@ fn header_root_presence_and_entry_count_shape_failures_are_distinct() {
         scope,
         PhysicalDamageCause::ChildReferenceMismatch,
         112,
-        64,
+        80,
         PhysicalFormatField::ChildReference,
     );
 

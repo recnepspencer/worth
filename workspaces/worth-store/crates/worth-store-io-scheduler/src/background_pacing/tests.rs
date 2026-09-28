@@ -24,6 +24,23 @@ fn filesystem_checkpoint_shape_requires_filesystem_admitted_fsync_evidence() {
 }
 
 #[test]
+fn buffered_arena_compaction_does_not_claim_direct_io() {
+    let buffered = BackgroundIoPressureShape::buffered_file_compaction_rewrite();
+    assert_eq!(
+        buffered.class(),
+        BackgroundIoPressureClass::CompactionRewrite
+    );
+    assert_eq!(
+        buffered.backend_requirement(),
+        IoSchedulerBackendCapabilityRequirement::BufferedFile
+    );
+    assert_eq!(
+        BackgroundIoPressureShape::compaction_rewrite().backend_requirement(),
+        IoSchedulerBackendCapabilityRequirement::DirectIo
+    );
+}
+
+#[test]
 fn background_pressure_classes_are_distinct_physical_shapes() {
     let classes = [
         BackgroundIoPressureShape::compaction_rewrite().class(),

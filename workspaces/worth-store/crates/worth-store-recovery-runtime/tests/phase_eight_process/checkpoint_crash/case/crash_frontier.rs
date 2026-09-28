@@ -23,7 +23,13 @@ pub(super) fn observe(mut fixture: CheckpointFixture) -> CrashObservation {
     let start_marker = fixture.parent.path().join("checkpoint-start");
     let reached_marker = fixture.parent.path().join("checkpoint-reached");
     std::fs::write(&start_marker, stage.label()).expect("release checkpoint writer");
-    wait_for_marker(&mut fixture.child, &reached_marker, "checkpoint effect");
+    let checkpoint_effect = format!(
+        "checkpoint effect for scenario {} ({}) at {}",
+        fixture.scenario_index,
+        fixture.scenario.id,
+        stage.label(),
+    );
+    wait_for_marker(&mut fixture.child, &reached_marker, &checkpoint_effect);
 
     let effect_snapshot = snapshot_directory(&fixture.root);
     let expected_frontier = derive_expected_frontier(stage.label());

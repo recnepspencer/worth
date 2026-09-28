@@ -10,6 +10,7 @@ use super::super::independent_wal_oracle::{
 use super::published_segments::{segment_identity, segment_names};
 use super::selected_segment_rewrite::prepare_rewrite;
 use super::*;
+use crate::manifest_fixture::current_extent_route;
 
 #[test]
 fn retirement_waits_for_the_source_reader_then_restores_growth() {
@@ -313,7 +314,7 @@ fn reopened_store_keeps_a_multi_page_rewrite_charge() {
 }
 
 #[test]
-fn reopened_store_keeps_an_extent_published_after_a_reserved_gap() {
+fn reopened_store_keeps_an_extent_published_after_a_denied_reservation() {
     let parent = tempfile::tempdir().unwrap();
     let root = parent.path().join("store");
     let serving = serving_from_initialization(&root);
@@ -329,20 +330,19 @@ fn reopened_store_keeps_an_extent_published_after_a_reserved_gap() {
             panic!("growth denial must prove no effect")
         }
     }
-    let published = vec![7_u8; 8_192];
-    completed(prepare(&serving, placement, [74; 32], &published).execute());
-    let charged = serving.certification_charged_growth_bytes();
-    let skipped =
-        root.join("families/records/extents/extent-0000000000000001-0000000000000001.data");
-    let published_extent =
-        root.join("families/records/extents/extent-0000000000000002-0000000000000001.data");
+    let arena_dir = root.join("families/records/arenas");
     assert!(
-        !skipped.exists(),
-        "the denied reservation must not publish extent 1"
+        !arena_dir.exists() || std::fs::read_dir(&arena_dir).unwrap().next().is_none(),
+        "the denied reservation must not publish an arena"
     );
+    let published = vec![7_u8; 8_192];
+    let publication = completed(prepare(&serving, placement, [74; 32], &published).execute());
+    let charged = serving.certification_charged_growth_bytes();
+    let route = current_extent_route(&root, publication.persisted_records()[0]);
+    let published_arena = arena_dir.join(format!("arena-{:016x}.data", route.arena));
     assert!(
-        published_extent.is_file(),
-        "the later append must publish extent 2"
+        published_arena.is_file(),
+        "the later append must publish a routed arena range"
     );
     serving.close();
     let serving = crate::serving_from_open(&root);
@@ -358,11 +358,14 @@ fn reopened_store_keeps_the_published_extent_charge() {
     let (format, placement, _) = configuration();
     let payload =
         vec![7_u8; usize::try_from(format.declaration().page_size().bytes() / 2).unwrap()];
-    completed(prepare(&serving, placement, [70; 32], &payload).execute());
+    let publication = completed(prepare(&serving, placement, [70; 32], &payload).execute());
     let charged = serving.certification_charged_growth_bytes();
-    let extent =
-        root.join("families/records/extents/extent-0000000000000001-0000000000000001.data");
-    assert!(extent.is_file(), "the payload must publish an extent");
+    let route = current_extent_route(&root, publication.persisted_records()[0]);
+    let arena = root.join(format!(
+        "families/records/arenas/arena-{:016x}.data",
+        route.arena
+    ));
+    assert!(arena.is_file(), "the payload must publish an arena range");
     serving.close();
     let serving = crate::serving_from_open(&root);
     assert_eq!(

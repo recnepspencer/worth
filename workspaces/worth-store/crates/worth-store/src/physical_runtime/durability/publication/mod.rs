@@ -5,11 +5,15 @@ pub use current_root_owner::{
 };
 mod failure;
 mod identity;
+mod maintenance;
 mod namespace_durability;
 mod preparation;
 mod replacement;
 mod retained_root;
 mod work_port;
+pub(in crate::physical_runtime) use maintenance::{
+    publish_retirement_candidate, NamespaceDurableRetirementRoot,
+};
 
 pub(in crate::physical_runtime) use current_root_owner::PhysicalCurrentRootOwner;
 pub use current_root_owner::{

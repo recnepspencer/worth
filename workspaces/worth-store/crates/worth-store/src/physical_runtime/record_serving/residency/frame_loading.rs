@@ -9,6 +9,8 @@ pub(in crate::physical_runtime::record_serving) enum ExactFrameSourceExtent {
     #[cfg(feature = "certification-test-authority")]
     CoordinateOnly,
     CompleteArtifact(std::num::NonZeroU64),
+    /// A published route bounds the frame; an arena may grow independently.
+    ArenaRange(worth_store_physical_format::ExtentArenaRange),
 }
 
 pub(in crate::physical_runtime::record_serving) use super::frame_load_failure::{

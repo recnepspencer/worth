@@ -23,10 +23,11 @@ pub(super) fn derive(
     mut context: PlanningContext,
     basis: &mut ResolvedPlanningBasis,
 ) -> Result<(PlanningContext, ExecutionProducts), PhysicalRecoveryOutcome> {
-    let candidate_required = match requires_successor_candidate(&basis.fates, &basis.redo) {
-        Ok(required) => required,
-        Err(_) => return Err(context.redo_block(basis.planning_counters(), None)),
-    };
+    let candidate_required =
+        match requires_successor_candidate(&context.selection, &basis.fates, &basis.redo) {
+            Ok(required) => required,
+            Err(_) => return Err(context.redo_block(basis.planning_counters(), None)),
+        };
     let successor_candidate = if candidate_required {
         let remaining_observation_bytes = context
             .limits

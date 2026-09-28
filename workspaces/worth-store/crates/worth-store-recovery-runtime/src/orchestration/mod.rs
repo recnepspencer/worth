@@ -20,3 +20,4 @@ pub(crate) use publication::publish_recovery;
 pub(crate) use recovery::recover;
 pub(crate) use reopen::reopen_recovery;
 pub(crate) use staging::{stage_recovery, RecoveryStagingCancellation, RecoveryStagingInput};
+pub(crate) mod source_copy;

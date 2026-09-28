@@ -149,13 +149,13 @@ fn manifest_b_k_l_s_p_t_u_matrix_has_exact_localization_and_counters() {
     );
 
     let mut unsupported_format = manifest_bytes(11, format);
-    unsupported_format[10..12].copy_from_slice(&2_u16.to_le_bytes());
+    unsupported_format[10..12].copy_from_slice(&3_u16.to_le_bytes());
     reseal_durable_frame(&mut unsupported_format);
     assert_unsupported(
         &unsupported_format,
         scope,
         PhysicalIntegrityVersionAxis::PhysicalFormat,
-        2,
+        3,
     );
 }
 

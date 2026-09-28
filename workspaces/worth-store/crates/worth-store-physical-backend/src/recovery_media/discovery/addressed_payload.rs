@@ -1,4 +1,4 @@
-use worth_store_physical_format::RecordArtifactFile;
+use worth_store_physical_format::{ExtentArenaRange, RecordArtifactFile};
 
 use super::{
     BoundedRecoveryFilesystemDiscovery, ObservedRecoveryArtifact, RecoveryDiscoveryFailure,
@@ -91,41 +91,31 @@ impl BoundedRecoveryFilesystemDiscovery {
 
     pub fn read_extent_manifest(
         &mut self,
-        extent: u64,
-        generation: u64,
+        range: ExtentArenaRange,
         byte_limit: u64,
     ) -> Result<ObservedRecoveryArtifact, RecoveryDiscoveryFailure> {
-        self.read_addressed(
-            RecordArtifactFile::ExtentManifest { extent, generation },
-            byte_limit,
-        )
-    }
-
-    pub fn read_extent(
-        &mut self,
-        extent: u64,
-        generation: u64,
-        byte_limit: u64,
-    ) -> Result<ObservedRecoveryArtifact, RecoveryDiscoveryFailure> {
-        self.read_addressed(
-            RecordArtifactFile::Extent { extent, generation },
-            byte_limit,
-        )
+        self.read_extent_range(range, 0, 104, byte_limit)
     }
 
     pub fn read_extent_range(
         &mut self,
-        extent: u64,
-        generation: u64,
+        range: ExtentArenaRange,
         offset: u64,
         length: u32,
         byte_limit: u64,
     ) -> Result<ObservedRecoveryArtifact, RecoveryDiscoveryFailure> {
-        self.read_addressed_range(
-            RecordArtifactFile::Extent { extent, generation },
-            offset,
-            length,
-            byte_limit,
-        )
+        let artifact = RecordArtifactFile::ExtentArena {
+            arena: range.arena().get(),
+        };
+        let context = super::RecoveryDiscoveryArtifact::Record(artifact);
+        let end = offset
+            .checked_add(u64::from(length))
+            .filter(|end| *end <= range.length())
+            .ok_or_else(|| RecoveryDiscoveryFailure::invalid(context.clone()))?;
+        let absolute = range
+            .offset()
+            .checked_add(end - u64::from(length))
+            .ok_or_else(|| RecoveryDiscoveryFailure::invalid(context))?;
+        self.read_addressed_range(artifact, absolute, length, byte_limit)
     }
 }

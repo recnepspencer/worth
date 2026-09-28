@@ -5,14 +5,14 @@ use super::super::{
 use super::durable_frame::{damaged_field, read_durable_frame, read_u16, read_u32, read_u64};
 use worth_store_physical_format::integrity_declarations::families::root::ROOT_MANIFEST_INTEGRITY_DECLARATION;
 
-pub(crate) const ROOT_MANIFEST_BYTES: usize = 368;
+pub(crate) const ROOT_MANIFEST_BYTES: usize = 384;
 const ROOT_MANIFEST_KIND: u8 = 2;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct OfflineRootManifestFacts {
     pub(crate) generation: u64,
     pub(crate) format: [u8; 10],
-    pub(crate) payload: [u8; 320],
+    pub(crate) payload: [u8; 336],
 }
 
 pub(crate) fn read_root_manifest(
@@ -77,7 +77,7 @@ fn validate_reserved_and_flags(payload: &[u8]) -> Result<(), OfflineIntegrityOut
         (156, 160),
         (161, 168),
         (233, 240),
-        (297, 304),
+        (313, 320),
     ] {
         if payload[start..end].iter().any(|byte| *byte != 0) {
             return Err(damaged_field(
@@ -88,7 +88,7 @@ fn validate_reserved_and_flags(payload: &[u8]) -> Result<(), OfflineIntegrityOut
             ));
         }
     }
-    for offset in [40, 120, 160, 232, 296] {
+    for offset in [40, 120, 160, 232, 312] {
         if payload[offset] > 1 {
             return Err(damaged_field(
                 OfflinePhysicalDamageCause::Pointer,
@@ -112,8 +112,8 @@ fn validate_manifest_shape(
     let routing = (payload[40] == 1).then(|| &payload[48..120]);
     let last_record = (payload[120] == 1).then(|| &payload[128..152]);
     let segment = (payload[160] == 1).then(|| &payload[168..224]);
-    let free_space = (payload[232] == 1).then(|| &payload[240..296]);
-    let last_segment = (payload[296] == 1).then(|| &payload[304..320]);
+    let free_space = (payload[232] == 1).then(|| &payload[240..312]);
+    let last_segment = (payload[312] == 1).then(|| &payload[320..336]);
     if last_record.is_some() != last_segment.is_some() {
         return Err(pointer_damage(168, 200));
     }
@@ -126,8 +126,8 @@ fn validate_manifest_shape(
     if record_count != 0 && routing.is_none() {
         return Err(pointer_damage(88, 1));
     }
-    if free_space.is_none() {
-        return Err(pointer_damage(280, 1));
+    if free_space.is_none() && payload[240..312].iter().any(|byte| *byte != 0) {
+        return Err(pointer_damage(288, 72));
     }
     if let Some(reference) = routing {
         let required_level =
@@ -196,13 +196,13 @@ fn validate_free_space_reference(
     if bytes[18..20] != [0, 0] {
         return Err(pointer_damage(306, 2));
     }
-    if !valid_free_space_key(&bytes[24..40]) {
-        return Err(pointer_damage(312, 16));
+    if !valid_free_space_key(&bytes[24..48]) {
+        return Err(pointer_damage(312, 24));
     }
-    if !valid_free_space_key(&bytes[40..56])
-        || free_space_key(&bytes[24..40]) > free_space_key(&bytes[40..56])
+    if !valid_free_space_key(&bytes[48..72])
+        || free_space_key(&bytes[24..48]) > free_space_key(&bytes[48..72])
     {
-        return Err(pointer_damage(328, 16));
+        return Err(pointer_damage(336, 24));
     }
     Ok(())
 }
@@ -227,8 +227,8 @@ fn valid_free_space_key(bytes: &[u8]) -> bool {
     matches!(bytes[0], 1 | 2) && bytes[1..8] == [0; 7] && read_u64(bytes, 8) != 0
 }
 
-fn free_space_key(bytes: &[u8]) -> (u8, u64) {
-    (bytes[0], read_u64(bytes, 8))
+fn free_space_key(bytes: &[u8]) -> (u8, u64, u64) {
+    (bytes[0], read_u64(bytes, 8), read_u64(bytes, 16))
 }
 
 fn required_tree_level(entries: u64, capacity: u16) -> Option<u16> {
@@ -249,7 +249,7 @@ fn malformed_manifest() -> OfflineIntegrityOutcome {
     damaged_field(
         OfflinePhysicalDamageCause::MalformedPayload,
         48,
-        320,
+        336,
         OfflinePhysicalFormatField::ManifestPointer,
     )
 }

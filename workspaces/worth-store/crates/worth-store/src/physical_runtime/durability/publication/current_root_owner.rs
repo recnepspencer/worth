@@ -3,6 +3,8 @@ use std::sync::Mutex;
 #[cfg(feature = "certification-test-authority")]
 mod capture_pause;
 mod displaced;
+mod maintenance;
+mod recovered_copy;
 #[cfg(feature = "certification-test-authority")]
 pub use capture_pause::{CertificationReadRootCapturePauseGate, CertificationReadRootCaptureStage};
 
@@ -239,7 +241,8 @@ impl PhysicalCurrentRootOwner {
         let (core, _replacement, _namespace_synchronization) = durable.into_parts();
         let group = core.group();
         let member_identities = core.members().to_vec().into_boxed_slice();
-        let (candidate, members) = core.release_transition();
+        let (mut candidate, members) = core.release_transition();
+        candidate.commit_arena_reservations();
         let (
             source_root,
             successor_free_space,
@@ -298,11 +301,7 @@ fn validate_advance(
     }
     let identity = durable.identity();
     let group = durable.group_basis();
-    if identity.group() != group.identity()
-        || identity.membership() != group.membership_digest()
-        || identity.member_count() != group.member_count().get()
-        || usize::try_from(identity.member_count()).ok() != Some(durable.members().len())
-    {
+    if !identity.matches_group(group, durable.members().len()) {
         return Some(PhysicalCurrentRootAdvanceFailureCause::TransitionIdentityMismatch);
     }
     if identity.source_generation() != current_root.generation()

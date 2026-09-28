@@ -43,11 +43,16 @@ pub(crate) fn read_durable_frame<'a>(
             OfflinePhysicalFormatField::FamilyKind,
         ));
     }
-    if bytes[9] != declaration.version().envelope_schema().unwrap_or_default() as u8 {
+    // Root schema 3 marks maintenance-capable roots without changing the byte
+    // shape. This structural reader is not a runtime publication admission.
+    let maintenance_root = expected_kind == 2 && bytes[9] == 3;
+    if !maintenance_root
+        && bytes[9] != declaration.version().envelope_schema().unwrap_or_default() as u8
+    {
         return Err(unsupported(
             OfflineUnsupportedVersionAxis::EnvelopeSchema,
             u64::from(bytes[9]),
-            "2",
+            if expected_kind == 2 { "2|3" } else { "2" },
             9,
             1,
         ));
@@ -122,7 +127,7 @@ fn validate_format(
         return Err(unsupported(
             OfflineUnsupportedVersionAxis::PhysicalRecordFormat,
             u64::from(version),
-            "1",
+            "2",
             10,
             2,
         ));

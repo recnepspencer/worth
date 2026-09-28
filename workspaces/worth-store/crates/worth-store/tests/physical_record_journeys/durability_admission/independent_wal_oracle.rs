@@ -6,6 +6,8 @@ const BINDING_DOMAIN: &[u8] = b"store.physical.mutation-attempt-binding.v1";
 
 #[path = "independent_wal_oracle/canonical_redo.rs"]
 mod canonical_redo;
+#[path = "independent_wal_oracle/copy_intent.rs"]
+mod copy_intent;
 #[path = "independent_wal_oracle/retirement_redo.rs"]
 mod retirement_redo;
 #[path = "independent_wal_oracle/rewrite_redo.rs"]
@@ -15,6 +17,7 @@ mod segment_inventory;
 #[path = "independent_wal_oracle/target_claim.rs"]
 mod target_claim;
 
+pub(crate) use copy_intent::produced_copy_intents;
 pub(crate) use retirement_redo::{
     file_retirement_payloads, produced_retirement_payloads, IndependentRetiredKind,
     IndependentRetirementAction,

@@ -27,7 +27,9 @@ impl PoolInner {
         Ok(())
     }
 
-    fn validate_clean_invalidation(entry: &FrameEntry) -> Result<(), PhysicalResidencyDenial> {
+    pub(super) fn validate_clean_invalidation(
+        entry: &FrameEntry,
+    ) -> Result<(), PhysicalResidencyDenial> {
         match &entry.state {
             FrameState::LoadFailed(terminal) => {
                 Err(PhysicalResidencyDenial::FrameLoadTerminated(*terminal))

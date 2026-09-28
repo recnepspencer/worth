@@ -39,6 +39,9 @@ fn independent_literal_header_seals_root_issued_identity_and_owner_projection() 
     assert_eq!(validated.next_segment(), 8);
     assert_eq!(validated.next_page(), 10);
     assert_eq!(validated.next_extent(), 5);
+    assert_eq!(validated.next_arena(), 6);
+    assert_eq!(validated.arena_capacity(), 64 * 1024 * 1024);
+    assert_eq!(validated.arena_alignment(), 16 * 1024);
     assert_eq!(validated.next_block(), 2);
     assert_eq!(validated.root().unwrap().block(), 1);
     assert_eq!(
@@ -126,7 +129,7 @@ fn header_framing_version_kind_length_and_truncation_are_precisely_localized() {
         truncated,
         scope,
         PhysicalDamageCause::Truncated,
-        PhysicalByteRange::new(HEADER_OFFSET + 169, 7).unwrap(),
+        PhysicalByteRange::new(HEADER_OFFSET + 209, 7).unwrap(),
         None,
         PhysicalBlastRadius::CanonicalFrame,
     );
@@ -142,13 +145,13 @@ fn header_framing_version_kind_length_and_truncation_are_precisely_localized() {
     );
 
     let mut unsupported_format = HEADER_LITERAL.to_vec();
-    unsupported_format[10..12].copy_from_slice(&2_u16.to_le_bytes());
+    unsupported_format[10..12].copy_from_slice(&3_u16.to_le_bytes());
     reseal(&mut unsupported_format);
     assert_header_unsupported(
         &unsupported_format,
         scope,
         PhysicalIntegrityVersionAxis::PhysicalFormat,
-        2,
+        3,
     );
 }
 
@@ -228,7 +231,7 @@ fn header_format_generation_tree_root_and_complete_crc_substitution_fail_closed(
         &root,
         scope,
         PhysicalDamageCause::ChildReferenceMismatch,
-        range(scope, 112, 64),
+        range(scope, 112, 80),
         Some(PhysicalFormatField::ChildReference),
         PhysicalBlastRadius::ReachableSubtree,
     );

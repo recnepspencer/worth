@@ -46,6 +46,21 @@ impl FrameLoadPort for BoundedFrameLoader {
         let coordinate = RecordFrameCoordinate::new(artifact, offset, length).ok_or(
             FrameLoadFailure::new(FrameLoadFailureKind::InvalidCoordinate),
         )?;
+        if let ExactFrameSourceExtent::ArenaRange(range) = source_extent {
+            let inside = artifact
+                == RecordArtifactFile::ExtentArena {
+                    arena: range.arena().get(),
+                }
+                && offset >= range.offset()
+                && offset
+                    .checked_add(u64::from(length))
+                    .is_some_and(|end| end <= range.end());
+            if !inside {
+                return Err(FrameLoadFailure::new(
+                    FrameLoadFailureKind::InvalidCoordinate,
+                ));
+            }
+        }
         let key = PhysicalFrameKey::new(self.pool.store_identity(), coordinate);
         let access = self
             .pool
@@ -243,6 +258,7 @@ fn validate_source_extent(
     source_extent: ExactFrameSourceExtent,
 ) -> Result<FrameWorkTrace, FrameLoadFailure> {
     match source_extent {
+        ExactFrameSourceExtent::ArenaRange(_) => Ok(FrameWorkTrace::none()),
         #[cfg(feature = "certification-test-authority")]
         ExactFrameSourceExtent::CoordinateOnly => Ok(FrameWorkTrace::none()),
         ExactFrameSourceExtent::CompleteArtifact(expected) => {

@@ -188,7 +188,7 @@ mod tests {
         DurableExtentRecordPlacement, DurablePhysicalRootManifest, DurableRootSelector,
         FreeSpaceBlockReference, FreeSpaceKey, PersistedRecordIdentity, PhysicalExtentId,
         PhysicalGeneration, PhysicalGenerationAuthority, PhysicalRecordFormatDeclaration,
-        RecordAllocationClass, RootSelectorIdentity, RootSelectorRole,
+        RootSelectorIdentity, RootSelectorRole,
     };
 
     use super::*;
@@ -268,7 +268,10 @@ mod tests {
         let block = PhysicalRootRoutingBlock::leaf(7, 1, 1, vec![placement], 4).unwrap();
         let bytes = block.encode(format);
         let reference = block.reference(durable_artifact_checksum(&bytes));
-        let free_key = FreeSpaceKey::new(RecordAllocationClass::Extent, 1).unwrap();
+        let free_key = FreeSpaceKey::arena(
+            worth_store_physical_format::ExtentArenaId::new(1).unwrap(),
+            0,
+        );
         let free = FreeSpaceBlockReference::new(1, 1, 0, 17, free_key, free_key).unwrap();
         let manifest = DurablePhysicalRootManifest::builder(1, 7, 4, 19)
             .record_count(record_count)
@@ -314,7 +317,10 @@ mod tests {
                 .unwrap();
         let branch_bytes = branch.encode(format);
         let branch_reference = branch.reference(durable_artifact_checksum(&branch_bytes));
-        let free_key = FreeSpaceKey::new(RecordAllocationClass::Extent, 1).unwrap();
+        let free_key = FreeSpaceKey::arena(
+            worth_store_physical_format::ExtentArenaId::new(1).unwrap(),
+            0,
+        );
         let free = FreeSpaceBlockReference::new(1, 1, 0, 17, free_key, free_key).unwrap();
         let manifest = DurablePhysicalRootManifest::builder(1, 7, 2, 19)
             .record_count(3)
@@ -353,7 +359,18 @@ mod tests {
             .record_extent_cell(PhysicalExtentId::from_raw(ordinal).unwrap())
             .with_extent_generation(PhysicalGeneration::from_raw(1).unwrap());
         CurrentPhysicalRecordPlacement::Extent(
-            DurableExtentRecordPlacement::new(record, extent, 23).unwrap(),
+            DurableExtentRecordPlacement::new(
+                record,
+                extent,
+                23,
+                worth_store_physical_format::ExtentArenaRange::new(
+                    worth_store_physical_format::ExtentArenaId::new(1).unwrap(),
+                    4096,
+                    20480,
+                )
+                .unwrap(),
+            )
+            .unwrap(),
         )
     }
 

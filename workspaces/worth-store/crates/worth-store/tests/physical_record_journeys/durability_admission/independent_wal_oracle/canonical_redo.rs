@@ -1,7 +1,7 @@
 use super::{BindingField, BindingInspectionDenial, ByteCursor, IndependentRedoTargetClaim};
 
 const REDO_DOMAIN: &[u8] = b"store.physical.wal.canonical-redo.v3";
-const PROJECTION_DOMAIN: &[u8] = b"store.physical.recovery-projection.v3";
+const PROJECTION_DOMAIN: &[u8] = b"store.physical.recovery-projection.v5";
 
 pub(super) fn independent_canonical_redo(
     records: &[&[u8]],

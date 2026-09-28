@@ -56,6 +56,7 @@ pub(super) fn build(
     format: PhysicalRecordFormatDeclaration,
     publication: u64,
     maintenance: bool,
+    maximum_staging_bytes: u64,
 ) -> Result<RecoveryCandidateBasis, CandidateBuildDenial> {
     let generation = base.destination_generation();
     let selected = base.selected_root();
@@ -65,6 +66,8 @@ pub(super) fn build(
         base.segment_updates(),
         base.root_states(),
         selected.node_capacity(),
+        generation,
+        maximum_staging_bytes / 40,
     )?;
     let mut comparison_scratch_bytes = 0;
     let (root, mut build, referenced_artifacts) = match observed_successor {
@@ -224,6 +227,9 @@ fn build_new(
         final_inventory.next_segment,
         final_inventory.next_page,
         final_inventory.next_extent,
+        final_inventory.next_arena,
+        source.free_space.arena_capacity(),
+        source.free_space.arena_alignment(),
         next_free_block,
         free_root,
     )

@@ -41,11 +41,8 @@ pub(crate) fn record_artifact(
             | RecordArtifactFile::SegmentMembershipBlock { .. } => records
                 .child("segment-manifests")
                 .map_err(|_| RecoveryDiscoveryFailure::invalid(context.clone()))?,
-            RecordArtifactFile::Extent { .. } => records
-                .child("extents")
-                .map_err(|_| RecoveryDiscoveryFailure::invalid(context.clone()))?,
-            RecordArtifactFile::ExtentManifest { .. } => records
-                .child("extent-manifests")
+            RecordArtifactFile::ExtentArena { .. } => records
+                .child("arenas")
                 .map_err(|_| RecoveryDiscoveryFailure::invalid(context.clone()))?,
             RecordArtifactFile::FreeSpaceManifest { .. }
             | RecordArtifactFile::FreeSpaceMembershipBlock { .. } => records

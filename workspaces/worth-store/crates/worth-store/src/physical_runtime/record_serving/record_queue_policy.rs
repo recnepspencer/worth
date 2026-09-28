@@ -115,6 +115,17 @@ pub(in crate::physical_runtime) fn admit_scrub_background_policy(
     )
 }
 
+pub(in crate::physical_runtime) fn admit_compaction_background_policy(
+    budget: worth_store_io_scheduler::BackgroundResourceBudget,
+) -> FoundationalPolicyAdmissionReceipt {
+    admit_exact_queue_policy(
+        budget,
+        FoundationalPerformanceWorkClass::AuthoritativeMutation,
+        FoundationalPerformanceAccessPatternPosture::RebuildCapable,
+        FoundationalPerformanceExecutionTemperature::ColdPath,
+    )
+}
+
 fn add_exact_budget(
     receipt: FoundationalPolicyAdmissionReceiptBuilder,
     (kind, units): (FoundationalPerformanceBudgetKind, u32),

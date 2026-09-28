@@ -93,11 +93,13 @@ parser runs, so one physical file is content-read once across roles and
 families. On Windows, the observer opens non-reparse handles for the canonical
 Store root, every lexical ancestor, and the final file. Those handles deny
 delete sharing (and the final file also denies write sharing) while path-based
-identity is queried, bytes are read, and the binding is rechecked. It then
-obtains volume-qualified identity through bounded `fsutil file queryFileID`
-and volume-serial adapters. Adapter output is capped by `max-bytes`, and the
-child is killed at the remaining shared `max-elapsed-ms`; unavailable identity is a typed
-`Indeterminate` outcome, never a canonical-path fallback. A detectable length,
+identity is queried, bytes are read, and the binding is rechecked. A safe
+high-resolution file-ID query obtains the 128-bit file identity and volume
+serial from the held pathname. Its transient handle is admitted and charged
+against `max-open-files`, and the query observes the shared byte and elapsed
+budgets. A pathname is bound to its first verified physical identity for the
+whole walk; a later replacement is `source_changed`. Unavailable identity is
+a typed `Indeterminate` outcome, never a canonical-path fallback. A detectable length,
 timestamp, or identity change across bounded acquisition is `Indeterminate`;
 the observer does not claim detection when a filesystem preserves all compared
 snapshot metadata, and it does not retry until a convenient answer appears.

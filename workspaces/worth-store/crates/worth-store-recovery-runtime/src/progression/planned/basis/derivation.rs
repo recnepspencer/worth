@@ -53,12 +53,14 @@ pub(crate) fn derive_execution_basis(
         successor_candidate,
         pending,
         staging,
+        maximum_staging_bytes,
     )
 }
 
 pub(crate) fn requires_successor_candidate(
+    selection: &PhysicalSourceSelection,
     fates: &ReconciledOperationFates,
     redo: &ImmutablePhysicalRedoPlan,
 ) -> Result<bool, ExecutionBasisDenial> {
-    pending::has_pending_projection(fates, redo)
+    pending::has_pending_projection(selection, fates, redo)
 }

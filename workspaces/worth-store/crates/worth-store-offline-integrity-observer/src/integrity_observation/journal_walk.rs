@@ -17,6 +17,7 @@ pub(crate) fn observe_journals(
     root: &Path,
     store: Option<[u8; 16]>,
     walk: &mut BoundedMediaWalk,
+    retirements: &mut super::retirement_evidence::RetirementEvidence,
 ) -> Vec<OfflineArtifactObservation> {
     let mut observations = Vec::new();
     if walk.exhausted_reason().is_some() {
@@ -129,6 +130,13 @@ pub(crate) fn observe_journals(
                     for frame in frames {
                         if let Some((start, end)) = frame.lsn {
                             wal_coverage.admit(segment, generation, start, end);
+                            let begin = frame.offset as usize + 116;
+                            let payload_end = (frame.offset + frame.length) as usize - 32;
+                            retirements.observe(
+                                (start, end),
+                                store,
+                                &acquired.bytes[begin..payload_end],
+                            );
                         } else {
                             wal_coverage.unresolved(&frame.outcome);
                         }

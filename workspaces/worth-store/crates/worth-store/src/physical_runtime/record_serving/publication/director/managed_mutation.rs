@@ -41,6 +41,7 @@ impl RecordPublicationDirector {
         prepared: PreparedPhysicalMutation,
         attempt: &PhysicalMutationAttempt,
     ) -> Result<Arc<CompletedPhysicalMutationFact>, PhysicalMutationTerminalFact> {
+        let copy = self.copy_failure_obligation(&prepared);
         let pending = match self
             .root_owner
             .register_pending_publication(attempt.identity())
@@ -71,33 +72,34 @@ impl RecordPublicationDirector {
         let mut growth = RewriteGrowthGuard::new(&self.root_owner);
         let appended = match self.append_managed_wal(prepared, attempt) {
             Ok(appended) => appended,
-            Err(terminal) => return Err(keep_unresolved(growth, pending, terminal)),
+            Err(terminal) => return Err(keep_unresolved(growth, pending, terminal, copy.as_ref())),
         };
         let (basis, durable) = match self.synchronize_managed_wal(appended, attempt) {
             Ok(durable) => durable,
-            Err(terminal) => return Err(keep_unresolved(growth, pending, terminal)),
+            Err(terminal) => return Err(keep_unresolved(growth, pending, terminal, copy.as_ref())),
         };
         let settled = match self.settle_managed_data(basis, durable, attempt) {
             Ok(settled) => settled,
-            Err(terminal) => return Err(keep_unresolved(growth, pending, terminal)),
+            Err(terminal) => return Err(keep_unresolved(growth, pending, terminal, copy.as_ref())),
         };
         let prepared_root = match self.prepare_managed_root(settled, attempt) {
             Ok(prepared_root) => prepared_root,
-            Err(terminal) => return Err(keep_unresolved(growth, pending, terminal)),
+            Err(terminal) => return Err(keep_unresolved(growth, pending, terminal, copy.as_ref())),
         };
         let replaced_root = match self.replace_managed_root(prepared_root, attempt) {
             Ok(replaced_root) => replaced_root,
-            Err(terminal) => return Err(keep_unresolved(growth, pending, terminal)),
+            Err(terminal) => return Err(keep_unresolved(growth, pending, terminal, copy.as_ref())),
         };
         let durable_root = match self.synchronize_managed_root(replaced_root, attempt) {
             Ok(durable_root) => durable_root,
-            Err(terminal) => return Err(keep_unresolved(growth, pending, terminal)),
+            Err(terminal) => return Err(keep_unresolved(growth, pending, terminal, copy.as_ref())),
         };
         let completed = match self.advance_managed_root(durable_root, attempt) {
             Ok(completed) => completed,
-            Err(terminal) => return Err(keep_unresolved(growth, pending, terminal)),
+            Err(terminal) => return Err(keep_unresolved(growth, pending, terminal, copy.as_ref())),
         };
         growth.commit();
+        self.release_copy_candidate_after_source_retained();
         Ok(completed)
     }
 
@@ -207,7 +209,7 @@ impl RecordPublicationDirector {
         attempt.enter(PhysicalMutationProgressPhase::DataDispatch);
         let dispatched = match self.dispatch_wal_durable_data(durable) {
             PhysicalDataDispatchOutcome::Dispatched(dispatched) => dispatched,
-            PhysicalDataDispatchOutcome::RetryableAfterCleanup(_)
+            PhysicalDataDispatchOutcome::Suspended(_)
             | PhysicalDataDispatchOutcome::NotStarted { .. }
             | PhysicalDataDispatchOutcome::Indeterminate(_) => {
                 return Err(indeterminate(

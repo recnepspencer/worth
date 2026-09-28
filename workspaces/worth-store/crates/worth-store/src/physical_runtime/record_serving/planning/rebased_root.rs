@@ -12,6 +12,10 @@ use super::super::{
 
 mod assembly;
 mod projection;
+mod retirement;
+pub(in crate::physical_runtime::record_serving) use retirement::{
+    plan_arena_forget, plan_retirement_release, RetirementRootPlanningContext,
+};
 
 pub(in crate::physical_runtime::record_serving) struct RootRebaseContext<'plan> {
     pub(in crate::physical_runtime::record_serving) allocation:
@@ -62,6 +66,7 @@ pub(in crate::physical_runtime::record_serving) fn project_settled_root(
     }
     let payload_manifests = prepared.payload_manifests;
     let publication = PublicationPlan {
+        arena_reservations: prepared.arena_reservations,
         generation,
         manifests: Vec::new(),
         root: RecordArtifactFile::RootManifest { generation },

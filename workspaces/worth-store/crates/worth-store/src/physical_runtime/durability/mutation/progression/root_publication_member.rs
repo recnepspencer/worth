@@ -64,7 +64,16 @@ impl RootPublicationPhysicalMutationMember {
     }
 
     pub fn data_effect_count(&self) -> usize {
-        self.settled.data_effects().len()
+        self.source_copy_evidence().map_or_else(
+            || self.settled.data_effects().len(),
+            |copy| copy.frame_writes() as usize,
+        )
+    }
+
+    pub fn source_copy_evidence(
+        &self,
+    ) -> Option<crate::physical_runtime::PhysicalExtentCopySettlementObservation> {
+        self.settled.source_copy_evidence()
     }
 
     pub const fn wal_append_settlement(

@@ -32,7 +32,10 @@ fn exact_checkpoint_root_absence_and_corruption_stop_before_owner_projection() {
         let store = media.store_identity();
         media.close();
         let format = PhysicalRecordFormatDeclaration::builder().admit().unwrap();
-        let key = FreeSpaceKey::new(RecordAllocationClass::Extent, 1).unwrap();
+        let key = FreeSpaceKey::arena(
+            worth_store_physical_format::ExtentArenaId::new(1).unwrap(),
+            0,
+        );
         let manifest = DurablePhysicalRootManifest::builder(4, 7, 4, 19)
             .free_space_root(Some(
                 FreeSpaceBlockReference::new(4, 1, 0, 17, key, key).unwrap(),

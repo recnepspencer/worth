@@ -109,6 +109,7 @@ fn plan_with_group_decisions(
         target_index: 0,
     };
     ImmutablePhysicalRedoPlan {
+        source_copies: Box::new([]),
         scratch_bytes: base.supersession_scratch_bytes() * 2,
         records: base.records.clone(),
         decisions: vec![

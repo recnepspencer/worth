@@ -56,7 +56,8 @@ fn decode_target(
         _ => return Err(PhysicalRedoPlanningDenial::InvalidTarget),
     };
     let artifact = cursor.byte()?;
-    let (artifact_identity, artifact_generation) = (cursor.u64()?, cursor.u64()?);
+    let artifact_identity = cursor.u64()?;
+    let artifact_generation = if artifact == 16 { 0 } else { cursor.u64()? };
     let artifact_offset = cursor.u64()?;
     let artifact_length = cursor.u32()?;
     cursor.require_end()?;
@@ -69,10 +70,12 @@ fn decode_target(
                 generation: artifact_generation,
             }
         }
-        PhysicalRedoTargetIdentity::ExtentChunk {
-            extent, generation, ..
-        } if (artifact, artifact_identity, artifact_generation) == (8, extent, generation) => {
-            RecordArtifactFile::Extent { extent, generation }
+        PhysicalRedoTargetIdentity::ExtentChunk { .. }
+            if matches!(artifact, 8 | 16) && artifact_identity != 0 && artifact_generation == 0 =>
+        {
+            RecordArtifactFile::ExtentArena {
+                arena: artifact_identity,
+            }
         }
         _ => return Err(PhysicalRedoPlanningDenial::InvalidTarget),
     };
@@ -139,4 +142,60 @@ fn decode_extent_identity(
             logical_offset,
         },
     ))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn literal_extent_target(tag: u8) -> Vec<u8> {
+        let mut bytes = vec![2];
+        bytes.extend_from_slice(&[7; 16]);
+        for number in [1_u64, 2, 3, 40_000, 0] {
+            bytes.extend_from_slice(&number.to_le_bytes());
+        }
+        bytes.extend_from_slice(&1_u32.to_le_bytes());
+        bytes.push(tag);
+        bytes.extend_from_slice(&9_u64.to_le_bytes());
+        if tag == 8 {
+            bytes.extend_from_slice(&0_u64.to_le_bytes());
+        }
+        bytes.extend_from_slice(&4096_u64.to_le_bytes());
+        bytes.extend_from_slice(&16384_u32.to_le_bytes());
+        bytes
+    }
+
+    #[test]
+    fn current_arena_tag_consumes_one_identity_word_and_legacy_tag_two() {
+        let current = literal_extent_target(16);
+        let legacy = literal_extent_target(8);
+        assert_eq!(current.len(), 82);
+        assert_eq!(legacy.len(), 90);
+        for encoded in [&current, &legacy] {
+            let target = decode_target(encoded, [5; 32]).unwrap();
+            assert_eq!(
+                target.artifact(),
+                RecordArtifactFile::ExtentArena { arena: 9 }
+            );
+            assert_eq!(target.artifact_offset(), 4096);
+            assert_eq!(target.artifact_length(), 16384);
+            let mut framed = Vec::new();
+            framed.extend_from_slice(&1_u64.to_le_bytes());
+            framed.extend_from_slice(&(encoded.len() as u64).to_le_bytes());
+            framed.extend_from_slice(encoded);
+            framed.extend_from_slice(&[5; 32]);
+            let mut cursor = Cursor::new(&framed);
+            let mut total = 0;
+            let decoded = decode_targets(&mut cursor, &mut total, 1, &mut None).unwrap();
+            assert_eq!(decoded.len(), 1);
+            assert_eq!(total, 1);
+            cursor.require_end().unwrap();
+        }
+        let mut trailing = current;
+        trailing.push(0);
+        assert_eq!(
+            decode_target(&trailing, [5; 32]),
+            Err(PhysicalRedoPlanningDenial::MalformedMember)
+        );
+    }
 }

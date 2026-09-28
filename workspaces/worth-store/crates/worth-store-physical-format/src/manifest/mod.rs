@@ -65,6 +65,9 @@ pub use physical_free_space_membership_block::{
 pub use rebuild_source::*;
 pub use reclaim_region::*;
 pub use reclaimed_byte_interpretation::*;
-pub use record_free_space_entry::{RecordAllocationClass, RecordFreeSpaceManifestEntry};
+pub use record_free_space_entry::{
+    InlinePageFreeFrontier, RecordAllocationClass, RecordFreeSpaceManifestEntry,
+    RecordFreeSpaceRegion,
+};
 pub use universe::*;
 pub use vocabulary::*;

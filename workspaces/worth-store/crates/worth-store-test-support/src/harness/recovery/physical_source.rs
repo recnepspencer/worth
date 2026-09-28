@@ -119,11 +119,7 @@ fn root_manifest(
     .unwrap();
     let block_bytes = block.encode(format);
     let block_reference = block.reference(durable_artifact_checksum(&block_bytes));
-    let free_space_key = FreeSpaceKey::new(
-        worth_store_physical_format::RecordAllocationClass::InlinePage,
-        1,
-    )
-    .unwrap();
+    let free_space_key = FreeSpaceKey::inline(1).unwrap();
     let free_space = FreeSpaceBlockReference::new(1, 1, 0, 1, free_space_key, free_space_key);
     let manifest = DurablePhysicalRootManifest::builder(1, 1, 2, 1)
         .record_count(1)

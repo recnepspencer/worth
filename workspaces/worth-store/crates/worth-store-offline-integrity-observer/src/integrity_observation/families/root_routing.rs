@@ -91,13 +91,17 @@ pub(crate) fn read_root_routing(
             2 => {
                 let extent = read_u64(entry, 40);
                 let generation = read_u64(entry, 48);
+                let arena = read_u64(entry, 32);
+                let offset = read_u64(entry, 56);
+                let allocated_bytes = read_u64(entry, 64);
                 let logical_bytes = read_u64(entry, 72);
                 scope(
                     extent != 0
                         && generation != 0
                         && logical_bytes != 0
-                        && entry[32..40] == [0; 8]
-                        && entry[56..72] == [0; 16]
+                        && arena != 0
+                        && allocated_bytes >= 104
+                        && offset.checked_add(allocated_bytes).is_some()
                         && entry[80..86] == [0; 6],
                     start + 32,
                     54,
@@ -109,7 +113,22 @@ pub(crate) fn read_root_routing(
                     8,
                     Field::ManifestPointer,
                 )?;
-                children.push(ChildExpectation { path: format!("families/records/extent-manifests/extent-{extent:016x}-{generation:016x}.manifest"), family: PhysicalArtifactFamily::ExtentManifest, generation, format: expected.format, offset: 0, length: Some(104), checksum: None, scope: ChildScope::ExtentManifest { extent, record: entry[..24].try_into().unwrap(), logical_bytes } });
+                children.push(ChildExpectation {
+                    path: format!("families/records/arenas/arena-{arena:016x}.data"),
+                    family: PhysicalArtifactFamily::ExtentManifest,
+                    generation,
+                    format: expected.format,
+                    offset,
+                    length: Some(104),
+                    checksum: None,
+                    scope: ChildScope::ExtentManifest {
+                        arena,
+                        extent,
+                        record: entry[..24].try_into().unwrap(),
+                        logical_bytes,
+                        allocated_bytes,
+                    },
+                });
             }
             _ => scope(false, start + 24, 1, Field::ManifestPointer)?,
         }

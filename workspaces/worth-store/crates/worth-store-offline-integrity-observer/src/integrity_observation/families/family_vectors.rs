@@ -24,7 +24,7 @@ use crate::integrity_observation::{
 };
 use worth_foundational::PhysicalArtifactFamily as Family;
 
-const FORMAT: [u8; 10] = [1, 0, 0, 64, 0, 0, 1, 1, 1, 24];
+const FORMAT: [u8; 10] = [2, 0, 0, 64, 0, 0, 1, 1, 1, 24];
 fn hex(value: &str) -> Vec<u8> {
     value
         .as_bytes()
@@ -41,9 +41,12 @@ fn segment_key(segment: u64, page: u64) -> Vec<u8> {
     [segment.to_le_bytes(), page.to_le_bytes()].concat()
 }
 fn free_key(class: u8, owner: u64) -> Vec<u8> {
-    let mut key = vec![0; 16];
+    let mut key = vec![0; 24];
     key[0] = class;
-    key[8..].copy_from_slice(&owner.to_le_bytes());
+    key[8..16].copy_from_slice(&owner.to_le_bytes());
+    if class == 2 {
+        key[16..24].copy_from_slice(&5_u64.to_le_bytes());
+    }
     key
 }
 fn expected(family: Family, generation: u64, scope: ChildScope) -> ChildExpectation {
@@ -125,9 +128,11 @@ fn every_durable_family_reader_consumes_frozen_bytes_and_rejects_poison() {
                 Family::ExtentManifest,
                 5,
                 ChildScope::ExtentManifest {
+                    arena: 1,
                     extent: 4,
                     record: record(0x22, 7),
                     logical_bytes: 6,
+                    allocated_bytes: 20480,
                 },
             ),
         ),
@@ -136,6 +141,7 @@ fn every_durable_family_reader_consumes_frozen_bytes_and_rejects_poison() {
                 Family::ExtentChunkFrame,
                 5,
                 ChildScope::ExtentChunk {
+                    arena: 1,
                     extent: 4,
                     record: record(0x22, 7),
                     logical_bytes: 6,
@@ -282,7 +288,7 @@ fn checkpoint_stream_preserves_record_kinds_and_selective_aggregates() {
     );
     for (index, offset) in [0, 164, 232, 268, 291].into_iter().enumerate() {
         let mut unsupported = stream.clone();
-        unsupported[offset + 8] = 2;
+        unsupported[offset + 8] = 3;
         let records = super::checkpoint::read_checkpoint(
             &unsupported,
             store,

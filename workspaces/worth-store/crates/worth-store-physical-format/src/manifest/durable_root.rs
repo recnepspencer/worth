@@ -130,7 +130,7 @@ impl DurablePhysicalRootManifest {
     }
 
     pub fn encode(&self, format: PhysicalRecordFormatDeclaration) -> Vec<u8> {
-        let mut payload = vec![0_u8; 320];
+        let mut payload = vec![0_u8; 336];
         payload[..8].copy_from_slice(&self.generation().to_le_bytes());
         payload[8..16].copy_from_slice(&self.tree_identity.to_le_bytes());
         payload[16..18].copy_from_slice(&self.node_capacity.to_le_bytes());
@@ -152,12 +152,12 @@ impl DurablePhysicalRootManifest {
         }
         if let Some(reference) = self.free_space_root {
             payload[232] = 1;
-            encode_free_space_reference(&mut payload[240..296], reference);
+            encode_free_space_reference(&mut payload[240..312], reference);
         }
         if let Some(segment) = self.last_inline_segment {
-            payload[296] = 1;
-            payload[304..312].copy_from_slice(&segment.segment_id().get().to_le_bytes());
-            payload[312..320].copy_from_slice(&segment.generation().get().to_le_bytes());
+            payload[312] = 1;
+            payload[320..328].copy_from_slice(&segment.segment_id().get().to_le_bytes());
+            payload[328..336].copy_from_slice(&segment.generation().get().to_le_bytes());
         }
         encode_durable_frame_schema(
             DurableFrameKind::RootManifest,
@@ -174,14 +174,14 @@ impl DurablePhysicalRootManifest {
     ) -> Result<(Self, PhysicalRecordFormatDeclaration), RootManifestDenial> {
         let (format, frame) = decode_durable_frame(bytes, DurableFrameKind::RootManifest)
             .map_err(RootManifestDenial::Frame)?;
-        if frame.payload.len() != 320
+        if frame.payload.len() != 336
             || frame.payload[18..24] != [0; 6]
             || frame.payload[41..48] != [0; 7]
             || frame.payload[121..128] != [0; 7]
             || frame.payload[156..160] != [0; 4]
             || frame.payload[161..168] != [0; 7]
             || frame.payload[233..240] != [0; 7]
-            || frame.payload[297..304] != [0; 7]
+            || frame.payload[313..320] != [0; 7]
         {
             return Err(RootManifestDenial::MalformedPrefix);
         }
@@ -225,20 +225,20 @@ impl DurablePhysicalRootManifest {
         let free_space_root = match frame.payload[232] {
             0 => None,
             1 => Some(
-                decode_free_space_reference(&frame.payload[240..296])
+                decode_free_space_reference(&frame.payload[240..312])
                     .ok_or(RootManifestDenial::InvalidPlacement)?,
             ),
             _ => return Err(RootManifestDenial::MalformedPrefix),
         };
-        let last_inline_segment = match frame.payload[296] {
+        let last_inline_segment = match frame.payload[312] {
             0 => None,
             1 => {
                 let segment = PhysicalSegmentId::from_raw(u64::from_le_bytes(
-                    frame.payload[304..312].try_into().unwrap(),
+                    frame.payload[320..328].try_into().unwrap(),
                 ))
                 .map_err(|_| RootManifestDenial::InvalidPlacement)?;
                 let generation = PhysicalGeneration::from_raw(u64::from_le_bytes(
-                    frame.payload[312..320].try_into().unwrap(),
+                    frame.payload[328..336].try_into().unwrap(),
                 ))
                 .map_err(|_| RootManifestDenial::InvalidPlacement)?;
                 Some(
@@ -350,7 +350,7 @@ impl DurablePhysicalRootManifestBuilder {
                 && reference.block() < next_segment_block
         });
         let free_space_shape_is_valid =
-            free_space_root.is_some_and(|reference| reference.generation() <= generation.get());
+            free_space_root.is_none_or(|reference| reference.generation() <= generation.get());
         if tree_identity == 0
             || node_capacity < 2
             || next_block == 0

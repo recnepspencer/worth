@@ -167,16 +167,18 @@ fn legacy_redo_domains_cannot_masquerade_as_the_v3_projection_grammar() {
 }
 
 #[test]
-fn legacy_projection_domains_cannot_masquerade_as_the_v3_grammar() {
+fn legacy_projection_domains_cannot_masquerade_as_the_v5_grammar() {
     let target = canonical_target_bytes_with_generations(1, 2);
     for legacy in [
         b"store.physical.recovery-projection.v1".as_slice(),
         b"store.physical.recovery-projection.v2".as_slice(),
+        b"store.physical.recovery-projection.v3".as_slice(),
+        b"store.physical.recovery-projection.v4".as_slice(),
     ] {
         let mut projection = projection_with_generations(1, 1, 2).encode();
         replace_first(
             &mut projection,
-            b"store.physical.recovery-projection.v3",
+            b"store.physical.recovery-projection.v5",
             legacy,
         );
         let member = PhysicalRedoMemberInput::new(

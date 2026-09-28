@@ -28,7 +28,6 @@ pub use key::{
 };
 pub use lease::{PhysicalMutationIdempotencyLease, PhysicalNamespaceDurableCheckpointGeneration};
 pub(in crate::physical_runtime) use persisted_binding::PersistedPhysicalMutationAttemptBinding;
-#[cfg(feature = "recovery-runtime-owner")]
 pub(in crate::physical_runtime) use persisted_binding::PhysicalBindingDecodingContext;
 pub(in crate::physical_runtime::durability) use registry::PhysicalMutationIdempotencyRegistry;
 pub(in crate::physical_runtime) use registry::{

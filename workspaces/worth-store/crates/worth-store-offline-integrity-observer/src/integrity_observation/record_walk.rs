@@ -23,10 +23,15 @@ use worth_foundational::{
     PhysicalByteRange,
 };
 
+mod emission;
+use emission::EmittedChildScopes;
+
 pub(crate) fn observe_records(
     root: &Path,
     store: Option<[u8; 16]>,
     roots: &[OfflineRootManifestFacts],
+    current_generation: Option<u64>,
+    retirements: super::retirement_evidence::RetirementEvidence,
     walk: &mut BoundedMediaWalk,
 ) -> Vec<OfflineArtifactObservation> {
     let mut observations = vec![observe_bootstrap(root, store, walk)];
@@ -34,31 +39,64 @@ pub(crate) fn observe_records(
         return observations;
     }
     let mut queue = VecDeque::new();
+    let mut arenas = super::families::extent_arena::ArenaAccounting::default();
+    observations.extend(retirements.admit(
+        root,
+        roots,
+        current_generation,
+        &mut arenas,
+        &mut queue,
+        walk,
+    ));
+    let mut emitted = EmittedChildScopes::seed(&mut observations);
     for manifest in roots {
-        queue.extend(root_children(manifest));
+        queue.extend(
+            root_children(manifest)
+                .into_iter()
+                .map(|child| (manifest.generation, child)),
+        );
     }
-    let mut visited: BTreeMap<(String, u64), ChildExpectation> = BTreeMap::new();
-    while let Some(expected) = queue.pop_front() {
-        let key = (expected.path.clone(), expected.offset);
+    let mut visited: BTreeMap<(u64, String, u64), ChildExpectation> = BTreeMap::new();
+    while let Some((root_generation, expected)) = queue.pop_front() {
+        let key = (root_generation, expected.path.clone(), expected.offset);
         if let Some(prior) = visited.get(&key) {
             if prior != &expected {
-                observations.push(project(
+                emitted.push(
+                    &mut observations,
                     &expected,
-                    0,
-                    damage(Cause::ScopeMismatch, None, Blast::Artifact),
-                ));
+                    project(
+                        &expected,
+                        0,
+                        damage(Cause::ScopeMismatch, None, Blast::Artifact),
+                    ),
+                );
             }
             continue;
         }
         if visited.len() as u64 >= walk.maximum_entries() {
-            observations.push(project(&expected, 0, walk.entry_bound()));
+            emitted.push(
+                &mut observations,
+                &expected,
+                project(&expected, 0, walk.entry_bound()),
+            );
             break;
         }
         visited.insert(key, expected.clone());
         let path = root.join(&expected.path);
+        let arena_frame = matches!(
+            expected.scope,
+            ChildScope::ExtentManifest { .. } | ChildScope::ExtentChunk { .. }
+        );
         let acquired = if !path.try_exists().unwrap_or(true) {
             walk.counters_mut().missing_artifacts += 1;
             Err(damage(Cause::MissingArtifact, None, Blast::Artifact))
+        } else if arena_frame {
+            walk.acquire_range(
+                &path,
+                4,
+                expected.offset,
+                expected.length.expect("arena frame length"),
+            )
         } else {
             walk.acquire(&path, 4)
         };
@@ -72,7 +110,9 @@ pub(crate) fn observe_records(
                     .as_ref()
                     .map(|path| super::unknown_artifact::relative_path(root, path));
                 if let Some(first_path) = &alias {
-                    observations.push(
+                    emitted.push(
+                        &mut observations,
+                        &expected,
                         project(
                             &expected,
                             acquired.byte_length,
@@ -98,7 +138,7 @@ pub(crate) fn observe_records(
                             Blast::Artifact,
                         );
                         walk.record_outcome(&outcome);
-                        observations.push(project(&expected, 0, outcome));
+                        emitted.push(&mut observations, &expected, project(&expected, 0, outcome));
                         continue;
                     }
                 }
@@ -106,9 +146,15 @@ pub(crate) fn observe_records(
                     .length
                     .and_then(|length| expected.offset.checked_add(length))
                     .unwrap_or(acquired.byte_length as u64);
-                let range = usize::try_from(expected.offset)
+                let start = if arena_frame { 0 } else { expected.offset };
+                let read_end = if arena_frame {
+                    expected.length.unwrap()
+                } else {
+                    end
+                };
+                let range = usize::try_from(start)
                     .ok()
-                    .zip(usize::try_from(end).ok())
+                    .zip(usize::try_from(read_end).ok())
                     .and_then(|(start, end)| acquired.bytes.get(start..end));
                 match range {
                     None => damage(
@@ -125,12 +171,20 @@ pub(crate) fn observe_records(
                         match result {
                             Err(outcome) => shift_outcome(outcome, expected.offset),
                             Ok(children) => {
+                                if expected.family == Family::RootRoutingBlock {
+                                    for child in &children {
+                                        arenas.observe_routed_expectation(root_generation, child);
+                                    }
+                                }
+                                arenas.observe(root_generation, &expected, bytes);
                                 if queue.len().saturating_add(children.len()) as u64
                                     > walk.maximum_entries()
                                 {
                                     walk.entry_bound()
                                 } else {
-                                    queue.extend(children);
+                                    queue.extend(
+                                        children.into_iter().map(|child| (root_generation, child)),
+                                    );
                                     Outcome::Intact
                                 }
                             }
@@ -147,12 +201,15 @@ pub(crate) fn observe_records(
                     first_path: first_path.into(),
                 });
         }
-        observations.push(observation);
+        emitted.push(&mut observations, &expected, observation);
+    }
+    for observation in arenas.finish(root, walk) {
+        emitted.push_untyped(&mut observations, observation);
     }
     observations
 }
 
-fn root_children(root: &OfflineRootManifestFacts) -> Vec<ChildExpectation> {
+pub(crate) fn root_children(root: &OfflineRootManifestFacts) -> Vec<ChildExpectation> {
     use super::families::durable_frame::read_u64;
     let payload = &root.payload;
     let tree = read_u64(payload, 8);
@@ -185,14 +242,14 @@ fn root_children(root: &OfflineRootManifestFacts) -> Vec<ChildExpectation> {
         generation: root.generation,
         format: root.format,
         offset: 0,
-        length: Some(176),
+        length: Some(216),
         checksum: Some(read_u32(payload, 152)),
         scope: ChildScope::FreeSpace { tree, capacity },
     });
     // Root's free-space reference is independently bound as well as the header reference.
     if payload[232] == 1 {
         children.push(reference(
-            &payload[240..296],
+            &payload[240..312],
             Family::FreeSpaceMembershipBlock,
             tree,
             capacity,
@@ -202,7 +259,7 @@ fn root_children(root: &OfflineRootManifestFacts) -> Vec<ChildExpectation> {
     children
 }
 
-fn inspect_expected(
+pub(crate) fn inspect_expected(
     bytes: &[u8],
     expected: &ChildExpectation,
     walk: &mut BoundedMediaWalk,
@@ -288,7 +345,7 @@ fn observe_bootstrap(
     }
 }
 
-fn project(
+pub(crate) fn project(
     expected: &ChildExpectation,
     length: usize,
     outcome: Outcome,

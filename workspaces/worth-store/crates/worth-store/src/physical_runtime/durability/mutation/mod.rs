@@ -35,6 +35,7 @@ pub use request::{PhysicalMutationDeadline, PhysicalMutationRequest};
 pub use request_fingerprint::PhysicalMutationRequestFingerprint;
 
 pub(in crate::physical_runtime) use admission::AdmittedPhysicalMutation;
+pub(in crate::physical_runtime) use idempotency::PhysicalBindingDecodingContext;
 pub(in crate::physical_runtime::durability) use idempotency::PhysicalMutationIdempotencyRegistry;
 pub(in crate::physical_runtime) use idempotency::{
     rebuild_idempotency, AllocatedPhysicalMutationAttemptBinding,
@@ -50,7 +51,6 @@ pub(in crate::physical_runtime) use idempotency::{
 #[cfg(feature = "recovery-runtime-owner")]
 pub(in crate::physical_runtime) use idempotency::{
     DecodedPhysicalMutationBindingRecord, PersistedPhysicalMutationFate,
-    PhysicalBindingDecodingContext,
 };
 pub(in crate::physical_runtime) use request::PhysicalMutationDurabilityRequest;
 pub(in crate::physical_runtime) use request_fingerprint::{

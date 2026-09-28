@@ -25,7 +25,7 @@ fn checksum_valid_root_bytes_cannot_relabel_their_c4_store_locator_or_offset() {
     let store_b = initialize_media(&root_b);
     assert_ne!(store_a, store_b);
     let format = PhysicalRecordFormatDeclaration::builder().admit().unwrap();
-    let key = FreeSpaceKey::new(RecordAllocationClass::InlinePage, 1).unwrap();
+    let key = FreeSpaceKey::inline(1).unwrap();
     let free = FreeSpaceBlockReference::new(1, 1, 0, 41, key, key).unwrap();
     let bytes = DurablePhysicalRootManifest::builder(1, 71, 2, 43)
         .free_space_root(Some(free))

@@ -7,7 +7,7 @@ use super::independent_frame::{artifact_checksum, decode_frame};
 use super::observation::{OfflineRecordIdentity, OfflineRecordPlacement};
 use super::{read_artifact, OfflineDurableManifestDenial};
 
-const ROOT_PAYLOAD_BYTES: usize = 320;
+const ROOT_PAYLOAD_BYTES: usize = 336;
 const BLOCK_PREFIX_BYTES: usize = 40;
 const REFERENCE_BYTES: usize = 72;
 const PLACEMENT_BYTES: usize = 88;
@@ -51,7 +51,7 @@ pub(super) fn decode_root_header(
         || payload[156..160] != [0; 4]
         || payload[161..168] != [0; 7]
         || payload[233..240] != [0; 7]
-        || payload[297..304] != [0; 7]
+        || payload[313..320] != [0; 7]
     {
         return Err(OfflineDurableManifestDenial::MalformedRoot);
     }
@@ -82,10 +82,10 @@ pub(super) fn decode_root_header(
         ),
         _ => return Err(OfflineDurableManifestDenial::MalformedRoot),
     };
-    let last_inline_segment = match payload[296] {
-        0 if payload[304..320] == [0; 16] => None,
-        1 if read_u64(payload, 304) != 0 && read_u64(payload, 312) != 0 => {
-            Some((read_u64(payload, 304), read_u64(payload, 312)))
+    let last_inline_segment = match payload[312] {
+        0 if payload[320..336] == [0; 16] => None,
+        1 if read_u64(payload, 320) != 0 && read_u64(payload, 328) != 0 => {
+            Some((read_u64(payload, 320), read_u64(payload, 328)))
         }
         _ => return Err(OfflineDurableManifestDenial::MalformedRoot),
     };
@@ -117,7 +117,7 @@ pub(super) fn decode_root_header(
         segment_root,
         free_space_root: super::free_space_tree::optional_reference(
             payload[232],
-            &payload[240..296],
+            &payload[240..312],
         )?,
         free_space_checksum: read_u32(payload, 152),
         last_inline_record,
@@ -319,14 +319,15 @@ fn decode_placement(bytes: &[u8]) -> Result<OfflineRecordPlacement, OfflineDurab
             segment_page_capacity: read_nonzero_u32(bytes, 80)?,
             slot: read_nonzero_u16(bytes, 84)?,
         },
-        2 if bytes[32..40] == [0; 8] && bytes[56..72] == [0; 16] && bytes[80..86] == [0; 6] => {
-            OfflineRecordPlacement::Extent {
-                record,
-                extent: read_nonzero_u64(bytes, 40)?,
-                generation: read_nonzero_u64(bytes, 48)?,
-                payload_bytes: read_nonzero_u64(bytes, 72)?,
-            }
-        }
+        2 if bytes[80..86] == [0; 6] => OfflineRecordPlacement::Extent {
+            record,
+            extent: read_nonzero_u64(bytes, 40)?,
+            generation: read_nonzero_u64(bytes, 48)?,
+            payload_bytes: read_nonzero_u64(bytes, 72)?,
+            arena: read_nonzero_u64(bytes, 32)?,
+            arena_offset: read_u64(bytes, 56),
+            arena_length: read_nonzero_u64(bytes, 64)?,
+        },
         _ => return Err(OfflineDurableManifestDenial::MalformedPlacement),
     };
     Ok(placement)

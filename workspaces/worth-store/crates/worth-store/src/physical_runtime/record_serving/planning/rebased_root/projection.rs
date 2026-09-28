@@ -31,7 +31,7 @@ pub(super) struct ProjectedSuccessorRoot {
     pub(super) free_space: DurableFreeSpaceManifestHeader,
     pub(super) manifests: Vec<(RecordArtifactFile, Vec<u8>)>,
     pub(super) root: DurablePhysicalRootManifest,
-    discoveries: [ManifestDiscoveryCounterSnapshot; 3],
+    pub(super) discoveries: [ManifestDiscoveryCounterSnapshot; 3],
 }
 
 struct ProjectedRecordManifest {
@@ -125,6 +125,7 @@ fn project_free_space(
             current: context.current_free_space,
             successor_generation: generation,
             successor_capacity: context.placement.manifest_capacity().get(),
+            arena_capacity: context.placement.arena_capacity(),
         },
         &prepared.inline_allocations,
         &prepared.placements,

@@ -66,6 +66,17 @@ fn placement(ordinal: u64) -> CurrentPhysicalRecordPlacement {
         .record_extent_cell(PhysicalExtentId::from_raw(ordinal).unwrap())
         .with_extent_generation(PhysicalGeneration::from_raw(1).unwrap());
     CurrentPhysicalRecordPlacement::Extent(
-        DurableExtentRecordPlacement::new(record, extent, 23).unwrap(),
+        DurableExtentRecordPlacement::new(
+            record,
+            extent,
+            23,
+            crate::ExtentArenaRange::new(
+                crate::ExtentArenaId::new(1).unwrap(),
+                (ordinal - 1) * 20480,
+                20480,
+            )
+            .unwrap(),
+        )
+        .unwrap(),
     )
 }

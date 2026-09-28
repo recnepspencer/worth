@@ -40,7 +40,7 @@ fn clean_manifest_records_exact_root_roles() {
         assert_eq!(
             record.exact_length(),
             if role == RootArtifactRole::AddressedRootManifest {
-                368
+                384
             } else {
                 107
             }

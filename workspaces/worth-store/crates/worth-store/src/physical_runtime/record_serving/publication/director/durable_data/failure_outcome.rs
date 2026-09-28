@@ -1,7 +1,5 @@
-use worth_store_physical_backend::QualifiedFilesystemMedia;
 use worth_store_physical_format::RecordFrameCoordinate;
 
-use super::candidate_cleanup::cleanup_extent_candidate_data;
 use crate::physical_runtime::record_serving::residency::candidate_frame_residency::{
     CandidateFrameCoordinate, CandidateFrameFailurePosture, CandidateFrameWriteFailure,
 };
@@ -52,7 +50,10 @@ pub(super) fn map_writeback_failure(
             posture,
         ),
         CandidateFrameWriteFailure::Effect(failure) => DispatchFailure::Settled {
-            cause: PhysicalDataDispatchFailureCause::ExistingArtifactWriteback(failure),
+            cause: failure.pressure(generation).map_or(
+                PhysicalDataDispatchFailureCause::ExistingArtifactWriteback(failure),
+                PhysicalDataDispatchFailureCause::PhysicalPressure,
+            ),
             fate: failure.effect_fate(),
         },
     }
@@ -80,8 +81,6 @@ pub(super) fn classify_dispatch_failure(
     durable: WalDurablePhysicalMutation,
     effects: Vec<PhysicalDataEffectSettlement>,
     failure: DispatchFailure,
-    media: &QualifiedFilesystemMedia,
-    generation: crate::physical_runtime::LifecycleGeneration,
 ) -> PhysicalDataDispatchOutcome {
     match failure {
         DispatchFailure::ProvenNoEffect(cause) if effects.is_empty() => {
@@ -91,47 +90,19 @@ pub(super) fn classify_dispatch_failure(
             cause,
             fate: PhysicalWorkEffectFate::ProvenNoEffect,
         } if effects.is_empty() => PhysicalDataDispatchOutcome::NotStarted { durable, cause },
-        DispatchFailure::Settled {
-            cause: PhysicalDataDispatchFailureCause::ExistingArtifactWriteback(failure),
-            fate: PhysicalWorkEffectFate::ProvenNoEffect,
-        } => retry_after_cleaned_pressure(durable, effects, failure, media, generation),
         DispatchFailure::ProvenNoEffect(cause)
-        | DispatchFailure::Settled { cause, .. }
-        | DispatchFailure::Uncertain(cause) => PhysicalDataDispatchOutcome::Indeterminate(
-            IndeterminatePhysicalDataDispatch::new(durable, effects, cause),
+        | DispatchFailure::Settled {
+            cause,
+            fate: PhysicalWorkEffectFate::ProvenNoEffect,
+        } => PhysicalDataDispatchOutcome::Suspended(
+            crate::physical_runtime::SuspendedPhysicalDataDispatch::new(durable, effects, cause),
         ),
+        DispatchFailure::Settled { cause, .. } | DispatchFailure::Uncertain(cause) => {
+            PhysicalDataDispatchOutcome::Indeterminate(IndeterminatePhysicalDataDispatch::new(
+                durable, effects, cause,
+            ))
+        }
     }
-}
-
-fn retry_after_cleaned_pressure(
-    durable: WalDurablePhysicalMutation,
-    effects: Vec<PhysicalDataEffectSettlement>,
-    failure: crate::physical_runtime::PhysicalRecordWritebackFailureEvidence,
-    media: &QualifiedFilesystemMedia,
-    generation: crate::physical_runtime::LifecycleGeneration,
-) -> PhysicalDataDispatchOutcome {
-    let Some(pressure) = failure.pressure(generation) else {
-        return PhysicalDataDispatchOutcome::Indeterminate(IndeterminatePhysicalDataDispatch::new(
-            durable,
-            effects,
-            PhysicalDataDispatchFailureCause::ExistingArtifactWriteback(failure),
-        ));
-    };
-    let Some(deleted_artifacts) = cleanup_extent_candidate_data(media, &durable) else {
-        return PhysicalDataDispatchOutcome::Indeterminate(IndeterminatePhysicalDataDispatch::new(
-            durable,
-            effects,
-            PhysicalDataDispatchFailureCause::ExistingArtifactWriteback(failure),
-        ));
-    };
-    PhysicalDataDispatchOutcome::RetryableAfterCleanup(
-        crate::physical_runtime::CleanedPhysicalDataDispatchRetry::new(
-            durable,
-            effects,
-            pressure,
-            deleted_artifacts,
-        ),
-    )
 }
 
 pub(super) fn project_candidate_admission_failure(
