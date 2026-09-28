@@ -568,11 +568,12 @@ extra, or renamed operand is `RequirementMismatch`. Every source is checked for
 currentness before any value is read, so a bad source is refused as such, never
 as an expression result:
 
-| Source | Outcome |
+| Case | Outcome |
 |---|---|
-| Changed since it was read | `Attempt(..)` with `WorkflowAssessmentEvidenceMismatch`; read again and resubmit |
-| From another world, branch, or instance, or not exactly one row | `Attempt(..)` with `WorkflowTransitionAffinityMismatch` |
-| Changed after acceptance was admitted, before publication | `Ok(WorkflowProgressOutcome::Application(Denied(..)))` with commit kind `ProductBasisStale`; nothing is published and the same request key can be retried |
+| A source changed since it was read | `Attempt(..)` with `WorkflowAssessmentEvidenceMismatch`; read again and resubmit |
+| A source from another world, branch, or instance, or not exactly one row | `Attempt(..)` with `WorkflowTransitionAffinityMismatch` |
+| A source changed after acceptance was admitted, before publication | `Ok(WorkflowProgressOutcome::Application(Denied(..)))` with commit kind `ProductBasisStale`; nothing is published and the same request key can be retried |
+| Advancing actor's authority revoked after preparation | `Ok(WorkflowProgressOutcome::IdempotencyDenied(..))` whose `kind()` is `Authorization` and whose authorization denial is `StaleAuthorization` |
 
 An evaluation error, such as division
 by zero, is the attempt denial `WorkflowConditionExpressionDenied`, whose

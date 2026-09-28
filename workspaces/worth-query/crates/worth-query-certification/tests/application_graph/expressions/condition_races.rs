@@ -82,12 +82,15 @@ fn a_raced_acceptance_retries_under_the_same_key() {
             .operand::<DocumentRetentionConditionQueryBinding, _>("retained", retained)
             .accept()
     });
-    assert!(matches!(
-        raced,
-        Ok(WorkflowProgressOutcome::Application(
-            WorthQueryApplicationUncommitted::Denied(_)
-        ))
-    ));
+    match raced {
+        Ok(WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::Denied(
+            denial,
+        ))) => assert_eq!(
+            denial.kind(),
+            WorthQueryApplicationCommitDenialKind::ProductBasisStale
+        ),
+        other => panic!("a transition over a replaced source must not publish: {other:?}"),
+    }
     match accept!(court, 9_177_310, days: days!(court.application), retained: retained!(court.application))
     {
         Ok(WorkflowProgressOutcome::Completed(performed)) => assert!(!performed.replayed()),
