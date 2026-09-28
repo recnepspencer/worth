@@ -19,10 +19,8 @@ use std::sync::{Arc, Condvar, Mutex};
 use std::thread::JoinHandle;
 use std::time::{Duration, Instant};
 
-use winit::event_loop::EventLoopProxy;
-
 use super::{UiNativeEventLoopApplication, UiNativeEventLoopClient};
-use crate::native::readiness::UiNativeApplicationWake;
+use crate::native::readiness::UiNativeWakeSender;
 
 /// How long past a deadline the event loop may take before the watch wakes it.
 const WATCH_SLACK: Duration = Duration::from_millis(1);
@@ -55,7 +53,7 @@ struct UiNativeDeadlineWatchState {
 }
 
 impl UiNativeDeadlineWatch {
-    pub(super) fn start(proxy: EventLoopProxy<UiNativeApplicationWake>) -> Option<Self> {
+    pub(super) fn start(wake: UiNativeWakeSender) -> Option<Self> {
         let shared = Arc::new((
             Mutex::new(UiNativeDeadlineWatchState::default()),
             Condvar::new(),
@@ -63,11 +61,7 @@ impl UiNativeDeadlineWatch {
         let watched = Arc::clone(&shared);
         let thread = std::thread::Builder::new()
             .name("worth-ui-deadline-watch".to_owned())
-            .spawn(move || {
-                watch(&watched, |()| {
-                    proxy.send_event(UiNativeApplicationWake).is_ok()
-                })
-            })
+            .spawn(move || watch(&watched, |()| wake.send().is_ok()))
             .ok()?;
         Some(Self {
             shared,

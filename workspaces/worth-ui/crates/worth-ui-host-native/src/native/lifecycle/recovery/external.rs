@@ -59,7 +59,7 @@ fn prepare_graphics(
     let Some(window) = state
         .window
         .as_ref()
-        .map(|window| std::sync::Arc::clone(window))
+        .map(crate::native::event_loop::UiNativeOwnedWindow::graphics_window)
     else {
         return false;
     };

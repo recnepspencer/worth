@@ -16,10 +16,12 @@ pub use worth_ui_runtime::native_platform::{
     UiNativeClientVisualCoordinateRounding, UiNativeClientVisualPixelColorSpace,
     UiNativeClientVisualSnapshotObservation, UiNativeClientVisualSnapshotRelation,
     UiNativeComponentPresenceChange, UiNativeComponentSemanticTextChange,
+    UiNativeOffscreenPlatformSession, UiNativeOffscreenSettle, UiNativeOffscreenStart,
     UiNativePlatformCloseReceipt, UiNativePlatformOutcome, UiNativePlatformPreparationDenial,
     UiNativePlatformProfile, UiNativePlatformStopReason, UiNativePlatformStopReport,
-    UiNativeSurfaceSuccession, UiNativeWindowSpec, UiPreparedNativeApplication,
-    UiPreparedNativePlatform, WorthUiNativePlatform,
+    UiNativeSubmittedFrameWork, UiNativeSurfaceSuccession, UiNativeWindowSpec,
+    UiPreparedNativeApplication, UiPreparedNativePlatform, UiPresentationWorkCounts,
+    UiPresentationWorkStage, WorthUiNativePlatform,
 };
 #[cfg(feature = "certification-support")]
 pub use worth_ui_runtime::native_platform::{

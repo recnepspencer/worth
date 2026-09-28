@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use winit::event_loop::ControlFlow;
+use winit::event_loop::{ControlFlow, EventLoop};
 
 use super::client_invocation::UiNativeEventLoopClientInvocation;
 use super::{
@@ -9,22 +9,43 @@ use super::{
     UiNativeEventLoopRunDenial, UiNativeEventLoopRunReport, UiNativeEventLoopStopReport,
     WorthUiNativeEventLoop,
 };
+use crate::native::readiness::{UiNativeApplicationWake, UiNativeWakeSender};
 use crate::native::UiNativeHostState;
 
 impl WorthUiNativeEventLoop {
     pub fn run<Client: UiNativeEventLoopClient>(
         self,
-        mut client: Client,
+        client: Client,
     ) -> Result<UiNativeEventLoopRunReport, UiNativeEventLoopStopReport> {
+        let event_loop = match platform_event_loop(self.thread_posture) {
+            Ok(event_loop) => event_loop,
+            Err(cause) => return Err(stop_before_callbacks(self.state, client, cause)),
+        };
+        let wake = UiNativeWakeSender::Platform(event_loop.create_proxy());
+        let mut application = self.start(client, wake)?;
+        event_loop.set_control_flow(ControlFlow::Wait);
+        if event_loop.run_app(&mut application).is_err() {
+            application
+                .failure
+                .get_or_insert(UiNativeEventLoopRunDenial::EventLoopRun);
+        }
+        application.finish()
+    }
+
+    /// Installs the client's clock and readiness ports and returns the
+    /// application either pump dispatches to, with its wakes posted through
+    /// `wake`.
+    pub(super) fn start<Client: UiNativeEventLoopClient>(
+        self,
+        mut client: Client,
+        wake: UiNativeWakeSender,
+    ) -> Result<UiNativeEventLoopApplication<Client>, UiNativeEventLoopStopReport> {
         let application_owner_count = client.application_readiness_owner_count();
-        let preflight =
-            match run_preflight::prepare(&self.state, self.thread_posture, application_owner_count)
-            {
-                Ok(preflight) => preflight,
-                Err(cause) => return Err(stop_before_callbacks(self.state, client, cause)),
-            };
+        let preflight = match run_preflight::prepare(&self.state, application_owner_count, &wake) {
+            Ok(preflight) => preflight,
+            Err(cause) => return Err(stop_before_callbacks(self.state, client, cause)),
+        };
         let run_preflight::UiNativeEventLoopRunPreflight {
-            event_loop,
             readiness,
             readiness_owner,
             physical_readiness_owner,
@@ -34,8 +55,7 @@ impl WorthUiNativeEventLoop {
             loop_resources,
         } = preflight;
         let physical_clock = super::physical_clock::UiNativePhysicalEventClock::new();
-        let deadline_watch =
-            super::deadline_watch::UiNativeDeadlineWatch::start(event_loop.create_proxy());
+        let deadline_watch = super::deadline_watch::UiNativeDeadlineWatch::start(wake);
         let installed = match deadline_watch {
             Some(_) => client
                 .invoke_install_observation_clock(physical_clock.observation_clock())
@@ -60,8 +80,7 @@ impl WorthUiNativeEventLoop {
                 .unwrap_or(UiNativeEventLoopRunDenial::ApplicationDriver);
             return Err(stop_before_callbacks(self.state, client, cause));
         };
-        event_loop.set_control_flow(ControlFlow::Wait);
-        let mut application = UiNativeEventLoopApplication {
+        Ok(UiNativeEventLoopApplication {
             shared: self.state,
             configuration: self.window,
             client: Some(client),
@@ -88,14 +107,18 @@ impl WorthUiNativeEventLoop {
             pending_resize: Default::default(),
             deadline_watch,
             thread_posture: self.thread_posture,
-        };
-        if event_loop.run_app(&mut application).is_err() {
-            application
-                .failure
-                .get_or_insert(UiNativeEventLoopRunDenial::EventLoopRun);
-        }
-        application.finish()
+        })
     }
+}
+
+fn platform_event_loop(
+    thread_posture: super::UiNativeEventLoopThreadPosture,
+) -> Result<EventLoop<UiNativeApplicationWake>, UiNativeEventLoopRunDenial> {
+    let mut builder = EventLoop::<UiNativeApplicationWake>::with_user_event();
+    super::windowing_system::force_qualified(&mut builder, thread_posture)?;
+    builder
+        .build()
+        .map_err(|_| UiNativeEventLoopRunDenial::EventLoopCreation)
 }
 
 pub(super) fn stop_before_callbacks<Client: UiNativeEventLoopClient>(

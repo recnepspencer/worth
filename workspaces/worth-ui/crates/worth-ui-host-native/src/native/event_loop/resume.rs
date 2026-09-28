@@ -1,8 +1,10 @@
-use std::sync::Arc;
+use std::rc::Rc;
 
 use winit::event_loop::ActiveEventLoop;
 
 use super::client_invocation::UiNativeEventLoopClientInvocation;
+use super::loop_control::UiNativeLoopControl;
+use super::window_port::UiNativeOffscreenWindow;
 use super::{
     callback_thread, directive, pointer_position, window_port, UiNativeEventLoopApplication,
     UiNativeEventLoopClient, UiNativeEventLoopRunDenial, UiNativeOwnedWindow,
@@ -11,16 +13,24 @@ use super::{
 use crate::native::{UiNativeOwnedDevice, UiNativeOwnedPresentationSurface};
 use window_port::UiNativeWindowPort;
 
+/// Where a resumed host gets its window: the platform event loop opens one,
+/// or the offscreen pump supplies the client area it drives.
+pub(super) enum UiNativeWindowSource<'a> {
+    Platform(&'a ActiveEventLoop),
+    Offscreen(Rc<UiNativeOffscreenWindow>),
+}
+
 impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
     pub(super) fn resume_admitted(
         &mut self,
-        event_loop: &ActiveEventLoop,
+        event_loop: &dyn UiNativeLoopControl,
+        source: UiNativeWindowSource<'_>,
         _admission: callback_thread::UiNativeEventLoopThreadObservation,
     ) {
         if self.shared.borrow().window.is_some() {
             return;
         }
-        let (window, pointer_input) = match self.open_registered_window(event_loop) {
+        let (window, pointer_input) = match self.open_registered_window(source) {
             Ok(opened) => opened,
             Err(denial) => return self.fail(event_loop, denial),
         };
@@ -44,7 +54,7 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
 
     fn open_registered_window(
         &mut self,
-        event_loop: &ActiveEventLoop,
+        source: UiNativeWindowSource<'_>,
     ) -> Result<
         (
             UiNativeOwnedWindow,
@@ -55,13 +65,24 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
         if !self.shared.borrow().resources.admits(6) {
             return Err(UiNativeEventLoopRunDenial::IncompleteCleanup);
         }
-        let opened = window_port::UiWinitNativeWindowPort::open(event_loop, &self.configuration)
-            .map_err(|_| UiNativeEventLoopRunDenial::WindowCreation)?;
+        let offscreen = matches!(source, UiNativeWindowSource::Offscreen(_));
+        let opened = match source {
+            UiNativeWindowSource::Platform(event_loop) => {
+                window_port::UiWinitNativeWindowPort::open(event_loop, &self.configuration)
+                    .map_err(|_| UiNativeEventLoopRunDenial::WindowCreation)?
+            }
+            UiNativeWindowSource::Offscreen(window) => window.open(),
+        };
         let (window, crossings) = opened
             .register(&mut self.shared.borrow_mut().resources)
             .map_err(|()| UiNativeEventLoopRunDenial::IncompleteCleanup)?;
         self.port_crossings = self.port_crossings.saturating_add(crossings);
-        let pointer = install_pointer(&window).ok_or(UiNativeEventLoopRunDenial::WindowCreation)?;
+        // An offscreen client area has no cursor to read.
+        let pointer = if offscreen {
+            None
+        } else {
+            install_pointer(&window).ok_or(UiNativeEventLoopRunDenial::WindowCreation)?
+        };
         Ok((window, pointer))
     }
 
@@ -70,7 +91,7 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
         window: &UiNativeOwnedWindow,
     ) -> Result<(UiNativeOwnedDevice, UiNativeOwnedPresentationSurface), UiNativeEventLoopRunDenial>
     {
-        let prepared = crate::native::graphics::prepare_platform_graphics(Arc::clone(window))
+        let prepared = crate::native::graphics::prepare_graphics(window.graphics_window())
             .map_err(|_| UiNativeEventLoopRunDenial::GraphicsPreparation)?;
         let (device, surface, crossings) = prepared.into_parts();
         self.port_crossings = self.port_crossings.saturating_add(crossings);

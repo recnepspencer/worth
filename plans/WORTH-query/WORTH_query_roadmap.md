@@ -5467,6 +5467,10 @@ negative-space dependency capture and 1k/100k/1M population qualification. CEL t
 cover only the declared semantic intersection; WORTH-specific rules require independent
 oracles. Structural work and memory, not elapsed seconds, gate performance.
 
+Status: Phases 1-3 complete. Phases 4-5 and the closure above are deferred; see
+[deferred work](../deferred-work.md). Worth UI 3.17 adopts the shared language for
+its own DSL expressions without closing this milestone.
+
 This is a successor to the workflow kernel, not a reopening of completed phases.
 Independent 9.17.7 inbound-effect development need not wait for UI integration;
 shared-language consumers must wait for their corresponding cutover proof. UI 3.17

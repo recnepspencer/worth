@@ -4,12 +4,14 @@ use super::{
     UiNativeEventLoopRunDenial, UiNativeObservationReadinessGrant,
 };
 use crate::native::UiNativeLifecycleEffect;
-use winit::{event::WindowEvent, event_loop::ActiveEventLoop};
+use winit::event::WindowEvent;
+
+use super::loop_control::UiNativeLoopControl;
 
 impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
     pub(super) fn observe_native_input(
         &mut self,
-        event_loop: &ActiveEventLoop,
+        event_loop: &dyn UiNativeLoopControl,
         event: &WindowEvent,
     ) {
         let composition = self.shared.borrow().lifecycle.ime_composition_posture();
@@ -47,7 +49,7 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
 
     pub(super) fn signal_native_observation_readiness(
         &mut self,
-        event_loop: &ActiveEventLoop,
+        event_loop: &dyn UiNativeLoopControl,
     ) -> bool {
         let has_ready_work = self.shared.borrow().lifecycle.has_retained_observations()
             || !self.pending_input_reachability.is_empty();
@@ -56,7 +58,7 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
             .borrow()
             .window
             .as_ref()
-            .map(|window| std::sync::Arc::clone(window));
+            .map(super::UiNativeOwnedWindow::redraw_handle);
         match crate::native::readiness::signal_level_ready(
             &self.readiness,
             self.input_readiness_owner,
@@ -84,7 +86,7 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
 
     pub(super) fn notify_native_observations_ready(
         &mut self,
-        event_loop: &ActiveEventLoop,
+        event_loop: &dyn UiNativeLoopControl,
     ) -> bool {
         // Input dispatched after a resize in the same turn may present.
         self.prepare_pending_resize(event_loop);

@@ -1,9 +1,9 @@
-use winit::event_loop::ActiveEventLoop;
+use super::loop_control::UiNativeLoopControl;
 
 impl<Client: super::UiNativeEventLoopClient> super::UiNativeEventLoopApplication<Client> {
     pub(super) fn finalize_presentation_retry_round(
         &mut self,
-        event_loop: &ActiveEventLoop,
+        event_loop: &dyn UiNativeLoopControl,
     ) -> bool {
         let finalization = self
             .shared
@@ -18,7 +18,7 @@ impl<Client: super::UiNativeEventLoopClient> super::UiNativeEventLoopApplication
         false
     }
 
-    pub(super) fn schedule_presentation_retry(&mut self, event_loop: &ActiveEventLoop) {
+    pub(super) fn schedule_presentation_retry(&mut self, event_loop: &dyn UiNativeLoopControl) {
         let wake = self.shared.borrow().lifecycle.presentation_retry_wake();
         match wake {
             Some(crate::native::UiNativePresentationRetryWake::Timeout(deadline)) => {
@@ -34,7 +34,7 @@ impl<Client: super::UiNativeEventLoopClient> super::UiNativeEventLoopApplication
         }
     }
 
-    pub(super) fn progress_due_presentation_retry(&mut self, event_loop: &ActiveEventLoop) {
+    pub(super) fn progress_due_presentation_retry(&mut self, event_loop: &dyn UiNativeLoopControl) {
         if self
             .shared
             .borrow_mut()
@@ -45,7 +45,10 @@ impl<Client: super::UiNativeEventLoopClient> super::UiNativeEventLoopApplication
         }
     }
 
-    pub(super) fn commit_visible_surface_readiness(&mut self, event_loop: &ActiveEventLoop) {
+    pub(super) fn commit_visible_surface_readiness(
+        &mut self,
+        event_loop: &dyn UiNativeLoopControl,
+    ) {
         if !self
             .shared
             .borrow()

@@ -40,7 +40,10 @@ pub use outcome::{
     UiNativePlatformCloseReceipt, UiNativePlatformOutcome, UiNativePlatformStopReason,
     UiNativePlatformStopReport,
 };
-pub use platform::{UiPreparedNativePlatform, WorthUiNativePlatform};
+pub use platform::{
+    UiNativeOffscreenPlatformSession, UiNativeOffscreenStart, UiPreparedNativePlatform,
+    WorthUiNativePlatform,
+};
 pub use profile::{UiNativePlatformPreparationDenial, UiNativePlatformProfile, UiNativeWindowSpec};
 #[cfg(feature = "certification-support")]
 pub use runtime_qualification::{
@@ -51,6 +54,7 @@ pub use runtime_qualification::{
 /// allocation reading here to have the resize trace count each frame's
 /// allocations.
 pub use worth_ui_host_contract::install_presentation_allocation_counter;
+pub use worth_ui_host_contract::{UiPresentationWorkCounts, UiPresentationWorkStage};
 #[cfg(feature = "certification-support")]
 pub use worth_ui_host_native::{
     UiNativeClientAuthoredMountedInstanceObservation, UiNativeClientDerivedStateLossClass,
@@ -68,3 +72,4 @@ pub use worth_ui_host_native::{
     UiNativeClientVisualPixelColorSpace, UiNativeClientVisualSnapshotObservation,
     UiNativeClientVisualSnapshotRelation,
 };
+pub use worth_ui_host_native::{UiNativeOffscreenSettle, UiNativeSubmittedFrameWork};

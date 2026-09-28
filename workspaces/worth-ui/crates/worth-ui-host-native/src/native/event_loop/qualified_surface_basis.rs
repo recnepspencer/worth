@@ -1,6 +1,6 @@
 //! Certification-triggered presentation-surface basis succession.
 
-use winit::event_loop::ActiveEventLoop;
+use super::loop_control::UiNativeLoopControl;
 
 #[cfg(feature = "certification-support")]
 use super::UiNativeEventLoopRunDenial;
@@ -12,7 +12,7 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
     #[cfg(feature = "certification-support")]
     pub(super) fn apply_qualified_surface_basis_successor(
         &mut self,
-        event_loop: &ActiveEventLoop,
+        event_loop: &dyn UiNativeLoopControl,
     ) -> bool {
         let successor = {
             let mut state = self.shared.borrow_mut();
@@ -69,7 +69,7 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
     #[cfg(not(feature = "certification-support"))]
     pub(super) fn apply_qualified_surface_basis_successor(
         &mut self,
-        _event_loop: &ActiveEventLoop,
+        _event_loop: &dyn UiNativeLoopControl,
     ) -> bool {
         false
     }

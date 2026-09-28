@@ -18,7 +18,8 @@
 > reviewed-geometry condition through the same entry. Not completed in Phase 3:
 > the House unit-bearing clearance and member-selection courts and the digital
 > snapshot court move to Phase 5 with the other CAD/digital courts. Phases 4-5
-> not started; they move to Worth UI and will be completed at the end of 3.17.
+> deferred; see [deferred work](../deferred-work.md). Worth UI 3.17 adopts the
+> shared language for its own DSL expressions without closing this milestone.
 
 ## Goal And Placement
 

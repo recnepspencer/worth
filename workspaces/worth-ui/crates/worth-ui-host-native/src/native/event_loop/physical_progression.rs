@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use winit::event_loop::ActiveEventLoop;
+use super::loop_control::UiNativeLoopControl;
 
 use super::{UiNativeEventLoopApplication, UiNativeEventLoopClient, UiNativeEventLoopRunDenial};
 
@@ -131,7 +131,7 @@ fn atlas_correlation(
 }
 
 impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
-    pub(super) fn advance_physical_signal_clock(&mut self, event_loop: &ActiveEventLoop) {
+    pub(super) fn advance_physical_signal_clock(&mut self, event_loop: &dyn UiNativeLoopControl) {
         let tick = self.physical_clock.current_tick();
 
         if self
@@ -147,7 +147,7 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
         self.request_physical_signal_redraw();
     }
 
-    pub(super) fn schedule_physical_signal_deadline(&self, event_loop: &ActiveEventLoop) {
+    pub(super) fn schedule_physical_signal_deadline(&self, event_loop: &dyn UiNativeLoopControl) {
         let due_tick = self.shared.borrow().physical_signal.next_due_tick();
 
         let Some(deadline) = due_tick.and_then(|tick| self.physical_clock.deadline(tick)) else {

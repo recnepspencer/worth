@@ -29,6 +29,7 @@ mod native_phase_f_reconstruction_world;
 mod native_phase_f_world;
 #[cfg(feature = "executable-world")]
 mod native_phase_f_world_evidence;
+mod offscreen_drag;
 mod product_process;
 mod query_source;
 mod source_watch;
@@ -73,6 +74,9 @@ fn main() -> ExitCode {
             .map(str::to_owned)
     }) {
         return native_phase_f_reconstruction_world::run(&class);
+    }
+    if std::env::args_os().any(|argument| argument == offscreen_drag::FLAG) {
+        return offscreen_drag::run();
     }
     if std::env::args_os().any(|argument| argument == "--worth-ui-native-phase2-world") {
         return run_native_phase2_world();

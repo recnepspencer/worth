@@ -88,7 +88,9 @@ impl UiNativePresentationStagePort for UiWgpuPresentationTransaction<'_, '_> {
         submitted: Self::Submitted,
     ) -> Result<Self::PresentHandoff, Self::Failure> {
         let handoff = submitted.hand_off();
-        crate::native::resize_trace::submitted(self.frame, self.graphics.extent());
+        let extent = self.graphics.extent();
+        crate::native::resize_trace::submitted(self.frame, extent);
+        crate::native::frame_work::charge_submitted(self.frame, extent);
         Ok(handoff)
     }
 
