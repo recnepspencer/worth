@@ -1,6 +1,8 @@
 # Milestone 9.17.6.1: Shared Typed Expression Language
 
-> **Status:** Not started.
+> **Status:** Phase 1 completed: bounded parser, typed builder, draft codec, pure
+> admission, installed functions, and canonical identity behind
+> `worth_foundational::expression_api`. Phases 2-5 not started.
 
 ## Goal And Placement
 

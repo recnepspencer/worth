@@ -31,6 +31,7 @@ fn performance_responsibility_home_is_named_in_the_facade_topology() {
             "diagnostics",
             "boundary_evidence",
             "performance",
+            "expressions",
         ]
     );
 }
