@@ -15,6 +15,12 @@ const POLL_INTERVAL: Duration = Duration::from_millis(10);
 
 static NEXT_INSTALLATION: AtomicU64 = AtomicU64::new(1);
 
+thread_local! {
+    /// How long a worker started from this test thread waits before it runs.
+    pub(super) static WORKER_START_DELAY: std::cell::Cell<Duration> =
+        const { std::cell::Cell::new(Duration::ZERO) };
+}
+
 #[test]
 fn intent_input_revision_admission_distinguishes_duplicate_stale_and_successor() {
     assert_eq!(classify_revision(7, 7), AdmittedRevisionRelation::Duplicate);
@@ -135,6 +141,36 @@ fn intent_watch_survives_own_reads_and_sibling_traffic_then_admits_a_successor()
     let shutdown = watch.shutdown().expect("shut down intent input watch");
     assert!(shutdown.worker_joined());
     assert_eq!(shutdown.pending_event_count(), 0);
+    std::fs::remove_dir_all(root).expect("remove intent input fixture");
+}
+
+/// Falsifier for the installation order: the watch is live before `open`
+/// reads the initial record, so a successor written the moment `open`
+/// returns is admitted, however late the worker thread starts.
+#[test]
+fn a_successor_written_as_open_returns_is_admitted() {
+    WORKER_START_DELAY.set(Duration::from_millis(300));
+    let root = isolated_root();
+    let target = root.join(INPUT_FILE);
+    std::fs::write(
+        &target,
+        include_bytes!("../../../intent_samples/ready.json"),
+    )
+    .expect("write initial intent input");
+    let installation = PlatformPulseIntentInputInstallation::open(&root)
+        .expect("open bounded intent input installation");
+    let temporary = root.join("platform-pulse-intent.json.tmp");
+    std::fs::write(
+        &temporary,
+        br#"{"protocol":"worth-ui.platform-pulse.intent-source","schema_version":1,"revision":2,"operability":"ready","executor_gate":"held"}"#,
+    )
+    .expect("write successor intent input");
+    std::fs::rename(&temporary, &target).expect("replace intent input atomically");
+    let (initial, mut watch) = installation.into_parts();
+    assert_eq!(initial.revision(), 1);
+    assert_eq!(await_record(&mut watch).revision(), 2);
+    let shutdown = watch.shutdown().expect("shut down intent input watch");
+    assert!(shutdown.worker_joined());
     std::fs::remove_dir_all(root).expect("remove intent input fixture");
 }
 

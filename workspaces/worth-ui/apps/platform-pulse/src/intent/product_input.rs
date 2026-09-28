@@ -11,7 +11,7 @@ mod tests;
 mod watch;
 
 use decode::read_record;
-use watch::run_watch;
+use watch::{register_watch, run_watch};
 
 pub(super) const INPUT_FILE: &str = "platform-pulse-intent.json";
 pub(super) const INPUT_IDENTITY: &str = "worth-ui.platform-pulse.intent-source";
@@ -95,6 +95,9 @@ impl PlatformPulseIntentInputInstallation {
         if !target.is_file() {
             return Err(PlatformPulseIntentInputWatchDenial::MissingInput);
         }
+        // The watch is registered before the initial read, so a successor
+        // written after that read always reaches the worker.
+        let registered = register_watch(root)?;
         let initial = read_record(&target)?;
         let (sender, receiver) = mpsc::sync_channel(CHANNEL_CAPACITY);
         let terminal = Arc::new(Mutex::new(None));
@@ -103,13 +106,17 @@ impl PlatformPulseIntentInputInstallation {
         let worker_stop = Arc::clone(&stop);
         let readiness = Arc::new(Mutex::new(None));
         let worker_readiness = Arc::clone(&readiness);
-        let root = root.to_owned();
         let admitted_revision = initial.revision;
+        #[cfg(test)]
+        let start_delay = tests::WORKER_START_DELAY.get();
         let worker = thread::Builder::new()
             .name("worth-ui-platform-pulse-intent-source".to_owned())
             .spawn(move || {
+                #[cfg(test)]
+                thread::sleep(start_delay);
                 run_watch(
-                    root,
+                    target,
+                    registered,
                     admitted_revision,
                     worker_stop,
                     sender,
