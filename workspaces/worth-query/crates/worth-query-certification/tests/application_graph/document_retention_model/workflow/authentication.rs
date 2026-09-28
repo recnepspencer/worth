@@ -3,14 +3,14 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use worth_query_admission::facade::authentication_event::{
+use worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope;
+use worth_query_host::facade::admission::authentication_event::{
     install_authentication_event_owner, WorthQueryAuthenticationEventChallenge,
     WorthQueryAuthenticationEventFuture, WorthQueryAuthenticationEventPolicy,
     WorthQueryAuthenticationEventReuse, WorthQueryAuthenticationEventVerifier,
     WorthQueryAuthenticationEventVerifierFailure, WorthQueryInstalledAuthenticationEventOwner,
 };
-use worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope;
-use worth_query_installation::facade::{
+use worth_query_host::facade::domain::{
     WorthQueryClockCoordinate, WorthQueryClockSourceIdentity, WorthQueryClockTimelineIdentity,
     WorthQueryInstalledApplicationSchema, WorthQueryNamedClock, WorthQueryNamedClockFailure,
     WorthQueryNamedClockReading, WorthQueryNamedClockSource,

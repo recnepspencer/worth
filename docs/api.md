@@ -61,6 +61,12 @@ says what it is: the aftermath and recovery vocabulary is still settling.
 
 ## 3. Application API
 
+> **Writing an application?** Start with
+> [Build an Application](build-an-application.md). It shows the real calls,
+> in order: declare features and a program, install the application graph,
+> run program-owned actions, author and run workflows, and adopt a new
+> program on a branch. This section maps the modules those calls live in.
+
 ### 3.1 `worth-query-decl`: declare meaning
 
 ```rust
@@ -77,7 +83,7 @@ publish a result. Those transitions belong to the host.
 | `application_operation` | Typed operations (mutations) and their declared ceilings |
 | `application_query` | Typed queries (reads), with result and work ceilings |
 | `application_capability` | Capabilities an operation or query needs |
-| `application_program` | Programs: a named, versioned set of declarations that can be adopted on a branch |
+| `application_program` | Features (`ApplicationFeature`, `ApplicationFeatureSpec`), ports and connections, the program (`ApplicationProgramDefinition`, validated with `ApplicationProgramAuthoring`), and workflow authoring (`ApplicationWorkflowSpec`, `ApplicationWorkflowDefinitionBuilder`). See [Build an Application §3](build-an-application.md#3-declare-features-and-the-program) and [§6](build-an-application.md#6-author-publish-and-run-workflows) |
 | `application_aftermath` | Declared aftermath for effects that must be recovered or compensated |
 | `authentication`, `identity`, `identity_authority`, `portable_identity` | Principals and how external identities map onto them |
 | `binding`, `typed` | Typed bindings between your Rust types and installed meaning |
@@ -101,12 +107,12 @@ lower-runtime internals.
 
 | Module on `worth_query_host::facade` | What it gives you |
 |---|---|
-| `application_installation` | Build and install a validated program, for example `in_memory_program` |
-| `application_entry` | The request API: `application.request(&principal, &scope)` via `WorthQueryApplicationRequestExt`, then `.query(..)`, mutations, `.on_branch(..)`, `.programs()` |
+| `application_installation` | Install a validated program: `in_memory_program`, or `in_memory_rostered_program` with successor revisions. See [Build an Application §4](build-an-application.md#4-install-the-application-graph) |
+| `application_entry` | The request API: `application.request(&principal, &scope)` via `WorthQueryApplicationRequestExt`, then `.query(..)`, mutations, `.on_branch(..)`, `.programs()` for adoption ([§7](build-an-application.md#7-adopt-a-new-program-on-a-branch)), and the `prepare_workflow_*` lifecycle calls ([§6](build-an-application.md#6-author-publish-and-run-workflows)) |
 | `application_contribution` | Contribution-composed applications: `ApplicationSchemaContribution`, `WorthQueryApplicationContribution`, handler and invariant setup |
 | `application_discovery` | Discover what an installed application offers |
 | `application_invariants` | Invariant factories and their execution points |
-| `installed`, `domain` | Installed application and domain handles; portable domain packages |
+| `installed`, `domain` | Installed application and domain handles; portable domain packages; workflow vocabulary installation (`WorthQueryApplicationWorkflowSpecInstallation`) |
 | `admission` | Admission decisions and denials (re-exported from the admission owner) |
 | `runtime` | Runtime handles and limits |
 | `primary_graph` | Typed access to the primary application graph inside handlers |
@@ -132,7 +138,15 @@ let rows = published.rows();
 let sources = published.observed_sources();
 
 // A mutation. The outcome is a type you must match; nothing is implied.
-match request.mutate(SomeOperation::new(input)).idempotency(&key).execute()? {
+// On a runtime installed with a program, every mutation runs through the
+// program the branch runs. Plain execute() refuses it with
+// ApplicationProgramRequired; it is only for a runtime installed without one.
+match request
+    .mutate(SomeOperation::new(input))
+    .without_source()                        // or .expect_source(source)
+    .idempotency(&key)
+    .execute_in_program(&application)?       // the installed program runtime
+{
     Committed { receipt, result } => { /* new state is published */ }
     AlreadyCommitted(receipt)     => { /* this key already committed */ }
     IdempotencyIntentDrift        => { /* same key, different intent */ }
@@ -146,7 +160,9 @@ match request.mutate(SomeOperation::new(input)).idempotency(&key).execute()? {
 
 The names above are shortened. The outcome type is
 `WorthQueryApplicationMutationOutcome<Denial, Result>`. Mutation requests also
-take `expect_source`, `without_source`, and `preconditions`. How WORTH Works
+take `preconditions`. A mutation that feeds the program's output graph runs
+with `execute_performed::<Program, Root>(&application)` instead; see
+[Build an Application §5](build-an-application.md#5-run-the-program). How WORTH Works
 [§9](how-it-works.md#9-query-the-life-of-one-request) and
 [§11](how-it-works.md#11-outcomes-every-way-a-request-can-end) explain what each outcome
 means, and why `Commit(..)` is never collapsed into an error string.
@@ -190,12 +206,18 @@ test of the guarantees.
 
 | Topic | Guide |
 |---|---|
+| **The whole application story, with real code** | [**Build an Application**](build-an-application.md) |
+| Programs, rosters, branch adoption, migration, retirement | [programs-and-adoption.md](../workspaces/worth-query/crates/worth-query/docs/foundations/programs-and-adoption.md) |
+| Workflows: every call, budget, and denial | [workflows.md](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md) |
+| Feature capsules, ports, and connections | [feature-capsule-authoring.md](../workspaces/worth-query/crates/worth-query/docs/authoring/feature-capsule-authoring.md) |
 | The ordinary application path | [ordinary-application-front-door.md](../workspaces/worth-query/crates/worth-query/docs/foundations/ordinary-application-front-door.md) |
 | Branches and previews | [branches-and-previews.md](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md) |
 | What Query will never do | [hard-prohibitions.md](../workspaces/worth-query/crates/worth-query/docs/foundations/hard-prohibitions.md) |
 | Domain capabilities catalog | [domain-capabilities/README.md](../workspaces/worth-query/crates/worth-query/docs/domain-capabilities/README.md) |
 | Query workspace map and focused commands | [workspaces/worth-query/README.md](../workspaces/worth-query/README.md) |
 
+These guides sit inside the `worth-query` crate for historical reasons, but
+the first four are consumer guides: they use only the two facades.
 Some pages under `workspaces/worth-query/crates/worth-query/docs/` are written
 against the internal engine (`worth_query::facade`). When a guide shows a
 `worth_query::` path, the application path is the matching module on
@@ -388,9 +410,10 @@ Use `--document-private-items` only when you are maintaining the platform.
 
 | You want to... | Import | Start at |
 |---|---|---|
-| Build an application with governed reads and writes | `worth-query-decl` + `worth-query-host` | [§3](#3-application-api), then the `ordinary_product_workflow` example |
-| Add a multi-step process with human decisions | the same two | [Workflows guide](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md), [authored_workflow](../workspaces/worth-query/crates/worth-query-certification/examples/authored_workflow/main.rs), [How WORTH Works §13](how-it-works.md#13-workflows) |
-| Evolve your application's program on a branch, then adopt it | the same two | [How WORTH Works §12](how-it-works.md#12-branches-programs-and-adoption), [host README](../workspaces/worth-query/crates/worth-query-host/README.md) |
+| Build an application with governed reads and writes | `worth-query-decl` + `worth-query-host` | [Build an Application](build-an-application.md), then the `ordinary_product_workflow` example |
+| Declare features and a program, and install it | the same two | [Build an Application §3–§4](build-an-application.md#3-declare-features-and-the-program) |
+| Add a multi-step process with human decisions | the same two | [Build an Application §6](build-an-application.md#6-author-publish-and-run-workflows), [Workflows guide](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md), [authored_workflow](../workspaces/worth-query/crates/worth-query-certification/examples/authored_workflow/main.rs) |
+| Evolve your application's program on a branch, then adopt it | the same two | [Build an Application §7](build-an-application.md#7-adopt-a-new-program-on-a-branch), [Programs and Adoption](../workspaces/worth-query/crates/worth-query/docs/foundations/programs-and-adoption.md), [How WORTH Works §12](how-it-works.md#12-branches-programs-and-adoption) |
 | Write pure, reusable schema meaning | `worth-schema-core` / `worth-schema-graph` | [§5](#5-schema-contracts) |
 | Prove that an execution replays exactly | `worth-query-replay` (cert crates only) | [§4](#4-certification-api) |
 | Serve an application over the network | `worth-server` | [Server docs](../crates/worth-server/docs/README.md) |

@@ -25,12 +25,16 @@ major runtimes have their own workspaces, documentation, tests, and lifecycle.
 | Understand why WORTH exists and why it is shaped this way | [Philosophy](docs/philosophy.md) |
 | Understand how the platform works, from the substrate up to one request | [How WORTH Works](docs/how-it-works.md) |
 | Look up an exact term | [Glossary](docs/glossary.md) |
-| Build an application, and find which crate to import | [API Map](docs/api.md) |
+| **Build an application: declare features and a program, install the application graph, author workflows, adopt a new program** | [**Build an Application**](docs/build-an-application.md) |
+| Find which crate to import for any job | [API Map](docs/api.md) |
 | Contribute to the platform itself | [Coding Guidelines](docs/coding-guidelines/) and [AGENTS.md](AGENTS.md) |
 | Browse every public document | [Documentation index](docs/README.md) |
 
 **AI agents:** read [Philosophy](docs/philosophy.md), then
 [How WORTH Works](docs/how-it-works.md), before you write application code.
+Then write it from [Build an Application](docs/build-an-application.md): the
+exact calls to declare features and a program, install the application graph,
+run it, author and run workflows, and adopt a new program on a branch.
 A Query application imports only `worth-query-decl` and `worth-query-host`.
 Servers, UIs, and standalone runtimes have their own entry points; see
 [API Map §6](docs/api.md#6-standalone-runtimes-and-hosts). Everything else is

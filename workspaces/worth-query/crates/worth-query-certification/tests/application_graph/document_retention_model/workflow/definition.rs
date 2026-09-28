@@ -1,3 +1,4 @@
+use worth_query_host::facade::domain::WorthQueryInstalledWorkflowDefinitionContract;
 use worth_query_host::facade::{
     application_entry::{
         PublishedWorkflowDefinitionRef, PublishedWorkflowProposalRef, RequiredWorkflowApproval,
@@ -15,7 +16,6 @@ use worth_query_host::facade::{
         AuthoredWorkflowDefinition, ValidatedWorkflowDefinition,
     },
 };
-use worth_query_installation::facade::WorthQueryInstalledWorkflowDefinitionContract;
 
 use super::super::{
     host::DocumentWorkflowRuntime,
