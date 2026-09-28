@@ -118,9 +118,9 @@ impl super::UiAllocationInvalidationAuthority {
             );
         }
         let mut successor = self.clone();
-        let mut catalog = self.catalog.clone();
         for scope in affected {
-            if catalog
+            if successor
+                .catalog
                 .remove_root(scope.root_graph_node_identity())
                 .as_ref()
                 != Some(scope)
@@ -129,13 +129,12 @@ impl super::UiAllocationInvalidationAuthority {
             }
         }
         for row in delta.changed_rows() {
-            catalog.insert(row.clone());
+            successor.catalog.insert(row.clone());
         }
         let (predecessor_identity, successor_identity) = successor
             .graph_replan
             .apply_activation_delta(affected, delta.changed_rows())
             .ok_or(UiAllocationNeighborhoodActivationDenial::StalePredecessor)?;
-        successor.catalog = catalog;
         let derived_index_counters = successor
             .apply_index_delta(&removed, delta.changed_rows())
             .map_err(|()| UiAllocationNeighborhoodActivationDenial::DerivedIndexDiverged)?;

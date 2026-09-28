@@ -52,7 +52,7 @@ impl UiActiveAllocationCatalog {
 
     pub(crate) fn insert(&mut self, row: ActivationRow) {
         let scope = row.scope();
-        if let Some(prior) = self.rows.get(&scope).cloned() {
+        if let Some(prior) = self.rows.get_shared(&scope) {
             self.remove_indexes(&scope, &prior);
         }
         self.insert_indexes(&scope, &row);
@@ -64,7 +64,7 @@ impl UiActiveAllocationCatalog {
         root: UiGraphNodeIdentity,
     ) -> Option<UiAllocationNeighborhoodScope> {
         let scope = self.scope_by_root.get(&root)?.clone();
-        let row = self.rows.get(&scope)?.clone();
+        let row = self.rows.get_shared(&scope)?;
         self.remove_indexes(&scope, &row);
         self.rows.remove(&scope);
         Some(scope)

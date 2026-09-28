@@ -8,6 +8,7 @@ use crate::native_platform::text_presentation::{
     prepare_mounted_semantic_text, UiMountedEventTimeDpiAuthority,
     UiNativeTextPresentationPreparation,
 };
+use std::collections::HashSet;
 use worth_ui_host_contract::{
     UiHostSurfaceIdentity, UiHostSurfacePresentationMode, UiMountedPaintCommandChange,
     UiMountedPaintOrderIntegrity, UiMountedPresentationDelta, UiMountedPresentationDeltaInput,
@@ -37,6 +38,31 @@ fn prepared_initial(
     (mechanics, prepared)
 }
 
+fn requirement_for(
+    projection: &worth_ui_host_contract::UiMountedProjectionView,
+) -> UiMountedSurfaceBindingRequirement {
+    UiMountedSurfaceBindingRequirement::new(
+        projection.surface(),
+        UiHostSurfaceIdentity::mint_unbound().unwrap(),
+        projection.binding(),
+        WorthUiHostCapabilityObservationGeneration::new(7),
+        11,
+        UiHostSurfacePresentationMode::NativeDisplay,
+    )
+}
+
+fn prepared_pins(prepared: &UiNativeTextPresentationPrepared) -> Vec<UiGlyphRasterPinRequest> {
+    prepared
+        .demand_batches()
+        .iter()
+        .flat_map(|demand| {
+            demand.records().iter().map(|record| {
+                UiGlyphRasterPinRequest::from_text_mechanics(demand.layout_identity(), record.key())
+            })
+        })
+        .collect()
+}
+
 /// Two candidates prepared from the same committed pins can both land. Each
 /// lands over the pins committed when it lands, so the binding counts its
 /// pins once and releasing them leaves no owner behind.
@@ -45,14 +71,7 @@ fn a_candidate_lands_over_the_pins_committed_when_it_lands() {
     let projection = semantic_text_projection_for_certification(
         UiSemanticTextProjectionCertificationMutation::Exact,
     );
-    let requirement = UiMountedSurfaceBindingRequirement::new(
-        projection.surface(),
-        UiHostSurfaceIdentity::mint_unbound().unwrap(),
-        projection.binding(),
-        WorthUiHostCapabilityObservationGeneration::new(7),
-        11,
-        UiHostSurfacePresentationMode::NativeDisplay,
-    );
+    let requirement = requirement_for(&projection);
     let (_, prepared) = prepared_initial(&projection, requirement);
     let binding = requirement.binding();
     let mut owner = UiMountedTextPinState::default();
@@ -73,25 +92,10 @@ fn real_prepared_demands_advance_pins_only_after_accepted_settlement() {
     let projection = semantic_text_projection_for_certification(
         UiSemanticTextProjectionCertificationMutation::Exact,
     );
-    let requirement = UiMountedSurfaceBindingRequirement::new(
-        projection.surface(),
-        UiHostSurfaceIdentity::mint_unbound().unwrap(),
-        projection.binding(),
-        WorthUiHostCapabilityObservationGeneration::new(7),
-        11,
-        UiHostSurfacePresentationMode::NativeDisplay,
-    );
+    let requirement = requirement_for(&projection);
     let (_, prepared) = prepared_initial(&projection, requirement);
     let binding = requirement.binding();
-    let expected = prepared
-        .demand_batches()
-        .iter()
-        .flat_map(|demand| {
-            demand.records().iter().map(|record| {
-                UiGlyphRasterPinRequest::from_text_mechanics(demand.layout_identity(), record.key())
-            })
-        })
-        .collect::<Vec<_>>();
+    let expected = prepared_pins(&prepared);
     let mut owner = UiMountedTextPinState::default();
 
     let denied = owner.candidate(binding, &prepared);
@@ -113,19 +117,81 @@ fn real_prepared_demands_advance_pins_only_after_accepted_settlement() {
     owner.commit_presented(retained);
 }
 
+/// A complete re-presentation at a new device scale changes every raster key
+/// and omits a command the binding held: the binding adds exactly the new
+/// pins and releases exactly the old ones, the omitted command's included.
+#[test]
+fn a_complete_representation_releases_every_pin_it_no_longer_holds() {
+    let projection = semantic_text_projection_for_certification(
+        UiSemanticTextProjectionCertificationMutation::Exact,
+    );
+    let requirement = requirement_for(&projection);
+    let (initial, prepared) = prepared_initial(&projection, requirement);
+    let binding = requirement.binding();
+    let mut owner = UiMountedTextPinState::default();
+    owner.commit_presented(owner.candidate(binding, &prepared));
+    let old = owner.committed(binding).into_iter().collect::<HashSet<_>>();
+    let other_projection = semantic_text_projection_for_certification(
+        UiSemanticTextProjectionCertificationMutation::Exact,
+    );
+    let (other_initial, _) =
+        prepared_initial(&other_projection, requirement_for(&other_projection));
+    let dropped_command = other_initial.commands()[0].identity();
+    let dropped_pins = old.iter().copied().collect::<Vec<_>>();
+    let committed = owner.committed.get_mut(&binding).unwrap();
+    committed
+        .by_command
+        .insert(dropped_command, dropped_pins.clone().into_boxed_slice());
+    add_pin_owners(&mut committed.pin_owners, &dropped_pins);
+    let rescaled_requirement = UiMountedSurfaceBindingRequirement::with_baseline_and_device_scale(
+        initial.affinity().surface(),
+        requirement.host_surface(),
+        binding,
+        requirement.capability_generation(),
+        requirement.capability_profile_digest(),
+        UiHostSurfacePresentationMode::NativeDisplay,
+        initial.affinity().baseline(),
+        1_500,
+    );
+    let (_, rescaled) = prepared_initial(&projection, rescaled_requirement);
+    assert!(rescaled.pin_set_complete());
+    let new = prepared_pins(&rescaled).into_iter().collect::<HashSet<_>>();
+    assert!(!old.is_empty() && old.is_disjoint(&new));
+
+    let candidate = owner.candidate(binding, &rescaled);
+    assert_eq!(
+        candidate
+            .additions()
+            .iter()
+            .copied()
+            .collect::<HashSet<_>>(),
+        new
+    );
+    assert_eq!(
+        candidate.releases().iter().copied().collect::<HashSet<_>>(),
+        old
+    );
+    owner.commit_presented(candidate);
+    assert_eq!(
+        owner.committed(binding).into_iter().collect::<HashSet<_>>(),
+        new
+    );
+    assert_eq!(
+        owner
+            .global_pin_owners
+            .keys()
+            .copied()
+            .collect::<HashSet<_>>(),
+        new
+    );
+}
+
 #[test]
 fn shared_pins_release_only_after_the_last_binding_is_deregistered() {
     let projection = semantic_text_projection_for_certification(
         UiSemanticTextProjectionCertificationMutation::Exact,
     );
-    let requirement = UiMountedSurfaceBindingRequirement::new(
-        projection.surface(),
-        UiHostSurfaceIdentity::mint_unbound().unwrap(),
-        projection.binding(),
-        WorthUiHostCapabilityObservationGeneration::new(7),
-        11,
-        UiHostSurfacePresentationMode::NativeDisplay,
-    );
+    let requirement = requirement_for(&projection);
     let (_, prepared) = prepared_initial(&projection, requirement);
     let first_binding = requirement.binding();
     let second_binding = UiSurfaceBindingGeneration::mint_unbound().unwrap();
@@ -160,36 +226,14 @@ fn command_owner_removal_is_visible_even_when_shared_keys_stay_pinned() {
     let second_projection = semantic_text_projection_for_certification(
         UiSemanticTextProjectionCertificationMutation::Exact,
     );
-    let first_requirement = UiMountedSurfaceBindingRequirement::new(
-        first_projection.surface(),
-        UiHostSurfaceIdentity::mint_unbound().unwrap(),
-        first_projection.binding(),
-        WorthUiHostCapabilityObservationGeneration::new(7),
-        11,
-        UiHostSurfacePresentationMode::NativeDisplay,
-    );
-    let second_requirement = UiMountedSurfaceBindingRequirement::new(
-        second_projection.surface(),
-        UiHostSurfaceIdentity::mint_unbound().unwrap(),
-        second_projection.binding(),
-        WorthUiHostCapabilityObservationGeneration::new(7),
-        11,
-        UiHostSurfacePresentationMode::NativeDisplay,
-    );
+    let first_requirement = requirement_for(&first_projection);
+    let second_requirement = requirement_for(&second_projection);
     let (first_initial, prepared) = prepared_initial(&first_projection, first_requirement);
     let (second_initial, _) = prepared_initial(&second_projection, second_requirement);
     let first_command = first_initial.commands()[0].identity();
     let second_command = second_initial.commands()[0].identity();
     assert_ne!(first_command, second_command);
-    let pins = prepared
-        .demand_batches()
-        .iter()
-        .flat_map(|demand| {
-            demand.records().iter().map(|record| {
-                UiGlyphRasterPinRequest::from_text_mechanics(demand.layout_identity(), record.key())
-            })
-        })
-        .collect::<Vec<_>>();
+    let pins = prepared_pins(&prepared);
     let mut previous = UiMountedBindingPins::default();
     previous
         .by_command
@@ -207,7 +251,7 @@ fn command_owner_removal_is_visible_even_when_shared_keys_stay_pinned() {
     let mut retained = previous.clone();
     let removed = retained.by_command.remove(&first_command).unwrap();
     remove_pin_owners(&mut retained.pin_owners, &removed);
-    let first_release = owner.candidate_from_next(binding, previous, retained);
+    let first_release = owner.candidate_from_next(binding, Some(&previous), retained);
     assert!(first_release.changes_binding());
     assert!(first_release.additions().is_empty());
     assert!(first_release.releases().is_empty());
@@ -215,7 +259,7 @@ fn command_owner_removal_is_visible_even_when_shared_keys_stay_pinned() {
 
     let previous = owner.committed.get(&binding).cloned().unwrap();
     let last_release =
-        owner.candidate_from_next(binding, previous, UiMountedBindingPins::default());
+        owner.candidate_from_next(binding, Some(&previous), UiMountedBindingPins::default());
     assert!(last_release.changes_binding());
     assert_eq!(last_release.releases().len(), pins.len());
 }
@@ -228,22 +272,8 @@ fn partial_delta_replaces_only_its_command_and_preserves_unchanged_shared_pins()
     let second_projection = semantic_text_projection_for_certification(
         UiSemanticTextProjectionCertificationMutation::Exact,
     );
-    let first_requirement = UiMountedSurfaceBindingRequirement::new(
-        first_projection.surface(),
-        UiHostSurfaceIdentity::mint_unbound().unwrap(),
-        first_projection.binding(),
-        WorthUiHostCapabilityObservationGeneration::new(7),
-        11,
-        UiHostSurfacePresentationMode::NativeDisplay,
-    );
-    let second_requirement = UiMountedSurfaceBindingRequirement::new(
-        second_projection.surface(),
-        UiHostSurfaceIdentity::mint_unbound().unwrap(),
-        second_projection.binding(),
-        WorthUiHostCapabilityObservationGeneration::new(7),
-        11,
-        UiHostSurfacePresentationMode::NativeDisplay,
-    );
+    let first_requirement = requirement_for(&first_projection);
+    let second_requirement = requirement_for(&second_projection);
     let (first_initial, first_prepared) = prepared_initial(&first_projection, first_requirement);
     let (second_initial, _) = prepared_initial(&second_projection, second_requirement);
     let binding = first_requirement.binding();

@@ -1,5 +1,12 @@
+use std::rc::Rc;
+
+/// An attempt's context, shared: a retained entry and each inspection record
+/// hold it without copying its role, state and aspects.
 #[derive(Clone)]
-pub(crate) struct UiAppearanceAttemptContext {
+pub(crate) struct UiAppearanceAttemptContext(Rc<UiAppearanceAttemptFields>);
+
+#[derive(Clone)]
+struct UiAppearanceAttemptFields {
     target: super::super::state::UiAppearanceTarget,
     mounted: crate::mounting::UiMountedAppearanceNodeInputContext,
     generation: crate::runtime::WorthUiActiveApplicationGenerationIdentity,
@@ -22,7 +29,8 @@ impl UiAppearanceAttemptContext {
         mut self,
         clip: crate::mounting::UiMountedAppearanceClip,
     ) -> Self {
-        self.mounted = self.mounted.with_clip_for_test(clip);
+        let fields = Rc::make_mut(&mut self.0);
+        fields.mounted = fields.mounted.clone().with_clip_for_test(clip);
         self
     }
 
@@ -33,7 +41,7 @@ impl UiAppearanceAttemptContext {
         consumers_selected: u32,
         owner_evidence: u64,
     ) -> Self {
-        Self {
+        Self(Rc::new(UiAppearanceAttemptFields {
             target,
             mounted,
             generation,
@@ -48,40 +56,45 @@ impl UiAppearanceAttemptContext {
             consumers_selected,
             owner_evidence,
             invalidation_batch: None,
-        }
+        }))
     }
 
     pub(crate) fn set_role(&mut self, role: &worth_ui_dsl::UiAppearanceRoleDeclaration) {
-        self.aspect_hints = role
+        let fields = Rc::make_mut(&mut self.0);
+        fields.aspect_hints = role
             .partitions()
             .iter()
             .map(|(aspect, _)| *aspect)
             .collect();
-        self.role = Some(role.clone());
+        fields.role = Some(role.clone());
     }
 
     pub(crate) fn set_theme(&mut self, theme: &super::super::theme::UiThemeResolutionView) {
-        self.theme_identity = Some(theme.definition_identity().into());
-        self.theme_revision = theme.definition_revision();
-        self.catalog_revision = theme.catalog_revision();
+        let fields = Rc::make_mut(&mut self.0);
+        fields.theme_identity = Some(theme.definition_identity().into());
+        fields.theme_revision = theme.definition_revision();
+        fields.catalog_revision = theme.catalog_revision();
     }
 
     pub(crate) fn set_state(&mut self, state: &super::super::state::UiAppearanceStateVector) {
-        self.owner_evidence = state.evidence_digest();
-        self.generation = state.basis().generation().clone();
-        self.state = Some(state.clone());
+        let fields = Rc::make_mut(&mut self.0);
+        fields.owner_evidence = state.evidence_digest();
+        fields.generation = state.basis().generation().clone();
+        fields.state = Some(state.clone());
     }
 
     pub(crate) fn set_invalidation_batch(
         &mut self,
         batch: &super::super::invalidation::UiAppearanceInvalidationBatch,
     ) {
-        self.invalidation_batch = Some(batch.clone());
+        let fields = Rc::make_mut(&mut self.0);
+        fields.invalidation_batch = Some(batch.clone());
     }
 
     pub(crate) fn set_projection(&mut self, projection: &super::UiAppearanceProjection) {
-        self.aspects = projection.aspects().to_vec().into_boxed_slice();
-        self.theme_slots_compared = projection
+        let fields = Rc::make_mut(&mut self.0);
+        fields.aspects = projection.aspects().to_vec().into_boxed_slice();
+        fields.theme_slots_compared = projection
             .aspects()
             .iter()
             .map(|aspect| aspect.theme_slots_compared())
@@ -90,45 +103,40 @@ impl UiAppearanceAttemptContext {
     }
 
     pub(crate) fn set_theme_slots_compared(&mut self, compared: u32) {
-        self.theme_slots_compared = compared;
+        let fields = Rc::make_mut(&mut self.0);
+        fields.theme_slots_compared = compared;
     }
 
-    pub(crate) const fn target(&self) -> &super::super::state::UiAppearanceTarget {
-        &self.target
+    pub(crate) fn target(&self) -> &super::super::state::UiAppearanceTarget {
+        &self.0.target
     }
 
-    pub(crate) const fn frame(&self) -> worth_ui_host_contract::UiMountedFrameIdentity {
-        self.mounted.frame
+    pub(crate) fn frame(&self) -> worth_ui_host_contract::UiMountedFrameIdentity {
+        self.0.mounted.frame
     }
 
-    pub(crate) const fn semantic_surface(
-        &self,
-    ) -> worth_ui_host_contract::UiSemanticSurfaceIdentity {
-        self.target.surface()
+    pub(crate) fn semantic_surface(&self) -> worth_ui_host_contract::UiSemanticSurfaceIdentity {
+        self.0.target.surface()
     }
 
-    pub(crate) const fn mounted_instance(
-        &self,
-    ) -> worth_ui_host_contract::UiMountedInstanceIdentity {
-        self.target.mounted_instance()
+    pub(crate) fn mounted_instance(&self) -> worth_ui_host_contract::UiMountedInstanceIdentity {
+        self.0.target.mounted_instance()
     }
 
-    pub(crate) const fn graph_node(&self) -> crate::graph::UiGraphNodeIdentity {
-        self.target.graph_node()
+    pub(crate) fn graph_node(&self) -> crate::graph::UiGraphNodeIdentity {
+        self.0.target.graph_node()
     }
 
-    pub(crate) const fn incarnation(&self) -> worth_ui_host_contract::UiMountIncarnation {
-        self.target.incarnation()
+    pub(crate) fn incarnation(&self) -> worth_ui_host_contract::UiMountIncarnation {
+        self.0.target.incarnation()
     }
 
-    pub(crate) const fn node_receipt(
-        &self,
-    ) -> worth_ui_host_contract::UiMountedNodeReceiptIdentity {
-        self.target.node_receipt()
+    pub(crate) fn node_receipt(&self) -> worth_ui_host_contract::UiMountedNodeReceiptIdentity {
+        self.0.target.node_receipt()
     }
 
-    pub(crate) const fn issuer(&self) -> worth_ui_host_contract::UiMountedNodeReceiptIssuer {
-        self.mounted.issuer()
+    pub(crate) fn issuer(&self) -> worth_ui_host_contract::UiMountedNodeReceiptIssuer {
+        self.0.mounted.issuer()
     }
 
     pub(crate) fn lower_resolved(
@@ -143,50 +151,49 @@ impl UiAppearanceAttemptContext {
         crate::mounting::UiMountedAppearanceLoweringInput,
         crate::mounting::UiMountedAppearanceLoweringDenial,
     > {
-        self.mounted
+        self.0
+            .mounted
             .lower_resolved_projection(projection, presentation, outline_fringe)
     }
 
-    pub(crate) const fn generation(
-        &self,
-    ) -> &crate::runtime::WorthUiActiveApplicationGenerationIdentity {
-        &self.generation
+    pub(crate) fn generation(&self) -> &crate::runtime::WorthUiActiveApplicationGenerationIdentity {
+        &self.0.generation
     }
 
-    pub(crate) const fn role(&self) -> Option<&worth_ui_dsl::UiAppearanceRoleDeclaration> {
-        self.role.as_ref()
+    pub(crate) fn role(&self) -> Option<&worth_ui_dsl::UiAppearanceRoleDeclaration> {
+        self.0.role.as_ref()
     }
 
     pub(crate) fn theme_identity(&self) -> Option<&str> {
-        self.theme_identity.as_deref()
+        self.0.theme_identity.as_deref()
     }
 
-    pub(crate) const fn theme_revision(&self) -> u64 {
-        self.theme_revision
+    pub(crate) fn theme_revision(&self) -> u64 {
+        self.0.theme_revision
     }
 
-    pub(crate) const fn state(&self) -> Option<&super::super::state::UiAppearanceStateVector> {
-        self.state.as_ref()
+    pub(crate) fn state(&self) -> Option<&super::super::state::UiAppearanceStateVector> {
+        self.0.state.as_ref()
     }
 
     pub(crate) fn aspects(&self) -> &[super::UiResolvedAppearanceAspect] {
-        &self.aspects
+        &self.0.aspects
     }
 
     pub(crate) fn aspect_hints(&self) -> &[worth_ui_dsl::UiAppearanceAspect] {
-        &self.aspect_hints
+        &self.0.aspect_hints
     }
 
-    pub(crate) const fn consumers_selected(&self) -> u32 {
-        self.consumers_selected
+    pub(crate) fn consumers_selected(&self) -> u32 {
+        self.0.consumers_selected
     }
 
-    pub(crate) const fn theme_slots_compared(&self) -> u32 {
-        self.theme_slots_compared
+    pub(crate) fn theme_slots_compared(&self) -> u32 {
+        self.0.theme_slots_compared
     }
 
-    pub(crate) const fn owner_evidence(&self) -> u64 {
-        self.owner_evidence
+    pub(crate) fn owner_evidence(&self) -> u64 {
+        self.0.owner_evidence
     }
 }
 

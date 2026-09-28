@@ -62,6 +62,25 @@ impl<K: Ord + Clone, V> UiPersistentOrdMap<K, V> {
     where
         K: std::borrow::Borrow<Q>,
     {
+        let (node, probes) = self.find(key);
+        (node.map(|node| node.value.as_ref()), probes)
+    }
+
+    /// The key's value as a shared handle, which outlives later edits to this
+    /// map without copying the value.
+    pub(crate) fn get_shared<Q: Ord + ?Sized>(&self, key: &Q) -> Option<Rc<V>>
+    where
+        K: std::borrow::Borrow<Q>,
+    {
+        self.find(key).0.map(|node| Rc::clone(&node.value))
+    }
+
+    /// The key's node and the nodes visited to reach it; every lookup records
+    /// its probes here so locality evidence sees them all.
+    fn find<Q: Ord + ?Sized>(&self, key: &Q) -> (Option<&Node<K, V>>, usize)
+    where
+        K: std::borrow::Borrow<Q>,
+    {
         let mut cursor = self.root.as_deref();
         let mut probes = 0;
         while let Some(node) = cursor {
@@ -69,19 +88,12 @@ impl<K: Ord + Clone, V> UiPersistentOrdMap<K, V> {
             match key.cmp(node.key.borrow()) {
                 Ordering::Less => cursor = node.left.as_deref(),
                 Ordering::Greater => cursor = node.right.as_deref(),
-                Ordering::Equal => {
-                    #[cfg(test)]
-                    super::test_observation::observe_lookup(
-                        std::ptr::from_ref(self).cast(),
-                        probes,
-                    );
-                    return (Some(node.value.as_ref()), probes);
-                }
+                Ordering::Equal => break,
             }
         }
         #[cfg(test)]
         super::test_observation::observe_lookup(std::ptr::from_ref(self).cast(), probes);
-        (None, probes)
+        (cursor, probes)
     }
 
     pub(crate) fn predecessor(&self, key: &K) -> Option<(&K, &V)> {

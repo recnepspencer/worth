@@ -333,11 +333,13 @@ impl UiMountedAppearanceFact {
     }
 }
 
+/// Shared slices, so a retained entry forked for a successor frame copies
+/// no fact records.
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct UiMountedAppearanceFacts {
-    geometry_inputs: Box<[super::UiMountedAppearanceGeometryInput]>,
+    geometry_inputs: std::rc::Rc<[super::UiMountedAppearanceGeometryInput]>,
     frame: UiMountedAppearanceFrame,
-    records: Box<[UiMountedAppearanceFact]>,
+    records: std::rc::Rc<[UiMountedAppearanceFact]>,
 }
 
 impl UiMountedAppearanceFacts {
@@ -358,12 +360,12 @@ impl UiMountedAppearanceFacts {
     pub(super) fn new(
         frame: UiMountedAppearanceFrame,
         records: Vec<UiMountedAppearanceFact>,
-        geometry_inputs: Box<[super::UiMountedAppearanceGeometryInput]>,
+        geometry_inputs: std::rc::Rc<[super::UiMountedAppearanceGeometryInput]>,
     ) -> Self {
         Self {
             geometry_inputs,
             frame,
-            records: records.into_boxed_slice(),
+            records: records.into(),
         }
     }
 
