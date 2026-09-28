@@ -27,3 +27,5 @@ pub use snapshot_aspect_reads::encode_snapshot_aspect_read_value;
 
 #[cfg(test)]
 mod canonical_digest_parity_tests;
+#[cfg(test)]
+mod identity_boundary_tests;

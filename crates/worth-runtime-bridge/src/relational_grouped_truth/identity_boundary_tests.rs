@@ -1,6 +1,9 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
+/// This file names the banned patterns, so the scan skips it.
+const THIS_FILE: &str = "identity_boundary_tests.rs";
+
 #[test]
 fn relational_grouped_truth_does_not_reintroduce_erased_identity_minting() {
     let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -19,6 +22,9 @@ fn relational_grouped_truth_does_not_reintroduce_erased_identity_minting() {
         "format!(\"commit-",
         "format!(\"patch-",
         "SnapshotReadRequest::for_coarse(",
+        "BridgeIdentity::new(",
+        "::admit_bridge_owned(",
+        "::with_payload(",
     ];
 
     let mut violations = Vec::new();
@@ -28,7 +34,7 @@ fn relational_grouped_truth_does_not_reintroduce_erased_identity_minting() {
 
     assert!(
         violations.is_empty(),
-        "Phase 3 bridge identity boundary folklore reappeared:\n{}",
+        "grouped truth minted a Bridge identity outside the typed constructors:\n{}",
         violations.join("\n")
     );
 }
@@ -41,7 +47,9 @@ fn collect_violations(path: &Path, banned_patterns: &[&str], violations: &mut Ve
         }
         return;
     }
-    if path.extension().and_then(|extension| extension.to_str()) != Some("rs") {
+    if path.extension().and_then(|extension| extension.to_str()) != Some("rs")
+        || path.file_name().and_then(|name| name.to_str()) == Some(THIS_FILE)
+    {
         return;
     }
     let source = fs::read_to_string(path).expect("read source file");
