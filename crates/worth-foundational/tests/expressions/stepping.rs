@@ -324,3 +324,29 @@ fn shared_and_separate_values_compare_at_one_cost() {
         assert_eq!(counters(same.cost()), counters(separate.cost()), "{source}");
     }
 }
+
+/// Folds charge one unit per iteration, the first element included, on top
+/// of their node and one unit per Int64 comparison.
+#[test]
+fn folds_charge_every_iteration() {
+    let work = |source: &str| {
+        evaluate(source)
+            .cost()
+            .used(ExpressionResource::SemanticWork)
+    };
+    for n in 1..=4_u64 {
+        let items: Vec<String> = (1..=n).map(|item| item.to_string()).collect();
+        let list = format!("[{}]", items.join(", "));
+        let base = work(&list);
+        assert_eq!(work(&format!("sum({list})")) - base, 1 + n, "sum of {n}");
+        for fold in ["min", "max"] {
+            assert_eq!(
+                work(&format!("{fold}({list})")) - base,
+                1 + n + (n - 1),
+                "{fold} of {n}"
+            );
+        }
+        let probe = work(&format!("contains({list}, {n})")) - base;
+        assert_eq!(probe, 2 + 2 * n, "contains of {n}: node, probe, n steps");
+    }
+}
