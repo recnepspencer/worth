@@ -209,7 +209,7 @@ impl BridgeCommittedPatchEnvelope {
         )
     }
 
-    pub fn new_with_authoritative_lowering(
+    pub(crate) fn new_with_authoritative_lowering(
         envelope_identity: BridgeCommittedPatchEnvelopeIdentity,
         patch_items: Vec<BridgeCommittedPatchItem>,
         record_changes: Vec<BridgeCommittedRecordChange>,

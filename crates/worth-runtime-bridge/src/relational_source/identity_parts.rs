@@ -198,6 +198,10 @@ impl BridgeIdentity<TruthBranchTag> {
 
 impl BridgeIdentity<TruthCommitTag> {
     /// The Bridge identity of a Relational commit.
+    ///
+    /// This is public because callers name the commit they want routed. An id
+    /// is a name, not authority: routing reads the commit's changes from the
+    /// registered source, so a wrong id can only miss or name another commit.
     pub fn from_relational_commit_id(commit_id: u64) -> Self {
         Self::with_payload(
             format!("{RELATIONAL_COMMIT_PREFIX}{commit_id}"),
@@ -288,6 +292,10 @@ impl BridgeIdentity<TruthSnapshotTag> {
 
 impl BridgeIdentity<HistoricalResolvedLineageIdentityTag> {
     /// The Bridge identity of a resolved Relational lineage.
+    ///
+    /// This is public because a `ContinuityLineageSource` reports the
+    /// lineages it resolved. The identity is a name; the lineage authority
+    /// that carries it is checked by `BridgeHistoricalLineageAuthority::try_new`.
     pub fn from_relational_lineage_id(lineage_id: u64) -> Self {
         Self::admit_bridge_owned(format!("{RELATIONAL_LINEAGE_PREFIX}{lineage_id}"))
     }
@@ -337,7 +345,7 @@ impl BridgeCommittedPatchItem {
 
     /// A committed-patch item for a Relational record, carrying the semantic
     /// aspect change Relational reported for it.
-    pub fn with_relational_semantic_change(
+    pub(crate) fn with_relational_semantic_change(
         record_identity: RelationalBridgeRecordIdentityParts,
         target: BridgeCommittedPatchTarget,
         semantic_change: crate::input::envelope::BridgeSemanticAspectChange,

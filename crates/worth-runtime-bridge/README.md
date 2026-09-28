@@ -24,10 +24,16 @@ The Bridge owns:
 - lowering portable conditional meaning into installed Signal contracts
 - branch-local speculation and promotion boundaries
 - causal diagnostics and boundary receipts
+- the Relational adapter, `RuntimeBridgeRelationalSource`, which implements
+  the Bridge's source contracts over `worth_relational::facade::change_source`
+
+The Bridge depends on Relational and Signal. Neither depends on the Bridge.
 
 It does not own:
 
-- Relational truth or schema interpretation
+- Relational truth or schema interpretation. The adapter lowers a
+  `RelationalChangeReceipt`, which only Relational can mint; it never decides
+  what a commit changed.
 - Query operation or workflow meaning
 - Signal aspect versions, scheduling, condition decisions, or compute results
 - application policy outside an installed provider contract
@@ -162,7 +168,8 @@ counters. The index is acceleration, not authority.
 
 - Using a mapping label as semantic aspect identity.
 - Accepting raw Signal aspects from portable Query declarations.
-- Interpreting Relational field or endpoint changes in the Bridge caller.
+- Re-deriving what a Relational commit changed from raw patch fields instead of
+  lowering the change receipt Relational minted.
 - Silently widening semantic change precision.
 - Re-deciding Signal condition eligibility in the Bridge.
 - Building a second Signal graph for the same Query runtime.

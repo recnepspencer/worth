@@ -2,6 +2,8 @@ use std::sync::Arc;
 
 use worth_foundational::facade::TruthPartitionRole;
 
+use crate::certification_constructor::certification_constructor;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BridgeAuthoritativeSourceProfile {
     runtime_instance_id: u64,
@@ -53,34 +55,41 @@ pub struct BridgeAuthoritativeSourceProvenance {
 }
 
 impl BridgeAuthoritativeSourceProvenance {
-    pub fn from_owner_publication(
-        runtime_instance_id: u64,
-        graph_role: impl Into<Arc<str>>,
-        adapter_semantic_identity: impl Into<Arc<str>>,
-        source_basis: impl Into<Arc<str>>,
-    ) -> Self {
-        Self {
-            runtime_instance_id,
-            graph_role: graph_role.into(),
-            adapter_semantic_identity: adapter_semantic_identity.into(),
-            source_basis: source_basis.into(),
-            partition_role: None,
+    certification_constructor! {
+        /// Provenance for an envelope the registered source published.
+        fn from_owner_publication(
+            runtime_instance_id: u64,
+            graph_role: impl Into<Arc<str>>,
+            adapter_semantic_identity: impl Into<Arc<str>>,
+            source_basis: impl Into<Arc<str>>,
+        ) -> Self {
+            Self {
+                runtime_instance_id,
+                graph_role: graph_role.into(),
+                adapter_semantic_identity: adapter_semantic_identity.into(),
+                source_basis: source_basis.into(),
+                partition_role: None,
+            }
         }
     }
 
-    pub fn from_owner_partition_publication(
-        runtime_instance_id: u64,
-        graph_role: impl Into<Arc<str>>,
-        adapter_semantic_identity: impl Into<Arc<str>>,
-        source_basis: impl Into<Arc<str>>,
-        partition_role: TruthPartitionRole,
-    ) -> Self {
-        Self {
-            runtime_instance_id,
-            graph_role: graph_role.into(),
-            adapter_semantic_identity: adapter_semantic_identity.into(),
-            source_basis: source_basis.into(),
-            partition_role: Some(partition_role),
+    certification_constructor! {
+        /// Provenance for an envelope the registered source published from
+        /// one partition.
+        fn from_owner_partition_publication(
+            runtime_instance_id: u64,
+            graph_role: impl Into<Arc<str>>,
+            adapter_semantic_identity: impl Into<Arc<str>>,
+            source_basis: impl Into<Arc<str>>,
+            partition_role: TruthPartitionRole,
+        ) -> Self {
+            Self {
+                runtime_instance_id,
+                graph_role: graph_role.into(),
+                adapter_semantic_identity: adapter_semantic_identity.into(),
+                source_basis: source_basis.into(),
+                partition_role: Some(partition_role),
+            }
         }
     }
 

@@ -1004,4 +1004,36 @@ Hunks that are not a move or a path rewrite:
 - Relational's README and `API_OVERVIEW.md` move the Bridge flow into "Who
   consumes this" sections.
 
-Phase 5 is not started.
+Phase 5 is complete.
+
+- Crate-private: `BridgeCommittedPatchEnvelope::new_with_authoritative_lowering`,
+  `BridgeCommittedPatchItem::with_relational_semantic_change`, and
+  `BridgeProducerMetadata::new`. The spec did not list `new`, but a public
+  `new(RegisteredAuthoritativeSource, ..)` would have bypassed the gate on
+  `registered_authoritative_source`; only Bridge code calls it.
+- Behind `certification-construction`:
+  `BridgeAuthoritativeSourceProvenance::from_owner_publication` and
+  `from_owner_partition_publication`, and
+  `BridgeProducerMetadata::registered_authoritative_source` and
+  `with_authoritative_source`. The `certification_constructor!` macro
+  (`src/certification_constructor.rs`) emits each one as `pub` with the
+  feature and `pub(crate)` without it. Query and the UI certification crates
+  already enable the feature.
+- `BridgeHistoricalLineageAuthority::try_new` stays public, which departs
+  from D11. Its caller is Query's public acceptance suite
+  (`worth_query_lower_runtime_acceptance_suite`, through the phase-six
+  readmission fixtures), not a test-only path, so a feature gate would have
+  put it behind a dev-dependency it cannot use. It validates that the
+  identities are canonical and distinct, and the authority basis comes from
+  the request.
+- `from_relational_commit_id`, `from_relational_lineage_id`, and
+  `from_relational_publication` stay public, with rustdoc saying why.
+- Compile-fail tests: `tests/ui/crate_private_constructors/` and, without
+  the feature, `tests/ui/certification_constructors/`. With the feature,
+  `tests/pass/certification_constructors_with_feature.rs` must compile.
+  `committed_patch_item_literal_private.stderr` regenerated unchanged.
+- The two `&str` record-identity compile-fail cases were the same case; the
+  grouped-row-label copy is deleted.
+- The dead presentation kinds were already deleted in Phase 4.
+- The docs listed above now show one direction, and this roadmap marks the
+  milestone complete.

@@ -216,6 +216,12 @@ pub struct BridgeCommittedRecordChange {
 }
 
 impl BridgeCommittedRecordChange {
+    /// A record change as Relational published it.
+    ///
+    /// This is public because it is data, not authority. An envelope carrying
+    /// it counts as authoritative only when the registered source produced the
+    /// envelope. Outside the Bridge, only certification code built with the
+    /// `certification-construction` feature can claim that provenance.
     pub fn from_relational_publication(
         record_identity: RelationalBridgeRecordIdentityParts,
         kind: BridgeCommittedRecordChangeKind,

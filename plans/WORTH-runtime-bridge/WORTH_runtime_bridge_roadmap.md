@@ -982,6 +982,8 @@ This milestone is complete only when bridge harness scenarios can prove:
 
 ## Milestone 20: The Bridge Owns The Relational Adapter
 
+Status: Complete
+
 Engineering spec: [milestone-20.md](./milestone-20.md)
 
 ### Goal
@@ -996,7 +998,9 @@ Bridge depends on Relational and Signal, and neither runtime names the Bridge.
 - the Relational adapter, its binding tables, and grouped truth projection
   owned by the Bridge
 - the manifest flip and an inverted boundary-check denial
-- narrowed Bridge envelope constructors that only the Bridge can call
+- narrowed Bridge envelope constructors that only the Bridge, or
+  certification code built with the `certification-construction` feature,
+  can call
 
 ### Must Preserve
 
