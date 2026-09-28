@@ -6,8 +6,9 @@ use super::mutation_work::UiPersistentIndexMutationWork;
 
 pub(super) type Link<K, V> = Option<Rc<Node<K, V>>>;
 
-/// Immutable AVL index used by replacement truth that must fork without
-/// copying unaffected rows. Updates allocate only the search path.
+/// Persistent AVL index used by replacement truth that must fork without
+/// copying unaffected rows. Updates rebuild only the search path: copied
+/// while a fork shares it, rewritten in place otherwise.
 pub(crate) struct UiPersistentOrdMap<K, V> {
     pub(super) root: Link<K, V>,
 }
@@ -337,7 +338,7 @@ mod tests {
     }
 
     #[test]
-    fn mutation_work_counts_exact_comparisons_and_allocated_nodes() {
+    fn mutation_work_counts_exact_comparisons_and_rebuilt_nodes() {
         let mut map = UiPersistentOrdMap::default();
         let first = map.insert_with_work(2, "two");
         assert_eq!(first.key_probes(), 0);
