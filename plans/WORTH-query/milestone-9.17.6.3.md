@@ -1,15 +1,22 @@
-# Milestone 9.17.6.3: Parallel Computation Across The Platform
+# Milestone 9.17.6.3: Exact Invalidation And Parallel Computation
 
 > **Status:** Not started. Successor to [9.17.6](./milestone-9.17.6.md). This is the
-> one plan for parallel execution in WORTH. It replaces the canceled Signal
-> Milestones 14 to 17. Phases 1 to 4 depend only on completed work and can start
-> now. Phases 5 and 6 also need Query exact invalidation: the settle-time reverse
-> index of consumed facts, commit-time marking from sealed touched records, and
-> one-call advancement of the dirty required set. That work lands as its own
-> domain-neutral public change before Phase 5. Portable and distributed backends
-> are deferred; see [deferred work](../deferred-work.md).
+> one plan for exact invalidation and parallel execution in WORTH. It replaces the
+> canceled Signal Milestones 14 to 17 and the 9.17.6 rules that kept touched
+> records as evidence only. Every phase depends only on completed work. Portable
+> and distributed backends are deferred; see [deferred work](../deferred-work.md).
 
 ## Goal And Placement
+
+This milestone has two measures, and they share one key.
+
+1. **Exact invalidation.** The touched graph drives recompute. A commit's sealed
+   touched records mark exactly the outputs whose consumed facts they intersect,
+   at the smallest granule that holds them. Only those outputs recompute, and
+   nothing else is re-checked. The cost of keeping outputs current grows with the
+   change, not with the model.
+2. **Parallel computation.** What does recompute runs in parallel wherever the
+   declarations make it independent, with the same answer at every worker count.
 
 Any application on WORTH gets parallel computation by declaring what is
 independent. It never spawns a thread, sizes a pool, picks a backend or asserts
@@ -17,21 +24,22 @@ that its own work is safe to run concurrently. The platform finds the parallelis
 the declarations permit, at every layer, runs it inside one bounded resource
 authority, and proves the answer is identical to serial execution.
 
-This milestone carries parallelism through every layer that needs it:
+This milestone carries both measures through every layer that needs them:
 
-| Layer | What becomes parallel |
+| Layer | What changes |
 | --- | --- |
 | Execution runtime (new `worth-execution`) | One authority: pool, leases, capability, cancellation, patterns, partitioners, serial oracle, work and span accounting |
-| Relational | Query fragments, index builds, validation, bulk create and commit preparation, on the caller's lease with stable partitions |
-| Signal | Independent ready graph work under three proofs, candidate lookup over a scope-path hierarchy, precompute and apply, all with canonical publication |
-| Runtime Bridge | Carries the caller's lease and delivers scope paths at the depth Signal seals them |
-| Query | Partitioned managed computations with per-partition reuse, independent computations inside one `advance`, workflow frontier stages, derived-view reconstruction |
+| Relational | Touched records for every observable revision, including index membership; aspect versions bumped only by a changed field; query fragments, index builds, validation, bulk create and commit preparation on the caller's lease with stable partitions |
+| Signal | Independent ready graph work under three proofs, candidate lookup over a scope-path hierarchy, precompute and apply, all with canonical publication; the loosest observation tier is renamed `Visited` |
+| Runtime Bridge | Delivers every committed patch envelope to one Query-owned subscription at full precision, including scope paths at the depth Signal seals them; carries the caller's lease |
+| Query | Settle-time reverse index, commit-time marking, clean reuse, input and output cutoff and one-call advancement; partitioned managed computations with per-partition reuse; independent computations inside one `advance`; workflow frontier stages; derived-view reconstruction |
 | Server | Shared-read batches on the request lease |
 | World | Composes one authority per process for the runtimes it builds |
 | WASM | Resolves the serial posture and runs every declaration unchanged |
 
 The platform owns:
 
+- touched-driven marking, reuse and cutoff;
 - the execution authority and the lease hierarchy;
 - structured patterns (map, reduce, scan, fork/join, bulk-synchronous rounds, and
   decomposition with an interface stage);
@@ -48,12 +56,13 @@ libraries, not in Query and not in the execution runtime.
 **The same key serves parallelism and reuse.** A partition is both the unit of
 parallel work and the unit of reuse. Its settlement records the facts it consumed,
 so when a commit's touched graph intersects those facts, marking lands on that
-partition and nothing else. The touched graph remains the only cause of
-invalidation. A partition key, a scope path and a physical shard are never an
-invalidation cause and never a currentness proof.
+partition and nothing else. The touched graph is the only cause of invalidation.
+A partition key, a scope path and a physical shard are never an invalidation
+cause and never a currentness proof.
 
-**This milestone sets the precedent.** From here on, every parallel computation
-in WORTH runs through the one execution authority and the structured patterns.
+**This milestone sets the precedent.** From here on, no layer re-checks clean
+state to decide currentness, and every parallel computation in WORTH runs through
+the one execution authority and the structured patterns.
 Direct `rayon`, thread spawning and ad hoc pools outside `worth-execution` are
 rejected by the boundary check across the repository. A thread that is not
 parallel computation (an owner thread, an input/output or durability worker, an
@@ -122,9 +131,44 @@ budget or determinism contract.
   host-installed parallel-admission provider, then `execute_parallel_stages`
   runs the stages in a serial loop over `&mut WorthQueryWorkspace`.
 - **Application outputs.** `advance_output_demand` progresses one demand per call,
-  one producer at a time. Producer `demand_resources` is a self-declared
-  allowance. The only measured application-authored work is charged through
+  one producer at a time, so an application calls `advance` repeatedly until its
+  outputs settle. Producer `demand_resources` is a self-declared allowance. The
+  only measured application-authored work is charged through
   `WorthQueryManagedComputationCheckpoint::advance`.
+- **Invalidation of application outputs.** Relational seals field-exact changes
+  with every commit. Bridge's direct correspondence path delivers them only for
+  an installed correspondence with Signal targets, matched against that
+  correspondence's dependency, and carries no index-membership records. Query
+  live queries and conditional operations consume those deliveries. Application
+  outputs never read them. Instead:
+  - reuse re-runs the source query and hashes its whole footprint
+    (`identity_current`), so any revision change in the footprint forces a fresh
+    computation, even when the value the producer receives is unchanged;
+  - demand re-verifies every stored fact of every settlement in the demanded
+    closure (`application_output_demand/currentness.rs`), in demand progression,
+    in reuse selection and in `require_current_program_output`, so a ready
+    output is re-checked on every advancement;
+  - the cost of confirming currentness therefore grows with the model, not with
+    the edit.
+- **Stamping.** Field revisions are value-compared on entity and relation
+  update. Authoritative relation patches, however, mark every patched aspect
+  changed (`patch_authority.rs`), so an equal-value patch still bumps the aspect
+  version, and a reader of aspect-revision facts sees a change that did not
+  happen.
+- **Published rules.** Query 9.17.6 kept touched sets as a delivery filter and
+  made demand-time version comparison authoritative. Its plan states that
+  "evidence staleness is never an eagerly stored flag", that "an ordinary source
+  commit performs zero workflow invalidation work", and that a touched set "may
+  narrow delivery" but "cannot replace admission's authoritative currentness
+  proof". Its Phase 2.4 retains outputs by comparing native versions at demand
+  time, and its warm-progression cost row allows every checked dependency on
+  every warm step. `docs/how-it-works.md` §10 and `docs/glossary.md` define
+  touched records only as commit evidence, and §9.8 documents
+  `advance(&fresh_request)` only as returning Pending or Settled for one demand.
+  Signal
+  Milestone 11 named its loosest observation tier `Touched`, and it fires for
+  every node invalidation visits, even one that neither recomputes nor
+  changes.
 - **Thread affinity.** Native artifacts are thread-bound
   (`WorthQueryArtifactThreadBound`, denial `ForeignThread`), checked at run time.
 - **WASM.** By default the runtime runs in one dedicated Web Worker, with an
@@ -142,6 +186,44 @@ budget or determinism contract.
   numbering and is unrelated.
 
 ## Adversarial Courtroom
+
+### Exact invalidation
+
+- A neutral model repeated at 1, 10 and 100 independent copies, with a fixed
+  one-field edit in one copy.
+- A commit that races an output's settlement.
+- A demand at an older snapshot than the latest marks.
+- A commit by a writer other than Query, and a branch merge.
+- A created entity, and a changed index key, that match a stored selection,
+  absence or set-completeness fact, both through an index and through an
+  un-indexed predicate.
+- Deletes and slot reuse with a new generation; relation add and remove;
+  aspect-version bumps without field changes; declared widening.
+- An upstream that republishes an equal value, and a write that sets a field to
+  its current value.
+- A change to a fetched field that the producer's input value omits.
+- A program installation, an aspect contract-revision change, a delivery
+  overflow, a checkpoint restore, a reopen from outside the retained commit
+  window, and a branch switch.
+- Workflow definition and capacity facts changing under waiting work.
+
+Required:
+
+- For the fixed edit, marking work, verification work, producer contacts and
+  reverse-index bytes per consumed fact are equal at 1, 10 and 100 copies.
+- Demanding a clean output costs zero fact checks and zero source-query re-runs.
+- One `advance` with an adequate budget settles every marked output, and
+  exhaustion returns a typed outcome naming the remaining work; the application
+  never polls.
+- A downstream output demanded before its upstream recomputes reports Pending,
+  and an equal upstream republication clears the marks below it with zero
+  producer contacts.
+- The racing commit is caught by insertion replay, and the older-snapshot demand
+  ignores later marks.
+- Every listed discontinuity triggers the full-verification fallback once per
+  affected output, counted and reported.
+- A randomized differential test over all of the above finds no difference
+  between marking and full verification.
 
 ### Same answer at every worker count
 
@@ -239,6 +321,16 @@ Required:
 
 ### The courtroom must convict
 
+- a clean output whose facts are re-checked or whose source query is re-run on
+  demand;
+- a commit that scans settlements or waiting work;
+- a second delivery path feeding Query invalidation;
+- a mark honored beyond the demand's snapshot, or a mark missed by a racing
+  settlement;
+- a write that bumps the revision of an equal value;
+- reuse keyed on the source query's footprint instead of the producer's input
+  value;
+- an application that polls `advance` to settle its outputs;
 - a user-authored "parallel safe" assertion or a forged disjointness proof;
 - partition identity or reduction shape derived from a worker index, bucket
   count, rank position or completion order;
@@ -268,6 +360,199 @@ Required:
 - a native artifact reached from a partition kernel or a wave `compute`.
 
 ## Product Decision Lock
+
+### The touched graph
+
+The touched graph is the exact set of changes a commit made. Relational seals
+field-exact changes in the published patch envelope: changed records, aspect
+field paths, adjacency changes (relation kind and endpoints) and aspect-version
+bumps. Other envelope producers may declare a coarser change. Every commit
+contributes a touched graph, whichever writer made it. It has two roles, and
+neither may be dropped:
+
+- **Evidence.** It is proof of what the commit changed, used for receipts, undo
+  and audit.
+- **Cause.** It is the only thing that invalidates. Declared dependencies say
+  what may affect an output. The touched graph says what did. The runtime marks
+  exactly the consumers whose consumed facts intersect the touched graph, at the
+  smallest granule that holds those facts. A consumer it does not reach, and
+  whose upstream outputs are current, is current without re-checking.
+
+Every layer carries the full precision the layer below sealed. Query consumes
+Relational changes at field precision for application outputs, not only for live
+queries. A coarser change is lawful only when its producer declares the widening
+(`DeclaredWidening`, a whole-aspect write, or an empty scope). Such a change marks
+at its declared breadth and is counted and reported.
+
+### Touched records Query consumes
+
+- **Observable revisions.** Relational emits a touched record for every revision
+  bump a stored fact can observe:
+  - a field value;
+  - an aspect version;
+  - an adjacency structural revision;
+  - index membership.
+
+  Index membership changes carry the old and new index keys, derived by
+  Relational from the field changes and the installed index definitions, so a
+  phantom match is caught.
+- **Delivery.** Marking consumes every committed patch envelope on the branch
+  through one Query-owned Bridge subscription with no Signal targets.
+  - It carries the full published aspect change with its field path, the
+    index-membership records, and, from Phase 4, the scope path at the depth
+    Signal sealed it.
+  - Delivery runs in commit order and synchronously with commit visibility.
+  - Live queries, conditional operations and workflow coverage consume the same
+    subscription, and their correspondence-based matching is replaced by
+    marking. Signal correspondences keep delivering to Signal-hosted nodes and
+    never feed Query marking. No second path feeds Query invalidation.
+
+### Marking
+
+- **Settle-time index.** When an output settles, each consumed fact enters a
+  reverse index:
+  - entity presence and generation;
+  - field path;
+  - aspect-revision facts, keyed by entity and aspect, which match any change
+    in that aspect;
+  - adjacency anchor, relation kind and direction;
+  - index key, for selection, absence and set-completeness facts answered
+    through an index;
+  - entity kind and predicate field paths, for those facts answered without an
+    index.
+
+  Before the output is marked current, insertion replays the touched records of
+  commits after its read basis, so a commit that races the settlement is never
+  missed.
+- **Commit-time marking.** Each commit's touched records are matched against the
+  index. Exactly the matching settlements are marked dirty, with the matched
+  facts and the commit version.
+  - The cost is proportional to the touched records, their matches and the
+    marked downstream closure.
+  - No commit scans settlements or waiting work.
+- **Upstream propagation.** Marking a settlement also marks, transitively, every
+  settlement that consumed its output as pending-upstream.
+  - A pending-upstream output is not current, and demand for it reports
+    Pending.
+  - When an upstream republishes an equal value, the pending marks below it
+    clear without any producer contact.
+- **Selection facts.** A created entity, or a changed index key, that matches a
+  stored selection, absence or set-completeness fact marks that fact. For a fact
+  answered without an index, a created entity of that kind, or a change to any
+  predicate field path on that kind, marks it.
+- **Lineage.** Deletes and slot reuse with a new generation mark every fact about
+  the old entity. Marks are per branch lineage, so an output current on one
+  branch is not thereby current on another. A merge commit's touched graph is its
+  difference from the target branch's parent, and the target lineage stays
+  continuous.
+- **Index cost.**
+  - Index entries reference the settlement and a fact ordinal, so fact storage
+    is shared rather than copied.
+  - The index is charged as derived retained bytes.
+  - Entries are removed when their settlement is superseded or reclaimed.
+
+### Currentness, demand and advancement
+
+- **Continuous basis.** A continuous basis requires all of the following:
+  - the same branch lineage;
+  - the settlement's read basis still inside Relational's retained commit
+    window;
+  - the demand's snapshot at or after that basis.
+
+  A demand at snapshot `v` honors marks up to `v`.
+- **Clean reuse.** On a continuous basis, a settlement that is neither dirty nor
+  pending-upstream is current. It is reused without re-running its source query,
+  hashing a footprint or scanning facts.
+- **Dirty recompute.** A dirty settlement re-verifies only its marked facts. If
+  they changed, it recomputes its output key, subject to input cutoff. A
+  partitioned computation recomputes only its marked partitions.
+- **Required set.** The outputs still required are those with an open demand, or
+  those required by a performed operation (`start_required_outputs`). The set
+  lives in Query's demand registry, and closing a demand removes its outputs.
+- **Advancement.** One host `advance(&fresh_request)` progresses exactly the
+  dirty and pending-upstream members of the required set, in dependency-ready
+  waves, to completion within its budget. It then reports readiness. When the
+  budget is exhausted first, it returns a typed outcome naming the remaining
+  work.
+  - The authenticated request stays the principal.
+  - No background sweeper is added.
+  - The application neither re-demands its whole output tree nor polls.
+- **Full-verification fallback.** Full verification by revision comparison
+  remains only when the basis is not continuous, or when marking may be
+  incomplete:
+  - checkpoint restore and reopen;
+  - a read basis outside the retained commit window;
+  - a switch to another branch lineage;
+  - a foreign basis;
+  - program or schema installation;
+  - an aspect contract-revision change, or an index-definition change;
+  - a delivery gap: an overflowed or missed batch, or marks that lag the
+    demand's snapshot.
+
+  It runs once per affected output and is counted and reported.
+- **Commit-time checks.** A commit still recompares its attempt's read facts
+  (optimistic concurrency control). Marking replaces only demand-time
+  re-verification.
+- **Equivalence check.** A debug and certification mode runs full verification
+  beside marking and fails on any difference.
+- **One mechanism.** Workflow definition and capacity facts mark through the same
+  path. A workflow history basis is pinned to an immutable snapshot and is never
+  marked. One invalidation mechanism serves outputs, live queries and workflow
+  coverage, and no parallel lane remains.
+- **Charging.** Work budgets charge marking and dirty verification, never a scan
+  of clean state.
+
+### Cutoff on both sides
+
+Input cutoff and output cutoff are one mechanism.
+
+- **Reuse key.** An output's reuse key has three parts:
+  - the source query's selection facts, meaning which entities it chose;
+  - the canonical digest of the input value the producer receives;
+  - the computation's implementation edition. Today that is its declared
+    identity revision; an edition derived from code fills the same field without
+    changing the key.
+- **Input cutoff.** Rebuilding the input value is cheap. If its digest is
+  unchanged, the output is reused without contacting the producer. A field that
+  enters the input but cannot affect the output is a defect, and the courtroom
+  exposes it as an unexpected contact.
+- **Stamping.** Every Relational write path compares values before stamping,
+  and an aspect version bumps only when one of its fields changed. An equal value
+  keeps its revisions, whichever patch kind wrote it.
+- **Republication.** A republished output keeps the entity identity of its output
+  key, whatever its value. An equal canonical encoding keeps its revision.
+  Equality is byte equality of the canonical encoding, never `PartialEq`, so
+  `-0.0` and `0.0` differ. The same rule decides partition and reduction-tree
+  cutoff.
+- **Determinism.** Cutoff and reuse depend on deterministic producers. The
+  serial oracle and schedule perturbation certify them.
+
+### The public definition is restored
+
+- **Definition.** `docs/glossary.md` and `docs/how-it-works.md` state the
+  definition in [The touched graph](#the-touched-graph). How-it-works §9.8 and
+  §10 describe marking and upstream propagation, clean reuse and dirty
+  recompute, one-call advancement of the required set and the full-verification
+  fallback. `docs/coding-guidelines/perf_laws.md` states that the touched graph
+  is the semantic delta that bounds recompute.
+- **9.17.6 rules replaced.** The 9.17.6 rules quoted in Current Boundary are
+  replaced by this milestone's marking and currentness rules. The 9.17.6 plan
+  points here.
+- **9.17.6 rules kept:**
+  - no commit scans waiting work (the reverse index serves instead);
+  - negative and set-completeness dependencies;
+  - ABA denial;
+  - reuse as a checked equivalence, never an identity or value match.
+- **Progression.** Caller-pumped progression is kept: the host's authenticated
+  `advance` stays the principal. One call now completes the dirty required set.
+- **Signal observation tier.** The `Touched` tier and every identifier bound to
+  it are renamed to `Visited`: its policy constructors, the `touched` field on
+  committed and classified observation summaries,
+  `ObservationScratchSummary::touched_event_count`, and the tier's `touched()`
+  accessors. "Touched" then means only what a commit changed.
+- **Granules.** The glossary states that a shard is a placement unit, and that a
+  scope path is a precision granule of touched records, never a cause on its
+  own.
 
 ### The execution authority and leases
 
@@ -586,12 +871,12 @@ Public Developer Experience). The declaration changes with it:
 - The declaration names its `DeterminismContract`, defaulting to
   `CanonicalBitwise`.
 - These changes alter program revision identity, and existing digests are
-  re-baselined in Phase 5.
+  re-baselined in Phase 6.
 
 Each partition's result settles with its own consumed facts, keyed by
 computation identity, implementation edition, partition identity and read basis.
-The exact-invalidation reverse index holds those facts at partition granularity,
-so a touched fact marks exactly the partitions that read it.
+The reverse index holds those facts at partition granularity, so a touched fact
+marks exactly the partitions that read it.
 
 Retention belongs to Query. `worth-execution` provides the canonical tree
 algorithm over a caller-owned node store. Query owns retention, eviction, branch
@@ -606,17 +891,15 @@ propagation, so nothing above it recombines.
 Full recomputation is the fallback in these cases, each counted and reported with
 its cause:
 
-- a basis discontinuity: the retained basis is not reachable from the read basis
-  through committed touched graphs, as after a checkpoint restore without
-  history;
+- a basis that is not continuous (see Currentness, demand and advancement);
 - a partitioner output change beyond the declared bound;
-- an edition change;
 - eviction under the retained-byte ceiling.
+
+An edition change is a reuse-key miss, not a fallback.
 
 ### Query: parallel advancement
 
-One `advance(&fresh_request)` progresses the dirty and pending-upstream members of
-the required set in waves.
+The one-call advancement above runs its waves in parallel.
 
 - A wave contains the required members whose declared upstream outputs are all
   committed in the current basis. Wave membership comes from dependency
@@ -724,6 +1007,9 @@ executor and no second pool survives.
   requirements point here.
 - **Query 5.3.** Signal stays authoritative for graph frontier and parallel
   admission. The execution resource authority is `worth-execution`.
+- **Query 9.17.6.** Its rules that kept touched records as evidence only are
+  replaced here, and its plan points here. Its caller-pumped progression, ABA
+  denial, negative dependencies and checked-equivalence reuse are kept.
 - **Query 9.20.** Set execution consumes partitions, disjointness and canonical
   reduction from `worth-execution`, and adds domain conflict meaning without a
   partitioning or reduction module of its own.
@@ -734,6 +1020,11 @@ executor and no second pool survives.
 
 | Contract | Bound |
 | --- | --- |
+| Commit-time marking | O(touched records + matched facts + marked downstream closure); no scan of settlements or waiting work |
+| Clean demand | Zero fact checks and zero source-query re-runs |
+| Fixed edit at 1, 10 and 100 model copies | Equal marking work, verification work, producer contacts and reverse-index bytes per consumed fact |
+| Reverse index | Charged as derived retained bytes; entries reclaimed with their settlement |
+| Unchanged producer input or output encoding | Zero producer contacts downstream of it |
 | Charged work | Identical at every worker count and schedule for completed outcomes |
 | Span | Reported per pattern and epoch; asserted against the declared structure |
 | Process authority | Active workers across all layers never exceed the authority's width |
@@ -746,7 +1037,7 @@ executor and no second pool survives.
 | Deep leaf change among disjoint subtrees | Candidate work proportional to the path depth plus matching subscribers |
 | Scheduling overhead | O(partitions + reductions + conflict groups), excluding charged partitioner work |
 | Retained partition results and tree nodes | Charged as derived retained bytes, owned by Query |
-| Fallback to full recomputation or serial publication | Counted and reported with its cause |
+| Fallback to full verification, full recomputation or serial publication | Counted and reported with its cause |
 | Serial platform | Same result, same charged work, reported serial posture |
 
 Outcomes are typed:
@@ -849,17 +1140,22 @@ crates/worth-execution/                                  N  execution runtime
   src/oracle/                                            N  serial oracle
 crates/worth-foundational/src/execution/                 N  portable vocabulary and reports
 crates/worth-proof/src/                                  R  generic disjoint-family and canonical-order doors
-crates/worth-relational/src/                             R  leased execution, stable buckets, posture from policy
+crates/worth-relational/src/                             R  observable-revision touched records, value-compared aspect versions,
+                                                            leased execution, stable buckets, posture from policy
 crates/worth-signal/src/logic/planner/                   R  graph parallelism, precompute and apply on leases
 crates/worth-signal/src/logic/planner/precompute/executor_pool.rs  D
 crates/worth-signal/src/data/graph/topology/subscriber_index/      R  ScopePath hierarchy
+crates/worth-signal/src/                                 R  observation tier renamed Visited
 crates/worth-signal-wasm/                                R  execution report
-crates/worth-runtime-bridge/src/                         R  lease carriage, scope-path delivery
+crates/worth-runtime-bridge/src/                         R  Query-owned envelope subscription, lease carriage,
+                                                            scope-path delivery
 crates/worth-runtime-world/                              R  composes the one authority
 crates/worth-server/src/product_adapter/execution_pipeline/  R  leased read batches
 workspaces/worth-query/crates/worth-query-declaration/   R  partition key contract, determinism
-workspaces/worth-query/crates/worth-query-execution/     R  partitioned owner, per-partition reuse and retention,
-                                                            parallel waves, derived-view reconstruction
+workspaces/worth-query/crates/worth-query-execution/     R  reverse index, marking, required set, input and output
+                                                            cutoff, one-call advancement; partitioned owner,
+                                                            per-partition reuse and retention, parallel waves,
+                                                            derived-view reconstruction
 workspaces/worth-query/crates/worth-query/               R  workflow frontier on leases; frontier-planning route deleted
 workspaces/worth-query/crates/worth-query-host/          R  facade
 tools/boundary-check/config/road1.toml                   R  crate edges, threading rule, declared threads
@@ -890,6 +1186,9 @@ Enforcement:
   `worth-execution`.
 
 ## Ordered Phases
+
+Phases 1 to 4 run in order. Phase 5 needs no parallel machinery and may proceed
+beside them. Phase 6 needs Phases 2 and 5, and Phase 7 needs Phases 4 and 6.
 
 ### Phase 1: Execution authority
 
@@ -944,14 +1243,31 @@ lease. The Signal and Query lanes remain on the ratchet list.
 - Have Bridge deliver scope paths at full depth.
 - The existing parallel-versus-serial Signal certification suites pass through
   the authority in the default build.
-- Signal called from Query runs the serial posture until Phase 6 passes the
+- Signal called from Query runs the serial posture until Phase 7 passes the
   request lease.
 
-The next phase may trust exact, parallel graph progression below Query.
+Phase 7 may trust exact, parallel graph progression below Query.
 
-### Phase 5: Partitioned managed computations
+### Phase 5: Exact invalidation
 
-Requires Query exact invalidation (see Status).
+- Emit observable-revision touched records from Relational, with old and new
+  index keys, and bump an aspect version only when one of its fields changed.
+- Deliver every committed patch envelope to one Query-owned Bridge subscription,
+  and move live queries, conditional operations and workflow coverage onto it.
+- Land the settle-time reverse index with insertion replay, commit-time marking,
+  upstream propagation, selection and lineage marking.
+- Land clean reuse, the input-value reuse key and cutoff, stable republication,
+  the required set and one-call advancement.
+- Land the full-verification fallback and the equivalence-check mode.
+- Rename the Signal `Touched` observation tier to `Visited`.
+- Restore the public definition, rules and vocabulary in the same change, and
+  point the 9.17.6 plan here.
+- A neutral application proves the exact-invalidation courtroom with operation
+  counts, including the randomized differential test.
+
+The next phase may trust that the touched graph alone decides what recomputes.
+
+### Phase 6: Partitioned managed computations
 
 - Change the partitioned declaration as described, and re-baseline revision
   digests.
@@ -966,9 +1282,7 @@ Requires Query exact invalidation (see Status).
 
 The next phase may trust that partition-granular reuse is exact.
 
-### Phase 6: Parallel advancement and remaining Query lanes
-
-Requires one-call advancement of the dirty required set (see Status).
+### Phase 7: Parallel advancement and remaining Query lanes
 
 - Pass the request lease from `advance` into Bridge, Relational and Signal.
 - Run the `compute` steps of each dependency-ready wave concurrently under the
@@ -983,7 +1297,7 @@ Requires one-call advancement of the dirty required set (see Status).
 
 The next phase may trust that advancement exploits every declared independence.
 
-### Phase 7: Documentation and closure
+### Phase 8: Documentation and closure
 
 - Update the public documentation listed below.
 - Run the complete certification and the mutation probes on x86-64 and wasm32.
@@ -1003,6 +1317,14 @@ the affected certification suites.
 
 Mutation probes must turn evidence red:
 
+- skip insertion replay at settlement;
+- drop the old index key from an index-membership touched record;
+- honor a mark beyond the demand's snapshot;
+- stop upstream propagation after one level;
+- drop the predicate-field key from an un-indexed selection fact;
+- stamp an equal value with a new revision;
+- key reuse on the source query's footprint instead of the input value;
+- re-check a clean settlement's facts on demand;
 - reverse one reduction's combine order;
 - build the reduction tree by rank position instead of identity digest;
 - derive a bucket from the worker count;
@@ -1018,21 +1340,28 @@ Mutation probes must turn evidence red:
 - skip a reduction-tree node on recombination;
 - truncate a scope path in Bridge delivery.
 
-An independent review checks every public statement about execution, parallelism,
-determinism, locality and reuse against the code.
+An independent review checks every public statement about touched records,
+invalidation, currentness, progression, execution, parallelism, determinism,
+locality and reuse against the code. A search of public docs and plans finds no
+remaining statement that touched records are evidence only, or that a commit
+performs no invalidation work, and no public identifier names the visited tier
+`touched`.
 
 Documentation must be domain-neutral, with executable examples from several
 domains:
 
-- `docs/how-it-works.md`: the execution authority and lease flow, parallelism at
-  each layer, parallel advancement inside a caller-pumped `advance`, and
-  per-partition reuse.
-- `docs/glossary.md`: execution authority, lease, determinism contract,
+- `docs/how-it-works.md`: the touched graph as cause, marking, clean reuse,
+  cutoff and one-call advancement (§9.8 and §10); the execution authority and
+  lease flow, parallelism at each layer, parallel advancement inside a
+  caller-pumped `advance`, and per-partition reuse.
+- `docs/glossary.md`: touched graph, visited, marking, reverse index, required
+  set, execution authority, lease, determinism contract,
   partition, partitioner, island, conflict group, decomposition, scope path,
   work, span. The glossary separates an execution partition from a Signal
   conflict group and from the Milestone 13 `WholePartition` scope lane.
-- `docs/coding-guidelines/perf_laws.md`: work and span as the parallel cost law,
-  and the threading rule.
+- `docs/coding-guidelines/perf_laws.md`: the touched graph as the semantic delta
+  that bounds recompute, work and span as the parallel cost law, and the
+  threading rule.
 - `docs/build-an-application.md`: declaring a partitioned managed computation.
 
 ## Completion And Successor Handoff
@@ -1050,7 +1379,8 @@ The milestone closes when:
 Successors:
 
 - **Query 9.20 and 9.22** consume the patterns and reuse.
-- **Application adopters** partition their computations. Proprietary adopters
+- **Application adopters** delete their settle-polling loops and partition their
+  computations. Proprietary adopters
   consume the pinned public revision.
 - **Deferred backends** (WASM helper workers, remote and distributed execution,
   accelerators, physical shard placement and rebalancing) plug into the backend
