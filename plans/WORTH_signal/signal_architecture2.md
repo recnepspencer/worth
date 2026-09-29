@@ -2509,15 +2509,25 @@ This is mandatory. The new structural rules are not advisory preferences.
 making physical scheduling, worker count, platform, or consumer domain part of
 signal meaning.
 
-The numbered implementation sequence is:
+[Query Milestone 9.17.6.3](../WORTH-query/milestone-9.17.6.3.md) implements this section as one
+cross-layer plan and replaces the canceled Signal Milestones 14-17. Ownership
+is split:
 
-1. [Milestone 14 - Deterministic Parallel Execution Foundation](./milestone-14-plan.md)
-2. [Milestone 15 - Proof-Carrying Graph Parallelism](./milestone-15-plan.md)
-3. [Milestone 16 - Structured Partitioned Parallelism](./milestone-16-plan.md)
-4. [Milestone 17 - Portable Execution Backends And Distributed Coordination](./milestone-17-plan.md)
+- the `worth-execution` runtime crate owns the execution authority, resource
+  leases, capability resolution, the backend port, the structured patterns, the
+  partitioners, the serial oracle, and work and span accounting; portable
+  vocabulary lives in `worth-foundational::execution` and the sealed dispatch
+  proofs live in `worth-proof::execution`
+- `worth-signal` owns graph-parallel admission (the three proofs, conflict
+  partitions, rewiring epochs, backpressure, and canonical epoch publication)
+  and `ScopePath` locality in its subscriber index, and executes that work on
+  leases from `worth-execution`
 
-The sequence follows Milestones 12-13 because parallel execution may not
-amplify or hide a causally false or breadth-dishonest invalidation frontier.
+The authority lives outside `worth-signal` because Relational, Query, and
+Server need the same authority and Relational cannot depend on Signal.
+
+This work follows Milestones 12-13 because parallel execution may not amplify
+or hide a causally false or breadth-dishonest invalidation frontier.
 
 Cross-phase invariants:
 
@@ -2525,7 +2535,7 @@ Cross-phase invariants:
 | --- | --- |
 | Parallelism never grants semantic safety | Callers and backends cannot assert disjointness, readiness, or control-order legality |
 | One lowered meaning | Serial, native parallel, WASM-worker, accelerator, and remote execution consume the same semantic plan |
-| One resource authority | Graph and nested partition work subdivide one bounded lease and cannot create independent capacity |
+| One resource authority | Graph and nested partition work subdivide one bounded lease from the `worth-execution` authority and cannot create independent capacity |
 | Workers are non-authoritative | Workers consume immutable inputs and return local packets; graph truth changes only through canonical publication |
 | Determinism is explicit | Bitwise, contract-equivalent, and relaxed execution remain distinct contracts and cannot be silently weakened |
 | Portability does not erase boundaries | Worker, device, process, and network crossings expose capability, transfer, failure, cancellation, and recovery |
@@ -2533,13 +2543,15 @@ Cross-phase invariants:
 
 #### S9.17.1 — Resource Authority, Determinism, And Publication
 
-Parallel execution must be admitted through a runtime-owned resource authority.
+Parallel execution must be admitted through the resource authority owned by
+`worth-execution`.
 The configured worker budget must become a strict hierarchical lease, not a
 chunking hint. Nested work subdivides that lease. It may not allocate another
 pool or exceed the parent's concurrency, memory, deadline, or cancellation
 envelope.
 
-Required target forms:
+Required target forms (in `worth-execution`, with `DeterminismContract` in
+`worth-foundational::execution`):
 
 ```rust
 pub struct ExecutionRequestPolicy { ... }
@@ -2563,7 +2575,8 @@ Normative rules:
 - a target with no parallel capability executes the same plan serially when
   policy permits, without semantic drift
 
-Milestone 14 owns this subsection.
+`worth-execution` owns this subsection under Query Milestone 9.17.6.3 Phase 1.
+`worth-signal` consumes its leases and keeps no pool of its own.
 
 #### S9.17.2 — Proof-Carrying Graph Parallelism
 
@@ -2600,14 +2613,20 @@ Normative rules:
 - queues and unpublished packets remain bounded by the resource lease
 - graph-parallel and serial histories must be differentially equivalent under
   adversarial schedule perturbation
+- the subscriber index generalizes Milestone 13's partition and detail lanes to
+  a bounded canonical `ScopePath`; candidate lookup runs as a `map` over index
+  partitions, the causal owner validates every candidate edge, and
+  sibling-disjoint subtrees contribute no candidates or work
 
-Milestone 15 owns this subsection.
+`worth-signal` owns this subsection under Query Milestone 9.17.6.3 Phase 4. The
+sealed disjoint graph batch lives in `worth-proof::execution`, and the admitted
+work executes on `worth-execution` leases.
 
 #### S9.17.3 — Structured Partitioned Parallelism
 
 Computation authors need domain-neutral structured patterns for work inside one
-node. The foundational family is map, reduce, scan, fork/join, and
-bulk-synchronous iterative rounds.
+node. The foundational family is map, reduce, scan, fork/join,
+bulk-synchronous iterative rounds, and decomposition with an interface stage.
 
 Required target forms:
 
@@ -2636,9 +2655,17 @@ Normative rules:
 - serial-only platforms execute the same declaration and proof topology
 
 Geometry is a future consumer and adversarial scale workload, not an API or
-module axis. Milestone 16 owns this subsection.
+module axis. `worth-execution` owns this subsection under Query Milestone
+9.17.6.3 Phase 2, including the keyed, components, and bisection partitioners.
 
 #### S9.17.4 — Portable Backends And Distributed Coordination
+
+The `worth-execution` authority executes through one backend port. Query
+Milestone 9.17.6.3 delivers the serial and native backends, and wasm32 resolves
+and reports the serial posture. WASM helper workers, remote and distributed
+execution, accelerators, and physical shard placement with rebalancing are
+[deferred](../deferred-work.md). They plug into the same port without changing
+any declaration, and the rules below bind them when they return.
 
 Portable backends consume only versioned prepared work. Capability negotiation
 must precede expensive transfer, and returned results are untrusted derived
@@ -2675,7 +2702,9 @@ Normative rules:
 - accelerator support is claimed only after a real adapter passes numerical,
   memory, cancellation, transfer, failure, and semantic conformance
 
-Milestone 17 owns this subsection.
+`worth-execution` owns the backend port and the serial, native and
+schedule-perturbation backends under Query Milestone 9.17.6.3 Phase 1. The
+remaining adapters are deferred.
 
 #### S9.17.5 — Certification And Performance Truth
 
@@ -2686,7 +2715,7 @@ Mandatory measurement boundaries include:
 
 - total work, span, and critical-path depth
 - active workers versus leased workers
-- queue width, steals, barriers, and conflict partitions
+- queue width, steals, barriers, and conflict groups
 - worker-local packet and canonical publication breadth
 - nested lease breadth and oversubscription denials
 - partitions, reductions, scans, rounds, and synchronization depth
@@ -2892,9 +2921,10 @@ S9 (performance enforcement addendum) → extends S2/S3/S5/S6/S7 and should be
 written before any V2.1 rewrite work begins
 S9.16.3 causal/local invalidation repair and S9.16.6 certification
   -> precede S9.17 parallel-execution expansion
-S9.17.1 resource/determinism foundation -> precedes S9.17.2 graph parallelism
-S9.17.2 graph parallelism -> precedes S9.17.3 nested partition parallelism
-S9.17.3 structured partition proof -> precedes S9.17.4 portable backends
+S9.17.1 execution authority (worth-execution) -> precedes S9.17.3 structured patterns
+S9.17.3 structured patterns -> precede S9.17.2 Signal graph parallelism and locality
+S9.17.4 serial and native backends land with S9.17.1; deferred backends plug
+  into the same port later
 ```
 
 ### Recommended Execution Order
@@ -2961,7 +2991,7 @@ Batch 9 — Performance Enforcement Rewrite Layer
   S9.13 Architecture-mandated measurement boundaries
   S9.15 Branched runtime reconciliation and merge lineage
   S9.16 Geometry-kernel performance hardening program
-  S9.17 Deterministic and portable parallel execution
+  S9.17 Deterministic and portable parallel execution (Query 9.17.6.3)
 ```
 
 ### Practical Rule

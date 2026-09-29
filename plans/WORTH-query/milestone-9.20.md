@@ -16,6 +16,12 @@ refinement, and verified footprints. This milestone then owns the independent
 typed execution-language and bulk-strategy boundary; it is not a continuation
 of the Milestone 9.17 composite-branch implementation phases.
 
+[Milestone 9.17.6.3](./milestone-9.17.6.3.md) supplies the execution authority,
+stable partition identity, write-set disjointness proofs and canonical
+reduction. This milestone consumes them for set execution and adds domain
+conflict meaning and provider set operations; it adds no partitioning,
+reduction or pool module of its own.
+
 ## Adversarial Constraint
 
 A provider lowers a typed path into per-binding child queries, omits a negative
@@ -67,9 +73,7 @@ worth-query-execution/src/domain_computation/
         execution.rs
         receipt.rs
     set_execution/
-        partitioning.rs
         provider_batch.rs
-        reduction.rs
 
 worth-query-certification/src/reference_domains/
     chip_netlist/
@@ -99,9 +103,9 @@ negative and ordering dependencies, and prove exact-zero caller-owned N+1 work.
 
 ### Phase 3: Conflict Proof And Canonical Partitioning
 
-Install domain conflict meaning, verify partition coverage, uniqueness, and
-conflict freedom, and choose scalar, partitioned, or bulk posture through a
-governed strategy transition.
+Install domain conflict meaning over `worth-execution`'s validated partitions,
+and choose scalar, partitioned, or bulk posture through a governed strategy
+transition.
 
 ### Phase 4: Provider Set Execution
 

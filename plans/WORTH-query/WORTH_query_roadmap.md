@@ -383,6 +383,9 @@ cross-feature proof gates before final certification:
 - `Milestone 9.17.6.1` establishes the shared typed expression language in
   `worth-foundational`, cuts workflow conditions over to it, and proves real Worth UI
   source/rebind adoption plus bounded CAD/digital-value and incremental scale contracts
+- `Milestone 9.17.6.3` carries parallel computation through every runtime layer on
+  one execution authority, with structured patterns, partitioners, per-partition
+  reuse and parallel advancement; it replaces the canceled Signal Milestones 14-17
 - `Milestone 9.17.7` adds authenticated bounded inbound occurrences and exact
   external-effect completion before workflow eligibility
 - `Milestone 9.18` accepts tree-based semantic undo and redo as freshly
@@ -430,6 +433,12 @@ contracts required by physical integration:
 The numbered order remains the semantic dependency order. The condensed ranges
 above do not weaken any intervening milestone, acceptance gate, or proof
 obligation.
+
+`Milestone 9.17.6.3` runs beside this chain rather than in it. Its Phases 1
+to 4 depend only on completed work. Its Phases 5 and 6 also require Query exact
+invalidation (the settle-time reverse index, commit-time marking and one-call
+advancement), which lands as its own public change first. No chain milestone
+waits on it.
 
 Store handoffs are explicit:
 
@@ -5482,6 +5491,31 @@ Independent 9.17.7 inbound-effect development need not wait for UI integration;
 shared-language consumers must wait for their corresponding cutover proof. UI 3.17
 retains full UI product acceptance and 3.18 preserves expression expansion provenance.
 
+## Milestone 9.17.6.3: Parallel Computation Across The Platform
+
+[milestone-9.17.6.3.md](./milestone-9.17.6.3.md) is the one plan for parallel
+execution in WORTH and replaces the canceled Signal Milestones 14-17. A new
+`worth-execution` runtime owns the only worker pool, resource leases, platform
+capability, structured patterns (map, reduce, scan, fork/join, rounds and
+decomposition with an interface stage), domain-neutral partitioners, the serial
+oracle and work and span accounting. Relational, Signal, Query and Server run
+their parallel work on leases from that authority, and the World composes one
+authority per process.
+
+Applications declare independence and never spawn threads. A partition is both
+the unit of parallel work and the unit of reuse: it settles with its own
+consumed facts, so a touched fact recomputes only that partition and the
+reduction nodes above it. The touched graph stays the only invalidation cause.
+Progress stays caller-pumped; parallel waves run inside `advance`.
+
+Seven phases deliver the authority, patterns and partitioners, the Relational,
+Server and World cutover, Signal graph parallelism and scope-path locality,
+partitioned managed computations with per-partition reuse, parallel
+advancement, and closure. Charged work is identical at every worker count,
+`CanonicalBitwise` results equal the serial oracle, and work and span gate
+performance. Portable and distributed backends are deferred; see
+[deferred work](../deferred-work.md).
+
 ## Milestone 9.17.7: Inbound Occurrences And External Effect Completion
 
 [milestone-9.17.7.md](./milestone-9.17.7.md) consumes the completed workflow kernel but
@@ -5937,6 +5971,7 @@ answer is "store-gated" or "shared with another subsystem."
 | Branch-scoped application program evolution | Milestone 9.17.5 | Exact program/component meaning per selected occurrence; compatible/incompatible local adoption; explicit broader partial progress; retained interpretation and effect custody | No global latest-program override, owner-local-success activation, stale migration, lost recovery or false multi-branch atomicity | A/P0 and B/P1 actual outputs, failed composite publication, target races, state migration, fixed continuation and external custody, A/B/C/D coverage |
 | Dynamic workflow authoring and execution | Milestone 9.17.6, including Phases 2.1-2.6 | One canonical builder/macro/component/UI/AI-authored model; prepared publication, authoritative branch-local definitions/instances, rebuildable compiled meaning, fresh per-transition admission, typed control flow, evidence joins, approvals, revision/fork/migration and real effects; linear effect/index admission, bounded index retention/checkpoints, shared inputs, exact output reuse, changed-component authoring and managed incremental views | No authoring request authority, syntax-specific validator, component-owned runtime, compiled-plan/status authority, definition-created authority, stale approval reuse, status-as-publication, unbounded retry, duplicate dispatch, second scheduler, per-rule duplicate gather or cache-authored truth | Equivalent multi-surface authoring, compile-time lifecycle boundaries, compiled/status reconstruction, user-authored CAD and Bank process journeys, independent required inventory, A/B definitions, branch/program affinity, exact outbound recovery and resource lifecycle; segmented 802-solid House build/edit/capture/reopen court under portable work and existing resource bounds |
 | Shared typed expression language | Milestone 9.17.6.1; shared substrate for Worth UI 3.17 | Foundational grammar, canonical typed programs, pure bounded evaluator, strict numerics/units/digital values, installed functions, tracked consumption and runtime-owned reuse | No arbitrary code, ambient reads, expression-issued authority, unmetered iteration, hash-only identity, stale reuse, or competing workflow evaluator | Cross-target/conformance and independent semantic vectors; real Query condition cutover, UI source/rebind pulse, proprietary CAD selection/rule, digital and scale/exhaustion/reconstruction courts |
+| Platform parallel computation | Milestone 9.17.6.3; replaces Signal Milestones 14-17 | One execution authority and lease hierarchy for every runtime; structured map/reduce/scan/fork-join/rounds/decompose; keyed, component and bisection partitioners; per-partition reuse with a retained canonical reduction tree; proof-carrying Signal graph parallelism and scope-path locality; parallel advancement inside caller-pumped `advance` | No thread, pool or Rayon use outside `worth-execution`, user-asserted parallel safety, worker-count-dependent partition identity or reduction shape, completion-order publication, or partition key used as an invalidation cause | Serial-oracle equality at one, two, machine and oversubscribed widths under forced schedules; identical charged work at every width; per-partition reuse and island stability by operation count; lease and backpressure bounds; mutation probes turn evidence red |
 | Inbound occurrences and external effect completion | Milestone 9.17.7 | Installed inbound protocols; authenticated bounded immutable occurrences; exact dispatch/branch correlation; external-effect-owner consumption; workflow posture delivery | Raw callback, payload, status, transport acknowledgement or workflow command cannot complete an effect; fork, duplicate and redispatch races cannot duplicate consumption | Static Bank lost-response/redispatch court, branch-affinity and hostile-envelope evidence, workflow await reconstruction, CAD callback, bounded custody and cleanup |
 | Tree-based semantic undo and redo | Milestone 9.18 | Exact source composite commit and target product branch/head, explicit per-component correction posture, installed inverse/compensation/reconciliation/reapplication contracts, applicability against intervening history, fresh Query admission, owner-local preparation, Runtime World coordinated publication, correction causality, and typed next actions | Reversal and reapplication create new composite commits; unchanged components retain exact bases; Signal reconciliation remains Signal-owned; history and alternatives remain intact; copied receipts and prior authority open no door; stale/conflicting divergence is typed before effects; external effects retain honest compensation/irreversibility posture; Query owns no history head | Milestone 9.18 composite-divergence, stale-head, component-basis, Signal-reconciliation, authority, compensation, external-effect, partial-preparation, zero-ordinary-work, facade, documentation, and residue certification + later cross-runtime merge/rebase/recovery suites |
 | Managed advanced access and verified footprints | Milestone 9.19 | Installed-query-bound search and access products, Milestone 9.10 requirement/inventory/plan extensions, lifecycle products, coverage/membership witnesses, exact refinement, and verified realized footprints | Search preserves capability, purpose, exact composite product-world basis, disclosure, cursor, recovery, and aftermath; membership remains complete under negative-space change; protected candidates do not leak; footprints narrow but never widen authority | Milestone 9.19 bank/geometry search, disclosure, no-N+1, membership, footprint, lifecycle, memory, alternate-provider, facade/docs, and prohibition certification + Milestone 13 parity |
@@ -6054,6 +6089,7 @@ must gain a row in the same patch or the roadmap is incomplete.
 - [milestone-9.17.5.md](./milestone-9.17.5.md)
 - [milestone-9.17.6.md](./milestone-9.17.6.md)
 - [milestone-9.17.6.1.md](./milestone-9.17.6.1.md)
+- [milestone-9.17.6.3.md](./milestone-9.17.6.3.md)
 - [milestone-9.17.7.md](./milestone-9.17.7.md)
 - [milestone-9.18.md](./milestone-9.18.md)
 - [milestone-9.19.md](./milestone-9.19.md)
