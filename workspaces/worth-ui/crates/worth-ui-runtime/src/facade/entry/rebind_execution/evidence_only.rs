@@ -7,6 +7,7 @@ pub(crate) struct WorthUiPreparedEvidenceOnlyApplicationRebind<'session> {
     appearance_succession: super::super::UiPreparedAppearanceGenerationSuccession,
     overlay_bindings: crate::runtime::portal::UiPortalOverlayBindingLifecycle,
     occurrence_geometry: crate::mounting::UiMountedOccurrenceGeometryState,
+    expressions: crate::runtime::expression::UiPreparedExpressionSuccession,
     pointer_succession:
         crate::runtime::pointer_affordance::UiPreparedPointerAffordanceGenerationSuccession,
     owners: crate::runtime::appearance::UiPreparedRetainedAppearanceOwnerSuccession,
@@ -18,6 +19,7 @@ impl<'session> WorthUiPreparedEvidenceOnlyApplicationRebind<'session> {
     pub(super) fn new(
         session: &'session mut WorthUiActiveApplicationSession,
         succession: crate::runtime::observation::UiAuthoredSourceSuccession,
+        expressions: crate::runtime::expression::UiPreparedExpressionSuccession,
         pointer_succession: crate::runtime::pointer_affordance::UiPreparedPointerAffordanceGenerationSuccession,
     ) -> Result<Self, crate::runtime::rebind::UiRebindPreparationDenial> {
         let crate::runtime::observation::UiAuthoredSourceSuccession::EvidenceOnly {
@@ -28,6 +30,14 @@ impl<'session> WorthUiPreparedEvidenceOnlyApplicationRebind<'session> {
         else {
             return Err(crate::runtime::rebind::UiRebindPreparationDenial::InvalidSemanticProof);
         };
+        // A presentation in flight completes against the generation it was
+        // prepared at, so no generation commits under it: the frame boundary
+        // a framed rebind waits for is the one this commit waits for too.
+        if session.mounted.has_active_presentation_attempt() {
+            return Err(
+                crate::runtime::rebind::UiRebindPreparationDenial::FrameBoundaryUnavailable,
+            );
+        }
         let predecessor = session.active_generation_identity();
         let successor = crate::runtime::WorthUiActiveApplicationGenerationIdentity::current(
             session.session_identity(),
@@ -80,6 +90,7 @@ impl<'session> WorthUiPreparedEvidenceOnlyApplicationRebind<'session> {
             appearance_succession,
             overlay_bindings,
             occurrence_geometry,
+            expressions,
             pointer_succession,
             owners,
             _admitted_candidate: admitted_candidate,
@@ -127,6 +138,7 @@ impl<'session> WorthUiPreparedEvidenceOnlyApplicationRebind<'session> {
             appearance_succession,
             overlay_bindings,
             occurrence_geometry,
+            expressions,
             pointer_succession,
             owners,
             _admitted_candidate: _,
@@ -137,6 +149,7 @@ impl<'session> WorthUiPreparedEvidenceOnlyApplicationRebind<'session> {
             appearance_succession,
             owners,
             overlay_bindings,
+            expressions,
             pointer_succession,
             occurrence_geometry,
         ))

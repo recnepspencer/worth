@@ -2,46 +2,53 @@ pub(crate) struct UiIntentInputBasisView<'state> {
     generation: &'state crate::runtime::WorthUiActiveApplicationGenerationIdentity,
     publication_frame: worth_ui_host_contract::UiMountedFrameIdentity,
     target: crate::runtime::interaction::UiPresentedInteractionTargetView,
-    mounted: &'state crate::mounting::WorthUiMountedSessionState,
-    application_facts: &'state super::super::UiIntentApplicationFactState,
+    graph_node: crate::graph::UiGraphNodeIdentity,
+    owners: UiIntentInputOwners<'state>,
+}
+
+/// The owners an input basis reads, all observed at one generation.
+#[derive(Clone, Copy)]
+pub(crate) struct UiIntentInputOwners<'state> {
+    pub(crate) mounted: &'state crate::mounting::WorthUiMountedSessionState,
+    pub(crate) application_facts: &'state super::super::UiIntentApplicationFactState,
+    pub(crate) expressions: &'state crate::runtime::expression::UiExpressionRuntimeState,
 }
 
 impl<'state> UiIntentInputBasisView<'state> {
     pub(crate) fn observe(
         source: &super::super::super::routing::UiIntentProductInputSource,
         generation: &'state crate::runtime::WorthUiActiveApplicationGenerationIdentity,
-        mounted: &'state crate::mounting::WorthUiMountedSessionState,
-        application_facts: &'state super::super::UiIntentApplicationFactState,
+        owners: UiIntentInputOwners<'state>,
     ) -> Result<Self, super::super::UiIntentPayloadStop> {
         if source.generation() != generation {
             return Err(super::super::UiIntentPayloadStop::ApplicationGenerationChanged);
         }
-        Self::admit_target(source.target(), generation, mounted, application_facts)
+        Self::admit_target(source.target(), generation, owners)
     }
 
     /// Observes dependencies without issuing an interaction or payload source.
     pub(crate) fn observe_target_with<R>(
         target: crate::runtime::interaction::UiPresentedInteractionTargetView,
         generation: &'state crate::runtime::WorthUiActiveApplicationGenerationIdentity,
-        mounted: &'state crate::mounting::WorthUiMountedSessionState,
-        application_facts: &'state super::super::UiIntentApplicationFactState,
+        owners: UiIntentInputOwners<'state>,
         observe: impl FnOnce(&Self) -> R,
     ) -> Result<R, super::super::UiIntentPayloadStop> {
-        let view = Self::admit_target(target, generation, mounted, application_facts)?;
+        let view = Self::admit_target(target, generation, owners)?;
         Ok(observe(&view))
     }
 
     fn admit_target(
         target: crate::runtime::interaction::UiPresentedInteractionTargetView,
         generation: &'state crate::runtime::WorthUiActiveApplicationGenerationIdentity,
-        mounted: &'state crate::mounting::WorthUiMountedSessionState,
-        application_facts: &'state super::super::UiIntentApplicationFactState,
+        owners: UiIntentInputOwners<'state>,
     ) -> Result<Self, super::super::UiIntentPayloadStop> {
+        let mounted = owners.mounted;
         if mounted.has_active_presentation_attempt() {
             return Err(super::super::UiIntentPayloadStop::PublicationTransitionInFlight);
         }
-        crate::runtime::interaction::targeting::require_current_target(mounted, target)
-            .map_err(super::super::UiIntentPayloadStop::Targeting)?;
+        let affinity =
+            crate::runtime::interaction::targeting::admit_current_target(mounted, target)
+                .map_err(super::super::UiIntentPayloadStop::Targeting)?;
         let publication_frame = mounted
             .view()
             .current_frame()
@@ -50,8 +57,8 @@ impl<'state> UiIntentInputBasisView<'state> {
             generation,
             publication_frame,
             target,
-            mounted,
-            application_facts,
+            graph_node: affinity.graph_node(),
+            owners,
         })
     }
 
@@ -65,15 +72,33 @@ impl<'state> UiIntentInputBasisView<'state> {
         &self,
         slot: worth_ui_query_binding::UiProjectionInputSlot,
     ) -> Option<worth_ui_query_binding::UiProjectionInputFactReference> {
-        self.mounted.current_projection_input(slot)
+        self.owners.mounted.current_projection_input(slot)
     }
 
     pub(crate) fn application(
         &self,
         slot: crate::declaration::UiIntentApplicationFactSlot,
     ) -> Option<super::super::UiIntentApplicationInputReference> {
-        self.application_facts
+        self.owners
+            .application_facts
             .input_reference(slot, self.generation)
+    }
+
+    /// The retained result of `slot`, whatever its posture. `None` when the
+    /// expression owner does not follow the generation this view observes.
+    pub(crate) fn expression(
+        &self,
+        slot: crate::runtime::expression::UiExpressionSlot,
+    ) -> Option<crate::runtime::expression::UiExpressionResultReference> {
+        self.owners
+            .expressions
+            .result(slot)
+            .filter(|result| result.generation() == self.generation)
+    }
+
+    /// The graph node the admitted target is mounted from.
+    pub(crate) const fn graph_node(&self) -> crate::graph::UiGraphNodeIdentity {
+        self.graph_node
     }
 
     pub(crate) const fn target(

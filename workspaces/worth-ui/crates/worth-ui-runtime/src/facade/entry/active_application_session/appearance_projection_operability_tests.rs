@@ -4,6 +4,8 @@ use worth_ui_host_contract::*;
 #[path = "appearance_projection_operability_fixture.rs"]
 mod fixture;
 
+#[path = "condition_operability_tests.rs"]
+mod condition_tests;
 #[path = "appearance_projection_operability_in_flight_tests.rs"]
 mod in_flight_tests;
 #[path = "appearance_projection_operability_lifecycle_tests.rs"]

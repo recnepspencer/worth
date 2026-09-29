@@ -6,6 +6,9 @@ pub(crate) enum WorthUiPreparedApplicationPublication {
         intent_contract: crate::declaration::UiIntentCatalogSemanticComparison,
         appearance_consumer_contract_unchanged: bool,
         projection_contract_unchanged: bool,
+        /// The intent contract compares conditions by identity, so a changed
+        /// condition body leaves it equivalent; this names that difference.
+        expression_contract_unchanged: bool,
     },
     MountedGraph(
         Box<
@@ -46,11 +49,15 @@ impl WorthUiPreparedApplicationPublication {
         let projection_contract_unchanged = previous_projection.projection_requirements()
             == next_projection.projection_requirements()
             && previous_projection.projection_contents() == next_projection.projection_contents();
+        let expression_contract_unchanged = predecessor
+            .expression_catalog()
+            .installs_same_expressions_as(successor.prepared_authority().expression_catalog());
         Self::Replacement {
             successor: Box::new(successor),
             intent_contract,
             appearance_consumer_contract_unchanged,
             projection_contract_unchanged,
+            expression_contract_unchanged,
         }
     }
 
@@ -66,12 +73,14 @@ impl WorthUiPreparedApplicationPublication {
                 intent_contract,
                 appearance_consumer_contract_unchanged,
                 projection_contract_unchanged,
+                expression_contract_unchanged,
                 ..
             } => {
                 *intent_contract
                     == crate::declaration::UiIntentCatalogSemanticComparison::Equivalent
                     && *appearance_consumer_contract_unchanged
                     && *projection_contract_unchanged
+                    && *expression_contract_unchanged
             }
             Self::MountedGraph(_) => true,
         }

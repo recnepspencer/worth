@@ -205,7 +205,7 @@ pub(super) fn complete(
         cost: completion.cost,
         span: installed.body_span().cloned(),
     };
-    if !records.admit(record) {
+    if records.admit(record).is_err() {
         return refuse(counters, UiExpressionCompletionReceipt::Stale);
     }
     if changed {

@@ -162,7 +162,7 @@ impl super::WorthUiActiveApplicationSession {
                     self.settle_motion_terminal_request(terminal);
                 }
                 let presented = sampling.presented_surface()?;
-                self.refresh_motion_appearance_owner_receipt_sources();
+                self.refresh_appearance_owner_receipt_sources();
                 // Every completion path, including an input drain, must make
                 // Scroll geometry agree with these accepted pixels before a
                 // pointer can derive a grab and retire the sample.

@@ -167,7 +167,7 @@ impl WorthUiActiveFrameworkTurnExecution<'_> {
                 graph: self.graph,
                 capabilities: self.capabilities,
                 consumed_facts: self.consumed_facts,
-                intent_catalog: self.intent_catalog,
+                intent_catalog: self.intent_operability.catalog,
                 mounted: self.mounted,
                 presentation: self.presentation,
                 appearance_owner_snapshot: snapshot,

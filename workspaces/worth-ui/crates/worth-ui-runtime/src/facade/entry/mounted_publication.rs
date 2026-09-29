@@ -30,12 +30,12 @@ impl WorthUiActiveApplicationSession {
             let transition = self
                 .mounted
                 .supersede_presentation(&self.host_session, in_flight);
-            return self.finish_mounted_transition(transition, now);
+            return self.finish_mounted_transition(transition, now, None);
         }
         let transition = self
             .mounted
             .complete_presentation(&self.host_session, in_flight, now);
-        self.finish_mounted_transition(transition, now)
+        self.finish_mounted_transition(transition, now, None)
     }
 
     pub fn cancel_mounted_presentation(
@@ -45,7 +45,7 @@ impl WorthUiActiveApplicationSession {
         let transition = self
             .mounted
             .cancel_presentation(&self.host_session, in_flight);
-        self.finish_mounted_transition(transition, u64::MAX)
+        self.finish_mounted_transition(transition, u64::MAX, None)
     }
 
     pub(crate) fn supersede_mounted_presentation(
@@ -55,7 +55,7 @@ impl WorthUiActiveApplicationSession {
         let transition = self
             .mounted
             .supersede_presentation(&self.host_session, in_flight);
-        self.finish_mounted_transition(transition, u64::MAX)
+        self.finish_mounted_transition(transition, u64::MAX, None)
     }
 
     pub(crate) fn admit_duplicate_native_presentation_observation(
@@ -82,16 +82,24 @@ impl WorthUiActiveApplicationSession {
         outcome: UiMountedPresentationOutcome,
     ) -> UiMountedFrameOutcome {
         let transition = self.mounted.finish_presentation(outcome);
-        self.finish_mounted_transition(transition, u64::MAX)
+        self.finish_mounted_transition(transition, u64::MAX, None)
     }
 
+    /// Settles a transition into the session's owners, then the frame's
+    /// owner receipts (a pending attempt's, and `owner_receipts` when this
+    /// call presented a new frame), and only then hands the expression
+    /// settlement to the standing operability facts, so a fact whose receipt
+    /// this frame succeeded is re-observed at its successor receipt.
     fn finish_mounted_transition(
         &mut self,
         transition: crate::mounting::UiMountedPublicationTransition,
         now: u64,
+        owner_receipts: Option<
+            super::mounted_owner_receipt_succession::UiPreparedMountedOwnerReceiptSuccession,
+        >,
     ) -> UiMountedFrameOutcome {
         let active_generation = self.active_generation_identity();
-        let outcome = finish_mounted_transition_with_ports(
+        let (outcome, conditions) = finish_mounted_transition_with_ports(
             UiMountedPublicationSettlementPorts {
                 mounted: &mut self.mounted,
                 focus: self.focus.as_mut(),
@@ -110,6 +118,10 @@ impl WorthUiActiveApplicationSession {
         self.overlay_composition_owners.settle(&outcome);
         self.settle_presented_scroll_extent(&outcome, now);
         self.settle_pending_mounted_owner_receipt_succession(&outcome);
+        if let Some(prepared) = owner_receipts {
+            self.settle_new_mounted_owner_receipt_succession(prepared, &outcome);
+        }
+        self.reobserve_condition_consumers(conditions);
         outcome
     }
 
@@ -192,6 +204,10 @@ pub(super) struct UiMountedPublicationSettlementPorts<'a> {
     pub(super) application_facts: &'a crate::runtime::intent::UiIntentApplicationFactState,
 }
 
+/// Settles a mounted transition into its owners. The expression settlement
+/// is returned, not re-observed: a caller hands it to the standing operability
+/// facts only after it has settled the frame's owner receipts, so a fact whose
+/// receipt this frame succeeded is re-observed at its successor receipt.
 pub(super) fn finish_mounted_transition(
     ports: UiMountedPublicationSettlementPorts<'_>,
     transition: crate::mounting::UiMountedPublicationTransition,
@@ -202,8 +218,11 @@ pub(super) fn finish_mounted_transition(
     overlay_composition_owners: Option<
         &mut super::active_application_session::UiActiveOverlayCompositionOwners,
     >,
-) -> UiMountedFrameOutcome {
-    let outcome = finish_mounted_transition_with_ports(
+) -> (
+    UiMountedFrameOutcome,
+    crate::runtime::expression::UiExpressionSettlement,
+) {
+    let (outcome, conditions) = finish_mounted_transition_with_ports(
         ports,
         transition,
         appearance_inspection,
@@ -212,7 +231,7 @@ pub(super) fn finish_mounted_transition(
     if let Some(owners) = overlay_composition_owners {
         owners.settle(&outcome);
     }
-    outcome
+    (outcome, conditions)
 }
 
 fn finish_mounted_transition_with_ports(
@@ -222,9 +241,12 @@ fn finish_mounted_transition_with_ports(
     mut appearance_presentation: Option<
         &mut crate::runtime::presentation_state::UiApplicationPresentationState,
     >,
-) -> UiMountedFrameOutcome {
+) -> (
+    UiMountedFrameOutcome,
+    crate::runtime::expression::UiExpressionSettlement,
+) {
     let (outcome, observation, appearance, hit_transition) = transition.into_parts();
-    match &outcome {
+    let conditions = match &outcome {
         UiMountedFrameOutcome::Published(_) | UiMountedFrameOutcome::Reconciled(_) => ports
             .expressions
             .invalidate_published_frame(&crate::runtime::expression::UiExpressionInputs {
@@ -239,8 +261,10 @@ fn finish_mounted_transition_with_ports(
         | UiMountedFrameOutcome::Superseded(_)
         | UiMountedFrameOutcome::RetentionDenied(_)
         | UiMountedFrameOutcome::AdmissionDenied(_)
-        | UiMountedFrameOutcome::CompletionDenied(_) => {}
-    }
+        | UiMountedFrameOutcome::CompletionDenied(_) => {
+            crate::runtime::expression::UiExpressionSettlement::default()
+        }
+    };
     match &outcome {
         UiMountedFrameOutcome::Published(receipt)
         | UiMountedFrameOutcome::Unchanged(receipt)
@@ -300,7 +324,7 @@ fn finish_mounted_transition_with_ports(
             .interaction
             .observe_presented_hit_transition(&transition, ports.mounted);
     }
-    outcome
+    (outcome, conditions)
 }
 
 fn rebind_portal_after_published_frame(

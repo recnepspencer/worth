@@ -1,7 +1,7 @@
 #[path = "operability_contract/resolution.rs"]
 mod resolution;
 
-pub(crate) use resolution::resolve_operability_contract;
+pub(crate) use resolution::{resolve_operability_contract, UiIntentOperabilitySourcePlans};
 
 use crate::capability::UiIntentBoolean;
 
@@ -32,6 +32,7 @@ enum UiAuthoredIntentMutabilitySource {
     ApplicationBoolean(Box<str>),
     ProjectionReadonly(Box<str>),
     CommittedDraft,
+    Condition(Box<str>),
 }
 
 pub struct UiIntentReadinessSource {
@@ -42,10 +43,16 @@ enum UiAuthoredIntentReadinessSource {
     ApplicationBoolean(Box<str>),
     Projection(Box<str>),
     CommittedDraft,
+    Condition(Box<str>),
 }
 
 pub struct UiIntentPolicySource {
-    fact: Box<str>,
+    source: UiAuthoredIntentPolicySource,
+}
+
+enum UiAuthoredIntentPolicySource {
+    ApplicationBoolean(Box<str>),
+    Condition(Box<str>),
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -64,6 +71,7 @@ pub(crate) enum UiResolvedIntentMutabilitySource {
         slot: worth_ui_query_binding::UiProjectionInputSlot,
     },
     CommittedDraft,
+    Condition(UiResolvedIntentConditionSource),
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -74,11 +82,22 @@ pub(crate) enum UiResolvedIntentReadinessSource {
         slot: worth_ui_query_binding::UiProjectionInputSlot,
     },
     CommittedDraft,
+    Condition(UiResolvedIntentConditionSource),
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(crate) struct UiResolvedIntentPolicySource {
-    slot: super::UiIntentApplicationFactSlot,
+pub(crate) enum UiResolvedIntentPolicySource {
+    ApplicationBoolean(super::UiIntentApplicationFactSlot),
+    Condition(UiResolvedIntentConditionSource),
+}
+
+/// A condition one operability axis reads. The slot addresses the prepared
+/// expression catalog; meaning is the authored identity, so two catalogs that
+/// number the same condition differently still compare equal.
+#[derive(Clone, Debug)]
+pub(crate) struct UiResolvedIntentConditionSource {
+    identity: Box<str>,
+    slot: crate::runtime::expression::UiExpressionSlot,
 }
 
 impl UiIntentOperabilityContract {
@@ -137,6 +156,15 @@ impl UiIntentMutabilitySource {
         }
     }
 
+    /// Mutability read from the authored condition named `identity`.
+    pub fn condition(
+        identity: impl Into<Box<str>>,
+    ) -> Result<Self, UiIntentOperabilityContractIdentityError> {
+        Ok(Self {
+            source: UiAuthoredIntentMutabilitySource::Condition(condition_identity(identity)?),
+        })
+    }
+
     fn into_dsl(self) -> worth_ui_dsl::WorthUiIntentMutabilitySourceSpec {
         match self.source {
             UiAuthoredIntentMutabilitySource::ApplicationBoolean(fact) => {
@@ -147,6 +175,9 @@ impl UiIntentMutabilitySource {
             }
             UiAuthoredIntentMutabilitySource::CommittedDraft => {
                 worth_ui_dsl::WorthUiIntentMutabilitySourceSpec::committed_draft()
+            }
+            UiAuthoredIntentMutabilitySource::Condition(condition) => {
+                worth_ui_dsl::WorthUiIntentMutabilitySourceSpec::condition(condition)
             }
         }
     }
@@ -171,6 +202,15 @@ impl UiIntentReadinessSource {
         }
     }
 
+    /// Readiness read from the authored condition named `identity`.
+    pub fn condition(
+        identity: impl Into<Box<str>>,
+    ) -> Result<Self, UiIntentOperabilityContractIdentityError> {
+        Ok(Self {
+            source: UiAuthoredIntentReadinessSource::Condition(condition_identity(identity)?),
+        })
+    }
+
     fn into_dsl(self) -> worth_ui_dsl::WorthUiIntentReadinessSourceSpec {
         match self.source {
             UiAuthoredIntentReadinessSource::ApplicationBoolean(fact) => {
@@ -182,6 +222,9 @@ impl UiIntentReadinessSource {
             UiAuthoredIntentReadinessSource::CommittedDraft => {
                 worth_ui_dsl::WorthUiIntentReadinessSourceSpec::committed_draft()
             }
+            UiAuthoredIntentReadinessSource::Condition(condition) => {
+                worth_ui_dsl::WorthUiIntentReadinessSourceSpec::condition(condition)
+            }
         }
     }
 }
@@ -189,12 +232,28 @@ impl UiIntentReadinessSource {
 impl UiIntentPolicySource {
     pub fn application_fact(fact: &super::UiIntentApplicationFact<UiIntentBoolean>) -> Self {
         Self {
-            fact: fact.identity().into(),
+            source: UiAuthoredIntentPolicySource::ApplicationBoolean(fact.identity().into()),
         }
     }
 
+    /// Policy read from the authored condition named `identity`.
+    pub fn condition(
+        identity: impl Into<Box<str>>,
+    ) -> Result<Self, UiIntentOperabilityContractIdentityError> {
+        Ok(Self {
+            source: UiAuthoredIntentPolicySource::Condition(condition_identity(identity)?),
+        })
+    }
+
     fn into_dsl(self) -> worth_ui_dsl::WorthUiIntentPolicySourceSpec {
-        worth_ui_dsl::WorthUiIntentPolicySourceSpec::application_boolean(self.fact)
+        match self.source {
+            UiAuthoredIntentPolicySource::ApplicationBoolean(fact) => {
+                worth_ui_dsl::WorthUiIntentPolicySourceSpec::application_boolean(fact)
+            }
+            UiAuthoredIntentPolicySource::Condition(condition) => {
+                worth_ui_dsl::WorthUiIntentPolicySourceSpec::condition(condition)
+            }
+        }
     }
 }
 
@@ -214,10 +273,50 @@ impl UiResolvedIntentOperabilityContract {
     pub(crate) const fn policy(&self) -> &UiResolvedIntentPolicySource {
         &self.policy
     }
+
+    /// Every condition this contract reads, in axis order.
+    pub(crate) fn conditions(&self) -> impl Iterator<Item = &UiResolvedIntentConditionSource> {
+        let mutability = match &self.mutability {
+            UiResolvedIntentMutabilitySource::Condition(condition) => Some(condition),
+            UiResolvedIntentMutabilitySource::ApplicationBoolean(_)
+            | UiResolvedIntentMutabilitySource::ProjectionReadonly { .. }
+            | UiResolvedIntentMutabilitySource::CommittedDraft => None,
+        };
+        let readiness = match &self.readiness {
+            UiResolvedIntentReadinessSource::Condition(condition) => Some(condition),
+            UiResolvedIntentReadinessSource::ApplicationBoolean(_)
+            | UiResolvedIntentReadinessSource::Projection { .. }
+            | UiResolvedIntentReadinessSource::CommittedDraft => None,
+        };
+        let policy = match &self.policy {
+            UiResolvedIntentPolicySource::Condition(condition) => Some(condition),
+            UiResolvedIntentPolicySource::ApplicationBoolean(_) => None,
+        };
+        mutability.into_iter().chain(readiness).chain(policy)
+    }
 }
 
-impl UiResolvedIntentPolicySource {
-    pub(crate) const fn slot(&self) -> super::UiIntentApplicationFactSlot {
+impl UiResolvedIntentConditionSource {
+    pub(crate) const fn slot(&self) -> crate::runtime::expression::UiExpressionSlot {
         self.slot
+    }
+}
+
+impl PartialEq for UiResolvedIntentConditionSource {
+    fn eq(&self, other: &Self) -> bool {
+        self.identity == other.identity
+    }
+}
+
+impl Eq for UiResolvedIntentConditionSource {}
+
+fn condition_identity(
+    identity: impl Into<Box<str>>,
+) -> Result<Box<str>, UiIntentOperabilityContractIdentityError> {
+    let identity = identity.into();
+    if super::valid_intent_identity(&identity) {
+        Ok(identity)
+    } else {
+        Err(UiIntentOperabilityContractIdentityError::InvalidIdentity)
     }
 }

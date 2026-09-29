@@ -48,17 +48,14 @@ impl WorthUiActiveApplicationSession {
             &mut super::application_replacement::UiNativeReplacementLayoutSupplier<'_>,
         >,
     ) -> Result<crate::runtime::rebind::UiPreparedRebind<'_>, UiRebindPreparationDenial> {
-        let pointer_succession = plan
+        let successions = plan
             .retained_successor_authority()
-            .map(|authority| self.prepare_pointer_generation_succession(authority))
+            .map(|authority| self.prepare_retained_successions(authority))
             .transpose()?;
-        let pointer_publication = pointer_succession.as_ref().is_some_and(|pointer| {
+        let pointer_publication = successions.as_ref().is_some_and(|(_, pointer)| {
             !pointer.changed_surfaces().is_empty() || pointer.requires_timed_publication()
         });
-        if pointer_publication {
-            let pointer = pointer_succession
-                .as_ref()
-                .expect("publication has prepared pointer owner");
+        if let Some((_, pointer)) = successions.as_ref().filter(|_| pointer_publication) {
             self.include_pointer_publication(&mut plan, pointer)?;
         }
         let reservation = crate::runtime::rebind::admit_plan(
@@ -90,17 +87,20 @@ impl WorthUiActiveApplicationSession {
                     native_viewport,
                     native_layout,
                 ),
-            crate::runtime::rebind::UiRebindSemanticProof::AuthoredContent(content) => self
-                .prepare_authored_content_rebind(
+            crate::runtime::rebind::UiRebindSemanticProof::AuthoredContent(content) => {
+                let (expressions, pointer) =
+                    successions.expect("authored content requires prepared successions");
+                self.prepare_authored_content_rebind(
                     plan,
                     reservation,
                     *content,
-                    pointer_succession
-                        .expect("authored content requires prepared pointer succession"),
-                ),
+                    expressions,
+                    pointer,
+                )
+            }
             crate::runtime::rebind::UiRebindSemanticProof::EvidenceOnly(succession) => {
-                let pointer = pointer_succession
-                    .expect("evidence publication requires prepared pointer succession");
+                let (expressions, pointer) =
+                    successions.expect("evidence publication requires prepared successions");
                 if pointer_publication {
                     let crate::runtime::observation::UiAuthoredSourceSuccession::EvidenceOnly {
                         successor_authority,
@@ -122,11 +122,16 @@ impl WorthUiActiveApplicationSession {
                         plan,
                         reservation,
                         content,
+                        expressions,
                         pointer,
                     );
                 }
-                let prepared =
-                    WorthUiPreparedEvidenceOnlyApplicationRebind::new(self, *succession, pointer)?;
+                let prepared = WorthUiPreparedEvidenceOnlyApplicationRebind::new(
+                    self,
+                    *succession,
+                    expressions,
+                    pointer,
+                )?;
                 crate::runtime::rebind::UiPreparedRebind::evidence_only(plan, reservation, prepared)
             }
             crate::runtime::rebind::UiRebindSemanticProof::ThemeSwitch(theme) => {
@@ -169,11 +174,35 @@ impl WorthUiActiveApplicationSession {
         ))
     }
 
+    /// The expression succession to `authority`'s generation, and the pointer
+    /// succession observed through it, so a condition reads at the successor
+    /// generation the outcome that generation will hold.
+    pub(in crate::facade::entry) fn prepare_retained_successions(
+        &mut self,
+        authority: &crate::facade::prepared_application_authority::WorthUiPreparedApplicationAuthority,
+    ) -> Result<
+        (
+            crate::runtime::expression::UiPreparedExpressionSuccession,
+            crate::runtime::pointer_affordance::UiPreparedPointerAffordanceGenerationSuccession,
+        ),
+        UiRebindPreparationDenial,
+    > {
+        let successor = crate::runtime::WorthUiActiveApplicationGenerationIdentity::current(
+            self.session_identity(),
+            authority.generation_identity(),
+        );
+        let expressions =
+            self.prepare_expression_succession(&successor, authority.expression_catalog());
+        let pointer = self.prepare_pointer_generation_succession(authority, &expressions)?;
+        Ok((expressions, pointer))
+    }
+
     fn prepare_authored_content_rebind(
         &mut self,
         plan: crate::runtime::rebind::UiRebindPlan,
         reservation: crate::runtime::rebind::UiRebindReservation,
         content: crate::runtime::rebind::UiAuthoredContentRebindSemanticProof,
+        expressions: crate::runtime::expression::UiPreparedExpressionSuccession,
         pointer_succession: crate::runtime::pointer_affordance::UiPreparedPointerAffordanceGenerationSuccession,
     ) -> Result<crate::runtime::rebind::UiPreparedRebind<'_>, UiRebindPreparationDenial> {
         let semantic_content = plan.content().clone();
@@ -224,6 +253,7 @@ impl WorthUiActiveApplicationSession {
             appearance_succession,
             overlay_bindings,
             occurrence_geometry,
+            expressions,
             pointer_succession,
             owners,
         )?;

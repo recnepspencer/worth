@@ -382,4 +382,11 @@ impl WorthUiMountedSessionState {
     ) -> Option<worth_ui_query_binding::UiProjectionInputFactReference> {
         self.retention.current_projection_input(slot)
     }
+
+    /// The published frame whose projection inputs are current, if any.
+    pub(crate) fn current_projection_frame(
+        &self,
+    ) -> Option<crate::mounting::UiMountedFrameIdentity> {
+        self.retention.current_projection_frame()
+    }
 }

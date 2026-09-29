@@ -213,4 +213,4 @@ pub use owner_revision::{
     UiIntentApplicationFactRevision, UiIntentDraftInputRevision, UiIntentInputOwnerRevision,
     UiIntentQueryInputRevision,
 };
-pub(crate) use view::UiIntentInputBasisView;
+pub(crate) use view::{UiIntentInputBasisView, UiIntentInputOwners};

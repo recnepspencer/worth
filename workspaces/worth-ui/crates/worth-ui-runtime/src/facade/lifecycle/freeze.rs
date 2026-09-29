@@ -68,14 +68,6 @@ pub(crate) fn prepare_application_authority(
         .commit_initial_generation(graph_world_profile)
         .map_err(|denial| WorthUiApplicationPreparationDenial::GraphCommit(Box::new(denial)))?
         .into_committed_snapshot();
-    let intent_catalog = crate::declaration::UiIntentCatalog::prepare(
-        semantic_handoff.intent_material(),
-        capability_snapshot.intent_definitions(),
-        &graph_snapshot,
-        &query_binding_plan,
-        &intent_application_facts,
-    )
-    .map_err(|denial| WorthUiApplicationPreparationDenial::IntentCatalog(Box::new(denial)))?;
     let expression_catalog = Arc::new(
         UiExpressionCatalog::prepare(
             &expression_material,
@@ -87,6 +79,17 @@ pub(crate) fn prepare_application_authority(
             WorthUiApplicationPreparationDenial::ExpressionCatalog(Box::new(denial))
         })?,
     );
+    let intent_catalog = crate::declaration::UiIntentCatalog::prepare(
+        semantic_handoff.intent_material(),
+        capability_snapshot.intent_definitions(),
+        &graph_snapshot,
+        &crate::declaration::UiIntentOperabilitySourcePlans {
+            query: &query_binding_plan,
+            application_facts: &intent_application_facts,
+            expressions: &expression_catalog,
+        },
+    )
+    .map_err(|denial| WorthUiApplicationPreparationDenial::IntentCatalog(Box::new(denial)))?;
     let retained_measurement_inspection_evidence = measurement_inspection_evidence.clone();
     let lifecycle = WorthUiFacadeLifecycleBootstrap::bootstrap_with_inspection_scope_inventory(
         &declaration_artifacts,
@@ -179,14 +182,6 @@ pub(crate) fn prepare_successor_application_authority(
         ))
         .map_err(|denial| WorthUiApplicationPreparationDenial::GraphCommit(Box::new(denial)))?
         .into_committed_snapshot();
-    let intent_catalog = crate::declaration::UiIntentCatalog::prepare(
-        semantic_handoff.intent_material(),
-        current.capabilities().intent_definitions(),
-        &graph_snapshot,
-        current.query_binding_plan(),
-        current.intent_application_fact_plan(),
-    )
-    .map_err(|denial| WorthUiApplicationPreparationDenial::IntentCatalog(Box::new(denial)))?;
     let expression_catalog = Arc::new(
         UiExpressionCatalog::prepare(
             &expression_material,
@@ -198,6 +193,17 @@ pub(crate) fn prepare_successor_application_authority(
             WorthUiApplicationPreparationDenial::ExpressionCatalog(Box::new(denial))
         })?,
     );
+    let intent_catalog = crate::declaration::UiIntentCatalog::prepare(
+        semantic_handoff.intent_material(),
+        current.capabilities().intent_definitions(),
+        &graph_snapshot,
+        &crate::declaration::UiIntentOperabilitySourcePlans {
+            query: current.query_binding_plan(),
+            application_facts: current.intent_application_fact_plan(),
+            expressions: &expression_catalog,
+        },
+    )
+    .map_err(|denial| WorthUiApplicationPreparationDenial::IntentCatalog(Box::new(denial)))?;
     let measurement_inspection_evidence = current
         .measurement_inspection_evidence()
         .to_vec()

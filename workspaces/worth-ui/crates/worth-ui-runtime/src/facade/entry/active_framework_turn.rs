@@ -23,7 +23,7 @@ pub struct WorthUiActiveFrameworkTurnCompletion<'session> {
     pub(super) host_session_identity: crate::facade::WorthUiHostSessionIdentity,
     pub(super) completion: WorthUiFrameworkTurnCompletion<'session>,
     pub(super) capabilities: &'session crate::capability::CapabilitySnapshot,
-    pub(super) intent_catalog: &'session crate::declaration::UiIntentCatalog,
+    pub(super) intent_operability: crate::runtime::intent::UiIntentOperabilityAuthority<'session>,
     pub(super) consumed_facts: &'session crate::graph::UiGraphConsumedFactIndex,
     pub(super) mounted: &'session mut crate::mounting::WorthUiMountedSessionState,
     pub(super) host_session: &'session crate::facade::WorthUiHostSessionAuthority,
@@ -65,7 +65,7 @@ pub struct WorthUiActiveFrameworkTurnExecution<'session> {
     pub(super) host_session_identity: crate::facade::WorthUiHostSessionIdentity,
     pub(super) execution: crate::runtime::WorthUiFrameworkTurnExecution<'session>,
     pub(super) capabilities: &'session crate::capability::CapabilitySnapshot,
-    pub(super) intent_catalog: &'session crate::declaration::UiIntentCatalog,
+    pub(super) intent_operability: crate::runtime::intent::UiIntentOperabilityAuthority<'session>,
     pub(super) consumed_facts: &'session crate::graph::UiGraphConsumedFactIndex,
     pub(super) mounted: &'session mut crate::mounting::WorthUiMountedSessionState,
     pub(super) host_session: &'session crate::facade::WorthUiHostSessionAuthority,
@@ -122,7 +122,7 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
             host_session_identity,
             completion,
             capabilities,
-            intent_catalog,
+            intent_operability,
             consumed_facts,
             mounted,
             host_session,
@@ -157,7 +157,7 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
                 host_session_identity,
                 execution,
                 capabilities,
-                intent_catalog,
+                intent_operability,
                 consumed_facts,
                 mounted,
                 host_session,
@@ -193,7 +193,7 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
                 host_session_identity,
                 completion: *completion,
                 capabilities,
-                intent_catalog,
+                intent_operability,
                 consumed_facts,
                 mounted,
                 host_session,
@@ -283,6 +283,31 @@ impl WorthUiActiveFrameworkTurnExecution<'_> {
             receipt,
             self.frame_execution_basis(),
         ))
+    }
+
+    /// Refreshes the standing facts of the declarations that read a
+    /// condition `settlement` changed. A frame path calls it after it settled
+    /// the frame's owner receipts.
+    pub(super) fn reobserve_condition_consumers(
+        &mut self,
+        settlement: crate::runtime::expression::UiExpressionSettlement,
+    ) {
+        let active = crate::runtime::WorthUiActiveApplicationGenerationIdentity::current(
+            self.application_session_identity,
+            &self.generation_identity,
+        );
+        self.intent_admission.reobserve_condition_consumers(
+            settlement,
+            crate::runtime::intent::UiIntentOperabilityReadOwners {
+                authority: self.intent_operability,
+                generation: &active,
+                inputs: crate::runtime::intent::UiIntentInputOwners {
+                    mounted: self.mounted,
+                    application_facts: self.intent_application_facts,
+                    expressions: self.expressions,
+                },
+            },
+        );
     }
 
     fn frame_execution_basis(&self) -> crate::runtime::WorthUiFrameExecutionBasis {

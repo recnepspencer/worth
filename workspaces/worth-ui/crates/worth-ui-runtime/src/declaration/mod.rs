@@ -86,10 +86,11 @@ pub(crate) use inspection::{UiDeclarationAuthoredEvidenceIndex, UiDeclarationEvi
 pub(crate) use intent::{
     prepare_authored_intent_material, UiCanonicalIntentDeclaration, UiIntentCatalog,
     UiIntentCatalogCommandRoute, UiIntentCatalogResolvedRoute, UiIntentCatalogSemanticComparison,
-    UiIntentSingleProductRouteDenial, UiResolvedIntentApplicationSource,
+    UiIntentOperabilitySourcePlans, UiIntentSingleProductRouteDenial,
+    UiResolvedIntentApplicationSource, UiResolvedIntentConditionSource,
     UiResolvedIntentConfirmationContract, UiResolvedIntentConfirmationSource,
     UiResolvedIntentMutabilitySource, UiResolvedIntentPayloadBinding,
-    UiResolvedIntentPayloadSource, UiResolvedIntentProjectionSource,
+    UiResolvedIntentPayloadSource, UiResolvedIntentPolicySource, UiResolvedIntentProjectionSource,
     UiResolvedIntentReadinessSource, WorthUiAuthoredIntentDeclaration,
     WorthUiAuthoredIntentMaterial, WorthUiAuthoredIntentMaterialDenial, WorthUiAuthoredIntentRoute,
 };

@@ -14,7 +14,6 @@ pub struct WorthUiPendingMountedPreview<'session> {
     planning_counters: crate::runtime::UiFrameworkTransitionPlanningCounters,
     consumed_facts: &'session crate::graph::UiGraphConsumedFactIndex,
     capabilities: &'session crate::capability::CapabilitySnapshot,
-    intent_catalog: &'session crate::declaration::UiIntentCatalog,
     presentation: &'session crate::runtime::presentation_state::UiApplicationPresentationState,
     appearance_owner_snapshot:
         &'session Option<crate::runtime::appearance::UiAppearanceOwnerSnapshot>,
@@ -72,6 +71,34 @@ struct WorthUiMountedPreviewPorts<'session> {
     owed_scroll_settles: &'session super::active_application_session::UiOwedScrollSettles,
     expressions: &'session mut crate::runtime::expression::UiExpressionRuntimeState,
     application_facts: &'session crate::runtime::intent::UiIntentApplicationFactState,
+    intent_admission: &'session mut crate::runtime::intent::UiIntentAdmissionState,
+    intent_operability: crate::runtime::intent::UiIntentOperabilityAuthority<'session>,
+}
+
+impl WorthUiMountedPreviewPorts<'_> {
+    /// Refreshes the standing facts of the declarations that read a
+    /// condition the preview frame's settlement changed.
+    fn reobserve_condition_consumers(
+        &mut self,
+        settlement: crate::runtime::expression::UiExpressionSettlement,
+    ) {
+        let active = crate::runtime::WorthUiActiveApplicationGenerationIdentity::current(
+            self.application_session_identity,
+            &self.generation_identity,
+        );
+        self.intent_admission.reobserve_condition_consumers(
+            settlement,
+            crate::runtime::intent::UiIntentOperabilityReadOwners {
+                authority: self.intent_operability,
+                generation: &active,
+                inputs: crate::runtime::intent::UiIntentInputOwners {
+                    mounted: self.mounted,
+                    application_facts: self.application_facts,
+                    expressions: self.expressions,
+                },
+            },
+        );
+    }
 }
 
 #[derive(Debug, PartialEq)]

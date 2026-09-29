@@ -97,11 +97,10 @@ impl WorthUiActiveApplicationSession {
         );
     }
 
+    /// Re-reads each demanded appearance owner and queues the repaint of
+    /// every instance whose owner state differs from the snapshot the
+    /// session held, so a change no frame painted yet is not absorbed.
     pub(super) fn refresh_appearance_owner_receipt_sources(&mut self) {
-        self.appearance_owner_snapshot = self.current_appearance_owner_receipt_sources();
-    }
-
-    pub(super) fn refresh_motion_appearance_owner_receipt_sources(&mut self) {
         let refreshed = self.current_appearance_owner_receipt_sources();
         self.queue_closed_owner_invalidation(refreshed.as_ref());
         self.appearance_owner_snapshot = refreshed;

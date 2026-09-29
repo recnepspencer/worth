@@ -205,7 +205,10 @@ fn an_owner_that_missed_a_generation_change_holds_nothing_current() {
         "an owner still on the retired generation reports nothing current"
     );
     assert!(missed.begin_evaluation(slot, &inputs).is_none());
-    missed.invalidate_application(&receipt, &inputs);
+    assert!(
+        missed.invalidate_application(&receipt, &inputs).is_empty(),
+        "a missed owner reports no changed condition"
+    );
     assert_eq!(missed.counters(), before, "a missed owner settles nothing");
     assert_eq!(
         missed.complete_evaluation(completion, &inputs),

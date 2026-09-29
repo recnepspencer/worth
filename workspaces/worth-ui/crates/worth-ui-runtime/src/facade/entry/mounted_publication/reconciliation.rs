@@ -36,7 +36,7 @@ impl WorthUiActiveApplicationSession {
                 )
             },
         )?;
-        Ok(self.finish_mounted_transition(transition, now))
+        Ok(self.finish_mounted_transition(transition, now, None))
     }
 
     pub(crate) fn present_prepared_mounted_frame_for_reconciliation(
@@ -76,9 +76,7 @@ impl WorthUiActiveApplicationSession {
                 )
             },
         )?;
-        let outcome = self.finish_mounted_transition(transition, now);
-        self.settle_new_mounted_owner_receipt_succession(owner_receipts, &outcome);
-        Ok(outcome)
+        Ok(self.finish_mounted_transition(transition, now, Some(owner_receipts)))
     }
 
     pub(crate) fn present_prepared_mounted_reconstruction_frame(
@@ -118,8 +116,6 @@ impl WorthUiActiveApplicationSession {
                 )
             },
         )?;
-        let outcome = self.finish_mounted_transition(transition, now);
-        self.settle_new_mounted_owner_receipt_succession(owner_receipts, &outcome);
-        Ok(outcome)
+        Ok(self.finish_mounted_transition(transition, now, Some(owner_receipts)))
     }
 }

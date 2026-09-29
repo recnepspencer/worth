@@ -135,6 +135,16 @@ pub enum UiIntentCatalogPreparationDenial {
         axis: super::UiIntentOperabilityDependencyAxis,
         interaction: UiSemanticInteractionFamily,
     },
+    UnknownOperabilityCondition {
+        declaration: Box<str>,
+        axis: super::UiIntentOperabilityDependencyAxis,
+        condition: Box<str>,
+    },
+    OperabilityConditionRoleMismatch {
+        declaration: Box<str>,
+        axis: super::UiIntentOperabilityDependencyAxis,
+        condition: Box<str>,
+    },
     UnknownConfirmationApplicationFact {
         declaration: Box<str>,
         fact: Box<str>,

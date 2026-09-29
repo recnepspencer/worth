@@ -5,12 +5,17 @@ impl WorthUiActiveApplicationSession {
     /// generation carries. The expression owner follows last, once the owners
     /// it reads hold the successor generation. Both a rebind and an authored
     /// successor publication commit through here.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "each prepared owner of the successor generation commits here together"
+    )]
     pub(in crate::facade::entry) fn commit_evidence_only_successor(
         &mut self,
         authority: crate::facade::prepared_application_authority::WorthUiPreparedApplicationAuthority,
         appearance_succession: super::super::UiPreparedAppearanceGenerationSuccession,
         owners: crate::runtime::appearance::UiPreparedRetainedAppearanceOwnerSuccession,
         overlay_bindings: crate::runtime::portal::UiPortalOverlayBindingLifecycle,
+        expressions: crate::runtime::expression::UiPreparedExpressionSuccession,
         pointer_succession:
             crate::runtime::pointer_affordance::UiPreparedPointerAffordanceGenerationSuccession,
         occurrence_geometry: crate::mounting::UiMountedOccurrenceGeometryState,
@@ -24,7 +29,7 @@ impl WorthUiActiveApplicationSession {
         self.pointer_affordance_snapshot = pointer_succession.into_snapshot();
         self.mounted
             .commit_retained_geometry_succession(occurrence_geometry);
-        self.follow_application_generation();
+        self.follow_application_generation(expressions);
         generations
     }
 }

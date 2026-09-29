@@ -125,12 +125,14 @@ at use sites.
 
 ## Phases
 
-Sonnet 5.5 implementers do most of the work from self-contained briefs. An
-independent Opus reviewer gates each phase with the qa-loop, qa-tests, and
+Opus implementers do the work from self-contained briefs. A separate, fresh
+Opus reviewer gates each phase with the qa-loop, qa-tests, and
 code-quality-qa skills before the next phase starts. Every phase must pass BC,
 AC, clippy, fmt, and the tests of the crates it touches.
 
 ### Phase 1: expression declarations (`worth-ui-dsl`)
+
+Completed.
 
 **Parsing and extent**
 - Tokens and parsing for `condition` and `derived`.
@@ -172,6 +174,8 @@ AC, clippy, fmt, and the tests of the crates it touches.
 
 ### Phase 2: evaluation owner (`worth-ui-runtime`)
 
+Completed.
+
 **Installation**
 - `runtime/expression/` installs each artifact's compiled program once per
   prepared generation.
@@ -205,6 +209,9 @@ The phase lands in this order:
 - **3a operability.** Condition sources for mutability, readiness, and policy
   feed `observe_operability_basis`. The existing decision and affinity code
   stays the consumer. The appearance Operability axis follows unchanged.
+  Completed. A changed condition re-observes only the standing facts of the
+  intents that read it. Application-fact and projection sources stay
+  pull-only.
 - **3b payload shaping.** A `derived` payload source.
 - **3c derived scalar.** Scalar text presentation from a `derived` value.
 - **3d conditional presence.** A region mount gated by a condition, through the

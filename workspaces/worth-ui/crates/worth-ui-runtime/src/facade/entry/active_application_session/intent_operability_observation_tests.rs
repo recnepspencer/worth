@@ -186,15 +186,10 @@ fn observe(
     UiIntentStandingOperabilityUnavailable,
 > {
     let prepared = session.application.prepared_authority();
+    let active = session.active_generation_identity();
     crate::runtime::intent::observe_activation_operability(
         target,
-        prepared.intent_catalog(),
-        prepared.capabilities().intent_definitions(),
-        prepared.intent_execution_bindings(),
-        &session.active_generation_identity(),
-        &session.mounted,
-        &session.intent_application_facts,
-        session.intent_execution.occupancy(),
+        session.intent_read_owners(prepared, &active),
         &session.intent_confirmation,
         session
             .observation_clock

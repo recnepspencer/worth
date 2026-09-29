@@ -2,6 +2,7 @@ use crate::runtime::intent::operability::UiIntentOperabilityStandingFact;
 use crate::runtime::persistent_index::{UiPersistentOrdMap, UiPersistentOrdSet};
 use worth_ui_host_contract::{UiMountedInstanceIdentity, UiSurfaceBindingGeneration};
 
+mod reobservation;
 mod snapshot;
 #[cfg(test)]
 mod tests;
@@ -20,6 +21,9 @@ pub(super) struct UiIntentOperabilityStandingOwner {
         UiSurfaceBindingGeneration,
         UiPersistentOrdSet<UiMountedInstanceIdentity>,
     >,
+    /// The instances holding a fact for each route, so a condition change
+    /// visits only the facts of the routes that read it.
+    routes: UiPersistentOrdMap<Box<str>, UiPersistentOrdSet<UiMountedInstanceIdentity>>,
     revision: u64,
 }
 
@@ -55,6 +59,7 @@ impl UiIntentOperabilityStandingOwner {
         }
         prepared
     }
+
     pub(super) fn record(
         &mut self,
         candidate: &crate::runtime::intent::payload::UiPreparedIntentPayload,
@@ -91,7 +96,34 @@ impl UiIntentOperabilityStandingOwner {
     }
 
     fn replace_instance(&mut self, instance: UiMountedInstanceIdentity, row: InstanceFacts) {
-        let previous_binding = self.facts.get(&instance).map(|previous| previous.binding);
+        let previous = self.facts.get(&instance);
+        let previous_binding = previous.map(|previous| previous.binding);
+        let dropped: Vec<Box<str>> = previous
+            .map(|previous| {
+                previous
+                    .routes
+                    .iter()
+                    .filter(|(route, _)| row.routes.get(route.as_ref()).is_none())
+                    .map(|(route, _)| route.clone())
+                    .collect()
+            })
+            .unwrap_or_default();
+        let added: Vec<Box<str>> = row
+            .routes
+            .iter()
+            .filter(|(route, _)| {
+                previous.is_none_or(|previous| previous.routes.get(route.as_ref()).is_none())
+            })
+            .map(|(route, _)| route.clone())
+            .collect();
+        for route in &dropped {
+            self.remove_route_member(route, instance);
+        }
+        for route in added {
+            let mut members = self.routes.get(&route).cloned().unwrap_or_default();
+            members.insert(instance);
+            self.routes.insert(route, members);
+        }
         if previous_binding != Some(row.binding) {
             if let Some(binding) = previous_binding {
                 self.remove_binding_member(binding, instance);
@@ -108,8 +140,12 @@ impl UiIntentOperabilityStandingOwner {
             return;
         };
         let binding = row.binding;
+        let routes = route_names(row);
         let revision = self.next_revision();
         self.remove_binding_member(binding, instance);
+        for route in &routes {
+            self.remove_route_member(route, instance);
+        }
         self.facts.remove(&instance);
         self.revision = revision;
     }
@@ -120,6 +156,11 @@ impl UiIntentOperabilityStandingOwner {
         };
         let revision = self.next_revision();
         for instance in members.iter() {
+            if let Some(row) = self.facts.get(instance) {
+                for route in &route_names(row) {
+                    self.remove_route_member(route, *instance);
+                }
+            }
             self.facts.remove(instance);
         }
         self.bindings.remove(&binding);
@@ -141,6 +182,18 @@ impl UiIntentOperabilityStandingOwner {
                 .expect("standing binding membership retains its fact row")
                 .clone();
             row.binding = successor;
+            let rebound: Vec<_> = row
+                .routes
+                .iter()
+                .map(|(route, fact)| {
+                    let mut rebound = fact.clone();
+                    rebound.rebind_surface(successor);
+                    (route.clone(), rebound)
+                })
+                .collect();
+            for (route, fact) in rebound {
+                row.routes.insert(route, fact);
+            }
             self.replace_instance(*instance, row);
         }
     }
@@ -149,6 +202,7 @@ impl UiIntentOperabilityStandingOwner {
         Self {
             facts: Default::default(),
             bindings: Default::default(),
+            routes: Default::default(),
             revision: if self.facts.is_empty() {
                 self.revision
             } else {
@@ -186,9 +240,26 @@ impl UiIntentOperabilityStandingOwner {
         }
     }
 
+    fn remove_route_member(&mut self, route: &str, instance: UiMountedInstanceIdentity) {
+        let Some(members) = self.routes.get(route) else {
+            return;
+        };
+        let mut members = members.clone();
+        members.remove(&instance);
+        if members.is_empty() {
+            self.routes.remove(&Box::from(route));
+        } else {
+            self.routes.insert(route.into(), members);
+        }
+    }
+
     fn next_revision(&self) -> u64 {
         self.revision
             .checked_add(1)
             .expect("bounded standing-fact revision exhausted")
     }
+}
+
+fn route_names(row: &InstanceFacts) -> Vec<Box<str>> {
+    row.routes.iter().map(|(route, _)| route.clone()).collect()
 }

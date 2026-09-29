@@ -6,6 +6,7 @@ mod diagnostics;
 mod operand_resolution;
 mod operand_types;
 mod pending_expression;
+mod use_sites;
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -41,9 +42,12 @@ impl WorthUiSemanticPackageSealingState {
                 module_id: module_id.clone(),
                 insert_at,
             }),
-            Err(error) => self
-                .diagnostics
-                .push(malformed_declaration_diagnostic(&error, block.provenance())),
+            Err(error) => {
+                self.refused_expressions
+                    .insert(block.name_text().to_owned());
+                self.diagnostics
+                    .push(malformed_declaration_diagnostic(&error, block.provenance()));
+            }
         }
     }
 
@@ -64,6 +68,8 @@ impl WorthUiSemanticPackageSealingState {
                 .iter()
                 .map(|position| pending[*position].declaration.identity())
                 .collect();
+            self.refused_expressions
+                .extend(names.iter().map(|name| (*name).to_owned()));
             let entry = &pending[cycle[0]];
             self.diagnostics.push(declaration_diagnostic(
                 WorthUiDslCompileDiagnosticCode::ExpressionCycle,
@@ -89,15 +95,20 @@ impl WorthUiSemanticPackageSealingState {
         };
         let mut sealed = Vec::new();
         let mut diagnostics = Vec::new();
+        let mut refused = Vec::new();
         for expression in &pending {
             match admit_one(expression, &scope) {
                 Ok(found) => {
                     sealed.push((expression.module_id.clone(), expression.insert_at, found))
                 }
-                Err(mut found) => diagnostics.append(&mut found),
+                Err(mut found) => {
+                    refused.push(expression.declaration.identity().to_owned());
+                    diagnostics.append(&mut found);
+                }
             }
         }
         self.diagnostics.append(&mut diagnostics);
+        self.refused_expressions.extend(refused);
         self.insert_sealed_expressions(sealed);
     }
 
@@ -107,6 +118,7 @@ impl WorthUiSemanticPackageSealingState {
         for expression in pending.drain(..) {
             let identity = expression.declaration.identity().to_owned();
             if !seen.insert(identity.clone()) {
+                self.refused_expressions.insert(identity.clone());
                 self.diagnostics.push(declaration_diagnostic(
                     WorthUiDslCompileDiagnosticCode::InvalidExpressionDeclaration,
                     format!("expression declaration `{identity}` appears more than once"),

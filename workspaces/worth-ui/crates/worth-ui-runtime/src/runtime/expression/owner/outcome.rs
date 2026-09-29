@@ -28,6 +28,19 @@ pub enum UiExpressionCurrentValue {
     Value(ExpressionValue),
 }
 
+/// Why a condition consumer holds no truth value. Each keeps its own posture:
+/// none of them is ever read as `false`.
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub enum UiExpressionConditionWithholding {
+    /// The condition was denied, or produced something other than a truth value.
+    Denied,
+    /// An operand the condition reads has no current fact.
+    Unavailable,
+    /// The condition's result is retained from an operand that is no longer
+    /// current, or belongs to a generation the reader does not observe.
+    Stale,
+}
+
 /// The operand fact that stopped an expression, kept distinct per owner.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum UiExpressionStopKind {
@@ -110,10 +123,65 @@ impl UiExpressionOutcome {
         }
     }
 
+    /// The truth value a condition consumer may act on. A condition slot
+    /// never records `Value`: the evaluator records a non-boolean kernel
+    /// result as a role-mismatch denial, so a `Value` read here is withheld as
+    /// denied rather than coerced.
+    pub const fn condition(&self) -> Result<bool, UiExpressionConditionWithholding> {
+        match self {
+            Self::Condition(value) => Ok(*value),
+            Self::Value(_) | Self::Denied(_) => Err(UiExpressionConditionWithholding::Denied),
+            Self::Unavailable(_) => Err(UiExpressionConditionWithholding::Unavailable),
+            Self::Stale { .. } => Err(UiExpressionConditionWithholding::Stale),
+        }
+    }
+
     pub const fn is_current(&self) -> bool {
         match self {
             Self::Condition(_) | Self::Value(_) => true,
             Self::Denied(_) | Self::Unavailable(_) | Self::Stale { .. } => false,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn only_a_truth_value_is_a_condition_and_every_other_outcome_keeps_its_withholding() {
+        let operand: Box<str> = "f".into();
+        for (outcome, expected) in [
+            (UiExpressionOutcome::Condition(true), Ok(true)),
+            (UiExpressionOutcome::Condition(false), Ok(false)),
+            (
+                UiExpressionOutcome::Value(ExpressionValue::bool(false)),
+                Err(UiExpressionConditionWithholding::Denied),
+            ),
+            (
+                UiExpressionOutcome::Denied(UiExpressionDenialReason::OperandShapeMismatch {
+                    operand: operand.clone(),
+                }),
+                Err(UiExpressionConditionWithholding::Denied),
+            ),
+            (
+                UiExpressionOutcome::Unavailable(UiExpressionUnavailableReason::ProjectionAbsent {
+                    operand: operand.clone(),
+                }),
+                Err(UiExpressionConditionWithholding::Unavailable),
+            ),
+            (
+                UiExpressionOutcome::Stale {
+                    reason: UiExpressionStaleReason::ProjectionRetained {
+                        operand: operand.clone(),
+                        kind: UiProjectionRetainedActivityKind::Idle,
+                    },
+                    last_current: Some(UiExpressionCurrentValue::Condition(true)),
+                },
+                Err(UiExpressionConditionWithholding::Stale),
+            ),
+        ] {
+            assert_eq!(outcome.condition(), expected, "{outcome:?}");
         }
     }
 }

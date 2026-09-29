@@ -56,8 +56,9 @@ pub use denial::{UiIntentCatalogPreparationDenial, UiIntentInteractionPayloadSou
 pub(crate) use identity::valid_intent_identity;
 pub use identity::UiIntentDeclarationIdentity;
 pub(crate) use operability_contract::{
-    resolve_operability_contract, UiResolvedIntentMutabilitySource,
-    UiResolvedIntentOperabilityContract, UiResolvedIntentReadinessSource,
+    resolve_operability_contract, UiIntentOperabilitySourcePlans, UiResolvedIntentConditionSource,
+    UiResolvedIntentMutabilitySource, UiResolvedIntentOperabilityContract,
+    UiResolvedIntentPolicySource, UiResolvedIntentReadinessSource,
 };
 pub use operability_contract::{
     UiIntentMutabilitySource, UiIntentOperabilityContract,

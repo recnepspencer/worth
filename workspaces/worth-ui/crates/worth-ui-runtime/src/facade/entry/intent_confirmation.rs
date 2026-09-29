@@ -24,6 +24,7 @@ impl WorthUiActiveApplicationSession {
                 mounted: &self.mounted,
                 application_facts: &self.intent_application_facts,
                 occupancy: self.intent_execution.occupancy(),
+                expressions: &self.expressions,
             },
         )
     }
@@ -49,6 +50,7 @@ impl WorthUiActiveApplicationSession {
             mounted: &self.mounted,
             application_facts: &self.intent_application_facts,
             occupancy: self.intent_execution.occupancy(),
+            expressions: &self.expressions,
         };
         crate::runtime::intent::continue_confirmation(&mut self.intent_confirmation, route, context)
     }

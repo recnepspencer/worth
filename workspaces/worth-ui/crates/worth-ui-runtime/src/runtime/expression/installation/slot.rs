@@ -12,6 +12,11 @@ impl UiExpressionSlot {
     pub const fn index(self) -> usize {
         self.0 as usize
     }
+
+    #[cfg(test)]
+    pub(crate) const fn for_test(index: u32) -> Self {
+        Self(index)
+    }
 }
 
 /// How many expressions one catalog installs. It is the only source of

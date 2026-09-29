@@ -9,9 +9,12 @@ pub use installation::{UiExpressionCatalogPreparationDenial, UiExpressionSlot};
 #[cfg(test)]
 pub(crate) use owner::{UiExpressionCompletion, UiExpressionCompletionReceipt};
 pub use owner::{
-    UiExpressionCurrentValue, UiExpressionDenialReason, UiExpressionEvaluationRecord,
-    UiExpressionOperandFact, UiExpressionOutcome, UiExpressionResultReference,
-    UiExpressionStaleReason, UiExpressionStopKind, UiExpressionUnavailableReason,
-    UiExpressionWorkCounters,
+    UiExpressionConditionWithholding, UiExpressionCurrentValue, UiExpressionDenialReason,
+    UiExpressionEvaluationRecord, UiExpressionOperandFact, UiExpressionOutcome,
+    UiExpressionResultReference, UiExpressionStaleReason, UiExpressionStopKind,
+    UiExpressionUnavailableReason, UiExpressionWorkCounters,
 };
-pub(crate) use owner::{UiExpressionInputs, UiExpressionRuntimeState};
+pub(crate) use owner::{
+    UiExpressionInputs, UiExpressionRuntimeState, UiExpressionSettlement,
+    UiPreparedExpressionSuccession,
+};

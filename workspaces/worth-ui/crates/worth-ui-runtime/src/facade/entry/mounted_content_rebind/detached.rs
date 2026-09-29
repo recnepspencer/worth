@@ -41,10 +41,10 @@ impl WorthUiDetachedPreparedMountedContentRebind {
             authority,
             overlay_bindings,
             occurrence_geometry,
+            expressions,
             pointer_succession,
             appearance_succession,
             owners,
-            ..
         } = &mut self.publication
         {
             *occurrence_geometry = session
@@ -53,7 +53,8 @@ impl WorthUiDetachedPreparedMountedContentRebind {
                 .map_err(
                     crate::runtime::rebind::UiRebindPreparationDenial::CandidateOccurrenceGeometry,
                 )?;
-            *pointer_succession = session.prepare_pointer_generation_succession(authority)?;
+            (*expressions, *pointer_succession) =
+                session.prepare_retained_successions(authority)?;
             *owners =
                 session.prepare_retained_appearance_owners(authority, appearance_succession)?;
         }

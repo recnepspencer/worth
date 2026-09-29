@@ -8,8 +8,12 @@ pub(super) fn shell() -> (
 ) {
     let role = fixture::role();
     let builder = || {
-        fixture::builder_with_component(&role, component(support::APPEARANCE_NODE_A, 24))
-            .register_component(component(support::APPEARANCE_NODE_B, 200))
+        fixture::builder_with_component(
+            &role,
+            component(support::APPEARANCE_NODE_A, 24),
+            crate::runtime::rebind::UiChangeProfile::platform_pulse(),
+        )
+        .register_component(component(support::APPEARANCE_NODE_B, 200))
     };
     let source = source();
     let capabilities = builder().freeze().unwrap();

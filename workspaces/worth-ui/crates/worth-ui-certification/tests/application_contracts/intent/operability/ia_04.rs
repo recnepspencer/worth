@@ -301,6 +301,9 @@ fn map_cause(cause: UiIntentInoperableCause) -> ModelCause {
         UiIntentInoperableCause::Readonly => ModelCause::Readonly,
         UiIntentInoperableCause::Pending => ModelCause::Pending,
         UiIntentInoperableCause::ConfirmationRequired { .. } => ModelCause::ConfirmationRequired,
+        UiIntentInoperableCause::ConditionWithheld { axis, condition } => {
+            panic!("the boolean lattice reads no condition, yet {axis:?} withheld {condition:?}")
+        }
     }
 }
 

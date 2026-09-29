@@ -30,7 +30,7 @@ impl<'session> WorthUiPreparedMountedPreview<'session> {
             ports
                 .mounted
                 .present_prepared_frame(ports.host_session, frame, None, deadline, now);
-        let outcome = super::super::mounted_publication::finish_mounted_transition(
+        let (outcome, conditions) = super::super::mounted_publication::finish_mounted_transition(
             UiMountedPublicationSettlementPorts {
                 mounted: ports.mounted,
                 focus: ports.focus.as_deref_mut(),
@@ -59,6 +59,7 @@ impl<'session> WorthUiPreparedMountedPreview<'session> {
             &outcome,
             now,
         );
+        ports.reobserve_condition_consumers(conditions);
         finish_preview_outcome(outcome, before, transition, planning_counters, ports)
     }
 
@@ -103,7 +104,7 @@ impl<'session> WorthUiMountedPreviewInFlight<'session> {
             ports
                 .mounted
                 .complete_presentation(ports.host_session, handle.clone(), now);
-        let outcome = super::super::mounted_publication::finish_mounted_transition(
+        let (outcome, conditions) = super::super::mounted_publication::finish_mounted_transition(
             UiMountedPublicationSettlementPorts {
                 mounted: ports.mounted,
                 focus: ports.focus.as_deref_mut(),
@@ -132,6 +133,7 @@ impl<'session> WorthUiMountedPreviewInFlight<'session> {
             &outcome,
             now,
         );
+        ports.reobserve_condition_consumers(conditions);
         if let crate::mounting::UiMountedFrameOutcome::CompletionDenied(denial) = outcome {
             return WorthUiMountedPreviewOutcome::CompletionDenied(Box::new(
                 WorthUiMountedPreviewCompletionRejection {

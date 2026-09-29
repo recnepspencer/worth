@@ -8,9 +8,9 @@ use crate::declaration::{UiResolvedIntentApplicationSource, UiResolvedIntentProj
 use crate::declaration::{UiResolvedIntentPayloadBinding, UiResolvedIntentPayloadSource};
 
 use super::{
-    UiIntentApplicationFactState, UiIntentApplicationInputReference, UiIntentInputBasisMaterial,
-    UiIntentInputBasisView, UiIntentInputOwnerRevision, UiIntentPayloadProjectionCost,
-    UiIntentPayloadStop, UiPreparedIntentPayload,
+    UiIntentApplicationInputReference, UiIntentInputBasisMaterial, UiIntentInputBasisView,
+    UiIntentInputOwnerRevision, UiIntentPayloadProjectionCost, UiIntentPayloadStop,
+    UiPreparedIntentPayload,
 };
 
 pub(crate) fn prepare_intent_payload(
@@ -18,14 +18,12 @@ pub(crate) fn prepare_intent_payload(
     definitions: &crate::capability::FrozenIntentDefinitionCapabilities,
     execution_bindings: &crate::runtime::intent_execution::FrozenIntentExecutionBindings,
     generation: &crate::runtime::WorthUiActiveApplicationGenerationIdentity,
-    mounted: &crate::mounting::WorthUiMountedSessionState,
-    application_facts: &UiIntentApplicationFactState,
+    owners: super::UiIntentInputOwners<'_>,
     occupancy: &super::super::operability::UiIntentOccupancyState,
 ) -> Result<UiPreparedIntentPayload, UiIntentPayloadStop> {
     let (graph_node, portal_declaration, declaration, source, route_resolution, evidence_reference) =
         route.into_parts();
-    let basis_view =
-        UiIntentInputBasisView::observe(&source, generation, mounted, application_facts)?;
+    let basis_view = UiIntentInputBasisView::observe(&source, generation, owners)?;
     let definition = definitions.definition_at(declaration.definition());
     let binding_support = execution_bindings.support_at(declaration.definition());
     let mut projection = PayloadProjection::new(&source, definition.payload_schema(), &basis_view);

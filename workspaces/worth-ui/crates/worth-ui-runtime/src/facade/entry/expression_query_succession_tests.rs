@@ -63,7 +63,9 @@ fn following_re_proves_each_query_operand_and_rebuilds_the_readers_whose_frame_c
         .prepared_authority()
         .expression_catalog();
     for missed in [&mut read_absent, &mut read_pending] {
-        missed.follow(catalog, &session_inputs(session, &active));
+        let inputs = session_inputs(session, &active);
+        let prepared = missed.prepare_succession(catalog, &inputs);
+        let _rebuilt = missed.commit_succession(prepared, catalog, &inputs);
         for identity in ["ex.online", "ex.echo", "ex.echoed"] {
             let slot = missed.catalog().slot_of(identity).unwrap();
             let record = missed.record(slot).unwrap();
@@ -99,7 +101,12 @@ fn an_owner_that_missed_a_generation_change_probes_no_published_frame() {
     assert_ne!(active, launched, "the comment edit published a successor");
     let before = missed.counters();
 
-    missed.invalidate_published_frame(&session_inputs(session, &active));
+    assert!(
+        missed
+            .invalidate_published_frame(&session_inputs(session, &active))
+            .is_empty(),
+        "an owner on a retired generation reports no changed condition"
+    );
 
     assert_eq!(
         missed.counters(),

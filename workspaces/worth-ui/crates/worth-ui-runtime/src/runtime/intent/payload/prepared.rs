@@ -100,13 +100,9 @@ impl UiPreparedIntentPayload {
 
     pub(crate) fn operability_dependencies_are_current(
         &self,
-        mounted: &crate::mounting::WorthUiMountedSessionState,
-        application_facts: &super::UiIntentApplicationFactState,
-        generation: &crate::runtime::WorthUiActiveApplicationGenerationIdentity,
+        reads: &super::super::operability::UiIntentOperabilityDependencyReads<'_>,
     ) -> Result<(), super::super::operability::UiIntentOperabilityDependencyDrift> {
-        self.basis
-            .operability()
-            .currentness(mounted, application_facts, generation)
+        self.basis.operability().currentness(reads)
     }
 
     pub(crate) fn declaration_reference(

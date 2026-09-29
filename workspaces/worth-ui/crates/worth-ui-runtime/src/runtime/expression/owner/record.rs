@@ -131,4 +131,10 @@ impl UiExpressionResultReference {
     pub const fn outcome(&self) -> &UiExpressionOutcome {
         &self.outcome
     }
+
+    /// The truth value this result gives a condition consumer, or why it
+    /// gives none.
+    pub const fn condition(&self) -> Result<bool, super::UiExpressionConditionWithholding> {
+        self.outcome.condition()
+    }
 }

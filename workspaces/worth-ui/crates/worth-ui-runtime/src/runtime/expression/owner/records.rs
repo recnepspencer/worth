@@ -16,20 +16,19 @@ impl UiExpressionRecords {
         self.0.get(slot.index())?.as_ref()
     }
 
-    /// Removes and returns the record of `slot`, leaving its cell empty.
-    pub(super) fn take(&mut self, slot: UiExpressionSlot) -> Option<UiExpressionEvaluationRecord> {
-        self.0.get_mut(slot.index())?.take()
-    }
-
-    /// Stores `record` in its own slot's cell. Returns `false`, storing
-    /// nothing, when the slot is outside these records.
-    pub(super) fn admit(&mut self, record: UiExpressionEvaluationRecord) -> bool {
+    /// Stores `record` in its own slot's cell. Hands the record back,
+    /// storing nothing, when the slot is outside these records; that path is
+    /// cold, so the record travels boxed.
+    pub(super) fn admit(
+        &mut self,
+        record: UiExpressionEvaluationRecord,
+    ) -> Result<(), Box<UiExpressionEvaluationRecord>> {
         match self.0.get_mut(record.slot.index()) {
             Some(cell) => {
                 *cell = Some(record);
-                true
+                Ok(())
             }
-            None => false,
+            None => Err(Box::new(record)),
         }
     }
 }

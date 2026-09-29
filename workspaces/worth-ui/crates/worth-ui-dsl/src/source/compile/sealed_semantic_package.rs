@@ -136,6 +136,8 @@ struct WorthUiSemanticPackageSealingState {
     overlay_relation_graph: Option<crate::UiOverlayRelationGraph>,
     pending_expressions: Vec<expression_admission::PendingExpression>,
     expressions: BTreeMap<String, WorthUiSealedExpression>,
+    /// Identities whose admission failed with a diagnostic of their own.
+    refused_expressions: BTreeSet<String>,
 }
 
 impl WorthUiSealedSemanticPackage {
@@ -153,6 +155,7 @@ impl WorthUiSealedSemanticPackage {
             state.seal_module(module_id, input_module);
         }
         state.admit_expressions();
+        state.validate_expression_use_sites();
         state.validate_projection_content_references();
         authored_route_validation::validate(&mut state);
         state.validate_appearance_declarations();
@@ -253,6 +256,7 @@ impl WorthUiSemanticPackageSealingState {
             overlay_relation_graph: None,
             pending_expressions: Vec::new(),
             expressions: BTreeMap::new(),
+            refused_expressions: BTreeSet::new(),
         }
     }
 

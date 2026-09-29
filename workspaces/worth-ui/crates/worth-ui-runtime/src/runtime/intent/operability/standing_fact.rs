@@ -11,8 +11,9 @@ pub(crate) enum UiIntentOperabilityAppearanceClass {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct UiIntentOperabilityStandingFact {
     graph_node: crate::graph::UiGraphNodeIdentity,
-    mounted_instance: worth_ui_host_contract::UiMountedInstanceIdentity,
-    node_receipt: worth_ui_host_contract::UiMountedNodeReceiptIdentity,
+    /// The target the decision was observed for; condition re-observation
+    /// admits it again before it refreshes the decision.
+    target: crate::runtime::interaction::UiPresentedInteractionTargetView,
     route: Box<str>,
     decision: super::UiIntentOperabilityDecision,
     class: UiIntentOperabilityAppearanceClass,
@@ -29,11 +30,26 @@ impl UiIntentOperabilityStandingFact {
         let class = appearance_class(decision.primary_cause().as_ref());
         Self {
             graph_node: candidate.graph_node(),
-            mounted_instance: target.mounted_instance(),
-            node_receipt: target.node_receipt(),
+            target,
             route: candidate.declaration_identity().into(),
             decision,
             class,
+            owner_revision,
+        }
+    }
+
+    /// This fact with a re-observed decision, sealed at `owner_revision`.
+    pub(in crate::runtime::intent) fn with_decision(
+        &self,
+        decision: super::UiIntentOperabilityDecision,
+        owner_revision: u64,
+    ) -> Self {
+        Self {
+            graph_node: self.graph_node,
+            target: self.target,
+            route: self.route.clone(),
+            class: appearance_class(decision.primary_cause().as_ref()),
+            decision,
             owner_revision,
         }
     }
@@ -50,24 +66,53 @@ impl UiIntentOperabilityStandingFact {
     pub(crate) const fn graph_node(&self) -> crate::graph::UiGraphNodeIdentity {
         self.graph_node
     }
+    pub(crate) const fn target(
+        &self,
+    ) -> crate::runtime::interaction::UiPresentedInteractionTargetView {
+        self.target
+    }
     pub(crate) const fn mounted_instance(
         &self,
     ) -> worth_ui_host_contract::UiMountedInstanceIdentity {
-        self.mounted_instance
+        self.target.mounted_instance()
     }
     pub(crate) const fn node_receipt(
         &self,
     ) -> worth_ui_host_contract::UiMountedNodeReceiptIdentity {
-        self.node_receipt
+        self.target.node_receipt()
     }
     pub(in crate::runtime::intent) fn rebind_node_receipt(
         &mut self,
         receipt: worth_ui_host_contract::UiMountedNodeReceiptIdentity,
     ) {
-        self.node_receipt = receipt;
+        self.target = self.target.with_node_receipt(receipt);
+    }
+    pub(in crate::runtime::intent) fn rebind_surface(
+        &mut self,
+        binding: worth_ui_host_contract::UiSurfaceBindingGeneration,
+    ) {
+        self.target = self.target.with_binding(binding);
     }
     pub(crate) fn route(&self) -> &str {
         &self.route
+    }
+
+    /// This fact as if it had been observed with `affinity`.
+    #[cfg(test)]
+    pub(crate) fn with_affinity_for_test(&self, affinity: super::UiIntentAffinityPosture) -> Self {
+        self.with_decision(
+            self.decision.with_affinity_for_test(affinity),
+            self.owner_revision,
+        )
+    }
+
+    /// This fact as if it had been recorded for `route`.
+    #[cfg(test)]
+    pub(crate) fn with_route_for_test(&self, route: &str) -> Self {
+        Self {
+            route: route.into(),
+            ..self.clone()
+        }
     }
 
     #[cfg(test)]
@@ -78,10 +123,25 @@ impl UiIntentOperabilityStandingFact {
         route: &str,
         owner_revision: u64,
     ) -> Self {
+        let binding = worth_ui_host_contract::UiSurfaceBindingGeneration::mint_unbound().unwrap();
+        let presentation = worth_ui_host_contract::UiHostObservationPresentationBasis::new(
+            worth_ui_host_contract::UiHostSurfaceIdentity::mint_unbound().unwrap(),
+            worth_ui_host_contract::UiMountedFrameIdentity::mint_unbound().unwrap(),
+            binding,
+            worth_ui_host_contract::UiHostPresentationEpoch::issued_by_host(1),
+        );
+        let target = crate::runtime::interaction::targeting::interaction_target_view_for_test(
+            presentation,
+            crate::mounting::UiMountedInteractionAffinityInput {
+                surface: worth_ui_host_contract::UiSemanticSurfaceIdentity::mint_unbound().unwrap(),
+                binding,
+                mounted_instance,
+                node_receipt,
+            },
+        );
         Self {
             graph_node,
-            mounted_instance,
-            node_receipt,
+            target,
             route: route.into(),
             decision: super::UiIntentOperabilityDecision::ready_for_test(),
             class: UiIntentOperabilityAppearanceClass::Ready,
@@ -109,6 +169,9 @@ fn appearance_class(
             | super::UiIntentInoperableCause::WrongWorld
             | super::UiIntentInoperableCause::RebindRequired,
         ) => UiIntentOperabilityAppearanceClass::Stale,
+        Some(super::UiIntentInoperableCause::ConditionWithheld { condition, .. }) => {
+            withheld_class(condition.withholding())
+        }
         Some(
             super::UiIntentInoperableCause::PolicyDenied
             | super::UiIntentInoperableCause::Readonly
@@ -117,9 +180,29 @@ fn appearance_class(
     }
 }
 
+/// An unavailable operand is usually transient, so it reads as pending; the
+/// other withholdings keep their own posture.
+const fn withheld_class(
+    withholding: crate::runtime::expression::UiExpressionConditionWithholding,
+) -> UiIntentOperabilityAppearanceClass {
+    match withholding {
+        crate::runtime::expression::UiExpressionConditionWithholding::Unavailable => {
+            UiIntentOperabilityAppearanceClass::Pending
+        }
+        crate::runtime::expression::UiExpressionConditionWithholding::Stale => {
+            UiIntentOperabilityAppearanceClass::Stale
+        }
+        crate::runtime::expression::UiExpressionConditionWithholding::Denied => {
+            UiIntentOperabilityAppearanceClass::Denied
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::{appearance_class, UiIntentOperabilityAppearanceClass as Class};
+    use crate::declaration::UiIntentOperabilityDependencyAxis as Axis;
+    use crate::runtime::expression::UiExpressionConditionWithholding as Withholding;
     use crate::runtime::intent::UiIntentInoperableCause as Cause;
 
     #[test]
@@ -140,8 +223,19 @@ mod tests {
                 },
                 Class::Denied,
             ),
+            (withheld(Withholding::Unavailable), Class::Pending),
+            (withheld(Withholding::Stale), Class::Stale),
+            (withheld(Withholding::Denied), Class::Denied),
         ] {
             assert_eq!(appearance_class(Some(&cause)), expected);
+        }
+    }
+
+    fn withheld(withholding: Withholding) -> Cause {
+        let slot = crate::runtime::expression::UiExpressionSlot::for_test(0);
+        Cause::ConditionWithheld {
+            axis: Axis::Policy,
+            condition: crate::runtime::intent::UiIntentWithheldCondition::new(slot, withholding),
         }
     }
 }

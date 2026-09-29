@@ -105,3 +105,27 @@ pub(super) fn confirmation(
         Owner::OccupancyChanged => Confirmation::OccupancyChanged,
     }
 }
+
+pub(super) const fn condition_axis(
+    axis: crate::declaration::UiIntentOperabilityDependencyAxis,
+) -> worth_ui_inspection::UiPointerAffordanceInspectionConditionAxis {
+    use crate::declaration::UiIntentOperabilityDependencyAxis as Owner;
+    use worth_ui_inspection::UiPointerAffordanceInspectionConditionAxis as Axis;
+    match axis {
+        Owner::Mutability => Axis::Mutability,
+        Owner::Readiness => Axis::Readiness,
+        Owner::Policy => Axis::Policy,
+    }
+}
+
+pub(super) const fn condition_withholding(
+    withholding: crate::runtime::expression::UiExpressionConditionWithholding,
+) -> worth_ui_inspection::UiPointerAffordanceInspectionConditionWithholding {
+    use crate::runtime::expression::UiExpressionConditionWithholding as Owner;
+    use worth_ui_inspection::UiPointerAffordanceInspectionConditionWithholding as Withholding;
+    match withholding {
+        Owner::Denied => Withholding::Denied,
+        Owner::Unavailable => Withholding::Unavailable,
+        Owner::Stale => Withholding::Stale,
+    }
+}

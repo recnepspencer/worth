@@ -11,6 +11,7 @@ pub enum WorthUiIntentMutabilitySourceSpec {
     ApplicationBoolean { fact: Box<str> },
     ProjectionReadonly { projection: Box<str> },
     CommittedDraft,
+    Condition { condition: Box<str> },
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -18,11 +19,13 @@ pub enum WorthUiIntentReadinessSourceSpec {
     ApplicationBoolean { fact: Box<str> },
     Projection { projection: Box<str> },
     CommittedDraft,
+    Condition { condition: Box<str> },
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthUiIntentPolicySourceSpec {
-    fact: Box<str>,
+pub enum WorthUiIntentPolicySourceSpec {
+    ApplicationBoolean { fact: Box<str> },
+    Condition { condition: Box<str> },
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -104,17 +107,32 @@ impl WorthUiIntentMutabilitySourceSpec {
         Self::CommittedDraft
     }
 
+    pub fn condition(condition: impl Into<Box<str>>) -> Self {
+        Self::Condition {
+            condition: required_text(condition, "mutability condition"),
+        }
+    }
+
     pub fn application_fact(&self) -> Option<&str> {
         match self {
             Self::ApplicationBoolean { fact } => Some(fact),
-            Self::ProjectionReadonly { .. } | Self::CommittedDraft => None,
+            Self::ProjectionReadonly { .. } | Self::CommittedDraft | Self::Condition { .. } => None,
         }
     }
 
     pub fn projection(&self) -> Option<&str> {
         match self {
             Self::ProjectionReadonly { projection } => Some(projection),
-            Self::ApplicationBoolean { .. } | Self::CommittedDraft => None,
+            Self::ApplicationBoolean { .. } | Self::CommittedDraft | Self::Condition { .. } => None,
+        }
+    }
+
+    pub fn condition_identity(&self) -> Option<&str> {
+        match self {
+            Self::Condition { condition } => Some(condition),
+            Self::ApplicationBoolean { .. }
+            | Self::ProjectionReadonly { .. }
+            | Self::CommittedDraft => None,
         }
     }
 
@@ -129,6 +147,7 @@ impl WorthUiIntentMutabilitySourceSpec {
                 format!("projection-readonly:{projection}")
             }
             Self::CommittedDraft => "committed-draft".to_owned(),
+            Self::Condition { condition } => format!("condition:{condition}"),
         }
     }
 }
@@ -150,17 +169,32 @@ impl WorthUiIntentReadinessSourceSpec {
         Self::CommittedDraft
     }
 
+    pub fn condition(condition: impl Into<Box<str>>) -> Self {
+        Self::Condition {
+            condition: required_text(condition, "readiness condition"),
+        }
+    }
+
     pub fn application_fact(&self) -> Option<&str> {
         match self {
             Self::ApplicationBoolean { fact } => Some(fact),
-            Self::Projection { .. } | Self::CommittedDraft => None,
+            Self::Projection { .. } | Self::CommittedDraft | Self::Condition { .. } => None,
         }
     }
 
     pub fn projection_identity(&self) -> Option<&str> {
         match self {
             Self::Projection { projection } => Some(projection),
-            Self::ApplicationBoolean { .. } | Self::CommittedDraft => None,
+            Self::ApplicationBoolean { .. } | Self::CommittedDraft | Self::Condition { .. } => None,
+        }
+    }
+
+    pub fn condition_identity(&self) -> Option<&str> {
+        match self {
+            Self::Condition { condition } => Some(condition),
+            Self::ApplicationBoolean { .. } | Self::Projection { .. } | Self::CommittedDraft => {
+                None
+            }
         }
     }
 
@@ -173,23 +207,43 @@ impl WorthUiIntentReadinessSourceSpec {
             Self::ApplicationBoolean { fact } => format!("application-boolean:{fact}"),
             Self::Projection { projection } => format!("projection:{projection}"),
             Self::CommittedDraft => "committed-draft".to_owned(),
+            Self::Condition { condition } => format!("condition:{condition}"),
         }
     }
 }
 
 impl WorthUiIntentPolicySourceSpec {
     pub fn application_boolean(fact: impl Into<Box<str>>) -> Self {
-        Self {
+        Self::ApplicationBoolean {
             fact: required_text(fact, "policy application fact"),
         }
     }
 
-    pub fn application_fact(&self) -> &str {
-        &self.fact
+    pub fn condition(condition: impl Into<Box<str>>) -> Self {
+        Self::Condition {
+            condition: required_text(condition, "policy condition"),
+        }
+    }
+
+    pub fn application_fact(&self) -> Option<&str> {
+        match self {
+            Self::ApplicationBoolean { fact } => Some(fact),
+            Self::Condition { .. } => None,
+        }
+    }
+
+    pub fn condition_identity(&self) -> Option<&str> {
+        match self {
+            Self::Condition { condition } => Some(condition),
+            Self::ApplicationBoolean { .. } => None,
+        }
     }
 
     fn revision_token(&self) -> String {
-        format!("application-boolean:{}", self.fact)
+        match self {
+            Self::ApplicationBoolean { fact } => format!("application-boolean:{fact}"),
+            Self::Condition { condition } => format!("condition:{condition}"),
+        }
     }
 }
 

@@ -106,6 +106,7 @@ impl WorthUiActiveApplicationSession {
             generation: &generation,
             mounted: &self.mounted,
             application_facts: &self.intent_application_facts,
+            expressions: &self.expressions,
             command_contexts,
         };
         match crate::runtime::intent::prepare_typed_admission_candidate(

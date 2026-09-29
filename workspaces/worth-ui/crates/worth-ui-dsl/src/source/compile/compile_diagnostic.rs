@@ -62,6 +62,8 @@ pub enum WorthUiDslCompileDiagnosticCode {
     ExpressionSyntax,
     ExpressionAdmissionDenied,
     UnusedExpressionOperand,
+    UnknownExpressionUseSite,
+    ExpressionUseSiteRoleMismatch,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

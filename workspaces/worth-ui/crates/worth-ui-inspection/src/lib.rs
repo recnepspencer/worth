@@ -34,6 +34,7 @@ pub use appearance::{
 };
 pub use appearance_change_distinctions::UiAppearanceInspectionChangeDistinctions;
 pub use pointer_affordance::{
+    UiPointerAffordanceInspectionConditionAxis, UiPointerAffordanceInspectionConditionWithholding,
     UiPointerAffordanceInspectionConfirmationStop, UiPointerAffordanceInspectionDecision,
     UiPointerAffordanceInspectionExpiry, UiPointerAffordanceInspectionExplanation,
     UiPointerAffordanceInspectionFamily, UiPointerAffordanceInspectionInoperableCause,

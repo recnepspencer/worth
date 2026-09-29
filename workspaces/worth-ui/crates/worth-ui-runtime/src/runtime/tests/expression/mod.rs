@@ -8,5 +8,7 @@ mod invalidation_tests;
 mod posture_tests;
 #[path = "preparation_denial_tests.rs"]
 mod preparation_denial_tests;
+#[path = "replacement_no_op_tests.rs"]
+mod replacement_no_op_tests;
 #[path = "session_fixture.rs"]
 pub(crate) mod session_fixture;

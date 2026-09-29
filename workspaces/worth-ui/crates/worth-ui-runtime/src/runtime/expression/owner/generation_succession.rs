@@ -3,7 +3,6 @@ use std::sync::Arc;
 
 use super::operand_binding::UiExpressionInputs;
 use super::records::UiExpressionRecords;
-use super::state::probe_projections;
 use super::{
     UiExpressionEvaluationRecord, UiExpressionOperandFact, UiExpressionRuntimeState,
     UiExpressionWorkCounters,
@@ -13,9 +12,10 @@ use crate::runtime::expression::{
 };
 
 impl UiExpressionRuntimeState {
-    /// Moves this owner to the generation `inputs` names as active, against
-    /// the catalog that generation installs. It is the only place the
-    /// owner's generation changes.
+    /// The owner of the generation `inputs` names as active, against the
+    /// catalog that generation installs, computed from this owner without
+    /// changing it. The successor's counters hold only the work of this
+    /// computation.
     ///
     /// An expression whose successor installs the same program over the same
     /// operands in the same slot, and whose every operand fact is still the
@@ -25,55 +25,60 @@ impl UiExpressionRuntimeState {
     /// is rebuilt with no prior record, and every expression is rebuilt when
     /// the successor catalog installs different slots. A rebuilt expression
     /// settles its readers through the dependency index, as any change does.
-    /// Whatever the path, no reference or ticket of the prior generation is
-    /// current afterwards.
+    /// No reference or ticket of this owner's generation is current in the
+    /// successor.
     ///
-    /// The work counters carry across: each operand re-proven counts one
-    /// operand probe, each indexed projection slot one probe, and a rebuild
-    /// counts as any settle does.
-    pub(crate) fn follow(
-        &mut self,
+    /// Each operand re-proven counts one operand probe, each indexed
+    /// projection slot one probe, and a rebuild counts as any settle does.
+    /// What the consumers re-observe is measured when the successor commits.
+    pub(super) fn successor(
+        &self,
         catalog: &Arc<UiExpressionCatalog>,
         inputs: &UiExpressionInputs<'_>,
-    ) {
-        if self.follows(inputs.generation) && Arc::ptr_eq(&self.catalog, catalog) {
-            return;
-        }
+    ) -> Self {
         let same_slots = self.catalog.has_same_slots_as(catalog);
-        let mut retained = std::mem::replace(
-            &mut self.records,
-            UiExpressionRecords::unsettled(catalog.slot_count()),
+        let mut successor = Self::unsettled(
+            Arc::clone(catalog),
+            inputs.generation.clone(),
+            inputs.mounted,
         );
         let mut dirty = BTreeSet::new();
         for slot in catalog.slot_count().slots() {
-            let restamped = match (
-                retained.take(slot),
-                self.catalog.expression(slot),
-                catalog.expression(slot),
-            ) {
-                (Some(record), Some(prior), Some(successor))
-                    if same_slots && prior.installs_same_program_as(successor) =>
+            let next = catalog.expression(slot);
+            let prior_slot = next.and_then(|next| self.catalog.slot_of(next.identity()));
+            let prior_record = prior_slot.and_then(|prior| self.records.get(prior));
+            let prior_expression = prior_slot.and_then(|prior| self.catalog.expression(prior));
+            if let (Some(record), Some(prior), Some(next)) = (prior_record, prior_expression, next)
+            {
+                if same_slots
+                    && prior.installs_same_program_as(next)
+                    && restamp(
+                        record,
+                        next,
+                        &successor.records,
+                        inputs,
+                        &mut successor.counters,
+                    )
+                    .is_some_and(|restamped| successor.records.admit(restamped).is_ok())
                 {
-                    restamp(record, successor, &self.records, inputs, &mut self.counters)
+                    continue;
                 }
-                _ => None,
-            };
-            if !restamped.is_some_and(|record| self.records.admit(record)) {
-                dirty.insert(slot);
             }
+            dirty.insert(slot);
         }
-        self.catalog = Arc::clone(catalog);
-        self.generation = inputs.generation.clone();
-        self.projections = probe_projections(catalog, inputs.mounted, &mut self.counters);
-        self.settle_dirty(dirty, inputs);
+        // The successor has no consumers yet; the commit reports against the
+        // owner it replaces.
+        let _settled = successor.settle_dirty(dirty, inputs);
+        successor
     }
 }
 
 /// `record` as a record of the successor generation, when every operand fact
-/// it read is still what its owner holds. `records` holds the successor
-/// records of every upstream slot already followed.
+/// it read is still what its owner holds, or `None` when one is not.
+/// `records` holds the successor records of every upstream slot already
+/// followed.
 fn restamp(
-    mut record: UiExpressionEvaluationRecord,
+    record: &UiExpressionEvaluationRecord,
     successor: &UiInstalledExpression,
     records: &UiExpressionRecords,
     inputs: &UiExpressionInputs<'_>,
@@ -82,7 +87,7 @@ fn restamp(
     if successor.operands().len() != record.operands.len() {
         return None;
     }
-    record.operands = successor
+    let reproven = successor
         .operands()
         .iter()
         .zip(&record.operands)
@@ -91,9 +96,12 @@ fn restamp(
             reprove(operand.source(), read, records, inputs)
         })
         .collect::<Option<_>>()?;
-    record.generation = inputs.generation.clone();
-    record.span = successor.body_span().cloned();
-    Some(record)
+    Some(UiExpressionEvaluationRecord {
+        operands: reproven,
+        generation: inputs.generation.clone(),
+        span: successor.body_span().cloned(),
+        ..record.clone()
+    })
 }
 
 /// The fact `read` is in the successor generation, or `None` when its owner

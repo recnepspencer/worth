@@ -1,6 +1,7 @@
 /// Deterministic operation counts. Invalidation is bounded by these counts,
 /// never by timing. They count from session activation; following a new
-/// generation never resets them.
+/// generation never resets them. The work of preparing a generation
+/// succession counts when it is prepared, whether or not it commits.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct UiExpressionWorkCounters {
     /// Kernel evaluations run.
@@ -25,4 +26,27 @@ pub struct UiExpressionWorkCounters {
     /// they read is no longer what its owner holds, or because they name a
     /// slot the retained records do not hold.
     pub stale_completions: u64,
+}
+
+impl UiExpressionWorkCounters {
+    /// These counts with `work` done besides them added.
+    pub(super) const fn absorbing(self, work: Self) -> Self {
+        Self {
+            evaluations: self.evaluations.saturating_add(work.evaluations),
+            settled_without_evaluation: self
+                .settled_without_evaluation
+                .saturating_add(work.settled_without_evaluation),
+            operand_probes: self.operand_probes.saturating_add(work.operand_probes),
+            index_hits: self.index_hits.saturating_add(work.index_hits),
+            published_changes: self
+                .published_changes
+                .saturating_add(work.published_changes),
+            suppressed_unchanged: self
+                .suppressed_unchanged
+                .saturating_add(work.suppressed_unchanged),
+            stale_completions: self
+                .stale_completions
+                .saturating_add(work.stale_completions),
+        }
+    }
 }

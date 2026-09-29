@@ -121,7 +121,7 @@ impl WorthUiActiveApplicationSession {
             .map_err(|denial| WorthUiMountedFrameExecutionStop::Preparation(Box::new(denial)))?;
         let owner_receipts = execution.prepare_mounted_owner_receipts(&frame);
         let transition = execution.present_prepared_frame_with_appearance(frame, deadline, now);
-        let outcome = finish_mounted_transition(
+        let (outcome, conditions) = finish_mounted_transition(
             UiMountedPublicationSettlementPorts {
                 mounted: &mut *execution.mounted,
                 focus: execution.focus.as_deref_mut(),
@@ -142,6 +142,7 @@ impl WorthUiActiveApplicationSession {
             Some(&mut *execution.overlay_composition_owners),
         );
         execution.settle_new_mounted_owner_receipts(owner_receipts, &outcome);
+        execution.reobserve_condition_consumers(conditions);
         super::active_application_session::settle_presented_scroll_extent(
             execution.scroll.as_deref_mut(),
             execution.motion.as_deref_mut(),
@@ -183,7 +184,7 @@ impl WorthUiActiveApplicationSession {
             .map_err(|denial| WorthUiMountedFrameExecutionStop::Preparation(Box::new(denial)))?;
         let owner_receipts = execution.prepare_mounted_owner_receipts(&frame);
         let transition = execution.present_prepared_frame_with_appearance(frame, deadline, now);
-        let outcome = finish_mounted_transition(
+        let (outcome, conditions) = finish_mounted_transition(
             UiMountedPublicationSettlementPorts {
                 mounted: &mut *execution.mounted,
                 focus: execution.focus.as_deref_mut(),
@@ -204,6 +205,7 @@ impl WorthUiActiveApplicationSession {
             Some(&mut *execution.overlay_composition_owners),
         );
         execution.settle_new_mounted_owner_receipts(owner_receipts, &outcome);
+        execution.reobserve_condition_consumers(conditions);
         super::active_application_session::settle_presented_scroll_extent(
             execution.scroll.as_deref_mut(),
             execution.motion.as_deref_mut(),

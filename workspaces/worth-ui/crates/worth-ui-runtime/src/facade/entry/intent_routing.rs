@@ -86,7 +86,7 @@ impl WorthUiActiveApplicationSession {
     > {
         if let Ok(receipt) = &updated {
             let active = self.active_generation_identity();
-            self.expressions.invalidate_application(
+            let settlement = self.expressions.invalidate_application(
                 receipt,
                 &crate::runtime::expression::UiExpressionInputs {
                     generation: &active,
@@ -94,6 +94,7 @@ impl WorthUiActiveApplicationSession {
                     facts: &self.intent_application_facts,
                 },
             );
+            self.reobserve_condition_consumers(settlement);
         }
         updated
     }

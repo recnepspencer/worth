@@ -107,6 +107,20 @@ impl UiExpressionCatalog {
         self.slot_count == successor.slot_count
             && self.slots_by_identity == successor.slots_by_identity
     }
+
+    /// Whether `successor` installs the same program in every slot, so every
+    /// result it would retain means what this catalog's does. Spans are
+    /// evidence and take no part.
+    pub(crate) fn installs_same_expressions_as(&self, successor: &Self) -> bool {
+        self.has_same_slots_as(successor)
+            && self.slot_count.slots().all(|slot| {
+                match (self.expression(slot), successor.expression(slot)) {
+                    (Some(prior), Some(next)) => prior.installs_same_program_as(next),
+                    (None, None) => true,
+                    _ => false,
+                }
+            })
+    }
 }
 
 impl UiInstalledExpression {

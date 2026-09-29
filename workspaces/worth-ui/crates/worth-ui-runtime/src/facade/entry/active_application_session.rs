@@ -319,6 +319,7 @@ impl WorthUiActiveApplicationSession {
             completion,
             capabilities,
             intent_catalog,
+            intent_execution_bindings,
             consumed_facts,
         ) = turn.into_parts();
         if self
@@ -346,7 +347,12 @@ impl WorthUiActiveApplicationSession {
             host_session_identity,
             completion,
             capabilities,
-            intent_catalog,
+            intent_operability: crate::runtime::intent::UiIntentOperabilityAuthority {
+                catalog: intent_catalog,
+                definitions: capabilities.intent_definitions(),
+                execution_bindings: intent_execution_bindings,
+                occupancy: self.intent_execution.occupancy(),
+            },
             consumed_facts,
             mounted: &mut self.mounted,
             host_session: &self.host_session,

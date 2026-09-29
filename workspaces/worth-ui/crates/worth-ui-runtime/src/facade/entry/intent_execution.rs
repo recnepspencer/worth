@@ -39,6 +39,7 @@ impl WorthUiActiveApplicationSession {
             generation: &generation,
             mounted: &self.mounted,
             application_facts: &self.intent_application_facts,
+            expressions: &self.expressions,
             command_contexts,
         };
         match self.intent_execution.dispatch(

@@ -135,6 +135,27 @@ impl UiPresentedInteractionTargetView {
     pub(crate) const fn geometry(self) -> super::UiPresentedInteractionGeometry {
         self.geometry
     }
+
+    /// The same target after its instance's receipt succeeded. The
+    /// presentation it was observed in stays historical evidence.
+    pub(crate) const fn with_node_receipt(
+        self,
+        node_receipt: worth_ui_host_contract::UiMountedNodeReceiptIdentity,
+    ) -> Self {
+        Self {
+            node_receipt,
+            ..self
+        }
+    }
+
+    /// The same target after its surface was rebound. The presentation it
+    /// was observed in stays historical evidence.
+    pub(crate) const fn with_binding(
+        self,
+        binding: worth_ui_host_contract::UiSurfaceBindingGeneration,
+    ) -> Self {
+        Self { binding, ..self }
+    }
 }
 
 #[cfg(test)]

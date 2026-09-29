@@ -1,4 +1,41 @@
 impl super::WorthUiActiveApplicationSession {
+    /// The owners an activation observation against `prepared` reads at
+    /// `generation`.
+    pub(in crate::facade::entry) fn intent_read_owners<'owners>(
+        &'owners self,
+        prepared: &'owners crate::facade::prepared_application_authority::WorthUiPreparedApplicationAuthority,
+        generation: &'owners crate::runtime::WorthUiActiveApplicationGenerationIdentity,
+    ) -> crate::runtime::intent::UiIntentOperabilityReadOwners<'owners> {
+        crate::runtime::intent::UiIntentOperabilityReadOwners {
+            authority: crate::runtime::intent::UiIntentOperabilityAuthority {
+                catalog: prepared.intent_catalog(),
+                definitions: prepared.capabilities().intent_definitions(),
+                execution_bindings: prepared.intent_execution_bindings(),
+                occupancy: self.intent_execution.occupancy(),
+            },
+            generation,
+            inputs: crate::runtime::intent::UiIntentInputOwners {
+                mounted: &self.mounted,
+                application_facts: &self.intent_application_facts,
+                expressions: &self.expressions,
+            },
+        }
+    }
+
+    /// The owners an activation observation at `successor` reads before that
+    /// generation is active: those of [`Self::intent_read_owners`], with
+    /// conditions read through the prepared expression succession.
+    fn successor_read_owners<'owners>(
+        &'owners self,
+        prepared: &'owners crate::facade::prepared_application_authority::WorthUiPreparedApplicationAuthority,
+        successor: &'owners crate::runtime::WorthUiActiveApplicationGenerationIdentity,
+        expressions: &'owners crate::runtime::expression::UiPreparedExpressionSuccession,
+    ) -> crate::runtime::intent::UiIntentOperabilityReadOwners<'owners> {
+        let mut owners = self.intent_read_owners(prepared, successor);
+        owners.inputs.expressions = expressions.successor_owner(&self.expressions);
+        owners
+    }
+
     pub(in crate::facade::entry) fn include_pointer_publication(
         &self,
         plan: &mut crate::runtime::rebind::UiRebindPlan,
@@ -34,6 +71,7 @@ impl super::WorthUiActiveApplicationSession {
     pub(in crate::facade::entry) fn prepare_pointer_generation_succession(
         &self,
         prepared: &crate::facade::prepared_application_authority::WorthUiPreparedApplicationAuthority,
+        expressions: &crate::runtime::expression::UiPreparedExpressionSuccession,
     ) -> Result<
         crate::runtime::pointer_affordance::UiPreparedPointerAffordanceGenerationSuccession,
         crate::runtime::rebind::UiRebindPreparationDenial,
@@ -53,10 +91,7 @@ impl super::WorthUiActiveApplicationSession {
             prepared.capabilities().digest().as_u64(),
             self.pointer_affordance_snapshot.as_ref(), now, &self.mounted,
             |target| crate::runtime::intent::observe_activation_operability(
-                target, prepared.intent_catalog(), prepared.capabilities().intent_definitions(),
-                prepared.intent_execution_bindings(), &successor, &self.mounted,
-                &self.intent_application_facts, self.intent_execution.occupancy(),
-                &self.intent_confirmation,
+                target, self.successor_read_owners(prepared, &successor, expressions), &self.intent_confirmation,
                 now.map(worth_ui_host_contract::UiHostObservationTimeBasis::HostMonotonicMillis),
             ),
         ).map_err(|_| crate::runtime::rebind::UiRebindPreparationDenial::CandidateCutoverPreparation)
@@ -65,6 +100,7 @@ impl super::WorthUiActiveApplicationSession {
     pub(in crate::facade::entry) fn prepare_pointer_graph_succession(
         &self,
         succession: &crate::facade::prepared_application_authority::WorthUiPreparedApplicationGenerationSuccession,
+        expressions: &crate::runtime::expression::UiPreparedExpressionSuccession,
     ) -> Result<
         crate::runtime::pointer_affordance::UiPreparedPointerAffordanceGenerationSuccession,
         (),
@@ -82,9 +118,7 @@ impl super::WorthUiActiveApplicationSession {
             self.active_generation_identity(), successor.clone(), succession,
             prepared.capabilities().digest().as_u64(), self.pointer_affordance_snapshot.as_ref(), now, &self.mounted,
             |target| crate::runtime::intent::observe_activation_operability(
-                target, prepared.intent_catalog(), prepared.capabilities().intent_definitions(),
-                prepared.intent_execution_bindings(), &successor, &self.mounted,
-                &self.intent_application_facts, self.intent_execution.occupancy(), &self.intent_confirmation,
+                target, self.successor_read_owners(prepared, &successor, expressions), &self.intent_confirmation,
                 now.map(worth_ui_host_contract::UiHostObservationTimeBasis::HostMonotonicMillis),
             ),
         ).map_err(|_| ())

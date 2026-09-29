@@ -16,9 +16,13 @@ impl UiExpressionRuntimeState {
             self.catalog.dependencies().dependents_of(slot).is_empty(),
             "`{identity}` has readers, which a retained outcome would not re-settle"
         );
-        let mut record = self.records.take(slot).expect("the expression is settled");
+        let mut record = self
+            .records
+            .get(slot)
+            .cloned()
+            .expect("the expression is settled");
         record.outcome = outcome;
         record.outcome_revision = record.outcome_revision.saturating_add(1);
-        assert!(self.records.admit(record));
+        assert!(self.records.admit(record).is_ok());
     }
 }

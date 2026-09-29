@@ -210,6 +210,27 @@ impl UiIntentApplicationFactState {
         self.slots_by_identity.get(identity).copied()
     }
 
+    /// The revision each fact holds now, in slot order: the basis
+    /// [`Self::updated_since`] later compares with.
+    pub(crate) fn revisions(&self) -> Box<[u64]> {
+        self.facts.iter().map(|fact| fact.revision).collect()
+    }
+
+    /// The receipt of each fact updated since `basis` was taken.
+    pub(crate) fn updated_since<'state>(
+        &'state self,
+        basis: &'state [u64],
+    ) -> impl Iterator<Item = UiIntentApplicationFactUpdateReceipt> + 'state {
+        self.facts
+            .iter()
+            .zip(basis)
+            .filter(|(fact, revision)| fact.revision != **revision)
+            .map(|(fact, _)| UiIntentApplicationFactUpdateReceipt {
+                identity: Arc::clone(&fact.identity),
+                revision: fact.revision,
+            })
+    }
+
     pub(crate) fn is_current_reference(
         &self,
         expected: &UiIntentApplicationInputReference,

@@ -99,7 +99,11 @@ impl WorthUiActiveApplicationSession {
         }
         self.mounted
             .commit_graph_replacement_successor(mounted_successor);
-        self.follow_application_generation();
+        let expressions = self.prepare_expression_succession(
+            &self.active_generation_identity(),
+            &std::sync::Arc::clone(self.application.prepared_authority().expression_catalog()),
+        );
+        self.follow_application_generation(expressions);
         let observation_resources = self.application.retire_observation_resources(
             crate::runtime::observation::UiObservationResourceRetirementCause::
                 ApplicationReplacement,

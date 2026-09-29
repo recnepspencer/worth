@@ -174,7 +174,7 @@
       "rationale": "scroll successor evidence is created with the off-side catalog transition and then carried through preflight and activation receipts",
       "allowed": {
         "workspaces/worth-ui/crates/worth-ui-runtime/src/runtime/activation/committed_allocation_attempt/preflight.rs": 2,
-        "workspaces/worth-ui/crates/worth-ui-runtime/src/runtime/activation/committed_allocation_attempt/receipt.rs": 5,
+        "workspaces/worth-ui/crates/worth-ui-runtime/src/runtime/activation/committed_allocation_attempt/receipt.rs": 6,
         "workspaces/worth-ui/crates/worth-ui-runtime/src/runtime/allocation_frame_dispatch/framework_turn/allocation_transaction.rs": 2,
         "workspaces/worth-ui/crates/worth-ui-runtime/src/runtime/exports.rs": 1,
         "workspaces/worth-ui/crates/worth-ui-runtime/src/runtime/invalidation_narrowing/authority/catalog/catalog_transition.rs": 4,
