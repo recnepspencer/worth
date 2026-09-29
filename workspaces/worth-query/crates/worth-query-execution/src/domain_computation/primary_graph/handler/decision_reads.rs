@@ -45,32 +45,41 @@ where
     }
 
     /// Resolve a prior committed semantic output for this exact admitted scope.
-    pub fn prior_output<PriorBinding, Entity, Action>(
+    ///
+    /// An exactly-one role yields its identity. An at-most-one role yields
+    /// `Option`: `None` when the prior commit left the role unbound.
+    #[allow(clippy::type_complexity)]
+    pub fn prior_output<Role>(
         &mut self,
-        role: super::super::WorthQueryApplicationOutputRole<PriorBinding, Entity, Action>,
-    ) -> Result<WorthQueryInvariantEntityIdentity<Schema, Entity>, HandlerExecutionDenial>
+        role: Role,
+    ) -> Result<
+        Role::Read<WorthQueryInvariantEntityIdentity<Schema, Role::Entity>>,
+        HandlerExecutionDenial,
+    >
     where
-        PriorBinding: 'static,
-        Entity:
-            ApplicationEntityMarkerIdentity<Schema> + OperationReads<Binding::Operation> + 'static,
-        Action: super::super::WorthQueryApplicationOutputAction,
+        Role: super::super::WorthQueryApplicationFixedOutputRole,
+        Role::Entity: ApplicationEntityMarkerIdentity<Schema> + OperationReads<Binding::Operation>,
     {
         self.reader()
             .prior_output(role)
             .map_err(HandlerExecutionDenial::new)
     }
 
-    /// Absence means this binding has not published at the selected product
-    /// coordinate. Missing context, stale entities and invalid roles still deny.
-    pub fn prior_output_if_present<PriorBinding, Entity, Action>(
+    /// The outer `None` means this binding has not published at the selected
+    /// product coordinate; the inner read follows the role's cardinality, as
+    /// for [`Self::prior_output`]. Missing context, stale entities and invalid
+    /// roles still deny.
+    #[allow(clippy::type_complexity)]
+    pub fn prior_output_if_present<Role>(
         &mut self,
-        role: super::super::WorthQueryApplicationOutputRole<PriorBinding, Entity, Action>,
-    ) -> Result<Option<WorthQueryInvariantEntityIdentity<Schema, Entity>>, HandlerExecutionDenial>
+        role: Role,
+    ) -> Result<
+        Option<Role::Read<WorthQueryInvariantEntityIdentity<Schema, Role::Entity>>>,
+        HandlerExecutionDenial,
+    >
     where
-        PriorBinding: 'static,
-        Entity:
-            ApplicationEntityMarkerIdentity<Schema> + OperationReads<Binding::Operation> + 'static,
-        Action: super::super::WorthQueryApplicationOutputAction,
+        Role: super::super::WorthQueryApplicationFixedOutputRole,
+        Role::Entity: ApplicationEntityMarkerIdentity<Schema> + OperationReads<Binding::Operation>,
     {
         self.reader()
             .prior_output_if_present(role)

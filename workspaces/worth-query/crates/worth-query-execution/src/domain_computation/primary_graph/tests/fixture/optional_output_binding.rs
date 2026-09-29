@@ -1,14 +1,16 @@
 //! A mutation whose output contract declares one exactly-one role and one
 //! at-most-one role. The input names which roles the handler binds, so the
 //! same installed binding shows an optional output left unbound, bound once,
-//! and bound twice, and a required output left unbound.
+//! bound twice, and bound through the wrong token, and a required output left
+//! unbound.
 
 use super::*;
 use crate::domain_computation::primary_graph::application_entry::mutation::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
 };
 use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationOutputRole, WorthQueryPreserveOutput,
+    WorthQueryApplicationOptionalOutputRole, WorthQueryApplicationOutputRole,
+    WorthQueryPreserveOutput,
 };
 use worth_query_declaration::facade::application_operation::{
     ApplicationCandidateRequirements, ApplicationMutationBinding,
@@ -25,6 +27,8 @@ pub(in crate::domain_computation::primary_graph) enum OptionalOutputPlan {
     RequiredOnly,
     RequiredAndOptional,
     RequiredAndOptionalTwice,
+    /// Binds the at-most-one role through an exactly-one token.
+    RequiredAndOptionalAsRequired,
     OptionalOnly,
 }
 
@@ -59,6 +63,13 @@ pub(in crate::domain_computation::primary_graph) const SUBJECT_OUTPUT:
     > = WorthQueryApplicationOutputRole::from_static("subject");
 /// The role a completed mutation binds at most once.
 pub(in crate::domain_computation::primary_graph) const COMPANION_OUTPUT:
+    WorthQueryApplicationOptionalOutputRole<
+        OptionalOutputMutationBinding,
+        Account,
+        WorthQueryPreserveOutput,
+    > = WorthQueryApplicationOptionalOutputRole::from_static("companion");
+/// The at-most-one role misnamed through an exactly-one token.
+pub(in crate::domain_computation::primary_graph) const COMPANION_AS_REQUIRED_OUTPUT:
     WorthQueryApplicationOutputRole<
         OptionalOutputMutationBinding,
         Account,
@@ -170,8 +181,10 @@ impl OperationHandler<IdentityExecutionSchema, OptionalOutputMutationBinding>
             OptionalOutputPlan::RequiredOnly => (true, 0),
             OptionalOutputPlan::RequiredAndOptional => (true, 1),
             OptionalOutputPlan::RequiredAndOptionalTwice => (true, 2),
+            OptionalOutputPlan::RequiredAndOptionalAsRequired => (true, 0),
             OptionalOutputPlan::OptionalOnly => (false, 1),
         };
+        let misnamed = decision.plan == OptionalOutputPlan::RequiredAndOptionalAsRequired;
         let bound = writer
             .resolve_entity(AccountStatus::reference(), decision.status.clone())
             .and_then(|account| {
@@ -181,6 +194,9 @@ impl OperationHandler<IdentityExecutionSchema, OptionalOutputMutationBinding>
                 }
                 for _ in 0..optional {
                     writer.preserve_output(COMPANION_OUTPUT, &account)?;
+                }
+                if misnamed {
+                    writer.preserve_output(COMPANION_AS_REQUIRED_OUTPUT, &account)?;
                 }
                 Ok(())
             });

@@ -37,6 +37,10 @@ pub enum WorthQueryApplicationAttemptDenialKind {
     DuplicateOutputRole,
     OutputRoleEntityMismatch,
     OutputRoleActionMismatch,
+    /// The role token's cardinality differs from the one the binding declares
+    /// for that role: an exactly-one token for an at-most-one role, or the
+    /// reverse.
+    OutputRoleCardinalityMismatch,
     DuplicateEffectKey,
     ConflictingEffectStep,
     CandidateCapacityExceeded,

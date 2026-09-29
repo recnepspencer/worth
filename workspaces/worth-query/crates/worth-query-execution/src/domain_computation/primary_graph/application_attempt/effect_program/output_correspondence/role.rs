@@ -1,9 +1,15 @@
 use std::borrow::Cow;
 use std::marker::PhantomData;
 
+use worth_query_declaration::facade::application_operation::ApplicationMutationOutputRoleCardinality;
+
 use super::WorthQueryApplicationOutputPosture;
 
 pub(in crate::domain_computation::primary_graph) mod action {
+    pub trait Sealed {}
+}
+
+pub(in crate::domain_computation::primary_graph) mod fixed {
     pub trait Sealed {}
 }
 
@@ -74,12 +80,103 @@ impl std::fmt::Display for WorthQueryApplicationOutputRoleNameDenial {
 
 impl std::error::Error for WorthQueryApplicationOutputRoleNameDenial {}
 
-/// A binding-owned semantic result role. The name describes correspondence;
-/// it never supplies or reconstructs an entity identity.
+/// A binding-owned semantic result role that every commit binds exactly once:
+/// a fixed role declared with `for_entity`, or one member of a declared role
+/// family. The name describes correspondence; it never supplies or
+/// reconstructs an entity identity. Reading through it yields the entity itself.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationOutputRole<Binding, Entity, Action> {
     name: Cow<'static, str>,
     _marker: PhantomData<fn() -> (Binding, Entity, Action)>,
+}
+
+/// A binding-owned fixed result role declared with `optional_for_entity`: a
+/// commit binds it at most once. Reading through it yields `Option`, so an
+/// absent role is a value, never a denial.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct WorthQueryApplicationOptionalOutputRole<Binding, Entity, Action> {
+    name: Cow<'static, str>,
+    _marker: PhantomData<fn() -> (Binding, Entity, Action)>,
+}
+
+/// A typed output-role token: [`WorthQueryApplicationOutputRole`] for a role
+/// every commit binds, [`WorthQueryApplicationOptionalOutputRole`] for a role
+/// a commit may leave unbound.
+///
+/// The token's cardinality decides what a read returns, so absence is typed:
+/// `Read<T>` is `T` for an exactly-one token and `Option<T>` for an at-most-one
+/// token. Query refuses a token whose cardinality differs from the one the
+/// binding declares for that role.
+pub trait WorthQueryApplicationFixedOutputRole: fixed::Sealed {
+    type Binding: 'static;
+    type Entity: 'static;
+    type Action: WorthQueryApplicationOutputAction;
+    /// What reading this role yields when the value read is `T`.
+    type Read<T>;
+    const CARDINALITY: ApplicationMutationOutputRoleCardinality;
+
+    fn name(&self) -> &str;
+
+    /// Shape one role lookup. An exactly-one token yields `None` when the role
+    /// is unbound, which callers refuse; an at-most-one token always yields a
+    /// read, carrying absence as its `None`.
+    fn read<T>(bound: Option<T>) -> Option<Self::Read<T>>;
+}
+
+impl<Binding, Entity, Action> fixed::Sealed
+    for WorthQueryApplicationOutputRole<Binding, Entity, Action>
+{
+}
+
+impl<Binding, Entity, Action> WorthQueryApplicationFixedOutputRole
+    for WorthQueryApplicationOutputRole<Binding, Entity, Action>
+where
+    Binding: 'static,
+    Entity: 'static,
+    Action: WorthQueryApplicationOutputAction,
+{
+    type Binding = Binding;
+    type Entity = Entity;
+    type Action = Action;
+    type Read<T> = T;
+    const CARDINALITY: ApplicationMutationOutputRoleCardinality =
+        ApplicationMutationOutputRoleCardinality::ExactlyOne;
+
+    fn name(&self) -> &str {
+        &self.name
+    }
+
+    fn read<T>(bound: Option<T>) -> Option<T> {
+        bound
+    }
+}
+
+impl<Binding, Entity, Action> fixed::Sealed
+    for WorthQueryApplicationOptionalOutputRole<Binding, Entity, Action>
+{
+}
+
+impl<Binding, Entity, Action> WorthQueryApplicationFixedOutputRole
+    for WorthQueryApplicationOptionalOutputRole<Binding, Entity, Action>
+where
+    Binding: 'static,
+    Entity: 'static,
+    Action: WorthQueryApplicationOutputAction,
+{
+    type Binding = Binding;
+    type Entity = Entity;
+    type Action = Action;
+    type Read<T> = Option<T>;
+    const CARDINALITY: ApplicationMutationOutputRoleCardinality =
+        ApplicationMutationOutputRoleCardinality::AtMostOne;
+
+    fn name(&self) -> &str {
+        &self.name
+    }
+
+    fn read<T>(bound: Option<T>) -> Option<Option<T>> {
+        Some(bound)
+    }
 }
 
 /// One declared generated-role family from a prior mutation binding.
@@ -117,6 +214,34 @@ impl<Binding, Entity, Action> WorthQueryApplicationOutputRole<Binding, Entity, A
 
     /// Construct a topology-derived role without leaking an untyped string into
     /// effect authoring.
+    pub fn try_new(
+        name: impl Into<String>,
+    ) -> Result<Self, WorthQueryApplicationOutputRoleNameDenial> {
+        let name = name.into();
+        validate_output_role_name(&name)?;
+        Ok(Self {
+            name: Cow::Owned(name),
+            _marker: PhantomData,
+        })
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+}
+
+impl<Binding, Entity, Action> WorthQueryApplicationOptionalOutputRole<Binding, Entity, Action> {
+    /// Construct a statically named at-most-one role. Query validates it
+    /// against the installed binding before candidate effects can be admitted.
+    pub const fn from_static(name: &'static str) -> Self {
+        Self {
+            name: Cow::Borrowed(name),
+            _marker: PhantomData,
+        }
+    }
+
+    /// Construct a runtime-named at-most-one role without leaking an untyped
+    /// string into effect authoring.
     pub fn try_new(
         name: impl Into<String>,
     ) -> Result<Self, WorthQueryApplicationOutputRoleNameDenial> {

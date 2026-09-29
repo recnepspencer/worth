@@ -7,6 +7,8 @@ use worth_query_topology_entry::{Body, FinalPlanarMutationBinding, PlanarRead};
 use super::super::{length, Request};
 use crate::ConsumerSchema;
 
+/// The exactly-one role of a generated vertex: the anchor, or the created
+/// family member. The ring's closing vertex is the at-most-one `closing` role.
 pub(super) fn role(
     vertex: &PlanarVertex,
     index: usize,
@@ -15,6 +17,10 @@ pub(super) fn role(
     Body,
     WorthQueryCreateOutput,
 > {
+    assert!(
+        index < 2,
+        "the closing vertex is read through its optional role"
+    );
     WorthQueryApplicationOutputRole::try_new(if index == 0 {
         "anchor".to_owned()
     } else {

@@ -126,21 +126,46 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, FinalPlanarPreserve
             .prior_output_family_if_present::<FinalPlanarPreserveBinding<Schema>, Body>(
                 WorthQueryApplicationOutputRoleFamily::from_static("preserved."),
             );
+        // The initial output's optional roles read as values: its closing
+        // vertex is present and its auxiliary role is absent.
+        let mut initial_closing = None;
         let anchor = match preserve_family {
-            Ok(Some(_)) => reader
-                .prior_output::<FinalPlanarPreserveBinding<Schema>, Body, WorthQueryPreserveOutput>(
-                    WorthQueryApplicationOutputRole::from_static("anchor"),
-                ),
+            Ok(Some(_)) => reader.prior_output(WorthQueryApplicationOutputRole::<
+                FinalPlanarPreserveBinding<Schema>,
+                Body,
+                WorthQueryPreserveOutput,
+            >::from_static("anchor")),
             Ok(None) => {
-                match reader.prior_output_family_if_present::<FinalPlanarMutationBinding<Schema>, Body>(
-                    WorthQueryApplicationOutputRoleFamily::from_static("created."),
-                ) {
-                    Ok(Some(_)) => reader.prior_output::<FinalPlanarMutationBinding<Schema>, Body, WorthQueryCreateOutput>(
-                        WorthQueryApplicationOutputRole::from_static("anchor"),
-                    ),
-                    Ok(None) => return HandlerResult::DomainDenied(
-                        worth_query_consumer_values::PlanarMutationDenial::CurrentOutputMissing,
-                    ),
+                match reader
+                    .prior_output_family_if_present::<FinalPlanarMutationBinding<Schema>, Body>(
+                        WorthQueryApplicationOutputRoleFamily::from_static("created."),
+                    ) {
+                    Ok(Some(_)) => {
+                        match (
+                            reader.prior_output(final_closing_output::<Schema>()),
+                            reader.prior_output(final_auxiliary_output::<Schema>()),
+                        ) {
+                            (Ok(Some(closing)), Ok(None)) => initial_closing = Some(closing),
+                            (Err(error), _) | (_, Err(error)) => {
+                                return HandlerResult::ExecutionDenied(error)
+                            }
+                            _ => {
+                                return HandlerResult::DomainDenied(
+                                    worth_query_consumer_values::PlanarMutationDenial::UnexpectedCurrentOutput,
+                                )
+                            }
+                        }
+                        reader.prior_output(WorthQueryApplicationOutputRole::<
+                            FinalPlanarMutationBinding<Schema>,
+                            Body,
+                            WorthQueryCreateOutput,
+                        >::from_static("anchor"))
+                    }
+                    Ok(None) => {
+                        return HandlerResult::DomainDenied(
+                            worth_query_consumer_values::PlanarMutationDenial::CurrentOutputMissing,
+                        )
+                    }
                     Err(error) => return HandlerResult::ExecutionDenied(error),
                 }
             }
@@ -171,6 +196,11 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, FinalPlanarPreserve
         if closure != anchor {
             return HandlerResult::DomainDenied(
                 worth_query_consumer_values::PlanarMutationDenial::UnexpectedSuccessor,
+            );
+        }
+        if initial_closing.is_some_and(|closing| closing != third) {
+            return HandlerResult::DomainDenied(
+                worth_query_consumer_values::PlanarMutationDenial::UnexpectedCurrentOutput,
             );
         }
         let entities = [anchor, second, third];

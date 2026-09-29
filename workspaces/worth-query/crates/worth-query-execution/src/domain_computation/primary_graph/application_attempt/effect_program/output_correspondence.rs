@@ -1,5 +1,5 @@
 use std::any::TypeId;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::marker::PhantomData;
 
 use worth_relational::facade::identity::EntityId;
@@ -9,10 +9,15 @@ pub use worth_query_declaration::facade::application_operation::ApplicationMutat
 mod candidate;
 pub(in crate::domain_computation::primary_graph::application_attempt) use candidate::WorthQueryApplicationOutputCorrespondenceCandidate;
 
+mod family_entry;
+pub use family_entry::WorthQueryApplicationOutputFamilyEntry;
+
 mod role;
 pub use role::{
-    Create, Preserve, Retire, WorthQueryApplicationOutputAction, WorthQueryApplicationOutputRole,
-    WorthQueryApplicationOutputRoleFamily, WorthQueryApplicationOutputRoleNameDenial,
+    Create, Preserve, Retire, WorthQueryApplicationFixedOutputRole,
+    WorthQueryApplicationOptionalOutputRole, WorthQueryApplicationOutputAction,
+    WorthQueryApplicationOutputRole, WorthQueryApplicationOutputRoleFamily,
+    WorthQueryApplicationOutputRoleNameDenial,
 };
 
 #[cfg(test)]
@@ -35,68 +40,21 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryCheckpointOutp
 }
 
 /// Sealed role-to-identity correspondence resolved from one Relational commit.
+///
+/// It keeps the binding's declared at-most-one fixed roles beside the bound
+/// ones, so a read through an optional role token answers absence as `None`
+/// and a token whose cardinality differs from the declaration is refused.
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct WorthQueryApplicationOutputCorrespondence {
     binding_type: Option<TypeId>,
+    optional_roles: BTreeSet<String>,
     roles: BTreeMap<String, CommittedOutputBinding>,
-}
-
-/// One typed member of a sealed output-role family.
-pub struct WorthQueryApplicationOutputFamilyEntry<'correspondence, Binding, Entity> {
-    role: &'correspondence str,
-    posture: WorthQueryApplicationOutputPosture,
-    entity_id: EntityId,
-    _marker: PhantomData<fn() -> (Binding, Entity)>,
-}
-
-impl<Binding, Entity> Copy for WorthQueryApplicationOutputFamilyEntry<'_, Binding, Entity> {}
-
-impl<Binding, Entity> Clone for WorthQueryApplicationOutputFamilyEntry<'_, Binding, Entity> {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
-impl<Binding, Entity> std::fmt::Debug
-    for WorthQueryApplicationOutputFamilyEntry<'_, Binding, Entity>
-{
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        formatter
-            .debug_struct("WorthQueryApplicationOutputFamilyEntry")
-            .field("role", &self.role)
-            .field("posture", &self.posture)
-            .field("entity_id", &self.entity_id)
-            .finish()
-    }
-}
-
-impl<Binding, Entity> PartialEq for WorthQueryApplicationOutputFamilyEntry<'_, Binding, Entity> {
-    fn eq(&self, other: &Self) -> bool {
-        self.role == other.role
-            && self.posture == other.posture
-            && self.entity_id == other.entity_id
-    }
-}
-
-impl<Binding, Entity> Eq for WorthQueryApplicationOutputFamilyEntry<'_, Binding, Entity> {}
-
-impl<Binding, Entity> WorthQueryApplicationOutputFamilyEntry<'_, Binding, Entity> {
-    pub const fn role(&self) -> &str {
-        self.role
-    }
-
-    pub const fn posture(&self) -> WorthQueryApplicationOutputPosture {
-        self.posture
-    }
-
-    pub const fn entity_id(&self) -> EntityId {
-        self.entity_id
-    }
 }
 
 impl WorthQueryApplicationOutputCorrespondence {
     pub(in crate::domain_computation::primary_graph) fn from_checkpoint_roles(
         binding_type: TypeId,
+        optional_roles: BTreeSet<String>,
         roles: Vec<WorthQueryCheckpointOutputRole>,
         mut entity_type: impl FnMut(&str) -> Option<TypeId>,
     ) -> Result<Self, String> {
@@ -125,6 +83,7 @@ impl WorthQueryApplicationOutputCorrespondence {
         }
         Ok(Self {
             binding_type: Some(binding_type),
+            optional_roles,
             roles: rebound,
         })
     }
@@ -190,35 +149,57 @@ impl WorthQueryApplicationOutputCorrespondence {
         })
     }
 
-    pub fn entity<Binding, Entity, Action>(
+    /// Project the entity committed under one role. An exactly-one token
+    /// yields the entity; an at-most-one token yields `Option`, `None` when
+    /// the commit left the role unbound.
+    #[allow(clippy::type_complexity)]
+    pub fn entity<Role>(
         &self,
-        role: WorthQueryApplicationOutputRole<Binding, Entity, Action>,
+        role: Role,
     ) -> Result<
-        WorthQueryApplicationOutputEntity<Binding, Entity, Action>,
+        Role::Read<WorthQueryApplicationOutputEntity<Role::Binding, Role::Entity, Role::Action>>,
         WorthQueryApplicationOutputProjectionDenial,
     >
     where
-        Binding: 'static,
-        Entity: 'static,
-        Action: WorthQueryApplicationOutputAction,
+        Role: WorthQueryApplicationFixedOutputRole,
     {
-        if self.binding_type != Some(TypeId::of::<Binding>()) {
+        Role::read(self.bound_entity(&role)?)
+            .ok_or(WorthQueryApplicationOutputProjectionDenial::MissingRole)
+    }
+
+    /// The entity bound under `role`, or `None` when it is unbound, once the
+    /// binding, the declared cardinality, the posture, and the entity type
+    /// agree with the token.
+    #[allow(clippy::type_complexity)]
+    pub(in crate::domain_computation::primary_graph) fn bound_entity<Role>(
+        &self,
+        role: &Role,
+    ) -> Result<
+        Option<WorthQueryApplicationOutputEntity<Role::Binding, Role::Entity, Role::Action>>,
+        WorthQueryApplicationOutputProjectionDenial,
+    >
+    where
+        Role: WorthQueryApplicationFixedOutputRole,
+    {
+        if self.binding_type != Some(TypeId::of::<Role::Binding>()) {
             return Err(WorthQueryApplicationOutputProjectionDenial::ForeignBinding);
         }
-        let binding = self
-            .roles
-            .get(role.name())
-            .ok_or(WorthQueryApplicationOutputProjectionDenial::MissingRole)?;
-        if binding.posture != Action::POSTURE {
+        if self.optional_roles.contains(role.name()) != Role::CARDINALITY.admits_absence() {
+            return Err(WorthQueryApplicationOutputProjectionDenial::CardinalityMismatch);
+        }
+        let Some(binding) = self.roles.get(role.name()) else {
+            return Ok(None);
+        };
+        if binding.posture != <Role::Action as WorthQueryApplicationOutputAction>::POSTURE {
             return Err(WorthQueryApplicationOutputProjectionDenial::ActionMismatch);
         }
-        if binding.entity_type != TypeId::of::<Entity>() {
+        if binding.entity_type != TypeId::of::<Role::Entity>() {
             return Err(WorthQueryApplicationOutputProjectionDenial::EntityMismatch);
         }
-        Ok(WorthQueryApplicationOutputEntity {
+        Ok(Some(WorthQueryApplicationOutputEntity {
             entity_id: binding.entity,
             _marker: PhantomData,
-        })
+        }))
     }
 
     /// Projects every member matching one typed role-family prefix from this
@@ -350,8 +331,12 @@ impl<Binding, Entity, Action> WorthQueryApplicationOutputEntity<Binding, Entity,
 /// correspondence. Nothing is changed by the refusal.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationOutputProjectionDenial {
-    /// The commit bound no entity to the requested role.
+    /// The commit bound no entity to the requested exactly-one role.
     MissingRole,
+    /// The role token's cardinality differs from the one the binding declares:
+    /// an exactly-one token named an at-most-one role, or an at-most-one token
+    /// named a role the binding does not declare at-most-one.
+    CardinalityMismatch,
     /// The role belongs to a different mutation binding than the one that
     /// committed.
     ForeignBinding,

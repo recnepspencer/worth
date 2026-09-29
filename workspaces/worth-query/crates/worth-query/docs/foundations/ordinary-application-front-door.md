@@ -140,7 +140,12 @@ Fixed output roles declare how often a completed candidate binds them.
 `ApplicationMutationOutputRoleDescriptor::for_entity` is exactly once and
 `optional_for_entity` is at most once. An unbound exactly-one role is
 `MissingOutputRole`, any second binding is `DuplicateOutputRole`, and an unbound
-at-most-one role commits without that output.
+at-most-one role commits without that output. Handlers name an at-most-one role
+with `WorthQueryApplicationOptionalOutputRole`; reading it through
+`entity(role)`, `DecisionReader::prior_output` or generated-output
+reconstruction returns `Option`, so absence is a value rather than a denial. The
+exactly-one token keeps those reads total. A token whose cardinality differs
+from the declaration is refused as a cardinality mismatch.
 
 Regenerating handlers declare variable semantic roles through
 `ApplicationMutationOutputContract::ROLE_FAMILIES` and read a prior family with

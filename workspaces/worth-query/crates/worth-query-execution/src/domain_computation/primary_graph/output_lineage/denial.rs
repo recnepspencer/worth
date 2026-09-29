@@ -5,6 +5,9 @@ pub enum WorthQueryPriorOutputDenialKind {
     Unavailable,
     UndeclaredFamily,
     MissingRole,
+    /// The role token's cardinality differs from the one the prior binding
+    /// declares for that role.
+    CardinalityMismatch,
     ActionMismatch,
     EntityMismatch,
     OutputUnavailable,
@@ -44,6 +47,9 @@ impl WorthQueryPriorOutputDenial {
         let kind = match denial {
             WorthQueryApplicationOutputProjectionDenial::MissingRole => {
                 WorthQueryPriorOutputDenialKind::MissingRole
+            }
+            WorthQueryApplicationOutputProjectionDenial::CardinalityMismatch => {
+                WorthQueryPriorOutputDenialKind::CardinalityMismatch
             }
             WorthQueryApplicationOutputProjectionDenial::ForeignBinding => {
                 WorthQueryPriorOutputDenialKind::Unavailable

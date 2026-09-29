@@ -164,6 +164,18 @@ fn restored_final_output_keeps_original_create_producer_and_zero_contact() {
             WorthQueryPreserveOutput,
         >::from_static("anchor"))
         .is_err());
+    // Readmitted optional roles stay values: the bound closing vertex is
+    // present and the never-bound auxiliary role is absent, not missing.
+    assert!(settled
+        .output_correspondence()
+        .entity(final_closing_output::<CheckpointSchema>())
+        .expect("the readmitted closing role reads as a value")
+        .is_some());
+    assert!(settled
+        .output_correspondence()
+        .entity(final_auxiliary_output::<CheckpointSchema>())
+        .expect("the readmitted auxiliary role reads as a value")
+        .is_none());
 }
 
 fn assert_small_budget_denied_without_provider(

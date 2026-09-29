@@ -325,7 +325,7 @@ pub(in crate::domain_computation::primary_graph) fn retained_status_program(
         .complete_projected_dependencies()
         .unwrap()
         .begin_effect_program();
-    effects.prepare_output_role_for_test(RETAINED_ACCOUNT_OUTPUT, "Account");
+    effects.prepare_output_role_for_test(&RETAINED_ACCOUNT_OUTPUT, "Account");
     let account = effects.existing_entity(account).unwrap();
     effects
         .bind_output(RETAINED_ACCOUNT_OUTPUT, &account)

@@ -25,7 +25,7 @@ mod manifest;
 mod successor;
 
 use expected::{read, role, vertices};
-use manifest::{claim_entity, write_fields};
+use manifest::{claim_entity, require_optional_role_reads, write_fields};
 
 pub(super) fn typed_reconstruction_preserves_query_authority(
     application: &ProgramApplication,
@@ -354,6 +354,7 @@ fn complete(
     let mut reconstruction = application
         .reconstruct_generated_output::<PlanarFinalOutputProducer<ConsumerSchema>>(suspended)
         .unwrap_or_else(|_| panic!("the owning producer completes reconstruction"));
+    require_optional_role_reads(&mut reconstruction);
     let entities = vertices
         .iter()
         .enumerate()

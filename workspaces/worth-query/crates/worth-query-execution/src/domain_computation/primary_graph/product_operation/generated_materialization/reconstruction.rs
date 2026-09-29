@@ -18,7 +18,8 @@ use worth_relational::facade::{
 
 use super::WorthQuerySuspendedGeneratedOutput;
 use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationOutputRole, WorthQueryApplicationProducerBinding, WorthQueryCreateOutput,
+    WorthQueryApplicationFixedOutputRole, WorthQueryApplicationOutputProjectionDenial,
+    WorthQueryApplicationProducerBinding, WorthQueryCreateOutput,
     WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrimaryGraphLayout,
 };
 
@@ -207,23 +208,48 @@ where
         }
     }
 
-    pub fn entity<Entity>(
+    /// Claim the generated entity behind one created role. An exactly-one
+    /// token yields the entity; an at-most-one token yields `Option`, `None`
+    /// when the suspended output left the role unbound, claiming nothing.
+    #[allow(clippy::type_complexity)]
+    pub fn entity<Role>(
         &mut self,
-        role: WorthQueryApplicationOutputRole<Producer::Operation, Entity, WorthQueryCreateOutput>,
+        role: Role,
+        entity: ApplicationEntityRef<Schema, Role::Entity>,
+    ) -> Result<
+        Role::Read<WorthQueryGeneratedEntity<Schema, Role::Entity>>,
+        WorthQueryGeneratedOutputReconstructionDenial,
+    >
+    where
+        Role: WorthQueryApplicationFixedOutputRole<
+            Binding = Producer::Operation,
+            Action = WorthQueryCreateOutput,
+        >,
+    {
+        let bound = self
+            .suspended
+            .correspondence()
+            .bound_entity(&role)
+            .map_err(|denial| match denial {
+                WorthQueryApplicationOutputProjectionDenial::CardinalityMismatch => {
+                    WorthQueryGeneratedOutputReconstructionDenial::OutputRoleCardinalityMismatch
+                }
+                _ => WorthQueryGeneratedOutputReconstructionDenial::MissingOutputRole,
+            })?;
+        let claimed = bound
+            .map(|output| self.claim_entity(output.entity_id(), entity))
+            .transpose()?;
+        Role::read(claimed).ok_or(WorthQueryGeneratedOutputReconstructionDenial::MissingOutputRole)
+    }
+
+    fn claim_entity<Entity>(
+        &mut self,
+        identity: EntityId,
         entity: ApplicationEntityRef<Schema, Entity>,
     ) -> Result<
         WorthQueryGeneratedEntity<Schema, Entity>,
         WorthQueryGeneratedOutputReconstructionDenial,
-    >
-    where
-        Entity: 'static,
-    {
-        let identity = self
-            .suspended
-            .correspondence()
-            .entity(role)
-            .map_err(|_| WorthQueryGeneratedOutputReconstructionDenial::MissingOutputRole)?
-            .entity_id();
+    > {
         let expected = self
             .layout
             .entity_kind(entity.name())

@@ -9,10 +9,9 @@ use worth_relational::facade::storage::RecordLifecycleState;
 
 use super::*;
 use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationOutputAction, WorthQueryApplicationOutputCorrespondence,
-    WorthQueryApplicationOutputPosture, WorthQueryApplicationOutputRole,
-    WorthQueryApplicationOutputRoleFamily, WorthQueryPriorOutputDenial,
-    WorthQueryPriorOutputDenialKind,
+    WorthQueryApplicationFixedOutputRole, WorthQueryApplicationOutputCorrespondence,
+    WorthQueryApplicationOutputPosture, WorthQueryApplicationOutputRoleFamily,
+    WorthQueryPriorOutputDenial, WorthQueryPriorOutputDenialKind,
 };
 
 /// One currently visible member of a prior generated-output family.
@@ -46,14 +45,17 @@ impl<'reader, 'runtime, Schema, Operation>
 where
     Schema: ApplicationSchema,
 {
-    pub fn prior_output<Binding, Entity, Action>(
+    #[allow(clippy::type_complexity)]
+    pub fn prior_output<Role>(
         &mut self,
-        role: WorthQueryApplicationOutputRole<Binding, Entity, Action>,
-    ) -> Result<WorthQueryInvariantEntityIdentity<Schema, Entity>, WorthQueryPriorOutputDenial>
+        role: Role,
+    ) -> Result<
+        Role::Read<WorthQueryInvariantEntityIdentity<Schema, Role::Entity>>,
+        WorthQueryPriorOutputDenial,
+    >
     where
-        Binding: 'static,
-        Entity: ApplicationEntityMarkerIdentity<Schema> + OperationReads<Operation> + 'static,
-        Action: WorthQueryApplicationOutputAction,
+        Role: WorthQueryApplicationFixedOutputRole,
+        Role::Entity: ApplicationEntityMarkerIdentity<Schema> + OperationReads<Operation>,
     {
         let role_name = role.name().to_owned();
         self.prior_output_if_present(role)?.ok_or_else(|| {
@@ -65,32 +67,42 @@ where
     }
 
     /// A missing correspondence for this exact binding is absence, not a denial.
-    /// Missing scope or product context and invalid or stale correspondence remain denials.
-    pub fn prior_output_if_present<Binding, Entity, Action>(
+    /// Within a present correspondence, an unbound at-most-one role reads as
+    /// `None` and an unbound exactly-one role is refused. Missing scope or
+    /// product context and invalid or stale correspondence remain denials.
+    #[allow(clippy::type_complexity)]
+    pub fn prior_output_if_present<Role>(
         &mut self,
-        role: WorthQueryApplicationOutputRole<Binding, Entity, Action>,
+        role: Role,
     ) -> Result<
-        Option<WorthQueryInvariantEntityIdentity<Schema, Entity>>,
+        Option<Role::Read<WorthQueryInvariantEntityIdentity<Schema, Role::Entity>>>,
         WorthQueryPriorOutputDenial,
     >
     where
-        Binding: 'static,
-        Entity: ApplicationEntityMarkerIdentity<Schema> + OperationReads<Operation> + 'static,
-        Action: WorthQueryApplicationOutputAction,
+        Role: WorthQueryApplicationFixedOutputRole,
+        Role::Entity: ApplicationEntityMarkerIdentity<Schema> + OperationReads<Operation>,
     {
-        self.admit_prior_entity::<Entity>(role.name())?;
-        let Some(correspondence) = self.select_prior_correspondence::<Binding>(role.name())? else {
+        self.admit_prior_entity::<Role::Entity>(role.name())?;
+        let Some(correspondence) =
+            self.select_prior_correspondence::<Role::Binding>(role.name())?
+        else {
             return Ok(None);
         };
         self.require_role_budget(1, role.name())?;
         self.reader.work_budget.consume(1);
         self.reader.work.record_output_lineage_role_lookup();
-        let role_name = role.name().to_owned();
-        let output = correspondence
-            .entity(role)
-            .map_err(|denial| WorthQueryPriorOutputDenial::projection(&role_name, denial))?;
-        self.live_prior_identity::<Entity>(&role_name, output.entity_id())
-            .map(Some)
+        let bound = correspondence
+            .bound_entity(&role)
+            .map_err(|denial| WorthQueryPriorOutputDenial::projection(role.name(), denial))?;
+        let identity = bound
+            .map(|output| self.live_prior_identity::<Role::Entity>(role.name(), output.entity_id()))
+            .transpose()?;
+        Role::read(identity).map(Some).ok_or_else(|| {
+            WorthQueryPriorOutputDenial::new(
+                WorthQueryPriorOutputDenialKind::MissingRole,
+                role.name(),
+            )
+        })
     }
 
     /// Read every currently visible member of one declared generated-role family.

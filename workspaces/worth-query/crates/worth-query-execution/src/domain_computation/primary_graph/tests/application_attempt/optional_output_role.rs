@@ -1,6 +1,7 @@
 //! An at-most-one output role through the installed mutation handler lane:
-//! the handler may leave it unbound or bind it once, both commit, a second
-//! binding is refused, and an exactly-one role left unbound is still missing.
+//! the handler may leave it unbound or bind it once, both commit and read back
+//! as `None` and `Some`, a second binding or a binding through an exactly-one
+//! token is refused, and an exactly-one role left unbound is still missing.
 
 use super::{authenticated_principal, installed_authorization_world, live_scope, resolved_account};
 use crate::domain_computation::primary_graph::application_entry::mutation::{
@@ -8,8 +9,8 @@ use crate::domain_computation::primary_graph::application_entry::mutation::{
 };
 use crate::domain_computation::primary_graph::tests::fixture::{
     AuthorizationWorld, IdentityExecutionSchema, OptionalOutputInput,
-    OptionalOutputMutationBinding, OptionalOutputOperation, OptionalOutputPlan, COMPANION_OUTPUT,
-    SUBJECT_OUTPUT,
+    OptionalOutputMutationBinding, OptionalOutputOperation, OptionalOutputPlan,
+    COMPANION_AS_REQUIRED_OUTPUT, COMPANION_OUTPUT, SUBJECT_OUTPUT,
 };
 use crate::domain_computation::primary_graph::{
     MutationHandlerExecutionDenial, WorthQueryApplicationAttemptDenial,
@@ -25,9 +26,12 @@ fn an_unbound_at_most_one_role_commits_without_that_output() {
     let outputs = committed_outputs(OptionalOutputPlan::RequiredOnly);
 
     assert!(outputs.entity(SUBJECT_OUTPUT).is_ok());
-    assert_eq!(
-        outputs.entity(COMPANION_OUTPUT).err(),
-        Some(WorthQueryApplicationOutputProjectionDenial::MissingRole)
+    assert!(
+        outputs
+            .entity(COMPANION_OUTPUT)
+            .expect("an absent optional output is a value, not a denial")
+            .is_none(),
+        "the unbound optional role reads as None"
     );
     assert_eq!(
         outputs.workflow_content_identity(),
@@ -41,8 +45,11 @@ fn a_bound_at_most_one_role_commits_with_that_output() {
     let outputs = committed_outputs(OptionalOutputPlan::RequiredAndOptional);
 
     assert_eq!(
-        outputs.entity(COMPANION_OUTPUT).unwrap().entity_id(),
-        outputs.entity(SUBJECT_OUTPUT).unwrap().entity_id()
+        outputs
+            .entity(COMPANION_OUTPUT)
+            .unwrap()
+            .map(|companion| companion.entity_id()),
+        Some(outputs.entity(SUBJECT_OUTPUT).unwrap().entity_id())
     );
     assert_ne!(
         outputs.workflow_content_identity(),
@@ -65,6 +72,40 @@ fn a_second_binding_of_an_at_most_one_role_is_refused() {
     assert_eq!(
         denial.kind(),
         WorthQueryApplicationAttemptDenialKind::DuplicateOutputRole
+    );
+    assert_eq!(denial.subject(), "companion");
+}
+
+#[test]
+fn an_optional_role_read_through_an_exactly_one_token_is_refused() {
+    for plan in [
+        OptionalOutputPlan::RequiredOnly,
+        OptionalOutputPlan::RequiredAndOptional,
+    ] {
+        assert_eq!(
+            committed_outputs(plan)
+                .entity(COMPANION_AS_REQUIRED_OUTPUT)
+                .err(),
+            Some(WorthQueryApplicationOutputProjectionDenial::CardinalityMismatch),
+            "{plan:?}"
+        );
+    }
+}
+
+#[test]
+fn an_optional_role_bound_through_an_exactly_one_token_is_refused() {
+    let Err(MutationHandlerExecutionDenial::Handler(denial)) =
+        executed(OptionalOutputPlan::RequiredAndOptionalAsRequired)
+    else {
+        panic!("an at-most-one role bound through an exactly-one token must be refused");
+    };
+    let denial = denial
+        .downcast::<WorthQueryApplicationAttemptDenial>()
+        .expect("the refusal is the attempt's typed denial");
+
+    assert_eq!(
+        denial.kind(),
+        WorthQueryApplicationAttemptDenialKind::OutputRoleCardinalityMismatch
     );
     assert_eq!(denial.subject(), "companion");
 }

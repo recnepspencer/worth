@@ -139,7 +139,7 @@ mod operation_contracts;
 mod optional_output_binding;
 pub(super) use optional_output_binding::{
     OptionalOutputInput, OptionalOutputMutationBinding, OptionalOutputOperation,
-    OptionalOutputPlan, COMPANION_OUTPUT, SUBJECT_OUTPUT,
+    OptionalOutputPlan, COMPANION_AS_REQUIRED_OUTPUT, COMPANION_OUTPUT, SUBJECT_OUTPUT,
 };
 #[path = "fixture/program_required_binding.rs"]
 mod program_required_binding;

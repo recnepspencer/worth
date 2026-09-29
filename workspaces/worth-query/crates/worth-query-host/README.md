@@ -108,9 +108,24 @@ role has a typed `ApplicationMutationOutputRoleCardinality`:
 `ApplicationMutationOutputRoleDescriptor::for_entity` declares `ExactlyOne`, and
 `optional_for_entity` declares `AtMostOne`. A completed candidate that leaves an
 exactly-one role unbound is refused with `MissingOutputRole`. An at-most-one
-role left unbound commits without it, and `output_correspondence().entity(role)`
-then returns `MissingRole`. Binding any fixed role a second time is refused with
-`DuplicateOutputRole`. The cardinality is part of the schema's canonical identity
+role left unbound commits without it. Binding any fixed role a second time is
+refused with `DuplicateOutputRole`.
+
+The role token carries the same cardinality, and it decides the shape of every
+read. `WorthQueryApplicationOutputRole` names an exactly-one role, and its reads
+are total: `output_correspondence().entity(role)`, `DecisionReader::prior_output`
+and generated-output reconstruction's `entity` return the output itself.
+`WorthQueryApplicationOptionalOutputRole` names an at-most-one role, and the same
+calls return an `Option`: `None` when the commit left the role unbound, `Some`
+when it bound it. Absence is a value, never a denial. Both tokens implement the
+sealed `WorthQueryApplicationFixedOutputRole`, so the create, preserve and retire
+writers accept either. A token whose cardinality differs from the declaration is
+a contract violation: writing through it is refused with
+`OutputRoleCardinalityMismatch`, and reading through it returns
+`CardinalityMismatch` (`OutputRoleCardinalityMismatch` in reconstruction).
+Family members are exactly-one and take `WorthQueryApplicationOutputRole`.
+
+The cardinality is part of the schema's canonical identity
 and of its portable and archived descriptions, so changing it changes the
 installed schema. An optional single output is always an at-most-one role, never
 a family with a minimum of zero.

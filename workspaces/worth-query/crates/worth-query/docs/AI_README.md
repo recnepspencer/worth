@@ -454,9 +454,14 @@ Application usage:
 - Each fixed role in `Binding::Output::ROLES` carries an
   `ApplicationMutationOutputRoleCardinality`. `for_entity` declares
   `ExactlyOne`: leaving it unbound fails the candidate with `MissingOutputRole`.
-  `optional_for_entity` declares `AtMostOne`: the commit may omit it, and
-  `entity(role)` then returns `MissingRole`. A second binding of either is
-  `DuplicateOutputRole`. The cardinality is part of the canonical schema
+  `optional_for_entity` declares `AtMostOne`: the commit may omit it. A second
+  binding of either is `DuplicateOutputRole`. The role token matches the
+  declaration: `WorthQueryApplicationOutputRole` for exactly-one roles, whose
+  `entity(role)`, `prior_output` and reconstruction `entity` reads are total,
+  and `WorthQueryApplicationOptionalOutputRole` for at-most-one roles, whose
+  same reads return `Option`, `None` meaning the commit left the role unbound.
+  A token of the other cardinality is refused on write
+  (`OutputRoleCardinalityMismatch`) and on read (`CardinalityMismatch`). The cardinality is part of the canonical schema
   identity and the portable and archived descriptions. Declare an optional
   single output this way, never as a family with minimum zero.
 - `WorthQueryApplicationOutputRoleFamily<Binding, Entity>` names a family

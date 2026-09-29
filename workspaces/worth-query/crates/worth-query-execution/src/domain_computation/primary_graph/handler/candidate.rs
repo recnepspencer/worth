@@ -10,8 +10,8 @@ use worth_query_installation::facade::{
 
 use super::super::{
     WorthQueryApplicationEffectEntity, WorthQueryApplicationEffectProgramBuilder,
-    WorthQueryApplicationOutputRole, WorthQueryCreateOutput, WorthQueryInvariantMutationTarget,
-    WorthQueryPreserveOutput, WorthQueryRetireOutput,
+    WorthQueryApplicationFixedOutputRole, WorthQueryCreateOutput,
+    WorthQueryInvariantMutationTarget, WorthQueryPreserveOutput, WorthQueryRetireOutput,
 };
 use super::invariant::HandlerInterruption;
 
@@ -105,35 +105,44 @@ where
         self.candidate.unlink_observed(relation, from, to)
     }
 
-    pub fn preserve_output<Entity>(
+    pub fn preserve_output<Role>(
         &mut self,
-        role: WorthQueryApplicationOutputRole<Binding, Entity, WorthQueryPreserveOutput>,
-        target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
+        role: Role,
+        target: &WorthQueryApplicationEffectEntity<Schema, Role::Entity>,
     ) -> Result<(), super::super::WorthQueryApplicationAttemptDenial>
     where
-        Entity: 'static,
+        Role: WorthQueryApplicationFixedOutputRole<
+            Binding = Binding,
+            Action = WorthQueryPreserveOutput,
+        >,
     {
         self.candidate.bind_output(role, target)
     }
 
-    pub fn create_output<Entity>(
+    pub fn create_output<Role>(
         &mut self,
-        role: WorthQueryApplicationOutputRole<Binding, Entity, WorthQueryCreateOutput>,
-        target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
+        role: Role,
+        target: &WorthQueryApplicationEffectEntity<Schema, Role::Entity>,
     ) -> Result<(), super::super::WorthQueryApplicationAttemptDenial>
     where
-        Entity: 'static,
+        Role: WorthQueryApplicationFixedOutputRole<
+            Binding = Binding,
+            Action = WorthQueryCreateOutput,
+        >,
     {
         self.candidate.bind_output(role, target)
     }
 
-    pub fn retire_output<Entity>(
+    pub fn retire_output<Role>(
         &mut self,
-        role: WorthQueryApplicationOutputRole<Binding, Entity, WorthQueryRetireOutput>,
-        target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
+        role: Role,
+        target: &WorthQueryApplicationEffectEntity<Schema, Role::Entity>,
     ) -> Result<(), super::super::WorthQueryApplicationAttemptDenial>
     where
-        Entity: 'static,
+        Role: WorthQueryApplicationFixedOutputRole<
+            Binding = Binding,
+            Action = WorthQueryRetireOutput,
+        >,
     {
         self.candidate.bind_output(role, target)
     }

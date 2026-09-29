@@ -13,7 +13,8 @@ use worth_query_host::facade::application_contribution::{
 };
 use worth_query_host::facade::primary_graph::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
-    WorthQueryApplicationOutputRole, WorthQueryCreateOutput,
+    WorthQueryApplicationOptionalOutputRole, WorthQueryApplicationOutputRole,
+    WorthQueryCreateOutput,
 };
 use worth_query_host::facade::{application_contribution, domain};
 
@@ -44,14 +45,42 @@ pub struct FinalPlanarMutationBinding<Schema>(PhantomData<fn() -> Schema>);
 
 pub struct FinalPlanarOutputs;
 
+/// The vertex that closes the final ring. Declared at-most-one; every final
+/// output this fixture publishes binds it.
+pub const fn final_closing_output<Schema>() -> WorthQueryApplicationOptionalOutputRole<
+    FinalPlanarMutationBinding<Schema>,
+    Body,
+    WorthQueryCreateOutput,
+> {
+    WorthQueryApplicationOptionalOutputRole::from_static("closing")
+}
+
+/// A declared at-most-one role no final output binds.
+pub const fn final_auxiliary_output<Schema>() -> WorthQueryApplicationOptionalOutputRole<
+    FinalPlanarMutationBinding<Schema>,
+    Body,
+    WorthQueryCreateOutput,
+> {
+    WorthQueryApplicationOptionalOutputRole::from_static("auxiliary")
+}
+
 impl<Schema: TopologySchemaBinding> ApplicationMutationOutputContract<Schema>
     for FinalPlanarOutputs
 {
-    const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] =
-        &[ApplicationMutationOutputRoleDescriptor::for_entity::<
-            Schema,
-            Body,
-        >("anchor", ApplicationMutationOutputPosture::Create)];
+    const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] = &[
+        ApplicationMutationOutputRoleDescriptor::for_entity::<Schema, Body>(
+            "anchor",
+            ApplicationMutationOutputPosture::Create,
+        ),
+        ApplicationMutationOutputRoleDescriptor::optional_for_entity::<Schema, Body>(
+            "closing",
+            ApplicationMutationOutputPosture::Create,
+        ),
+        ApplicationMutationOutputRoleDescriptor::optional_for_entity::<Schema, Body>(
+            "auxiliary",
+            ApplicationMutationOutputPosture::Create,
+        ),
+    ];
     const ROLE_FAMILIES: &'static [ApplicationMutationOutputRoleFamilyDescriptor] =
         &[ApplicationMutationOutputRoleFamilyDescriptor::for_entity::<
             Schema,
@@ -227,16 +256,17 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, FinalPlanarMutation
         if let Err(error) = writer.create_output(role, entity) {
             return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error));
         }
-        for (key, entity) in keys.iter().zip(entities.iter()).skip(1) {
-            let role = WorthQueryApplicationOutputRole::<
-                FinalPlanarMutationBinding<Schema>,
-                Body,
-                WorthQueryCreateOutput,
-            >::try_new(format!("created.{key}"))
-            .expect("the created role family is declared");
-            if let Err(error) = writer.create_output(role, entity) {
-                return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error));
-            }
+        let role = WorthQueryApplicationOutputRole::<
+            FinalPlanarMutationBinding<Schema>,
+            Body,
+            WorthQueryCreateOutput,
+        >::try_new(format!("created.{}", keys[1]))
+        .expect("the created role family is declared");
+        if let Err(error) = writer.create_output(role, &entities[1]) {
+            return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error));
+        }
+        if let Err(error) = writer.create_output(final_closing_output::<Schema>(), &entities[2]) {
+            return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error));
         }
         HandlerResult::Completed(worth_query_consumer_values::PlanarAdjustmentResult {
             changed_vertices: 1,

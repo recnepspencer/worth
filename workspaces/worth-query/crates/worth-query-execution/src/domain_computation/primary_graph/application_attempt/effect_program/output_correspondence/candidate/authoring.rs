@@ -2,7 +2,7 @@ use super::*;
 use crate::domain_computation::primary_graph::application_attempt::effect_program::{
     retained_representation, WorthQueryApplicationEffectProgramBuilder,
 };
-use crate::domain_computation::primary_graph::WorthQueryApplicationOutputAction;
+use crate::domain_computation::primary_graph::WorthQueryApplicationFixedOutputRole;
 use worth_query_declaration::facade::{
     application_operation::ApplicationMutationBinding, application_schema::ApplicationSchema,
 };
@@ -11,24 +11,15 @@ impl<Schema, Operation, Input, Scope>
     WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, Scope>
 {
     #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn prepare_output_role_for_test<
-        Binding,
-        Entity,
-        Action,
-    >(
+    pub(in crate::domain_computation::primary_graph) fn prepare_output_role_for_test<Role>(
         &mut self,
-        role: WorthQueryApplicationOutputRole<Binding, Entity, Action>,
+        role: &Role,
         entity_name: &'static str,
     ) where
-        Binding: 'static,
-        Entity: 'static,
-        Action: WorthQueryApplicationOutputAction,
+        Role: WorthQueryApplicationFixedOutputRole,
     {
-        self.output_correspondence.prepare_test_role(
-            role,
-            entity_name,
-            worth_query_declaration::facade::application_operation::ApplicationMutationOutputRoleCardinality::ExactlyOne,
-        );
+        self.output_correspondence
+            .prepare_test_role(role, entity_name);
     }
 
     pub(in crate::domain_computation::primary_graph) fn prepare_output_contract<Binding>(
@@ -50,15 +41,13 @@ impl<Schema, Operation, Input, Scope>
         Ok(())
     }
 
-    pub(in crate::domain_computation::primary_graph) fn bind_output<Binding, Entity, Action>(
+    pub(in crate::domain_computation::primary_graph) fn bind_output<Role>(
         &mut self,
-        role: WorthQueryApplicationOutputRole<Binding, Entity, Action>,
-        target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
+        role: Role,
+        target: &WorthQueryApplicationEffectEntity<Schema, Role::Entity>,
     ) -> Result<(), WorthQueryApplicationAttemptDenial>
     where
-        Binding: 'static,
-        Entity: 'static,
-        Action: WorthQueryApplicationOutputAction,
+        Role: WorthQueryApplicationFixedOutputRole,
     {
         validate_role_name(role.name())?;
         let retained_representation_bytes =
