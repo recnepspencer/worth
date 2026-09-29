@@ -5,24 +5,19 @@ use worth_ui_dsl::{
     WorthUiIntentReadinessSourceSpec,
 };
 
-use super::{
-    UiIntentOperabilityDependencyAxis, UiResolvedIntentConditionSource,
-    UiResolvedIntentMutabilitySource, UiResolvedIntentOperabilityContract,
-    UiResolvedIntentPolicySource, UiResolvedIntentReadinessSource,
-};
+use crate::declaration::intent::{UiIntentSourcePlans, UiResolvedIntentExpressionSource};
 
-/// The prepared owners an operability contract resolves its sources against.
-pub(crate) struct UiIntentOperabilitySourcePlans<'plan> {
-    pub(crate) query: &'plan worth_ui_query_binding::WorthUiQueryBindingPlan,
-    pub(crate) application_facts: &'plan crate::declaration::UiIntentApplicationFactPlan,
-    pub(crate) expressions: &'plan crate::runtime::expression::UiExpressionCatalog,
-}
+use super::{
+    UiIntentOperabilityDependencyAxis, UiResolvedIntentMutabilitySource,
+    UiResolvedIntentOperabilityContract, UiResolvedIntentPolicySource,
+    UiResolvedIntentReadinessSource,
+};
 
 pub(crate) fn resolve_operability_contract(
     declaration: &str,
     spec: &worth_ui_dsl::WorthUiIntentOperabilityContractSpec,
     interaction: crate::capability::UiSemanticInteractionFamily,
-    plans: &UiIntentOperabilitySourcePlans<'_>,
+    plans: &UiIntentSourcePlans<'_>,
 ) -> Result<UiResolvedIntentOperabilityContract, crate::declaration::UiIntentCatalogPreparationDenial>
 {
     let mutability = resolve_mutability(declaration, spec.mutability(), interaction, plans)?;
@@ -58,7 +53,7 @@ fn resolve_mutability(
     declaration: &str,
     source: &WorthUiIntentMutabilitySourceSpec,
     interaction: crate::capability::UiSemanticInteractionFamily,
-    plans: &UiIntentOperabilitySourcePlans<'_>,
+    plans: &UiIntentSourcePlans<'_>,
 ) -> Result<UiResolvedIntentMutabilitySource, crate::declaration::UiIntentCatalogPreparationDenial>
 {
     let axis = UiIntentOperabilityDependencyAxis::Mutability;
@@ -94,7 +89,7 @@ fn resolve_readiness(
     declaration: &str,
     source: &WorthUiIntentReadinessSourceSpec,
     interaction: crate::capability::UiSemanticInteractionFamily,
-    plans: &UiIntentOperabilitySourcePlans<'_>,
+    plans: &UiIntentSourcePlans<'_>,
 ) -> Result<UiResolvedIntentReadinessSource, crate::declaration::UiIntentCatalogPreparationDenial> {
     let axis = UiIntentOperabilityDependencyAxis::Readiness;
     Ok(match source {
@@ -133,11 +128,10 @@ fn resolve_condition(
     axis: UiIntentOperabilityDependencyAxis,
     identity: &str,
     expressions: &crate::runtime::expression::UiExpressionCatalog,
-) -> Result<UiResolvedIntentConditionSource, crate::declaration::UiIntentCatalogPreparationDenial> {
-    let installed = expressions
-        .slot_of(identity)
-        .and_then(|slot| Some((slot, expressions.expression(slot)?)));
-    let Some((slot, expression)) = installed else {
+) -> Result<UiResolvedIntentExpressionSource, crate::declaration::UiIntentCatalogPreparationDenial>
+{
+    let Some((source, role)) = UiResolvedIntentExpressionSource::resolve(identity, expressions)
+    else {
         return Err(
             crate::declaration::UiIntentCatalogPreparationDenial::UnknownOperabilityCondition {
                 declaration: declaration.into(),
@@ -146,7 +140,7 @@ fn resolve_condition(
             },
         );
     };
-    if expression.role() != WorthUiExpressionRole::Condition {
+    if role != WorthUiExpressionRole::Condition {
         return Err(
             crate::declaration::UiIntentCatalogPreparationDenial::OperabilityConditionRoleMismatch {
                 declaration: declaration.into(),
@@ -155,10 +149,7 @@ fn resolve_condition(
             },
         );
     }
-    Ok(UiResolvedIntentConditionSource {
-        identity: identity.into(),
-        slot,
-    })
+    Ok(source)
 }
 
 fn resolve_boolean_fact(

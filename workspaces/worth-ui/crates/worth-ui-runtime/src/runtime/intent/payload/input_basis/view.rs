@@ -119,6 +119,7 @@ impl<'state> UiIntentInputBasisView<'state> {
             source: material.source,
             query_inputs: material.query_inputs,
             application_inputs: material.application_inputs,
+            expression_inputs: material.expression_inputs,
             owner_revisions: material.owner_revisions,
             route_resolution: material.route_resolution,
             cost: material.cost,

@@ -18,6 +18,17 @@ pub(crate) struct UiIntentAdmissionCurrentnessContext<'state> {
     pub(crate) command_contexts: Box<[crate::runtime::command_routing::UiCommandRoutingContext]>,
 }
 
+impl<'state> UiIntentAdmissionCurrentnessContext<'state> {
+    /// The owners a prepared payload read its inputs from, as they are now.
+    fn payload_input_owners(&self) -> super::super::payload::UiIntentInputOwners<'state> {
+        super::super::payload::UiIntentInputOwners {
+            mounted: self.mounted,
+            application_facts: self.application_facts,
+            expressions: self.expressions,
+        }
+    }
+}
+
 pub(crate) struct UiIntentAdmissionPreparationFailure {
     reason: UiIntentAdmissionStopReason,
     cost: UiIntentAdmissionCost,
@@ -211,11 +222,7 @@ fn validate_currentness(
             ));
         }
     }
-    if !payload.payload_inputs_are_current(
-        context.mounted,
-        context.application_facts,
-        context.generation,
-    ) {
+    if !payload.payload_inputs_are_current(context.payload_input_owners(), context.generation) {
         return Err((
             UiIntentCandidateCurrentnessViolation::PayloadInputChanged,
             8,

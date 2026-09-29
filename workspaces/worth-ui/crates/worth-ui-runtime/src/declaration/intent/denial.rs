@@ -95,6 +95,24 @@ pub enum UiIntentCatalogPreparationDenial {
         field_kind: crate::capability::UiIntentPayloadFieldKind,
         fact_kind: crate::capability::UiIntentPayloadFieldKind,
     },
+    /// A payload field reads an expression the prepared expression catalog
+    /// does not install.
+    UnknownPayloadExpression {
+        declaration: Box<str>,
+        field: Box<str>,
+        expression: Box<str>,
+    },
+    /// A payload field reads an expression whose role or result type the
+    /// field's kind cannot carry: a Boolean field reads only a condition, a
+    /// text field only a `derived text`, and no field a derived integer,
+    /// decimal or token.
+    PayloadExpressionKindMismatch {
+        declaration: Box<str>,
+        field: Box<str>,
+        expression: Box<str>,
+        field_kind: crate::capability::UiIntentPayloadFieldKind,
+        role: worth_ui_dsl::WorthUiExpressionRole,
+    },
     DuplicateInteractionPayloadSource {
         declaration: Box<str>,
         source: UiIntentInteractionPayloadSourceKind,

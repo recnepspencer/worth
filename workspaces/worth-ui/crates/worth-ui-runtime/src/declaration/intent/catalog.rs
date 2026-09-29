@@ -114,7 +114,7 @@ impl UiIntentCatalog {
         material: &crate::declaration::WorthUiAuthoredIntentMaterial,
         definitions: &crate::capability::FrozenIntentDefinitionCapabilities,
         graph: &crate::graph::UiGraphSnapshot,
-        sources: &super::UiIntentOperabilitySourcePlans<'_>,
+        sources: &super::UiIntentSourcePlans<'_>,
     ) -> Result<Self, UiIntentCatalogPreparationDenial> {
         preparation::prepare(material, definitions, graph, sources)
     }

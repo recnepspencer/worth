@@ -2,15 +2,30 @@
 //! expression must name one the package admitted, in the role the use site
 //! reads. An expression refused at admission already carries its own
 //! diagnostic, so its use sites add none.
+//!
+//! The package knows each expression's role and result type but not the
+//! field kinds of a payload schema, so a payload `derived` source is checked
+//! here only for being a payload value at all; whether its result type fits
+//! the field is the runtime intent catalog's check.
 
 use super::super::{WorthUiSemanticDeclaration, WorthUiSemanticPackageSealingState};
 use super::diagnostics::declaration_diagnostic;
 use crate::source::WorthUiDslCompileDiagnosticCode;
-use crate::WorthUiExpressionRole;
+use crate::{WorthUiExpressionResultType, WorthUiExpressionRole, WorthUiIntentPayloadSource};
+
+/// What a use site reads from the expression it names.
+#[derive(Clone, Copy)]
+enum UseSiteRead {
+    /// The one Boolean form: operability axes and Boolean payload fields.
+    Condition,
+    /// A derived value a payload field can carry: any result type but an
+    /// appearance token.
+    PayloadValue,
+}
 
 impl WorthUiSemanticPackageSealingState {
-    /// Checks every intent operability axis that reads a condition against
-    /// the admitted expression table.
+    /// Checks every intent operability axis and payload field that reads an
+    /// expression against the admitted expression table.
     pub(in super::super) fn validate_expression_use_sites(&mut self) {
         let mut found = Vec::new();
         for module in self.modules.values() {
@@ -21,20 +36,32 @@ impl WorthUiSemanticPackageSealingState {
                 let Some(intent) = artifact.declaration().intent_declaration() else {
                     continue;
                 };
+                let consumer = artifact.declaration().key().as_str();
                 let operability = intent.operability();
-                let uses = [
+                let axes = [
                     ("mutability", operability.mutability().condition_identity()),
                     ("readiness", operability.readiness().condition_identity()),
                     ("policy", operability.policy().condition_identity()),
-                ];
-                let consumer = artifact.declaration().key().as_str();
-                for (axis, condition) in uses {
-                    let Some(condition) = condition else {
-                        continue;
-                    };
-                    if let Some((code, message)) =
-                        self.condition_use_denial(consumer, axis, condition)
-                    {
+                ]
+                .into_iter()
+                .filter_map(|(axis, condition)| {
+                    let site = format!("intent `{consumer}` operability {axis}");
+                    Some((site, UseSiteRead::Condition, condition?))
+                });
+                let payload = intent.payload_sources().iter().filter_map(|source| {
+                    let site = format!("intent `{consumer}` payload field `{}`", source.field());
+                    match source.source() {
+                        WorthUiIntentPayloadSource::Derived { expression } => {
+                            Some((site, UseSiteRead::PayloadValue, &**expression))
+                        }
+                        WorthUiIntentPayloadSource::Condition { expression } => {
+                            Some((site, UseSiteRead::Condition, &**expression))
+                        }
+                        _ => None,
+                    }
+                });
+                for (site, read, identity) in axes.chain(payload) {
+                    if let Some((code, message)) = self.use_denial(&site, read, identity) {
                         let provenance = &self.provenance_table[artifact.provenance_ref().0];
                         found.push(declaration_diagnostic(code, message, provenance));
                     }
@@ -44,29 +71,45 @@ impl WorthUiSemanticPackageSealingState {
         self.diagnostics.append(&mut found);
     }
 
-    fn condition_use_denial(
+    fn use_denial(
         &self,
-        consumer: &str,
-        axis: &str,
-        condition: &str,
+        site: &str,
+        read: UseSiteRead,
+        identity: &str,
     ) -> Option<(WorthUiDslCompileDiagnosticCode, String)> {
-        match self.expressions.get(condition) {
-            Some(expression) => match expression.role() {
+        let mismatch = |detail: &str| {
+            Some((
+                WorthUiDslCompileDiagnosticCode::ExpressionUseSiteRoleMismatch,
+                format!("{site} reads `{identity}`, {detail}"),
+            ))
+        };
+        match (self.expressions.get(identity), read) {
+            (Some(expression), UseSiteRead::Condition) => match expression.role() {
                 WorthUiExpressionRole::Condition => None,
-                WorthUiExpressionRole::Derived(_) => Some((
-                    WorthUiDslCompileDiagnosticCode::ExpressionUseSiteRoleMismatch,
-                    format!(
-                        "intent `{consumer}` operability {axis} reads `{condition}`, which is a derived declaration, not a condition"
-                    ),
-                )),
+                WorthUiExpressionRole::Derived(_) => {
+                    mismatch("which is a derived declaration, not a condition")
+                }
             },
-            None if self.refused_expressions.contains(condition) => None,
-            None => Some((
-                WorthUiDslCompileDiagnosticCode::UnknownExpressionUseSite,
-                format!(
-                    "intent `{consumer}` operability {axis} reads condition `{condition}`, which is not declared"
+            (Some(expression), UseSiteRead::PayloadValue) => match expression.role() {
+                WorthUiExpressionRole::Derived(WorthUiExpressionResultType::Token) => {
+                    mismatch("a derived token, which no payload field carries")
+                }
+                WorthUiExpressionRole::Derived(_) => None,
+                WorthUiExpressionRole::Condition => mismatch(
+                    "which is a condition, not a derived value; a Boolean field reads it with `condition`",
                 ),
-            )),
+            },
+            (None, _) if self.refused_expressions.contains(identity) => None,
+            (None, read) => {
+                let noun = match read {
+                    UseSiteRead::Condition => "condition",
+                    UseSiteRead::PayloadValue => "derived value",
+                };
+                Some((
+                    WorthUiDslCompileDiagnosticCode::UnknownExpressionUseSite,
+                    format!("{site} reads {noun} `{identity}`, which is not declared"),
+                ))
+            }
         }
     }
 }

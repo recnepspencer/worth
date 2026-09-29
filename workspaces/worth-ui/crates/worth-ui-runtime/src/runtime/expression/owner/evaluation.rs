@@ -3,7 +3,6 @@ use std::sync::Arc;
 use worth_foundational::expression_api::{
     ExpressionConsumption, ExpressionCost, ExpressionInputs, ExpressionProfile, ExpressionValue,
 };
-use worth_ui_dsl::WorthUiExpressionRole;
 
 use super::operand_binding::{bind_operands, UiBoundOperands, UiExpressionInputs};
 use super::operand_currentness::operands_are_current;
@@ -137,7 +136,7 @@ fn run_kernel(
         .program()
         .evaluate(&inputs, &ExpressionProfile::interactive());
     let outcome = match evaluation.result() {
-        Ok(value) => role_outcome(installed.role(), value),
+        Ok(value) => UiExpressionOutcome::of_role(installed.role(), value),
         Err(denial) => {
             UiExpressionOutcome::Denied(UiExpressionDenialReason::Evaluation(denial.clone()))
         }
@@ -147,16 +146,6 @@ fn run_kernel(
         Some(evaluation.consumption().clone()),
         Some(*evaluation.cost()),
     )
-}
-
-fn role_outcome(role: WorthUiExpressionRole, value: &ExpressionValue) -> UiExpressionOutcome {
-    match role {
-        WorthUiExpressionRole::Condition => match value.as_bool() {
-            Some(condition) => UiExpressionOutcome::Condition(condition),
-            None => UiExpressionOutcome::Denied(UiExpressionDenialReason::RoleMismatch { role }),
-        },
-        WorthUiExpressionRole::Derived(_) => UiExpressionOutcome::Value(value.clone()),
-    }
 }
 
 /// Admits a completion into the retained records if it began in the active
@@ -252,10 +241,9 @@ fn carry_last_current(
 
 #[cfg(test)]
 mod tests {
-    use worth_foundational::expression_api::ExpressionValue;
     use worth_ui_dsl::WorthUiExpressionRole;
 
-    use super::{carry_last_current, role_outcome, UiExpressionDenialReason, UiExpressionOutcome};
+    use super::{carry_last_current, UiExpressionDenialReason, UiExpressionOutcome};
     use crate::runtime::expression::{UiExpressionCurrentValue, UiExpressionStaleReason};
 
     fn stale() -> UiExpressionOutcome {
@@ -319,32 +307,6 @@ mod tests {
                 Some(&UiExpressionOutcome::Condition(false))
             ),
             current
-        );
-    }
-
-    #[test]
-    fn a_condition_that_yields_a_non_boolean_is_a_role_mismatch_never_false() {
-        let outcome = role_outcome(
-            WorthUiExpressionRole::Condition,
-            &ExpressionValue::integer(1),
-        );
-
-        assert_eq!(
-            outcome,
-            UiExpressionOutcome::Denied(UiExpressionDenialReason::RoleMismatch {
-                role: WorthUiExpressionRole::Condition
-            })
-        );
-    }
-
-    #[test]
-    fn a_condition_that_yields_a_boolean_is_that_condition() {
-        assert_eq!(
-            role_outcome(
-                WorthUiExpressionRole::Condition,
-                &ExpressionValue::bool(false)
-            ),
-            UiExpressionOutcome::Condition(false)
         );
     }
 }

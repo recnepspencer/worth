@@ -31,6 +31,13 @@ pub(crate) enum UiResolvedIntentPayloadSource {
     ApplicationText(UiResolvedIntentApplicationSource),
     ApplicationBoolean(UiResolvedIntentApplicationSource),
     ApplicationUnsigned64(UiResolvedIntentApplicationSource),
+    /// A text field read from an admitted `derived text` declaration.
+    DerivedText(super::UiResolvedIntentExpressionSource),
+    /// An unsigned 64-bit field read from an admitted `derived integer`
+    /// declaration. The range is checked when the payload reads the value.
+    DerivedInteger(super::UiResolvedIntentExpressionSource),
+    /// A Boolean field read from an admitted condition.
+    Condition(super::UiResolvedIntentExpressionSource),
 }
 
 impl UiResolvedIntentPayloadBinding {

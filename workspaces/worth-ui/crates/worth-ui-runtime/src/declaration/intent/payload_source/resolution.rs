@@ -1,6 +1,6 @@
 use super::{
     UiResolvedIntentApplicationSource, UiResolvedIntentPayloadBinding,
-    UiResolvedIntentPayloadSource, UiResolvedIntentProjectionSource,
+    UiResolvedIntentPayloadSource,
 };
 use crate::capability::{
     UiIntentPayloadFieldDescriptor, UiIntentPayloadFieldKind, UiIntentPayloadFieldSet,
@@ -11,8 +11,7 @@ use std::sync::Arc;
 pub(crate) fn resolve_payload_sources(
     declaration: &crate::declaration::WorthUiAuthoredIntentDeclaration,
     fields: UiIntentPayloadFieldSet,
-    query: &worth_ui_query_binding::WorthUiQueryBindingPlan,
-    application_facts: &super::UiIntentApplicationFactPlan,
+    sources: &super::UiIntentSourcePlans<'_>,
 ) -> Result<Box<[UiResolvedIntentPayloadBinding]>, super::UiIntentCatalogPreparationDenial> {
     let mut authored = BTreeMap::new();
     for source in declaration.payload_sources() {
@@ -37,8 +36,7 @@ pub(crate) fn resolve_payload_sources(
             declaration,
             *field,
             source.source(),
-            query,
-            application_facts,
+            sources,
         )?);
     }
     if let Some((field, _)) = authored.into_iter().next() {
@@ -160,106 +158,92 @@ fn resolve_source(
     declaration: &crate::declaration::WorthUiAuthoredIntentDeclaration,
     field: UiIntentPayloadFieldDescriptor,
     authored: &worth_ui_dsl::WorthUiIntentPayloadSource,
-    query: &worth_ui_query_binding::WorthUiQueryBindingPlan,
-    application_facts: &super::UiIntentApplicationFactPlan,
+    sources: &super::UiIntentSourcePlans<'_>,
 ) -> Result<UiResolvedIntentPayloadBinding, super::UiIntentCatalogPreparationDenial> {
+    use super::projection_resolution::{resolve_collection_text, resolve_scalar_text};
     use worth_ui_dsl::WorthUiIntentPayloadSource as Source;
+    use UiIntentPayloadFieldKind as Kind;
+    use UiResolvedIntentPayloadSource as Resolved;
+    let application = |kind, fact: &str| {
+        require_kind(declaration, field, kind)?;
+        resolve_application_fact(declaration, field, fact, sources.application_facts)
+    };
     let source = match authored {
         Source::ProjectionText { projection } => {
-            require_kind(declaration, field, UiIntentPayloadFieldKind::Text)?;
-            let identity = projection_identity(declaration, field, projection)?;
-            let native_family = query
-                .scalar_projection_registration(&identity)
-                .map(|registration| registration.requirement().native_family())
-                .or_else(|| {
-                    query
-                        .application_scalar_projection_registration(&identity)
-                        .map(|registration| registration.requirement().native_family())
-                })
-                .ok_or_else(|| unknown_projection(declaration, field, projection, "scalar-text"))?;
-            if native_family != worth_ui_query_binding::UiProjectionNativeFamily::Text {
-                return Err(source_mismatch(declaration, field, "scalar-text"));
-            }
-            UiResolvedIntentPayloadSource::ProjectionText(resolve_projection_slot(
+            require_kind(declaration, field, Kind::Text)?;
+            Resolved::ProjectionText(resolve_scalar_text(
                 declaration,
                 field,
-                query,
-                identity,
+                projection,
+                sources.query,
             )?)
         }
         Source::ProjectionSelection { projection } => {
-            require_kind(declaration, field, UiIntentPayloadFieldKind::Selection)?;
-            let identity = projection_identity(declaration, field, projection)?;
-            let registration = query
-                .collection_projection_registration(&identity)
-                .ok_or_else(|| unknown_projection(declaration, field, projection, "collection"))?;
-            if registration.requirement().native_family()
-                != worth_ui_query_binding::UiProjectionNativeFamily::Text
-            {
-                return Err(source_mismatch(declaration, field, "collection-text"));
-            }
-            UiResolvedIntentPayloadSource::ProjectionSelection(resolve_projection_slot(
+            require_kind(declaration, field, Kind::Selection)?;
+            Resolved::ProjectionSelection(resolve_collection_text(
                 declaration,
                 field,
-                query,
-                identity,
+                projection,
+                sources.query,
             )?)
         }
         Source::CommittedDraft => {
-            require_kind(declaration, field, UiIntentPayloadFieldKind::Text)?;
-            UiResolvedIntentPayloadSource::CommittedDraft
+            require_kind(declaration, field, Kind::Text)?;
+            Resolved::CommittedDraft
         }
-        Source::ConstantText { value } => {
-            require_kind(declaration, field, UiIntentPayloadFieldKind::Text)?;
-            if value.len() > field.byte_budget() {
-                return Err(
-                    super::UiIntentCatalogPreparationDenial::PayloadConstantBudgetExceeded {
-                        declaration: declaration.identity().into(),
-                        field: field.stable_name().into(),
-                        observed: value.len(),
-                        maximum: field.byte_budget(),
-                    },
-                );
-            }
-            UiResolvedIntentPayloadSource::ConstantText(Arc::from(value.as_ref()))
-        }
+        Source::ConstantText { value } => resolve_constant_text(declaration, field, value)?,
         Source::ConstantBoolean { value } => {
-            require_kind(declaration, field, UiIntentPayloadFieldKind::Boolean)?;
-            UiResolvedIntentPayloadSource::ConstantBoolean(*value)
+            require_kind(declaration, field, Kind::Boolean)?;
+            Resolved::ConstantBoolean(*value)
         }
         Source::ConstantUnsigned64 { value } => {
-            require_kind(declaration, field, UiIntentPayloadFieldKind::Unsigned64)?;
-            UiResolvedIntentPayloadSource::ConstantUnsigned64(*value)
+            require_kind(declaration, field, Kind::Unsigned64)?;
+            Resolved::ConstantUnsigned64(*value)
         }
         Source::ApplicationText { fact } => {
-            require_kind(declaration, field, UiIntentPayloadFieldKind::Text)?;
-            UiResolvedIntentPayloadSource::ApplicationText(resolve_application_fact(
-                declaration,
-                field,
-                fact,
-                application_facts,
-            )?)
+            Resolved::ApplicationText(application(Kind::Text, fact)?)
         }
         Source::ApplicationBoolean { fact } => {
-            require_kind(declaration, field, UiIntentPayloadFieldKind::Boolean)?;
-            UiResolvedIntentPayloadSource::ApplicationBoolean(resolve_application_fact(
-                declaration,
-                field,
-                fact,
-                application_facts,
-            )?)
+            Resolved::ApplicationBoolean(application(Kind::Boolean, fact)?)
         }
         Source::ApplicationUnsigned64 { fact } => {
-            require_kind(declaration, field, UiIntentPayloadFieldKind::Unsigned64)?;
-            UiResolvedIntentPayloadSource::ApplicationUnsigned64(resolve_application_fact(
-                declaration,
-                field,
-                fact,
-                application_facts,
-            )?)
+            Resolved::ApplicationUnsigned64(application(Kind::Unsigned64, fact)?)
         }
+        Source::Derived { expression } => super::expression_resolution::resolve_derived(
+            declaration.identity(),
+            field,
+            expression,
+            sources.expressions,
+        )?,
+        Source::Condition { expression } => super::expression_resolution::resolve_condition(
+            declaration.identity(),
+            field,
+            expression,
+            sources.expressions,
+        )?,
     };
     Ok(UiResolvedIntentPayloadBinding { field, source })
+}
+
+fn resolve_constant_text(
+    declaration: &crate::declaration::WorthUiAuthoredIntentDeclaration,
+    field: UiIntentPayloadFieldDescriptor,
+    value: &str,
+) -> Result<UiResolvedIntentPayloadSource, super::UiIntentCatalogPreparationDenial> {
+    require_kind(declaration, field, UiIntentPayloadFieldKind::Text)?;
+    if value.len() > field.byte_budget() {
+        return Err(
+            super::UiIntentCatalogPreparationDenial::PayloadConstantBudgetExceeded {
+                declaration: declaration.identity().into(),
+                field: field.stable_name().into(),
+                observed: value.len(),
+                maximum: field.byte_budget(),
+            },
+        );
+    }
+    Ok(UiResolvedIntentPayloadSource::ConstantText(Arc::from(
+        value,
+    )))
 }
 
 fn resolve_application_fact(
@@ -308,62 +292,4 @@ fn require_kind(
         );
     }
     Ok(())
-}
-
-fn projection_identity(
-    declaration: &crate::declaration::WorthUiAuthoredIntentDeclaration,
-    field: UiIntentPayloadFieldDescriptor,
-    authored: &str,
-) -> Result<worth_ui_query_binding::WorthUiQueryViewIdentity, super::UiIntentCatalogPreparationDenial>
-{
-    worth_ui_query_binding::WorthUiQueryViewIdentity::new(authored).map_err(|_| {
-        super::UiIntentCatalogPreparationDenial::InvalidPayloadProjectionIdentity {
-            declaration: declaration.identity().into(),
-            field: field.stable_name().into(),
-            projection: authored.into(),
-        }
-    })
-}
-
-fn resolve_projection_slot(
-    declaration: &crate::declaration::WorthUiAuthoredIntentDeclaration,
-    field: UiIntentPayloadFieldDescriptor,
-    query: &worth_ui_query_binding::WorthUiQueryBindingPlan,
-    identity: worth_ui_query_binding::WorthUiQueryViewIdentity,
-) -> Result<UiResolvedIntentProjectionSource, super::UiIntentCatalogPreparationDenial> {
-    let slot = query.projection_input_slot(&identity).ok_or_else(|| {
-        unknown_projection(
-            declaration,
-            field,
-            identity.as_str(),
-            "registered-input-slot",
-        )
-    })?;
-    Ok(UiResolvedIntentProjectionSource { identity, slot })
-}
-
-fn unknown_projection(
-    declaration: &crate::declaration::WorthUiAuthoredIntentDeclaration,
-    field: UiIntentPayloadFieldDescriptor,
-    projection: &str,
-    required_shape: &'static str,
-) -> super::UiIntentCatalogPreparationDenial {
-    super::UiIntentCatalogPreparationDenial::UnknownPayloadProjection {
-        declaration: declaration.identity().into(),
-        field: field.stable_name().into(),
-        projection: projection.into(),
-        required_shape,
-    }
-}
-
-fn source_mismatch(
-    declaration: &crate::declaration::WorthUiAuthoredIntentDeclaration,
-    field: UiIntentPayloadFieldDescriptor,
-    required_source: &'static str,
-) -> super::UiIntentCatalogPreparationDenial {
-    super::UiIntentCatalogPreparationDenial::PayloadProjectionShapeMismatch {
-        declaration: declaration.identity().into(),
-        field: field.stable_name().into(),
-        required_source,
-    }
 }

@@ -24,7 +24,7 @@ pub(super) fn prepare(
     material: &crate::declaration::WorthUiAuthoredIntentMaterial,
     definitions: &FrozenIntentDefinitionCapabilities,
     graph: &crate::graph::UiGraphSnapshot,
-    sources: &super::super::UiIntentOperabilitySourcePlans<'_>,
+    sources: &super::super::UiIntentSourcePlans<'_>,
 ) -> Result<UiIntentCatalog, UiIntentCatalogPreparationDenial> {
     let (declarations, declaration_index) = resolve_declarations(material, definitions, sources)?;
     let routes =
@@ -75,7 +75,7 @@ pub(super) fn prepare(
 fn resolve_declarations(
     material: &crate::declaration::WorthUiAuthoredIntentMaterial,
     definitions: &FrozenIntentDefinitionCapabilities,
-    sources: &super::super::UiIntentOperabilitySourcePlans<'_>,
+    sources: &super::super::UiIntentSourcePlans<'_>,
 ) -> Result<
     (
         Vec<Arc<UiCanonicalIntentDeclaration>>,
@@ -123,8 +123,7 @@ fn resolve_declarations(
             super::super::resolve_payload_sources(
                 authored,
                 resolved.descriptor().payload_fields(),
-                sources.query,
-                sources.application_facts,
+                sources,
             )?,
             super::super::resolve_operability_contract(
                 authored.identity(),

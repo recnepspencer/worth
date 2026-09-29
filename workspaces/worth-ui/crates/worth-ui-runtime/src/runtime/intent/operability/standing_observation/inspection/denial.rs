@@ -29,7 +29,9 @@ pub(super) fn target(cause: &crate::runtime::intent::payload::UiIntentPayloadSto
         | Owner::ApplicationFactIdentityChanged { .. }
         | Owner::ApplicationFactGenerationChanged { .. }
         | Owner::ApplicationFactKindMismatch { .. }
-        | Owner::PayloadProjection(_) => Target::PayloadInputUnavailable,
+        | Owner::PayloadProjection(_)
+        | Owner::ExpressionWithheld { .. }
+        | Owner::DerivedIntegerOutOfRange { .. } => Target::PayloadInputUnavailable,
     }
 }
 
@@ -119,9 +121,9 @@ pub(super) const fn condition_axis(
 }
 
 pub(super) const fn condition_withholding(
-    withholding: crate::runtime::expression::UiExpressionConditionWithholding,
+    withholding: crate::runtime::expression::UiExpressionWithholding,
 ) -> worth_ui_inspection::UiPointerAffordanceInspectionConditionWithholding {
-    use crate::runtime::expression::UiExpressionConditionWithholding as Owner;
+    use crate::runtime::expression::UiExpressionWithholding as Owner;
     use worth_ui_inspection::UiPointerAffordanceInspectionConditionWithholding as Withholding;
     match withholding {
         Owner::Denied => Withholding::Denied,

@@ -1,5 +1,7 @@
-//! Application-fact and projection operability sources stay pull-only in 3a:
-//! only condition sources are pushed, through this index.
+//! Application-fact and projection operability sources, and every payload
+//! expression source, stay pull-only: a payload reads its expressions when it
+//! is prepared. Only operability condition sources are pushed, through this
+//! index.
 
 use std::collections::BTreeMap;
 
