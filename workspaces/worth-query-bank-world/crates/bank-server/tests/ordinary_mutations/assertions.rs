@@ -27,7 +27,8 @@ pub(super) fn assert_program_committed<Input>(
             BankSchema,
         >>::CANDIDATES
             .resources()
-            .maximum_validator_work();
+            .maximum_validator_work()
+            .expect("every Bank binding declares its validator work ceiling");
     let declared =
         u64::try_from(declared).expect("the binding ceiling should fit the work counter");
     assert!(
