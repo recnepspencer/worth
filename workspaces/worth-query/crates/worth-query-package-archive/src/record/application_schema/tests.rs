@@ -115,6 +115,43 @@ fn version_one_application_schema_member_tags_are_frozen() {
 }
 
 #[test]
+fn inbound_occurrence_round_trips_under_new_tag_without_changing_old_effect_tag() {
+    use std::num::NonZeroU64;
+    use worth_foundational::facade::{BoundaryProtocolIdentity, BoundaryProtocolVersion};
+    use worth_query_declaration::facade::application_schema::{
+        ApplicationInboundOccurrenceLimits, ApplicationInboundOccurrenceProtocol,
+    };
+
+    let one = NonZeroU64::new(1).unwrap();
+    let member = ApplicationSchemaMember::OperationInboundOccurrence {
+        operation: "notify".to_owned(),
+        effect: "death-notice".to_owned(),
+        protocol: ApplicationInboundOccurrenceProtocol::new(
+            BoundaryProtocolIdentity::new("bank.rail-completion"),
+            BoundaryProtocolVersion::new(1),
+        ),
+        source_identity: "bank-rail".to_owned(),
+        limits: ApplicationInboundOccurrenceLimits {
+            maximum_envelope_bytes: one,
+            maximum_payload_bytes: one,
+            maximum_outstanding_dispatch_provenance: one,
+            maximum_accepted_occurrences: one,
+            maximum_accepted_bytes: one,
+            maximum_concurrent_publications: one,
+            maximum_discovery_work: one,
+            replay_window_milliseconds: one,
+            maximum_cleanup_work: one,
+        },
+    };
+    assert_eq!(super::member::member_tag(&member), 29);
+    assert_eq!(decode_member(&encode_member(&member)), member);
+    assert_eq!(
+        super::member::member_tag(&fixture::complete_untrusted_schema_record().members()[16]),
+        17,
+    );
+}
+
+#[test]
 fn tag_four_relation_bytes_retain_self_edge_meaning_and_reencode_exactly() {
     let member = ApplicationSchemaMember::Relation {
         relation: "Peer".to_owned(),

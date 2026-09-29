@@ -266,6 +266,20 @@ available at a user node without a credential field; that process supplies its
 own authenticated session. Linear undo/redo routes remain provisional
 Milestone 9.18 experiments rather than a Bank Phase 5 product contract.
 
+The estate `notify-death` response establishes the authorized dispatch commit;
+rail completion arrives later through Bank's private signed callback route.
+Clients do not submit callback bytes or interpret a rail transport ACK as a
+completed estate operation. Bank acknowledges callback custody only after
+Query authenticates and correlates the exact original dispatch. Its signed
+postures are `AcceptedPending`, `AlreadyAccepted`, `Performed`, and
+`AlreadyCompleted`; unavailable or revoked recovery receives no signed ACK.
+The rail retains immutable signed bytes through bounded retry and reports
+exhausted obligations for reconciliation. HTTPS installation requires pinned
+Bank TLS trust plus a distinct pinned Bank ACK key. Both rail delivery and
+Query accepted custody are process-local in this phase; orderly rail close
+reports unresolved obligations, while forced process death has no persistence
+promise.
+
 Bank Phase 5 is closed. The Docker-backed Authentik courtroom executed the
 complete separate-process failure matrix through the production Bank server and
 independent user-node binaries; its evidence is recorded in

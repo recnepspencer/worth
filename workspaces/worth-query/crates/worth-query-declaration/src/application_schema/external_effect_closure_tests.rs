@@ -49,6 +49,45 @@ fn external_effect_rejects_a_zero_wire_bound() {
     );
 }
 
+#[test]
+fn inbound_occurrence_requires_the_exact_outbound_effect() {
+    use std::num::NonZeroU64;
+    let mut members = closed_members();
+    let one = NonZeroU64::new(1).unwrap();
+    let inbound = ApplicationSchemaMember::OperationInboundOccurrence {
+        operation: "Operation".to_owned(),
+        effect: "ExternalEffect".to_owned(),
+        protocol: super::ApplicationInboundOccurrenceProtocol::new(
+            BoundaryProtocolIdentity::new("test.inbound"),
+            BoundaryProtocolVersion::new(1),
+        ),
+        source_identity: "rail".to_owned(),
+        limits: super::ApplicationInboundOccurrenceLimits {
+            maximum_envelope_bytes: one,
+            maximum_payload_bytes: one,
+            maximum_outstanding_dispatch_provenance: one,
+            maximum_accepted_occurrences: one,
+            maximum_accepted_bytes: one,
+            maximum_concurrent_publications: one,
+            maximum_discovery_work: one,
+            replay_window_milliseconds: one,
+            maximum_cleanup_work: one,
+        },
+    };
+    members.push(inbound);
+    assert_eq!(validate_member_closure(&members), Ok(()));
+    let ApplicationSchemaMember::OperationInboundOccurrence { effect, .. } =
+        members.last_mut().unwrap()
+    else {
+        unreachable!()
+    };
+    *effect = "AnotherEffect".to_owned();
+    assert_eq!(
+        validate_member_closure(&members),
+        Err(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency)
+    );
+}
+
 fn closed_members() -> Vec<ApplicationSchemaMember> {
     vec![
         ApplicationSchemaMember::Operation {

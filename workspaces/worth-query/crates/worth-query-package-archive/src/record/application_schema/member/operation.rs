@@ -1,6 +1,7 @@
 use worth_foundational::facade::{BoundaryProtocolIdentity, BoundaryProtocolVersion};
 use worth_query_declaration::facade::application_schema::{
-    ApplicationExternalEffectProtocol, ApplicationMutationPreconditionFamily,
+    ApplicationExternalEffectProtocol, ApplicationInboundOccurrenceLimits,
+    ApplicationInboundOccurrenceProtocol, ApplicationMutationPreconditionFamily,
     ApplicationMutationPreconditionTarget, ApplicationOperationDecisionReadTarget,
     ApplicationOperationProgramTarget, ApplicationSchemaMember,
     WorthQueryExternalEffectCorrelationFamily,
@@ -80,6 +81,28 @@ pub(super) fn write(
             output.text(operation)?;
             aftermath::write(output, contract)
         }
+        ApplicationSchemaMember::OperationInboundOccurrence {
+            operation,
+            effect,
+            protocol,
+            source_identity,
+            limits,
+        } => {
+            output.text(operation)?;
+            output.text(effect)?;
+            output.text(protocol.identity().as_str())?;
+            output.u32(protocol.version().get())?;
+            output.text(source_identity)?;
+            output.u64(limits.maximum_envelope_bytes.get())?;
+            output.u64(limits.maximum_payload_bytes.get())?;
+            output.u64(limits.maximum_outstanding_dispatch_provenance.get())?;
+            output.u64(limits.maximum_accepted_occurrences.get())?;
+            output.u64(limits.maximum_accepted_bytes.get())?;
+            output.u64(limits.maximum_concurrent_publications.get())?;
+            output.u64(limits.maximum_discovery_work.get())?;
+            output.u64(limits.replay_window_milliseconds.get())?;
+            output.u64(limits.maximum_cleanup_work.get())
+        }
         _ => unreachable!("operation member dispatch is exhaustive"),
     }
 }
@@ -135,8 +158,43 @@ pub(super) fn decode(
             operation,
             contract: aftermath::decode(input, budget)?,
         },
+        29 => ApplicationSchemaMember::OperationInboundOccurrence {
+            operation,
+            effect: input.text()?.to_owned(),
+            protocol: ApplicationInboundOccurrenceProtocol::new(
+                BoundaryProtocolIdentity::parse(input.text()?.to_owned())
+                    .map_err(|_| Denial::new(Kind::InvalidRecordShape))?,
+                BoundaryProtocolVersion::try_new(input.u32()?)
+                    .map_err(|_| Denial::new(Kind::InvalidRecordShape))?,
+            ),
+            source_identity: input.text()?.to_owned(),
+            limits: decode_inbound_limits(input)?,
+        },
         _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
     })
+}
+
+fn decode_inbound_limits(
+    input: &mut BinaryInput<'_>,
+) -> Result<ApplicationInboundOccurrenceLimits, Denial> {
+    let mut nonzero = || {
+        std::num::NonZeroU64::new(input.u64()?).ok_or_else(|| Denial::new(Kind::InvalidRecordShape))
+    };
+    let limits = ApplicationInboundOccurrenceLimits {
+        maximum_envelope_bytes: nonzero()?,
+        maximum_payload_bytes: nonzero()?,
+        maximum_outstanding_dispatch_provenance: nonzero()?,
+        maximum_accepted_occurrences: nonzero()?,
+        maximum_accepted_bytes: nonzero()?,
+        maximum_concurrent_publications: nonzero()?,
+        maximum_discovery_work: nonzero()?,
+        replay_window_milliseconds: nonzero()?,
+        maximum_cleanup_work: nonzero()?,
+    };
+    limits
+        .accommodates_payload()
+        .then_some(limits)
+        .ok_or_else(|| Denial::new(Kind::InvalidRecordShape))
 }
 
 fn write_program_target(

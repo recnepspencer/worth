@@ -14,6 +14,7 @@ axum.workspace = true
 bank-domain.workspace = true
 bank-external-rail.workspace = true
 bank-server.workspace = true
+ed25519-dalek.workspace = true
 openidconnect.workspace = true
 rand.workspace = true
 serde.workspace = true
@@ -23,6 +24,7 @@ tokio.workspace = true
 tokio-stream.workspace = true
 url.workspace = true
 worth-query-host.workspace = true
+worth-foundational.workspace = true
 
 [dev-dependencies]
 bank-server = { workspace = true, features = ["test-controls"] }

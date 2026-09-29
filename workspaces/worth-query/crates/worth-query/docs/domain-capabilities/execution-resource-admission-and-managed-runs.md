@@ -49,6 +49,40 @@ Managed execution:
 
 Convergence enters through `worth_query_host::facade::convergence_epoch`.
 
+Inbound external completion uses a separate installed resource profile on the
+operation's source contract. `maximum_outstanding_dispatch_provenance` reserves
+the committed outbox relationship before an effectful commit, including the
+gap before World publication. `maximum_accepted_occurrences` and
+`maximum_accepted_bytes` govern verified but still retained completions;
+`maximum_concurrent_publications` bounds their World attempts. Envelope and
+payload byte limits, replay window, discovery work, and cleanup work are finite
+at installation. Exhaustion denies new admission before taking custody; it
+does not evict pending or unpublished evidence.
+
+An outbound physical attempt holds a move-only claim on its original finite
+outbox reservation. If a callback seals the terminal while that attempt is
+still in flight, the reservation stays charged. A real `Completed` observation
+transfers the claim into bounded transport recovery custody until an exact
+World terminal or matching callback winner is confirmed. No capacity check
+after the remote effect may discard that observation.
+
+After World performs a completion, the owner keeps exact terminal history and
+a compact lookup entry. Host-requested cleanup can reclaim an accepted payload
+slot only after signed expiry, original dispatch handoff, and delivery
+settlement. The exact lookup checks its retained World protection and sealed
+Relational pairing under the declared cleanup work limit. A lost derived terminal index is repaired with
+an explicit bounded history pass; ordinary requests fail closed while that
+proof is incomplete. Runtime close must expose unresolved obligations, and a
+forced process exit does not preserve this process-local custody.
+
+The Bank rail installation owns one serial cue-driven maintenance task. Each batch uses
+fresh request controls and the installed verifier handle, examines at most the
+declared discovery work, rotates past blocked entries, and reclaims only
+terminal entries that satisfy the declared cleanup bound. Orderly server
+shutdown waits for the current batch; this task continues already accepted
+custody after the source envelope expires without opening a raw correlation
+selector to callers.
+
 ## Core Mental Model
 
 ### Ordinary work-limit ownership

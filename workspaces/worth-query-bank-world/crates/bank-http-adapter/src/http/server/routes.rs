@@ -19,6 +19,7 @@ use super::elevation_executor::BankHttpElevationExecutor;
 use super::elevation_routes::{
     approve_elevation, complete_review, request_elevation, revoke_elevation,
 };
+use super::inbound_completion::{rail_completion, BankRailCompletionRoute};
 use super::live_executor::BankHttpLiveExecutor;
 use super::live_routes::account_activity_stream;
 use super::mutation_routes::mutate;
@@ -34,6 +35,9 @@ pub(super) struct BankHttpRouteState {
     pub(super) continuations: BankHttpContinuationExecutor,
     pub(super) recovery: BankHttpRecoveryExecutor,
     pub(super) elevation: BankHttpElevationExecutor,
+    pub(super) rail: Option<std::sync::Arc<dyn BankRailCompletionRoute>>,
+    pub(super) rail_slots: std::sync::Arc<tokio::sync::Semaphore>,
+    pub(super) rail_maintenance_wake: std::sync::Arc<tokio::sync::Notify>,
     pub(super) maximum_deadline: Duration,
 }
 
@@ -44,6 +48,9 @@ impl BankHttpRouteState {
         continuations: BankHttpContinuationExecutor,
         recovery: BankHttpRecoveryExecutor,
         elevation: BankHttpElevationExecutor,
+        rail: Option<std::sync::Arc<dyn BankRailCompletionRoute>>,
+        rail_slots: std::sync::Arc<tokio::sync::Semaphore>,
+        rail_maintenance_wake: std::sync::Arc<tokio::sync::Notify>,
         maximum_deadline: Duration,
     ) -> Self {
         Self {
@@ -52,6 +59,9 @@ impl BankHttpRouteState {
             continuations,
             recovery,
             elevation,
+            rail,
+            rail_slots,
+            rail_maintenance_wake,
             maximum_deadline,
         }
     }
@@ -77,6 +87,7 @@ pub(super) fn router(state: BankHttpRouteState, maximum_body_bytes: usize) -> Ro
         .route("/v1/estate/elevation/revoke", post(revoke_elevation))
         .route("/v1/estate/elevation/review", post(complete_review))
         .route("/v1/estate/notify-death", post(notify_death))
+        .route("/v1/inbound/rail-completions", post(rail_completion))
         .route("/v1/recovery/inspect", post(inspect_recovery))
         .route("/v1/recovery/safe-retry", post(safe_retry))
         .layer(DefaultBodyLimit::max(maximum_body_bytes))

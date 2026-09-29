@@ -56,5 +56,5 @@ pub use http::{
     BankHttpRecoveryRequest, BankHttpRecoveryRetryDisposition, BankHttpRecoverySafeRetryOutcome,
     BankHttpRecoveryStatus, BankHttpRecoveryWork, BankHttpRequestControls,
     BankHttpRestrictedBankField, BankHttpServer, BankHttpServerBinding,
-    BankHttpServerConfiguration,
+    BankHttpServerConfiguration, BankRailCompletionServerInstallation,
 };

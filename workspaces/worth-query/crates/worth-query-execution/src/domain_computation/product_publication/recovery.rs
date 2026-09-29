@@ -7,6 +7,7 @@ use super::WorthQueryProductUnpublishedApplication;
 
 /// Exact access to one World-owned partial record. Holding this handle keeps no
 /// strong effects view live and cannot authorize a committed application.
+#[derive(Clone)]
 pub struct WorthQueryProductUnpublishedRecovery {
     handle: ProductUnpublishedRecoveryHandle,
     recovery: RuntimeWorldRecoveryPort,

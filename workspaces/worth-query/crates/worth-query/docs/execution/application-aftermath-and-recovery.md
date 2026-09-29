@@ -75,6 +75,59 @@ The executable does not manufacture an owner failure to enter those arms.
 The `provisional_aftermath` facade contains the current undo/redo experiment.
 It is not part of the stable feature described here.
 
+## Authenticated Inbound Completion
+
+An operation with an external dispatch can declare one inbound source, protocol,
+version, and finite receiver limits. The host installs a verifier for that exact
+operation. Incoming bytes cannot select a different verifier or completion
+target. The public host entry is
+`worth_query_host::facade::application_entry::WorthQueryApplicationInboundOccurrencesExt`:
+
+```rust,ignore
+let receipt = application.inbound_occurrences()
+    .receive(&installed_source, bounded_envelope, &scope)
+    .execute();
+```
+
+Query first verifies the signed envelope against the installed source and clock,
+then matches its correlation to one committed dispatch on the original product
+incarnation. It retains accepted evidence before attempting the completion
+publication. Only a World `Performed` publication establishes terminal truth.
+An installed transport's immediate `Completed` observation enters this same
+World path with its original committed operation and physical attempt proof.
+It is recorded as transport provenance, never as a fabricated signed message.
+If a callback and that observation race, the incarnation lane admits one
+terminal publication; the later matching source message returns
+`AlreadyCompleted`.
+`ProductUnpublished` keeps exact recovery custody; a retry must settle or clean
+that attempt before another publication. `NoEffect` and denied publications do
+not earn a custody acknowledgement.
+
+The receipt distinguishes `AcceptedPending`, `AlreadyAccepted`, `Performed`,
+and `AlreadyCompleted`. A duplicate with the same authenticated message meaning
+does no new work. A fresh message identity for an already completed effect is
+compared with the original effect meaning and returns `AlreadyCompleted` without
+republishing. Reusing a message identity with altered signed meaning, or changing
+the correlated effect, is denied. Bank signs its transport ACK only from a Query
+receipt; HTTP receipt of bytes alone does not discharge the rail sender.
+
+Accepted evidence has finite count and byte limits. Pending and unpublished
+work cannot be evicted by age or request cancellation. After the signed replay
+cutoff and explicit delivery settlement, bounded host cleanup can release the
+accepted payload slot. The compact terminal index remains available for ordinary
+exact lookup, with its authoritative performed publication retained in World
+history. Index repair is a separate bounded operation and returns unavailable
+while proof is incomplete. This custody guarantee is process-local; forced
+process death has no recovery promise.
+
+The installed host wakes bounded custodian maintenance for retained work,
+explicit owner continuation, and the next terminal expiry after callbacks stop. It
+selects already accepted pending work internally, so an expired signature is
+never reauthenticated to continue its exact World recovery. A blocked item
+does not prevent later entries from being considered. The route-bound terminal
+observation on the Bank server handle is a privileged host diagnostic; it is
+not an authenticated operator inspection endpoint.
+
 ## Core Mental Model
 
 There are four independent owners:

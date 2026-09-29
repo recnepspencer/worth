@@ -69,6 +69,8 @@ pub(super) fn release_reservation(
         .entries
         .remove(identity)
         .is_some_and(|slot| slot.get().is_none()));
+    assert!(state.inspection_order.remove(identity));
+    state.publication_revision.advance();
     lock_index(&state.reachability).release_reservation(identity);
     state.metadata.release_reservation(&reservation);
     lock_counters(&state.counters).record_metadata_release();
@@ -132,6 +134,8 @@ pub(super) fn remove_installed(
         .entries
         .remove(identity)
         .expect("prevalidated candidate remains installed during reclamation");
+    assert!(state.inspection_order.remove(identity));
+    state.publication_revision.advance();
     let installed = entry.get().expect("prevalidated installed slot");
     let parent = installed.commit().parent().clone();
     {

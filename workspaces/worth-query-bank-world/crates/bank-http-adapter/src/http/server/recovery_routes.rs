@@ -8,9 +8,9 @@ use bank_domain::model::BankPrincipalId;
 use bank_domain::proposals::BankIdempotencyKey;
 
 use super::super::protocol::{
-    BankHttpDenial, BankHttpDenialKind, BankHttpEstateNotificationOutcome,
-    BankHttpEstateNotificationRequest, BankHttpNextAction, BankHttpRecoveryInspectionOutcome,
-    BankHttpRecoveryRequest, BankHttpRecoverySafeRetryOutcome,
+    BankHttpCommitDisposition, BankHttpDenial, BankHttpDenialKind,
+    BankHttpEstateNotificationOutcome, BankHttpEstateNotificationRequest, BankHttpNextAction,
+    BankHttpRecoveryInspectionOutcome, BankHttpRecoveryRequest, BankHttpRecoverySafeRetryOutcome,
 };
 use super::recovery_executor::{
     AdmittedBankHttpNotificationRequest, AdmittedBankHttpRecoveryRequest,
@@ -31,7 +31,14 @@ pub(super) async fn notify_death(
         Ok(admitted) => admitted,
         Err(outcome) => return notification_response(outcome),
     };
-    notification_response(state.recovery.notify(admitted).await)
+    let outcome = state.recovery.notify(admitted).await;
+    if matches!(&outcome, BankHttpEstateNotificationOutcome::Applied {
+        disposition: BankHttpCommitDisposition::Committed, commit, ..
+    } if commit.emitted_effect_count > 0)
+    {
+        state.rail_maintenance_wake.notify_one();
+    }
+    notification_response(outcome)
 }
 
 pub(super) async fn inspect(
@@ -65,7 +72,11 @@ pub(super) async fn safe_retry(
             return safe_retry_response(safe_retry_denied(request_id, denial));
         }
     };
-    safe_retry_response(state.recovery.safe_retry(admitted).await)
+    let outcome = state.recovery.safe_retry(admitted).await;
+    // A safe retry is an explicit owner continuation that may settle retained
+    // transport custody even when its HTTP result is only a recovery posture.
+    state.rail_maintenance_wake.notify_one();
+    safe_retry_response(outcome)
 }
 
 fn admit_notification(

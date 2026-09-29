@@ -22,6 +22,15 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
             input_type: definition.input_type,
         });
         if let Some(external_effect) = definition.external_effect {
+            if let Some(inbound) = external_effect.inbound {
+                self.push_member_in_place(ApplicationSchemaMember::OperationInboundOccurrence {
+                    operation: operation.clone(),
+                    effect: external_effect.effect.clone(),
+                    protocol: inbound.protocol,
+                    source_identity: inbound.source_identity,
+                    limits: inbound.limits,
+                });
+            }
             self.push_member_in_place(ApplicationSchemaMember::OperationExternalEffect {
                 operation: operation.clone(),
                 effect: external_effect.effect,

@@ -65,6 +65,66 @@ Requests and active streams have separate concurrency ceilings. Deadlines
 cover node-to-server connection, headers, JSON bodies, and the full SSE
 lifetime. Capacity is reserved before a recovery-producing domain effect.
 
+## Rail Completion Callback
+
+`NotifyDeath` commits one external dispatch before the separate rail can
+complete its consequence. The rail sends a signed v1 completion to the Bank
+server's private `POST /v1/inbound/rail-completions` route. The route installs
+one rail Ed25519 verification key, audience, source (`rail-primary`), and key
+epoch. Callback bytes cannot select another verifier or operation. Bank checks
+the signature and exact original dispatch through Query before signing a
+custody ACK with a separate Bank key.
+
+The signed ACK binds its posture to the rail message ID and SHA-256 of the
+complete signed callback body. `AcceptedPending` means Query retained accepted
+evidence, including exact World recovery if effects are unpublished.
+`AlreadyAccepted` repeats that custody result. `Performed` and
+`AlreadyCompleted` report World terminal truth. Bank currently sends no signed
+permanent denial. A retry-before-acceptance, revocation, capacity refusal,
+publication failure, or HTTP error returns no signed custody ACK. The rail
+resends the same signed bytes with bounded attempts and backoff; exhaustion
+keeps an observable unresolved sender obligation for reconciliation.
+
+The installed Bank server runs one serial, bounded maintenance task for Query
+custody. It wakes when accepted work is retained, on explicit host continuation
+after an external recovery change, or at the next terminal expiry; it does not
+poll an idle inbox. It continues an already accepted completion after the
+sender's signed envelope expires and awaits its current batch on orderly
+shutdown. Its
+`observe_rail_completion` method is a route-bound host diagnostic on the
+server handle; there is no raw-correlation HTTP inspection route. An immediate
+rail `Completed` response also enters Query's World completion path with
+transport provenance, and the later signed callback receives
+`AlreadyCompleted` for the same effect.
+
+For HTTPS deployment, install one PEM Bank TLS trust certificate and the
+separate Bank ACK verification key in the rail sender configuration. Reqwest
+uses only that installed root and does not follow redirects. Loopback HTTP is
+allowed for the process courtroom with `None` as the final argument:
+
+```rust,ignore
+let delivery = RailCompletionDeliveryConfiguration::new(
+    "https://bank.example/v1/inbound/rail-completions".to_owned(),
+    "bank-prod".to_owned(),
+    "rail-primary".to_owned(),
+    1,
+    rail_signing_seed,
+    bank_ack_verifying_key,
+    60,
+    128,
+    8,
+    Duration::from_millis(100),
+    Duration::from_secs(5),
+    Some(bank_tls_root_pem),
+)?;
+```
+
+`RailProcessHandle::close()` stops new rail contacts and returns
+`RailCompletionDeliveryPosture { reserved, pending, exhausted }` after the
+child prints `CLOSING` and exits. Pending includes exhausted obligations.
+Dropping the handle forces termination and gives no delivery survival promise;
+the sender and Query custody in this phase are process-local.
+
 ## Small Example
 
 After browser authorization, query the participant's own account through their

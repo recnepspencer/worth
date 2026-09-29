@@ -29,4 +29,8 @@ pub(in crate::domain_computation::primary_graph) use registry::WorthQueryConditi
 pub(in crate::domain_computation::primary_graph) use operation_cell::WorthQueryConditionalOperationCell;
 
 #[cfg(test)]
+mod test_whole_graph_route;
+#[cfg(test)]
 mod tests;
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) use test_whole_graph_route::install_test_whole_graph_route;

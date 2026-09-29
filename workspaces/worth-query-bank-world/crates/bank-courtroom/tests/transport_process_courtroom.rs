@@ -1,3 +1,5 @@
+#![recursion_limit = "512"]
+
 #[path = "transport_process_courtroom/credential_lifecycle.rs"]
 mod credential_lifecycle;
 #[path = "transport_process_courtroom/effect_observation.rs"]
@@ -10,6 +12,8 @@ mod identity_world;
 mod live;
 #[path = "transport_process_courtroom/process.rs"]
 mod process;
+#[path = "transport_process_courtroom/rail_completion.rs"]
+mod rail_completion;
 #[path = "transport_process_courtroom/recovery.rs"]
 mod recovery;
 #[path = "transport_process_courtroom/world.rs"]

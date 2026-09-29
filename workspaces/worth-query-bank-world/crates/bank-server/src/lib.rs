@@ -18,6 +18,7 @@ mod estate_progression;
 mod external_effect_transport;
 mod graph_bootstrap;
 mod identity_runtime;
+mod inbound_completion;
 mod mutation_handlers;
 mod operation_admission;
 mod operation_commit;
@@ -94,6 +95,9 @@ pub use estate_progression::{
 };
 pub use external_effect_transport::BankExternalEffectTransportDenial;
 pub use identity_runtime::{BankAuthenticationConfiguration, BankIdentityRuntime};
+pub use inbound_completion::{
+    BankEstateRailCompletionInstallationDenial, BankEstateRailCompletionRoute,
+};
 pub use operation_commit::{
     BankApplicationAttemptDenialKind, BankCommitCanonicalWorkEvidence,
     BankCommitCanonicalWorkPhases, BankCommitDenialKind, BankCommitDenialStage,

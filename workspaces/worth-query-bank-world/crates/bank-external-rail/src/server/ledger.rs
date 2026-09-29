@@ -25,6 +25,7 @@ pub enum RailAdmission {
 pub struct RailReservation {
     correlation: RailCorrelation,
     effect: RailDomainEffect,
+    payload: RailEffectPayload,
 }
 
 impl RailReservation {
@@ -34,6 +35,10 @@ impl RailReservation {
 
     pub fn effect(&self) -> &RailDomainEffect {
         &self.effect
+    }
+
+    pub fn payload(&self) -> &RailEffectPayload {
+        &self.payload
     }
 }
 
@@ -102,6 +107,7 @@ impl Ledger {
                 RailAdmission::Reserved(RailReservation {
                     correlation: correlation.clone(),
                     effect,
+                    payload: payload.clone(),
                 })
             }
         }
@@ -115,6 +121,15 @@ impl Ledger {
         assert_eq!(&record.effect, reservation.effect());
         assert_eq!(record.status, LedgerStatus::Acknowledged);
         record.status = LedgerStatus::Completed;
+    }
+
+    /// A completion admission that cannot retain its sender obligation has
+    /// no physical consequence and cannot remain replayable as success.
+    pub fn record_denied(&self, reservation: &RailReservation) {
+        let mut records = self.lock();
+        if records.remove(reservation.correlation()).is_some() {
+            self.admissions.fetch_sub(1, Ordering::SeqCst);
+        }
     }
 
     pub fn status_of(&self, correlation: &RailCorrelation) -> LedgerStatus {

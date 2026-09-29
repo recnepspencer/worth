@@ -21,6 +21,8 @@ mod close_report;
 mod product_cas_loss;
 #[path = "owner_tests/publication.rs"]
 mod publication;
+#[path = "owner_tests/publication_inspection.rs"]
+mod publication_inspection;
 #[path = "owner_tests/recovery_metadata_budget.rs"]
 mod recovery_metadata_budget;
 

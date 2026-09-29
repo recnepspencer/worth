@@ -7,10 +7,10 @@ use crate::application_aftermath::{
 use super::super::capabilities::OperationEmits;
 use super::super::{
     ApplicationEffectMarkerIdentity, ApplicationEffectRef, ApplicationExternalEffectBinding,
-    ApplicationOperationRef, ApplicationStructuredValueBinding,
-    WorthQueryExternalEffectCorrelationFamily,
+    ApplicationInboundOccurrenceBinding, ApplicationOperationRef,
+    ApplicationStructuredValueBinding, WorthQueryExternalEffectCorrelationFamily,
 };
-use super::contract_slots::DeclaredExternalEffectSlot;
+use super::contract_slots::{DeclaredExternalEffectSlot, DeclaredInboundOccurrenceSlot};
 use super::definition::ApplicationOperationDefinition;
 
 /// Typestate authoring for one operation's singleton static contracts.
@@ -96,6 +96,40 @@ impl<Schema, Operation, Input, const AFTERMATH_DECIDED: bool>
                 protocol: Effect::PayloadBinding::PROTOCOL,
                 maximum_payload_bytes: Effect::PayloadBinding::MAX_EXTERNAL_BYTES,
                 correlation_family,
+                inbound: None,
+            }),
+            aftermath: self.aftermath,
+            marker: PhantomData,
+        }
+    }
+
+    /// Selects one outbound effect and its exact installed inbound completion
+    /// meaning. The binding's effect marker must be the selected effect.
+    pub fn external_effect_with_inbound<Effect, Payload>(
+        self,
+        effect: ApplicationEffectRef<Schema, Effect, Payload>,
+        correlation_family: WorthQueryExternalEffectCorrelationFamily,
+        inbound: ApplicationInboundOccurrenceBinding<Effect>,
+    ) -> ApplicationOperationDefinitionBuilder<Schema, Operation, Input, true, AFTERMATH_DECIDED>
+    where
+        Effect: ApplicationEffectMarkerIdentity<Schema> + OperationEmits<Operation>,
+        Effect::PayloadBinding: ApplicationExternalEffectBinding<Value = Payload>,
+    {
+        let (protocol, source_identity, limits) = inbound.into_parts();
+        ApplicationOperationDefinitionBuilder {
+            operation: self.operation,
+            input_type: self.input_type,
+            external_effect: Some(DeclaredExternalEffectSlot {
+                effect: effect.name().to_string(),
+                rust_payload_type: Effect::PayloadBinding::IDENTITY,
+                protocol: Effect::PayloadBinding::PROTOCOL,
+                maximum_payload_bytes: Effect::PayloadBinding::MAX_EXTERNAL_BYTES,
+                correlation_family,
+                inbound: Some(DeclaredInboundOccurrenceSlot {
+                    protocol,
+                    source_identity,
+                    limits,
+                }),
             }),
             aftermath: self.aftermath,
             marker: PhantomData,

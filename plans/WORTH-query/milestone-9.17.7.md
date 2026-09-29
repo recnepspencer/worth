@@ -1,6 +1,7 @@
 # Milestone 9.17.7: Inbound Occurrences And External Effect Completion
 
-> **Status:** Not started. Design grounded in current Query, World, Bank and
+> **Status:** Phase 1 static Bank completion is certified; workflow consumption
+> and resource/public closure remain. Design grounded in current Query, World, Bank and
 > Proprietary boundaries on 2026-09-29. [9.17.4](./milestone-9.17.4.md) and
 > [9.17.6](./milestone-9.17.6.md) supply publication delivery and workflow custody;
 > they do not yet supply inbound completion. New names and call shapes below
@@ -295,9 +296,16 @@ cannot release sender custody. Shutdown exposes outstanding delivery. Test contr
 may delay/reorder the real sender but cannot mint completion through a special route.
 
 Finite installed configuration bounds envelope/payload bytes, verifier work,
-accepted count/bytes, concurrent publication, discovery page/work, sender attempts/
+outstanding dispatch provenance before any callback, accepted count/bytes,
+concurrent publication, discovery page/work, sender attempts/
 deadline, replay window and cleanup work. The compiled example supplies a small
 complete profile; all are admission ceilings, not advisory metrics.
+
+Reserve outstanding provenance capacity before an effectful commit and carry it
+through unpublished World custody. The original commit-basis lease stays with the
+external-effect owner until settlement leaves enough canonical terminal provenance
+for duplicate and recovery lookup. Accepted-occurrence limits begin later and
+cannot authorize FIFO eviction of an unconfirmed dispatch.
 
 - Reserve mandatory evidence until settlement or explicit owner-admitted retirement.
   Request deadlines and optional payload age do not expire pending custody.

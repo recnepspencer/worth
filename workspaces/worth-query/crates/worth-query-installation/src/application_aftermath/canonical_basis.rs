@@ -148,6 +148,7 @@ fn push_external_effect(
             rust_payload_type,
             protocol,
             maximum_payload_bytes,
+            inbound,
         } => {
             builder.text("external-effect", "declared");
             builder.text("external-correlation", correlation_family.as_str());
@@ -159,6 +160,55 @@ fn push_external_effect(
                 u64::from(protocol.version().get()),
             );
             builder.u64("external-maximum-payload-bytes", *maximum_payload_bytes);
+            if let Some(inbound) = inbound {
+                builder.text("inbound-effect", inbound.effect());
+                builder.text(
+                    "inbound-protocol-identity",
+                    inbound.protocol().identity().as_str(),
+                );
+                builder.u64(
+                    "inbound-protocol-version",
+                    u64::from(inbound.protocol().version().get()),
+                );
+                builder.text("inbound-source-identity", inbound.source_identity());
+                let limits = inbound.limits();
+                builder.u64(
+                    "inbound-maximum-envelope-bytes",
+                    limits.maximum_envelope_bytes.get(),
+                );
+                builder.u64(
+                    "inbound-maximum-payload-bytes",
+                    limits.maximum_payload_bytes.get(),
+                );
+                builder.u64(
+                    "inbound-maximum-outstanding-dispatch-provenance",
+                    limits.maximum_outstanding_dispatch_provenance.get(),
+                );
+                builder.u64(
+                    "inbound-maximum-accepted-occurrences",
+                    limits.maximum_accepted_occurrences.get(),
+                );
+                builder.u64(
+                    "inbound-maximum-accepted-bytes",
+                    limits.maximum_accepted_bytes.get(),
+                );
+                builder.u64(
+                    "inbound-maximum-concurrent-publications",
+                    limits.maximum_concurrent_publications.get(),
+                );
+                builder.u64(
+                    "inbound-maximum-discovery-work",
+                    limits.maximum_discovery_work.get(),
+                );
+                builder.u64(
+                    "inbound-replay-window-milliseconds",
+                    limits.replay_window_milliseconds.get(),
+                );
+                builder.u64(
+                    "inbound-maximum-cleanup-work",
+                    limits.maximum_cleanup_work.get(),
+                );
+            }
         }
     }
 }

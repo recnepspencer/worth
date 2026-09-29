@@ -227,10 +227,11 @@ fn publish_with_snapshot(
     if provider.take_panicked_pending_application_publication() {
         panic!("injected unwind after performed World publication reached terminal cutover");
     }
-    let attempt = pending
+    let mut attempt = pending
         .attempt
         .take()
         .expect("pending application publication retains causality until final cutover");
+    let outstanding = attempt.take_outstanding_dispatch_reservation();
     let causality = attempt.publish_causality(provider, committed_product_publication);
     assert_eq!(
         causality.emitted_effect_count(),
@@ -247,7 +248,18 @@ fn publish_with_snapshot(
                 .receipt_basis_lease
                 .take()
                 .expect("publication cutover retains its exact receipt basis"),
+            outstanding.is_some(),
         );
+    if let Some(outstanding) = outstanding {
+        outstanding.commit(
+            commit_id,
+            pending
+                .application
+                .as_ref()
+                .expect("performed World publication remains in pending evidence")
+                .committed_product_publication(),
+        );
+    }
     pending.release_before(runtime);
     let completed = pending
         .application

@@ -2,7 +2,7 @@
 //! request, then the rail closes it.
 
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 use std::time::Duration;
 
 use tokio::io::AsyncWriteExt;
@@ -16,6 +16,7 @@ use crate::protocol::wire::{read_frame, write_frame, FrameRead};
 use crate::test_control::{FaultScript, FaultSelection};
 
 use super::completed_effects::CompletedEffects;
+use super::completion_delivery::{CompletionDelivery, DeliveryReservation};
 use super::fault_behavior;
 use super::ledger::Ledger;
 use super::ledger::RailAdmission;
@@ -32,6 +33,7 @@ pub(super) struct RailDispatchState {
     completed_effects: Arc<CompletedEffects>,
     fault_selection: Arc<FaultSelection>,
     protocol_support: RailProtocolSupportProfile,
+    completion_delivery: OnceLock<Arc<CompletionDelivery>>,
 }
 
 impl RailDispatchState {
@@ -45,7 +47,19 @@ impl RailDispatchState {
             completed_effects: Arc::new(CompletedEffects::default()),
             fault_selection,
             protocol_support,
+            completion_delivery: OnceLock::new(),
         }
+    }
+
+    pub(super) fn install_completion_delivery(
+        &self,
+        delivery: Arc<CompletionDelivery>,
+    ) -> Result<(), ()> {
+        self.completion_delivery.set(delivery).map_err(|_| ())
+    }
+
+    pub(super) fn completion_delivery(&self) -> Option<&Arc<CompletionDelivery>> {
+        self.completion_delivery.get()
     }
 
     fn owners(&self) -> DispatchOwners<'_> {
@@ -112,6 +126,18 @@ pub async fn handle_connection(mut stream: TcpStream, state: Arc<RailDispatchSta
             )
             .await
         }
+        RailRequest::InquireCompletionDeliveryPosture => {
+            write_frame(
+                &mut stream,
+                &RailResponseFrame::CompletionDeliveryPosture(
+                    state
+                        .completion_delivery()
+                        .map(|delivery| delivery.posture())
+                        .unwrap_or_default(),
+                ),
+            )
+            .await
+        }
     };
 
     let _ = stream.shutdown().await;
@@ -135,12 +161,44 @@ async fn serve_dispatch(
         Err(rejection) => return fault_behavior::reject(stream, rejection).await,
     };
     let reserve_new = fault_script != FaultScript::DisappearMidDispatch;
+    if let Some(sender) = state.completion_delivery() {
+        if !sender.admits_envelope(correlation, &dispatch.payload) {
+            return fault_behavior::reject(
+                stream,
+                crate::protocol::notice::RailRejection::CompletionEnvelopeInvalid,
+            )
+            .await;
+        }
+    }
+    let mut delivery =
+        if reserve_new && owners.ledger.status_of(correlation) == LedgerStatus::NoRecord {
+            match state.completion_delivery() {
+                Some(sender) => match sender.reserve() {
+                    Ok(Some(reservation)) => Some(reservation),
+                    Ok(None) => return fault_behavior::reject(
+                        stream,
+                        crate::protocol::notice::RailRejection::CompletionDeliveryCapacityExhausted,
+                    )
+                    .await,
+                    Err(_) => {
+                        return fault_behavior::reject(
+                            stream,
+                            crate::protocol::notice::RailRejection::CompletionClockUnavailable,
+                        )
+                        .await
+                    }
+                },
+                None => None,
+            }
+        } else {
+            None
+        };
     match owners
         .ledger
         .admit(correlation, &dispatch.payload, effect, reserve_new)
     {
         RailAdmission::Reserved(reservation) => {
-            apply_fault_script(stream, reservation, fault_script, owners).await
+            apply_fault_script(stream, reservation, fault_script, owners, delivery.take()).await
         }
         RailAdmission::Replay(status) => replay_status(stream, status).await,
         RailAdmission::MeaningDrift => {
@@ -159,14 +217,20 @@ async fn apply_fault_script(
     reservation: super::ledger::RailReservation,
     fault_script: FaultScript,
     owners: DispatchOwners<'_>,
+    delivery: Option<DeliveryReservation>,
 ) -> std::io::Result<()> {
     match fault_script {
         FaultScript::Succeed => {
-            fault_behavior::succeed(stream, reservation, owners.completion()).await
+            fault_behavior::succeed(stream, reservation, owners.completion(), delivery).await
         }
         FaultScript::CommitThenLoseResponse => {
-            fault_behavior::commit_then_lose_response(reservation, owners.completion()).await;
-            Ok(())
+            fault_behavior::commit_then_lose_response(
+                stream,
+                reservation,
+                owners.completion(),
+                delivery,
+            )
+            .await
         }
         FaultScript::AcknowledgeWithoutCompleting => {
             fault_behavior::acknowledge_without_completing(stream, reservation).await
@@ -176,6 +240,7 @@ async fn apply_fault_script(
                 stream,
                 reservation,
                 owners.completion(),
+                delivery,
                 Duration::from_millis(delay_millis),
             )
             .await

@@ -35,6 +35,7 @@ pub(crate) fn operation_external_effect(
             rust_payload_type: rust_payload_type.clone(),
             protocol: protocol.clone(),
             maximum_payload_bytes: *maximum_payload_bytes,
+            inbound: None,
         });
     }
     Ok(resolved.unwrap_or(InstalledExternalEffectContract::None))

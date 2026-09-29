@@ -94,6 +94,10 @@ impl From<QueryDenial> for BankCommittedDispatchOutboxReadDenial {
         match denial {
             QueryDenial::ForeignRuntime => Self::ForeignRuntime,
             QueryDenial::Missing => Self::Missing,
+            QueryDenial::AmbiguousCorrelation => Self::NotAuthoritative,
+            QueryDenial::PendingPublication | QueryDenial::CommittedIndexUnavailable => {
+                Self::ExactCommitUnavailable
+            }
             QueryDenial::WrongRecordKind => Self::WrongRecordKind,
             QueryDenial::NotAuthoritative => Self::NotAuthoritative,
             QueryDenial::ExactCommitUnavailable => Self::ExactCommitUnavailable,

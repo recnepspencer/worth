@@ -103,6 +103,7 @@ fn contract(effect: &str) -> InstalledExternalEffectContract {
         rust_payload_type: <ExternalPayload as worth_query_declaration::facade::portable_identity::WorthQueryPortableType>::PORTABLE_TYPE_IDENTITY,
         protocol: EXTERNAL_PROTOCOL,
         maximum_payload_bytes: ExternalPayloadBinding::MAX_EXTERNAL_BYTES,
+        inbound: None,
     }
 }
 

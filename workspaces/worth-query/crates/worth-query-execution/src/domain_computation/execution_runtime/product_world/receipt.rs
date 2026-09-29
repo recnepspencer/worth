@@ -134,6 +134,22 @@ impl WorthQueryProductPublicationReceipt {
         ))
     }
 
+    /// Called only after the owner hands the performed Relational commit to
+    /// its installed conditional journal. It discharges the one-shot direct
+    /// witness without creating a witness to be dropped.
+    pub(crate) fn settle_fresh_delivery_after_owner_handoff(&self) -> bool {
+        let mut available = self
+            .custody
+            .fresh_delivery_available
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if !*available {
+            return false;
+        }
+        *available = false;
+        true
+    }
+
     pub(crate) fn take_live_successor_observation(
         &self,
     ) -> Option<worth_runtime_world::facade::ProductBranchObservation> {

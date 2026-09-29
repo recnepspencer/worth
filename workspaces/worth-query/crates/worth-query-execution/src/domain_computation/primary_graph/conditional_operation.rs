@@ -51,6 +51,8 @@ pub use installation::{
     WorthQueryConditionalRuntimeInstallationDenial,
     WorthQueryConditionalRuntimeInstallationDenialKind,
 };
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) use lifecycle::install_test_whole_graph_route;
 pub(in crate::domain_computation::primary_graph) use lifecycle::WorthQueryConditionalOperationRegistry;
 pub use lifecycle_inventory::WorthQueryConditionalRuntimeLifecycleProbe;
 pub use operation_invocation::{

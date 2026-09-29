@@ -91,7 +91,7 @@ pub(super) fn retain_commit_basis(
         .receipt_basis_retention
         .lock()
         .unwrap_or_else(|poisoned| poisoned.into_inner())
-        .retain(committed.commit.commit_id, retention);
+        .retain(committed.commit.commit_id, retention, false);
 }
 
 pub(super) fn record_for(identity: u64) -> WorthQueryDispatchOutboxRecord {
@@ -125,6 +125,7 @@ pub(super) fn record_for(identity: u64) -> WorthQueryDispatchOutboxRecord {
                 BoundaryProtocolVersion::new(1),
             ),
             maximum_payload_bytes: 24,
+            inbound: None,
         },
         vec![identity as u8; 8],
         identity,

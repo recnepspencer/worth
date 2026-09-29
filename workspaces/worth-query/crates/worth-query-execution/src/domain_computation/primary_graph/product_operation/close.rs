@@ -18,6 +18,8 @@ pub enum WorthQueryApplicationProductBranchCloseDenial {
     /// The application's pending publication on the branch could not be
     /// settled first. The close did not begin.
     ApplicationSettlementPending,
+    /// An inbound-capable dispatch still owns completion/recovery custody.
+    OutstandingExternalEffect,
     /// The product runtime refused to begin the close. Nothing was closed.
     Product(WorthQueryProductBranchCloseDenial),
     /// The close began and the branch's retention was released, but owner
@@ -43,6 +45,13 @@ impl<Schema: ApplicationSchema> WorthQueryProductEntry<'_, Schema> {
             .map_err(|_| {
                 WorthQueryApplicationProductBranchCloseDenial::ApplicationSettlementPending
             })?;
+        if self
+            .application
+            .primary_provider
+            .has_outstanding_dispatch_for_branch(occurrence)
+        {
+            return Err(WorthQueryApplicationProductBranchCloseDenial::OutstandingExternalEffect);
+        }
         let pending = self
             .application
             .product_runtime
