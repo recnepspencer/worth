@@ -16,6 +16,7 @@ use crate::authorization::{
 };
 
 use super::super::{
+    approved_payment_inbound_binding,
     decision_read_manifest::install_payment_decision_reads,
     entities::*,
     fields::*,
@@ -234,10 +235,11 @@ fn approved_payment_operation(
 ) -> ApplicationOperationDefinition<BankSchema, ApprovePaymentOperation, ApprovePayment> {
     ApprovePaymentOperation::reference()
         .definition()
-        .external_effect(
+        .external_effect_with_inbound(
             ApprovedPaymentSettlementEffect::reference(),
             WorthQueryExternalEffectCorrelationFamily::new(APPROVED_PAYMENT_SETTLEMENT_RAIL)
                 .expect("the approved-payment settlement rail is an atomic identity"),
+            approved_payment_inbound_binding(),
         )
         .aftermath(
             DeclaredApplicationAftermathContract::runtime_with_external_owner(

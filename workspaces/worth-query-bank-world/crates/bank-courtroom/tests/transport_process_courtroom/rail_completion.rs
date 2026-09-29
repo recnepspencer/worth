@@ -28,16 +28,16 @@ use super::world::{
 };
 
 #[path = "rail_completion/proxy.rs"]
-mod proxy;
+pub(crate) mod proxy;
 use proxy::{correlation_token, CallbackProxy};
 
 const TIMEOUT: Duration = Duration::from_secs(5);
-const AUDIENCE: &str = "bank-process-court";
-const RAIL_PUBLIC_KEY: [u8; 32] = [
+pub(super) const AUDIENCE: &str = "bank-process-court";
+pub(super) const RAIL_PUBLIC_KEY: [u8; 32] = [
     234, 74, 108, 99, 226, 156, 82, 10, 190, 245, 80, 123, 19, 46, 197, 249, 149, 71, 118, 174,
     190, 190, 123, 146, 66, 30, 234, 105, 20, 70, 210, 44,
 ];
-const BANK_PUBLIC_KEY: [u8; 32] = [
+pub(super) const BANK_PUBLIC_KEY: [u8; 32] = [
     253, 23, 36, 56, 90, 160, 199, 91, 100, 251, 120, 205, 96, 47, 161, 217, 145, 253, 235, 247,
     107, 19, 197, 142, 215, 2, 234, 200, 53, 233, 246, 24,
 ];

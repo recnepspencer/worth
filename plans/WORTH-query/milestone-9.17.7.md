@@ -1,11 +1,11 @@
 # Milestone 9.17.7: Inbound Occurrences And External Effect Completion
 
-> **Status:** Phase 1 static Bank completion is certified; workflow consumption
-> and resource/public closure remain. Design grounded in current Query, World, Bank and
+> **Status:** Phase 1 static Bank completion and Phase 2 workflow consumption
+> are certified; resource/public closure remains. Design grounded in Query, World, Bank and
 > Proprietary boundaries on 2026-09-29. [9.17.4](./milestone-9.17.4.md) and
 > [9.17.6](./milestone-9.17.6.md) supply publication delivery and workflow custody;
-> they do not yet supply inbound completion. New names and call shapes below
-> specify destination APIs rather than shipped capabilities.
+> they did not supply inbound completion at this milestone's start. New names
+> and call shapes below specify the full destination, including Phase 3 work.
 
 ## Goal And Roadmap Placement
 
@@ -30,7 +30,7 @@ Store's later reconstruction integration must preserve canonical occurrence/effe
 records and re-admit authority. Do not serialize live proofs or describe an
 in-memory acknowledgement as durable delivery.
 
-## Current Boundary
+## Starting Boundary
 
 Query paths below are relative to `workspaces/worth-query/crates/`.
 

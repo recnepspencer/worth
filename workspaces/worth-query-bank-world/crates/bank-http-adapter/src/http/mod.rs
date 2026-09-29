@@ -35,6 +35,6 @@ pub use protocol::{
     BankHttpRequestControls, BankHttpRestrictedBankField,
 };
 pub use server::{
-    BankHttpServer, BankHttpServerBinding, BankHttpServerConfiguration,
-    BankRailCompletionServerInstallation,
+    BankHttpServer, BankHttpServerBinding, BankHttpServerConfiguration, BankRailCallbackServer,
+    BankRailCallbackServerBinding, BankRailCompletionServerInstallation,
 };

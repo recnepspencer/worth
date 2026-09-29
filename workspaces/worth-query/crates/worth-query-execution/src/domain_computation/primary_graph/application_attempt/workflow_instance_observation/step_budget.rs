@@ -29,6 +29,11 @@ pub(in crate::domain_computation::primary_graph::application_attempt) enum Workf
 pub(in crate::domain_computation::primary_graph) struct WorkflowStepAllowance(());
 
 impl WorkflowStepAllowance {
+    #[cfg(test)]
+    pub(in crate::domain_computation::primary_graph) fn for_test() -> Self {
+        Self(())
+    }
+
     /// Consumes the allowance for the one step being admitted.
     pub(in crate::domain_computation::primary_graph) fn spend(self) {
         let Self(()) = self;

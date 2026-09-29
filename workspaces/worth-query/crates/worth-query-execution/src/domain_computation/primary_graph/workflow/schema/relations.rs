@@ -155,6 +155,9 @@ pub(super) fn lower_node(
     let member = planned_field_locator(NODE_ASPECT, "member")?;
     let input_type = planned_field_locator(NODE_ASPECT, "input-type")?;
     let operation_binding = planned_field_locator(NODE_ASPECT, "operation-binding")?;
+    let inbound_origin = planned_field_locator(NODE_ASPECT, "inbound-origin")?;
+    let inbound_contract = planned_field_locator(NODE_ASPECT, "inbound-contract")?;
+    let inbound_wait = planned_field_locator(NODE_ASPECT, "inbound-wait")?;
     let parameter_type = planned_field_locator(NODE_ASPECT, "parameter-type")?;
     let result_type = planned_field_locator(NODE_ASPECT, "result-type")?;
     let assessment_binding = planned_field_locator(NODE_ASPECT, "assessment-binding")?;
@@ -179,6 +182,9 @@ pub(super) fn lower_node(
         .required("member", ScalarAspectType::String)
         .optional("input-type", ScalarAspectType::String)
         .optional("operation-binding", ScalarAspectType::String)
+        .optional("inbound-origin", ScalarAspectType::String)
+        .optional("inbound-contract", ScalarAspectType::String)
+        .optional("inbound-wait", ScalarAspectType::UInt64)
         .optional("parameter-type", ScalarAspectType::String)
         .optional("result-type", ScalarAspectType::String)
         .optional("assessment-binding", ScalarAspectType::String)
@@ -216,6 +222,9 @@ pub(super) fn lower_node(
             member,
             input_type,
             operation_binding,
+            inbound_origin,
+            inbound_contract,
+            inbound_wait,
             parameter_type,
             result_type,
             assessment_binding,

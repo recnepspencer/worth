@@ -81,10 +81,14 @@ impl WorthQueryWorkflowAdvanceAdapter {
             )
             .map_err(|_| owner_custody_denial(required))?;
         use crate::domain_computation::primary_graph::application_attempt::WorthQueryGuardedWorkflowOperationCustody as Custody;
-        // A committed effect settles directly; a dispatch-pending one settles
-        // only with the recovery admission that owner custody asked for.
+        // An owner-settled external effect has the same original operation
+        // receipt. Receipt validation rechecks its canonical terminal; a
+        // dispatch-pending effect still requires exact safe-retry admission.
         let prepared = match (custody, recovery) {
             (Custody::Committed(receipt), None) => prepared.settle::<Binding>(runtime, &receipt)?,
+            (Custody::ExternallySettled(receipt), _) => {
+                prepared.settle::<Binding>(runtime, &receipt)?
+            }
             (Custody::DispatchPending(receipt), Some(recovery)) => {
                 prepared.settle_recovered::<Binding>(runtime, &receipt, recovery)?
             }

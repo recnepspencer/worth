@@ -18,6 +18,7 @@ use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkfl
 pub(in crate::domain_computation::primary_graph) struct WorkflowRetainedNode {
     pub(in crate::domain_computation::primary_graph) entity: EntityId,
     pub(in crate::domain_computation::primary_graph) path: String,
+    pub(in crate::domain_computation::primary_graph) inbound_origin: Option<String>,
     /// Empty for evidence joins and terminals, which act through no program
     /// member; one per operand for a condition; otherwise one.
     pub(in crate::domain_computation::primary_graph) dependencies:
@@ -62,6 +63,31 @@ pub(in crate::domain_computation::primary_graph) fn read_definition_dependencies
     }
     if nodes.is_empty() {
         return Err(unreadable);
+    }
+    let mut operation_by_path = std::collections::BTreeMap::new();
+    for node in &nodes {
+        if let [WorthQueryWorkflowNodeDependency::Operation { identifier, .. }] =
+            node.dependencies.as_slice()
+        {
+            if operation_by_path
+                .insert(node.path.clone(), identifier.clone())
+                .is_some()
+            {
+                return Err(unreadable);
+            }
+        }
+    }
+    for node in &mut nodes {
+        if let Some(origin) = &node.inbound_origin {
+            let operation = operation_by_path.get(origin).ok_or(unreadable)?;
+            let [WorthQueryWorkflowNodeDependency::AwaitInbound {
+                origin_operation, ..
+            }] = node.dependencies.as_mut_slice()
+            else {
+                return Err(unreadable);
+            };
+            *origin_operation = operation.clone();
+        }
     }
     let mut approval_authorities = Vec::new();
     for membership in truth.outgoing(definition, layout.definition_connection_relation)? {
@@ -119,6 +145,7 @@ fn read_node(
     let unreadable = WorkflowAdoptionReadDenial::UnreadableEntity { entity };
     let path = record.text(&node.path)?;
     let identifier = record.text(&node.member)?;
+    let inbound_origin = record.optional_text(&node.inbound_origin)?;
     let required = |locator: &worth_foundational::facade::AspectFieldLocator| {
         record.optional_text(locator)?.ok_or(unreadable)
     };
@@ -131,6 +158,22 @@ fn read_node(
             requires_authority: record.bool(&node.requires_authority)?,
             identifier,
         }],
+        Some(WorkflowNodeTag::AwaitInbound) => {
+            let origin = inbound_origin.as_deref().ok_or(unreadable)?;
+            if origin.is_empty() || record.u64(&node.inbound_wait)? != 0 || identifier.is_empty() {
+                return Err(unreadable);
+            }
+            let contract = required(&node.inbound_contract)?;
+            let (protocol, source_identity, limits) =
+                super::inbound_codec::decode(&contract).ok_or(unreadable)?;
+            vec![WorthQueryWorkflowNodeDependency::AwaitInbound {
+                origin_operation: String::new(),
+                effect: identifier,
+                protocol,
+                source_identity,
+                limits,
+            }]
+        }
         Some(WorkflowNodeTag::Assessment) => vec![WorthQueryWorkflowNodeDependency::Assessment {
             parameter_type: required(&node.parameter_type)?,
             result_type: required(&node.result_type)?,
@@ -167,6 +210,7 @@ fn read_node(
     Ok(WorkflowRetainedNode {
         entity,
         path,
+        inbound_origin,
         dependencies,
     })
 }

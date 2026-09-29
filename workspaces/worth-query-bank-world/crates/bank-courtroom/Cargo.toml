@@ -8,6 +8,7 @@ publish = false
 [features]
 cold-docker-courtroom = [
     "bank-http-adapter/cold-certification",
+    "bank-server/test-controls",
     "bank-user-node/cold-certification",
 ]
 

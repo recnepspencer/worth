@@ -39,7 +39,9 @@ use crate::AuthentikBankIdentity;
 
 use authentication::BankHttpApplicationAuthenticator;
 pub use configuration::BankHttpServerConfiguration;
-pub use inbound_completion::BankRailCompletionServerInstallation;
+pub use inbound_completion::{
+    BankRailCallbackServer, BankRailCallbackServerBinding, BankRailCompletionServerInstallation,
+};
 use live_executor::BankHttpLiveExecutor;
 use queue::BankHttpExecutionQueue;
 use routes::BankHttpRouteState;

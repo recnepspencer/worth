@@ -5,8 +5,8 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::oneshot;
 
-pub(super) struct CallbackProxy {
-    pub(super) address: SocketAddr,
+pub(crate) struct CallbackProxy {
+    pub(crate) address: SocketAddr,
     captured: Arc<Mutex<Vec<Vec<u8>>>>,
     first_capture: Option<oneshot::Receiver<Vec<u8>>>,
     release_first: Option<oneshot::Sender<()>>,
@@ -15,7 +15,7 @@ pub(super) struct CallbackProxy {
 }
 
 impl CallbackProxy {
-    pub(super) async fn start(bank: SocketAddr) -> Self {
+    pub(crate) async fn start(bank: SocketAddr) -> Self {
         let listener = TcpListener::bind("127.0.0.1:0")
             .await
             .expect("test callback proxy should bind");
@@ -82,11 +82,11 @@ impl CallbackProxy {
         }
     }
 
-    pub(super) fn captured(&self) -> Vec<Vec<u8>> {
+    pub(crate) fn captured(&self) -> Vec<Vec<u8>> {
         self.captured.lock().expect("recordings lock").clone()
     }
 
-    pub(super) async fn await_first_capture(&mut self) -> Vec<u8> {
+    pub(crate) async fn await_first_capture(&mut self) -> Vec<u8> {
         self.first_capture
             .take()
             .expect("first capture awaited once")
@@ -94,7 +94,7 @@ impl CallbackProxy {
             .expect("proxy should capture first callback")
     }
 
-    pub(super) fn release_first(&mut self) {
+    pub(crate) fn release_first(&mut self) {
         self.release_first
             .take()
             .expect("first callback released once")
@@ -102,7 +102,7 @@ impl CallbackProxy {
             .expect("proxy should still await release");
     }
 
-    pub(super) async fn shutdown(self) {
+    pub(crate) async fn shutdown(self) {
         let _ = self.shutdown.send(());
         self.task.await.expect("proxy should stop");
     }
@@ -148,7 +148,7 @@ async fn read_http_body(connection: &mut TcpStream) -> Vec<u8> {
     frame[boundary..boundary + length].to_vec()
 }
 
-pub(super) fn correlation_token(envelope: &[u8]) -> [u8; 32] {
+pub(crate) fn correlation_token(envelope: &[u8]) -> [u8; 32] {
     let mut offset = 16; // BANK-COMPLETION1
     for _ in 0..2 {
         skip_text(envelope, &mut offset);

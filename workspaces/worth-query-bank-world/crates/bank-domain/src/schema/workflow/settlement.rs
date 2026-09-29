@@ -1,8 +1,11 @@
+use std::num::NonZeroU64;
+
 use worth_foundational::facade::{BoundaryProtocolIdentity, BoundaryProtocolVersion};
 use worth_query_decl::facade::{
     application_schema::{
         ApplicationExternalEffectBinding, ApplicationExternalEffectProtocol,
-        ApplicationRetainedEffectBinding,
+        ApplicationInboundOccurrenceBinding, ApplicationInboundOccurrenceLimits,
+        ApplicationInboundOccurrenceProtocol, ApplicationRetainedEffectBinding,
     },
     worth_query_effect, worth_query_structured_value_binding,
 };
@@ -77,6 +80,30 @@ fn push_identity(bytes: &mut Vec<u8>, identity: &str) {
 }
 
 worth_query_effect!(pub ApprovedPaymentSettlementEffect for BankSchema, payload ApprovedPaymentSettlementRequestBinding);
+
+/// One fixed Bank declaration shared by the payment operation and its workflow wait.
+pub fn approved_payment_inbound_binding(
+) -> ApplicationInboundOccurrenceBinding<ApprovedPaymentSettlementEffect> {
+    ApplicationInboundOccurrenceBinding::new(
+        ApplicationInboundOccurrenceProtocol::new(
+            BoundaryProtocolIdentity::new("bank.payment.approved-settlement"),
+            BoundaryProtocolVersion::new(1),
+        ),
+        "rail-primary",
+        ApplicationInboundOccurrenceLimits {
+            maximum_envelope_bytes: NonZeroU64::new(4_096).unwrap(),
+            maximum_payload_bytes: NonZeroU64::new(268).unwrap(),
+            maximum_outstanding_dispatch_provenance: NonZeroU64::new(1_024).unwrap(),
+            maximum_accepted_occurrences: NonZeroU64::new(1_024).unwrap(),
+            maximum_accepted_bytes: NonZeroU64::new(5 * 1_024 * 1_024).unwrap(),
+            maximum_concurrent_publications: NonZeroU64::new(32).unwrap(),
+            maximum_discovery_work: NonZeroU64::new(1_024).unwrap(),
+            replay_window_milliseconds: NonZeroU64::new(60_000).unwrap(),
+            maximum_cleanup_work: NonZeroU64::new(1_024).unwrap(),
+        },
+    )
+    .expect("payment rail inbound bounds are usable")
+}
 
 #[cfg(test)]
 mod tests {

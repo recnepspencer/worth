@@ -51,3 +51,122 @@ fn equal_contract_on_another_operation_cannot_claim_the_original_dispatch() {
         WorthQueryInboundReceiptPosture::Performed,
     );
 }
+
+#[test]
+fn workflow_settlement_joins_the_original_committed_operation_to_world_terminal() {
+    let world = installed_world();
+    let original = world.commit_dispatch(118, "workflow-original");
+    let other = world.commit_dispatch(119, "workflow-other");
+    let record = original
+        .dispatch_outbox()
+        .expect("original dispatch outbox");
+    assert!(!world
+        .application
+        .resolve_guarded_workflow_external_settlement(&original)
+        .expect("terminal index is available before completion"));
+
+    let envelope = signed_envelope(record, [0xB2; 32], record.payload(), false);
+    assert_eq!(
+        world
+            .application
+            .receive_inbound_occurrence(
+                &world.verifier,
+                &envelope,
+                &super::super::fixture::live_scope()
+            )
+            .expect("installed source completes the original effect")
+            .posture(),
+        WorthQueryInboundReceiptPosture::Performed,
+    );
+    let terminal = world
+        .application
+        .primary_provider
+        .lookup_completed_inbound(record.correlation())
+        .expect("canonical terminal index remains available")
+        .expect("World performed a terminal completion");
+    assert!(terminal.matches_original_dispatch(
+        record,
+        original.commit_reference(),
+        original.committed_product_publication().composite_commit(),
+        original
+            .committed_product_publication()
+            .product_incarnation(),
+    ));
+    assert!(!terminal.matches_original_dispatch(
+        other.dispatch_outbox().unwrap(),
+        other.commit_reference(),
+        other.committed_product_publication().composite_commit(),
+        other.committed_product_publication().product_incarnation(),
+    ));
+    assert!(world
+        .application
+        .resolve_guarded_workflow_external_settlement(&original)
+        .expect("the original receipt resolves exact owner completion"));
+    assert!(!world
+        .application
+        .resolve_guarded_workflow_external_settlement(&other)
+        .expect("the other operation remains pending"));
+}
+
+#[test]
+fn duplicate_callback_keeps_the_original_terminal_out_of_a_sibling_fork() {
+    let world = installed_world();
+    let original = world.commit_dispatch(120, "same-meaning-on-two-branches");
+    let fork = world
+        .application
+        .branches()
+        .fork(world.application.current_world())
+        .components(|components| components.fork_relational().fork_signal())
+        .create()
+        .expect("the sibling product branch publishes");
+    let sibling = world.commit_dispatch_on(fork, 121, "same-meaning-on-two-branches");
+    let original_record = original.dispatch_outbox().unwrap();
+    let sibling_record = sibling.dispatch_outbox().unwrap();
+    assert_eq!(original_record.payload(), sibling_record.payload());
+    assert_ne!(original_record.correlation(), sibling_record.correlation());
+    let envelope = signed_envelope(
+        original_record,
+        [0xB3; 32],
+        original_record.payload(),
+        false,
+    );
+    let request = super::super::fixture::live_scope();
+    let first = world
+        .application
+        .receive_inbound_occurrence(&world.verifier, &envelope, &request)
+        .expect("the original installed callback completes");
+    assert_eq!(first.posture(), WorthQueryInboundReceiptPosture::Performed);
+    let commits_after_first = super::tests::owner_commits(&world);
+    let duplicate = world
+        .application
+        .receive_inbound_occurrence(&world.verifier, &envelope, &request)
+        .expect("the exact callback replays its World terminal");
+    assert_eq!(
+        duplicate.posture(),
+        WorthQueryInboundReceiptPosture::Performed
+    );
+    assert_eq!(super::tests::owner_commits(&world), commits_after_first);
+
+    assert!(world
+        .application
+        .resolve_guarded_workflow_external_settlement(&original)
+        .expect("the original owner still observes completion"));
+    assert!(!world
+        .application
+        .resolve_guarded_workflow_external_settlement(&sibling)
+        .expect("the sibling owner remains pending"));
+    let terminal = world
+        .application
+        .primary_provider
+        .lookup_completed_inbound(original_record.correlation())
+        .unwrap()
+        .unwrap();
+    assert!(!terminal.matches_original_dispatch(
+        sibling_record,
+        sibling.commit_reference(),
+        sibling.committed_product_publication().composite_commit(),
+        sibling
+            .committed_product_publication()
+            .product_incarnation(),
+    ));
+}

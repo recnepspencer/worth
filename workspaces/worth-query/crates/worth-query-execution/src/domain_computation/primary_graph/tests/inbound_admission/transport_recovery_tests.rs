@@ -72,6 +72,13 @@ fn completed_transport_recovery_publishes_without_a_second_physical_attempt() {
         .primary_provider
         .lookup_completed_inbound(&correlation)
         .is_err());
+    assert!(
+        world
+            .application
+            .resolve_guarded_workflow_external_settlement(&receipt)
+            .is_err(),
+        "transport Completed before World settlement grants no workflow completion"
+    );
     assert_eq!(
         world
             .application
@@ -85,6 +92,10 @@ fn completed_transport_recovery_publishes_without_a_second_physical_attempt() {
         .lookup_completed_inbound(&correlation)
         .unwrap()
         .is_some());
+    assert!(world
+        .application
+        .resolve_guarded_workflow_external_settlement(&receipt)
+        .expect("World-performed terminal settles the exact operation"));
 }
 
 #[test]

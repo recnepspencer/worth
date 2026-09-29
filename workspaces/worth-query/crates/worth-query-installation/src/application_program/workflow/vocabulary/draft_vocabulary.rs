@@ -34,6 +34,7 @@ impl InstalledWorkflowOperation {
             binding_identity: Binding::IDENTITY,
             requires_workflow_authority: Binding::REQUIRES_WORKFLOW_AUTHORITY,
             reference,
+            inbound: None,
         }
     }
 }

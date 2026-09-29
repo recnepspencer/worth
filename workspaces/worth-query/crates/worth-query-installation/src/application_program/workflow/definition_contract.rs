@@ -1,4 +1,4 @@
-use std::marker::PhantomData;
+use std::{collections::BTreeMap, marker::PhantomData};
 
 use worth_query_declaration::facade::{
     application_program::{
@@ -148,6 +148,11 @@ where
         ));
     }
     let mut assessment_bindings = Vec::new();
+    let nodes_by_path = definition
+        .nodes()
+        .iter()
+        .map(|node| (node.identity().as_str(), node))
+        .collect::<BTreeMap<_, _>>();
     let mut condition_bindings = Vec::new();
     let mut approval_bindings = Vec::new();
     for node in definition.nodes() {
@@ -188,6 +193,32 @@ where
                     ));
                 })
                 .is_some(),
+            ApplicationWorkflowNodeKind::AwaitInbound(awaited) => {
+                let origin = nodes_by_path.get(awaited.origin().as_str()).copied();
+                let Some(ApplicationWorkflowNodeKind::Operation { operation, .. }) =
+                    origin.map(|node| node.kind())
+                else {
+                    return Err(denial(WorthQueryApplicationWorkflowInstallationDenialKind::UnsupportedDefinitionMember, node.identity().as_str()));
+                };
+                let inbound = awaited.inbound();
+                installed
+                    .operations
+                    .iter()
+                    .filter(|candidate| {
+                        candidate.marker == operation.operation_type()
+                            && candidate.identifier == operation.identifier()
+                            && candidate.inbound.as_ref().is_some_and(
+                                |(effect, protocol, source, limits)| {
+                                    effect == inbound.effect()
+                                        && protocol == inbound.protocol()
+                                        && source == inbound.source_identity()
+                                        && *limits == inbound.limits()
+                                },
+                            )
+                    })
+                    .count()
+                    == 1
+            }
             ApplicationWorkflowNodeKind::Condition(condition) => {
                 condition.operands().iter().all(|operand| {
                     installed

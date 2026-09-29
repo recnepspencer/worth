@@ -52,6 +52,9 @@ pub(super) fn create_node(
                 None,
                 false,
             ),
+            ApplicationWorkflowNodeKind::AwaitInbound(awaited) => {
+                (awaited.inbound().effect(), None, None, None, None, false)
+            }
             ApplicationWorkflowNodeKind::Condition(_) => {
                 (condition_member.as_str(), None, None, None, None, false)
             }
@@ -131,6 +134,22 @@ pub(super) fn create_node(
         fields.insert(
             layout.node.condition_operands.clone(),
             text(encode_operands(operands)),
+        );
+    }
+    if let ApplicationWorkflowNodeKind::AwaitInbound(awaited) = node.kind() {
+        fields.insert(
+            layout.node.inbound_origin.clone(),
+            text(awaited.origin().as_str()),
+        );
+        fields.insert(
+            layout.node.inbound_contract.clone(),
+            text(super::super::inbound_codec::encode(awaited.inbound())),
+        );
+        fields.insert(
+            layout.node.inbound_wait.clone(),
+            AspectValue::UInt64(match awaited.wait() {
+                worth_query_declaration::facade::application_program::ApplicationWorkflowInboundWait::UntilInstanceDeadline => 0,
+            }),
         );
     }
     if let ApplicationWorkflowNodeKind::Assessment(assessment) = node.kind() {

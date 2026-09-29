@@ -1,6 +1,7 @@
 //! Separate callback route: bounded bytes, fixed verifier, Query custody, ACK.
 
-use std::time::Instant;
+use std::sync::Arc;
+use std::time::{Duration, Instant};
 
 use axum::body::Bytes;
 use axum::extract::State;
@@ -12,6 +13,16 @@ use worth_query_host::facade::primary_graph::WorthQueryInboundAdmissionDenial;
 
 use crate::http::protocol::inbound_completion::MAXIMUM_COMPLETION_BYTES;
 use crate::http::server::routes::BankHttpRouteState;
+
+use super::route::BankRailCompletionRoute;
+
+#[derive(Clone)]
+pub(in crate::http::server) struct BankRailCompletionEndpointState {
+    pub route: Arc<dyn BankRailCompletionRoute>,
+    pub slots: Arc<tokio::sync::Semaphore>,
+    pub wake: Arc<tokio::sync::Notify>,
+    pub maximum_deadline: Duration,
+}
 
 struct CancelOnDrop(WorthQueryCancellationSource);
 
@@ -28,16 +39,33 @@ pub(in crate::http::server) async fn rail_completion(
     let Some(route) = state.rail else {
         return (StatusCode::NOT_FOUND, Vec::new());
     };
+    receive(
+        BankRailCompletionEndpointState {
+            route,
+            slots: state.rail_slots,
+            wake: state.rail_maintenance_wake,
+            maximum_deadline: state.maximum_deadline,
+        },
+        envelope,
+    )
+    .await
+}
+
+pub(in crate::http::server) async fn receive(
+    state: BankRailCompletionEndpointState,
+    envelope: Bytes,
+) -> (StatusCode, Vec<u8>) {
     if envelope.len() > MAXIMUM_COMPLETION_BYTES {
         return (StatusCode::PAYLOAD_TOO_LARGE, Vec::new());
     }
-    let Ok(slot) = state.rail_slots.try_acquire_owned() else {
+    let Ok(slot) = state.slots.try_acquire_owned() else {
         return (StatusCode::TOO_MANY_REQUESTS, Vec::new());
     };
     let cancellation = WorthQueryCancellationSource::new();
     let _cancel_on_drop = CancelOnDrop(cancellation.clone());
     let deadline = Instant::now() + state.maximum_deadline;
-    let wake = state.rail_maintenance_wake;
+    let wake = state.wake;
+    let route = state.route;
     let task = tokio::task::spawn_blocking(move || {
         let _slot = slot;
         let request = WorthQueryRequestScope::new(deadline, cancellation.token());

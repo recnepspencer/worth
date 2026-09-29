@@ -50,6 +50,34 @@ pub(in crate::domain_computation) struct WorthQueryCanonicalInboundCompletion {
 }
 
 impl WorthQueryCanonicalInboundCompletion {
+    /// A workflow may consume only the terminal for its original committed
+    /// operation. Correlation selects this row; these owner facts authorize its
+    /// use after both the dispatch and completion have been World-performed.
+    pub(in crate::domain_computation::primary_graph) fn matches_original_dispatch(
+        &self,
+        record: &crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxRecord,
+        original_relational_commit: &RelationalCommitReceipt,
+        original_world_commit: &CompositeCommitIdentity,
+        original_incarnation: ProductBranchIncarnation,
+    ) -> bool {
+        let Some(inbound) = record.inbound() else {
+            return false;
+        };
+        self.correlation == *record.correlation()
+            && record.operation_slot() == Some(self.operation.as_str())
+            && record.effect() == inbound.effect()
+            && self.source == inbound.source_identity()
+            && self.correlation_family == record.correlation_family().as_str()
+            && self.protocol_identity == *record.protocol_identity()
+            && inbound.protocol().identity() == record.protocol_identity()
+            && self.protocol_version == record.protocol_version()
+            && inbound.protocol().version() == record.protocol_version()
+            && self.payload == record.payload()
+            && self.original_incarnation == original_incarnation
+            && &self.original_relational_commit == original_relational_commit
+            && &self.original_world_commit == original_world_commit
+    }
+
     pub(in crate::domain_computation::primary_graph) fn from_verified_row(
         row: WorthQueryCanonicalCompletionRow,
         original_incarnation: ProductBranchIncarnation,

@@ -13,6 +13,38 @@ const SIGNATURE_BYTES: usize = 64;
 const ACK_PREFIX: &[u8; 16] = b"BANK-CUSTODY-ACK";
 pub(crate) const MAXIMUM_COMPLETION_BYTES: usize = 4_096;
 
+/// An untrusted wire selector. Query still authenticates the exact bytes
+/// against the fixed verifier installed for the selected operation.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) enum RailCompletionProtocol {
+    EstateDeathNotice,
+    ApprovedPaymentSettlement,
+}
+
+pub(crate) fn completion_protocol_for_selection(
+    bytes: &[u8],
+) -> Result<RailCompletionProtocol, CompletionWireDenial> {
+    if bytes.len() > MAXIMUM_COMPLETION_BYTES {
+        return Err(CompletionWireDenial::Oversized);
+    }
+    let signed_len = bytes
+        .len()
+        .checked_sub(SIGNATURE_BYTES)
+        .ok_or(CompletionWireDenial::Malformed)?;
+    let mut reader = Reader::new(&bytes[..signed_len]);
+    if reader.take(PREFIX.len())? != PREFIX {
+        return Err(CompletionWireDenial::Malformed);
+    }
+    reader.bytes_u16()?; // audience
+    reader.bytes_u16()?; // source
+    reader.take(8 + 32 + 8 + 8)?; // epoch, message, issue and expiry
+    match std::str::from_utf8(reader.bytes_u16()?).map_err(|_| CompletionWireDenial::Malformed)? {
+        "bank.estate.death-notification" => Ok(RailCompletionProtocol::EstateDeathNotice),
+        "bank.payment.approved-settlement" => Ok(RailCompletionProtocol::ApprovedPaymentSettlement),
+        _ => Err(CompletionWireDenial::Malformed),
+    }
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct VerifiedRailCompletion {
     pub audience: String,

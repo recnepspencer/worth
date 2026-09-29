@@ -7,16 +7,21 @@ use crate::{
     application_capability::ApplicationCapabilityMarkerIdentity,
     application_operation::ApplicationMutationBinding,
     application_query::ApplicationQueryMarkerIdentity,
-    application_schema::ApplicationOperationMarkerIdentity,
+    application_schema::{
+        ApplicationEffectMarkerIdentity, ApplicationInboundOccurrenceBinding,
+        ApplicationOperationMarkerIdentity,
+    },
 };
 
 use super::{
-    ApplicationWorkflowApprovalRef, ApplicationWorkflowAssessmentRef, ApplicationWorkflowCondition,
+    ApplicationWorkflowApprovalRef, ApplicationWorkflowAssessmentRef,
+    ApplicationWorkflowAwaitInbound, ApplicationWorkflowCondition,
     ApplicationWorkflowConditionOperands, ApplicationWorkflowConnection,
     ApplicationWorkflowDefinitionIdentity, ApplicationWorkflowDefinitionLimits,
-    ApplicationWorkflowEvidenceJoinPolicy, ApplicationWorkflowNode,
-    ApplicationWorkflowNodeIdentity, ApplicationWorkflowNodeKind, ApplicationWorkflowOperationRef,
-    ApplicationWorkflowSpec, ApplicationWorkflowSubjectSelector, AuthoredWorkflowDefinition,
+    ApplicationWorkflowEvidenceJoinPolicy, ApplicationWorkflowInboundRef,
+    ApplicationWorkflowInboundWait, ApplicationWorkflowNode, ApplicationWorkflowNodeIdentity,
+    ApplicationWorkflowNodeKind, ApplicationWorkflowOperationRef, ApplicationWorkflowSpec,
+    ApplicationWorkflowSubjectSelector, AuthoredWorkflowDefinition,
 };
 
 mod command;
@@ -33,6 +38,7 @@ pub use component::{
 pub use denial::{ApplicationWorkflowAuthoringDenial, ApplicationWorkflowComponentResource};
 
 pub enum ApplicationWorkflowOperationNode {}
+pub enum ApplicationWorkflowAwaitInboundNode {}
 pub enum ApplicationWorkflowAssessmentNode {}
 pub enum ApplicationWorkflowConditionNode {}
 pub enum ApplicationWorkflowApprovalNode {}
@@ -159,6 +165,31 @@ where
                 operation: ApplicationWorkflowOperationRef::declared::<Spec, Operation>(),
                 requires_workflow_authority,
             },
+        )
+    }
+
+    /// Wait for the exact installed inbound completion of a prior operation.
+    /// This declaration does not receive an occurrence or resume an instance.
+    pub fn await_inbound<Effect>(
+        &mut self,
+        identity: impl Into<String>,
+        origin: &ApplicationWorkflowNodeRef<ApplicationWorkflowOperationNode>,
+        inbound: ApplicationInboundOccurrenceBinding<Effect>,
+        wait: ApplicationWorkflowInboundWait,
+    ) -> Result<
+        ApplicationWorkflowNodeRef<ApplicationWorkflowAwaitInboundNode>,
+        ApplicationWorkflowAuthoringDenial,
+    >
+    where
+        Effect: ApplicationEffectMarkerIdentity<Spec::Schema> + 'static,
+    {
+        self.push_node(
+            identity,
+            ApplicationWorkflowNodeKind::AwaitInbound(ApplicationWorkflowAwaitInbound::new(
+                origin.identity().clone(),
+                ApplicationWorkflowInboundRef::declared::<Spec, Effect>(inbound),
+                wait,
+            )),
         )
     }
 

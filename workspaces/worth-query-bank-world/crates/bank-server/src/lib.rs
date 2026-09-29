@@ -29,7 +29,7 @@ mod world_seed;
 
 pub use application_definition::{
     approved_business_payment_definition, ApprovedBusinessPaymentDefinitionDenial, BankApplication,
-    BankApplicationP1, APPROVAL_LIMIT, APPROVAL_LIMIT_OPERAND,
+    BankApplicationP1, BankApplicationP2, APPROVAL_LIMIT, APPROVAL_LIMIT_OPERAND,
 };
 pub use application_query::{
     BankAccountActivityContinuation, BankAccountActivityHistoricalResult,
@@ -97,6 +97,7 @@ pub use external_effect_transport::BankExternalEffectTransportDenial;
 pub use identity_runtime::{BankAuthenticationConfiguration, BankIdentityRuntime};
 pub use inbound_completion::{
     BankEstateRailCompletionInstallationDenial, BankEstateRailCompletionRoute,
+    BankPaymentRailCompletionRoute,
 };
 pub use operation_commit::{
     BankApplicationAttemptDenialKind, BankCommitCanonicalWorkEvidence,

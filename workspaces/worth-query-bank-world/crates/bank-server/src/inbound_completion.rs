@@ -1,9 +1,9 @@
-//! Bank's fixed estate rail completion route over Query's installed owner.
+//! Bank's fixed rail completion routes over Query's installed owners.
 
 use std::num::NonZeroUsize;
 use std::sync::Arc;
 
-use bank_domain::schema::NotifyDeathEstateOperation;
+use bank_domain::schema::{ApprovePaymentOperation, NotifyDeathEstateOperation};
 use worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope;
 use worth_query_host::facade::primary_graph::{
     WorthQueryInboundAdmissionDenial, WorthQueryInboundMaintenanceReport,
@@ -19,6 +19,11 @@ pub struct BankEstateRailCompletionRoute {
     handle: WorthQueryInboundVerifierHandle,
 }
 
+/// The payment route selects only the declared settlement effect.
+pub struct BankPaymentRailCompletionRoute {
+    handle: WorthQueryInboundVerifierHandle,
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankEstateRailCompletionInstallationDenial {
     OperationUnavailable,
@@ -26,6 +31,53 @@ pub enum BankEstateRailCompletionInstallationDenial {
 }
 
 impl BankIdentityRuntime {
+    pub fn install_payment_rail_completion_verifier(
+        &self,
+        verifier: Arc<dyn WorthQueryInboundOccurrenceVerifier>,
+    ) -> Result<BankPaymentRailCompletionRoute, BankEstateRailCompletionInstallationDenial> {
+        let operation = self
+            .application_runtime()
+            .installed_schema()
+            .installed_operation(ApprovePaymentOperation::reference())
+            .map_err(|_| BankEstateRailCompletionInstallationDenial::OperationUnavailable)?;
+        let handle = self
+            .application_runtime()
+            .install_inbound_occurrence_verifier(&operation, verifier)
+            .map_err(BankEstateRailCompletionInstallationDenial::Verifier)?;
+        Ok(BankPaymentRailCompletionRoute { handle })
+    }
+
+    pub fn receive_payment_rail_completion(
+        &self,
+        route: &BankPaymentRailCompletionRoute,
+        envelope: &[u8],
+        request: &WorthQueryRequestScope,
+    ) -> Result<WorthQueryInboundReceipt, WorthQueryInboundAdmissionDenial> {
+        self.application_runtime()
+            .receive_inbound_occurrence(&route.handle, envelope, request)
+    }
+
+    pub fn observe_payment_rail_completion(
+        &self,
+        route: &BankPaymentRailCompletionRoute,
+        correlation_token: [u8; 32],
+    ) -> Option<WorthQueryInboundTerminalObservation> {
+        self.application_runtime()
+            .observe_inbound_terminal(&route.handle, correlation_token)
+    }
+
+    pub fn maintain_payment_rail_completion(
+        &self,
+        route: &BankPaymentRailCompletionRoute,
+        request: &WorthQueryRequestScope,
+    ) -> Result<WorthQueryInboundMaintenanceReport, WorthQueryInboundAdmissionDenial> {
+        self.application_runtime().maintain_inbound_occurrences(
+            &route.handle,
+            NonZeroUsize::new(4).expect("fixed positive maintenance batch"),
+            request,
+        )
+    }
+
     pub fn install_estate_rail_completion_verifier(
         &self,
         verifier: Arc<dyn WorthQueryInboundOccurrenceVerifier>,

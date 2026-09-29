@@ -35,7 +35,7 @@ impl BankRailCompletionServerInstallation {
         })
     }
 
-    pub(super) fn verifier(&self) -> super::BankRailCompletionVerifier {
+    pub(super) fn estate_verifier(&self) -> super::BankRailCompletionVerifier {
         super::BankRailCompletionVerifier::new(
             self.rail_verifying_key,
             self.audience.clone(),
@@ -46,6 +46,19 @@ impl BankRailCompletionServerInstallation {
             BoundaryProtocolVersion::new(1),
         )
         .expect("validated rail completion installation")
+    }
+
+    pub(super) fn payment_verifier(&self) -> super::BankRailCompletionVerifier {
+        super::BankRailCompletionVerifier::new(
+            self.rail_verifying_key,
+            self.audience.clone(),
+            self.source.clone(),
+            self.key_epoch,
+            self.maximum_clock_skew_seconds,
+            BoundaryProtocolIdentity::new("bank.payment.approved-settlement"),
+            BoundaryProtocolVersion::new(1),
+        )
+        .expect("validated payment completion installation")
     }
 
     pub(super) fn ack_signer(&self) -> SigningKey {

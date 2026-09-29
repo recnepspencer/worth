@@ -14,8 +14,8 @@ pub(in crate::domain_computation::primary_graph) use selection::{
     select_assessment_collection, select_current_transition, select_navigation_back_transition,
     select_proposal_replay_transition, select_proposal_transition,
     select_settled_replay_transition, select_terminal_transition, SelectedWorkflowApproval,
-    SelectedWorkflowAssessment, SelectedWorkflowCondition, SelectedWorkflowOperation,
-    SelectedWorkflowTransition, SelectedWorkflowTransitionKind,
+    SelectedWorkflowAssessment, SelectedWorkflowCondition, SelectedWorkflowInbound,
+    SelectedWorkflowOperation, SelectedWorkflowTransition, SelectedWorkflowTransitionKind,
 };
 
 pub(in crate::domain_computation::primary_graph) struct AdmittedWorkflowTransition<
