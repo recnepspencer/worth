@@ -83,6 +83,10 @@ pub(super) fn append_operation_member(
                 limits.maximum_envelope_bytes.get(),
             );
             basis.u64(
+                format!("{prefix}.maximum-verifier-work"),
+                limits.maximum_verifier_work.get(),
+            );
+            basis.u64(
                 format!("{prefix}.maximum-payload-bytes"),
                 limits.maximum_payload_bytes.get(),
             );

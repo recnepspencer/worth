@@ -156,18 +156,15 @@ where
             }
         });
         let inbound = self.operations.iter().filter_map(|operation| {
-            operation
-                .inbound
-                .as_ref()
-                .map(|(effect, protocol, source_identity, limits)| {
-                    WorthQueryWorkflowNodeDependency::AwaitInbound {
-                        origin_operation: operation.identifier.to_owned(),
-                        effect: effect.clone(),
-                        protocol: protocol.clone(),
-                        source_identity: source_identity.clone(),
-                        limits: *limits,
-                    }
-                })
+            operation.inbound_ref.as_ref().map(|inbound| {
+                WorthQueryWorkflowNodeDependency::AwaitInbound {
+                    origin_operation: operation.identifier.to_owned(),
+                    effect: inbound.effect().to_owned(),
+                    protocol: inbound.protocol().clone(),
+                    source_identity: inbound.source_identity().to_owned(),
+                    limits: inbound.limits(),
+                }
+            })
         });
         let conditions =
             self.conditions

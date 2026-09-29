@@ -137,11 +137,12 @@ pub use super::application_runtime::{
     WorthQueryCertificationCostObservation, WorthQueryCertificationCostRuntimeExt,
     WorthQueryCertificationCostScope, WorthQueryCertificationWorldHistory,
     WorthQueryCertificationWorldRetention, WorthQueryInboundAdmissionDenial,
-    WorthQueryInboundCleanupReport, WorthQueryInboundMaintenanceReport, WorthQueryInboundReceipt,
-    WorthQueryInboundReceiptPosture, WorthQueryInboundSourceControlDenial,
-    WorthQueryInboundSourcePosture, WorthQueryInboundTerminalObservation,
-    WorthQueryInboundVerifierHandle, WorthQueryInboundVerifierInstallationDenial,
-    WorthQueryPrimaryGraphApplicationRuntime,
+    WorthQueryInboundCleanupReport, WorthQueryInboundCostObservation,
+    WorthQueryInboundIndexRepairDenial, WorthQueryInboundMaintenanceReport,
+    WorthQueryInboundReceipt, WorthQueryInboundReceiptPosture,
+    WorthQueryInboundSourceControlDenial, WorthQueryInboundSourcePosture,
+    WorthQueryInboundTerminalObservation, WorthQueryInboundVerifierHandle,
+    WorthQueryInboundVerifierInstallationDenial, WorthQueryPrimaryGraphApplicationRuntime,
 };
 pub use super::authenticated_principal::{
     WorthQueryApplicationPrincipalIdentity, WorthQueryAuthenticatedPrincipal,

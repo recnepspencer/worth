@@ -289,6 +289,66 @@ mod tests {
         );
     }
 
+    #[test]
+    fn independent_payment_v1_vector_and_bank_ack_vector() {
+        let payment = decode_hex(include_str!("inbound_payment_completion_v1.hex").trim());
+        let key =
+            VerifyingKey::from_bytes(&decode_hex(RAIL_PUBLIC_KEY_HEX).try_into().unwrap()).unwrap();
+        let verified = verify_completion(
+            &payment,
+            RailCompletionVerification {
+                key: &key,
+                audience: "bank-process-court",
+                source: "rail-primary",
+                key_epoch: 1,
+                now_seconds: 1_700_000_000,
+                maximum_clock_skew_seconds: 0,
+            },
+        )
+        .unwrap();
+        assert_eq!(
+            verified.protocol_identity,
+            "bank.payment.approved-settlement"
+        );
+        assert_eq!(verified.protocol_version, 1);
+        assert_eq!(
+            verified.correlation_family,
+            "approved-payment-settlement-rail"
+        );
+        assert_eq!(verified.correlation_token, [6; 32]);
+        assert_eq!(
+            verified.payload,
+            b"\x09payment-5\x09account-2\x09account-3\0\0\0\0\0\0\0\x07\0\0\0\0\0\0\0\xfa"
+        );
+
+        let estate = decode_hex(RAIL_V1_HEX.trim());
+        let digest: [u8; 32] = Sha256::digest(&estate).into();
+        let estate_verified = verify_completion(
+            &estate,
+            RailCompletionVerification {
+                key: &key,
+                audience: "bank-process-court",
+                source: "rail-primary",
+                key_epoch: 1,
+                now_seconds: 1_700_000_000,
+                maximum_clock_skew_seconds: 0,
+            },
+        )
+        .unwrap();
+        let ack = sign_custody_ack(
+            &digest,
+            estate_verified.message_id,
+            BankCustodyAckPosture::AcceptedPending,
+            &SigningKey::from_bytes(&[9; 32]),
+        );
+        assert_eq!(
+            ack.iter()
+                .map(|byte| format!("{byte:02x}"))
+                .collect::<String>(),
+            include_str!("inbound_custody_ack_v1.hex").trim()
+        );
+    }
+
     fn decode_hex(hex: &str) -> Vec<u8> {
         hex.as_bytes()
             .chunks_exact(2)

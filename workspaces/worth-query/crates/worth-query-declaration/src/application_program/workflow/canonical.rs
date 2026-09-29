@@ -144,6 +144,7 @@ fn node_record(node: &ApplicationWorkflowNode) -> String {
                 inbound.protocol().version().get().to_string(),
                 inbound.source_identity().to_owned(),
                 limits.maximum_envelope_bytes.get().to_string(),
+                limits.maximum_verifier_work.get().to_string(),
                 limits.maximum_payload_bytes.get().to_string(),
                 limits
                     .maximum_outstanding_dispatch_provenance

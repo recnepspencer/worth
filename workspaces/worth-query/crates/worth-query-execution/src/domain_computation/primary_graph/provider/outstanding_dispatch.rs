@@ -75,6 +75,15 @@ pub(in crate::domain_computation::primary_graph) struct OutstandingDispatchReser
 }
 
 impl OutstandingDispatchOwner {
+    pub(super) fn count_for_contract(&self, contract: &InstalledInboundOccurrenceContract) -> u64 {
+        self.entries
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .counts
+            .get(contract)
+            .copied()
+            .unwrap_or(0)
+    }
     pub(super) fn reserve(
         &self,
         record: &WorthQueryDispatchOutboxRecord,

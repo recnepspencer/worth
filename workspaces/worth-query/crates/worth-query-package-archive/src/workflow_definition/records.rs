@@ -10,6 +10,7 @@ use worth_query_declaration::facade::application_program::{
 
 use super::{DraftConnection, DraftMember, DraftNode};
 
+mod await_inbound;
 mod condition;
 use crate::binary_input::BinaryInput;
 use crate::binary_output::BinaryOutput;
@@ -49,6 +50,7 @@ pub(super) fn encode_node(
             vec![approval.identifier(), approval.capability_type().as_str()],
         ),
         ApplicationWorkflowNodeKind::EvidenceJoin(policy) => (5, vec![policy.identity()]),
+        ApplicationWorkflowNodeKind::AwaitInbound(_) => (7, Vec::new()),
         ApplicationWorkflowNodeKind::Terminal => (6, Vec::new()),
     };
     output.raw_bytes(&[tag]);
@@ -74,6 +76,9 @@ pub(super) fn encode_node(
         }
         ApplicationWorkflowNodeKind::Condition(condition) => {
             condition::encode_condition(output, condition)?;
+        }
+        ApplicationWorkflowNodeKind::AwaitInbound(awaited) => {
+            await_inbound::encode(output, awaited)?;
         }
         _ => {}
     }
@@ -128,6 +133,7 @@ pub(super) fn decode_node(input: &mut BinaryInput<'_>, version: u16) -> Result<D
             policy: nonempty_text(input)?,
         },
         6 => DraftMember::Terminal,
+        7 if version >= 3 => DraftMember::AwaitInbound(await_inbound::decode(input)?),
         _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
     };
     Ok(DraftNode { identity, member })

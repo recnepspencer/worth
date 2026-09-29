@@ -674,7 +674,8 @@ still needs its own lane and its own key.
 ## Caller-pumped progression
 
 - There is no background scheduler. No timer advances an instance.
-- There is no callback, resume message, or inbound completion API.
+- An installed inbound source may complete an existing external-effect owner.
+  The callback does not run a workflow node or carry a resume message.
 - Every step happens because a caller sent a request. A caller that stops pumping leaves the instance where it is.
 - Each outcome is typed, so a caller (or an AI agent) can read the `Awaiting*` variant and choose the next request.
 - Each request carries its own idempotency key. Retrying a key replays the recorded outcome.
@@ -705,6 +706,39 @@ until the owner's receipt is accepted. While it is unsettled:
 - program adoption reports the instance as `OperationInOwnerCustody` and gives it no legal disposition.
 
 Accept the owner's receipt (see [Operations](#operations)), then retry.
+
+### Waiting for an inbound completion
+
+`await_inbound` names the exact effect of a preceding operation node and the
+same declared inbound binding that operation installed. Bank's approved-payment
+definition uses the public authoring shape:
+
+```rust,ignore
+let apply = builder.operation_binding::<ApprovePaymentMutationBinding>("apply")?;
+let await_completion = builder.await_inbound::<ApprovedPaymentSettlementEffect>(
+    "await-inbound",
+    &apply,
+    approved_payment_inbound_binding(),
+    ApplicationWorkflowInboundWait::UntilInstanceDeadline,
+)?;
+```
+
+Validation rejects a wait if every reachable path does not have one dominating
+origin with the matching effect, protocol, source and limits. The installed
+source completes the original operation through Query custody and World. A
+fresh owner acceptance first settles the operation's receipt; before that,
+advance still returns `AwaitingOperation`. A subsequent fresh
+`advance_workflow` observes the terminal owner result at `await_inbound` and
+may enter its successor. A notification only cues those caller requests.
+Neither callback bytes nor a correlation token can resume the instance.
+
+Cancellation, migration and fork continuation remain refused while the
+operation is in owner custody. Once the exact owner settlement is accepted,
+ordinary fresh transition admission applies. Program adoption inventories the
+pending operation and requires its lawful disposition before retiring the
+definition; an accepted completion is not lost when the sender or observer
+stops. The [aftermath guide](../execution/application-aftermath-and-recovery.md#authenticated-inbound-completion)
+describes accepted-pending recovery and duplicate outcomes.
 
 ## Budgets and deadlines
 
@@ -763,10 +797,15 @@ authored definitions. It is not part of the `worth-query-decl` or
 `worth-query-host` facades. The in-repo users are certification and release
 tooling. This guide does not state that application crates may depend on it.
 
-- `encode_workflow_definition_draft(&validated, limits)` writes a `WQWD` byte stream (protocol version `WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION`, currently `1`).
+- `encode_workflow_definition_draft(&validated, limits)` writes a `WQWD` byte stream (protocol version `WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION`, currently `3`). Version 3 carries `await_inbound`; readers retain the supported v1/v2 drafts but reject a wait tag presented under either older version.
 - `decode_workflow_definition_draft(bytes, limits)` returns `WorthQueryUntrustedWorkflowDefinitionDraft`. Every count is checked against the draft's limits and the remaining bytes before allocation. Node identities must be in ascending order.
-- `draft.author::<Schema, Spec>(&installed)` rebuilds an `AuthoredWorkflowDefinition` against an installed spec. It refuses with `WorthQueryWorkflowDefinitionDraftDenial` and names the node it refuses.
+- `draft.author::<Schema, Spec>(&installed)` rebuilds an `AuthoredWorkflowDefinition` against an installed spec. An inbound wait resolves its origin and complete source/effect/protocol/limits contract against the installed typed vocabulary; archive bytes never provide a Rust effect marker. It refuses with `WorthQueryWorkflowDefinitionDraftDenial` and names the node it refuses.
 - A draft carries no instances, approvals, or authority. Decoded bytes mint nothing. The rebuilt definition still validates, binds, and publishes through the ordinary path.
+
+The [Bank payment archive court](../../../../../worth-query-bank-world/crates/bank-courtroom/tests/payment_workflow_archive.rs)
+uses its actual installed workflow spec to reauthor and bind a version 3 wait.
+It also refuses a changed source, a missing operation, and a different Rust
+effect marker with the same portable name.
 
 ## Denials
 

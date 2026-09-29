@@ -17,14 +17,17 @@ mod transport_binding;
 mod transport_publication_permit;
 pub(in crate::domain_computation) use transport_binding::WorthQueryInstalledTransportCompletionBinding;
 mod cleanup;
+mod cost;
 mod maintenance;
 mod observe;
 mod progress;
 mod rebuild;
 mod reconstruct;
 mod recover;
+pub use cost::WorthQueryInboundCostObservation;
 pub use maintenance::WorthQueryInboundMaintenanceReport;
 pub use observe::WorthQueryInboundTerminalObservation;
+pub use rebuild::WorthQueryInboundIndexRepairDenial;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use receive::WorthQueryInboundAdmission;
 pub use receive::{
@@ -34,6 +37,7 @@ pub use receive::{
 pub(in crate::domain_computation) struct WorthQueryInstalledInboundVerifier {
     pub(in crate::domain_computation) contract: InstalledInboundOccurrenceContract,
     pub(in crate::domain_computation) verifier: Arc<dyn WorthQueryInboundOccurrenceVerifier>,
+    pub(in crate::domain_computation::primary_graph) cost: cost::WorthQueryInboundCostLedger,
     source_posture: AtomicU8,
 }
 
@@ -133,6 +137,7 @@ where
         let installed = Arc::new(WorthQueryInstalledInboundVerifier {
             contract: contract.clone(),
             verifier,
+            cost: Default::default(),
             source_posture: AtomicU8::new(0),
         });
         entry.insert(Arc::clone(&installed));

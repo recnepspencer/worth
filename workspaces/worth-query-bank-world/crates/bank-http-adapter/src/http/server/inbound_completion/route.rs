@@ -9,9 +9,9 @@ use bank_server::{
 use ed25519_dalek::SigningKey;
 use worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope;
 use worth_query_host::facade::primary_graph::{
-    WorthQueryInboundAdmissionDenial, WorthQueryInboundMaintenanceReport,
-    WorthQueryInboundReceiptPosture, WorthQueryInboundTerminalObservation,
-    WorthQueryInboundVerificationDenial,
+    WorthQueryInboundAdmissionDenial, WorthQueryInboundCostObservation,
+    WorthQueryInboundMaintenanceReport, WorthQueryInboundReceiptPosture,
+    WorthQueryInboundTerminalObservation, WorthQueryInboundVerificationDenial,
 };
 
 use super::configuration::BankRailCompletionServerInstallation;
@@ -40,7 +40,7 @@ impl BankRailCompletionRuntime for BankIdentityRuntime {
 }
 
 #[derive(Clone, Copy, Debug, Default)]
-pub(super) struct BankRailMaintenancePool {
+pub(in crate::http::server) struct BankRailMaintenancePool {
     pub(super) signed_available_before: usize,
     pub(super) signed_selected: usize,
     pub(super) transport_available_before: usize,
@@ -49,15 +49,18 @@ pub(super) struct BankRailMaintenancePool {
 
 #[derive(Clone, Copy, Debug, Default)]
 pub(in crate::http::server) struct BankRailMaintenanceBatch {
-    pub(super) selected: usize,
+    pub(in crate::http::server) selected: usize,
     /// Estate and payment each retain independent signed and transport work.
-    pub(super) pools: [BankRailMaintenancePool; 2],
-    pub(super) advanced: usize,
-    pub(super) performed: usize,
-    pub(super) blocked: usize,
-    pub(super) reclaimed: u64,
-    pub(super) remaining: usize,
-    pub(super) next_expiry_unix_seconds: Option<u64>,
+    pub(in crate::http::server) pools: [BankRailMaintenancePool; 2],
+    pub(in crate::http::server) advanced: usize,
+    pub(in crate::http::server) performed: usize,
+    pub(in crate::http::server) blocked: usize,
+    pub(in crate::http::server) reclaimed: u64,
+    pub(in crate::http::server) remaining: usize,
+    pub(in crate::http::server) outstanding_dispatches: u64,
+    pub(in crate::http::server) retained_accepted_occurrences: u64,
+    pub(in crate::http::server) unavailable_routes: u8,
+    pub(in crate::http::server) next_expiry_unix_seconds: Option<u64>,
 }
 
 impl From<WorthQueryInboundMaintenanceReport> for BankRailMaintenanceBatch {
@@ -78,6 +81,9 @@ impl From<WorthQueryInboundMaintenanceReport> for BankRailMaintenanceBatch {
             blocked: report.blocked(),
             reclaimed: report.reclaimed(),
             remaining: report.remaining(),
+            outstanding_dispatches: 0,
+            retained_accepted_occurrences: 0,
+            unavailable_routes: 0,
             next_expiry_unix_seconds: report.next_expiry_unix_seconds(),
         }
     }
@@ -95,6 +101,9 @@ pub(in crate::http::server) trait BankRailCompletionRoute:
         &self,
         correlation_token: [u8; 32],
     ) -> Option<WorthQueryInboundTerminalObservation>;
+    fn observe_estate_cost(&self) -> Option<WorthQueryInboundCostObservation> {
+        None
+    }
     fn maintain_custody(
         &self,
         request: &WorthQueryRequestScope,
@@ -112,10 +121,9 @@ fn combine_maintenance(
     estate: Result<BankRailMaintenanceBatch, WorthQueryInboundAdmissionDenial>,
     payment: Result<BankRailMaintenanceBatch, WorthQueryInboundAdmissionDenial>,
 ) -> Result<BankRailMaintenanceBatch, WorthQueryInboundAdmissionDenial> {
-    let (estate, payment) = match (estate, payment) {
-        (Err(denial), Err(_)) => return Err(denial),
-        (estate, payment) => (estate.unwrap_or_default(), payment.unwrap_or_default()),
-    };
+    let unavailable_routes = u8::from(estate.is_err()) + u8::from(payment.is_err());
+    let estate = estate.unwrap_or_default();
+    let payment = payment.unwrap_or_default();
     Ok(BankRailMaintenanceBatch {
         selected: estate.selected + payment.selected,
         pools: [estate.pools[0], payment.pools[0]],
@@ -124,6 +132,9 @@ fn combine_maintenance(
         blocked: estate.blocked + payment.blocked,
         reclaimed: estate.reclaimed + payment.reclaimed,
         remaining: estate.remaining + payment.remaining,
+        outstanding_dispatches: 0,
+        retained_accepted_occurrences: 0,
+        unavailable_routes,
         next_expiry_unix_seconds: estate
             .next_expiry_unix_seconds
             .into_iter()
@@ -133,6 +144,12 @@ fn combine_maintenance(
 }
 
 impl<A: BankRailCompletionRuntime> BankRailCompletionRoute for InstalledRoute<A> {
+    fn observe_estate_cost(&self) -> Option<WorthQueryInboundCostObservation> {
+        self.application
+            .runtime()
+            .observe_estate_rail_completion_cost(&self.estate)
+    }
+
     fn maintain_custody(
         &self,
         request: &WorthQueryRequestScope,
@@ -147,7 +164,30 @@ impl<A: BankRailCompletionRuntime> BankRailCompletionRoute for InstalledRoute<A>
             .runtime()
             .maintain_payment_rail_completion(&self.payment, request)
             .map(BankRailMaintenanceBatch::from);
-        combine_maintenance(estate, payment)
+        let mut batch = combine_maintenance(estate, payment)?;
+        for cost in [
+            self.application
+                .runtime()
+                .observe_estate_rail_completion_cost(&self.estate),
+            self.application
+                .runtime()
+                .observe_payment_rail_completion_cost(&self.payment),
+        ] {
+            match cost {
+                Some(cost) => {
+                    batch.outstanding_dispatches = batch
+                        .outstanding_dispatches
+                        .saturating_add(cost.outstanding_dispatches());
+                    batch.retained_accepted_occurrences = batch
+                        .retained_accepted_occurrences
+                        .saturating_add(cost.accepted_occurrences());
+                }
+                None => {
+                    batch.unavailable_routes = batch.unavailable_routes.saturating_add(1).min(2)
+                }
+            }
+        }
+        Ok(batch)
     }
 
     fn observe_terminal(
@@ -270,11 +310,20 @@ mod tests {
         let payment_only = combine_maintenance(Err(denial), Ok(payment)).unwrap();
         assert_eq!(payment_only.performed, 1);
         assert_eq!(payment_only.pools[1].transport_selected, 1);
+        assert_eq!(payment_only.unavailable_routes, 1);
         let estate_only = combine_maintenance(
             Ok(estate),
             Err(WorthQueryInboundAdmissionDenial::RecoveryUnavailable),
         )
         .unwrap();
         assert_eq!(estate_only.pools[0].signed_selected, 4);
+        assert_eq!(estate_only.unavailable_routes, 1);
+        let neither = combine_maintenance(
+            Err(WorthQueryInboundAdmissionDenial::RecoveryUnavailable),
+            Err(WorthQueryInboundAdmissionDenial::RecoveryUnavailable),
+        )
+        .unwrap();
+        assert_eq!(neither.unavailable_routes, 2);
+        assert_eq!(neither.remaining, 0, "known count excludes failed routes");
     }
 }

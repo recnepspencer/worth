@@ -92,11 +92,16 @@ worth_query_operation!(pub NotifyOperation for InboundTestSchema, input NotifyIn
 worth_query_operation_emits!(NotifyOperation => [NoticeEffect]);
 worth_query_operation!(pub OtherNotifyOperation for InboundTestSchema, input NotifyInputBinding);
 worth_query_operation_emits!(OtherNotifyOperation => [NoticeEffect]);
+worth_query_operation!(pub UnrelatedNotifyOperation for InboundTestSchema, input NotifyInputBinding);
+worth_query_operation_emits!(UnrelatedNotifyOperation => [NoticeEffect]);
+worth_query_operation!(pub WideNotifyOperation for InboundTestSchema, input NotifyInputBinding);
+worth_query_operation_emits!(WideNotifyOperation => [NoticeEffect]);
 
 pub(super) fn limits() -> ApplicationInboundOccurrenceLimits {
     let n = |value| NonZeroU64::new(value).unwrap();
     ApplicationInboundOccurrenceLimits {
         maximum_envelope_bytes: n(256),
+        maximum_verifier_work: n(256),
         maximum_payload_bytes: n(64),
         maximum_outstanding_dispatch_provenance: n(3),
         maximum_accepted_occurrences: n(1),
@@ -108,12 +113,20 @@ pub(super) fn limits() -> ApplicationInboundOccurrenceLimits {
     }
 }
 
+fn wide_limits() -> ApplicationInboundOccurrenceLimits {
+    let mut limits = limits();
+    limits.maximum_outstanding_dispatch_provenance = NonZeroU64::new(4).unwrap();
+    limits.maximum_accepted_occurrences = NonZeroU64::new(3).unwrap();
+    limits.maximum_accepted_bytes = NonZeroU64::new(1_536).unwrap();
+    limits
+}
+
 worth_query_application_schema! {
     pub schema InboundTestSchema {
         owner: inbound_admission_test,
         version: (1, 0),
         members: |schema| {
-            schema
+            let schema = schema
                 .entity(Mapping::reference())
                 .entity(Principal::reference())
                 .entity(Target::reference())
@@ -169,6 +182,40 @@ worth_query_application_schema! {
                 .operation_decision_fact_budget(OtherNotifyOperation::reference(), 1)
                 .operation_projection_work_budget(OtherNotifyOperation::reference(), 8)
                 .operation_emit(OtherNotifyOperation::reference(), NoticeEffect::reference())
+                .operation(
+                    UnrelatedNotifyOperation::reference()
+                        .definition()
+                        .external_effect(
+                            NoticeEffect::reference(),
+                            WorthQueryExternalEffectCorrelationFamily::new("unrelated-test-family").unwrap(),
+                        )
+                        .no_aftermath()
+                        .finish(),
+                )
+                .operation_decision_fact_budget(UnrelatedNotifyOperation::reference(), 1)
+                .operation_projection_work_budget(UnrelatedNotifyOperation::reference(), 8)
+                .operation_emit(UnrelatedNotifyOperation::reference(), NoticeEffect::reference());
+            schema.operation(
+                    WideNotifyOperation::reference()
+                        .definition()
+                        .external_effect_with_inbound(
+                            NoticeEffect::reference(),
+                            WorthQueryExternalEffectCorrelationFamily::new("inbound-test-family").unwrap(),
+                            ApplicationInboundOccurrenceBinding::new(
+                                ApplicationInboundOccurrenceProtocol::new(
+                                    BoundaryProtocolIdentity::new(PROTOCOL),
+                                    BoundaryProtocolVersion::new(1),
+                                ),
+                                SOURCE,
+                                wide_limits(),
+                            ).unwrap(),
+                        )
+                        .no_aftermath()
+                        .finish(),
+                )
+                .operation_decision_fact_budget(WideNotifyOperation::reference(), 1)
+                .operation_projection_work_budget(WideNotifyOperation::reference(), 8)
+                .operation_emit(WideNotifyOperation::reference(), NoticeEffect::reference())
         }
     }
 }

@@ -177,6 +177,10 @@ fn push_external_effect(
                     limits.maximum_envelope_bytes.get(),
                 );
                 builder.u64(
+                    "inbound-maximum-verifier-work",
+                    limits.maximum_verifier_work.get(),
+                );
+                builder.u64(
                     "inbound-maximum-payload-bytes",
                     limits.maximum_payload_bytes.get(),
                 );

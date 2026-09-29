@@ -1,5 +1,6 @@
 //! Authentication, exact correlation and owner-retained acceptance.
 
+use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
 use sha2::{Digest, Sha256};
@@ -198,6 +199,10 @@ where
         if envelope_len > limits.maximum_envelope_bytes.get() {
             return Err(Denial::Oversized);
         }
+        installed
+            .cost
+            .verifier_input_bytes
+            .fetch_add(envelope_len, Ordering::Relaxed);
         let sample = self
             .authorization_clock
             .sample(ApplicationCapabilityValidityTimeline::UnixEpochSeconds)
@@ -207,7 +212,7 @@ where
         };
         let claims = installed
             .verifier
-            .verify(envelope, *now)
+            .verify(envelope, *now, limits.maximum_verifier_work)
             .map_err(Denial::Verification)?;
         if claims.audience != installed.verifier.audience()
             || claims.source_identity != installed.contract.source_identity()
@@ -236,6 +241,10 @@ where
             .inbound_custody
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
+        installed
+            .cost
+            .custody_key_probes
+            .fetch_add(1, Ordering::Relaxed);
         if let Some(duplicate) = custody.duplicate(handle.operation(), &claims, envelope) {
             return map_custody(duplicate);
         }
@@ -249,6 +258,10 @@ where
         let correlation = ExternalEffectCorrelationIdentity::from_digest(CanonicalDigestId::new(
             claims.correlation_token,
         ));
+        installed
+            .cost
+            .terminal_key_probes
+            .fetch_add(1, Ordering::Relaxed);
         match self.primary_provider.lookup_completed_inbound(&correlation) {
             Ok(Some(terminal)) => {
                 if !terminal.matches_effect(handle.operation(), &claims) {
@@ -268,9 +281,17 @@ where
             Ok(None) => {}
             Err(_) => return Err(Denial::RetryBeforeAcceptance),
         }
+        installed
+            .cost
+            .outbox_key_probes
+            .fetch_add(1, Ordering::Relaxed);
         let owner = self
             .observe_committed_dispatch_outbox_for_correlation(&correlation)
             .map_err(map_owner_read)?;
+        installed
+            .cost
+            .selected_outbox_records
+            .fetch_add(1, Ordering::Relaxed);
         let publication = owner.committed_product_publication();
         if owner.relational_runtime_instance_id()
             != self
@@ -300,6 +321,10 @@ where
             .inbound_custody
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
+        installed
+            .cost
+            .custody_key_probes
+            .fetch_add(1, Ordering::Relaxed);
         map_custody(custody.accept(
             handle.operation(),
             &installed.contract,

@@ -94,6 +94,7 @@ pub(super) fn write(
             output.u32(protocol.version().get())?;
             output.text(source_identity)?;
             output.u64(limits.maximum_envelope_bytes.get())?;
+            output.u64(limits.maximum_verifier_work.get())?;
             output.u64(limits.maximum_payload_bytes.get())?;
             output.u64(limits.maximum_outstanding_dispatch_provenance.get())?;
             output.u64(limits.maximum_accepted_occurrences.get())?;
@@ -158,7 +159,7 @@ pub(super) fn decode(
             operation,
             contract: aftermath::decode(input, budget)?,
         },
-        29 => ApplicationSchemaMember::OperationInboundOccurrence {
+        29 | 30 => ApplicationSchemaMember::OperationInboundOccurrence {
             operation,
             effect: input.text()?.to_owned(),
             protocol: ApplicationInboundOccurrenceProtocol::new(
@@ -168,7 +169,7 @@ pub(super) fn decode(
                     .map_err(|_| Denial::new(Kind::InvalidRecordShape))?,
             ),
             source_identity: input.text()?.to_owned(),
-            limits: decode_inbound_limits(input)?,
+            limits: decode_inbound_limits(input, tag)?,
         },
         _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
     })
@@ -176,12 +177,20 @@ pub(super) fn decode(
 
 fn decode_inbound_limits(
     input: &mut BinaryInput<'_>,
+    tag: u16,
 ) -> Result<ApplicationInboundOccurrenceLimits, Denial> {
     let mut nonzero = || {
         std::num::NonZeroU64::new(input.u64()?).ok_or_else(|| Denial::new(Kind::InvalidRecordShape))
     };
+    let maximum_envelope_bytes = nonzero()?;
+    let maximum_verifier_work = if tag == 29 {
+        maximum_envelope_bytes
+    } else {
+        nonzero()?
+    };
     let limits = ApplicationInboundOccurrenceLimits {
-        maximum_envelope_bytes: nonzero()?,
+        maximum_envelope_bytes,
+        maximum_verifier_work,
         maximum_payload_bytes: nonzero()?,
         maximum_outstanding_dispatch_provenance: nonzero()?,
         maximum_accepted_occurrences: nonzero()?,

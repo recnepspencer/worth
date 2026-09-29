@@ -21,6 +21,7 @@ fn inbound_source_protocol_and_capacity_change_schema_identity() {
         source_identity: "rail".to_owned(),
         limits: ApplicationInboundOccurrenceLimits {
             maximum_envelope_bytes: one,
+            maximum_verifier_work: one,
             maximum_payload_bytes: one,
             maximum_outstanding_dispatch_provenance: one,
             maximum_accepted_occurrences: one,

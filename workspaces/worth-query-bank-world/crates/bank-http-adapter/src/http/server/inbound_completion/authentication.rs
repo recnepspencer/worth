@@ -1,3 +1,5 @@
+use std::num::NonZeroU64;
+
 use ed25519_dalek::VerifyingKey;
 use worth_foundational::facade::{BoundaryProtocolIdentity, BoundaryProtocolVersion};
 use worth_query_host::facade::primary_graph::{
@@ -67,7 +69,19 @@ impl WorthQueryInboundOccurrenceVerifier for BankRailCompletionVerifier {
         &self,
         envelope: &[u8],
         now_seconds: u64,
+        maximum_work: NonZeroU64,
     ) -> Result<WorthQueryInboundOccurrenceClaims, WorthQueryInboundVerificationDenial> {
+        // Four envelope-length byte traversals cover signature input, decode,
+        // text validation and digest, plus one fixed Ed25519 operation.
+        // Refuse before the cryptographic or parsing work begins.
+        let byte_work = u64::try_from(envelope.len())
+            .ok()
+            .and_then(|length| length.checked_mul(4))
+            .and_then(|work| work.checked_add(64))
+            .ok_or(WorthQueryInboundVerificationDenial::WorkExhausted)?;
+        if byte_work > maximum_work.get() {
+            return Err(WorthQueryInboundVerificationDenial::WorkExhausted);
+        }
         let verified = verify_completion(
             envelope,
             RailCompletionVerification {
@@ -114,5 +128,39 @@ fn map_wire_denial(denial: CompletionWireDenial) -> WorthQueryInboundVerificatio
             WorthQueryInboundVerificationDenial::AuthenticationFailed
         }
         CompletionWireDenial::Expired => WorthQueryInboundVerificationDenial::Expired,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn verifier_refuses_insufficient_work_before_decoding_signed_bytes() {
+        let verifier = BankRailCompletionVerifier::new(
+            ed25519_dalek::SigningKey::from_bytes(&[7; 32])
+                .verifying_key()
+                .to_bytes(),
+            "bank-process-court".into(),
+            "rail-primary".into(),
+            1,
+            0,
+            BoundaryProtocolIdentity::new("bank.estate.death-notification"),
+            BoundaryProtocolVersion::new(1),
+        )
+        .unwrap();
+        let envelope = include_str!("../../protocol/inbound_completion_v1.hex")
+            .trim()
+            .as_bytes()
+            .chunks_exact(2)
+            .map(|pair| u8::from_str_radix(std::str::from_utf8(pair).unwrap(), 16).unwrap())
+            .collect::<Vec<_>>();
+        assert!(matches!(
+            verifier.verify(&envelope, 1_700_000_000, NonZeroU64::new(1).unwrap()),
+            Err(WorthQueryInboundVerificationDenial::WorkExhausted)
+        ));
+        assert!(verifier
+            .verify(&envelope, 1_700_000_000, NonZeroU64::new(20_480).unwrap())
+            .is_ok());
     }
 }

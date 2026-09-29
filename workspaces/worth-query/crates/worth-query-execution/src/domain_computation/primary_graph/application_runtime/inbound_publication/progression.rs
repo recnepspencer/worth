@@ -1,6 +1,8 @@
+use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_world::facade::RuntimeWorldPublicationOutcome;
 
 use super::outcome::{
@@ -12,7 +14,7 @@ use crate::domain_computation::execution_runtime::product_world::WorthQueryReser
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::WorthQueryProductUnpublishedApplication;
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     /// Progress one accepted occurrence at the current head of the exact
     /// incarnation that issued its dispatch. Only World Performed may become
     /// terminal completion; an unpublished Relational effect stays in custody.
@@ -22,6 +24,9 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         request: &WorthQueryRequestScope,
     ) -> Outcome {
         let owner = accepted.owner();
+        let cost = self
+            .inbound_cost_for_operation(accepted.operation())
+            .expect("accepted occurrence retains its installed operation");
         let original = owner.committed_product_publication();
         let incarnation = original.product_incarnation();
         let runtime_instance = self
@@ -51,6 +56,9 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         // entered custody but before it acquired the shared incarnation lane.
         // Recheck canonical terminal ownership here before creating a second
         // completion mutation.
+        cost.cost
+            .terminal_key_probes
+            .fetch_add(1, Ordering::Relaxed);
         match self
             .primary_provider
             .lookup_completed_inbound(accepted.owner().record().correlation())
@@ -68,6 +76,9 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
             Ok(lease) => lease,
             Err(denial) => return Outcome::Denied(Denial::ProductAdmission(denial)),
         };
+        cost.cost
+            .completion_candidate_prepares
+            .fetch_add(1, Ordering::Relaxed);
         let candidate = match self
             .primary_provider
             .prepare_inbound_completion_candidate(lease.relational_basis(), &accepted)
@@ -91,8 +102,14 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         let correlation = *accepted.owner().record().correlation();
         self.primary_provider
             .mark_inbound_completion_publication_pending(&correlation);
+        cost.cost
+            .world_publication_attempts
+            .fetch_add(1, Ordering::Relaxed);
         match prepared.execute() {
             RuntimeWorldPublicationOutcome::Performed(publication) => {
+                cost.cost
+                    .world_performed_publications
+                    .fetch_add(1, Ordering::Relaxed);
                 Outcome::Performed(WorthQueryPerformedInboundCompletion::new(
                     accepted,
                     incarnation,

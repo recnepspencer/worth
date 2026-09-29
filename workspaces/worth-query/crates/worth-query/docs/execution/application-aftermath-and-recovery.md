@@ -44,6 +44,9 @@ Declaration consumers use `worth_query_decl::facade`:
 - `application_schema::WorthQueryExternalEffectCorrelationFamily`
 - `application_schema::ApplicationOperationDefinitionBuilder::external_effect`
 - `application_schema::ApplicationOperationDefinitionBuilder::no_external_effect`
+- `application_schema::ApplicationInboundOccurrenceBinding` and
+  `ApplicationInboundOccurrenceLimits`
+- `application_schema::ApplicationOperationDefinitionBuilder::external_effect_with_inbound`
 - `application_aftermath::DeclaredApplicationAftermathContract`
 - `application_aftermath::DeclaredPreImageDemand`
 - `application_schema::ApplicationOperationDefinitionBuilder::aftermath`
@@ -58,6 +61,8 @@ Hosts use `worth_query_host::facade`:
 - `publication::domain_computation::publish_application_commit`
 - `publication::application_aftermath::publish_application_aftermath`
 - `publication::application_aftermath::publish_recovery_support`
+- `application_entry::WorthQueryApplicationInboundOccurrencesExt`
+- `primary_graph::WorthQueryPrimaryGraphApplicationRuntime::install_inbound_occurrence_verifier`
 
 Application hosts should normally wrap the generic host surface in domain-named
 operations, as Bank does with `BankCommitReceipt::aftermath()` and its recovery
@@ -78,16 +83,35 @@ It is not part of the stable feature described here.
 ## Authenticated Inbound Completion
 
 An operation with an external dispatch can declare one inbound source, protocol,
-version, and finite receiver limits. The host installs a verifier for that exact
-operation. Incoming bytes cannot select a different verifier or completion
-target. The public host entry is
+version, and finite receiver limits with `external_effect_with_inbound`. The
+host installs a verifier for that exact operation. Incoming bytes cannot select
+a different verifier or completion target. The public host entry is
 `worth_query_host::facade::application_entry::WorthQueryApplicationInboundOccurrencesExt`:
 
-```rust,ignore
+```rust
 let receipt = application.inbound_occurrences()
     .receive(&installed_source, bounded_envelope, &scope)
     .execute();
 ```
+
+`receipt` is a `Result<WorthQueryInboundReceipt,
+WorthQueryInboundAdmissionDenial>`. A denial before custody receives no Bank
+signed ACK; the sender retains the same signed bytes for its bounded retry.
+`AcceptedPending` and `AlreadyAccepted` acknowledge retained Query custody,
+not external completion. `Performed` and `AlreadyCompleted` require the exact
+World terminal. A route may diagnose a terminal only through its installed
+host handle; a public raw-correlation status endpoint would bypass this
+boundary.
+
+The compiled Bank [payment declaration](../../../../../worth-query-bank-world/crates/bank-domain/src/schema/contributions/payments.rs)
+and [workflow definition](../../../../../worth-query-bank-world/crates/bank-server/src/application_definition/workflows.rs)
+use the same typed inbound binding. Bank's
+[installed route](../../../../../worth-query-bank-world/crates/bank-server/src/inbound_completion.rs)
+obtains the verifier handle from the operation contract, then the
+[HTTP composition](../../../../../worth-query-bank-world/crates/bank-http-adapter/src/http/server/inbound_completion/route.rs)
+signs an ACK only from the resulting Query receipt. These are the executable
+source locations for the declaration, installation and host progression shown
+above.
 
 Query first verifies the signed envelope against the installed source and clock,
 then matches its correlation to one committed dispatch on the original product
@@ -105,7 +129,9 @@ not earn a custody acknowledgement.
 
 The receipt distinguishes `AcceptedPending`, `AlreadyAccepted`, `Performed`,
 and `AlreadyCompleted`. A duplicate with the same authenticated message meaning
-does no new work. A fresh message identity for an already completed effect is
+may repeat authentication and exact lookup, but adds no completion prepare,
+World publication, redispatch or retained occurrence. A fresh message identity
+for an already completed effect is
 compared with the original effect meaning and returns `AlreadyCompleted` without
 republishing. Reusing a message identity with altered signed meaning, or changing
 the correlated effect, is denied. Bank signs its transport ACK only from a Query
@@ -116,8 +142,10 @@ work cannot be evicted by age or request cancellation. After the signed replay
 cutoff and explicit delivery settlement, bounded host cleanup can release the
 accepted payload slot. The compact terminal index remains available for ordinary
 exact lookup, with its authoritative performed publication retained in World
-history. Index repair is a separate bounded operation and returns unavailable
-while proof is incomplete. This custody guarantee is process-local; forced
+history. An installed host may call `repair_completed_inbound_index` with its
+verifier handle and finite World-page, changed-record and ancestry budgets.
+Ordinary exact lookup remains unavailable while that separate repair is
+incomplete. This custody guarantee is process-local; forced
 process death has no recovery promise.
 
 The installed host wakes bounded custodian maintenance for retained work,

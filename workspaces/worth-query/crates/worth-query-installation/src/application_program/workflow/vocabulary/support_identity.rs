@@ -54,13 +54,16 @@ pub(super) fn derive(
             }
             .to_owned(),
         ];
-        if let Some((effect, protocol, source, limits)) = &operation.inbound {
+        if let Some(inbound) = &operation.inbound_ref {
+            let protocol = inbound.protocol();
+            let limits = inbound.limits();
             values.extend([
-                effect.clone(),
+                inbound.effect().to_owned(),
                 protocol.identity().as_str().to_owned(),
                 protocol.version().get().to_string(),
-                source.clone(),
+                inbound.source_identity().to_owned(),
                 limits.maximum_envelope_bytes.get().to_string(),
+                limits.maximum_verifier_work.get().to_string(),
                 limits.maximum_payload_bytes.get().to_string(),
                 limits
                     .maximum_outstanding_dispatch_provenance

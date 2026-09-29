@@ -64,6 +64,7 @@ fn inbound_occurrence_requires_the_exact_outbound_effect() {
         source_identity: "rail".to_owned(),
         limits: super::ApplicationInboundOccurrenceLimits {
             maximum_envelope_bytes: one,
+            maximum_verifier_work: one,
             maximum_payload_bytes: one,
             maximum_outstanding_dispatch_provenance: one,
             maximum_accepted_occurrences: one,

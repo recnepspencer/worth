@@ -11,7 +11,7 @@ use super::{ApplicationWorkflowNodeIdentity, ApplicationWorkflowSpec};
 /// field to the origin operation's one installed inbound effect.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ApplicationWorkflowInboundRef {
-    effect: &'static str,
+    effect: String,
     effect_type: TypeId,
     protocol: ApplicationInboundOccurrenceProtocol,
     source_identity: String,
@@ -25,7 +25,7 @@ impl ApplicationWorkflowInboundRef {
         Effect: ApplicationEffectMarkerIdentity<Spec::Schema> + 'static,
     {
         Self {
-            effect: Effect::IDENTIFIER,
+            effect: Effect::IDENTIFIER.to_owned(),
             effect_type: TypeId::of::<Effect>(),
             protocol: binding.protocol().clone(),
             source_identity: binding.source_identity().to_owned(),
@@ -33,8 +33,8 @@ impl ApplicationWorkflowInboundRef {
         }
     }
 
-    pub const fn effect(&self) -> &'static str {
-        self.effect
+    pub fn effect(&self) -> &str {
+        &self.effect
     }
     pub const fn effect_type(&self) -> TypeId {
         self.effect_type
@@ -47,6 +47,22 @@ impl ApplicationWorkflowInboundRef {
     }
     pub const fn limits(&self) -> ApplicationInboundOccurrenceLimits {
         self.limits
+    }
+
+    pub(crate) fn from_member_provenance(
+        effect: String,
+        effect_type: TypeId,
+        protocol: ApplicationInboundOccurrenceProtocol,
+        source_identity: String,
+        limits: ApplicationInboundOccurrenceLimits,
+    ) -> Self {
+        Self {
+            effect,
+            effect_type,
+            protocol,
+            source_identity,
+            limits,
+        }
     }
 }
 
@@ -64,7 +80,8 @@ pub struct ApplicationWorkflowAwaitInbound {
 }
 
 impl ApplicationWorkflowAwaitInbound {
-    pub(crate) fn new(
+    #[doc(hidden)]
+    pub fn new(
         origin: ApplicationWorkflowNodeIdentity,
         inbound: ApplicationWorkflowInboundRef,
         wait: ApplicationWorkflowInboundWait,

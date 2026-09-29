@@ -152,6 +152,11 @@ pub(in crate::domain_computation) enum WorthQueryInboundPublicationClaim {
 }
 
 impl WorthQueryInboundCustody {
+    pub(in crate::domain_computation) fn usage_for_operation(&self, operation: &str) -> (u64, u64) {
+        self.usage_by_operation
+            .get(operation)
+            .map_or((0, 0), |usage| (usage.count, usage.bytes))
+    }
     pub(in crate::domain_computation) fn reserve_transport_publication(
         custody: Arc<Mutex<Self>>,
         operation: &str,

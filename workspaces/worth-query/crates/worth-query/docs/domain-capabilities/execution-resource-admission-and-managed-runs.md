@@ -59,6 +59,14 @@ payload byte limits, replay window, discovery work, and cleanup work are finite
 at installation. Exhaustion denies new admission before taking custody; it
 does not evict pending or unpublished evidence.
 
+The verifier is installed by the host for one declared operation; the request
+cannot nominate another mechanism. Query rejects an oversized envelope before
+calling it. The installed verifier's finite work ceiling is part of that
+operation contract, and the trusted mechanism must stop with a typed denial
+when its budget is spent. Bank's fixed v1 signature and decoder walk only the
+bounded envelope. A byte ceiling alone would not prove arbitrary product
+verifier CPU work, so hosts must install a budget-aware mechanism.
+
 An outbound physical attempt holds a move-only claim on its original finite
 outbox reservation. If a callback seals the terminal while that attempt is
 still in flight, the reservation stays charged. A real `Completed` observation
@@ -70,14 +78,51 @@ After World performs a completion, the owner keeps exact terminal history and
 a compact lookup entry. Host-requested cleanup can reclaim an accepted payload
 slot only after signed expiry, original dispatch handoff, and delivery
 settlement. The exact lookup checks its retained World protection and sealed
-Relational pairing under the declared cleanup work limit. A lost derived terminal index is repaired with
-an explicit bounded history pass; ordinary requests fail closed while that
-proof is incomplete. Runtime close must expose unresolved obligations, and a
+Relational pairing under the declared cleanup work limit. A lost derived
+terminal index is repaired with an explicit bounded history pass; ordinary
+requests fail closed while that proof is incomplete. Runtime close must expose
+unresolved obligations, and a
 forced process exit does not preserve this process-local custody.
 
-The Bank rail installation owns one serial cue-driven maintenance task. Each batch uses
-fresh request controls and the installed verifier handle, examines at most the
-declared discovery work, rotates past blocked entries, and reclaims only
+`observe_inbound_cost(&installed_source)` is a cumulative, read-only,
+operation-scoped observation of the signed inbound lane. It reports verifier
+input bytes, exact terminal and outbox key
+probes, selected outbox records, completion candidate prepares, World
+publication attempts/performed publications, current accepted count/charged
+bytes, and outstanding dispatch provenance. These fields count their named
+owner events; Bank separately owns HTTP/rail contacts and workflow separately
+owns transitions. Compare snapshots around a fixed-size callback at small and
+large unrelated populations. Duplicate volume may add verification and exact
+lookup work, but must add no prepare, World publication, redispatch, workflow
+transition or retained occurrence after terminal settlement.
+
+Cleanup's `maximum_work` is a selected-candidate page bound, intersected with
+the installed `maximum_cleanup_work`; each selected candidate gets exact
+canonical revalidation before release. Pending and unpublished entries never
+enter the expiry turnover index. Explicit index reconstruction has its own
+bounded World-page, changed-record and ancestry budgets, with no hidden scan
+on ordinary lookup. A blocked repair leaves the index unavailable rather than
+answering from partial proof.
+
+The trusted host enters repair through the runtime-issued verifier handle:
+
+```rust
+let complete = application.repair_completed_inbound_index(
+    &installed_source,
+    world_page,
+    changed_records_per_commit,
+    ancestry_commits_per_completion,
+)?;
+```
+
+The installed discovery ceiling narrows `world_page`; the other two values are
+explicit finite repair budgets. `Ok(false)` retains a cursor for another call.
+The handle selects an installed runtime, while the repair itself rebuilds the
+runtime's disposable terminal index and never runs from ordinary lookup.
+
+The Bank rail installation owns one serial cue-driven maintenance task. Each
+batch uses fresh request controls and the installed verifier handle, examines at
+most the declared discovery work, rotates past blocked entries, and reclaims only
 terminal entries that satisfy the declared cleanup bound. Orderly server
 shutdown waits for the current batch; this task continues already accepted
 custody after the source envelope expires without opening a raw correlation

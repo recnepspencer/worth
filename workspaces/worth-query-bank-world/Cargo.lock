@@ -144,6 +144,7 @@ dependencies = [
  "tokio",
  "url",
  "worth-query-host",
+ "worth-query-package-archive",
 ]
 
 [[package]]
@@ -3203,6 +3204,16 @@ dependencies = [
  "worth-proof",
  "worth-query-declaration",
  "zeroize",
+]
+
+[[package]]
+name = "worth-query-package-archive"
+version = "0.1.0"
+dependencies = [
+ "sha2",
+ "worth-foundational",
+ "worth-query-declaration",
+ "worth-query-installation",
 ]
 
 [[package]]

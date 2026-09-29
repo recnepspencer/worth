@@ -67,8 +67,9 @@ lifetime. Capacity is reserved before a recovery-producing domain effect.
 
 ## Rail Completion Callback
 
-`NotifyDeath` commits one external dispatch before the separate rail can
-complete its consequence. The rail sends a signed v1 completion to the Bank
+`NotifyDeath` and approved-payment settlement each commit one external
+dispatch before the separate rail can complete its consequence. The rail sends
+a signed v1 completion to the Bank
 server's private `POST /v1/inbound/rail-completions` route. The route installs
 one rail Ed25519 verification key, audience, source (`rail-primary`), and key
 epoch. Callback bytes cannot select another verifier or operation. Bank checks
@@ -97,6 +98,42 @@ rail `Completed` response also enters Query's World completion path with
 transport provenance, and the later signed callback receives
 `AlreadyCompleted` for the same effect.
 
+The v1 callback body is the exact bytes below, followed by a 64-byte Ed25519
+signature over the preceding bytes. Integers are unsigned big-endian; text is
+UTF-8 preceded by its `u16` byte length. The token uses a `u16` byte length
+and the payload uses `u32`. No field is optional or extensible in v1.
+
+| Order | Field |
+| --- | --- |
+| 1 | `BANK-COMPLETION1` (16 bytes), audience, source, key epoch (`u64`) |
+| 2 | Message ID (32 bytes), issued and expires Unix seconds (`u64` each) |
+| 3 | Effect protocol identity, version (`u16`), correlation family, token, exact effect payload |
+
+The rail derives the message ID as SHA-256 of `bank-rail-completion-id-v1`,
+then the length-prefixed audience and source, key epoch, protocol identity and
+version, correlation family and token, and payload in that order. This identity
+stays stable across retries. Bank's ACK signs `BANK-CUSTODY-ACK` (16 bytes),
+the one-byte posture, message ID, and SHA-256 of the complete signed callback
+body. The rail verifies both that signature and the exact message/digest; an
+HTTP 200 or altered ACK cannot release its sender obligation.
+
+The first compatibility window accepts v1 only. New versions require explicit
+coexistence and retirement rules at installation; v1 bytes are never
+reinterpreted or downgraded by a caller. Bank verifies the installed audience,
+source, epoch, signature, protocol and original dispatch. A message remains
+acceptable through its signed expiry second, subject to the installed clock
+skew and replay-window ceiling; after expiry it cannot create new custody.
+Already accepted evidence continues through bounded maintenance without
+reauthenticating expired bytes. Pending or unpublished custody is never evicted
+at a request deadline or replay cutoff.
+
+The installed Bank declaration caps an envelope at 4,096 bytes and verifier
+work at 20,480 abstract units. Its verifier charges four bounded byte passes
+and one fixed signature operation (`4 × envelope length + 64`) and refuses a
+budget excess before authentication. An arbitrary product verifier must honor
+its own installed work budget; a byte cap by itself does not constrain
+arbitrary code.
+
 For HTTPS deployment, install one PEM Bank TLS trust certificate and the
 separate Bank ACK verification key in the rail sender configuration. Reqwest
 uses only that installed root and does not follow redirects. Loopback HTTP is
@@ -119,9 +156,31 @@ let delivery = RailCompletionDeliveryConfiguration::new(
 )?;
 ```
 
+The Bank side installs the matching rail verification key, the Bank ACK
+signing seed, and the same audience, source and key epoch through
+`BankRailCompletionServerInstallation::new`. The installation creates fixed
+estate and payment verifiers; callback bytes cannot add a protocol or replace
+either verifier. The
+[real process setup](../crates/bank-courtroom/tests/transport_process_courtroom/rail_completion.rs)
+and [payment setup](../crates/bank-courtroom/tests/transport_process_courtroom/payment/setup.rs)
+exercise both installed routes. Rotate keys and epochs through an explicit
+deployment overlap and retirement policy; the current single-key process
+installation does not negotiate versions or silently accept an old key.
+
 `RailProcessHandle::close()` stops new rail contacts and returns
 `RailCompletionDeliveryPosture { reserved, pending, exhausted }` after the
 child prints `CLOSING` and exits. Pending includes exhausted obligations.
+The Bank HTTP server's orderly `shutdown()` drains its listener and current
+maintenance batch, then returns a `BankHttpServerClose`. Its rail assessment
+reports pending recovery work, outstanding dispatch provenance, retained
+accepted custody, blocked work, the next replay-cleanup expiry, and whether an
+installed route could not be assessed. These owner views can overlap and must
+not be summed. An unavailable assessment must not be read as zero outstanding
+work. A shutdown failure also retains the close result through `into_close()`.
+The close result can transfer the original installed route into a
+`BankRailCompletionContinuation`; a surviving host may call `continue_once()`
+after owner recovery without reinstalling a verifier or opening another HTTP
+listener.
 Dropping the handle forces termination and gives no delivery survival promise;
 the sender and Query custody in this phase are process-local.
 

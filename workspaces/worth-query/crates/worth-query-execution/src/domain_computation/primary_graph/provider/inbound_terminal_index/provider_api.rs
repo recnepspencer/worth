@@ -73,13 +73,13 @@ impl WorthQueryPrimaryGraphProvider {
         self.inbound_terminal_index.lookup(correlation)
     }
 
-    pub(in crate::domain_computation::primary_graph) fn prune_completed_inbound(
+    pub(in crate::domain_computation::primary_graph) fn verify_completed_inbound_for_cleanup(
         &self,
         correlations: &[ExternalEffectCorrelationIdentity],
         now_unix_seconds: u64,
     ) -> Result<(), WorthQueryInboundTerminalIndexDenial> {
         self.inbound_terminal_index
-            .prune_expired(correlations, now_unix_seconds)
+            .verify_expired_for_cleanup(correlations, now_unix_seconds)
     }
 
     #[cfg(test)]

@@ -2,6 +2,7 @@ mod aftermath_routes;
 mod application;
 mod authenticated_owner;
 mod authentication;
+mod closure;
 mod configuration;
 mod continuation_executor;
 mod continuation_registry;
@@ -38,9 +39,12 @@ use tokio::task::JoinHandle;
 use crate::AuthentikBankIdentity;
 
 use authentication::BankHttpApplicationAuthenticator;
+pub use closure::{BankHttpServerClose, BankHttpServerCloseFailure};
 pub use configuration::BankHttpServerConfiguration;
 pub use inbound_completion::{
-    BankRailCallbackServer, BankRailCallbackServerBinding, BankRailCompletionServerInstallation,
+    BankRailCallbackServer, BankRailCallbackServerBinding, BankRailCloseAssessment,
+    BankRailCompletionClose, BankRailCompletionCloseFailure, BankRailCompletionContinuation,
+    BankRailCompletionServerInstallation,
 };
 use live_executor::BankHttpLiveExecutor;
 use queue::BankHttpExecutionQueue;
@@ -58,6 +62,7 @@ pub struct BankHttpServer {
     elevation_task: Option<JoinHandle<()>>,
     recovery_task: Option<JoinHandle<()>>,
     rail_maintenance_task: Option<JoinHandle<io::Result<()>>>,
+    rail_maintenance_deadline: std::time::Duration,
     live_thread: Option<std::thread::JoinHandle<io::Result<()>>>,
 }
 
@@ -143,6 +148,13 @@ impl BankHttpServer {
             .observe_terminal(correlation_token)
     }
 
+    /// Observe bounded work for the installed estate completion route.
+    pub fn observe_estate_rail_completion_cost(
+        &self,
+    ) -> Option<worth_query_host::facade::primary_graph::WorthQueryInboundCostObservation> {
+        self.rail_completion.as_ref()?.observe_estate_cost()
+    }
+
     /// Cue one bounded owner continuation after an external recovery or
     /// capacity change affecting the installed rail completion route.
     pub fn continue_rail_completion(&self) {
@@ -151,7 +163,7 @@ impl BankHttpServer {
         }
     }
 
-    pub async fn shutdown(mut self) -> io::Result<()> {
+    pub async fn shutdown(mut self) -> Result<BankHttpServerClose, BankHttpServerCloseFailure> {
         self.live_shutdown.send_replace(true);
         if let Some(shutdown) = self.shutdown.take() {
             let _ = shutdown.send(());
@@ -198,7 +210,22 @@ impl BankHttpServer {
                 .and_then(|result| result),
             );
         }
-        first_error.map_or(Ok(()), Err)
+        let rail_completion = match self.rail_completion.take() {
+            Some(route) => Some(
+                inbound_completion::BankRailCompletionContinuation::new(
+                    route,
+                    self.rail_maintenance_deadline,
+                )
+                .close()
+                .await,
+            ),
+            None => None,
+        };
+        let close = BankHttpServerClose::new(rail_completion);
+        match first_error {
+            Some(error) => Err(BankHttpServerCloseFailure::new(error, close)),
+            None => Ok(close),
+        }
     }
 }
 
@@ -340,6 +367,7 @@ where
         continuation_task: Some(continuation_task),
         recovery_task: Some(recovery_task),
         rail_maintenance_task,
+        rail_maintenance_deadline: configuration.maximum_deadline(),
         elevation_task: Some(elevation_task),
         live_thread: Some(live_thread),
     })

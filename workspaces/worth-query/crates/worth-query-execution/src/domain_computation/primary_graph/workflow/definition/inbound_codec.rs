@@ -11,11 +11,12 @@ use worth_query_declaration::facade::application_schema::{
 pub(super) fn encode(inbound: &ApplicationWorkflowInboundRef) -> String {
     let limits = inbound.limits();
     serde_json::json!([
-        1,
+        2,
         inbound.protocol().identity().as_str(),
         inbound.protocol().version().get(),
         inbound.source_identity(),
         limits.maximum_envelope_bytes.get(),
+        limits.maximum_verifier_work.get(),
         limits.maximum_payload_bytes.get(),
         limits.maximum_outstanding_dispatch_provenance.get(),
         limits.maximum_accepted_occurrences.get(),
@@ -36,7 +37,8 @@ pub(super) fn decode(
     ApplicationInboundOccurrenceLimits,
 )> {
     let values: Vec<serde_json::Value> = serde_json::from_str(encoded).ok()?;
-    if values.len() != 13 || values[0].as_u64()? != 1 {
+    let legacy = values.len() == 13 && values[0].as_u64()? == 1;
+    if !legacy && (values.len() != 14 || values[0].as_u64()? != 2) {
         return None;
     }
     let identity = BoundaryProtocolIdentity::parse(values[1].as_str()?.to_owned()).ok()?;
@@ -47,16 +49,18 @@ pub(super) fn decode(
         return None;
     }
     let number = |index: usize| NonZeroU64::new(values[index].as_u64()?);
+    let shift = usize::from(!legacy);
     let limits = ApplicationInboundOccurrenceLimits {
         maximum_envelope_bytes: number(4)?,
-        maximum_payload_bytes: number(5)?,
-        maximum_outstanding_dispatch_provenance: number(6)?,
-        maximum_accepted_occurrences: number(7)?,
-        maximum_accepted_bytes: number(8)?,
-        maximum_concurrent_publications: number(9)?,
-        maximum_discovery_work: number(10)?,
-        replay_window_milliseconds: number(11)?,
-        maximum_cleanup_work: number(12)?,
+        maximum_verifier_work: if legacy { number(4)? } else { number(5)? },
+        maximum_payload_bytes: number(5 + shift)?,
+        maximum_outstanding_dispatch_provenance: number(6 + shift)?,
+        maximum_accepted_occurrences: number(7 + shift)?,
+        maximum_accepted_bytes: number(8 + shift)?,
+        maximum_concurrent_publications: number(9 + shift)?,
+        maximum_discovery_work: number(10 + shift)?,
+        replay_window_milliseconds: number(11 + shift)?,
+        maximum_cleanup_work: number(12 + shift)?,
     };
     if !limits.accommodates_payload() {
         return None;

@@ -339,7 +339,7 @@ impl WorthQueryInboundTerminalIndex {
         }
     }
 
-    fn prune_expired(
+    fn verify_expired_for_cleanup(
         &self,
         correlations: &[ExternalEffectCorrelationIdentity],
         now: u64,

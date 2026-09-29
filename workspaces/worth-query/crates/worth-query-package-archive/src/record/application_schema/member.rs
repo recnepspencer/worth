@@ -79,7 +79,7 @@ pub(super) fn decode(
     match input.u16()? {
         tag @ 1..=5 | tag @ 25..=26 => schema::decode(tag, input),
         tag @ 6..=10 => capability::decode(tag, input, budget),
-        tag @ 11..=18 | tag @ 29 => operation::decode(tag, input, budget),
+        tag @ 11..=18 | tag @ (29 | 30) => operation::decode(tag, input, budget),
         tag @ 19..=22 => authorization::decode(tag, input, budget),
         tag @ 23..=24 => vocabulary::decode(tag, input),
         27 => invariant::decode(input, budget),
@@ -116,7 +116,7 @@ pub(super) fn member_tag(member: &ApplicationSchemaMember) -> u16 {
         ApplicationSchemaMember::OperationDecisionFactBudget { .. } => 15,
         ApplicationSchemaMember::OperationProjectionWorkBudget { .. } => 16,
         ApplicationSchemaMember::OperationExternalEffect { .. } => 17,
-        ApplicationSchemaMember::OperationInboundOccurrence { .. } => 29,
+        ApplicationSchemaMember::OperationInboundOccurrence { .. } => 30,
         ApplicationSchemaMember::OperationAftermath { .. } => 18,
         ApplicationSchemaMember::Policy { .. } => 19,
         ApplicationSchemaMember::Ability { .. } => 20,

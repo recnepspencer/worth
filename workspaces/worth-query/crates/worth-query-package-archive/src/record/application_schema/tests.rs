@@ -133,6 +133,7 @@ fn inbound_occurrence_round_trips_under_new_tag_without_changing_old_effect_tag(
         source_identity: "bank-rail".to_owned(),
         limits: ApplicationInboundOccurrenceLimits {
             maximum_envelope_bytes: one,
+            maximum_verifier_work: one,
             maximum_payload_bytes: one,
             maximum_outstanding_dispatch_provenance: one,
             maximum_accepted_occurrences: one,
@@ -143,12 +144,33 @@ fn inbound_occurrence_round_trips_under_new_tag_without_changing_old_effect_tag(
             maximum_cleanup_work: one,
         },
     };
-    assert_eq!(super::member::member_tag(&member), 29);
+    assert_eq!(super::member::member_tag(&member), 30);
     assert_eq!(decode_member(&encode_member(&member)), member);
     assert_eq!(
         super::member::member_tag(&fixture::complete_untrusted_schema_record().members()[16]),
         17,
     );
+}
+
+#[test]
+fn legacy_inbound_tag_retains_its_bytes_and_derives_a_finite_verifier_ceiling() {
+    let mut output = BinaryOutput::with_capacity(128);
+    output.u16(29);
+    output.text("notify");
+    output.text("death-notice");
+    output.text("bank.rail-completion");
+    output.u32(1);
+    output.text("bank-rail");
+    for value in [512_u64, 256, 8, 8, 2048, 2, 16, 60_000, 16] {
+        output.u64(value);
+    }
+    let bytes = output.into_bytes();
+    let ApplicationSchemaMember::OperationInboundOccurrence { limits, .. } = decode_member(&bytes)
+    else {
+        panic!("legacy tag remains an inbound member")
+    };
+    assert_eq!(limits.maximum_envelope_bytes.get(), 512);
+    assert_eq!(limits.maximum_verifier_work.get(), 512);
 }
 
 #[test]

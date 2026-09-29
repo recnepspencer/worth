@@ -32,3 +32,48 @@ pub(super) fn verify_ack(
         .ok()?;
     Some(posture)
 }
+
+#[cfg(test)]
+mod tests {
+    use ed25519_dalek::SigningKey;
+    use sha2::{Digest, Sha256};
+
+    use super::*;
+
+    #[test]
+    fn fixed_bank_ack_verifies_exact_completion() {
+        let body = include_str!("estate_v1.hex")
+            .trim()
+            .as_bytes()
+            .chunks_exact(2)
+            .map(|pair| u8::from_str_radix(std::str::from_utf8(pair).unwrap(), 16).unwrap())
+            .collect::<Vec<_>>();
+        let message_id: [u8; 32] = body[58..90].try_into().unwrap();
+        let digest: [u8; 32] = Sha256::digest(&body).into();
+        let completion = SignedRailCompletion::new(body, message_id, digest);
+        let ack = include_str!("custody_ack_v1.hex")
+            .trim()
+            .as_bytes()
+            .chunks_exact(2)
+            .map(|pair| u8::from_str_radix(std::str::from_utf8(pair).unwrap(), 16).unwrap())
+            .collect::<Vec<_>>();
+        assert_eq!(
+            verify_ack(
+                &ack,
+                &completion,
+                &SigningKey::from_bytes(&[9; 32]).verifying_key().to_bytes()
+            ),
+            Some(RailCustodyAckPosture::AcceptedPending)
+        );
+        let mut altered = ack;
+        altered[49] ^= 1;
+        assert_eq!(
+            verify_ack(
+                &altered,
+                &completion,
+                &SigningKey::from_bytes(&[9; 32]).verifying_key().to_bytes()
+            ),
+            None
+        );
+    }
+}

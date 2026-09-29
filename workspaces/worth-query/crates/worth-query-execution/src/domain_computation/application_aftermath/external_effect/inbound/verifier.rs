@@ -5,6 +5,10 @@ use worth_foundational::facade::{BoundaryProtocolIdentity, BoundaryProtocolVersi
 /// Implementations must verify exact bytes, source key, audience and validity
 /// against the supplied Query clock sample before returning claims. Query checks those claims against its
 /// installed operation and authoritative dispatch provenance.
+/// The trusted implementation must conservatively account its own bounded
+/// parsing and authentication work against `maximum_work` and return
+/// `WorkExhausted` before exceeding it. Work units are mechanism-defined; the
+/// numeric limit does not preempt arbitrary product code.
 pub trait WorthQueryInboundOccurrenceVerifier: Send + Sync {
     fn audience(&self) -> &str;
     fn source_identity(&self) -> &str;
@@ -15,6 +19,7 @@ pub trait WorthQueryInboundOccurrenceVerifier: Send + Sync {
         &self,
         envelope: &[u8],
         now_unix_seconds: u64,
+        maximum_work: std::num::NonZeroU64,
     ) -> Result<WorthQueryInboundOccurrenceClaims, WorthQueryInboundVerificationDenial>;
 }
 
@@ -27,5 +32,6 @@ pub enum WorthQueryInboundVerificationDenial {
     TimeUnavailable,
     Malformed,
     Oversized,
+    WorkExhausted,
     Expired,
 }

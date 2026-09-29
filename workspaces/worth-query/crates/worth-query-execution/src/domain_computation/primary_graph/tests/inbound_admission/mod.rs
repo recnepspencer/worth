@@ -1,6 +1,7 @@
 mod capacity_race_tests;
 mod cleanup_tests;
 mod compact_transport_message_tests;
+mod cost_tests;
 mod delivery_tests;
 mod fixture;
 mod operation_binding_tests;

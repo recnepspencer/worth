@@ -42,7 +42,11 @@ impl WorthQueryInboundOccurrenceVerifier for TestVerifier {
         &self,
         envelope: &[u8],
         now_unix_seconds: u64,
+        maximum_work: std::num::NonZeroU64,
     ) -> Result<WorthQueryInboundOccurrenceClaims, Denial> {
+        if u64::try_from(envelope.len()).unwrap_or(u64::MAX) > maximum_work.get() {
+            return Err(Denial::WorkExhausted);
+        }
         if envelope.len() < BODY_PREFIX + MAC_BYTES {
             return Err(Denial::Malformed);
         }

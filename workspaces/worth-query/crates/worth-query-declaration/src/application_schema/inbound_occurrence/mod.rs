@@ -17,6 +17,7 @@ mod tests {
     fn limits() -> ApplicationInboundOccurrenceLimits {
         ApplicationInboundOccurrenceLimits {
             maximum_envelope_bytes: NonZeroU64::new(1024).unwrap(),
+            maximum_verifier_work: NonZeroU64::new(1024).unwrap(),
             maximum_payload_bytes: NonZeroU64::new(256).unwrap(),
             maximum_outstanding_dispatch_provenance: NonZeroU64::new(8).unwrap(),
             maximum_accepted_occurrences: NonZeroU64::new(8).unwrap(),

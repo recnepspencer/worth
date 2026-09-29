@@ -26,6 +26,11 @@ thirtyfour.workspace = true
 tokio.workspace = true
 url.workspace = true
 worth-query-host.workspace = true
+worth-query-package-archive = { path = "../../../worth-query/crates/worth-query-package-archive" }
+
+[[test]]
+name = "payment_workflow_archive"
+path = "tests/payment_workflow_archive.rs"
 
 [[test]]
 name = "async_identity_courtroom"

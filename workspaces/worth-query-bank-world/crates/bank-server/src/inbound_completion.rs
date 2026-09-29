@@ -6,10 +6,10 @@ use std::sync::Arc;
 use bank_domain::schema::{ApprovePaymentOperation, NotifyDeathEstateOperation};
 use worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope;
 use worth_query_host::facade::primary_graph::{
-    WorthQueryInboundAdmissionDenial, WorthQueryInboundMaintenanceReport,
-    WorthQueryInboundOccurrenceVerifier, WorthQueryInboundReceipt,
-    WorthQueryInboundTerminalObservation, WorthQueryInboundVerifierHandle,
-    WorthQueryInboundVerifierInstallationDenial,
+    WorthQueryInboundAdmissionDenial, WorthQueryInboundCostObservation,
+    WorthQueryInboundMaintenanceReport, WorthQueryInboundOccurrenceVerifier,
+    WorthQueryInboundReceipt, WorthQueryInboundTerminalObservation,
+    WorthQueryInboundVerifierHandle, WorthQueryInboundVerifierInstallationDenial,
 };
 
 use crate::BankIdentityRuntime;
@@ -66,6 +66,14 @@ impl BankIdentityRuntime {
             .observe_inbound_terminal(&route.handle, correlation_token)
     }
 
+    pub fn observe_payment_rail_completion_cost(
+        &self,
+        route: &BankPaymentRailCompletionRoute,
+    ) -> Option<WorthQueryInboundCostObservation> {
+        self.application_runtime()
+            .observe_inbound_cost(&route.handle)
+    }
+
     pub fn maintain_payment_rail_completion(
         &self,
         route: &BankPaymentRailCompletionRoute,
@@ -111,6 +119,14 @@ impl BankIdentityRuntime {
     ) -> Option<WorthQueryInboundTerminalObservation> {
         self.application_runtime()
             .observe_inbound_terminal(&route.handle, correlation_token)
+    }
+
+    pub fn observe_estate_rail_completion_cost(
+        &self,
+        route: &BankEstateRailCompletionRoute,
+    ) -> Option<WorthQueryInboundCostObservation> {
+        self.application_runtime()
+            .observe_inbound_cost(&route.handle)
     }
 
     /// Advance retained custody through this installed route after the source

@@ -1,11 +1,11 @@
 # Milestone 9.17.7: Inbound Occurrences And External Effect Completion
 
-> **Status:** Phase 1 static Bank completion and Phase 2 workflow consumption
-> are certified; resource/public closure remains. Design grounded in Query, World, Bank and
-> Proprietary boundaries on 2026-09-29. [9.17.4](./milestone-9.17.4.md) and
+> **Status:** Phases 1–3 are implemented and independently certified on
+> 2026-09-29. Design grounded in Query, World, Bank and Proprietary boundaries.
+> [9.17.4](./milestone-9.17.4.md) and
 > [9.17.6](./milestone-9.17.6.md) supply publication delivery and workflow custody;
 > they did not supply inbound completion at this milestone's start. New names
-> and call shapes below specify the full destination, including Phase 3 work.
+> and call shapes below specify the delivered destination.
 
 ## Goal And Roadmap Placement
 

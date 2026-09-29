@@ -207,14 +207,10 @@ where
                     .filter(|candidate| {
                         candidate.marker == operation.operation_type()
                             && candidate.identifier == operation.identifier()
-                            && candidate.inbound.as_ref().is_some_and(
-                                |(effect, protocol, source, limits)| {
-                                    effect == inbound.effect()
-                                        && protocol == inbound.protocol()
-                                        && source == inbound.source_identity()
-                                        && *limits == inbound.limits()
-                                },
-                            )
+                            && candidate
+                                .inbound_ref
+                                .as_ref()
+                                .is_some_and(|typed| typed == inbound)
                     })
                     .count()
                     == 1

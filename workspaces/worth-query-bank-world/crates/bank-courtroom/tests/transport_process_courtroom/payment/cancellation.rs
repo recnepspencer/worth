@@ -135,7 +135,10 @@ async fn callback_settled_cancellation_survives_late_exact_duplicate() {
         .expect("signed duplicate ACK is readable");
     assert_eq!(ack.len(), CUSTODY_ACK_V1_BYTES);
     assert_eq!(&ack[..16], CUSTODY_ACK_V1_MAGIC);
-    assert_eq!(ack[16], 2, "the exact signed message replays its performed custody");
+    assert_eq!(
+        ack[16], 2,
+        "the exact signed message replays its performed custody"
+    );
     let retained = court
         .bank
         .observe_rail_completion(token)

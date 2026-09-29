@@ -93,7 +93,18 @@ pub(crate) enum DraftMember {
     EvidenceJoin {
         policy: String,
     },
+    AwaitInbound(DraftInbound),
     Terminal,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(crate) struct DraftInbound {
+    origin: String,
+    effect: String,
+    protocol:
+        worth_query_declaration::facade::application_schema::ApplicationInboundOccurrenceProtocol,
+    source: String,
+    limits: worth_query_declaration::facade::application_schema::ApplicationInboundOccurrenceLimits,
 }
 
 /// A condition as the draft names it.

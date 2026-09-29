@@ -5,18 +5,21 @@ use std::task::{Context, Poll, Waker};
 use std::time::{Duration, SystemTime};
 
 use worth_query_admission::facade::authenticated_principal::*;
-use worth_query_declaration::facade::application_schema::TypedMutationPreconditions;
+use worth_query_declaration::facade::application_schema::{
+    OperationEmits, TypedMutationPreconditions,
+};
 use worth_query_declaration::facade::authentication::{
     WorthQueryExternalPrincipalIdentity, WorthQueryPrincipalMappingStatus,
 };
 use worth_query_installation::facade::{
     WorthQueryInstallationAdmissionProfile, WorthQueryInstallationGeneration,
-    WorthQueryPortableDomainIdentity, WorthQueryPortableDomainPackage,
+    WorthQueryInstalledApplicationOperation, WorthQueryPortableDomainIdentity,
+    WorthQueryPortableDomainPackage,
 };
 
 use super::schema::{
     IdentityBinding, InboundTestSchema, Notice, NoticeEffect, NotifyOperation,
-    OtherNotifyOperation, Target, TargetKey,
+    OtherNotifyOperation, Target, TargetKey, UnrelatedNotifyOperation,
 };
 use super::verifier::TestVerifier;
 use crate::domain_computation::execution_runtime::{
@@ -36,7 +39,7 @@ pub(super) struct InboundWorld {
     invariant: WorthQueryApplicationInvariantProjectionAuthority<InboundTestSchema>,
     pub verifier: WorthQueryInboundVerifierHandle,
 }
-
+mod wide;
 pub(super) fn installed_world() -> InboundWorld {
     let declaration = InboundTestSchema::declaration().unwrap();
     let package = WorthQueryPortableDomainPackage::new(WorthQueryPortableDomainIdentity::new(
@@ -108,9 +111,41 @@ pub(super) fn installed_world() -> InboundWorld {
 impl InboundWorld {
     pub fn commit_other_dispatch(
         &self,
-        seed: u8,
+        seed: u64,
         text: &str,
     ) -> WorthQueryApplicationCommitReceipt {
+        let operation = self
+            .application
+            .installed_schema()
+            .installed_operation(OtherNotifyOperation::reference())
+            .unwrap();
+        self.commit_nonselected_dispatch(operation, seed, text)
+    }
+
+    pub fn commit_unrelated_dispatch(
+        &self,
+        seed: u64,
+        text: &str,
+    ) -> WorthQueryApplicationCommitReceipt {
+        let operation = self
+            .application
+            .installed_schema()
+            .installed_operation(UnrelatedNotifyOperation::reference())
+            .unwrap();
+        self.commit_nonselected_dispatch(operation, seed, text)
+    }
+
+    fn commit_nonselected_dispatch<Operation, Input>(
+        &self,
+        operation: WorthQueryInstalledApplicationOperation<InboundTestSchema, Operation, Input>,
+        seed: u64,
+        text: &str,
+    ) -> WorthQueryApplicationCommitReceipt
+    where
+        Operation: 'static,
+        NoticeEffect: OperationEmits<Operation>,
+        Input: Clone + Send + Sync + 'static,
+    {
         let branch = self.application.current_world();
         let identity = self
             .application
@@ -146,11 +181,6 @@ impl InboundWorld {
                 WorthQueryPrincipalResolutionMode::Ordinary,
             )
             .unwrap();
-        let operation = self
-            .application
-            .installed_schema()
-            .installed_operation(OtherNotifyOperation::reference())
-            .unwrap();
         let admission = self
             .application
             .select_product_branch(&identity)
@@ -180,12 +210,17 @@ impl InboundWorld {
             .emit_external(NoticeEffect::reference(), Notice(text.to_owned()))
             .unwrap();
         let program = effects.finish().unwrap();
+        let mut key = [0_u8; 32];
+        key[..8].copy_from_slice(&seed.to_be_bytes());
+        key[8] = 1;
+        let mut fingerprint = key;
+        fingerprint[8] = 2;
         match self.application.compare_and_commit_application(
             program,
-            WorthQueryApplicationIdempotencyBinding::new([seed; 32], [seed.wrapping_add(1); 32]),
+            WorthQueryApplicationIdempotencyBinding::new(key, fingerprint),
         ) {
             WorthQueryApplicationCommitOutcome::Committed(receipt) => receipt,
-            other => panic!("other operation must issue a genuine dispatch: {other:?}"),
+            other => panic!("other operation {seed} must issue a genuine dispatch: {other:?}"),
         }
     }
 
@@ -210,6 +245,18 @@ impl InboundWorld {
         branch: crate::basis::WorthQueryProductBranch,
         seed: u8,
         text: &str,
+    ) -> WorthQueryApplicationCommitOutcome {
+        self.attempt_operation_on(branch, seed, text, true)
+    }
+    pub fn attempt_no_effect(&self, seed: u8) -> WorthQueryApplicationCommitOutcome {
+        self.attempt_operation_on(self.application.current_world(), seed, "unused", false)
+    }
+    fn attempt_operation_on(
+        &self,
+        branch: crate::basis::WorthQueryProductBranch,
+        seed: u8,
+        text: &str,
+        emit_external: bool,
     ) -> WorthQueryApplicationCommitOutcome {
         let identity = self
             .application
@@ -275,9 +322,11 @@ impl InboundWorld {
             .complete_projected_dependencies()
             .unwrap()
             .begin_effect_program();
-        effects
-            .emit_external(NoticeEffect::reference(), Notice(text.to_owned()))
-            .unwrap();
+        if emit_external {
+            effects
+                .emit_external(NoticeEffect::reference(), Notice(text.to_owned()))
+                .unwrap();
+        }
         let program = effects.finish().unwrap();
         self.application.compare_and_commit_application(
             program,

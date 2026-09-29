@@ -35,10 +35,12 @@ pub use certification_cost::{
 };
 pub(in crate::domain_computation) use inbound_occurrence::WorthQueryInstalledTransportCompletionBinding;
 pub use inbound_occurrence::{
-    WorthQueryInboundAdmissionDenial, WorthQueryInboundMaintenanceReport, WorthQueryInboundReceipt,
-    WorthQueryInboundReceiptPosture, WorthQueryInboundSourceControlDenial,
-    WorthQueryInboundSourcePosture, WorthQueryInboundTerminalObservation,
-    WorthQueryInboundVerifierHandle, WorthQueryInboundVerifierInstallationDenial,
+    WorthQueryInboundAdmissionDenial, WorthQueryInboundCostObservation,
+    WorthQueryInboundIndexRepairDenial, WorthQueryInboundMaintenanceReport,
+    WorthQueryInboundReceipt, WorthQueryInboundReceiptPosture,
+    WorthQueryInboundSourceControlDenial, WorthQueryInboundSourcePosture,
+    WorthQueryInboundTerminalObservation, WorthQueryInboundVerifierHandle,
+    WorthQueryInboundVerifierInstallationDenial,
 };
 pub(in crate::domain_computation::primary_graph) use inbound_publication::{
     InstalledTransportCompletion, InstalledTransportPendingReason, InstalledTransportResumeOutcome,

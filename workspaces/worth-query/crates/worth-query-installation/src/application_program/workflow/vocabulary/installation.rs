@@ -104,15 +104,9 @@ where
                 )
             })?;
         let mut operation = InstalledWorkflowOperation::declared::<Spec, Binding>();
-        operation.inbound = self.schema.installed_declaration().members().iter().find_map(|member| {
-            if let worth_query_declaration::facade::application_schema::ApplicationSchemaMember::OperationInboundOccurrence {
-                operation: declared_operation, effect, protocol, source_identity, limits,
-            } = member {
-                (declared_operation == Binding::Operation::IDENTIFIER).then(|| (
-                    effect.clone(), protocol.clone(), source_identity.clone(), *limits,
-                ))
-            } else { None }
-        });
+        operation.inbound_ref = self
+            .schema
+            .installed_workflow_inbound_ref(Binding::Operation::IDENTIFIER);
         self.operations.push(operation);
         Ok(self)
     }

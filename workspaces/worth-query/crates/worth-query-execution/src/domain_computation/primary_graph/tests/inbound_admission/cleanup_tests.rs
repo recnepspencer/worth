@@ -1,11 +1,103 @@
 use std::num::NonZeroUsize;
+use std::sync::Arc;
 use std::time::Duration;
 
 use super::fixture::installed_world;
+use super::schema::WideNotifyOperation;
+use super::verifier::TestVerifier;
 use super::verifier::{signed_envelope, signed_envelope_for_seconds};
 use crate::domain_computation::primary_graph::{
     WorthQueryInboundAdmissionDenial, WorthQueryInboundReceiptPosture,
 };
+
+#[test]
+fn one_cleanup_page_reclaims_one_of_two_terminals_but_never_pending_custody() {
+    let world = installed_world();
+    let request = super::super::fixture::live_scope();
+    let wide_operation = world
+        .application
+        .installed_schema()
+        .installed_operation(WideNotifyOperation::reference())
+        .unwrap();
+    let wide_handle = world
+        .application
+        .install_inbound_occurrence_verifier(&wide_operation, Arc::new(TestVerifier))
+        .unwrap();
+
+    for (seed, message) in [(51_u64, [0xc1; 32]), (52, [0xc2; 32])] {
+        let completed = world.commit_wide_dispatch(seed, "settled-short");
+        let record = completed.dispatch_outbox().unwrap();
+        let envelope = signed_envelope_for_seconds(record, message, record.payload(), false, 1);
+        assert_eq!(
+            world
+                .application
+                .receive_inbound_occurrence(&wide_handle, &envelope, &request)
+                .unwrap()
+                .posture(),
+            WorthQueryInboundReceiptPosture::Performed,
+        );
+    }
+    let pending = world.commit_wide_dispatch(53, "pending-same-operation");
+    let pending_record = pending.dispatch_outbox().unwrap();
+    let pending_envelope =
+        signed_envelope(pending_record, [0xc3; 32], pending_record.payload(), false);
+    assert!(world
+        .application
+        .admit_inbound_occurrence(&wide_handle, &pending_envelope)
+        .is_ok());
+    assert_eq!(
+        world
+            .application
+            .observe_inbound_cost(&wide_handle)
+            .unwrap()
+            .accepted_occurrences(),
+        3
+    );
+
+    std::thread::sleep(Duration::from_secs(2));
+    let page = NonZeroUsize::new(1).unwrap();
+    assert_eq!(
+        world
+            .application
+            .cleanup_completed_inbound_occurrences(&wide_handle, page)
+            .unwrap()
+            .reclaimed(),
+        1
+    );
+    assert_eq!(
+        world
+            .application
+            .observe_inbound_cost(&wide_handle)
+            .unwrap()
+            .accepted_occurrences(),
+        2,
+        "one-work page leaves the second eligible terminal and pending slot charged",
+    );
+    assert_eq!(
+        world
+            .application
+            .cleanup_completed_inbound_occurrences(&wide_handle, page)
+            .unwrap()
+            .reclaimed(),
+        1
+    );
+    assert_eq!(
+        world
+            .application
+            .cleanup_completed_inbound_occurrences(&wide_handle, page)
+            .unwrap()
+            .reclaimed(),
+        0
+    );
+    assert_eq!(
+        world
+            .application
+            .observe_inbound_cost(&wide_handle)
+            .unwrap()
+            .accepted_occurrences(),
+        1
+    );
+}
 
 #[test]
 fn expired_settled_terminal_reclaims_one_finite_accepted_slot() {

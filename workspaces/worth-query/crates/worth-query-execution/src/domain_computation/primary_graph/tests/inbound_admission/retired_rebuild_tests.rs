@@ -5,6 +5,21 @@ use super::verifier::signed_envelope;
 use crate::domain_computation::primary_graph::WorthQueryInboundReceiptPosture;
 
 #[test]
+fn explicit_terminal_repair_rejects_a_foreign_verifier_handle() {
+    let world = installed_world();
+    let foreign = installed_world();
+    assert_eq!(
+        world.application.repair_completed_inbound_index(
+            &foreign.verifier,
+            NonZeroUsize::new(32).unwrap(),
+            NonZeroUsize::new(32).unwrap(),
+            NonZeroUsize::new(32).unwrap(),
+        ),
+        Err(crate::domain_computation::primary_graph::WorthQueryInboundIndexRepairDenial::ForeignVerifier),
+    );
+}
+
+#[test]
 fn retired_original_incarnation_rebuilds_from_world_and_canonical_relational_patch() {
     let world = installed_world();
     let branch = world
@@ -49,7 +64,8 @@ fn retired_original_incarnation_rebuilds_from_world_and_canonical_relational_pat
     assert!(provider.lookup_completed_inbound(&correlation).is_err());
     let complete = world
         .application
-        .rebuild_completed_inbound_index(
+        .repair_completed_inbound_index(
+            &world.verifier,
             NonZeroUsize::new(32).unwrap(),
             NonZeroUsize::new(32).unwrap(),
             NonZeroUsize::new(32).unwrap(),

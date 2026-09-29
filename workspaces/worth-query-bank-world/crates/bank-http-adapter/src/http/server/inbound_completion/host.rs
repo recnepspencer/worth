@@ -16,6 +16,9 @@ use tokio::task::JoinHandle;
 
 use super::BankRailCompletionServerInstallation;
 use super::{install, receive, start_maintenance, BankRailCompletionEndpointState};
+use super::{
+    BankRailCompletionClose, BankRailCompletionCloseFailure, BankRailCompletionContinuation,
+};
 use crate::http::server::configuration::BankHttpServerConfiguration;
 
 pub struct BankRailCallbackServerBinding {
@@ -25,6 +28,7 @@ pub struct BankRailCallbackServerBinding {
 
 pub struct BankRailCallbackServer {
     address: SocketAddr,
+    maximum_deadline: std::time::Duration,
     route: Arc<dyn super::BankRailCompletionRoute>,
     wake: Arc<Notify>,
     shutdown: Option<oneshot::Sender<()>>,
@@ -87,6 +91,7 @@ impl BankRailCallbackServerBinding {
         });
         Ok(BankRailCallbackServer {
             address,
+            maximum_deadline: self.configuration.maximum_deadline(),
             route,
             wake,
             shutdown: Some(shutdown),
@@ -120,13 +125,33 @@ impl BankRailCallbackServer {
         self.wake.notify_one();
     }
 
-    pub async fn shutdown(mut self) -> io::Result<()> {
+    pub async fn shutdown(
+        mut self,
+    ) -> Result<BankRailCompletionClose, BankRailCompletionCloseFailure> {
         self.maintenance_shutdown.send_replace(true);
         if let Some(shutdown) = self.shutdown.take() {
             let _ = shutdown.send(());
         }
-        self.server_task.await.map_err(io::Error::other)??;
-        self.maintenance_task.await.map_err(io::Error::other)??;
-        Ok(())
+        let server_result = self
+            .server_task
+            .await
+            .map_err(io::Error::other)
+            .and_then(|r| r);
+        let maintenance_result = self
+            .maintenance_task
+            .await
+            .map_err(io::Error::other)
+            .and_then(|r| r);
+        let close =
+            BankRailCompletionContinuation::new(Arc::clone(&self.route), self.maximum_deadline)
+                .close()
+                .await;
+        match server_result.and(maintenance_result) {
+            Ok(()) => Ok(close),
+            Err(error) => Err(BankRailCompletionCloseFailure::new(error, close)),
+        }
     }
 }
+
+#[cfg(test)]
+mod tests;

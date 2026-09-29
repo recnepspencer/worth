@@ -162,10 +162,10 @@ fn lost_terminal_index_denies_until_bounded_owner_reconstruction() {
     let records = std::num::NonZeroUsize::new(32).unwrap();
     let ancestry = std::num::NonZeroUsize::new(32).unwrap();
     assert!(matches!(
-        world.application.rebuild_completed_inbound_index(
-            std::num::NonZeroUsize::new(32).unwrap(), records, one,
+        world.application.repair_completed_inbound_index(
+            &world.verifier, std::num::NonZeroUsize::new(32).unwrap(), records, one,
         ),
-        Err(super::super::super::provider::WorthQueryInboundTerminalIndexDenial::ReconstructionWorkExhausted)
+        Err(crate::domain_computation::primary_graph::WorthQueryInboundIndexRepairDenial::ReconstructionWorkExhausted)
     ));
     assert!(provider.lookup_completed_inbound(&correlation).is_err());
     let mut pages = 0;
@@ -173,7 +173,7 @@ fn lost_terminal_index_denies_until_bounded_owner_reconstruction() {
         pages += 1;
         let complete = world
             .application
-            .rebuild_completed_inbound_index(one, records, ancestry)
+            .repair_completed_inbound_index(&world.verifier, one, records, ancestry)
             .expect("each explicit World page is bounded and authoritative");
         if complete {
             break;

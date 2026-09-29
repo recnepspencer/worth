@@ -24,6 +24,8 @@ use crate::support;
 mod authority;
 #[path = "payment/cancellation.rs"]
 mod cancellation;
+#[path = "payment/close.rs"]
+mod close;
 #[path = "payment/oracle.rs"]
 mod oracle;
 #[path = "payment/retirement.rs"]

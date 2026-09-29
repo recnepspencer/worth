@@ -266,8 +266,18 @@ available at a user node without a credential field; that process supplies its
 own authenticated session. Linear undo/redo routes remain provisional
 Milestone 9.18 experiments rather than a Bank Phase 5 product contract.
 
-The estate `notify-death` response establishes the authorized dispatch commit;
-rail completion arrives later through Bank's private signed callback route.
+The estate `notify-death` and approved-payment responses establish authorized
+dispatch commits. The rail can report `Completed` synchronously, or send the
+same effect's signed completion through Bank's private callback route later.
+Both observations meet at the original Query owner and one World terminal.
+The approved-payment workflow's `await_inbound` node names that payment
+operation and its installed settlement effect. A callback never advances the
+instance; a fresh authenticated workflow advance observes the owner result.
+Cancellation or definition retirement cannot abandon an operation still in
+owner custody. The
+[compiled payment definition](../crates/bank-server/src/application_definition/workflows.rs)
+and [process court](../crates/bank-courtroom/tests/transport_process_courtroom/payment.rs)
+exercise those paths.
 Clients do not submit callback bytes or interpret a rail transport ACK as a
 completed estate operation. Bank acknowledges callback custody only after
 Query authenticates and correlates the exact original dispatch. Its signed

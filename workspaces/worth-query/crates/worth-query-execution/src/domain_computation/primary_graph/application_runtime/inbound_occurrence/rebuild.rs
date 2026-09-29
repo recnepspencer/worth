@@ -5,7 +5,7 @@ use std::num::NonZeroUsize;
 use worth_runtime_world::facade::{CompositeComponentChangePosture, RuntimeWorldPublicationRow};
 
 use super::reconstruct::pair_world_history;
-use super::WorthQueryPrimaryGraphApplicationRuntime;
+use super::{WorthQueryInboundVerifierHandle, WorthQueryPrimaryGraphApplicationRuntime};
 use crate::domain_computation::primary_graph::provider::{
     WorthQueryCanonicalInboundCompletion, WorthQueryInboundCompletionReadDenial,
     WorthQueryInboundTerminalIndexDenial as Denial,
@@ -115,5 +115,56 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
                 attempt,
             ),
         ))
+    }
+}
+
+/// Explicit repair result; ordinary exact lookup never invokes this lane.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WorthQueryInboundIndexRepairDenial {
+    ForeignVerifier,
+    IndexUnavailable,
+    ReconstructionWorkExhausted,
+    WorldPairMismatch,
+}
+
+impl<Schema: worth_query_installation::facade::ApplicationSchema>
+    WorthQueryPrimaryGraphApplicationRuntime<Schema>
+{
+    /// Inspect one owner-wide World page under three finite work axes. The
+    /// installed route caps page width; changed-record and ancestry budgets
+    /// are explicit repair-only ceilings and may need to exceed ordinary
+    /// discovery work for a long-lived branch.
+    /// `Ok(false)` retains the cursor; until `Ok(true)`, exact terminal lookup
+    /// remains unavailable. Reconstruction is separate from ordinary discovery.
+    pub fn repair_completed_inbound_index(
+        &self,
+        handle: &WorthQueryInboundVerifierHandle,
+        maximum_world_slots: NonZeroUsize,
+        maximum_changed_records_per_commit: NonZeroUsize,
+        maximum_ancestry_commits_per_completion: NonZeroUsize,
+    ) -> Result<bool, WorthQueryInboundIndexRepairDenial> {
+        let installed = self
+            .installed_inbound_verifier(handle)
+            .ok_or(WorthQueryInboundIndexRepairDenial::ForeignVerifier)?;
+        let installed_page_limit =
+            usize::try_from(installed.contract.limits().maximum_discovery_work.get())
+                .unwrap_or(usize::MAX);
+        let maximum_world_slots =
+            NonZeroUsize::new(maximum_world_slots.get().min(installed_page_limit))
+                .expect("installed discovery work is nonzero");
+        self.rebuild_completed_inbound_index(
+            maximum_world_slots,
+            maximum_changed_records_per_commit,
+            maximum_ancestry_commits_per_completion,
+        )
+        .map_err(|denial| match denial {
+            Denial::IndexUnavailable | Denial::NotExpired => {
+                WorthQueryInboundIndexRepairDenial::IndexUnavailable
+            }
+            Denial::ReconstructionWorkExhausted => {
+                WorthQueryInboundIndexRepairDenial::ReconstructionWorkExhausted
+            }
+            Denial::WorldPairMismatch => WorthQueryInboundIndexRepairDenial::WorldPairMismatch,
+        })
     }
 }

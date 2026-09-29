@@ -43,8 +43,12 @@ impl CallbackProxy {
                         if first {
                             first_captured.take().expect("first callback signal is unique")
                                 .send(body.clone()).expect("court must await first callback");
-                            release.take().expect("first callback release is unique")
-                                .await.expect("court must release first callback");
+                            tokio::select! {
+                                released = release.take().expect("first callback release is unique") => {
+                                    released.expect("court must release first callback");
+                                }
+                                _ = &mut done => break,
+                            }
                         }
                         let response = client
                             .post(format!("http://{bank}/v1/inbound/rail-completions"))

@@ -1,5 +1,6 @@
 //! Explicit bounded reconstruction after a disposable terminal index is lost.
 
+#[cfg(test)]
 use std::num::NonZeroUsize;
 
 use worth_runtime_world::facade::{
@@ -9,10 +10,11 @@ use worth_runtime_world::facade::{
 
 use super::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::application_aftermath::ExternalEffectCorrelationIdentity;
-use crate::domain_computation::primary_graph::provider::{
-    WorthQueryCanonicalInboundCompletion, WorthQueryInboundTerminalIndexDenial as Denial,
-};
+#[cfg(test)]
+use crate::domain_computation::primary_graph::provider::WorthQueryCanonicalInboundCompletion;
+use crate::domain_computation::primary_graph::provider::WorthQueryInboundTerminalIndexDenial as Denial;
 
+#[cfg(test)]
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     /// The committed dispatch owner supplies the exact original incarnation.
     /// Absence is authoritative only within that lineage's current indexed
@@ -56,14 +58,16 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
             ),
         ))
     }
+}
 
+impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(in crate::domain_computation) fn verify_completed_inbound_for_cleanup(
         &self,
         correlations: &[ExternalEffectCorrelationIdentity],
         now_unix_seconds: u64,
     ) -> Result<(), Denial> {
         self.primary_provider
-            .prune_completed_inbound(correlations, now_unix_seconds)
+            .verify_completed_inbound_for_cleanup(correlations, now_unix_seconds)
     }
 }
 

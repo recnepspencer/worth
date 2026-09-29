@@ -583,6 +583,8 @@ exports = [
     "WorthQueryGranularTransportMergeDenial",
     "WorthQueryInboundAdmissionDenial",
     "WorthQueryInboundCleanupReport",
+    "WorthQueryInboundCostObservation",
+    "WorthQueryInboundIndexRepairDenial",
     "WorthQueryInboundMaintenanceReport",
     "WorthQueryInboundOccurrenceClaims",
     "WorthQueryInboundOccurrenceVerifier",

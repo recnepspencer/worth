@@ -107,6 +107,17 @@ impl BankIdentityRuntime {
         &self.runtime
     }
 
+    /// The installed Bank vocabulary used to readmit portable payment workflow
+    /// definitions before they can be bound or published.
+    pub const fn approved_payment_workflow_spec(
+        &self,
+    ) -> &worth_query_host::facade::domain::WorthQueryInstalledApplicationWorkflowSpec<
+        BankSchema,
+        ApprovedBusinessPaymentWorkflow,
+    > {
+        self.runtime.workflow_spec()
+    }
+
     pub(crate) const fn approval_authentication(&self) -> &BankApprovalAuthenticationOwner {
         &self.approval_authentication
     }

@@ -29,6 +29,7 @@ impl CompiledWorkflowNode {
                 origin.clone(), effect.clone(), protocol.identity().as_str().to_owned(),
                 protocol.version().get().to_string(), source_identity.clone(),
                 limits.maximum_envelope_bytes.get().to_string(),
+                limits.maximum_verifier_work.get().to_string(),
                 limits.maximum_payload_bytes.get().to_string(),
                 limits.maximum_outstanding_dispatch_provenance.get().to_string(),
                 limits.maximum_accepted_occurrences.get().to_string(),

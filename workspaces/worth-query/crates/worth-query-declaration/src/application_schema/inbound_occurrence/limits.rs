@@ -4,6 +4,8 @@ use std::num::NonZeroU64;
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct ApplicationInboundOccurrenceLimits {
     pub maximum_envelope_bytes: NonZeroU64,
+    /// Maximum trusted verifier work units consumed while authenticating one envelope.
+    pub maximum_verifier_work: NonZeroU64,
     pub maximum_payload_bytes: NonZeroU64,
     /// Co-committed outbound effects retained before any callback is accepted.
     pub maximum_outstanding_dispatch_provenance: NonZeroU64,
