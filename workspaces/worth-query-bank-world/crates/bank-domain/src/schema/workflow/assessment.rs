@@ -27,7 +27,7 @@ use worth_query_host::facade::{
 
 use crate::{
     model::{BankPrincipalId, PaymentId},
-    proposals::{BankIdempotencyKey, CanonicalProposalPayload},
+    proposals::BankIdempotencyKey,
     queries::{PaymentDetailQuery, PaymentDetailQueryBinding, PaymentDetailRequest},
     reads::PaymentSummary,
     schema::{
@@ -36,8 +36,6 @@ use crate::{
         Principal,
     },
 };
-
-use super::super::client_key_identity;
 
 const INITIAL: WorthQueryProducerApplicability = WorthQueryProducerApplicability::new(
     "approved-payment-assessment",
@@ -49,7 +47,7 @@ const PRESERVE: WorthQueryProducerApplicability = WorthQueryProducerApplicabilit
 );
 const APPLICABILITY: &[WorthQueryProducerApplicability] = &[INITIAL, PRESERVE];
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct ApprovedPaymentAssessmentInput {
     pub payment: PaymentId,
     pub status: PaymentStatus,
@@ -125,18 +123,6 @@ impl ApplicationMutationBinding<BankSchema> for ApprovedPaymentAssessmentBinding
             ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 0, 0),
             ApplicationCandidateResourceCeiling::bounded(1_024, 512),
         );
-
-    fn idempotency_key_identity(key: &BankIdempotencyKey) -> [u8; 32] {
-        client_key_identity(key)
-    }
-
-    fn input_identity(input: &ApprovedPaymentAssessmentInput) -> [u8; 32] {
-        *CanonicalProposalPayload::new("approved-payment-assessment")
-            .text("payment", &input.payment.canonical_text())
-            .text("status", input.status.canonical_text())
-            .derive_identity()
-            .bytes()
-    }
 
     fn scope_field() -> ApplicationFieldRef<
         BankSchema,

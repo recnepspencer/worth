@@ -33,14 +33,6 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
         "worth.query.certification.prior-cycle-adjustment-command.v1";
     const CANDIDATES: ApplicationCandidateRequirements = requirements(16);
 
-    fn idempotency_key_identity(key: &u64) -> [u8; 32] {
-        super::identity::command_identity(*key)
-    }
-
-    fn input_identity(input: &PriorCycleAdjustment) -> [u8; 32] {
-        super::identity::input_identity(input)
-    }
-
     fn scope_field() -> ApplicationFieldRef<
         Schema,
         Body,

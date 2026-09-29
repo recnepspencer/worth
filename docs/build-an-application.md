@@ -625,7 +625,7 @@ impl ApplicationMutationBinding<TemporalHostSchema> for AmendTemporalBinding {
     const HANDLER_IDENTITY: &'static str = "worth.query.example.temporal-amend-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.example.temporal-amend-command.v1";
     const CANDIDATES: ApplicationCandidateRequirements = /* fixed ceilings */;
-    // fn idempotency_key_identity, input_identity, scope_field, principal_binding
+    // fn scope_field, principal_binding
 }
 
 impl ApplicationMutationIntent<TemporalHostSchema> for AmendTemporalIntent {
@@ -654,6 +654,75 @@ contribution registers the handler with `setup.handler::<Binding, _>(..)`
 ([§2](#2-declare-the-schema-and-its-contributions)).
 `worth_query_mutation_binding!` (decl facade) writes the binding for you in
 common cases.
+
+The input and idempotency key types derive `serde::Serialize`, and that is all
+a binding says about retries. Query derives both identities from a canonical
+encoding of what `Serialize` emits, so a retry that reuses a key with any
+changed serialized field is refused as `IdempotencyIntentDrift` rather than
+replayed. Bindings never write these hashes: a request encodes its key and
+input once, at the entry point, into
+`ApplicationMutationIdentities::<Schema, Binding>::encode(&key, &input)`. Every
+later step (admission, the handler, the commit) reuses those identities and
+never encodes again, and a denial says whether the key or the input failed to
+encode. A workflow operation encodes its input once when it binds to the
+workflow transition, as an `ApplicationEncodedInput`, and the request's
+identities reuse it. The two derivations are reported in the receipt's
+admission-phase canonical work, for a replayed retry as for a fresh commit.
+
+The binding is part of the intent too. Only typed constructors build a
+`WorthQueryApplicationIdempotencyBinding`, and a mutation request builds its
+own with `WorthQueryApplicationIdempotencyBinding::for_mutation_identities(&identities)`
+from the `ApplicationMutationIdentities` it encoded, which names the binding
+without encoding anything again. The handler takes that same
+`ApplicationMutationIdentities`, which holds the key and input it was encoded
+from, so the identities and the input the handler decides on cannot come from
+different requests.
+
+The program owner binds `Binding` into the idempotency binding it is given, so
+a caller of `compare_and_commit_program_action::<Binding>` passes the
+`&ApplicationMutationIdentities` it encoded, plus a closure that adds anything
+the request also binds (`std::convert::identity` when nothing), and the door
+builds the idempotency binding itself; a caller never names the mutation. At
+commit, a candidate built by another binding's handler is refused as
+`MutationBindingMismatch`, and one whose handler decided on a different input
+than the idempotency binding derives from is refused as `MutationInputMismatch`.
+A capability admission governs the request's own input identity rather than
+encoding the input again, and the handler refuses a request whose identities
+encode a different input (`MutationHandlerExecutionDenial::InputNotAdmitted`).
+Hosts that author a commit without a mutation request use
+`for_host_commit::<Schema, Operation, _, _>(&key, &intent)`, the only host
+constructor: the same key and intent under two operations never replay each
+other, and it names no mutation binding. Capability workflows (elevation,
+review, delegation and revocation requests) build their binding inside Query:
+the input is encoded once, its identity is both the governed input and the
+intent, and the key is scoped to the operation and the requesting principal,
+so the same key from another principal or under another operation never
+replays the request.
+
+The identity is exactly the serialized value, so keep that value complete and
+ordered:
+
+- Do not hide meaning from it. A field marked `#[serde(skip)]`,
+  `skip_serializing_if`, or written by a lossy `serialize_with` or custom
+  `Serialize` does not take part, and two inputs that differ only there
+  replay each other.
+- Put anything that must matter in a serialized field. `PhantomData` and
+  generic type parameters emit no data, so a `Money<C>` currency marker is not
+  in the identity.
+- Use ordered collections. Map entries are sorted by their encoded keys, so a
+  `HashMap` and a `BTreeMap` with the same entries agree. A `HashSet` and every
+  sequence keep iteration order, so a retry of the same set can be refused as
+  drift. Prefer `BTreeSet` or a sorted `Vec`.
+- Keep variants distinguishable. `#[serde(untagged)]` emits no variant name, so
+  variants with the same payload share one identity. Floats encode their exact
+  bits, so `-0.0` and `0.0` differ.
+- Integers encode by value, so a `u8` and a `u64` holding the same number
+  agree, but a signed and an unsigned integer holding the same number differ.
+  Keep a field's integer type stable across versions.
+- Treat serialized type, field and variant names as part of the durable
+  identity. Renaming one changes the identity of every in-flight retry and
+  of every workflow requirement that names the input; version the input
+  binding identity when you do.
 
 ### 5.3 Execute through the program
 
@@ -827,7 +896,7 @@ impl ApplicationMutationBinding<BankSchema> for $binding {
     // ... the same associated types as any mutation binding (§5.2) ...
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
     const WORKFLOW_CONTROL: bool = true;
-    // ... identities, CANDIDATES, and the four functions ...
+    // ... identities, CANDIDATES, scope_field, and principal_binding ...
 }
 
 impl ApplicationCapabilityMutationBinding<BankSchema> for $binding {

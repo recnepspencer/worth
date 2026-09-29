@@ -124,7 +124,7 @@ worth_query_capability_context_entity_slot!(pub PriorActorSlot in PublicationAut
 worth_query_capability_provenance!(pub PublicationCapabilityProvenance in PublicationAuthorizationSchema);
 worth_query_capability!(pub PublicationCapability in PublicationAuthorizationSchema);
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct PublicationInput;
 worth_query_declaration::worth_query_portable_type!(PublicationInput => "worth.query.test.publication.input.v1");
 worth_query_declaration::worth_query_structured_value_binding!(pub PublicationInputBinding for PublicationInput { identity: "worth.query.test.publication.input.v1" });

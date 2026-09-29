@@ -2,20 +2,20 @@ use std::cell::RefCell;
 use std::sync::Arc;
 
 use worth_query_declaration::facade::application_operation::{
-    ApplicationMutationBinding, ApplicationMutationIntent, ApplicationMutationScopeBinding,
-    ApplicationMutationScopeResolution,
+    ApplicationMutationBinding, ApplicationMutationIdentities, ApplicationMutationIntent,
+    ApplicationMutationScopeBinding, ApplicationMutationScopeResolution,
 };
 use worth_query_declaration::facade::application_program::ApplicationProgramDefinition;
 use worth_query_execution::facade::application_installation::WorthQueryProgramOwner;
 use worth_query_execution::facade::primary_graph::{
     WorthQueryApplicationCommitOutcome, WorthQueryApplicationCommitReceipt,
-    WorthQueryApplicationEffectProgram, WorthQueryApplicationIdempotencyBinding,
-    WorthQueryApplicationReadObservation as RetainedRead,
+    WorthQueryApplicationEffectProgram, WorthQueryApplicationReadObservation as RetainedRead,
     WorthQueryApplicationRetainedCommitOutcome, WorthQueryPrimaryGraphApplicationRuntime,
 };
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{
+    commit_binding::WorthQueryMutationCommitBinding, staged::WorthQueryStagedMutation,
     WorthQueryApplicationMutationOutcome, WorthQueryApplicationMutationRequestWithIdempotency,
 };
 use crate::application_entry::{
@@ -87,8 +87,8 @@ where
         }
         self.execute_retained_with_commit(
             super::authorization::prepare,
-            |application, program, idempotency| {
-                application.compare_and_commit_application_retained(program, idempotency)
+            |application, program, binding| {
+                application.compare_and_commit_application_retained(program, binding.idempotency())
             },
         )
     }
@@ -127,17 +127,21 @@ where
             return Err(WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired);
         }
         self.execute_retained_with_commit(
-            move |request| super::authorization::prepare_selected(request, &selected),
-            |_, program, idempotency| {
+            move |request, identities, staged| {
+                super::authorization::prepare_selected(request, identities, staged, &selected)
+            },
+            |_, program, binding| {
                 if selected_owns_action {
-                    owner.compare_and_commit_program_action_retained::<Intent::Binding>(
+                    owner.compare_and_commit_program_action_retained(
                         program,
-                        idempotency,
+                        binding.identities(),
+                        |idempotency| binding.extension().apply(idempotency),
                     )
                 } else {
-                    application.compare_and_commit_program_action_retained::<Intent::Binding>(
+                    application.compare_and_commit_program_action_retained(
                         program,
-                        idempotency,
+                        binding.identities(),
+                        |idempotency| binding.extension().apply(idempotency),
                     )
                 }
             },
@@ -147,7 +151,9 @@ where
     fn execute_retained_with_commit(
         self,
         prepare: impl FnOnce(
-            &mut Self,
+            &Self,
+            &ApplicationMutationIdentities<'_, Schema, Intent::Binding>,
+            WorthQueryStagedMutation<Schema, Intent>,
         ) -> Result<
             super::authorization::PreparedMutation<Schema, Intent::Binding>,
             WorthQueryApplicationRequestMutationDenial,
@@ -160,7 +166,7 @@ where
                 <Intent::Binding as ApplicationMutationBinding<Schema>>::Input,
                 Scope<Schema, Intent>,
             >,
-            WorthQueryApplicationIdempotencyBinding,
+            &WorthQueryMutationCommitBinding<'_, '_, Schema, Intent::Binding>,
         ) -> WorthQueryApplicationRetainedCommitOutcome,
     ) -> Result<
         WorthQueryApplicationRetainedMutationOutcome<
@@ -170,19 +176,19 @@ where
         WorthQueryApplicationRequestMutationDenial,
     > {
         let retained: RefCell<Option<Arc<RetainedRead>>> = RefCell::new(None);
-        let outcome: Outcome<Schema, Intent> = self.execute_with_preparation_and_commit(
-            prepare,
-            |application, program, idempotency| match commit(application, program, idempotency) {
-                WorthQueryApplicationRetainedCommitOutcome::Committed {
-                    receipt,
-                    retained: observation,
-                } => {
-                    retained.replace(Some(observation));
-                    WorthQueryApplicationCommitOutcome::Committed(receipt)
+        let outcome: Outcome<Schema, Intent> =
+            self.execute_with_preparation_and_commit(prepare, |application, program, binding| {
+                match commit(application, program, binding) {
+                    WorthQueryApplicationRetainedCommitOutcome::Committed {
+                        receipt,
+                        retained: observation,
+                    } => {
+                        retained.replace(Some(observation));
+                        WorthQueryApplicationCommitOutcome::Committed(receipt)
+                    }
+                    WorthQueryApplicationRetainedCommitOutcome::Other(outcome) => outcome,
                 }
-                WorthQueryApplicationRetainedCommitOutcome::Other(outcome) => outcome,
-            },
-        )?;
+            })?;
         Ok(match outcome {
             WorthQueryApplicationMutationOutcome::Committed { receipt, result } => {
                 let observation = retained

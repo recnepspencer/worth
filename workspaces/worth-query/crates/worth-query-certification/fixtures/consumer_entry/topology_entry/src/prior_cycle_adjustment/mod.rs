@@ -1,7 +1,6 @@
 mod binding;
 mod declaration;
 mod handler;
-mod identity;
 
 pub use binding::PriorCycleAdjustmentBinding;
 pub(crate) use declaration::declare_prior_cycle_adjustment;
@@ -14,7 +13,7 @@ use worth_query_decl::facade::{
     worth_query_structured_value_binding,
 };
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct PriorCycleAdjustment {
     pub scope_key: String,
     pub offset_y: PositiveLength,

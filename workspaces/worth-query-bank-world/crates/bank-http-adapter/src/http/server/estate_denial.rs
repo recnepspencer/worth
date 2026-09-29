@@ -9,7 +9,8 @@ pub(super) fn estate_denial(denial: BankEstateProgressionDenial) -> BankHttpDeni
         D::ProgramAction(denial) => super::mutation_application::commit_denial(denial.kind()).1,
         D::ProgramMismatch
         | D::PrincipalBindingInstallation(_)
-        | D::PrincipalIdentityEncoding(_) => BankHttpDenial::new(
+        | D::IdentityEncoding(_)
+        | D::MutationIdentityEncoding(_) => BankHttpDenial::new(
             BankHttpDenialKind::InternalDenied,
             BankHttpNextAction::ContactOperator,
         ),

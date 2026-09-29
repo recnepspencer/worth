@@ -107,6 +107,35 @@ pub struct SetRetentionInput {
     pub identity: String,
     pub retention_days: u64,
 }
+
+thread_local! {
+    static SET_RETENTION_INPUT_ENCODINGS: std::cell::Cell<u32> = const { std::cell::Cell::new(0) };
+}
+
+impl SetRetentionInput {
+    /// Starts counting how many times this thread serializes a retention input.
+    pub fn reset_encoding_count() {
+        SET_RETENTION_INPUT_ENCODINGS.with(|count| count.set(0));
+    }
+
+    /// How many times this thread serialized a retention input since the reset.
+    pub fn encoding_count() -> u32 {
+        SET_RETENTION_INPUT_ENCODINGS.with(std::cell::Cell::get)
+    }
+}
+
+/// Serializes exactly as a derived impl would, and counts each call so a proof
+/// can show how many times a request encodes its input.
+impl serde::Serialize for SetRetentionInput {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        use serde::ser::SerializeStruct;
+        SET_RETENTION_INPUT_ENCODINGS.with(|count| count.set(count.get() + 1));
+        let mut state = serializer.serialize_struct("SetRetentionInput", 2)?;
+        state.serialize_field("identity", &self.identity)?;
+        state.serialize_field("retention_days", &self.retention_days)?;
+        state.end()
+    }
+}
 worth_query_portable_type!(SetRetentionInput => "worth.query.certification.document-retention.set-input.v1");
 worth_query_structured_value_binding!(pub SetRetentionInputBinding for SetRetentionInput {
     identity: "worth.query.certification.document-retention.set-input.v1"

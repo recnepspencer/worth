@@ -33,8 +33,11 @@ pub enum BankEstateProgressionDenial {
     ProgramAction(WorthQueryApplicationCommitDenial),
     ProgramMismatch,
     PrincipalBindingInstallation(WorthQueryPrincipalBindingInstallationDenial),
-    PrincipalIdentityEncoding(
+    IdentityEncoding(
         worth_query_host::facade::declaration::application_schema::ApplicationValueEncodeDenial,
+    ),
+    MutationIdentityEncoding(
+        worth_query_host::facade::declaration::application_operation::ApplicationMutationIdentityDenial,
     ),
     PrincipalResolution(WorthQueryPrincipalResolutionDenial),
     ApplicationEntry(
@@ -152,7 +155,8 @@ impl std::fmt::Display for BankEstateProgressionDenial {
             Self::ProgramAction(denial) => write!(formatter, "{denial:?}"),
             Self::ProgramMismatch => formatter.write_str("application-program-mismatch"),
             Self::PrincipalBindingInstallation(denial) => write!(formatter, "{denial:?}"),
-            Self::PrincipalIdentityEncoding(denial) => write!(formatter, "{denial:?}"),
+            Self::IdentityEncoding(denial) => write!(formatter, "{denial:?}"),
+            Self::MutationIdentityEncoding(denial) => write!(formatter, "{denial:?}"),
             Self::PrincipalResolution(denial) => denial.fmt(formatter),
             Self::ProductSelection(denial) => {
                 write!(formatter, "product selection denied: {denial:?}")
@@ -231,6 +235,12 @@ impl BankEstateProgressionDenial {
         denial: WorthQueryApplicationIdempotencyResolutionDenial,
     ) -> Self {
         Self::Idempotency(idempotency::from_query(denial))
+    }
+
+    pub(crate) fn from_mutation_identity(
+        denial: worth_query_host::facade::declaration::application_operation::ApplicationMutationIdentityDenial,
+    ) -> Self {
+        Self::MutationIdentityEncoding(denial)
     }
 
     pub(crate) fn from_attempt(denial: WorthQueryApplicationAttemptDenial) -> Self {

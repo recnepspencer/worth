@@ -116,7 +116,11 @@ where
         let selected = application.on_branch(self.product_branch()).select()
             .map_err(WorthQueryApplicationRequestMutationDenial::ProductSelection)
             .map_err(WorthQueryWorkflowProposalPreparationDenial::RequestAdmission)?;
-        let mutation = authorization::prepare_capability_selected(&mut self, &selected)
+        let staged = self.stage();
+        let identities = self
+            .identities()
+            .map_err(WorthQueryWorkflowProposalPreparationDenial::RequestAdmission)?;
+        let mutation = authorization::prepare_capability_selected(&self, &identities, staged, &selected)
             .map_err(WorthQueryWorkflowProposalPreparationDenial::RequestAdmission)?;
         if instance.branch() != request_branch {
             return Err(WorthQueryWorkflowProposalPreparationDenial::InstanceBranchMismatch);

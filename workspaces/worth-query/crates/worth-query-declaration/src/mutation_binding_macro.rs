@@ -8,7 +8,6 @@ macro_rules! worth_query_mutation_binding {
         operation $Operation:path,
         result $ResultBinding:path,
         idempotency $IdempotencyKey:ty, identity $idempotency_identity:literal,
-            key_identity $key_identity:path, input_identity $input_identity:path,
         decision $Decision:ty, denial $DenialBinding:path,
         handler identity $handler_identity:literal,
         $(program $program_requirement:ident,)?
@@ -71,14 +70,6 @@ macro_rules! worth_query_mutation_binding {
                     ),
                 );
 
-            fn idempotency_key_identity(key: &Self::IdempotencyKey) -> [u8; 32] {
-                ($key_identity)(key)
-            }
-
-            fn input_identity(input: &Self::Input) -> [u8; 32] {
-                ($input_identity)(input)
-            }
-
             fn scope_field() -> $crate::facade::application_schema::ApplicationFieldRef<
                 $Schema, $Scope, $Aspect, $Field, $Value, $Write,
                 $crate::facade::application_schema::EqualityPredicate, $Unit,
@@ -118,7 +109,6 @@ macro_rules! worth_query_mutation_binding {
         operation $Operation:path,
         result $ResultBinding:path,
         idempotency $IdempotencyKey:ty, identity $idempotency_identity:literal,
-            key_identity $key_identity:path, input_identity $input_identity:path,
         decision $Decision:ty, denial $DenialBinding:path,
         handler identity $handler_identity:literal,
         $(program $program_requirement:ident,)?
@@ -138,7 +128,6 @@ macro_rules! worth_query_mutation_binding {
             $vis $Binding for $Input, schema $Schema,
             identity $identity, input $InputBinding, operation $Operation, result $ResultBinding,
             idempotency $IdempotencyKey, identity $idempotency_identity,
-                key_identity $key_identity, input_identity $input_identity,
             decision $Decision, denial $DenialBinding, handler identity $handler_identity,
             program $($program_requirement)?,
             workflow_authority $($workflow_authority)?,
@@ -180,7 +169,6 @@ macro_rules! worth_query_mutation_binding {
         operation $Operation:path,
         result $ResultBinding:path,
         idempotency $IdempotencyKey:ty, identity $idempotency_identity:literal,
-            key_identity $key_identity:path, input_identity $input_identity:path,
         decision $Decision:ty, denial $DenialBinding:path,
         handler identity $handler_identity:literal,
         $(program $program_requirement:ident,)?
@@ -199,7 +187,6 @@ macro_rules! worth_query_mutation_binding {
             $vis $Binding for $Input, schema $Schema,
             identity $identity, input $InputBinding, operation $Operation, result $ResultBinding,
             idempotency $IdempotencyKey, identity $idempotency_identity,
-                key_identity $key_identity, input_identity $input_identity,
             decision $Decision, denial $DenialBinding, handler identity $handler_identity,
             program $($program_requirement)?,
             workflow_authority $($workflow_authority)?,
@@ -238,7 +225,6 @@ macro_rules! worth_query_mutation_binding {
         identity $identity:literal, input $InputBinding:path, operation $Operation:path,
         result $ResultBinding:path,
         idempotency $IdempotencyKey:ty, identity $idempotency_identity:literal,
-            key_identity $key_identity:path, input_identity $input_identity:path,
         decision $Decision:ty, denial $DenialBinding:path, handler identity $handler_identity:literal,
         program $($program_requirement:ident)?,
         workflow_authority $($workflow_authority:ident)?,
@@ -298,14 +284,6 @@ macro_rules! worth_query_mutation_binding {
                         $maximum_validator_work,
                     ),
                 );
-
-            fn idempotency_key_identity(key: &Self::IdempotencyKey) -> [u8; 32] {
-                ($key_identity)(key)
-            }
-
-            fn input_identity(input: &Self::Input) -> [u8; 32] {
-                ($input_identity)(input)
-            }
 
             fn scope_field() -> $crate::facade::application_schema::ApplicationFieldRef<
                 $Schema, $Scope, $Aspect, $Field, $Value, $Write,

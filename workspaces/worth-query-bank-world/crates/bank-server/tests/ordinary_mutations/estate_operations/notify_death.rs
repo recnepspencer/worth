@@ -44,7 +44,7 @@ fn public_query_observes_one_committed_notification_request() {
     assert_eq!(receipt.emitted_effect_count(), 1);
     assert_eq!(receipt.expected_fact_count(), 0);
     assert_eq!(receipt.decision_fact_count(), Some(8));
-    assert_zero_canonical_work(receipt.canonical_work());
+    assert_admission_derives_the_request_identities_once(receipt.canonical_work());
     assert_eq!(
         notice_status(&fixture),
         DeathNoticeStatus::NotificationRequested
@@ -66,7 +66,7 @@ fn public_query_observes_one_committed_notification_request() {
     assert_eq!(receipt.aftermath(), recovered.aftermath());
     assert!(recovered.co_committed_dispatch_outbox());
     assert_eq!(recovered.emitted_effect_count(), 1);
-    assert_zero_canonical_work(recovered.canonical_work());
+    assert_admission_derives_the_request_identities_once(recovered.canonical_work());
 
     let drift = fixture
         .world
@@ -181,16 +181,29 @@ fn idempotency(identity: u8) -> BankIdempotencyKey {
     BankIdempotencyKey::new(format!("notify-death-{identity}")).unwrap()
 }
 
-fn assert_zero_canonical_work(phases: bank_server::BankCommitCanonicalWorkPhases) {
+fn assert_admission_derives_the_request_identities_once(
+    phases: bank_server::BankCommitCanonicalWorkPhases,
+) {
+    // Admission derives the request's two identities once each, streamed into
+    // their hashes with no basis sequence: the governed input (104 encoded
+    // bytes + 67 framing, 3 blocks) and the key `notify-death-program-entry` (48
+    // encoded bytes + 85 framing, ceil((133 + 9) / 64) = 3 blocks). A
+    // replayed retry is admitted the same way and reports the same work. Every
+    // other phase performs no canonical work.
+    let admission = phases.admission();
+    assert_eq!(admission.basis_preparations(), 0);
+    assert_eq!(admission.digest_derivations(), 2);
+    assert_eq!(admission.canonical_entries(), 2);
+    assert_eq!(admission.canonical_encoded_bytes(), 152);
+    assert_eq!(admission.sha256_input_bytes(), 304);
+    assert_eq!(admission.sha256_compression_blocks(), 6);
+    assert_eq!(admission.digest_text_materializations(), 0);
     for work in [
         phases.installation(),
-        phases.admission(),
         phases.execution(),
         phases.provider_commit(),
         phases.projection(),
-        phases.live_delivery(),
         phases.retry_resolution(),
-        phases.recovery_inspection(),
         phases.publication(),
     ] {
         assert_eq!(work.basis_preparations(), 0);

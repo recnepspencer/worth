@@ -80,7 +80,7 @@ pub struct BankCommitCanonicalWorkPhases {
 }
 
 impl BankCommitCanonicalWorkPhases {
-    pub(super) const fn from_query(work: WorthQueryCanonicalWorkPhases) -> Self {
+    pub(crate) const fn from_query(work: WorthQueryCanonicalWorkPhases) -> Self {
         Self {
             installation: BankCommitCanonicalWorkEvidence::from_query(work.installation()),
             admission: BankCommitCanonicalWorkEvidence::from_query(work.admission()),

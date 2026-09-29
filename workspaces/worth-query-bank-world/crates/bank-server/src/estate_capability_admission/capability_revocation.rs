@@ -100,6 +100,7 @@ fn equivalent_revocation_retry_recovers_commit_before_fresh_poststate_denial() {
         panic!("the equivalent retry must recover the prior commit: {retry:?}");
     };
     assert_equivalent_commit_semantics(&committed, &recovered);
+    assert_admission_derives_the_request_identities_once(committed.canonical_work().admission());
     assert_eq!(
         committed.publication().inspect().kind(),
         WorthQueryPublishedApplicationCommitKind::Executed
@@ -254,6 +255,25 @@ fn capability(result: &GovernanceResult, grant: CapabilityGrantId) -> &EstateCap
         .iter()
         .find(|capability| capability.id() == grant)
         .expect("the exact capability grant should be present in governance readback")
+}
+
+/// Admission derives the two request identities once each, with no basis
+/// sequence, and the recovered retry reports the same. The input, encoded once
+/// as both admitted input and intent: 84 encoded bytes, 151 hashed with 67
+/// bytes of framing (30-byte input domain, 21-byte `bank.estate.action.v1`),
+/// 3 blocks. The key over the principal basis and the 25-byte
+/// "capability-revocation-131": 112 encoded, 197 hashed with 85 bytes of
+/// framing (38-byte capability workflow key domain, 31-byte operation
+/// identifier), 4 blocks.
+fn assert_admission_derives_the_request_identities_once(
+    admission: crate::BankCommitCanonicalWorkEvidence,
+) {
+    assert_eq!(admission.basis_preparations(), 0);
+    assert_eq!(admission.digest_derivations(), 2);
+    assert_eq!(admission.canonical_entries(), 2);
+    assert_eq!(admission.canonical_encoded_bytes(), 196);
+    assert_eq!(admission.sha256_input_bytes(), 348);
+    assert_eq!(admission.sha256_compression_blocks(), 7);
 }
 
 fn idempotency(seed: u8) -> BankIdempotencyKey {

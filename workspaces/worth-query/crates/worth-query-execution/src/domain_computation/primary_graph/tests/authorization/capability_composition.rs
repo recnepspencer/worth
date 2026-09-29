@@ -296,6 +296,5 @@ fn composed_input() -> CapabilityTouchInput {
         caller_time: 100,
         request_record: "selected-request".to_owned(),
         prior_record: "selected-prior".to_owned(),
-        governed_input_identity: Default::default(),
     }
 }

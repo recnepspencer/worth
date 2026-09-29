@@ -7,7 +7,7 @@ use worth_query_declaration::facade::application_schema::{
     NoApplicationUnit, ReadWrite, U64ApplicationValueBinding,
 };
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 pub(in crate::domain_computation::primary_graph) struct ProgramRequiredInput {
     pub(in crate::domain_computation::primary_graph) status: String,
 }
@@ -55,8 +55,6 @@ worth_query_declaration::worth_query_mutation_binding!(
     operation ProgramRequiredOperation,
     result ProgramRequiredOutcomeBinding,
     idempotency String, identity "worth.query.test.program-required-key.v1",
-        key_identity program_required_key_identity,
-        input_identity program_required_input_identity,
     decision ProgramRequiredInput,
     denial ProgramRequiredOutcomeBinding,
     handler identity "worth.query.test.program-required-handler.v1",
@@ -76,22 +74,6 @@ worth_query_declaration::worth_query_mutation_binding!(
 
 fn program_required_scope(input: &ProgramRequiredInput) -> String {
     input.status.clone()
-}
-
-fn program_required_key_identity(key: &String) -> [u8; 32] {
-    bounded_identity(key.as_bytes())
-}
-
-fn program_required_input_identity(input: &ProgramRequiredInput) -> [u8; 32] {
-    bounded_identity(input.status.as_bytes())
-}
-
-fn bounded_identity(bytes: &[u8]) -> [u8; 32] {
-    let mut identity = [0_u8; 32];
-    for (index, byte) in bytes.iter().copied().take(32).enumerate() {
-        identity[index] = byte;
-    }
-    identity
 }
 
 pub(super) struct ProgramRequiredHandler;
@@ -162,5 +144,74 @@ impl
         crate::domain_computation::primary_graph::application_entry::mutation::HandlerResult::Completed(
             ProgramRequiredOutcome("program-owned".to_owned()),
         )
+    }
+}
+
+/// A second binding of the same operation, input type, and key namespace as
+/// `ProgramRequiredMutationBinding`, differing only in its own identities.
+/// Nothing installs it: it exists to show that a key reused across the two is
+/// not a replay, and that a binding with no installed handler is refused.
+pub(in crate::domain_computation::primary_graph) struct ProgramRequiredSiblingBinding;
+
+type Sibling = ProgramRequiredMutationBinding;
+
+impl ApplicationMutationBinding<IdentityExecutionSchema> for ProgramRequiredSiblingBinding {
+    type Input = <Sibling as ApplicationMutationBinding<IdentityExecutionSchema>>::Input;
+    type InputBinding =
+        <Sibling as ApplicationMutationBinding<IdentityExecutionSchema>>::InputBinding;
+    type Result = <Sibling as ApplicationMutationBinding<IdentityExecutionSchema>>::Result;
+    type ResultBinding =
+        <Sibling as ApplicationMutationBinding<IdentityExecutionSchema>>::ResultBinding;
+    type IdempotencyKey =
+        <Sibling as ApplicationMutationBinding<IdentityExecutionSchema>>::IdempotencyKey;
+    type Operation = <Sibling as ApplicationMutationBinding<IdentityExecutionSchema>>::Operation;
+    type Decision = <Sibling as ApplicationMutationBinding<IdentityExecutionSchema>>::Decision;
+    type Denial = <Sibling as ApplicationMutationBinding<IdentityExecutionSchema>>::Denial;
+    type DenialBinding =
+        <Sibling as ApplicationMutationBinding<IdentityExecutionSchema>>::DenialBinding;
+    type Output = <Sibling as ApplicationMutationBinding<IdentityExecutionSchema>>::Output;
+    type ScopeBinding =
+        <Sibling as ApplicationMutationBinding<IdentityExecutionSchema>>::ScopeBinding;
+    type PrincipalBinding =
+        <Sibling as ApplicationMutationBinding<IdentityExecutionSchema>>::PrincipalBinding;
+    type Mapping = <Sibling as ApplicationMutationBinding<IdentityExecutionSchema>>::Mapping;
+    type Principal = <Sibling as ApplicationMutationBinding<IdentityExecutionSchema>>::Principal;
+    type PrincipalIdentity =
+        <Sibling as ApplicationMutationBinding<IdentityExecutionSchema>>::PrincipalIdentity;
+    type PrincipalIdentityBinding =
+        <Sibling as ApplicationMutationBinding<IdentityExecutionSchema>>::PrincipalIdentityBinding;
+    type SourceExpectation =
+        <Sibling as ApplicationMutationBinding<IdentityExecutionSchema>>::SourceExpectation;
+
+    const IDENTITY: &'static str = "worth.query.test.program-required-sibling-mutation.v1";
+    const HANDLER_IDENTITY: &'static str = "worth.query.test.program-required-sibling-handler.v1";
+    const IDEMPOTENCY_IDENTITY: &'static str =
+        <Sibling as ApplicationMutationBinding<IdentityExecutionSchema>>::IDEMPOTENCY_IDENTITY;
+    const CANDIDATES: ApplicationCandidateRequirements =
+        <Sibling as ApplicationMutationBinding<IdentityExecutionSchema>>::CANDIDATES;
+
+    fn scope_field() -> worth_query_declaration::facade::application_schema::ApplicationFieldRef<
+        IdentityExecutionSchema,
+        Account,
+        AccountPolicy,
+        AccountStatus,
+        String,
+        ReadWrite,
+        worth_query_declaration::facade::application_schema::EqualityPredicate,
+        NoApplicationUnit,
+    > {
+        <Sibling as ApplicationMutationBinding<IdentityExecutionSchema>>::scope_field()
+    }
+
+    fn principal_binding(
+    ) -> worth_query_declaration::facade::application_schema::ApplicationPrincipalBindingRef<
+        IdentityExecutionSchema,
+        Self::PrincipalBinding,
+        Self::Mapping,
+        Self::Principal,
+        Self::PrincipalIdentity,
+        Self::PrincipalIdentityBinding,
+    > {
+        <Sibling as ApplicationMutationBinding<IdentityExecutionSchema>>::principal_binding()
     }
 }

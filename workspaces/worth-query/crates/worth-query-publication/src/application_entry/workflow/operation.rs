@@ -1,5 +1,7 @@
 use worth_query_declaration::facade::{
-    application_operation::{ApplicationMutationBinding, ApplicationMutationIntent},
+    application_operation::{
+        ApplicationMutationBinding, ApplicationMutationIdentityDenial, ApplicationMutationIntent,
+    },
     application_program::ApplicationWorkflowSpec,
     application_schema::{ApplicationOperationMarkerIdentity, ApplicationStructuredValueBinding},
 };
@@ -28,11 +30,14 @@ pub use recovery::{
 /// Why a request could not bind to the operation a workflow awaits: the workflow belongs to
 /// another runtime, the request does not match the requirement, or no authority was issued
 /// for it.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryWorkflowOperationBindingDenial {
     RuntimeMismatch,
     RequirementMismatch,
     AuthorityUnavailable,
+    /// The request key or input could not be encoded into its canonical
+    /// identity, so it cannot be compared with the requirement.
+    Identity(ApplicationMutationIdentityDenial),
 }
 
 impl std::fmt::Display for WorthQueryWorkflowOperationBindingDenial {
@@ -83,6 +88,10 @@ where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
 {
+    /// Binds the request to the operation a workflow awaits.
+    ///
+    /// The input is encoded here, once, and compared with the requirement; the
+    /// request keeps it, so executing the request encodes only its key.
     pub fn for_workflow_operation<'workflow, Spec>(
         self,
         workflow: impl Into<WorthQueryWorkflowVocabulary<'workflow, Schema, Spec>>,
@@ -90,20 +99,26 @@ where
     ) -> Result<Self, WorthQueryWorkflowOperationBindingDenial>
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
+        <Intent::Binding as ApplicationMutationBinding<Schema>>::Input: Clone,
     {
         let workflow = workflow.into();
-        self.validate_workflow_operation_binding(workflow, required)?;
+        let input = self
+            .encode_input()
+            .map_err(WorthQueryWorkflowOperationBindingDenial::Identity)?;
+        self.validate_workflow_operation_binding(workflow, required, input.identity())?;
         if !required.authority_slot().was_issued() {
             return Err(WorthQueryWorkflowOperationBindingDenial::AuthorityUnavailable);
         }
         Ok(self.bind_workflow_transition(
             *required.transition_identity_bytes(),
+            input,
             required.authority_slot(),
         ))
     }
 
     /// Binds only the exact performed operation for outbox recovery. This does
-    /// not issue authority to run a new guarded mutation.
+    /// not issue authority to run a new guarded mutation. Like
+    /// `for_workflow_operation`, it encodes the input once and keeps it.
     pub fn for_workflow_operation_recovery<'workflow, Spec>(
         self,
         workflow: impl Into<WorthQueryWorkflowVocabulary<'workflow, Schema, Spec>>,
@@ -111,16 +126,21 @@ where
     ) -> Result<Self, WorthQueryWorkflowOperationBindingDenial>
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
+        <Intent::Binding as ApplicationMutationBinding<Schema>>::Input: Clone,
     {
         let workflow = workflow.into();
-        self.validate_workflow_operation_binding(workflow, required)?;
-        Ok(self.bind_workflow_recovery_transition(*required.transition_identity_bytes()))
+        let input = self
+            .encode_input()
+            .map_err(WorthQueryWorkflowOperationBindingDenial::Identity)?;
+        self.validate_workflow_operation_binding(workflow, required, input.identity())?;
+        Ok(self.bind_workflow_recovery_transition(*required.transition_identity_bytes(), input))
     }
 
     fn validate_workflow_operation_binding<Spec>(
         &self,
         workflow: WorthQueryWorkflowVocabulary<'_, Schema, Spec>,
         required: &RequiredWorkflowOperation,
+        input_identity: &[u8; 32],
     ) -> Result<(), WorthQueryWorkflowOperationBindingDenial>
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
@@ -135,7 +155,7 @@ where
             || !<<Intent as ApplicationMutationIntent<Schema>>::Binding as ApplicationMutationBinding<Schema>>::REQUIRES_WORKFLOW_AUTHORITY
             || required.input_type()
                 != <<Intent as ApplicationMutationIntent<Schema>>::Binding as ApplicationMutationBinding<Schema>>::InputBinding::IDENTITY.as_str()
-            || required.input_identity() != &self.input_identity()
+            || input_identity != required.input_identity()
             || required.branch() != self.product_branch()
         {
             return Err(WorthQueryWorkflowOperationBindingDenial::RequirementMismatch);

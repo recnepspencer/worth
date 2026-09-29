@@ -1,5 +1,5 @@
 use worth_query_declaration::facade::{
-    application_operation::ApplicationMutationBinding,
+    application_operation::{ApplicationMutationBinding, ApplicationMutationIdentities},
     application_schema::ApplicationOperationMarkerIdentity,
 };
 use worth_query_installation::facade::ApplicationSchema;

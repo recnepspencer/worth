@@ -46,11 +46,15 @@ where
             Value = <Self::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Value,
         >,
 {
-    type Input: 'static;
+    /// Everything the input serializes takes part in the canonical input
+    /// identity; a field serde skips does not, so none may be skipped.
+    type Input: serde::Serialize + 'static;
     type InputBinding: ApplicationStructuredValueBinding<Value = Self::Input>;
     type Result: 'static;
     type ResultBinding: ApplicationStructuredValueBinding<Value = Self::Result>;
-    type IdempotencyKey: 'static;
+    /// Everything the key serializes takes part in the canonical key
+    /// identity; a field serde skips does not, so none may be skipped.
+    type IdempotencyKey: serde::Serialize + 'static;
     type Operation: ApplicationOperationMarkerIdentity<Schema, InputBinding = Self::InputBinding>
         + 'static;
     type Decision: 'static;
@@ -78,10 +82,6 @@ where
     /// refused, and the ordinary mutation lane refuses the binding.
     const WORKFLOW_CONTROL: bool = false;
     const CANDIDATES: ApplicationCandidateRequirements;
-
-    fn idempotency_key_identity(key: &Self::IdempotencyKey) -> [u8; 32];
-
-    fn input_identity(input: &Self::Input) -> [u8; 32];
 
     /// Binds input-selected subjects to the exact parameters of retained source evidence.
     /// Return `None` only when the operation accepts any selection of its source query.

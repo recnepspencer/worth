@@ -12,7 +12,7 @@ pub enum BankDisclosureClassification {
     LegalSealed,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize)]
 pub enum RestrictedBankField {
     CustomerIdentity,
     BeneficiaryIdentity,

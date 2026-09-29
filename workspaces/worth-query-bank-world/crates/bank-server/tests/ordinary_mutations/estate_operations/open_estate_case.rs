@@ -40,7 +40,7 @@ fn public_query_progression_opens_the_exact_verified_estate_case() {
     assert_eq!(receipt.emitted_effect_count(), 0);
     assert_eq!(receipt.expected_fact_count(), 0);
     assert_eq!(receipt.decision_fact_count(), Some(7));
-    assert_zero_canonical_work(receipt.canonical_work());
+    assert_admission_derives_the_request_identities_once(receipt.canonical_work());
     assert_case_posture(
         &fixture,
         EstateCaseStatus::Open,
@@ -71,7 +71,7 @@ fn assert_equivalent_retry(
         panic!("the equivalent retry must recover the exact commit: {retry:?}");
     };
     assert_eq!(committed.aftermath(), recovered.aftermath());
-    assert_zero_canonical_work(recovered.canonical_work());
+    assert_admission_derives_the_request_identities_once(recovered.canonical_work());
 }
 
 fn assert_intent_drift(
@@ -238,16 +238,29 @@ fn idempotency(identity: u8) -> BankIdempotencyKey {
     BankIdempotencyKey::new(format!("open-estate-case-{identity}")).unwrap()
 }
 
-fn assert_zero_canonical_work(phases: bank_server::BankCommitCanonicalWorkPhases) {
+fn assert_admission_derives_the_request_identities_once(
+    phases: bank_server::BankCommitCanonicalWorkPhases,
+) {
+    // Admission derives the request's two identities once each, streamed into
+    // their hashes with no basis sequence: the governed input (79 encoded
+    // bytes + 67 framing, 3 blocks) and the key `open-estate-case-program-entry` (52
+    // encoded bytes + 85 framing, ceil((137 + 9) / 64) = 3 blocks). A
+    // replayed retry is admitted the same way and reports the same work. Every
+    // other phase performs no canonical work.
+    let admission = phases.admission();
+    assert_eq!(admission.basis_preparations(), 0);
+    assert_eq!(admission.digest_derivations(), 2);
+    assert_eq!(admission.canonical_entries(), 2);
+    assert_eq!(admission.canonical_encoded_bytes(), 131);
+    assert_eq!(admission.sha256_input_bytes(), 283);
+    assert_eq!(admission.sha256_compression_blocks(), 6);
+    assert_eq!(admission.digest_text_materializations(), 0);
     for work in [
         phases.installation(),
-        phases.admission(),
         phases.execution(),
         phases.provider_commit(),
         phases.projection(),
-        phases.live_delivery(),
         phases.retry_resolution(),
-        phases.recovery_inspection(),
         phases.publication(),
     ] {
         assert_eq!(work.basis_preparations(), 0);

@@ -1,7 +1,7 @@
 use super::PlanarVertex;
 
 /// Replace the middle vertex of a predecessor -> vertex -> successor chain.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct PlanarVertexReplacement {
     pub retired_key: String,
     pub next_key: String,

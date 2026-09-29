@@ -1,8 +1,5 @@
 use worth_query_declaration::facade::{
-    application_capability::{
-        ApplicationCapabilityRef, ApplicationCapabilityRequest,
-        ApplicationCapabilityWorkflowIdempotency,
-    },
+    application_capability::{ApplicationCapabilityRef, ApplicationCapabilityRequest},
     application_program::ApplicationProgramDefinition,
     application_schema::{
         ApplicationIdentityScalarValueBinding, ApplicationOperationMarkerIdentity,
@@ -28,7 +25,11 @@ use worth_query_installation::facade::{
     WorthQueryApplicationOperationInstallationDenial, WorthQueryPrincipalBindingInstallationDenial,
 };
 
-use super::{workflow_key::workflow_idempotency, WorthQueryApplicationRequest};
+use super::WorthQueryApplicationRequest;
+use worth_query_declaration::facade::application_operation::ApplicationEncodedInput;
+use worth_query_execution::publication_boundary::{
+    capability_workflow::WorthQueryCapabilityWorkflowIdempotency, program_publication_access,
+};
 
 /// Why `execute_elevation_close_in_program` refused. `ProgramMismatch` means the program
 /// runtime is not this request's runtime.
@@ -37,7 +38,9 @@ pub enum WorthQueryApplicationElevationCloseDenial<DecisionDenial> {
     Program(WorthQueryApplicationCommitDenial),
     ProgramMismatch,
     PrincipalBindingInstallation(WorthQueryPrincipalBindingInstallationDenial),
-    PrincipalIdentityEncoding(ApplicationValueEncodeDenial),
+    /// The idempotency key, the input or the principal identity could not be
+    /// canonically encoded; the payload names the binding whose value was rejected.
+    IdentityEncoding(ApplicationValueEncodeDenial),
     CapabilityInstallation(WorthQueryApplicationCapabilityInstallationDenial),
     OperationInstallation(WorthQueryApplicationOperationInstallationDenial),
     ProductSelection(WorthQueryProductBranchAdmissionDenial),
@@ -136,10 +139,10 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, Schema>
         Program: ApplicationProgramDefinition<Schema>,
         PrincipalIdentityBinding: ApplicationIdentityScalarValueBinding<Value = PrincipalIdentity>,
         PrincipalIdentity: 'static,
-        Operation: ApplicationOperationMarkerIdentity<Schema>
-            + ApplicationCapabilityWorkflowIdempotency<Schema, Input, Key>
-            + 'static,
+        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
         Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
+        Input: serde::Serialize,
+        Key: serde::Serialize,
         Input: ApplicationCapabilityRequest<Schema, Capability> + Clone + Send + Sync + 'static,
     {
         use WorthQueryApplicationElevationCloseDenial as Denial;
@@ -201,30 +204,40 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, Schema>
                 ))
             }
         };
-        let idempotency = match workflow_idempotency::<
-            Schema,
-            Operation,
-            Input,
-            Key,
-            PrincipalIdentity,
-            PrincipalIdentityBinding,
-        >(key, &input, principal.principal_identity())
-        {
-            Ok(binding) => binding,
+        let encoded =
+            ApplicationEncodedInput::<Operation::InputBinding>::encode(input).and_then(|input| {
+                WorthQueryCapabilityWorkflowIdempotency::bind::<
+                    Schema,
+                    Operation,
+                    Key,
+                    PrincipalIdentity,
+                    PrincipalIdentityBinding,
+                >(key, &input, principal.principal_identity())
+                .map(|workflow| (input, workflow))
+            });
+        let (input, workflow) = match encoded {
+            Ok(encoded) => encoded,
             Err(denial) => {
                 return Err(Failure::retained(
-                    Denial::PrincipalIdentityEncoding(denial),
+                    Denial::IdentityEncoding(denial),
                     approved,
                 ))
             }
         };
-        let access =
-            match selected.admit_capability_access(&principal, &capability, input, self.scope) {
-                Ok(access) => access,
-                Err(denial) => {
-                    return Err(Failure::retained(Denial::Authorization(denial), approved))
-                }
-            };
+        let idempotency = workflow.binding();
+        let publication = program_publication_access();
+        let mut access = match selected.admit_encoded_capability_access(
+            &publication,
+            &principal,
+            &capability,
+            input,
+            self.scope,
+        ) {
+            Ok(access) => access,
+            Err(denial) => return Err(Failure::retained(Denial::Authorization(denial), approved)),
+        };
+        access.record_request_identity_work(&publication, workflow.key_work());
+
         let operation = match self
             .application
             .installed_schema()

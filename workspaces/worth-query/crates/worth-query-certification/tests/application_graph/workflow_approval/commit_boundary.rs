@@ -1,17 +1,23 @@
 //! The public program-owner commit door cannot bypass workflow authority.
 
 use super::*;
+use worth_query_decl::facade::application_operation::ApplicationMutationIdentities;
 use worth_query_host::facade::{
     application_installation::WorthQueryProgramOwner,
-    declaration::application_operation::ApplicationMutationBinding,
-    primary_graph::{
-        HandlerResult, WorthQueryApplicationIdempotencyBinding, WorthQueryPrincipalResolutionMode,
-    },
+    primary_graph::{HandlerResult, WorthQueryPrincipalResolutionMode},
 };
 
+use super::super::document_retention_model::retention_entry::SetRetentionBinding;
 use super::super::document_retention_model::schema::{
-    DocumentIdentityField, SetRetention, SetRetentionInput,
+    DocumentIdentityField, DocumentRetentionSchema, SetRetention, SetRetentionInput,
 };
+
+fn reviewed_identities<'a>(
+    key: &'a u64,
+    input: &'a SetRetentionInput,
+) -> ApplicationMutationIdentities<'a, DocumentRetentionSchema, ReviewedSetRetentionBinding> {
+    ApplicationMutationIdentities::encode(key, input).expect("key and input must encode")
+}
 
 #[test]
 fn guarded_action_cannot_commit_through_public_program_owner_without_workflow_authority() {
@@ -67,8 +73,7 @@ fn guarded_action_cannot_commit_through_public_program_owner_without_workflow_au
             .expect("ordinary operation admission must succeed");
         let HandlerResult::Completed(completed) = runtime
             .execute_mutation_handler::<ReviewedSetRetentionBinding>(
-                &input,
-                &key,
+                &reviewed_identities(&key, &input),
                 principal.principal_identity(),
                 admission,
             )
@@ -81,12 +86,10 @@ fn guarded_action_cannot_commit_through_public_program_owner_without_workflow_au
     let key = 950_u64;
     let outcome = application
         .program_runtime()
-        .compare_and_commit_program_action::<ReviewedSetRetentionBinding>(
+        .compare_and_commit_program_action(
             candidate(key),
-            WorthQueryApplicationIdempotencyBinding::new(
-                ReviewedSetRetentionBinding::idempotency_key_identity(&key),
-                ReviewedSetRetentionBinding::input_identity(&input),
-            ),
+            &reviewed_identities(&key, &input),
+            std::convert::identity,
         );
     assert!(matches!(
         outcome,
@@ -181,8 +184,7 @@ fn one_approval_transition_cannot_commit_twice_under_different_client_keys() {
             .unwrap();
         let HandlerResult::Completed(completed) = runtime
             .execute_mutation_handler::<ReviewedSetRetentionBinding>(
-                &input,
-                &key,
+                &reviewed_identities(&key, &input),
                 principal.principal_identity(),
                 admission,
             )
@@ -196,12 +198,9 @@ fn one_approval_transition_cannot_commit_twice_under_different_client_keys() {
         .authority_slot()
         .take()
         .expect("the owner issued one operation authority");
-    let idempotency = |key: u64| {
+    let extend = |idempotency| {
         WorthQueryWorkflowAdvanceAdapter::bind_operation_idempotency(
-            WorthQueryApplicationIdempotencyBinding::new(
-                ReviewedSetRetentionBinding::idempotency_key_identity(&key),
-                ReviewedSetRetentionBinding::input_identity(&input),
-            ),
+            idempotency,
             required.transition_identity_bytes(),
         )
     };
@@ -219,8 +218,11 @@ fn one_approval_transition_cannot_commit_twice_under_different_client_keys() {
         .execute_mutation_handler::<
             super::super::document_retention_model::retention_entry::SetRetentionBinding,
         >(
-            &input,
-            &sibling_key,
+            &ApplicationMutationIdentities::<DocumentRetentionSchema, SetRetentionBinding>::encode(
+                &sibling_key,
+                &input,
+            )
+            .unwrap(),
             principal.principal_identity(),
             sibling_admission,
         )
@@ -235,9 +237,10 @@ fn one_approval_transition_cannot_commit_twice_under_different_client_keys() {
         .unwrap();
     let relabeled = application
         .program_runtime()
-        .compare_and_commit_program_action::<ReviewedSetRetentionBinding>(
+        .compare_and_commit_program_action(
             sibling_program,
-            idempotency(sibling_key),
+            &reviewed_identities(&sibling_key, &input),
+            extend,
         );
     assert!(matches!(
         relabeled,
@@ -253,9 +256,10 @@ fn one_approval_transition_cannot_commit_twice_under_different_client_keys() {
         .unwrap();
     let first = application
         .program_runtime()
-        .compare_and_commit_program_action::<ReviewedSetRetentionBinding>(
+        .compare_and_commit_program_action(
             first_program,
-            idempotency(972),
+            &reviewed_identities(&972, &input),
+            extend,
         );
     assert!(matches!(
         first,
@@ -263,9 +267,10 @@ fn one_approval_transition_cannot_commit_twice_under_different_client_keys() {
     ));
     let second = application
         .program_runtime()
-        .compare_and_commit_program_action::<ReviewedSetRetentionBinding>(
+        .compare_and_commit_program_action(
             second_program,
-            idempotency(973),
+            &reviewed_identities(&973, &input),
+            extend,
         );
     assert!(matches!(
         second,

@@ -33,7 +33,6 @@ impl OperationHandler<BankSchema, CreatePersonalAccountMutationBinding>
             return interrupted(interruption);
         }
         let scope = reader.scope().clone();
-        let key = reader.idempotency_key().clone();
         let snapshot = match project_personal_account_creation(reader.reader(), &scope, input) {
             Ok(snapshot) => snapshot,
             Err(error) => return execution_denied(error),
@@ -47,8 +46,10 @@ impl OperationHandler<BankSchema, CreatePersonalAccountMutationBinding>
         if snapshot.primary_account(input.owner).is_some() {
             return HandlerResult::DomainDenied(BankProposalDenial::DuplicatePersonalAccount);
         }
-        HandlerResult::Completed(CreatePersonalAccountDecision::from_admitted_input(
-            &key, input,
+        HandlerResult::Completed(CreatePersonalAccountDecision::from_admitted_identities(
+            reader.key_identity(),
+            reader.input_identity(),
+            input,
         ))
     }
 

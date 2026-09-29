@@ -137,16 +137,6 @@ macro_rules! mutation_binding {
                     ApplicationCandidateResourceCeiling::bounded($bytes, 4),
                 );
 
-            fn idempotency_key_identity(key: &Self::IdempotencyKey) -> [u8; 32] {
-                let mut identity = [0; 32];
-                identity[..8].copy_from_slice(&key.to_be_bytes());
-                identity
-            }
-
-            fn input_identity(_input: &Self::Input) -> [u8; 32] {
-                [1; 32]
-            }
-
             fn scope_field() -> ApplicationFieldRef<
                 MutationSchema,
                 FixtureEntity<MutationSchema>,

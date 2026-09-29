@@ -1,4 +1,5 @@
 mod descriptor;
+mod identity;
 mod intent;
 mod output;
 mod portable_description;
@@ -11,6 +12,11 @@ mod source_expectation;
 pub use descriptor::{
     ApplicationMutationBindingDescriptor, ApplicationMutationHandlerMetadata,
     ApplicationMutationIdempotencyMetadata,
+};
+pub use identity::{
+    application_value_identity, ApplicationCanonicalIdentity, ApplicationCanonicalWork,
+    ApplicationEncodedInput, ApplicationMutationIdentities, ApplicationMutationIdentityDenial,
+    ApplicationValueIdentityDomain,
 };
 pub use intent::{
     ApplicationCapabilityMutationBinding, ApplicationMutationBinding, ApplicationMutationIntent,

@@ -2,9 +2,8 @@ use worth_query_admission::facade::authenticated_principal::WorthQueryRequestSco
 
 use super::world_installation::AuthorizationWorld;
 use super::{
-    CapabilityAction, CapabilityDisclosure, CapabilityGovernedInputIdentity, CapabilityPurpose,
-    CapabilityTouchInput, CapabilityTouchOperation, IdentityExecutionSchema, Principal,
-    TouchAccountCapability,
+    CapabilityAction, CapabilityDisclosure, CapabilityPurpose, CapabilityTouchInput,
+    CapabilityTouchOperation, IdentityExecutionSchema, Principal, TouchAccountCapability,
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedApplicationCapabilityAccess, WorthQueryAuthenticatedPrincipal,
@@ -45,7 +44,6 @@ pub(in crate::domain_computation::primary_graph) fn admit_touch_account_capabili
             caller_time: 100,
             request_record: "selected-request".to_owned(),
             prior_record: "selected-prior".to_owned(),
-            governed_input_identity: CapabilityGovernedInputIdentity::None,
         },
         request,
     )

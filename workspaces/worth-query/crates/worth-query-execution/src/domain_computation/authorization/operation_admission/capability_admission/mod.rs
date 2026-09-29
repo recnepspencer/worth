@@ -2,6 +2,10 @@
 
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest;
+use worth_query_declaration::facade::application_operation::ApplicationEncodedInput;
+use worth_query_declaration::facade::application_schema::{
+    ApplicationOperationMarkerIdentity, ApplicationStructuredValueBinding,
+};
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationCapability,
 };
@@ -16,7 +20,9 @@ use crate::domain_computation::primary_graph::{
 mod preparation;
 
 pub use preparation::WorthQueryAdmittedApplicationCapabilityAccess;
-use preparation::{complete_capability_admission, prepare_capability_admission};
+use preparation::{
+    complete_capability_admission, prepare_capability_admission, CapabilityAdmissionInput,
+};
 pub(in crate::domain_computation::authorization) use preparation::{
     WorthQueryCapabilityContextKey, WorthQueryResolvedCapabilityRequest,
 };
@@ -57,7 +63,55 @@ where
 {
     admit_request(request, capability.contract().operation())?;
     let prepared = prepare_capability_admission(
-        runtime, product, principal, capability, input, request, approved,
+        runtime,
+        product,
+        principal,
+        capability,
+        CapabilityAdmissionInput::Derive(input),
+        request,
+        approved,
+    )?;
+    complete_capability_admission(prepared)
+}
+
+/// Admits capability access for an input the request already encoded.
+///
+/// Admission reuses the carrier's identity as the governed input identity and
+/// reports only the work the carrier still has to report, so the input is
+/// never encoded twice for one request.
+pub(in crate::domain_computation) fn admit_encoded_capability_access<
+    Schema,
+    Principal,
+    PrincipalIdentity,
+    Capability,
+    Operation,
+    Input,
+>(
+    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    product: &crate::basis::WorthQueryProductBranchLease,
+    principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
+    capability: &WorthQueryInstalledApplicationCapability<Schema, Capability, Operation, Input>,
+    input: ApplicationEncodedInput<Operation::InputBinding>,
+    request: &WorthQueryRequestScope,
+) -> Result<
+    WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
+    WorthQueryOperationAuthorizationDenial,
+>
+where
+    Schema: ApplicationSchema,
+    Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
+    Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
+    Input: ApplicationCapabilityRequest<Schema, Capability> + 'static,
+{
+    admit_request(request, capability.contract().operation())?;
+    let prepared = prepare_capability_admission(
+        runtime,
+        product,
+        principal,
+        capability,
+        CapabilityAdmissionInput::Encoded(input),
+        request,
+        None,
     )?;
     complete_capability_admission(prepared)
 }

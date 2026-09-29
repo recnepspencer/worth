@@ -255,16 +255,6 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for SetRetentionBinding
             ApplicationCandidateResourceCeiling::bounded(1024, 1024),
         );
 
-    fn idempotency_key_identity(key: &u64) -> [u8; 32] {
-        content_identity(&key.to_le_bytes())
-    }
-
-    fn input_identity(input: &SetRetentionInput) -> [u8; 32] {
-        let mut bytes = input.identity.as_bytes().to_vec();
-        bytes.extend_from_slice(&input.retention_days.to_le_bytes());
-        content_identity(&bytes)
-    }
-
     fn scope_field() -> ApplicationFieldRef<
         DocumentRetentionSchema,
         Document,
@@ -377,17 +367,4 @@ pub fn declare(
         .application_query_binding::<DocumentRetentionConditionQueryBinding>()
         .application_mutation_binding::<SetRetentionBinding>()
         .application_mutation_binding::<ReviewedSetRetentionBinding>()
-}
-
-/// A stable content identity for one authored value. Nothing in this court
-/// depends on the digest being cryptographic; it only has to separate two
-/// different requests so idempotency cannot silently merge them.
-fn content_identity(bytes: &[u8]) -> [u8; 32] {
-    let mut identity = [0_u8; 32];
-    let mut accumulator = 0xcbf2_9ce4_8422_2325_u64;
-    for (index, byte) in bytes.iter().enumerate() {
-        accumulator = (accumulator ^ u64::from(*byte)).wrapping_mul(0x0000_0100_0000_01b3);
-        identity[index % identity.len()] ^= (accumulator >> ((index % 8) * 8)) as u8;
-    }
-    identity
 }

@@ -19,3 +19,21 @@ pub(in crate::domain_computation::primary_graph::application_attempt) struct Mut
     pub(in crate::domain_computation::primary_graph::application_attempt) binding: &'static str,
     pub(in crate::domain_computation::primary_graph::application_attempt) input_identity: [u8; 32],
 }
+
+impl MutationHandlerBindingProof {
+    /// Refuses a commit whose idempotency binding is not for the request the
+    /// handler decided on: it must name the handler's own mutation binding and
+    /// derive its intent from the input the handler decided on.
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn refusal(
+        &self,
+        idempotency: &super::super::WorthQueryApplicationIdempotencyBinding,
+    ) -> Option<super::super::WorthQueryApplicationCommitDenial> {
+        if !idempotency.is_for_mutation_binding(self.binding) {
+            return Some(
+                super::super::WorthQueryApplicationCommitDenial::mutation_binding_mismatch(),
+            );
+        }
+        (*idempotency.intent_identity() != self.input_identity)
+            .then(super::super::WorthQueryApplicationCommitDenial::mutation_input_mismatch)
+    }
+}

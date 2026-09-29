@@ -7,14 +7,17 @@ use std::time::Instant;
 
 #[path = "operation_admission/capability_admission/mod.rs"]
 mod capability_admission;
-pub(in crate::domain_computation) use capability_admission::admit_capability_access;
 pub use capability_admission::WorthQueryAdmittedApplicationCapabilityAccess;
+pub(in crate::domain_computation) use capability_admission::{
+    admit_capability_access, admit_encoded_capability_access,
+};
 pub(in crate::domain_computation::authorization) use capability_admission::{
     WorthQueryCapabilityContextKey, WorthQueryCurrentCapabilityObservation,
     WorthQueryDelegationResolvedRequest, WorthQueryExactCapabilityObservationContext,
     WorthQueryResolvedCapabilityRequest,
 };
 
+use worth_query_declaration::facade::application_operation::ApplicationCanonicalWork;
 use worth_query_installation::facade::{
     ApplicationSchemaBindingIdentity, WorthQueryCanonicalWorkEvidence,
     WorthQueryCanonicalWorkPhases, WorthQueryCompiledApplicationOperationContracts,
@@ -136,6 +139,19 @@ impl<Schema, Operation, Input, Scope>
         work: WorthQueryCanonicalWorkEvidence,
     ) {
         self.canonical_work = self.canonical_work.with_execution_work(work);
+    }
+
+    /// Reports the derivations that encoded this request's key and input in
+    /// the admission phase, so a fresh commit and a replayed retry both carry
+    /// them. Only Publication's request entries report them, once per request.
+    pub fn record_request_identity_work(
+        &mut self,
+        _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+        work: ApplicationCanonicalWork,
+    ) {
+        self.canonical_work = self
+            .canonical_work
+            .with_admission_work(WorthQueryCanonicalWorkEvidence::streamed_identities(work));
     }
 }
 

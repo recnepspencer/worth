@@ -3,12 +3,16 @@
 
 #[path = "application_graph/adoption.rs"]
 mod adoption;
+#[path = "application_graph/canonical_identity.rs"]
+mod canonical_identity;
 #[path = "application_graph/document_retention_model.rs"]
 mod document_retention_model;
 #[path = "application_graph/expressions/conditions.rs"]
 mod expression_conditions;
 #[path = "application_graph/fork_decision_reads.rs"]
 mod fork_decision_reads;
+#[path = "application_graph/mutation_binding_guard.rs"]
+mod mutation_binding_guard;
 #[path = "application_graph/workflow.rs"]
 mod workflow;
 #[path = "application_graph/workflow_actor_wait.rs"]

@@ -8,11 +8,8 @@ use worth_query_decl::facade::{
 };
 
 use crate::model::{BankPrincipalId, PaymentId};
-use crate::proposals::{
-    BankIdempotencyKey, BankInvariantApprovedProposal, BankProposalDenial, CanonicalProposalPayload,
-};
+use crate::proposals::{BankIdempotencyKey, BankInvariantApprovedProposal, BankProposalDenial};
 
-use super::create_personal_account_binding::client_key_identity;
 use super::{ApprovePayment, ApprovePaymentInputBinding, RejectPayment, RejectPaymentInputBinding};
 use crate::schema::{
     ApprovePaymentOperation, BankPrincipalBinding, BankPrincipalIdBinding, BankSchema,
@@ -60,22 +57,6 @@ fn payment_scope_from_rejection(input: &RejectPayment) -> PaymentId {
     input.payment
 }
 
-pub(crate) fn approval_input_identity(input: &ApprovePayment) -> [u8; 32] {
-    *CanonicalProposalPayload::new("application-approve-payment")
-        .text("payment", &input.payment.canonical_text())
-        .u64("approver", input.approver.get())
-        .derive_identity()
-        .bytes()
-}
-
-fn rejection_input_identity(input: &RejectPayment) -> [u8; 32] {
-    *CanonicalProposalPayload::new("application-reject-payment")
-        .text("payment", &input.payment.canonical_text())
-        .u64("rejecting-principal", input.rejecting_principal.get())
-        .derive_identity()
-        .bytes()
-}
-
 worth_query_mutation_binding!(
     pub ApprovePaymentMutationBinding for ApprovePayment, schema BankSchema,
     identity "bank.operation.approve-payment.mutation-binding.v1",
@@ -84,8 +65,6 @@ worth_query_mutation_binding!(
     result PaymentDecisionResultBinding,
     idempotency BankIdempotencyKey,
         identity "bank.application-mutation-client-key.v1",
-        key_identity client_key_identity,
-        input_identity approval_input_identity,
     decision BankInvariantApprovedProposal,
     denial PaymentDecisionDenialBinding,
     handler identity "bank.operation.approve-payment.handler.v1",
@@ -117,8 +96,6 @@ worth_query_mutation_binding!(
     result PaymentDecisionResultBinding,
     idempotency BankIdempotencyKey,
         identity "bank.application-mutation-client-key.v1",
-        key_identity client_key_identity,
-        input_identity rejection_input_identity,
     decision BankInvariantApprovedProposal,
     denial PaymentDecisionDenialBinding,
     handler identity "bank.operation.reject-payment.handler.v1",

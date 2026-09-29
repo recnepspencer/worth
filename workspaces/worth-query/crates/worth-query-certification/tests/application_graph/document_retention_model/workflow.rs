@@ -79,7 +79,8 @@ pub use retry_definition::{bounded_retry_definition, bounded_retry_definition_wi
 pub use review_requirement::{
     link_review_requirement, link_review_requirement_on, unlink_review_requirement,
     unlink_review_requirement_on, ReviewRequirementBinding, ReviewRequirementDenial,
-    ReviewRequirementHandler, UnlinkReviewRequirementBinding, UnlinkReviewRequirementHandler,
+    ReviewRequirementHandler, ReviewRequirementInput, UnlinkReviewRequirementBinding,
+    UnlinkReviewRequirementHandler,
 };
 pub use runtime::{
     install_workflow_spec, retain_workflow, retain_workflow_with_resources,

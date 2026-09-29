@@ -351,7 +351,9 @@ pub(super) fn commit_denial(
         | Denial::CandidateIdentityExhausted
         | Denial::IndexGenerationIdentityExhausted
         | Denial::ProgramActivationUnresolved
-        | Denial::ProgramSupportRetired => (
+        | Denial::ProgramSupportRetired
+        | Denial::MutationBindingMismatch
+        | Denial::MutationInputMismatch => (
             BankHttpMutationFailureKind::Aborted,
             BankHttpDenial::new(
                 BankHttpDenialKind::Unavailable,

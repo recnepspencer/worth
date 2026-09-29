@@ -47,21 +47,6 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for UnlinkReviewRequire
             ApplicationCandidateResourceCeiling::bounded(1024, 1024),
         );
 
-    fn idempotency_key_identity(key: &u64) -> [u8; 32] {
-        identity(&key.to_le_bytes())
-    }
-    fn input_identity(input: &ReviewRequirementInput) -> [u8; 32] {
-        identity(
-            format!(
-                "{}:{}:{}:{}",
-                input.resource.len(),
-                input.resource,
-                input.related.len(),
-                input.related
-            )
-            .as_bytes(),
-        )
-    }
     fn scope_field() -> ApplicationFieldRef<
         DocumentRetentionSchema,
         Document,

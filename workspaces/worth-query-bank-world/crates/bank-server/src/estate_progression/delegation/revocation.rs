@@ -257,9 +257,7 @@ fn map_revocation_denial(
         Query::PrincipalResolution(denial) => {
             BankEstateProgressionDenial::PrincipalResolution(denial)
         }
-        Query::PrincipalIdentityEncoding(denial) => {
-            BankEstateProgressionDenial::PrincipalIdentityEncoding(denial)
-        }
+        Query::IdentityEncoding(denial) => BankEstateProgressionDenial::IdentityEncoding(denial),
         Query::Authorization(denial) => BankEstateProgressionDenial::from_authorization(denial),
         Query::Idempotency(denial) => BankEstateProgressionDenial::from_idempotency(denial),
         Query::IdempotencyIntentDrift => BankEstateProgressionDenial::IdempotencyIntentDrift,

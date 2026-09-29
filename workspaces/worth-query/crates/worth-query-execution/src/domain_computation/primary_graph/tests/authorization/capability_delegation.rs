@@ -29,8 +29,12 @@ fn lawful_multi_link_delegation_is_one_composite_exact_authorization_fact() {
     assert_eq!(access.relational_counters().paths_evaluated, 20);
     assert!(access.signal_dependency_count() > 0);
     let work = access.admission_canonical_work();
+    // The one canonical derivation is the governed input the admission encoded.
     assert_eq!(work.basis_preparations(), 0);
-    assert_eq!(work.digest_derivations(), 0);
+    assert_eq!(work.digest_derivations(), 1);
+    assert_eq!(work.canonical_encoded_bytes(), 289);
+    assert_eq!(work.sha256_input_bytes(), 377);
+    assert_eq!(work.sha256_compression_blocks(), 7);
     assert_eq!(work.digest_text_materializations(), 0);
 }
 

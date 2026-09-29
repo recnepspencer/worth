@@ -39,24 +39,24 @@ pub(in crate::domain_computation::primary_graph) use capability_access_fixture::
 #[path = "fixture/capability_status_mutation.rs"]
 mod capability_status_mutation;
 pub(super) use capability::{
-    canonical_governed_input_materialization_count, elevated_account_activity_parameters,
-    ApproveCapabilityElevationOperation, ApproveElevationCapability, ApproveElevationInput,
-    CapabilityAction, CapabilityActionBinding, CapabilityDisclosure, CapabilityDisclosureBinding,
-    CapabilityElevationApprover, CapabilityElevationGrant, CapabilityElevationIdentity,
-    CapabilityElevationNotAfter, CapabilityElevationNotBefore, CapabilityElevationReason,
-    CapabilityElevationRequester, CapabilityElevationResource, CapabilityElevationReview,
-    CapabilityElevationStatus, CapabilityElevationStatusBinding, CapabilityElevationStatusField,
-    CapabilityGovernedInputIdentity, CapabilityIdentity, CapabilityPurpose,
-    CapabilityPurposeBinding, CapabilityRequestContext, CapabilityReviewIdentity,
-    CapabilityReviewKindField, CapabilityReviewResource, CapabilityReviewStatus,
-    CapabilityReviewStatusBinding, CapabilityReviewStatusField, CapabilityReviewer,
-    CapabilityStatus, CapabilityStatusBinding, CapabilityStatusField, CapabilityTouchInput,
-    CapabilityTouchOperation, CloseElevationInput, CompleteCapabilityReviewOperation,
-    CompleteElevationReviewCapability, CompleteElevationReviewInput, ElevatedAccountActivityCause,
-    ElevatedAccountActivityQuery, ElevatedAccountActivityResult, ElevatedCapabilityTouchInput,
-    ElevatedCapabilityTouchOperation, ElevatedTouchAccountCapability,
-    RequestCapabilityElevationOperation, RequestElevationCapability, RequestElevationInput,
-    RevokeCapabilityElevationOperation, RevokeElevationCapability, TouchAccountCapability,
+    elevated_account_activity_parameters, ApproveCapabilityElevationOperation,
+    ApproveElevationCapability, ApproveElevationInput, CapabilityAction, CapabilityActionBinding,
+    CapabilityDisclosure, CapabilityDisclosureBinding, CapabilityElevationApprover,
+    CapabilityElevationGrant, CapabilityElevationIdentity, CapabilityElevationNotAfter,
+    CapabilityElevationNotBefore, CapabilityElevationReason, CapabilityElevationRequester,
+    CapabilityElevationResource, CapabilityElevationReview, CapabilityElevationStatus,
+    CapabilityElevationStatusBinding, CapabilityElevationStatusField, CapabilityIdentity,
+    CapabilityPurpose, CapabilityPurposeBinding, CapabilityRequestContext,
+    CapabilityReviewIdentity, CapabilityReviewKindField, CapabilityReviewResource,
+    CapabilityReviewStatus, CapabilityReviewStatusBinding, CapabilityReviewStatusField,
+    CapabilityReviewer, CapabilityStatus, CapabilityStatusBinding, CapabilityStatusField,
+    CapabilityTouchInput, CapabilityTouchOperation, CloseElevationInput,
+    CompleteCapabilityReviewOperation, CompleteElevationReviewCapability,
+    CompleteElevationReviewInput, ElevatedAccountActivityCause, ElevatedAccountActivityQuery,
+    ElevatedAccountActivityResult, ElevatedCapabilityTouchInput, ElevatedCapabilityTouchOperation,
+    ElevatedTouchAccountCapability, RequestCapabilityElevationOperation,
+    RequestElevationCapability, RequestElevationInput, RevokeCapabilityElevationOperation,
+    RevokeElevationCapability, TouchAccountCapability,
 };
 pub(in crate::domain_computation::primary_graph) use capability_status_mutation::revoke_current_capability;
 #[path = "fixture/application_queries.rs"]
@@ -127,13 +127,18 @@ mod invalid_disclosure_queries;
 pub(super) use invalid_disclosure_queries::{
     ForbiddenInfluenceQuery, IncompleteDisclosureQuery, ResultRulePredicateQuery,
 };
+#[path = "fixture/capability_touch_binding.rs"]
+mod capability_touch_binding;
 #[path = "fixture/operation_contracts.rs"]
 mod operation_contracts;
 #[path = "fixture/program_required_binding.rs"]
 mod program_required_binding;
+use capability_touch_binding::CapabilityTouchHandler;
+pub(super) use capability_touch_binding::CapabilityTouchMutationBinding;
 use program_required_binding::ProgramRequiredHandler;
 pub(super) use program_required_binding::{
     ProgramRequiredInput, ProgramRequiredMutationBinding, ProgramRequiredOperation,
+    ProgramRequiredSiblingBinding,
 };
 #[path = "fixture/program_roster.rs"]
 mod program_roster;
@@ -270,6 +275,8 @@ worth_query_application_schema! {
                 .application_mutation_binding::<
                     program_required_binding::ProgramRequiredMutationBinding,
                 >()
+                .application_mutation_binding::<CapabilityTouchMutationBinding>()
+
                 .policy(AccountAccessPolicy::reference())
                 .ability_policy(
                     ViewAccount::reference(),

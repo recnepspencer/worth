@@ -19,6 +19,7 @@ worth-query-topology-entry = { path = "topology_entry" }
 worth-query-parameter-entry = { path = "parameter_entry" }
 worth-query-decl = { path = "../../../worth-query-decl" }
 worth-query-host = { path = "../../../worth-query-host" }
+serde = { version = "1", features = ["derive"] }
 
 # Match the Query workspace's compilation profile so the external consumer can
 # reuse its owner artifacts without full-debug or optimized Query recompilation.

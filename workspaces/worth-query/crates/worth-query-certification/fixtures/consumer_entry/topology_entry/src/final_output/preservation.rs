@@ -4,7 +4,7 @@ use worth_query_host::facade::primary_graph::{
     WorthQueryInvariantMutationTarget, WorthQueryPreserveOutput,
 };
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct FinalPlanarPreserve {
     pub scope_key: String,
     pub output_key: String,
@@ -71,21 +71,6 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
         "worth.query.certification.final-planar-preserve-command.v1";
     const CANDIDATES: ApplicationCandidateRequirements =
         super::super::requirements(0, 0, 0, 6, 4096, 4096);
-
-    fn idempotency_key_identity(key: &u64) -> [u8; 32] {
-        super::super::mutation_identity::key_identity(*key)
-    }
-
-    fn input_identity(input: &FinalPlanarPreserve) -> [u8; 32] {
-        super::super::mutation_identity::input_identity(&PlanarMutation {
-            scope_key: input.scope_key.clone(),
-            operation: PlanarOperation::PublishDerivedOutput(PlanarDerivedOutput {
-                body_key: input.output_key.clone(),
-                value: input.value,
-            }),
-            validator_work: 4_096,
-        })
-    }
 
     fn scope_field() -> ApplicationFieldRef<
         Schema,

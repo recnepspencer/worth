@@ -10,8 +10,7 @@ use crate::application_schema::{
 
 use super::{
     ApplicationCapabilityContextEntitySlotBinding, ApplicationCapabilityContextEntitySlotRef,
-    ApplicationCapabilityContextRef, ApplicationCapabilityGovernedInputIdentity,
-    ApplicationCapabilityRelationBinding,
+    ApplicationCapabilityContextRef, ApplicationCapabilityRelationBinding,
 };
 
 /// Application-owned projection of one exact operation input into the
@@ -19,17 +18,16 @@ use super::{
 ///
 /// Implementations describe the input; they do not grant authority. Query
 /// validates the projection against installed meaning and current graph truth.
-pub trait ApplicationCapabilityRequest<Schema, Capability> {
+///
+/// The input is `Serialize` because Query derives its governed identity from
+/// the canonical encoding of everything the input serializes. Query retains that
+/// identity, composes it privately with the installed operation and admitted
+/// scope, and treats drift in any serialized field as inequivalent for an
+/// idempotent retry or a redo. It is not capability authority or graph truth,
+/// and the application never writes it.
+pub trait ApplicationCapabilityRequest<Schema, Capability>: serde::Serialize {
     type Scope;
     type Context;
-
-    /// Stable application-owned identity of governed input dimensions whose
-    /// drift must make an idempotent retry inequivalent. Query retains and
-    /// privately composes this identity with the installed operation and
-    /// admitted scope; it is not capability authority or graph truth.
-    fn governed_input_identity(&self) -> Option<ApplicationCapabilityGovernedInputIdentity> {
-        None
-    }
 
     fn capability_request(
         &self,

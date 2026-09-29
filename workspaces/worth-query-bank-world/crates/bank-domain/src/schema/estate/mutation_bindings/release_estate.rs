@@ -14,7 +14,7 @@ use worth_query_decl::facade::{
 use crate::{
     estate::{EstateAction, EstateCaseId, LegalAuthorityId, MandatoryReviewId},
     model::BankPrincipalId,
-    proposals::{BankIdempotencyKey, CanonicalProposalPayload},
+    proposals::BankIdempotencyKey,
     schema::{
         BankPrincipalBinding, BankPrincipalIdBinding, BankSchema, EstateCase,
         EstateCaseIdentityField, ExternalPrincipalMapping, Principal, ReleaseEstateCapability,
@@ -90,29 +90,6 @@ impl ApplicationMutationBinding<BankSchema> for ReleaseEstateMutationBinding {
             ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 1, 0),
             ApplicationCandidateResourceCeiling::bounded(32768, 33),
         );
-
-    fn idempotency_key_identity(key: &BankIdempotencyKey) -> [u8; 32] {
-        crate::schema::operations::client_key_identity(key)
-    }
-
-    fn input_identity(input: &EstateAction) -> [u8; 32] {
-        let EstateAction::ReleaseEstate {
-            estate,
-            executor,
-            authority,
-            review,
-        } = input
-        else {
-            return super::invalid_variant_identity("application-release-estate", input);
-        };
-        *CanonicalProposalPayload::new("application-release-estate")
-            .u64("estate", estate.get())
-            .u64("executor", executor.get())
-            .u64("authority", authority.get())
-            .u64("review", review.get())
-            .derive_identity()
-            .bytes()
-    }
 
     fn scope_field() -> ApplicationFieldRef<
         BankSchema,

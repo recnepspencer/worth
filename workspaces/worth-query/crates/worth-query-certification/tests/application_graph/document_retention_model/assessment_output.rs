@@ -53,7 +53,7 @@ const APPLICABILITY: &[WorthQueryProducerApplicability] = &[INITIAL, PRESERVE];
 mod lookalike;
 pub use lookalike::LookalikeRetentionAssessmentDemand;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize)]
 pub struct RetentionAssessmentInput {
     identity: String,
     retention_days: u64,
@@ -134,16 +134,6 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for RetentionAssessment
             ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 0, 0),
             ApplicationCandidateResourceCeiling::bounded(512, 256),
         );
-
-    fn idempotency_key_identity(key: &u64) -> [u8; 32] {
-        hash(&key.to_le_bytes())
-    }
-
-    fn input_identity(input: &RetentionAssessmentInput) -> [u8; 32] {
-        let mut bytes = input.identity.as_bytes().to_vec();
-        bytes.extend_from_slice(&input.retention_days.to_le_bytes());
-        hash(&bytes)
-    }
 
     fn scope_field() -> ApplicationFieldRef<
         DocumentRetentionSchema,
@@ -359,14 +349,4 @@ pub fn declare(
             DocumentRetentionField::reference(),
         )
         .application_mutation_binding::<RetentionAssessmentBinding>()
-}
-
-fn hash(bytes: &[u8]) -> [u8; 32] {
-    let mut identity = [0_u8; 32];
-    let mut accumulator = 0xcbf2_9ce4_8422_2325_u64;
-    for (index, byte) in bytes.iter().enumerate() {
-        accumulator = (accumulator ^ u64::from(*byte)).wrapping_mul(0x0000_0100_0000_01b3);
-        identity[index % identity.len()] ^= (accumulator >> ((index % 8) * 8)) as u8;
-    }
-    identity
 }

@@ -8,11 +8,8 @@ use worth_query_decl::facade::{
 };
 
 use crate::model::{AccountId, BankPrincipalId, InstitutionId};
-use crate::proposals::{
-    BankIdempotencyKey, BankInvariantApprovedProposal, BankProposalDenial, CanonicalProposalPayload,
-};
+use crate::proposals::{BankIdempotencyKey, BankInvariantApprovedProposal, BankProposalDenial};
 
-use super::create_personal_account_binding::client_key_identity;
 use super::{CreateBusinessAccount, CreateBusinessAccountInputBinding};
 use crate::schema::{
     Account, BankPrincipalBinding, BankPrincipalIdBinding, BankSchema,
@@ -56,15 +53,6 @@ fn institution_scope(input: &CreateBusinessAccount) -> InstitutionId {
     input.institution
 }
 
-fn input_identity(input: &CreateBusinessAccount) -> [u8; 32] {
-    *CanonicalProposalPayload::new("application-create-business-account")
-        .u64("institution", input.institution.get())
-        .u64("business", input.business.get())
-        .text("display-name", input.display_name.as_str())
-        .derive_identity()
-        .bytes()
-}
-
 worth_query_mutation_binding!(
     pub CreateBusinessAccountMutationBinding for CreateBusinessAccount, schema BankSchema,
     identity "bank.operation.create-business-account.mutation-binding.v1",
@@ -73,8 +61,6 @@ worth_query_mutation_binding!(
     result CreateBusinessAccountResultBinding,
     idempotency BankIdempotencyKey,
         identity "bank.application-mutation-client-key.v1",
-        key_identity client_key_identity,
-        input_identity input_identity,
     decision BankInvariantApprovedProposal,
     denial CreateBusinessAccountDenialBinding,
     handler identity "bank.operation.create-business-account.handler.v1",

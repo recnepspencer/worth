@@ -48,9 +48,8 @@ fn public_delegation_creates_the_exact_narrowed_child_and_retries_idempotently()
     };
     assert_eq!(receipt.decision_fact_count(), Some(5));
     let canonical = receipt.canonical_work();
-    assert_eq!(canonical.admission().basis_preparations(), 0);
-    assert_eq!(canonical.admission().digest_derivations(), 0);
-    assert_eq!(canonical.admission().canonical_entries(), 0);
+    assert_admission_derives_the_request_identities_once(canonical.admission());
+
     assert_eq!(canonical.execution().basis_preparations(), 1);
     assert_eq!(canonical.execution().digest_derivations(), 1);
     assert_eq!(canonical.execution().canonical_entries(), 61);
@@ -59,10 +58,10 @@ fn public_delegation_creates_the_exact_narrowed_child_and_retries_idempotently()
         .runtime
         .delegate_estate_capability_with_key(&principal, action, &idempotency, &request_scope())
         .expect("the exact delegation retry must recover the first commit");
-    assert!(matches!(
-        retry,
-        BankMutationCommitOutcome::AlreadyCommitted(_)
-    ));
+    let BankMutationCommitOutcome::AlreadyCommitted(recovered) = &retry else {
+        panic!("the exact delegation retry must recover the first commit: {retry:?}");
+    };
+    assert_admission_derives_the_request_identities_once(recovered.canonical_work().admission());
 
     let drift = fixture
         .runtime
@@ -133,7 +132,7 @@ fn revoking_the_exact_root_immediately_cuts_active_children_and_grandchildren() 
             &fixture,
             &specialist,
             delegated_action(DelegationLimit::generations(1)),
-            idempotency(101),
+            idempotency(97),
         )
         .expect("the root must activate its exact narrowed child"),
     );
@@ -169,13 +168,13 @@ fn revoking_the_exact_root_immediately_cuts_active_children_and_grandchildren() 
         &fixture,
         &specialist,
         delegated_action(DelegationLimit::generations(1)),
-        idempotency(101),
+        idempotency(97),
     )
     .expect("the exact committed child should replay after its parent is revoked");
-    assert!(matches!(
-        replay,
-        BankMutationCommitOutcome::AlreadyCommitted(_)
-    ));
+    let BankMutationCommitOutcome::AlreadyCommitted(recovered) = &replay else {
+        panic!("the revoked parent's committed child must replay: {replay:?}");
+    };
+    assert_admission_derives_the_request_identities_once(recovered.canonical_work().admission());
 
     assert_governance_denied(&fixture, &specialist);
     assert_governance_denied(&fixture, &approver);
@@ -375,6 +374,24 @@ fn assert_committed(outcome: BankMutationCommitOutcome) {
         matches!(outcome, BankMutationCommitOutcome::Committed(_)),
         "the public mutation must authoritatively commit: {outcome:?}"
     );
+}
+
+fn assert_admission_derives_the_request_identities_once(
+    admission: crate::BankCommitCanonicalWorkEvidence,
+) {
+    // Admission derives the two request identities once each, with no basis
+    // sequence. The input, encoded once as both admitted input and intent: 656
+    // encoded bytes, 723 hashed with 67 bytes of framing, 12 blocks. The key
+    // over the principal basis and a two-digit "delegation-progression-NN": 112
+    // encoded, 199 hashed with 87 bytes of framing (38-byte capability workflow
+    // key domain, 33-byte operation identifier), 4 blocks. Replays report the
+    // same, whether idempotency resolves them or a fresh denial falls back.
+    assert_eq!(admission.basis_preparations(), 0);
+    assert_eq!(admission.digest_derivations(), 2);
+    assert_eq!(admission.canonical_entries(), 2);
+    assert_eq!(admission.canonical_encoded_bytes(), 768);
+    assert_eq!(admission.sha256_input_bytes(), 922);
+    assert_eq!(admission.sha256_compression_blocks(), 16);
 }
 
 fn idempotency(seed: u8) -> BankIdempotencyKey {

@@ -226,12 +226,14 @@ impl FinancialCourtroomWorld {
                 .unwrap();
         }
         self.amendment_ordinal = self.amendment_ordinal.saturating_add(1);
-        let mut key_identity = [0x31; 32];
-        key_identity[31] = self.amendment_ordinal;
-        let idempotency = primary_graph::WorthQueryApplicationIdempotencyBinding::new(
-            key_identity,
-            [self.amendment_ordinal; 32],
-        );
+        let idempotency =
+            primary_graph::WorthQueryApplicationIdempotencyBinding::for_host_commit::<
+                FinancialHostSchema,
+                AmendMarket,
+                _,
+                _,
+            >(&self.amendment_ordinal, &self.amendment_ordinal)
+            .unwrap();
         match self
             .application
             .compare_and_commit_application(effects.finish().unwrap(), idempotency)

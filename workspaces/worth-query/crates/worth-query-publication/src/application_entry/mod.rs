@@ -13,7 +13,6 @@ mod query;
 mod request;
 mod retained_read;
 mod workflow;
-mod workflow_key;
 
 pub use capability_delegation::WorthQueryApplicationCapabilityDelegationDenial;
 pub use capability_revocation::WorthQueryApplicationCapabilityRevocationDenial;

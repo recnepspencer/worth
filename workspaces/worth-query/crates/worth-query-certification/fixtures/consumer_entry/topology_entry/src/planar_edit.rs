@@ -53,14 +53,6 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.certification.planar-edit-command.v1";
     const CANDIDATES: ApplicationCandidateRequirements = requirements(16, 16, 16, 64, 8192, 4096);
 
-    fn idempotency_key_identity(key: &u64) -> [u8; 32] {
-        super::mutation_identity::key_identity(*key)
-    }
-
-    fn input_identity(input: &PlanarMutation) -> [u8; 32] {
-        super::mutation_identity::input_identity(input)
-    }
-
     fn scope_field() -> ApplicationFieldRef<
         Schema,
         Body,

@@ -13,7 +13,6 @@ use crate::proposals::{
     BankIdempotencyClaim, BankIdempotencyKey, BankProposalDenial, CanonicalProposalPayload,
 };
 
-use super::create_personal_account_binding::client_key_identity;
 use super::{InitiateBusinessPayment, InitiateBusinessPaymentInputBinding};
 use crate::schema::{
     BankPrincipalBinding, BankPrincipalIdBinding, BankSchema, Business, BusinessIdentity,
@@ -80,16 +79,6 @@ fn business_scope(input: &InitiateBusinessPayment) -> BusinessId {
     input.business
 }
 
-fn input_identity(input: &InitiateBusinessPayment) -> [u8; 32] {
-    *CanonicalProposalPayload::new("application-initiate-business-payment")
-        .u64("business", input.business.get())
-        .text("source", &input.from.canonical_text())
-        .u64("recipient", input.recipient.get())
-        .i64("amount-minor-units", input.amount.minor_units())
-        .derive_identity()
-        .bytes()
-}
-
 pub fn initiate_business_payment_application_idempotency(
     binding: crate::proposals::BankOperationScopeBinding,
     key: &BankIdempotencyKey,
@@ -111,8 +100,6 @@ worth_query_mutation_binding!(
     result InitiateBusinessPaymentResultBinding,
     idempotency BankIdempotencyKey,
         identity "bank.application-mutation-client-key.v1",
-        key_identity client_key_identity,
-        input_identity input_identity,
     decision InitiateBusinessPaymentDecision,
     denial InitiateBusinessPaymentDenialBinding,
     handler identity "bank.operation.initiate-business-payment.handler.v1",

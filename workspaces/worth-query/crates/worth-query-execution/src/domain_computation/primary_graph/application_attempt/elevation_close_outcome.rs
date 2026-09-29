@@ -49,6 +49,14 @@ impl WorthQueryMandatoryReview {
         self.close_commit.publication_source()
     }
 
+    /// The canonical work of the close commit, by phase. A replay reports the
+    /// admission work of its own request.
+    pub const fn canonical_work(
+        &self,
+    ) -> worth_query_installation::facade::WorthQueryCanonicalWorkPhases {
+        self.close_commit.canonical_work()
+    }
+
     pub const fn requester(&self) -> EntityId {
         self.binding.approved().requester()
     }

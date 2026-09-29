@@ -11,8 +11,9 @@ use worth_query_installation::facade::{
 };
 
 use super::super::{
-    application_entry::mutation::OperationHandler, WorthQueryPrimaryGraphApplicationRuntime,
-    WorthQueryPrimaryGraphBootstrap, WorthQueryPrimaryGraphInstallationDenial,
+    application_entry::mutation::{MutationHandlerExecutionDenial, OperationHandler},
+    WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrimaryGraphBootstrap,
+    WorthQueryPrimaryGraphInstallationDenial,
     WorthQueryPrimaryGraphInstallationDenialKind as DenialKind,
 };
 
@@ -330,25 +331,30 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: ApplicationSchema,
 {
-    /// The installed handler for `Binding`, or `None` for a workflow control
-    /// binding, which no handler serves.
+    /// The installed handler for `Binding`.
+    ///
+    /// A workflow control binding has no handler and is refused as
+    /// `WorkflowControl`; a binding this runtime installed no handler for is
+    /// refused as `HandlerNotInstalled`. Both refusals are deterministic, so
+    /// no retry of the same request can succeed.
     pub(in crate::domain_computation::primary_graph) fn mutation_handler_for_attempt<Binding>(
         &self,
-    ) -> Option<(
-        Arc<dyn OperationHandler<Schema, Binding>>,
-        ApplicationCandidateRequirements,
-    )>
+    ) -> Result<
+        (
+            Arc<dyn OperationHandler<Schema, Binding>>,
+            ApplicationCandidateRequirements,
+        ),
+        MutationHandlerExecutionDenial,
+    >
     where
         Binding: ApplicationMutationBinding<Schema>,
     {
         if Binding::WORKFLOW_CONTROL {
-            return None;
+            return Err(MutationHandlerExecutionDenial::WorkflowControl);
         }
-        Some(
-            self.mutation_handlers
-                .get::<Binding>()
-                .expect("runtime publication validated the exact mutation handler inventory"),
-        )
+        self.mutation_handlers
+            .get::<Binding>()
+            .ok_or(MutationHandlerExecutionDenial::HandlerNotInstalled)
     }
 }
 

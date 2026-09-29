@@ -8,7 +8,7 @@ use worth_query_decl::facade::{
     worth_query_structured_value_binding,
 };
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct PlanarMutation {
     pub scope_key: String,
     pub operation: PlanarOperation,
@@ -59,12 +59,6 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     const HANDLER_IDENTITY: &'static str = "worth.query.certification.planar-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.certification.planar-command.v1";
     const CANDIDATES: ApplicationCandidateRequirements = requirements(16, 16, 16, 64, 8192, 4096);
-    fn idempotency_key_identity(key: &u64) -> [u8; 32] {
-        super::mutation_identity::key_identity(*key)
-    }
-    fn input_identity(input: &PlanarMutation) -> [u8; 32] {
-        super::mutation_identity::input_identity(input)
-    }
     fn scope_field() -> ApplicationFieldRef<
         Schema,
         Body,

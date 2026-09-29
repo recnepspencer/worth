@@ -52,6 +52,16 @@ pub enum WorthQueryApplicationCommitDenialKind {
     /// The idempotency key is already bound to a different intent. New intent needs
     /// a new key.
     IdempotencyIntentDrift,
+    /// The idempotency binding does not name the mutation binding whose handler
+    /// produced this program. That is a programming error in the caller, not
+    /// intent drift: build the binding with `for_mutation_identities` from
+    /// identities encoded for the same binding.
+    MutationBindingMismatch,
+    /// The idempotency binding names the right mutation binding but derives its
+    /// intent from a different input than the handler decided on. That is a
+    /// programming error in the caller, not intent drift: build the binding from
+    /// the same key and input the handler ran with.
+    MutationInputMismatch,
     /// The operation is bound to an elevation lifecycle and must be committed
     /// through its elevation lane, not as a plain commit.
     ElevationTransitionRequired,
@@ -251,6 +261,26 @@ impl WorthQueryApplicationCommitDenial {
     ) -> Self {
         Self {
             kind: WorthQueryApplicationCommitDenialKind::IdempotencyIntentDrift,
+            stage: WorthQueryApplicationCommitDenialStage::Idempotency,
+            detail: None,
+            custom_invariant: None,
+        }
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_attempt) const fn mutation_binding_mismatch(
+    ) -> Self {
+        Self {
+            kind: WorthQueryApplicationCommitDenialKind::MutationBindingMismatch,
+            stage: WorthQueryApplicationCommitDenialStage::Idempotency,
+            detail: None,
+            custom_invariant: None,
+        }
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_attempt) const fn mutation_input_mismatch(
+    ) -> Self {
+        Self {
+            kind: WorthQueryApplicationCommitDenialKind::MutationInputMismatch,
             stage: WorthQueryApplicationCommitDenialStage::Idempotency,
             detail: None,
             custom_invariant: None,

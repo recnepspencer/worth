@@ -42,11 +42,13 @@ impl<Node>
         let input_identity =
             domain::WorthQueryTemporalOperationInputIdentity::declare(row.input.clone())
                 .map_err(projection_failure)?;
-        let idempotency = domain::WorthQueryTemporalIntentIdempotencyRelation::declare(format!(
-            "{}:{}:{}",
-            row.identity, row.revision, row.input
+        // Every part that makes the wake the same intent goes into the relation.
+        let idempotency = domain::WorthQueryTemporalIntentIdempotencyRelation::declare(&(
+            &row.identity,
+            row.revision,
+            &row.input,
         ))
-        .map_err(projection_failure)?;
+        .map_err(|denial| projection_failure(format!("{denial:?}")))?;
         let input = FinancialInput(row.input.clone());
         let due = domain::WorthQueryClockCoordinate::from_nanoseconds(row.due);
         match row.lifecycle.as_str() {

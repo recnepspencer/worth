@@ -36,7 +36,7 @@ worth_query_capability_provenance!(pub WorkflowAdvanceProvenance in DocumentRete
 worth_query_capability!(pub WorkflowAdvanceCapability in DocumentRetentionSchema);
 worth_query_capability!(pub WorkflowApprovalCapability in DocumentRetentionSchema);
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct WorkflowAdvanceInput {
     pub document_identity: String,
 }

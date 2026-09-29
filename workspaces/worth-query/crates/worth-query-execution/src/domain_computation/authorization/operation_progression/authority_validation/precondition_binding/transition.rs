@@ -3,11 +3,13 @@ use super::PreconditionBoundCapabilityOperation;
 #[path = "../../../operation_admission.rs"]
 mod admitted_operation;
 
-pub(in crate::domain_computation) use admitted_operation::admit_capability_access;
 pub(in crate::domain_computation::authorization::operation_progression) use admitted_operation::transition_conventional_operation;
 pub use admitted_operation::WorthQueryAdmittedApplicationCapabilityAccess;
 pub use admitted_operation::WorthQueryAdmittedApplicationOperation;
 pub(in crate::domain_computation) use admitted_operation::WorthQueryOperationAdmissionIdentity;
+pub(in crate::domain_computation) use admitted_operation::{
+    admit_capability_access, admit_encoded_capability_access,
+};
 pub(in crate::domain_computation::authorization) use admitted_operation::{
     WorthQueryCapabilityContextKey, WorthQueryCurrentCapabilityObservation,
     WorthQueryDelegationResolvedRequest, WorthQueryExactCapabilityObservationContext,

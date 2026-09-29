@@ -113,7 +113,10 @@ pub(in crate::domain_computation::primary_graph) use fact::{
     observe_adjacency, observe_indexed_entity_selection, WorthQueryApplicationAdjacencyDirection,
     WorthQueryApplicationFactKey, WorthQuerySourceCurrentnessFailure,
 };
-pub use idempotency::WorthQueryApplicationIdempotencyBinding;
+pub use idempotency::{
+    WorthQueryApplicationIdempotencyBinding, WorthQueryCapabilityWorkflowIdempotency,
+};
+
 pub use idempotency_resolution::WorthQueryGuardedWorkflowOperationCustody;
 pub use idempotency_resolution::{
     WorthQueryApplicationIdempotencyResolution, WorthQueryApplicationIdempotencyResolutionDenial,

@@ -10,6 +10,7 @@ publish = false
 worth-foundational.workspace = true
 worth-query-decl.workspace = true
 worth-query-host.workspace = true
+serde.workspace = true
 
 [dev-dependencies]
 worth-query-host.workspace = true

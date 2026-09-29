@@ -20,7 +20,6 @@ pub use final_output::*;
 mod checkpoint_recovery;
 mod discovery_read;
 mod mutation;
-mod mutation_identity;
 mod planar_edit;
 mod planar_invariant;
 mod planar_output_read;

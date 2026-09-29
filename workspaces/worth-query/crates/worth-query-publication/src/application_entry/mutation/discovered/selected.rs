@@ -83,19 +83,19 @@ where
             crate::application_entry::mutation::performed_source::PerformedSourceCommit::default();
         let outcome = self
             .execute_with_preparation_and_commit(
-                move |request| {
+                move |request, identities, staged| {
                     crate::application_entry::mutation::authorization::prepare_selected(
-                        request, &selected,
+                        request, identities, staged, &selected,
                     )
                 },
-                |_, program, idempotency| {
+                |_, program, binding| {
                     source.record(
                         application
                             .compare_and_commit_selected_discovered_output_source::<Root, Intent::Binding>(
                                 &worth_query_execution::publication_boundary::program_publication_access(),
                                 &owner,
                                 program,
-                                idempotency,
+                                binding.idempotency(),
                                 retained_discovery,
                             ),
                     )

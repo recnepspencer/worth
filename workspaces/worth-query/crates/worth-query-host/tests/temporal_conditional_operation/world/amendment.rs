@@ -278,10 +278,17 @@ impl CourtroomWorld {
         effects
             .write_field(&intent, IntentGateField::reference(), gate.to_string())
             .unwrap();
-        let idempotency = primary_graph::WorthQueryApplicationIdempotencyBinding::new(
-            [0x91 ^ amendment_ordinal; 32],
-            [0xA0 ^ amendment_ordinal; 32],
-        );
+        let idempotency =
+            primary_graph::WorthQueryApplicationIdempotencyBinding::for_host_commit::<
+                TemporalHostSchema,
+                AmendTemporal,
+                _,
+                _,
+            >(
+                &("amendment", amendment_ordinal),
+                &("amendment", amendment_ordinal),
+            )
+            .unwrap();
         let admitted_change =
             product::WorthQueryAdmittedChange::new(effects.finish().unwrap(), idempotency);
         self.application

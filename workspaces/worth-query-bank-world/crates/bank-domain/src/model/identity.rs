@@ -1,6 +1,6 @@
 macro_rules! domain_id {
     ($name:ident) => {
-        #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+        #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, serde::Serialize)]
         pub struct $name(u64);
 
         impl $name {
@@ -28,7 +28,7 @@ macro_rules! domain_id {
     };
 }
 
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, serde::Serialize)]
 enum CreatedDomainIdentity {
     Fixture(u64),
     Operation {
@@ -39,7 +39,7 @@ enum CreatedDomainIdentity {
 
 macro_rules! created_domain_id {
     ($name:ident) => {
-        #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+        #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, serde::Serialize)]
         pub struct $name(CreatedDomainIdentity);
 
         impl $name {

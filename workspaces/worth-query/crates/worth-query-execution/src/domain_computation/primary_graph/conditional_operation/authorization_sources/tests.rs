@@ -6,8 +6,8 @@ use super::{
     WorthQueryTemporalOperationAuthorization, WorthQueryTemporalQueryAuthorization,
 };
 use crate::domain_computation::primary_graph::tests::fixture::capability::{
-    CapabilityAction, CapabilityDisclosure, CapabilityGovernedInputIdentity, CapabilityPurpose,
-    CapabilityTouchInput, CapabilityTouchOperation, TouchAccountCapability,
+    CapabilityAction, CapabilityDisclosure, CapabilityPurpose, CapabilityTouchInput,
+    CapabilityTouchOperation, TouchAccountCapability,
 };
 use crate::domain_computation::primary_graph::tests::{
     application_attempt::{authenticated_principal, resolved_account},
@@ -115,6 +115,5 @@ fn admitted_input() -> CapabilityTouchInput {
         prior_record: "selected-prior".to_owned(),
         amount: 50,
         caller_time: 100,
-        governed_input_identity: CapabilityGovernedInputIdentity::None,
     }
 }

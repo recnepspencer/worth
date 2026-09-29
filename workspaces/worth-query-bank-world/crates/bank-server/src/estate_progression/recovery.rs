@@ -6,7 +6,7 @@ use bank_domain::schema::{
     BankSchema, DisburseEstateMutationBinding, EstateCase, NotifyEstateDeathMutationBinding,
 };
 use worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope;
-use worth_query_host::facade::declaration::application_operation::ApplicationMutationBinding;
+use worth_query_host::facade::declaration::application_operation::ApplicationMutationIdentities;
 use worth_query_host::facade::primary_graph::{
     resolve_recovery_handle, safe_retry_recovery_handle, WorthQueryAdmittedApplicationOperation,
     WorthQueryApplicationIdempotencyBinding,
@@ -29,21 +29,22 @@ impl BankIdentityRuntime {
         key: &BankIdempotencyKey,
         request: &WorthQueryRequestScope,
     ) -> Result<BankRecoveryIdempotencyResolution, BankEstateProgressionDenial> {
-        let binding = if matches!(action, EstateAction::DisburseEstate(_)) {
-            WorthQueryApplicationIdempotencyBinding::new(
-                DisburseEstateMutationBinding::idempotency_key_identity(key),
-                DisburseEstateMutationBinding::input_identity(&action),
-            )
-        } else {
-            WorthQueryApplicationIdempotencyBinding::new(
-                NotifyEstateDeathMutationBinding::idempotency_key_identity(key),
-                NotifyEstateDeathMutationBinding::input_identity(&action),
-            )
-        };
         if matches!(action, EstateAction::DisburseEstate(_)) {
+            let binding = WorthQueryApplicationIdempotencyBinding::for_mutation_identities(
+                &ApplicationMutationIdentities::<BankSchema, DisburseEstateMutationBinding>::encode(
+                    key, &action,
+                )
+                .map_err(BankEstateProgressionDenial::from_mutation_identity)?,
+            );
             let admission = self.admit_estate_disbursement(principal, action, request)?;
             return self.resolve_admitted_idempotency(&admission, binding);
         }
+        let binding = WorthQueryApplicationIdempotencyBinding::for_mutation_identities(
+            &ApplicationMutationIdentities::<BankSchema, NotifyEstateDeathMutationBinding>::encode(
+                key, &action,
+            )
+            .map_err(BankEstateProgressionDenial::from_mutation_identity)?,
+        );
         let admission = self.admit_notification_operation(principal, action, request)?;
         self.resolve_admitted_idempotency(&admission, binding)
     }
