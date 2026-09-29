@@ -244,6 +244,11 @@ owner. The runtime also guards phase order with asserts, expects, bools, and
 
    A detached-drift test proves the stale detached commit. It stays ignored
    until step 6.
+
+   Not completed. Unreviewed partial tests are on branch
+   `worth-ui-3.17-cleanup-wip`. Its `wip-notes/` folder holds the succession
+   survey, the typed-phase audit (file:line evidence for every step), and the
+   design rulings.
 2. **Small typed fixes.**
    - A Query projection fact exposes one shape enum, not three `Option`
      accessors. The scalar kinds are separate changed-fact kinds.
@@ -371,6 +376,11 @@ The phase lands in this order:
 - **3b payload shaping.** A `derived` payload source for text fields and a
   `condition` source for Boolean fields. Payload stays pull-only: currentness
   at admission refuses a drifted expression result.
+  - The payload `application-boolean` source is retired, and `condition`
+    replaces it. No alias remains.
+  - The work is redone on the cleaned structure. Branch
+    `worth-ui-3.17-3b-wip` holds earlier partial work to draw from; it is not
+    a rebase target.
 - **3c derived scalar.** Scalar text presentation from a `derived` value.
 - **3d conditional presence.** A region mount gated by a condition, through the
   existing identity lifecycle decisions (Create/Retire). It never uses a
