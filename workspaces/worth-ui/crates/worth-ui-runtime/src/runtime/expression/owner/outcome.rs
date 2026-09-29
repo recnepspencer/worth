@@ -1,5 +1,5 @@
 use worth_foundational::expression_api::{ExpressionDenial, ExpressionValue};
-use worth_ui_dsl::WorthUiExpressionRole;
+use worth_ui_dsl::{WorthUiExpressionResultType, WorthUiExpressionRole};
 use worth_ui_query_binding::{
     UiProjectionFactStopKind, UiProjectionInputTransitionStopKind,
     UiProjectionRetainedActivityKind, UiProjectionUnavailableKind,
@@ -28,15 +28,16 @@ pub enum UiExpressionCurrentValue {
     Value(ExpressionValue),
 }
 
-/// Why a condition consumer holds no truth value. Each keeps its own posture:
-/// none of them is ever read as `false`.
+/// Why an expression consumer holds no current result. Each keeps its own
+/// posture: none of them is ever read as `false` or as a default value.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub enum UiExpressionConditionWithholding {
-    /// The condition was denied, or produced something other than a truth value.
+pub enum UiExpressionWithholding {
+    /// The expression was denied, or produced something other than the type
+    /// its consumer reads.
     Denied,
-    /// An operand the condition reads has no current fact.
+    /// An operand the expression reads has no current fact.
     Unavailable,
-    /// The condition's result is retained from an operand that is no longer
+    /// The expression's result is retained from an operand that is no longer
     /// current, or belongs to a generation the reader does not observe.
     Stale,
 }
@@ -114,6 +115,25 @@ pub enum UiExpressionStaleReason {
 }
 
 impl UiExpressionOutcome {
+    /// The outcome a kernel value is for an expression of `role`. A value
+    /// whose kernel type is not the role's is a role-mismatch denial, never
+    /// coerced: a condition yields only a truth value, and a derived value
+    /// only its declared result type.
+    pub(super) fn of_role(role: WorthUiExpressionRole, value: &ExpressionValue) -> Self {
+        match role {
+            WorthUiExpressionRole::Condition => match value.as_bool() {
+                Some(condition) => Self::Condition(condition),
+                None => Self::Denied(UiExpressionDenialReason::RoleMismatch { role }),
+            },
+            WorthUiExpressionRole::Derived(result) if carries(result, value) => {
+                Self::Value(value.clone())
+            }
+            WorthUiExpressionRole::Derived(_) => {
+                Self::Denied(UiExpressionDenialReason::RoleMismatch { role })
+            }
+        }
+    }
+
     /// The value a current outcome carries. Every other outcome carries none.
     pub fn current_value(&self) -> Option<UiExpressionCurrentValue> {
         match self {
@@ -127,12 +147,35 @@ impl UiExpressionOutcome {
     /// never records `Value`: the evaluator records a non-boolean kernel
     /// result as a role-mismatch denial, so a `Value` read here is withheld as
     /// denied rather than coerced.
-    pub const fn condition(&self) -> Result<bool, UiExpressionConditionWithholding> {
+    pub const fn condition(&self) -> Result<bool, UiExpressionWithholding> {
         match self {
             Self::Condition(value) => Ok(*value),
-            Self::Value(_) | Self::Denied(_) => Err(UiExpressionConditionWithholding::Denied),
-            Self::Unavailable(_) => Err(UiExpressionConditionWithholding::Unavailable),
-            Self::Stale { .. } => Err(UiExpressionConditionWithholding::Stale),
+            Self::Value(_) | Self::Denied(_) => Err(UiExpressionWithholding::Denied),
+            Self::Unavailable(_) => Err(UiExpressionWithholding::Unavailable),
+            Self::Stale { .. } => Err(UiExpressionWithholding::Stale),
+        }
+    }
+
+    /// The text a derived consumer may act on. The evaluator records a
+    /// derived value of any other kernel type as a role-mismatch denial, so a
+    /// non-text value read here is withheld as denied rather than coerced.
+    pub fn derived_text(&self) -> Result<&str, UiExpressionWithholding> {
+        match self {
+            Self::Value(value) => value.as_str().ok_or(UiExpressionWithholding::Denied),
+            Self::Condition(_) | Self::Denied(_) => Err(UiExpressionWithholding::Denied),
+            Self::Unavailable(_) => Err(UiExpressionWithholding::Unavailable),
+            Self::Stale { .. } => Err(UiExpressionWithholding::Stale),
+        }
+    }
+
+    /// The integer a derived consumer may act on, as the kernel carries it.
+    /// Whether it fits the consumer's own range is the consumer's check.
+    pub fn derived_integer(&self) -> Result<i128, UiExpressionWithholding> {
+        match self {
+            Self::Value(value) => value.as_integer().ok_or(UiExpressionWithholding::Denied),
+            Self::Condition(_) | Self::Denied(_) => Err(UiExpressionWithholding::Denied),
+            Self::Unavailable(_) => Err(UiExpressionWithholding::Unavailable),
+            Self::Stale { .. } => Err(UiExpressionWithholding::Stale),
         }
     }
 
@@ -144,44 +187,18 @@ impl UiExpressionOutcome {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn only_a_truth_value_is_a_condition_and_every_other_outcome_keeps_its_withholding() {
-        let operand: Box<str> = "f".into();
-        for (outcome, expected) in [
-            (UiExpressionOutcome::Condition(true), Ok(true)),
-            (UiExpressionOutcome::Condition(false), Ok(false)),
-            (
-                UiExpressionOutcome::Value(ExpressionValue::bool(false)),
-                Err(UiExpressionConditionWithholding::Denied),
-            ),
-            (
-                UiExpressionOutcome::Denied(UiExpressionDenialReason::OperandShapeMismatch {
-                    operand: operand.clone(),
-                }),
-                Err(UiExpressionConditionWithholding::Denied),
-            ),
-            (
-                UiExpressionOutcome::Unavailable(UiExpressionUnavailableReason::ProjectionAbsent {
-                    operand: operand.clone(),
-                }),
-                Err(UiExpressionConditionWithholding::Unavailable),
-            ),
-            (
-                UiExpressionOutcome::Stale {
-                    reason: UiExpressionStaleReason::ProjectionRetained {
-                        operand: operand.clone(),
-                        kind: UiProjectionRetainedActivityKind::Idle,
-                    },
-                    last_current: Some(UiExpressionCurrentValue::Condition(true)),
-                },
-                Err(UiExpressionConditionWithholding::Stale),
-            ),
-        ] {
-            assert_eq!(outcome.condition(), expected, "{outcome:?}");
+/// Whether `value` has the kernel type a derived `result` declares.
+fn carries(result: WorthUiExpressionResultType, value: &ExpressionValue) -> bool {
+    match result {
+        WorthUiExpressionResultType::Text | WorthUiExpressionResultType::Token => {
+            value.as_str().is_some()
         }
+        WorthUiExpressionResultType::Integer => value
+            .as_integer()
+            .is_some_and(|integer| i64::try_from(integer).is_ok()),
+        WorthUiExpressionResultType::Decimal => value.as_decimal().is_some(),
     }
 }
+
+#[cfg(test)]
+mod tests;

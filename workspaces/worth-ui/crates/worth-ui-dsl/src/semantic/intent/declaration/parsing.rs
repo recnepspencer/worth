@@ -240,6 +240,8 @@ fn parse_payload_source(
         "application-unsigned64" => {
             WorthUiIntentPayloadSourceSpec::application_unsigned64(field, cursor.take_identifier()?)
         }
+        "derived" => WorthUiIntentPayloadSourceSpec::derived(field, cursor.take_identifier()?),
+        "condition" => WorthUiIntentPayloadSourceSpec::condition(field, cursor.take_identifier()?),
         _ => return Err(error(format!("unknown payload source kind `{kind}`"))),
     })
 }

@@ -19,6 +19,8 @@ enum UiAuthoredIntentPayloadSource {
     ApplicationText(Box<str>),
     ApplicationBoolean(Box<str>),
     ApplicationUnsigned64(Box<str>),
+    Derived(Box<str>),
+    Condition(Box<str>),
 }
 
 impl UiIntentPayloadSource<UiIntentText> {
@@ -41,6 +43,13 @@ impl UiIntentPayloadSource<UiIntentText> {
             fact.identity().into(),
         ))
     }
+
+    /// Text read from the `derived text` declaration named `identity`. The
+    /// package refuses an undeclared expression, a condition, and a derived
+    /// token; the intent catalog refuses any other result type.
+    pub fn derived(identity: impl Into<Box<str>>) -> Self {
+        Self::new(UiAuthoredIntentPayloadSource::Derived(identity.into()))
+    }
 }
 
 impl UiIntentPayloadSource<UiIntentBoolean> {
@@ -52,6 +61,13 @@ impl UiIntentPayloadSource<UiIntentBoolean> {
         Self::new(UiAuthoredIntentPayloadSource::ApplicationBoolean(
             fact.identity().into(),
         ))
+    }
+
+    /// The Boolean the condition named `identity` holds: a computed Boolean
+    /// is always a condition. The package refuses an undeclared expression
+    /// and a derived one.
+    pub fn condition(identity: impl Into<Box<str>>) -> Self {
+        Self::new(UiAuthoredIntentPayloadSource::Condition(identity.into()))
     }
 }
 
@@ -116,6 +132,12 @@ impl<K: UiIntentPayloadValueKind> UiIntentPayloadSource<K> {
             }
             UiAuthoredIntentPayloadSource::ApplicationUnsigned64(fact) => {
                 worth_ui_dsl::WorthUiIntentPayloadSourceSpec::application_unsigned64(field, fact)
+            }
+            UiAuthoredIntentPayloadSource::Derived(expression) => {
+                worth_ui_dsl::WorthUiIntentPayloadSourceSpec::derived(field, expression)
+            }
+            UiAuthoredIntentPayloadSource::Condition(expression) => {
+                worth_ui_dsl::WorthUiIntentPayloadSourceSpec::condition(field, expression)
             }
         }
     }

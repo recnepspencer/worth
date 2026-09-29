@@ -4,9 +4,8 @@
 use super::*;
 use crate::declaration::UiIntentOperabilityDependencyAxis as Axis;
 use crate::facade::expression::{
-    UiExpressionConditionWithholding as Withholding, UiExpressionCurrentValue,
-    UiExpressionDenialReason, UiExpressionOutcome, UiExpressionStaleReason,
-    UiExpressionUnavailableReason,
+    UiExpressionCurrentValue, UiExpressionDenialReason, UiExpressionOutcome,
+    UiExpressionStaleReason, UiExpressionUnavailableReason, UiExpressionWithholding as Withholding,
 };
 
 /// The withheld condition an axis reports, if it reports one.

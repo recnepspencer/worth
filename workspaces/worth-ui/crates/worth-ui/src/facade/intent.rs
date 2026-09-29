@@ -1,7 +1,7 @@
 //! Typed intent meaning exposed to product composition roots.
 
 /// Why the condition a withheld operability axis reads holds no truth value.
-pub use worth_ui_runtime::facade::expression::UiExpressionConditionWithholding;
+pub use worth_ui_runtime::facade::expression::UiExpressionWithholding;
 pub use worth_ui_runtime::facade::intent::{
     FrozenIntentDefinitionCapabilities, IntentDefinitionDescriptor, UiAdmittedIntent,
     UiApplicationEffectDestination, UiConfirmedIntentCandidate, UiInoperableIntentCandidate,
@@ -44,10 +44,10 @@ pub use worth_ui_runtime::facade::intent::{
     UiIntentExecutionIdempotencyIdentity, UiIntentExecutionPollContext, UiIntentExecutionProvider,
     UiIntentExecutionRecovery, UiIntentExecutionRequest, UiIntentExecutionReservationDenial,
     UiIntentExecutionShutdownReport, UiIntentExecutionTransition,
-    UiIntentExecutionTransitionPosture, UiIntentId, UiIntentInoperableCause,
-    UiIntentInoperableCauseIter, UiIntentInputBasisReceipt, UiIntentInputOwnerRevision,
-    UiIntentInteractionPayloadSourceKind, UiIntentMutabilityPosture, UiIntentMutabilitySource,
-    UiIntentOccupancyPosture, UiIntentOperabilityContract,
+    UiIntentExecutionTransitionPosture, UiIntentExpressionInputRevision, UiIntentId,
+    UiIntentInoperableCause, UiIntentInoperableCauseIter, UiIntentInputBasisReceipt,
+    UiIntentInputOwnerRevision, UiIntentInteractionPayloadSourceKind, UiIntentMutabilityPosture,
+    UiIntentMutabilitySource, UiIntentOccupancyPosture, UiIntentOperabilityContract,
     UiIntentOperabilityContractIdentityError, UiIntentOperabilityCost, UiIntentOperabilityDecision,
     UiIntentOperabilityDependencyAxis, UiIntentOperabilityOutcome, UiIntentOperabilityProof,
     UiIntentPartialEffect, UiIntentPayload, UiIntentPayloadField, UiIntentPayloadFieldDescriptor,

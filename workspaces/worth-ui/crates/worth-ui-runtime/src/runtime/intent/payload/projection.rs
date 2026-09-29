@@ -1,3 +1,5 @@
+mod expression_input;
+
 use std::sync::Arc;
 
 use crate::capability::{
@@ -30,7 +32,8 @@ pub(crate) fn prepare_intent_payload(
     for binding in declaration.payload() {
         projection.project(binding)?;
     }
-    let (values, query_inputs, application_inputs, owner_revisions, cost) = projection.finish();
+    let (values, query_inputs, application_inputs, expression_inputs, owner_revisions, cost) =
+        projection.finish();
     let execution = execution_bindings
         .project_at(declaration.definition(), values)
         .map_err(UiIntentPayloadStop::PayloadProjection)?;
@@ -45,6 +48,7 @@ pub(crate) fn prepare_intent_payload(
         source,
         query_inputs,
         application_inputs,
+        expression_inputs,
         owner_revisions,
         route_resolution,
         portal_declaration,
@@ -68,6 +72,7 @@ struct PayloadProjection<'basis> {
     values: Vec<UiIntentProjectedValue>,
     query_inputs: Vec<worth_ui_query_binding::UiProjectionInputFactReference>,
     application_inputs: Vec<UiIntentApplicationInputReference>,
+    expression_inputs: Vec<crate::runtime::expression::UiExpressionResultReference>,
     owner_revisions: Vec<UiIntentInputOwnerRevision>,
     cost: UiIntentPayloadProjectionCost,
 }
@@ -85,6 +90,7 @@ impl<'basis> PayloadProjection<'basis> {
             values: Vec::new(),
             query_inputs: Vec::new(),
             application_inputs: Vec::new(),
+            expression_inputs: Vec::new(),
             owner_revisions: Vec::new(),
             cost: Default::default(),
         }
@@ -120,6 +126,15 @@ impl<'basis> PayloadProjection<'basis> {
             }
             UiResolvedIntentPayloadSource::ApplicationUnsigned64(fact) => {
                 self.application_unsigned64(field, fact)?
+            }
+            UiResolvedIntentPayloadSource::DerivedText(expression) => {
+                self.derived_text(field, expression)?
+            }
+            UiResolvedIntentPayloadSource::DerivedInteger(expression) => {
+                self.derived_unsigned64(field, expression)?
+            }
+            UiResolvedIntentPayloadSource::Condition(expression) => {
+                self.condition(field, expression)?
             }
         };
         self.cost.record_field();
@@ -337,15 +352,25 @@ impl<'basis> PayloadProjection<'basis> {
         field: UiIntentPayloadFieldDescriptor,
         value: Arc<str>,
     ) -> Result<UiIntentProjectedValue, UiIntentPayloadStop> {
-        if value.len() > field.byte_budget() {
+        self.admit_text_bytes(field, value.len())?;
+        Ok(UiIntentProjectedValue::text(value))
+    }
+
+    /// Admits `bytes` of UTF-8 text into `field` before any copy is made.
+    fn admit_text_bytes(
+        &mut self,
+        field: UiIntentPayloadFieldDescriptor,
+        bytes: usize,
+    ) -> Result<(), UiIntentPayloadStop> {
+        if bytes > field.byte_budget() {
             return Err(UiIntentPayloadStop::TextByteBudgetExceeded {
                 field: field.stable_name(),
-                observed: value.len(),
+                observed: bytes,
                 maximum: field.byte_budget(),
             });
         }
-        self.cost.record_utf8_bytes(value.len());
-        Ok(UiIntentProjectedValue::text(value))
+        self.cost.record_utf8_bytes(bytes);
+        Ok(())
     }
 
     fn finish(
@@ -354,6 +379,7 @@ impl<'basis> PayloadProjection<'basis> {
         Vec<UiIntentProjectedValue>,
         Vec<worth_ui_query_binding::UiProjectionInputFactReference>,
         Vec<UiIntentApplicationInputReference>,
+        Vec<crate::runtime::expression::UiExpressionResultReference>,
         Vec<UiIntentInputOwnerRevision>,
         UiIntentPayloadProjectionCost,
     ) {
@@ -361,6 +387,7 @@ impl<'basis> PayloadProjection<'basis> {
             self.values,
             self.query_inputs,
             self.application_inputs,
+            self.expression_inputs,
             self.owner_revisions,
             self.cost,
         )

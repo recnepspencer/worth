@@ -1,7 +1,7 @@
 #[path = "operability_contract/resolution.rs"]
 mod resolution;
 
-pub(crate) use resolution::{resolve_operability_contract, UiIntentOperabilitySourcePlans};
+pub(crate) use resolution::resolve_operability_contract;
 
 use crate::capability::UiIntentBoolean;
 
@@ -71,7 +71,7 @@ pub(crate) enum UiResolvedIntentMutabilitySource {
         slot: worth_ui_query_binding::UiProjectionInputSlot,
     },
     CommittedDraft,
-    Condition(UiResolvedIntentConditionSource),
+    Condition(super::UiResolvedIntentExpressionSource),
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -82,22 +82,13 @@ pub(crate) enum UiResolvedIntentReadinessSource {
         slot: worth_ui_query_binding::UiProjectionInputSlot,
     },
     CommittedDraft,
-    Condition(UiResolvedIntentConditionSource),
+    Condition(super::UiResolvedIntentExpressionSource),
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) enum UiResolvedIntentPolicySource {
     ApplicationBoolean(super::UiIntentApplicationFactSlot),
-    Condition(UiResolvedIntentConditionSource),
-}
-
-/// A condition one operability axis reads. The slot addresses the prepared
-/// expression catalog; meaning is the authored identity, so two catalogs that
-/// number the same condition differently still compare equal.
-#[derive(Clone, Debug)]
-pub(crate) struct UiResolvedIntentConditionSource {
-    identity: Box<str>,
-    slot: crate::runtime::expression::UiExpressionSlot,
+    Condition(super::UiResolvedIntentExpressionSource),
 }
 
 impl UiIntentOperabilityContract {
@@ -275,7 +266,9 @@ impl UiResolvedIntentOperabilityContract {
     }
 
     /// Every condition this contract reads, in axis order.
-    pub(crate) fn conditions(&self) -> impl Iterator<Item = &UiResolvedIntentConditionSource> {
+    pub(crate) fn conditions(
+        &self,
+    ) -> impl Iterator<Item = &super::UiResolvedIntentExpressionSource> {
         let mutability = match &self.mutability {
             UiResolvedIntentMutabilitySource::Condition(condition) => Some(condition),
             UiResolvedIntentMutabilitySource::ApplicationBoolean(_)
@@ -295,20 +288,6 @@ impl UiResolvedIntentOperabilityContract {
         mutability.into_iter().chain(readiness).chain(policy)
     }
 }
-
-impl UiResolvedIntentConditionSource {
-    pub(crate) const fn slot(&self) -> crate::runtime::expression::UiExpressionSlot {
-        self.slot
-    }
-}
-
-impl PartialEq for UiResolvedIntentConditionSource {
-    fn eq(&self, other: &Self) -> bool {
-        self.identity == other.identity
-    }
-}
-
-impl Eq for UiResolvedIntentConditionSource {}
 
 fn condition_identity(
     identity: impl Into<Box<str>>,

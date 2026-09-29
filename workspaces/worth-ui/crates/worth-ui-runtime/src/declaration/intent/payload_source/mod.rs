@@ -1,3 +1,5 @@
+mod expression_resolution;
+mod projection_resolution;
 mod resolution;
 mod resolved;
 
@@ -9,5 +11,5 @@ pub(crate) use resolved::{
 
 use super::{
     UiIntentApplicationFactPlan, UiIntentApplicationFactSlot, UiIntentCatalogPreparationDenial,
-    UiIntentInteractionPayloadSourceKind,
+    UiIntentInteractionPayloadSourceKind, UiIntentSourcePlans, UiResolvedIntentExpressionSource,
 };

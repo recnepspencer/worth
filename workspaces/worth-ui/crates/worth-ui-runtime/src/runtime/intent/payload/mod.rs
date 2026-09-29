@@ -17,8 +17,9 @@ pub use application_fact_state::{
     UiIntentApplicationInputReference, UiIntentApplicationInputRevision,
 };
 pub use input_basis::{
-    UiIntentApplicationFactRevision, UiIntentDraftInputRevision, UiIntentInputBasisReceipt,
-    UiIntentInputOwnerRevision, UiIntentPayloadProjectionCost, UiIntentQueryInputRevision,
+    UiIntentApplicationFactRevision, UiIntentDraftInputRevision, UiIntentExpressionInputRevision,
+    UiIntentInputBasisReceipt, UiIntentInputOwnerRevision, UiIntentPayloadProjectionCost,
+    UiIntentQueryInputRevision,
 };
 pub(crate) use input_basis::{
     UiIntentInputBasis, UiIntentInputBasisMaterial, UiIntentInputBasisView, UiIntentInputOwners,

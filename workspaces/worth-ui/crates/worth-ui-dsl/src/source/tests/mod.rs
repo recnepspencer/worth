@@ -5,6 +5,7 @@ mod expression_declaration_tests;
 mod expression_diagnostic_tests;
 mod expression_identity_tests;
 mod expression_lexing_tests;
+mod expression_payload_use_site_tests;
 mod expression_use_site_tests;
 mod layout_declaration_tests;
 mod phase1_source_package_tests;

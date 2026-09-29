@@ -1,9 +1,9 @@
 use crate::declaration::{
-    UiIntentOperabilityDependencyAxis, UiResolvedIntentConditionSource,
-    UiResolvedIntentConfirmationSource, UiResolvedIntentMutabilitySource,
+    UiIntentOperabilityDependencyAxis, UiResolvedIntentConfirmationSource,
+    UiResolvedIntentExpressionSource, UiResolvedIntentMutabilitySource,
     UiResolvedIntentPolicySource, UiResolvedIntentReadinessSource,
 };
-use crate::runtime::expression::{UiExpressionConditionWithholding, UiExpressionResultReference};
+use crate::runtime::expression::{UiExpressionResultReference, UiExpressionWithholding};
 use crate::runtime::intent::payload::{UiIntentApplicationInputReference, UiIntentInputBasisView};
 
 use super::super::{
@@ -154,7 +154,7 @@ pub(super) fn observe_confirmation(
 /// view's generation holds no result for it, which is stale by definition.
 fn observe_condition(
     view: &UiIntentInputBasisView<'_>,
-    condition: &UiResolvedIntentConditionSource,
+    condition: &UiResolvedIntentExpressionSource,
     axis: UiIntentOperabilityDependencyAxis,
     inputs: &mut UiIntentAxisInputs,
 ) -> Result<bool, UiIntentWithheldCondition> {
@@ -165,7 +165,7 @@ fn observe_condition(
             inputs.expressions.push((axis, result));
             truth
         }
-        None => Err(UiExpressionConditionWithholding::Stale),
+        None => Err(UiExpressionWithholding::Stale),
     };
     truth.map_err(|withholding| UiIntentWithheldCondition::new(slot, withholding))
 }

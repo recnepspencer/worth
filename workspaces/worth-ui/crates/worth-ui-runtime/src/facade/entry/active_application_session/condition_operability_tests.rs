@@ -7,6 +7,8 @@ use worth_ui_dsl::*;
 
 #[path = "condition_operability_admission_tests.rs"]
 mod admission_tests;
+#[path = "expression_payload_tests.rs"]
+mod payload_tests;
 #[path = "condition_operability_projection_tests.rs"]
 mod projection_tests;
 #[path = "condition_operability_projection_world.rs"]

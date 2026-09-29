@@ -83,7 +83,7 @@ pub(crate) fn prepare_application_authority(
         semantic_handoff.intent_material(),
         capability_snapshot.intent_definitions(),
         &graph_snapshot,
-        &crate::declaration::UiIntentOperabilitySourcePlans {
+        &crate::declaration::UiIntentSourcePlans {
             query: &query_binding_plan,
             application_facts: &intent_application_facts,
             expressions: &expression_catalog,
@@ -197,7 +197,7 @@ pub(crate) fn prepare_successor_application_authority(
         semantic_handoff.intent_material(),
         current.capabilities().intent_definitions(),
         &graph_snapshot,
-        &crate::declaration::UiIntentOperabilitySourcePlans {
+        &crate::declaration::UiIntentSourcePlans {
             query: current.query_binding_plan(),
             application_facts: current.intent_application_fact_plan(),
             expressions: &expression_catalog,

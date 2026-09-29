@@ -17,9 +17,9 @@ mod work_counters;
 pub(crate) use evaluation::{UiExpressionCompletion, UiExpressionCompletionReceipt};
 pub(crate) use operand_binding::UiExpressionInputs;
 pub use outcome::{
-    UiExpressionConditionWithholding, UiExpressionCurrentValue, UiExpressionDenialReason,
-    UiExpressionOutcome, UiExpressionStaleReason, UiExpressionStopKind,
-    UiExpressionUnavailableReason,
+    UiExpressionCurrentValue, UiExpressionDenialReason, UiExpressionOutcome,
+    UiExpressionStaleReason, UiExpressionStopKind, UiExpressionUnavailableReason,
+    UiExpressionWithholding,
 };
 pub(crate) use prepared_succession::UiPreparedExpressionSuccession;
 pub use record::{

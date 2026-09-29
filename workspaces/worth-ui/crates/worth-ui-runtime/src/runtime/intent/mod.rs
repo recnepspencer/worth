@@ -80,9 +80,9 @@ pub(crate) use payload::{UiAdmittedValidationAppearanceTarget, UiValidationAppea
 pub use payload::{
     UiIntentApplicationFactRevision, UiIntentApplicationFactUpdateDenial,
     UiIntentApplicationFactUpdateReceipt, UiIntentApplicationInputReference,
-    UiIntentApplicationInputRevision, UiIntentDraftInputRevision, UiIntentInputBasisReceipt,
-    UiIntentInputOwnerRevision, UiIntentPayloadProjectionCost, UiIntentPayloadStop,
-    UiIntentQueryInputRevision, UiPreparedIntentPayload,
+    UiIntentApplicationInputRevision, UiIntentDraftInputRevision, UiIntentExpressionInputRevision,
+    UiIntentInputBasisReceipt, UiIntentInputOwnerRevision, UiIntentPayloadProjectionCost,
+    UiIntentPayloadStop, UiIntentQueryInputRevision, UiPreparedIntentPayload,
 };
 pub(crate) use routing::resolve_intent_route;
 pub use routing::{

@@ -11,13 +11,13 @@ pub enum UiIntentSupportPosture {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct UiIntentWithheldCondition {
     slot: crate::runtime::expression::UiExpressionSlot,
-    withholding: crate::runtime::expression::UiExpressionConditionWithholding,
+    withholding: crate::runtime::expression::UiExpressionWithholding,
 }
 
 impl UiIntentWithheldCondition {
     pub(crate) const fn new(
         slot: crate::runtime::expression::UiExpressionSlot,
-        withholding: crate::runtime::expression::UiExpressionConditionWithholding,
+        withholding: crate::runtime::expression::UiExpressionWithholding,
     ) -> Self {
         Self { slot, withholding }
     }
@@ -26,7 +26,7 @@ impl UiIntentWithheldCondition {
         self.slot
     }
 
-    pub const fn withholding(self) -> crate::runtime::expression::UiExpressionConditionWithholding {
+    pub const fn withholding(self) -> crate::runtime::expression::UiExpressionWithholding {
         self.withholding
     }
 }

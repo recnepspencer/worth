@@ -183,16 +183,16 @@ fn appearance_class(
 /// An unavailable operand is usually transient, so it reads as pending; the
 /// other withholdings keep their own posture.
 const fn withheld_class(
-    withholding: crate::runtime::expression::UiExpressionConditionWithholding,
+    withholding: crate::runtime::expression::UiExpressionWithholding,
 ) -> UiIntentOperabilityAppearanceClass {
     match withholding {
-        crate::runtime::expression::UiExpressionConditionWithholding::Unavailable => {
+        crate::runtime::expression::UiExpressionWithholding::Unavailable => {
             UiIntentOperabilityAppearanceClass::Pending
         }
-        crate::runtime::expression::UiExpressionConditionWithholding::Stale => {
+        crate::runtime::expression::UiExpressionWithholding::Stale => {
             UiIntentOperabilityAppearanceClass::Stale
         }
-        crate::runtime::expression::UiExpressionConditionWithholding::Denied => {
+        crate::runtime::expression::UiExpressionWithholding::Denied => {
             UiIntentOperabilityAppearanceClass::Denied
         }
     }
@@ -202,7 +202,7 @@ const fn withheld_class(
 mod tests {
     use super::{appearance_class, UiIntentOperabilityAppearanceClass as Class};
     use crate::declaration::UiIntentOperabilityDependencyAxis as Axis;
-    use crate::runtime::expression::UiExpressionConditionWithholding as Withholding;
+    use crate::runtime::expression::UiExpressionWithholding as Withholding;
     use crate::runtime::intent::UiIntentInoperableCause as Cause;
 
     #[test]

@@ -250,12 +250,28 @@ pub(super) fn session_with_component(
     crate::facade::WorthUiActiveApplicationSession,
     crate::certification_support::ScriptedPresentationHost,
 ) {
+    session_with_registrations(role, source, component, |builder| builder)
+}
+
+/// A session over `source` whose application also carries what `register`
+/// adds to the fixture registrations.
+pub(super) fn session_with_registrations(
+    role: &UiAppearanceRoleDeclaration,
+    source: WorthUiRustAuthoredArtifactInput,
+    component: crate::capability::ComponentDescriptor,
+    register: impl Fn(
+        crate::facade::entry::WorthUiApplicationBuilder,
+    ) -> crate::facade::entry::WorthUiApplicationBuilder,
+) -> (
+    crate::facade::WorthUiActiveApplicationSession,
+    crate::certification_support::ScriptedPresentationHost,
+) {
     let requires_text_presentation = component.semantic_text_contract().is_some();
     let host = crate::certification_support::ScriptedPresentationHost::native_display();
     host.set_capabilities(worth_ui_host_native::appearance_capability_report());
     let observer = host.clone();
     let pulse = crate::runtime::rebind::UiChangeProfile::platform_pulse;
-    let capabilities = builder_with_component(role, component.clone(), pulse())
+    let capabilities = register(builder_with_component(role, component.clone(), pulse()))
         .freeze()
         .unwrap();
     let launch = crate::runtime::tests::source_ingress_boundary_test_support::lower_rust_submission(
@@ -266,7 +282,7 @@ pub(super) fn session_with_component(
         )],
         capabilities.capabilities(),
     );
-    let app = builder_with_component(role, component, pulse())
+    let app = register(builder_with_component(role, component, pulse()))
         .with_candidate_submission(launch)
         .freeze()
         .unwrap();
