@@ -7,6 +7,10 @@ use worth_ui_dsl::*;
 
 #[path = "condition_operability_admission_tests.rs"]
 mod admission_tests;
+#[path = "condition_operability_cutover_tests.rs"]
+mod cutover_tests;
+#[path = "condition_operability_detached_tests.rs"]
+mod detached_tests;
 #[path = "condition_operability_projection_tests.rs"]
 mod projection_tests;
 #[path = "condition_operability_projection_world.rs"]

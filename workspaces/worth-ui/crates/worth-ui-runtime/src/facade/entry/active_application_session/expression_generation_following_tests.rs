@@ -1,6 +1,9 @@
 use std::sync::Arc;
 
 use super::expression_session_fixture::{complete, evaluate, evidence_only_rebind, session_inputs};
+use super::succession_characterization::{
+    assert_owners_follow, assert_pointer_is_fresh, assert_standing_is_fresh, SuccessionWork,
+};
 use crate::facade::expression::{
     UiExpressionCurrentValue, UiExpressionOutcome, UiExpressionStaleReason,
 };
@@ -154,9 +157,26 @@ fn a_cutover_that_resets_a_fact_the_record_read_rebuilds_that_record() {
         session.expression_record("ex.ready").unwrap().outcome(),
         &UiExpressionOutcome::Condition(true)
     );
+    let predecessor = session.active_generation_identity();
+    let work = SuccessionWork::read(&session);
 
     cut_over(&mut session, READY_CONDITION);
 
+    assert_ne!(session.active_generation_identity(), predecessor);
+    assert_pointer_is_fresh(&session, false);
+    assert_standing_is_fresh(&session, 0);
+    assert_owners_follow(&session, false);
+    assert_eq!(
+        work.since(&session),
+        SuccessionWork {
+            reobservations: 0,
+            operand_probes: 3,
+            index_hits: 0,
+            evaluations: 1,
+            appearance_batches: 0,
+        },
+        "the replacement pipeline and its unmounted cutover (W3)"
+    );
     let record = session.expression_record("ex.ready").unwrap();
     assert_eq!(record.generation(), &session.active_generation_identity());
     assert_eq!(
