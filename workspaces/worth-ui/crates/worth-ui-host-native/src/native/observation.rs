@@ -212,7 +212,8 @@ impl UiNativeGlyphObservation {
     pub(crate) fn from_native_command(
         command: super::presentation::text::UiNativeGlyphCommand,
     ) -> Self {
-        use sha2::{Digest, Sha256};
+        use sha2::Digest;
+        use worth_ui_host_contract::UiCountedSha256;
         let key = command.run.raster_key();
         let range = command.run.original_range();
         let [x, y, width, height] = command.target;
@@ -220,8 +221,10 @@ impl UiNativeGlyphObservation {
             glyph_id: key.glyph_id(),
             palette: key.palette().index(),
             source: key.source(),
-            raster_key_digest: Sha256::digest(super::text_atlas::canonical_raster_key_bytes(key))
-                .into(),
+            raster_key_digest: UiCountedSha256::digest(
+                super::text_atlas::canonical_raster_key_bytes(key),
+            )
+            .into(),
             original_range: [range.start(), range.end()],
             foreground_rgba8: command.run.foreground().channels(),
             target_bounds: [
@@ -230,7 +233,8 @@ impl UiNativeGlyphObservation {
                 (x + width).ceil().max(0.0) as u32,
                 (y + height).ceil().max(0.0) as u32,
             ],
-            transcript_digest: Sha256::digest(command.run.canonical_transcript_bytes()).into(),
+            transcript_digest: UiCountedSha256::digest(command.run.canonical_transcript_bytes())
+                .into(),
         }
     }
 
@@ -267,13 +271,14 @@ fn intrinsic_transcript_digest(glyphs: &[UiNativeGlyphObservation]) -> [u8; 32] 
 fn glyph_transcript_digest<'a>(
     glyphs: impl IntoIterator<Item = &'a UiNativeGlyphObservation>,
 ) -> [u8; 32] {
-    use sha2::{Digest, Sha256};
+    use sha2::Digest;
+    use worth_ui_host_contract::UiCountedSha256;
     let mut rows = glyphs
         .into_iter()
         .map(|glyph| glyph.transcript_digest)
         .collect::<Vec<_>>();
     rows.sort_unstable();
-    let mut digest = Sha256::new();
+    let mut digest = UiCountedSha256::new();
     digest.update((rows.len() as u64).to_le_bytes());
     for row in rows {
         digest.update(32_u64.to_le_bytes());

@@ -12,6 +12,9 @@ pub enum UiNativePlatformStopReason {
     PresentationDeadlineExpired,
     EventLoopRun,
     IncompleteCleanup,
+    /// The host did not exit after its close was requested, so the owner of
+    /// its offscreen session stopped it.
+    CloseUnhonored,
 }
 
 #[derive(Debug)]
@@ -226,6 +229,9 @@ impl UiNativePlatformStopReport {
             }
             worth_ui_host_native::UiNativeEventLoopRunDenial::IncompleteCleanup => {
                 UiNativePlatformStopReason::IncompleteCleanup
+            }
+            worth_ui_host_native::UiNativeEventLoopRunDenial::CloseUnhonored => {
+                UiNativePlatformStopReason::CloseUnhonored
             }
         }
     }

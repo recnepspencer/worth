@@ -105,6 +105,28 @@ fn maximum_state_facts(
     Ok(declared_state_facts.max(candidate_state_facts).max(1))
 }
 
+/// The semantic candidate validation allowance, not each invariant's separate
+/// state-load-plus-execution budget. Derived once at installation.
+pub(super) fn candidate_validator_work(
+    contract: &WorthQueryInvariantExecutionContract,
+) -> Result<u64, ()> {
+    let native = contract
+        .requirements()
+        .iter()
+        .map(|requirement| requirement.max_state_facts())
+        .max()
+        .unwrap_or(0);
+    contract.requirements().iter().try_fold(
+        u64::try_from(native).map_err(|_| ())?,
+        |work, requirement| match requirement.application_invariant() {
+            Some(invariant) => work
+                .checked_add(invariant.maximum_work_units().get())
+                .ok_or(()),
+            None => Ok(work),
+        },
+    )
+}
+
 fn load_and_execution_work(state_facts: usize, execution_work: u64) -> Result<u64, ()> {
     u64::try_from(state_facts)
         .map_err(|_| ())?
@@ -160,6 +182,29 @@ mod tests {
         assert!(
             application_invariant_execution_contract(1, 1, 0, &[custom_invariant(u64::MAX)])
                 .is_err()
+        );
+    }
+
+    #[test]
+    fn candidate_validator_allowance_follows_installed_closure_not_load_budgets() {
+        for custom_work in [7, 71] {
+            let contract = application_invariant_execution_contract(
+                3,
+                1,
+                32,
+                &[custom_invariant(custom_work)],
+            )
+            .unwrap();
+            assert_eq!(
+                super::candidate_validator_work(&contract),
+                Ok(32 + custom_work)
+            );
+        }
+        assert_eq!(
+            super::candidate_validator_work(
+                &crate::domain_operation::WorthQueryInvariantExecutionContract::NotRequired
+            ),
+            Ok(0)
         );
     }
 

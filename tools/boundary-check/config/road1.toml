@@ -223,8 +223,8 @@ guidance = "Milestone 3.10.1: DSL owns authored language meaning and may not imp
 [[source_dependency_allowlists]]
 workspace_manifest = "workspaces/worth-ui/Cargo.toml"
 sources = ["worth-ui-platform-pulse"]
-allowed_targets = ["mimalloc", "notify", "png", "serde", "serde_json", "uiautomation", "win32job", "winsafe", "worth-query-decl", "worth-query-host", "worth-ui", "worth-ui-native-platform", "x11rb", "xcap"]
-guidance = "Milestones 3.13 and 3.14.1: the permanent Pulse remains a downstream application composition root. It may assemble Query declarations through worth-query-decl and worth-query-host, consume application meaning through worth-ui, and enter native effects only through worth-ui-native-platform. As the executable it also chooses the process allocator (Milestone 3.16.2: mimalloc). Raw Query, binding-owner, runtime, DSL, host-native mechanics, certification, test-support, replay, and convenience dependencies remain forbidden."
+allowed_targets = ["mimalloc", "notify", "png", "serde", "serde_json", "stats_alloc", "uiautomation", "win32job", "winsafe", "worth-query-decl", "worth-query-host", "worth-ui", "worth-ui-native-platform", "x11rb", "xcap"]
+guidance = "Milestones 3.13 and 3.14.1: the permanent Pulse remains a downstream application composition root. It may assemble Query declarations through worth-query-decl and worth-query-host, consume application meaning through worth-ui, and enter native effects only through worth-ui-native-platform. As the executable it also chooses the process allocator (Milestone 3.16.2: mimalloc, or stats_alloc's instrumented system allocator in count-allocations diagnostic builds). Raw Query, binding-owner, runtime, DSL, host-native mechanics, certification, test-support, replay, and convenience dependencies remain forbidden."
 
 [[source_dependency_allowlists.dependency_contracts]]
 target = "mimalloc"
@@ -235,6 +235,12 @@ features = []
 [[source_dependency_allowlists.dependency_contracts]]
 target = "png"
 version_requirement = "=0.18.1"
+uses_default_features = false
+features = []
+
+[[source_dependency_allowlists.dependency_contracts]]
+target = "stats_alloc"
+version_requirement = "=0.1.10"
 uses_default_features = false
 features = []
 
@@ -309,6 +315,54 @@ forbidden_identifiers = [
 ]
 forbidden_identifier_fragments = ["WorthQuery"]
 guidance = "Milestone 3.13 Phase 4: direct Query declaration, host, workspace, result, operation, and live-handle authority is confined to query_source/** and the application composition seam; native-frame, visual, observation, and host-adapter modules consume only Worth UI or Pulse-owned contracts"
+
+[[source_identifier_denials]]
+root = "workspaces/worth-ui/crates/worth-ui-host-contract/src"
+exclude_paths = [
+  "workspaces/worth-ui/crates/worth-ui-host-contract/src/presentation_work.rs",
+]
+forbidden_identifiers = ["Sha256"]
+forbidden_identifier_fragments = []
+guidance = "Milestone 3.16.2: presentation hashing goes through worth-ui-host-contract::UiCountedSha256, the exact SHA-256 whose digested bytes the presentation work ledger counts; only the ledger owns the raw hasher, and tests keep raw SHA-256 as an independent oracle"
+
+[[source_identifier_denials]]
+root = "workspaces/worth-ui/crates/worth-ui-text/src"
+exclude_paths = [
+  "workspaces/worth-ui/crates/worth-ui-text/src/font_collection/application_alpha_raster_controls.rs",
+  "workspaces/worth-ui/crates/worth-ui-text/src/font_collection/application_fallback_tests.rs",
+  "workspaces/worth-ui/crates/worth-ui-text/src/font_collection/application_format_tests.rs",
+  "workspaces/worth-ui/crates/worth-ui-text/src/raster/color/tests.rs",
+  "workspaces/worth-ui/crates/worth-ui-text/src/raster/demand_alpha_tests.rs",
+  "workspaces/worth-ui/crates/worth-ui-text/src/raster/tests.rs",
+  "workspaces/worth-ui/crates/worth-ui-text/src/shaping/reference_fixture_tests.rs",
+]
+forbidden_identifiers = ["Sha256"]
+forbidden_identifier_fragments = []
+guidance = "Milestone 3.16.2: presentation hashing goes through worth-ui-host-contract::UiCountedSha256, the exact SHA-256 whose digested bytes the presentation work ledger counts; only the ledger owns the raw hasher, and tests keep raw SHA-256 as an independent oracle"
+
+[[source_identifier_denials]]
+root = "workspaces/worth-ui/crates/worth-ui-host-native/src"
+exclude_paths = [
+  "workspaces/worth-ui/crates/worth-ui-host-native/src/native/mechanics_adapter/text_atlas_dx12_tests.rs",
+  "workspaces/worth-ui/crates/worth-ui-host-native/src/native/mechanics_adapter/text_atlas_signal_failure_tests.rs",
+  "workspaces/worth-ui/crates/worth-ui-host-native/src/native/mechanics_adapter/text_atlas_tests.rs",
+  "workspaces/worth-ui/crates/worth-ui-host-native/src/qualification_tests.rs",
+]
+forbidden_identifiers = ["Sha256"]
+forbidden_identifier_fragments = []
+guidance = "Milestone 3.16.2: presentation hashing goes through worth-ui-host-contract::UiCountedSha256, the exact SHA-256 whose digested bytes the presentation work ledger counts; only the ledger owns the raw hasher, and tests keep raw SHA-256 as an independent oracle"
+
+[[source_identifier_denials]]
+root = "workspaces/worth-ui/crates/worth-ui-runtime/src"
+forbidden_identifiers = ["Sha256"]
+forbidden_identifier_fragments = []
+guidance = "Milestone 3.16.2: presentation hashing goes through worth-ui-host-contract::UiCountedSha256, the exact SHA-256 whose digested bytes the presentation work ledger counts; only the ledger owns the raw hasher, and tests keep raw SHA-256 as an independent oracle"
+
+[[source_identifier_denials]]
+root = "workspaces/worth-ui/crates/worth-ui-query-binding/src"
+forbidden_identifiers = ["Sha256"]
+forbidden_identifier_fragments = []
+guidance = "Milestone 3.16.2: presentation hashing goes through worth-ui-host-contract::UiCountedSha256, the exact SHA-256 whose digested bytes the presentation work ledger counts; only the ledger owns the raw hasher, and tests keep raw SHA-256 as an independent oracle"
 
 [[source_identifier_denials]]
 root = "workspaces/worth-store/crates/worth-store/src/physical_runtime"

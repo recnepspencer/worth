@@ -45,6 +45,30 @@ fn work_counts_only_the_drag() {
                 start: 29,
             },
         ),
+        (
+            12,
+            HostKind::Work {
+                frame: 1,
+                counts: [40, 40, 40, 40, 40, 40, 80, 40, 40, 40, 4096, 120],
+                allocations: Some(300),
+            },
+        ),
+        (
+            21,
+            HostKind::Work {
+                frame: 2,
+                counts: [0; 12],
+                allocations: None,
+            },
+        ),
+        (
+            35,
+            HostKind::Work {
+                frame: 3,
+                counts: [9; 12],
+                allocations: Some(9),
+            },
+        ),
         (40, HostKind::Target([800, 600])),
     ]);
     let mut stage_ms: [Vec<f64>; STAGES.len()] = Default::default();
@@ -61,6 +85,8 @@ fn work_counts_only_the_drag() {
             shaping_attempts: 1,
             text_total: [2, 40, 52, 4, 7],
             text_max: [2, 40, 40, 3, 7],
+            presentation: vec![[40, 40, 40, 40, 40, 40, 80, 40, 40, 40, 4096, 120], [0; 12]],
+            allocations: vec![300],
             stage_ms,
             peaks: vec![("textures".to_owned(), 4)],
         }

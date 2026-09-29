@@ -70,8 +70,10 @@ impl<'owners> UiNativePresentationAccess<'owners> {
         self.surface.targetless_surface_suspensions()
     }
 
-    pub(crate) fn surface(&self) -> &wgpu::Surface<'static> {
-        self.surface.state().surface()
+    pub(crate) fn presentation_target(
+        &self,
+    ) -> &crate::native::graphics::UiNativeBackendPresentationTarget {
+        self.surface.state().presentation_target()
     }
 
     pub(crate) fn surface_configuration(&self) -> &wgpu::SurfaceConfiguration {

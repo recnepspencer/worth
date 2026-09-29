@@ -88,7 +88,7 @@ impl ApplicationQueryBinding<DocumentRetentionSchema> for DocumentRetentionQuery
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
 
     const IDENTITY: &'static str = "worth.query.certification.document-retention.read-binding.v1";
-    const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::bounded(1, 64);
+    const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
 
     fn scope_field() -> ApplicationFieldRef<
         DocumentRetentionSchema,
@@ -252,7 +252,7 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for SetRetentionBinding
     const CANDIDATES: ApplicationCandidateRequirements =
         ApplicationCandidateRequirements::fixed_shape(
             ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 2, 0),
-            ApplicationCandidateResourceCeiling::bounded(1024, 1024),
+            ApplicationCandidateResourceCeiling::representation_bytes(1024),
         );
 
     fn scope_field() -> ApplicationFieldRef<

@@ -277,6 +277,9 @@ pub enum UiNativeEventLoopRunDenial {
     PresentationDeadlineExpired,
     EventLoopRun,
     IncompleteCleanup,
+    /// The host did not exit after its close was requested, so the owner of
+    /// its offscreen session stopped it.
+    CloseUnhonored,
 }
 
 #[derive(Debug)]

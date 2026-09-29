@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use super::presentation_target::UiWgpuPresentationTarget;
 use crate::native::graphics::{UiNativeDeviceGeneration, UiNativeDeviceState};
 use crate::native::presentation::UiNativePresentationSurface;
 
@@ -31,7 +32,7 @@ impl UiWgpuDeviceGenerationMechanics {
 }
 
 pub(crate) struct UiWgpuSurfaceMechanics {
-    pub(super) surface: wgpu::Surface<'static>,
+    pub(super) surface: UiWgpuPresentationTarget,
     pub(super) retained_target: Option<wgpu::Texture>,
     pub(super) configuration: wgpu::SurfaceConfiguration,
     /// Set when the configuration changed after the swapchain was last
@@ -43,7 +44,7 @@ pub(crate) struct UiWgpuSurfaceMechanics {
     pub(super) texture_limit: u32,
 }
 
-pub(crate) struct UiWgpuSurfaceHandle(pub(super) wgpu::Surface<'static>);
+pub(crate) struct UiWgpuSurfaceHandle(pub(super) UiWgpuPresentationTarget);
 pub(crate) struct UiWgpuRetainedTarget(pub(super) wgpu::Texture);
 
 pub(crate) enum UiNativePreparedGraphicsRecovery {
@@ -122,7 +123,7 @@ impl UiNativePresentationSurface {
         self.generation
     }
 
-    pub(crate) fn surface(&self) -> &wgpu::Surface<'static> {
+    pub(crate) fn presentation_target(&self) -> &UiWgpuPresentationTarget {
         &self.mechanics.surface
     }
 

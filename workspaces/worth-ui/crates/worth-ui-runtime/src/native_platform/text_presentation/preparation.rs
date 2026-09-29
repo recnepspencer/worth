@@ -2,7 +2,9 @@
 
 use std::num::NonZeroU32;
 
-use sha2::{Digest, Sha256};
+use sha2::Digest;
+
+use worth_ui_host_contract::UiCountedSha256;
 use worth_ui_host_contract::{
     UiGlyphRunView, UiMountedLogicalDamage, UiMountedPaintCommandIdentity,
     UiMountedPresentationWorkView, UiMountedSurfaceBindingRequirement,
@@ -204,7 +206,7 @@ fn canonical_damage(damage: &[UiMountedLogicalDamage]) -> Vec<UiMountedLogicalDa
 
 pub(crate) fn presentation_damage_digest(work: UiMountedPresentationWorkView<'_>) -> [u8; 32] {
     let damage = canonical_damage(logical_damage(work));
-    let mut digest = Sha256::new();
+    let mut digest = UiCountedSha256::new();
     digest.update((damage.len() as u64).to_le_bytes());
     for region in damage {
         let bounds = region.bounds();

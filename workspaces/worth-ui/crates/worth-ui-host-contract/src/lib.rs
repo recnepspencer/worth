@@ -4,6 +4,7 @@ mod mounted_projection;
 mod mounted_target_coherence;
 mod observation_report;
 mod operational_adapter;
+mod presentation_work;
 mod qualified_text;
 mod runtime;
 mod visual_snapshot;
@@ -154,6 +155,11 @@ pub use observation_report::{
 pub use operational_adapter::{
     UiHostSessionReleaseIndeterminate, UiHostSessionReleaseOutcome, UiHostSessionReleaseReceipt,
     WorthUiHostMechanicsAdapter,
+};
+pub use presentation_work::{
+    install_presentation_allocation_counter, record_presentation_glyphs,
+    record_presentation_map_inserts, take_presentation_work, UiCountedSha256,
+    UiPresentationWorkCounts, UiPresentationWorkStage,
 };
 pub use qualified_text::{
     UiAlphaRasterBatchView, UiAlphaRasterRecordView, UiColorRasterBatchView,

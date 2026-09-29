@@ -2,8 +2,10 @@
 
 use std::sync::Arc;
 
-use sha2::{Digest, Sha256};
+use sha2::Digest;
+
 use swash::zeno::Placement;
+use worth_ui_host_contract::UiCountedSha256;
 use worth_ui_host_contract::{
     UiGlyphRasterBearing, UiGlyphRasterContentDigest, UiGlyphRasterExtent,
 };
@@ -153,7 +155,8 @@ pub(super) fn finish_image(
             .ok_or(UiGlyphRasterizationDenial::ExtentExceeded)?,
     );
     encode_linear_premultiplied_for_srgb_texture(&mut pixels)?;
-    let digest = UiGlyphRasterContentDigest::from_text_mechanics(Sha256::digest(&pixels).into());
+    let digest =
+        UiGlyphRasterContentDigest::from_text_mechanics(UiCountedSha256::digest(&pixels).into());
     Ok(UiCanonicalColorImage {
         bearing,
         extent,
@@ -183,7 +186,8 @@ pub(super) fn finish_linear_image(
             .ok_or(UiGlyphRasterizationDenial::ExtentExceeded)?,
     );
     encode_linear_premultiplied_for_srgb_texture(&mut pixels)?;
-    let digest = UiGlyphRasterContentDigest::from_text_mechanics(Sha256::digest(&pixels).into());
+    let digest =
+        UiGlyphRasterContentDigest::from_text_mechanics(UiCountedSha256::digest(&pixels).into());
     Ok(UiCanonicalColorImage {
         bearing,
         extent,

@@ -7,7 +7,9 @@ use std::collections::{BTreeMap, HashMap};
 use std::rc::Rc;
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use sha2::{Digest, Sha256};
+use sha2::Digest;
+
+use worth_ui_host_contract::UiCountedSha256;
 
 use worth_ui_host_contract::{
     UiGlyphRasterKey, UiGlyphRasterKeyEvidence, UiQualifiedTextLayoutIdentity,
@@ -108,7 +110,7 @@ impl PinIdentity {
     }
 
     fn raster_key_digest(self) -> [u8; 32] {
-        Sha256::digest(self.key).into()
+        UiCountedSha256::digest(self.key).into()
     }
 }
 
@@ -266,7 +268,7 @@ impl UiNativeTextAtlas {
                 .map(|entry| model_entry_bytes(1, entry)),
         );
         rows.sort_unstable();
-        let mut digest = Sha256::new();
+        let mut digest = UiCountedSha256::new();
         digest.update(core.alpha.page_width.to_le_bytes());
         digest.update(core.alpha.page_height.to_le_bytes());
         digest.update((core.alpha.pages.len() as u64).to_le_bytes());

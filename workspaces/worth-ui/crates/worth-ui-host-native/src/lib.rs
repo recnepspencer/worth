@@ -50,7 +50,7 @@ pub use native::{
     UiNativeEventLoopThreadPosture, UiNativeGlyphObservation, UiNativeGraphicsObservation,
     UiNativeInputObservationEventFamily, UiNativeInputObservationReport,
     UiNativeInputObservationStop, UiNativeInputReachability, UiNativeObservationClock,
-    UiNativeObservationReadinessGrant, UiNativeObservationTimeProgress,
+    UiNativeObservationReadinessGrant, UiNativeObservationTimeProgress, UiNativeOffscreenSettle,
     UiNativePhysicalPresentationCorrelation, UiNativePhysicalProgressClass,
     UiNativePhysicalProgressGrant, UiNativePhysicalSignalExternalStatusClass,
     UiNativePhysicalSignalLifecycleObservation, UiNativePhysicalSignalObservationOriginClass,
@@ -58,8 +58,9 @@ pub use native::{
     UiNativePhysicalSignalWorkClass, UiNativePointerButtonObservation,
     UiNativePresentationEffectPhase, UiNativePresentationObservation, UiNativePresentationWorkKind,
     UiNativeReadinessGrant, UiNativeReducedMotionPosture, UiNativeResourceCensus,
-    UiNativeRetainedFrameObservation, UiNativeScrollDeltaObservation,
+    UiNativeRetainedFrameObservation, UiNativeScrollDeltaObservation, UiNativeSubmittedFrameWork,
     UiNativeTextAtlasPlanObservation, UiNativeTextPinObservation, WorthUiNativeEventLoop,
+    WorthUiNativeOffscreenSession,
 };
 #[cfg(feature = "certification-support")]
 pub use native::{UiNativeCaptureExternalObservation, UiNativeCaptureProtocolWorld};

@@ -2,7 +2,8 @@
 
 use super::rasterization::UiNativeTextRasterWorkReport;
 use super::UiNativeTextPresentationPrepared;
-use sha2::{Digest, Sha256};
+use sha2::Digest;
+use worth_ui_host_contract::UiCountedSha256;
 
 #[path = "work_observation/transcript.rs"]
 mod transcript;
@@ -84,7 +85,7 @@ impl UiNativeTextPresentationWorkObservation {
                 .map(|pin| {
                     [
                         pin.layout().digest(),
-                        Sha256::digest(pin.key().canonical_evidence_bytes()).into(),
+                        UiCountedSha256::digest(pin.key().canonical_evidence_bytes()).into(),
                     ]
                 })
                 .collect(),
@@ -178,7 +179,7 @@ fn raster_key_set_digest(keys: &[worth_ui_host_contract::UiGlyphRasterKey]) -> [
         .map(|key| key.canonical_evidence_bytes())
         .collect::<Vec<_>>();
     rows.sort_unstable();
-    let mut digest = Sha256::new();
+    let mut digest = UiCountedSha256::new();
     digest.update((rows.len() as u64).to_le_bytes());
     for row in rows {
         digest.update((row.len() as u64).to_le_bytes());

@@ -1,4 +1,5 @@
-use sha2::{Digest, Sha256};
+use sha2::Digest;
+use worth_ui_host_contract::UiCountedSha256;
 use worth_ui_host_contract::{UiFontSlant, UiQualifiedFontFamilyIdentity};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -69,7 +70,7 @@ impl UiTextFaceRequest {
 }
 
 pub(crate) fn profile_family_identity(name: &str) -> UiQualifiedFontFamilyIdentity {
-    let mut hash = Sha256::new();
+    let mut hash = UiCountedSha256::new();
     hash.update(b"worth-ui-profile-family-v2\0");
     hash.update(name.as_bytes());
     UiQualifiedFontFamilyIdentity::from_text_mechanics(hash.finalize().into())

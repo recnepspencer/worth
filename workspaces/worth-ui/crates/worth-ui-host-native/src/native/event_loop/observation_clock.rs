@@ -1,4 +1,6 @@
-use winit::event_loop::{ActiveEventLoop, ControlFlow};
+use winit::event_loop::ControlFlow;
+
+use super::loop_control::UiNativeLoopControl;
 
 use super::client_invocation::UiNativeEventLoopClientInvocation;
 use super::{UiNativeEventLoopApplication, UiNativeEventLoopClient, UiNativeEventLoopRunDenial};
@@ -6,7 +8,7 @@ use super::{UiNativeEventLoopApplication, UiNativeEventLoopClient, UiNativeEvent
 impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
     pub(super) fn restore_wait_before_observation_deadline(
         &mut self,
-        event_loop: &ActiveEventLoop,
+        event_loop: &dyn UiNativeLoopControl,
     ) {
         // new_events runs before any client/retry callback in the next batch.
         // Restore the carried predecessor, never infer ownership from equal Instants.
@@ -16,7 +18,10 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
         );
     }
 
-    pub(super) fn close_observation_time_and_schedule(&mut self, event_loop: &ActiveEventLoop) {
+    pub(super) fn close_observation_time_and_schedule(
+        &mut self,
+        event_loop: &dyn UiNativeLoopControl,
+    ) {
         let before_close = self.physical_clock.current_tick();
         let Some(client) = self.client.as_mut() else {
             return;

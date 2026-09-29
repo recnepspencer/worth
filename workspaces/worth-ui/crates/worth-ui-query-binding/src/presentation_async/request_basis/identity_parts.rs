@@ -1,5 +1,6 @@
-use sha2::{Digest, Sha256};
+use sha2::Digest;
 use worth_query::facade::foundation::WorthQueryAsyncRequestIdentityPart as Part;
+use worth_ui_host_contract::UiCountedSha256;
 
 use super::{
     WorthUiPresentationMechanicBasis, WorthUiPresentationPinBasis, WorthUiPresentationRequestBasis,
@@ -71,7 +72,7 @@ fn mechanic_identity_digest(
     mechanics: impl Iterator<Item = worth_ui_host_contract::UiMountedPaintCommandIdentity>,
 ) -> [u8; 32] {
     let mechanics = mechanics.collect::<Vec<_>>();
-    let mut digest = Sha256::new();
+    let mut digest = UiCountedSha256::new();
     digest.update(b"worth-ui/presentation-mechanic-identities/v1\0");
     encode_bytes(&mut digest, b"posture", posture);
     encode_count(&mut digest, mechanics.len());
@@ -136,7 +137,7 @@ fn removed_mechanics_fingerprint(
 }
 
 fn encode_paint_command(
-    digest: &mut Sha256,
+    digest: &mut UiCountedSha256,
     mechanic: worth_ui_host_contract::UiMountedPaintCommandIdentity,
 ) {
     let (slot, row) = mechanic
@@ -173,37 +174,37 @@ fn pins_fingerprint(domain: &[u8], pins: &[WorthUiPresentationPinBasis]) -> [u8;
     digest.finalize().into()
 }
 
-fn encode_pin(digest: &mut Sha256, pin: WorthUiPresentationPinBasis) {
+fn encode_pin(digest: &mut UiCountedSha256, pin: WorthUiPresentationPinBasis) {
     encode_bytes(digest, b"pin-layout", &pin.layout().digest());
     encode_raster_key(digest, pin.key());
 }
 
 /// A key enters the digest as its canonical evidence: every profile field in
 /// fixed widths plus the axis count, so one length-prefixed field is injective.
-fn encode_raster_key(digest: &mut Sha256, key: worth_ui_host_contract::UiGlyphRasterKey) {
+fn encode_raster_key(digest: &mut UiCountedSha256, key: worth_ui_host_contract::UiGlyphRasterKey) {
     encode_bytes(digest, b"raster-key", &key.canonical_evidence_bytes());
 }
 
-fn fingerprint(domain: &[u8]) -> Sha256 {
-    let mut digest = Sha256::new();
+fn fingerprint(domain: &[u8]) -> UiCountedSha256 {
+    let mut digest = UiCountedSha256::new();
     digest.update(b"worth-ui/presentation-request-identity/v2\0");
     encode_bytes(&mut digest, b"collection-domain", domain);
     digest
 }
 
-fn encode_count(digest: &mut Sha256, value: usize) {
+fn encode_count(digest: &mut UiCountedSha256, value: usize) {
     encode_u64(digest, b"count", count(value));
 }
 
-fn encode_u32(digest: &mut Sha256, field: &[u8], value: u32) {
+fn encode_u32(digest: &mut UiCountedSha256, field: &[u8], value: u32) {
     encode_bytes(digest, field, &value.to_le_bytes());
 }
 
-fn encode_u64(digest: &mut Sha256, field: &[u8], value: u64) {
+fn encode_u64(digest: &mut UiCountedSha256, field: &[u8], value: u64) {
     encode_bytes(digest, field, &value.to_le_bytes());
 }
 
-fn encode_bytes(digest: &mut Sha256, field: &[u8], value: &[u8]) {
+fn encode_bytes(digest: &mut UiCountedSha256, field: &[u8], value: &[u8]) {
     digest.update((field.len() as u64).to_le_bytes());
     digest.update(field);
     digest.update((value.len() as u64).to_le_bytes());

@@ -1,4 +1,5 @@
-use sha2::{Digest, Sha256};
+use sha2::Digest;
+use worth_ui_host_contract::UiCountedSha256;
 
 use crate::capability::ThemeTokenId;
 
@@ -59,7 +60,7 @@ impl ComponentSemanticTextSpanContract {
 }
 
 pub(crate) fn whole_paragraph_paint_identity(token: &ThemeTokenId) -> [u8; 32] {
-    let mut digest = Sha256::new();
+    let mut digest = UiCountedSha256::new();
     digest.update(b"worth-ui-mounted-text-whole-paragraph-paint-v1\0");
     digest.update(token.as_str().as_bytes());
     digest.finalize().into()
@@ -69,7 +70,7 @@ fn paint_identity(
     token: &ThemeTokenId,
     range: worth_ui_host_contract::UiTextOriginalRange,
 ) -> [u8; 32] {
-    let mut digest = Sha256::new();
+    let mut digest = UiCountedSha256::new();
     digest.update(b"worth-ui-mounted-text-authored-paint-span-v1\0");
     digest.update(token.as_str().as_bytes());
     digest.update(range.start().to_le_bytes());

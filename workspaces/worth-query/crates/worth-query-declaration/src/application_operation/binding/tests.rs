@@ -124,7 +124,7 @@ crate::worth_query_mutation_binding!(
     field AccountIdField::reference(),
     value rename_scope,
     candidates creates 0, deletes 0, links 0, unlinks 0, writes 1, emits 1,
-    resources retained_representation_bytes 128, validator_work 4
+    resources retained_representation_bytes 128, validator_work 17
 );
 
 crate::worth_query_application_schema! {
@@ -207,6 +207,10 @@ fn mutation_binding_registers_exact_handler_scope_and_candidate_metadata() {
     assert_eq!(descriptor.scope().field().locus().field(), "AccountIdField");
     assert_eq!(descriptor.candidates().cardinality().maximum_writes(), 1);
     assert_eq!(descriptor.candidates().cardinality().maximum_emits(), 1);
+    assert_eq!(
+        descriptor.candidates().resources().maximum_validator_work(),
+        Some(17)
+    );
     assert_eq!(
         descriptor
             .candidates()

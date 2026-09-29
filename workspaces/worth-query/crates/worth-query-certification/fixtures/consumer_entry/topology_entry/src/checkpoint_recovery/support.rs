@@ -33,13 +33,34 @@ pub(super) type Application = application_installation::WorthQueryProgramApplica
 pub(super) fn install(
     checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
 ) -> Application {
+    install_with_demand_profile(checkpoint, Default::default())
+}
+
+pub(super) fn install_with_demand_profile(
+    checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
+    profile: worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile,
+) -> Application {
+    install_program::<CheckpointProgram>(checkpoint, profile)
+}
+
+pub(super) fn install_program<Program>(
+    checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
+    profile: worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile,
+) -> application_installation::WorthQueryProgramApplicationRuntime<CheckpointSchema, Program>
+where
+    Program: ApplicationProgramDefinition<
+        CheckpointSchema,
+        Outputs = ApplicationProgramOutputs<CheckpointRoot>,
+        Contributions = <CheckpointSchema as ApplicationSchemaComposition>::Contributions,
+    >,
+{
     let configuration = (TopologyConfiguration {
         setup_calls: Arc::new(AtomicUsize::new(0)),
         invariant_calls: Arc::new(AtomicUsize::new(0)),
         invariant_probe: Arc::new(AtomicUsize::new(0)),
         producer_authorization_denials: Arc::new(AtomicUsize::new(0)),
     },);
-    let program = ApplicationProgramAuthoring::<CheckpointSchema, CheckpointProgram>::begin()
+    let program = ApplicationProgramAuthoring::<CheckpointSchema, Program>::begin()
         .validated_program()
         .expect("the checkpoint program is complete");
     let declaration = CheckpointSchema::declaration().expect("the checkpoint schema is valid");
@@ -48,7 +69,7 @@ pub(super) fn install(
             program,
             declaration,
             configuration,
-            limits(),
+            limits().with_output_demand_resources(profile),
             checkpoint,
         )
         .expect("the checkpoint restores"),
@@ -56,7 +77,7 @@ pub(super) fn install(
             program,
             declaration,
             configuration,
-            limits(),
+            limits().with_output_demand_resources(profile),
             |graph, installed| {
                 let principal = installed
                     .principal_binding(ConsumerPrincipalBinding::reference::<CheckpointSchema>())
@@ -203,12 +224,18 @@ fn external_identity() -> WorthQueryExternalPrincipalIdentity {
         .unwrap()
 }
 
-pub(super) fn authenticate(
-    application: &Application,
+pub(super) fn authenticate<Program>(
+    application: &application_installation::WorthQueryProgramApplicationRuntime<
+        CheckpointSchema,
+        Program,
+    >,
 ) -> (
     authentication::WorthQueryRequestScope,
     authentication::WorthQueryAuthenticatedExternalPrincipal<CheckpointSchema>,
-) {
+)
+where
+    Program: ApplicationProgramDefinition<CheckpointSchema>,
+{
     let cancellation = authentication::WorthQueryCancellationSource::new();
     let scope = authentication::WorthQueryRequestScope::new(
         Instant::now() + Duration::from_secs(120),

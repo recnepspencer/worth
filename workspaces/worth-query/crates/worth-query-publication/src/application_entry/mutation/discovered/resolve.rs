@@ -168,8 +168,7 @@ where
                 .admit_performed_discovered_program_root_output::<Root>(
                     &worth_query_execution::publication_boundary::program_publication_access(),
                     source,
-                    controls.maximum_work().get(),
-                    controls.maximum_retained_bytes().get(),
+                    controls.resolve(application.runtime().output_demand_resource_profile()),
                     prepared,
                 ),
             DiscoveredRootStartKind::Recovery => {
@@ -179,8 +178,7 @@ where
                     &worth_query_execution::publication_boundary::program_publication_access(),
                     source,
                     current_source,
-                    controls.maximum_work().get(),
-                    controls.maximum_retained_bytes().get(),
+                    controls.resolve(application.runtime().output_demand_resource_profile()),
                     receipt,
                 )
             }

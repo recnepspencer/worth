@@ -1,8 +1,13 @@
-use winit::event_loop::{ActiveEventLoop, ControlFlow};
+use winit::event_loop::ControlFlow;
+
+use super::loop_control::UiNativeLoopControl;
 
 use super::UiNativeEventLoopDirective;
 
-pub(super) fn apply(event_loop: &ActiveEventLoop, directive: UiNativeEventLoopDirective) -> bool {
+pub(super) fn apply(
+    event_loop: &dyn UiNativeLoopControl,
+    directive: UiNativeEventLoopDirective,
+) -> bool {
     match directive {
         UiNativeEventLoopDirective::Continue => set_wait(event_loop),
         UiNativeEventLoopDirective::WaitUntil(deadline) => {
@@ -13,7 +18,7 @@ pub(super) fn apply(event_loop: &ActiveEventLoop, directive: UiNativeEventLoopDi
     }
 }
 
-fn set_wait(event_loop: &ActiveEventLoop) -> bool {
+fn set_wait(event_loop: &dyn UiNativeLoopControl) -> bool {
     event_loop.set_control_flow(ControlFlow::Wait);
     false
 }

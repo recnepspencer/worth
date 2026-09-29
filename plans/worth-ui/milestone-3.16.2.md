@@ -16,6 +16,11 @@ mounted layout completion are the integration path, not proof of continuous
 resize. Neither a scaled screenshot nor correct geometry only after release closes
 this milestone. Measure callback/layout/GPU costs before choosing private optimizations.
 
+Status: Deferred, not closed. Requirements 1-4, phases 1 and 2, the measurement
+half of 2a, and the phase 3 hardening and trace tools are complete. The
+structural per-frame work of 2a and the timed qualification of phase 3 are
+deferred; see those items and [deferred work](../deferred-work.md).
+
 ## Requirements 1-4: presentation truth is compiler-enforced
 
 Resize multiplies the moments at which the host, Motion, Scroll, hit testing,
@@ -253,6 +258,15 @@ While the platform runs a modal resize loop, a deadline watch posts one wake
 per armed deadline the loop misses, sleeping precisely for its last
 millisecond; its wake cost across a drag is a known trade against timer-tick
 lateness, to revisit if a later budget needs the idle core back.
+Every presentation attempt charges its work to a per-thread ledger in
+worth-ui-host-contract: glyph records each text stage touched (demand, request
+basis, atlas normalize/plan/settle, pins, run admission, coverage, command
+planning, vertex encode), bytes digested, glyph-path map inserts, and, when the
+binary counts them, process-wide allocations as a diagnostic. Presentation hashing goes through the ledger's
+counted SHA-256 (boundary-check denies the raw hasher outside tests), and the
+resize trace writes each submitted frame's counts. Budget tests over the
+deterministic glyph, byte, and insert counts, not wall-clock timings, gate per-frame work while this
+milestone develops; timings are qualified once, at the end.
 
 Acceptance commits those prepared results and retires predecessor resources only
 after physical completion. Pre-effect rejection preserves accepted application
@@ -337,11 +351,41 @@ to the whole dashboard. Finish scroll extent/anchor succession, text constraints
 modal/popover placement, and Backdrop extent through the same preparation boundary.
 No stretched-canvas substitute or separate initial/rebind/retry layout formula.
 
+**2a. Bound per-frame work.** Count each attempt's work per stage (ledger above)
+and drive a headless native pass so budget tests run the production pipeline
+without a window: a move-only resize frame touches no glyphs in the text stages
+and O(moved blocks) work overall; a rewrap frame touches only rewrapped blocks'
+glyphs. Then retain text per block (move-only deltas, block-local glyph buffers),
+intern glyph raster keys, reuse unchanged async admission, make runtime passes
+incremental, and move presentation to a render thread. Ledger, trace counts,
+headless pass, and budget tests: completed. The structural work: deferred. Its
+order, highest leverage first: block-level retained text, interned glyph raster
+keys, reused async admission (with a written currentness argument under AP07),
+incremental runtime passes, a render thread (AP07 handoff argument first),
+vsync-aligned frame start, then DXGI Desktop Duplication capture, which the
+qualification needs because the GDI capture samples only every ~21 ms.
+
+The headless pass replays ordinary platform loop turns offscreen, not a
+platform's modal border drag, and renders each frame into an offscreen target
+of the swapchain's extent, format, and usage. It proves per-frame work, not
+pacing: present, composition, on-screen gaps, and pointer input stay with the
+qualified drag in phase 3. `platform-pulse --worth-ui-offscreen-drag` prints
+each frame's counts. The budget tests hold the current counts as ceilings and
+lower them as each structural step lands, until a move-only frame (product
+extent, 16 pixels shorter) touches zero glyphs in every text stage and a
+rewrap frame (also 16 pixels narrower) touches only rewrapped blocks' glyphs.
+Before block-level retained text, both frames re-derive every visible glyph.
+
 **3. Harden and qualify.** Cover delayed completion followed by a newer extent,
 pre-effect rejection/retry, scale transitions, minimize/restore, reconstruction,
 and shutdown in focused cases. Admission denial must not partially update owners.
 Use the existing compile-fail target only if the actual readiness boundary changes;
 keep one incomplete-frame denial and its valid counterpart, not a phase matrix.
+Hardening and the trace recorder and qualification tools: completed. The timed
+qualification: deferred with the structural work of 2a. When deferred, a live
+drag cost about 24 ms of main-thread work per frame, and the accepted
+visible-frame gap was about 35 ms at p95 and 50 ms at p99, so the p95 gate is
+not met.
 
 Qualify on a 60 Hz display on a supported desktop OS. Retain three timestamped
 10-second active edge-drag traces across the stated sizes, including reversal

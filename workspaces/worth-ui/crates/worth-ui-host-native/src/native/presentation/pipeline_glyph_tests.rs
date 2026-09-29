@@ -151,7 +151,7 @@ fn upload_page(
         .unwrap();
 }
 
-fn command(
+pub(in crate::native::presentation) fn command(
     key: worth_ui_host_contract::UiGlyphRasterKey,
     atlas_kind: UiNativeGpuAtlasKind,
     target: [f32; 4],
@@ -209,7 +209,7 @@ fn command(
     }
 }
 
-fn alpha_key() -> worth_ui_host_contract::UiGlyphRasterKey {
+pub(in crate::native::presentation) fn alpha_key() -> worth_ui_host_contract::UiGlyphRasterKey {
     key(
         worth_ui_host_contract::UiGlyphRasterSource::AlphaOutline,
         11,

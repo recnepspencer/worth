@@ -92,8 +92,7 @@ where
             SourceQuery<Schema, WorthQueryProgramRootDemand<Schema, Root>>,
             SourceValue<Schema, WorthQueryProgramRootDemand<Schema, Root>>,
         >,
-        maximum_work: usize,
-        maximum_retained_bytes: usize,
+        limits: crate::domain_computation::execution_runtime::WorthQueryOutputDemandLimits,
     ) -> Result<
         WorthQueryAdmittedProgramOutput<Schema, Program, WorthQueryProgramRootDemand<Schema, Root>>,
         WorthQueryOutputDemandDenial,
@@ -109,12 +108,12 @@ where
                 "selected output root is not installed for this program",
             ));
         }
-        let artifact =
-            self.validate_root_artifact_demand::<Root>(maximum_work, maximum_retained_bytes)?;
+        let artifact = self.validate_root_artifact_demand::<Root>()?;
+        let limits = self.resolve_artifact_limits(limits, artifact)?;
         self.runtime
             .admit_required_output_demand::<
                 Family<Schema, WorthQueryProgramRootDemand<Schema, Root>>,
-            >(source, maximum_work, maximum_retained_bytes)
+            >(source, limits)
             .map(|admitted| WorthQueryAdmittedProgramOutput {
                 admitted,
                 target_feature: std::any::TypeId::of::<
@@ -249,8 +248,7 @@ where
             SourceQuery<Schema, WorthQueryProgramRootDemand<Schema, Root>>,
             SourceValue<Schema, WorthQueryProgramRootDemand<Schema, Root>>,
         >,
-        maximum_work: usize,
-        maximum_retained_bytes: usize,
+        limits: crate::domain_computation::execution_runtime::WorthQueryOutputDemandLimits,
         source_receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
     ) -> Result<
         WorthQueryAdmittedProgramOutput<Schema, Program, WorthQueryProgramRootDemand<Schema, Root>>,
@@ -267,8 +265,8 @@ where
                 "selected output root is not installed for this program",
             ));
         }
-        let artifact =
-            self.validate_root_artifact_demand::<Root>(maximum_work, maximum_retained_bytes)?;
+        let artifact = self.validate_root_artifact_demand::<Root>()?;
+        let limits = self.resolve_artifact_limits(limits, artifact)?;
         self.runtime.validate_recovered_output_root_kind(
             source_receipt,
             crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Required(std::any::TypeId::of::<Root>()),
@@ -279,8 +277,7 @@ where
             >(
                 source,
                 current,
-                maximum_work,
-                maximum_retained_bytes,
+                limits,
                 source_receipt,
             )
             .map(|admitted| WorthQueryAdmittedProgramOutput {
@@ -298,8 +295,7 @@ where
             SourceQuery<Schema, WorthQueryProgramRootDemand<Schema, Root>>,
             SourceValue<Schema, WorthQueryProgramRootDemand<Schema, Root>>,
         >,
-        maximum_work: usize,
-        maximum_retained_bytes: usize,
+        limits: crate::domain_computation::execution_runtime::WorthQueryOutputDemandLimits,
         prepared: &WorthQueryPreparedRequiredOutputSource,
     ) -> Result<
         WorthQueryAdmittedProgramOutput<Schema, Program, WorthQueryProgramRootDemand<Schema, Root>>,
@@ -316,12 +312,12 @@ where
                 "selected output root is not installed for this program",
             ));
         }
-        let artifact =
-            self.validate_root_artifact_demand::<Root>(maximum_work, maximum_retained_bytes)?;
+        let artifact = self.validate_root_artifact_demand::<Root>()?;
+        let limits = self.resolve_artifact_limits(limits, artifact)?;
         self.runtime
             .admit_performed_output_demand::<
                 Family<Schema, WorthQueryProgramRootDemand<Schema, Root>>,
-            >(source, maximum_work, maximum_retained_bytes, prepared)
+            >(source, limits, prepared)
             .map(|admitted| WorthQueryAdmittedProgramOutput {
                 admitted,
                 target_feature: std::any::TypeId::of::<<RootConnectionRef<Schema, Root> as ApplicationConnectionShape<Schema>>::TargetFeature>(),

@@ -2,7 +2,9 @@
 
 use std::collections::{HashMap, HashSet};
 
-use sha2::{Digest, Sha256};
+use sha2::Digest;
+
+use worth_ui_host_contract::UiCountedSha256;
 use worth_ui_host_contract::{
     UiAlphaRasterBatchView, UiColorRasterBatchView, UiGlyphRasterBatchIdentity,
     UiGlyphRasterBatchSink, UiGlyphRasterBatchSubmissionDenial, UiGlyphRasterDemandIdentity,
@@ -114,10 +116,11 @@ impl UploadSink {
         {
             return Err(UiGlyphRasterBatchSubmissionDenial::Malformed);
         }
-        let actual_digest: [u8; 32] = Sha256::digest(pixels).into();
+        let actual_digest: [u8; 32] = UiCountedSha256::digest(pixels).into();
         if actual_digest != record.digest {
             return Err(UiGlyphRasterBatchSubmissionDenial::Malformed);
         }
+        worth_ui_host_contract::record_presentation_map_inserts(1);
         if !self.seen.insert(record.key) {
             return Err(UiGlyphRasterBatchSubmissionDenial::Duplicate);
         }
@@ -230,7 +233,7 @@ impl RasterRecordInput {
 }
 
 fn miss_identity(records: &[RasterRecordInput]) -> UiGlyphRasterDemandIdentity {
-    let mut digest = Sha256::new();
+    let mut digest = UiCountedSha256::new();
     digest.update(b"worth-ui-glyph-raster-miss-v1\0");
     digest.update(
         u64::try_from(records.len())
@@ -256,7 +259,7 @@ fn batch_identity(
     records: impl Iterator<Item = RasterRecordInput>,
 ) -> UiGlyphRasterBatchIdentity {
     let records = records.collect::<Vec<_>>();
-    let mut digest = Sha256::new();
+    let mut digest = UiCountedSha256::new();
     digest.update(b"worth-ui-glyph-raster-batch-v1\0");
     digest.update(demand.digest());
     digest.update(miss.digest());

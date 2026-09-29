@@ -1,6 +1,8 @@
 use std::collections::BTreeMap;
 
-use sha2::{Digest, Sha256};
+use sha2::Digest;
+
+use worth_ui_host_contract::UiCountedSha256;
 use worth_ui_host_contract::{
     UiFontCollectionGeneration, UiFontSlant, UiQualifiedFontFaceIdentity,
     UiQualifiedFontFamilyIdentity, UiQualifiedFontPackIdentity,
@@ -111,7 +113,7 @@ fn face_selection_digest(
     face: &UiApplicationFontFaceDefinition,
     font_bytes_digest: [u8; 32],
 ) -> [u8; 32] {
-    let mut hash = Sha256::new();
+    let mut hash = UiCountedSha256::new();
     hash.update(b"worth-ui-application-font-face-selection-v3\0");
     hash.update(pack.digest());
     hash.update(family.digest());
@@ -145,7 +147,7 @@ fn pack_identity(
         super::metadata_inventory::UiApplicationFaceMetadata,
     )],
 ) -> UiQualifiedFontPackIdentity {
-    let mut hash = Sha256::new();
+    let mut hash = UiCountedSha256::new();
     hash.update(b"worth-ui-application-font-pack-v3\0");
     hash_framed(&mut hash, b"pack-name", name.as_bytes());
     hash.update((faces.len() as u64).to_le_bytes());
@@ -161,7 +163,7 @@ fn pack_identity(
             b"license-identifier",
             face.license.identifier.as_bytes(),
         );
-        hash.update(Sha256::digest(face.license.notice.as_bytes()));
+        hash.update(UiCountedSha256::digest(face.license.notice.as_bytes()));
         hash.update([u8::from(metadata.intrinsic_color)]);
     }
     UiQualifiedFontPackIdentity::from_text_mechanics(hash.finalize().into())
@@ -181,7 +183,7 @@ fn family_receipts(
         .collect::<std::collections::BTreeSet<_>>()
         .into_iter()
         .map(|name| {
-            let mut hash = Sha256::new();
+            let mut hash = UiCountedSha256::new();
             hash.update(b"worth-ui-application-font-family-v3\0");
             hash.update(pack.digest());
             hash_framed(&mut hash, b"family-name", name.as_bytes());
@@ -196,7 +198,7 @@ fn family_receipts(
         .into_boxed_slice()
 }
 
-fn hash_framed(hash: &mut Sha256, domain: &[u8], value: &[u8]) {
+fn hash_framed(hash: &mut UiCountedSha256, domain: &[u8], value: &[u8]) {
     hash.update((domain.len() as u64).to_le_bytes());
     hash.update(domain);
     hash.update((value.len() as u64).to_le_bytes());

@@ -86,6 +86,10 @@ fn build_candidate(
     demands: &[UiNativeTextAtlasDemand],
     transition: &UiNativeTextAtlasPinTransition,
 ) -> Result<Candidate, UiNativeTextAtlasDenial> {
+    worth_ui_host_contract::record_presentation_glyphs(
+        worth_ui_host_contract::UiPresentationWorkStage::AtlasPlan,
+        demands.len(),
+    );
     let protected = protected_keys(core, transition, demands);
     let mut candidate = candidate_from_predecessor(core);
     for demand in demands.iter().copied() {

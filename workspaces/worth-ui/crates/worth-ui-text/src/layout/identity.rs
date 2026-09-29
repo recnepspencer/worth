@@ -1,4 +1,5 @@
-use sha2::{Digest, Sha256};
+use sha2::Digest;
+use worth_ui_host_contract::UiCountedSha256;
 use worth_ui_host_contract::{
     UiPositionedTextGlyphRecord, UiQualifiedTextCaretRecord, UiQualifiedTextCostRecord,
     UiQualifiedTextCoverageRecord, UiQualifiedTextGlyphRecord, UiQualifiedTextLayoutIdentity,
@@ -31,7 +32,7 @@ pub(super) fn for_layout(
     input: UiQualifiedTextLayoutIdentityInput<'_>,
 ) -> UiQualifiedTextLayoutIdentity {
     let shaped = input.shaped;
-    let mut hasher = Sha256::new();
+    let mut hasher = UiCountedSha256::new();
     hasher.update(b"worth-ui-qualified-text-layout-v3\0");
     hash_bytes(&mut hasher, shaped.source().as_bytes());
     hasher.update(input.request_identity.digest());
@@ -56,14 +57,17 @@ pub(super) fn for_layout(
     UiQualifiedTextLayoutIdentity::from_text_mechanics(hasher.finalize().into())
 }
 
-fn hash_word_boundaries(hasher: &mut Sha256, boundaries: &[UiQualifiedTextWordBoundaryRecord]) {
+fn hash_word_boundaries(
+    hasher: &mut UiCountedSha256,
+    boundaries: &[UiQualifiedTextWordBoundaryRecord],
+) {
     hash_len(hasher, boundaries.len());
     for boundary in boundaries {
         hash_range(hasher, boundary.original_boundary());
     }
 }
 
-fn hash_cost(hasher: &mut Sha256, cost: UiQualifiedTextCostRecord) {
+fn hash_cost(hasher: &mut UiCountedSha256, cost: UiQualifiedTextCostRecord) {
     for value in [
         cost.analyzed_bytes(),
         cost.graphemes(),
@@ -87,7 +91,11 @@ fn hash_cost(hasher: &mut Sha256, cost: UiQualifiedTextCostRecord) {
     }
 }
 
-fn hash_constraints(hasher: &mut Sha256, shaped: &UiShapedTextParagraph, width_millipoints: u32) {
+fn hash_constraints(
+    hasher: &mut UiCountedSha256,
+    shaped: &UiShapedTextParagraph,
+    width_millipoints: u32,
+) {
     let constraints = shaped.constraints();
     hasher.update([
         direction_tag(constraints.base_direction()),
@@ -109,7 +117,7 @@ fn hash_constraints(hasher: &mut Sha256, shaped: &UiShapedTextParagraph, width_m
     hasher.update(constraints.word_spacing_millipoints().to_le_bytes());
 }
 
-fn hash_styles(hasher: &mut Sha256, styles: &[UiQualifiedTextStyleRecord]) {
+fn hash_styles(hasher: &mut UiCountedSha256, styles: &[UiQualifiedTextStyleRecord]) {
     hash_len(hasher, styles.len());
     for style in styles {
         hasher.update(style.original_range().start().to_le_bytes());
@@ -143,7 +151,7 @@ fn hash_styles(hasher: &mut Sha256, styles: &[UiQualifiedTextStyleRecord]) {
 }
 
 fn hash_logical_records(
-    hasher: &mut Sha256,
+    hasher: &mut UiCountedSha256,
     runs: &[UiQualifiedTextRunRecord],
     glyphs: &[UiQualifiedTextGlyphRecord],
 ) {
@@ -178,7 +186,7 @@ fn hash_logical_records(
 }
 
 fn hash_layout_records(
-    hasher: &mut Sha256,
+    hasher: &mut UiCountedSha256,
     lines: &[UiQualifiedTextLineRecord],
     runs: &[UiQualifiedTextVisualRunRecord],
     glyphs: &[UiPositionedTextGlyphRecord],
@@ -217,7 +225,7 @@ fn hash_layout_records(
 }
 
 fn hash_graphemes(
-    hasher: &mut Sha256,
+    hasher: &mut UiCountedSha256,
     graphemes: &[worth_ui_host_contract::UiQualifiedTextGraphemeRecord],
 ) {
     hash_len(hasher, graphemes.len());
@@ -227,7 +235,7 @@ fn hash_graphemes(
     }
 }
 
-fn hash_carets(hasher: &mut Sha256, carets: &[UiQualifiedTextCaretRecord]) {
+fn hash_carets(hasher: &mut UiCountedSha256, carets: &[UiQualifiedTextCaretRecord]) {
     hash_len(hasher, carets.len());
     for caret in carets {
         let position = caret.position();
@@ -244,7 +252,7 @@ fn hash_carets(hasher: &mut Sha256, carets: &[UiQualifiedTextCaretRecord]) {
     }
 }
 
-fn hash_coverage(hasher: &mut Sha256, coverage: &[UiQualifiedTextCoverageRecord]) {
+fn hash_coverage(hasher: &mut UiCountedSha256, coverage: &[UiQualifiedTextCoverageRecord]) {
     hash_len(hasher, coverage.len());
     for record in coverage {
         hash_range(hasher, record.original_range());
@@ -260,7 +268,7 @@ fn hash_coverage(hasher: &mut Sha256, coverage: &[UiQualifiedTextCoverageRecord]
     }
 }
 
-fn hash_faces(hasher: &mut Sha256, faces: &[UiQualifiedTextFaceResource]) {
+fn hash_faces(hasher: &mut UiCountedSha256, faces: &[UiQualifiedTextFaceResource]) {
     hash_len(hasher, faces.len());
     for face in faces {
         hasher.update(face.identity().selection_digest());
@@ -285,7 +293,7 @@ fn hash_faces(hasher: &mut Sha256, faces: &[UiQualifiedTextFaceResource]) {
     }
 }
 
-fn hash_len(hasher: &mut Sha256, len: usize) {
+fn hash_len(hasher: &mut UiCountedSha256, len: usize) {
     hasher.update(
         u64::try_from(len)
             .expect("qualified profile length fits u64")
@@ -293,17 +301,17 @@ fn hash_len(hasher: &mut Sha256, len: usize) {
     );
 }
 
-fn hash_bytes(hasher: &mut Sha256, bytes: &[u8]) {
+fn hash_bytes(hasher: &mut UiCountedSha256, bytes: &[u8]) {
     hash_len(hasher, bytes.len());
     hasher.update(bytes);
 }
 
-fn hash_range(hasher: &mut Sha256, range: worth_ui_host_contract::UiTextOriginalRange) {
+fn hash_range(hasher: &mut UiCountedSha256, range: worth_ui_host_contract::UiTextOriginalRange) {
     hasher.update(range.start().to_le_bytes());
     hasher.update(range.end().to_le_bytes());
 }
 
-fn hash_rect(hasher: &mut Sha256, rect: worth_ui_host_contract::UiTextRect) {
+fn hash_rect(hasher: &mut UiCountedSha256, rect: worth_ui_host_contract::UiTextRect) {
     for value in [
         rect.left_millipoints(),
         rect.top_millipoints(),
@@ -314,7 +322,10 @@ fn hash_rect(hasher: &mut Sha256, rect: worth_ui_host_contract::UiTextRect) {
     }
 }
 
-fn hash_font_unit_rect(hasher: &mut Sha256, rect: worth_ui_host_contract::UiTextFontUnitRect) {
+fn hash_font_unit_rect(
+    hasher: &mut UiCountedSha256,
+    rect: worth_ui_host_contract::UiTextFontUnitRect,
+) {
     for value in [rect.x_min(), rect.y_min(), rect.x_max(), rect.y_max()] {
         hasher.update(value.to_le_bytes());
     }

@@ -18,14 +18,19 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: ApplicationSchema + 'static,
 {
+    pub fn output_demand_resource_profile(
+        &self,
+    ) -> crate::domain_computation::execution_runtime::WorthQueryOutputDemandResourceProfile {
+        self.runtime.output_demand_resource_profile()
+    }
+
     pub fn admit_output_demand<Family>(
         &self,
         source_result: crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource<
             FamilySourceQuery<Schema, Family>,
             FamilySourceValue<Schema, Family>,
         >,
-        maximum_work: usize,
-        maximum_retained_bytes: usize,
+        limits: crate::domain_computation::execution_runtime::WorthQueryOutputDemandLimits,
     ) -> Result<WorthQueryAdmittedOutputDemand<Schema, Family>, WorthQueryOutputDemandDenial>
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
@@ -42,8 +47,7 @@ where
             observed_source,
             None,
             profile_kind,
-            maximum_work,
-            maximum_retained_bytes,
+            limits,
             None,
             crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind::Ordinary,
             None,
@@ -59,8 +63,7 @@ where
             FamilySourceQuery<Schema, Family>,
             FamilySourceValue<Schema, Family>,
         >,
-        maximum_work: usize,
-        maximum_retained_bytes: usize,
+        limits: crate::domain_computation::execution_runtime::WorthQueryOutputDemandLimits,
     ) -> Result<WorthQueryAdmittedOutputDemand<Schema, Family>, WorthQueryOutputDemandDenial>
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
@@ -77,8 +80,7 @@ where
             observed_source,
             None,
             profile_kind,
-            maximum_work,
-            maximum_retained_bytes,
+            limits,
             None,
             crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind::Required,
             None,
@@ -98,8 +100,7 @@ where
             FamilySourceQuery<Schema, Family>,
             FamilySourceValue<Schema, Family>,
         >,
-        maximum_work: usize,
-        maximum_retained_bytes: usize,
+        limits: crate::domain_computation::execution_runtime::WorthQueryOutputDemandLimits,
         source_receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
     ) -> Result<WorthQueryAdmittedOutputDemand<Schema, Family>, WorthQueryOutputDemandDenial>
     where
@@ -144,8 +145,7 @@ where
             observed_source,
             Some(&current_observed_source),
             profile_kind,
-            maximum_work,
-            maximum_retained_bytes,
+            limits,
             None,
             crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind::Recovery,
             Some(source_receipt.committed_product_publication().composite_commit()),
@@ -160,8 +160,7 @@ where
             FamilySourceQuery<Schema, Family>,
             FamilySourceValue<Schema, Family>,
         >,
-        maximum_work: usize,
-        maximum_retained_bytes: usize,
+        limits: crate::domain_computation::execution_runtime::WorthQueryOutputDemandLimits,
         prepared: &crate::domain_computation::primary_graph::WorthQueryPreparedRequiredOutputSource,
     ) -> Result<WorthQueryAdmittedOutputDemand<Schema, Family>, WorthQueryOutputDemandDenial>
     where
@@ -184,8 +183,7 @@ where
             observed_source,
             None,
             profile_kind,
-            maximum_work,
-            maximum_retained_bytes,
+            limits,
             Some(prepared.source_commit.clone()),
             crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind::Required,
             None,
@@ -200,8 +198,7 @@ where
         observed_source: WorthQueryObservedSource<FamilySourceQuery<Schema, Family>>,
         selection_source: Option<&WorthQueryObservedSource<FamilySourceQuery<Schema, Family>>>,
         profile_kind: &'static str,
-        maximum_work: usize,
-        maximum_retained_bytes: usize,
+        limits: crate::domain_computation::execution_runtime::WorthQueryOutputDemandLimits,
         performed_source: Option<worth_runtime_world::facade::CompositeCommitIdentity>,
         admission_kind: crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind,
         expected_source_commit: Option<&worth_runtime_world::facade::CompositeCommitIdentity>,
@@ -217,20 +214,18 @@ where
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
     {
-        let currentness_work_limit =
-            std::num::NonZeroUsize::new(maximum_work).ok_or_else(|| {
-                denial(
-                    WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-                    Family::IDENTITY,
-                )
-                .with_recovery_posture(
-                    super::super::WorthQueryOutputDemandRecoveryPosture::Retryable,
-                )
-            })?;
+        let limits = self.output_demand_resource_profile().constrain(limits);
+        std::num::NonZeroUsize::new(limits.source_currentness_work()).ok_or_else(|| {
+            denial(
+                WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
+                Family::IDENTITY,
+            )
+            .with_recovery_posture(super::super::WorthQueryOutputDemandRecoveryPosture::Retryable)
+        })?;
         let selected = self.select_output_producer_with_retained_basis::<Family>(
             selection_source.unwrap_or(&observed_source),
             profile_kind,
-            maximum_work,
+            limits.source_currentness_work(),
             retained_program_basis.as_deref(),
         )?;
         let entry = self
@@ -302,12 +297,7 @@ where
                     "restored output has no retained producer resource profile",
                 )
             })?;
-            super::resources::validate_retained_resources(
-                resources,
-                &selected.identity,
-                maximum_work,
-                maximum_retained_bytes,
-            )?;
+            super::resources::validate_retained_resources(resources, &selected.identity, limits)?;
             let (interest, newly_adopted) = self.output_demands.admit_restored(
                 key,
                 source_scope,
@@ -322,8 +312,7 @@ where
                 schema_binding: self.installed_schema.binding_identity(),
                 selected,
                 observed_source,
-                currentness_work_limit,
-                maximum_retained_bytes,
+                limits,
                 resources: Some(resources),
                 resources_validated: true,
                 producer_contacts_in_this_demand: 0,
@@ -343,20 +332,14 @@ where
                     "retained output has no producer resource profile",
                 )
             })?;
-            super::resources::validate_retained_resources(
-                resources,
-                &selected.identity,
-                maximum_work,
-                maximum_retained_bytes,
-            )?;
+            super::resources::validate_retained_resources(resources, &selected.identity, limits)?;
             resources
         } else {
             super::resources::validate_demand_resources(
                 entry.executor.as_ref(),
                 &source,
                 &selected.identity,
-                maximum_work,
-                maximum_retained_bytes,
+                limits,
             )?
         };
         let interest = match performed_source {
@@ -387,8 +370,7 @@ where
             schema_binding: self.installed_schema.binding_identity(),
             selected,
             observed_source,
-            currentness_work_limit,
-            maximum_retained_bytes,
+            limits,
             resources: Some(resources),
             resources_validated,
             producer_contacts_in_this_demand: 0,

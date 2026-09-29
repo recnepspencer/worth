@@ -25,6 +25,13 @@ pub enum HostKind {
         frame: u64,
         work: [u64; 5],
     },
+    /// A frame's presentation work, counted as [`crate::work::PRESENTATION_WORK`]
+    /// names, and its heap allocations when the host counted them.
+    Work {
+        frame: u64,
+        counts: [u64; crate::work::PRESENTATION_WORK.len()],
+        allocations: Option<u64>,
+    },
     /// A stage of a frame's work, [`crate::work::STAGES`] naming it by
     /// index, that began at `start` and ended at the event's counter.
     Stage {
@@ -145,6 +152,21 @@ pub fn parse_host(text: &str) -> Parsed<HostTrace> {
                 HostKind::Text {
                     frame: field(&words, 2, line)?,
                     work,
+                }
+            }
+            Some("work") => {
+                let mut counts = [0; crate::work::PRESENTATION_WORK.len()];
+                for (at, count) in counts.iter_mut().enumerate() {
+                    *count = field(&words, at + 3, line)?;
+                }
+                let allocations_at = 3 + counts.len();
+                HostKind::Work {
+                    frame: field(&words, 2, line)?,
+                    counts,
+                    allocations: match words.get(allocations_at) {
+                        Some(&"-") => None,
+                        _ => Some(field(&words, allocations_at, line)?),
+                    },
                 }
             }
             Some("stage") => HostKind::Stage {

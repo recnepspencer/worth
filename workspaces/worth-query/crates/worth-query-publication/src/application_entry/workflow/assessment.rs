@@ -269,7 +269,11 @@ where
         WorthQueryWorkflowAssessmentDemandProgress<SourceQuery<Schema, Demand>>,
         WorthQueryApplicationOutputDemandDenial,
     > {
-        for _ in 0..self.controls.maximum_settlement_attempts().get() {
+        for _ in 0..self
+            .controls
+            .resolve(self.workflow.runtime().output_demand_resource_profile())
+            .settlement_attempts()
+        {
             let disclosure = fresh_request
                 .query(self.demand.source_intent())
                 .execute()

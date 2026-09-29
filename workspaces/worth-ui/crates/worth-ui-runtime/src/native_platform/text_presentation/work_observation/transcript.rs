@@ -1,4 +1,5 @@
-use sha2::{Digest, Sha256};
+use sha2::Digest;
+use worth_ui_host_contract::UiCountedSha256;
 
 use super::super::UiNativeTextPresentationPrepared;
 
@@ -73,14 +74,14 @@ fn digest_set(rows: &mut Vec<Vec<u8>>) -> [u8; 32] {
 fn digest_rows(rows: &mut [Vec<u8>]) -> [u8; 32] {
     let mut row_hashes = rows
         .iter()
-        .map(|row| Sha256::digest(row).to_vec())
+        .map(|row| UiCountedSha256::digest(row).to_vec())
         .collect::<Vec<_>>();
     row_hashes.sort_unstable();
     digest_ordered(&row_hashes)
 }
 
 fn digest_ordered(rows: &[Vec<u8>]) -> [u8; 32] {
-    let mut digest = Sha256::new();
+    let mut digest = UiCountedSha256::new();
     digest.update((rows.len() as u64).to_le_bytes());
     for row in rows {
         digest.update((row.len() as u64).to_le_bytes());

@@ -105,6 +105,41 @@ pub(crate) fn submitted(frame: u64, extent: [u32; 2]) {
     ));
 }
 
+/// Records the presentation work charged to submitted `frame`, attempts that
+/// never submitted included: glyph records per
+/// [`worth_ui_host_contract::UiPresentationWorkStage::ALL`] stage, then
+/// digested bytes, map inserts, and allocations (`-` when uncounted).
+///
+/// Like every trace line, this one is formatted into a single allocation,
+/// which the next frame's count includes along with the frame's other lines.
+pub(crate) fn work(frame: u64, work: worth_ui_host_contract::UiPresentationWorkCounts) {
+    if enabled() {
+        record(format_args!("work {frame} {}", WorkFields(work)));
+    }
+}
+
+/// The fields of a `work` line, written without allocating.
+struct WorkFields(worth_ui_host_contract::UiPresentationWorkCounts);
+
+impl std::fmt::Display for WorkFields {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let work = self.0;
+        for stage in worth_ui_host_contract::UiPresentationWorkStage::ALL {
+            write!(formatter, "{} ", work.glyphs(stage))?;
+        }
+        write!(
+            formatter,
+            "{} {} ",
+            work.digested_bytes(),
+            work.map_inserts()
+        )?;
+        match work.allocations() {
+            Some(allocations) => write!(formatter, "{allocations}"),
+            None => formatter.write_str("-"),
+        }
+    }
+}
+
 /// The host acknowledged the presentation of a frame it painted.
 pub(crate) fn accepted(frame: u64) {
     record(format_args!("accepted {frame}"));

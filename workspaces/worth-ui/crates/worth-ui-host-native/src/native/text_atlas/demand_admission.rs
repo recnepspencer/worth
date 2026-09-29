@@ -1,6 +1,8 @@
 //! Host-contract demand translation and exact transaction identity admission.
 
-use sha2::{Digest, Sha256};
+use sha2::Digest;
+
+use worth_ui_host_contract::UiCountedSha256;
 use worth_ui_host_contract::{
     UiGlyphRasterDemandBatchView, UiGlyphRasterDemandIdentity, UiGlyphRasterLane,
 };
@@ -65,7 +67,7 @@ fn translate_one(
 }
 
 fn combined_identity(demands: &[UiGlyphRasterDemandBatchView<'_>]) -> UiGlyphRasterDemandIdentity {
-    let mut digest = Sha256::new();
+    let mut digest = UiCountedSha256::new();
     digest.update(b"worth-ui-native-atlas-transaction-v1\0");
     digest.update(
         u64::try_from(demands.len())

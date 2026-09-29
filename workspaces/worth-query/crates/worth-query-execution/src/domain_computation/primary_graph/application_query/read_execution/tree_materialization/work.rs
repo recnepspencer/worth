@@ -4,6 +4,7 @@ use super::{
 };
 
 pub(super) struct ResultTreeWork {
+    request: worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     maximum_work: usize,
     pub(super) projected_records: usize,
     pub(super) projected_fields: usize,
@@ -23,8 +24,12 @@ fn work_limit_denial(subject: impl Into<String>) -> WorthQueryApplicationReadExe
 }
 
 impl ResultTreeWork {
-    pub(super) fn new(maximum_work: usize) -> Self {
+    pub(super) fn new(
+        maximum_work: usize,
+        request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+    ) -> Self {
         Self {
+            request: request.clone(),
             maximum_work,
             projected_records: 0,
             projected_fields: 0,
@@ -108,6 +113,7 @@ impl ResultTreeWork {
         units: usize,
         subject: &str,
     ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
+        self.checkpoint(subject)?;
         if self.work_units.saturating_add(units) > self.maximum_work {
             return Err(work_limit_denial(subject));
         }
@@ -117,5 +123,12 @@ impl ResultTreeWork {
 
     pub(super) fn remaining_work(&self) -> usize {
         self.maximum_work.saturating_sub(self.work_units)
+    }
+
+    pub(super) fn checkpoint(
+        &self,
+        subject: &str,
+    ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
+        super::super::interruption::checkpoint(&self.request, subject)
     }
 }

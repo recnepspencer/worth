@@ -1,4 +1,4 @@
-use winit::event_loop::ActiveEventLoop;
+use super::loop_control::UiNativeLoopControl;
 
 use super::client_invocation::UiNativeEventLoopClientInvocation;
 use super::{
@@ -7,7 +7,7 @@ use super::{
 };
 
 impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
-    pub(super) fn progress_application_readiness(&mut self, event_loop: &ActiveEventLoop) {
+    pub(super) fn progress_application_readiness(&mut self, event_loop: &dyn UiNativeLoopControl) {
         self.readiness_signals = self.readiness_signals.saturating_add(1);
         for ordinal in 0..self.application_readiness_owners.len() {
             let owner = self.application_readiness_owners[ordinal];

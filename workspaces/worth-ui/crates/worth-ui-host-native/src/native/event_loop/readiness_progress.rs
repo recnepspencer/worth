@@ -1,9 +1,7 @@
-use std::sync::Arc;
-
-use winit::event_loop::ActiveEventLoop;
+use super::loop_control::UiNativeLoopControl;
 
 impl<Client: super::UiNativeEventLoopClient> super::UiNativeEventLoopApplication<Client> {
-    pub(super) fn commit_readiness(&mut self, event_loop: &ActiveEventLoop) {
+    pub(super) fn commit_readiness(&mut self, event_loop: &dyn UiNativeLoopControl) {
         let basis = self.shared.borrow().presentation_surface().map(|surface| {
             (
                 (surface.state().scale_factor() * 1_000.0).round() as u32,
@@ -35,7 +33,7 @@ impl<Client: super::UiNativeEventLoopClient> super::UiNativeEventLoopApplication
             .borrow()
             .window
             .as_ref()
-            .map(|window| Arc::clone(window));
+            .map(super::UiNativeOwnedWindow::redraw_handle);
         match crate::native::readiness::signal_committed(
             &self.readiness,
             self.readiness_owner,

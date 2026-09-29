@@ -1,6 +1,8 @@
 //! Content-framed identity for one exact glyph-raster demand batch.
 
-use sha2::{Digest, Sha256};
+use sha2::Digest;
+
+use worth_ui_host_contract::UiCountedSha256;
 use worth_ui_host_contract::{
     UiGlyphRasterDemandIdentity, UiGlyphRasterDemandRecord, UiGlyphRasterDemandScope,
     UiGlyphRasterLane, UiGlyphRasterSource, UiQualifiedTextLayoutIdentity,
@@ -19,7 +21,7 @@ pub(super) fn demand_identity(
     scope: UiGlyphRasterDemandScope,
     records: &[UiGlyphRasterDemandRecord],
 ) -> UiGlyphRasterIdentity {
-    let mut digest = Sha256::new();
+    let mut digest = UiCountedSha256::new();
     digest.update(DEMAND_IDENTITY_DOMAIN);
     digest.update(layout.digest());
     digest.update(scale.dpi_milli().to_le_bytes());

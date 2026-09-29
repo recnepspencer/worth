@@ -16,6 +16,9 @@ name = "worth-ui-platform-pulse"
 path = "src/main.rs"
 
 [features]
+# Swaps mimalloc for the instrumented system allocator so the resize trace
+# counts each frame's allocations. Diagnostic builds only.
+count-allocations = ["dep:stats_alloc"]
 executable-world = [
     "worth-ui/certification-support",
     "worth-ui-native-platform/certification-support",
@@ -34,6 +37,7 @@ mimalloc = { workspace = true }
 notify = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+stats_alloc = { workspace = true, optional = true }
 worth-query-decl = { workspace = true }
 worth-query-host = { workspace = true }
 worth-ui = { workspace = true }

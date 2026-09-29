@@ -298,14 +298,15 @@ impl UiFontCollectionCapacityBound {
 }
 
 pub(super) fn collection_identity(sources: &[UiFontFaceSource]) -> [u8; 32] {
-    use sha2::{Digest, Sha256};
+    use sha2::Digest;
+    use worth_ui_host_contract::UiCountedSha256;
 
     let mut faces = sources
         .iter()
         .map(|source| source.identity.selection_digest())
         .collect::<Vec<_>>();
     faces.sort_unstable();
-    let mut hash = Sha256::new();
+    let mut hash = UiCountedSha256::new();
     hash.update(b"worth-ui-font-collection-v2\0");
     for face in faces {
         hash.update(face);

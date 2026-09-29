@@ -69,6 +69,13 @@ pub(crate) fn derive_text_presentation_request_bases(
             })
         })
         .collect::<Result<Vec<_>, UiNativeTextPresentationCorrespondenceDenial>>()?;
+    worth_ui_host_contract::record_presentation_glyphs(
+        worth_ui_host_contract::UiPresentationWorkStage::RequestBasis,
+        mechanic_bases
+            .iter()
+            .map(|basis| basis.raster_keys.len())
+            .sum(),
+    );
     let basis = WorthUiPresentationRequestBasis::from_runtime_correspondence(
         WorthUiPresentationRequestBasisInput {
             mounted_frame: affinity.successor(),

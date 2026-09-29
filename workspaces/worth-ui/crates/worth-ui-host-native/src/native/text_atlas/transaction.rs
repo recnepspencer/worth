@@ -182,9 +182,11 @@ impl UiNativeTextAtlasTransactionPlan {
             .iter()
             .map(|demand| demand.key())
             .collect::<HashSet<_>>();
+        worth_ui_host_contract::record_presentation_map_inserts(self.misses.len());
         if miss_keys.len() != self.misses.len() {
             return false;
         }
+        worth_ui_host_contract::record_presentation_map_inserts(uploads.len());
         let mut upload_keys = HashSet::with_capacity(uploads.len());
         uploads.iter().all(|upload| {
             upload_keys.insert(upload.key())

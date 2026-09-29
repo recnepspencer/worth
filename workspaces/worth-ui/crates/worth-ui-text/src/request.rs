@@ -1,6 +1,8 @@
 use std::sync::Arc;
 
-use sha2::{Digest, Sha256};
+use sha2::Digest;
+
+use worth_ui_host_contract::UiCountedSha256;
 
 use crate::UiTextParagraphAdmissionInput;
 pub use worth_ui_host_contract::UiQualifiedTextLayoutRequestIdentity;
@@ -133,7 +135,7 @@ impl<'a> UiQualifiedTextRequestParts<'a> {
 
     fn digest(&self, domain: &[u8], width_millipoints: Option<u32>) -> [u8; 32] {
         let constraints = self.constraints;
-        let mut hash = Sha256::new();
+        let mut hash = UiCountedSha256::new();
         hash.update(domain);
         hash.update(self.collection_identity);
         hash_bytes(&mut hash, self.source.as_bytes());
@@ -168,7 +170,7 @@ impl<'a> UiQualifiedTextRequestParts<'a> {
     }
 }
 
-fn hash_bytes(hash: &mut Sha256, bytes: &[u8]) {
+fn hash_bytes(hash: &mut UiCountedSha256, bytes: &[u8]) {
     hash.update(
         u64::try_from(bytes.len())
             .expect("qualified text capacity fits u64")

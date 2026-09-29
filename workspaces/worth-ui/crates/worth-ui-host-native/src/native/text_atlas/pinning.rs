@@ -77,6 +77,14 @@ pub(crate) fn protected_keys(
     for addition in transition.additions() {
         keys.insert(addition.key());
     }
+    // The demand records are the plan's work; the pins are this stage's.
+    // Releases are walked but not inserted: validation proved each is pinned.
+    let inserted = core.pins.len() + transition.additions().len();
+    worth_ui_host_contract::record_presentation_glyphs(
+        worth_ui_host_contract::UiPresentationWorkStage::Pins,
+        transition.releases().len() + inserted,
+    );
+    worth_ui_host_contract::record_presentation_map_inserts(demands.len() + inserted);
     keys
 }
 
@@ -84,6 +92,12 @@ pub(crate) fn validate_pin_transition(
     core: &AtlasCore,
     transition: &UiNativeTextAtlasPinTransition,
 ) -> Result<(), UiNativeTextAtlasDenial> {
+    let transitions = transition.releases().len() + transition.additions().len();
+    worth_ui_host_contract::record_presentation_glyphs(
+        worth_ui_host_contract::UiPresentationWorkStage::Pins,
+        transitions,
+    );
+    worth_ui_host_contract::record_presentation_map_inserts(transitions);
     let mut seen = HashSet::new();
     for release in transition.releases() {
         if !seen.insert(PinIdentity::new(release.layout(), release.key()))
