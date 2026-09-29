@@ -136,6 +136,12 @@ Invariant factories resolve typed field and relation bindings once and evaluate
 the actual proposed overlay and committed before-image inside a declared prepared
 scope and finite work budget.
 
+Fixed output roles declare how often a completed candidate binds them.
+`ApplicationMutationOutputRoleDescriptor::for_entity` is exactly once and
+`optional_for_entity` is at most once. An unbound exactly-one role is
+`MissingOutputRole`, any second binding is `DuplicateOutputRole`, and an unbound
+at-most-one role commits without that output.
+
 Regenerating handlers declare variable semantic roles through
 `ApplicationMutationOutputContract::ROLE_FAMILIES` and read a prior family with
 `DecisionReader::prior_output_family`. Query returns live members in deterministic

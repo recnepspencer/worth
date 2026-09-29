@@ -103,10 +103,23 @@ different entity marker even when the binding, name and action match; foreign
 bindings, missing roles and action mismatches have their own typed denials.
 Role names describe correspondence; the platform resolves persistent identity.
 
-Bindings with a finite result shape declare exact roles in `ROLES`. Bindings
-whose result cardinality follows the authored topology declare typed namespaces
-in `ROLE_FAMILIES`, including the entity marker, allowed action postures and
-minimum member count. A handler constructs each source-derived member with
+Bindings with a finite result shape declare exact roles in `ROLES`. Each fixed
+role has a typed `ApplicationMutationOutputRoleCardinality`:
+`ApplicationMutationOutputRoleDescriptor::for_entity` declares `ExactlyOne`, and
+`optional_for_entity` declares `AtMostOne`. A completed candidate that leaves an
+exactly-one role unbound is refused with `MissingOutputRole`. An at-most-one
+role left unbound commits without it, and `output_correspondence().entity(role)`
+then returns `MissingRole`. Binding any fixed role a second time is refused with
+`DuplicateOutputRole`. The cardinality is part of the schema's canonical identity
+and of its portable and archived descriptions, so changing it changes the
+installed schema. An optional single output is always an at-most-one role, never
+a family with a minimum of zero.
+A producer's `OUTPUT_ROLE` names an exactly-one role or a family member; an
+at-most-one role is refused because a commit may omit it.
+
+Bindings whose result cardinality follows the authored topology declare typed
+namespaces in `ROLE_FAMILIES`, including the entity marker, allowed action
+postures and minimum member count. A handler constructs each source-derived member with
 `WorthQueryApplicationOutputRole::try_new(format!(...))` and passes that token
 directly to `create_output`, `preserve_output` or `retire_output`. Query rejects
 empty, ambiguous and oversized runtime names, validates each member against the

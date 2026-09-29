@@ -451,6 +451,14 @@ Application usage:
   action, and entity marker, so a caller cannot relabel a committed identity by
   changing a generic argument. The projected identity still needs fresh
   admission for later use.
+- Each fixed role in `Binding::Output::ROLES` carries an
+  `ApplicationMutationOutputRoleCardinality`. `for_entity` declares
+  `ExactlyOne`: leaving it unbound fails the candidate with `MissingOutputRole`.
+  `optional_for_entity` declares `AtMostOne`: the commit may omit it, and
+  `entity(role)` then returns `MissingRole`. A second binding of either is
+  `DuplicateOutputRole`. The cardinality is part of the canonical schema
+  identity and the portable and archived descriptions. Declare an optional
+  single output this way, never as a family with minimum zero.
 - `WorthQueryApplicationOutputRoleFamily<Binding, Entity>` names a family
   already declared by `Binding::Output::ROLE_FAMILIES`. It creates no second
   lineage store.
