@@ -65,6 +65,22 @@ reservation precedes candidate allocation, and the candidate is checked with its
 affected untouched neighbors before atomic publication. A request does not retain
 admission or a selected World between executions.
 
+Ordinary graph demands use `WorthQueryOutputDemandControls::default()` and inherit
+the installed host policy. Configure that policy once with
+`WorthQueryInMemoryApplicationLimits::with_output_demand_resources(...)` and
+`WorthQueryOutputDemandResourceProfile`; currentness work, producer work, producer
+retained bytes, and settlement attempts are separate dimensions. Explicit caller
+controls and child artifact limits only narrow the relevant dimensions. A handle's
+`settle(&request)` owns bounded progression and reports `Pending` when necessary;
+applications do not implement retry counts in query-work units.
+
+For ordinary candidate declarations, use
+`ApplicationCandidateResourceCeiling::representation_bytes(bytes)` (or omit
+`validator_work` in the mutation-binding macro). Installation derives validator
+allowance from the selected invariant contracts. Explicit validator caps can
+restrict that allowance; effect cardinality, bytes, actual closure checks, and
+host capacity remain enforced.
+
 `application.discovery()` exposes declaration-derived `mutations()`, `queries()`,
 `query_requests()`, and `fields()`. These describe portable input/result and typed
 denial identities, scope/effects, units/frames, and installed request-binding
@@ -235,7 +251,14 @@ installed query, and returns a `WorthQueryPublishedApplicationResult`.
 Reusing the request therefore observes later lawful publications rather than
 retaining an earlier selection.
 
-Callers can request narrower finite ceilings before execution:
+Ordinary query bindings declare result cardinality, not engine cost arithmetic.
+The installed `WorthQueryApplicationQueryResourceProfile` supplies a finite work
+guard; `.with_maximum_work(...)` configures that host safeguard. A binding's
+explicit work cap can only restrict it. Work is still metered and traversal
+checks cancellation/deadline internally. The guard is not a performance promise
+or aggregate-memory measurement.
+
+Callers can request narrower resolved ceilings before execution:
 
 ```rust
 let published = request
@@ -244,7 +267,7 @@ let published = request
     .execute()?;
 ```
 
-Widening either installed ceiling returns a typed `Limit` denial before World
+Widening either resolved ceiling returns a typed `Limit` denial before World
 selection or provider work. Other denial kinds preserve the failed boundary:
 binding installation, product selection, principal resolution, scope
 resolution, admission, or execution.

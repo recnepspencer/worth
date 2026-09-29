@@ -195,7 +195,7 @@ where
         >,
         crate::application_entry::WorthQueryRequiredOutputPreparationDenial,
     > {
-        for _ in 0..self.controls.maximum_settlement_attempts().get() {
+        for _ in 0..self.controls.resolve(self.application.runtime().output_demand_resource_profile()).settlement_attempts() {
             let progress = self.advance(request)?;
             if matches!(progress, WorthQueryApplicationProgramOutputProgress::Settled(_)) {
                 return Ok(progress);

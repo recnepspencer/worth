@@ -129,6 +129,12 @@ fn map_authorized_read_denial(
         }
         WorthQueryAuthorizedApplicationReadDenial::Read(read) => {
             let kind = match read.kind() {
+                WorthQueryApplicationReadExecutionDenialKind::Cancelled => {
+                    WorthQueryApplicationOneShotDenialKind::Cancelled
+                }
+                WorthQueryApplicationReadExecutionDenialKind::DeadlineExceeded => {
+                    WorthQueryApplicationOneShotDenialKind::DeadlineExceeded
+                }
                 WorthQueryApplicationReadExecutionDenialKind::PredicateIndexUnavailable => {
                     WorthQueryApplicationOneShotDenialKind::PredicateIndexUnavailable
                 }

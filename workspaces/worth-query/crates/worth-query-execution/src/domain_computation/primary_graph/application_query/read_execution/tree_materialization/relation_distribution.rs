@@ -31,6 +31,7 @@ pub(super) fn distribute_relation_rows(
     let mut children = children.into_iter();
     let mut predicate_sources = predicate_sources.into_iter();
     for ((parent, count), predicate_count) in parents.iter_mut().zip(counts).zip(predicate_counts) {
+        work.checkpoint(relation.result_path())?;
         let mut rows = allocate_claimed_result_vector::<WorthQueryApplicationProjectionNode>(
             result_buffer,
             count,

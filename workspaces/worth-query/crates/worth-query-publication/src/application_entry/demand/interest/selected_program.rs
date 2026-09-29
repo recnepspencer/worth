@@ -54,7 +54,7 @@ where
         if !program.contains_output_root::<Root>() {
             return Err(WorthQueryApplicationOutputDemandDenial::ProgramOutputUndeclared);
         }
-        self.start_with_program_selection(program)
+        self.start_with_program_selection::<Program, <Root as ApplicationOutputGraphShape<Schema>>::RootConnection>(program)
     }
 
     /// Binds a direct dependent demand to the exact connection declared by this program.
@@ -79,11 +79,11 @@ where
         ) {
             return Err(WorthQueryApplicationOutputDemandDenial::ProgramOutputUndeclared);
         }
-        self.start_with_program_selection(program)
+        self.start_with_program_selection::<Program, Connection>(program)
     }
 
-    fn start_with_program_selection<Program>(
-        self,
+    fn start_with_program_selection<Program, Connection>(
+        mut self,
         program: &WorthQueryProgramApplicationRuntime<Schema, Program>,
     ) -> Result<
         WorthQueryApplicationOutputDemandHandle<'application, Schema, Demand>,
@@ -91,7 +91,15 @@ where
     >
     where
         Program: ApplicationProgramDefinition<Schema>,
+        Connection: ApplicationConnectionShape<Schema>,
     {
+        let limits = program
+            .resolve_program_output_limits::<Connection, Demand>(
+                &worth_query_execution::publication_boundary::program_publication_access(),
+                self.resolved_limits(),
+            )
+            .map_err(WorthQueryApplicationOutputDemandDenial::Demand)?;
+        self.controls = Some(super::WorthQueryOutputDemandControls::from_limits(limits));
         let selection = (
             program.installed_program().identity().clone(),
             *program.installed_program().revision(),

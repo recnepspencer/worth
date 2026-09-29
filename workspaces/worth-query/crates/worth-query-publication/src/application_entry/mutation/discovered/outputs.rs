@@ -185,7 +185,11 @@ where
         WorthQueryDiscoveredProgramOutputProgress<Query<Schema, Root>, Demand<Schema, Root>>,
         WorthQueryRequiredOutputPreparationDenial,
     > {
-        for _ in 0..self.controls.maximum_settlement_attempts().get() {
+        for _ in 0..self
+            .controls
+            .resolve(self.application.runtime().output_demand_resource_profile())
+            .settlement_attempts()
+        {
             let progress = self.advance(request)?;
             if matches!(
                 progress,

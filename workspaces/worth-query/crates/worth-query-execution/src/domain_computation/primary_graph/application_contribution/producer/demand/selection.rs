@@ -30,7 +30,11 @@ where
         self.select_output_producer_with_retained_basis::<Family>(
             source,
             profile_kind,
-            maximum_work,
+            maximum_work.min(
+                self.output_demand_resource_profile()
+                    .limits()
+                    .source_currentness_work(),
+            ),
             None,
         )
     }

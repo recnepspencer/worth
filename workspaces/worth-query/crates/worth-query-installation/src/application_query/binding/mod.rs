@@ -13,4 +13,5 @@ pub(crate) use compiled_contract::WorthQueryCompiledApplicationQuery;
 pub(crate) use key::ApplicationQueryBindingKey;
 pub use limits::{
     WorthQueryApplicationQueryLimitDenial, WorthQueryInstalledApplicationQueryLimits,
+    WorthQueryResolvedApplicationQueryLimits,
 };

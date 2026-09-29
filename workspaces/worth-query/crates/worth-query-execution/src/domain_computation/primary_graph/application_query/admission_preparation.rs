@@ -54,6 +54,17 @@ where
         WorthQueryApplicationQueryAdmissionDenial,
     > {
         validate_admission_request(controls.request_scope(), query.name())?;
+        if controls.maximum_work()
+            > self
+                .runtime
+                .application_query_resource_profile()
+                .maximum_work()
+        {
+            return Err(denial(
+                WorthQueryApplicationQueryAdmissionDenialKind::WorkLimitExceeded,
+                query.name(),
+            ));
+        }
         self.validate_installed_query(query)?;
         self.validate_access_authority(query, access)?;
         validate_controls(query, &controls)?;

@@ -80,11 +80,14 @@ where
             .installed_query_binding::<Intent::Binding>()
             .map_err(WorthQueryApplicationRequestQueryDenial::BindingInstallation)?;
         let limits = match self.limits {
-            Some((results, work)) => binding
-                .limits()
+            Some((results, work)) => self
+                .application
+                .resolve_application_query_limits(binding.limits())
                 .narrow(results, work)
                 .map_err(WorthQueryApplicationRequestQueryDenial::Limit)?,
-            None => binding.limits(),
+            None => self
+                .application
+                .resolve_application_query_limits(binding.limits()),
         };
         let selected = self
             .application

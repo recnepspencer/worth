@@ -106,8 +106,7 @@ where
             SourceQuery<Schema, Root>,
             SourceValue<Schema, Root>,
         >,
-        maximum_work: usize,
-        maximum_retained_bytes: usize,
+        limits: crate::domain_computation::execution_runtime::WorthQueryOutputDemandLimits,
         prepared: &WorthQueryPreparedRequiredOutputSource,
     ) -> Result<
         WorthQueryAdmittedProgramOutput<
@@ -126,12 +125,12 @@ where
         let artifact = self.validate_derived_artifact_demand::<
             <Root as ApplicationOutputGraphShape<Schema>>::RootConnection,
             WorthQueryDiscoveredProgramRootDemand<Schema, Root>,
-        >(maximum_work, maximum_retained_bytes)?;
+        >()?;
+        let limits = self.resolve_artifact_limits(limits, artifact)?;
         self.runtime
             .admit_performed_output_demand::<Family<Schema, Root>>(
                 source,
-                maximum_work,
-                maximum_retained_bytes,
+                limits,
                 prepared,
             )
             .map(|admitted| WorthQueryAdmittedProgramOutput {
@@ -153,8 +152,7 @@ where
             SourceQuery<Schema, Root>,
             SourceValue<Schema, Root>,
         >,
-        maximum_work: usize,
-        maximum_retained_bytes: usize,
+        limits: crate::domain_computation::execution_runtime::WorthQueryOutputDemandLimits,
         source_receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
     ) -> Result<
         WorthQueryAdmittedProgramOutput<
@@ -173,7 +171,8 @@ where
         let artifact = self.validate_derived_artifact_demand::<
             <Root as ApplicationOutputGraphShape<Schema>>::RootConnection,
             WorthQueryDiscoveredProgramRootDemand<Schema, Root>,
-        >(maximum_work, maximum_retained_bytes)?;
+        >()?;
+        let limits = self.resolve_artifact_limits(limits, artifact)?;
         self.runtime.validate_recovered_output_root_kind(
             source_receipt,
             crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Discovered(std::any::TypeId::of::<Root>()),
@@ -182,8 +181,7 @@ where
             .admit_recovered_output_demand::<Family<Schema, Root>>(
                 source,
                 current,
-                maximum_work,
-                maximum_retained_bytes,
+                limits,
                 source_receipt,
             )
             .map(|admitted| WorthQueryAdmittedProgramOutput {

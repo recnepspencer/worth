@@ -243,7 +243,9 @@ Application usage:
 - `ApplicationQueryBinding<Schema>` is one installed contract: the input and
   its structured-value binding, the installed query, parameter and result
   bindings, exact principal mapping, scope resolution, stable binding identity,
-  and finite result and work ceilings. `ApplicationQueryIntent<Schema>` carries
+  a finite result ceiling and an optional deliberate work cap. Ordinary bindings
+  use `ApplicationQueryBindingLimits::results(n)`; the installed host supplies
+  the finite operational work safeguard. `ApplicationQueryIntent<Schema>` carries
   only the request values needed for parameters and scope.
 - Installation compiles that association once.
   `installed_schema.installed_query_binding::<Binding>()` exposes the installed
@@ -251,7 +253,9 @@ Application usage:
 - A borrowed request reads no World state. Each `execute()` selects the current
   World once and carries that occurrence through principal and scope
   resolution, admission, execution, and publication. `.limits(results, work)`
-  may only narrow; widening is denied before provider or basis work.
+  may only narrow the resolved host/binding ceiling; widening is denied before
+  provider or basis work. All modes, including retained reads and continuation,
+  use the same resolution policy.
 - Result projectors receive only disclosure-admitted rows.
   `WorthQueryApplicationProjectionRow::entity_id()` distinguishes repeated
   traversal of one entity from distinct entities; topology membership and
@@ -388,7 +392,10 @@ and How WORTH Works
   operation admission. A target from another runtime, binding, or admission, or
   absent from this attempt's completed read set, is rejected.
 - Candidate cardinality, retained representation bytes, and validator work are
-  separate finite bounds. Relation integrity and installed invariants inspect
+  separate finite bounds. `representation_bytes(n)` leaves validator allowance
+  to the installed invariant closure; optional binding/handler caps only restrict
+  that allowance, while host capacity and exact closure checks remain enforced.
+  Relation integrity and installed invariants inspect
   the actual candidate and its affected untouched neighbors before atomic
   publication. Domain prechecks or handler success cannot substitute for
   invariant receipts. Denied, cancelled, or invalid candidates do not publish.
@@ -470,9 +477,10 @@ typed action intent + exact installed program
     -> complete program-output settlement
 ```
 
-- `settle(&fresh_request)` performs at most the controls'
-  `maximum_settlement_attempts()` advances and returns `Pending` when that
-  bound is exhausted. `advance(&fresh_request)` serves hosts that wait on owner
+- `settle(&fresh_request)` performs at most the resolved installed-host
+  settlement allowance, optionally narrowed by caller controls, and returns
+  `Pending` when that bound is exhausted. `Default::default()` controls use the
+  installed host policy without copied numeric caps. `advance(&fresh_request)` serves hosts that wait on owner
   notifications between advances. Ordinary consumers never hard-code an
   advance count or rediscover the dependent graph.
 - Settlement of the root and every discovered edge returns one

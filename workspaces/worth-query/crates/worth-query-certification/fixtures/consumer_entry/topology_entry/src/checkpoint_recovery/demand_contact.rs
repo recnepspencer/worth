@@ -43,13 +43,72 @@ fn restored_output_retains_its_resource_profile_without_provider_contact() {
     let checkpoint = application.capture_application_checkpoint().unwrap();
     drop(application);
 
-    let restored = install(Some(checkpoint));
+    let restored = support::install_with_demand_profile(
+        Some(checkpoint),
+        worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::bounded(
+            NonZeroUsize::new(4_096).unwrap(),
+            NonZeroUsize::new(4_096).unwrap(),
+            NonZeroUsize::new(8_192).unwrap(),
+            NonZeroUsize::new(32).unwrap(),
+        ),
+    );
     let (scope, principal) = authenticate(&restored);
     let request = restored.request(&principal, &scope);
     super::super::producer::reset_provider_contacts();
     assert_small_budget_denied_without_provider(&request);
     let reused = direct_demand(&request);
     assert_eq!(reused.producer_contacts_in_this_demand(), 0);
+    assert_eq!(super::super::producer::provider_contacts(), 0);
+}
+
+#[test]
+fn restored_output_denies_smaller_host_work_without_provider_contact_or_effects() {
+    let _guard = checkpoint_recovery_test_guard();
+    let application = install(None);
+    let (scope, principal) = authenticate(&application);
+    let request = application.request(&principal, &scope);
+    drop(settle(&request, &application));
+    drop(principal);
+    drop(scope);
+    let checkpoint = application.capture_application_checkpoint().unwrap();
+    drop(application);
+
+    super::super::producer::reset_provider_contacts();
+    let restored = support::install_with_demand_profile(
+        Some(checkpoint),
+        worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::bounded(
+            NonZeroUsize::new(4_096).unwrap(),
+            NonZeroUsize::new(4_095).unwrap(),
+            NonZeroUsize::new(8_192).unwrap(),
+            NonZeroUsize::new(32).unwrap(),
+        ),
+    );
+    let (scope, principal) = authenticate(&restored);
+    let request = restored.request(&principal, &scope);
+    let before = request.retain_read().unwrap();
+    let output = PlanarOutputRead {
+        body_key: "final:anchor-a".to_owned(),
+    };
+    let before_output = request.query(output.clone()).execute().unwrap();
+    assert!(!before_output.rows().is_empty());
+
+    // No caller restriction: the persisted 4,096-work estimate must be checked
+    // against this fresh host's 4,095 limit without asking the producer again.
+    let denied = match request.demand(PlanarOutputDemand::new("anchor-a")).start() {
+        Ok(_) => panic!("restored resource requirements exceed the reopened host policy"),
+        Err(denied) => denied,
+    };
+    assert!(matches!(
+        denied,
+        WorthQueryApplicationOutputDemandDenial::Demand(cause)
+            if cause.kind() == WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
+                && cause.subject() == "worth.query.certification.planar-initial.v1"
+    ));
+    assert_eq!(super::super::producer::provider_contacts(), 0);
+    let after = request.retain_read().unwrap();
+    let after_output = request.query(output).execute().unwrap();
+    assert_eq!(before.selected_commit(), after.selected_commit());
+    assert_eq!(before_output.rows(), after_output.rows());
     assert_eq!(super::super::producer::provider_contacts(), 0);
 }
 

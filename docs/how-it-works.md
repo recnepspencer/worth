@@ -781,7 +781,17 @@ descriptive history.
 
 ### 9.9 Resources and budgets
 
-Every resource is bounded, and every bound narrows only:
+Every resource is bounded, and caller limits can only restrict installed policy.
+
+Ordinary callers do not calculate Query's internal traversal or validator work.
+Installed host profiles supply finite operational safeguards; declarations state
+semantic result/effect scope and may add deliberate tighter caps. Candidate
+validator allowances derive from the installed invariant closure. Composed demand
+admission intersects host, caller and child ceilings, then checks the child's
+required resources. Work counters are safeguards and diagnostics, not claims
+about elapsed performance or total process memory.
+
+The governed controls include:
 
 - install limits;
 - query limits;

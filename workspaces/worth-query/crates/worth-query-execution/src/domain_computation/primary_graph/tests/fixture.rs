@@ -65,12 +65,13 @@ mod application_queries;
 mod current_output_source;
 #[path = "fixture/filtered_activity_query.rs"]
 mod filtered_activity_query;
-pub(in crate::domain_computation::primary_graph) use application_queries::AccountSummaryParameters;
 pub(super) use application_queries::{
-    cross_root_definition, status_parameter, AccountSummaryQuery, AccountSummaryResult,
-    CrossRootQuery, GovernedAccountSummaryQuery, OrderedAccountSummaryQuery,
-    PublicAccountMembershipQuery, PublicAccountMembershipResult, PublicScopedAccountSummaryQuery,
-    ScopedAccountSummaryQuery,
+    cross_root_definition, AccountSummaryQuery, AccountSummaryResult, CrossRootQuery,
+    GovernedAccountSummaryQuery, OrderedAccountSummaryQuery, PublicAccountMembershipQuery,
+    PublicAccountMembershipResult, PublicScopedAccountSummaryQuery, ScopedAccountSummaryQuery,
+};
+pub(in crate::domain_computation::primary_graph) use application_queries::{
+    status_parameter, AccountSummaryParameters,
 };
 pub(super) use current_output_source::TestAccountSourceBinding;
 pub(super) use filtered_activity_query::{
@@ -84,7 +85,8 @@ pub(super) use optional_account_field_query::{
 };
 #[path = "fixture/nested_account.rs"]
 mod nested_account;
-pub(super) use nested_account::{NestedAccountQuery, NestedAccountResult};
+pub(in crate::domain_computation::primary_graph) use nested_account::NestedAccountQuery;
+pub(super) use nested_account::NestedAccountResult;
 #[path = "fixture/forged_selector.rs"]
 mod forged_selector;
 pub(super) use forged_selector::{ForgedSelectorQuery, ForgedSelectorResult};

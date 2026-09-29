@@ -107,6 +107,7 @@ where
     let (runtime, authority) = WorthQueryExecutionRuntimeInstaller::new()
         .application_candidate_resources(limits.candidates)
         .application_query_resources(limits.queries)
+        .output_demand_resources(limits.output_demands)
         .install(WorthQueryInstallationGeneration::initial(), [admitted])
         .map_err(Denial::Runtime)?
         .into_parts();
