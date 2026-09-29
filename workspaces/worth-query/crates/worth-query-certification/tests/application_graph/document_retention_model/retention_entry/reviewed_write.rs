@@ -62,14 +62,6 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for ReviewedSetRetentio
     const REQUIRES_WORKFLOW_AUTHORITY: bool = true;
     const CANDIDATES: ApplicationCandidateRequirements = SetRetentionBinding::CANDIDATES;
 
-    fn idempotency_key_identity(key: &u64) -> [u8; 32] {
-        SetRetentionBinding::idempotency_key_identity(key)
-    }
-
-    fn input_identity(input: &SetRetentionInput) -> [u8; 32] {
-        SetRetentionBinding::input_identity(input)
-    }
-
     fn scope_field() -> ApplicationFieldRef<
         DocumentRetentionSchema,
         Document,

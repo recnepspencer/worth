@@ -94,7 +94,11 @@ where
             .select()
             .map_err(WorthQueryApplicationRequestMutationDenial::ProductSelection)
             .map_err(WorthQueryWorkflowAdvancePreparationDenial::RequestAdmission)?;
-        let mutation = authorization::prepare_capability_selected(&mut self, &selected)
+        let staged = self.stage();
+        let identities = self
+            .identities()
+            .map_err(WorthQueryWorkflowAdvancePreparationDenial::RequestAdmission)?;
+        let mutation = authorization::prepare_capability_selected(&self, &identities, staged, &selected)
             .map_err(WorthQueryWorkflowAdvancePreparationDenial::RequestAdmission)?;
         let prepared = WorthQueryWorkflowAdvanceAdapter::prepare_approval::<
             Schema,

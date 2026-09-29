@@ -230,7 +230,7 @@ fn request_expiry_after_approval_materialization_denies_provider_commit() {
 }
 
 #[test]
-fn exact_approval_authorization_carries_three_graph_facts_without_canonical_admission_work() {
+fn exact_approval_authorization_carries_three_graph_facts_and_derive_only_the_governed_input() {
     let (world, request, requested) =
         super::approval_transition::requested_world(CapabilityElevationScenario::Active);
     let approver = super::approval_transition::authenticated(&world, "bob", &request);
@@ -248,8 +248,12 @@ fn exact_approval_authorization_carries_three_graph_facts_without_canonical_admi
     assert_eq!(admission.authorization_decision_fact_count(), 3);
     assert_eq!(admission.graph_work_decision_fact_count(), 3);
     let work = admission.canonical_work().admission();
+    // The one canonical derivation is the governed input the admission encoded.
     assert_eq!(work.basis_preparations(), 0);
-    assert_eq!(work.digest_derivations(), 0);
+    assert_eq!(work.digest_derivations(), 1);
+    assert_eq!(work.canonical_encoded_bytes(), 68);
+    assert_eq!(work.sha256_input_bytes(), 157);
+    assert_eq!(work.sha256_compression_blocks(), 3);
     assert_eq!(work.digest_text_materializations(), 0);
 }
 

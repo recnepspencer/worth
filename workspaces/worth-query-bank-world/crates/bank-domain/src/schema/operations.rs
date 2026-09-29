@@ -48,49 +48,49 @@ use super::relations::{
 use super::workflow::ApprovedPaymentSettlementEffect;
 use super::BankSchema;
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct CreatePersonalAccount {
     pub institution: InstitutionId,
     pub owner: BankPrincipalId,
     pub display_name: AccountName,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct CreateBusinessAccount {
     pub institution: InstitutionId,
     pub business: BusinessId,
     pub display_name: AccountName,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct ApplyOpeningFunding {
     pub institution: InstitutionId,
     pub account: AccountId,
     pub amount: Money<USD>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct Deposit {
     pub institution: InstitutionId,
     pub account: AccountId,
     pub amount: Money<USD>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct Withdraw {
     pub institution: InstitutionId,
     pub account: AccountId,
     pub amount: Money<USD>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct SendMoney {
     pub from: AccountId,
     pub recipient: BankPrincipalId,
     pub amount: Money<USD>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct InitiateBusinessPayment {
     pub business: BusinessId,
     pub from: AccountId,
@@ -98,39 +98,39 @@ pub struct InitiateBusinessPayment {
     pub amount: Money<USD>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct ApprovePayment {
     pub payment: PaymentId,
     pub approver: BankPrincipalId,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct RejectPayment {
     pub payment: PaymentId,
     pub rejecting_principal: BankPrincipalId,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct GrantAccountAuthorization {
     pub account: AccountId,
     pub principal: BankPrincipalId,
     pub role: CustomerRole,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct RevokeAccountAuthorization {
     pub account: AccountId,
     pub authorization: AccountAuthorizationId,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize)]
 pub enum ReversalReason {
     Duplicate,
     OperatorCorrection,
     ExternalReturn,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct ReverseJournal {
     pub institution: InstitutionId,
     pub journal: JournalEntryId,

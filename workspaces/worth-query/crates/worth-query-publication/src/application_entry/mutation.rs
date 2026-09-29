@@ -1,5 +1,6 @@
 pub(in crate::application_entry) mod authorization;
 mod authorization_assessment;
+pub(in crate::application_entry) mod commit_binding;
 mod discovered;
 mod execution;
 mod outcome;
@@ -12,6 +13,7 @@ mod program_output_work;
 mod request;
 mod retained;
 mod selected_program;
+mod staged;
 
 pub use authorization_assessment::WorthQueryCurrentAuthorizationAssessment;
 pub use discovered::{

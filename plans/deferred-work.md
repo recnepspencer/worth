@@ -7,6 +7,10 @@ scheduled into an active milestone or completed, not when it becomes
 inconvenient. Deferring is a scope decision, never a relaxation: gates,
 ceilings, and certification stay as they are, and a deferred claim is not made.
 
+Only a deferred phase, milestone or qualification belongs here. A review
+follow-up, or anything that fits inside the current work, is done in that
+work, not logged here.
+
 ## Worth UI
 
 ### 3.16.2 per-frame structural work and the 60 Hz drag qualification
@@ -95,3 +99,27 @@ language milestone's closure. Deferred:
 Bring this back when an engineering consumer (CAD rules, digital logic) needs
 expressions at scale, or before the language is published as a stable
 public contract.
+
+### 9.17.6.3 portable and distributed execution backends
+
+Spec: [milestone-9.17.6.3.md](WORTH-query/milestone-9.17.6.3.md), platform
+capability and backends, and the canceled Signal Milestone 17 it absorbs.
+
+9.17.6.3 delivers the backend port with a serial backend, a native
+work-stealing backend and a schedule-perturbation backend for certification.
+Every declaration runs unchanged on each, and wasm32 resolves the serial
+posture. Deferred:
+
+- WASM helper workers, with shared memory where the host permits it;
+- remote and distributed execution, with prepared work crossing a versioned
+  boundary and results readmitted only through validation;
+- accelerator backends;
+- physical shard placement, cross-shard dependency boundaries and shard
+  rebalancing between epochs.
+
+None of these changes a declaration, a determinism contract or charged work.
+Each plugs into the existing backend port.
+
+Bring a backend back when a real workload needs it: browser parallelism for a
+shipped web product, a computation that outgrows one machine, or a kernel that
+needs an accelerator.

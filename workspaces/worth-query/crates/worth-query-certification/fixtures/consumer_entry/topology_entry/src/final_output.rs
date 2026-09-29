@@ -1,6 +1,5 @@
 use std::marker::PhantomData;
 
-use worth_query_consumer_values::{PlanarDerivedOutput, PlanarOperation};
 use worth_query_decl::facade::{
     application_operation::*, application_schema::*, worth_query_operation,
     worth_query_operation_creates, worth_query_operation_links, worth_query_operation_reads,
@@ -19,13 +18,13 @@ use worth_query_host::facade::primary_graph::{
 use worth_query_host::facade::{application_contribution, domain};
 
 use super::{
-    Body, BodyKey, ConsumerPrincipalBinding, ExternalPrincipalMapping, Length, PlanarMutation,
+    Body, BodyKey, ConsumerPrincipalBinding, ExternalPrincipalMapping, Length,
     PlanarMutationDenialBinding, PlanarMutationResultBinding, PlanarMutationScope, PlanarPosition,
     PlanarQuery, PlanarRead, PlanarReadBinding, PlanarReadResult, PlanarSuccessor, PositionX,
     PositionY, Principal, TopologySchemaBinding,
 };
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct FinalPlanarMutation {
     pub scope_key: String,
     pub output_key: String,
@@ -88,21 +87,6 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.certification.final-planar-command.v1";
     const CANDIDATES: ApplicationCandidateRequirements =
         super::requirements(3, 3, 0, 12, 4096, 4096);
-
-    fn idempotency_key_identity(key: &u64) -> [u8; 32] {
-        super::mutation_identity::key_identity(*key)
-    }
-
-    fn input_identity(input: &FinalPlanarMutation) -> [u8; 32] {
-        super::mutation_identity::input_identity(&PlanarMutation {
-            scope_key: input.scope_key.clone(),
-            operation: PlanarOperation::PublishDerivedOutput(PlanarDerivedOutput {
-                body_key: input.output_key.clone(),
-                value: input.value,
-            }),
-            validator_work: 4_096,
-        })
-    }
 
     fn scope_field() -> ApplicationFieldRef<
         Schema,

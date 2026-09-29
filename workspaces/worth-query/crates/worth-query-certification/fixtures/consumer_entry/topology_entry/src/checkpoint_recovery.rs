@@ -20,6 +20,7 @@ use worth_query_host::facade::{
 
 use super::*;
 mod demand_contact;
+mod demand_policy;
 mod support;
 use support::{authenticate, install, length};
 
@@ -90,24 +91,7 @@ impl ApplicationProgramDefinition<CheckpointSchema> for CheckpointProgram {
         ApplicationProgramIdentity::new("worth.query.certification.checkpoint-program.v1");
 
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        vec![
-            ApplicationFeatureSpec::root::<CheckpointSchema, PlanarSourceFeature>()
-                .provides::<PlanarBodyOutput>()
-                .finish(),
-            ApplicationFeatureSpec::root::<CheckpointSchema, PlanarOutputFeature>()
-                .provides::<PlanarDerivedBodyOutput>()
-                .conditional_operation::<MutatePlanar>()
-                .finish(),
-            ApplicationFeatureSpec::root::<CheckpointSchema, PlanarFinalOutputFeature>()
-                .provides::<PlanarFinalBodyOutput>()
-                .conditional_operation::<PublishFinalPlanarOutput>()
-                .conditional_operation::<PreserveFinalPlanarOutput>()
-                .finish(),
-            ApplicationFeatureSpec::root::<CheckpointSchema, PlanarAlternateFinalOutputFeature>()
-                .provides::<PlanarAlternateFinalBodyOutput>()
-                .conditional_operation::<PublishAlternatePlanarOutput>()
-                .finish(),
-        ]
+        demand_policy::feature_specs::<demand_policy::FinalArtifact>()
     }
 }
 

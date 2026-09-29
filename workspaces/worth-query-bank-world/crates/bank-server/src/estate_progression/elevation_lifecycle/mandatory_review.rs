@@ -42,4 +42,8 @@ impl BankEstateMandatoryReview {
     pub fn close_changed_record_count(&self) -> usize {
         self.query.publication_source().changed_record_count()
     }
+
+    pub const fn close_canonical_work(&self) -> crate::BankCommitCanonicalWorkPhases {
+        crate::BankCommitCanonicalWorkPhases::from_query(self.query.canonical_work())
+    }
 }

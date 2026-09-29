@@ -230,7 +230,16 @@ where
             .select()
             .map_err(WorthQueryApplicationRequestMutationDenial::ProductSelection)
             .map_err(WorthQueryWorkflowAdvancePreparationDenial::RequestAdmission)?;
-        let mutation = match authorization::prepare_capability_selected(&mut self, &selected) {
+        let staged = self.stage();
+        let identities = self
+            .identities()
+            .map_err(WorthQueryWorkflowAdvancePreparationDenial::RequestAdmission)?;
+        let mutation = match authorization::prepare_capability_selected(
+            &self,
+            &identities,
+            staged,
+            &selected,
+        ) {
             Ok(mutation) => mutation,
             Err(denial) => {
                 if matches!(action, WorkflowRequestedAction::Advance)

@@ -1,7 +1,11 @@
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::{
     application_capability::ApplicationCapabilityRequest,
-    application_schema::TypedMutationPreconditions,
+    application_operation::ApplicationEncodedInput,
+    application_schema::{
+        ApplicationOperationMarkerIdentity, ApplicationStructuredValueBinding,
+        TypedMutationPreconditions,
+    },
 };
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationCapability,
@@ -66,6 +70,42 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             input,
             request,
             None,
+        )
+    }
+
+    /// Admits capability access for an input the request already encoded, so
+    /// the admission governs the carrier's identity instead of encoding the
+    /// input again. Only Publication's request entries drive it: they encode
+    /// each request's input once and report that work themselves.
+    pub fn admit_encoded_capability_access<
+        Principal,
+        PrincipalIdentity,
+        Capability,
+        Operation,
+        Input,
+    >(
+        &self,
+        _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+        principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
+        capability: &WorthQueryInstalledApplicationCapability<Schema, Capability, Operation, Input>,
+        input: ApplicationEncodedInput<Operation::InputBinding>,
+        request: &WorthQueryRequestScope,
+    ) -> Result<
+        WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
+        WorthQueryOperationAuthorizationDenial,
+    >
+    where
+        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
+        Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
+        Input: ApplicationCapabilityRequest<Schema, Capability> + 'static,
+    {
+        crate::domain_computation::authorization::admit_encoded_capability_access(
+            self.application(),
+            self.product(),
+            principal,
+            capability,
+            input,
+            request,
         )
     }
 

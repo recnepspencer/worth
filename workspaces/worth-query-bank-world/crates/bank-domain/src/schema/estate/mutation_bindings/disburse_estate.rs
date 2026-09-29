@@ -14,7 +14,7 @@ use worth_query_decl::facade::{
 use crate::{
     estate::{EstateAction, EstateCaseId, EstateDisbursement},
     model::BankPrincipalId,
-    proposals::{BankIdempotencyKey, BankInvariantApprovedProposal, CanonicalProposalPayload},
+    proposals::{BankIdempotencyKey, BankInvariantApprovedProposal},
     schema::{
         BankPrincipalBinding, BankPrincipalIdBinding, BankSchema, DisburseEstateCapability,
         DisburseEstateOperation, EstateCase, EstateCaseIdentityField, ExternalPrincipalMapping,
@@ -81,17 +81,6 @@ impl ApplicationMutationBinding<BankSchema> for DisburseEstateMutationBinding {
             ApplicationCandidateResourceCeiling::bounded(32768, 16459),
         );
 
-    fn idempotency_key_identity(key: &BankIdempotencyKey) -> [u8; 32] {
-        crate::schema::operations::client_key_identity(key)
-    }
-
-    fn input_identity(input: &EstateAction) -> [u8; 32] {
-        let EstateAction::DisburseEstate(disbursement) = input else {
-            return super::invalid_variant_identity("application-disburse-estate", input);
-        };
-        disbursement_identity(disbursement)
-    }
-
     fn scope_field() -> ApplicationFieldRef<
         BankSchema,
         EstateCase,
@@ -115,36 +104,6 @@ impl ApplicationMutationBinding<BankSchema> for DisburseEstateMutationBinding {
     > {
         BankPrincipalBinding::reference()
     }
-}
-
-fn disbursement_identity(disbursement: &EstateDisbursement) -> [u8; 32] {
-    *CanonicalProposalPayload::new("application-disburse-estate")
-        .u64("estate", disbursement.estate.get())
-        .text(
-            "source-account",
-            &disbursement.source_account.canonical_text(),
-        )
-        .text(
-            "destination-account",
-            &disbursement.destination_account.canonical_text(),
-        )
-        .u64("beneficiary", disbursement.beneficiary.get())
-        .i64("amount-minor", disbursement.amount.minor_units())
-        .text(
-            "debit-account",
-            &disbursement.postings[0].account.canonical_text(),
-        )
-        .i64("debit-minor", disbursement.postings[0].amount.minor_units())
-        .text(
-            "credit-account",
-            &disbursement.postings[1].account.canonical_text(),
-        )
-        .i64(
-            "credit-minor",
-            disbursement.postings[1].amount.minor_units(),
-        )
-        .derive_identity()
-        .bytes()
 }
 
 impl ApplicationCapabilityMutationBinding<BankSchema> for DisburseEstateMutationBinding {

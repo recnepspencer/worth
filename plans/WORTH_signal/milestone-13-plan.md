@@ -39,8 +39,8 @@ happens, and certifies sparse and dense cost slopes in the authentic financial
 world.
 
 Together, Milestones 12 and 13 close `S9.16.3`. There is no later
-invalidation-certification milestone. Milestone 14 may parallelize only the
-work stream sealed here.
+invalidation-certification milestone. [Query Milestone 9.17.6.3](../WORTH-query/milestone-9.17.6.3.md)
+may parallelize only the work stream sealed here.
 
 ## 2. Current Boundary
 
@@ -1204,8 +1204,8 @@ Required evidence:
 - all documentation and successor contracts match final source
 
 Milestone 13.1 may trust only the sealed canonical work stream and measured
-envelopes, not an implementation-specific queue. Milestone 14 inherits that
-same restriction after the platform carriage cutover.
+envelopes, not an implementation-specific queue. Query Milestone 9.17.6.3
+inherits that same restriction after the platform carriage cutover.
 
 ## 8. Complexity And Resource Contracts
 
@@ -1258,7 +1258,7 @@ Milestone 13 must revise these durable audience documents:
 
 | Audience | Authoritative document | Required content and implementation check |
 |---|---|---|
-| runtime implementers | `signal_architecture2.md` | direct-hop work progression, Proof phase topology, owner authorities, current-basis restore law, and M14 handoff; type/module names checked against source |
+| runtime implementers | `signal_architecture2.md` | direct-hop work progression, Proof phase topology, owner authorities, current-basis restore law, and Query 9.17.6.3 handoff; type/module names checked against source |
 | acceptance/QA reviewers | `s9_16_acceptance_map.md` | exact semantic versus locality closure, phase denial matrix, counter ownership, and sealed evidence |
 | test authors | `test-requirements.md` | authentic financial worlds, independent locality manifest, scale axes, mutation probes, compile/runtime proof boundaries, and lane budgets |
 | Signal callers | `crates/worth-signal/README.md` and relevant reference page | observable locality/counter contract, predicted versus realized meaning, unchanged public invalidation semantics, and typed failures if any facade changes |
@@ -1397,15 +1397,15 @@ Bridge installed correspondence and Query-owned impact, maintenance, and
 publication. It may not turn any Signal index key, cause, readiness product,
 or performed receipt into Bridge correspondence or Query permission.
 
-Milestone 14 may prepare and execute independent ready batches under resource
-leases. It may not weaken direct-hop admission, current-basis binding,
+Query Milestone 9.17.6.3 may prepare and execute independent ready batches
+under resource leases. It may not weaken direct-hop admission, current-basis binding,
 cause-preserving deduplication, deterministic order, either independent
 financial oracle, the Foundational work-disclosure boundary, or the distinction
 between admission authority and performed execution.
 
-Milestone 14 may generalize the physical shape of the derived subscriber index
-from partition/detail to a bounded opaque hierarchy and may derive physical
-execution shards from already-admitted work. It must preserve M13's exact
+Query Milestone 9.17.6.3 may generalize the physical shape of the derived
+subscriber index from partition/detail to a bounded opaque hierarchy and may
+lower already-admitted work into conflict groups. It must preserve M13's exact
 two-segment behavior, immediate-producer-local aspect meaning, and causal
 revalidation. Neither `ScopePath`, `ProducerAspectKey`, nor an execution shard
 may become edge, cause, readiness, or commit authority. Geometry and other
@@ -1413,5 +1413,5 @@ domains assign path-segment meaning outside `worth-signal`.
 
 If and only if the final decision is `OrderedReadyWorkCandidate`, a separate
 WORTH-native traversal optimization specification may consume that evidence.
-It cannot replace the Milestone 13.1 platform cutover or enter Milestone 14 as
-an unmeasured compatibility lane.
+It cannot replace the Milestone 13.1 platform cutover or enter Query Milestone
+9.17.6.3 as an unmeasured compatibility lane.

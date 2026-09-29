@@ -387,5 +387,11 @@ fn idempotency(seed: u8) -> BankIdempotencyKey {
 }
 
 fn query_idempotency(seed: u8) -> WorthQueryApplicationIdempotencyBinding {
-    WorthQueryApplicationIdempotencyBinding::new([seed; 32], [seed + 1; 32])
+    WorthQueryApplicationIdempotencyBinding::for_host_commit::<
+        BankSchema,
+        DelegateEstateCapabilityOperation,
+        _,
+        _,
+    >(&seed, &seed)
+    .unwrap()
 }

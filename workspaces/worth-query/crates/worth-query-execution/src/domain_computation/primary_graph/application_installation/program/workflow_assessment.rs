@@ -23,14 +23,12 @@ where
             SourceQuery<Schema, Family>,
             SourceValue<Schema, Family>,
         >,
-        maximum_work: usize,
-        maximum_retained_bytes: usize,
+        limits: crate::domain_computation::execution_runtime::WorthQueryOutputDemandLimits,
     ) -> Result<WorthQueryAdmittedOutputDemand<Schema, Family>, WorthQueryOutputDemandDenial>
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
     {
-        self.runtime()
-            .admit_output_demand::<Family>(source, maximum_work, maximum_retained_bytes)
+        self.runtime().admit_output_demand::<Family>(source, limits)
     }
 
     pub fn advance_workflow_assessment_output<Family>(

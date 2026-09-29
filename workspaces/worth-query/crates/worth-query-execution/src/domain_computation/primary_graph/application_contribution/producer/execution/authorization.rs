@@ -1,3 +1,5 @@
+use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
+
 use super::*;
 
 pub(super) fn authorize_typed<Schema, Binding>(

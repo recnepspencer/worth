@@ -10,7 +10,8 @@
 > [Runtime Bridge aspect-native refactor](../WORTH-runtime-bridge/aspect_native_refactor.md),
 > and [Query AI README](../../workspaces/worth-query/crates/worth-query/docs/AI_README.md)
 >
-> **Successor:** [Milestone 14](./milestone-14-plan.md)
+> **Successor:** [Query Milestone 9.17.6.3](../WORTH-query/milestone-9.17.6.3.md), which replaces the
+> canceled Signal Milestones 14-17
 
 ## 1. Goal And Roadmap Placement
 
@@ -29,7 +30,8 @@ Relational committed aspect truth
 ```
 
 The milestone is filed under WORTH Signal because it productizes the contract
-sealed by Milestone 13 before Milestone 14 parallelizes its work stream. It is
+sealed by Milestone 13 before Query Milestone 9.17.6.3 parallelizes its work
+stream. It is
 not permission for Signal to own Runtime Bridge correspondence or Query
 meaning. Each participating runtime keeps its existing authority:
 
@@ -54,8 +56,9 @@ The central claim is:
 > owner-authorized, independently observable, and bounded by the relevant
 > semantic delta rather than platform-wide installed state.
 
-Milestone 13.1 is a required integration handoff between Milestones 13 and 14.
-Milestone 14 may still change only execution placement and concurrency. It may
+Milestone 13.1 is a required integration handoff between Milestone 13 and Query
+Milestone 9.17.6.3. Query Milestone 9.17.6.3 may still change only execution
+placement and concurrency. It may
 not be the first place where M13 precision reaches the platform.
 
 ## 2. Current Boundary
@@ -155,8 +158,8 @@ installed Query world containing:
 Add one domain-neutral locality twin whose semantic regions are opaque to
 Signal. It proves that no financial term, tenor rule, or geometry assumption
 has entered Signal, Proof, or Foundational authority. Milestone 13.1 certifies
-M13's exact unscoped/partition/detail base; Milestone 14 owns the bounded deeper
-scope hierarchy.
+M13's exact unscoped/partition/detail base; Query Milestone 9.17.6.3 owns the
+bounded deeper scope hierarchy.
 
 ### 3.2 Required Scenario Families
 
@@ -568,8 +571,8 @@ not private syntax preferences:
 ## 6. Architectural Destination
 
 The tree below is normative. `[existing]`, `[extended]`, `[created]`,
-`[replaced]`, and `[removed]` describe Milestone 13.1 actions. Committed M14
-destinations are shown only where this milestone must leave an additive seam;
+`[replaced]`, and `[removed]` describe Milestone 13.1 actions. Committed Query
+9.17.6.3 destinations are shown only where this milestone must leave an additive seam;
 empty placeholders are not created.
 
 ```text
@@ -586,7 +589,7 @@ crates/worth-signal/src/
     integration.rs                                 [extended; one scoped installed entry]
   data/graph/topology/subscriber_index/
     buckets.rs                                     [existing; Signal-private]
-                                                  [M14 adds hierarchy beneath this owner]
+                                                  [Query 9.17.6.3 adds hierarchy beneath this owner]
 
 crates/worth-runtime-bridge/src/
   correspondence/
@@ -679,7 +682,7 @@ Structural rules:
   descriptive.
 - no `helpers`, `common`, `shared`, `manager`, or milestone-number production
   directories are permitted.
-- M14 hierarchical locality enters under the existing Signal subscriber-index
+- Query 9.17.6.3 hierarchical locality enters under the existing Signal subscriber-index
   and Bridge locality-lowering axes without moving the 13.1 facade or Query
   manifest.
 
@@ -857,7 +860,7 @@ What becomes true:
   wrong-scenario, wrong-seed, wrong-policy, wrong-tier, mixed-runtime, and
   mismatched-oracle evidence
 - all false documentation and compatibility residue is removed
-- M14 receives a platform-used canonical Signal work stream without acquiring
+- Query 9.17.6.3 receives a platform-used canonical Signal work stream without acquiring
   cross-runtime authority
 
 This phase closes only after default, parallel-feature, WASM, constitutional,
@@ -998,7 +1001,7 @@ lower-runtime event is sufficient production authority.
 - Foundational/Proof authority limits
 - Query-shaped public delivery
 - cert-only replay and ordinary-lane cost separation
-- M14's ability to parallelize the same admitted Signal work without changing
+- Query 9.17.6.3's ability to parallelize the same admitted Signal work without changing
   semantic admission
 
 ## 11. Explicit Exclusions
@@ -1010,7 +1013,7 @@ Milestone 13.1 does not:
 - make `ProducerAspectKey`, locality paths, digests, counters, or indexes
   authoritative
 - define financial or geometry semantics in Signal
-- implement M14 resource leasing, hierarchical scope paths, sharding, or
+- implement Query 9.17.6.3 resource leasing, hierarchical scope paths, sharding, or
   deterministic parallel publication
 - expose raw CDC, partition events, or Signal receipts as the public Query
   delivery contract
@@ -1059,7 +1062,7 @@ Milestone 13.1 closes only when:
 
 ## 13. Successor Handoff
 
-[Milestone 14 - Deterministic Parallel Execution Foundation](./milestone-14-plan.md)
+[Query Milestone 9.17.6.3 - Parallel Computation Across The Platform](../WORTH-query/milestone-9.17.6.3.md)
 inherits:
 
 - the unchanged M13 canonical ready-work stream and performed receipt
@@ -1070,8 +1073,8 @@ inherits:
 - the exact unscoped/partition/detail base case used by production platform
   composition
 
-Milestone 14 may generalize the physical Signal subscriber index to a bounded
-opaque hierarchy, derive non-authoritative execution placement, and execute
+Query Milestone 9.17.6.3 may generalize the physical Signal subscriber index to a
+bounded opaque hierarchy, derive non-authoritative execution placement, and execute
 independent ready work under resource leases. It may not:
 
 - change the Bridge or Query authority chain
@@ -1083,5 +1086,5 @@ independent ready work under resource leases. It may not:
 - charge cross-runtime reconstruction or diagnostics to the ordinary execution
   receipt
 
-Milestone 15 and later graph-parallel work therefore optimize a platform-used,
+Its graph-parallel work therefore optimizes a platform-used,
 end-to-end granular invalidation contract rather than a Signal-local mechanism.

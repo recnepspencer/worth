@@ -15,7 +15,7 @@ use worth_query_decl::facade::{
 use crate::{
     estate::{DeathNoticeId, EstateAction, EstateCaseId},
     model::{AccountId, BankPrincipalId},
-    proposals::{BankIdempotencyKey, CanonicalProposalPayload},
+    proposals::BankIdempotencyKey,
 };
 
 use crate::schema::{
@@ -30,9 +30,7 @@ mod recognize_executor;
 pub use recognize_executor::*;
 mod release_estate;
 pub use release_estate::*;
-mod action_identity;
 mod disburse_estate;
-mod workflow_idempotency;
 pub use disburse_estate::*;
 mod retransmit_death_notice;
 pub use retransmit_death_notice::*;
@@ -140,27 +138,6 @@ impl ApplicationMutationBinding<BankSchema> for NotifyEstateDeathMutationBinding
             ApplicationCandidateResourceCeiling::bounded(32768, 8),
         );
 
-    fn idempotency_key_identity(key: &BankIdempotencyKey) -> [u8; 32] {
-        super::super::operations::client_key_identity(key)
-    }
-
-    fn input_identity(input: &EstateAction) -> [u8; 32] {
-        let EstateAction::NotifyDeath {
-            estate,
-            notice,
-            subject,
-        } = input
-        else {
-            return invalid_variant_identity("application-notify-estate-death", input);
-        };
-        *CanonicalProposalPayload::new("application-notify-estate-death")
-            .u64("estate", estate.get())
-            .u64("notice", notice.get())
-            .u64("subject", subject.get())
-            .derive_identity()
-            .bytes()
-    }
-
     fn scope_field() -> ApplicationFieldRef<
         BankSchema,
         EstateCase,
@@ -225,21 +202,6 @@ impl ApplicationMutationBinding<BankSchema> for FreezeEstateAccountMutationBindi
             ApplicationCandidateResourceCeiling::bounded(32768, 4),
         );
 
-    fn idempotency_key_identity(key: &BankIdempotencyKey) -> [u8; 32] {
-        super::super::operations::client_key_identity(key)
-    }
-
-    fn input_identity(input: &EstateAction) -> [u8; 32] {
-        let EstateAction::FreezeAccount { estate, account } = input else {
-            return invalid_variant_identity("application-freeze-estate-account", input);
-        };
-        *CanonicalProposalPayload::new("application-freeze-estate-account")
-            .u64("estate", estate.get())
-            .text("account", &account.canonical_text())
-            .derive_identity()
-            .bytes()
-    }
-
     fn scope_field() -> ApplicationFieldRef<
         BankSchema,
         EstateCase,
@@ -281,13 +243,6 @@ impl ApplicationMutationIntent<BankSchema> for FreezeEstateAccount {
     ) -> <Self::Binding as ApplicationMutationBinding<BankSchema>>::ScopeBinding {
         ApplicationMutationFieldScope::new(EstateCaseIdentityField::reference(), self.estate)
     }
-}
-
-pub(super) fn invalid_variant_identity(operation: &'static str, input: &EstateAction) -> [u8; 32] {
-    *action_identity::canonical_action_payload(operation, input)
-        .text("input-variant", "mismatch")
-        .derive_identity()
-        .bytes()
 }
 
 impl ApplicationCapabilityMutationBinding<BankSchema> for NotifyEstateDeathMutationBinding {

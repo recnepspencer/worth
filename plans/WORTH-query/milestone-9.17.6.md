@@ -5,6 +5,11 @@
 > publication return paths and migrated existing consumers. 9.17.5 supplies exact
 > branch-local program adoption and custody disposition. Neither waits for this
 > milestone's new user-authored definition/instance product.
+> **Replaced rules:** [9.17.6.3](./milestone-9.17.6.3.md) makes the touched graph the
+> invalidation cause. Its marking and currentness rules replace this plan's rules that
+> staleness is never a stored flag, that a source commit performs no workflow
+> invalidation work, that touched sets only narrow delivery, that Phase 2.4 retains
+> outputs by demand-time version comparison, and the "plus D" warm-progression cost.
 
 ## Goal, Entry And Completion
 

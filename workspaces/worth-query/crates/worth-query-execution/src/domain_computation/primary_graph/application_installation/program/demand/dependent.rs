@@ -15,8 +15,7 @@ where
             SourceQuery<Schema, ConnectionDemand<Schema, Connection>>,
             SourceValue<Schema, ConnectionDemand<Schema, Connection>>,
         >,
-        maximum_work: usize,
-        maximum_retained_bytes: usize,
+        limits: crate::domain_computation::execution_runtime::WorthQueryOutputDemandLimits,
     ) -> Result<
         WorthQueryAdmittedProgramOutput<Schema, Program, ConnectionDemand<Schema, Connection>>,
         WorthQueryOutputDemandDenial,
@@ -47,9 +46,8 @@ where
         }
         let artifact = self
             .validate_derived_artifact_demand::<Connection, ConnectionDemand<Schema, Connection>>(
-                maximum_work,
-                maximum_retained_bytes,
             )?;
+        let limits = self.resolve_artifact_limits(limits, artifact)?;
         if let (Some(child), Some(parent_artifact)) = (artifact, parent.artifact) {
             let consumes_parent = child.dependencies().iter().any(|dependency| {
                 dependency.identity() == parent_artifact.identity()
@@ -98,8 +96,7 @@ where
         self.runtime
             .admit_dependent_output_demand::<Family<Schema, ConnectionDemand<Schema, Connection>>>(
                 source,
-                maximum_work,
-                maximum_retained_bytes,
+                limits,
                 retained_basis
                     .expect("validated dependent basis")
                     .retain_application_read(),

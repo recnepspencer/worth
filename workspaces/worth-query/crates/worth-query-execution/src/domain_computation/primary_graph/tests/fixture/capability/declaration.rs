@@ -1,9 +1,8 @@
 use worth_query_declaration::facade::{
     application_capability::{
-        ApplicationCapabilityEntitySelector, ApplicationCapabilityGovernedInputIdentity,
-        ApplicationCapabilityRelatedEntitySelector, ApplicationCapabilityRequest,
-        ApplicationCapabilityRequestContext, ApplicationCapabilityRequestProjection,
-        ApplicationCapabilityRequestProjectionDenial,
+        ApplicationCapabilityEntitySelector, ApplicationCapabilityRelatedEntitySelector,
+        ApplicationCapabilityRequest, ApplicationCapabilityRequestContext,
+        ApplicationCapabilityRequestProjection, ApplicationCapabilityRequestProjectionDenial,
     },
     application_schema::{
         ApplicationEncodedScalarValue, ApplicationStructuredValueBinding,
@@ -19,7 +18,6 @@ use worth_query_declaration::{
 };
 
 use super::super::{Account, AccountIdentity, AccountLabel, IdentityExecutionSchema, Principal};
-use super::governed_input::CapabilityGovernedInputIdentity;
 
 #[path = "value_bindings.rs"]
 mod value_bindings;
@@ -28,7 +26,7 @@ pub use value_bindings::{
     CapabilityStatusBinding,
 };
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize)]
 pub enum CapabilityAction {
     Touch,
     Inspect,
@@ -39,7 +37,7 @@ pub enum CapabilityAction {
     CompleteReview,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize)]
 pub enum CapabilityPurpose {
     AccountMaintenance,
     Audit,
@@ -51,7 +49,7 @@ pub enum CapabilityStatus {
     Revoked,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize)]
 pub enum CapabilityDisclosure {
     AccountActivity,
     PrivateLabel,
@@ -153,6 +151,7 @@ worth_query_capability_provenance!(pub CapabilityProvenance in IdentityExecution
 worth_query_capability!(pub TouchAccountCapability in IdentityExecutionSchema);
 worth_query_capability!(pub ComposedTouchAccountCapability in IdentityExecutionSchema);
 
+/// Serialized by `touch_input_encoding`, which counts every encoding.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct CapabilityTouchInput {
     pub account: String,
@@ -164,7 +163,6 @@ pub struct CapabilityTouchInput {
     pub prior_record: String,
     pub amount: u64,
     pub caller_time: u64,
-    pub governed_input_identity: CapabilityGovernedInputIdentity,
 }
 worth_query_declaration::worth_query_portable_type!(CapabilityAction => "worth.query.test.execution.capability.action.v1");
 worth_query_declaration::worth_query_portable_type!(CapabilityPurpose => "worth.query.test.execution.capability.purpose.v1");
@@ -203,10 +201,6 @@ impl ApplicationCapabilityRequest<IdentityExecutionSchema, TouchAccountCapabilit
     type Scope = Account;
     type Context = CapabilityRequestContext;
 
-    fn governed_input_identity(&self) -> Option<ApplicationCapabilityGovernedInputIdentity> {
-        self.governed_input_identity.materialize(self.amount)
-    }
-
     fn capability_request(
         &self,
     ) -> Result<
@@ -224,10 +218,6 @@ impl ApplicationCapabilityRequest<IdentityExecutionSchema, ComposedTouchAccountC
 {
     type Scope = Account;
     type Context = CapabilityRequestContext;
-
-    fn governed_input_identity(&self) -> Option<ApplicationCapabilityGovernedInputIdentity> {
-        self.governed_input_identity.materialize(self.amount)
-    }
 
     fn capability_request(
         &self,

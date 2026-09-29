@@ -16,10 +16,12 @@ use crate::domain_computation::primary_graph::{
 use super::WorthQueryCapabilityOperationProgression;
 
 mod precondition_binding;
-pub(in crate::domain_computation) use precondition_binding::admit_capability_access;
 pub use precondition_binding::WorthQueryAdmittedApplicationCapabilityAccess;
 pub use precondition_binding::WorthQueryAdmittedApplicationOperation;
 pub(in crate::domain_computation) use precondition_binding::WorthQueryOperationAdmissionIdentity;
+pub(in crate::domain_computation) use precondition_binding::{
+    admit_capability_access, admit_encoded_capability_access,
+};
 pub(super) use precondition_binding::{
     bind_capability_preconditions, bind_conventional_preconditions,
     transition_capability_operation, transition_conventional_operation,

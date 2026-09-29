@@ -2,6 +2,7 @@ use super::{WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind};
 use crate::domain_computation::primary_graph::{
     MutationHandlerExecutionDenial, WorthQueryApplicationAttemptDenialKind,
 };
+use worth_query_declaration::facade::application_operation::ApplicationMutationIdentityDenial;
 
 pub(super) fn execution_failed(
     subject: &str,
@@ -20,6 +21,17 @@ pub(super) fn execution_failed(
     } else {
         failed(subject, error)
     }
+}
+
+/// The producer's key or input did not encode; the denial names which one.
+pub(super) fn identity_unavailable(
+    subject: &str,
+    error: ApplicationMutationIdentityDenial,
+) -> WorthQueryOutputDemandDenial {
+    denial(
+        WorthQueryOutputDemandDenialKind::ProducerUnavailable,
+        format!("{subject}: mutation identity unavailable: {error:?}"),
+    )
 }
 
 pub(super) fn failed(subject: &str, error: impl std::fmt::Debug) -> WorthQueryOutputDemandDenial {

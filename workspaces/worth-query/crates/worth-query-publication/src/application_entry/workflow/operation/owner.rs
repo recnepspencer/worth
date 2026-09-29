@@ -207,15 +207,23 @@ where
             <Intent::Binding as ApplicationMutationBinding<Schema>>::PrincipalIdentity,
         >,
 {
+    let staged = operation.stage();
+    let identities = operation
+        .identities()
+        .map_err(WorthQueryWorkflowOperationOwnerAcceptanceDenial::Request)?;
     operation
-        .validate_workflow_operation_binding(advance.workflow, required)
+        .validate_workflow_operation_binding(
+            advance.workflow,
+            required,
+            identities.input_identity(),
+        )
         .map_err(WorthQueryWorkflowOperationOwnerAcceptanceDenial::Binding)?;
     if operation.workflow_transition_identity() != Some(*required.transition_identity_bytes()) {
         return Err(WorthQueryWorkflowOperationOwnerAcceptanceDenial::Binding(
             WorthQueryWorkflowOperationBindingDenial::RequirementMismatch,
         ));
     }
-    let prepared = authorization::prepare(operation)
+    let prepared = authorization::prepare(operation, &identities, staged)
         .map_err(WorthQueryWorkflowOperationOwnerAcceptanceDenial::Request)?;
     let custody = WorthQueryWorkflowAdvanceAdapter::resolve_guarded_operation_custody(
         advance.application,

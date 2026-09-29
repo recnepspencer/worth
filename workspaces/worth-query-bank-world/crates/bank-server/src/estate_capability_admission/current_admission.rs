@@ -48,7 +48,7 @@ fn active_bank_grant_mints_only_a_current_move_only_access_proof() {
     assert_eq!(access.capability_time_sample().semantic_byte_width(), 9);
     assert!(access.relational_counters().paths_evaluated > 0);
     assert!(access.signal_dependency_count() > 0);
-    assert_zero_canonical_work(access.admission_canonical_work());
+    assert_governed_input_work_only(access.admission_canonical_work());
     assert_eq!(capability.lookup_evidence().basis_preparations(), 0);
     assert_eq!(capability.lookup_evidence().digest_derivations(), 0);
     assert_eq!(
@@ -130,15 +130,17 @@ pub(super) fn view_action() -> EstateAction {
     }
 }
 
-fn assert_zero_canonical_work(
+/// A capability admission's only canonical work is the one streamed derivation
+/// of the governed input it admitted.
+fn assert_governed_input_work_only(
     work: worth_query_host::facade::domain::WorthQueryCanonicalWorkEvidence,
 ) {
     assert_eq!(work.basis_preparations(), 0);
-    assert_eq!(work.digest_derivations(), 0);
-    assert_eq!(work.canonical_entries(), 0);
-    assert_eq!(work.canonical_encoded_bytes(), 0);
+    assert_eq!(work.digest_derivations(), 1);
+    assert_eq!(work.canonical_entries(), 1);
+    assert_eq!(work.canonical_encoded_bytes(), 160);
     assert_eq!(work.canonical_material_allocation_bytes(), 0);
-    assert_eq!(work.sha256_input_bytes(), 0);
-    assert_eq!(work.sha256_compression_blocks(), 0);
+    assert_eq!(work.sha256_input_bytes(), 227);
+    assert_eq!(work.sha256_compression_blocks(), 4);
     assert_eq!(work.digest_text_materializations(), 0);
 }

@@ -172,6 +172,7 @@ where
     let workflow_settlement = read_set.workflow_authority_binding;
     let workflow_deadline = read_set.workflow_deadline;
     let new_commit_refusal = read_set.new_commit_refusal;
+    let mutation_proof = read_set.mutation_handler_binding;
     let workflow_approval_authority = workflow_settlement
         .as_ref()
         .map(|binding| binding.approval_authority.clone());
@@ -179,6 +180,12 @@ where
     let preimage_demand = installed_preimage_demand(admission.allowed_graph_contract().aftermath());
     let idempotency =
         bind_commit_idempotency(&admission, conditional_definition.as_ref(), idempotency);
+    if let Some(denial) = mutation_proof
+        .as_ref()
+        .and_then(|proof| proof.refusal(&idempotency))
+    {
+        return terminal(WorthQueryApplicationCommitOutcome::Denied(denial));
+    }
     if let Err(outcome) = validate_operation_currentness(&admission) {
         return terminal(outcome);
     }

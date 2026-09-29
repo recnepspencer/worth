@@ -1,3 +1,4 @@
+use worth_query_declaration::facade::application_operation::ApplicationMutationIdentityDenial;
 use worth_query_execution::facade::primary_graph::{
     MutationHandlerExecutionDenial, WorthQueryApplicationIdempotencyResolutionDenial,
     WorthQueryOperationAuthorizationDenial,
@@ -106,7 +107,19 @@ pub enum WorthQueryApplicationRequestMutationDenialKind {
     ScopeResolution,
     Authorization,
     Idempotency,
+    Identity,
+    /// The handler ran and refused, or its projection, read attempt or
+    /// candidate program failed.
     Handler,
+    /// The binding is a workflow control step, which only a workflow transition
+    /// may commit. Retrying the same request cannot succeed.
+    WorkflowControl,
+    /// The admission governed a different input than the request carries.
+    /// Retrying the same request cannot succeed.
+    InputNotAdmitted,
+    /// The runtime installed no handler for the binding. Retrying the same
+    /// request cannot succeed until the runtime is reconfigured.
+    HandlerNotInstalled,
     SourceExpectation,
     ProgramSelection,
     ApplicationProgramRequired,
@@ -126,6 +139,10 @@ pub enum WorthQueryApplicationRequestMutationDenial {
     ScopeResolution(WorthQueryEntityResolutionDenial),
     Authorization(WorthQueryOperationAuthorizationDenial),
     Idempotency(WorthQueryApplicationIdempotencyResolutionDenial),
+    /// The idempotency key or the input could not be encoded into its canonical
+    /// identity, so no retry could be told apart from a changed request. The
+    /// payload names which of the two failed.
+    Identity(ApplicationMutationIdentityDenial),
     Handler(MutationHandlerExecutionDenial),
     SourceExpectation(
         worth_query_execution::facade::primary_graph::WorthQuerySourceExpectationDenial,
@@ -164,6 +181,16 @@ impl WorthQueryApplicationRequestMutationDenial {
             }
             Self::Authorization(_) => WorthQueryApplicationRequestMutationDenialKind::Authorization,
             Self::Idempotency(_) => WorthQueryApplicationRequestMutationDenialKind::Idempotency,
+            Self::Identity(_) => WorthQueryApplicationRequestMutationDenialKind::Identity,
+            Self::Handler(MutationHandlerExecutionDenial::WorkflowControl) => {
+                WorthQueryApplicationRequestMutationDenialKind::WorkflowControl
+            }
+            Self::Handler(MutationHandlerExecutionDenial::InputNotAdmitted) => {
+                WorthQueryApplicationRequestMutationDenialKind::InputNotAdmitted
+            }
+            Self::Handler(MutationHandlerExecutionDenial::HandlerNotInstalled) => {
+                WorthQueryApplicationRequestMutationDenialKind::HandlerNotInstalled
+            }
             Self::Handler(_) => WorthQueryApplicationRequestMutationDenialKind::Handler,
             Self::SourceExpectation(_) => {
                 WorthQueryApplicationRequestMutationDenialKind::SourceExpectation

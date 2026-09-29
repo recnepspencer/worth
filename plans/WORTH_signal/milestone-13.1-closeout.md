@@ -7,7 +7,7 @@
 >
 > Prerequisite: [Milestone 13 closeout](./milestone-13-closeout.md)
 >
-> Successor: [Milestone 14](./milestone-14-plan.md)
+> Successor: [Query Milestone 9.17.6.3](../WORTH-query/milestone-9.17.6.3.md)
 
 ## Outcome
 
@@ -214,16 +214,16 @@ and verdict before this document claims independent final-source acceptance.
   of owner-derived `R/B/S/I/M/D/X`, the curve-to-opaque Signal substitution,
   the forged Relational-record execution, all six production worlds, seven
   slopes, lifecycle/currentness, Foundational/Proof sealing, facades,
-  composition, and the Milestone 14 handoff
+  composition, and the successor handoff
 - Verdict: `ACCEPT`
 - Freeze: 339 reviewed paths at
   `eb733318a992fabd4eb1a17976098f450ee54a34a966e3c1dcd3065153aac5c7`
 
-## Residual Boundary And Milestone 14 Handoff
+## Residual Boundary And Successor Handoff
 
 Milestone 13.1 establishes semantic granularity and owner-local performed work;
 it does not assign physical shards, regions, workers, queues, or leases.
-Milestone 14 inherits:
+Query Milestone 9.17.6.3 inherits:
 
 - Signal's canonical ready-work stream and performed receipt
 - Runtime Bridge's installed scoped lowering and direct/performed delivery
@@ -231,7 +231,7 @@ Milestone 14 inherits:
 - owner-separated counters and seven cross-runtime slopes
 - the unscoped, whole-partition, and exact-detail platform base case
 
-Milestone 14 may derive non-authoritative placement and execute independent
+Query Milestone 9.17.6.3 may derive non-authoritative placement and execute independent
 ready work in parallel. It may not move semantic authority into shard keys,
 copy aspects transitively, weaken consumer disclosure checks, or reinterpret
 Runtime Bridge correspondence.

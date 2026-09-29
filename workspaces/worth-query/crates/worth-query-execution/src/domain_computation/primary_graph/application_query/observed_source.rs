@@ -22,6 +22,7 @@ pub use result_set::WorthQueryObservedResultSet;
 /// An observed query source accepted as an admitted mutation's source expectation.
 ///
 /// Pass it to `bind_idempotency` so the idempotency binding covers that source.
+#[derive(Clone, Copy)]
 pub struct WorthQueryBoundSourceExpectation {
     identity: [u8; 32],
     partition_identity: [u8; 32],

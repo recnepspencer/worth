@@ -7,8 +7,12 @@ description = "Canonical Query declaration and schema-visible validation authori
 publish = false
 
 [dependencies]
+serde = "1"
 sha2 = "0.10"
 worth-foundational = { path = "../../../../crates/worth-foundational" }
+
+[dev-dependencies]
+serde = { version = "1", features = ["derive"] }
 
 [lints]
 workspace = true

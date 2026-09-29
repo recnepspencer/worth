@@ -50,9 +50,9 @@ impl ApplicationInvariantMarkerIdentity<DocumentRetentionSchema> for DocumentRet
 }
 
 /// Bounded Relational work for this shared host's largest bootstrap and
-/// workflow-publication candidates. The ordinary retention mutation reserves
-/// both installed rule ceilings explicitly, so this bound must also remain
-/// within that operation's validator-work contract.
+/// workflow-publication candidates. Query derives the ordinary retention
+/// mutation's validator allowance from both installed contracts; the binding
+/// and handler do not reproduce their sum.
 const FIRST_RULE_WORK_UNITS: u64 = 256;
 const SECOND_RULE_WORK_UNITS: u64 = 256;
 

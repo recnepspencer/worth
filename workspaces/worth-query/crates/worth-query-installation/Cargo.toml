@@ -11,12 +11,16 @@ certification-query-lookup = []
 [dependencies]
 getrandom = "0.4"
 hmac = "0.12"
+serde = "1"
 sha2 = "0.10"
 subtle = "2.6"
 worth-foundational = { path = "../../../../crates/worth-foundational" }
 worth-proof = { path = "../../../../crates/worth-proof" }
 worth-query-declaration = { path = "../worth-query-declaration" }
 zeroize = { version = "1.8", features = ["derive"] }
+
+[dev-dependencies]
+serde = { version = "1", features = ["derive"] }
 
 [lints]
 workspace = true

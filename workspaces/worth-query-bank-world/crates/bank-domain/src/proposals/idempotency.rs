@@ -13,7 +13,7 @@ const INTENT_DOMAIN: CanonicalBasisDomain =
     CanonicalBasisDomain::Future("worth-bank.idempotency-intent");
 const INTENT_RULE_VERSION: &str = "worth-bank-idempotency-intent-v2";
 
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, serde::Serialize)]
 pub struct BankIdempotencyKey(String);
 
 impl BankIdempotencyKey {

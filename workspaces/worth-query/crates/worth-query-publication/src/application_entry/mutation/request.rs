@@ -2,12 +2,15 @@ use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
 };
 use worth_query_declaration::facade::application_operation::{
-    ApplicationMutationBinding, ApplicationMutationIntent, ApplicationMutationScopeBinding,
+    ApplicationEncodedInput, ApplicationMutationBinding, ApplicationMutationIdentities,
+    ApplicationMutationIdentityDenial, ApplicationMutationIntent, ApplicationMutationScopeBinding,
     ApplicationMutationSourceExpectation, NoApplicationMutationSource,
 };
 use worth_query_declaration::facade::application_schema::TypedMutationPreconditions;
 use worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use worth_query_installation::facade::ApplicationSchema;
+
+use crate::application_entry::WorthQueryApplicationRequestMutationDenial;
 
 #[doc(hidden)]
 pub struct WorthQueryMutationSourceUnprepared;
@@ -76,6 +79,11 @@ pub struct WorthQueryApplicationMutationRequestWithIdempotency<
     >,
     pub(super) key: &'key <Intent::Binding as ApplicationMutationBinding<Schema>>::IdempotencyKey,
     pub(super) workflow_transition_identity: Option<[u8; 32]>,
+    /// The input, encoded once when the request bound its workflow
+    /// requirement, so the entry point encodes only the key beside it.
+    pub(super) workflow_input: Option<
+        ApplicationEncodedInput<<Intent::Binding as ApplicationMutationBinding<Schema>>::InputBinding>,
+    >,
     pub(super) workflow_authority: Option<
         std::sync::Arc<
             worth_query_execution::publication_boundary::workflow_advance::WorkflowOperationAuthoritySlot,
@@ -260,6 +268,7 @@ where
             request: self,
             key,
             workflow_transition_identity: None,
+            workflow_input: None,
             workflow_authority: None,
         }
     }
@@ -282,11 +291,15 @@ where
     pub(in crate::application_entry) fn bind_workflow_transition(
         mut self,
         identity: [u8; 32],
+        input: ApplicationEncodedInput<
+            <Intent::Binding as ApplicationMutationBinding<Schema>>::InputBinding,
+        >,
         authority: std::sync::Arc<
             worth_query_execution::publication_boundary::workflow_advance::WorkflowOperationAuthoritySlot,
         >,
     ) -> Self {
         self.workflow_transition_identity = Some(identity);
+        self.workflow_input = Some(input);
         self.workflow_authority = Some(authority);
         self
     }
@@ -294,13 +307,50 @@ where
     pub(in crate::application_entry) fn bind_workflow_recovery_transition(
         mut self,
         identity: [u8; 32],
+        input: ApplicationEncodedInput<
+            <Intent::Binding as ApplicationMutationBinding<Schema>>::InputBinding,
+        >,
     ) -> Self {
         self.workflow_transition_identity = Some(identity);
+        self.workflow_input = Some(input);
         self
     }
 
-    pub(in crate::application_entry) fn input_identity(&self) -> [u8; 32] {
-        Intent::Binding::input_identity(self.request.intent.input())
+    /// The request's key and input with the identities encoded from exactly them.
+    ///
+    /// Each entry point calls this once and passes the result through preparation,
+    /// execution, and the idempotency binding; the identities borrow the key and
+    /// the input this request owns, so they cannot be stored beside them. A
+    /// request bound to a workflow requirement already encoded its input when it
+    /// bound, so only the key is encoded here.
+    pub(in crate::application_entry) fn identities(
+        &self,
+    ) -> Result<
+        ApplicationMutationIdentities<'_, Schema, Intent::Binding>,
+        WorthQueryApplicationRequestMutationDenial,
+    > {
+        match &self.workflow_input {
+            Some(input) => ApplicationMutationIdentities::with_encoded_input(self.key, input),
+            None => ApplicationMutationIdentities::encode(self.key, self.request.intent.input()),
+        }
+        .map_err(WorthQueryApplicationRequestMutationDenial::Identity)
+    }
+
+    /// Encodes the request's input once, for binding it to a workflow
+    /// requirement; the entry point later reuses it through `identities`.
+    pub(in crate::application_entry) fn encode_input(
+        &self,
+    ) -> Result<
+        ApplicationEncodedInput<
+            <Intent::Binding as ApplicationMutationBinding<Schema>>::InputBinding,
+        >,
+        ApplicationMutationIdentityDenial,
+    >
+    where
+        <Intent::Binding as ApplicationMutationBinding<Schema>>::Input: Clone,
+    {
+        ApplicationEncodedInput::encode(self.request.intent.input().clone())
+            .map_err(ApplicationMutationIdentityDenial::Input)
     }
 
     pub(in crate::application_entry) const fn workflow_transition_identity(

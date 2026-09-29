@@ -1,6 +1,6 @@
 use worth_query_declaration::facade::application_operation::{
-    ApplicationMutationBinding, ApplicationMutationIntent, ApplicationMutationScopeBinding,
-    ApplicationMutationScopeResolution,
+    ApplicationMutationBinding, ApplicationMutationIdentities, ApplicationMutationIntent,
+    ApplicationMutationScopeBinding, ApplicationMutationScopeResolution,
 };
 use worth_query_execution::facade::primary_graph::{
     HandlerResult, MutationHandlerExecutionDenial, WorthQueryAdmittedApplicationOperation,
@@ -11,6 +11,7 @@ use worth_query_execution::facade::primary_graph::{
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{
+    commit_binding::WorthQueryMutationCommitBinding, staged::WorthQueryStagedMutation,
     WorthQueryApplicationMutationOutcome, WorthQueryApplicationMutationRequestWithIdempotency,
 };
 use crate::application_entry::WorthQueryApplicationRequestMutationDenial;
@@ -79,14 +80,17 @@ where
             .application
             .admit_program_migration::<Intent::Binding>(target)
             .map_err(WorthQueryApplicationProgramMigrationPreparationDenial::Migration)?;
-        let prepared = super::authorization::prepare(&mut self)
+        let staged = self.stage();
+        let identities = self
+            .identities()
+            .map_err(WorthQueryApplicationProgramMigrationPreparationDenial::Request)?;
+        let prepared = super::authorization::prepare(&self, &identities, staged)
             .map_err(WorthQueryApplicationProgramMigrationPreparationDenial::Request)?;
         let completed = match self
             .request
             .application
             .execute_mutation_handler::<Intent::Binding>(
-                self.request.intent.input(),
-                self.key,
+                &identities,
                 &prepared.principal_identity,
                 prepared.admission,
             )
@@ -145,8 +149,8 @@ where
         }
         self.execute_with_preparation_and_commit(
             super::authorization::prepare,
-            |application, program, idempotency| {
-                application.compare_and_commit_application(program, idempotency)
+            |application, program, binding| {
+                application.compare_and_commit_application(program, binding.idempotency())
             },
         )
     }
@@ -154,7 +158,9 @@ where
     pub(super) fn execute_with_preparation_and_commit(
         mut self,
         prepare: impl FnOnce(
-            &mut Self,
+            &Self,
+            &ApplicationMutationIdentities<'_, Schema, Intent::Binding>,
+            WorthQueryStagedMutation<Schema, Intent>,
         ) -> Result<
             super::authorization::PreparedMutation<Schema, Intent::Binding>,
             WorthQueryApplicationRequestMutationDenial,
@@ -167,7 +173,7 @@ where
                 <Intent::Binding as ApplicationMutationBinding<Schema>>::Input,
                 <<Intent::Binding as ApplicationMutationBinding<Schema>>::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope,
             >,
-            WorthQueryApplicationIdempotencyBinding,
+            &WorthQueryMutationCommitBinding<'_, '_, Schema, Intent::Binding>,
         ) -> WorthQueryApplicationCommitOutcome,
     ) -> Result<
         WorthQueryApplicationMutationOutcome<
@@ -177,11 +183,13 @@ where
         WorthQueryApplicationRequestMutationDenial,
     > {
         self.require_workflow_transition()?;
-        let prepared = prepare(&mut self)?;
+        let staged = self.stage();
+        let identities = self.identities()?;
+        let prepared = prepare(&self, &identities, staged)?;
         let principal_identity = prepared.principal_identity;
         let admission = prepared.admission;
-        let idempotency = prepared.idempotency;
-        if let Some(outcome) = self.resolve_idempotency(&admission, idempotency)? {
+        let commit_binding = WorthQueryMutationCommitBinding::new(&identities, prepared.extension);
+        if let Some(outcome) = self.resolve_idempotency(&admission, commit_binding.idempotency())? {
             return Ok(outcome);
         }
         let workflow_authority = self
@@ -204,8 +212,7 @@ where
             .request
             .application
             .execute_mutation_handler::<Intent::Binding>(
-                self.request.intent.input(),
-                self.key,
+                &identities,
                 &principal_identity,
                 admission,
             )
@@ -236,7 +243,7 @@ where
                 )?;
         }
         Ok(
-            match commit(self.request.application, program, idempotency).landed() {
+            match commit(self.request.application, program, &commit_binding).landed() {
                 Ok((receipt, false)) => {
                     WorthQueryApplicationMutationOutcome::Committed { receipt, result }
                 }

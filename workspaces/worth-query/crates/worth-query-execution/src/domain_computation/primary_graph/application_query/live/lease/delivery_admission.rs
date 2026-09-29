@@ -167,9 +167,16 @@ where
             }
             Denial::Authorization(authorization) => self
                 .terminate_delivery_outcome(Outcome::AuthorizationDenied(Box::new(authorization))),
-            Denial::Read(_) | Denial::Session => {
-                self.terminate_delivery_outcome(Outcome::Unavailable)
+            Denial::Read(read) => {
+                use crate::domain_computation::primary_graph::application_query::read_execution::WorthQueryApplicationReadExecutionDenialKind as Read;
+                let outcome = match read.kind() {
+                    Read::Cancelled => Outcome::Cancelled,
+                    Read::DeadlineExceeded => Outcome::DeadlineExceeded,
+                    _ => Outcome::Unavailable,
+                };
+                self.terminate_delivery_outcome(outcome)
             }
+            Denial::Session => self.terminate_delivery_outcome(Outcome::Unavailable),
         }
     }
 

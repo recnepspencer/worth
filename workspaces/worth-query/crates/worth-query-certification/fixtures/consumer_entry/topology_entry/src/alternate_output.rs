@@ -28,7 +28,7 @@ pub(crate) const ALTERNATE_OUTPUT_APPLICABILITY: WorthQueryProducerApplicability
         WorthQueryProducerLifecyclePosture::Initial,
     );
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct AlternatePlanarOutput {
     pub scope_key: String,
     pub output_key: String,
@@ -76,23 +76,6 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.alternate-planar-output-command.v1";
     const CANDIDATES: ApplicationCandidateRequirements = requirements(0, 0, 0, 1, 1024, 4096);
-
-    fn idempotency_key_identity(key: &u64) -> [u8; 32] {
-        super::mutation_identity::key_identity(*key)
-    }
-
-    fn input_identity(input: &AlternatePlanarOutput) -> [u8; 32] {
-        super::mutation_identity::input_identity(&PlanarMutation {
-            scope_key: input.scope_key.clone(),
-            operation: worth_query_consumer_values::PlanarOperation::VerifyCurrentOutputs(vec![
-                worth_query_consumer_values::PlanarCurrentOutputExpectation {
-                    producer_key: input.scope_key.clone(),
-                    output_key: input.output_key.clone(),
-                },
-            ]),
-            validator_work: 0,
-        })
-    }
 
     fn scope_field() -> ApplicationFieldRef<
         Schema,

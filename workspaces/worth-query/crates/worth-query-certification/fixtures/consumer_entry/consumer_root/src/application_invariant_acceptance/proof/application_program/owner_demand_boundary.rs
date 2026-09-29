@@ -85,7 +85,10 @@ fn source(
             <PlanarRead as ApplicationQueryIntent<ConsumerSchema>>::parameters(&intent),
             WorthQueryProductQueryControls::new(
                 binding.limits().maximum_results(),
-                binding.limits().maximum_work(),
+                binding
+                    .limits()
+                    .maximum_work()
+                    .expect("fixture declares an explicit cap"),
                 request_scope,
             ),
         )

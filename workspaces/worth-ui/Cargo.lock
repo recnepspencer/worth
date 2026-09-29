@@ -4605,6 +4605,7 @@ dependencies = [
 name = "worth-query-declaration"
 version = "0.1.0"
 dependencies = [
+ "serde",
  "sha2",
  "worth-foundational",
 ]
@@ -4645,6 +4646,7 @@ version = "0.1.0"
 dependencies = [
  "getrandom 0.4.3",
  "hmac",
+ "serde",
  "sha2",
  "subtle",
  "worth-foundational",
@@ -4657,6 +4659,7 @@ dependencies = [
 name = "worth-query-publication"
 version = "0.1.0"
 dependencies = [
+ "serde",
  "sha2",
  "worth-foundational",
  "worth-proof",
@@ -4865,6 +4868,7 @@ dependencies = [
 name = "worth-ui-query-binding"
 version = "0.1.0"
 dependencies = [
+ "serde",
  "serde_json",
  "sha2",
  "worth-foundational",

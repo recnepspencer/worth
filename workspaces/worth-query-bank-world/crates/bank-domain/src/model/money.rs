@@ -21,7 +21,8 @@ impl Currency for USD {
 ///
 /// let _ = Money::<USD>::from_signed_minor(-1);
 /// ```
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize)]
+#[serde(bound = "")]
 pub struct Money<C: Currency> {
     minor_units: i64,
     _currency: PhantomData<C>,
@@ -43,7 +44,8 @@ impl<C: Currency> Money<C> {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize)]
+#[serde(bound = "")]
 pub struct SignedMoney<C: Currency> {
     minor_units: i64,
     _currency: PhantomData<C>,

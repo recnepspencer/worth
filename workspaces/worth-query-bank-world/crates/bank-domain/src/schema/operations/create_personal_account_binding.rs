@@ -1,7 +1,7 @@
 use worth_foundational::facade::{
     canonicalization, prepare_canonical_basis_sequence, CanonicalBasisDomain, CanonicalBasisEntry,
     CanonicalBasisEntryKind, CanonicalBasisLocus, CanonicalBasisValue, CanonicalDigestAlgorithmId,
-    CanonicalDigestId, CanonicalIntegerWidth, CanonicalizationRuleVersion,
+    CanonicalDigestId, CanonicalizationRuleVersion,
 };
 use worth_query_decl::facade::{
     application_operation::{
@@ -98,7 +98,14 @@ impl ApplicationMutationOutputContract<BankSchema> for CreatePersonalAccountOutp
 }
 
 impl CreatePersonalAccountDecision {
-    pub fn from_admitted_input(key: &BankIdempotencyKey, input: &CreatePersonalAccount) -> Self {
+    /// Derives the new account's identity from Query's canonical identities of
+    /// the admitted client key and input, so a retry of the same request names
+    /// the same account.
+    pub fn from_admitted_identities(
+        key_identity: &[u8; 32],
+        input_identity: &[u8; 32],
+        input: &CreatePersonalAccount,
+    ) -> Self {
         let operation_identity = derive_identity(
             CREATE_PERSONAL_ACCOUNT_IDENTITY_DOMAIN,
             CREATE_PERSONAL_ACCOUNT_IDENTITY_RULE_VERSION,
@@ -106,12 +113,12 @@ impl CreatePersonalAccountDecision {
                 digest_entry(
                     CREATE_PERSONAL_ACCOUNT_IDENTITY_DOMAIN,
                     "client-key",
-                    client_key_identity(key),
+                    *key_identity,
                 ),
                 digest_entry(
                     CREATE_PERSONAL_ACCOUNT_IDENTITY_DOMAIN,
                     "input",
-                    create_personal_account_input_identity(input),
+                    *input_identity,
                 ),
             ],
         );
@@ -133,13 +140,6 @@ impl CreatePersonalAccountDecision {
     }
 }
 
-const CLIENT_KEY_DOMAIN: CanonicalBasisDomain =
-    CanonicalBasisDomain::Future("worth-bank.application-mutation-client-key");
-const CLIENT_KEY_RULE_VERSION: &str = "worth-bank-application-mutation-client-key-v1";
-const CREATE_PERSONAL_ACCOUNT_INPUT_DOMAIN: CanonicalBasisDomain =
-    CanonicalBasisDomain::Future("worth-bank.create-personal-account-input");
-const CREATE_PERSONAL_ACCOUNT_INPUT_RULE_VERSION: &str =
-    "worth-bank-create-personal-account-input-v1";
 const CREATE_PERSONAL_ACCOUNT_IDENTITY_DOMAIN: CanonicalBasisDomain =
     CanonicalBasisDomain::Future("worth-bank.create-personal-account-identity");
 const CREATE_PERSONAL_ACCOUNT_IDENTITY_RULE_VERSION: &str =
@@ -147,38 +147,6 @@ const CREATE_PERSONAL_ACCOUNT_IDENTITY_RULE_VERSION: &str =
 
 fn institution_scope(input: &CreatePersonalAccount) -> InstitutionId {
     input.institution
-}
-
-pub(crate) fn client_key_identity(key: &BankIdempotencyKey) -> [u8; 32] {
-    derive_identity(
-        CLIENT_KEY_DOMAIN,
-        CLIENT_KEY_RULE_VERSION,
-        [text_entry(CLIENT_KEY_DOMAIN, "client-key", key.as_str())],
-    )
-}
-
-fn create_personal_account_input_identity(input: &CreatePersonalAccount) -> [u8; 32] {
-    derive_identity(
-        CREATE_PERSONAL_ACCOUNT_INPUT_DOMAIN,
-        CREATE_PERSONAL_ACCOUNT_INPUT_RULE_VERSION,
-        [
-            unsigned_entry(
-                CREATE_PERSONAL_ACCOUNT_INPUT_DOMAIN,
-                "institution",
-                input.institution.get(),
-            ),
-            unsigned_entry(
-                CREATE_PERSONAL_ACCOUNT_INPUT_DOMAIN,
-                "owner",
-                input.owner.get(),
-            ),
-            text_entry(
-                CREATE_PERSONAL_ACCOUNT_INPUT_DOMAIN,
-                "display-name",
-                input.display_name.as_str(),
-            ),
-        ],
-    )
 }
 
 worth_query_mutation_binding!(
@@ -189,8 +157,6 @@ worth_query_mutation_binding!(
     result CreatePersonalAccountResultBinding,
     idempotency BankIdempotencyKey,
         identity "bank.application-mutation-client-key.v1",
-        key_identity client_key_identity,
-        input_identity create_personal_account_input_identity,
     decision CreatePersonalAccountDecision,
     denial CreatePersonalAccountDenialBinding,
     handler identity "bank.operation.create-personal-account.handler.v1",
@@ -229,33 +195,6 @@ fn derive_identity<const N: usize>(
         .into_result()
         .expect("SHA-256 admits the typed bank application mutation identity basis");
     *canonicalization().digest().derive(ready).value().bytes()
-}
-
-fn text_entry(
-    domain: CanonicalBasisDomain,
-    locus: &'static str,
-    value: &str,
-) -> CanonicalBasisEntry {
-    identity_entry(
-        domain,
-        locus,
-        CanonicalBasisValue::ExactText(value.to_owned().into()),
-    )
-}
-
-fn unsigned_entry(
-    domain: CanonicalBasisDomain,
-    locus: &'static str,
-    value: u64,
-) -> CanonicalBasisEntry {
-    identity_entry(
-        domain,
-        locus,
-        CanonicalBasisValue::UnsignedInteger {
-            width: CanonicalIntegerWidth::Bits64,
-            value: value.into(),
-        },
-    )
 }
 
 fn digest_entry(

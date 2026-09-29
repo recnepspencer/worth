@@ -1,5 +1,5 @@
 use worth_query_declaration::facade::application_operation::{
-    ApplicationMutationBinding, ApplicationMutationScopeBinding,
+    ApplicationMutationBinding, ApplicationMutationIdentities, ApplicationMutationScopeBinding,
 };
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -48,7 +48,7 @@ where
     >,
     principal_identity: &'borrow Binding::PrincipalIdentity,
     operation_scope_binding: &'borrow WorthQueryOperationScopeBinding,
-    idempotency_key: &'borrow Binding::IdempotencyKey,
+    identities: &'borrow ApplicationMutationIdentities<'borrow, Schema, Binding>,
     request:
         &'borrow worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
 }
@@ -72,7 +72,7 @@ where
         >,
         principal_identity: &'borrow Binding::PrincipalIdentity,
         operation_scope_binding: &'borrow WorthQueryOperationScopeBinding,
-        idempotency_key: &'borrow Binding::IdempotencyKey,
+        identities: &'borrow ApplicationMutationIdentities<'borrow, Schema, Binding>,
         request: &'borrow worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     ) -> Self {
         Self {
@@ -80,7 +80,7 @@ where
             scope,
             principal_identity,
             operation_scope_binding,
-            idempotency_key,
+            identities,
             request,
         }
     }
@@ -106,7 +106,20 @@ where
     }
 
     pub fn idempotency_key(&self) -> &Binding::IdempotencyKey {
-        self.idempotency_key
+        self.identities.idempotency_key()
+    }
+
+    /// Identity of the request's idempotency key, encoded once for the whole
+    /// request and scoped to the binding's key namespace.
+    pub fn key_identity(&self) -> &[u8; 32] {
+        self.identities.key_identity()
+    }
+
+    /// Identity of the request's input, encoded once for the whole request.
+    /// A handler that derives a domain identity from the input uses this one,
+    /// never a second encoding.
+    pub fn input_identity(&self) -> &[u8; 32] {
+        self.identities.input_identity()
     }
 
     /// Resolved application principal identity for this admitted operation.

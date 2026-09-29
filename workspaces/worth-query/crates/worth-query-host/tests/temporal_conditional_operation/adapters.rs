@@ -62,11 +62,13 @@ impl
         let input_identity =
             domain::WorthQueryTemporalOperationInputIdentity::declare(row.input.clone())
                 .map_err(projection_failure)?;
-        let idempotency = domain::WorthQueryTemporalIntentIdempotencyRelation::declare(format!(
-            "{}:{}:{}",
-            row.identity, row.revision, row.input
+        // Every part that makes the wake the same intent goes into the relation.
+        let idempotency = domain::WorthQueryTemporalIntentIdempotencyRelation::declare(&(
+            &row.identity,
+            row.revision,
+            &row.input,
         ))
-        .map_err(projection_failure)?;
+        .map_err(|denial| projection_failure(format!("{denial:?}")))?;
         let due = domain::WorthQueryClockCoordinate::from_nanoseconds(row.due);
         let input = TemporalInput(row.input.clone());
         match row.lifecycle.as_str() {
@@ -108,7 +110,9 @@ impl
     }
 }
 
-fn projection_failure(detail: &'static str) -> domain::WorthQueryTemporalIntentProjectionFailure {
+fn projection_failure(
+    detail: impl Into<String>,
+) -> domain::WorthQueryTemporalIntentProjectionFailure {
     domain::WorthQueryTemporalIntentProjectionFailure::new(
         domain::WorthQueryTemporalIntentProjectionFailureKind::InvalidIdentity,
         detail,

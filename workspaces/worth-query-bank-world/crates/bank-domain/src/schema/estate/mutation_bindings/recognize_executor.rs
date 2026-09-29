@@ -14,7 +14,7 @@ use worth_query_decl::facade::{
 use crate::{
     estate::{EstateAction, EstateCaseId, LegalAuthorityId},
     model::BankPrincipalId,
-    proposals::{BankIdempotencyKey, CanonicalProposalPayload},
+    proposals::BankIdempotencyKey,
     schema::{
         BankPrincipalBinding, BankPrincipalIdBinding, BankSchema, EstateCase,
         EstateCaseIdentityField, ExternalPrincipalMapping, Principal,
@@ -88,27 +88,6 @@ impl ApplicationMutationBinding<BankSchema> for RecognizeEstateExecutorMutationB
             ApplicationCandidateCardinalityCeiling::fixed(0, 0, 1, 0, 0, 0),
             ApplicationCandidateResourceCeiling::bounded(32768, 7),
         );
-
-    fn idempotency_key_identity(key: &BankIdempotencyKey) -> [u8; 32] {
-        crate::schema::operations::client_key_identity(key)
-    }
-
-    fn input_identity(input: &EstateAction) -> [u8; 32] {
-        let EstateAction::RecognizeExecutor {
-            estate,
-            executor,
-            authority,
-        } = input
-        else {
-            return super::invalid_variant_identity("application-recognize-estate-executor", input);
-        };
-        *CanonicalProposalPayload::new("application-recognize-estate-executor")
-            .u64("estate", estate.get())
-            .u64("executor", executor.get())
-            .u64("authority", authority.get())
-            .derive_identity()
-            .bytes()
-    }
 
     fn scope_field() -> ApplicationFieldRef<
         BankSchema,

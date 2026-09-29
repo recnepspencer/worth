@@ -662,6 +662,9 @@ dependencies = [
 [[package]]
 name = "worth-query-consumer-values"
 version = "0.0.0"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "worth-query-decl"
@@ -674,6 +677,7 @@ dependencies = [
 name = "worth-query-declaration"
 version = "0.1.0"
 dependencies = [
+ "serde",
  "sha2",
  "worth-foundational",
 ]
@@ -722,6 +726,7 @@ version = "0.1.0"
 dependencies = [
  "getrandom 0.4.3",
  "hmac",
+ "serde",
  "sha2",
  "subtle",
  "worth-foundational",
@@ -743,6 +748,7 @@ dependencies = [
 name = "worth-query-publication"
 version = "0.1.0"
 dependencies = [
+ "serde",
  "sha2",
  "worth-foundational",
  "worth-proof",
@@ -757,6 +763,7 @@ dependencies = [
 name = "worth-query-topology-entry"
 version = "0.0.0"
 dependencies = [
+ "serde",
  "worth-foundational",
  "worth-query-consumer-values",
  "worth-query-decl",

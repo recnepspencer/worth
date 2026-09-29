@@ -1,6 +1,6 @@
 const MAX_ACCOUNT_NAME_BYTES: usize = 120;
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct AccountName(String);
 
 impl AccountName {

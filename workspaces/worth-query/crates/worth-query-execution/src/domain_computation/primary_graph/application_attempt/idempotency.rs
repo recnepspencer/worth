@@ -1,6 +1,9 @@
 use crate::domain_computation::authorization::WorthQueryOperationScopeBinding;
 
+mod capability_workflow;
 mod encoding;
+mod host_commit;
+mod mutation_binding;
 #[cfg(test)]
 mod tests;
 mod workflow_definition;
@@ -8,6 +11,7 @@ mod workflow_instance;
 mod workflow_proposal_context;
 mod workflow_transition;
 
+pub use capability_workflow::WorthQueryCapabilityWorkflowIdempotency;
 use encoding::{append_identity_slot, append_scope_slot, encode_identity};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -30,12 +34,21 @@ struct WorthQueryIdempotencyScopeIdentity {
 
 /// The idempotency key of one commit, bound to the intent it commits.
 ///
-/// Build it with `new(key_identity, intent_identity)`; an accepted source
-/// expectation can add its source with `bind_idempotency`. At commit and at
-/// resolution the runtime also binds the admitted operation, its scope, its
-/// preconditions, and its governed input into the intent. Reusing a key with the
-/// same intent finds the earlier commit; reusing it with a different intent is
-/// intent drift.
+/// No caller writes either identity. They derive from canonical encoding through
+/// the typed constructors: `for_mutation_identities` for a request to a mutation
+/// binding, from the identities `ApplicationMutationIdentities::encode` derived
+/// once, which also names the binding so two bindings that share an operation
+/// and an input type never replay each other; `for_host_commit` for a commit
+/// whose effect program the host built itself, scoped to the operation it
+/// commits under, the only constructor a host names; and, for Publication's
+/// capability workflow entries alone, `WorthQueryCapabilityWorkflowIdempotency`
+/// behind the publication boundary.
+///
+/// An accepted source expectation can add its source with `bind_idempotency`, and
+/// at commit and at resolution the runtime also binds the admitted operation, its
+/// scope, its preconditions, and its governed input into the intent. Reusing a key
+/// with the same intent finds the earlier commit; reusing it with a different
+/// intent is intent drift.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationIdempotencyBinding {
     key_identity: [u8; 32],
@@ -56,10 +69,11 @@ pub struct WorthQueryApplicationIdempotencyBinding {
     workflow_support_identity: Option<[u8; 32]>,
     workflow_client_key_identity: Option<[u8; 32]>,
     workflow_approval_identity: Option<[u8; 32]>,
+    mutation_binding_identity: Option<[u8; 32]>,
 }
 
 impl WorthQueryApplicationIdempotencyBinding {
-    pub const fn new(key_identity: [u8; 32], intent_identity: [u8; 32]) -> Self {
+    pub(crate) const fn new(key_identity: [u8; 32], intent_identity: [u8; 32]) -> Self {
         Self {
             key_identity,
             intent_identity,
@@ -79,6 +93,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             workflow_support_identity: None,
             workflow_client_key_identity: None,
             workflow_approval_identity: None,
+            mutation_binding_identity: None,
         }
     }
 
@@ -144,10 +159,14 @@ impl WorthQueryApplicationIdempotencyBinding {
             &mut encoded,
             self.workflow_approval_identity,
         );
+        mutation_binding::append_identity_slot(&mut encoded, self.mutation_binding_identity);
         encoded
     }
 
-    pub const fn bind_source(mut self, source_identity: Option<&[u8; 32]>) -> Self {
+    pub(in crate::domain_computation::primary_graph) const fn bind_source(
+        mut self,
+        source_identity: Option<&[u8; 32]>,
+    ) -> Self {
         self.source_identity = match source_identity {
             Some(identity) => Some(*identity),
             None => None,
@@ -194,6 +213,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             workflow_support_identity: self.workflow_support_identity,
             workflow_client_key_identity: self.workflow_client_key_identity,
             workflow_approval_identity: self.workflow_approval_identity,
+            mutation_binding_identity: self.mutation_binding_identity,
         }
     }
 
@@ -238,6 +258,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             workflow_support_identity: self.workflow_support_identity,
             workflow_client_key_identity: self.workflow_client_key_identity,
             workflow_approval_identity: self.workflow_approval_identity,
+            mutation_binding_identity: self.mutation_binding_identity,
         }
     }
 
@@ -267,6 +288,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             workflow_support_identity: self.workflow_support_identity,
             workflow_client_key_identity: self.workflow_client_key_identity,
             workflow_approval_identity: self.workflow_approval_identity,
+            mutation_binding_identity: self.mutation_binding_identity,
         }
     }
 
@@ -296,6 +318,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             workflow_support_identity: self.workflow_support_identity,
             workflow_client_key_identity: self.workflow_client_key_identity,
             workflow_approval_identity: self.workflow_approval_identity,
+            mutation_binding_identity: self.mutation_binding_identity,
         }
     }
 
@@ -325,6 +348,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             workflow_support_identity: self.workflow_support_identity,
             workflow_client_key_identity: self.workflow_client_key_identity,
             workflow_approval_identity: self.workflow_approval_identity,
+            mutation_binding_identity: self.mutation_binding_identity,
         }
     }
 
@@ -354,6 +378,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             workflow_support_identity: self.workflow_support_identity,
             workflow_client_key_identity: self.workflow_client_key_identity,
             workflow_approval_identity: self.workflow_approval_identity,
+            mutation_binding_identity: self.mutation_binding_identity,
         }
     }
 }

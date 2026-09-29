@@ -36,6 +36,14 @@ impl WorthQueryApprovedElevation {
         self.approval_commit.publication_source()
     }
 
+    /// The canonical work of the approval commit, by phase. A replay reports
+    /// the admission work of its own request.
+    pub const fn approval_canonical_work(
+        &self,
+    ) -> worth_query_installation::facade::WorthQueryCanonicalWorkPhases {
+        self.approval_commit.canonical_work()
+    }
+
     pub const fn approval_changed_record_count(&self) -> usize {
         self.approval_commit.changed_record_count()
     }

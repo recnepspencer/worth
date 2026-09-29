@@ -29,6 +29,8 @@ pub enum BankCommitDenialKind {
         required_bytes: u64,
     },
     IdempotencyIntentDrift,
+    MutationBindingMismatch,
+    MutationInputMismatch,
     ElevationTransitionRequired,
     ElevationRequestProgramMismatch,
     ElevationApprovalProgramMismatch,
@@ -98,6 +100,8 @@ pub(crate) const fn denial_kind(
             required_bytes,
         },
         Query::IdempotencyIntentDrift => BankCommitDenialKind::IdempotencyIntentDrift,
+        Query::MutationBindingMismatch => BankCommitDenialKind::MutationBindingMismatch,
+        Query::MutationInputMismatch => BankCommitDenialKind::MutationInputMismatch,
         Query::ElevationTransitionRequired => BankCommitDenialKind::ElevationTransitionRequired,
         Query::ElevationRequestProgramMismatch => {
             BankCommitDenialKind::ElevationRequestProgramMismatch

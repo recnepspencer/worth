@@ -16,6 +16,8 @@ pub(in crate::domain_computation::primary_graph::application_query) enum WorthQu
     ProjectionUnavailable,
     ResultBufferLimitExceeded,
     WorkLimitExceeded,
+    Cancelled,
+    DeadlineExceeded,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

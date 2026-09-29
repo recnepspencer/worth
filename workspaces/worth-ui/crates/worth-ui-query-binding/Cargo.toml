@@ -16,6 +16,7 @@ certification-construction = []
 workspace = true
 
 [dependencies]
+serde.workspace = true
 sha2.workspace = true
 worth-foundational = { path = "../../../../crates/worth-foundational" }
 worth-proof.workspace = true

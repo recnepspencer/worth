@@ -668,21 +668,20 @@ The current numbered core-runtime continuation is:
 
 - [Milestone 12 - Aspect-Causal Invalidation](./milestone-12-plan.md)
 - [Milestone 13 - Locality-First Frontier Execution](./milestone-13-plan.md)
-- [Milestone 14 - Deterministic Parallel Execution Foundation](./milestone-14-plan.md)
-- [Milestone 15 - Proof-Carrying Graph Parallelism](./milestone-15-plan.md)
-- [Milestone 16 - Structured Partitioned Parallelism](./milestone-16-plan.md)
-- [Milestone 17 - Portable Execution Backends And Distributed Coordination](./milestone-17-plan.md)
+- [Milestone 13.1 - Cross-Runtime Granular Invalidation](./milestone-13.1-plan.md)
+- [Query Milestone 9.17.6.3 - Parallel Computation Across The Platform](../WORTH-query/milestone-9.17.6.3.md)
 
 Milestones 12 and 13 expand the existing fintech financial world and certify
 aspect correctness, compiler-enforced Proof progression, locality, exact
 index-disjoint/queried-candidate/semantic-frontier slopes, Foundational
 counter-backed evidence, and strategy readiness during their implementation
 phases. Signal retains operational authority; Proof supplies progression law
-and Foundational supplies portable descriptive evidence. Milestones 14-17 build the independent parallel-
-execution sequence:
-one deterministic resource authority, graph-wide proof-carrying concurrency,
-domain-agnostic partitioned computation, and portable native, WASM-worker,
-accelerator-ready, and remote execution boundaries.
+and Foundational supplies portable descriptive evidence. Query Milestone
+9.17.6.3 replaces the canceled Signal Milestones 14-17 with one cross-layer
+plan: one deterministic resource authority in the `worth-execution` runtime
+crate, graph-wide proof-carrying concurrency and scope-path locality in Signal,
+domain-agnostic partitioned computation, and serial and native backends.
+WASM-worker, accelerator, and remote backends are [deferred](../deferred-work.md).
 
 Geometry remains a future consumer and certification pressure source. It does
 not become semantic vocabulary or authority inside `worth-signal`.

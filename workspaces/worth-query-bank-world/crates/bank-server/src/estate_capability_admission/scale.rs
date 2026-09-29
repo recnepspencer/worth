@@ -84,11 +84,12 @@ fn unrelated_grant_population_does_not_enter_warm_capability_work() {
         expanded_access.admission_canonical_work(),
     ] {
         assert_eq!(work.basis_preparations(), 0);
-        assert_eq!(work.digest_derivations(), 0);
-        assert_eq!(work.canonical_encoded_bytes(), 0);
+        // The one derivation is the governed input the admission encoded.
+        assert_eq!(work.digest_derivations(), 1);
+        assert_eq!(work.canonical_encoded_bytes(), 160);
         assert_eq!(work.canonical_material_allocation_bytes(), 0);
-        assert_eq!(work.sha256_input_bytes(), 0);
-        assert_eq!(work.sha256_compression_blocks(), 0);
+        assert_eq!(work.sha256_input_bytes(), 227);
+        assert_eq!(work.sha256_compression_blocks(), 4);
         assert_eq!(work.digest_text_materializations(), 0);
     }
 }

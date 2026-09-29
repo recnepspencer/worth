@@ -63,7 +63,7 @@ fn every_bank_action_reserves_its_installed_validator_scope() {
                 .candidates()
                 .resources()
                 .maximum_validator_work();
-            if declared != required {
+            if declared != Some(required) {
                 mismatches.push((operation.operation().to_owned(), declared, required));
             }
         }};

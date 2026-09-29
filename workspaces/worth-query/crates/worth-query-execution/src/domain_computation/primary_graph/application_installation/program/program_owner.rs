@@ -11,7 +11,7 @@
 use std::any::TypeId;
 
 use worth_query_declaration::facade::application_operation::{
-    ApplicationMutationBinding, ApplicationMutationScopeBinding,
+    ApplicationMutationBinding, ApplicationMutationIdentities, ApplicationMutationScopeBinding,
 };
 use worth_query_declaration::facade::application_program::{
     ApplicationProgramDefinition, ApplicationProgramRevision, ApplicationWorkflowSpec,
@@ -139,6 +139,15 @@ pub trait WorthQueryProgramOwner<Schema>: sealed::WorthQueryProgramOwnership {
 
     /// Commits one action through the program this owner presents, only when
     /// that program is the one this occurrence activated.
+    ///
+    /// The commit's idempotency binding is built here from `identities`, the key
+    /// and input identities the request encoded once, and names `Binding` as the
+    /// mutation it runs, so the binding cannot disagree with the request. `extend`
+    /// adds what only the caller knows, such as an accepted source expectation;
+    /// pass `std::convert::identity` when there is nothing to add. A program built
+    /// by another binding's handler is refused with `MutationBindingMismatch`, and
+    /// one whose handler decided on a different input than `identities` is refused
+    /// with `MutationInputMismatch`.
     fn compare_and_commit_program_action<Binding>(
         &self,
         program: WorthQueryApplicationEffectProgram<
@@ -147,7 +156,10 @@ pub trait WorthQueryProgramOwner<Schema>: sealed::WorthQueryProgramOwnership {
             Binding::Input,
             <Binding::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope,
         >,
-        idempotency: WorthQueryApplicationIdempotencyBinding,
+        identities: &ApplicationMutationIdentities<'_, Schema, Binding>,
+        extend: impl FnOnce(
+            WorthQueryApplicationIdempotencyBinding,
+        ) -> WorthQueryApplicationIdempotencyBinding,
     ) -> WorthQueryApplicationCommitOutcome
     where
         Self: Sized,
@@ -155,7 +167,11 @@ pub trait WorthQueryProgramOwner<Schema>: sealed::WorthQueryProgramOwnership {
         Binding: ApplicationMutationBinding<Schema>,
         Binding::Input: Clone + Send + Sync + 'static,
     {
-        commit_program_action::<Schema, Binding, Self>(self, program, idempotency)
+        commit_program_action::<Schema, Binding, Self>(
+            self,
+            program,
+            extend(WorthQueryApplicationIdempotencyBinding::for_mutation_identities(identities)),
+        )
     }
 
     /// Commits one action through the presented program and retains its
@@ -168,7 +184,10 @@ pub trait WorthQueryProgramOwner<Schema>: sealed::WorthQueryProgramOwnership {
             Binding::Input,
             <Binding::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope,
         >,
-        idempotency: WorthQueryApplicationIdempotencyBinding,
+        identities: &ApplicationMutationIdentities<'_, Schema, Binding>,
+        extend: impl FnOnce(
+            WorthQueryApplicationIdempotencyBinding,
+        ) -> WorthQueryApplicationIdempotencyBinding,
     ) -> WorthQueryApplicationRetainedCommitOutcome
     where
         Self: Sized,
@@ -176,7 +195,11 @@ pub trait WorthQueryProgramOwner<Schema>: sealed::WorthQueryProgramOwnership {
         Binding: ApplicationMutationBinding<Schema>,
         Binding::Input: Clone + Send + Sync + 'static,
     {
-        commit_program_action_retained::<Schema, Binding, Self>(self, program, idempotency)
+        commit_program_action_retained::<Schema, Binding, Self>(
+            self,
+            program,
+            extend(WorthQueryApplicationIdempotencyBinding::for_mutation_identities(identities)),
+        )
     }
 }
 

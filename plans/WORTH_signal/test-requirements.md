@@ -1010,7 +1010,7 @@ Milestone 13 phase/progression evidence must additionally prove:
 | Phase 4 - Topology Lowering, Readiness, And Causal Deduplication | convergent factor permutations and sparse/medium/dense small worlds; exact cause-preserving merge; performed enqueue/pop/dedup rows; pending-first condition and async families green |
 | Phase 5 - Rewire, Restore, And Trust-Boundary Reconstitution | dependency churn and branch/restore/replay; stale work denial; no serialized ready authority; rebuilt current binding; cycle rejection creates no work |
 | Phase 6 - Realized Counters And Foundational Evidence Cutover | predicted/realized type and public-facade separation; reachability-plan/wave constructor removal; performed Signal rows; Foundational canonical identity and counter-backed receipt; wrong/missing/duplicate/unexpected row denials; diagnostic-tier equality with cold-work separation |
-| Phase 7 - Scale Courtroom, Strategy Decision, And Closeout | all six scenario families at ordinary/scheduled lanes; sparse/dense slopes; identical admitted work for strategy comparisons; complete sealed locality run; historical mutations red; M14 handoff frozen |
+| Phase 7 - Scale Courtroom, Strategy Decision, And Closeout | all six scenario families at ordinary/scheduled lanes; sparse/dense slopes; identical admitted work for strategy comparisons; complete sealed locality run; historical mutations red; successor handoff frozen |
 
 ### Milestone 13.1 cross-runtime granular invalidation binding addendum
 
@@ -1138,71 +1138,77 @@ one runtime. Wall-clock evidence is supplemental to exact structural counters.
 | Phase 4 - Query Installed Invalidation Manifest And Admission | complete dependency-role manifest; exact indexed selection; current Query admission; index destruction/rebuild; authority drift denials; public phase-skip compile evidence |
 | Phase 5 - Production Maintenance, Sharing, And Facade Cutover | curve, suppression, ordered membership, and shared-disclosure scenarios through real host observation; production region execution; query-shaped outcomes; coarse/count-only path and descriptive authority lane removed |
 | Phase 6 - Rebind, Restore, Branch, And Lifecycle Closure | destroyed derived state, fresh-runtime rebind, stale/delayed/duplicate/reordered delivery, revocation before publication, no serialized ready/candidate authority, cert-only replay separation |
-| Phase 7 - Structural Slopes, Certification, Documentation, And Handoff | all six scenarios, seven independent slopes, sealed cross-runtime run, owner-separated performed rows, default/parallel/WASM/constitutional gates, executable documentation, frozen M14 handoff |
+| Phase 7 - Structural Slopes, Certification, Documentation, And Handoff | all six scenarios, seven independent slopes, sealed cross-runtime run, owner-separated performed rows, default/parallel/WASM/constitutional gates, executable documentation, frozen successor handoff |
 
 The sealed cross-runtime run rejects missing, duplicate, stale, wrong-scenario,
 wrong-seed, wrong-policy, wrong-diagnostics-tier, mixed-runtime,
 wrong-direct-versus-derived, and mismatched-manifest evidence. Coordinated
 caller-supplied expected/actual values cannot construct completion evidence.
 
-### Milestones 14-17 binding addendum
+### Query Milestone 9.17.6.3 binding addendum
 
-Parallel execution evidence must use an independent serial oracle and hostile
-schedule control. Running the same happy-path graph once with `parallel`
-enabled does not prove any milestone in this sequence.
+[Query Milestone 9.17.6.3](../WORTH-query/milestone-9.17.6.3.md) replaces the
+canceled Signal Milestones 14-17. Parallel execution evidence must use an
+independent serial oracle and hostile schedule control. Running the same
+happy-path graph once on a wide lease does not prove any phase of that plan.
 
-Milestone 14 must prove:
+Phase 1 (execution authority) must prove:
 
 - configured worker and memory budgets are strict hierarchical leases rather
   than dispatch hints
 - nested execution cannot create independent capacity or oversubscribe the
   parent lease
-- worker-local compute has no authoritative graph mutation capability
 - schedule and completion-order perturbation cannot change canonical
   publication, replay, history, or explanation under bitwise determinism
+- cancellation, deadline, and failure at each safe point expose a typed
+  canonical-prefix boundary and join every task
+- a serial-only target consumes the same lowered plan without semantic drift
+
+Phase 2 (patterns and partitioners) must certify map, reduce, scan, fork/join,
+synchronous rounds, and decompose using stable partition identity and explicit
+read/write sets. The test matrix must vary worker count, partition count, skew,
+grain size, numerical reducer, nesting depth, cancellation point, and
+serial-only capability. Floating-point bitwise claims require fixed partition
+and join order; approximate equality cannot certify a bitwise contract.
+
+The partition matrix must distinguish semantic scope path from stable work
+partition. It must cover hierarchy-aligned and deliberately misaligned scope
+bindings and explicit boundary/halo reads. Each binding must preserve
+partition/access/result identity and must report boundary reads.
+
+Phase 4 (Signal graph parallelism and locality) must prove:
+
+- worker-local compute has no authoritative graph mutation capability
 - cancellation, deadline, and failure at each precompute/apply/publication
   boundary expose exact typed progress and preserve precommit atomicity
-- a serial-only target consumes the same lowered plan without semantic drift
 - M13 partition/detail behavior is preserved exactly as the two-segment case of
   a bounded opaque scope hierarchy
 - exact-leaf, ancestor-subtree, unscoped, and sibling-disjoint mutations produce
   the exact independent candidate/work sets at path depths `1`, `2`, `4`, and
   `8`
-- `ProducerAspectKey`, scope paths, subscriber buckets, and physical shard keys
+- `ProducerAspectKey`, scope paths, subscriber buckets, and conflict groups
   cannot substitute for current edge, snapshot, cause, readiness, or commit
   authority
-- worker-count and epoch-bounded shard-placement changes preserve admitted
-  semantic work and canonical outputs while exposing occupancy, imbalance,
-  migration, and resident-byte evidence
+- worker-count changes preserve admitted semantic work and canonical outputs
+  while exposing occupancy and imbalance evidence
 
-Milestone 15 must combine wide antichains, long critical chains, reconvergence,
+Phase 4 must also combine wide antichains, long critical chains, reconvergence,
 dynamic rewiring, overlapping mutation footprints, and bounded ready queues.
 The evidence must fail if readiness, control-order proof, any synchronous
 mutation-footprint axis, or atomic epoch publication is removed. Serial and
 graph-parallel mutation histories must agree step by step, not only at one
 final output.
 
-The same graph courtroom must include deep hierarchical subscriptions,
-cross-shard diamonds, hot-subtree skew, shard-boundary rewiring, and
-epoch-bounded rebalancing. A sibling-disjoint subtree must contribute zero
-candidates and work. Every cross-shard dependency must remain readiness-ordered,
-and placement changes must leave causes, dependency revisions, work identity,
-history, replay, and explanation unchanged.
+The same graph courtroom must include deep hierarchical subscriptions, diamonds
+that cross conflict groups, hot-subtree skew, and rewiring across
+conflict-group boundaries. A sibling-disjoint subtree must contribute zero
+candidates and work. Every dependency across conflict groups must remain
+readiness-ordered, and worker-count changes must leave causes, dependency
+revisions, work identity, history, replay, and explanation unchanged.
 
-Milestone 16 must certify map, reduce, scan, fork/join, and synchronous rounds
-using stable partition identity and explicit read/write sets. The test matrix
-must vary worker count, partition count, skew, grain size, numerical reducer,
-nesting depth, cancellation point, and serial-only capability. Floating-point
-bitwise claims require fixed partition and join order; approximate equality
-cannot certify a bitwise contract.
-
-The partition matrix must distinguish semantic scope path, stable work
-partition, and physical shard. It must cover hierarchy-aligned and deliberately
-misaligned placements, explicit boundary/halo reads, hot-subtree splitting, and
-rebalancing. Each placement must preserve partition/access/result identity and
-must report boundary reads, cross-shard bytes, residency, and migrations.
-
-Milestone 17 must cross real external boundaries:
+WASM helper workers, remote and distributed execution, accelerators, and
+physical shard placement with rebalancing are [deferred](../deferred-work.md).
+When one returns, its plan must cross real external boundaries:
 
 - a real WASM worker/host boundary for worker claims
 - a real child-process or network loopback boundary for distributed claims
@@ -1221,12 +1227,16 @@ Milestone 17 must cross real external boundaries:
   semantic work and canonical publication
 - missing, stale, or mismatched locality/partition/shard-plan/boundary-read/epoch
   result packets rejected before publication
+- worker-count and epoch-bounded shard-placement changes, cross-shard diamonds,
+  shard-boundary rewiring, and rebalancing that preserve admitted semantic work,
+  partition/access/result identity, and canonical outputs while exposing
+  occupancy, imbalance, migration, cross-shard bytes, and resident-byte evidence
 
 An accelerator backend may be claimed only from a real adapter on named
 hardware running the common conformance suite. A trait, mock device, or CPU
 implementation labeled as an accelerator is negative evidence, not support.
 
-Every performance report in Milestones 14-17 must name total work, span,
+Every performance report in Query Milestone 9.17.6.3 must name total work, span,
 critical path, active versus leased workers, queues, steals, barriers, conflict
 partitions, publication breadth, nested leases, partitions, reductions,
 transient and peak memory, transferred bytes and round trips where applicable,

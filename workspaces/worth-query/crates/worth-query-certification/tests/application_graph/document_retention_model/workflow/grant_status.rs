@@ -30,7 +30,7 @@ use super::declaration::{
     WorkflowGrantStatusField,
 };
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct WorkflowGrantStatusInput {
     pub grant_identity: String,
     pub status: String,
@@ -107,17 +107,6 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for WorkflowGrantStatus
             ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 2, 0),
             ApplicationCandidateResourceCeiling::bounded(1_024, 1_024),
         );
-
-    fn idempotency_key_identity(key: &u64) -> [u8; 32] {
-        digest(&key.to_le_bytes())
-    }
-
-    fn input_identity(input: &WorkflowGrantStatusInput) -> [u8; 32] {
-        let mut bytes = input.grant_identity.as_bytes().to_vec();
-        bytes.push(0);
-        bytes.extend_from_slice(input.status.as_bytes());
-        digest(&bytes)
-    }
 
     fn scope_field() -> ApplicationFieldRef<
         DocumentRetentionSchema,
@@ -258,14 +247,4 @@ pub(super) fn install_members(
             WorkflowGrantStatusField::reference(),
         )
         .application_mutation_binding::<WorkflowGrantStatusBinding>()
-}
-
-fn digest(bytes: &[u8]) -> [u8; 32] {
-    let mut identity = [0_u8; 32];
-    let mut accumulator = 0xcbf2_9ce4_8422_2325_u64;
-    for (index, byte) in bytes.iter().enumerate() {
-        accumulator = (accumulator ^ u64::from(*byte)).wrapping_mul(0x0000_0100_0000_01b3);
-        identity[index % identity.len()] ^= (accumulator >> ((index % 8) * 8)) as u8;
-    }
-    identity
 }

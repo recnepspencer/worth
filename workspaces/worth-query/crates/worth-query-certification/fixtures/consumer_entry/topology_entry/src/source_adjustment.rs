@@ -13,7 +13,7 @@ use worth_query_host::facade::primary_graph::{
 
 use super::*;
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct PlanarSourceAdjustment {
     pub scope_key: String,
     pub replacement_y: PositiveLength,
@@ -62,24 +62,6 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
         "worth.query.certification.planar-source-adjustment-command.v1";
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
     const CANDIDATES: ApplicationCandidateRequirements = requirements(0, 0, 0, 1, 1024, 4096);
-
-    fn idempotency_key_identity(key: &u64) -> [u8; 32] {
-        super::mutation_identity::key_identity(*key)
-    }
-
-    fn input_identity(input: &PlanarSourceAdjustment) -> [u8; 32] {
-        let mutation = PlanarMutation {
-            scope_key: input.scope_key.clone(),
-            operation: worth_query_consumer_values::PlanarOperation::Adjust(vec![
-                worth_query_consumer_values::PlanarAdjustment {
-                    body_key: input.scope_key.clone(),
-                    replacement_y: input.replacement_y,
-                },
-            ]),
-            validator_work: 0,
-        };
-        super::mutation_identity::input_identity(&mutation)
-    }
 
     fn scope_field() -> ApplicationFieldRef<
         Schema,

@@ -1,7 +1,6 @@
 mod binding;
 mod declaration;
 mod handler;
-mod identity;
 
 pub use binding::{VertexReplacementBinding, VertexReplacementOutputs};
 pub(crate) use declaration::declare_vertex_replacement;
@@ -17,7 +16,7 @@ use worth_query_decl::facade::{
     worth_query_operation_writes, worth_query_structured_value_binding,
 };
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct VertexReplacement {
     pub scope_key: String,
     pub replacement: PlanarVertexReplacement,

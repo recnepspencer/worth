@@ -1,6 +1,6 @@
 use crate::domain_computation::execution_runtime::{
     product_world::WorthQueryProductWorldResources, WorthQueryApplicationCandidateResourceProfile,
-    WorthQueryApplicationQueryResourceProfile,
+    WorthQueryApplicationQueryResourceProfile, WorthQueryOutputDemandResourceProfile,
 };
 use worth_signal::facade::runtime::SignalConditionalEvaluationBudget;
 
@@ -11,6 +11,7 @@ use super::WorthQueryInMemoryApplicationProfile;
 pub struct WorthQueryInMemoryApplicationLimits {
     pub(super) world: WorthQueryProductWorldResources,
     pub(super) candidates: WorthQueryApplicationCandidateResourceProfile,
+    pub(super) output_demands: WorthQueryOutputDemandResourceProfile,
     pub(super) queries: WorthQueryApplicationQueryResourceProfile,
     pub(super) conditionals: SignalConditionalEvaluationBudget,
     pub(super) profile: WorthQueryInMemoryApplicationProfile,
@@ -28,10 +29,19 @@ impl WorthQueryInMemoryApplicationLimits {
             world,
             candidates,
             queries,
+            output_demands: WorthQueryOutputDemandResourceProfile::standard(),
             conditionals,
             profile: WorthQueryInMemoryApplicationProfile::GeneralPurpose,
             maximum_publication_records: None,
         }
+    }
+
+    pub const fn with_output_demand_resources(
+        mut self,
+        profile: WorthQueryOutputDemandResourceProfile,
+    ) -> Self {
+        self.output_demands = profile;
+        self
     }
 
     /// Selects the bounded execution policy for this application's workload.

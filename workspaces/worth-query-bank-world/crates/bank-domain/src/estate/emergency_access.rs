@@ -2,7 +2,7 @@ use crate::model::BankPrincipalId;
 
 use super::{CapabilityGrantId, EmergencyAccessId, EstateMoment, MandatoryReviewId};
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize)]
 pub enum EmergencyAccessReason {
     PreventImmediateLoss,
     ProtectVulnerableCustomer,

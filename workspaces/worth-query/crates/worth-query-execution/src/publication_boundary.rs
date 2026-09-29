@@ -3,12 +3,19 @@
 //! It carries the capability Publication uses to drive installed program
 //! custody after source discovery and retained-read checks, and the workflow
 //! owner vocabulary Publication alone drives: prepared definition,
-//! instance, proposal and transition attempts and their adapters. Boundary
-//! checks deny naming this module outside execution and Publication, and the
-//! execution facade no longer carries this vocabulary:
+//! instance, proposal and transition attempts and their adapters, and the
+//! idempotency binding of capability workflow requests. The same capability
+//! gates admitting capability access for an input a request already encoded
+//! and reporting a request's own identity work. Boundary checks deny naming
+//! this module outside execution and Publication, and the execution facade no
+//! longer carries this vocabulary:
 //!
 //! ```compile_fail,E0432
 //! use worth_query_execution::facade::workflow_advance::WorthQueryWorkflowAdvanceAdapter;
+//! ```
+//!
+//! ```compile_fail,E0432
+//! use worth_query_execution::facade::primary_graph::WorthQueryCapabilityWorkflowIdempotency;
 //! ```
 
 /// Compiler-visible access to program-output progression owned by the
@@ -22,7 +29,12 @@ pub fn program_publication_access() -> WorthQueryProgramPublicationAccess {
     WorthQueryProgramPublicationAccess { _private: () }
 }
 
+pub mod capability_workflow {
+    pub use crate::domain_computation::primary_graph::application_attempt::WorthQueryCapabilityWorkflowIdempotency;
+}
+
 pub mod workflow_definition_publication {
+
     pub use crate::domain_computation::primary_graph::{
         PerformedWorkflowDefinitionPublication, PreparedWorkflowDefinitionPublication,
         PublishedWorkflowDefinitionRef, WorkflowDefinitionBindingDenial,

@@ -113,8 +113,21 @@ pub(super) fn open_read_denial(
                 WorthQueryApplicationLiveOpenDenialKind::AuthorizationDenied(authorization.kind());
             WorthQueryApplicationLiveOpenDenial::with_authorization(kind, authorization)
         }
-        WorthQueryAuthorizedApplicationReadDenial::Read(_)
-        | WorthQueryAuthorizedApplicationReadDenial::Session => open_denial(
+        WorthQueryAuthorizedApplicationReadDenial::Read(read) => {
+            use super::super::super::read_execution::WorthQueryApplicationReadExecutionDenialKind as Read;
+            use super::super::super::WorthQueryApplicationQueryAdmissionDenialKind as Admission;
+            let kind = match read.kind() {
+                Read::Cancelled => {
+                    WorthQueryApplicationLiveOpenDenialKind::Admission(Admission::Cancelled)
+                }
+                Read::DeadlineExceeded => {
+                    WorthQueryApplicationLiveOpenDenialKind::Admission(Admission::DeadlineExceeded)
+                }
+                _ => WorthQueryApplicationLiveOpenDenialKind::ScopeIdentityUnavailable,
+            };
+            open_denial(kind, read.subject())
+        }
+        WorthQueryAuthorizedApplicationReadDenial::Session => open_denial(
             WorthQueryApplicationLiveOpenDenialKind::ScopeIdentityUnavailable,
             subject,
         ),

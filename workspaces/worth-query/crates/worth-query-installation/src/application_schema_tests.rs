@@ -50,6 +50,7 @@ impl ApplicationEntityMarkerIdentity<DriftedSchema> for AddedEntity {
 }
 struct TestAbility;
 struct TestOperation<Schema>(std::marker::PhantomData<Schema>);
+#[derive(serde::Serialize)]
 struct TestInput;
 struct MappingTarget;
 struct PrincipalBinding;

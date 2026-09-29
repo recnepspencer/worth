@@ -10,7 +10,7 @@ use crate::authentication::{
     WorthQueryPrincipalMappingStatus, WorthQueryPrincipalMappingStatusBinding,
 };
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 struct RenameInput {
     account_id: u64,
 }
@@ -107,18 +107,6 @@ fn rename_scope(input: &RenameInput) -> u64 {
     input.account_id
 }
 
-fn rename_key_identity(key: &u64) -> [u8; 32] {
-    let mut identity = [0; 32];
-    identity[..8].copy_from_slice(&key.to_be_bytes());
-    identity
-}
-
-fn rename_input_identity(input: &RenameInput) -> [u8; 32] {
-    let mut identity = [0; 32];
-    identity[..8].copy_from_slice(&input.account_id.to_be_bytes());
-    identity
-}
-
 crate::worth_query_mutation_binding!(
     RenameBinding for RenameInput, schema MutationSchema,
     identity "worth.query.test.rename-binding.v1",
@@ -126,7 +114,6 @@ crate::worth_query_mutation_binding!(
     operation RenameOperation,
     result RenameResultBinding,
     idempotency u64, identity "worth.query.test.rename-idempotency.v1",
-        key_identity rename_key_identity, input_identity rename_input_identity,
     decision RenameDecision, denial RenameDenialBinding,
     handler identity "worth.query.test.rename-handler.v1",
     outputs RenameOutputs,
@@ -137,7 +124,7 @@ crate::worth_query_mutation_binding!(
     field AccountIdField::reference(),
     value rename_scope,
     candidates creates 0, deletes 0, links 0, unlinks 0, writes 1, emits 1,
-    resources retained_representation_bytes 128, validator_work 4
+    resources retained_representation_bytes 128, validator_work 17
 );
 
 crate::worth_query_application_schema! {
@@ -220,6 +207,10 @@ fn mutation_binding_registers_exact_handler_scope_and_candidate_metadata() {
     assert_eq!(descriptor.scope().field().locus().field(), "AccountIdField");
     assert_eq!(descriptor.candidates().cardinality().maximum_writes(), 1);
     assert_eq!(descriptor.candidates().cardinality().maximum_emits(), 1);
+    assert_eq!(
+        descriptor.candidates().resources().maximum_validator_work(),
+        Some(17)
+    );
     assert_eq!(
         descriptor
             .candidates()

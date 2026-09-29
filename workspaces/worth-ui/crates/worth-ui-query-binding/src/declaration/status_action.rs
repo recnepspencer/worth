@@ -1,4 +1,3 @@
-use sha2::Digest;
 use worth_query_decl::facade::{
     application_operation::{
         ApplicationCandidateCardinalityCeiling, ApplicationCandidateRequirements,
@@ -16,7 +15,6 @@ use worth_query_host::facade::primary_graph::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
     WorthQueryInvariantMutationTarget,
 };
-use worth_ui_host_contract::UiCountedSha256;
 
 use super::status_mutation::{
     StatusMutationScope, WorthUiStatusUpdateDenial, WorthUiStatusUpdateDenialBinding,
@@ -70,25 +68,6 @@ impl ApplicationMutationBinding<WorthUiApplicationSchema> for WorthUiStatusActio
             ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 1, 1),
             ApplicationCandidateResourceCeiling::bounded(65_544, 256),
         );
-
-    fn idempotency_key_identity(key: &WorthUiStatusActionIdentity) -> [u8; 32] {
-        let mut digest = UiCountedSha256::new();
-        digest.update(b"worth.ui.status-action-command.v1");
-        digest.update(key.session().to_le_bytes());
-        digest.update(key.lineage().to_le_bytes());
-        digest.finalize().into()
-    }
-
-    fn input_identity(input: &WorthUiStatusActionRequest) -> [u8; 32] {
-        let mut digest = UiCountedSha256::new();
-        digest.update(b"worth.ui.status-action-input.v1");
-        digest.update(input.source_revision().to_le_bytes());
-        digest.update((input.status().len() as u64).to_le_bytes());
-        digest.update(input.status().as_bytes());
-        digest.update(input.identity().session().to_le_bytes());
-        digest.update(input.identity().lineage().to_le_bytes());
-        digest.finalize().into()
-    }
 
     fn scope_field() -> ApplicationFieldRef<
         WorthUiApplicationSchema,

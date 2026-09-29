@@ -49,6 +49,7 @@ pub(in crate::domain_computation::primary_graph::application_query::read_executi
     if let Some(expected_generation) = request.expected_generation {
         lookup = lookup.expect_generation(expected_generation);
     }
+    work.checkpoint(relation.result_path())?;
     let page = runtime
         .index_access()
         .execute_bounded_related_entity_ordered_lookup(lookup, BoundedIndexParityMode::Production)

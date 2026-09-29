@@ -8,7 +8,7 @@ impl<Schema, Operation, Input, Scope>
 {
     pub(in crate::domain_computation::primary_graph) fn bind_mutation_handler_input<Binding>(
         mut self,
-        input: &Binding::Input,
+        identities: &ApplicationMutationIdentities<'_, Schema, Binding>,
     ) -> Self
     where
         Schema: ApplicationSchema,
@@ -16,7 +16,7 @@ impl<Schema, Operation, Input, Scope>
     {
         self.read_set.mutation_handler_binding = Some(MutationHandlerBindingProof {
             binding: Binding::IDENTITY,
-            input_identity: Binding::input_identity(input),
+            input_identity: *identities.input_identity(),
         });
         self
     }

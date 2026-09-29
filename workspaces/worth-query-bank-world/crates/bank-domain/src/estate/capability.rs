@@ -5,7 +5,7 @@ use super::{
     RestrictedBankField,
 };
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize)]
 pub enum EstateCapabilityOperation {
     NotifyDeath,
     RetransmitDeathNotice,
@@ -23,7 +23,7 @@ pub enum EstateCapabilityOperation {
     ViewRestrictedEstate,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize)]
 pub enum EstateCapabilityPurpose {
     EstateAdministration,
     IdentityVerification,
@@ -39,7 +39,7 @@ pub enum CapabilityGrantStatus {
     Revoked,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct CapabilityValidity {
     not_before: EstateMoment,
     not_after: EstateMoment,
@@ -71,7 +71,7 @@ impl CapabilityValidity {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct EstateCapabilityScope {
     pub account: Option<AccountId>,
     pub estate: EstateCaseId,
@@ -86,7 +86,7 @@ pub struct EstateCapabilityScope {
     pub workflow_stage: EstateWorkflowStage,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct EstateCapabilityDelegationRequest {
     pub id: CapabilityGrantId,
     pub grantee: BankPrincipalId,

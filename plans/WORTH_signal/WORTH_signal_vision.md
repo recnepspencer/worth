@@ -207,10 +207,10 @@ Status meanings:
 | Builder-based runtime ergonomics | Implemented | Runtime builder, transaction helpers, and node builders are now first-class |
 | Explicit execution planner | Implemented | Reusable staged planning now exists, but hot-path hardening and cached topology remain future work |
 | Parallel prepared execution | Partially implemented | Same-stage precompute and proof-safe grouped apply packet construction can run concurrently; canonical publication remains ordered and unsupported mutable stages fall back explicitly |
-| Deterministic parallel foundation | Planned | [Milestone 14](./milestone-14-plan.md) establishes one bounded resource authority, determinism contracts, hierarchical semantic locality, non-authoritative execution placement, cancellation, and canonical publication |
-| Proof-carrying graph parallelism | Planned | [Milestone 15](./milestone-15-plan.md) extends concurrency across hierarchical candidate batches and graph shards only where dependency readiness, control order, cross-shard boundaries, and mutation footprints prove safety |
-| Structured partitioned parallelism | Planned | [Milestone 16](./milestone-16-plan.md) adds domain-agnostic map/reduce/scan/fork-join/round infrastructure with explicit locality binding and boundary reads for work inside a node |
-| Portable execution backends | Planned | [Milestone 17](./milestone-17-plan.md) carries semantic locality and replaceable physical placement separately across versioned native, WASM-worker, remote, and accelerator-conformance boundaries |
+| Deterministic parallel foundation | Planned | [Query Milestone 9.17.6.3](../WORTH-query/milestone-9.17.6.3.md) runs Signal parallel work on leases from the one bounded `worth-execution` authority, with determinism contracts, cancellation, work and span accounting, and canonical publication |
+| Proof-carrying graph parallelism | Planned | [Query Milestone 9.17.6.3](../WORTH-query/milestone-9.17.6.3.md) admits ready graph work concurrently only where dependency readiness, control order, and mutation footprints prove safety, publishes one canonical epoch, and generalizes the subscriber index to a bounded `ScopePath` hierarchy |
+| Structured partitioned parallelism | Planned | [Query Milestone 9.17.6.3](../WORTH-query/milestone-9.17.6.3.md) adds domain-agnostic map/reduce/scan/fork-join/round/decompose patterns and keyed, components, and bisection partitioners in `worth-execution`, with explicit locality binding and boundary reads for work inside a node |
+| Portable execution backends | Later | [Query Milestone 9.17.6.3](../WORTH-query/milestone-9.17.6.3.md) ships the serial and native backends behind one backend port; WASM helper-worker, remote, and accelerator backends and physical shard placement are [deferred](../deferred-work.md) |
 | Cost-aware scheduling | Later | Requires per-node cost metadata and planner integration |
 | Priority propagation | Later | Requires explicit scheduling model and prioritization semantics |
 
@@ -248,7 +248,7 @@ Status meanings:
 | Patch-to-invalidation bridge | Implemented | [Milestone 13.1](./milestone-13.1-plan.md) carries authoritative Relational aspect/locality changes through installed Bridge correspondence into scoped Signal invalidation and Query maintenance |
 | Aspect mapping layer | Implemented | Runtime Bridge owns exact installed correspondence and declared widening under [Milestone 13.1](./milestone-13.1-plan.md); Signal slots remain runtime-local |
 | Snapshot evaluation | Implemented | Granular Query source reads are bound to the admitted immutable snapshot basis and fail closed when that basis drifts |
-| Bulk change propagation | Implemented | [Milestone 13.1](./milestone-13.1-plan.md) carries semantic batches with owner-separated performed counters; physical parallel dispatch remains Milestone 14 work |
+| Bulk change propagation | Implemented | [Milestone 13.1](./milestone-13.1-plan.md) carries semantic batches with owner-separated performed counters; physical parallel dispatch belongs to [Query Milestone 9.17.6.3](../WORTH-query/milestone-9.17.6.3.md) |
 | Change stream protocol | Later | Generic protocol should exist before tighter integration scales up |
 | Reactive source protocol | Later | Generic read contract for signal consumers without fusion |
 | Relational-key to signal-node mapping | Later | Needed to keep truth IDs and signal IDs decoupled |
@@ -340,8 +340,9 @@ What Phase 4 did **not** complete:
 - data-oriented planner/storage hardening for very large graphs
 
 Later work added proof-safe grouped concurrent apply packet construction with
-deterministic publication, but it does not close those broader claims. The
-numbered Milestones 14-17 own their completion.
+deterministic publication, but it does not close those broader claims.
+[Query Milestone 9.17.6.3](../WORTH-query/milestone-9.17.6.3.md) owns the parallel-execution items;
+WASM-worker, accelerator, and remote backends are [deferred](../deferred-work.md).
 
 ### Phase 4.5: Runtime trust layer and diagnostics contract (In progress)
 
