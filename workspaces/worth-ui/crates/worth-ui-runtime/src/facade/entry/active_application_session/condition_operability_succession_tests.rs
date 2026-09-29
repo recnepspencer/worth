@@ -128,11 +128,11 @@ fn a_successor_keeps_the_hovered_affordance_current_for_a_current_condition() {
     assert_eq!(
         work.since(&world.session),
         SuccessionWork {
-            reobservations: 99,
-            operand_probes: 99,
-            index_hits: 99,
-            evaluations: 99,
-            appearance_batches: 99,
+            reobservations: 0,
+            operand_probes: 3,
+            index_hits: 0,
+            evaluations: 0,
+            appearance_batches: 0,
         },
         "an evidence-only successor (W1) re-stamps its unchanged conditions"
     );
@@ -168,11 +168,11 @@ fn a_successor_that_changes_a_hovered_condition_publishes_its_new_family() {
     assert_eq!(
         work.since(&world.session),
         SuccessionWork {
-            reobservations: 99,
-            operand_probes: 99,
-            index_hits: 99,
-            evaluations: 99,
-            appearance_batches: 99,
+            reobservations: 1,
+            operand_probes: 4,
+            index_hits: 0,
+            evaluations: 1,
+            appearance_batches: 1,
         },
         "a changed pointer family upgrades the rebind to an authored \r
          successor (W2) published while attached"

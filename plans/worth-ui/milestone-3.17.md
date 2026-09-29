@@ -245,10 +245,18 @@ owner. The runtime also guards phase order with asserts, expects, bools, and
    A detached-drift test proves the stale detached commit. It stays ignored
    until step 6.
 
-   Not completed. Unreviewed partial tests are on branch
-   `worth-ui-3.17-cleanup-wip`. Its `wip-notes/` folder holds the succession
-   survey, the typed-phase audit (file:line evidence for every step), and the
-   design rulings.
+   Completed, without the separate review gate:
+   - `succession_characterization.rs` reads every writer the same way: work
+     counters, pointer rows against a fresh observation at the current
+     presentation, standing facts, and owner snapshots.
+   - Each writer pins exact counters.
+   - The detached-drift test is ignored until step 6. It fails today: a policy
+     denied while detached still commits `policy: Admitted` and an operable row.
+
+   Not completed: the review gate. It runs with step 2.
+
+   `milestone-3.17-cleanup/` holds the succession survey, the typed-phase
+   audit (file:line evidence for every step), and the design rulings.
 2. **Small typed fixes.**
    - A Query projection fact exposes one shape enum, not three `Option`
      accessors. The scalar kinds are separate changed-fact kinds.
@@ -378,9 +386,19 @@ The phase lands in this order:
   at admission refuses a drifted expression result.
   - The payload `application-boolean` source is retired, and `condition`
     replaces it. No alias remains.
-  - The work is redone on the cleaned structure. Branch
-    `worth-ui-3.17-3b-wip` holds earlier partial work to draw from; it is not
-    a rebase target.
+  - Partly completed:
+    - DSL `payload <field> derived <id>` and `payload <field> condition <id>`.
+    - Runtime sources: text from a derived text, unsigned 64 from a derived
+      integer (an out-of-range value stops with `DerivedIntegerOutOfRange`),
+      and Boolean from a condition.
+    - A selection field has no expression source, because a selection is a
+      Query-issued row reference that an expression cannot mint.
+    - A withheld expression stops with `ExpressionWithheld`, and a drifted
+      one with `PayloadInputChanged`.
+  - Not completed:
+    - Retiring the payload `application-boolean` source.
+    - Mutation probes and the full gate set.
+    - Moving the payload onto cleanup steps 3 and 13.
 - **3c derived scalar.** Scalar text presentation from a `derived` value.
 - **3d conditional presence.** A region mount gated by a condition, through the
   existing identity lifecycle decisions (Create/Retire). It never uses a

@@ -123,7 +123,10 @@ pub(super) fn mount_unestablished(
     device_scale_milli: u32,
 ) -> (
     worth_ui_host_contract::UiSemanticSurfaceIdentity,
-    Vec<(crate::graph::UiGraphNodeIdentity, worth_ui_host_contract::UiMountedInstanceIdentity)>,
+    Vec<(
+        crate::graph::UiGraphNodeIdentity,
+        worth_ui_host_contract::UiMountedInstanceIdentity,
+    )>,
 ) {
     let surface = session.create_semantic_surface().unwrap();
     session

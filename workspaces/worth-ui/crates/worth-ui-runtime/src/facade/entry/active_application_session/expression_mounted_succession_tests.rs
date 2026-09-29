@@ -76,11 +76,11 @@ fn establishing_the_mounted_allocation_moves_the_expression_state_to_its_generat
     assert_eq!(
         work.since(&session),
         SuccessionWork {
-            reobservations: 99,
-            operand_probes: 99,
-            index_hits: 99,
-            evaluations: 99,
-            appearance_batches: 99,
+            reobservations: 0,
+            operand_probes: 1,
+            index_hits: 0,
+            evaluations: 0,
+            appearance_batches: 0,
         },
         "native mounted establishment (W4) alone"
     );

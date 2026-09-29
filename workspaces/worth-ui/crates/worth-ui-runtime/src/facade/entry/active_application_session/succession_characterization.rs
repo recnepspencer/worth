@@ -81,7 +81,10 @@ fn decided(
 
 /// Each hovered row of the committed pointer snapshot beside what a fresh
 /// observation of the committed state decides for the same target, in row
-/// order. Empty when no snapshot is committed.
+/// order. Empty when no snapshot is committed. A row's target names the frame
+/// it was observed on, so the fresh observation first refreshes it at its
+/// surface's current presentation, as the pointer owner does when a frame
+/// lands.
 pub(in crate::facade::entry) fn pointer_rows(
     session: &WorthUiActiveApplicationSession,
 ) -> Vec<(Decided, Decided)> {
@@ -97,17 +100,44 @@ pub(in crate::facade::entry) fn pointer_rows(
     });
     snapshot
         .active_projections()
-        .filter_map(|row| Some((row.presented_target()?, row.operability()?)))
-        .map(|(target, committed)| {
-            let fresh = crate::runtime::intent::observe_activation_operability(
-                target,
-                session.intent_read_owners(prepared, &active),
-                &session.intent_confirmation,
-                host_time,
-            );
-            (decided(committed), decided(fresh.as_ref()))
+        .filter_map(|row| Some((row.surface(), row.presented_target()?, row.operability()?)))
+        .map(|(surface, target, committed)| {
+            let fresh = match current_target(session, surface, target) {
+                Ok(target) => decided(
+                    crate::runtime::intent::observe_activation_operability(
+                        target,
+                        session.intent_read_owners(prepared, &active),
+                        &session.intent_confirmation,
+                        host_time,
+                    )
+                    .as_ref(),
+                ),
+                Err(denial) => Err(denial),
+            };
+            (decided(committed), fresh)
         })
         .collect()
+}
+
+/// `target` refreshed at the current presentation of `surface`, or why the
+/// committed state presents no such target.
+fn current_target(
+    session: &WorthUiActiveApplicationSession,
+    surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+    target: crate::runtime::interaction::UiPresentedInteractionTargetView,
+) -> Result<crate::runtime::interaction::UiPresentedInteractionTargetView, String> {
+    let presentation = session
+        .mounted
+        .current_presentation_for_surface(surface)
+        .ok_or_else(|| "SurfaceNotPresented".to_owned())?
+        .basis();
+    crate::runtime::interaction::targeting::refresh_pointer_target(
+        &session.mounted,
+        presentation,
+        target,
+        &mut crate::mounting::UiHitTestSpatialWork::default(),
+    )
+    .map_err(|denial| format!("{denial:?}"))
 }
 
 /// Asserts a pointer snapshot is committed exactly when `present`, that it
@@ -183,7 +213,11 @@ pub(in crate::facade::entry) fn assert_owners_follow(
 ) {
     let active = session.active_generation_identity();
     let owners = session.appearance_owner_snapshot.as_ref();
-    assert_eq!(owners.is_some(), present, "appearance owner snapshot presence");
+    assert_eq!(
+        owners.is_some(),
+        present,
+        "appearance owner snapshot presence"
+    );
     if let Some(owners) = owners {
         assert_eq!(owners.generation(), &active);
     }

@@ -1,4 +1,4 @@
-# Rulings on succession_design.md (D1-D8)
+# Rulings on succession-survey.md (D1-D8)
 
 Governing: arch laws 2, 9, 12, 13, 16; MENTALITY.md; the user's 2026-09-29
 directive "phases must ALWAYS be typed ... the goal is clean code".
@@ -107,5 +107,5 @@ disposition types.
     condition` replaces it.
 - A confirmation source becomes `NotRequired | Condition`, and the consumer
   index covers it.
-- The typed-phase audit (`typed_phase_audit.md`) findings merge into the same
+- The typed-phase audit (`typed-phase-audit.md`) findings merge into the same
   phase.
