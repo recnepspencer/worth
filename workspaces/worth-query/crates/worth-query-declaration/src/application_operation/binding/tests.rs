@@ -1,5 +1,7 @@
 use std::any::TypeId;
 
+mod output_cardinality;
+
 use crate::application_operation::{
     ApplicationMutationBinding, ApplicationMutationIntent, ApplicationMutationPrincipalScope,
     ApplicationMutationScopeResolution,
@@ -65,6 +67,13 @@ impl super::ApplicationMutationOutputContract<MutationSchema> for RenameOutputs 
         super::ApplicationMutationOutputRoleDescriptor::for_entity::<MutationSchema, Account>(
             "renamed-account",
             super::ApplicationMutationOutputPosture::Preserve,
+        ),
+        super::ApplicationMutationOutputRoleDescriptor::optional_for_entity::<
+            MutationSchema,
+            ExternalMapping,
+        >(
+            "retired-mapping",
+            super::ApplicationMutationOutputPosture::Retire,
         ),
     ];
     const ROLE_FAMILIES: &'static [super::ApplicationMutationOutputRoleFamilyDescriptor] = &[

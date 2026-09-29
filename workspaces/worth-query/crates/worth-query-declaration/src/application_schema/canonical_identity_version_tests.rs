@@ -38,7 +38,7 @@ fn schema_axes_use_the_current_complete_identity_preimage() {
     ] {
         assert_eq!(
             identity.canonical_basis().payload().version().as_str(),
-            "worth-query-application-schema-v13"
+            "worth-query-application-schema-v14"
         );
     }
 }
@@ -73,11 +73,11 @@ fn relation_endpoint_policy_changes_current_canonical_meaning() {
     );
     assert_eq!(
         unchanged.canonical_basis().payload().version().as_str(),
-        "worth-query-application-schema-v13"
+        "worth-query-application-schema-v14"
     );
     assert_eq!(
         no_self_edges.canonical_basis().payload().version().as_str(),
-        "worth-query-application-schema-v13"
+        "worth-query-application-schema-v14"
     );
     assert_ne!(unchanged, no_self_edges);
 }

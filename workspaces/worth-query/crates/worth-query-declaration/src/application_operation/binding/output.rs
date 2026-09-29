@@ -54,14 +54,39 @@ impl ApplicationMutationOutputPostureSet {
     }
 }
 
+/// How many outputs one fixed output role binds in a completed mutation.
+///
+/// A fixed role is the single way to declare a named output that is present
+/// at most once; `ApplicationMutationOutputRoleFamilyDescriptor` is for a
+/// variable number of outputs under one prefix.
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub enum ApplicationMutationOutputRoleCardinality {
+    /// Every completed mutation binds the role exactly once; leaving it
+    /// unbound is denied as a missing output role.
+    ExactlyOne,
+    /// A completed mutation binds the role once or leaves it unbound; a second
+    /// binding is denied as a duplicate output role.
+    AtMostOne,
+}
+
+impl ApplicationMutationOutputRoleCardinality {
+    /// Whether a completed mutation may leave a role of this cardinality
+    /// unbound.
+    pub const fn admits_absence(self) -> bool {
+        matches!(self, Self::AtMostOne)
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct ApplicationMutationOutputRoleDescriptor {
     name: &'static str,
     entity: &'static str,
     posture: ApplicationMutationOutputPosture,
+    cardinality: ApplicationMutationOutputRoleCardinality,
 }
 
 impl ApplicationMutationOutputRoleDescriptor {
+    /// A role every completed mutation binds exactly once.
     pub const fn for_entity<Schema, Entity>(
         name: &'static str,
         posture: ApplicationMutationOutputPosture,
@@ -74,6 +99,25 @@ impl ApplicationMutationOutputRoleDescriptor {
             name,
             entity: Entity::IDENTIFIER,
             posture,
+            cardinality: ApplicationMutationOutputRoleCardinality::ExactlyOne,
+        }
+    }
+
+    /// A role a completed mutation binds at most once: it may leave the role
+    /// unbound, and binding it twice is denied.
+    pub const fn optional_for_entity<Schema, Entity>(
+        name: &'static str,
+        posture: ApplicationMutationOutputPosture,
+    ) -> Self
+    where
+        Schema: ApplicationSchema,
+        Entity: ApplicationEntityMarkerIdentity<Schema>,
+    {
+        Self {
+            name,
+            entity: Entity::IDENTIFIER,
+            posture,
+            cardinality: ApplicationMutationOutputRoleCardinality::AtMostOne,
         }
     }
 
@@ -87,6 +131,10 @@ impl ApplicationMutationOutputRoleDescriptor {
 
     pub const fn posture(&self) -> ApplicationMutationOutputPosture {
         self.posture
+    }
+
+    pub const fn cardinality(&self) -> ApplicationMutationOutputRoleCardinality {
+        self.cardinality
     }
 }
 

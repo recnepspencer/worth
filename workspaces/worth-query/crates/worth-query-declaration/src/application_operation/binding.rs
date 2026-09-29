@@ -23,8 +23,9 @@ pub use intent::{
 };
 pub use output::{
     ApplicationMutationOutputContract, ApplicationMutationOutputPosture,
-    ApplicationMutationOutputPostureSet, ApplicationMutationOutputRoleDescriptor,
-    ApplicationMutationOutputRoleFamilyDescriptor, NoApplicationMutationOutputs,
+    ApplicationMutationOutputPostureSet, ApplicationMutationOutputRoleCardinality,
+    ApplicationMutationOutputRoleDescriptor, ApplicationMutationOutputRoleFamilyDescriptor,
+    NoApplicationMutationOutputs,
 };
 pub use portable_description::{
     ApplicationMutationDescription, ApplicationMutationDescriptionParts,

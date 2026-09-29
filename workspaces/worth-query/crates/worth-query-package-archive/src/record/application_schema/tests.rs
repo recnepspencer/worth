@@ -246,6 +246,12 @@ fn encode_member(member: &ApplicationSchemaMember) -> Vec<u8> {
 }
 
 fn decode_member(bytes: &[u8]) -> ApplicationSchemaMember {
+    try_decode_member(bytes).unwrap()
+}
+
+fn try_decode_member(
+    bytes: &[u8],
+) -> Result<ApplicationSchemaMember, crate::denial::WorthQueryPackageArchiveDenial> {
     let limits = WorthQueryPackageArchiveLimits::DEFAULT;
     let mut input = crate::binary_input::BinaryInput::new(bytes);
     let mut attempt = RecordDecodeAttempt::begin(
@@ -254,9 +260,9 @@ fn decode_member(bytes: &[u8]) -> ApplicationSchemaMember {
         limits,
     )
     .unwrap();
-    let member = super::member::decode(&mut input, &mut attempt).unwrap();
+    let member = super::member::decode(&mut input, &mut attempt)?;
     assert!(input.is_finished());
-    member
+    Ok(member)
 }
 
 fn frame_payload(payload: &[u8]) -> Vec<u8> {
