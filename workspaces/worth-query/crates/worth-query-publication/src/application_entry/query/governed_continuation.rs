@@ -91,6 +91,10 @@ where
             .installed_schema()
             .installed_query_binding::<Intent::Binding>()
             .map_err(WorthQueryApplicationRequestQueryDenial::BindingInstallation)?;
+        self.application
+            .resolve_application_query_limits(binding.limits())
+            .narrow(binding.limits().maximum_results(), maximum_work)
+            .map_err(WorthQueryApplicationRequestQueryDenial::Limit)?;
         let selected = self
             .application
             .on_branch(self.branch)
@@ -176,6 +180,10 @@ where
             .installed_schema()
             .installed_query_binding::<Intent::Binding>()
             .map_err(WorthQueryApplicationRequestQueryDenial::BindingInstallation)?;
+        self.application
+            .resolve_application_query_limits(binding.limits())
+            .narrow(binding.limits().maximum_results(), maximum_work)
+            .map_err(WorthQueryApplicationRequestQueryDenial::Limit)?;
         let selected = self
             .application
             .on_branch(self.branch)

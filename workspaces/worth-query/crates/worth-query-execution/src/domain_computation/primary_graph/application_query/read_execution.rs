@@ -1,5 +1,6 @@
 use worth_query_declaration::facade::application_query::ApplicationQueryCardinality;
 mod denial;
+mod interruption;
 mod kernel_outcome;
 mod live_target;
 mod root_selection;
@@ -97,6 +98,7 @@ pub(super) fn read_bounded_root_rows<
             .get()
             .saturating_sub(selection.work_units),
         ResultTreeCollectionSelection::Complete,
+        plan.controls.request_scope(),
         &mut result_buffer,
     )?;
     let actual_work = selection.work_units.saturating_add(tree.work_units);
@@ -210,6 +212,7 @@ pub(super) fn read_continuation_page<
             after,
             page_width: plan.controls.maximum_result_count().get(),
         }),
+        plan.controls.request_scope(),
         &mut result_buffer,
     )?;
     let actual_work = selection.work_units.saturating_add(tree.work_units);

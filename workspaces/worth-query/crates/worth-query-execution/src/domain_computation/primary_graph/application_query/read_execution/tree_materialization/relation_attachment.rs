@@ -92,6 +92,7 @@ pub(super) fn attach_relation(
         | ActiveResultTreeCollectionSelection::Ordered(_)
         | ActiveResultTreeCollectionSelection::Targeted(_) => {}
     }
+    work.checkpoint(relation.result_path())?;
     let read = match relation.direction() {
         ApplicationQueryResultTraversalDirection::Forward => projection
             .bounded_outgoing_relations_for_frontier(&frontier, layout.kind, work.remaining_work()),
@@ -107,6 +108,7 @@ pub(super) fn attach_relation(
     )?;
     let mut targets = BTreeMap::<EntityId, Vec<EntityId>>::new();
     for record in read.into_records() {
+        work.checkpoint(relation.result_path())?;
         let (parent, child) = match relation.direction() {
             ApplicationQueryResultTraversalDirection::Forward => (record.source, record.target),
             ApplicationQueryResultTraversalDirection::Reverse => (record.target, record.source),
@@ -208,6 +210,7 @@ fn attach_targeted_relation(
         .relation(relation.relation())
         .ok_or_else(|| traversal_denial(relation.result_path()))?;
     let frontier = BTreeSet::from([target.child_entity_id]);
+    work.checkpoint(relation.result_path())?;
     let read = match relation.direction() {
         ApplicationQueryResultTraversalDirection::Forward => projection
             .bounded_incoming_relations_for_frontier(&frontier, layout.kind, work.remaining_work()),

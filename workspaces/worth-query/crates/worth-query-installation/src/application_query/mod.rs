@@ -23,6 +23,7 @@ mod tests;
 
 pub use binding::{
     WorthQueryApplicationQueryLimitDenial, WorthQueryInstalledApplicationQueryLimits,
+    WorthQueryResolvedApplicationQueryLimits,
 };
 pub use canonical_basis::WorthQueryApplicationCanonicalArtifact;
 pub use canonical_identity::WorthQueryInstalledApplicationQueryIdentity;

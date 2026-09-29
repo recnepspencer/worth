@@ -5435,6 +5435,12 @@ Warm progression cannot scan the whole definition or replay history. Infrastruct
 choice follows authority and cost; no particular traversal/index representation is
 mandated. The common API preserves advanced controls and typed waits/recovery without
 client polling, manual receipt routing or stringified denials.
+Ordinary query/output-demand resource policy belongs to installed runtime owners,
+with optional caller narrowing and owner-derived candidate validator closure;
+applications do not duplicate internal work formulas. The governing ownership and
+adversarial cutover proof are in the
+[execution-resource guide](../../workspaces/worth-query/crates/worth-query/docs/domain-capabilities/execution-resource-admission-and-managed-runs.md#ordinary-work-limit-ownership).
+This shared correction precedes the remaining House automatic-update closeout.
 Required inventory survives supplier removal, approvals bind exact proposal/source/
 evidence, duplicate wakes cannot duplicate effects, and status records cannot
 substitute for performed publication.

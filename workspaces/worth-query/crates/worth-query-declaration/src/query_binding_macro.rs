@@ -13,7 +13,7 @@ macro_rules! worth_query_query_binding {
         scope $Scope:ty, $Aspect:ty, $Field:ty, $Value:ty, $Write:ty, $Unit:ty,
         field $scope_field:expr,
         value $scope_value:path,
-        limits results $maximum_results:expr, work $maximum_work:expr
+        limits results $maximum_results:expr $(, work $maximum_work:expr)?
     ) => {
         $crate::worth_query_query_binding!(@binding
             $vis $Binding for $Input, schema $Schema,
@@ -26,7 +26,7 @@ macro_rules! worth_query_query_binding {
             >,
             scope_field_type $Scope, $Aspect, $Field, $Value, $Write, $Unit,
             scope_field $scope_field,
-            limits results $maximum_results, work $maximum_work
+            limits results $maximum_results $(, work $maximum_work)?
         );
 
         impl $crate::facade::application_query::ApplicationQueryIntent<$Schema> for $Input {
@@ -55,7 +55,7 @@ macro_rules! worth_query_query_binding {
             principal_identity $PrincipalIdentity:ty, identity_binding $PrincipalIdentityBinding:path,
         scope $Scope:ty, $Aspect:ty, $Field:ty, $Value:ty, $Write:ty, $Unit:ty,
         principal_field $scope_field:expr,
-        limits results $maximum_results:expr, work $maximum_work:expr
+        limits results $maximum_results:expr $(, work $maximum_work:expr)?
     ) => {
         $crate::worth_query_query_binding!(@binding
             $vis $Binding for $Input, schema $Schema,
@@ -68,7 +68,7 @@ macro_rules! worth_query_query_binding {
             >,
             scope_field_type $Scope, $Aspect, $Field, $Value, $Write, $Unit,
             scope_field $scope_field,
-            limits results $maximum_results, work $maximum_work
+            limits results $maximum_results $(, work $maximum_work)?
         );
 
         impl $crate::facade::application_query::ApplicationQueryIntent<$Schema> for $Input {
@@ -92,7 +92,7 @@ macro_rules! worth_query_query_binding {
         scope_binding $ScopeBinding:ty,
         scope_field_type $Scope:ty, $Aspect:ty, $Field:ty, $Value:ty, $Write:ty, $Unit:ty,
         scope_field $scope_field:expr,
-        limits results $maximum_results:expr, work $maximum_work:expr
+        limits results $maximum_results:expr $(, work $maximum_work:expr)?
     ) => {
         $vis struct $Binding;
 
@@ -111,9 +111,7 @@ macro_rules! worth_query_query_binding {
 
             const IDENTITY: &'static str = $identity;
             const LIMITS: $crate::facade::application_query::ApplicationQueryBindingLimits =
-                $crate::facade::application_query::ApplicationQueryBindingLimits::bounded(
-                    $maximum_results, $maximum_work,
-                );
+                $crate::worth_query_query_binding!(@limits $maximum_results $(, $maximum_work)?);
 
             fn scope_field() -> $crate::facade::application_schema::ApplicationFieldRef<
                 $Schema, $Scope, $Aspect, $Field, $Value, $Write,
@@ -129,5 +127,11 @@ macro_rules! worth_query_query_binding {
                 <$PrincipalBinding>::reference()
             }
         }
+    };
+    (@limits $results:expr) => {
+        $crate::facade::application_query::ApplicationQueryBindingLimits::results($results)
+    };
+    (@limits $results:expr, $work:expr) => {
+        $crate::facade::application_query::ApplicationQueryBindingLimits::bounded($results, $work)
     };
 }

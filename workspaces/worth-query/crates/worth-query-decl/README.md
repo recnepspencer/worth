@@ -21,6 +21,19 @@ publish a result. Application hosts perform those transitions through
 Pure reusable schema-meaning crates remain Query-agnostic. Query declaration
 integration belongs in the application entry band.
 
+## Ordinary Resource Declarations
+
+Declare query result cardinality with `ApplicationQueryBindingLimits::results(n)`
+or the query-binding macro's `limits results n`. The installed host owns the
+finite work safeguard. `bounded(n, work)` (macro `limits results n, work w`)
+adds a deliberate cap; ordinary code does not count internal traversal work.
+
+For candidate resources, `ApplicationCandidateResourceCeiling::representation_bytes(n)`
+lets Query derive validator allowance from installed invariant contracts. The
+mutation-binding macro likewise allows `resources retained_representation_bytes n`
+without `validator_work`. Explicit validator caps, effect cardinalities and byte
+limits remain enforced. These declarations grant no runtime capacity or authority.
+
 ## Application Program Meaning
 
 **Writing an application?** Start with [Build an Application](../../../../docs/build-an-application.md). Its

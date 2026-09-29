@@ -220,8 +220,7 @@ where
     schema_binding: worth_query_installation::facade::ApplicationSchemaBindingIdentity,
     selected: WorthQuerySelectedApplicationProducer,
     observed_source: WorthQueryObservedSource<FamilySourceQuery<Schema, Family>>,
-    currentness_work_limit: std::num::NonZeroUsize,
-    maximum_retained_bytes: usize,
+    limits: crate::domain_computation::execution_runtime::WorthQueryOutputDemandLimits,
     resources: Option<super::WorthQueryProducerDemandResources>,
     resources_validated: bool,
     producer_contacts_in_this_demand: usize,
@@ -240,6 +239,11 @@ where
     Schema: ApplicationSchema,
     Family: WorthQueryProducerOutputFamily<Schema>,
 {
+    fn currentness_work_limit(&self) -> std::num::NonZeroUsize {
+        std::num::NonZeroUsize::new(self.limits.source_currentness_work())
+            .expect("admitted output demand has nonzero source-currentness work")
+    }
+
     pub fn observed_source(&self) -> &WorthQueryObservedSource<FamilySourceQuery<Schema, Family>> {
         &self.observed_source
     }

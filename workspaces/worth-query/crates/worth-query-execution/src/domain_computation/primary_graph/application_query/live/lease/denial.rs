@@ -98,6 +98,10 @@ where
                 self.authorization_denied_outcome(authorization)
             }
             WorthQueryAuthorizedApplicationReadDenial::Read(read) => match read.kind() {
+                WorthQueryApplicationReadExecutionDenialKind::Cancelled => self.cancelled_outcome(),
+                WorthQueryApplicationReadExecutionDenialKind::DeadlineExceeded => {
+                    self.deadline_exceeded_outcome()
+                }
                 WorthQueryApplicationReadExecutionDenialKind::TargetIdentityNotFound
                 | WorthQueryApplicationReadExecutionDenialKind::TargetIdentityLookupOverflow => {
                     self.acknowledge_cause_denial(

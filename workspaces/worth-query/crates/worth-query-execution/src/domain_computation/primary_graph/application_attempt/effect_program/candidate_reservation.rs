@@ -30,6 +30,7 @@ impl WorthQueryCandidateReservation {
     pub(super) fn admit(
         requested: ApplicationCandidateRequirements,
         ceiling: ApplicationCandidateRequirements,
+        derived_validator_work: u64,
         candidate_item_capacity: u64,
         retained_representation_byte_capacity: u64,
         validator_work_capacity: u64,
@@ -37,6 +38,12 @@ impl WorthQueryCandidateReservation {
         let requested_cardinality = requested.cardinality();
         let ceiling_cardinality = ceiling.cardinality();
         let requested_total = total(requested_cardinality).ok_or_else(capacity_denial)?;
+        let declared_work = ceiling.resources().maximum_validator_work();
+        let derived_work =
+            usize::try_from(derived_validator_work).map_err(|_| capacity_denial())?;
+        let requested_cap = requested.resources().maximum_validator_work();
+        let installed_work = declared_work.map_or(derived_work, |cap| cap.min(derived_work));
+        let requested_work = requested_cap.map_or(installed_work, |cap| cap.min(installed_work));
         let within_binding = requested_cardinality.maximum_creates()
             <= ceiling_cardinality.maximum_creates()
             && requested_cardinality.maximum_deletes() <= ceiling_cardinality.maximum_deletes()
@@ -48,8 +55,7 @@ impl WorthQueryCandidateReservation {
                 .resources()
                 .maximum_retained_representation_bytes()
                 <= ceiling.resources().maximum_retained_representation_bytes()
-            && requested.resources().maximum_validator_work()
-                <= ceiling.resources().maximum_validator_work();
+            && declared_work.is_none_or(|cap| requested_cap.is_none_or(|work| work <= cap));
         let within_runtime = u64::try_from(requested_total)
             .is_ok_and(|count| count <= candidate_item_capacity)
             && u64::try_from(
@@ -58,8 +64,7 @@ impl WorthQueryCandidateReservation {
                     .maximum_retained_representation_bytes(),
             )
             .is_ok_and(|bytes| bytes <= retained_representation_byte_capacity)
-            && u64::try_from(requested.resources().maximum_validator_work())
-                .is_ok_and(|work| work <= validator_work_capacity);
+            && u64::try_from(requested_work).is_ok_and(|work| work <= validator_work_capacity);
         if !within_binding || !within_runtime {
             return Err(capacity_denial());
         }
@@ -69,7 +74,7 @@ impl WorthQueryCandidateReservation {
                 .resources()
                 .maximum_retained_representation_bytes(),
             validator_work: WorthQueryCandidateValidatorWorkAdmission::Reserved {
-                maximum_work: requested.resources().maximum_validator_work(),
+                maximum_work: requested_work,
             },
         })
     }

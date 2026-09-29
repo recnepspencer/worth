@@ -204,7 +204,7 @@ where
                         })?;
                         match current.require_current_output_receipts(
                             [&receipt],
-                            demand.currentness_work_limit,
+                            demand.currentness_work_limit(),
                         ) {
                             Ok(()) => {}
                             Err(denial)
@@ -265,8 +265,7 @@ where
                 entry.executor.as_ref(),
                 &disclosed_value,
                 &demand.selected.identity,
-                demand.currentness_work_limit.get(),
-                demand.maximum_retained_bytes,
+                demand.limits,
             );
             let resources = match resources {
                 Ok(resources) => resources,
@@ -298,7 +297,7 @@ where
             &disclosed_source,
             successor_of,
             commit_authority,
-            demand.currentness_work_limit.get(),
+            demand.limits.source_currentness_work(),
         );
         let mut receipt = match result {
             Ok(receipt) => receipt,
@@ -367,8 +366,7 @@ where
             observed_source,
             None,
             profile_kind,
-            demand.currentness_work_limit.get(),
-            demand.maximum_retained_bytes,
+            demand.limits,
             None,
             demand.admission_kind,
             None,

@@ -28,7 +28,7 @@ pub(super) fn collect_source_footprints(
 ) -> Result<Vec<WorthQueryObservedSourceFootprint>, WorthQueryApplicationReadExecutionDenial> {
     let mut footprints = allocate_claimed_result_vector(result_buffer, roots.len(), "source")?;
     for root in roots {
-        let counts = footprint_counts(contract, governance, root);
+        let counts = footprint_counts(contract, governance, root, work)?;
         let mut footprint = WorthQueryObservedSourceFootprint {
             root: root.entity_id(),
             complete: true,
@@ -96,7 +96,9 @@ pub(super) fn collect_source_footprints(
                 }
             }
         }
+        work.checkpoint(root.result_path())?;
         let released_bytes = normalize_source_footprint(&mut footprint);
+        work.checkpoint(root.result_path())?;
         result_buffer.release_temporary(released_bytes);
         footprints.push(footprint);
     }
@@ -135,8 +137,10 @@ fn footprint_counts(
     contract: &WorthQueryInstalledGraphReadContract,
     governance: &WorthQueryApplicationQueryGovernance,
     node: &WorthQueryApplicationProjectionNode,
-) -> FootprintCounts {
-    node.relations().iter().fold(
+    work: &ResultTreeWork,
+) -> Result<FootprintCounts, WorthQueryApplicationReadExecutionDenial> {
+    work.checkpoint(node.result_path())?;
+    node.relations().iter().try_fold(
         FootprintCounts {
             entities: 1,
             fields: unique_source_aspect_count(contract, governance, node.result_path()),
@@ -150,12 +154,12 @@ fn footprint_counts(
                 .fields
                 .saturating_add(relation.predicate_sources().len());
             for child in relation.rows() {
-                let child = footprint_counts(contract, governance, child);
+                let child = footprint_counts(contract, governance, child, work)?;
                 counts.entities = counts.entities.saturating_add(child.entities);
                 counts.fields = counts.fields.saturating_add(child.fields);
                 counts.relations = counts.relations.saturating_add(child.relations);
             }
-            counts
+            Ok(counts)
         },
     )
 }
@@ -172,6 +176,7 @@ fn collect_node(
     footprint: &mut WorthQueryObservedSourceFootprint,
 ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
     footprint.complete &= node.source_dependencies_complete();
+    work.checkpoint(node.result_path())?;
     footprint.entities.push(node.entity_id());
     work.charge_source_observation(1, node.result_path())?;
     let node_aspect_start = footprint.aspects.len();
@@ -236,6 +241,7 @@ fn collect_node(
                 RelationalAdjacencyDirection::Incoming
             }
         };
+        work.checkpoint(relation.result_path())?;
         let revision = projection
             .bounded_adjacency_structural_revision(
                 node.entity_id(),

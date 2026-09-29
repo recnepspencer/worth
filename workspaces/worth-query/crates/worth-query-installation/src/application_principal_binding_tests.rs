@@ -1,4 +1,6 @@
 use worth_foundational::facade::AspectValue;
+#[path = "application_principal_binding_tests/result_only.rs"]
+mod result_only;
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
     ApplicationQueryDefinitionBuilder, ApplicationQueryDependencyCeiling,
@@ -52,6 +54,7 @@ worth_query_application_schema! {
                 .principal_binding(IdentityBinding::reference())
                 .application_query(principal_query_definition())
                 .application_query_binding::<PrincipalQueryBinding>()
+                .application_query_binding::<result_only::ResultOnlyQueryBinding>()
         }
     }
 }
@@ -245,9 +248,10 @@ fn installed_query_binding_retains_exact_principal_scope_and_finite_limits() {
         "PrincipalIdentityField"
     );
     assert_eq!(binding.limits().maximum_results().get(), 8);
-    assert_eq!(binding.limits().maximum_work().get(), 256);
+    assert_eq!(binding.limits().maximum_work().unwrap().get(), 256);
     assert!(binding
         .limits()
+        .resolve(std::num::NonZeroUsize::new(1024).unwrap())
         .narrow(
             std::num::NonZeroUsize::new(1).unwrap(),
             std::num::NonZeroUsize::new(128).unwrap(),
@@ -256,6 +260,7 @@ fn installed_query_binding_retains_exact_principal_scope_and_finite_limits() {
     assert_eq!(
         binding
             .limits()
+            .resolve(std::num::NonZeroUsize::new(1024).unwrap())
             .narrow(
                 std::num::NonZeroUsize::new(9).unwrap(),
                 std::num::NonZeroUsize::new(128).unwrap(),
