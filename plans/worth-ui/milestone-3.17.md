@@ -80,13 +80,16 @@ Use sites refer to an expression by identity. Each use has one typed role:
 | Conditional presence | region `mount … when <condition>` | `bool` |
 | Conditional participation | slot participant `participates when <condition>` | `bool` |
 | Operability projection | intent `policy-condition` / `readiness-condition` / `mutability-condition <condition>` | `bool` |
-| Payload shaping | intent `payload <name> derived <derived>` | the payload's type |
+| Payload shaping | intent `payload <name> derived <derived>`, or `payload <name> condition <condition>` for a Boolean field | the payload field's kind |
 | Derived scalar | scalar text presentation `value derived <derived>` | `text` |
 | Data-driven appearance | appearance aspect `use derived <derived>` | `token` |
 
 Compilation fails when a use site's role type differs from the expression's
-result type. A use site only names an expression; there is no inline expression
-at use sites.
+result type. Payload field kinds live in the runtime's payload schema
+registry, so compilation checks a payload use site's expression and role, and
+intent catalog preparation denies a result type that does not fit the field
+kind before the generation activates. A use site only names an expression;
+there is no inline expression at use sites.
 
 ## Laws
 
@@ -202,6 +205,150 @@ Completed.
 - Zero evaluations when an unrelated fact changes.
 - A late result against a replaced generation is stale.
 
+### Cleanup: typed phases (`worth-ui-runtime`, `worth-ui-dsl`, `worth-ui-inspection`)
+
+Phase 3 resumes only after this cleanup lands. Phases 2 and 3a wired
+generation succession and invalidation by hand. As a result, every new
+expression consumer cost several review rounds that found writers missing an
+owner. The runtime also guards phase order with asserts, expects, bools, and
+`Option` states. Arch laws 2, 9, 13, and 16 forbid both.
+
+**Exit criteria**
+- Every phase progression is typed: a sealed proof goes in and the next proof
+  comes out. An out-of-order call does not compile.
+- Adding a generation-scoped owner breaks the build at every writer until the
+  writer states that owner's disposition.
+- A consumer declares what it reads, and the framework computes invalidation.
+  No call site re-observes by hand.
+- No runtime `assert`, `expect`, `unreachable!`, bool flag, or `Option` state
+  stands in for a phase, a lifecycle step, or an authority check.
+  - Local invariants remain legal: numeric fits after an admitted
+    reservation, same-function lookups, and data-structure invariants.
+  - No `debug_assert!` stands in for a check the types now carry.
+- No owned-enum match uses a wildcard arm where a new variant would be
+  silently dropped. No workspace-internal enum is `#[non_exhaustive]`.
+
+**Method**
+- Each step compiles, keeps the scoped tests green, and is reviewed, committed,
+  and pushed on its own.
+- The characterization tests pin every counter exactly. A step that moves a
+  counter states why in its commit message.
+
+**Steps**
+
+1. **Characterization.** Write counter-exact tests for each generation writer:
+   - evidence-only rebind;
+   - authored rebind, attached and detached;
+   - cutover, mounted and unmounted;
+   - native establishment.
+
+   A detached-drift test proves the stale detached commit. It stays ignored
+   until step 6.
+2. **Small typed fixes.**
+   - A Query projection fact exposes one shape enum, not three `Option`
+     accessors. The scalar kinds are separate changed-fact kinds.
+   - Operability proofs are minted only from the matching arm of
+     `classify(decision)`.
+   - Inspection enums lose `#[non_exhaustive]`. A graph-backed inspection
+     authority carries its generation.
+   - DSL region binding, expression diagnostics, and overlay/appearance
+     validation match exhaustively. Each expression denial gets its own code.
+3. **One read of owners at a generation.**
+   - One session-minted `UiIntentGenerationReads<'g>` replaces the seven
+     overlapping intent read contexts.
+   - Currentness is two consuming steps, `prove_generation` then
+     `prove_inputs`, shared by admission and confirmation.
+   - Every currentness outcome is a `Result`: no bare bool, and no inverted
+     `Option`.
+4. **Declared consumers, one sink, one frame finish.**
+   - The intent catalog builds `UiOperabilityConsumers` from each contract's
+     declared sources, matched exhaustively. `CommittedDraft` declares no key,
+     with the reason stated.
+   - Owners emit typed `UiOwnerChanges` into one change sink.
+   - One `finish_frame` replaces the five frame-finish copies.
+   - The appearance-owner and pointer-affordance snapshots each become a slot
+     with a single writer. Replacing the appearance snapshot always queues
+     closed-owner invalidation.
+5. **The succession pipeline, `Retain`.** Evidence-only and attached authored
+   rebinds move onto `UiPreparedGenerationSuccession<Retain>`.
+   - Each plan names every owner's disposition as an associated type.
+   - `commit(self)` destructures every field, with no `..`, and writes the one
+     commit order.
+   - The authored path is typed: prepare, then `into_publication`, then
+     `finish`, then commit.
+   - The attached runtime re-checks are deleted.
+6. **Detached reattach.** A detached succession holds only what presentation
+   needs. The one way back is `reattach`, which re-prepares every `Retain`
+   owner from the current session. The detached-drift test passes.
+7. **Mount transitions.**
+   - The graph mints a mount transition from its own snapshot. The caller
+     never supplies the prior state.
+   - The transition has `Mount` and `Unmount` lanes. Dependent axes come from
+     one graph-owned table, so an unmount never admits Layout.
+   - The vestigial `graph_eligibility_reserved` flag is deleted.
+8. **The succession pipeline, `Establish` and `Replace`.**
+   - Native establishment and both cutover paths move onto the pipeline.
+   - Establishment states that it allocates no occurrence geometry.
+   - The cutover transition becomes typestate, `Prepared` to `Committed` by
+     value, instead of an `Option`.
+   - Cutover clears are one `UiCutoverClears` disposition.
+   - Every prepared-succession guard in the owning runtime modules becomes a
+     type. A prepared value carries what its preparation computed, such as the
+     focus structural revision.
+9. **Authority preparation and semantic comparison.**
+   - Initial and successor authority preparation share one core,
+     parameterized by basis.
+   - Candidate admission runs before successor construction, and a test pins
+     the denial precedence.
+   - The semantic no-op compares one struct, destructured without `..`.
+10. **Frame mode and lanes.**
+    - One `UiMountedFrameMode` is chosen at begin and selects the matching
+      finish.
+    - Required lanes issue obligations, and recording a lane returns a receipt.
+    - Each mode has its own outcome type, so callers carry no `unreachable!`
+      arms.
+11. **Participation lowering.**
+    - The graph mints each node's admitted participation.
+    - A completed mechanic can resolve a `Deferred` axis. It never overrides
+      `Withheld` or `Denied`.
+    - Motion reads its graph axis.
+    - Each deferred axis carries its own reason.
+    - The axis table is written once.
+12. **Appearance.**
+    - The aspect and its value are one typed enum, and consumers match it
+      exhaustively.
+    - Demanded appearance owners are built once, at activation, and consumers
+      take the owner, not the session.
+    - Presentation work is typestate: `Unbound`, then `LayoutBound`, then
+      `Bound`. Appearance admission returns an admitted frame.
+13. **Intent payload.**
+    - Each projected field returns one record that owns its value, its input,
+      and its revision.
+    - Field-kind reads are typed per kind.
+    - `prepare_intent_payload` takes the generation reads and a route, and
+      returns a named struct.
+14. **Services.**
+    - Service normalization groups dependent owners into units. For example,
+      portal requires focus and motion, so they install together.
+    - Flows take the unit, and `is_installed` checks followed by expects
+      disappear.
+    - Proposal settlement takes a complete, typed acknowledgement set.
+    - Retention release returns a `Result`.
+15. **Remaining guards and debt.**
+    - Convert every remaining phase guard from the audit's miscellaneous list.
+    - One completion drop-guard type replaces the two copies.
+    - A non-empty member type carries the constraint pipeline's root member.
+    - Named outcomes replace the `qualification_cache` bool and the lowering
+      bool parameter.
+    - The overlay relation cache is tagged with its declaration revision.
+    - Verified orphan files are deleted.
+16. **Enforcement and composition.**
+    - A certification topology audit forbids writes to succession-owned session
+      fields outside the pipeline module, and forbids writes to the snapshot
+      slots except through their methods.
+    - Facade functions that still exceed the composition laws after steps 10,
+      12, and 14 are split into tables of contents.
+
 ### Phase 3: the five uses (`worth-ui-dsl` + `worth-ui-runtime`)
 
 The phase lands in this order:
@@ -209,10 +356,21 @@ The phase lands in this order:
 - **3a operability.** Condition sources for mutability, readiness, and policy
   feed `observe_operability_basis`. The existing decision and affinity code
   stays the consumer. The appearance Operability axis follows unchanged.
-  Completed. A changed condition re-observes only the standing facts of the
-  intents that read it. Application-fact and projection sources stay
-  pull-only.
-- **3b payload shaping.** A `derived` payload source.
+  - Conditions become the only Boolean operability source. The
+    `*-application-boolean` source kinds are retired for mutability,
+    readiness, policy, and confirmation, with every authored source,
+    constructor, and Pulse use migrated. No alias remains.
+  - Standing operability follows every source kind that reads an owner. A
+    changed condition or projection re-observes only the standing facts of
+    the intents that read it. The framework computes this from each
+    contract's declared sources. A committed-draft source is legal only on a
+    draft interaction and reads no owner, so it has nothing to push.
+  - Condition sources and their push are completed. Retirement and
+    projection push land after the typed succession cleanup, on its declared
+    consumer index.
+- **3b payload shaping.** A `derived` payload source for text fields and a
+  `condition` source for Boolean fields. Payload stays pull-only: currentness
+  at admission refuses a drifted expression result.
 - **3c derived scalar.** Scalar text presentation from a `derived` value.
 - **3d conditional presence.** A region mount gated by a condition, through the
   existing identity lifecycle decisions (Create/Retire). It never uses a
