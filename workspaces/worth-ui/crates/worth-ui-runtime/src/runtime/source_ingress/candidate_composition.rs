@@ -1,4 +1,5 @@
 use crate::facade::prepared_application_authority::WorthUiPreparedDeclarationSourceIdentity;
+use crate::runtime::expression::WorthUiAuthoredExpressionMaterial;
 use crate::runtime::{
     WorthUiCandidateAuthoringLane, WorthUiReplacementCandidate, WorthUiReplacementCandidateBasis,
 };
@@ -32,6 +33,7 @@ pub struct WorthUiCandidateComposition {
     candidate: WorthUiReplacementCandidate,
     declaration_material: WorthUiPreparedDeclarationMaterial,
     semantic_handoff: WorthUiSemanticHandoffEvidence,
+    expression_material: WorthUiAuthoredExpressionMaterial,
     basis: WorthUiCandidateCompositionBasis,
 }
 
@@ -39,6 +41,7 @@ pub(crate) struct WorthUiCandidatePreparationHandoff {
     candidate: WorthUiReplacementCandidate,
     declaration_material: WorthUiPreparedDeclarationMaterial,
     semantic_handoff: WorthUiSemanticHandoffEvidence,
+    expression_material: WorthUiAuthoredExpressionMaterial,
     composition_basis: WorthUiCandidateCompositionBasis,
 }
 
@@ -47,22 +50,35 @@ impl WorthUiCandidateComposition {
         candidate: WorthUiReplacementCandidate,
         declaration_material: WorthUiPreparedDeclarationMaterial,
         semantic_handoff: WorthUiSemanticHandoffEvidence,
+        expression_material: WorthUiAuthoredExpressionMaterial,
     ) -> Self {
-        Self::new(candidate, declaration_material, semantic_handoff)
+        Self::new(
+            candidate,
+            declaration_material,
+            semantic_handoff,
+            expression_material,
+        )
     }
 
     pub(super) fn rust_authored(
         candidate: WorthUiReplacementCandidate,
         declaration_material: WorthUiPreparedDeclarationMaterial,
         semantic_handoff: WorthUiSemanticHandoffEvidence,
+        expression_material: WorthUiAuthoredExpressionMaterial,
     ) -> Self {
-        Self::new(candidate, declaration_material, semantic_handoff)
+        Self::new(
+            candidate,
+            declaration_material,
+            semantic_handoff,
+            expression_material,
+        )
     }
 
     fn new(
         candidate: WorthUiReplacementCandidate,
         declaration_material: WorthUiPreparedDeclarationMaterial,
         semantic_handoff: WorthUiSemanticHandoffEvidence,
+        expression_material: WorthUiAuthoredExpressionMaterial,
     ) -> Self {
         let candidate = candidate.with_prepared_snapshot_succession(&semantic_handoff);
         let basis = WorthUiCandidateCompositionBasis {
@@ -74,6 +90,7 @@ impl WorthUiCandidateComposition {
             candidate,
             declaration_material,
             semantic_handoff,
+            expression_material,
             basis,
         }
     }
@@ -95,6 +112,7 @@ impl WorthUiCandidateComposition {
             candidate: self.candidate,
             declaration_material: self.declaration_material,
             semantic_handoff: self.semantic_handoff,
+            expression_material: self.expression_material,
             composition_basis: self.basis,
         }
     }
@@ -111,6 +129,7 @@ impl WorthUiCandidatePreparationHandoff {
         crate::facade::prepared_application_authority::WorthUiPreparedApplicationArtifact,
         WorthUiPreparedDeclarationMaterial,
         WorthUiSemanticHandoffEvidence,
+        WorthUiAuthoredExpressionMaterial,
     ) {
         let canonical_artifact =
             crate::facade::prepared_application_authority::WorthUiPreparedApplicationArtifact::source_backed(
@@ -120,6 +139,7 @@ impl WorthUiCandidatePreparationHandoff {
             canonical_artifact,
             self.declaration_material,
             self.semantic_handoff,
+            self.expression_material,
         )
     }
 
@@ -130,6 +150,7 @@ impl WorthUiCandidatePreparationHandoff {
         WorthUiReplacementCandidate,
         WorthUiPreparedDeclarationMaterial,
         WorthUiSemanticHandoffEvidence,
+        WorthUiAuthoredExpressionMaterial,
     ) {
         let canonical_artifact =
             crate::facade::prepared_application_authority::WorthUiPreparedApplicationArtifact::source_backed(
@@ -140,6 +161,7 @@ impl WorthUiCandidatePreparationHandoff {
             self.candidate,
             self.declaration_material,
             self.semantic_handoff,
+            self.expression_material,
         )
     }
 }

@@ -99,6 +99,7 @@ impl WorthUiActiveApplicationSession {
         }
         self.mounted
             .commit_graph_replacement_successor(mounted_successor);
+        self.follow_application_generation();
         let observation_resources = self.application.retire_observation_resources(
             crate::runtime::observation::UiObservationResourceRetirementCause::
                 ApplicationReplacement,

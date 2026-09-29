@@ -100,6 +100,8 @@ impl WorthUiActiveApplicationSession {
                 host_session: &self.host_session,
                 active_generation,
                 host_exchange: &mut self.host_exchange,
+                expressions: &mut self.expressions,
+                application_facts: &self.intent_application_facts,
             },
             transition,
             Some(&mut self.appearance_inspection),
@@ -147,6 +149,8 @@ impl WorthUiActiveApplicationSession {
             host_session: &self.host_session,
             active_generation,
             host_exchange: &mut self.host_exchange,
+            expressions: &mut self.expressions,
+            application_facts: &self.intent_application_facts,
         };
         if let Some(portal) = ports.portal.as_deref_mut() {
             rebind_portal_after_published_frame(portal, publication);
@@ -175,25 +179,21 @@ impl WorthUiActiveApplicationSession {
     }
 }
 
-struct UiMountedPublicationSettlementPorts<'a> {
-    mounted: &'a mut crate::mounting::WorthUiMountedSessionState,
-    focus: Option<&'a mut crate::runtime::focus::UiFocusRuntimeState>,
-    portal: Option<&'a mut crate::runtime::portal::UiPortalRuntimeState>,
-    interaction: &'a mut crate::runtime::interaction::UiInteractionRuntimeState,
-    host_session: &'a crate::facade::WorthUiHostSessionAuthority,
-    active_generation: crate::runtime::WorthUiActiveApplicationGenerationIdentity,
-    host_exchange: &'a mut crate::host_exchange::WorthUiHostExchangeSessionState,
+/// The owners a published mounted frame settles into.
+pub(super) struct UiMountedPublicationSettlementPorts<'a> {
+    pub(super) mounted: &'a mut crate::mounting::WorthUiMountedSessionState,
+    pub(super) focus: Option<&'a mut crate::runtime::focus::UiFocusRuntimeState>,
+    pub(super) portal: Option<&'a mut crate::runtime::portal::UiPortalRuntimeState>,
+    pub(super) interaction: &'a mut crate::runtime::interaction::UiInteractionRuntimeState,
+    pub(super) host_session: &'a crate::facade::WorthUiHostSessionAuthority,
+    pub(super) active_generation: crate::runtime::WorthUiActiveApplicationGenerationIdentity,
+    pub(super) host_exchange: &'a mut crate::host_exchange::WorthUiHostExchangeSessionState,
+    pub(super) expressions: &'a mut crate::runtime::expression::UiExpressionRuntimeState,
+    pub(super) application_facts: &'a crate::runtime::intent::UiIntentApplicationFactState,
 }
 
 pub(super) fn finish_mounted_transition(
-    mounted: &mut crate::mounting::WorthUiMountedSessionState,
-    focus: Option<&mut crate::runtime::focus::UiFocusRuntimeState>,
-    portal: Option<&mut crate::runtime::portal::UiPortalRuntimeState>,
-    interaction: &mut crate::runtime::interaction::UiInteractionRuntimeState,
-    host_session: &crate::facade::WorthUiHostSessionAuthority,
-    application_session: crate::facade::WorthUiActiveApplicationSessionIdentity,
-    generation: &crate::facade::prepared_application_authority::WorthUiPreparedApplicationGenerationIdentity,
-    host_exchange: &mut crate::host_exchange::WorthUiHostExchangeSessionState,
+    ports: UiMountedPublicationSettlementPorts<'_>,
     transition: crate::mounting::UiMountedPublicationTransition,
     appearance_inspection: Option<&mut crate::runtime::appearance::UiAppearanceInspectionProducer>,
     appearance_presentation: Option<
@@ -203,20 +203,8 @@ pub(super) fn finish_mounted_transition(
         &mut super::active_application_session::UiActiveOverlayCompositionOwners,
     >,
 ) -> UiMountedFrameOutcome {
-    let active_generation = crate::runtime::WorthUiActiveApplicationGenerationIdentity::current(
-        application_session,
-        generation,
-    );
     let outcome = finish_mounted_transition_with_ports(
-        UiMountedPublicationSettlementPorts {
-            mounted,
-            focus,
-            portal,
-            interaction,
-            host_session,
-            active_generation,
-            host_exchange,
-        },
+        ports,
         transition,
         appearance_inspection,
         appearance_presentation,
@@ -236,6 +224,23 @@ fn finish_mounted_transition_with_ports(
     >,
 ) -> UiMountedFrameOutcome {
     let (outcome, observation, appearance, hit_transition) = transition.into_parts();
+    match &outcome {
+        UiMountedFrameOutcome::Published(_) | UiMountedFrameOutcome::Reconciled(_) => ports
+            .expressions
+            .invalidate_published_frame(&crate::runtime::expression::UiExpressionInputs {
+                generation: &ports.active_generation,
+                mounted: ports.mounted,
+                facts: ports.application_facts,
+            }),
+        UiMountedFrameOutcome::Unchanged(_)
+        | UiMountedFrameOutcome::RejectedBeforeEffects(_)
+        | UiMountedFrameOutcome::InFlight(_)
+        | UiMountedFrameOutcome::PresentationIndeterminate(_)
+        | UiMountedFrameOutcome::Superseded(_)
+        | UiMountedFrameOutcome::RetentionDenied(_)
+        | UiMountedFrameOutcome::AdmissionDenied(_)
+        | UiMountedFrameOutcome::CompletionDenied(_) => {}
+    }
     match &outcome {
         UiMountedFrameOutcome::Published(receipt)
         | UiMountedFrameOutcome::Unchanged(receipt)

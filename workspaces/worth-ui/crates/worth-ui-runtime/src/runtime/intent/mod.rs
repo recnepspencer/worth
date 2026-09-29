@@ -77,7 +77,8 @@ pub(crate) use payload::{
 pub(crate) use payload::{UiAdmittedValidationAppearanceTarget, UiValidationAppearanceFactDenial};
 pub use payload::{
     UiIntentApplicationFactRevision, UiIntentApplicationFactUpdateDenial,
-    UiIntentApplicationFactUpdateReceipt, UiIntentDraftInputRevision, UiIntentInputBasisReceipt,
+    UiIntentApplicationFactUpdateReceipt, UiIntentApplicationInputReference,
+    UiIntentApplicationInputRevision, UiIntentDraftInputRevision, UiIntentInputBasisReceipt,
     UiIntentInputOwnerRevision, UiIntentPayloadProjectionCost, UiIntentPayloadStop,
     UiIntentQueryInputRevision, UiPreparedIntentPayload,
 };

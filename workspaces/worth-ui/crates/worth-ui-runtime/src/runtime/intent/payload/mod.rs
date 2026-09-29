@@ -9,12 +9,12 @@ pub(crate) use application_fact_state::{
     UiAdmittedValidationAppearanceTarget, UiValidationAppearanceFactDenial,
 };
 pub(crate) use application_fact_state::{
-    UiIntentApplicationFactState, UiIntentApplicationInputReference,
-    UiPreparedValidationAppearanceReceiptSuccession, UiValidationAppearanceClass,
-    UiValidationAppearanceFactSnapshot,
+    UiIntentApplicationFactState, UiPreparedValidationAppearanceReceiptSuccession,
+    UiValidationAppearanceClass, UiValidationAppearanceFactSnapshot,
 };
 pub use application_fact_state::{
     UiIntentApplicationFactUpdateDenial, UiIntentApplicationFactUpdateReceipt,
+    UiIntentApplicationInputReference, UiIntentApplicationInputRevision,
 };
 pub use input_basis::{
     UiIntentApplicationFactRevision, UiIntentDraftInputRevision, UiIntentInputBasisReceipt,

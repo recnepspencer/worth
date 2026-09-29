@@ -3,6 +3,7 @@ use crate::capability::{CapabilitySnapshot, CapabilitySnapshotDigest};
 use crate::facade::prepared_application_authority::{
     WorthUiPreparedApplicationArtifact, WorthUiPreparedDeclarationSourceIdentity,
 };
+use crate::runtime::expression::WorthUiAuthoredExpressionMaterial;
 use crate::runtime::{WorthUiPreparedDeclarationMaterial, WorthUiSemanticHandoffEvidence};
 
 pub(crate) struct WorthUiApplicationPreparationSource {
@@ -10,6 +11,7 @@ pub(crate) struct WorthUiApplicationPreparationSource {
     authored_source_basis: crate::runtime::WorthUiAuthoredSourceBasis,
     declaration_material: WorthUiPreparedDeclarationMaterial,
     semantic_handoff: WorthUiSemanticHandoffEvidence,
+    expression_material: WorthUiAuthoredExpressionMaterial,
 }
 
 impl WorthUiApplicationPreparationSource {
@@ -45,12 +47,14 @@ impl WorthUiApplicationPreparationSource {
             input.source_revision_digest(),
             handoff.composition_basis().clone(),
         );
-        let (canonical_artifact, declaration_material, semantic_handoff) = handoff.into_parts();
+        let (canonical_artifact, declaration_material, semantic_handoff, expression_material) =
+            handoff.into_parts();
         Ok(Self {
             canonical_artifact,
             authored_source_basis,
             declaration_material,
             semantic_handoff,
+            expression_material,
         })
     }
 
@@ -61,7 +65,8 @@ impl WorthUiApplicationPreparationSource {
         let candidate_snapshot_digest = submission.candidate_snapshot_digest();
         let authored_source_basis = submission.authored_source_basis();
         let handoff = submission.into_preparation_handoff();
-        let (canonical_artifact, declaration_material, semantic_handoff) = handoff.into_parts();
+        let (canonical_artifact, declaration_material, semantic_handoff, expression_material) =
+            handoff.into_parts();
         if candidate_snapshot_digest != snapshot_digest.as_u64() {
             return Err(
                 WorthUiApplicationPreparationDenial::CandidateSnapshotMismatch {
@@ -75,6 +80,7 @@ impl WorthUiApplicationPreparationSource {
             authored_source_basis,
             declaration_material,
             semantic_handoff,
+            expression_material,
         })
     }
 
@@ -85,6 +91,7 @@ impl WorthUiApplicationPreparationSource {
         crate::runtime::WorthUiAuthoredSourceBasis,
         WorthUiPreparedDeclarationSourceIdentity,
         WorthUiSemanticHandoffEvidence,
+        WorthUiAuthoredExpressionMaterial,
         Vec<crate::declaration::UiDeclarationArtifact>,
     ) {
         let Self {
@@ -92,6 +99,7 @@ impl WorthUiApplicationPreparationSource {
             authored_source_basis,
             declaration_material,
             semantic_handoff,
+            expression_material,
         } = self;
         let (artifacts, declaration_source_identity) = declaration_material.into_parts();
         (
@@ -99,6 +107,7 @@ impl WorthUiApplicationPreparationSource {
             authored_source_basis,
             declaration_source_identity,
             semantic_handoff,
+            expression_material,
             artifacts,
         )
     }

@@ -10,6 +10,7 @@ pub mod declaration;
 pub mod entry;
 pub mod evidence;
 pub mod execution;
+pub mod expression;
 pub mod graph;
 pub mod host;
 mod host_session_authority;

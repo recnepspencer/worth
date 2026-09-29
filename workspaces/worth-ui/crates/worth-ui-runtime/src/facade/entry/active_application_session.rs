@@ -47,6 +47,19 @@ pub(in crate::facade::entry) use portal_exit_publication::UiPortalExitTerminalPr
 pub(in crate::facade::entry) use portal_exit_retention::{
     UiPortalExitTerminalPending, UiPortalExitTerminalPendingKind,
 };
+#[path = "active_application_session/evidence_only_successor_commit.rs"]
+mod evidence_only_successor_commit;
+#[path = "active_application_session/expression_access.rs"]
+mod expression_access;
+#[cfg(test)]
+#[path = "active_application_session/expression_currentness_tests.rs"]
+mod expression_currentness_tests;
+#[cfg(test)]
+#[path = "active_application_session/expression_generation_following_tests.rs"]
+mod expression_generation_following_tests;
+#[cfg(test)]
+#[path = "active_application_session/expression_session_fixture.rs"]
+pub(super) mod expression_session_fixture;
 #[cfg(any(test, feature = "certification-support"))]
 #[path = "active_application_session/plan_observation.rs"]
 mod plan_observation;
@@ -177,6 +190,7 @@ pub struct WorthUiActiveApplicationSession {
     pub(super) portal_exit_retention: portal_exit_retention::UiPortalExitRetentionCoordinator,
     pub(super) intent_evidence: crate::inspection::intent::UiIntentEvidenceRegistry,
     pub(super) intent_application_facts: crate::runtime::intent::UiIntentApplicationFactState,
+    pub(super) expressions: crate::runtime::expression::UiExpressionRuntimeState,
     pub(super) intent_execution: crate::runtime::intent_execution::UiIntentExecutionState,
     pub(super) intent_admission: crate::runtime::intent::UiIntentAdmissionState,
     pub(super) intent_confirmation: crate::runtime::intent::UiIntentConfirmationState,
@@ -346,6 +360,7 @@ impl WorthUiActiveApplicationSession {
             appearance_owner_snapshot: &mut self.appearance_owner_snapshot,
             intent_admission: &mut self.intent_admission,
             intent_application_facts: &mut self.intent_application_facts,
+            expressions: &mut self.expressions,
             mounted_owner_receipt_successions: &mut self.mounted_owner_receipt_successions,
             pointer_affordance_snapshot: &self.pointer_affordance_snapshot,
             appearance_inspection: &mut self.appearance_inspection,

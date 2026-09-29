@@ -1,8 +1,10 @@
 use super::{
-    mounted_publication::finish_mounted_transition, WorthUiActiveApplicationSession,
-    WorthUiMountedFrameExecutionStop, WorthUiMountedFrameFrameworkTransitionStop,
+    mounted_publication::{finish_mounted_transition, UiMountedPublicationSettlementPorts},
+    WorthUiActiveApplicationSession, WorthUiMountedFrameExecutionStop,
+    WorthUiMountedFrameFrameworkTransitionStop,
 };
 use crate::mounting::UiMountedFrameOutcome;
+use crate::runtime::WorthUiActiveApplicationGenerationIdentity;
 use worth_ui_host_contract::UiPresentationDeadline;
 
 type PendingHostMeasurements = (
@@ -120,14 +122,20 @@ impl WorthUiActiveApplicationSession {
         let owner_receipts = execution.prepare_mounted_owner_receipts(&frame);
         let transition = execution.present_prepared_frame_with_appearance(frame, deadline, now);
         let outcome = finish_mounted_transition(
-            &mut *execution.mounted,
-            execution.focus.as_deref_mut(),
-            execution.portal.as_deref_mut(),
-            &mut *execution.interaction,
-            execution.host_session,
-            execution.application_session_identity,
-            &execution.generation_identity,
-            &mut *execution.host_exchange,
+            UiMountedPublicationSettlementPorts {
+                mounted: &mut *execution.mounted,
+                focus: execution.focus.as_deref_mut(),
+                portal: execution.portal.as_deref_mut(),
+                interaction: &mut *execution.interaction,
+                host_session: execution.host_session,
+                active_generation: WorthUiActiveApplicationGenerationIdentity::current(
+                    execution.application_session_identity,
+                    &execution.generation_identity,
+                ),
+                host_exchange: &mut *execution.host_exchange,
+                expressions: &mut *execution.expressions,
+                application_facts: &*execution.intent_application_facts,
+            },
             transition,
             Some(&mut *execution.appearance_inspection),
             Some(&mut *execution.presentation),
@@ -176,14 +184,20 @@ impl WorthUiActiveApplicationSession {
         let owner_receipts = execution.prepare_mounted_owner_receipts(&frame);
         let transition = execution.present_prepared_frame_with_appearance(frame, deadline, now);
         let outcome = finish_mounted_transition(
-            &mut *execution.mounted,
-            execution.focus.as_deref_mut(),
-            execution.portal.as_deref_mut(),
-            &mut *execution.interaction,
-            execution.host_session,
-            execution.application_session_identity,
-            &execution.generation_identity,
-            &mut *execution.host_exchange,
+            UiMountedPublicationSettlementPorts {
+                mounted: &mut *execution.mounted,
+                focus: execution.focus.as_deref_mut(),
+                portal: execution.portal.as_deref_mut(),
+                interaction: &mut *execution.interaction,
+                host_session: execution.host_session,
+                active_generation: WorthUiActiveApplicationGenerationIdentity::current(
+                    execution.application_session_identity,
+                    &execution.generation_identity,
+                ),
+                host_exchange: &mut *execution.host_exchange,
+                expressions: &mut *execution.expressions,
+                application_facts: &*execution.intent_application_facts,
+            },
             transition,
             Some(&mut *execution.appearance_inspection),
             Some(&mut *execution.presentation),

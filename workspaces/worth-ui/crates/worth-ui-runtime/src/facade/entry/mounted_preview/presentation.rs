@@ -1,11 +1,13 @@
 use worth_ui_host_contract::UiPresentationDeadline;
 
+use super::super::mounted_publication::UiMountedPublicationSettlementPorts;
 use super::{
     WorthUiMountedPreviewAdmissionRejection, WorthUiMountedPreviewCompletionRejection,
     WorthUiMountedPreviewDisposition, WorthUiMountedPreviewInFlight, WorthUiMountedPreviewOutcome,
     WorthUiMountedPreviewPorts, WorthUiMountedPreviewRetentionRejection,
     WorthUiPreparedMountedPreview, WorthUiResolvedMountedPreview,
 };
+use crate::runtime::WorthUiActiveApplicationGenerationIdentity;
 
 impl<'session> WorthUiPreparedMountedPreview<'session> {
     pub fn frame(&self) -> &crate::mounting::UiPreparedMountedFrame {
@@ -29,14 +31,20 @@ impl<'session> WorthUiPreparedMountedPreview<'session> {
                 .mounted
                 .present_prepared_frame(ports.host_session, frame, None, deadline, now);
         let outcome = super::super::mounted_publication::finish_mounted_transition(
-            ports.mounted,
-            ports.focus.as_deref_mut(),
-            ports.portal.as_deref_mut(),
-            ports.interaction,
-            ports.host_session,
-            ports.application_session_identity,
-            &ports.generation_identity,
-            ports.host_exchange,
+            UiMountedPublicationSettlementPorts {
+                mounted: ports.mounted,
+                focus: ports.focus.as_deref_mut(),
+                portal: ports.portal.as_deref_mut(),
+                interaction: ports.interaction,
+                host_session: ports.host_session,
+                active_generation: WorthUiActiveApplicationGenerationIdentity::current(
+                    ports.application_session_identity,
+                    &ports.generation_identity,
+                ),
+                host_exchange: ports.host_exchange,
+                expressions: ports.expressions,
+                application_facts: ports.application_facts,
+            },
             publication,
             None,
             None,
@@ -96,14 +104,20 @@ impl<'session> WorthUiMountedPreviewInFlight<'session> {
                 .mounted
                 .complete_presentation(ports.host_session, handle.clone(), now);
         let outcome = super::super::mounted_publication::finish_mounted_transition(
-            ports.mounted,
-            ports.focus.as_deref_mut(),
-            ports.portal.as_deref_mut(),
-            ports.interaction,
-            ports.host_session,
-            ports.application_session_identity,
-            &ports.generation_identity,
-            ports.host_exchange,
+            UiMountedPublicationSettlementPorts {
+                mounted: ports.mounted,
+                focus: ports.focus.as_deref_mut(),
+                portal: ports.portal.as_deref_mut(),
+                interaction: ports.interaction,
+                host_session: ports.host_session,
+                active_generation: WorthUiActiveApplicationGenerationIdentity::current(
+                    ports.application_session_identity,
+                    &ports.generation_identity,
+                ),
+                host_exchange: ports.host_exchange,
+                expressions: ports.expressions,
+                application_facts: ports.application_facts,
+            },
             publication,
             None,
             None,

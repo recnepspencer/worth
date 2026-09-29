@@ -45,7 +45,7 @@ fn a_layout_that_restates_the_registered_layout_admits() {
     let app = row_app();
     let material = prepare_semantic_handoff(layout_package(ROW, RESTATED), app.capabilities())
         .expect("a layout block that restates its container's layout admits");
-    let (_, _, evidence) = material.into_parts();
+    let (_, _, evidence, _) = material.into_parts();
 
     assert_eq!(evidence.successor_snapshot(), None);
 }

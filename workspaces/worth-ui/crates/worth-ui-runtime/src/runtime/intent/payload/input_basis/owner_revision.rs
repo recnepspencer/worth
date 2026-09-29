@@ -11,6 +11,11 @@ pub struct UiIntentQueryInputRevision {
     revision: worth_ui_query_binding::UiProjectionInputRevision,
 }
 
+/// The revision of one application fact as an Intent payload field read it:
+/// the payload field it fed, the fact identity and the fact revision. It
+/// proves which fact revision a payload was projected from. Expression
+/// operands use `UiIntentApplicationInputRevision` instead, which also names
+/// the active generation the fact was read in.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct UiIntentApplicationFactRevision {
     field: crate::capability::UiIntentPayloadFieldDescriptor,

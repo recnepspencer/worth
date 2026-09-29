@@ -16,6 +16,7 @@ pub enum WorthUiApplicationPreparationDenial {
     RuntimePreparation(Box<crate::runtime::WorthUiSemanticHandoffPreparationDenial>),
     Candidate(Box<crate::runtime::WorthUiReplacementCandidateDenial>),
     IntentCatalog(Box<crate::declaration::UiIntentCatalogPreparationDenial>),
+    ExpressionCatalog(Box<crate::runtime::expression::UiExpressionCatalogPreparationDenial>),
     IntentExecutionBinding(
         Box<crate::runtime::intent_execution::UiIntentExecutionBindingPreparationDenial>,
     ),
@@ -36,6 +37,7 @@ impl WorthUiApplicationPreparationDenial {
             | Self::RuntimePreparation(_)
             | Self::Candidate(_)
             | Self::IntentCatalog(_)
+            | Self::ExpressionCatalog(_)
             | Self::IntentExecutionBinding(_) => WorthUiApplicationPreparationPhase::CandidateBasis,
             Self::CandidateSnapshotMismatch { .. } => {
                 WorthUiApplicationPreparationPhase::CandidateBasis

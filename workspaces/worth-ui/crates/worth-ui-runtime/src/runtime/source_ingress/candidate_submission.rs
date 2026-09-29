@@ -46,17 +46,20 @@ pub(crate) fn prepare_rust_authored_handoff(
     let material = prepare_semantic_handoff(sealed_package, snapshot).map_err(|denial| {
         WorthUiAuthoredCompositionPreparationDenial::RuntimePreparation(Box::new(denial))
     })?;
-    let (artifact, declaration_material, handoff) = material.into_parts();
+    let (artifact, declaration_material, handoff, expression_material) = material.into_parts();
     let candidate = rust_authored_replacement_candidate(
         artifact,
         handoff.successor_snapshot_digest(),
         WorthUiReplacementCause::rust_authored_input_change(source_revision_digest),
     )
     .map_err(|denial| WorthUiAuthoredCompositionPreparationDenial::Candidate(Box::new(denial)))?;
-    Ok(
-        WorthUiCandidateComposition::rust_authored(candidate, declaration_material, handoff)
-            .into_preparation_handoff(),
+    Ok(WorthUiCandidateComposition::rust_authored(
+        candidate,
+        declaration_material,
+        handoff,
+        expression_material,
     )
+    .into_preparation_handoff())
 }
 
 impl WorthUiWatchedCandidateSubmission {

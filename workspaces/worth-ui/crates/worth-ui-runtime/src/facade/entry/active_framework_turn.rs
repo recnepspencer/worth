@@ -41,6 +41,7 @@ pub struct WorthUiActiveFrameworkTurnCompletion<'session> {
     pub(super) intent_admission: &'session mut crate::runtime::intent::UiIntentAdmissionState,
     pub(super) intent_application_facts:
         &'session mut crate::runtime::intent::UiIntentApplicationFactState,
+    pub(super) expressions: &'session mut crate::runtime::expression::UiExpressionRuntimeState,
     pub(super) mounted_owner_receipt_successions: &'session mut super::mounted_owner_receipt_succession::UiMountedOwnerReceiptSuccessionCoordinator,
     pub(super) pointer_affordance_snapshot:
         &'session Option<crate::runtime::pointer_affordance::UiPointerAffordanceSnapshot>,
@@ -82,6 +83,7 @@ pub struct WorthUiActiveFrameworkTurnExecution<'session> {
     pub(super) intent_admission: &'session mut crate::runtime::intent::UiIntentAdmissionState,
     pub(super) intent_application_facts:
         &'session mut crate::runtime::intent::UiIntentApplicationFactState,
+    pub(super) expressions: &'session mut crate::runtime::expression::UiExpressionRuntimeState,
     pub(super) mounted_owner_receipt_successions: &'session mut super::mounted_owner_receipt_succession::UiMountedOwnerReceiptSuccessionCoordinator,
     pub(super) pointer_affordance_snapshot:
         &'session Option<crate::runtime::pointer_affordance::UiPointerAffordanceSnapshot>,
@@ -134,6 +136,7 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
             appearance_owner_snapshot,
             intent_admission,
             intent_application_facts,
+            expressions,
             mounted_owner_receipt_successions,
             pointer_affordance_snapshot,
             appearance_inspection,
@@ -168,6 +171,7 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
                 appearance_owner_snapshot,
                 intent_admission,
                 intent_application_facts,
+                expressions,
                 mounted_owner_receipt_successions,
                 pointer_affordance_snapshot,
                 appearance_inspection,
@@ -203,6 +207,7 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
                 appearance_owner_snapshot,
                 intent_admission,
                 intent_application_facts,
+                expressions,
                 mounted_owner_receipt_successions,
                 pointer_affordance_snapshot,
                 appearance_inspection,

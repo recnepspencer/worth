@@ -25,6 +25,7 @@ pub(crate) mod appearance;
 mod drag_resize;
 pub(crate) mod execution;
 pub(crate) mod exports;
+pub(crate) mod expression;
 pub(crate) mod host_observation;
 pub(crate) mod intent;
 pub(crate) mod pointer_affordance;

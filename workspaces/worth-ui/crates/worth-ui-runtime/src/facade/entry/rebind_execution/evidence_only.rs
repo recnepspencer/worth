@@ -132,16 +132,14 @@ impl<'session> WorthUiPreparedEvidenceOnlyApplicationRebind<'session> {
             _admitted_candidate: _,
             _comparison: _,
         } = self;
-        let generations = session
-            .application
-            .commit_evidence_only_rebind(successor_authority);
-        session.commit_retained_appearance_succession(appearance_succession, owners);
-        session.authored_overlay_bindings = overlay_bindings;
-        session.pointer_affordance_snapshot = pointer_succession.into_snapshot();
-        session
-            .mounted
-            .commit_retained_geometry_succession(occurrence_geometry);
-        Ok(generations)
+        Ok(session.commit_evidence_only_successor(
+            successor_authority,
+            appearance_succession,
+            owners,
+            overlay_bindings,
+            pointer_succession,
+            occurrence_geometry,
+        ))
     }
 
     pub(crate) fn generation_identity(

@@ -58,15 +58,20 @@ pub enum UiIntentApplicationFactUpdateDenial {
     },
 }
 
+/// The revision of one application fact as an expression operand read it: the
+/// active generation, the fact identity and the fact revision. It is current
+/// only in that generation. Intent payloads use
+/// `UiIntentApplicationFactRevision` instead, which names the payload field
+/// the fact fed and carries no generation.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(crate) struct UiIntentApplicationInputRevision {
+pub struct UiIntentApplicationInputRevision {
     generation: crate::runtime::WorthUiActiveApplicationGenerationIdentity,
     identity: Arc<str>,
     revision: u64,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(crate) enum UiIntentApplicationInputReference {
+pub enum UiIntentApplicationInputReference {
     Text {
         revision: UiIntentApplicationInputRevision,
         value: Arc<str>,
@@ -198,6 +203,13 @@ impl UiIntentApplicationFactState {
         })
     }
 
+    pub(crate) fn slot_of(
+        &self,
+        identity: &str,
+    ) -> Option<crate::declaration::UiIntentApplicationFactSlot> {
+        self.slots_by_identity.get(identity).copied()
+    }
+
     pub(crate) fn is_current_reference(
         &self,
         expected: &UiIntentApplicationInputReference,
@@ -277,12 +289,26 @@ impl UiIntentApplicationFactUpdateReceipt {
 }
 
 impl UiIntentApplicationInputReference {
-    pub(crate) const fn revision(&self) -> &UiIntentApplicationInputRevision {
+    pub const fn revision(&self) -> &UiIntentApplicationInputRevision {
         match self {
             Self::Text { revision, .. }
             | Self::Boolean { revision, .. }
             | Self::Unsigned64 { revision, .. } => revision,
         }
+    }
+
+    /// The same fact, with the same identity, revision and value, issued for
+    /// `generation`.
+    pub(crate) fn restamped(
+        &self,
+        generation: &crate::runtime::WorthUiActiveApplicationGenerationIdentity,
+    ) -> Self {
+        let mut restamped = self.clone();
+        let (Self::Text { revision, .. }
+        | Self::Boolean { revision, .. }
+        | Self::Unsigned64 { revision, .. }) = &mut restamped;
+        revision.generation = generation.clone();
+        restamped
     }
 
     pub(crate) const fn kind(&self) -> UiIntentPayloadFieldKind {
@@ -316,15 +342,15 @@ impl UiIntentApplicationInputReference {
 }
 
 impl UiIntentApplicationInputRevision {
-    pub(crate) fn generation(&self) -> &crate::runtime::WorthUiActiveApplicationGenerationIdentity {
+    pub fn generation(&self) -> &crate::runtime::WorthUiActiveApplicationGenerationIdentity {
         &self.generation
     }
 
-    pub(crate) fn identity(&self) -> &str {
+    pub fn identity(&self) -> &str {
         &self.identity
     }
 
-    pub(crate) const fn revision(&self) -> u64 {
+    pub const fn revision(&self) -> u64 {
         self.revision
     }
 }

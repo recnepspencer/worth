@@ -90,6 +90,15 @@ pub(super) fn source_with_role(
     role: Option<&UiAppearanceRoleDeclaration>,
     routes: usize,
 ) -> WorthUiRustAuthoredArtifactInput {
+    WorthUiRustAuthoredArtifactInput::from_modules([consumer_module(role, routes)])
+}
+
+/// The consumer module: `routes` operability-gated control routes on the
+/// appearance node, attached to `role` when one is given.
+pub(super) fn consumer_module(
+    role: Option<&UiAppearanceRoleDeclaration>,
+    routes: usize,
+) -> WorthUiRustAuthoredArtifactInputModule {
     let mut module = WorthUiRustAuthoredArtifactInputModule::new("appearance/consumer");
     let mut bindings = Vec::new();
     for (identity, family) in [
@@ -128,7 +137,7 @@ pub(super) fn source_with_role(
             )
             .unwrap();
     }
-    WorthUiRustAuthoredArtifactInput::from_modules([module])
+    module
 }
 
 pub(super) fn component() -> crate::capability::ComponentDescriptor {

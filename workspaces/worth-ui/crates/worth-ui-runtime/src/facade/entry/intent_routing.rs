@@ -40,7 +40,8 @@ impl WorthUiActiveApplicationSession {
         crate::facade::intent::UiIntentApplicationFactUpdateReceipt,
         crate::facade::intent::UiIntentApplicationFactUpdateDenial,
     > {
-        self.intent_application_facts.update_text(fact, value)
+        let updated = self.intent_application_facts.update_text(fact, value);
+        self.settle_expressions_after_fact_update(updated)
     }
 
     pub fn update_intent_boolean_fact(
@@ -53,7 +54,8 @@ impl WorthUiActiveApplicationSession {
         crate::facade::intent::UiIntentApplicationFactUpdateReceipt,
         crate::facade::intent::UiIntentApplicationFactUpdateDenial,
     > {
-        self.intent_application_facts.update_boolean(fact, value)
+        let updated = self.intent_application_facts.update_boolean(fact, value);
+        self.settle_expressions_after_fact_update(updated)
     }
 
     pub fn update_intent_unsigned64_fact(
@@ -66,6 +68,33 @@ impl WorthUiActiveApplicationSession {
         crate::facade::intent::UiIntentApplicationFactUpdateReceipt,
         crate::facade::intent::UiIntentApplicationFactUpdateDenial,
     > {
-        self.intent_application_facts.update_unsigned64(fact, value)
+        let updated = self.intent_application_facts.update_unsigned64(fact, value);
+        self.settle_expressions_after_fact_update(updated)
+    }
+
+    /// Re-settles only the expressions that read the fact an accepted update
+    /// changed. A denied update changed nothing and settles nothing.
+    fn settle_expressions_after_fact_update(
+        &mut self,
+        updated: Result<
+            crate::facade::intent::UiIntentApplicationFactUpdateReceipt,
+            crate::facade::intent::UiIntentApplicationFactUpdateDenial,
+        >,
+    ) -> Result<
+        crate::facade::intent::UiIntentApplicationFactUpdateReceipt,
+        crate::facade::intent::UiIntentApplicationFactUpdateDenial,
+    > {
+        if let Ok(receipt) = &updated {
+            let active = self.active_generation_identity();
+            self.expressions.invalidate_application(
+                receipt,
+                &crate::runtime::expression::UiExpressionInputs {
+                    generation: &active,
+                    mounted: &self.mounted,
+                    facts: &self.intent_application_facts,
+                },
+            );
+        }
+        updated
     }
 }

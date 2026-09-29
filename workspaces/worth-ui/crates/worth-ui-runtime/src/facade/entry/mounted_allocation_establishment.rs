@@ -200,6 +200,7 @@ impl WorthUiActiveApplicationSession {
         self.pointer_affordance_snapshot = pointer.into_snapshot();
         self.authored_overlay_bindings
             .commit_graph_succession(overlay_succession);
+        self.follow_application_generation();
         Ok(WorthUiMountedAllocationEstablishmentReceipt { committed })
     }
 

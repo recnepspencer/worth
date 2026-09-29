@@ -265,9 +265,32 @@ fn mounted_world() -> (
     crate::certification_support::ScriptedPresentationHost,
     Vec<UiSemanticSurfaceIdentity>,
 ) {
+    mounted_world_with(super::fixture::source_with_role(None, 2))
+}
+
+/// Mounts the graph node `source` authors on three published surfaces.
+fn mounted_world_with(
+    source: worth_ui_dsl::WorthUiRustAuthoredArtifactInput,
+) -> (
+    crate::facade::WorthUiActiveApplicationSession,
+    crate::certification_support::ScriptedPresentationHost,
+    Vec<UiSemanticSurfaceIdentity>,
+) {
     let role = super::fixture::role();
-    let source = super::fixture::source_with_role(None, 2);
-    let (mut session, host) = super::fixture::session_with_source(&role, source);
+    let (session, host) = super::fixture::session_with_source(&role, source);
+    mount_world(session, host)
+}
+
+/// Establishes the mounted allocation of the launched `session` and mounts
+/// its authored graph node on three published surfaces.
+fn mount_world(
+    mut session: crate::facade::WorthUiActiveApplicationSession,
+    host: crate::certification_support::ScriptedPresentationHost,
+) -> (
+    crate::facade::WorthUiActiveApplicationSession,
+    crate::certification_support::ScriptedPresentationHost,
+    Vec<UiSemanticSurfaceIdentity>,
+) {
     let graph = session
         .graph()
         .node_identities()
@@ -317,3 +340,6 @@ mod mounted_tests;
 
 #[path = "pointer_affordance_succession_tests.rs"]
 mod succession_tests;
+
+#[path = "expression_mounted_succession_tests.rs"]
+mod expression_mounted_succession_tests;
