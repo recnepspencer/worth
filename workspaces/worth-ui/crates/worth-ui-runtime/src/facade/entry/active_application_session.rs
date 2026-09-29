@@ -60,6 +60,9 @@ mod expression_generation_following_tests;
 #[cfg(test)]
 #[path = "active_application_session/expression_session_fixture.rs"]
 pub(super) mod expression_session_fixture;
+#[cfg(test)]
+#[path = "active_application_session/succession_characterization.rs"]
+pub(super) mod succession_characterization;
 #[cfg(any(test, feature = "certification-support"))]
 #[path = "active_application_session/plan_observation.rs"]
 mod plan_observation;

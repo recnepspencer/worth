@@ -4,6 +4,9 @@
 //! uncommitted succession leaves the predecessor as it was.
 
 use super::*;
+use crate::facade::entry::active_application_session::succession_characterization::{
+    assert_owners_follow, assert_pointer_is_fresh, assert_standing_is_fresh, SuccessionWork,
+};
 
 /// Runs a live evidence-only rebind whose mutability condition body is
 /// `mutable_when`, and returns whether it prepared a mounted frame.
@@ -52,7 +55,7 @@ fn prepare_rebind<'session>(
 }
 
 /// A world whose pointer hovers its one consumer, painted operable.
-fn hovered() -> (World, UiMountedInstanceIdentity) {
+pub(super) fn hovered() -> (World, UiMountedInstanceIdentity) {
     let mut world = world(Policy::Fact);
     let (target, _) = activate(&mut world.session, world.surface, 1);
     repaint(
@@ -99,6 +102,8 @@ pub(super) fn hovered_family(
 #[test]
 fn a_successor_keeps_the_hovered_affordance_current_for_a_current_condition() {
     let (mut world, target) = hovered();
+    let predecessor = world.session.active_generation_identity();
+    let work = SuccessionWork::read(&world.session);
 
     assert!(
         !evidence_only_rebind(&mut world, "f", 3),
@@ -116,6 +121,21 @@ fn a_successor_keeps_the_hovered_affordance_current_for_a_current_condition() {
         !pending,
         "the displayed pointer already shows the current affordance"
     );
+    assert_ne!(world.session.active_generation_identity(), predecessor);
+    assert_pointer_is_fresh(&world.session, true);
+    assert_standing_is_fresh(&world.session, 1);
+    assert_owners_follow(&world.session, true);
+    assert_eq!(
+        work.since(&world.session),
+        SuccessionWork {
+            reobservations: 99,
+            operand_probes: 99,
+            index_hits: 99,
+            evaluations: 99,
+            appearance_batches: 99,
+        },
+        "an evidence-only successor (W1) re-stamps its unchanged conditions"
+    );
     let _ = world.session.shutdown();
 }
 
@@ -126,6 +146,8 @@ fn a_successor_that_changes_a_hovered_condition_publishes_its_new_family() {
         hovered_family(&world, target).0,
         crate::declaration::UiPointerAffordance::Activation
     );
+    let predecessor = world.session.active_generation_identity();
+    let work = SuccessionWork::read(&world.session);
 
     assert!(
         evidence_only_rebind(&mut world, "!f", 3),
@@ -139,6 +161,22 @@ fn a_successor_that_changes_a_hovered_condition_publishes_its_new_family() {
         "the readonly consumer no longer offers activation"
     );
     assert!(!pending, "the published frame shows the new family");
+    assert_ne!(world.session.active_generation_identity(), predecessor);
+    assert_pointer_is_fresh(&world.session, true);
+    assert_standing_is_fresh(&world.session, 1);
+    assert_owners_follow(&world.session, true);
+    assert_eq!(
+        work.since(&world.session),
+        SuccessionWork {
+            reobservations: 99,
+            operand_probes: 99,
+            index_hits: 99,
+            evaluations: 99,
+            appearance_batches: 99,
+        },
+        "a changed pointer family upgrades the rebind to an authored \r
+         successor (W2) published while attached"
+    );
     let _ = world.session.shutdown();
 }
 

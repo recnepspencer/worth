@@ -6,6 +6,9 @@ use worth_ui_host_contract::*;
 use crate::facade::entry::active_application_session::expression_session_fixture::{
     complete, evaluate,
 };
+use crate::facade::entry::active_application_session::succession_characterization::{
+    assert_owners_follow, assert_pointer_is_fresh, assert_standing_is_fresh, SuccessionWork,
+};
 use crate::facade::expression::UiExpressionOutcome;
 use crate::runtime::expression::UiExpressionCompletionReceipt;
 
@@ -32,7 +35,7 @@ fn source() -> WorthUiRustAuthoredArtifactInput {
 #[test]
 fn establishing_the_mounted_allocation_moves_the_expression_state_to_its_generation() {
     let role = super::super::fixture::role();
-    let (session, host) = super::super::fixture::session_with_source(&role, source());
+    let (mut session, _host) = super::super::fixture::session_with_source(&role, source());
     let launched = session.active_generation_identity();
     let retained = session
         .expression_record(MUTABLE_CONDITION)
@@ -41,8 +44,10 @@ fn establishing_the_mounted_allocation_moves_the_expression_state_to_its_generat
     let reference = session.expression_result(MUTABLE_CONDITION).unwrap();
     assert!(session.is_current_expression_result(&reference));
     let before = session.expression_work_counters();
+    let _ = super::super::super::mounting_fixture::mount_unestablished(&mut session, 1_000);
+    let work = SuccessionWork::read(&session);
 
-    let (session, _host, _surfaces) = super::mount_world(session, host);
+    session.establish_native_viewport_allocation().unwrap();
 
     let established = session.active_generation_identity();
     assert_ne!(
@@ -64,6 +69,20 @@ fn establishing_the_mounted_allocation_moves_the_expression_state_to_its_generat
         (after.evaluations, after.settled_without_evaluation),
         (before.evaluations, before.settled_without_evaluation),
         "the same program over the same facts is re-stamped, not evaluated again"
+    );
+    assert_pointer_is_fresh(&session, false);
+    assert_standing_is_fresh(&session, 0);
+    assert_owners_follow(&session, false);
+    assert_eq!(
+        work.since(&session),
+        SuccessionWork {
+            reobservations: 99,
+            operand_probes: 99,
+            index_hits: 99,
+            evaluations: 99,
+            appearance_batches: 99,
+        },
+        "native mounted establishment (W4) alone"
     );
     let _ = session.shutdown();
 }
