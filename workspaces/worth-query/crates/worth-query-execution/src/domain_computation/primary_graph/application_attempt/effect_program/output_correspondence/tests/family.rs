@@ -121,6 +121,7 @@ fn family_range_is_deterministic_and_exposes_mixed_postures_only_within_prefix()
     candidate.prepare_test_role(
         WorthQueryApplicationOutputRole::<Binding, Entity, Preserve>::from_static("unrelated"),
         "entity",
+        ApplicationMutationOutputRoleCardinality::ExactlyOne,
     );
     candidate
         .bind(

@@ -67,10 +67,11 @@ pub(super) fn validate_checkpoint_output_meaning(
         }
     }
     if let Some(missing) = installed.output_role_descriptors.iter().find(|expected| {
-        !checkpoint
-            .roles
-            .iter()
-            .any(|role| role.role == expected.name())
+        !expected.cardinality().admits_absence()
+            && !checkpoint
+                .roles
+                .iter()
+                .any(|role| role.role == expected.name())
     }) {
         return Err(format!(
             "checkpoint output omits installed role {}",

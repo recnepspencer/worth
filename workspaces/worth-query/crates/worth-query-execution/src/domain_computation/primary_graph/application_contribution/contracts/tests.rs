@@ -6,7 +6,8 @@ use crate::domain_computation::primary_graph::application_contribution::{
 };
 use worth_query_declaration::facade::{
     application_operation::{
-        ApplicationMutationOutputPostureSet, ApplicationMutationOutputRoleFamilyDescriptor,
+        ApplicationMutationOutputPosture, ApplicationMutationOutputPostureSet,
+        ApplicationMutationOutputRoleDescriptor, ApplicationMutationOutputRoleFamilyDescriptor,
     },
     application_schema::ApplicationEntityMarkerIdentity,
 };
@@ -55,9 +56,26 @@ fn output_role_family_prefix_without_a_member_is_denied() {
     assert_eq!(denial.subject(), "initial");
 }
 
+#[test]
+fn producer_output_role_must_be_bound_by_every_commit() {
+    let mut catalog = WorthQueryApplicationContractCatalog::<TestSchema>::default();
+    let mut binding = producer("initial", "create-source", &[INITIAL]);
+    binding.output_role_descriptors = vec![
+        ApplicationMutationOutputRoleDescriptor::optional_for_entity::<TestSchema, TestEntity>(
+            "output",
+            ApplicationMutationOutputPosture::Create,
+        ),
+    ];
+    catalog.producers.insert("initial".to_owned(), binding);
+
+    let denial = catalog.validate().unwrap_err();
+    assert_eq!(denial.kind(), DenialKind::ProducerBindingMeaningMismatch);
+    assert_eq!(denial.subject(), "initial");
+}
+
 fn family_producer(output_role: &str) -> DeclaredProducerBinding {
     let mut binding = producer("initial", "create-source", &[INITIAL]);
-    binding.output_roles.clear();
+    binding.output_role_descriptors.clear();
     binding.output_role_families =
         vec![ApplicationMutationOutputRoleFamilyDescriptor::for_entity::<
             TestSchema,
@@ -80,8 +98,10 @@ fn producer(
         source_selector: source.to_owned(),
         output_family: "family".to_owned(),
         output_family_type: TypeId::of::<()>(),
-        output_roles: vec!["output".to_owned()],
-        output_role_descriptors: Vec::new(),
+        output_role_descriptors: vec![ApplicationMutationOutputRoleDescriptor::for_entity::<
+            TestSchema,
+            TestEntity,
+        >("output", ApplicationMutationOutputPosture::Create)],
         output_role_families: Vec::new(),
         output_role: "output".to_owned(),
         operation: "operation".to_owned(),

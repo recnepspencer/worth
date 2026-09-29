@@ -3,7 +3,8 @@ use std::collections::BTreeMap;
 
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationOutputContract,
-    ApplicationMutationOutputPostureSet, ApplicationMutationOutputRoleFamilyDescriptor,
+    ApplicationMutationOutputPostureSet, ApplicationMutationOutputRoleCardinality,
+    ApplicationMutationOutputRoleFamilyDescriptor,
 };
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -17,6 +18,7 @@ use crate::domain_computation::primary_graph::{
 pub(super) struct ExpectedOutputBinding {
     pub(super) posture: WorthQueryApplicationOutputPosture,
     pub(super) entity_name: &'static str,
+    pub(super) cardinality: ApplicationMutationOutputRoleCardinality,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -55,6 +57,7 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
                         ExpectedOutputBinding {
                             posture: descriptor.posture(),
                             entity_name: descriptor.entity(),
+                            cardinality: descriptor.cardinality(),
                         },
                     )
                     .is_some()

@@ -24,8 +24,11 @@ impl<Schema, Operation, Input, Scope>
         Entity: 'static,
         Action: WorthQueryApplicationOutputAction,
     {
-        self.output_correspondence
-            .prepare_test_role(role, entity_name);
+        self.output_correspondence.prepare_test_role(
+            role,
+            entity_name,
+            worth_query_declaration::facade::application_operation::ApplicationMutationOutputRoleCardinality::ExactlyOne,
+        );
     }
 
     pub(in crate::domain_computation::primary_graph) fn prepare_output_contract<Binding>(

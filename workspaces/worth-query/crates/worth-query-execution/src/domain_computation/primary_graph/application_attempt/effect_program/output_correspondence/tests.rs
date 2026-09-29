@@ -10,6 +10,7 @@ use crate::domain_computation::primary_graph::application_attempt::effect_progra
     WorthQueryApplicationRealizedEffect,
 };
 use crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind;
+use worth_query_declaration::facade::application_operation::ApplicationMutationOutputRoleCardinality;
 
 mod family;
 
@@ -145,7 +146,11 @@ fn declaration_inventory_denies_undeclared_missing_and_wrong_entity_roles() {
     let program = Arc::new(());
     let existing = existing_handle(EntityId::new(PartitionId::main(), 12, 0), &program);
     let mut candidate = WorthQueryApplicationOutputCorrespondenceCandidate::default();
-    candidate.prepare_test_role(PRESERVED, "entity");
+    candidate.prepare_test_role(
+        PRESERVED,
+        "entity",
+        ApplicationMutationOutputRoleCardinality::ExactlyOne,
+    );
 
     let undeclared =
         WorthQueryApplicationOutputRole::<Binding, Entity, Preserve>::from_static("other");
@@ -323,20 +328,40 @@ fn create_effect(key: &'static str, kind: u32) -> WorthQueryApplicationRealizedE
 
 fn prepared_candidate() -> WorthQueryApplicationOutputCorrespondenceCandidate {
     let mut candidate = WorthQueryApplicationOutputCorrespondenceCandidate::default();
-    candidate.prepare_test_role(PRESERVED, "entity");
-    candidate.prepare_test_role(CREATED, "entity");
-    candidate.prepare_test_role(RETIRED, "entity");
+    candidate.prepare_test_role(
+        PRESERVED,
+        "entity",
+        ApplicationMutationOutputRoleCardinality::ExactlyOne,
+    );
+    candidate.prepare_test_role(
+        CREATED,
+        "entity",
+        ApplicationMutationOutputRoleCardinality::ExactlyOne,
+    );
+    candidate.prepare_test_role(
+        RETIRED,
+        "entity",
+        ApplicationMutationOutputRoleCardinality::ExactlyOne,
+    );
     candidate
 }
 
 fn prepared_retire_candidate() -> WorthQueryApplicationOutputCorrespondenceCandidate {
     let mut candidate = WorthQueryApplicationOutputCorrespondenceCandidate::default();
-    candidate.prepare_test_role(RETIRED, "entity");
+    candidate.prepare_test_role(
+        RETIRED,
+        "entity",
+        ApplicationMutationOutputRoleCardinality::ExactlyOne,
+    );
     candidate
 }
 
 fn prepared_create_candidate() -> WorthQueryApplicationOutputCorrespondenceCandidate {
     let mut candidate = WorthQueryApplicationOutputCorrespondenceCandidate::default();
-    candidate.prepare_test_role(CREATED, "entity");
+    candidate.prepare_test_role(
+        CREATED,
+        "entity",
+        ApplicationMutationOutputRoleCardinality::ExactlyOne,
+    );
     candidate
 }

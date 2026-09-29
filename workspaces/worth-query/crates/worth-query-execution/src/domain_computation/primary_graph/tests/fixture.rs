@@ -131,13 +131,19 @@ pub(super) use invalid_disclosure_queries::{
 };
 #[path = "fixture/capability_touch_binding.rs"]
 mod capability_touch_binding;
+#[path = "fixture/handler_installation.rs"]
+mod handler_installation;
 #[path = "fixture/operation_contracts.rs"]
 mod operation_contracts;
+#[path = "fixture/optional_output_binding.rs"]
+mod optional_output_binding;
+pub(super) use optional_output_binding::{
+    OptionalOutputInput, OptionalOutputMutationBinding, OptionalOutputOperation,
+    OptionalOutputPlan, COMPANION_OUTPUT, SUBJECT_OUTPUT,
+};
 #[path = "fixture/program_required_binding.rs"]
 mod program_required_binding;
-use capability_touch_binding::CapabilityTouchHandler;
 pub(super) use capability_touch_binding::CapabilityTouchMutationBinding;
-use program_required_binding::ProgramRequiredHandler;
 pub(super) use program_required_binding::{
     ProgramRequiredInput, ProgramRequiredMutationBinding, ProgramRequiredOperation,
     ProgramRequiredSiblingBinding,
@@ -273,7 +279,7 @@ worth_query_application_schema! {
                 .effect(RetainedStatusEffect::reference())
                 .effect(MutationFreeExternalEffect::reference())
                 .effect(LiveActivityEffect::reference());
-            let schema = operation_contracts::install(schema)
+            let schema = optional_output_binding::declare(operation_contracts::install(schema))
                 .application_mutation_binding::<
                     program_required_binding::ProgramRequiredMutationBinding,
                 >()

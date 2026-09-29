@@ -83,6 +83,49 @@ fn checkpoint_cannot_omit_an_exact_installed_role() {
 }
 
 #[test]
+fn checkpoint_may_omit_only_an_at_most_one_installed_role() {
+    use worth_query_declaration::facade::application_operation::{
+        ApplicationMutationOutputPosture, ApplicationMutationOutputRoleDescriptor,
+    };
+    use worth_query_declaration::facade::application_schema::ApplicationEntityMarkerIdentity;
+    type Schema = crate::domain_computation::primary_graph::tests::fixture::IdentityExecutionSchema;
+    type Account = crate::domain_computation::primary_graph::tests::fixture::Account;
+
+    let mut installed = declared(TypeId::of::<InstalledProducer>());
+    installed.output_role_descriptors = vec![
+        ApplicationMutationOutputRoleDescriptor::for_entity::<Schema, Account>(
+            "required",
+            ApplicationMutationOutputPosture::Preserve,
+        ),
+        ApplicationMutationOutputRoleDescriptor::optional_for_entity::<Schema, Account>(
+            "optional",
+            ApplicationMutationOutputPosture::Preserve,
+        ),
+    ];
+    let checkpoint_of = |names: &[&str]| {
+        let mut checkpoint = checkpoint(names.iter().map(|name| role(name)).collect());
+        for role in &mut checkpoint.roles {
+            role.entity_name = Account::IDENTIFIER.into();
+        }
+        checkpoint
+    };
+
+    assert_eq!(
+        validate_checkpoint_output_meaning(&installed, &checkpoint_of(&["required"])),
+        Ok(())
+    );
+    assert_eq!(
+        validate_checkpoint_output_meaning(&installed, &checkpoint_of(&["required", "optional"])),
+        Ok(())
+    );
+    assert!(
+        validate_checkpoint_output_meaning(&installed, &checkpoint_of(&["optional"]))
+            .unwrap_err()
+            .contains("omits installed role required")
+    );
+}
+
+#[test]
 fn checkpoint_cannot_underfill_an_installed_role_family() {
     use worth_query_declaration::facade::application_operation::{
         ApplicationMutationOutputPostureSet, ApplicationMutationOutputRoleFamilyDescriptor,
@@ -151,7 +194,6 @@ fn declared(binding_type: TypeId) -> DeclaredProducerBinding {
         source_selector: "source".into(),
         output_family: "family".into(),
         output_family_type: TypeId::of::<()>(),
-        output_roles: vec!["output".into()],
         output_role_descriptors: Vec::new(),
         output_role_families: Vec::new(),
         output_role: "output".into(),

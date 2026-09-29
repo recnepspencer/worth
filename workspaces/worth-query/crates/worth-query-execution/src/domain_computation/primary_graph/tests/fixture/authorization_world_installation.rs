@@ -327,18 +327,7 @@ fn publish_authorization_world(prepared: PreparedAuthorizationWorld) -> Authoriz
         binding,
         mut bootstrap,
     } = prepared;
-    let program_required = schema
-        .installed_mutation_binding::<ProgramRequiredMutationBinding>()
-        .unwrap();
-    bootstrap
-        .install_handler(&program_required, ProgramRequiredHandler)
-        .unwrap();
-    let capability_touch = schema
-        .installed_mutation_binding::<CapabilityTouchMutationBinding>()
-        .unwrap();
-    bootstrap
-        .install_handler(&capability_touch, CapabilityTouchHandler)
-        .unwrap();
+    super::handler_installation::install_fixture_handlers(&schema, &mut bootstrap);
 
     let invariant = bootstrap.retain_invariant_projection_authority();
     let authorization_time = AuthorizationTimeController::default();

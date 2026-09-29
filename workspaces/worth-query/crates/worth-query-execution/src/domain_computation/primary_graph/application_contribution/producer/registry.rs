@@ -32,8 +32,6 @@ pub(in crate::domain_computation::primary_graph::application_contribution) struc
         String,
     pub(in crate::domain_computation::primary_graph::application_contribution) output_family_type:
         TypeId,
-    pub(in crate::domain_computation::primary_graph::application_contribution) output_roles:
-        Vec<String>,
     pub(in crate::domain_computation::primary_graph::application_contribution) output_role_descriptors:
         Vec<worth_query_declaration::facade::application_operation::ApplicationMutationOutputRoleDescriptor>,
     pub(in crate::domain_computation::primary_graph::application_contribution) output_role_families:

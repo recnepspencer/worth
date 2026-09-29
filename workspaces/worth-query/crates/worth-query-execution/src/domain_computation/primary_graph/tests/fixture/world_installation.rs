@@ -67,18 +67,7 @@ pub(in crate::domain_computation::primary_graph::tests) fn installed_world_with_
             ))
             .unwrap();
     }
-    let program_required = schema
-        .installed_mutation_binding::<ProgramRequiredMutationBinding>()
-        .unwrap();
-    bootstrap
-        .install_handler(&program_required, ProgramRequiredHandler)
-        .unwrap();
-    let capability_touch = schema
-        .installed_mutation_binding::<CapabilityTouchMutationBinding>()
-        .unwrap();
-    bootstrap
-        .install_handler(&capability_touch, CapabilityTouchHandler)
-        .unwrap();
+    super::handler_installation::install_fixture_handlers(&schema, &mut bootstrap);
 
     let application = bootstrap
         .publish_application_runtime(
