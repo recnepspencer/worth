@@ -85,9 +85,11 @@ coexist because selection and immutable storage use exact semantic identity.
    archive, pushes records through reconstruction in canonical order, and asks
    Query to validate the reconstructed meaning freshly.
 
-The current compatibility profile accepts exactly protocol version 1 for the
-release envelope, archive, manifest, and record frame. Compatibility changes
-must add real readers; callers cannot widen the window.
+The current compatibility profile, `WorthQueryPackageArchiveCompatibilityProfile::CURRENT`,
+accepts exactly the current protocol version of each layer: release envelope,
+archive, manifest, record frame, and application program description. Bytes
+framed under an earlier version are refused, never reinterpreted. Compatibility
+changes must add real readers; callers cannot widen the window.
 
 ## Small Example
 
@@ -246,7 +248,8 @@ no-overwrite output.
 
 - The default export ceiling is 65,536 records and 64 MiB of logical material;
   custom limits may narrow but not widen constitutional ceilings.
-- The current reader window is exactly version 1 at every archive layer.
+- The current reader window is exactly the current version at every archive
+  layer; artifacts framed under an earlier protocol must be re-exported.
 - The archive surface frames opaque external signature bytes; consuming hosts
   remain responsible for current trust policy and cryptographic verification.
 - GitHub publication is a human distribution surface, not package discovery or

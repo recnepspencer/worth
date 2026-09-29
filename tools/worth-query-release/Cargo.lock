@@ -425,6 +425,7 @@ version = "0.1.0"
 name = "worth-query-declaration"
 version = "0.1.0"
 dependencies = [
+ "serde",
  "sha2",
  "worth-foundational",
 ]
@@ -435,6 +436,7 @@ version = "0.1.0"
 dependencies = [
  "getrandom",
  "hmac",
+ "serde",
  "sha2",
  "subtle",
  "worth-foundational",
