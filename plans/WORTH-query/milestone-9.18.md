@@ -1,404 +1,577 @@
 # Milestone 9.18: Tree-Based Semantic Undo And Redo
 
-> **Status:** Not started.
+> **Status:** Not started. Design reconciled with the current application entry,
+> program adoption, workflow and owner-publication code on 2026-09-29.
+> **Dependencies:** 9.17.4, 9.17.5 and 9.17.6 are completed. [9.17.7](./milestone-9.17.7.md)
+> is not started. Phase 1 may begin independently; inbound completion and custody
+> courts gate external-effect integration and final acceptance, not Phase 1 entry.
+> This document specifies destination
+> APIs; it does not claim that tree correction or inbound completion ships today.
 
-## Goal
+## Goal And Roadmap Placement
 
-Replace Milestone 9.16's provisional linear current-head undo/redo experiment
-with an accepted tree-based correction product over the composite runtime-world
-history governed by [Milestone 9.17](./milestone-9.17.md) and completed through
-[Milestone 9.17.3](./milestone-9.17.3.md), using the application contract established
-by [9.17.4 graph authoring](./milestone-9.17.4.md),
-[9.17.5 branch program evolution](./milestone-9.17.5.md), and
-[9.17.6 dynamic workflows](./milestone-9.17.6.md), plus
-[9.17.7 inbound effect completion](./milestone-9.17.7.md). Their validated contracts
-preserve scoped rules, exact interpretation, workflow and inbound-effect custody.
-Undo and redo select exact committed occurrences and publish newly admitted composite commits
-on an exact product branch. They never erase history, move a hidden stack
-cursor, replay old authority, reinterpret a receipt as permission, or assume
-that reversing Relational truth alone restores the selected Signal world.
-Semantic revision adoption cannot discard an already-performed occurrence's
-recovery obligation: the obligation remains exact-occurrence-bound and is
-usable only through current correction or recovery authority. Correction binds the
-exact source program/component meaning and the target branch's admitted program;
-a revision current on another branch is not automatically callable in this target.
-Supported branch revisions may coexist, without reinstating an old API from a receipt
-or invalidating siblings through a global program-generation change.
+Accept semantic correction as a new, freshly admitted operation on an exact
+product branch. Reversal applies an installed inverse, compensation or reconciliation
+of one exact committed occurrence. Reapplication executes its retained governed
+meaning again under current authority. Each successful operation appends a new
+single-parent composite commit. Original commits, intervening edits and alternative
+correction lineages remain observable under retention and disclosure policy.
 
-One correction may advance Relational while retaining the exact Signal basis,
-advance or reconcile Signal while retaining Relational, or coordinate changes
-in both. Every unchanged component remains pinned to its exact prior basis.
+The source is historical evidence. The target is the current product world against
+which effects are admitted. Neither a receipt, old approval, undo handle, derived
+value nor program digest grants current execution authority. Domain meaning decides
+what can be corrected; Query admits and coordinates it; Relational and Signal prepare
+their own effects; Runtime World alone publishes product currentness.
 
-Later cross-runtime milestones extend this accepted single-parent correction
-contract through semantic merge, rebase, multi-parent publication, durable
-recovery, offline synchronization, and distributed collaboration rather than
-replacing it.
+Consume the exact bases and branch isolation of [9.17.1](./milestone-9.17.1.md),
+[9.17.2](./milestone-9.17.2.md)'s composite publication/custody and
+[9.17.3](./milestone-9.17.3.md)'s Query carriage. Extend
+[9.17.4](./milestone-9.17.4.md)'s ordinary application entry,
+[9.17.5](./milestone-9.17.5.md)'s branch-local supported programs and
+[9.17.6](./milestone-9.17.6.md)'s workflow ownership. Preserve the accepted
+[9.16 aftermath foundation](./milestone-9.16.md); replace its provisional correction
+lane. Do not reopen completed predecessor portfolios.
 
-## Roadmap Placement
+[Cross-runtime merging and branching](../cross-runtime/merging-and-branching-roadmap.md)
+adds merge, rebase, multiple parents, collaboration and distributed recovery later.
+Correction here never grafts a historical component into a target world or silently
+rebases a stale attempt. Process-local custody remains the acceptance boundary;
+Store-backed reconstruction of correction history/custody is a successor contract.
 
-Milestone 9.16 accepted aftermath classification, retained pre-images,
-retained governed input, external-effect causality, recovery handles, and
-publication while explicitly withholding product acceptance from its existing
-undo/redo lane. Milestone 9.17.1 supplies exact component bases and Relational
-branch-local MVCC; 9.17.2 supplies the product branch, composite single-parent
-history, and coordinated target-head authority; 9.17.3 supplies complete Query
-carriage and public branch/history authority. Milestone 9.17.4 then supplies
-entry-owned bindings, fresh request execution, installed domain handlers, and
-the retained-history/recovery experience this milestone extends. 9.17.5 adds exact
-branch-local program adoption and 9.17.6 adds dynamic definition/instance lifecycle.
-9.17.7 adds inbound occurrences under external-effect completion authority. All four
-close before this milestone; correction does not finish their migrations. Correction
-must use that same application entry, not restore caller-owned phase plumbing
-or the provisional API.
+## Current Boundary And Required Change
 
-9.17.4 retires Bank's provisional undo/redo server commands, HTTP routes,
-user-node actions and experimental-only tests together. Accepted aftermath
-inspection and owner recovery remain available. This milestone must install
-new tree-correction intents and complete Bank transport/user-node journeys;
-it cannot assume a supported linear correction route survived the cutover.
+Paths below are repository-relative evidence of today's implementation.
 
-```text
-exact committed source occurrence
-    -> exact source composite world commit
-    -> selected target product branch and exact composite head
-    -> installed correction and per-component posture
-    -> current principal, capability, purpose, policy, and definitions
-    -> owner-local inverse, compensation, reconciliation, or reapplication plans
-    -> composite applicability and invariant admission
-    -> owner-local preparation
-    -> Runtime World coordinated compare-and-publish
-    -> new composite commit with exact component bases
-    -> typed aftermath and next actions
-```
+| Existing boundary | What 9.18 consumes and changes |
+| --- | --- |
+| `worth-query-publication/src/application_entry/request.rs` under `workspaces/worth-query/crates/` | `request(&principal, &scope).on_branch(branch)`, typed mutation/query requests, retained observations and bounded `at_commit` already exist. Add correction here. Retained requests remain read/demand-only; `at_commit` is not correction admission. |
+| `application_entry/mutation/{request,outcome,performed}.rs` | Typed source expectations, idempotency, `Committed`/`AlreadyCommitted`, uncommitted terminals and separate required-output custody exist. Corrections use the same ordinary admission, handler, invariant, publication and output return paths. |
+| Declaration and installation `src/application_aftermath/` | Authority and mechanism are already separate axes; recorded inverse/pre-image, compensation, reconciliation and irreversibility have meaning. Extend these contracts with typed executable bindings and exact occurrence/program compatibility; do not create a second declaration registry. |
+| Execution `domain_computation/application_aftermath/{undo_*,redo_*}.rs` | Provisional admission/progression and descriptive intent types exist. Redo binds a linear head and rejects divergence. Replace this lane and its policy-dependent tests; retain useful pre-image, custody, authority and bounded canonicalization guarantees. Source comments promising unchanged 9.18 reuse do not govern the new contract. |
+| Execution `primary_graph` and `crates/worth-runtime-world/src/publication/` | Query already carries selected products; World already lowers explicit component plans and returns performed, no-effect or unpublished owner-effect custody. Extend these owners only where a required correction mechanism is absent. Do not build `worth-runtime-world/src/correction/` as a second publication engine. |
+| `worth-query-host/src/facade.rs` | `provisional_aftermath` remains exported; it is not stable acceptance. Remove its executable undo/redo surface at cutover. Host/decl stay exports-only audience facades. |
 
-## Current Boundary
+Bank already routes ordinary operations through `bank-server`'s application definition
+and installed mutation handlers. `bank-domain/src/schema/operations/reverse_journal_binding.rs`
+and `bank-server/src/mutation_handlers/reverse_journal.rs` implement the business
+operation `ReverseJournal`; this creates a linked compensating journal. It does not
+establish a generic historical correction facade. Estate aftermath declarations
+already distinguish freeze pre-images, disbursement compensation and external death
+notice effects. Bank's generic provisional undo/redo HTTP routes were removed;
+`bank-http-adapter/tests/protocol_boundary.rs` protects that cutover. Install new
+accepted correction commands through the real server, HTTP adapter and user node.
 
-- Query owns installed operation meaning, authority admission, invariant
-  execution, aftermath, and the provisional correction surface.
-- Relational owns authoritative truth changes and the exact inverse or
-  compensation inputs installed for those changes.
-- Signal owns Signal definition and derived-execution branch semantics; its
-  branch state is not inferred from Relational history.
-- the base Runtime Bridge owns installed semantic correspondence; the dedicated
-  Runtime World owner owns composite branches, history, and publication
-  progression completed by Milestone 9.17.2 and carried through Query by
-  Milestone 9.17.3.
+The separate WORTH Proprietary repository contains actual CAD/House consumers through
+`worth-query-decl` and `worth-query-host`: `HouseApplication`, `worth-cad-entry`,
+`worthy-house-declarations` and `worthy-house-certification`. Its
+`docs/house/query-platform.md` still labels `CorrectAuthoredChange` and
+`ReapplyAuthoredChange` planned and requires capture/generation/identity gates before
+shipping them. These are domain bindings for this platform correction contract, not
+proof that an accepted correction API exists. Its WORTH dependency is pinned to an
+older revision; cross-repository acceptance must build against the exact candidate
+facade through a reviewed pin update or explicit local dependency override.
 
-The missing product law is not merely “apply the inverse.” It is:
+## Adversarial Courtroom
 
-> Given one exact historical product world and one exact current product branch,
-> which component changes, retained component bases, compensations, and derived
-> reconciliations can lawfully produce a new current product world?
+The plausible defective implementation reads an old value, runs today's mutation,
+advances only Relational, and stores one redo item in a session. It passes a simple
+undo/redo example while losing occurrence identity, external custody, branch meaning
+and alternatives. The following courts must convict it.
 
-## Adversarial Constraint
+### Composite source, target and concurrent publication
 
-A source composite commit changed Relational truth and caused a corresponding
-Signal branch advance. It has two descendants:
+Use the existing public `application_graph` certification composition with real
+Relational, Bridge, Signal and World owners. Install a small numeric source and a
+required derived output with independently calculable P0/P1 formulas. Publish source
+occurrence S, fork A/B from its exact composite basis and retain S for inspection.
 
-- one product branch contains an intervening disjoint Relational change while
-  retaining the source Signal basis; and
-- another contains a conflicting Relational change plus an independently
-  advanced Signal definition branch and expired caller capability.
+1. Make a disjoint edit on A and an overlapping edit on B. Independently change B's
+   supported program/Signal definition through ordinary program adoption. Keep A on
+   P0. Use separately issued branches with equal-looking versions as negative twins.
+2. Select S and reverse it on A. Preserve A's intervening edit and exact unchanged
+   Signal definition basis; publish a new child of A's selected head. Required derived
+   output must reconcile from the corrected source, not reuse S's cached value.
+3. On B require typed conflict or incompatibility before effects. Also present foreign
+   source/target/owner evidence, insufficient disclosure and revoked capability. Each
+   denial has a lawful twin which reaches the disputed boundary and performs.
+4. Prepare two valid corrections against the same A head. Pause one immediately
+   before World's product comparison, publish the other and release the pause. Only
+   one prepared attempt can advance that reference. The loser reports stale/no-effect
+   or exact unpublished owner effects according to what actually occurred.
+5. Cancel before owner preparation, after the first owner effect, and after World
+   performs but before required-output delivery. Observe each boundary independently:
+   no effects; unchanged product head plus retained owner custody; performed source
+   plus pending delivery. Cancellation never converts the latter two into rollback.
+6. Reapply from retained S meaning, reverse again, make another ordinary edit, then
+   list both correction alternatives. Explicitly select an older eligible alternative;
+   new input, old authority or a session redo cursor cannot substitute for it.
+7. Drop history pages, correction handles and derived output caches. Reopen bounded
+   inspection from canonical retained history; rebuild derived outputs. Original
+   commits, correction links, input/pre-image provenance and mandatory custody survive.
+   Expired optional correction material returns unavailable; it never guesses an inverse.
 
-An external effect from the source cannot be reversed, but its installed
-compensation remains available. The caller attempts to:
+Observe actual source fields, computed numeric values, component bases, composite
+parents, owner effects, outbox contacts and recovery catalog state. Expected values
+come from a small independent semantic model, not production inverse/redo code.
+Mutation of exact occurrence binding, fresh admission, target comparison, component
+retention, output reconciliation or alternative retention must fail a named scenario.
+Do not create a second proof ledger or tests for the tests.
 
-- undo a copied receipt rather than the exact source occurrence;
-- target an equal-version foreign Relational or Signal branch;
-- reverse Relational state while silently selecting ambient latest Signal;
-- reuse the source Signal snapshot after its definition basis became
-  incompatible;
-- redo with replacement input or original authority;
-- hide divergent alternatives behind a linear redo stack;
-- publish after the selected composite target head advances; and
-- cancel after one component prepares but before composite publication.
+### Bank: authenticated process, accounting and escaped effects
 
-The honest path must:
+Extend `bank-courtroom/tests/transport_process_courtroom.rs` and its scenario modules.
+Use `TransportProcessWorld`, separately authenticated user nodes, the actual TCP/HTTP
+adapter/server and the rail process where external behavior is under test. A direct
+runtime test cannot substitute for this product journey.
 
-- preserve every original component and composite commit;
-- admit a lawful disjoint correction as a new composite commit;
-- retain an unchanged component at the exact selected basis;
-- require Signal owner reconciliation when the corrected Relational or
-  definition meaning invalidates the selected Signal basis;
-- classify conflicting or incompatible divergence before effects;
-- require fresh authority;
-- compensate rather than counterfeit reversal;
-- retain every redo alternative after divergence;
-- expose partial preparation without product-visible half currentness; and
-- lose the atomic race when the composite target head changes.
+- Perform one lawful money movement, retain its occurrence, then perform an unrelated
+  movement. Reverse the first through the new correction command bound to the installed
+  journal compensation. Observe balances and linked original/compensating journals
+  through ordinary account-summary/activity queries; compare with independent posting
+  arithmetic. No journal is deleted, no unrelated movement is undone and balanced
+  postings remain an invariant of each new journal.
+- Repeat the exact correction after response loss with the same idempotency key:
+  return its existing occurrence/custody and emit no second journal. Reuse the key
+  with a different source, action or target branch: typed intent drift. Copy the wire
+  selector to another authenticated principal: fresh denial, no protected disclosure.
+- Add an overlapping change or revoke correction capability after inspection and
+  before execution. The valid twin reaches ordinary correction admission; hostile
+  twins return conflict/authority denial before new owner effects.
+- Correct an estate freeze using its recorded pre-image and current eligibility;
+  revoke or change the required authority independently. This distinguishes an exact
+  local inverse from journal compensation and security restoration by copied data.
+- After 9.17.7 closes, consume a real external callback for a dispatched effect, lose
+  the response and then request correction. The performed effect remains completed.
+  Only a separately installed compensation/reconciliation may proceed. Duplicate or
+  late callbacks cannot undo completion, authorize redispatch or resurrect a cancelled
+  workflow. Observe rail logical-effect counts and external-owner posture separately
+  from local journal and product publication.
 
-A Relational-only inverse test, hidden linear stack, bridge-bypassing component
-publication, or Signal `latest` lookup must fail this courtroom.
+Keep `ReverseJournal` available as its own business operation. Historical correction
+uses its installed meaning where applicable and adds exact source/correction linkage;
+a user-supplied journal identifier alone cannot select or authorize a historical inverse.
+
+### WORTH Proprietary: real authored source and regenerated geometry
+
+Extend `worthy-house-certification/tests/journeys.rs` with `journeys/correction/` in
+that repository. Start from real `HouseApplication` installation and ordinary CAD
+source commands, using the existing extrusion/split, workflow and program-adoption
+journeys for composition. Do not certify this with a substitute geometry provider or
+`prepare_extrusion_source_for_certification` as the product entry.
+
+- Create a rectangular extrusion and dependent split with actual units/tolerance.
+  Change one source dimension; retain that exact edit occurrence. Make an unrelated
+  feature edit. Reverse the dimension change through House's correction command,
+  observe source parameters, actual solid volume and split volume conservation, and
+  verify the unrelated edit survives. The oracle computes the rectangular volume from
+  independent dimensions; it does not reuse production geometry or inverse helpers.
+- Reapply the original dimension change and verify new source/geometry occurrences.
+  Change the dimension again before reversal to expose the exact applicability conflict.
+  P0/P1 branch adoption and a retained sibling exercise source interpretation versus
+  current target rules. No old geometry receipt makes unsupported code callable.
+- Evict derived geometry/scene views through their owner lifecycle and rebuild from
+  the corrected source. Assert stable semantic correspondence and current output
+  lineage, not equality of regenerated raw entity IDs or cached mesh bytes. A pending
+  required output remains visibly pending; source success is not geometry completion.
+- Use actual source retirement/membership changes for the deletion case. Physical
+  identity resurrection is supported only by an owner-admitted restoration or explicit
+  new-identity correspondence contract. If that binding is absent, installation denies
+  reversibility for that family. It must not fail for the first time after a user edits.
+- A local UI redo continuation may clear on a new edit. Reopen the explicit bounded
+  history chooser and recover both retained alternatives. This reconciles the planned
+  House session UX with Query's canonical tree: clearing selection never deletes history
+  or correction evidence. House must consume the shared correction owner rather than
+  co-commit a competing inverse/history system.
+
+The first proof is a small real extrusion/split world, followed by a House population
+with 1,000 unrelated source features while correcting one dependency closure. Count
+producer contacts and source/history visits; unrelated population must not enter the
+correction or output work. A native Studio shortcut/menu journey is required when that
+UI enables Undo/Redo; the House command integration gate does not claim native UI or
+restart-durable correction support. Existing Save/Open tests alone cannot certify that
+new correction records and live recovery rights survive restart.
 
 ## Product Decision Lock
 
-1. Undo and redo are canonical new-history operations. Neither deletes,
-   rewrites, uncommits, or moves past history.
-2. The base Runtime Bridge owns installed semantic correspondence. The Runtime
-   World owner owns composite commits, product branch references, composite
-   currentness, and coordinated compare-and-publish.
-3. Relational owns authoritative truth changes, Relational branch history,
-   owner-local inverse inputs, conflicts, and publication candidates.
-4. Signal owns Signal branch history, definition-bound execution meaning,
-   reconciliation, derived lifecycle, and owner-local publication candidates.
-5. Query owns installed correction meaning, fresh admission, operation lowering,
-   typed progression, public DX, and aftermath projection. It owns no component
-   or composite head.
-6. Domain packages own semantic inverse and compensation meaning. Query,
-   Runtime Bridge, and Runtime World cannot infer an inverse from touched scope, a before/after
-   diff, or apparent component equality.
-7. Every correction names an exact source operation occurrence, source
-   composite commit, target product branch, target composite head generation,
-   component bases, operation version, and current actor authority.
-8. Every component receives one explicit posture: retain exact basis, apply
-   owner-issued inverse, apply compensation, reconcile/rebuild derived state,
-   reapply retained meaning, or reject as unavailable/irreversible. Omission is
-   not “unchanged.”
-9. Retaining a component means retaining the exact source or target basis
-   selected by the admitted plan. It never means resolving that component's
-   ambient current head.
-10. Signal derived values are not reversed as authoritative truth. They are
-    retained only under exact basis equivalence or reconciled/rebuilt through
-    Signal authority from the corrected authoritative and definition basis.
-11. A lawful Signal definition change may itself have an owner-declared inverse
-    or reapplication. Query cannot treat definition rollback as cache invalidation.
-12. A tree has no implicit redo top. Reapplication selects an exact prior
-    operation or correction lineage and preserves alternative descendants.
-13. Redo is fresh execution of retained governed meaning. It is not replay,
-    cached output reuse, retry, or reuse of prior authorization.
-14. Relevant divergence produces typed cleanly-applicable,
-    revalidation-required, component-reconciliation-required,
-    conflict-requiring, stale-head, non-invertible, unavailable, or
-    indeterminate posture before effects.
-15. Current authentication, capability, purpose, disclosure, elevation,
-    conflict-of-interest, definitions, invariants, and idempotency are re-entered.
-16. External-effect reversal is admitted only by the external owner. Otherwise
-    Query exposes compensation, reconciliation, or irreversibility honestly.
-17. Owner-local preparations become product current only through Milestone
-    9.17.2's composite publication progression as carried by 9.17.3. A failed
-    or losing correction
-    leaves no product-visible half correction.
-18. The provisional Milestone 9.16 lane is evidence, not authority. It is
-    accepted, revised, or deleted only through this milestone's cutover.
-19. Merge, rebase, multi-parent correction, offline synchronization, and
-    distributed crash recovery remain in the cross-runtime roadmap.
+### Source, target and installed meaning
 
-## Destination Topology
+The exact source occurrence binds its composite publication, operation identity and
+version, source program, governed input, pre-image capture, component meaning and
+external-effect lineage. A copied receipt may locate that occurrence through fresh
+owner-backed lookup; possession proves neither permission nor retained availability.
+There is no deserialize-proof, public constructor from IDs or caller-supplied
+`already_corrected`, `applicable` or `reversible` boolean.
+
+This milestone reverses an occurrence in the selected target's retained ancestry,
+including an ancestor inherited through a fork. It reapplies retained meaning selected
+from that ancestry's correction lineage. A foreign sibling occurrence which is not in
+that lineage requires future transplant/merge meaning and is denied. Tree alternatives
+are explicit lineage selections, not permission to run any historical operation anywhere.
+A repeated reversal of the same active correction edge is already-corrected, not a
+second inverse; after a performed reapplication a new reversal names that new occurrence.
+An alternative is consumed only in its exact target lineage, never process-globally.
+
+Each correction appends to the selected target head; its source/correction relationship
+is canonical causal metadata, not a second ancestry parent. Program compatibility is
+checked between exact retained source meaning and the target's admitted current program.
+Same-version-looking digests cannot establish owner compatibility. Unsupported old input
+or inverse meaning returns a typed support/migration requirement before effects. No
+implicit program rollback, new input substitution or API resurrection is permitted.
+
+One operation declaration owns the capture and correction binding. Extend existing
+`DeclaredApplicationAftermathContract` and installed aftermath resolution with typed
+inverse/compensation/reconciliation/reapplication bindings to installed domain handlers,
+input codecs, source expectations, pre-image and output contracts. Names currently used
+as descriptive inverse references cannot become runtime dispatch by string. Installation
+checks handler membership, schema/version support, bounded capture and legal external
+posture; execution checks live target applicability and authority. Domain packages author
+these bindings at entry-band composition; pure schema meaning remains Query-agnostic.
+
+Required pre-images and retained governed inputs are captured with the original admitted
+candidate from its actual changed footprint, co-retained with the performed occurrence.
+A later read cannot recreate a missing pre-image. Uncorrectable operations remain valid
+ordinary operations with explicit posture. There is no automatic field-diff inverse.
+Historical capture stays truthful about unsupported create/delete/identity mechanisms.
+
+### Component and derived-state posture
+
+Every plan has an explicit Relational and Signal disposition: retain exact target basis,
+prepare an owner inverse/compensation/reapplication successor, prepare an owner definition
+successor, or deny. Retaining the historical source basis is allowed for inspection;
+it does not switch a current component back to that basis. Signal values are derived
+and never restored as authority. A definition inverse uses Signal owner authority and
+compatible Bridge correspondence, just as ordinary definition/program publication does.
+
+Authoritative source/component correction and derived settlement are distinct phases.
+A source edit may retain the exact Signal definition basis while invalidating its derived
+outputs. The performed-publication return path then reconciles the declared dependency
+closure through existing required-output demand/settlement owners. A simultaneous
+Relational and Signal definition correction must use one World component publication.
+Signal recomputation is not an extra authoritative definition change.
+
+World owns exact target reference/incarnation/head comparison, immutable composite
+history and owner-effect custody. Query fixes semantic component dispositions before
+owner effects and consumes existing prepared component/publication types. Bridge owns
+correspondence, Relational owns truth/inverse application, Signal owns definitions and
+derived lifecycle. No new head registry, general undo manager or correction scheduler.
+
+### Compiler-visible progression and typed outcomes
+
+Names in this table describe required new semantic products; constructors remain private
+to their owners. Existing concrete proof, admission and publication carriers are reused.
+Legality witnesses belong in `worth-proof`; portable descriptive vocabulary belongs in
+`worth-foundational`; live handles/counters/Drop and issuance stay in their owning runtime.
+
+| Product | Issuer, proof and consumer |
+| --- | --- |
+| Selected correction occurrence | Query fresh disclosed lookup over World history and retained owner material; proves exact available source meaning, grants no effects; consumed by correction preparation. |
+| Inspected applicability | Bounded report of available mechanisms, conflict, compatibility and missing material; observation only; never accepted as a prepare/publish permit. |
+| Prepared correction | Query ordinary fresh admission plus component owners; seals exact source, target head, current program, full observed dependency footprint, invariants, idempotency and reserved custody; consumed once by publication. |
+| Performed correction | Constructed only from World's performed publication; exposes canonical source/target/causal receipt and separately held required-output/external obligations. |
+| Unpublished correction | Existing World/Query custody records actual owner effects with no product movement; only existing owner recovery can settle/clean them. |
+| Reapplication selection | Retained original governed meaning plus exact performed correction lineage; fresh preparation required; cannot hold replacement input or previous authority. |
+
+Applicability reports distinguish ready-for-preparation, revalidation required,
+component reconciliation required, conflicting divergence, incompatible program,
+retained material unavailable and non-correctable/irreversible. These are inspection
+facts. Preparation discharges every validation/reconciliation requirement or denies;
+no effectful executor accepts unresolved applicability.
+
+| Runtime event | Required result and effects |
+| --- | --- |
+| Undisclosed/foreign source or denied current authority | Typed selection/admission denial before effects; protected source facts remain omitted. |
+| Relevant overlapping change or failed target invariant | Typed conflict/invariant denial; current state unchanged. Disjointness comes from installed dependency contracts and owner observations, including negative reads. |
+| Target head moves after preparation | Stale prepared attempt; no automatic retry, rebase or target substitution. Any performed owner effects retain unpublished custody. |
+| Budget/deadline/cancellation before effects | Typed no-effect terminal and released temporary reservations. |
+| Owner effects exist; World did not perform | `ProductUnpublishedOwnerEffects` through the existing public recovery wrapper. No committed correction edge or product success. |
+| World performs; output delivery/settlement interrupts | Performed source receipt plus exact pending/recovery obligation; never rerun the inverse. |
+| Remote compensation result is unknown | Indeterminate external posture and owner recovery; no declaration that the external effect was reversed. |
+| Same key, same source/action/target intent | Existing result/custody; no repeated inverse, dispatch or component publication. |
+| Same key with changed source/action/branch or governed meaning | Typed idempotency intent drift before new effects. |
+
+Use existing terminal families instead of flattening `ProductUnpublished`,
+`SettlementDeferred`, denied, cancelled and committed states into a correction boolean.
+A correction-specific enum may add meaning but must carry the original typed terminals.
+Exact target head is preparation evidence. Retrying the same immutable intent after
+response loss first resolves its idempotency result under fresh admission; it does not
+turn a changed current head into changed command meaning or silently prepare again.
+
+### Workflow, external effects and lifecycle
+
+Correcting a workflow-produced operation corrects that occurrence only. It does not
+rewind instance status, reuse approvals, rerun an entire workflow or erase completed
+inbound consumption. The workflow owner derives the resulting continuation disposition
+from performed publication and current contracts. Any new effectful workflow step needs
+fresh transition/approval evidence. Missing continuation or mandatory-custody disposition
+denies preparation. Current program adoption may remove ordinary APIs while retaining
+exact-occurrence owner recovery for already-performed obligations.
+
+External effects remain at their actual performed/unknown posture. Local journal
+compensation is not reversal of a remote transfer. A separately admitted compensating
+effect has its own occurrence and idempotency identity, linked to the original. Query
+cannot promise remote exactly-once behavior beyond the installed external owner contract.
+
+History pages and selections use existing bounded owner pins. Prepared corrections own
+bounded reservations; dropping an uneffected preparation releases them. Dropping an
+observer cannot abandon performed or unpublished mandatory custody. Optional input and
+pre-image retention obey installed byte/age/disclosure/deletion policy. Expiry returns
+unavailable and preserves permitted causal metadata/typed omissions; alternatives are
+not promised to retain protected payloads forever. Branch/program retirement inventories
+these users through existing owners. No session-local map is canonical history.
+
+## Public Developer Experience
+
+The stable entry remains `worth_query_host::facade::application_entry` and the existing
+`WorthQueryApplicationRequestExt`. Declaration bindings remain behind `worth-query-decl`.
+Add `corrections()` to an ordinary branch-bound request; do not add mutation to a retained
+read request. Principal, purpose, deadlines and cancellation come from the existing typed
+request scope. Domain intent, exact source, idempotency and bounded work are explicit.
+
+This is the required new call shape, not currently compiling API. Convert it into a
+compiled public example in Phase 1 and keep the example as the compatibility contract:
+
+```rust,ignore
+let request = application.request(&principal, &scope).on_branch(branch);
+let selected = request.corrections()
+    .select(&source_receipt, history_limits)?;
+let preparation = request.corrections()
+    .reverse(&selected)
+    .idempotency(&correction_key)
+    .limits(correction_limits)
+    .prepare()?;
+let outcome = preparation.publish();
+// Exhaustively match performed, no-effect/denial and unpublished custody.
+// A performed source may still own required-output or external recovery work.
+```
+
+The selected receipt is re-resolved under disclosure and owner provenance, not cast
+into a proof. Preparation pins and compares the exact current target head internally;
+callers cannot fabricate component plans. The default `reverse` chooses the single
+installed mechanism. If a domain has semantically different corrective actions, they
+are separate typed installed bindings, not a free-form mechanism flag.
+
+```rust,ignore
+let request = application.request(&fresh_principal, &fresh_scope).on_branch(branch);
+let page = request.corrections().alternatives(&selected, page_limits)?;
+let alternative = page.select(&alternative_ref)?; // descriptive exact selection
+let outcome = request.corrections()
+    .reapply(&alternative)
+    .idempotency(&reapplication_key)
+    .limits(correction_limits)
+    .prepare()?
+    .publish();
+```
+
+Reapplication has no input setter, principal-copy helper or implicit redo top.
+A bounded history continuation is owner-bound, freshly disclosed and invalidated with
+an explicit reason when retention/program support changes. Exhaustion returns a typed
+stop/continuation; it is not evidence that no alternative exists. The ordinary path
+exposes legal next actions and required output/recovery handles; richer explanation
+remains opt-in. Transport DTOs carry selectors/outcomes and require re-admission; they
+never serialize live authority.
+
+## Destination Topology And Enforcement
+
+Prefixes Q = `workspaces/worth-query/crates`, W = repository `crates`,
+B = `workspaces/worth-query-bank-world/crates`. E extend existing, N create,
+R replace/remove, S committed successor destination (no empty placeholder).
 
 ```text
-worth-query-installation/src/application_aftermath/correction/
-    contract.rs
-    component_posture.rs
-    recorded_inverse.rs
-    compensation.rs
-    reconciliation.rs
-    reapplication.rs
+Q/worth-query-declaration/src/application_aftermath/       E semantic authoring owner
+  correction_mechanism/{recorded_inverse,compensation}.rs E existing mechanism meaning
+  correction_binding/{mod,inverse,reapplication}.rs       N typed handler/input binding
+  reconciliation.rs                                     E reconciliation declaration
+Q/worth-query-installation/src/application_aftermath/      E installed meaning owner
+  correction_mechanism/                                  E validated mechanisms
+  correction_binding/{mod,validation,compatibility}.rs    N support/version resolution
+Q/worth-query-execution/src/domain_computation/application_aftermath/
+  correction/
+    mod.rs                                              N private facade, exports only
+    selection/{mod,occurrence,retention}.rs               N exact source and custody
+    admission/{mod,applicability,program,authority}.rs    N fresh complete admission
+    planning/{mod,components,dependencies}.rs            N fixed semantic plan
+    reversal/{mod,preparation,progression}.rs             N inverse/compensation execution
+    reapplication/{mod,preparation,progression}.rs        N retained meaning execution
+    history/{mod,causality,alternatives}.rs               N owner-backed projection
+  retained_preimage.rs, governed_input.rs                E original capture foundation
+  recovery_handle/, recovery_progression/, external_effect/ E existing custody owners
+  undo_*.rs, redo_*.rs                                   R provisional policy/progression
+Q/worth-query-execution/src/domain_computation/primary_graph/
+  product_operation/                                    E ordinary owner coordination
+  workflow/                                             E performed correction disposition
+Q/worth-query-publication/src/application_entry/
+  request.rs                                            E corrections() entry
+  correction/{mod,selection,preparation,outcome,alternatives}.rs N caller progression
+Q/worth-query-publication/src/application_aftermath/       E disclosed correction projection
+Q/worth-query-host/src/facade.rs                          E exports; remove provisional lane
+Q/worth-query-decl/src/facade.rs                          E declaration exports only
+W/worth-runtime-world/src/{history,publication,recovery,retention}/ E existing owners
+  publication/component_plan/                            E exact retain/successor plans
+  history/                                               S multi-parent history in cross-runtime
+W/worth-relational/src/                                  E existing truth/candidate owners
+W/worth-signal/src/                                      E existing branch/derived owners
+Q/worth-query-certification/tests/application_graph/
+  correction/{mod,branches,programs,custody,cost}.rs       N grouped public proof
+Q/worth-query-certification/examples/application_correction.rs N compiling caller example
+B/bank-domain/src/schema/                                E installed correction bindings
+B/bank-server/src/correction/{mod,commands,outcome}.rs     N product orchestration
+B/bank-http-adapter/src/http/{protocol,server}/           E correction DTOs/routes
+B/bank-user-node/src/{session,server/routes}/             E authenticated correction entry
+B/bank-courtroom/tests/transport_process_courtroom/
+  correction.rs                                         N actual process journey
 
-worth-query-admission/src/application_aftermath/correction/
-    source.rs
-    target.rs
-    component_plan.rs
-    applicability.rs
-    authority.rs
-
-worth-query-execution/src/domain_computation/application_aftermath/
-    reversal/
-        intent.rs
-        admission.rs
-        progression.rs
-        evidence.rs
-    reapplication/
-        intent.rs
-        admission.rs
-        progression.rs
-        evidence.rs
-    correction_history/
-        causality.rs
-        alternatives.rs
-        retention.rs
-
-worth-runtime-world/src/correction/
-    preparation.rs
-    component_outcomes.rs
-    coordination.rs
-    publication.rs
-
-worth-relational/
-    existing correction inputs and owner-local candidate publication
-
-worth-signal/
-    existing basis compatibility, reconciliation, rebuild, and branch lifecycle
-
-worth-query-publication/src/application_aftermath/
-    reversal.rs
-    reapplication.rs
-    correction_outcome.rs
-
-worth-query-certification/tests/application_aftermath/
-    composite_reversal.rs
-    composite_reapplication.rs
-    divergence.rs
-    signal_reconciliation.rs
-    external_effects.rs
-    authority.rs
+WORTH Proprietary repository, coordinated consumer phase only:
+crates/worth-cad-entry/src/application/correction/         N CAD semantic bindings
+crates/worthy-house-application/src/commands/correction.rs N House command mapping
+crates/worthy-house-certification/tests/journeys/correction/ N source/geometry courts
 ```
 
-The correction tree is organized by semantic meaning in Query, owner-local
-mechanics in Relational and Signal, and cross-runtime coordination in Runtime
-World. Forbidden placements include a Query-local history store, a Runtime World-
-implemented domain inverse, a Relational-owned Signal selection, and a generic
-undo manager that hides component posture.
+Declaration classifies stable semantic meaning; installation resolves supported
+implementations without mutable branch activation. Runtime selection/admission,
+effect progression and history projection have different lifecycle/truth ownership
+and remain separate. Query correction history reads canonical owner records and may
+maintain discardable indexes; it cannot own another branch or correction truth table.
+Canonical causal metadata is recorded with the performed operation in owner history;
+a projection rebuild may not change applicability or lose a committed edge.
 
-## Phase Plan
+World's publication/history/recovery directories remain the cross-domain authority
+axis. Any missing retain/successor or exact lineage access goes there through its
+existing facade. Domain-specific inverse logic cannot enter World. Mechanism-neutral
+component preparation stays reusable for future merge/rebase; those successors add
+strategies/parent forms in their owners without moving correction's public facade.
+9.19 adds managed access consumers beside correction and must preserve its footprints.
+No generic `helpers`, flat correction mega-file, second runtime, per-domain authority
+wrapper or product-owned component publication is permitted.
 
-### Phase 1: Correction Contract And Occurrence Identity
+Enforce private constructors, existing audience/tier dependencies, no ordinary replay
+imports, and exports-only facades. Compile-fail public cases cover forged selection,
+report-as-permit, reused/mutated preparation, replacement reapplication input and
+retained-read mutation, with lawful counterparts in the same grouped compile lane.
+Runtime cases cover fresh but foreign/stale owner-issued evidence. Keep code/test files
+within 400 lines; this specification grants no line-cap exemptions.
 
-Install exact operation-level inverse, compensation, reconciliation,
-reapplication, retained input, pre-image, and irreversibility contracts. Bind
-every candidate to the exact committed occurrence, source composite commit,
-component bases, and operation schema version. Scope-only or receipt-only
-correction becomes unrepresentable.
+## Ordered Phases
 
-### Phase 2: Composite Tree Selection And Applicability
+### Phase 1: One exact source correction through the ordinary entry
 
-Expose owner-backed inspection of source composite commits, target product
-branches, current composite heads, exact component bases, and correction
-alternatives. Compile applicability against relevant intervening composite and
-component history, current definitions, policy, retention, and authority before
-effects begin.
+Consume completed predecessor publication and custody contracts. Install typed inverse
+bindings and original pre-image capture, implement exact ancestry selection, fresh
+ordinary correction admission and one Relational successor with exact Signal retention.
+Reach a new World commit and actual readback through the public request facade and
+compiled example. Prove disjoint versus overlapping edits, copied/foreign selectors,
+revoked authority and idempotency. Retained receipts alone cannot execute. This phase
+establishes the smallest real vertical path; later phases trust its occurrence and
+current-authority binding, not a future facade or private host plumbing.
 
-### Phase 3: Owner-Local Component Correction Plans
+### Phase 2: Composite compatibility, effects and recovery
 
-Lower the admitted correction into explicit per-component retain, inverse,
-compensation, reconciliation, rebuild, reapplication, or denial plans. Each
-runtime validates and prepares only its own meaning. Query and Runtime World
-may coordinate those plans but cannot recreate them.
+Extend that path to owner definition successors, program compatibility, required-output
+reconciliation, compensation and workflow/inbound dispositions. Use existing World
+preparation/publication/recovery and existing output demand. Prove two-owner partial
+effects, same-head races, cancellation at each boundary and no mixed world. Complete
+the Bank accounting and external process court. No missing 9.17.7 capability may be
+simulated and called completed. Later phases trust honest performed/unpublished/pending
+posture and complete mandatory custody.
 
-### Phase 4: Coordinated Reversal And Compensation Publication
+### Phase 3: Explicit tree reapplication and bounded history
 
-Execute the owner-local plans through ordinary runtime boundaries and publish
-one new composite commit through Runtime World's coordinated
-compare-and-publish progression. Preserve the source and every descendant.
-Denial, cancellation, stale head, and conflict move no product head; retained
-owner effects without product movement receive the exact
-`ProductUnpublishedOwnerEffects` lifecycle posture.
+Add retained-meaning reapplication, canonical causal edges, exact alternative selection,
+branch-local consumed-edge rules, bounded pagination and lawful retention expiry. Prove
+undo/edit/reapply divergence and handle/index destruction; remove linear-head policy
+and migrate useful provisional tests together. Ordinary edits cannot clear alternatives.
+This phase establishes the accepted platform product and enables full consumer adoption.
 
-### Phase 5: Reapplication And Divergent Redo
+### Phase 4: House integration, cutover and public closure
 
-Admit reapplication from exact retained governed meaning under current
-authority and current component definitions. Preserve multiple alternatives
-after divergence; never collapse them into a mutable redo stack or silently
-discard them after a new edit.
+Build Proprietary against the exact new facade, install CAD/House correction bindings,
+and complete real source/geometry and 1,000-feature work courts. Revise House's planned
+commands and session-continuation wording to match canonical history. Complete Bank
+transport/user-node behavior and DTO compatibility. Remove executable provisional
+exports, callers, linear-stack tests and misleading documentation together; retain
+accepted aftermath/recovery. Ship documentation and run the required enforcement and
+focused/integration gates below. No parallel product-owned correction engine remains.
 
-### Phase 6: Public Facade, Documentation, And Provisional Cutover
+Each phase adds its adversarial proof as the boundary becomes real; there is no final
+phase where all correctness testing begins. Implementation plans choose private edit
+order within these decisions, not new authority or product semantics.
 
-Publish the composite branch/history/aftermath workflow through
-`worth-query-decl` and `worth-query-host`. Revise the application-aftermath
-feature guide to teach composite source and target selection, component
-retention, Signal reconciliation, fresh authority, compensation, divergence,
-and external-effect limits. Delete or migrate every provisional surface and
-test that encodes the rejected linear or Relational-only product.
+## Cost And Resource Contract
 
-### Phase 7: Hostile Certification
+- Ordinary operations incur zero correction selection, applicability, alternative
+  traversal, inverse preparation or retry work. Existing installed pre-image/input
+  capture and canonical causal metadata remain separately counted ordinary obligations;
+  “zero correction work” cannot hide mandatory capture cost.
+- Admission rejects invalid identity, missing support, authority and resource ceilings
+  before expensive history/candidate construction. Correction work is bounded by selected
+  source material, relevant intervening changes and the declared dependency closure.
+  Required owner indexes belong to owner history/dependency access; a full-history scan
+  is not an acceptable hidden fallback. Index absence/exhaustion yields an explicit
+  bounded stop. Diagnostic reconstruction has a separately admitted cost lane.
+- Bound selected history work, page entries, pre-image/input bytes, prepared candidates,
+  live pins and pending output/recovery resources. No internal unbounded queue, implicit
+  publication retry or silent truncation. Deadlines and cancellation are checked before
+  effects and at existing owner progression safe points.
+- Retained component bases cause no inverse, branch advance or rebuild by themselves.
+  Derived work scales with semantic delta and declared dependencies; a dense fallback
+  is explicit and budgeted. Count history visits, dependency checks, capture bytes,
+  inverse construction, owner prepares, World comparisons, output contacts and dispatches.
+- Compare 10 and 1,000 unrelated history/feature entries while holding the affected
+  closure fixed. Assert unchanged relevant-work counts and exact zero untouched-owner
+  mutation/dispatch contacts. Grow relevant ancestry separately to verify the admitted
+  bound, continuation and exhaustion. Do not confuse output fan-out with identity work.
 
-Use an independent composite-history oracle across copied receipts,
-equal-version foreign component branches, stale target heads, disjoint and
-conflicting divergence, incompatible Signal definitions, replacement inputs,
-expired authority, compensation, irreversible effects, cancellation, response
-loss, partial preparation, and concurrent correction. Mutation of occurrence
-binding, exact component retention, reconciliation admission, fresh authority,
-or composite compare-and-publish must turn the court red.
+## Documentation Deliverables
 
-## DX Target
+Use existing authoritative feature guides under
+`workspaces/worth-query/crates/worth-query/docs/`; do not create a competing milestone
+closeout guide. The implementation phases must deliver:
 
-```rust
-let choices = bank
-    .history(product_branch)
-    .corrections(committed_operation)
-    .inspect()
-    .await?;
+| Audience | Document and required content |
+| --- | --- |
+| Application authors/operators | `execution/application-aftermath-and-recovery.md`: exact source/target selection, typed correction bindings, compensation, irreversibility, retained material expiry, custody and provisional removal. |
+| Ordinary callers | `foundations/ordinary-application-front-door.md` and `foundations/branches-and-previews.md`: compiled request/correction examples, explicit alternatives, idempotency, bounded history, denial, source-versus-output completion. |
+| Program/workflow authors | `foundations/programs-and-adoption.md` and `foundations/workflows.md`: source interpretation, target support, fresh approvals and non-rewindable performed effects. |
+| Bank maintainers/users | `workspaces/worth-query-bank-world/docs/public-consumer-contract.md` and `docs/process-transport.md` in that workspace: new commands, authentication, response loss, journal compensation and external recovery. |
+| House/Studio maintainers | Proprietary `docs/house/query-platform.md` and `docs/house/milestones.md`: M3B bindings to accepted Query correction, local selection versus canonical alternatives, identity restoration gates, real integration evidence and native UI scope. |
 
-let undone = choices
-    .reverse_on(product_branch.head())
-    .as_principal(principal)
-    .purpose(purposes::operator_correction())
-    .execute()
-    .await?
-    .require_committed()?;
+Compile snippets through the public certification example; check transport examples
+against real process journeys. Keep planned syntax explicitly marked until it compiles.
+Document mandatory recovery even when optional diagnostics/payload disclosure is omitted.
+Cross-repository documentation and pin changes belong to Phase 4, not this design-only edit.
 
-let redone = undone
-    .reapplications()
-    .select(original_operation)
-    .against(product_branch.head())
-    .as_principal(principal)
-    .execute()
-    .await?;
-```
+## Acceptance Evidence, QA And Handoff
 
-Ordinary callers select product meaning, not lower-runtime branch ids. Advanced
-inspection may explain which components are retained, reversed, compensated,
-or reconciled, but cannot let callers fabricate component plans or publication
-authority.
+9.18 closes only after all four phases, the composite public court, real Bank process
+court and real Proprietary source/geometry court pass against the candidate APIs.
+Platform certification without the private product build is platform evidence only;
+missing access or a mismatched dependency pin leaves the product integration gate open.
+Do not replace that gate with a generic CAD mock or claim existing House tests prove
+new correction semantics.
 
-## Performance Contract
+Verification uses the existing grouped `application_graph` target in
+`workspaces/worth-query/Cargo.toml`, affected owner tests, public compile tests/example,
+Bank's grouped process target in `workspaces/worth-query-bank-world/Cargo.toml` and
+Proprietary's grouped `worthy-house-certification` journeys target. Confirm target/test
+names by discovery before expensive runs. Focused semantic/compile checks belong in CI;
+process and population lanes use explicit bounded workload/resource budgets. Record
+executed commands, candidate revisions and unavailable environments in normal CI/review
+output, not a new source-controlled proof ledger.
 
-- Ordinary commits with no correction request retain exact-zero correction
-  planning and history-navigation work.
-- Correction admission scales with the selected source, target, changed
-  component set, declared dependency closure, and relevant intervening changes,
-  not total product or component history.
-- An unchanged component performs no inverse, rebuild, or branch advance; it
-  carries and validates its exact retained basis.
-- Signal reconciliation scales with the authoritative semantic delta plus the
-  declared Signal dependency closure, with an explicit dense fallback when
-  sparse maintenance is no longer profitable.
-- Listing alternatives is explicit history work with a declared bound and
-  continuation; it is never hidden in an outcome getter.
-- Retained pre-images, governed inputs, component candidates, and correction
-  pins have installed byte and lifetime bounds.
-- Counters distinguish composite history traversal, per-component
-  applicability, inverse construction, compensation, Signal reconciliation,
-  invariant work, owner preparation, and composite publication retries.
+Run `cargo run --manifest-path tools/boundary-check/Cargo.toml -- --root .`,
+`cargo run --manifest-path tools/agent-context/Cargo.toml -- check`, affected formatting
+and `scripts/ci/check_workspace_rust_line_caps.sh dirty` for implementation. A document-only
+revision checks links, path claims and diff integrity; it does not claim runtime proof.
 
-## Must Preserve
+QA focuses on counterfeit source authority, stale target/program reuse, omitted negative
+read conflicts, partial effects misreported as rollback, automatic external redispatch,
+provisional residue, incomplete cross-repository adoption and correction work leaking
+into ordinary requests. Review the independent observations and lawful negative twins
+before expanding test volume. Accepted 9.16/9.17 recovery, disclosure, branch isolation,
+workflow custody, cert-only replay and derived-state rebuildability remain mandatory.
 
-- the accepted Milestone 9.16 aftermath, recovery, external-effect, retention,
-  and publication foundation;
-- the completed Milestone 9.17 umbrella: 9.17.1 component authority and
-  independent-branch progress, 9.17.2 composite branch/history/currentness,
-  and 9.17.3 Query carriage and public-facade authority;
-- original component and composite commits plus complete causal history;
-- fresh authorization, current definitions, and invariant execution for every
-  correction;
-- derived Signal state remaining rebuildable and non-authoritative; and
-- the distinction between redo, replay, reuse, retry, reconciliation, rebuild,
-  rollback, and external compensation.
-
-## Explicit Non-Goals
-
-- semantic merge or rebase;
-- automatic resolution of conflicting divergence;
-- multi-parent correction or merge publication;
-- offline or replicated branch synchronization;
-- Store-backed durable recovery; and
-- using history navigation, component correspondence, or retained evidence as
-  authorization.
-
-## Acceptance Evidence
-
-Milestone 9.18 closes only when the provisional inventory is fully classified,
-the accepted public facade exposes no linear-stack or Relational-only fiction,
-every correction is an independently observed new composite commit, unchanged
-components retain exact bases, required Signal reconciliation is owner-issued,
-stale and hostile attempts apply nothing, external effects retain honest
-posture, ordinary commits pay zero correction work, documentation compiles
-against the real facade, and residue checks find no Query-owned head or
-competing composition/history chain.
-
-## Handoff
-
-[Milestone 9.19](./milestone-9.19.md) may now require advanced search, bulk,
-path, attachment, and reuse operations to preserve the accepted composite
-tree-based aftermath contract. It cannot defer their correction semantics to
-provisional Phase 8 behavior or treat a Relational branch as the complete
-product world.
+[9.19](./milestone-9.19.md) receives exact source/target correction, complete dependency
+footprints, new-history causality and honest resource/custody outcomes for its advanced
+access consumers. Cross-runtime successors retain these semantics while adding merge,
+rebase and durable recovery. Multi-parent correction, automatic conflict resolution,
+remote/distributed rollback and restart serialization of live authority are not supplied
+by this milestone.

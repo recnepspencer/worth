@@ -429,7 +429,8 @@ contracts required by physical integration:
 
 The numbered order remains the semantic dependency order. The condensed ranges
 above do not weaken any intervening milestone, acceptance gate, or proof
-obligation.
+obligation. 9.18 Phase 1 may begin before 9.17.7 closes; the inbound contract gates
+9.18 external-effect integration and final acceptance, not that independent phase.
 
 Store handoffs are explicit:
 
@@ -5119,7 +5120,8 @@ post-closure [9.17.4 application graph authoring and execution](./milestone-9.17
 follows that foundation, preserving certified Phase 1/Pre-M0 and completing static
 graph/consumer cutover. [9.17.5](./milestone-9.17.5.md) then adds branch program
 evolution, [9.17.6](./milestone-9.17.6.md) adds dynamic workflows and
-[9.17.7](./milestone-9.17.7.md) adds inbound effect completion before 9.18;
+[9.17.7](./milestone-9.17.7.md) adds inbound effect completion before 9.18's
+external-effect integration and final acceptance; 9.18 Phase 1 may start independently;
 none reopens the certified umbrella.
 
 ### Submilestone Sequence
@@ -5485,16 +5487,22 @@ retains full UI product acceptance and 3.18 preserves expression expansion prove
 ## Milestone 9.17.7: Inbound Occurrences And External Effect Completion
 
 [milestone-9.17.7.md](./milestone-9.17.7.md) consumes the completed workflow kernel but
-first proves authenticated inbound completion against a static Bank dispatch. One
-application-scoped occurrence correlates to the exact dispatch and only the
-external-effect aftermath owner may consume it through World publication. Workflow
-`await_inbound` observes that performed posture; callbacks never resume instances.
-Duplicate/reordered/foreign delivery, redispatch races, branch forks and bounded
-custody close before 9.18.
+first proves authenticated inbound completion for Bank's static estate death notice
+through the real server and rail processes. Exact correlation precedes accepted
+application-scoped aftermath custody; unavailable lookup returns retry without a
+custody acknowledgement, and the sender retains the message. The existing external
+owner co-publishes consumption and terminal posture through World. Approved-payment
+workflow `await_inbound` then consumes that owner result under fresh advance authority;
+callbacks never resume instances. Duplicate/late/foreign delivery, redispatch races,
+publication gaps and bounded custody close before 9.18 external-effect integration
+and final acceptance. The guarantee is process-local;
+Store owns later restart recovery. CAD's local producer completion remains distinct;
+a real remote CAD effect requires its own later adoption court, not a fictitious solver
+service in this milestone.
 
-9.18 follows the completed graph, evolution, workflow and inbound-effect milestones
-and consumes their ordinary typed operations, exact history, scoped rules and lawful
-workflow/inbound custody. None of
+9.18 consumes the completed graph, evolution and workflow contracts. The inbound-effect
+milestone 9.17.7 is not yet implemented; its completion gates 9.18 external-effect
+integration and final acceptance. 9.18 Phase 1 may begin independently. None of
 these specs is a progress ledger for another; each has its own production endpoint,
 owner/type contracts, destination topology, deletion and acceptance requirements.
 
@@ -5505,7 +5513,9 @@ owner/type contracts, destination topology, deletion and acceptance requirements
 Replace the provisional Milestone 9.16 linear undo/redo experiment with an
 accepted tree-based product over the composite history completed by Milestone
 9.17.3 under the Milestone 9.17 umbrella, through graph authoring, branch program
-evolution, workflow and inbound-effect contracts completed by 9.17.4-9.17.7. Every
+evolution and workflow contracts completed by 9.17.4-9.17.6, and the inbound-effect
+contract required from 9.17.7 before external-effect integration and final acceptance.
+Phase 1 may begin independently of 9.17.7 completion. Every
 reversal or reapplication selects an exact source world commit and target
 product branch/head, re-enters current authority and policy, coordinates the
 required component plans, and publishes a new composite commit without
@@ -5535,11 +5545,14 @@ The governing milestone spec is
   reapply, or deny posture
 - typed applicability over intervening composite/component history, current
   definitions, policy, authority, conflicts, and invariants
-- fresh reversal and reapplication through ordinary owner-local execution and
-  Runtime Bridge coordinated compare-and-publish
+- fresh reversal and reapplication through the ordinary application request,
+  owner-local execution and Runtime World coordinated compare-and-publish
 - preserved alternative descendants rather than a mutable undo/redo stack
 - public branch-history/aftermath facade, executable documentation, complete
   provisional-lane cutover, and independent hostile certification
+- real Bank authenticated process/accounting/external-effect correction and real
+  WORTH Proprietary House source/geometry correction against the candidate facade;
+  product session redo selection cannot erase canonical history alternatives
 
 ### Must Preserve
 
@@ -5556,9 +5569,13 @@ The governing milestone spec is
 ### Acceptance Evidence
 
 An independent history oracle proves every successful correction is a new
-commit, stale or hostile attempts apply nothing, divergence remains explicit,
-compensation does not claim reversal, alternatives remain navigable, and
-ordinary commits pay exact-zero correction work.
+commit, stale or hostile attempts cannot move the product head, actual partial
+owner effects retain unpublished custody, divergence remains explicit,
+compensation does not claim reversal, and alternatives remain navigable.
+Ordinary commits pay zero correction planning/navigation work while installed
+pre-image capture remains separately accounted. The Bank process and Proprietary
+source/geometry journeys are acceptance gates; a missing consumer dependency update
+or private product run cannot be replaced by an in-memory substitute.
 
 ## Milestone 9.19: Managed Advanced Access And Verified Footprints
 
@@ -5937,7 +5954,7 @@ answer is "store-gated" or "shared with another subsystem."
 | Branch-scoped application program evolution | Milestone 9.17.5 | Exact program/component meaning per selected occurrence; compatible/incompatible local adoption; explicit broader partial progress; retained interpretation and effect custody | No global latest-program override, owner-local-success activation, stale migration, lost recovery or false multi-branch atomicity | A/P0 and B/P1 actual outputs, failed composite publication, target races, state migration, fixed continuation and external custody, A/B/C/D coverage |
 | Dynamic workflow authoring and execution | Milestone 9.17.6, including Phases 2.1-2.6 | One canonical builder/macro/component/UI/AI-authored model; prepared publication, authoritative branch-local definitions/instances, rebuildable compiled meaning, fresh per-transition admission, typed control flow, evidence joins, approvals, revision/fork/migration and real effects; linear effect/index admission, bounded index retention/checkpoints, shared inputs, exact output reuse, changed-component authoring and managed incremental views | No authoring request authority, syntax-specific validator, component-owned runtime, compiled-plan/status authority, definition-created authority, stale approval reuse, status-as-publication, unbounded retry, duplicate dispatch, second scheduler, per-rule duplicate gather or cache-authored truth | Equivalent multi-surface authoring, compile-time lifecycle boundaries, compiled/status reconstruction, user-authored CAD and Bank process journeys, independent required inventory, A/B definitions, branch/program affinity, exact outbound recovery and resource lifecycle; segmented 802-solid House build/edit/capture/reopen court under portable work and existing resource bounds |
 | Shared typed expression language | Milestone 9.17.6.1; shared substrate for Worth UI 3.17 | Foundational grammar, canonical typed programs, pure bounded evaluator, strict numerics/units/digital values, installed functions, tracked consumption and runtime-owned reuse | No arbitrary code, ambient reads, expression-issued authority, unmetered iteration, hash-only identity, stale reuse, or competing workflow evaluator | Cross-target/conformance and independent semantic vectors; real Query condition cutover, UI source/rebind pulse, proprietary CAD selection/rule, digital and scale/exhaustion/reconstruction courts |
-| Inbound occurrences and external effect completion | Milestone 9.17.7 | Installed inbound protocols; authenticated bounded immutable occurrences; exact dispatch/branch correlation; external-effect-owner consumption; workflow posture delivery | Raw callback, payload, status, transport acknowledgement or workflow command cannot complete an effect; fork, duplicate and redispatch races cannot duplicate consumption | Static Bank lost-response/redispatch court, branch-affinity and hostile-envelope evidence, workflow await reconstruction, CAD callback, bounded custody and cleanup |
+| Inbound occurrences and external effect completion | Milestone 9.17.7 | Installed inbound protocols; authenticated bounded immutable occurrences; exact dispatch/branch correlation; external-effect-owner consumption; workflow posture delivery | Raw callback, payload, status, transport acknowledgement or workflow command cannot complete an effect; fork, duplicate and redispatch races cannot duplicate consumption | Static Bank death-notice process court, publication-gap/custody owner court and approved-payment workflow reconstruction; real CAD remote effects require a later adoption court |
 | Tree-based semantic undo and redo | Milestone 9.18 | Exact source composite commit and target product branch/head, explicit per-component correction posture, installed inverse/compensation/reconciliation/reapplication contracts, applicability against intervening history, fresh Query admission, owner-local preparation, Runtime World coordinated publication, correction causality, and typed next actions | Reversal and reapplication create new composite commits; unchanged components retain exact bases; Signal reconciliation remains Signal-owned; history and alternatives remain intact; copied receipts and prior authority open no door; stale/conflicting divergence is typed before effects; external effects retain honest compensation/irreversibility posture; Query owns no history head | Milestone 9.18 composite-divergence, stale-head, component-basis, Signal-reconciliation, authority, compensation, external-effect, partial-preparation, zero-ordinary-work, facade, documentation, and residue certification + later cross-runtime merge/rebase/recovery suites |
 | Managed advanced access and verified footprints | Milestone 9.19 | Installed-query-bound search and access products, Milestone 9.10 requirement/inventory/plan extensions, lifecycle products, coverage/membership witnesses, exact refinement, and verified realized footprints | Search preserves capability, purpose, exact composite product-world basis, disclosure, cursor, recovery, and aftermath; membership remains complete under negative-space change; protected candidates do not leak; footprints narrow but never widen authority | Milestone 9.19 bank/geometry search, disclosure, no-N+1, membership, footprint, lifecycle, memory, alternate-provider, facade/docs, and prohibition certification + Milestone 13 parity |
 | Correlated paths and set execution | Milestone 9.20 | Typed heterogeneous path programs, admitted provider lowering, complete path dependencies, installed conflict relations, verified partitions, provider set operations, canonical reductions, and structural-cost evidence | Paths remain bounded and schema-typed; correlated reads consume one admitted graph plan; partitions are complete and conflict-free; bulk work is truly set-oriented; planning is not quadratic; unauthorized members are not processed or leaked | Milestone 9.20 chip/geometry/bank interpreter, no-N+1, partition-parity, slope, authority, facade/docs, and prohibition certification + Milestone 13 parity |
