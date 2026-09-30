@@ -2,6 +2,7 @@ use super::WorthQueryApplicationObservedFact;
 
 pub(super) fn encode(fact: &WorthQueryApplicationObservedFact) -> String {
     match fact {
+        WorthQueryApplicationObservedFact::RetiredOutputEntity { read_locator, .. } => read_locator.clone(),
         WorthQueryApplicationObservedFact::SourceEntity { entity_id } => format!(
             "application-source-entity:{}:{}:{}",
             entity_id.partition_value(),

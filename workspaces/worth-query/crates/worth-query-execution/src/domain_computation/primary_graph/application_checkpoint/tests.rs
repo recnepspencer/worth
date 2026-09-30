@@ -287,7 +287,7 @@ fn producer_resource_profile_rejects_invalid_posture_and_padding() {
 }
 
 #[test]
-fn v5_complete_facts_roundtrip_and_hostile_lengths_fail_before_allocation() {
+fn v6_and_v5_complete_facts_roundtrip_and_hostile_lengths_fail_before_allocation() {
     let fact = crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact::SourceEntity {
         entity_id: worth_relational::facade::identity::EntityId::new(
             worth_relational::facade::identity::PartitionId(1), 3, 1,
@@ -306,6 +306,17 @@ fn v5_complete_facts_roundtrip_and_hostile_lengths_fail_before_allocation() {
         Some(bytes.as_slice())
     );
     assert_eq!(super::facts::decode(&bytes).unwrap().as_ref(), &[fact]);
+    let mut legacy = checkpoint_body(1, accepted.clone());
+    legacy[..2].copy_from_slice(&5_u16.to_be_bytes());
+    assert_eq!(
+        checkpoint_from_body(legacy)
+            .decode()
+            .unwrap()
+            .accepted_outputs[0]
+            .producer_facts
+            .as_deref(),
+        Some(bytes.as_slice())
+    );
 
     let length_start = accepted.len() - bytes.len() - 8;
     accepted[length_start..length_start + 8]

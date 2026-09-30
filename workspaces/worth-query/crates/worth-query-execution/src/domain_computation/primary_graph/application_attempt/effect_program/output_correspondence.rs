@@ -163,6 +163,16 @@ impl WorthQueryApplicationOutputCorrespondence {
         })
     }
 
+    /// Only completed Retire bindings whose actual delete effects were validated.
+    pub(in crate::domain_computation::primary_graph) fn retired_entity_ids(
+        &self,
+    ) -> impl Iterator<Item = EntityId> + '_ {
+        self.roles.values().filter_map(|binding| {
+            (binding.posture == WorthQueryApplicationOutputPosture::Retire)
+                .then_some(binding.entity)
+        })
+    }
+
     pub(in crate::domain_computation::primary_graph) fn active_entity_for_role(
         &self,
         role: &str,

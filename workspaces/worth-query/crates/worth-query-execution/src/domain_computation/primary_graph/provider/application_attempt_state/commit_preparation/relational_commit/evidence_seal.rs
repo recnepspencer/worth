@@ -57,10 +57,12 @@ pub(super) fn seal(
         .attempt()
         .seal_output_correspondence(committed.committed());
     let observed_source_facts = provider.graph.with_runtime(|runtime| {
-        postcommit_currentness::rebase(
+        postcommit_currentness::rebase_output(
             runtime,
             &committed.committed().snapshot,
             committed.attempt().observed_source_facts(),
+            &output_correspondence,
+            &committed.committed().changed_records,
             committed
                 .attempt()
                 .idempotency()

@@ -200,6 +200,12 @@ fn retire_role_requires_the_matching_delete_effect() {
     candidate
         .validate_effects(&[WorthQueryApplicationRealizedEffect::DeleteEntity { entity_id }])
         .expect("the role and actual retirement agree");
+    let sealed = candidate.seal_with(|_| None);
+    assert_eq!(
+        sealed.retired_entity_ids().collect::<Vec<_>>(),
+        vec![entity_id],
+        "only the typed retirement validated against its delete enters the retirement selector"
+    );
 }
 
 #[test]

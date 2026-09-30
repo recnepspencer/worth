@@ -19,7 +19,8 @@ pub(super) fn complete_output_currentness_facts(
 fn is_output_currentness_fact(fact: &WorthQueryApplicationObservedFact) -> bool {
     matches!(
         fact,
-        WorthQueryApplicationObservedFact::SourceEntity { .. }
+        WorthQueryApplicationObservedFact::RetiredOutputEntity { .. }
+            | WorthQueryApplicationObservedFact::SourceEntity { .. }
             | WorthQueryApplicationObservedFact::SourceAspectRevision { .. }
             | WorthQueryApplicationObservedFact::SourceFieldRevision { .. }
             | WorthQueryApplicationObservedFact::SourceAdjacencyRevision { .. }

@@ -9,7 +9,9 @@ use worth_relational::facade::identity::{EntityId, RelationId};
 
 use super::super::WorthQueryApplicationObservedFact;
 
+mod canonical_digest;
 mod workflow_fact;
+use canonical_digest::derive_identity;
 
 const DOMAIN: CanonicalBasisDomain =
     CanonicalBasisDomain::Future("worth-query.application-producer-dependencies");
@@ -74,36 +76,30 @@ pub(super) fn lineage_identity(
     )
 }
 
-fn derive_identity(
-    rule_version: &str,
-    entries: Vec<CanonicalBasisEntry>,
-    maximum_canonical_bytes: usize,
-) -> Result<([u8; 32], WorthQueryCanonicalWorkEvidence), ()> {
-    let version = CanonicalizationRuleVersion::new(rule_version).ok_or(())?;
-    let maximum_entries = u32::try_from(entries.len()).map_err(|_| ())?;
-    let budget =
-        CanonicalDigestWorkBudget::new(maximum_entries, maximum_canonical_bytes).ok_or(())?;
-    let basis = prepare_canonical_basis_sequence(version, DOMAIN, entries)
-        .into_result()
-        .map_err(|_| ())?;
-    let ready = canonicalization()
-        .digest()
-        .for_sequence_with_budget(basis, CanonicalDigestAlgorithmId::sha256(), budget)
-        .into_result()
-        .map_err(|_| ())?;
-    let derived = canonicalization().digest().derive(ready);
-    Ok((
-        *derived.value().bytes(),
-        WorthQueryCanonicalWorkEvidence::one_digest(derived.metadata().work()),
-    ))
-}
-
 fn append_fact(
     entries: &mut Vec<CanonicalBasisEntry>,
     prefix: &str,
     fact: &WorthQueryApplicationObservedFact,
 ) {
     match fact {
+        WorthQueryApplicationObservedFact::RetiredOutputEntity {
+            entity_id,
+            kind: entity_kind,
+            created_at,
+            deleted_at,
+            ..
+        } => {
+            kind(entries, prefix, "retired-output-entity");
+            entity(entries, prefix, "entity", *entity_id);
+            number_u64(
+                entries,
+                prefix,
+                "entity-kind",
+                u64::from(entity_kind.as_u32()),
+            );
+            number_u64(entries, prefix, "created-at", created_at.as_u64());
+            number_u64(entries, prefix, "deleted-at", deleted_at.as_u64());
+        }
         WorthQueryApplicationObservedFact::SourceEntity { .. } => {
             kind(entries, prefix, "source-entity")
         }

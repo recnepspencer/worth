@@ -1,4 +1,4 @@
-//! Bounded v5 wire for the complete, postcommit-rebased producer fact set.
+//! Bounded v6 wire for the complete, postcommit-rebased producer fact set.
 //! Unsupported decision facts are deliberately not checkpoint-reusable.
 
 use std::sync::Arc;
@@ -27,6 +27,20 @@ pub(in crate::domain_computation::primary_graph) fn encode(facts: &[Fact]) -> Op
     put_u32(&mut bytes, u32::try_from(facts.len()).ok()?);
     for fact in facts {
         match fact {
+            Fact::RetiredOutputEntity {
+                entity_id,
+                kind,
+                created_at,
+                deleted_at,
+                read_locator,
+            } => {
+                bytes.push(6);
+                put_entity(&mut bytes, *entity_id);
+                put_u32(&mut bytes, kind.as_u32());
+                put_u64(&mut bytes, created_at.as_u64());
+                put_u64(&mut bytes, deleted_at.as_u64());
+                put_text(&mut bytes, read_locator)?;
+            }
             Fact::SourceEntity { entity_id } => {
                 bytes.push(1);
                 put_entity(&mut bytes, *entity_id);
@@ -98,6 +112,10 @@ pub(in crate::domain_computation::primary_graph) fn encode(facts: &[Fact]) -> Op
 pub(in crate::domain_computation::primary_graph) fn decode(
     bytes: &[u8],
 ) -> Result<Arc<[Fact]>, String> {
+    decode_version(bytes, 6)
+}
+
+pub(super) fn decode_version(bytes: &[u8], version: u16) -> Result<Arc<[Fact]>, String> {
     if bytes.len() < 5 || bytes.len() > MAXIMUM_FACT_BYTES {
         return Err("checkpoint producer fact payload length is invalid".to_owned());
     }
@@ -110,6 +128,14 @@ pub(in crate::domain_computation::primary_graph) fn decode(
     let mut facts = Vec::with_capacity(count);
     for _ in 0..count {
         let fact = match cursor.next_byte()? {
+            6 if version >= 6 => Fact::RetiredOutputEntity {
+                entity_id: cursor.next_entity()?,
+                kind: KindId(cursor.next_u32()?),
+                created_at: VersionId(cursor.next_u64()?),
+                deleted_at: VersionId(cursor.next_u64()?),
+                read_locator: cursor
+                    .next_bounded_text(MAXIMUM_TEXT, "checkpoint retirement read locator")?,
+            },
             1 => Fact::SourceEntity {
                 entity_id: cursor.next_entity()?,
             },
