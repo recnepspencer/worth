@@ -4,12 +4,24 @@
 use super::*;
 use worth_query_declaration::facade::application_operation::ApplicationMutationOutputPostureSet;
 
-const COMPANION: WorthQueryApplicationOptionalOutputRole<Binding, Entity, Preserve> =
-    WorthQueryApplicationOptionalOutputRole::from_static("companion");
-const COMPANION_AS_REQUIRED: WorthQueryApplicationOutputRole<Binding, Entity, Preserve> =
-    WorthQueryApplicationOutputRole::from_static("companion");
-const PRESERVED_AS_OPTIONAL: WorthQueryApplicationOptionalOutputRole<Binding, Entity, Preserve> =
-    WorthQueryApplicationOptionalOutputRole::from_static("preserved");
+const COMPANION: WorthQueryApplicationOptionalOutputRole<
+    Binding,
+    Entity,
+    WorthQueryPreserveOutput,
+> = WorthQueryApplicationOptionalOutputRole::for_entity::<Schema>("companion");
+
+// Stray declarations: the binding declares neither, so each reaches Query only
+// as a token whose cardinality differs from the declared role of its name.
+const COMPANION_AS_REQUIRED: WorthQueryApplicationOutputRole<
+    Binding,
+    Entity,
+    WorthQueryPreserveOutput,
+> = WorthQueryApplicationOutputRole::for_entity::<Schema>("companion");
+const PRESERVED_AS_OPTIONAL: WorthQueryApplicationOptionalOutputRole<
+    Binding,
+    Entity,
+    WorthQueryPreserveOutput,
+> = WorthQueryApplicationOptionalOutputRole::for_entity::<Schema>("preserved");
 
 fn optional_candidate() -> WorthQueryApplicationOutputCorrespondenceCandidate {
     let mut candidate = WorthQueryApplicationOutputCorrespondenceCandidate::default();
@@ -90,10 +102,11 @@ fn a_write_token_whose_cardinality_differs_from_the_declaration_is_refused() {
         "entity",
         0,
     );
-    let optional_member =
-        WorthQueryApplicationOptionalOutputRole::<Binding, Entity, Preserve>::from_static(
-            "member.one",
-        );
+    let optional_member = WorthQueryApplicationOptionalOutputRole::<
+        Binding,
+        Entity,
+        WorthQueryPreserveOutput,
+    >::for_entity::<Schema>("member.one");
 
     for denial in [
         candidate.bind(COMPANION_AS_REQUIRED, &existing, &program),

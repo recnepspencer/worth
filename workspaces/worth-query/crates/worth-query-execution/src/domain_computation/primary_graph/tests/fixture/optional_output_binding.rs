@@ -14,8 +14,7 @@ use crate::domain_computation::primary_graph::{
 };
 use worth_query_declaration::facade::application_operation::{
     ApplicationCandidateRequirements, ApplicationMutationBinding,
-    ApplicationMutationOutputContract, ApplicationMutationOutputPosture,
-    ApplicationMutationOutputRoleDescriptor,
+    ApplicationMutationOutputContract, ApplicationMutationOutputRoleDescriptor,
 };
 use worth_query_declaration::facade::application_schema::{
     ApplicationSchemaDeclarationBuilder, NoApplicationUnit, ReadWrite, U64ApplicationValueBinding,
@@ -60,35 +59,28 @@ pub(in crate::domain_computation::primary_graph) const SUBJECT_OUTPUT:
         OptionalOutputMutationBinding,
         Account,
         WorthQueryPreserveOutput,
-    > = WorthQueryApplicationOutputRole::from_static("subject");
+    > = WorthQueryApplicationOutputRole::for_entity::<IdentityExecutionSchema>("subject");
 /// The role a completed mutation binds at most once.
 pub(in crate::domain_computation::primary_graph) const COMPANION_OUTPUT:
     WorthQueryApplicationOptionalOutputRole<
         OptionalOutputMutationBinding,
         Account,
         WorthQueryPreserveOutput,
-    > = WorthQueryApplicationOptionalOutputRole::from_static("companion");
-/// The at-most-one role misnamed through an exactly-one token.
+    > = WorthQueryApplicationOptionalOutputRole::for_entity::<IdentityExecutionSchema>("companion");
+/// A stray exactly-one declaration of the at-most-one role's name. The output
+/// contract never lists it, so Query must refuse it by cardinality.
 pub(in crate::domain_computation::primary_graph) const COMPANION_AS_REQUIRED_OUTPUT:
     WorthQueryApplicationOutputRole<
         OptionalOutputMutationBinding,
         Account,
         WorthQueryPreserveOutput,
-    > = WorthQueryApplicationOutputRole::from_static("companion");
+    > = WorthQueryApplicationOutputRole::for_entity::<IdentityExecutionSchema>("companion");
 
 pub(in crate::domain_computation::primary_graph) struct OptionalOutputs;
 
 impl ApplicationMutationOutputContract<IdentityExecutionSchema> for OptionalOutputs {
-    const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] = &[
-        ApplicationMutationOutputRoleDescriptor::for_entity::<IdentityExecutionSchema, Account>(
-            "subject",
-            ApplicationMutationOutputPosture::Preserve,
-        ),
-        ApplicationMutationOutputRoleDescriptor::optional_for_entity::<
-            IdentityExecutionSchema,
-            Account,
-        >("companion", ApplicationMutationOutputPosture::Preserve),
-    ];
+    const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] =
+        &[SUBJECT_OUTPUT.descriptor(), COMPANION_OUTPUT.descriptor()];
 }
 
 worth_query_declaration::worth_query_mutation_binding!(

@@ -14,11 +14,12 @@ pub use family_entry::WorthQueryApplicationOutputFamilyEntry;
 
 mod role;
 pub(in crate::domain_computation::primary_graph) use role::fixed as fixed_output_role;
-pub use role::{
-    Create, Preserve, Retire, WorthQueryApplicationFixedOutputRole,
+pub use role::WorthQueryApplicationFixedOutputRole;
+pub use worth_query_declaration::facade::application_operation::{
     WorthQueryApplicationOptionalOutputRole, WorthQueryApplicationOutputAction,
-    WorthQueryApplicationOutputRole, WorthQueryApplicationOutputRoleFamily,
-    WorthQueryApplicationOutputRoleNameDenial,
+    WorthQueryApplicationOutputMemberRole, WorthQueryApplicationOutputRole,
+    WorthQueryApplicationOutputRoleFamily, WorthQueryApplicationOutputRoleNameDenial,
+    WorthQueryCreateOutput, WorthQueryPreserveOutput, WorthQueryRetireOutput,
 };
 
 #[cfg(test)]
@@ -61,7 +62,7 @@ impl WorthQueryApplicationOutputCorrespondence {
     ) -> Result<Self, String> {
         let mut rebound = BTreeMap::new();
         for role in roles {
-            super::output_correspondence::role::validate_output_role_name(&role.role)
+            WorthQueryApplicationOutputRoleNameDenial::validate(&role.role)
                 .map_err(|denial| format!("checkpoint output role {}: {denial}", role.role))?;
             let marker = entity_type(&role.entity_name).ok_or_else(|| {
                 format!(
@@ -185,12 +186,13 @@ impl WorthQueryApplicationOutputCorrespondence {
         if self.binding_type != Some(TypeId::of::<Role::Binding>()) {
             return Err(WorthQueryApplicationOutputProjectionDenial::ForeignBinding);
         }
-        if self.optional_roles.contains(role.name())
+        let name = role.name(fixed_output_role::INTERNAL);
+        if self.optional_roles.contains(name)
             != Role::cardinality(fixed_output_role::INTERNAL).admits_absence()
         {
             return Err(WorthQueryApplicationOutputProjectionDenial::CardinalityMismatch);
         }
-        let Some(binding) = self.roles.get(role.name()) else {
+        let Some(binding) = self.roles.get(name) else {
             return Ok(None);
         };
         if binding.posture != <Role::Action as WorthQueryApplicationOutputAction>::POSTURE {

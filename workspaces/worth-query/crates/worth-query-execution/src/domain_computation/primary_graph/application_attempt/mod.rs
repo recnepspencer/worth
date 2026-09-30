@@ -87,10 +87,11 @@ pub use effect_program::{
     WorthQueryApplicationEffectProgramBuilder, WorthQueryApplicationFixedOutputRole,
     WorthQueryApplicationOptionalOutputRole, WorthQueryApplicationOutputAction,
     WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationOutputEntity,
-    WorthQueryApplicationOutputFamilyEntry, WorthQueryApplicationOutputPosture,
-    WorthQueryApplicationOutputProjectionDenial, WorthQueryApplicationOutputRole,
-    WorthQueryApplicationOutputRoleFamily, WorthQueryApplicationOutputRoleNameDenial,
-    WorthQueryCreateOutput, WorthQueryPreserveOutput, WorthQueryRetireOutput,
+    WorthQueryApplicationOutputFamilyEntry, WorthQueryApplicationOutputMemberRole,
+    WorthQueryApplicationOutputPosture, WorthQueryApplicationOutputProjectionDenial,
+    WorthQueryApplicationOutputRole, WorthQueryApplicationOutputRoleFamily,
+    WorthQueryApplicationOutputRoleNameDenial, WorthQueryCreateOutput, WorthQueryPreserveOutput,
+    WorthQueryRetireOutput,
 };
 pub(super) use elevation_approval_outcome::approved_outcome;
 pub use elevation_approval_outcome::{

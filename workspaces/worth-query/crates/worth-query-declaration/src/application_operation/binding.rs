@@ -2,6 +2,7 @@ mod descriptor;
 mod identity;
 mod intent;
 mod output;
+mod output_role;
 mod portable_description;
 mod principal_contract;
 mod scope;
@@ -26,6 +27,12 @@ pub use output::{
     ApplicationMutationOutputPostureSet, ApplicationMutationOutputRoleCardinality,
     ApplicationMutationOutputRoleDescriptor, ApplicationMutationOutputRoleFamilyDescriptor,
     NoApplicationMutationOutputs,
+};
+pub use output_role::{
+    WorthQueryApplicationOptionalOutputRole, WorthQueryApplicationOutputAction,
+    WorthQueryApplicationOutputMemberRole, WorthQueryApplicationOutputRole,
+    WorthQueryApplicationOutputRoleFamily, WorthQueryApplicationOutputRoleNameDenial,
+    WorthQueryCreateOutput, WorthQueryPreserveOutput, WorthQueryRetireOutput,
 };
 pub use portable_description::{
     ApplicationMutationDescription, ApplicationMutationDescriptionParts,

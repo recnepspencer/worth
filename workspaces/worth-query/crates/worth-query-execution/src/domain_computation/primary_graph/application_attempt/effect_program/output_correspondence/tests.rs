@@ -12,33 +12,23 @@ use crate::domain_computation::primary_graph::application_attempt::effect_progra
 use crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind;
 
 mod cardinality;
+mod declaration;
 mod family;
 
-struct Schema;
-struct Binding;
-struct ForeignBinding;
-struct Entity;
-struct WrongEntity;
-
-const PRESERVED: WorthQueryApplicationOutputRole<Binding, Entity, Preserve> =
-    WorthQueryApplicationOutputRole::from_static("preserved");
-const CREATED: WorthQueryApplicationOutputRole<Binding, Entity, Create> =
-    WorthQueryApplicationOutputRole::from_static("created");
-const RETIRED: WorthQueryApplicationOutputRole<Binding, Entity, Retire> =
-    WorthQueryApplicationOutputRole::from_static("retired");
+use declaration::*;
 
 #[test]
 fn runtime_role_names_reject_ambiguous_or_unbounded_representations() {
     assert!(matches!(
-        WorthQueryApplicationOutputRole::<Binding, Entity, Create>::try_new(" role"),
+        WorthQueryApplicationOutputRoleNameDenial::validate(" role"),
         Err(WorthQueryApplicationOutputRoleNameDenial::SurroundingWhitespace)
     ));
     assert!(matches!(
-        WorthQueryApplicationOutputRole::<Binding, Entity, Create>::try_new("role\nmember"),
+        WorthQueryApplicationOutputRoleNameDenial::validate("role\nmember"),
         Err(WorthQueryApplicationOutputRoleNameDenial::ControlCharacter)
     ));
     assert!(matches!(
-        WorthQueryApplicationOutputRole::<Binding, Entity, Create>::try_new("x".repeat(257)),
+        WorthQueryApplicationOutputRoleNameDenial::validate(&"x".repeat(257)),
         Err(
             WorthQueryApplicationOutputRoleNameDenial::RepresentationTooLarge {
                 maximum_bytes: 256,
@@ -109,8 +99,11 @@ fn duplicate_and_foreign_binding_roles_are_denied_before_commit() {
             .kind(),
         WorthQueryApplicationAttemptDenialKind::DuplicateOutputRole
     );
-    let foreign =
-        WorthQueryApplicationOutputRole::<ForeignBinding, Entity, Preserve>::from_static("foreign");
+    let foreign = WorthQueryApplicationOutputRole::<
+        ForeignBinding,
+        Entity,
+        WorthQueryPreserveOutput,
+    >::for_entity::<Schema>("foreign");
     assert_eq!(
         candidate
             .bind(foreign, &existing, &program)
@@ -152,7 +145,9 @@ fn declaration_inventory_denies_undeclared_missing_and_wrong_entity_roles() {
     candidate.prepare_test_role(&PRESERVED, "entity");
 
     let undeclared =
-        WorthQueryApplicationOutputRole::<Binding, Entity, Preserve>::from_static("other");
+        WorthQueryApplicationOutputRole::<Binding, Entity, WorthQueryPreserveOutput>::for_entity::<
+            Schema,
+        >("other");
     assert_eq!(
         candidate
             .bind(undeclared, &existing, &program)
@@ -278,8 +273,8 @@ fn owner_resolved_creation_projects_the_exact_typed_identity() {
             .entity(WorthQueryApplicationOutputRole::<
                 Binding,
                 WrongEntity,
-                Create,
-            >::from_static("created"))
+                WorthQueryCreateOutput,
+            >::for_entity::<Schema>("created"))
             .err(),
         Some(WorthQueryApplicationOutputProjectionDenial::EntityMismatch)
     );

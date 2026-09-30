@@ -58,7 +58,7 @@ where
         Role: WorthQueryApplicationFixedOutputRole,
         Role::Entity: ApplicationEntityMarkerIdentity<Schema> + OperationReads<Operation>,
     {
-        let role_name = role.name().to_owned();
+        let role_name = role.name(fixed_output_role::INTERNAL).to_owned();
         self.prior_output_if_present(role)?.ok_or_else(|| {
             WorthQueryPriorOutputDenial::new(
                 WorthQueryPriorOutputDenialKind::Unavailable,
@@ -83,27 +83,32 @@ where
         Role: WorthQueryApplicationFixedOutputRole,
         Role::Entity: ApplicationEntityMarkerIdentity<Schema> + OperationReads<Operation>,
     {
-        self.admit_prior_entity::<Role::Entity>(role.name())?;
-        let Some(correspondence) =
-            self.select_prior_correspondence::<Role::Binding>(role.name())?
+        self.admit_prior_entity::<Role::Entity>(role.name(fixed_output_role::INTERNAL))?;
+        let Some(correspondence) = self
+            .select_prior_correspondence::<Role::Binding>(role.name(fixed_output_role::INTERNAL))?
         else {
             return Ok(None);
         };
-        self.require_role_budget(1, role.name())?;
+        self.require_role_budget(1, role.name(fixed_output_role::INTERNAL))?;
         self.reader.work_budget.consume(1);
         self.reader.work.record_output_lineage_role_lookup();
-        let bound = correspondence
-            .bound_entity(&role)
-            .map_err(|denial| WorthQueryPriorOutputDenial::projection(role.name(), denial))?;
+        let bound = correspondence.bound_entity(&role).map_err(|denial| {
+            WorthQueryPriorOutputDenial::projection(role.name(fixed_output_role::INTERNAL), denial)
+        })?;
         let identity = bound
-            .map(|output| self.live_prior_identity::<Role::Entity>(role.name(), output.entity_id()))
+            .map(|output| {
+                self.live_prior_identity::<Role::Entity>(
+                    role.name(fixed_output_role::INTERNAL),
+                    output.entity_id(),
+                )
+            })
             .transpose()?;
         Role::read(identity, fixed_output_role::INTERNAL)
             .map(Some)
             .ok_or_else(|| {
                 WorthQueryPriorOutputDenial::new(
                     WorthQueryPriorOutputDenialKind::MissingRole,
-                    role.name(),
+                    role.name(fixed_output_role::INTERNAL),
                 )
             })
     }

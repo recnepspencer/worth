@@ -13,10 +13,12 @@ use worth_relational::facade::transactions::{CommitResult, EntityReference};
 
 use contract::{ExpectedOutputBinding, ExpectedOutputFamily};
 
+use super::fixed_output_role::INTERNAL;
+
 use super::{
     CommittedOutputBinding, WorthQueryApplicationFixedOutputRole,
     WorthQueryApplicationOutputAction, WorthQueryApplicationOutputCorrespondence,
-    WorthQueryApplicationOutputPosture,
+    WorthQueryApplicationOutputPosture, WorthQueryApplicationOutputRoleNameDenial,
 };
 use crate::domain_computation::primary_graph::application_attempt::effect_program::WorthQueryApplicationEffectEntity;
 use crate::domain_computation::primary_graph::{
@@ -65,11 +67,11 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
     {
         self.binding_type = Some(TypeId::of::<Role::Binding>());
         self.expected_roles.insert(
-            role.name().to_owned(),
+            role.name(INTERNAL).to_owned(),
             ExpectedOutputBinding {
                 posture: <Role::Action as WorthQueryApplicationOutputAction>::POSTURE,
                 entity_name,
-                cardinality: Role::cardinality(super::fixed_output_role::INTERNAL),
+                cardinality: Role::cardinality(INTERNAL),
             },
         );
     }
@@ -103,14 +105,14 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
         Role: WorthQueryApplicationFixedOutputRole,
     {
         let posture = <Role::Action as WorthQueryApplicationOutputAction>::POSTURE;
-        validate_role_name(role.name())?;
+        validate_role_name(role.name(INTERNAL))?;
         if !std::sync::Arc::ptr_eq(program, &target.program) {
             return Err(denial(
                 WorthQueryApplicationAttemptDenialKind::ForeignEffectTarget,
-                role.name(),
+                role.name(INTERNAL),
             ));
         }
-        validate_reference_posture(posture, &target.reference, role.name())?;
+        validate_reference_posture(posture, &target.reference, role.name(INTERNAL))?;
         let binding_type = TypeId::of::<Role::Binding>();
         if self
             .binding_type
@@ -118,14 +120,14 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
         {
             return Err(denial(
                 WorthQueryApplicationAttemptDenialKind::ForeignOutputRole,
-                role.name(),
+                role.name(INTERNAL),
             ));
         }
-        let exact = self.expected_roles.get(role.name());
+        let exact = self.expected_roles.get(role.name(INTERNAL));
         let family = self
             .expected_families
             .iter()
-            .find(|family| family_matches(role.name(), &family.prefix));
+            .find(|family| family_matches(role.name(INTERNAL), &family.prefix));
         let (posture_allowed, expected_entity, cardinality) = match (exact, family) {
             (Some(expected), None) => (
                 expected.posture == posture,
@@ -140,32 +142,32 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
             _ => {
                 return Err(denial(
                     WorthQueryApplicationAttemptDenialKind::UndeclaredOutputRole,
-                    role.name(),
+                    role.name(INTERNAL),
                 ))
             }
         };
         if expected_entity != target.entity {
             return Err(denial(
                 WorthQueryApplicationAttemptDenialKind::OutputRoleEntityMismatch,
-                role.name(),
+                role.name(INTERNAL),
             ));
         }
         if !posture_allowed {
             return Err(denial(
                 WorthQueryApplicationAttemptDenialKind::OutputRoleActionMismatch,
-                role.name(),
+                role.name(INTERNAL),
             ));
         }
-        if cardinality != Role::cardinality(super::fixed_output_role::INTERNAL) {
+        if cardinality != Role::cardinality(INTERNAL) {
             return Err(denial(
                 WorthQueryApplicationAttemptDenialKind::OutputRoleCardinalityMismatch,
-                role.name(),
+                role.name(INTERNAL),
             ));
         }
-        if self.roles.contains_key(role.name()) {
+        if self.roles.contains_key(role.name(INTERNAL)) {
             return Err(denial(
                 WorthQueryApplicationAttemptDenialKind::DuplicateOutputRole,
-                role.name(),
+                role.name(INTERNAL),
             ));
         }
         Ok(())
@@ -180,7 +182,7 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
     {
         self.binding_type = Some(TypeId::of::<Role::Binding>());
         self.roles.insert(
-            role.name().to_owned(),
+            role.name(INTERNAL).to_owned(),
             CandidateOutputBinding {
                 posture: <Role::Action as WorthQueryApplicationOutputAction>::POSTURE,
                 entity_name: target.entity.clone(),
@@ -280,7 +282,7 @@ fn validate_reference_posture(
 }
 
 fn validate_role_name(role: &str) -> Result<(), WorthQueryApplicationAttemptDenial> {
-    if super::role::validate_output_role_name(role).is_err() {
+    if WorthQueryApplicationOutputRoleNameDenial::validate(role).is_err() {
         Err(denial(
             WorthQueryApplicationAttemptDenialKind::InvalidOutputRole,
             role,

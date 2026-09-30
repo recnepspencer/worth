@@ -1,10 +1,9 @@
-use crate::application_schema::{ApplicationEntityMarkerIdentity, ApplicationSchema};
+use crate::application_schema::ApplicationSchema;
 
 /// What a mutation does to the record behind one declared output role.
 ///
-/// Each `ApplicationMutationOutputRoleDescriptor` in a mutation's output
-/// contract names an entity and one posture; installation checks the roles
-/// against the installed schema.
+/// Each output role a mutation's output contract lists names an entity and
+/// one posture; installation checks the roles against the installed schema.
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum ApplicationMutationOutputPosture {
     /// The role names a record the mutation keeps; it neither creates nor
@@ -57,8 +56,8 @@ impl ApplicationMutationOutputPostureSet {
 /// How many outputs one fixed output role binds in a completed mutation.
 ///
 /// A fixed role is the single way to declare a named output that is present
-/// at most once; `ApplicationMutationOutputRoleFamilyDescriptor` is for a
-/// variable number of outputs under one prefix.
+/// at most once; a role family is for a variable number of outputs under one
+/// prefix.
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum ApplicationMutationOutputRoleCardinality {
     /// Every completed mutation binds the role exactly once; leaving it
@@ -77,6 +76,9 @@ impl ApplicationMutationOutputRoleCardinality {
     }
 }
 
+/// The installed form of one fixed output role. Only an output-role token
+/// builds one, through its `descriptor`, so the roles a binding lists are
+/// exactly the tokens it declares.
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct ApplicationMutationOutputRoleDescriptor {
     name: &'static str,
@@ -86,38 +88,17 @@ pub struct ApplicationMutationOutputRoleDescriptor {
 }
 
 impl ApplicationMutationOutputRoleDescriptor {
-    /// A role every completed mutation binds exactly once.
-    pub const fn for_entity<Schema, Entity>(
+    pub(super) const fn declared(
         name: &'static str,
+        entity: &'static str,
         posture: ApplicationMutationOutputPosture,
-    ) -> Self
-    where
-        Schema: ApplicationSchema,
-        Entity: ApplicationEntityMarkerIdentity<Schema>,
-    {
+        cardinality: ApplicationMutationOutputRoleCardinality,
+    ) -> Self {
         Self {
             name,
-            entity: Entity::IDENTIFIER,
+            entity,
             posture,
-            cardinality: ApplicationMutationOutputRoleCardinality::ExactlyOne,
-        }
-    }
-
-    /// A role a completed mutation binds at most once: it may leave the role
-    /// unbound, and binding it twice is denied.
-    pub const fn optional_for_entity<Schema, Entity>(
-        name: &'static str,
-        posture: ApplicationMutationOutputPosture,
-    ) -> Self
-    where
-        Schema: ApplicationSchema,
-        Entity: ApplicationEntityMarkerIdentity<Schema>,
-    {
-        Self {
-            name,
-            entity: Entity::IDENTIFIER,
-            posture,
-            cardinality: ApplicationMutationOutputRoleCardinality::AtMostOne,
+            cardinality,
         }
     }
 
@@ -138,6 +119,8 @@ impl ApplicationMutationOutputRoleDescriptor {
     }
 }
 
+/// The installed form of one output-role family. Only a family token builds
+/// one, through its `descriptor`.
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct ApplicationMutationOutputRoleFamilyDescriptor {
     prefix: &'static str,
@@ -147,18 +130,15 @@ pub struct ApplicationMutationOutputRoleFamilyDescriptor {
 }
 
 impl ApplicationMutationOutputRoleFamilyDescriptor {
-    pub const fn for_entity<Schema, Entity>(
+    pub(super) const fn declared(
         prefix: &'static str,
+        entity: &'static str,
         postures: ApplicationMutationOutputPostureSet,
         minimum: usize,
-    ) -> Self
-    where
-        Schema: ApplicationSchema,
-        Entity: ApplicationEntityMarkerIdentity<Schema>,
-    {
+    ) -> Self {
         Self {
             prefix,
-            entity: Entity::IDENTIFIER,
+            entity,
             postures,
             minimum,
         }
@@ -182,6 +162,11 @@ impl ApplicationMutationOutputRoleFamilyDescriptor {
 }
 
 /// Finite semantic output inventory for one mutation binding.
+///
+/// `ROLES` lists the `descriptor()` of each fixed output-role token the
+/// binding declares, and `ROLE_FAMILIES` the `descriptor()` of each family
+/// token. The tokens are the declarations, so a listed role's cardinality,
+/// posture and entity are the ones its token reads and writes with.
 pub trait ApplicationMutationOutputContract<Schema>: 'static
 where
     Schema: ApplicationSchema,

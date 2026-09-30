@@ -49,15 +49,18 @@ impl<Schema, Operation, Input, Scope>
     where
         Role: WorthQueryApplicationFixedOutputRole,
     {
-        validate_role_name(role.name())?;
-        let retained_representation_bytes =
-            retained_representation::output_binding(role.name(), &target.entity, &target.reference)
-                .ok_or_else(|| {
-                    denial(
-                        WorthQueryApplicationAttemptDenialKind::CandidateReservationExceeded,
-                        role.name(),
-                    )
-                })?;
+        validate_role_name(role.name(INTERNAL))?;
+        let retained_representation_bytes = retained_representation::output_binding(
+            role.name(INTERNAL),
+            &target.entity,
+            &target.reference,
+        )
+        .ok_or_else(|| {
+            denial(
+                WorthQueryApplicationAttemptDenialKind::CandidateReservationExceeded,
+                role.name(INTERNAL),
+            )
+        })?;
         self.output_correspondence
             .validate_binding(&role, target, &self.program)?;
         self.charge_candidate_representation_only(retained_representation_bytes)?;
