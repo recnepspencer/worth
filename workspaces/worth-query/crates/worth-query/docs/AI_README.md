@@ -444,29 +444,35 @@ Application usage:
 (output roles and committed changes) and
 [host README, Output Demand, Exact Observation, And Live Reads](../../worth-query-host/README.md#output-demand-exact-observation-and-live-reads).
 
-- `WorthQueryApplicationOutputRole<Binding, Entity, Action>` names one declared
-  semantic output. The role name supplies no persistent identity; Relational
+- `WorthQueryApplicationOutputRole<Binding, Entity, Action>` declares one
+  semantic output. The binding declares it once as a constant through
+  `for_entity::<Schema>(name)` and lists `TOKEN.descriptor()` in `ROLES`;
+  handlers and readers pass the same constant, and no token is built from a
+  bare name. The role name supplies no persistent identity; Relational
   resolves created identities and co-commits their structural changes and
   lineage. `output_correspondence().entity(role)` checks binding, role name,
   action, and entity marker, so a caller cannot relabel a committed identity by
   changing a generic argument. The projected identity still needs fresh
   admission for later use.
 - Each fixed role in `Binding::Output::ROLES` carries an
-  `ApplicationMutationOutputRoleCardinality`. `for_entity` declares
-  `ExactlyOne`: leaving it unbound fails the candidate with `MissingOutputRole`.
-  `optional_for_entity` declares `AtMostOne`: the commit may omit it. A second
-  binding of either is `DuplicateOutputRole`. The role token matches the
-  declaration: `WorthQueryApplicationOutputRole` for exactly-one roles, whose
-  `entity(role)`, `prior_output` and reconstruction `entity` reads are total,
-  and `WorthQueryApplicationOptionalOutputRole` for at-most-one roles, whose
-  same reads return `Option`, `None` meaning the commit left the role unbound.
-  A token of the other cardinality is refused on write
-  (`OutputRoleCardinalityMismatch`) and on read (`CardinalityMismatch`). The cardinality is part of the canonical schema
+  `ApplicationMutationOutputRoleCardinality` taken from its token.
+  `WorthQueryApplicationOutputRole` declares `ExactlyOne`: leaving it unbound
+  fails the candidate with `MissingOutputRole`, and its `entity(role)`,
+  `prior_output` and reconstruction `entity` reads are total.
+  `WorthQueryApplicationOptionalOutputRole` declares `AtMostOne`: the commit may
+  omit it, and the same reads return `Option`, `None` meaning the commit left
+  the role unbound. A second binding of either is `DuplicateOutputRole`. A
+  token `ROLES` does not list is refused when used; one of the other
+  cardinality is `OutputRoleCardinalityMismatch` on write and
+  `CardinalityMismatch` on read. The cardinality is part of the canonical schema
   identity and the portable and archived descriptions. Declare an optional
   single output this way, never as a family with minimum zero.
-- `WorthQueryApplicationOutputRoleFamily<Binding, Entity>` names a family
-  already declared by `Binding::Output::ROLE_FAMILIES`. It creates no second
-  lineage store.
+- `WorthQueryApplicationOutputRoleFamily<Binding, Entity>` declares a family
+  through `for_entity::<Schema>(prefix, postures, minimum)`, listed in
+  `Binding::Output::ROLE_FAMILIES` by its descriptor. Members come only from
+  `FAMILY.member::<Action>(suffix)`, which validates the name; Query checks the
+  member's action against the family's postures. It creates no second lineage
+  store.
 - `committed_changes()` returns `WorthQueryApplicationCommittedChanges`, an
   immutable view with no field payloads or mutation authority. Its constructor
   and canonical artifact stay private. Event order and numeric identity do not

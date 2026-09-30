@@ -14,9 +14,9 @@ use worth_query_host::facade::{
             ApplicationCandidateCardinalityCeiling, ApplicationCandidateRequirements,
             ApplicationCandidateResourceCeiling, ApplicationMutationBinding,
             ApplicationMutationFieldScope, ApplicationMutationIntent,
-            ApplicationMutationOutputContract, ApplicationMutationOutputPosture,
-            ApplicationMutationOutputRoleDescriptor, ApplicationMutationOutputRoleFamilyDescriptor,
-            ApplicationQueryMutationSource,
+            ApplicationMutationOutputContract, ApplicationMutationOutputRoleDescriptor,
+            ApplicationMutationOutputRoleFamilyDescriptor, ApplicationQueryMutationSource,
+            WorthQueryApplicationOutputRole, WorthQueryPreserveOutput,
         },
         application_schema::{
             ApplicationFieldRef, ApplicationPrincipalBindingRef,
@@ -71,14 +71,16 @@ worth_query_operation_reads!(PublishApprovedPaymentAssessment => [PaymentIntent,
 
 pub struct ApprovedPaymentAssessmentOutputs;
 
+/// The approved payment an assessment preserves.
+pub const APPROVED_PAYMENT_ASSESSMENT_OUTPUT: WorthQueryApplicationOutputRole<
+    ApprovedPaymentAssessmentBinding,
+    PaymentIntent,
+    WorthQueryPreserveOutput,
+> = WorthQueryApplicationOutputRole::for_entity::<BankSchema>("assessment");
+
 impl ApplicationMutationOutputContract<BankSchema> for ApprovedPaymentAssessmentOutputs {
     const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] =
-        &[ApplicationMutationOutputRoleDescriptor::for_entity::<
-            BankSchema,
-            PaymentIntent,
-        >(
-            "assessment", ApplicationMutationOutputPosture::Preserve
-        )];
+        &[APPROVED_PAYMENT_ASSESSMENT_OUTPUT.descriptor()];
     const ROLE_FAMILIES: &'static [ApplicationMutationOutputRoleFamilyDescriptor] = &[];
 }
 

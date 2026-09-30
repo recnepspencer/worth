@@ -16,7 +16,6 @@ use worth_query_host::facade::{
     domain,
     primary_graph::{
         CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
-        WorthQueryApplicationOutputRole,
     },
 };
 
@@ -159,7 +158,7 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, AlternatePlanarOutp
             return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error));
         }
         match writer.preserve_output(
-            WorthQueryApplicationOutputRole::from_static("anchor"),
+            planar_anchor_output::<Schema, AlternatePlanarOutputBinding<Schema>>(),
             &anchor,
         ) {
             Ok(()) => HandlerResult::Completed(PlanarAdjustmentResult {

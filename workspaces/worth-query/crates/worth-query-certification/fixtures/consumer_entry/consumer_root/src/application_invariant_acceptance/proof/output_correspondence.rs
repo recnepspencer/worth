@@ -9,12 +9,14 @@ use worth_query_host::facade::{
         LineageEventKind, MutationHandlerExecutionDenial, RecordStructuralChange,
         WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationCommitReceipt,
         WorthQueryApplicationOutputProjectionDenial, WorthQueryApplicationOutputRole,
-        WorthQueryCreateOutput, WorthQueryEntityResolutionDenialKind, WorthQueryPreserveOutput,
-        WorthQueryRetireOutput, WorthQuerySourceExpectationDenialKind,
+        WorthQueryCreateOutput, WorthQueryEntityResolutionDenialKind,
+        WorthQuerySourceExpectationDenialKind,
     },
 };
 use worth_query_topology_entry::{
-    Body, PlanarEditBinding, PlanarQuery, PlanarRead, VertexReplacement, VertexReplacementBinding,
+    planar_anchor_output, vertex_replacement_anchor_output, vertex_replacement_created_output,
+    vertex_replacement_retired_output, PlanarEditBinding, PlanarQuery, PlanarRead, Principal,
+    VertexReplacement, VertexReplacementBinding,
 };
 
 use super::{
@@ -57,37 +59,25 @@ pub(super) fn run(request: &Request<'_>, application: &ProgramApplication) {
     assert_eq!(result.replacement_key, "replacement-b");
     let correspondence = receipt.output_correspondence();
     let preserved = correspondence
-        .entity(WorthQueryApplicationOutputRole::<
-            VertexReplacementBinding<ConsumerSchema>,
-            Body,
-            WorthQueryPreserveOutput,
-        >::from_static("anchor"))
+        .entity(vertex_replacement_anchor_output::<ConsumerSchema>())
         .unwrap()
         .entity_id();
     let created = correspondence
-        .entity(WorthQueryApplicationOutputRole::<
-            VertexReplacementBinding<ConsumerSchema>,
-            Body,
-            WorthQueryCreateOutput,
-        >::from_static("replacement"))
+        .entity(vertex_replacement_created_output::<ConsumerSchema>())
         .unwrap()
         .entity_id();
     assert_eq!(
         correspondence
             .entity(WorthQueryApplicationOutputRole::<
                 VertexReplacementBinding<ConsumerSchema>,
-                (),
+                Principal,
                 WorthQueryCreateOutput,
-            >::from_static("replacement"))
+            >::for_entity::<ConsumerSchema>("replacement"))
             .err(),
         Some(WorthQueryApplicationOutputProjectionDenial::EntityMismatch)
     );
     let deleted = correspondence
-        .entity(WorthQueryApplicationOutputRole::<
-            VertexReplacementBinding<ConsumerSchema>,
-            Body,
-            WorthQueryRetireOutput,
-        >::from_static("retired"))
+        .entity(vertex_replacement_retired_output::<ConsumerSchema>())
         .unwrap()
         .entity_id();
     assert_eq!(preserved, anchor);
@@ -257,11 +247,10 @@ fn preserved_identity(
     };
     receipt
         .output_correspondence()
-        .entity(WorthQueryApplicationOutputRole::<
+        .entity(planar_anchor_output::<
+            ConsumerSchema,
             PlanarEditBinding<ConsumerSchema>,
-            Body,
-            WorthQueryPreserveOutput,
-        >::from_static("anchor"))
+        >())
         .unwrap()
         .entity_id()
 }

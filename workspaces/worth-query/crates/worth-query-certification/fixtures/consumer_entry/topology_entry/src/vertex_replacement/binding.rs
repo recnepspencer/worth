@@ -79,21 +79,34 @@ pub(super) const fn replacement_requirements() -> ApplicationCandidateRequiremen
 }
 
 pub struct VertexReplacementOutputs;
+
+/// The vertex a replacement keeps as its anchor.
+pub const fn vertex_replacement_anchor_output<Schema: TopologySchemaBinding>(
+) -> WorthQueryApplicationOutputRole<VertexReplacementBinding<Schema>, Body, WorthQueryPreserveOutput>
+{
+    WorthQueryApplicationOutputRole::for_entity::<Schema>("anchor")
+}
+
+/// The vertex a replacement creates.
+pub const fn vertex_replacement_created_output<Schema: TopologySchemaBinding>(
+) -> WorthQueryApplicationOutputRole<VertexReplacementBinding<Schema>, Body, WorthQueryCreateOutput>
+{
+    WorthQueryApplicationOutputRole::for_entity::<Schema>("replacement")
+}
+
+/// The vertex a replacement retires.
+pub const fn vertex_replacement_retired_output<Schema: TopologySchemaBinding>(
+) -> WorthQueryApplicationOutputRole<VertexReplacementBinding<Schema>, Body, WorthQueryRetireOutput>
+{
+    WorthQueryApplicationOutputRole::for_entity::<Schema>("retired")
+}
+
 impl<Schema: TopologySchemaBinding> ApplicationMutationOutputContract<Schema>
     for VertexReplacementOutputs
 {
     const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] = &[
-        ApplicationMutationOutputRoleDescriptor::for_entity::<Schema, Body>(
-            "anchor",
-            ApplicationMutationOutputPosture::Preserve,
-        ),
-        ApplicationMutationOutputRoleDescriptor::for_entity::<Schema, Body>(
-            "replacement",
-            ApplicationMutationOutputPosture::Create,
-        ),
-        ApplicationMutationOutputRoleDescriptor::for_entity::<Schema, Body>(
-            "retired",
-            ApplicationMutationOutputPosture::Retire,
-        ),
+        vertex_replacement_anchor_output::<Schema>().descriptor(),
+        vertex_replacement_created_output::<Schema>().descriptor(),
+        vertex_replacement_retired_output::<Schema>().descriptor(),
     ];
 }

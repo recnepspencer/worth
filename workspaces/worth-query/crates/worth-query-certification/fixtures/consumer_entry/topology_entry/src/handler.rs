@@ -6,8 +6,8 @@ use worth_query_decl::facade::application_schema::{
 };
 use worth_query_host::facade::primary_graph::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
-    WorthQueryApplicationEntityKey, WorthQueryApplicationOutputRole, WorthQueryCreateOutput,
-    WorthQueryCurrentOutputRole, WorthQueryCurrentOutputSelection,
+    WorthQueryApplicationEntityKey, WorthQueryCreateOutput, WorthQueryCurrentOutputRole,
+    WorthQueryCurrentOutputSelection,
 };
 
 pub struct PlanarHandler;
@@ -225,12 +225,7 @@ where
         .resolve_entity(BodyKey::reference(), input.scope_key.clone())
         .map_err(HandlerExecutionDenial::new)?;
     writer
-        .preserve_output(
-            worth_query_host::facade::primary_graph::WorthQueryApplicationOutputRole::from_static(
-                "anchor",
-            ),
-            &anchor,
-        )
+        .preserve_output(planar_anchor_output::<Schema, Binding>(), &anchor)
         .map_err(HandlerExecutionDenial::new)?;
     match &input.operation {
         PlanarOperation::CreateCycle(vertices) => {
@@ -257,12 +252,9 @@ where
                         worth_query_consumer_values::PositiveLength::new(1).unwrap(),
                     )
                     .map_err(HandlerExecutionDenial::new)?;
-                let role = WorthQueryApplicationOutputRole::<
-                    Binding,
-                    Body,
-                    WorthQueryCreateOutput,
-                >::try_new(format!("created.{}", vertex.body_key))
-                .map_err(HandlerExecutionDenial::new)?;
+                let role = planar_created_outputs::<Schema, Binding>()
+                    .member::<WorthQueryCreateOutput>(&vertex.body_key)
+                    .map_err(HandlerExecutionDenial::new)?;
                 writer
                     .create_output(role, &entity)
                     .map_err(HandlerExecutionDenial::new)?;

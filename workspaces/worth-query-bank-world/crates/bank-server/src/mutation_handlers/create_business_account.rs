@@ -12,8 +12,7 @@ use worth_query_host::facade::declaration::application_operation::{
 };
 use worth_query_host::facade::primary_graph::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerInterruption, HandlerResult,
-    OperationHandler, WorthQueryApplicationEntityKey, WorthQueryApplicationOutputRole,
-    WorthQueryCreateOutput,
+    OperationHandler, WorthQueryApplicationEntityKey,
 };
 
 use crate::bank_projection::project_business_account_creation;
@@ -148,14 +147,7 @@ fn author_account(
         )
         .map_err(HandlerExecutionDenial::new)?;
     candidate
-        .create_output(
-            WorthQueryApplicationOutputRole::<
-                CreateBusinessAccountMutationBinding,
-                Account,
-                WorthQueryCreateOutput,
-            >::from_static(CREATE_BUSINESS_ACCOUNT_OUTPUT_ACCOUNT),
-            &created,
-        )
+        .create_output(CREATE_BUSINESS_ACCOUNT_OUTPUT_ACCOUNT, &created)
         .map_err(HandlerExecutionDenial::new)?;
     Ok(CreateBusinessAccountResult {
         account: account.id(),

@@ -105,28 +105,50 @@ different entity marker even when the binding, name and action match; foreign
 bindings, missing roles and action mismatches have their own typed denials.
 Role names describe correspondence; the platform resolves persistent identity.
 
-Bindings with a finite result shape declare exact roles in `ROLES`. Each fixed
-role has a typed `ApplicationMutationOutputRoleCardinality`:
-`ApplicationMutationOutputRoleDescriptor::for_entity` declares `ExactlyOne`, and
-`optional_for_entity` declares `AtMostOne`. A completed candidate that leaves an
-exactly-one role unbound is refused with `MissingOutputRole`. An at-most-one
-role left unbound commits without it. Binding any fixed role a second time is
-refused with `DuplicateOutputRole`.
+The role token is the declaration. A binding declares each fixed role once, as
+a typed constant, and lists its descriptor in `ROLES`; handlers and readers pass
+the same constant:
 
-The role token carries the same cardinality, and it decides the shape of every
-read. `WorthQueryApplicationOutputRole` names an exactly-one role, and its reads
-are total: `output_correspondence().entity(role)`, `DecisionReader::prior_output`
-and generated-output reconstruction's `entity` return the output itself.
-`WorthQueryApplicationOptionalOutputRole` names an at-most-one role, and the same
-calls return an `Option`: `None` when the commit left the role unbound, `Some`
-when it bound it. Absence is a value, never a denial. Both tokens implement the
-sealed `WorthQueryApplicationFixedOutputRole`, so the create, preserve and retire
+```rust,ignore
+pub const ACCOUNT_OUTPUT: WorthQueryApplicationOutputRole<
+    CreateAccountBinding,
+    Account,
+    WorthQueryCreateOutput,
+> = WorthQueryApplicationOutputRole::for_entity::<BankSchema>("account");
+
+impl ApplicationMutationOutputContract<BankSchema> for CreateAccountOutputs {
+    const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] =
+        &[ACCOUNT_OUTPUT.descriptor()];
+}
+
+candidate.create_output(ACCOUNT_OUTPUT, &created)?;
+```
+
+`for_entity` requires the entity marker to belong to the schema, and the
+action type fixes the posture, so a declaration cannot disagree with its token.
+No token is built from a bare name. A generic schema or binding declares its
+token through a `const fn` that returns it.
+
+Each fixed role has a typed `ApplicationMutationOutputRoleCardinality`.
+`WorthQueryApplicationOutputRole` declares `ExactlyOne`, and
+`WorthQueryApplicationOptionalOutputRole` declares `AtMostOne`. A completed
+candidate that leaves an exactly-one role unbound is refused with
+`MissingOutputRole`. An at-most-one role left unbound commits without it.
+Binding any fixed role a second time is refused with `DuplicateOutputRole`.
+
+The cardinality also decides the shape of every read. Reads through an
+exactly-one token are total: `output_correspondence().entity(role)`,
+`DecisionReader::prior_output` and generated-output reconstruction's `entity`
+return the output itself. Through an at-most-one token the same calls return an
+`Option`: `None` when the commit left the role unbound, `Some` when it bound it.
+Absence is a value, never a denial. Both tokens implement the sealed
+`WorthQueryApplicationFixedOutputRole`, so the create, preserve and retire
 writers accept either; its `Read<T>` names the read shape, and the operations
-that shape reads stay inside Query. A token whose cardinality differs from the declaration is
-a contract violation: writing through it is refused with
-`OutputRoleCardinalityMismatch`, and reading through it returns
-`CardinalityMismatch` (`OutputRoleCardinalityMismatch` in reconstruction).
-Family members are exactly-one and take `WorthQueryApplicationOutputRole`.
+that shape reads stay inside Query. A token the binding's `ROLES` does not list
+is a contract violation checked when it is used: a different cardinality is
+refused with `OutputRoleCardinalityMismatch` on write and `CardinalityMismatch`
+on read (`OutputRoleCardinalityMismatch` in reconstruction), and an undeclared
+name, entity marker or action has its own typed denial.
 
 The cardinality is part of the schema's canonical identity
 and of its portable and archived descriptions, so changing it changes the
@@ -136,13 +158,14 @@ A producer's `OUTPUT_ROLE` names an exactly-one role or a family member; an
 at-most-one role is refused because a commit may omit it.
 
 Bindings whose result cardinality follows the authored topology declare typed
-namespaces in `ROLE_FAMILIES`, including the entity marker, allowed action
-postures and minimum member count. A handler constructs each source-derived member with
-`WorthQueryApplicationOutputRole::try_new(format!(...))` and passes that token
-directly to `create_output`, `preserve_output` or `retire_output`. Query rejects
-empty, ambiguous and oversized runtime names, validates each member against the
-installed family, and seals the resolved identity in the same correspondence.
-`from_static` remains the constructor for exact compile-time role names.
+families. `WorthQueryApplicationOutputRoleFamily::for_entity` declares the
+prefix, entity marker, allowed action postures and minimum member count, and
+`ROLE_FAMILIES` lists its descriptor. A handler takes each source-derived member
+from its family, `CREATED.member::<WorthQueryCreateOutput>(&key)?`, and passes
+the member directly to `create_output`, `preserve_output` or `retire_output`.
+Members are exactly-one. `member` rejects empty, ambiguous and oversized names;
+Query validates each member's action against the installed family and seals the
+resolved identity in the same correspondence.
 
 `committed_changes()` provides the exact `commit_reference()`, an
 `entity_changes()` iterator of `(EntityId, RecordStructuralChange)`, and native

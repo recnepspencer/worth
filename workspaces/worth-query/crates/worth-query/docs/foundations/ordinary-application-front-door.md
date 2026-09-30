@@ -136,19 +136,23 @@ Invariant factories resolve typed field and relation bindings once and evaluate
 the actual proposed overlay and committed before-image inside a declared prepared
 scope and finite work budget.
 
-Fixed output roles declare how often a completed candidate binds them.
-`ApplicationMutationOutputRoleDescriptor::for_entity` is exactly once and
-`optional_for_entity` is at most once. An unbound exactly-one role is
-`MissingOutputRole`, any second binding is `DuplicateOutputRole`, and an unbound
-at-most-one role commits without that output. Handlers name an at-most-one role
-with `WorthQueryApplicationOptionalOutputRole`; reading it through
-`entity(role)`, `DecisionReader::prior_output` or generated-output
-reconstruction returns `Option`, so absence is a value rather than a denial. The
-exactly-one token keeps those reads total. A token whose cardinality differs
-from the declaration is refused as a cardinality mismatch.
+Fixed output roles are typed declarations. A binding declares each role once
+as a constant token and lists `TOKEN.descriptor()` in `ROLES`, so the handler
+writes and every reader reads through the declaration itself.
+`WorthQueryApplicationOutputRole` is exactly once and
+`WorthQueryApplicationOptionalOutputRole` is at most once. An unbound
+exactly-one role is `MissingOutputRole`, any second binding is
+`DuplicateOutputRole`, and an unbound at-most-one role commits without that
+output. Reading an at-most-one role through `entity(role)`,
+`DecisionReader::prior_output` or generated-output reconstruction returns
+`Option`, so absence is a value rather than a denial. The exactly-one token
+keeps those reads total. A token the binding does not list is refused when
+used; one of the other cardinality is a cardinality mismatch.
 
-Regenerating handlers declare variable semantic roles through
-`ApplicationMutationOutputContract::ROLE_FAMILIES` and read a prior family with
+Regenerating handlers declare variable semantic roles as a
+`WorthQueryApplicationOutputRoleFamily` token listed in
+`ApplicationMutationOutputContract::ROLE_FAMILIES`, take members from it with
+`member`, and read a prior family with
 `DecisionReader::prior_output_family`. Query returns live members in deterministic
 role order from the selected branch occurrence and product generation. The
 resulting typed identities are normal tracked decision reads; undeclared families,

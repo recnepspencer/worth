@@ -5,12 +5,11 @@ use worth_query_host::facade::primary_graph::{
     WorthQueryGeneratedOutputReconstructionDenial,
 };
 use worth_query_topology_entry::{
-    final_auxiliary_output, final_closing_output, Body, BodyKey, FinalPlanarMutationBinding,
-    Length, PlanarFinalOutputProducer, PositionX, PositionY,
+    final_anchor_output, final_auxiliary_output, final_closing_output, final_created_outputs, Body,
+    BodyKey, FinalPlanarMutationBinding, Length, PlanarFinalOutputProducer, PositionX, PositionY,
 };
 
 use super::super::length;
-use super::expected::role;
 use crate::ConsumerSchema;
 
 pub(super) fn claim_entity(
@@ -22,15 +21,22 @@ pub(super) fn claim_entity(
     vertex: &PlanarVertex,
     index: usize,
 ) -> WorthQueryGeneratedEntity<ConsumerSchema, Body> {
-    if index == 2 {
-        return reconstruction
-            .entity(final_closing_output::<ConsumerSchema>(), Body::reference())
-            .expect("the optional closing role resolves its retained platform identity")
-            .expect("the suspended output bound its closing vertex");
+    match index {
+        0 => reconstruction.entity(final_anchor_output::<ConsumerSchema>(), Body::reference()),
+        1 => {
+            let member = final_created_outputs::<ConsumerSchema>()
+                .member::<WorthQueryCreateOutput>(&vertex.body_key)
+                .expect("fixture keys name valid created members");
+            reconstruction.entity(member, Body::reference())
+        }
+        _ => {
+            return reconstruction
+                .entity(final_closing_output::<ConsumerSchema>(), Body::reference())
+                .expect("the optional closing role resolves its retained platform identity")
+                .expect("the suspended output bound its closing vertex");
+        }
     }
-    reconstruction
-        .entity(role(vertex, index), Body::reference())
-        .expect("the typed role resolves its retained platform identity")
+    .expect("the typed role resolves its retained platform identity")
 }
 
 /// An unbound at-most-one role reads as `None` and claims nothing, and a token
@@ -49,16 +55,18 @@ pub(super) fn require_optional_role_reads(
         )
         .expect("an absent optional role is a value, not a denial")
         .is_none());
+    // Stray declarations the output contract never lists, each spelling a
+    // declared role's name with the other cardinality.
     let closing_as_required = WorthQueryApplicationOutputRole::<
         FinalPlanarMutationBinding<ConsumerSchema>,
         Body,
         WorthQueryCreateOutput,
-    >::from_static("closing");
+    >::for_entity::<ConsumerSchema>("closing");
     let anchor_as_optional = WorthQueryApplicationOptionalOutputRole::<
         FinalPlanarMutationBinding<ConsumerSchema>,
         Body,
         WorthQueryCreateOutput,
-    >::from_static("anchor");
+    >::for_entity::<ConsumerSchema>("anchor");
     assert_eq!(
         reconstruction
             .entity(closing_as_required, Body::reference())

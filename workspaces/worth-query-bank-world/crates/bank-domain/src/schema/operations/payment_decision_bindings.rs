@@ -1,7 +1,7 @@
 use worth_query_decl::facade::{
     application_operation::{
-        ApplicationMutationOutputContract, ApplicationMutationOutputPosture,
-        ApplicationMutationOutputRoleDescriptor,
+        ApplicationMutationOutputContract, ApplicationMutationOutputRoleDescriptor,
+        WorthQueryApplicationOutputRole, WorthQueryPreserveOutput,
     },
     application_schema::{NoApplicationUnit, ReadOnly},
     worth_query_mutation_binding, worth_query_structured_value_binding,
@@ -36,17 +36,24 @@ worth_query_structured_value_binding!(
 
 pub struct PaymentDecisionOutputs;
 
-pub const PAYMENT_DECISION_OUTPUT_PAYMENT: &str = "payment";
+/// The payment intent an approval preserves.
+pub const APPROVE_PAYMENT_OUTPUT_PAYMENT: WorthQueryApplicationOutputRole<
+    ApprovePaymentMutationBinding,
+    PaymentIntent,
+    WorthQueryPreserveOutput,
+> = WorthQueryApplicationOutputRole::for_entity::<BankSchema>("payment");
+
+/// The payment intent a rejection preserves. Both decisions share
+/// [`PaymentDecisionOutputs`], so this token declares the same role.
+pub const REJECT_PAYMENT_OUTPUT_PAYMENT: WorthQueryApplicationOutputRole<
+    RejectPaymentMutationBinding,
+    PaymentIntent,
+    WorthQueryPreserveOutput,
+> = WorthQueryApplicationOutputRole::for_entity::<BankSchema>("payment");
 
 impl ApplicationMutationOutputContract<BankSchema> for PaymentDecisionOutputs {
     const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] =
-        &[ApplicationMutationOutputRoleDescriptor::for_entity::<
-            BankSchema,
-            PaymentIntent,
-        >(
-            PAYMENT_DECISION_OUTPUT_PAYMENT,
-            ApplicationMutationOutputPosture::Preserve,
-        )];
+        &[APPROVE_PAYMENT_OUTPUT_PAYMENT.descriptor()];
 }
 
 fn payment_scope_from_approval(input: &ApprovePayment) -> PaymentId {

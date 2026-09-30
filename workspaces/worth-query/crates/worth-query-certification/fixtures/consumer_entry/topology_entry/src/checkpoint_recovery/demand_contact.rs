@@ -1,9 +1,6 @@
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationOutputDemandDenial, WorthQueryApplicationOutputDemandProgress,
 };
-use worth_query_host::facade::primary_graph::{
-    WorthQueryApplicationOutputRole, WorthQueryCreateOutput, WorthQueryPreserveOutput,
-};
 
 use super::*;
 
@@ -150,19 +147,11 @@ fn restored_final_output_keeps_original_create_producer_and_zero_contact() {
     assert_eq!(settled.producer_contacts_in_this_demand(), 0);
     assert!(settled
         .output_correspondence()
-        .entity(WorthQueryApplicationOutputRole::<
-            FinalPlanarMutationBinding<CheckpointSchema>,
-            Body,
-            WorthQueryCreateOutput,
-        >::from_static("anchor"))
+        .entity(final_anchor_output::<CheckpointSchema>())
         .is_ok());
     assert!(settled
         .output_correspondence()
-        .entity(WorthQueryApplicationOutputRole::<
-            FinalPlanarPreserveBinding<CheckpointSchema>,
-            Body,
-            WorthQueryPreserveOutput,
-        >::from_static("anchor"))
+        .entity(final_preserved_anchor_output::<CheckpointSchema>())
         .is_err());
     // Readmitted optional roles stay values: the bound closing vertex is
     // present and the never-bound auxiliary role is absent, not missing.

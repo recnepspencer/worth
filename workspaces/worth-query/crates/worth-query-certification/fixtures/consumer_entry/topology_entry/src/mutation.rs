@@ -106,19 +106,35 @@ pub const fn requirements(
 }
 
 pub struct PlanarOutputs;
+
+/// The body every planar mutation preserves as its anchor, for any binding
+/// whose outputs are [`PlanarOutputs`].
+pub const fn planar_anchor_output<Schema, Binding>(
+) -> WorthQueryApplicationOutputRole<Binding, Body, WorthQueryPreserveOutput>
+where
+    Schema: TopologySchemaBinding,
+    Binding: ApplicationMutationBinding<Schema, Output = PlanarOutputs>,
+{
+    WorthQueryApplicationOutputRole::for_entity::<Schema>("anchor")
+}
+
+/// The bodies a planar mutation creates, one member per created vertex.
+pub const fn planar_created_outputs<Schema, Binding>(
+) -> WorthQueryApplicationOutputRoleFamily<Binding, Body>
+where
+    Schema: TopologySchemaBinding,
+    Binding: ApplicationMutationBinding<Schema, Output = PlanarOutputs>,
+{
+    WorthQueryApplicationOutputRoleFamily::for_entity::<Schema>(
+        "created.",
+        ApplicationMutationOutputPostureSet::CREATE,
+        0,
+    )
+}
+
 impl<Schema: TopologySchemaBinding> ApplicationMutationOutputContract<Schema> for PlanarOutputs {
     const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] =
-        &[ApplicationMutationOutputRoleDescriptor::for_entity::<
-            Schema,
-            Body,
-        >(
-            "anchor", ApplicationMutationOutputPosture::Preserve
-        )];
+        &[planar_anchor_output::<Schema, PlanarMutationBinding<Schema>>().descriptor()];
     const ROLE_FAMILIES: &'static [ApplicationMutationOutputRoleFamilyDescriptor] =
-        &[ApplicationMutationOutputRoleFamilyDescriptor::for_entity::<
-            Schema,
-            Body,
-        >(
-            "created.", ApplicationMutationOutputPostureSet::CREATE, 0
-        )];
+        &[planar_created_outputs::<Schema, PlanarMutationBinding<Schema>>().descriptor()];
 }

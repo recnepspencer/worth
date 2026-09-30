@@ -7,7 +7,7 @@ use bank_domain::schema::{
     ApprovedPaymentSettlementEffect, ApprovedPaymentSettlementRequest, BankSchema, PaymentApproval,
     PaymentDecisionResult, PaymentIdentityField, PaymentIntent, PaymentStatusField,
     PrincipalIdentityField, RejectPayment, RejectPaymentMutationBinding,
-    PAYMENT_DECISION_OUTPUT_PAYMENT,
+    APPROVE_PAYMENT_OUTPUT_PAYMENT, REJECT_PAYMENT_OUTPUT_PAYMENT,
 };
 use worth_query_host::facade::declaration::application_operation::{
     ApplicationCandidateRequirements, ApplicationMutationBinding,
@@ -18,7 +18,6 @@ use worth_query_host::facade::domain::{
 use worth_query_host::facade::primary_graph::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerInterruption, HandlerResult,
     OperationHandler, WorthQueryApplicationEffectEntity, WorthQueryApplicationEntityKey,
-    WorthQueryApplicationOutputRole, WorthQueryPreserveOutput,
 };
 
 use super::journal::author_journal;
@@ -155,14 +154,7 @@ fn author_approval_candidate(
         )
         .map_err(HandlerExecutionDenial::new)?;
     candidate
-        .preserve_output(
-            WorthQueryApplicationOutputRole::<
-                ApprovePaymentMutationBinding,
-                PaymentIntent,
-                WorthQueryPreserveOutput,
-            >::from_static(PAYMENT_DECISION_OUTPUT_PAYMENT),
-            &payment_entity,
-        )
+        .preserve_output(APPROVE_PAYMENT_OUTPUT_PAYMENT, &payment_entity)
         .map_err(HandlerExecutionDenial::new)?;
     Ok(PaymentDecisionResult {
         payment: payment.id(),
@@ -176,14 +168,7 @@ fn author_rejection_candidate(
     let payment = exact_updated_payment(proposal.effects())?;
     let payment_entity = author_payment_decision(candidate, payment)?;
     candidate
-        .preserve_output(
-            WorthQueryApplicationOutputRole::<
-                RejectPaymentMutationBinding,
-                PaymentIntent,
-                WorthQueryPreserveOutput,
-            >::from_static(PAYMENT_DECISION_OUTPUT_PAYMENT),
-            &payment_entity,
-        )
+        .preserve_output(REJECT_PAYMENT_OUTPUT_PAYMENT, &payment_entity)
         .map_err(HandlerExecutionDenial::new)?;
     Ok(PaymentDecisionResult {
         payment: payment.id(),

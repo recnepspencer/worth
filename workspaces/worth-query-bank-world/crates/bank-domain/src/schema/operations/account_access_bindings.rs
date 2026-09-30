@@ -1,7 +1,7 @@
 use worth_query_decl::facade::{
     application_operation::{
-        ApplicationMutationOutputContract, ApplicationMutationOutputPosture,
-        ApplicationMutationOutputRoleDescriptor,
+        ApplicationMutationOutputContract, ApplicationMutationOutputRoleDescriptor,
+        WorthQueryApplicationOutputRole, WorthQueryCreateOutput, WorthQueryRetireOutput,
     },
     application_schema::{NoApplicationUnit, ReadOnly},
     worth_query_mutation_binding, worth_query_structured_value_binding,
@@ -40,28 +40,28 @@ worth_query_structured_value_binding!(
 pub struct GrantAccountAccessOutputs;
 pub struct RevokeAccountAccessOutputs;
 
-pub const ACCOUNT_ACCESS_OUTPUT_AUTHORIZATION: &str = "authorization";
+/// The authorization a grant creates.
+pub const GRANT_ACCOUNT_ACCESS_OUTPUT_AUTHORIZATION: WorthQueryApplicationOutputRole<
+    GrantAccountAccessMutationBinding,
+    AccountAuthorization,
+    WorthQueryCreateOutput,
+> = WorthQueryApplicationOutputRole::for_entity::<BankSchema>("authorization");
+
+/// The authorization a revocation retires.
+pub const REVOKE_ACCOUNT_ACCESS_OUTPUT_AUTHORIZATION: WorthQueryApplicationOutputRole<
+    RevokeAccountAccessMutationBinding,
+    AccountAuthorization,
+    WorthQueryRetireOutput,
+> = WorthQueryApplicationOutputRole::for_entity::<BankSchema>("authorization");
 
 impl ApplicationMutationOutputContract<BankSchema> for GrantAccountAccessOutputs {
     const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] =
-        &[ApplicationMutationOutputRoleDescriptor::for_entity::<
-            BankSchema,
-            AccountAuthorization,
-        >(
-            ACCOUNT_ACCESS_OUTPUT_AUTHORIZATION,
-            ApplicationMutationOutputPosture::Create,
-        )];
+        &[GRANT_ACCOUNT_ACCESS_OUTPUT_AUTHORIZATION.descriptor()];
 }
 
 impl ApplicationMutationOutputContract<BankSchema> for RevokeAccountAccessOutputs {
     const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] =
-        &[ApplicationMutationOutputRoleDescriptor::for_entity::<
-            BankSchema,
-            AccountAuthorization,
-        >(
-            ACCOUNT_ACCESS_OUTPUT_AUTHORIZATION,
-            ApplicationMutationOutputPosture::Retire,
-        )];
+        &[REVOKE_ACCOUNT_ACCESS_OUTPUT_AUTHORIZATION.descriptor()];
 }
 
 fn grant_scope(input: &GrantAccountAuthorization) -> AccountId {

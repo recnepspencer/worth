@@ -1,8 +1,6 @@
 use super::*;
 use worth_query_consumer_values::PositiveLength;
-use worth_query_host::facade::primary_graph::{
-    WorthQueryApplicationOutputRoleFamily, WorthQueryInvariantMutationTarget,
-};
+use worth_query_host::facade::primary_graph::WorthQueryInvariantMutationTarget;
 
 pub struct PriorCycleDecisionMember<Schema: TopologySchemaBinding> {
     pub(super) role: String,
@@ -20,7 +18,7 @@ pub(super) fn observe_prior_cycle<Schema: TopologySchemaBinding>(
 ) -> HandlerResult<PriorCycleDecision<Schema>, PriorCycleAdjustmentDenial> {
     let prior = match reader
         .prior_output_family_if_present::<crate::PlanarEditBinding<Schema>, Body>(
-            WorthQueryApplicationOutputRoleFamily::from_static("created."),
+            crate::planar_created_outputs::<Schema, crate::PlanarEditBinding<Schema>>(),
         ) {
         Ok(Some(prior)) => prior,
         Ok(None) => return HandlerResult::DomainDenied(PriorCycleAdjustmentDenial::NoPriorCycle),

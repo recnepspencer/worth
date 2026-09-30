@@ -13,9 +13,8 @@ use worth_query_host::facade::{
             ApplicationCandidateCardinalityCeiling, ApplicationCandidateRequirements,
             ApplicationCandidateResourceCeiling, ApplicationMutationBinding,
             ApplicationMutationFieldScope, ApplicationMutationIntent,
-            ApplicationMutationOutputContract, ApplicationMutationOutputPosture,
-            ApplicationMutationOutputRoleDescriptor, ApplicationMutationOutputRoleFamilyDescriptor,
-            ApplicationQueryMutationSource,
+            ApplicationMutationOutputContract, ApplicationMutationOutputRoleDescriptor,
+            ApplicationMutationOutputRoleFamilyDescriptor, ApplicationQueryMutationSource,
         },
         application_schema::{
             ApplicationFieldRef, ApplicationPrincipalBindingRef,
@@ -26,6 +25,7 @@ use worth_query_host::facade::{
     primary_graph::{
         CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
         WorthQueryApplicationOutputRole, WorthQueryInvariantMutationTarget,
+        WorthQueryPreserveOutput,
     },
     worth_query_operation, worth_query_operation_reads, worth_query_structured_value_binding,
 };
@@ -83,14 +83,16 @@ worth_query_operation_reads!(PublishRetentionAssessment => [Document, DocumentId
 
 pub struct RetentionAssessmentOutputs;
 
+/// The assessed document every retention assessment preserves.
+pub const ASSESSMENT_OUTPUT: WorthQueryApplicationOutputRole<
+    RetentionAssessmentBinding,
+    Document,
+    WorthQueryPreserveOutput,
+> = WorthQueryApplicationOutputRole::for_entity::<DocumentRetentionSchema>("assessment");
+
 impl ApplicationMutationOutputContract<DocumentRetentionSchema> for RetentionAssessmentOutputs {
     const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] =
-        &[ApplicationMutationOutputRoleDescriptor::for_entity::<
-            DocumentRetentionSchema,
-            Document,
-        >(
-            "assessment", ApplicationMutationOutputPosture::Preserve
-        )];
+        &[ASSESSMENT_OUTPUT.descriptor()];
     const ROLE_FAMILIES: &'static [ApplicationMutationOutputRoleFamilyDescriptor] = &[];
 }
 
@@ -228,10 +230,7 @@ impl OperationHandler<DocumentRetentionSchema, RetentionAssessmentBinding>
                 return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error))
             }
         };
-        if let Err(error) = writer.preserve_output(
-            WorthQueryApplicationOutputRole::from_static("assessment"),
-            &document,
-        ) {
+        if let Err(error) = writer.preserve_output(ASSESSMENT_OUTPUT, &document) {
             return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error));
         }
         HandlerResult::Completed(RetentionAssessmentPublished {

@@ -3,12 +3,11 @@ use worth_query_host::facade::{
     application_entry::{
         WorthQueryApplicationMutationOutcome, WorthQueryApplicationRequestQueryDenial,
     },
-    primary_graph::{
-        WorthQueryApplicationOutputRole, WorthQueryCreateOutput,
-        WorthQueryEntityResolutionDenialKind, WorthQueryPreserveOutput,
-    },
+    primary_graph::{WorthQueryCreateOutput, WorthQueryEntityResolutionDenialKind},
 };
-use worth_query_topology_entry::{Body, PlanarEditBinding, PlanarMutation, PlanarRead};
+use worth_query_topology_entry::{
+    planar_anchor_output, planar_created_outputs, PlanarEditBinding, PlanarMutation, PlanarRead,
+};
 
 use super::{
     length, mutate, read_y, require_planar_violation, source_version, ProgramApplication, Request,
@@ -52,7 +51,7 @@ pub(super) fn create_and_reject_cycles(request: &Request<'_>, application: &Prog
         };
         assert_eq!(result.changed_vertices, vertices.len());
         receipt.output_correspondence().entity(
-            WorthQueryApplicationOutputRole::<PlanarEditBinding<crate::ConsumerSchema>, Body, WorthQueryPreserveOutput>::from_static("anchor"),
+            planar_anchor_output::<crate::ConsumerSchema, PlanarEditBinding<crate::ConsumerSchema>>(),
         ).expect("the committed group preserves its declared anchor through owner identity correspondence");
         let created = vertices
             .iter()
@@ -60,12 +59,12 @@ pub(super) fn create_and_reject_cycles(request: &Request<'_>, application: &Prog
                 receipt
                     .output_correspondence()
                     .entity(
-                        WorthQueryApplicationOutputRole::<
+                        planar_created_outputs::<
+                            crate::ConsumerSchema,
                             PlanarEditBinding<crate::ConsumerSchema>,
-                            Body,
-                            WorthQueryCreateOutput,
-                        >::try_new(format!("created.{}", vertex.body_key))
-                        .expect("fixture keys form valid source-derived role names"),
+                        >()
+                        .member::<WorthQueryCreateOutput>(&vertex.body_key)
+                        .expect("fixture keys name valid created members"),
                     )
                     .expect("every created cycle member is sealed under its source-derived role")
                     .entity_id()

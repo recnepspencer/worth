@@ -1,7 +1,7 @@
 use worth_query_decl::facade::{
     application_operation::{
-        ApplicationMutationOutputContract, ApplicationMutationOutputPosture,
-        ApplicationMutationOutputRoleDescriptor,
+        ApplicationMutationOutputContract, ApplicationMutationOutputRoleDescriptor,
+        WorthQueryApplicationOutputRole, WorthQueryCreateOutput,
     },
     application_schema::{NoApplicationUnit, ReadOnly},
     worth_query_mutation_binding, worth_query_structured_value_binding,
@@ -62,17 +62,16 @@ impl InitiateBusinessPaymentDecision {
 
 pub struct InitiateBusinessPaymentOutputs;
 
-pub const INITIATE_BUSINESS_PAYMENT_OUTPUT_PAYMENT: &str = "payment";
+/// The payment intent the operation creates.
+pub const INITIATE_BUSINESS_PAYMENT_OUTPUT_PAYMENT: WorthQueryApplicationOutputRole<
+    InitiateBusinessPaymentMutationBinding,
+    PaymentIntent,
+    WorthQueryCreateOutput,
+> = WorthQueryApplicationOutputRole::for_entity::<BankSchema>("payment");
 
 impl ApplicationMutationOutputContract<BankSchema> for InitiateBusinessPaymentOutputs {
     const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] =
-        &[ApplicationMutationOutputRoleDescriptor::for_entity::<
-            BankSchema,
-            PaymentIntent,
-        >(
-            INITIATE_BUSINESS_PAYMENT_OUTPUT_PAYMENT,
-            ApplicationMutationOutputPosture::Create,
-        )];
+        &[INITIATE_BUSINESS_PAYMENT_OUTPUT_PAYMENT.descriptor()];
 }
 
 fn business_scope(input: &InitiateBusinessPayment) -> BusinessId {

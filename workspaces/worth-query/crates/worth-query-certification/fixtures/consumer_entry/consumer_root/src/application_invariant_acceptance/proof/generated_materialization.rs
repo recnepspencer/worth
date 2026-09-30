@@ -24,7 +24,7 @@ mod expected;
 mod manifest;
 mod successor;
 
-use expected::{read, role, vertices};
+use expected::{read, vertices};
 use manifest::{claim_entity, require_optional_role_reads, write_fields};
 
 pub(super) fn typed_reconstruction_preserves_query_authority(
@@ -317,7 +317,10 @@ fn claim_denials_preserve_session(
             .expect_err("a denied duplicate field must not replace the admitted value"),
         WorthQueryGeneratedOutputReconstructionDenial::DuplicateField
     );
-    let duplicate = match reconstruction.entity(role(&vertices[0], 0), Body::reference()) {
+    let duplicate = match reconstruction.entity(
+        worth_query_topology_entry::final_anchor_output::<ConsumerSchema>(),
+        Body::reference(),
+    ) {
         Ok(_) => panic!("one output identity may be claimed only once"),
         Err(denial) => denial,
     };

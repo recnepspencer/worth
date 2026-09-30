@@ -12,8 +12,7 @@ use worth_query_host::facade::declaration::application_operation::{
 };
 use worth_query_host::facade::primary_graph::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerInterruption, HandlerResult,
-    OperationHandler, WorthQueryApplicationEntityKey, WorthQueryApplicationOutputRole,
-    WorthQueryCreateOutput,
+    OperationHandler, WorthQueryApplicationEntityKey,
 };
 
 use super::payment_approval_grant::author_approval_grant;
@@ -152,14 +151,7 @@ fn author_candidate(
         )?;
     }
     candidate
-        .create_output(
-            WorthQueryApplicationOutputRole::<
-                InitiateBusinessPaymentMutationBinding,
-                PaymentIntent,
-                WorthQueryCreateOutput,
-            >::from_static(INITIATE_BUSINESS_PAYMENT_OUTPUT_PAYMENT),
-            &created,
-        )
+        .create_output(INITIATE_BUSINESS_PAYMENT_OUTPUT_PAYMENT, &created)
         .map_err(HandlerExecutionDenial::new)?;
     Ok(InitiateBusinessPaymentResult {
         payment: payment.id(),
