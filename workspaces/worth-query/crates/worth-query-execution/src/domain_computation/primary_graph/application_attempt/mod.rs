@@ -119,7 +119,7 @@ pub use idempotency::{
 pub use idempotency_resolution::WorthQueryGuardedWorkflowOperationCustody;
 pub use idempotency_resolution::{
     WorthQueryApplicationIdempotencyResolution, WorthQueryApplicationIdempotencyResolutionDenial,
-    WorthQueryApplicationIdempotencyResolutionDenialKind,
+    WorthQueryApplicationIdempotencyResolutionDenialKind, WorthQueryHistoricalApplicationCommit,
 };
 pub(super) use mandatory_review_outcome::reviewed_outcome;
 pub use mandatory_review_outcome::{WorthQueryMandatoryReviewOutcome, WorthQueryReviewedElevation};

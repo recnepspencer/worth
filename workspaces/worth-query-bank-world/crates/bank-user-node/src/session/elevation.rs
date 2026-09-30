@@ -23,7 +23,7 @@ impl BankUserSession {
             return request_denied(BankUserNodeDenialKind::NoAuthenticatedSession);
         };
         let upstream = BankHttpElevationRequest {
-            protocol: BankHttpProtocolVersion::V2,
+            protocol: BankHttpProtocolVersion::V3,
             request_id: request.request_id,
             credential: BankHttpCredential::from_authentik(&credential),
             controls: request.controls,
@@ -57,7 +57,7 @@ impl BankUserSession {
             return approval_denied(BankUserNodeDenialKind::NoAuthenticatedSession);
         };
         let upstream = BankHttpElevationApprovalRequest {
-            protocol: BankHttpProtocolVersion::V2,
+            protocol: BankHttpProtocolVersion::V3,
             request_id: request.request_id,
             credential: BankHttpCredential::from_authentik(&credential),
             controls: request.controls,
@@ -85,7 +85,7 @@ impl BankUserSession {
             return revocation_denied(BankUserNodeDenialKind::NoAuthenticatedSession);
         };
         let upstream = BankHttpElevationRevocationRequest {
-            protocol: BankHttpProtocolVersion::V2,
+            protocol: BankHttpProtocolVersion::V3,
             request_id: request.request_id,
             credential: BankHttpCredential::from_authentik(&credential),
             controls: request.controls,
@@ -113,7 +113,7 @@ impl BankUserSession {
             return review_denied(BankUserNodeDenialKind::NoAuthenticatedSession);
         };
         let upstream = BankHttpMandatoryReviewRequest {
-            protocol: BankHttpProtocolVersion::V2,
+            protocol: BankHttpProtocolVersion::V3,
             request_id: request.request_id,
             credential: BankHttpCredential::from_authentik(&credential),
             controls: request.controls,

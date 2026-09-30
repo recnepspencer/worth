@@ -1,5 +1,7 @@
 use super::super::WorthQueryApplicationOutputProjectionDenial;
 
+/// Owning refusal reason for reading a prior binding's admitted output.
+/// Absence of the binding is distinct from a missing member in present output.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryPriorOutputDenialKind {
     Unavailable,
@@ -17,6 +19,9 @@ pub enum WorthQueryPriorOutputDenialKind {
     WorkBudgetExceeded,
 }
 
+/// Query's sealed refusal to resolve one prior role or family member.
+/// A handler may inspect this error through `HandlerExecutionDenial::downcast`;
+/// it is neither a prior entity identity nor permission to publish a candidate.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryPriorOutputDenial {
     kind: WorthQueryPriorOutputDenialKind,

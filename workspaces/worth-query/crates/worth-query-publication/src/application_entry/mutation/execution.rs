@@ -289,12 +289,23 @@ where
         >,
         WorthQueryApplicationRequestMutationDenial,
     > {
-        let resolution = self
+        let resolution = match self
             .request
             .application
             .resolve_admitted_application_idempotency(admission, idempotency)
-            .map_err(WorthQueryApplicationRequestMutationDenial::Idempotency)?
-            .into_resolution();
+        {
+            Ok(read) => read.into_resolution(),
+            Err(denial) => {
+                return match denial.historical_commit() {
+                    Some(observation) => Ok(Some(
+                        WorthQueryApplicationMutationOutcome::PreviouslyCommitted(observation),
+                    )),
+                    None => Err(WorthQueryApplicationRequestMutationDenial::Idempotency(
+                        denial,
+                    )),
+                };
+            }
+        };
         Ok(match resolution {
             WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) => Some(
                 WorthQueryApplicationMutationOutcome::AlreadyCommitted(receipt),

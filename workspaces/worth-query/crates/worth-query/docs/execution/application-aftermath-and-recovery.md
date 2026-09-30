@@ -444,6 +444,21 @@ admission and the send answers `AlreadyCompleted`.
 
 ## Publication Settlement Recovery
 
+An ordinary request retry after checkpoint restore or reopening still compares
+the durable intent under fresh authorization. When its original live receipt
+is absent, `WorthQueryApplicationMutationOutcome::PreviouslyCommitted` carries
+the sealed `WorthQueryHistoricalApplicationCommit` and its `commit_id()`. This
+is a landed historical fact: the request commits nothing again. It carries no
+handler result, publication authority, workflow settlement authority, or live
+receipt. Query current state through a freshly admitted request before further
+work. In-process retries whose original receipt remains retained continue to
+return `AlreadyCommitted(receipt)`.
+
+Lower APIs that require a live receipt retain the typed
+`CommittedReceiptNotRetained { commit }` denial. Its `historical_commit()`
+accessor exposes the same descriptive fact; it cannot grant the missing
+authority or fabricate receipt evidence from durable identifiers.
+
 Split the application commit outcome with `landed()` before entering aftermath
 handling. A landed commit returns its receipt; every other terminal arrives as a
 `WorthQueryApplicationUncommitted` variant:

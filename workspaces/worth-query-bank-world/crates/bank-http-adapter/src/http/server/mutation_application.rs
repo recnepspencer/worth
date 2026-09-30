@@ -128,6 +128,13 @@ fn describe_outcome(
             BankHttpCommitDisposition::AlreadyCommitted,
             receipt,
         ),
+        Ok(WorthQueryApplicationMutationOutcome::PreviouslyCommitted(observation)) => {
+            BankHttpMutationOutcome::PreviouslyCommitted {
+                request_id,
+                commit_id: observation.commit_id().0,
+                next_action: BankHttpNextAction::Refresh,
+            }
+        }
         Ok(WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift) => not_applied(
             Some(request_id),
             BankHttpMutationFailureKind::Aborted,

@@ -4,11 +4,12 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 /// version and refuses every other as `UnsupportedProtocol`, so a client
 /// never receives a shape it cannot decode.
 ///
-/// `v2` added the safe-retry `already_completed` outcome. A `v1` decoder
-/// rejects that outcome, so `v1` requests are refused rather than answered.
+/// `v3` adds the historical `previously_committed` mutation outcome without
+/// live receipt evidence. Older decoders cannot interpret that outcome, so
+/// `v1` and `v2` requests are refused before effects.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum BankHttpProtocolVersion {
-    V2,
+    V3,
     Unsupported(String),
 }
 
@@ -18,7 +19,7 @@ impl Serialize for BankHttpProtocolVersion {
         S: Serializer,
     {
         serializer.serialize_str(match self {
-            Self::V2 => "v2",
+            Self::V3 => "v3",
             Self::Unsupported(value) => value,
         })
     }
@@ -30,8 +31,8 @@ impl<'de> Deserialize<'de> for BankHttpProtocolVersion {
         D: Deserializer<'de>,
     {
         let value = String::deserialize(deserializer)?;
-        Ok(if value == "v2" {
-            Self::V2
+        Ok(if value == "v3" {
+            Self::V3
         } else {
             Self::Unsupported(value)
         })

@@ -274,8 +274,11 @@ cannot commit the removed action.
 A key records its intent durably, and that intent names no runtime, so the same
 request matches it before and after a restore or reopen, and a changed request
 under the key is still `IdempotencyIntentDrift`. The recorded receipt is not
-durable. A runtime that no longer holds it answers the unchanged retry with
-`CommittedReceiptNotRetained`, naming the original commit, and commits nothing.
+durable. An ordinary request retry whose receipt is no longer retained answers
+`PreviouslyCommitted(observation)`, naming the original `commit_id()` and
+committing nothing. It carries no live receipt or handler result; read current
+state under fresh authorization before further work. Lower surfaces that
+require a live receipt retain `CommittedReceiptNotRetained { commit }`.
 A record from an earlier intent encoding that cannot be checked against the
 request answers `RecordedIntentUnverifiable`, never drift.
 
@@ -352,7 +355,10 @@ owner already performed.
 
 Every commit either landed or did not. The request lanes already report that
 split: `WorthQueryApplicationMutationOutcome::Committed { receipt, result }` and
-`AlreadyCommitted(receipt)` carry the canonical product receipt, and every
+`AlreadyCommitted(receipt)` carry the canonical product receipt.
+`PreviouslyCommitted(observation)` proves an earlier commit with the same
+durable intent when its live receipt is unavailable; it grants no performed
+mutation, publication, or workflow settlement authority. Every
 commit terminal that did not land arrives as
 `WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationUncommitted)`.
 

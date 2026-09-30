@@ -70,9 +70,11 @@ pub(super) fn authorization_denial(kind: BankAuthorizationDenialKind) -> BankHtt
         | Authorization::ScopeMismatch
         | Authorization::ProductSecurityBasis(_)
         | Authorization::PermissionDenied => (Kind::PermissionDenied, Next::None),
-        Authorization::TrustedTimeUnavailable
-        | Authorization::GraphWorkAdmissionUnavailable
-        | Authorization::PolicyNotInstalled => (Kind::Unavailable, Next::Retry),
+        Authorization::TrustedTimeUnavailable | Authorization::GraphWorkAdmissionUnavailable => {
+            (Kind::Unavailable, Next::Retry)
+        }
+        // Repeating the request cannot install or repair its policy.
+        Authorization::PolicyNotInstalled => (Kind::Unavailable, Next::ContactOperator),
         Authorization::CapabilityProjectionRejected
         | Authorization::ElevationProjectionRejected
         | Authorization::InvalidInstalledPolicy

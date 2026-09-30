@@ -15,6 +15,8 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPriorOutputDenial, WorthQueryPriorOutputDenialKind,
 };
 
+mod prior_member;
+
 /// The read of a prior fixed role: the identity for an exactly-one role, an
 /// `Option` of it for an at-most-one role.
 pub(in crate::domain_computation::primary_graph) type WorthQueryPriorOutputRead<Schema, Role> =

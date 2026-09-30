@@ -57,3 +57,12 @@ fn capacity_is_retried_but_spent_identity_asks_for_the_operator() {
         );
     }
 }
+
+#[test]
+fn an_uninstalled_policy_requires_operator_repair() {
+    let denial = authorization_denial(Authorization::PolicyNotInstalled);
+    assert_eq!(
+        (denial.kind, denial.next_action),
+        (Kind::Unavailable, Next::ContactOperator)
+    );
+}

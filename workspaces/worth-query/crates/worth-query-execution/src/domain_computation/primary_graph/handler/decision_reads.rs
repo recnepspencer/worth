@@ -21,6 +21,8 @@ use super::super::{
 };
 use super::invariant::DecisionReader;
 
+mod prior_member;
+
 impl<Schema, Binding> DecisionReader<'_, '_, '_, Schema, Binding>
 where
     Schema: ApplicationSchema,

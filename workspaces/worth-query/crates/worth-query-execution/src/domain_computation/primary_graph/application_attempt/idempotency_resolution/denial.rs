@@ -51,6 +51,19 @@ pub struct WorthQueryApplicationIdempotencyResolutionDenial {
 }
 
 impl WorthQueryApplicationIdempotencyResolutionDenial {
+    /// The key's earlier commit is proven, but its live receipt is unavailable.
+    /// Other denials carry no historical commit observation.
+    pub const fn historical_commit(&self) -> Option<super::WorthQueryHistoricalApplicationCommit> {
+        match self.kind {
+            WorthQueryApplicationIdempotencyResolutionDenialKind::CommittedReceiptNotRetained {
+                commit,
+            } => Some(super::WorthQueryHistoricalApplicationCommit::observed(
+                commit,
+            )),
+            _ => None,
+        }
+    }
+
     pub const fn kind(&self) -> WorthQueryApplicationIdempotencyResolutionDenialKind {
         self.kind
     }

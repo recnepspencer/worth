@@ -29,6 +29,9 @@ pub use crate::domain_computation::application_aftermath::{
     WorthQueryRecoveryInspectionView, WorthQueryRecoveryReconcileAdmission,
     WorthQueryRecoverySafeRetryAdmission, WorthQueryRecoverySafeRetryDenial,
 };
+pub use crate::domain_computation::primary_graph::output_lineage::{
+    WorthQueryPriorOutputDenial, WorthQueryPriorOutputDenialKind,
+};
 pub use crate::domain_computation::primary_graph::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerInterruption, HandlerResult,
     MutationHandlerExecutionDenial, OperationHandler,
@@ -146,11 +149,11 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryGovernedTemporalOperationAuthorization, WorthQueryGovernedTemporalQueryAuthorization,
     WorthQueryGranularInvalidationDeliveryBatch, WorthQueryGranularInvalidationInstallation,
     WorthQueryGranularInvalidationObservation, WorthQueryGranularSourceReadBasis,
-    WorthQueryGranularTransportMergeDenial, WorthQueryInboundAdmissionDenial,
-    WorthQueryInboundAuthenticatedPermanentDenial, WorthQueryInboundCleanupReport,
-    WorthQueryInboundCostObservation, WorthQueryInboundIndexRepairDenial,
-    WorthQueryInboundMaintenanceReport, WorthQueryInboundPendingReason,
-    WorthQueryInboundPermanentDenialKind, WorthQueryInboundReceipt,
+    WorthQueryGranularTransportMergeDenial, WorthQueryHistoricalApplicationCommit,
+    WorthQueryInboundAdmissionDenial, WorthQueryInboundAuthenticatedPermanentDenial,
+    WorthQueryInboundCleanupReport, WorthQueryInboundCostObservation,
+    WorthQueryInboundIndexRepairDenial, WorthQueryInboundMaintenanceReport,
+    WorthQueryInboundPendingReason, WorthQueryInboundPermanentDenialKind, WorthQueryInboundReceipt,
     WorthQueryInboundReceiptPosture, WorthQueryInboundSourceControlDenial,
     WorthQueryInboundSourcePosture, WorthQueryInboundTerminalObservation,
     WorthQueryInboundVerifierHandle, WorthQueryInboundVerifierInstallationDenial,

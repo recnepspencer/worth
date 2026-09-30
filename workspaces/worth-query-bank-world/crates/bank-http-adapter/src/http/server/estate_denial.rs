@@ -154,16 +154,17 @@ fn dispatch_owner_read_denial(read: BankCommittedDispatchOutboxReadDenial) -> Ba
     use BankHttpDenialKind as Denial;
     use BankHttpNextAction as Next;
     let (denial, next) = match read {
-        // The commit is still publishing or its evidence is being indexed.
-        Read::PendingPublication | Read::CommittedIndexUnavailable => {
-            (Denial::Unavailable, Next::Retry)
-        }
+        // Publication, indexing or concurrent snapshot occupancy can settle
+        // before the same owner read is retried.
+        Read::PendingPublication
+        | Read::CommittedIndexUnavailable
+        | Read::ActiveSnapshotCapacityExhausted { .. } => (Denial::Unavailable, Next::Retry),
         // The exact committed version or its retained basis is gone, so no
-        // later read recovers it. The snapshot bounds are the operator's, as
-        // they are for principal resolution.
-        Read::ExactCommitUnavailable
-        | Read::ActiveSnapshotCapacityExhausted { .. }
-        | Read::SnapshotIdentityExhausted => (Denial::Unavailable, Next::ContactOperator),
+        // later read recovers it. Spent snapshot identities also require
+        // operator repair, unlike capacity occupied by concurrent reads.
+        Read::ExactCommitUnavailable | Read::SnapshotIdentityExhausted => {
+            (Denial::Unavailable, Next::ContactOperator)
+        }
         Read::ForeignRuntime
         | Read::Missing
         | Read::AmbiguousCorrelation

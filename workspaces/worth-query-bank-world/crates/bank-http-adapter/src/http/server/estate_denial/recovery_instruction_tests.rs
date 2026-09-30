@@ -24,7 +24,7 @@ const OWNER_READS: [(Read, Denial, Next); 13] = [
             maximum_active_snapshots: 3,
         },
         Denial::Unavailable,
-        Next::ContactOperator,
+        Next::Retry,
     ),
     (
         Read::SnapshotIdentityExhausted,
@@ -255,7 +255,7 @@ fn a_lapsed_admission_and_a_foreign_authority_ask_for_different_actions() {
 }
 
 #[test]
-fn a_settling_publication_is_retried_but_a_lost_exact_commit_is_not() {
+fn a_settling_owner_read_is_retried_but_lost_history_and_spent_identity_are_not() {
     let owner_read = |read| recovery_denial(Kind::DispatchOwnerReadDenied(read));
     assert_eq!(
         owner_read(Read::PendingPublication).next_action,
@@ -264,6 +264,19 @@ fn a_settling_publication_is_retried_but_a_lost_exact_commit_is_not() {
     assert_eq!(
         owner_read(Read::CommittedIndexUnavailable).next_action,
         Next::Retry
+    );
+    assert_eq!(
+        owner_read(Read::ActiveSnapshotCapacityExhausted {
+            maximum_active_snapshots: 3,
+        })
+        .next_action,
+        Next::Retry,
+        "concurrent reads can release the occupied snapshot capacity"
+    );
+    assert_eq!(
+        owner_read(Read::SnapshotIdentityExhausted).next_action,
+        Next::ContactOperator,
+        "releasing a snapshot cannot replenish spent identities"
     );
     assert_eq!(
         owner_read(Read::ExactCommitUnavailable).next_action,

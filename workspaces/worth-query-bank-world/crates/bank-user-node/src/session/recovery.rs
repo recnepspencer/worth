@@ -21,7 +21,7 @@ impl BankUserSession {
             None => return notification_denied(BankUserNodeDenialKind::NoAuthenticatedSession),
         };
         let upstream = BankHttpEstateNotificationRequest {
-            protocol: BankHttpProtocolVersion::V2,
+            protocol: BankHttpProtocolVersion::V3,
             request_id: request.request_id,
             credential: BankHttpCredential::from_authentik(&credential),
             controls: request.controls,
@@ -96,7 +96,7 @@ impl BankUserSession {
             .clone()
             .ok_or(BankUserNodeDenialKind::NoAuthenticatedSession)?;
         Ok(BankHttpRecoveryRequest {
-            protocol: BankHttpProtocolVersion::V2,
+            protocol: BankHttpProtocolVersion::V3,
             request_id: request.request_id,
             credential: BankHttpCredential::from_authentik(&credential),
             controls: request.controls,

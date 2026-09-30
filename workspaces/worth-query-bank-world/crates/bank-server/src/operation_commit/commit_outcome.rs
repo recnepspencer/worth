@@ -21,6 +21,9 @@ pub enum BankMutationCommitOutcome {
     NoEffect(WorthQueryApplicationNoEffectCause),
     Committed(BankCommitReceipt),
     AlreadyCommitted(BankCommitReceipt),
+    PreviouslyCommitted(
+        worth_query_host::facade::primary_graph::WorthQueryHistoricalApplicationCommit,
+    ),
     Stale {
         stale_fact_count: usize,
     },

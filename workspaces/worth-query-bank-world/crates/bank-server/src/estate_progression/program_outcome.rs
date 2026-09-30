@@ -42,6 +42,9 @@ pub(super) fn program_outcome(
         WorthQueryApplicationMutationOutcome::AlreadyCommitted(receipt) => {
             BankMutationCommitOutcome::AlreadyCommitted(commit_receipt(receipt))
         }
+        WorthQueryApplicationMutationOutcome::PreviouslyCommitted(observation) => {
+            BankMutationCommitOutcome::PreviouslyCommitted(observation)
+        }
         WorthQueryApplicationMutationOutcome::Commit(outcome) => outcome.into(),
         WorthQueryApplicationMutationOutcome::Cancelled => BankMutationCommitOutcome::Cancelled,
         WorthQueryApplicationMutationOutcome::DeadlineExceeded => {

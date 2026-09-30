@@ -4,6 +4,10 @@ use worth_query_installation::facade::ApplicationSchema;
 mod denial;
 #[path = "idempotency_resolution/external_settlement.rs"]
 mod external_settlement;
+#[path = "idempotency_resolution/historical_commit.rs"]
+mod historical_commit;
+
+pub use historical_commit::WorthQueryHistoricalApplicationCommit;
 
 pub use denial::{
     WorthQueryApplicationIdempotencyResolutionDenial,

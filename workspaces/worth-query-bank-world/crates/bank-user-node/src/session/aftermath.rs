@@ -19,7 +19,7 @@ impl BankUserSession {
             None => return disbursement_denied(BankUserNodeDenialKind::NoAuthenticatedSession),
         };
         let upstream = BankHttpEstateDisbursementRequest {
-            protocol: BankHttpProtocolVersion::V2,
+            protocol: BankHttpProtocolVersion::V3,
             request_id: request.request_id,
             credential: BankHttpCredential::from_authentik(&credential),
             controls: request.controls,

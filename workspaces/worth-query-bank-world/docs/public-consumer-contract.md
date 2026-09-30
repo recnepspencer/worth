@@ -272,12 +272,13 @@ available at a user node without a credential field; that process supplies its
 own authenticated session. Linear undo/redo routes remain provisional
 Milestone 9.18 experiments rather than a Bank Phase 5 product contract.
 
-Every Bank server request body declares `"protocol": "v2"`. The server admits
-that one version and refuses any other as `unsupported_protocol`. Version 2
-added the recovery safe-retry `already_completed` outcome, which a version 1
-decoder cannot read, so version 1 requests are refused rather than answered in
-a shape the client cannot decode. Route paths keep their `/v1/` prefix; the
-body field is the negotiated version.
+Every Bank server request body declares `"protocol": "v3"`. The server admits
+that one version and refuses any other as `unsupported_protocol`. Version 3
+adds the mutation `previously_committed` outcome. It names the original commit
+and asks the caller to refresh current state, carrying no live receipt or
+invented commit counters. Version 1 and 2 decoders cannot read this outcome,
+so those requests are refused before effects. Route paths keep their `/v1/`
+prefix; the body field is the negotiated version.
 
 The estate `notify-death` and approved-payment responses establish authorized
 dispatch commits. The rail can report `Completed` synchronously, or send the
