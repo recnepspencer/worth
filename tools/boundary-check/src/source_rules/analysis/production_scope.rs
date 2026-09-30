@@ -23,7 +23,12 @@ pub(super) fn production_graphs(root: &Path, crate_root: &str) -> Result<Vec<Mod
         crate_root: absolute_root,
         relative_crate_root: crate_root.to_owned(),
     };
-    let mut graphs = vec![parse_crate_modules(&covered)?];
+    let mut graphs =
+        if super::library_target::resolve_lib_source_path(&covered.crate_root)?.is_file() {
+            vec![parse_crate_modules(&covered)?]
+        } else {
+            Vec::new()
+        };
     graphs.extend(parse_additional_production_target_graphs(&covered)?);
     Ok(graphs)
 }

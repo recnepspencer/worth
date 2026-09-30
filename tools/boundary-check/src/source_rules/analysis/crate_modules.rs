@@ -93,7 +93,7 @@ pub(super) fn parse_additional_source_targets(
     for relative in ["src/bin", "tests", "examples", "benches"] {
         collect_rust_files(&governed.crate_root.join(relative), &mut paths)?;
     }
-    collect_manifest_target_paths(governed, &mut paths)?;
+    collect_manifest_target_paths(governed, &mut paths, &["bin", "example", "test", "bench"])?;
     paths.sort();
     paths.dedup();
 
@@ -133,13 +133,14 @@ pub(super) fn parse_additional_production_target_graphs(
 ) -> Result<Vec<ModuleGraph>, String> {
     let source_root = governed.crate_root.join("src");
     let mut paths = Vec::new();
-    let main = source_root.join("main.rs");
-    if main.is_file() {
-        paths.push(main);
+    for relative in ["build.rs", "src/main.rs"] {
+        let path = governed.crate_root.join(relative);
+        if path.is_file() {
+            paths.push(path);
+        }
     }
     collect_rust_files(&source_root.join("bin"), &mut paths)?;
-    collect_manifest_target_paths(governed, &mut paths)?;
-    paths.retain(|path| path.starts_with(&source_root));
+    collect_manifest_target_paths(governed, &mut paths, &["bin"])?;
     paths.sort();
     paths.dedup();
 
@@ -167,6 +168,7 @@ pub(super) fn parse_additional_production_target_graphs(
 fn collect_manifest_target_paths(
     governed: &GovernedCrate,
     paths: &mut Vec<PathBuf>,
+    target_kinds: &[&str],
 ) -> Result<(), String> {
     let manifest_path = governed.crate_root.join("Cargo.toml");
     let text = fs::read_to_string(&manifest_path)
@@ -180,7 +182,7 @@ fn collect_manifest_target_paths(
     {
         paths.push(governed.crate_root.join(build));
     }
-    for table_name in ["bin", "example", "test", "bench"] {
+    for &table_name in target_kinds {
         let Some(targets) = manifest.get(table_name).and_then(|value| value.as_array()) else {
             continue;
         };

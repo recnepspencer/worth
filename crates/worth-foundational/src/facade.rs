@@ -387,6 +387,11 @@ pub use crate::diagnostics::{
     FoundationalReportArtifactKind, FoundationalSummaryArtifactKind,
     FoundationalSupportReportArtifactKind,
 };
+pub use crate::execution::{
+    DeterminismContract, EquivalenceContractId, ExecutionBudget, ExecutionFallbackCause,
+    ExecutionPhysicalReport, ExecutionPosture, ExecutionReport, ExecutionRequestPolicy,
+    PartitionIdentity,
+};
 pub use crate::identities::{
     admit_foundational_authority_identity, admit_foundational_external_identity_token,
     admitted_foundational_identity_value, derive_foundational_digest_identity_evidence,

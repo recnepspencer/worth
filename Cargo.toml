@@ -11,6 +11,7 @@ members = [
     "crates/worth-server-client-generation",
     "crates/worth-foundational",
     "crates/worth-proof",
+    "crates/worth-execution",
     "crates/worth-signal",
     "crates/worth-signal-wasm",
     "crates/worth-relational",
@@ -42,6 +43,7 @@ worth-query-replay = { path = "workspaces/worth-query/crates/worth-query-replay"
 worth-schema-graph = { path = "workspaces/worth-contracts/crates/worth-schema-graph" }
 worth-foundational = { path = "crates/worth-foundational" }
 worth-proof = { path = "crates/worth-proof" }
+worth-execution = { path = "crates/worth-execution" }
 worth-signal = { path = "crates/worth-signal" }
 worth-signal-wasm = { path = "crates/worth-signal-wasm" }
 worth-relational = { path = "crates/worth-relational" }

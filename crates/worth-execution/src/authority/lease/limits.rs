@@ -1,0 +1,86 @@
+use std::{sync::Arc, time::Instant};
+
+use worth_foundational::{ExecutionPosture, ExecutionRequestPolicy};
+
+use super::{CancellationToken, ExecutionResourceLease, LeaseDenial, LeaseNode, LeaseRequest};
+
+impl<'a> ExecutionResourceLease<'a> {
+    pub fn child(&self, request: LeaseRequest) -> Result<Self, LeaseDenial> {
+        if request.policy.determinism() != self.policy.determinism() {
+            return Err(LeaseDenial::EquivalenceContractUnavailable);
+        }
+        let budget = request.policy.budget();
+        if budget.max_workers().get() > self.node.max_workers {
+            return Err(LeaseDenial::WorkerLimitExceedsParent);
+        }
+        if budget.charged_memory_bytes() > self.node.charged_memory_bytes {
+            return Err(LeaseDenial::MemoryLimitExceedsParent);
+        }
+        if budget.work_ceiling() > self.policy.budget().work_ceiling() {
+            return Err(LeaseDenial::WorkLimitExceedsParent);
+        }
+        Ok(Self {
+            authority: self.authority,
+            node: Arc::new(LeaseNode {
+                id: self.authority.next_id(),
+                parent: Some(Arc::clone(&self.node)),
+                max_workers: budget.max_workers().get(),
+                posture: request.policy.posture(),
+                charged_memory_bytes: budget.charged_memory_bytes(),
+                deadline: match (self.node.deadline, request.deadline) {
+                    (Some(parent), Some(child)) => Some(parent.min(child)),
+                    (Some(parent), None) => Some(parent),
+                    (None, child) => child,
+                },
+                cancellation: request.cancellation,
+            }),
+            policy: request.policy,
+        })
+    }
+
+    pub fn policy(&self) -> &ExecutionRequestPolicy {
+        &self.policy
+    }
+
+    pub fn resolved_posture(&self) -> ExecutionPosture {
+        if cfg!(target_arch = "wasm32")
+            || self
+                .lineage()
+                .iter()
+                .any(|node| node.posture == ExecutionPosture::Serial)
+            || self.node.max_workers == 1
+        {
+            ExecutionPosture::Serial
+        } else {
+            ExecutionPosture::Automatic
+        }
+    }
+
+    pub fn is_cancelled(&self) -> bool {
+        let mut node = Some(self.node.as_ref());
+        while let Some(current) = node {
+            if current.cancellation.is_cancelled() {
+                return true;
+            }
+            node = current.parent.as_deref();
+        }
+        false
+    }
+
+    pub fn deadline_elapsed(&self) -> bool {
+        self.node
+            .deadline
+            .is_some_and(|deadline| Instant::now() >= deadline)
+    }
+
+    pub(crate) fn deadline(&self) -> Option<Instant> {
+        self.node.deadline
+    }
+
+    pub(crate) fn cancellation_lineage(&self) -> Vec<CancellationToken> {
+        self.lineage()
+            .into_iter()
+            .map(|node| node.cancellation.clone())
+            .collect()
+    }
+}

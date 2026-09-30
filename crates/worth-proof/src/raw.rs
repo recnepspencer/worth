@@ -10,7 +10,10 @@ pub use crate::assumption::{
 };
 pub use crate::binding::{Binding, BindingAxes};
 pub use crate::brand::{with_brand, Brand, Branded};
-pub use crate::collections::{CanonicalVec, DisjointPair, ExactlyOne, NonEmpty, Pair, UniqueVec};
+pub use crate::collections::{
+    CanonicalUniqueVec, CanonicalVec, DisjointKeySetDenial, DisjointKeySetFamily,
+    DisjointKeySetViolation, DisjointPair, ExactlyOne, NonEmpty, Pair, UniqueVec,
+};
 pub use crate::composition::{
     compose_join_ready_recipe_pair, fork_artifact_pair, join_artifact_pair, join_ready_recipe_pair,
     lower_deterministic_family_pair, resolve_family_symbol, AuthoritativeFamilyMember,
@@ -24,8 +27,9 @@ pub use crate::linear::{LinearResource, TerminalReceipt, TerminalState};
 pub use crate::phase::PhaseMarker;
 pub use crate::proof::{
     AuthorityMarker, AuthorityProves, AuthorityWitness, CanonicalOrder, CapabilityMarker,
-    CapabilityWitness, Disjointness, NoProofs, Normalization, Proof, ProofMarker, ProofSet,
-    ProofSetAuthorizedBy, ProofSetCons, StructuralProofAuthority, Uniqueness,
+    CapabilityWitness, Disjointness, ExecutionAuthorityMarker, NoProofs, Normalization, Proof,
+    ProofMarker, ProofSet, ProofSetAuthorizedBy, ProofSetCons, StructuralProofAuthority,
+    Uniqueness,
 };
 pub use crate::recipe::{
     Admitted, ExecutedRecipe, ExecutionReadyRecipe, Lowered, Recipe, RecipeStageMarker, Resolved,
