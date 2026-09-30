@@ -12,6 +12,8 @@ use crate::transactions::data::{
 
 #[path = "materialization_port_tests/generated_group.rs"]
 mod generated_group;
+#[path = "materialization_port_tests/required_child.rs"]
+mod required_child;
 
 #[test]
 fn external_endpoint_group_restores_only_its_exact_relation_endpoints() {

@@ -2,6 +2,8 @@ use crate::runtime::PartitionEdition;
 use crate::storage::overlay::{OverlayStateView, PartitionAccess, WorkingState};
 use serde::{Deserialize, Serialize};
 
+mod custom_semantics;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum InvariantObservationKind {
     Committed,
