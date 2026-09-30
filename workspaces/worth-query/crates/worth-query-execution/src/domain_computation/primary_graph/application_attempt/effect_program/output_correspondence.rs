@@ -13,6 +13,7 @@ mod family_entry;
 pub use family_entry::WorthQueryApplicationOutputFamilyEntry;
 
 mod role;
+pub(in crate::domain_computation::primary_graph) use role::fixed as fixed_output_role;
 pub use role::{
     Create, Preserve, Retire, WorthQueryApplicationFixedOutputRole,
     WorthQueryApplicationOptionalOutputRole, WorthQueryApplicationOutputAction,
@@ -163,7 +164,7 @@ impl WorthQueryApplicationOutputCorrespondence {
     where
         Role: WorthQueryApplicationFixedOutputRole,
     {
-        Role::read(self.bound_entity(&role)?)
+        Role::read(self.bound_entity(&role)?, fixed_output_role::INTERNAL)
             .ok_or(WorthQueryApplicationOutputProjectionDenial::MissingRole)
     }
 
@@ -184,7 +185,9 @@ impl WorthQueryApplicationOutputCorrespondence {
         if self.binding_type != Some(TypeId::of::<Role::Binding>()) {
             return Err(WorthQueryApplicationOutputProjectionDenial::ForeignBinding);
         }
-        if self.optional_roles.contains(role.name()) != Role::CARDINALITY.admits_absence() {
+        if self.optional_roles.contains(role.name())
+            != Role::cardinality(fixed_output_role::INTERNAL).admits_absence()
+        {
             return Err(WorthQueryApplicationOutputProjectionDenial::CardinalityMismatch);
         }
         let Some(binding) = self.roles.get(role.name()) else {

@@ -57,15 +57,17 @@ use crate::domain_computation::primary_graph::WorthQueryApplicationEntityKey;
 pub(in crate::domain_computation::primary_graph) use candidate_reservation::WorthQueryCandidateValidatorWorkAdmission;
 use candidate_reservation::{CandidateItemKind, WorthQueryCandidateReservation};
 use candidate_retained_representation as retained_representation;
-pub(in crate::domain_computation::primary_graph) use output_correspondence::WorthQueryCheckpointOutputRole;
+pub(in crate::domain_computation::primary_graph) use output_correspondence::{
+    fixed_output_role, WorthQueryCheckpointOutputRole,
+};
 pub use output_correspondence::{
     Create as WorthQueryCreateOutput, Preserve as WorthQueryPreserveOutput,
     Retire as WorthQueryRetireOutput, WorthQueryApplicationFixedOutputRole,
-    WorthQueryApplicationOptionalOutputRole, WorthQueryApplicationOutputCorrespondence,
-    WorthQueryApplicationOutputEntity, WorthQueryApplicationOutputFamilyEntry,
-    WorthQueryApplicationOutputPosture, WorthQueryApplicationOutputProjectionDenial,
-    WorthQueryApplicationOutputRole, WorthQueryApplicationOutputRoleFamily,
-    WorthQueryApplicationOutputRoleNameDenial,
+    WorthQueryApplicationOptionalOutputRole, WorthQueryApplicationOutputAction,
+    WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationOutputEntity,
+    WorthQueryApplicationOutputFamilyEntry, WorthQueryApplicationOutputPosture,
+    WorthQueryApplicationOutputProjectionDenial, WorthQueryApplicationOutputRole,
+    WorthQueryApplicationOutputRoleFamily, WorthQueryApplicationOutputRoleNameDenial,
 };
 pub(in crate::domain_computation::primary_graph) use platform_reservation::{
     admit_platform_effects, admit_workflow_settlement_effects, PlatformEffectDemand,

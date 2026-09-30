@@ -69,7 +69,7 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
             ExpectedOutputBinding {
                 posture: <Role::Action as WorthQueryApplicationOutputAction>::POSTURE,
                 entity_name,
-                cardinality: Role::CARDINALITY,
+                cardinality: Role::cardinality(super::fixed_output_role::INTERNAL),
             },
         );
     }
@@ -156,7 +156,7 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
                 role.name(),
             ));
         }
-        if cardinality != Role::CARDINALITY {
+        if cardinality != Role::cardinality(super::fixed_output_role::INTERNAL) {
             return Err(denial(
                 WorthQueryApplicationAttemptDenialKind::OutputRoleCardinalityMismatch,
                 role.name(),

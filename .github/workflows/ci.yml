@@ -51,7 +51,7 @@ jobs:
   query-checkpoint-recovery:
     name: Query checkpoint recovery court
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - name: Prove restored accepted outputs avoid producer contact
@@ -60,3 +60,10 @@ jobs:
           --manifest-path workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml
           -p worth-query-topology-entry
           -- --test-threads=1
+      # The external consumer journey: publication, reconstruction, output
+      # preservation and optional output roles through the public facades.
+      - name: Run the public consumer journey
+        run: >-
+          cargo run
+          --manifest-path workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml
+          -p worth-query-consumer-root

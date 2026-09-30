@@ -96,7 +96,9 @@ fresh authorization and currentness checks.
 
 Committed mutation receipts expose `output_correspondence()` and
 `committed_changes()`. Output roles carry the binding, entity marker and
-preserve/create/retire action. `output_correspondence().entity(role)` checks
+action: `WorthQueryPreserveOutput`, `WorthQueryCreateOutput` or
+`WorthQueryRetireOutput`, the only implementations of the sealed
+`WorthQueryApplicationOutputAction`. `output_correspondence().entity(role)` checks
 those exact types and the role name against the committed association. It
 returns `WorthQueryApplicationOutputProjectionDenial::EntityMismatch` for a
 different entity marker even when the binding, name and action match; foreign
@@ -119,7 +121,8 @@ and generated-output reconstruction's `entity` return the output itself.
 calls return an `Option`: `None` when the commit left the role unbound, `Some`
 when it bound it. Absence is a value, never a denial. Both tokens implement the
 sealed `WorthQueryApplicationFixedOutputRole`, so the create, preserve and retire
-writers accept either. A token whose cardinality differs from the declaration is
+writers accept either; its `Read<T>` names the read shape, and the operations
+that shape reads stay inside Query. A token whose cardinality differs from the declaration is
 a contract violation: writing through it is refused with
 `OutputRoleCardinalityMismatch`, and reading through it returns
 `CardinalityMismatch` (`OutputRoleCardinalityMismatch` in reconstruction).

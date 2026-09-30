@@ -17,6 +17,7 @@ use worth_relational::facade::{
 };
 
 use super::WorthQuerySuspendedGeneratedOutput;
+use crate::domain_computation::primary_graph::application_attempt::fixed_output_role;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationFixedOutputRole, WorthQueryApplicationOutputProjectionDenial,
     WorthQueryApplicationProducerBinding, WorthQueryCreateOutput,
@@ -239,7 +240,8 @@ where
         let claimed = bound
             .map(|output| self.claim_entity(output.entity_id(), entity))
             .transpose()?;
-        Role::read(claimed).ok_or(WorthQueryGeneratedOutputReconstructionDenial::MissingOutputRole)
+        Role::read(claimed, fixed_output_role::INTERNAL)
+            .ok_or(WorthQueryGeneratedOutputReconstructionDenial::MissingOutputRole)
     }
 
     fn claim_entity<Entity>(

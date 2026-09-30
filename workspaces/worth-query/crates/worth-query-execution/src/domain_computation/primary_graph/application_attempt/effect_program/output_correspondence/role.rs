@@ -10,7 +10,29 @@ pub(in crate::domain_computation::primary_graph) mod action {
 }
 
 pub(in crate::domain_computation::primary_graph) mod fixed {
-    pub trait Sealed {}
+    use super::{ApplicationMutationOutputRoleCardinality, WorthQueryApplicationFixedOutputRole};
+
+    /// The argument every sealed role operation takes. Only Query constructs
+    /// it, so code outside Query cannot call them, even through a generic
+    /// bound.
+    pub struct Internal(());
+
+    pub(in crate::domain_computation::primary_graph) const INTERNAL: Internal = Internal(());
+
+    pub trait Sealed {
+        /// The cardinality this token reads and writes as.
+        fn cardinality(_: Internal) -> ApplicationMutationOutputRoleCardinality;
+
+        /// Shape one role lookup. An exactly-one token yields `None` when the
+        /// role is unbound, which callers refuse; an at-most-one token always
+        /// yields a read, carrying absence as its `None`.
+        fn read<T>(
+            bound: Option<T>,
+            _: Internal,
+        ) -> Option<<Self as WorthQueryApplicationFixedOutputRole>::Read<T>>
+        where
+            Self: WorthQueryApplicationFixedOutputRole;
+    }
 }
 
 /// Output posture marker: the role names a record the mutation keeps, neither
@@ -24,7 +46,13 @@ pub struct Create;
 /// the action of a [`WorthQueryApplicationOutputRole`].
 pub struct Retire;
 
-/// Marker implemented by Query's sealed output postures.
+/// The action an output role performs on its record: implemented only by
+/// [`WorthQueryPreserveOutput`], [`WorthQueryCreateOutput`] and
+/// [`WorthQueryRetireOutput`], and sealed against other implementations.
+///
+/// [`WorthQueryPreserveOutput`]: Preserve
+/// [`WorthQueryCreateOutput`]: Create
+/// [`WorthQueryRetireOutput`]: Retire
 pub trait WorthQueryApplicationOutputAction: action::Sealed {
     const POSTURE: WorthQueryApplicationOutputPosture;
 }
@@ -107,25 +135,62 @@ pub struct WorthQueryApplicationOptionalOutputRole<Binding, Entity, Action> {
 /// `Read<T>` is `T` for an exactly-one token and `Option<T>` for an at-most-one
 /// token. Query refuses a token whose cardinality differs from the one the
 /// binding declares for that role.
+///
+/// The trait is sealed, and the operations Query uses to shape reads are not
+/// callable outside Query, even through a generic bound:
+///
+/// ```compile_fail
+/// use worth_query_execution::facade::primary_graph::WorthQueryApplicationFixedOutputRole;
+///
+/// fn cannot_shape_a_read<Role: WorthQueryApplicationFixedOutputRole>() -> Option<Role::Read<u8>> {
+///     Role::read(Some(1))
+/// }
+/// ```
+///
+/// ```compile_fail
+/// use worth_query_execution::facade::primary_graph::WorthQueryApplicationFixedOutputRole;
+///
+/// fn cannot_read_the_cardinality<Role: WorthQueryApplicationFixedOutputRole>() {
+///     let _ = Role::cardinality();
+/// }
+/// ```
+///
+/// Naming the read shape through the bound is ordinary:
+///
+/// ```
+/// use worth_query_execution::facade::primary_graph::WorthQueryApplicationFixedOutputRole;
+///
+/// fn read_shape<Role: WorthQueryApplicationFixedOutputRole>(read: Role::Read<u8>) -> Role::Read<u8> {
+///     read
+/// }
+/// ```
 pub trait WorthQueryApplicationFixedOutputRole: fixed::Sealed {
     type Binding: 'static;
     type Entity: 'static;
     type Action: WorthQueryApplicationOutputAction;
     /// What reading this role yields when the value read is `T`.
     type Read<T>;
-    const CARDINALITY: ApplicationMutationOutputRoleCardinality;
 
     fn name(&self) -> &str;
-
-    /// Shape one role lookup. An exactly-one token yields `None` when the role
-    /// is unbound, which callers refuse; an at-most-one token always yields a
-    /// read, carrying absence as its `None`.
-    fn read<T>(bound: Option<T>) -> Option<Self::Read<T>>;
 }
 
 impl<Binding, Entity, Action> fixed::Sealed
     for WorthQueryApplicationOutputRole<Binding, Entity, Action>
+where
+    Binding: 'static,
+    Entity: 'static,
+    Action: WorthQueryApplicationOutputAction,
 {
+    fn cardinality(_: fixed::Internal) -> ApplicationMutationOutputRoleCardinality {
+        ApplicationMutationOutputRoleCardinality::ExactlyOne
+    }
+
+    fn read<T>(
+        bound: Option<T>,
+        _: fixed::Internal,
+    ) -> Option<<Self as WorthQueryApplicationFixedOutputRole>::Read<T>> {
+        bound
+    }
 }
 
 impl<Binding, Entity, Action> WorthQueryApplicationFixedOutputRole
@@ -139,21 +204,29 @@ where
     type Entity = Entity;
     type Action = Action;
     type Read<T> = T;
-    const CARDINALITY: ApplicationMutationOutputRoleCardinality =
-        ApplicationMutationOutputRoleCardinality::ExactlyOne;
 
     fn name(&self) -> &str {
         &self.name
-    }
-
-    fn read<T>(bound: Option<T>) -> Option<T> {
-        bound
     }
 }
 
 impl<Binding, Entity, Action> fixed::Sealed
     for WorthQueryApplicationOptionalOutputRole<Binding, Entity, Action>
+where
+    Binding: 'static,
+    Entity: 'static,
+    Action: WorthQueryApplicationOutputAction,
 {
+    fn cardinality(_: fixed::Internal) -> ApplicationMutationOutputRoleCardinality {
+        ApplicationMutationOutputRoleCardinality::AtMostOne
+    }
+
+    fn read<T>(
+        bound: Option<T>,
+        _: fixed::Internal,
+    ) -> Option<<Self as WorthQueryApplicationFixedOutputRole>::Read<T>> {
+        Some(bound)
+    }
 }
 
 impl<Binding, Entity, Action> WorthQueryApplicationFixedOutputRole
@@ -167,15 +240,9 @@ where
     type Entity = Entity;
     type Action = Action;
     type Read<T> = Option<T>;
-    const CARDINALITY: ApplicationMutationOutputRoleCardinality =
-        ApplicationMutationOutputRoleCardinality::AtMostOne;
 
     fn name(&self) -> &str {
         &self.name
-    }
-
-    fn read<T>(bound: Option<T>) -> Option<Option<T>> {
-        Some(bound)
     }
 }
 

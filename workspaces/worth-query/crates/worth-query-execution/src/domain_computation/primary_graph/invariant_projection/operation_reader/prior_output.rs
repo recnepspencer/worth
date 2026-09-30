@@ -8,6 +8,7 @@ use worth_relational::facade::runtime::ProjectionAspectScope;
 use worth_relational::facade::storage::RecordLifecycleState;
 
 use super::*;
+use crate::domain_computation::primary_graph::application_attempt::fixed_output_role;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationFixedOutputRole, WorthQueryApplicationOutputCorrespondence,
     WorthQueryApplicationOutputPosture, WorthQueryApplicationOutputRoleFamily,
@@ -97,12 +98,14 @@ where
         let identity = bound
             .map(|output| self.live_prior_identity::<Role::Entity>(role.name(), output.entity_id()))
             .transpose()?;
-        Role::read(identity).map(Some).ok_or_else(|| {
-            WorthQueryPriorOutputDenial::new(
-                WorthQueryPriorOutputDenialKind::MissingRole,
-                role.name(),
-            )
-        })
+        Role::read(identity, fixed_output_role::INTERNAL)
+            .map(Some)
+            .ok_or_else(|| {
+                WorthQueryPriorOutputDenial::new(
+                    WorthQueryPriorOutputDenialKind::MissingRole,
+                    role.name(),
+                )
+            })
     }
 
     /// Read every currently visible member of one declared generated-role family.

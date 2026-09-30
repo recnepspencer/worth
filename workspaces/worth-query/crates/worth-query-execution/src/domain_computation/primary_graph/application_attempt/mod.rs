@@ -77,19 +77,20 @@ pub(in crate::domain_computation::primary_graph) use compare_and_commit::{
 pub use delegation_activation_program::WorthQueryDelegationActivationProgram;
 pub use denial::{WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind};
 pub(in crate::domain_computation::primary_graph) use effect_program::{
-    WorthQueryAdmittedApplicationEmissionBatch, WorthQueryApplicationCreationPartition,
-    WorthQueryApplicationEmission, WorthQueryApplicationRealizedEffect,
-    WorthQueryCandidateValidatorWorkAdmission, WorthQueryCheckpointOutputRole,
+    fixed_output_role, WorthQueryAdmittedApplicationEmissionBatch,
+    WorthQueryApplicationCreationPartition, WorthQueryApplicationEmission,
+    WorthQueryApplicationRealizedEffect, WorthQueryCandidateValidatorWorkAdmission,
+    WorthQueryCheckpointOutputRole,
 };
 pub use effect_program::{
     WorthQueryApplicationEffectEntity, WorthQueryApplicationEffectProgram,
     WorthQueryApplicationEffectProgramBuilder, WorthQueryApplicationFixedOutputRole,
-    WorthQueryApplicationOptionalOutputRole, WorthQueryApplicationOutputCorrespondence,
-    WorthQueryApplicationOutputEntity, WorthQueryApplicationOutputFamilyEntry,
-    WorthQueryApplicationOutputPosture, WorthQueryApplicationOutputProjectionDenial,
-    WorthQueryApplicationOutputRole, WorthQueryApplicationOutputRoleFamily,
-    WorthQueryApplicationOutputRoleNameDenial, WorthQueryCreateOutput, WorthQueryPreserveOutput,
-    WorthQueryRetireOutput,
+    WorthQueryApplicationOptionalOutputRole, WorthQueryApplicationOutputAction,
+    WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationOutputEntity,
+    WorthQueryApplicationOutputFamilyEntry, WorthQueryApplicationOutputPosture,
+    WorthQueryApplicationOutputProjectionDenial, WorthQueryApplicationOutputRole,
+    WorthQueryApplicationOutputRoleFamily, WorthQueryApplicationOutputRoleNameDenial,
+    WorthQueryCreateOutput, WorthQueryPreserveOutput, WorthQueryRetireOutput,
 };
 pub(super) use elevation_approval_outcome::approved_outcome;
 pub use elevation_approval_outcome::{

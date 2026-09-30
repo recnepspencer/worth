@@ -424,6 +424,7 @@ exports = [
     "WorthQueryApplicationOperationInvariantProjectionReader",
     "WorthQueryApplicationOperationInvariantProjectionSnapshot",
     "WorthQueryApplicationOptionalOutputRole",
+    "WorthQueryApplicationOutputAction",
     "WorthQueryApplicationOutputCorrespondence",
     "WorthQueryApplicationOutputDemandDisclosure",
     "WorthQueryApplicationOutputDemandSource",
