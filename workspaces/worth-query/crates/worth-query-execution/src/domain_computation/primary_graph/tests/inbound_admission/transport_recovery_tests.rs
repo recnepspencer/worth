@@ -9,9 +9,9 @@ use crate::domain_computation::application_aftermath::{
     dispatch_external_effect, WorthQueryExternalDispatchRequest, WorthQueryExternalEffectTransport,
     WorthQueryExternalTransportOutcome,
 };
+use crate::domain_computation::primary_graph::application_runtime::InstalledTransportPendingReason;
 use crate::domain_computation::primary_graph::{
-    InstalledTransportCompletion, InstalledTransportPendingReason, InstalledTransportResumeOutcome,
-    WorthQueryInboundReceiptPosture,
+    InstalledTransportCompletion, InstalledTransportResumeOutcome, WorthQueryInboundReceiptPosture,
 };
 
 struct CompletingTransport(AtomicUsize);

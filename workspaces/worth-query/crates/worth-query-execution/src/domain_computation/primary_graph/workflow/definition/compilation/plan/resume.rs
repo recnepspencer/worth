@@ -146,8 +146,7 @@ mod tests {
                 &[],
                 WorkflowStepAllowance::for_test(),
             )
-            .err()
-            .expect("a successor cannot consume an origin it never ran");
+            .expect_err("a successor cannot consume an origin it never ran");
             assert_eq!(
                 denial.kind(),
                 WorthQueryApplicationAttemptDenialKind::WorkflowInstanceMigrationUnmapped,

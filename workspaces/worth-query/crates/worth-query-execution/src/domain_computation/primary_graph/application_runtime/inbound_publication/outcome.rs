@@ -1,10 +1,9 @@
 use std::sync::Arc;
 
-use worth_runtime_world::facade::{NoEffectCompositePublication, ProductBranchIncarnation};
+use worth_runtime_world::facade::ProductBranchIncarnation;
 
 use crate::domain_computation::application_aftermath::WorthQueryAcceptedInboundOccurrence;
 use crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationReceipt;
-use crate::domain_computation::primary_graph::provider::WorthQueryInboundCompletionPreparationDenial;
 use crate::domain_computation::WorthQueryProductUnpublishedApplication;
 
 /// The only completion posture that may seal terminal owner truth.
@@ -63,18 +62,6 @@ impl WorthQueryUnpublishedInboundCompletion {
         }
     }
 
-    pub(in crate::domain_computation) fn accepted(
-        &self,
-    ) -> &Arc<WorthQueryAcceptedInboundOccurrence> {
-        &self.accepted
-    }
-
-    pub(in crate::domain_computation) fn unpublished(
-        &self,
-    ) -> &WorthQueryProductUnpublishedApplication {
-        &self.unpublished
-    }
-
     pub(in crate::domain_computation) fn into_parts(
         self,
     ) -> (
@@ -90,8 +77,8 @@ pub(in crate::domain_computation) enum WorthQueryInboundPublicationDenial {
     ForeignRelationalRuntime,
     ForeignProductWorld,
     OriginalPublicationCommitMismatch,
-    ProductAdmission(crate::basis::WorthQueryProductBranchAdmissionDenial),
-    CompletionPreparation(WorthQueryInboundCompletionPreparationDenial),
+    ProductAdmission,
+    CompletionPreparation,
     TerminalIndexUnavailable,
     CorrelationAlreadyOwned,
 }
@@ -100,7 +87,7 @@ pub(in crate::domain_computation) enum WorthQueryInboundPublicationDenial {
 pub(in crate::domain_computation) enum WorthQueryInboundPublicationOutcome {
     AlreadyCompleted,
     Performed(WorthQueryPerformedInboundCompletion),
-    NoEffect(NoEffectCompositePublication),
+    NoEffect,
     ProductUnpublished(WorthQueryUnpublishedInboundCompletion),
     Denied(WorthQueryInboundPublicationDenial),
 }

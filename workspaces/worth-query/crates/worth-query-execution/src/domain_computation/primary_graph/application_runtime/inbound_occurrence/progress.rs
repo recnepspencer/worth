@@ -93,7 +93,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     .mark_publication_retryable(&accepted);
                 Err(WorthQueryInboundAdmissionDenial::CorrelationAlreadyOwned)
             }
-            WorthQueryInboundPublicationOutcome::NoEffect(_)
+            WorthQueryInboundPublicationOutcome::NoEffect
             | WorthQueryInboundPublicationOutcome::Denied(_) => {
                 self.inbound_custody
                     .lock()

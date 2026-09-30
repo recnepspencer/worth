@@ -263,7 +263,7 @@ impl InboundWorld {
             .clone();
         let default_request = super::super::fixture::live_scope();
         let request = request.unwrap_or(&default_request);
-        let external = authenticate(self.application.installed_schema(), &request);
+        let external = authenticate(self.application.installed_schema(), request);
         let selected = self.application.select_product_branch(&identity).unwrap();
         let binding = self
             .application
@@ -274,7 +274,7 @@ impl InboundWorld {
             .resolve_authenticated_principal(
                 &binding,
                 &external,
-                &request,
+                request,
                 WorthQueryPrincipalResolutionMode::Ordinary,
             )
             .unwrap();
@@ -285,7 +285,7 @@ impl InboundWorld {
             .resolve_entity(
                 TargetKey::reference(),
                 "target".to_owned(),
-                &request,
+                request,
                 WorthQueryPrincipalResolutionMode::Ordinary,
             )
             .unwrap();
@@ -303,7 +303,7 @@ impl InboundWorld {
                 &target,
                 &operation,
                 TypedMutationPreconditions::new(),
-                &request,
+                request,
             )
             .unwrap();
         let (_, projection, _) = self

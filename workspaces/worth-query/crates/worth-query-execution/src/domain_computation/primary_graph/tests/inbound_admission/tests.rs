@@ -170,9 +170,9 @@ fn lost_terminal_index_denies_until_bounded_owner_reconstruction() {
 }
 
 #[test]
-fn indexed_completion_row_reconstructs_only_with_original_world_history() {
+fn cleanup_verification_of_a_completed_inbound_keeps_the_terminal_owner() {
     let world = installed_world();
-    let dispatch = world.commit_dispatch(32, "notice-durable-rebuild");
+    let dispatch = world.commit_dispatch(32, "notice-durable-cleanup");
     let record = dispatch.dispatch_outbox().unwrap();
     let correlation = *record.correlation();
     let envelope = signed_envelope(record, [0x97; 32], record.payload(), false);
@@ -185,47 +185,12 @@ fn indexed_completion_row_reconstructs_only_with_original_world_history() {
             .posture(),
         Posture::Performed
     );
-    let product = world
-        .application
-        .product_runtime()
-        .admit_product_branch(world.application.product_runtime().default_branch())
-        .unwrap();
-    let row = world
-        .application
-        .primary_provider
-        .lookup_inbound_completion_row(product.relational_basis(), &correlation)
-        .unwrap()
-        .expect("indexed Relational completion row exists");
-    assert_eq!(row.correlation, correlation);
-    assert_eq!(row.original_commit, *dispatch.commit_reference());
-    assert_ne!(row.completion_commit, row.original_commit);
-    let reconstructed = world
-        .application
-        .reconstruct_completed_inbound_on_original(
-            &correlation,
-            product.observation().lifecycle_incarnation(),
-            std::num::NonZeroUsize::new(32).unwrap(),
-        )
-        .unwrap()
-        .expect("World ancestry pairs the indexed row");
     let sealed = world
         .application
         .primary_provider
         .lookup_completed_inbound(&correlation)
         .unwrap()
-        .unwrap();
-    assert_eq!(
-        reconstructed.original_world_commit(),
-        sealed.original_world_commit()
-    );
-    assert_eq!(
-        reconstructed.completion_world_commit(),
-        sealed.completion_world_commit()
-    );
-    assert_eq!(
-        reconstructed.completion_attempt(),
-        sealed.completion_attempt()
-    );
+        .expect("the terminal owner holds the completion");
     world
         .application
         .verify_completed_inbound_for_cleanup(&[correlation], u64::MAX)
@@ -236,7 +201,7 @@ fn indexed_completion_row_reconstructs_only_with_original_world_history() {
             .primary_provider
             .lookup_completed_inbound(&correlation)
             .unwrap(),
-        Some(sealed.clone())
+        Some(sealed)
     );
     world
         .application

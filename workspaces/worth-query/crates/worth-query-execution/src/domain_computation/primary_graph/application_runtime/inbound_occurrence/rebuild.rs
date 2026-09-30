@@ -101,8 +101,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
             .inspection_port()
             .trace_ancestry(world.commit().identity().clone(), maximum_ancestry_commits)
             .map_err(|_| Denial::IndexUnavailable)?;
-        let (original, completion, attempt) =
-            pair_world_history(&history, &row, world.product_incarnation())?;
+        let (original, completion, attempt) = pair_world_history(&history, &row)?;
         if &completion != world.commit().identity() || &attempt != world.publication_attempt() {
             return Err(Denial::WorldPairMismatch);
         }

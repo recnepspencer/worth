@@ -153,11 +153,6 @@ impl WorthQueryPrimaryGraph {
                 self.layout.provider_idempotency().key_index_id,
             ))
             .chain(std::iter::once(
-                self.layout
-                    .provider_inbound_completion()
-                    .correlation_index_id,
-            ))
-            .chain(std::iter::once(
                 self.layout.provider_aftermath_causality().key_index_id,
             ))
             .chain(std::iter::once(

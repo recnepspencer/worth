@@ -57,7 +57,7 @@ where
             .lookup_completed_inbound(owner.record().correlation())
         {
             Ok(Some(terminal)) if terminal.matches_transport_observation(&evidence, &binding) => {
-                return Outcome::AlreadyCompleted(evidence);
+                return Outcome::AlreadyCompleted;
             }
             Ok(Some(_)) => return Outcome::Denied(evidence, Denial::CorrelationAlreadyOwned),
             Err(_) => return Outcome::Denied(evidence, Denial::TerminalIndexUnavailable),
@@ -65,11 +65,11 @@ where
         }
         let _publication_permit = match self.reserve_installed_transport_publication(&binding) {
             Ok(permit) => permit,
-            Err(denial) => return Outcome::Denied(evidence, Denial::PublicationPermit(denial)),
+            Err(_) => return Outcome::Denied(evidence, Denial::PublicationPermit),
         };
         let lease = match self.product_runtime.admit_product_occurrence(incarnation) {
             Ok(lease) => lease,
-            Err(denial) => return Outcome::Denied(evidence, Denial::ProductAdmission(denial)),
+            Err(_) => return Outcome::Denied(evidence, Denial::ProductAdmission),
         };
         let candidate = match self
             .primary_provider
@@ -80,13 +80,13 @@ where
                 &binding,
             ) {
             Ok(candidate) => candidate,
-            Err(denial) => return Outcome::Denied(evidence, Denial::CompletionPreparation(denial)),
+            Err(_) => return Outcome::Denied(evidence, Denial::CompletionPreparation),
         };
         let publication = lease.publication_binding();
         let recovery = publication.recovery();
         let prepared = match publication.prepare_relational_candidate(candidate, request, false) {
             Ok(prepared) => prepared,
-            Err(no_effect) => return Outcome::NoEffect(evidence, no_effect),
+            Err(_) => return Outcome::NoEffect(evidence),
         };
         let terminal = WorthQueryReservedProductPublicationReceipt::new(
             publication.root_identity(),
@@ -107,10 +107,10 @@ where
                     terminal.fill(performed.consume(), None),
                 ))
             }
-            RuntimeWorldPublicationOutcome::NoEffect(no_effect) => {
+            RuntimeWorldPublicationOutcome::NoEffect(_) => {
                 self.primary_provider
                     .clear_inbound_completion_publication_pending(&correlation);
-                Outcome::NoEffect(evidence, no_effect)
+                Outcome::NoEffect(evidence)
             }
             RuntimeWorldPublicationOutcome::ProductUnpublished(effects) => {
                 Outcome::ProductUnpublished(UnpublishedInstalledTransportCompletion::new(

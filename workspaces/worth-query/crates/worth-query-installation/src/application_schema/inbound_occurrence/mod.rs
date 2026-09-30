@@ -43,9 +43,10 @@ mod tests {
         assert!(install_inbound_occurrence(&[], "old", "death-notice")
             .unwrap()
             .is_none());
-        let installed = install_inbound_occurrence(&[member.clone()], "notify", "death-notice")
-            .unwrap()
-            .unwrap();
+        let installed =
+            install_inbound_occurrence(std::slice::from_ref(&member), "notify", "death-notice")
+                .unwrap()
+                .unwrap();
         assert_eq!(installed.effect(), "death-notice");
         assert_eq!(installed.source_identity(), "bank-rail");
         assert_eq!(

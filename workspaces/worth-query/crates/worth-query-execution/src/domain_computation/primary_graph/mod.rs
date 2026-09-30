@@ -91,7 +91,7 @@ pub(in crate::domain_computation) use application_runtime::WorthQueryExternalDis
 pub(in crate::domain_computation) use application_runtime::WorthQueryPerformedInboundCompletion;
 pub(in crate::domain_computation) use application_runtime::WorthQueryUnpublishedInboundCompletion;
 pub(in crate::domain_computation::primary_graph) use application_runtime::{
-    InstalledTransportCompletion, InstalledTransportPendingReason, InstalledTransportResumeOutcome,
+    InstalledTransportCompletion, InstalledTransportResumeOutcome,
     PerformedInstalledTransportCompletion,
 };
 pub(in crate::domain_computation) use application_runtime::{

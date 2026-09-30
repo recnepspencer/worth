@@ -15,7 +15,8 @@ mod graph_participation;
 mod idempotency;
 mod inbound_completion;
 mod inbound_cost;
-pub(in crate::domain_computation) use inbound_completion::WorthQueryInboundCompletionPreparationDenial;
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) use inbound_completion::WorthQueryInboundCompletionPreparationDenial;
 pub(in crate::domain_computation::primary_graph) use inbound_completion::{
     WorthQueryCanonicalCompletionRow, WorthQueryInboundCompletionReadDenial,
 };
