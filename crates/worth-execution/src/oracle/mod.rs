@@ -1,13 +1,15 @@
 mod canonical_bits;
 
+use std::panic::{catch_unwind, AssertUnwindSafe};
+
 use canonical_bits::visit_exact;
 pub use canonical_bits::CanonicalBits;
 
 use crate::{
     authority::ExecutionResourceLease,
     backend::{
-        enter_retained_memory, run_checked_batch, run_checked_batch_with_charge, AdmittedBatch,
-        BackendKind, BatchOutcome, KernelContext, KernelFailure,
+        enter_retained_memory, run_checked_batch, run_checked_batch_with_charge, run_scope,
+        AdmittedBatch, BackendKind, BatchOutcome, KernelContext, KernelFailure,
     },
     report::ChargedBytes,
 };
@@ -18,6 +20,12 @@ pub enum OracleMismatch {
     Stop,
     ChargedWork,
     ChargedSpan,
+}
+
+impl ChargedBytes for OracleMismatch {
+    fn additional_charged_bytes(&self) -> u64 {
+        0
+    }
 }
 
 /// Evaluate the same admitted batch and kernel through serial and selected ports.
@@ -47,7 +55,8 @@ where
         .map_err(|_| OracleMismatch::Stop)?;
     let _actual_physical = enter_retained_memory(retained_bytes);
     let actual = run_checked_batch(Some(lease), batch, selected, kernel);
-    compare(lease, &expected, &actual)?;
+    catch_unwind(AssertUnwindSafe(|| compare(lease, &expected, &actual)))
+        .unwrap_or(Err(OracleMismatch::Stop))?;
     drop((expected_retained, actual_retained));
     Ok(actual)
 }
@@ -86,6 +95,14 @@ fn same_bits<T: CanonicalBits + ?Sized>(
     expected: &T,
     actual: &T,
 ) -> Result<bool, OracleMismatch> {
+    same_bits_with_contract(lease, expected, actual)
+}
+
+fn same_bits_with_contract<T: CanonicalBits + ?Sized>(
+    lease: &ExecutionResourceLease<'_>,
+    expected: &T,
+    actual: &T,
+) -> Result<bool, OracleMismatch> {
     let length = expected.canonical_len().ok_or(OracleMismatch::Stop)?;
     let bytes = u64::try_from(length).map_err(|_| OracleMismatch::Stop)?;
     let _reservation = lease
@@ -102,6 +119,28 @@ fn same_bits<T: CanonicalBits + ?Sized>(
     }) {
         return Err(OracleMismatch::Stop);
     }
+    if let Some(predicate) = lease.equivalence_predicate() {
+        let candidate_len = actual.canonical_len().ok_or(OracleMismatch::Stop)?;
+        let candidate_bytes = u64::try_from(candidate_len).map_err(|_| OracleMismatch::Stop)?;
+        let _candidate_reservation = lease
+            .reserve_retained_memory(candidate_bytes)
+            .map_err(|_| OracleMismatch::Stop)?;
+        let _candidate_physical = enter_retained_memory(candidate_bytes);
+        let mut candidate = Vec::new();
+        candidate
+            .try_reserve_exact(candidate_len)
+            .map_err(|_| OracleMismatch::Stop)?;
+        if !visit_exact(actual, &mut |chunk| {
+            candidate.extend_from_slice(chunk);
+            true
+        }) {
+            return Err(OracleMismatch::Stop);
+        }
+        return catch_unwind(AssertUnwindSafe(|| {
+            predicate.equivalent(&reference, &candidate)
+        }))
+        .map_err(|_| OracleMismatch::Stop);
+    }
     if actual.canonical_len() != Some(length) {
         return Ok(false);
     }
@@ -117,6 +156,20 @@ fn same_bits<T: CanonicalBits + ?Sized>(
         true
     });
     Ok(equal && position == length)
+}
+
+/// Compare two complete canonical results under the lease's installed
+/// determinism contract. Encoding buffers are reserved against the lease.
+pub fn compare_canonical_values<T: CanonicalBits + ?Sized>(
+    lease: &ExecutionResourceLease<'_>,
+    expected: &T,
+    actual: &T,
+) -> Result<bool, OracleMismatch> {
+    let outcome = run_scope(Some(lease), 0, 0, |context| {
+        context.checkpoint(0)?;
+        same_bits(lease, expected, actual).map_err(KernelFailure::Domain)
+    });
+    outcome.result.map_err(|_| OracleMismatch::Stop)
 }
 
 fn same_stop<E: CanonicalBits>(

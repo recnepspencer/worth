@@ -176,9 +176,19 @@ impl<T, K: Ord + ChargedBytes> ExecutionMap<T, K> {
             _write_sets: write_sets,
         })
     }
+}
 
+impl<T, K> ExecutionMap<T, K> {
     pub fn partition_count(&self) -> usize {
         self.batch.identities().len()
+    }
+
+    pub fn identities(&self) -> &[PartitionIdentity] {
+        self.batch.identities()
+    }
+
+    pub(crate) fn retained_result_bytes<R>(&self) -> Option<u64> {
+        self.batch.retained_result_bytes::<R>()
     }
 }
 
@@ -199,6 +209,20 @@ impl<T: Sync + ChargedBytes, K> ExecutionMap<T, K> {
             } else {
                 BackendKind::Serial
             };
+        self.run_with_backend(lease, backend, kernel)
+    }
+
+    pub(crate) fn run_with_backend<R, E, F>(
+        &self,
+        lease: Option<&ExecutionResourceLease<'_>>,
+        backend: BackendKind,
+        kernel: F,
+    ) -> MapOutcome<R, E>
+    where
+        R: Send + ChargedBytes,
+        E: Send + ChargedBytes,
+        F: Fn(&T, &mut MapKernelContext<'_, '_>) -> Result<R, MapKernelFailure<E>> + Sync,
+    {
         run_checked_batch(lease, &self.batch, backend, &kernel).into()
     }
 

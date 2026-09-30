@@ -80,7 +80,7 @@ where
     E: ChargedBytes + Send,
     F: Fn(&T, &mut KernelContext<'_, '_>) -> Result<R, KernelFailure<E>> + Sync,
 {
-    if lease.is_none() && RunLimits::has_parent() {
+    if lease.is_none() && RunLimits::has_leased_parent() {
         let outcome = denied(LeaseDenial::UnrelatedNestedLease);
         record_nested(outcome.report, true);
         return outcome;

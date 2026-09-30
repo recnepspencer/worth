@@ -1,8 +1,24 @@
 use std::sync::atomic::AtomicUsize;
 
 use super::*;
+use crate::backend::{run_scope, ScopeStop};
 use crate::{ExecutionMap, MapKernelFailure, MapKernelStop, MapOutcome, MapPartition, MapStop};
 use worth_foundational::ExecutionFallbackCause;
+
+#[test]
+fn zero_retained_reservation_survives_nested_scope_drop() {
+    let _serial = TEST_LOCK.lock().unwrap();
+    let lease = authority().request_lease(request(1, 1_000, 100)).unwrap();
+    let outcome = map(&[1], 0).run(Some(&lease), |_, _context| {
+        let mut zero = lease.reserve_retained_memory(0).unwrap();
+        let nested = run_scope(Some(&lease), 0, 0, |_child| Ok::<_, KernelFailure<()>>(()));
+        assert!(nested.result.is_ok());
+        lease.rebind_retained_memory(&mut zero, 64).unwrap();
+        drop(zero);
+        Ok::<_, MapKernelFailure<()>>(0_u64)
+    });
+    assert!(matches!(outcome, MapOutcome::Complete { .. }));
+}
 
 fn map(values: &[u64], max_result_bytes: u64) -> ExecutionMap<u64, u64> {
     let expected = (0..values.len())
@@ -257,4 +273,52 @@ fn exhausted_process_slots_fall_back_to_one_worker_with_honest_report() {
     assert_eq!(report.physical().peak_queue_width(), 2);
     assert!(report.physical().peak_charged_memory_bytes() > 0);
     drop(three_slots);
+}
+
+#[test]
+fn enclosing_scope_enforces_one_ceiling_across_successive_nested_stages() {
+    let _serial = TEST_LOCK.lock().unwrap();
+    let lease = authority().request_lease(request(2, 2_000, 1)).unwrap();
+    let first = map(&[1], 0);
+    let second = map(&[2], 0);
+    let scoped = run_scope::<(), (), _>(Some(&lease), 0, 0, |_| {
+        let first_result = first.run(Some(&lease), |value, context| {
+            context.checkpoint(1)?;
+            Ok::<_, MapKernelFailure<()>>(*value)
+        });
+        assert!(matches!(first_result, MapOutcome::Complete { values, .. } if values == vec![1]));
+        let second_result = second.run(Some(&lease), |value, context| {
+            context.checkpoint(1)?;
+            Ok::<_, MapKernelFailure<()>>(*value)
+        });
+        assert!(matches!(second_result, MapOutcome::Stopped {
+            reason: MapStop::WorkExhausted { identity }, ..
+        } if identity == PartitionIdentity::new(1)));
+        Ok(())
+    });
+    assert!(matches!(
+        scoped.result,
+        Err(ScopeStop::Failure(KernelFailure::Stop(
+            KernelStop::NestedStopped
+        )))
+    ));
+    assert_eq!(scoped.report.charged_work(), 1);
+}
+
+#[test]
+fn unleased_scope_can_compose_serial_patterns_without_claiming_a_lease() {
+    let _serial = TEST_LOCK.lock().unwrap();
+    let inner = map(&[1], 0);
+    let scoped = run_scope::<(), (), _>(None, 0, 0, |_| {
+        let outcome = inner.run(None, |value, context| {
+            context.checkpoint(2)?;
+            Ok::<_, MapKernelFailure<()>>(*value)
+        });
+        assert!(matches!(outcome, MapOutcome::Complete { values, .. } if values == vec![1]));
+        Ok(())
+    });
+    assert!(scoped.result.is_ok());
+    assert_eq!(scoped.report.charged_work(), 2);
+    assert_eq!(scoped.report.charged_span(), 2);
+    assert_eq!(scoped.report.physical().active_workers_high_watermark(), 1);
 }

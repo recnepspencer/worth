@@ -7,13 +7,16 @@ use std::{
 };
 
 use rayon::{ThreadPool, ThreadPoolBuilder};
-use worth_foundational::{DeterminismContract, ExecutionPosture, ExecutionRequestPolicy};
+use worth_foundational::{
+    DeterminismContract, EquivalenceContractId, ExecutionPosture, ExecutionRequestPolicy,
+};
 
-use super::CancellationToken;
+use super::{equivalence::EquivalenceRegistry, CancellationToken, EquivalencePredicate};
 
 static PROCESS_AUTHORITY: OnceLock<()> = OnceLock::new();
 static CONSTRUCTION_LOCK: Mutex<()> = Mutex::new(());
 mod limits;
+mod retained;
 thread_local! {
     static ACTIVE_WORKER: RefCell<Vec<(usize, u64)>> = const { RefCell::new(Vec::new()) };
 }
@@ -28,6 +31,8 @@ pub struct ExecutionAuthorityConfig {
 pub enum ConstructionDenial {
     AlreadyConstructed,
     PoolConstruction(String),
+    DuplicateEquivalenceContract(EquivalenceContractId),
+    DuplicateEquivalenceIdentity([u8; 32]),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -56,6 +61,7 @@ pub struct ExecutionAuthority {
 struct AuthorityInner {
     config: ExecutionAuthorityConfig,
     pool: Option<ThreadPool>,
+    equivalences: EquivalenceRegistry,
     ledger: Mutex<Ledger>,
 }
 
@@ -94,12 +100,21 @@ pub struct ExecutionResourceLease<'a> {
 /// One physical authority is permitted for a process lifetime, including after drop.
 impl ExecutionAuthority {
     pub fn try_construct(config: ExecutionAuthorityConfig) -> Result<Self, ConstructionDenial> {
+        Self::try_construct_with_equivalences(config, [])
+    }
+
+    /// Installs an immutable set of comparison contracts at the composition root.
+    pub fn try_construct_with_equivalences(
+        config: ExecutionAuthorityConfig,
+        predicates: impl IntoIterator<Item = EquivalencePredicate>,
+    ) -> Result<Self, ConstructionDenial> {
         let _lock = CONSTRUCTION_LOCK
             .lock()
             .unwrap_or_else(|error| error.into_inner());
         if PROCESS_AUTHORITY.get().is_some() {
             return Err(ConstructionDenial::AlreadyConstructed);
         }
+        let equivalences = EquivalenceRegistry::new(predicates)?;
         let pool = if cfg!(target_arch = "wasm32") {
             None
         } else {
@@ -115,6 +130,7 @@ impl ExecutionAuthority {
             inner: Arc::new(AuthorityInner {
                 config,
                 pool,
+                equivalences,
                 ledger: Mutex::new(Ledger::default()),
             }),
         };
@@ -128,11 +144,10 @@ impl ExecutionAuthority {
         &self,
         request: LeaseRequest,
     ) -> Result<ExecutionResourceLease<'_>, LeaseDenial> {
-        if matches!(
-            request.policy.determinism(),
-            DeterminismContract::ContractEquivalent(_)
-        ) {
-            return Err(LeaseDenial::EquivalenceContractUnavailable);
+        if let DeterminismContract::ContractEquivalent(id) = request.policy.determinism() {
+            if self.inner.equivalences.get(id).is_none() {
+                return Err(LeaseDenial::EquivalenceContractUnavailable);
+            }
         }
         let budget = request.policy.budget();
         if budget.max_workers().get() > self.inner.config.max_workers.get() {
@@ -169,6 +184,15 @@ impl ExecutionAuthority {
 }
 
 impl<'a> ExecutionResourceLease<'a> {
+    pub(crate) fn equivalence_predicate(&self) -> Option<&EquivalencePredicate> {
+        match self.policy.determinism() {
+            DeterminismContract::CanonicalBitwise => None,
+            DeterminismContract::ContractEquivalent(id) => {
+                self.authority.inner.equivalences.get(id)
+            }
+        }
+    }
+
     fn lineage(&self) -> Vec<&LeaseNode> {
         let mut lineage = Vec::new();
         let mut node = Some(self.node.as_ref());
@@ -245,6 +269,16 @@ impl<'a> ExecutionResourceLease<'a> {
         worker_count_per_node: usize,
         memory_bytes: u64,
     ) -> Result<ResourceReservation, LeaseDenial> {
+        if process_workers == 0 && worker_count_per_node == 0 && memory_bytes == 0 {
+            return Ok(ResourceReservation {
+                authority: Arc::clone(&self.authority.inner),
+                memory_lineage: Vec::new(),
+                worker_lineage: Vec::new(),
+                worker_count_per_node: 0,
+                process_workers: 0,
+                memory_bytes: 0,
+            });
+        }
         let lineage = self.lineage();
         let mut ledger = self
             .authority

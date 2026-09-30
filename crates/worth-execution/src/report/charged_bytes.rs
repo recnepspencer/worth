@@ -6,6 +6,12 @@ pub trait ChargedBytes {
     fn additional_charged_bytes(&self) -> u64;
 }
 
+impl ChargedBytes for worth_foundational::PartitionIdentity {
+    fn additional_charged_bytes(&self) -> u64 {
+        0
+    }
+}
+
 macro_rules! inline_value {
     ($($type:ty),+ $(,)?) => {
         $(impl ChargedBytes for $type {

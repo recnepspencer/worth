@@ -12,11 +12,17 @@ use std::{
 
 use worth_foundational::ExecutionReport;
 
-use crate::authority::{CancellationToken, ExecutionResourceLease};
+use crate::{
+    authority::{CancellationToken, ExecutionResourceLease},
+    report::ChargedBytes,
+};
 
 thread_local! {
     static ACTIVE_METER: RefCell<Vec<Rc<RefCell<KernelMeter>>>> = const { RefCell::new(Vec::new()) };
 }
+
+mod activity;
+pub(crate) use activity::{enter_certification_activity, enter_retained_memory, has_active_kernel};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum KernelStop {
@@ -25,6 +31,12 @@ pub enum KernelStop {
     WorkCounterOverflow,
     WorkCeiling,
     NestedStopped,
+}
+
+impl ChargedBytes for KernelStop {
+    fn additional_charged_bytes(&self) -> u64 {
+        0
+    }
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -49,6 +61,7 @@ pub(crate) struct RunLimits {
     worker_activity: Arc<WorkerActivity>,
     physical_activity: Arc<PhysicalActivity>,
     force_serial: bool,
+    bound_to_lease: bool,
 }
 
 #[derive(Default)]
@@ -83,27 +96,37 @@ impl Drop for WorkerActivityGuard {
 impl RunLimits {
     pub(crate) fn for_run(lease: Option<&ExecutionResourceLease<'_>>, serial: bool) -> Self {
         let parent = ACTIVE_METER.with(|active| active.borrow().last().cloned());
-        let (tokens, deadline, ceiling, worker_activity, physical_activity, inherited_serial) =
-            if let Some(parent) = parent {
-                let parent = parent.borrow();
-                (
-                    parent.limits.tokens.clone(),
-                    parent.limits.deadline,
-                    parent.limits.ceiling.saturating_sub(parent.work),
-                    Arc::clone(&parent.limits.worker_activity),
-                    Arc::clone(&parent.limits.physical_activity),
-                    parent.limits.force_serial,
-                )
-            } else {
-                (
-                    Vec::new(),
-                    None,
-                    u64::MAX,
-                    Arc::new(WorkerActivity::default()),
-                    Arc::new(PhysicalActivity::default()),
-                    false,
-                )
-            };
+        let (
+            tokens,
+            deadline,
+            ceiling,
+            worker_activity,
+            physical_activity,
+            inherited_serial,
+            inherited_lease,
+        ) = if let Some(parent) = parent {
+            let parent = parent.borrow();
+            (
+                parent.limits.tokens.clone(),
+                parent.limits.deadline,
+                parent.limits.ceiling.saturating_sub(parent.work),
+                Arc::clone(&parent.limits.worker_activity),
+                Arc::clone(&parent.limits.physical_activity),
+                parent.limits.force_serial,
+                parent.limits.bound_to_lease,
+            )
+        } else {
+            (
+                Vec::new(),
+                None,
+                u64::MAX,
+                Arc::new(WorkerActivity::default()),
+                activity::active_certification_physical()
+                    .unwrap_or_else(|| Arc::new(PhysicalActivity::default())),
+                false,
+                false,
+            )
+        };
         let mut limits = Self {
             tokens,
             deadline,
@@ -111,6 +134,7 @@ impl RunLimits {
             worker_activity,
             physical_activity,
             force_serial: serial || inherited_serial,
+            bound_to_lease: lease.is_some() || inherited_lease,
         };
         if let Some(lease) = lease {
             limits.tokens.extend(lease.cancellation_lineage());
@@ -126,6 +150,15 @@ impl RunLimits {
 
     pub(crate) fn has_parent() -> bool {
         ACTIVE_METER.with(|active| !active.borrow().is_empty())
+    }
+
+    pub(crate) fn has_leased_parent() -> bool {
+        ACTIVE_METER.with(|active| {
+            active
+                .borrow()
+                .last()
+                .is_some_and(|parent| parent.borrow().limits.bound_to_lease)
+        })
     }
 
     pub(crate) fn safe_point(&self) -> Result<(), KernelStop> {
@@ -255,6 +288,31 @@ impl<'a, 'lease> KernelContext<'a, 'lease> {
         (meter.work, meter.span)
     }
 
+    /// Replace the sequential checkpoint span of a completed stage with its
+    /// proven dependency span. Work remains the exact checkpoint count.
+    pub(crate) fn apply_structural_span(
+        &mut self,
+        before: (u64, u64),
+        stage_work: u64,
+        stage_span: u64,
+    ) -> bool {
+        let mut meter = self.meter.borrow_mut();
+        let Some(expected_work) = before.0.checked_add(stage_work) else {
+            return false;
+        };
+        let Some(expected_span) = before.1.checked_add(stage_work) else {
+            return false;
+        };
+        let Some(next_span) = before.1.checked_add(stage_span) else {
+            return false;
+        };
+        if meter.work != expected_work || meter.span != expected_span || stage_span > stage_work {
+            return false;
+        }
+        meter.span = next_span;
+        true
+    }
+
     pub(crate) fn nested_stopped(&self) -> bool {
         self.meter.borrow().nested_stopped
     }
@@ -334,12 +392,4 @@ pub(crate) fn record_nested(report: ExecutionReport, stopped: bool) {
             }
         }
     });
-}
-
-pub(crate) fn enter_retained_memory(bytes: u64) -> Option<MemoryActivityGuard> {
-    ACTIVE_METER.with(|active| {
-        let parent = active.borrow().last().cloned()?;
-        let guard = parent.borrow().limits.enter_memory(bytes);
-        Some(guard)
-    })
 }
