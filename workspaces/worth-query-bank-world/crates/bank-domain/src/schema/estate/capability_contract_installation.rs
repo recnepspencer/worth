@@ -1,3 +1,6 @@
+use std::num::NonZeroU64;
+
+use worth_foundational::facade::{BoundaryProtocolIdentity, BoundaryProtocolVersion};
 use worth_query_decl::facade::{
     application_capability::{
         ApplicationCapabilityCardinalityDimension, ApplicationCapabilityConstraintDefinition,
@@ -11,8 +14,9 @@ use worth_query_decl::facade::{
         ApplicationCapabilityValueBinding, ApplicationCapabilityWorkflowDefinition,
     },
     application_schema::{
-        ApplicationOperationDefinition, ApplicationOperationRef,
-        ApplicationSchemaDeclarationBuilder, OperationEmits,
+        ApplicationInboundOccurrenceBinding, ApplicationInboundOccurrenceLimits,
+        ApplicationInboundOccurrenceProtocol, ApplicationOperationDefinition,
+        ApplicationOperationRef, ApplicationSchemaDeclarationBuilder, OperationEmits,
         WorthQueryExternalEffectCorrelationFamily,
     },
 };
@@ -224,20 +228,42 @@ where
     let correlation_family =
         WorthQueryExternalEffectCorrelationFamily::new(ESTATE_DEATH_NOTICE_RAIL)
             .expect("the estate death-notice rail is an atomic identity");
+    let inbound = ApplicationInboundOccurrenceBinding::<EstateDeathNotificationEffect>::new(
+        ApplicationInboundOccurrenceProtocol::new(
+            BoundaryProtocolIdentity::new("bank.estate.death-notification"),
+            BoundaryProtocolVersion::new(1),
+        ),
+        "rail-primary",
+        ApplicationInboundOccurrenceLimits {
+            maximum_envelope_bytes: NonZeroU64::new(4_096).unwrap(),
+            maximum_verifier_work: NonZeroU64::new(20_480).unwrap(),
+            maximum_payload_bytes: NonZeroU64::new(256).unwrap(),
+            maximum_outstanding_dispatch_provenance: NonZeroU64::new(1_024).unwrap(),
+            maximum_accepted_occurrences: NonZeroU64::new(1_024).unwrap(),
+            maximum_accepted_bytes: NonZeroU64::new(5 * 1_024 * 1_024).unwrap(),
+            maximum_concurrent_publications: NonZeroU64::new(32).unwrap(),
+            maximum_discovery_work: NonZeroU64::new(1_024).unwrap(),
+            replay_window_milliseconds: NonZeroU64::new(60_000).unwrap(),
+            maximum_cleanup_work: NonZeroU64::new(1_024).unwrap(),
+        },
+    )
+    .expect("estate rail inbound bounds are usable");
     match declared_aftermath_for(capability) {
         Some(contract) => operation
             .definition()
-            .external_effect(
+            .external_effect_with_inbound(
                 EstateDeathNotificationEffect::reference(),
                 correlation_family,
+                inbound,
             )
             .aftermath(contract)
             .finish(),
         None => operation
             .definition()
-            .external_effect(
+            .external_effect_with_inbound(
                 EstateDeathNotificationEffect::reference(),
                 correlation_family,
+                inbound,
             )
             .no_aftermath()
             .finish(),

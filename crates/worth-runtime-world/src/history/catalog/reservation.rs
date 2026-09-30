@@ -358,5 +358,6 @@ fn promote_reserved_commit(
         metadata_charge: reservation.commit_charge,
     };
     slots.install(state, entry);
+    state.publication_revision.advance();
     result
 }

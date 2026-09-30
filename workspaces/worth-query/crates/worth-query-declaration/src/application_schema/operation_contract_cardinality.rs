@@ -10,7 +10,22 @@ pub(super) fn validate_operation_contract_cardinality(
     members: &[ApplicationSchemaMember],
 ) -> Result<(), ApplicationSchemaDeclarationDenial> {
     validate_external_effect_cardinality(members)?;
+    validate_inbound_cardinality(members)?;
     validate_aftermath_cardinality(members)
+}
+
+fn validate_inbound_cardinality(
+    members: &[ApplicationSchemaMember],
+) -> Result<(), ApplicationSchemaDeclarationDenial> {
+    let mut operations = BTreeSet::new();
+    for member in members {
+        if let ApplicationSchemaMember::OperationInboundOccurrence { operation, .. } = member {
+            if !operations.insert(operation.as_str()) {
+                return Err(ApplicationSchemaDeclarationDenial::DuplicateMember);
+            }
+        }
+    }
+    Ok(())
 }
 
 fn validate_external_effect_cardinality(

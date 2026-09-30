@@ -41,6 +41,8 @@ pub enum RailRequest {
     InquireCompletedEffectCount,
     /// Ask which completed domain notice exists for one correlation.
     InquireCompletedNotice { correlation: RailCorrelation },
+    /// Bounded sender obligations, including exhausted unresolved work.
+    InquireCompletionDeliveryPosture,
 }
 
 /// One dispatch attempt as it travels the wire.

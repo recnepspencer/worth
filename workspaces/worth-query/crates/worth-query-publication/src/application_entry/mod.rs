@@ -5,6 +5,7 @@ mod denial;
 mod elevation_approval;
 mod elevation_close;
 mod elevation_request;
+mod inbound_occurrence;
 mod live;
 mod mandatory_review;
 mod mutation;
@@ -34,6 +35,10 @@ pub use elevation_close::{
     WorthQueryApplicationElevationCloseDenial, WorthQueryApplicationElevationCloseFailure,
 };
 pub use elevation_request::WorthQueryApplicationElevationRequestDenial;
+pub use inbound_occurrence::{
+    WorthQueryApplicationInboundOccurrences, WorthQueryApplicationInboundOccurrencesExt,
+    WorthQueryApplicationInboundReceive,
+};
 pub use live::{
     WorthQueryApplicationLiveLimits, WorthQueryApplicationLiveNextDenial,
     WorthQueryApplicationLiveOpenRequestDenial, WorthQueryApplicationLiveSubscription,

@@ -144,7 +144,7 @@ pub(super) use program_required_binding::{
 };
 #[path = "fixture/program_roster.rs"]
 mod program_roster;
-pub(super) use program_roster::{
+pub(in crate::domain_computation::primary_graph) use program_roster::{
     installed_program_support, rostered_program_revision, unadmitted_program_revision,
 };
 #[path = "fixture/schema_types.rs"]

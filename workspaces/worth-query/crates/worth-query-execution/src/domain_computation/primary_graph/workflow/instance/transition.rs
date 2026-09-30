@@ -7,8 +7,8 @@ pub(in crate::domain_computation::primary_graph) use admission::{
     select_navigation_back_transition, select_proposal_replay_transition,
     select_proposal_transition, select_settled_replay_transition, select_terminal_transition,
     AdmittedWorkflowTransition, SelectedWorkflowApproval, SelectedWorkflowAssessment,
-    SelectedWorkflowCondition, SelectedWorkflowOperation, SelectedWorkflowTransition,
-    SelectedWorkflowTransitionKind, WorkflowOperationSettlementBasis,
+    SelectedWorkflowCondition, SelectedWorkflowInbound, SelectedWorkflowOperation,
+    SelectedWorkflowTransition, SelectedWorkflowTransitionKind, WorkflowOperationSettlementBasis,
 };
 pub(in crate::domain_computation::primary_graph) use outcome::{
     decode_transition_outcome, encode_transition_outcome,

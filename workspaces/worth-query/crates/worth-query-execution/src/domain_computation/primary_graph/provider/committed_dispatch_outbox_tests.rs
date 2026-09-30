@@ -2,6 +2,8 @@ use worth_foundational::facade::AspectValue;
 
 #[path = "committed_dispatch_outbox_tests/record_identity.rs"]
 mod record_identity;
+#[path = "committed_dispatch_outbox_tests/work_scale.rs"]
+mod work_scale;
 use worth_relational::facade::history::{BranchId, CommitId};
 use worth_relational::facade::identity::VersionId;
 use worth_relational::facade::mvcc::BranchBoundRelationalTransaction;
@@ -135,7 +137,7 @@ fn fresh_later_head_still_reports_the_rows_exact_creation_commit() {
     assert_eq!(observed.work().examined_index_entries(), 0);
     assert_eq!(observed.work().direct_record_probes(), 1);
     assert_eq!(observed.work().projected_records(), 1);
-    assert_eq!(observed.work().projected_fields(), 8);
+    assert_eq!(observed.work().projected_fields(), 9);
     assert_eq!(observed.work().reconstruction_requests(), 0);
 }
 
@@ -259,6 +261,7 @@ fn outbox_field_locator(
         &layout.maximum_payload_bytes_locator,
         &layout.payload_locator,
         &layout.outcome_identity_locator,
+        &layout.operation_slot_locator,
     ][field]
         .clone()
 }

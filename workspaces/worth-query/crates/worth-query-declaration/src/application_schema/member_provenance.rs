@@ -55,6 +55,30 @@ pub struct ApplicationSchemaMemberProvenance {
 }
 
 impl ApplicationSchemaMemberProvenance {
+    /// Resolve only a compiler-local effect marker retained by the declaring schema.
+    /// Portable effect text alone cannot create a typed workflow inbound ref.
+    pub fn workflow_inbound_ref(
+        &self,
+        effect: &str,
+        protocol: super::ApplicationInboundOccurrenceProtocol,
+        source_identity: String,
+        limits: super::ApplicationInboundOccurrenceLimits,
+    ) -> Option<crate::application_program::ApplicationWorkflowInboundRef> {
+        let mut matches = self.effects.iter().filter(|member| member.name == effect);
+        let marker = matches.next()?;
+        if matches.next().is_some() {
+            return None;
+        }
+        Some(
+            crate::application_program::ApplicationWorkflowInboundRef::from_member_provenance(
+                marker.name.clone(),
+                marker.marker_type,
+                protocol,
+                source_identity,
+                limits,
+            ),
+        )
+    }
     #[doc(hidden)]
     pub fn is_empty(&self) -> bool {
         self.field_bindings.is_empty()

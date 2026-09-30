@@ -103,8 +103,11 @@ where
                     Binding::IDENTITY,
                 )
             })?;
-        self.operations
-            .push(InstalledWorkflowOperation::declared::<Spec, Binding>());
+        let mut operation = InstalledWorkflowOperation::declared::<Spec, Binding>();
+        operation.inbound_ref = self
+            .schema
+            .installed_workflow_inbound_ref(Binding::Operation::IDENTIFIER);
+        self.operations.push(operation);
         Ok(self)
     }
 

@@ -14,6 +14,7 @@ use super::*;
 mod authoring;
 mod condition;
 mod content_identity;
+mod inbound;
 mod resource_limits;
 mod retry;
 mod scale;

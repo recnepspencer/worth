@@ -133,8 +133,9 @@ with contribution inventory, ownership, and handler-completeness denials in
 The synchronous application foundation, branch-local program evolution, and
 authored workflow definitions (see the authored workflow example above and the
 [workflows guide](../worth-query/docs/foundations/workflows.md)) are
-available through this facade. The workflow surface exposes no callback,
-resume-message, or inbound-completion API.
+available through this facade. An installed inbound source can complete the
+exact external-effect owner; `await_inbound` reads that result on fresh
+workflow advance. No callback or resume message advances an instance itself.
 
 ## Branch-Local Program Evolution
 
@@ -308,6 +309,9 @@ Host code may:
   canonical work through the carried clock, runtime-inspection, and provenance
   surfaces;
 - dispatch declared external effects only from co-committed outbox facts;
+- install an inbound verifier for the exact declared operation, receive through
+  `facade::application_entry::WorthQueryApplicationInboundOccurrencesExt`, and
+  continue accepted custody within its installed work limits;
 - inspect, resolve, safely retry, dispose, or expire an exact receipt-bound
   runtime recovery handle;
 - admit reconciliation or compensation against exact owner authority without

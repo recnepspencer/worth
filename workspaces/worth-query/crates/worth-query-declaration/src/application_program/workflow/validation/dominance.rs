@@ -17,6 +17,7 @@ pub(super) fn validate_availability(
     start: NodeIndex,
     graph: &ValidationGraph<'_>,
     control: &ControlProof,
+    has_instance_deadline: bool,
     work: &mut ValidationWorkMeter,
 ) -> Result<(), ApplicationWorkflowValidationDenial> {
     let has_data = graph.connections().iter().any(|indexed| {
@@ -26,7 +27,10 @@ pub(super) fn validate_availability(
             ApplicationWorkflowConnectionKind::Data(_)
         )
     });
-    if !has_data {
+    let has_wait = graph
+        .nodes()
+        .any(|(_, node)| matches!(node.kind(), ApplicationWorkflowNodeKind::AwaitInbound(_)));
+    if !has_data && !has_wait {
         return Ok(());
     }
     let dominance = DominanceIndex::build(start, graph, &control.topological_order, work);
@@ -66,12 +70,58 @@ pub(super) fn validate_availability(
             ));
         }
     }
+    validate_inbound_origins(graph, has_instance_deadline, &dominance, work)?;
     work.observe_index_bytes(
         graph
             .retained_bytes()
             .saturating_add(dominance.retained_bytes())
             .saturating_add(control.topological_order.capacity() * size_of::<NodeIndex>()),
     );
+    Ok(())
+}
+
+/// Every wait names one concrete operation that controls all paths to it.
+/// This also runs when a definition has no data edges.
+fn validate_inbound_origins(
+    graph: &ValidationGraph<'_>,
+    has_instance_deadline: bool,
+    dominance: &DominanceIndex,
+    work: &mut ValidationWorkMeter,
+) -> Result<(), ApplicationWorkflowValidationDenial> {
+    for (target, node) in graph.nodes() {
+        let ApplicationWorkflowNodeKind::AwaitInbound(awaited) = node.kind() else {
+            continue;
+        };
+        if !has_instance_deadline {
+            return Err(denial(
+                ApplicationWorkflowValidationDenialKind::MissingInboundDeadline,
+                node.identity().as_str(),
+            ));
+        }
+        let Some(origin) = graph.resolve(awaited.origin(), work) else {
+            return Err(denial(
+                ApplicationWorkflowValidationDenialKind::MissingInboundOrigin,
+                node.identity().as_str(),
+            ));
+        };
+        if !matches!(
+            graph.node(origin).kind(),
+            ApplicationWorkflowNodeKind::Operation { .. }
+        ) {
+            return Err(denial(
+                ApplicationWorkflowValidationDenialKind::MissingInboundOrigin,
+                node.identity().as_str(),
+            ));
+        }
+        if origin == target || !dominance.dominates(origin, target, work) {
+            return Err(denial(
+                ApplicationWorkflowValidationDenialKind::UnavailableInboundOrigin,
+                node.identity().as_str(),
+            ));
+        }
+        // A typed origin identity resolves once within the definition. Multiple
+        // runtime occurrences remain distinct through the instance's progress.
+    }
     Ok(())
 }
 

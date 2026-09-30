@@ -10,8 +10,10 @@ use super::causal_event::{
 };
 use super::classification::{ExternalEffectClassification, ExternalRailTransportFault};
 use super::correlation::ExternalEffectCorrelationIdentity;
+use super::identity_derivation::provider_commit_identity;
 use super::observation::classify_dispatch_observation;
 use super::transport::{WorthQueryExternalDispatchRequest, WorthQueryExternalEffectTransport};
+use super::ExternalEffectPostureKind;
 
 /// Observable kind of one dispatch result.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -132,6 +134,43 @@ pub enum WorthQueryExternalDispatchCausalRelation {
 }
 
 impl WorthQueryExternalEffectDispatch {
+    /// Verify the sealed dispatch ladder against the exact original Query
+    /// owner observation. A matching correlation alone cannot substitute a
+    /// different outbox or product publication.
+    pub(in crate::domain_computation) fn matches_committed_owner(
+        &self,
+        runtime: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+        committed: &crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxObservation,
+    ) -> bool {
+        let ladder = &self.causal_ladder;
+        let Some(observation) = ladder.observation() else {
+            return false;
+        };
+        let expected = match provider_commit_identity(runtime, committed) {
+            Ok(expected) => expected,
+            Err(_) => return false,
+        };
+        self.is_external_completion()
+            && self.correlation == *committed.record().correlation()
+            && ladder.provider_commit().kind() == ExternalEffectPostureKind::ProviderCommit
+            && ladder.provider_commit().identity().digest() == &expected.digest
+            && ladder.emission().kind() == ExternalEffectPostureKind::EmittedApplicationCausality
+            && ladder
+                .emission()
+                .predecessor()
+                .is_some_and(|link| link.predecessor() == ladder.provider_commit().identity())
+            && ladder.attempt().kind() == ExternalEffectPostureKind::DispatchAttempt
+            && ladder
+                .attempt()
+                .predecessor()
+                .is_some_and(|link| link.predecessor() == ladder.emission().identity())
+            && observation.kind() == ExternalEffectPostureKind::ExternalCompletion
+            && observation
+                .predecessor()
+                .is_some_and(|link| link.predecessor() == ladder.attempt().identity())
+            && self.posture.observation() == Some(observation)
+    }
+
     pub const fn correlation(&self) -> &ExternalEffectCorrelationIdentity {
         &self.correlation
     }

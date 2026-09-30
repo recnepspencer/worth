@@ -96,6 +96,16 @@ shows the complete journey, and the
 [workflows guide](../worth-query/docs/foundations/workflows.md) documents it
 step by step.
 
+An external-effect operation may declare one fixed inbound source, protocol,
+version and finite `ApplicationInboundOccurrenceLimits` with
+`external_effect_with_inbound`. The same typed binding can be used by a
+definition's `await_inbound` node, which must name the preceding operation
+node. These declarations grant neither verifier authority nor a workflow
+resume capability. Bank's
+[payment declaration](../../../worth-query-bank-world/crates/bank-domain/src/schema/contributions/payments.rs)
+and [definition](../../../worth-query-bank-world/crates/bank-server/src/application_definition/workflows.rs)
+are compiled consumers of this shape.
+
 ## Related Docs
 
 - [Build an Application](../../../../docs/build-an-application.md): the centerpiece guide

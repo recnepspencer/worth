@@ -34,7 +34,9 @@ impl WorthQueryPrimaryGraphProvider {
                     super::resource_support::UNPUBLISHED_IDEMPOTENCY_CAPACITY,
                 ),
             )),
-            receipt_basis_retention: std::sync::Mutex::new(Default::default()),
+            receipt_basis_retention: std::sync::Arc::new(std::sync::Mutex::new(Default::default())),
+            outstanding_dispatch: Default::default(),
+            inbound_terminal_index: Default::default(),
             pending_application_publications: std::sync::Arc::new(std::sync::Mutex::new(
                 super::pending_application_publication::registry::WorthQueryPendingApplicationPublicationRegistry::new(
                     maximum_concurrent_graph_work.get(),

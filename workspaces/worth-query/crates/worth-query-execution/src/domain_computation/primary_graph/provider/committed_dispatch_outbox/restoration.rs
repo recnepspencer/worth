@@ -1,4 +1,4 @@
-//! Restoration of the durable eight-field dispatch-outbox projection.
+//! Restoration of the durable operation-bound dispatch-outbox projection.
 
 use worth_foundational::facade::{
     AspectValue, BoundaryProtocolIdentity, BoundaryProtocolVersion, CanonicalDigestId,
@@ -23,6 +23,7 @@ pub(super) fn required_fields(
         &layout.maximum_payload_bytes_locator,
         &layout.payload_locator,
         &layout.outcome_identity_locator,
+        &layout.operation_slot_locator,
     ]
     .into_iter()
     .map(|locator| {
@@ -39,7 +40,7 @@ pub(super) fn required_fields(
 pub(super) fn restore_record(
     values: Vec<AspectValue>,
 ) -> Result<WorthQueryDispatchOutboxRecord, Denial> {
-    let [correlation, family, effect, protocol_identity, protocol_version, maximum, payload, outcome]: [AspectValue; 8] =
+    let [correlation, family, effect, protocol_identity, protocol_version, maximum, payload, outcome, operation_slot]: [AspectValue; 9] =
         values.try_into().map_err(|_| Denial::Malformed)?;
     let correlation = decode_digest(raw_string(correlation)?)?;
     let payload = decode_hex(raw_string(payload)?)?;
@@ -66,6 +67,10 @@ pub(super) fn restore_record(
         maximum_payload_bytes: maximum,
         payload,
         outcome_identity: outcome,
+        operation_slot: match raw_string(operation_slot)?.as_str() {
+            "" => None,
+            slot => Some(slot.to_owned()),
+        },
     })
     .ok_or(Denial::Malformed)
 }

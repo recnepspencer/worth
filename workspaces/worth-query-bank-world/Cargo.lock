@@ -136,14 +136,18 @@ dependencies = [
  "bank-http-adapter",
  "bank-server",
  "bank-user-node",
+ "ed25519-dalek",
  "rand 0.8.7",
  "reqwest 0.12.28",
  "serde",
  "serde_json",
+ "sha2",
  "thirtyfour",
  "tokio",
  "url",
+ "worth-query-decl",
  "worth-query-host",
+ "worth-query-package-archive",
 ]
 
 [[package]]
@@ -172,9 +176,15 @@ dependencies = [
 name = "bank-external-rail"
 version = "0.1.0"
 dependencies = [
+ "ed25519-dalek",
+ "rcgen",
+ "reqwest 0.12.28",
+ "rustls-pemfile",
  "serde",
  "serde_json",
+ "sha2",
  "tokio",
+ "tokio-rustls",
  "worth-foundational",
 ]
 
@@ -186,6 +196,7 @@ dependencies = [
  "bank-domain",
  "bank-external-rail",
  "bank-server",
+ "ed25519-dalek",
  "openidconnect",
  "rand 0.8.7",
  "reqwest 0.12.28",
@@ -195,6 +206,7 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "url",
+ "worth-foundational",
  "worth-query-host",
 ]
 
@@ -1517,6 +1529,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2ee67f1008b1ba2321834326597b8e186293b049a023cdef258527550b9935b4"
 
 [[package]]
+name = "pem"
+version = "3.0.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1d30c53c26bc5b31a98cd02d20f25a7c8567146caf63ed593a9d87b2775291be"
+dependencies = [
+ "base64 0.22.1",
+ "serde_core",
+]
+
+[[package]]
 name = "pem-rfc7468"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1770,6 +1792,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "rcgen"
+version = "0.14.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4c83367ba62b3f1dbd0f086ede4e5ebfb4713fb234dbbc5807772a31245ff46d"
+dependencies = [
+ "pem",
+ "ring",
+ "rustls-pki-types",
+ "time",
+ "yasna",
+]
+
+[[package]]
 name = "redox_syscall"
 version = "0.5.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1990,6 +2025,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3c54fcab019b409d04215d3a17cb438fd7fbf192ee61461f20f4fe18704bc138"
 dependencies = [
  "aws-lc-rs",
+ "log",
  "once_cell",
  "ring",
  "rustls-pki-types",
@@ -2008,6 +2044,15 @@ dependencies = [
  "rustls-pki-types",
  "schannel",
  "security-framework",
+]
+
+[[package]]
+name = "rustls-pemfile"
+version = "2.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dce314e5fee3f39953d46bb63bb8a46d40c2f8fb7cc5a3b6cab2bde9721d6e50"
+dependencies = [
+ "rustls-pki-types",
 ]
 
 [[package]]
@@ -3165,6 +3210,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "worth-query-package-archive"
+version = "0.1.0"
+dependencies = [
+ "sha2",
+ "worth-foundational",
+ "worth-query-declaration",
+ "worth-query-installation",
+]
+
+[[package]]
 name = "worth-query-publication"
 version = "0.1.0"
 dependencies = [
@@ -3242,6 +3297,15 @@ name = "writeable"
 version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1ffae5123b2d3fc086436f8834ae3ab053a283cfac8fe0a0b8eaae044768a4c4"
+
+[[package]]
+name = "yasna"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e17bb3549cc1321ae1296b9cdc2698e2b6cb1992adfa19a8c72e5b7a738f44cd"
+dependencies = [
+ "time",
+]
 
 [[package]]
 name = "yoke"

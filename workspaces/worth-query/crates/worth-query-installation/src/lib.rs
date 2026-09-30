@@ -225,8 +225,8 @@ pub mod facade {
         WorthQueryResolvedApplicationQueryLimits,
     };
     pub use crate::application_schema::{
-        WorthQueryInstalledApplicationAspectContract, WorthQueryInstalledApplicationAspectLocus,
-        WorthQueryInstalledApplicationContribution,
+        InstalledInboundOccurrenceContract, WorthQueryInstalledApplicationAspectContract,
+        WorthQueryInstalledApplicationAspectLocus, WorthQueryInstalledApplicationContribution,
         WorthQueryInstalledApplicationContributionCatalog, WorthQueryInstalledApplicationInvariant,
         WorthQueryInstalledApplicationInvariantCatalog,
         WorthQueryInstalledApplicationInvariantDescriptor, WorthQueryInstalledApplicationSchema,

@@ -24,6 +24,7 @@ where
         lease,
         running,
         cleanup,
+        request,
     } = progressed;
     let terminal = terminal_for(&outcome);
     let snapshot_released = lease.release();
@@ -72,7 +73,7 @@ where
             .collect::<Vec<_>>();
         application.maintain_conditional_commit(receipt.commit_reference(), touched);
     }
-    application.dispatch_committed_external_effect(committed)
+    application.dispatch_committed_external_effect(committed, &request)
 }
 
 const fn terminal_for(

@@ -34,6 +34,7 @@ pub(in crate::domain_computation::primary_graph) use transition::{
     select_settled_replay_transition, select_terminal_transition, visit_terminal_transition_facts,
     visit_workflow_operation_settlement_facts, visit_workflow_operation_transition_facts,
     visit_workflow_transition_facts, AdmittedWorkflowTransition, SelectedWorkflowApproval,
-    SelectedWorkflowAssessment, SelectedWorkflowCondition, SelectedWorkflowOperation,
-    SelectedWorkflowTransition, SelectedWorkflowTransitionKind, WorkflowOperationSettlementBasis,
+    SelectedWorkflowAssessment, SelectedWorkflowCondition, SelectedWorkflowInbound,
+    SelectedWorkflowOperation, SelectedWorkflowTransition, SelectedWorkflowTransitionKind,
+    WorkflowOperationSettlementBasis,
 };

@@ -22,6 +22,7 @@ const PROTOCOL_VERSION_FIELD: &str = "protocol-version";
 const MAXIMUM_PAYLOAD_BYTES_FIELD: &str = "maximum-payload-bytes";
 const PAYLOAD_FIELD: &str = "payload-hex";
 const OUTCOME_IDENTITY_FIELD: &str = "outcome-identity";
+const OPERATION_SLOT_FIELD: &str = "operation-slot";
 
 /// Lowers the Query-owned dispatch-outbox entity into the application's own
 /// Relational schema so a declared external effect co-commits its dispatch
@@ -44,6 +45,7 @@ pub(super) fn lower_provider_dispatch_outbox(
     let maximum_payload_bytes_locator = planned_field_locator(ASPECT, MAXIMUM_PAYLOAD_BYTES_FIELD)?;
     let payload_locator = planned_field_locator(ASPECT, PAYLOAD_FIELD)?;
     let outcome_identity_locator = planned_field_locator(ASPECT, OUTCOME_IDENTITY_FIELD)?;
+    let operation_slot_locator = planned_field_locator(ASPECT, OPERATION_SLOT_FIELD)?;
     let shape = aspects()
         .struct_fields()
         .required(CORRELATION_FIELD, ScalarAspectType::String)
@@ -54,13 +56,14 @@ pub(super) fn lower_provider_dispatch_outbox(
         .required(MAXIMUM_PAYLOAD_BYTES_FIELD, ScalarAspectType::UInt64)
         .required(PAYLOAD_FIELD, ScalarAspectType::String)
         .required(OUTCOME_IDENTITY_FIELD, ScalarAspectType::UInt64)
+        .required(OPERATION_SLOT_FIELD, ScalarAspectType::String)
         .finish()
         .map_err(|_| super::invalid_member(ASPECT))?;
     let contract = aspects()
         .contract()
         .for_key(valid_aspect_key(ASPECT)?)
         .identified_by(identity)
-        .at_revision(aspects().vocabulary().revision(1))
+        .at_revision(aspects().vocabulary().revision(2))
         .struct_aspect(shape);
     let registry = register_entity(
         registry,
@@ -87,6 +90,7 @@ pub(super) fn lower_provider_dispatch_outbox(
             maximum_payload_bytes_locator,
             payload_locator,
             outcome_identity_locator,
+            operation_slot_locator,
         },
     ))
 }

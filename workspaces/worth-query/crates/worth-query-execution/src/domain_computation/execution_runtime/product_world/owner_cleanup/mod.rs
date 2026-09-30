@@ -79,6 +79,7 @@ impl WorthQueryProductBranchOwnerCleanupReceipt {
 /// A handle into runtime-owned exact cleanup custody. Dropping the handle does
 /// not remove the obligation; `branches().pending_cleanup()` can rediscover it.
 #[must_use = "owner cleanup must be completed or retained for retry"]
+#[derive(Clone)]
 pub struct WorthQueryProductBranchOwnerCleanup {
     runtime: WorthQueryProductRuntime,
     identity: u64,

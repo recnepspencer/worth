@@ -11,7 +11,8 @@ use crate::protocol::notice::RailRejection;
 use crate::protocol::response::RailResponseFrame;
 use crate::protocol::wire::write_frame;
 
-use super::completed_effects::CompletedEffects;
+use super::completed_effects::{CompletedEffectConflict, CompletedEffects};
+use super::completion_delivery::DeliveryReservation;
 use super::ledger::{Ledger, RailReservation};
 
 #[derive(Clone, Copy)]
@@ -28,25 +29,44 @@ impl<'a> CompletionOwners<'a> {
         }
     }
 
-    fn complete(self, reservation: RailReservation) {
-        self.completed_effects
-            .apply_once(
-                reservation.correlation().clone(),
-                reservation.effect().clone(),
-            )
-            .expect("a unique rail reservation applies its physical effect exactly once");
+    fn complete(
+        self,
+        reservation: RailReservation,
+        mut delivery: Option<DeliveryReservation>,
+    ) -> Result<(), RailRejection> {
+        let result = self.completed_effects.apply_once(
+            reservation.correlation().clone(),
+            reservation.effect().clone(),
+            reservation.payload(),
+            delivery.as_mut(),
+        );
+        if let Err(denial) = result {
+            self.ledger.record_denied(&reservation);
+            return Err(match denial {
+                CompletedEffectConflict::DeliveryUnavailable => {
+                    RailRejection::CompletionEnvelopeInvalid
+                }
+                CompletedEffectConflict::Repeat | CompletedEffectConflict::MeaningDrift => {
+                    RailRejection::CorrelationPayloadMismatch
+                }
+            });
+        }
         self.ledger.record_completed(&reservation);
+        Ok(())
     }
 }
 
-/// Acknowledge, then complete: the only path that ever reports success.
+/// Complete, then acknowledge: a refusal never masquerades as a rail ACK.
 pub async fn succeed(
     stream: &mut TcpStream,
     reservation: RailReservation,
     owners: CompletionOwners<'_>,
+    delivery: Option<DeliveryReservation>,
 ) -> std::io::Result<()> {
+    if let Err(denial) = owners.complete(reservation, delivery) {
+        return reject(stream, denial).await;
+    }
     write_frame(stream, &RailResponseFrame::Ack).await?;
-    owners.complete(reservation);
     write_frame(stream, &RailResponseFrame::Completed).await
 }
 
@@ -56,8 +76,16 @@ pub async fn succeed(
 /// The ledger write happens before the caller's connection is ever touched,
 /// so the effect is real and inspectable through [`report_status`] even
 /// though this exchange itself never says so.
-pub async fn commit_then_lose_response(reservation: RailReservation, owners: CompletionOwners<'_>) {
-    owners.complete(reservation);
+pub async fn commit_then_lose_response(
+    stream: &mut TcpStream,
+    reservation: RailReservation,
+    owners: CompletionOwners<'_>,
+    delivery: Option<DeliveryReservation>,
+) -> std::io::Result<()> {
+    if let Err(denial) = owners.complete(reservation, delivery) {
+        return reject(stream, denial).await;
+    }
+    Ok(())
 }
 
 /// Acknowledge, then never complete: the connection closes cleanly after the
@@ -77,11 +105,14 @@ pub async fn complete_after_delay(
     stream: &mut TcpStream,
     reservation: RailReservation,
     owners: CompletionOwners<'_>,
+    delivery: Option<DeliveryReservation>,
     delay: Duration,
 ) -> std::io::Result<()> {
     write_frame(stream, &RailResponseFrame::Ack).await?;
     tokio::time::sleep(delay).await;
-    owners.complete(reservation);
+    if let Err(denial) = owners.complete(reservation, delivery) {
+        return reject(stream, denial).await;
+    }
     write_frame(stream, &RailResponseFrame::Completed).await
 }
 

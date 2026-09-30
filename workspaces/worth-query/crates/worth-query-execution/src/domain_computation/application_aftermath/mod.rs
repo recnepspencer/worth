@@ -29,6 +29,7 @@ pub use causal_fact::{WorthQueryAftermathCausalRole, WorthQueryCommittedAftermat
 pub(in crate::domain_computation) use external_effect::dispatch_external_effect;
 #[cfg(test)]
 pub(crate) use external_effect::dispatch_outbox_create_intent;
+pub use external_effect::WorthQueryInboundCleanupReport;
 pub(crate) use external_effect::{
     bind_dispatch_outbox_create_intent, WorthQueryDispatchOutboxRestoredFields,
     WorthQueryPendingDispatchOutbox,
@@ -42,7 +43,14 @@ pub use external_effect::{
     WorthQueryExternalDispatchPosture, WorthQueryExternalDispatchPostureKind,
     WorthQueryExternalDispatchRequest, WorthQueryExternalEffectCausalLadder,
     WorthQueryExternalEffectDispatch, WorthQueryExternalEffectTransport,
-    WorthQueryExternalTransportOutcome,
+    WorthQueryExternalTransportOutcome, WorthQueryInboundOccurrenceClaims,
+    WorthQueryInboundOccurrenceVerifier, WorthQueryInboundVerificationDenial,
+};
+pub(in crate::domain_computation) use external_effect::{
+    WorthQueryAcceptedInboundOccurrence, WorthQueryInboundCustody,
+    WorthQueryInboundCustodyAdmission, WorthQueryInboundPublicationClaim,
+    WorthQueryInboundRecoveryState, WorthQueryInboundTerminalOwnerResult,
+    WorthQueryTransportPublicationPermit, WorthQueryTransportPublicationPermitDenial,
 };
 pub use recovery_handle::{
     WorthQueryOpaqueRecoveryWireIdentity, WorthQueryRecoveryClaimStatus, WorthQueryRecoveryHandle,

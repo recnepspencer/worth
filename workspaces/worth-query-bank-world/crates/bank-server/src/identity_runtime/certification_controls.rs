@@ -21,6 +21,14 @@ impl BankIdentityRuntime {
             .fail_next_durable_append_for_test();
     }
 
+    /// Drops the rebuildable workflow-instance progress projection.
+    #[doc(hidden)]
+    pub fn release_workflow_instance_progress_for_test(&self) {
+        self.application_program()
+            .runtime()
+            .release_workflow_instance_progress_for_test();
+    }
+
     /// Unwinds the next World product comparison, once.
     #[doc(hidden)]
     pub fn panic_before_product_compare_once_for_test(&self) {

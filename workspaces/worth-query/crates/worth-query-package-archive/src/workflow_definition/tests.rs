@@ -175,7 +175,7 @@ fn nodes_must_arrive_in_strictly_ascending_identity_order() {
 fn malformed_records_are_refused_by_kind() {
     let mut unknown_node = Draft::current();
     unknown_node.output.u32(1);
-    unknown_node.output.raw_bytes(&[TERMINAL + 1]);
+    unknown_node.output.raw_bytes(&[8]);
     unknown_node.output.text("a");
     assert_eq!(
         refused(&unknown_node.bytes()),
@@ -212,6 +212,42 @@ fn malformed_records_are_refused_by_kind() {
     zero_attempts.output.text("again");
     zero_attempts.output.u16(0);
     assert_eq!(refused(&zero_attempts.bytes()), Kind::InvalidRecordShape);
+}
+
+#[test]
+fn version_two_cannot_read_the_version_three_inbound_wait_tag() {
+    let mut draft = Draft::new(2, 8);
+    draft.output.u32(1);
+    draft.output.raw_bytes(&[7]);
+    draft.output.text("wait");
+    assert_eq!(refused(&draft.bytes()), Kind::UnsupportedRecordVariant);
+}
+
+#[test]
+fn version_three_reads_only_portable_inbound_wait_fields() {
+    let mut draft = Draft::current();
+    draft.output.u32(1);
+    draft.output.raw_bytes(&[7]);
+    for field in ["wait", "origin", "remote-effect", "inbound.test.protocol"] {
+        draft.output.text(field);
+    }
+    draft.output.u32(1);
+    draft.output.text("fixed-rail");
+    for value in [4096_u64, 20480, 512, 3, 1, 4096, 1, 16, 60_000, 8] {
+        draft.output.u64(value);
+    }
+    draft.output.raw_bytes(&[0]);
+    draft.output.u32(0);
+    let decoded =
+        decode_workflow_definition_draft(&draft.bytes(), WorthQueryPackageArchiveLimits::DEFAULT)
+            .expect("v3 portable wait draft decodes without a typed marker");
+    let DraftMember::AwaitInbound(inbound) = &decoded.nodes[0].member else {
+        panic!("tag seven must be a portable inbound wait");
+    };
+    assert_eq!(inbound.origin, "origin");
+    assert_eq!(inbound.effect, "remote-effect");
+    assert_eq!(inbound.source, "fixed-rail");
+    assert_eq!(inbound.limits.maximum_verifier_work.get(), 20480);
 }
 
 #[test]

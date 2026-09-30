@@ -3,6 +3,13 @@
 use super::WorthQueryPrimaryGraphProvider;
 
 impl WorthQueryPrimaryGraphProvider {
+    pub(in crate::domain_computation::primary_graph) fn has_outstanding_dispatch_for_branch(
+        &self,
+        incarnation: worth_runtime_world::facade::ProductBranchIncarnation,
+    ) -> bool {
+        self.outstanding_dispatch.has_branch_obligation(incarnation)
+    }
+
     pub(in crate::domain_computation::primary_graph) fn settle_before_product_retirement(
         &self,
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,

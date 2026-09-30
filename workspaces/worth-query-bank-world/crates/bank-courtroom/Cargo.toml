@@ -8,6 +8,7 @@ publish = false
 [features]
 cold-docker-courtroom = [
     "bank-http-adapter/cold-certification",
+    "bank-server/test-controls",
     "bank-user-node/cold-certification",
 ]
 
@@ -17,14 +18,22 @@ bank-external-rail.workspace = true
 bank-http-adapter.workspace = true
 bank-server.workspace = true
 bank-user-node.workspace = true
+ed25519-dalek.workspace = true
 rand.workspace = true
 reqwest.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+sha2.workspace = true
 thirtyfour.workspace = true
 tokio.workspace = true
 url.workspace = true
 worth-query-host.workspace = true
+worth-query-decl.workspace = true
+worth-query-package-archive = { path = "../../../worth-query/crates/worth-query-package-archive" }
+
+[[test]]
+name = "payment_workflow_archive"
+path = "tests/payment_workflow_archive.rs"
 
 [[test]]
 name = "async_identity_courtroom"
@@ -50,6 +59,12 @@ required-features = ["cold-docker-courtroom"]
 name = "cold-bank-rail"
 path = "src/bin/cold-bank-rail.rs"
 required-features = ["cold-docker-courtroom"]
+
+[[example]]
+name = "inbound_completion"
+path = "examples/inbound_completion.rs"
+test = true
+harness = false
 
 [lints]
 workspace = true
