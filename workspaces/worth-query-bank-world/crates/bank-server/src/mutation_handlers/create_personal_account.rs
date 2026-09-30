@@ -3,9 +3,9 @@ use bank_domain::proposals::BankProposalDenial;
 use bank_domain::schema::{
     Account, AccountDisplayName, AccountIdentity, AccountKind, AccountStatus, AccountingRevision,
     BankSchema, CreatePersonalAccount, CreatePersonalAccountDecision,
-    CreatePersonalAccountMutationBinding, CreatePersonalAccountResult, InstitutionAccount,
-    InstitutionIdentityField, Kind, PersonalOwner, PrincipalIdentityField, Status,
-    CREATE_PERSONAL_ACCOUNT_OUTPUT_ACCOUNT,
+    CreatePersonalAccountMutationBinding, CreatePersonalAccountResult,
+    CreatedPersonalAccountOutput, InstitutionAccount, InstitutionIdentityField, Kind,
+    PersonalOwner, PrincipalIdentityField, Status,
 };
 use worth_query_host::facade::declaration::application_operation::{
     ApplicationCandidateRequirements, ApplicationMutationBinding,
@@ -134,7 +134,7 @@ fn author_candidate(
         )
         .map_err(HandlerExecutionDenial::new)?;
     candidate
-        .create_output(CREATE_PERSONAL_ACCOUNT_OUTPUT_ACCOUNT, &created)
+        .create_output::<CreatedPersonalAccountOutput>(&created)
         .map_err(HandlerExecutionDenial::new)?;
     Ok(CreatePersonalAccountResult {
         account: account_id,

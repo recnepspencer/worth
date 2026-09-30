@@ -1,7 +1,8 @@
 use worth_query_decl::facade::{
     application_operation::{
         ApplicationMutationOutputContract, ApplicationMutationOutputRoleDescriptor,
-        WorthQueryApplicationOutputRole, WorthQueryCreateOutput,
+        WorthQueryApplicationDeclaredOutputRole, WorthQueryApplicationOutputRole,
+        WorthQueryCreateOutput, WorthQueryExactlyOneOutput,
     },
     application_schema::{NoApplicationUnit, ReadOnly},
     worth_query_mutation_binding, worth_query_structured_value_binding,
@@ -63,15 +64,20 @@ impl InitiateBusinessPaymentDecision {
 pub struct InitiateBusinessPaymentOutputs;
 
 /// The payment intent the operation creates.
-pub const INITIATE_BUSINESS_PAYMENT_OUTPUT_PAYMENT: WorthQueryApplicationOutputRole<
-    InitiateBusinessPaymentMutationBinding,
-    PaymentIntent,
-    WorthQueryCreateOutput,
-> = WorthQueryApplicationOutputRole::for_entity::<BankSchema>("payment");
+pub struct InitiatedBusinessPaymentOutput;
+
+impl WorthQueryApplicationOutputRole for InitiatedBusinessPaymentOutput {
+    type Schema = BankSchema;
+    type Contract = InitiateBusinessPaymentOutputs;
+    type Entity = PaymentIntent;
+    type Action = WorthQueryCreateOutput;
+    type Cardinality = WorthQueryExactlyOneOutput;
+    const NAME: &'static str = "payment";
+}
 
 impl ApplicationMutationOutputContract<BankSchema> for InitiateBusinessPaymentOutputs {
     const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] =
-        &[INITIATE_BUSINESS_PAYMENT_OUTPUT_PAYMENT.descriptor()];
+        &[<InitiatedBusinessPaymentOutput as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR];
 }
 
 fn business_scope(input: &InitiateBusinessPayment) -> BusinessId {

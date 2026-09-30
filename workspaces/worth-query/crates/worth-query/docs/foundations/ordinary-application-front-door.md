@@ -136,27 +136,26 @@ Invariant factories resolve typed field and relation bindings once and evaluate
 the actual proposed overlay and committed before-image inside a declared prepared
 scope and finite work budget.
 
-Fixed output roles are typed declarations. A binding declares each role once
-as a constant token and lists `TOKEN.descriptor()` in `ROLES`, so the handler
-writes and every reader reads through the declaration itself.
-`WorthQueryApplicationOutputRole` is exactly once and
-`WorthQueryApplicationOptionalOutputRole` is at most once. An unbound
-exactly-one role is `MissingOutputRole`, any second binding is
-`DuplicateOutputRole`, and an unbound at-most-one role commits without that
-output. Reading an at-most-one role through `entity(role)`,
-`DecisionReader::prior_output` or generated-output reconstruction returns
-`Option`, so absence is a value rather than a denial. The exactly-one token
-keeps those reads total. A token the binding does not list is refused when
-used; one of the other cardinality is a cardinality mismatch.
+Fixed output roles are marker types. Each role's
+`WorthQueryApplicationOutputRole` impl declares its contract, entity marker,
+action, cardinality and name, and the contract lists the derived `DESCRIPTOR`
+in `ROLES`, so the handler writes and every reader reads through the
+declaration itself. A role use that disagrees with its contract fails to
+compile. An exactly-one role must be bound; leaving it unbound is
+`MissingOutputRole`. Any second binding is `DuplicateOutputRole`, and an unbound
+at-most-one role commits without that output. Reading an at-most-one role
+through `entity::<Role>()`, `DecisionReader::prior_output` or generated-output
+reconstruction returns `Option`, so absence is a value rather than a denial. An
+exactly-one role keeps those reads total.
 
 Regenerating handlers declare variable semantic roles as a
-`WorthQueryApplicationOutputRoleFamily` token listed in
-`ApplicationMutationOutputContract::ROLE_FAMILIES`, take members from it with
-`member`, and read a prior family with
+`WorthQueryApplicationOutputRoleFamily` marker listed in
+`ApplicationMutationOutputContract::ROLE_FAMILIES`, bind members with
+`create_member`, `preserve_member` and `retire_member`, and read a prior family with
 `DecisionReader::prior_output_family`. Query returns live members in deterministic
 role order from the selected branch occurrence and product generation. The
-resulting typed identities are normal tracked decision reads; undeclared families,
-wrong entity markers, stale correspondence and exhausted work fail through
+resulting typed identities are normal tracked decision reads. An undeclared
+family fails to compile; stale correspondence and exhausted work fail through
 `WorthQueryPriorOutputDenial`.
 Handlers shared by initial publication and regeneration use
 `DecisionReader::prior_output_family_if_present`. It returns `None` only when the
@@ -166,10 +165,11 @@ remain denials.
 
 Committed receipts expose `output_correspondence()` for preserve/create/retire
 roles and `committed_changes()` for immutable structural and lineage
-observations from the same commit. Projecting `entity(role)` requires the exact
-binding, role name, action, and entity marker; substituting the entity marker
-returns `WorthQueryApplicationOutputProjectionDenial::EntityMismatch` even when
-the other three match. These observations carry no new execution authority.
+observations from the same commit. Projecting `entity::<Role>()` names the
+role's marker, so its contract, name, action and entity marker come from the
+declaration; a role of another contract is refused with
+`WorthQueryApplicationOutputProjectionDenial::ForeignContract`. These
+observations carry no new execution authority.
 The [public replacement proof](../../../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/output_correspondence.rs)
 checks projection, readback, rejected-candidate isolation, and idempotent recovery.
 

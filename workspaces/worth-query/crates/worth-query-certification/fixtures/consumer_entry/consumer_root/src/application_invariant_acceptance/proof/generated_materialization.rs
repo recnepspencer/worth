@@ -13,7 +13,7 @@ use worth_query_host::facade::{
     },
 };
 use worth_query_topology_entry::{
-    AlternatePlanarOutputProducer, Body, PlanarFinalOutputFamily, PlanarFinalOutputProducer,
+    AlternatePlanarOutputProducer, PlanarFinalOutputFamily, PlanarFinalOutputProducer,
     PlanarOutputToFinalConnection, PlanarRead, PlanarSourceAdjustment, PlanarSuccessor, PositionY,
 };
 
@@ -317,10 +317,9 @@ fn claim_denials_preserve_session(
             .expect_err("a denied duplicate field must not replace the admitted value"),
         WorthQueryGeneratedOutputReconstructionDenial::DuplicateField
     );
-    let duplicate = match reconstruction.entity(
-        worth_query_topology_entry::final_anchor_output::<ConsumerSchema>(),
-        Body::reference(),
-    ) {
+    let duplicate = match reconstruction
+        .entity::<worth_query_topology_entry::FinalAnchorOutput<ConsumerSchema>>()
+    {
         Ok(_) => panic!("one output identity may be claimed only once"),
         Err(denial) => denial,
     };

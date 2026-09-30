@@ -16,10 +16,10 @@ pub(super) fn observe_prior_cycle<Schema: TopologySchemaBinding>(
     input: &PriorCycleAdjustment,
     reader: &mut DecisionReader<'_, '_, '_, Schema, PriorCycleAdjustmentBinding<Schema>>,
 ) -> HandlerResult<PriorCycleDecision<Schema>, PriorCycleAdjustmentDenial> {
-    let prior = match reader
-        .prior_output_family_if_present::<crate::PlanarEditBinding<Schema>, Body>(
-            crate::planar_created_outputs::<Schema, crate::PlanarEditBinding<Schema>>(),
-        ) {
+    let prior = match reader.prior_output_family_if_present::<
+        crate::PlanarEditBinding<Schema>,
+        crate::PlanarCreatedOutputs<Schema>,
+    >() {
         Ok(Some(prior)) => prior,
         Ok(None) => return HandlerResult::DomainDenied(PriorCycleAdjustmentDenial::NoPriorCycle),
         Err(error) => return HandlerResult::ExecutionDenied(error),

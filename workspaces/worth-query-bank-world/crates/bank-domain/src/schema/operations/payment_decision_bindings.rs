@@ -1,7 +1,8 @@
 use worth_query_decl::facade::{
     application_operation::{
         ApplicationMutationOutputContract, ApplicationMutationOutputRoleDescriptor,
-        WorthQueryApplicationOutputRole, WorthQueryPreserveOutput,
+        WorthQueryApplicationDeclaredOutputRole, WorthQueryApplicationOutputRole,
+        WorthQueryExactlyOneOutput, WorthQueryPreserveOutput,
     },
     application_schema::{NoApplicationUnit, ReadOnly},
     worth_query_mutation_binding, worth_query_structured_value_binding,
@@ -36,24 +37,22 @@ worth_query_structured_value_binding!(
 
 pub struct PaymentDecisionOutputs;
 
-/// The payment intent an approval preserves.
-pub const APPROVE_PAYMENT_OUTPUT_PAYMENT: WorthQueryApplicationOutputRole<
-    ApprovePaymentMutationBinding,
-    PaymentIntent,
-    WorthQueryPreserveOutput,
-> = WorthQueryApplicationOutputRole::for_entity::<BankSchema>("payment");
+/// The payment intent an approval or a rejection preserves. Both decisions
+/// share [`PaymentDecisionOutputs`], so one role serves both handlers.
+pub struct DecidedPaymentOutput;
 
-/// The payment intent a rejection preserves. Both decisions share
-/// [`PaymentDecisionOutputs`], so this token declares the same role.
-pub const REJECT_PAYMENT_OUTPUT_PAYMENT: WorthQueryApplicationOutputRole<
-    RejectPaymentMutationBinding,
-    PaymentIntent,
-    WorthQueryPreserveOutput,
-> = WorthQueryApplicationOutputRole::for_entity::<BankSchema>("payment");
+impl WorthQueryApplicationOutputRole for DecidedPaymentOutput {
+    type Schema = BankSchema;
+    type Contract = PaymentDecisionOutputs;
+    type Entity = PaymentIntent;
+    type Action = WorthQueryPreserveOutput;
+    type Cardinality = WorthQueryExactlyOneOutput;
+    const NAME: &'static str = "payment";
+}
 
 impl ApplicationMutationOutputContract<BankSchema> for PaymentDecisionOutputs {
     const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] =
-        &[APPROVE_PAYMENT_OUTPUT_PAYMENT.descriptor()];
+        &[<DecidedPaymentOutput as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR];
 }
 
 fn payment_scope_from_approval(input: &ApprovePayment) -> PaymentId {

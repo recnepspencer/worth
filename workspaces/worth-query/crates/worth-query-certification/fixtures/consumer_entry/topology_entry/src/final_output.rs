@@ -44,53 +44,70 @@ pub struct FinalPlanarMutationBinding<Schema>(PhantomData<fn() -> Schema>);
 pub struct FinalPlanarOutputs;
 
 /// The vertex that anchors the final ring.
-pub const fn final_anchor_output<Schema: TopologySchemaBinding>(
-) -> WorthQueryApplicationOutputRole<FinalPlanarMutationBinding<Schema>, Body, WorthQueryCreateOutput>
-{
-    WorthQueryApplicationOutputRole::for_entity::<Schema>("anchor")
+pub struct FinalAnchorOutput<Schema>(PhantomData<fn() -> Schema>);
+
+impl<Schema: TopologySchemaBinding> WorthQueryApplicationOutputRole for FinalAnchorOutput<Schema> {
+    type Schema = Schema;
+    type Contract = FinalPlanarOutputs;
+    type Entity = Body;
+    type Action = WorthQueryCreateOutput;
+    type Cardinality = WorthQueryExactlyOneOutput;
+    const NAME: &'static str = "anchor";
 }
 
 /// The vertex that closes the final ring. Declared at-most-one; every final
 /// output this fixture publishes binds it.
-pub const fn final_closing_output<Schema: TopologySchemaBinding>(
-) -> WorthQueryApplicationOptionalOutputRole<
-    FinalPlanarMutationBinding<Schema>,
-    Body,
-    WorthQueryCreateOutput,
-> {
-    WorthQueryApplicationOptionalOutputRole::for_entity::<Schema>("closing")
+pub struct FinalClosingOutput<Schema>(PhantomData<fn() -> Schema>);
+
+impl<Schema: TopologySchemaBinding> WorthQueryApplicationOutputRole for FinalClosingOutput<Schema> {
+    type Schema = Schema;
+    type Contract = FinalPlanarOutputs;
+    type Entity = Body;
+    type Action = WorthQueryCreateOutput;
+    type Cardinality = WorthQueryAtMostOneOutput;
+    const NAME: &'static str = "closing";
 }
 
 /// A declared at-most-one role no final output binds.
-pub const fn final_auxiliary_output<Schema: TopologySchemaBinding>(
-) -> WorthQueryApplicationOptionalOutputRole<
-    FinalPlanarMutationBinding<Schema>,
-    Body,
-    WorthQueryCreateOutput,
-> {
-    WorthQueryApplicationOptionalOutputRole::for_entity::<Schema>("auxiliary")
+pub struct FinalAuxiliaryOutput<Schema>(PhantomData<fn() -> Schema>);
+
+impl<Schema: TopologySchemaBinding> WorthQueryApplicationOutputRole
+    for FinalAuxiliaryOutput<Schema>
+{
+    type Schema = Schema;
+    type Contract = FinalPlanarOutputs;
+    type Entity = Body;
+    type Action = WorthQueryCreateOutput;
+    type Cardinality = WorthQueryAtMostOneOutput;
+    const NAME: &'static str = "auxiliary";
 }
 
 /// The other vertices the final ring creates, one member per vertex.
-pub const fn final_created_outputs<Schema: TopologySchemaBinding>(
-) -> WorthQueryApplicationOutputRoleFamily<FinalPlanarMutationBinding<Schema>, Body> {
-    WorthQueryApplicationOutputRoleFamily::for_entity::<Schema>(
-        "created.",
-        ApplicationMutationOutputPostureSet::CREATE,
-        0,
-    )
+pub struct FinalCreatedOutputs<Schema>(PhantomData<fn() -> Schema>);
+
+impl<Schema: TopologySchemaBinding> WorthQueryApplicationOutputRoleFamily
+    for FinalCreatedOutputs<Schema>
+{
+    type Schema = Schema;
+    type Contract = FinalPlanarOutputs;
+    type Entity = Body;
+    const PREFIX: &'static str = "created.";
+    const POSTURES: ApplicationMutationOutputPostureSet =
+        ApplicationMutationOutputPostureSet::CREATE;
+    const MINIMUM: usize = 0;
 }
 
 impl<Schema: TopologySchemaBinding> ApplicationMutationOutputContract<Schema>
     for FinalPlanarOutputs
 {
     const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] = &[
-        final_anchor_output::<Schema>().descriptor(),
-        final_closing_output::<Schema>().descriptor(),
-        final_auxiliary_output::<Schema>().descriptor(),
+        <FinalAnchorOutput<Schema> as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR,
+        <FinalClosingOutput<Schema> as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR,
+        <FinalAuxiliaryOutput<Schema> as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR,
     ];
-    const ROLE_FAMILIES: &'static [ApplicationMutationOutputRoleFamilyDescriptor] =
-        &[final_created_outputs::<Schema>().descriptor()];
+    const ROLE_FAMILIES: &'static [ApplicationMutationOutputRoleFamilyDescriptor] = &[
+        <FinalCreatedOutputs<Schema> as WorthQueryApplicationDeclaredOutputRoleFamily>::DESCRIPTOR,
+    ];
 }
 
 impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
@@ -250,17 +267,14 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, FinalPlanarMutation
             }
         }
         let entity = &entities[0];
-        if let Err(error) = writer.create_output(final_anchor_output::<Schema>(), entity) {
-            return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error));
-        }
-        let role = final_created_outputs::<Schema>()
-            .member::<WorthQueryCreateOutput>(&keys[1])
-            .expect("fixture keys name valid created members");
-        if let Err(error) = writer.create_output(role, &entities[1]) {
-            return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error));
-        }
-        if let Err(error) = writer.create_output(final_closing_output::<Schema>(), &entities[2]) {
-            return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error));
+        for bound in [
+            writer.create_output::<FinalAnchorOutput<Schema>>(entity),
+            writer.create_member::<FinalCreatedOutputs<Schema>>(&keys[1], &entities[1]),
+            writer.create_output::<FinalClosingOutput<Schema>>(&entities[2]),
+        ] {
+            if let Err(error) = bound {
+                return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error));
+            }
         }
         HandlerResult::Completed(worth_query_consumer_values::PlanarAdjustmentResult {
             changed_vertices: 1,
@@ -284,6 +298,7 @@ impl<Schema: TopologySchemaBinding> WorthQueryProducerOutputFamily<Schema>
     for PlanarFinalOutputFamily
 {
     type Source = PlanarReadBinding<Schema>;
+    type Entity = Body;
 
     const IDENTITY: &'static str = "worth.query.certification.planar-final-output.v1";
     const SUPPORTED: &'static [WorthQueryProducerApplicability] = SUPPORTED;
@@ -360,8 +375,9 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationProducerBinding<Schema>
     type OutputFamily = PlanarFinalOutputFamily;
     type Provider = PlanarFinalOutputProvider;
 
+    type OutputRole = FinalAnchorOutput<Schema>;
+
     const IDENTITY: &'static str = "worth.query.certification.planar-final-output-producer.v1";
-    const OUTPUT_ROLE: &'static str = "anchor";
     const APPLICABILITY: &'static [WorthQueryProducerApplicability] = &[INITIAL];
     const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement] =
         &[WorthQueryProducerInvariantRequirement::new(

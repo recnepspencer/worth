@@ -1,12 +1,10 @@
 use worth_query_consumer_values::PlanarVertex;
 use worth_query_host::facade::primary_graph::{
-    WorthQueryApplicationOptionalOutputRole, WorthQueryApplicationOutputRole,
-    WorthQueryCreateOutput, WorthQueryGeneratedEntity, WorthQueryGeneratedOutputReconstruction,
-    WorthQueryGeneratedOutputReconstructionDenial,
+    WorthQueryGeneratedEntity, WorthQueryGeneratedOutputReconstruction,
 };
 use worth_query_topology_entry::{
-    final_anchor_output, final_auxiliary_output, final_closing_output, final_created_outputs, Body,
-    BodyKey, FinalPlanarMutationBinding, Length, PlanarFinalOutputProducer, PositionX, PositionY,
+    Body, BodyKey, FinalAnchorOutput, FinalAuxiliaryOutput, FinalClosingOutput,
+    FinalCreatedOutputs, Length, PlanarFinalOutputProducer, PositionX, PositionY,
 };
 
 use super::super::length;
@@ -22,16 +20,11 @@ pub(super) fn claim_entity(
     index: usize,
 ) -> WorthQueryGeneratedEntity<ConsumerSchema, Body> {
     match index {
-        0 => reconstruction.entity(final_anchor_output::<ConsumerSchema>(), Body::reference()),
-        1 => {
-            let member = final_created_outputs::<ConsumerSchema>()
-                .member::<WorthQueryCreateOutput>(&vertex.body_key)
-                .expect("fixture keys name valid created members");
-            reconstruction.entity(member, Body::reference())
-        }
+        0 => reconstruction.entity::<FinalAnchorOutput<ConsumerSchema>>(),
+        1 => reconstruction.member::<FinalCreatedOutputs<ConsumerSchema>>(&vertex.body_key),
         _ => {
             return reconstruction
-                .entity(final_closing_output::<ConsumerSchema>(), Body::reference())
+                .entity::<FinalClosingOutput<ConsumerSchema>>()
                 .expect("the optional closing role resolves its retained platform identity")
                 .expect("the suspended output bound its closing vertex");
         }
@@ -39,8 +32,8 @@ pub(super) fn claim_entity(
     .expect("the typed role resolves its retained platform identity")
 }
 
-/// An unbound at-most-one role reads as `None` and claims nothing, and a token
-/// whose cardinality differs from the declaration is refused either way.
+/// An unbound at-most-one role reads as `None` and claims nothing. Reading a
+/// role with a cardinality other than its declaration fails to compile.
 pub(super) fn require_optional_role_reads(
     reconstruction: &mut WorthQueryGeneratedOutputReconstruction<
         '_,
@@ -49,36 +42,9 @@ pub(super) fn require_optional_role_reads(
     >,
 ) {
     assert!(reconstruction
-        .entity(
-            final_auxiliary_output::<ConsumerSchema>(),
-            Body::reference()
-        )
+        .entity::<FinalAuxiliaryOutput<ConsumerSchema>>()
         .expect("an absent optional role is a value, not a denial")
         .is_none());
-    // Stray declarations the output contract never lists, each spelling a
-    // declared role's name with the other cardinality.
-    let closing_as_required = WorthQueryApplicationOutputRole::<
-        FinalPlanarMutationBinding<ConsumerSchema>,
-        Body,
-        WorthQueryCreateOutput,
-    >::for_entity::<ConsumerSchema>("closing");
-    let anchor_as_optional = WorthQueryApplicationOptionalOutputRole::<
-        FinalPlanarMutationBinding<ConsumerSchema>,
-        Body,
-        WorthQueryCreateOutput,
-    >::for_entity::<ConsumerSchema>("anchor");
-    assert_eq!(
-        reconstruction
-            .entity(closing_as_required, Body::reference())
-            .err(),
-        Some(WorthQueryGeneratedOutputReconstructionDenial::OutputRoleCardinalityMismatch)
-    );
-    assert_eq!(
-        reconstruction
-            .entity(anchor_as_optional, Body::reference())
-            .err(),
-        Some(WorthQueryGeneratedOutputReconstructionDenial::OutputRoleCardinalityMismatch)
-    );
 }
 
 pub(super) fn write_fields(

@@ -157,10 +157,7 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, AlternatePlanarOutp
         if let Err(error) = writer.write_field(&anchor, PositionY::reference(), y) {
             return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error));
         }
-        match writer.preserve_output(
-            planar_anchor_output::<Schema, AlternatePlanarOutputBinding<Schema>>(),
-            &anchor,
-        ) {
+        match writer.preserve_output::<PlanarAnchorOutput<Schema>>(&anchor) {
             Ok(()) => HandlerResult::Completed(PlanarAdjustmentResult {
                 changed_vertices: 0,
             }),
@@ -204,7 +201,7 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationProducerBinding<Schema>
     type Provider = AlternatePlanarOutputProvider;
 
     const IDENTITY: &'static str = "worth.query.certification.alternate-planar-producer.v1";
-    const OUTPUT_ROLE: &'static str = "anchor";
+    type OutputRole = PlanarAnchorOutput<Schema>;
     const APPLICABILITY: &'static [WorthQueryProducerApplicability] =
         &[ALTERNATE_OUTPUT_APPLICABILITY];
     const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement] = &[];

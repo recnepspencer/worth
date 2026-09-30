@@ -95,77 +95,89 @@ availability. Availability describes installation; every execution still perform
 fresh authorization and currentness checks.
 
 Committed mutation receipts expose `output_correspondence()` and
-`committed_changes()`. Output roles carry the binding, entity marker and
-action: `WorthQueryPreserveOutput`, `WorthQueryCreateOutput` or
-`WorthQueryRetireOutput`, the only implementations of the sealed
-`WorthQueryApplicationOutputAction`. `output_correspondence().entity(role)` checks
-those exact types and the role name against the committed association. It
-returns `WorthQueryApplicationOutputProjectionDenial::EntityMismatch` for a
-different entity marker even when the binding, name and action match; foreign
-bindings, missing roles and action mismatches have their own typed denials.
-Role names describe correspondence; the platform resolves persistent identity.
+`committed_changes()`.
 
-The role token is the declaration. A binding declares each fixed role once, as
-a typed constant, and lists its descriptor in `ROLES`; handlers and readers pass
-the same constant:
+An output role is a marker type, and its `WorthQueryApplicationOutputRole` impl
+is the declaration. The impl names the schema, the output contract, the entity
+marker, the action (`WorthQueryPreserveOutput`, `WorthQueryCreateOutput` or
+`WorthQueryRetireOutput`), the cardinality (`WorthQueryExactlyOneOutput` or
+`WorthQueryAtMostOneOutput`) and the role name. The sealed
+`WorthQueryApplicationDeclaredOutputRole` derives the role's `DESCRIPTOR`, which
+the contract lists in `ROLES`. A role belongs to its contract, so one marker
+serves every binding whose `Output` is that contract:
 
 ```rust,ignore
-pub const ACCOUNT_OUTPUT: WorthQueryApplicationOutputRole<
-    CreateAccountBinding,
-    Account,
-    WorthQueryCreateOutput,
-> = WorthQueryApplicationOutputRole::for_entity::<BankSchema>("account");
+pub struct CreatedAccountOutput;
+
+impl WorthQueryApplicationOutputRole for CreatedAccountOutput {
+    type Schema = BankSchema;
+    type Contract = CreateAccountOutputs;
+    type Entity = Account;
+    type Action = WorthQueryCreateOutput;
+    type Cardinality = WorthQueryExactlyOneOutput;
+    const NAME: &'static str = "account";
+}
 
 impl ApplicationMutationOutputContract<BankSchema> for CreateAccountOutputs {
     const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] =
-        &[ACCOUNT_OUTPUT.descriptor()];
+        &[<CreatedAccountOutput as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR];
 }
 
-candidate.create_output(ACCOUNT_OUTPUT, &created)?;
+candidate.create_output::<CreatedAccountOutput>(&created)?;
+let account = receipt.output_correspondence().entity::<CreatedAccountOutput>()?;
 ```
 
-`for_entity` requires the entity marker to belong to the schema, and the
-action type fixes the posture, so a declaration cannot disagree with its token.
-No token is built from a bare name. A generic schema or binding declares its
-token through a `const fn` that returns it.
+A generic schema declares a generic marker,
+`struct AnchorOutput<Schema>(PhantomData<fn() -> Schema>)`, with one impl that
+covers every schema.
 
-Each fixed role has a typed `ApplicationMutationOutputRoleCardinality`.
-`WorthQueryApplicationOutputRole` declares `ExactlyOne`, and
-`WorthQueryApplicationOptionalOutputRole` declares `AtMostOne`. A completed
-candidate that leaves an exactly-one role unbound is refused with
-`MissingOutputRole`. An at-most-one role left unbound commits without it.
-Binding any fixed role a second time is refused with `DuplicateOutputRole`.
+Every use names the marker, and a use that disagrees with the contract fails to
+compile. `create_output`, `preserve_output` and `retire_output` bound the role's
+contract to the handler's binding and its action to the writer.
+`DecisionReader::prior_output::<PriorBinding, Role>` bounds the contract to
+`PriorBinding`. A producer's `type OutputRole` must be an exactly-one role of its
+operation's contract, for the entity its output family names. Each use also
+evaluates the derived `DECLARED` constant, which fails unless the contract's
+`ROLES` lists the role with the same name, entity, posture and cardinality.
+`DECLARED` is evaluated when the use is compiled to code, so that error appears
+in `cargo build` and `cargo test` but not in `cargo check`, and not in a generic
+function nothing instantiates.
 
-The cardinality also decides the shape of every read. Reads through an
-exactly-one token are total: `output_correspondence().entity(role)`,
-`DecisionReader::prior_output` and generated-output reconstruction's `entity`
-return the output itself. Through an at-most-one token the same calls return an
-`Option`: `None` when the commit left the role unbound, `Some` when it bound it.
-Absence is a value, never a denial. Both tokens implement the sealed
-`WorthQueryApplicationFixedOutputRole`, so the create, preserve and retire
-writers accept either; its `Read<T>` names the read shape, and the operations
-that shape reads stay inside Query. A token the binding's `ROLES` does not list
-is a contract violation checked when it is used: a different cardinality is
-refused with `OutputRoleCardinalityMismatch` on write and `CardinalityMismatch`
-on read (`OutputRoleCardinalityMismatch` in reconstruction), and an undeclared
-name, entity marker or action has its own typed denial.
+The cardinality decides the shape of every read. An exactly-one role must be
+bound: a completed candidate that leaves it unbound is refused with
+`MissingOutputRole`, and its reads return the output itself. The reads are
+`output_correspondence().entity::<Role>()`, `DecisionReader::prior_output` and
+generated-output reconstruction's `entity::<Role>()`. An at-most-one role may be
+left unbound, and the same reads return an `Option`, `None` when the commit left
+the role unbound. Absence is a value, never a denial. Binding any fixed role a
+second time is refused with `DuplicateOutputRole`. The cardinality is part of
+the schema's canonical identity and of its portable and archived descriptions,
+so changing it changes the installed schema. An optional single output is always
+an at-most-one role, never a family with a minimum of zero. A producer names an
+exactly-one role because a commit may omit an at-most-one role.
 
-The cardinality is part of the schema's canonical identity
-and of its portable and archived descriptions, so changing it changes the
-installed schema. An optional single output is always an at-most-one role, never
-a family with a minimum of zero.
-A producer's `OUTPUT_ROLE` names an exactly-one role or a family member; an
-at-most-one role is refused because a commit may omit it.
+Bindings whose result cardinality follows the authored topology declare
+families. A family is a marker type whose
+`WorthQueryApplicationOutputRoleFamily` impl names the schema, the contract, the
+entity marker, the member-name `PREFIX`, the allowed `POSTURES` and the
+`MINIMUM` member count. The contract lists its derived `DESCRIPTOR` in
+`ROLE_FAMILIES`. A handler binds each source-derived member by its suffix, as in
+`candidate.create_member::<CreatedVertices>(&key, &created)?`; `preserve_member`
+and `retire_member` work the same way. Readers name the family and the action,
+as in `output_correspondence().member::<CreatedVertices, WorthQueryCreateOutput>(&key)`,
+or read the whole family with `family_entries::<CreatedVertices>()`. Members are
+exactly-one. A family the contract does not declare exactly as used, or an
+action outside the family's postures, fails to compile. The suffix is run-time
+data, so an empty, ambiguous or oversized member name is refused when it is
+named.
 
-Bindings whose result cardinality follows the authored topology declare typed
-families. `WorthQueryApplicationOutputRoleFamily::for_entity` declares the
-prefix, entity marker, allowed action postures and minimum member count, and
-`ROLE_FAMILIES` lists its descriptor. A handler takes each source-derived member
-from its family, `CREATED.member::<WorthQueryCreateOutput>(&key)?`, and passes
-the member directly to `create_output`, `preserve_output` or `retire_output`.
-Members are exactly-one. `member` rejects empty, ambiguous and oversized names;
-Query validates each member's action against the installed family and seals the
-resolved identity in the same correspondence.
+Query keeps run-time checks only where the types cannot carry the contract.
+`output_correspondence()` has no binding type, so reading a role of another
+contract is refused with `ForeignContract`. A family member's committed action
+is data, so reading it with another allowed action is `ActionMismatch`. Portable
+and readmitted forms are validated when admitted. Typed uses are checked again at
+run time as defense in depth. Role names describe correspondence; the platform
+resolves persistent identity.
 
 `committed_changes()` provides the exact `commit_reference()`, an
 `entity_changes()` iterator of `(EntityId, RecordStructuralChange)`, and native

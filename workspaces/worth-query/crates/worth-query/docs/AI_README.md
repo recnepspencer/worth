@@ -444,35 +444,42 @@ Application usage:
 (output roles and committed changes) and
 [host README, Output Demand, Exact Observation, And Live Reads](../../worth-query-host/README.md#output-demand-exact-observation-and-live-reads).
 
-- `WorthQueryApplicationOutputRole<Binding, Entity, Action>` declares one
-  semantic output. The binding declares it once as a constant through
-  `for_entity::<Schema>(name)` and lists `TOKEN.descriptor()` in `ROLES`;
-  handlers and readers pass the same constant, and no token is built from a
-  bare name. The role name supplies no persistent identity; Relational
-  resolves created identities and co-commits their structural changes and
-  lineage. `output_correspondence().entity(role)` checks binding, role name,
-  action, and entity marker, so a caller cannot relabel a committed identity by
-  changing a generic argument. The projected identity still needs fresh
-  admission for later use.
-- Each fixed role in `Binding::Output::ROLES` carries an
-  `ApplicationMutationOutputRoleCardinality` taken from its token.
-  `WorthQueryApplicationOutputRole` declares `ExactlyOne`: leaving it unbound
-  fails the candidate with `MissingOutputRole`, and its `entity(role)`,
-  `prior_output` and reconstruction `entity` reads are total.
-  `WorthQueryApplicationOptionalOutputRole` declares `AtMostOne`: the commit may
-  omit it, and the same reads return `Option`, `None` meaning the commit left
-  the role unbound. A second binding of either is `DuplicateOutputRole`. A
-  token `ROLES` does not list is refused when used; one of the other
-  cardinality is `OutputRoleCardinalityMismatch` on write and
-  `CardinalityMismatch` on read. The cardinality is part of the canonical schema
-  identity and the portable and archived descriptions. Declare an optional
-  single output this way, never as a family with minimum zero.
-- `WorthQueryApplicationOutputRoleFamily<Binding, Entity>` declares a family
-  through `for_entity::<Schema>(prefix, postures, minimum)`, listed in
-  `Binding::Output::ROLE_FAMILIES` by its descriptor. Members come only from
-  `FAMILY.member::<Action>(suffix)`, which validates the name; Query checks the
-  member's action against the family's postures. It creates no second lineage
-  store.
+- An output role is a marker type; its `WorthQueryApplicationOutputRole` impl
+  declares the schema, contract, entity marker, action, cardinality and name.
+  The contract lists the derived
+  `<Role as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR` in `ROLES`,
+  and one marker serves every binding sharing that contract. Handlers and
+  readers name the marker: `create_output::<Role>(&entity)`,
+  `output_correspondence().entity::<Role>()`, `prior_output::<Binding, Role>()`.
+  The role name supplies no persistent identity; Relational resolves created
+  identities and co-commits their structural changes and lineage. The projected
+  identity still needs fresh admission for later use.
+- A role use that disagrees with its contract fails to compile. Writer and
+  prior-read bounds fix the contract and the action; every use evaluates
+  `DECLARED`, which requires the contract to list the role with the same name,
+  entity, posture and cardinality. `DECLARED` is a post-monomorphization
+  constant: `cargo build` and `cargo test` report it, `cargo check` does not.
+- The cardinality is `WorthQueryExactlyOneOutput` or `WorthQueryAtMostOneOutput`.
+  Leaving an exactly-one role unbound fails the candidate with
+  `MissingOutputRole`, and its reads are total. An at-most-one role may be
+  omitted, and the same reads return `Option`, `None` meaning the commit left
+  the role unbound. A second binding of either is `DuplicateOutputRole`. The
+  cardinality is part of the canonical schema identity and the portable and
+  archived descriptions. Declare an optional single output this way, never as a
+  family with minimum zero. A producer's `type OutputRole` must be an
+  exactly-one role of its operation's contract, for its output family's entity.
+- A family is a marker type implementing `WorthQueryApplicationOutputRoleFamily`
+  with `PREFIX`, `POSTURES` and `MINIMUM`, listed in `ROLE_FAMILIES` by its
+  derived descriptor. Handlers bind members with
+  `create_member::<Family>(suffix, &entity)` (and `preserve_member`,
+  `retire_member`); readers use `member::<Family, Action>(suffix)` and
+  `family_entries::<Family>()`. An undeclared family or an action outside its
+  postures fails to compile; the suffix is validated at run time. It creates no
+  second lineage store.
+- Run-time checks remain where the types cannot carry the contract:
+  `output_correspondence()` has no binding type (`ForeignContract`), a family
+  member's committed action is data (`ActionMismatch`), and portable and
+  readmitted forms are validated on admission.
 - `committed_changes()` returns `WorthQueryApplicationCommittedChanges`, an
   immutable view with no field payloads or mutation authority. Its constructor
   and canonical artifact stay private. Event order and numeric identity do not

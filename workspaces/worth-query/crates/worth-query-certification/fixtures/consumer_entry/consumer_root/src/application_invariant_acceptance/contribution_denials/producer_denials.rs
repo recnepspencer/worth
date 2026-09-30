@@ -26,9 +26,9 @@ use worth_query_host::facade::{
 };
 use worth_query_parameter_entry::{ParameterContribution, ParameterSchemaBinding};
 use worth_query_topology_entry::{
-    InitialPlanarProducer, InitialPlanarProvider, PlanarHandler, PlanarMutation,
-    PlanarMutationBinding, PlanarOutputFamily, PlanarReadResult, PositivePlanarTurn,
-    PositiveTurnRule, TopologyContribution, TopologySchemaBinding,
+    InitialPlanarProducer, InitialPlanarProvider, PlanarAnchorOutput, PlanarHandler,
+    PlanarMutation, PlanarMutationBinding, PlanarOutputFamily, PlanarReadResult,
+    PositivePlanarTurn, PositiveTurnRule, TopologyContribution, TopologySchemaBinding,
 };
 
 use super::{assert_contribution_denial, limits, validated_denial_program};
@@ -232,7 +232,7 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationProducerBinding<Schema>
     type Provider = AmbiguousProvider;
 
     const IDENTITY: &'static str = "worth.query.certification.ambiguous-producer.v1";
-    const OUTPUT_ROLE: &'static str = "anchor";
+    type OutputRole = PlanarAnchorOutput<Schema>;
     const APPLICABILITY: &'static [WorthQueryProducerApplicability] =
         &[WorthQueryProducerApplicability::new(
             "planar",

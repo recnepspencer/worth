@@ -3,8 +3,8 @@ mod declaration;
 mod handler;
 
 pub use binding::{
-    vertex_replacement_anchor_output, vertex_replacement_created_output,
-    vertex_replacement_retired_output, VertexReplacementBinding, VertexReplacementOutputs,
+    VertexReplacementAnchorOutput, VertexReplacementBinding, VertexReplacementCreatedOutput,
+    VertexReplacementOutputs, VertexReplacementRetiredOutput,
 };
 pub(crate) use declaration::declare_vertex_replacement;
 pub use handler::VertexReplacementHandler;

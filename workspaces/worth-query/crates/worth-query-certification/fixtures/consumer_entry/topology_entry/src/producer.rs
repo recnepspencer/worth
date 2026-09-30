@@ -43,6 +43,7 @@ pub struct PlanarOutputFamily;
 
 impl<Schema: TopologySchemaBinding> WorthQueryProducerOutputFamily<Schema> for PlanarOutputFamily {
     type Source = super::PlanarReadBinding<Schema>;
+    type Entity = super::Body;
 
     const IDENTITY: &'static str = "worth.query.certification.planar-output.v1";
     const SUPPORTED: &'static [WorthQueryProducerApplicability] = SUPPORTED;
@@ -109,7 +110,7 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationProducerBinding<Schema>
     type Provider = InitialPlanarProvider;
 
     const IDENTITY: &'static str = "worth.query.certification.planar-initial.v1";
-    const OUTPUT_ROLE: &'static str = "anchor";
+    type OutputRole = super::PlanarAnchorOutput<Schema>;
     const APPLICABILITY: &'static [WorthQueryProducerApplicability] = PRIMARY;
     const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement] =
         &[WorthQueryProducerInvariantRequirement::new(

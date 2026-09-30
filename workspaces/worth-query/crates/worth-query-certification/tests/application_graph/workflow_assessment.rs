@@ -13,7 +13,7 @@ use worth_query_host::facade::primary_graph::{
 use worth_query_replay::facade::WorthQueryCertificationCostRuntimeExt;
 
 use super::document_retention_model::{
-    assessment_output::ASSESSMENT_OUTPUT,
+    assessment_output::AssessmentOutput,
     host::{publish_workflow_on_first_program, SEED_RETENTION},
     presented_request::set_retention,
     retention_entry::{DOCUMENT_IDENTITY, RELATED_DOCUMENT_IDENTITY},
@@ -148,7 +148,7 @@ fn authenticated_advance_reconstructs_the_exact_required_assessment_without_sett
                 .application_commit_receipt()
                 .expect("fresh assessment has a commit receipt")
                 .output_correspondence()
-                .entity(ASSESSMENT_OUTPUT)
+                .entity::<AssessmentOutput>()
                 .expect("the assessment output role must project from its performed receipt");
             assert_eq!(evidence.subject(), output.entity_id());
             assert!(evidence.passing());

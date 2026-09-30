@@ -4,10 +4,10 @@ use bank_domain::proposals::{
 };
 use bank_domain::schema::{
     Approval, ApprovalPrincipal, ApprovePayment, ApprovePaymentMutationBinding,
-    ApprovedPaymentSettlementEffect, ApprovedPaymentSettlementRequest, BankSchema, PaymentApproval,
-    PaymentDecisionResult, PaymentIdentityField, PaymentIntent, PaymentStatusField,
-    PrincipalIdentityField, RejectPayment, RejectPaymentMutationBinding,
-    APPROVE_PAYMENT_OUTPUT_PAYMENT, REJECT_PAYMENT_OUTPUT_PAYMENT,
+    ApprovedPaymentSettlementEffect, ApprovedPaymentSettlementRequest, BankSchema,
+    DecidedPaymentOutput, PaymentApproval, PaymentDecisionResult, PaymentIdentityField,
+    PaymentIntent, PaymentStatusField, PrincipalIdentityField, RejectPayment,
+    RejectPaymentMutationBinding,
 };
 use worth_query_host::facade::declaration::application_operation::{
     ApplicationCandidateRequirements, ApplicationMutationBinding,
@@ -154,7 +154,7 @@ fn author_approval_candidate(
         )
         .map_err(HandlerExecutionDenial::new)?;
     candidate
-        .preserve_output(APPROVE_PAYMENT_OUTPUT_PAYMENT, &payment_entity)
+        .preserve_output::<DecidedPaymentOutput>(&payment_entity)
         .map_err(HandlerExecutionDenial::new)?;
     Ok(PaymentDecisionResult {
         payment: payment.id(),
@@ -168,7 +168,7 @@ fn author_rejection_candidate(
     let payment = exact_updated_payment(proposal.effects())?;
     let payment_entity = author_payment_decision(candidate, payment)?;
     candidate
-        .preserve_output(REJECT_PAYMENT_OUTPUT_PAYMENT, &payment_entity)
+        .preserve_output::<DecidedPaymentOutput>(&payment_entity)
         .map_err(HandlerExecutionDenial::new)?;
     Ok(PaymentDecisionResult {
         payment: payment.id(),

@@ -105,36 +105,43 @@ pub const fn requirements(
     )
 }
 
+/// The output contract of every planar mutation.
+///
+#[doc = include_str!("output_role_contract.md")]
 pub struct PlanarOutputs;
 
-/// The body every planar mutation preserves as its anchor, for any binding
+/// The body every planar mutation preserves as its anchor, for every binding
 /// whose outputs are [`PlanarOutputs`].
-pub const fn planar_anchor_output<Schema, Binding>(
-) -> WorthQueryApplicationOutputRole<Binding, Body, WorthQueryPreserveOutput>
-where
-    Schema: TopologySchemaBinding,
-    Binding: ApplicationMutationBinding<Schema, Output = PlanarOutputs>,
-{
-    WorthQueryApplicationOutputRole::for_entity::<Schema>("anchor")
+pub struct PlanarAnchorOutput<Schema>(PhantomData<fn() -> Schema>);
+
+impl<Schema: TopologySchemaBinding> WorthQueryApplicationOutputRole for PlanarAnchorOutput<Schema> {
+    type Schema = Schema;
+    type Contract = PlanarOutputs;
+    type Entity = Body;
+    type Action = WorthQueryPreserveOutput;
+    type Cardinality = WorthQueryExactlyOneOutput;
+    const NAME: &'static str = "anchor";
 }
 
 /// The bodies a planar mutation creates, one member per created vertex.
-pub const fn planar_created_outputs<Schema, Binding>(
-) -> WorthQueryApplicationOutputRoleFamily<Binding, Body>
-where
-    Schema: TopologySchemaBinding,
-    Binding: ApplicationMutationBinding<Schema, Output = PlanarOutputs>,
+pub struct PlanarCreatedOutputs<Schema>(PhantomData<fn() -> Schema>);
+
+impl<Schema: TopologySchemaBinding> WorthQueryApplicationOutputRoleFamily
+    for PlanarCreatedOutputs<Schema>
 {
-    WorthQueryApplicationOutputRoleFamily::for_entity::<Schema>(
-        "created.",
-        ApplicationMutationOutputPostureSet::CREATE,
-        0,
-    )
+    type Schema = Schema;
+    type Contract = PlanarOutputs;
+    type Entity = Body;
+    const PREFIX: &'static str = "created.";
+    const POSTURES: ApplicationMutationOutputPostureSet =
+        ApplicationMutationOutputPostureSet::CREATE;
+    const MINIMUM: usize = 0;
 }
 
 impl<Schema: TopologySchemaBinding> ApplicationMutationOutputContract<Schema> for PlanarOutputs {
     const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] =
-        &[planar_anchor_output::<Schema, PlanarMutationBinding<Schema>>().descriptor()];
-    const ROLE_FAMILIES: &'static [ApplicationMutationOutputRoleFamilyDescriptor] =
-        &[planar_created_outputs::<Schema, PlanarMutationBinding<Schema>>().descriptor()];
+        &[<PlanarAnchorOutput<Schema> as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR];
+    const ROLE_FAMILIES: &'static [ApplicationMutationOutputRoleFamilyDescriptor] = &[
+        <PlanarCreatedOutputs<Schema> as WorthQueryApplicationDeclaredOutputRoleFamily>::DESCRIPTOR,
+    ];
 }

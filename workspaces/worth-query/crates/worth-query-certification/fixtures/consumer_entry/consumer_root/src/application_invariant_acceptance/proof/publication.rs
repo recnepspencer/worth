@@ -3,10 +3,11 @@ use worth_query_host::facade::{
     application_entry::{
         WorthQueryApplicationMutationOutcome, WorthQueryApplicationRequestQueryDenial,
     },
-    primary_graph::{WorthQueryCreateOutput, WorthQueryEntityResolutionDenialKind},
+    declaration::application_operation::WorthQueryCreateOutput,
+    primary_graph::WorthQueryEntityResolutionDenialKind,
 };
 use worth_query_topology_entry::{
-    planar_anchor_output, planar_created_outputs, PlanarEditBinding, PlanarMutation, PlanarRead,
+    PlanarAnchorOutput, PlanarCreatedOutputs, PlanarMutation, PlanarRead,
 };
 
 use super::{
@@ -50,21 +51,17 @@ pub(super) fn create_and_reject_cycles(request: &Request<'_>, application: &Prog
             panic!("the complete positive-turn ring must publish: {outcome:?}")
         };
         assert_eq!(result.changed_vertices, vertices.len());
-        receipt.output_correspondence().entity(
-            planar_anchor_output::<crate::ConsumerSchema, PlanarEditBinding<crate::ConsumerSchema>>(),
-        ).expect("the committed group preserves its declared anchor through owner identity correspondence");
+        receipt
+            .output_correspondence()
+            .entity::<PlanarAnchorOutput<crate::ConsumerSchema>>()
+            .expect("the committed group preserves its declared anchor through owner identity correspondence");
         let created = vertices
             .iter()
             .map(|vertex| {
                 receipt
                     .output_correspondence()
-                    .entity(
-                        planar_created_outputs::<
-                            crate::ConsumerSchema,
-                            PlanarEditBinding<crate::ConsumerSchema>,
-                        >()
-                        .member::<WorthQueryCreateOutput>(&vertex.body_key)
-                        .expect("fixture keys name valid created members"),
+                    .member::<PlanarCreatedOutputs<crate::ConsumerSchema>, WorthQueryCreateOutput>(
+                        &vertex.body_key,
                     )
                     .expect("every created cycle member is sealed under its source-derived role")
                     .entity_id()

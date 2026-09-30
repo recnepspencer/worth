@@ -16,7 +16,8 @@ use worth_query_host::facade::{
             ApplicationMutationFieldScope, ApplicationMutationIntent,
             ApplicationMutationOutputContract, ApplicationMutationOutputRoleDescriptor,
             ApplicationMutationOutputRoleFamilyDescriptor, ApplicationQueryMutationSource,
-            WorthQueryApplicationOutputRole, WorthQueryPreserveOutput,
+            WorthQueryApplicationDeclaredOutputRole, WorthQueryApplicationOutputRole,
+            WorthQueryExactlyOneOutput, WorthQueryPreserveOutput,
         },
         application_schema::{
             ApplicationFieldRef, ApplicationPrincipalBindingRef,
@@ -72,15 +73,21 @@ worth_query_operation_reads!(PublishApprovedPaymentAssessment => [PaymentIntent,
 pub struct ApprovedPaymentAssessmentOutputs;
 
 /// The approved payment an assessment preserves.
-pub const APPROVED_PAYMENT_ASSESSMENT_OUTPUT: WorthQueryApplicationOutputRole<
-    ApprovedPaymentAssessmentBinding,
-    PaymentIntent,
-    WorthQueryPreserveOutput,
-> = WorthQueryApplicationOutputRole::for_entity::<BankSchema>("assessment");
+pub struct ApprovedPaymentAssessmentOutput;
+
+impl WorthQueryApplicationOutputRole for ApprovedPaymentAssessmentOutput {
+    type Schema = BankSchema;
+    type Contract = ApprovedPaymentAssessmentOutputs;
+    type Entity = PaymentIntent;
+    type Action = WorthQueryPreserveOutput;
+    type Cardinality = WorthQueryExactlyOneOutput;
+    const NAME: &'static str = "assessment";
+}
 
 impl ApplicationMutationOutputContract<BankSchema> for ApprovedPaymentAssessmentOutputs {
-    const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] =
-        &[APPROVED_PAYMENT_ASSESSMENT_OUTPUT.descriptor()];
+    const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] = &[
+        <ApprovedPaymentAssessmentOutput as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR,
+    ];
     const ROLE_FAMILIES: &'static [ApplicationMutationOutputRoleFamilyDescriptor] = &[];
 }
 
@@ -167,6 +174,7 @@ pub struct ApprovedPaymentAssessmentOutputFamily;
 
 impl WorthQueryProducerOutputFamily<BankSchema> for ApprovedPaymentAssessmentOutputFamily {
     type Source = PaymentDetailQueryBinding;
+    type Entity = PaymentIntent;
     const IDENTITY: &'static str = "worth.bank.approved-payment-assessment.output.v1";
     const SUPPORTED: &'static [WorthQueryProducerApplicability] = APPLICABILITY;
 
@@ -213,8 +221,8 @@ impl WorthQueryApplicationProducerBinding<BankSchema> for ApprovedPaymentAssessm
     type Operation = ApprovedPaymentAssessmentBinding;
     type OutputFamily = ApprovedPaymentAssessmentOutputFamily;
     type Provider = ApprovedPaymentAssessmentProvider;
+    type OutputRole = ApprovedPaymentAssessmentOutput;
     const IDENTITY: &'static str = "worth.bank.approved-payment-assessment.producer.v1";
-    const OUTPUT_ROLE: &'static str = "assessment";
     const APPLICABILITY: &'static [WorthQueryProducerApplicability] = APPLICABILITY;
     const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement] = &[];
     const RESOURCE_POLICY: &'static str = "bounded-synchronous";

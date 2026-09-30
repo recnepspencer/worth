@@ -81,32 +81,53 @@ pub(super) const fn replacement_requirements() -> ApplicationCandidateRequiremen
 pub struct VertexReplacementOutputs;
 
 /// The vertex a replacement keeps as its anchor.
-pub const fn vertex_replacement_anchor_output<Schema: TopologySchemaBinding>(
-) -> WorthQueryApplicationOutputRole<VertexReplacementBinding<Schema>, Body, WorthQueryPreserveOutput>
+pub struct VertexReplacementAnchorOutput<Schema>(PhantomData<fn() -> Schema>);
+
+impl<Schema: TopologySchemaBinding> WorthQueryApplicationOutputRole
+    for VertexReplacementAnchorOutput<Schema>
 {
-    WorthQueryApplicationOutputRole::for_entity::<Schema>("anchor")
+    type Schema = Schema;
+    type Contract = VertexReplacementOutputs;
+    type Entity = Body;
+    type Action = WorthQueryPreserveOutput;
+    type Cardinality = WorthQueryExactlyOneOutput;
+    const NAME: &'static str = "anchor";
 }
 
 /// The vertex a replacement creates.
-pub const fn vertex_replacement_created_output<Schema: TopologySchemaBinding>(
-) -> WorthQueryApplicationOutputRole<VertexReplacementBinding<Schema>, Body, WorthQueryCreateOutput>
+pub struct VertexReplacementCreatedOutput<Schema>(PhantomData<fn() -> Schema>);
+
+impl<Schema: TopologySchemaBinding> WorthQueryApplicationOutputRole
+    for VertexReplacementCreatedOutput<Schema>
 {
-    WorthQueryApplicationOutputRole::for_entity::<Schema>("replacement")
+    type Schema = Schema;
+    type Contract = VertexReplacementOutputs;
+    type Entity = Body;
+    type Action = WorthQueryCreateOutput;
+    type Cardinality = WorthQueryExactlyOneOutput;
+    const NAME: &'static str = "replacement";
 }
 
 /// The vertex a replacement retires.
-pub const fn vertex_replacement_retired_output<Schema: TopologySchemaBinding>(
-) -> WorthQueryApplicationOutputRole<VertexReplacementBinding<Schema>, Body, WorthQueryRetireOutput>
+pub struct VertexReplacementRetiredOutput<Schema>(PhantomData<fn() -> Schema>);
+
+impl<Schema: TopologySchemaBinding> WorthQueryApplicationOutputRole
+    for VertexReplacementRetiredOutput<Schema>
 {
-    WorthQueryApplicationOutputRole::for_entity::<Schema>("retired")
+    type Schema = Schema;
+    type Contract = VertexReplacementOutputs;
+    type Entity = Body;
+    type Action = WorthQueryRetireOutput;
+    type Cardinality = WorthQueryExactlyOneOutput;
+    const NAME: &'static str = "retired";
 }
 
 impl<Schema: TopologySchemaBinding> ApplicationMutationOutputContract<Schema>
     for VertexReplacementOutputs
 {
     const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] = &[
-        vertex_replacement_anchor_output::<Schema>().descriptor(),
-        vertex_replacement_created_output::<Schema>().descriptor(),
-        vertex_replacement_retired_output::<Schema>().descriptor(),
+        <VertexReplacementAnchorOutput<Schema> as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR,
+        <VertexReplacementCreatedOutput<Schema> as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR,
+        <VertexReplacementRetiredOutput<Schema> as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR,
     ];
 }

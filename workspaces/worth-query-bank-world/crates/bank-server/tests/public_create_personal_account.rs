@@ -6,7 +6,7 @@ use bank_domain::model::{
 };
 use bank_domain::proposals::{BankIdempotencyKey, BankSnapshotBuilder};
 use bank_domain::queries;
-use bank_domain::schema::{CreatePersonalAccount, CREATE_PERSONAL_ACCOUNT_OUTPUT_ACCOUNT};
+use bank_domain::schema::{CreatePersonalAccount, CreatedPersonalAccountOutput};
 use bank_server::{
     mutations, BankEmployeeAssignmentSeed, BankMutationControls, BankPrincipalSeed, BankWorldSeed,
 };
@@ -91,7 +91,7 @@ fn assert_public_creation(display_name: &str) {
     assert_eq!(account.canonical_text().len(), 76);
     let created_entity = first_receipt
         .output_correspondence()
-        .entity(CREATE_PERSONAL_ACCOUNT_OUTPUT_ACCOUNT)
+        .entity::<CreatedPersonalAccountOutput>()
         .expect("the declared created-account output must resolve")
         .entity_id();
     assert!(first_receipt
@@ -116,7 +116,7 @@ fn assert_public_creation(display_name: &str) {
     };
     let recovered_entity = retry_receipt
         .output_correspondence()
-        .entity(CREATE_PERSONAL_ACCOUNT_OUTPUT_ACCOUNT)
+        .entity::<CreatedPersonalAccountOutput>()
         .expect("the recovered output correspondence must remain complete")
         .entity_id();
     assert_eq!(recovered_entity, created_entity);

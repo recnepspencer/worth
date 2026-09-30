@@ -88,13 +88,13 @@ fn bind_correspondence<Schema: TopologySchemaBinding>(
     retired: &WorthQueryApplicationEffectEntity<Schema, Body>,
 ) -> Result<(), HandlerExecutionDenial> {
     writer
-        .preserve_output(vertex_replacement_anchor_output::<Schema>(), anchor)
+        .preserve_output::<VertexReplacementAnchorOutput<Schema>>(anchor)
         .map_err(HandlerExecutionDenial::new)?;
     writer
-        .create_output(vertex_replacement_created_output::<Schema>(), replacement)
+        .create_output::<VertexReplacementCreatedOutput<Schema>>(replacement)
         .map_err(HandlerExecutionDenial::new)?;
     writer
-        .retire_output(vertex_replacement_retired_output::<Schema>(), retired)
+        .retire_output::<VertexReplacementRetiredOutput<Schema>>(retired)
         .map_err(HandlerExecutionDenial::new)?;
     Ok(())
 }

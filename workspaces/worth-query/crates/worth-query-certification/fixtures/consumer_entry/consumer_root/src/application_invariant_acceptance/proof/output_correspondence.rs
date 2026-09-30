@@ -8,15 +8,12 @@ use worth_query_host::facade::{
     primary_graph::{
         LineageEventKind, MutationHandlerExecutionDenial, RecordStructuralChange,
         WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationCommitReceipt,
-        WorthQueryApplicationOutputProjectionDenial, WorthQueryApplicationOutputRole,
-        WorthQueryCreateOutput, WorthQueryEntityResolutionDenialKind,
-        WorthQuerySourceExpectationDenialKind,
+        WorthQueryEntityResolutionDenialKind, WorthQuerySourceExpectationDenialKind,
     },
 };
 use worth_query_topology_entry::{
-    planar_anchor_output, vertex_replacement_anchor_output, vertex_replacement_created_output,
-    vertex_replacement_retired_output, PlanarEditBinding, PlanarQuery, PlanarRead, Principal,
-    VertexReplacement, VertexReplacementBinding,
+    PlanarAnchorOutput, PlanarQuery, PlanarRead, VertexReplacement, VertexReplacementAnchorOutput,
+    VertexReplacementCreatedOutput, VertexReplacementRetiredOutput,
 };
 
 use super::{
@@ -59,25 +56,15 @@ pub(super) fn run(request: &Request<'_>, application: &ProgramApplication) {
     assert_eq!(result.replacement_key, "replacement-b");
     let correspondence = receipt.output_correspondence();
     let preserved = correspondence
-        .entity(vertex_replacement_anchor_output::<ConsumerSchema>())
+        .entity::<VertexReplacementAnchorOutput<ConsumerSchema>>()
         .unwrap()
         .entity_id();
     let created = correspondence
-        .entity(vertex_replacement_created_output::<ConsumerSchema>())
+        .entity::<VertexReplacementCreatedOutput<ConsumerSchema>>()
         .unwrap()
         .entity_id();
-    assert_eq!(
-        correspondence
-            .entity(WorthQueryApplicationOutputRole::<
-                VertexReplacementBinding<ConsumerSchema>,
-                Principal,
-                WorthQueryCreateOutput,
-            >::for_entity::<ConsumerSchema>("replacement"))
-            .err(),
-        Some(WorthQueryApplicationOutputProjectionDenial::EntityMismatch)
-    );
     let deleted = correspondence
-        .entity(vertex_replacement_retired_output::<ConsumerSchema>())
+        .entity::<VertexReplacementRetiredOutput<ConsumerSchema>>()
         .unwrap()
         .entity_id();
     assert_eq!(preserved, anchor);
@@ -247,10 +234,7 @@ fn preserved_identity(
     };
     receipt
         .output_correspondence()
-        .entity(planar_anchor_output::<
-            ConsumerSchema,
-            PlanarEditBinding<ConsumerSchema>,
-        >())
+        .entity::<PlanarAnchorOutput<ConsumerSchema>>()
         .unwrap()
         .entity_id()
 }

@@ -147,22 +147,22 @@ fn restored_final_output_keeps_original_create_producer_and_zero_contact() {
     assert_eq!(settled.producer_contacts_in_this_demand(), 0);
     assert!(settled
         .output_correspondence()
-        .entity(final_anchor_output::<CheckpointSchema>())
+        .entity::<FinalAnchorOutput<CheckpointSchema>>()
         .is_ok());
     assert!(settled
         .output_correspondence()
-        .entity(final_preserved_anchor_output::<CheckpointSchema>())
+        .entity::<FinalPreservedAnchorOutput<CheckpointSchema>>()
         .is_err());
     // Readmitted optional roles stay values: the bound closing vertex is
     // present and the never-bound auxiliary role is absent, not missing.
     assert!(settled
         .output_correspondence()
-        .entity(final_closing_output::<CheckpointSchema>())
+        .entity::<FinalClosingOutput<CheckpointSchema>>()
         .expect("the readmitted closing role reads as a value")
         .is_some());
     assert!(settled
         .output_correspondence()
-        .entity(final_auxiliary_output::<CheckpointSchema>())
+        .entity::<FinalAuxiliaryOutput<CheckpointSchema>>()
         .expect("the readmitted auxiliary role reads as a value")
         .is_none());
 }
