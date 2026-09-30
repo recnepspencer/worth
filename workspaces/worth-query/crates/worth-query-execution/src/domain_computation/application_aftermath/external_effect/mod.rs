@@ -9,6 +9,7 @@ mod correlation;
 mod dispatch;
 mod identity;
 mod identity_derivation;
+mod inbound;
 mod observation;
 mod outbox;
 mod posture;
@@ -31,6 +32,16 @@ pub use dispatch::{
     WorthQueryExternalEffectDispatch,
 };
 pub use identity::{ExternalEffectCausalLink, ExternalEffectPostureIdentity};
+pub(in crate::domain_computation) use inbound::{
+    WorthQueryAcceptedInboundOccurrence, WorthQueryInboundCustody,
+    WorthQueryInboundCustodyAdmission, WorthQueryInboundPublicationClaim,
+    WorthQueryInboundRecoveryState, WorthQueryInboundTerminalOwnerResult,
+    WorthQueryTransportPublicationPermit, WorthQueryTransportPublicationPermitDenial,
+};
+pub use inbound::{
+    WorthQueryInboundCleanupReport, WorthQueryInboundOccurrenceClaims,
+    WorthQueryInboundOccurrenceVerifier, WorthQueryInboundVerificationDenial,
+};
 #[cfg(test)]
 pub(crate) use outbox::dispatch_outbox_create_intent;
 pub(crate) use outbox::{

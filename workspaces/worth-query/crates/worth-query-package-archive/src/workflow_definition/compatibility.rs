@@ -4,11 +4,11 @@
 
 use worth_query_declaration::facade::application_program::{
     ApplicationWorkflowAuthoringCommand, ApplicationWorkflowAuthoringDenial,
-    ApplicationWorkflowCommandAdapter, ApplicationWorkflowCondition,
-    ApplicationWorkflowConditionOperand, ApplicationWorkflowConnectionKind,
-    ApplicationWorkflowEvidenceJoinPolicy, ApplicationWorkflowNodeIdentity,
-    ApplicationWorkflowNodeKind, ApplicationWorkflowSpec, ApplicationWorkflowSubjectSelector,
-    AuthoredWorkflowDefinition,
+    ApplicationWorkflowAwaitInbound, ApplicationWorkflowCommandAdapter,
+    ApplicationWorkflowCondition, ApplicationWorkflowConditionOperand,
+    ApplicationWorkflowConnectionKind, ApplicationWorkflowEvidenceJoinPolicy,
+    ApplicationWorkflowInboundWait, ApplicationWorkflowNodeIdentity, ApplicationWorkflowNodeKind,
+    ApplicationWorkflowSpec, ApplicationWorkflowSubjectSelector, AuthoredWorkflowDefinition,
 };
 use worth_query_declaration::facade::application_schema::{
     ApplicationSchema, ApplicationSchemaDeclaration,
@@ -98,7 +98,7 @@ impl WorthQueryUntrustedWorkflowDefinitionDraft {
         let mut schema = None;
         let mut commands = Vec::with_capacity(1 + self.nodes.len() + self.connections.len());
         for node in &self.nodes {
-            let kind = resolve(node, installed, &mut schema)?;
+            let kind = resolve(node, &self.nodes, installed, &mut schema)?;
             let identity = ApplicationWorkflowNodeIdentity::new(node.identity.as_str()).map_err(
                 |invalid| {
                     authoring(
@@ -129,6 +129,7 @@ impl WorthQueryUntrustedWorkflowDefinitionDraft {
 
 fn resolve<Schema, Spec>(
     node: &DraftNode,
+    nodes: &[DraftNode],
     installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
     schema: &mut Option<ApplicationSchemaDeclaration<Schema>>,
 ) -> Result<ApplicationWorkflowNodeKind, Denial>
@@ -212,6 +213,37 @@ where
             ApplicationWorkflowEvidenceJoinPolicy::from_identity(policy)
                 .ok_or_else(|| denial(Kind::UnknownEvidenceJoinPolicy, subject))?,
         ),
+        DraftMember::AwaitInbound(awaited) => {
+            let origin = nodes
+                .iter()
+                .find(|candidate| candidate.identity == awaited.origin)
+                .ok_or_else(changed)?;
+            let DraftMember::Operation {
+                identifier,
+                binding,
+                ..
+            } = &origin.member
+            else {
+                return Err(changed());
+            };
+            let inbound = installed
+                .draft_inbound(identifier, binding.as_deref())
+                .ok_or_else(unknown)?;
+            if inbound.effect() != awaited.effect
+                || inbound.protocol() != &awaited.protocol
+                || inbound.source_identity() != awaited.source
+                || inbound.limits() != awaited.limits
+            {
+                return Err(changed());
+            }
+            let origin =
+                ApplicationWorkflowNodeIdentity::new(&awaited.origin).map_err(|_| changed())?;
+            ApplicationWorkflowNodeKind::AwaitInbound(ApplicationWorkflowAwaitInbound::new(
+                origin,
+                inbound,
+                ApplicationWorkflowInboundWait::UntilInstanceDeadline,
+            ))
+        }
         DraftMember::Terminal => ApplicationWorkflowNodeKind::Terminal,
     })
 }

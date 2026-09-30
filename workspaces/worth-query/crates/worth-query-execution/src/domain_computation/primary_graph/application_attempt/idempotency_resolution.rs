@@ -1,5 +1,8 @@
 use worth_query_installation::facade::ApplicationSchema;
 
+#[path = "idempotency_resolution/external_settlement.rs"]
+mod external_settlement;
+
 use super::{
     provider_recomparison::recover_equivalent_commit_evidence,
     WorthQueryApplicationCommitAuthorityBinding, WorthQueryApplicationCommitReceipt,
@@ -42,6 +45,9 @@ pub enum WorthQueryApplicationIdempotencyResolution {
 pub enum WorthQueryGuardedWorkflowOperationCustody {
     Unseen,
     Committed(WorthQueryApplicationCommitReceipt),
+    /// The original dispatch has a matching World-performed terminal at its
+    /// external-effect owner. Acceptance still rechecks that owner at commit.
+    ExternallySettled(WorthQueryApplicationCommitReceipt),
     DispatchPending(WorthQueryApplicationCommitReceipt),
     IntentDrift,
     PublicationPending,
@@ -227,8 +233,26 @@ where
                     admission.canonical_work(),
                     WorthQueryApplicationCommitAuthorityBinding::from_admission(admission, bound),
                 );
-                if super::workflow_transition_program::operation_receipt_requires_recovery(&receipt)
+                if receipt
+                    .dispatch_outbox()
+                    .and_then(|record| record.inbound())
+                    .is_some()
                 {
+                    match self.resolve_guarded_workflow_external_settlement(&receipt) {
+                        Ok(true) => {
+                            WorthQueryGuardedWorkflowOperationCustody::ExternallySettled(receipt)
+                        }
+                        Ok(false) => {
+                            WorthQueryGuardedWorkflowOperationCustody::DispatchPending(receipt)
+                        }
+                        Err(_) => WorthQueryGuardedWorkflowOperationCustody::Indeterminate(
+                            WorthQueryApplicationIdempotencyResolutionDenial::provider_unavailable(
+                            ),
+                        ),
+                    }
+                } else if super::workflow_transition_program::operation_receipt_requires_recovery(
+                    &receipt,
+                ) {
                     WorthQueryGuardedWorkflowOperationCustody::DispatchPending(receipt)
                 } else {
                     WorthQueryGuardedWorkflowOperationCustody::Committed(receipt)

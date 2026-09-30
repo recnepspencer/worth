@@ -12,6 +12,10 @@ pub(in crate::domain_computation) enum WorthQueryExternalDispatchAdmissionDenial
     ForeignRelationalRuntime,
     ForeignProductWorld,
     PublicationCommitMismatch,
+    MissingInboundOperationSlot,
+    AlreadyCompleted,
+    CompletedTransportRetained,
+    TerminalIndexUnavailable,
     AttemptIdentityExhausted,
 }
 
@@ -33,7 +37,9 @@ impl WorthQueryExternalDispatchAttemptOrdinal {
     }
 }
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+impl<Schema: worth_query_installation::facade::ApplicationSchema>
+    WorthQueryPrimaryGraphApplicationRuntime<Schema>
+{
     pub(in crate::domain_computation::primary_graph) fn admit_external_dispatch_attempt(
         &self,
         committed: WorthQueryCommittedDispatchOutboxObservation,
@@ -62,6 +68,44 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
                 .relational_commit()
         {
             return Err(WorthQueryExternalDispatchAdmissionDenial::PublicationCommitMismatch);
+        }
+        // Installed inbound completion needs the original operation's exact
+        // co-committed slot. A restored legacy row without it cannot enter the
+        // physical rail and leave a completion that owner maintenance cannot find.
+        if committed.record().inbound().is_some() && committed.record().operation_slot().is_none() {
+            return Err(WorthQueryExternalDispatchAdmissionDenial::MissingInboundOperationSlot);
+        }
+        // Once World has performed the inbound terminal transition, no new
+        // physical attempt may be admitted for this original effect. An
+        // attempt admitted before that transition may already be on the wire;
+        // the installed rail idempotency contract resolves that race.
+        if self
+            .inbound_custody
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .terminal_by_correlation(committed.record().correlation())
+            .is_some()
+        {
+            return Err(WorthQueryExternalDispatchAdmissionDenial::AlreadyCompleted);
+        }
+        if committed.record().inbound().is_some() {
+            if self.has_retained_installed_transport_completion(committed.record().correlation()) {
+                return Err(WorthQueryExternalDispatchAdmissionDenial::CompletedTransportRetained);
+            }
+            match self
+                .primary_provider
+                .lookup_completed_inbound(committed.record().correlation())
+            {
+                Ok(Some(_)) => {
+                    return Err(WorthQueryExternalDispatchAdmissionDenial::AlreadyCompleted);
+                }
+                Err(_) => {
+                    return Err(
+                        WorthQueryExternalDispatchAdmissionDenial::TerminalIndexUnavailable,
+                    );
+                }
+                Ok(None) => {}
+            }
         }
         let ordinal = WorthQueryExternalDispatchAttemptOrdinal::mint(
             self.next_external_dispatch_attempt

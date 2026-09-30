@@ -198,6 +198,14 @@ pub(super) fn validate_member_identifiers(
                 validate_identifiers([operation, effect])?;
                 validate_portable_type_identity(rust_payload_type)?;
             }
+            ApplicationSchemaMember::OperationInboundOccurrence {
+                operation,
+                effect,
+                source_identity,
+                ..
+            } => {
+                validate_identifiers([operation, effect, source_identity])?;
+            }
             ApplicationSchemaMember::OperationAftermath { operation, .. } => {
                 validate_simple_identifier(operation)?;
             }

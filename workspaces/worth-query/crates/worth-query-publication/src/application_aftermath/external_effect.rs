@@ -29,6 +29,9 @@ pub enum WorthQueryPublishedExternalEffectFailure {
     PayloadRejected,
     InitialDispatchOwnerReadDenied,
     InitialDispatchAttemptAdmissionDenied,
+    InitialDispatchAlreadyCompleted,
+    CompletionPublicationPending,
+    InitialDispatchTerminalIndexUnavailable,
     InitialDispatchCanonicalDerivationDenied,
     InitialDispatchTimeObservationDenied,
     UnsupportedProtocolVersion {
@@ -110,6 +113,15 @@ const fn publish_preparation_failure(
         }
         Execution::AttemptAdmissionDenied => {
             WorthQueryPublishedExternalEffectFailure::InitialDispatchAttemptAdmissionDenied
+        }
+        Execution::AlreadyCompleted => {
+            WorthQueryPublishedExternalEffectFailure::InitialDispatchAlreadyCompleted
+        }
+        Execution::CompletionPublicationPending => {
+            WorthQueryPublishedExternalEffectFailure::CompletionPublicationPending
+        }
+        Execution::TerminalIndexUnavailable => {
+            WorthQueryPublishedExternalEffectFailure::InitialDispatchTerminalIndexUnavailable
         }
         Execution::CanonicalDerivationDenied => {
             WorthQueryPublishedExternalEffectFailure::InitialDispatchCanonicalDerivationDenied
@@ -223,6 +235,14 @@ mod tests {
             (
                 WorthQueryExternalDispatchPreparationDenial::AttemptAdmissionDenied,
                 WorthQueryPublishedExternalEffectFailure::InitialDispatchAttemptAdmissionDenied,
+            ),
+            (
+                WorthQueryExternalDispatchPreparationDenial::AlreadyCompleted,
+                WorthQueryPublishedExternalEffectFailure::InitialDispatchAlreadyCompleted,
+            ),
+            (
+                WorthQueryExternalDispatchPreparationDenial::TerminalIndexUnavailable,
+                WorthQueryPublishedExternalEffectFailure::InitialDispatchTerminalIndexUnavailable,
             ),
             (
                 WorthQueryExternalDispatchPreparationDenial::CanonicalDerivationDenied,

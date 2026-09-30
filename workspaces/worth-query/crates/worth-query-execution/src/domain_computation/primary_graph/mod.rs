@@ -47,6 +47,7 @@ pub(crate) mod product_activation;
 mod product_operation;
 mod program_occurrence;
 mod provider;
+pub(in crate::domain_computation::primary_graph) use provider::OutstandingDispatchInFlightLease;
 mod resolution;
 mod resolution_denial;
 mod root;
@@ -87,6 +88,15 @@ pub(crate) use application_query::WorthQueryApplicationHistoricalRead;
 pub(crate) use application_query::WorthQueryApplicationQueryControls;
 pub(in crate::domain_computation) use crate::domain_computation::application_aftermath::external_effect::WorthQueryAdmittedExternalDispatchAttempt;
 pub(in crate::domain_computation) use application_runtime::WorthQueryExternalDispatchAttemptOrdinal;
+pub(in crate::domain_computation) use application_runtime::WorthQueryPerformedInboundCompletion;
+pub(in crate::domain_computation) use application_runtime::WorthQueryUnpublishedInboundCompletion;
+pub(in crate::domain_computation::primary_graph) use application_runtime::{
+    InstalledTransportCompletion, InstalledTransportPendingReason, InstalledTransportResumeOutcome,
+    PerformedInstalledTransportCompletion,
+};
+pub(in crate::domain_computation) use application_runtime::{
+    WorthQueryInstalledTransportCompletionBinding,
+};
 pub(in crate::domain_computation) use entity_resolution::{
     WorthQueryEntityResolutionTruth, WorthQueryInstalledEntityResolutionContext,
     WorthQueryResolvedEntity,

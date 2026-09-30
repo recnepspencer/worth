@@ -48,4 +48,5 @@ fn installed_outbox_layout_preserves_every_frozen_physical_field_name() {
         layout.outcome_identity_locator,
         expected("outcome-identity")
     );
+    assert_eq!(layout.operation_slot_locator, expected("operation-slot"));
 }

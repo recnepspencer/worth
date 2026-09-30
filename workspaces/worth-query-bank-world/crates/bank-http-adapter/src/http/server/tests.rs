@@ -16,6 +16,9 @@ mod elevation_request_replay;
 mod fixture;
 mod mutation;
 mod protocol;
+mod rail_audience_facade;
+mod rail_protocol;
+mod rail_shutdown;
 mod recovery;
 mod resource_close;
 

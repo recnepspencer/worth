@@ -25,9 +25,9 @@ use crate::limits::WorthQueryPackageArchiveLimits;
 
 const MAGIC: &[u8; 4] = b"WQWD";
 
-/// Current deterministic workflow definition draft protocol. Version 2
-/// carries expression-backed conditions.
-pub const WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION: u16 = 2;
+/// Current deterministic workflow definition draft protocol. Version 3
+/// carries portable inbound waits; versions 1 and 2 remain readable.
+pub const WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION: u16 = 3;
 
 /// The oldest draft protocol still read. Its conditions readmit as migrated
 /// expressions; nothing writes it.

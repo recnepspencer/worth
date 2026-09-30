@@ -8,7 +8,11 @@ mod retention;
 pub(crate) use catalog::{
     CompositeHistoryCatalog, ReservedCompositeCommitCapacity, RuntimeWorldHistoryCatalogContract,
 };
-pub use catalog::{CompositeHistoryCatalogDenial, CompositeHistoryTraversal};
+pub use catalog::{
+    CompositeHistoryCatalogDenial, CompositeHistoryTraversal,
+    RuntimeWorldPerformedPublicationProtection, RuntimeWorldPublicationCursor,
+    RuntimeWorldPublicationFrontier, RuntimeWorldPublicationPage, RuntimeWorldPublicationRow,
+};
 #[allow(
     unused_imports,
     reason = "the internal denial is asserted by the real constructor contract test"
@@ -22,7 +26,7 @@ pub use commit::{
 pub use parentage::OrdinaryParent;
 pub(crate) use publication::{
     CanonicalPublicationEnvelope, PerformedPublicationFacts, PreparedPublicationRecord,
-    PublicationDeliveryClaim,
+    PublicationDeliveryClaim, PublicationRevision,
 };
 pub use reclamation::{
     CompositeHistoryReclamationRequest, HistoryReclamationDenial, HistoryReclamationOutcome,

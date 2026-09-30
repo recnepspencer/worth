@@ -168,10 +168,27 @@ lists where the code enforces them. Their engine consequences:
   relevant ones before governed work or commit.
 - **Commit is not external completion.** A committed mutation or outbox row
   proves local state only. Acknowledgement, silence, timeout, disconnect, and
-  lost response keep their exact typed posture.
+  lost response keep their exact typed posture. An installed signed inbound
+  source or the original transport observation can complete that same owner;
+  only the canonical World publication makes it terminal. A workflow
+  `await_inbound` node observes the owner on fresh advance, never from callback
+  bytes or a receipt-local status alone.
 - **Support is explicit.** An exported type may be accepted, provisional,
   deferred, or vocabulary-only. `provisional_aftermath` is a compiled undo and
   redo experiment, not an accepted product contract.
+
+Inbound meaning starts in
+`worth-query-declaration/src/application_schema/inbound_occurrence`;
+installation fixes the verifier to the operation, and
+`worth-query-execution/src/domain_computation/application_aftermath/external_effect/inbound`
+owns accepted evidence and terminal correlation.
+The primary graph runtime publishes through World; the publication
+`application_entry/inbound_occurrence` module supplies the ordinary host call.
+Bank's compiled [payment declaration](../../../../worth-query-bank-world/crates/bank-domain/src/schema/contributions/payments.rs),
+[workflow wait](../../../../worth-query-bank-world/crates/bank-server/src/application_definition/workflows.rs),
+and [installed route](../../../../worth-query-bank-world/crates/bank-server/src/inbound_completion.rs)
+show the audience path. See the [aftermath guide](./execution/application-aftermath-and-recovery.md#authenticated-inbound-completion)
+for custody, duplicate, and recovery postures.
 
 ## Audience Facade Rules
 

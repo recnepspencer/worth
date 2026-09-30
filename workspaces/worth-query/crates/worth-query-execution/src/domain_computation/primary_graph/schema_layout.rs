@@ -23,6 +23,7 @@ mod program_activation;
 mod provider_aftermath_causality;
 mod provider_dispatch_outbox;
 mod provider_idempotency;
+mod provider_inbound_completion;
 mod registry_lowering;
 
 use super::workflow::schema::WorthQueryWorkflowLayout;
@@ -42,6 +43,7 @@ pub(in crate::domain_computation) use principal_binding::WorthQueryPrimaryPrinci
 pub(in crate::domain_computation::primary_graph) use program_activation::WorthQueryProgramActivationLayout;
 pub(super) use provider_aftermath_causality::WorthQueryAftermathCausalityLayout;
 pub(super) use provider_idempotency::WorthQueryProviderIdempotencyLayout;
+pub(in crate::domain_computation::primary_graph) use provider_inbound_completion::WorthQueryInboundCompletionLayout;
 use registry_lowering::{
     lower_application_contract_bindings, lower_kind_ids, next_provider_kind_id,
     relational_schema_basis,
@@ -65,6 +67,7 @@ pub(in crate::domain_computation) struct WorthQueryPrimaryGraphLayout {
     capability_grant_joins: BTreeMap<(String, String), WorthQueryCapabilityGrantJoinLayout>,
     provider_idempotency: WorthQueryProviderIdempotencyLayout,
     provider_dispatch_outbox: WorthQueryDispatchOutboxLayout,
+    provider_inbound_completion: WorthQueryInboundCompletionLayout,
     provider_aftermath_causality: WorthQueryAftermathCausalityLayout,
     program_activation: WorthQueryProgramActivationLayout,
     workflow: WorthQueryWorkflowLayout,
@@ -182,6 +185,7 @@ impl WorthQueryPrimaryGraphLayout {
                 capability_grant_joins,
                 provider_idempotency: platform_entities.provider_idempotency,
                 provider_dispatch_outbox: platform_entities.provider_dispatch_outbox,
+                provider_inbound_completion: platform_entities.provider_inbound_completion,
                 provider_aftermath_causality: platform_entities.provider_aftermath_causality,
                 program_activation: platform_entities.program_activation,
                 workflow: platform_entities.workflow,
@@ -354,6 +358,18 @@ impl WorthQueryPrimaryGraphLayout {
 
     pub(super) const fn provider_dispatch_outbox(&self) -> &WorthQueryDispatchOutboxLayout {
         &self.provider_dispatch_outbox
+    }
+
+    pub(in crate::domain_computation::primary_graph) const fn provider_inbound_completion(
+        &self,
+    ) -> &WorthQueryInboundCompletionLayout {
+        &self.provider_inbound_completion
+    }
+
+    pub(super) fn provider_inbound_completion_mut(
+        &mut self,
+    ) -> &mut WorthQueryInboundCompletionLayout {
+        &mut self.provider_inbound_completion
     }
 
     pub(super) const fn provider_aftermath_causality(&self) -> &WorthQueryAftermathCausalityLayout {

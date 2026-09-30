@@ -50,6 +50,40 @@ impl RuntimeWorldInspectionPort {
             .map_err(RuntimeWorldServiceDenial::Denied)
     }
 
+    pub fn performed_publication_page(
+        &self,
+        after: Option<&crate::history::RuntimeWorldPublicationCursor>,
+        maximum: NonZeroUsize,
+    ) -> Result<
+        crate::history::RuntimeWorldPublicationPage,
+        RuntimeWorldServiceDenial<CompositeHistoryCatalogDenial>,
+    > {
+        self.service()?
+            .performed_publication_page(after, maximum)
+            .map_err(RuntimeWorldServiceDenial::Denied)
+    }
+
+    pub fn protect_performed_publication(
+        &self,
+        identity: &CompositeCommitIdentity,
+    ) -> Result<
+        crate::history::RuntimeWorldPerformedPublicationProtection,
+        RuntimeWorldServiceDenial<CompositeHistoryCatalogDenial>,
+    > {
+        self.service()?
+            .protect_performed_publication(identity)
+            .map_err(RuntimeWorldServiceDenial::Denied)
+    }
+
+    pub fn publication_frontier_is_current(
+        &self,
+        frontier: &crate::history::RuntimeWorldPublicationFrontier,
+    ) -> Result<bool, RuntimeWorldServiceDenial<CompositeHistoryCatalogDenial>> {
+        self.service()?
+            .publication_frontier_is_current(frontier)
+            .map_err(RuntimeWorldServiceDenial::Denied)
+    }
+
     pub fn inspect_retention(
         &self,
         key: &crate::inspection::RuntimeWorldRetentionKey,

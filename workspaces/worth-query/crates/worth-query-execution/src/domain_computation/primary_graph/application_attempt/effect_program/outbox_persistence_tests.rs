@@ -122,8 +122,8 @@ fn assert_protocol_projection(evidence: &OutboxProjectionEvidence) {
     assert_eq!(spec.kind_id, layout.entity_kind);
     assert_eq!(
         spec.fields.len(),
-        8,
-        "the outbox projects exactly its eight declared fields"
+        9,
+        "the outbox projects exactly its nine declared fields"
     );
     assert_eq!(
         spec.fields.get(&layout.payload_locator),
@@ -168,6 +168,17 @@ fn assert_correlation_projection(evidence: &OutboxProjectionEvidence) {
         spec.fields.get(&layout.outcome_identity_locator),
         Some(&AspectValue::UInt64(evidence.outcome.get())),
         "the persisted outcome identity is the one this commit minted"
+    );
+    assert_eq!(
+        spec.fields.get(&layout.operation_slot_locator),
+        Some(&text(
+            evidence
+                .record
+                .operation_slot()
+                .unwrap_or_default()
+                .to_owned()
+        )),
+        "the original operation slot stays co-committed with the dispatch"
     );
     let correlation = hex(evidence.record.correlation().digest().bytes().to_vec());
     assert_eq!(
@@ -236,6 +247,7 @@ fn installed_contract() -> InstalledExternalEffectContract {
         rust_payload_type: <DeathNotice as worth_query_declaration::facade::portable_identity::WorthQueryPortableType>::PORTABLE_TYPE_IDENTITY,
         protocol: EXTERNAL_PROTOCOL,
         maximum_payload_bytes: DeathNoticeBinding::MAX_EXTERNAL_BYTES,
+        inbound: None,
     }
 }
 
@@ -267,6 +279,7 @@ fn layout() -> WorthQueryDispatchOutboxLayout {
         maximum_payload_bytes_locator: locator("maximum-payload-bytes"),
         payload_locator: locator("payload-hex"),
         outcome_identity_locator: locator("outcome-identity"),
+        operation_slot_locator: locator("operation-slot"),
     }
 }
 

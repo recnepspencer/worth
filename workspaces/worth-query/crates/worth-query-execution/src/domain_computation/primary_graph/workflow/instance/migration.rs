@@ -68,7 +68,10 @@ pub(in crate::domain_computation::primary_graph) fn admit_workflow_migration(
     let resume = resumed.start().entity();
     let runs = resumed.reachable_from(resume, None);
     for node in &runs {
-        for consumed in resumed.consumed_sources(*node) {
+        for consumed in resumed
+            .consumed_sources(*node)
+            .ok_or_else(|| unmapped("a consumed inbound origin is absent or ambiguous"))?
+        {
             let producer = Some(consumed.entity());
             if resumed.reachable_from(resume, producer).contains(node)
                 && !resumed

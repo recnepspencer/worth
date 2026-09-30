@@ -157,6 +157,7 @@ mod tests {
                 BoundaryProtocolVersion::new(1),
             ),
             maximum_payload_bytes: 24,
+            inbound: None,
         };
         let record = WorthQueryDispatchOutboxRecord::from_installed_contract(
             correlation,

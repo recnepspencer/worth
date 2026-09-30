@@ -86,6 +86,9 @@ pub enum RailRejection {
     MalformedNotice,
     /// This correlation was already reserved for different immutable meaning.
     CorrelationPayloadMismatch,
+    CompletionDeliveryCapacityExhausted,
+    CompletionEnvelopeInvalid,
+    CompletionClockUnavailable,
 }
 
 pub(crate) fn decode_notice_for_profile(

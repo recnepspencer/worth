@@ -68,7 +68,7 @@ fn pending_rail_dispatch_remains_under_the_committed_outbox_owner() {
 }
 
 #[test]
-fn lost_dispatch_before_rail_admission_requires_recovery_before_workflow_completion() {
+fn lost_dispatch_recovery_remains_pending_until_authenticated_inbound() {
     let ready = ReadyPaymentWorld::new(
         "lost-dispatch-before-admission",
         FaultScript::DisappearMidDispatch,
@@ -137,7 +137,7 @@ fn lost_dispatch_before_rail_admission_requires_recovery_before_workflow_complet
         .expect("the exact operation opens recovery")
         .safe_retry()
         .expect("recovery re-dispatches the retained outbox request");
-    let accepted = workflow
+    let denied = workflow
         .accept_recovered_applied(
             ready.instance.clone(),
             &required,
@@ -147,8 +147,21 @@ fn lost_dispatch_before_rail_admission_requires_recovery_before_workflow_complet
             &recovery,
             &key("approved-payment:operation:accept:lost-dispatch:recovered"),
         )
-        .expect("completed recovery settles the waiting operation");
-    assert!(matches!(accepted, WorkflowProgressOutcome::Completed(_)));
+        .expect_err("rail-local recovery does not publish the authenticated inbound terminal");
+    assert!(matches!(
+        denied,
+        bank_server::BankApprovedPaymentWorkflowError::OperationOwnerAcceptance(_)
+    ));
+    assert!(matches!(
+        workflow
+            .advance(
+                ready.instance.clone(),
+                ready.authority.clone(),
+                &key("approved-payment:advance:recovered-without-inbound"),
+            )
+            .expect("the payment retains its operation wait"),
+        WorkflowProgressOutcome::AwaitingOperation(_)
+    ));
     assert_eq!(ready.rail.attempts().len(), 2);
     assert_eq!(ready.rail.admission_count(), 1);
     assert_eq!(ready.rail.completed_effect_count(), 1);

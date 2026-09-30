@@ -4,13 +4,15 @@ mod denial;
 mod entry;
 mod metadata;
 mod publication;
+mod publication_page;
+mod publication_protection;
 mod reachability;
 mod reservation;
 mod slots;
 mod support;
 mod traversal;
 
-use std::collections::HashMap;
+use std::collections::{BTreeSet, HashMap};
 use std::num::NonZeroUsize;
 use std::sync::{Arc, Mutex, OnceLock};
 
@@ -24,13 +26,18 @@ use super::retention::{
     CompositeHistoryProtectionObligation, ExplicitCommitHistoryProtectionObligation,
     HistoryProtectionClass, ProductHeadHistoryProtectionObligation,
 };
-use super::{CompositeCommitParent, CompositeRuntimeWorldCommit};
+use super::{CompositeCommitParent, CompositeRuntimeWorldCommit, PublicationRevision};
 
 pub use counters::HistoryCatalogCounters;
 pub use denial::CompositeHistoryCatalogDenial;
 pub(crate) use entry::CompositeHistoryCatalogEntry;
 pub use metadata::HistoryMetadataLedger;
 pub(super) use metadata::HistoryReservationMetadata;
+pub use publication_page::{
+    RuntimeWorldPublicationCursor, RuntimeWorldPublicationFrontier, RuntimeWorldPublicationPage,
+    RuntimeWorldPublicationRow,
+};
+pub use publication_protection::RuntimeWorldPerformedPublicationProtection;
 pub(in crate::history) use reachability::{
     lock_index, HistoryReachabilityHandle, HistoryReachabilityIndex,
 };
@@ -82,6 +89,8 @@ pub(super) struct CompositeHistoryCatalogState {
     // Reservation allocates the eventual stable slot before owner effects.
     // Only a populated slot is an installed occurrence.
     entries: HashMap<CompositeCommitIdentity, Arc<OnceLock<CompositeHistoryCatalogEntry>>>,
+    inspection_order: BTreeSet<CompositeCommitIdentity>,
+    publication_revision: Arc<PublicationRevision>,
     reservations: HashMap<CompositeCommitIdentity, HistoryReservationMetadata>,
     metadata: HistoryMetadataLedger,
     reachability: HistoryReachabilityHandle,
@@ -105,6 +114,8 @@ impl CompositeHistoryCatalog {
                 owner,
                 limits: contract,
                 entries: HashMap::new(),
+                inspection_order: BTreeSet::new(),
+                publication_revision: Arc::new(PublicationRevision::default()),
                 reservations: HashMap::new(),
                 metadata: HistoryMetadataLedger::default(),
                 reachability,

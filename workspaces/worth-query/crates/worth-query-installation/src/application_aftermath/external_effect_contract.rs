@@ -15,6 +15,7 @@ pub enum InstalledExternalEffectContract {
         rust_payload_type: WorthQueryPortableTypeIdentity,
         protocol: ApplicationExternalEffectProtocol,
         maximum_payload_bytes: u64,
+        inbound: Option<crate::application_schema::InstalledInboundOccurrenceContract>,
     },
 }
 
@@ -44,6 +45,15 @@ impl InstalledExternalEffectContract {
     pub const fn protocol(&self) -> Option<&ApplicationExternalEffectProtocol> {
         match self {
             Self::Declared { protocol, .. } => Some(protocol),
+            Self::None => None,
+        }
+    }
+
+    pub const fn inbound(
+        &self,
+    ) -> Option<&crate::application_schema::InstalledInboundOccurrenceContract> {
+        match self {
+            Self::Declared { inbound, .. } => inbound.as_ref(),
             Self::None => None,
         }
     }

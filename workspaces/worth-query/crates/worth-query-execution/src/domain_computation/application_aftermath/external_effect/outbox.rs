@@ -26,6 +26,8 @@ pub struct WorthQueryDispatchOutboxRecord {
     maximum_payload_bytes: u64,
     payload: Vec<u8>,
     outcome_identity: u64,
+    operation_slot: Option<String>,
+    inbound: Option<worth_query_installation::facade::InstalledInboundOccurrenceContract>,
 }
 
 /// Fully decoded durable fields returned by the Relational owner read.
@@ -38,6 +40,7 @@ pub(crate) struct WorthQueryDispatchOutboxRestoredFields {
     pub maximum_payload_bytes: u64,
     pub payload: Vec<u8>,
     pub outcome_identity: u64,
+    pub operation_slot: Option<String>,
 }
 
 /// The Query-owned outbox record and the exact create reference submitted with it.
@@ -90,6 +93,8 @@ impl WorthQueryDispatchOutboxRecord {
             maximum_payload_bytes: *maximum_payload_bytes,
             payload,
             outcome_identity,
+            operation_slot: None,
+            inbound: contract.inbound().cloned(),
         })
     }
 
@@ -125,6 +130,37 @@ impl WorthQueryDispatchOutboxRecord {
         self.outcome_identity
     }
 
+    /// Exact operation slot co-committed with production outboxes. Legacy
+    /// records lacking this binding cannot select transport completion.
+    pub fn operation_slot(&self) -> Option<&str> {
+        self.operation_slot.as_deref()
+    }
+
+    pub(in crate::domain_computation) fn with_operation_slot(mut self, slot: &str) -> Self {
+        self.operation_slot = Some(slot.to_owned());
+        self
+    }
+
+    pub const fn inbound(
+        &self,
+    ) -> Option<&worth_query_installation::facade::InstalledInboundOccurrenceContract> {
+        self.inbound.as_ref()
+    }
+
+    /// Exact persistent row comparison. Inbound installation is separately
+    /// retained by the Query owner for this process-local milestone.
+    pub(crate) fn same_persisted_fields(&self, other: &Self) -> bool {
+        self.correlation == other.correlation
+            && self.correlation_family == other.correlation_family
+            && self.effect == other.effect
+            && self.protocol_identity == other.protocol_identity
+            && self.protocol_version == other.protocol_version
+            && self.maximum_payload_bytes == other.maximum_payload_bytes
+            && self.payload == other.payload
+            && self.outcome_identity == other.outcome_identity
+            && self.operation_slot == other.operation_slot
+    }
+
     pub(crate) fn restore(fields: WorthQueryDispatchOutboxRestoredFields) -> Option<Self> {
         Some(Self {
             correlation: fields.correlation,
@@ -138,6 +174,8 @@ impl WorthQueryDispatchOutboxRecord {
             maximum_payload_bytes: fields.maximum_payload_bytes,
             payload: fields.payload,
             outcome_identity: fields.outcome_identity,
+            operation_slot: fields.operation_slot,
+            inbound: None,
         })
     }
 }
@@ -154,6 +192,7 @@ pub struct WorthQueryDispatchOutboxLayout {
     pub maximum_payload_bytes_locator: worth_foundational::facade::AspectFieldLocator,
     pub payload_locator: worth_foundational::facade::AspectFieldLocator,
     pub outcome_identity_locator: worth_foundational::facade::AspectFieldLocator,
+    pub operation_slot_locator: worth_foundational::facade::AspectFieldLocator,
 }
 
 /// Build a create intent for a declared external effect. Returns `None` when
@@ -217,6 +256,12 @@ pub(crate) fn bind_dispatch_outbox_create_intent(
         (
             layout.outcome_identity_locator.clone(),
             AspectValue::UInt64(record.outcome_identity),
+        ),
+        (
+            layout.operation_slot_locator.clone(),
+            AspectValue::String(InternedString::from(
+                record.operation_slot.clone().unwrap_or_default(),
+            )),
         ),
     ]);
     let created_entity = CreatedEntityRef {

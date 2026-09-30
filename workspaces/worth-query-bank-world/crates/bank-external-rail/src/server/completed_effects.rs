@@ -6,6 +6,9 @@ use std::sync::Mutex;
 
 use crate::protocol::correlation::RailCorrelation;
 use crate::protocol::notice::{EstateDeathNotice, RailDomainEffect};
+use crate::protocol::payload::RailEffectPayload;
+
+use super::completion_delivery::DeliveryReservation;
 
 /// The rail-side consequence of completing one admitted death notice.
 ///
@@ -22,10 +25,22 @@ impl CompletedEffects {
         &self,
         correlation: RailCorrelation,
         effect: RailDomainEffect,
+        payload: &RailEffectPayload,
+        delivery: Option<&mut DeliveryReservation>,
     ) -> Result<(), CompletedEffectConflict> {
-        match self.lock().entry(correlation) {
+        let mut effects = self.lock();
+        match effects.entry(correlation.clone()) {
             Entry::Vacant(entry) => {
                 entry.insert(effect);
+                if let Some(delivery) = delivery {
+                    if delivery
+                        .record_completed(correlation.clone(), payload)
+                        .is_err()
+                    {
+                        effects.remove(&correlation);
+                        return Err(CompletedEffectConflict::DeliveryUnavailable);
+                    }
+                }
                 Ok(())
             }
             Entry::Occupied(entry) if entry.get() == &effect => {
@@ -59,4 +74,5 @@ impl CompletedEffects {
 pub enum CompletedEffectConflict {
     Repeat,
     MeaningDrift,
+    DeliveryUnavailable,
 }

@@ -33,6 +33,33 @@ where
         self.state.history.trace_ancestry(start, maximum)
     }
 
+    fn performed_publication_page(
+        &self,
+        after: Option<&crate::history::RuntimeWorldPublicationCursor>,
+        maximum: NonZeroUsize,
+    ) -> Result<crate::history::RuntimeWorldPublicationPage, CompositeHistoryCatalogDenial> {
+        self.state
+            .history
+            .performed_publication_page(after, maximum)
+    }
+
+    fn protect_performed_publication(
+        &self,
+        identity: &CompositeCommitIdentity,
+    ) -> Result<
+        crate::history::RuntimeWorldPerformedPublicationProtection,
+        CompositeHistoryCatalogDenial,
+    > {
+        self.state.history.protect_performed_publication(identity)
+    }
+
+    fn publication_frontier_is_current(
+        &self,
+        frontier: &crate::history::RuntimeWorldPublicationFrontier,
+    ) -> Result<bool, CompositeHistoryCatalogDenial> {
+        self.state.history.publication_frontier_is_current(frontier)
+    }
+
     fn inspect_retention(
         &self,
         key: &crate::inspection::RuntimeWorldRetentionKey,

@@ -56,5 +56,6 @@ pub(in crate::domain_computation::primary_graph) fn derive_dispatch_outbox_recor
         basis.external_effect,
         payload.to_vec(),
         basis.outcome_identity.get(),
-    ))
+    )
+    .map(|record| record.with_operation_slot(basis.operation_slot)))
 }

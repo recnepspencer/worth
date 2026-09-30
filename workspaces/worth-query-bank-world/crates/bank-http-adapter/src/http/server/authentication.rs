@@ -1,7 +1,7 @@
 use std::future::Future;
 use std::pin::Pin;
 
-use bank_server::{BankAuthenticatedPrincipal, BankIdentityRuntime, BankPrincipalAdmissionError};
+use bank_server::{BankAuthenticatedPrincipal, BankPrincipalAdmissionError};
 use worth_query_host::facade::admission::authenticated_principal::{
     WorthQueryAuthenticationAdapterFailureKind, WorthQueryAuthenticationDenialKind,
     WorthQueryRequestScope,
@@ -14,9 +14,9 @@ use super::super::protocol::{
     BankHttpCredential, BankHttpDenial, BankHttpDenialKind, BankHttpNextAction,
 };
 
-pub(super) trait BankHttpApplicationAuthenticator: Send + Sync + 'static {
-    fn runtime(&self) -> &BankIdentityRuntime;
-
+pub(super) trait BankHttpApplicationAuthenticator:
+    super::inbound_completion::BankRailCompletionRuntime + Send + Sync + 'static
+{
     fn authenticate<'a>(
         &'a self,
         credential: BankHttpCredential,
@@ -25,10 +25,6 @@ pub(super) trait BankHttpApplicationAuthenticator: Send + Sync + 'static {
 }
 
 impl BankHttpApplicationAuthenticator for AuthentikBankIdentity {
-    fn runtime(&self) -> &BankIdentityRuntime {
-        self.runtime()
-    }
-
     fn authenticate<'a>(
         &'a self,
         credential: BankHttpCredential,

@@ -34,6 +34,7 @@ impl InstalledWorkflowOperation {
             binding_identity: Binding::IDENTITY,
             requires_workflow_authority: Binding::REQUIRES_WORKFLOW_AUTHORITY,
             reference,
+            inbound_ref: None,
         }
     }
 }
@@ -97,6 +98,25 @@ where
             Some(_) => installed.reference.clone(),
             None => installed.reference.without_binding(),
         })
+    }
+
+    /// The exact typed inbound ref co-installed with one bound operation.
+    /// A portable draft may compare against it, but cannot create its marker.
+    pub fn draft_inbound(
+        &self,
+        identifier: &str,
+        binding: Option<&str>,
+    ) -> Option<worth_query_declaration::facade::application_program::ApplicationWorkflowInboundRef>
+    {
+        let mut operations = self.operations.iter().filter(|operation| {
+            operation.identifier == identifier
+                && binding.is_none_or(|selected| operation.binding_identity == selected)
+        });
+        let operation = operations.next()?;
+        if operations.next().is_some() {
+            return None;
+        }
+        operation.inbound_ref.clone()
     }
 
     /// The installed assessment query a draft names, read for the resource

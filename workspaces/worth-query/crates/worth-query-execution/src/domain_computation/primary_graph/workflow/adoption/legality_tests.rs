@@ -17,6 +17,7 @@ fn approval_gated() -> WorkflowDefinitionDependencies {
             WorkflowRetainedNode {
                 entity: APPROVAL,
                 path: "approve".to_owned(),
+                inbound_origin: None,
                 dependencies: vec![WorthQueryWorkflowNodeDependency::Approval {
                     identifier: "approve".to_owned(),
                     capability_type: "capability".to_owned(),
@@ -27,6 +28,7 @@ fn approval_gated() -> WorkflowDefinitionDependencies {
             WorkflowRetainedNode {
                 entity: OPERATION,
                 path: "ship".to_owned(),
+                inbound_origin: None,
                 dependencies: vec![WorthQueryWorkflowNodeDependency::Operation {
                     identifier: "ship".to_owned(),
                     input_type: "input".to_owned(),
@@ -37,6 +39,7 @@ fn approval_gated() -> WorkflowDefinitionDependencies {
             WorkflowRetainedNode {
                 entity: TERMINAL,
                 path: "done".to_owned(),
+                inbound_origin: None,
                 dependencies: Vec::new(),
             },
         ],

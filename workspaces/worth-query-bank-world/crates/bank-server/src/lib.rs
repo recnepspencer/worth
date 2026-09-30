@@ -18,6 +18,7 @@ mod estate_progression;
 mod external_effect_transport;
 mod graph_bootstrap;
 mod identity_runtime;
+mod inbound_completion;
 mod mutation_handlers;
 mod operation_admission;
 mod operation_commit;
@@ -28,7 +29,7 @@ mod world_seed;
 
 pub use application_definition::{
     approved_business_payment_definition, ApprovedBusinessPaymentDefinitionDenial, BankApplication,
-    BankApplicationP1, APPROVAL_LIMIT, APPROVAL_LIMIT_OPERAND,
+    BankApplicationP1, BankApplicationP2, APPROVAL_LIMIT, APPROVAL_LIMIT_OPERAND,
 };
 pub use application_query::{
     BankAccountActivityContinuation, BankAccountActivityHistoricalResult,
@@ -94,6 +95,10 @@ pub use estate_progression::{
 };
 pub use external_effect_transport::BankExternalEffectTransportDenial;
 pub use identity_runtime::{BankAuthenticationConfiguration, BankIdentityRuntime};
+pub use inbound_completion::{
+    BankEstateRailCompletionInstallationDenial, BankEstateRailCompletionRoute,
+    BankPaymentRailCompletionRoute,
+};
 pub use operation_commit::{
     BankApplicationAttemptDenialKind, BankCommitCanonicalWorkEvidence,
     BankCommitCanonicalWorkPhases, BankCommitDenialKind, BankCommitDenialStage,

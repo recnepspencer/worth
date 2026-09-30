@@ -15,12 +15,14 @@ use crate::domain_computation::primary_graph::workflow::instance::{
 mod approval;
 mod collection;
 mod identity;
+mod inbound;
 mod navigation;
 mod replay;
 use approval::select_approval;
 pub(in crate::domain_computation::primary_graph) use approval::SelectedWorkflowApproval;
 pub(in crate::domain_computation::primary_graph) use collection::select_assessment_collection;
 use identity::transition_identity;
+use inbound::select_inbound;
 pub(in crate::domain_computation::primary_graph) use replay::select_settled_replay_transition;
 pub(in crate::domain_computation::primary_graph) struct SelectedWorkflowTransition {
     pub(super) node: EntityId,
@@ -35,6 +37,7 @@ pub(in crate::domain_computation::primary_graph) struct SelectedWorkflowTransiti
 #[derive(Clone)]
 pub(in crate::domain_computation::primary_graph) enum SelectedWorkflowTransitionKind {
     Operation(SelectedWorkflowOperation),
+    AwaitInbound(SelectedWorkflowInbound),
     Assessment(SelectedWorkflowAssessment),
     Condition(SelectedWorkflowCondition),
     Approval(SelectedWorkflowApproval),
@@ -43,6 +46,11 @@ pub(in crate::domain_computation::primary_graph) enum SelectedWorkflowTransition
     ),
     NavigationBack,
     Terminal,
+}
+
+#[derive(Clone)]
+pub(in crate::domain_computation::primary_graph) struct SelectedWorkflowInbound {
+    pub(in crate::domain_computation::primary_graph) origin_receipt_identity: [u8; 32],
 }
 
 #[derive(Clone)]
@@ -155,6 +163,11 @@ pub(in crate::domain_computation::primary_graph) fn select_current_transition(
             binding: binding.clone(),
             subject: subject.clone(),
         }),
+        CompiledWorkflowNodeKind::AwaitInbound { origin, .. } => {
+            SelectedWorkflowTransitionKind::AwaitInbound(select_inbound(
+                compiled, node, origin, progress,
+            )?)
+        }
         CompiledWorkflowNodeKind::Condition(condition) => {
             SelectedWorkflowTransitionKind::Condition(SelectedWorkflowCondition {
                 condition: condition.clone(),

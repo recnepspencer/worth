@@ -98,7 +98,7 @@ pub mod history {
         MergeInspection, OrderedParentList, RelationalCommitReceipt,
         RelationalMergeBranchBasisDenial, VersionGraphPolicy,
     };
-    pub use crate::history::{HistoryAccess, HistoryAuthority};
+    pub use crate::history::{BoundedCanonicalCommitPatchDenial, HistoryAccess, HistoryAuthority};
     pub use crate::history::{
         RelationalCommitArtifactDenial, RelationalCommitCatalogAppendDenial,
         RelationalCommitCatalogEntry, RelationalCommitIdentity, RelationalCommitParentage,

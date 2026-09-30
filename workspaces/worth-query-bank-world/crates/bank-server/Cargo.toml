@@ -11,6 +11,7 @@ publish = false
 # `identity_runtime/certification_controls.rs`.
 test-controls = [
     "worth-query-host/test-durability-faults",
+    "worth-query-host/test-output-delivery-faults",
     "worth-query-host/test-world-operation-control",
 ]
 

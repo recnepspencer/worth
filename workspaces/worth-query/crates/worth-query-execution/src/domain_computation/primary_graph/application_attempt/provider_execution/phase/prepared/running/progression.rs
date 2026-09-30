@@ -34,6 +34,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt::provider_e
     lease: WorthQueryApplicationSnapshotLease,
     running: crate::domain_computation::WorthQueryRunningDirectRun,
     cleanup: WorthQueryApplicationMutationCleanupOwner,
+    request: worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
 }
 
 struct WorthQueryProviderProgression<'a, Schema, Operation, Input, Scope> {
@@ -71,6 +72,7 @@ impl WorthQueryProviderProgressionCompletion {
         lease: WorthQueryApplicationSnapshotLease,
         running: crate::domain_computation::WorthQueryRunningDirectRun,
         workflow_settlement_publication: Option<super::LocalWorkflowSettlementPublication>,
+        request: worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     ) -> WorthQueryProgressedApplicationCommit {
         WorthQueryProgressedApplicationCommit {
             outcome: self.outcome,
@@ -78,6 +80,7 @@ impl WorthQueryProviderProgressionCompletion {
             lease,
             running,
             cleanup: self.cleanup,
+            request,
         }
     }
 }
@@ -201,7 +204,12 @@ where
         },
         mutation_run,
     )
-    .finish(lease, running, workflow_settlement_publication)
+    .finish(
+        lease,
+        running,
+        workflow_settlement_publication,
+        admission.publication_request().clone(),
+    )
 }
 
 fn progress_provider_application<Schema, Operation, Input, Scope>(

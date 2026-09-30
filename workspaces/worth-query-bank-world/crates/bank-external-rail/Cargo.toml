@@ -10,10 +10,18 @@ publish = false
 worth-foundational.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+ed25519-dalek.workspace = true
+reqwest.workspace = true
+rustls-pemfile = "=2.2.0"
+sha2.workspace = true
 tokio.workspace = true
 
 [lints]
 workspace = true
+
+[dev-dependencies]
+rcgen = "=0.14.4"
+tokio-rustls = "=0.26.4"
 
 [[bin]]
 name = "bank-external-rail"

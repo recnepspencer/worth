@@ -13,6 +13,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitReceipt, WorthQueryCommittedProductPublication,
 };
 
+mod correlation;
 #[cfg(test)]
 mod layout_tests;
 #[cfg(test)]
@@ -54,6 +55,9 @@ struct WorthQueryCommittedDispatchOutboxOwnerObservation {
 pub enum WorthQueryCommittedDispatchOutboxReadDenial {
     ForeignRuntime,
     Missing,
+    AmbiguousCorrelation,
+    PendingPublication,
+    CommittedIndexUnavailable,
     WrongRecordKind,
     NotAuthoritative,
     ExactCommitUnavailable,
@@ -254,6 +258,16 @@ impl<Schema> super::super::WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: worth_query_installation::facade::ApplicationSchema,
 {
+    /// Uses the correlation only to select a candidate. The provider then
+    /// re-reads that candidate from the exact retained Relational commit.
+    pub(in crate::domain_computation) fn observe_committed_dispatch_outbox_for_correlation(
+        &self,
+        correlation: &crate::domain_computation::application_aftermath::ExternalEffectCorrelationIdentity,
+    ) -> Result<WorthQueryCommittedDispatchOutboxObservation, Denial> {
+        self.primary_provider
+            .committed_dispatch_outbox_for_correlation(correlation)
+    }
+
     /// Reads this receipt's outbox from a fresh provider-owned Relational view.
     pub fn observe_committed_dispatch_outbox(
         &self,
@@ -280,7 +294,7 @@ impl CommittedOutboxRead<'_> {
         let entity_id = *entity_id;
         let (created_at, values, owner_work) = self.read_record(entity_id)?;
         let record = restore_record(values)?;
-        if &record != self.binding.record() {
+        if !record.same_persisted_fields(self.binding.record()) {
             return Err(Denial::RecordMismatch);
         }
         let committed = self
@@ -292,7 +306,7 @@ impl CommittedOutboxRead<'_> {
             return Err(Denial::CommitMismatch);
         }
         Ok(WorthQueryCommittedDispatchOutboxOwnerObservation::seal(
-            record,
+            self.binding.record().clone(),
             committed.commit().clone(),
             RecordRef::Entity(entity_id),
             self.expected_runtime,

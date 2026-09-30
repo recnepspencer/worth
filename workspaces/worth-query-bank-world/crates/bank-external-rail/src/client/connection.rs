@@ -51,20 +51,19 @@ pub async fn dispatch(
         Ok(RailResponseFrame::Ack) => match read_response_frame(&mut stream, frame_timeout).await {
             Ok(RailResponseFrame::Completed) => RailExchangeOutcome::Completed,
             Ok(RailResponseFrame::DuplicateAck) => RailExchangeOutcome::DuplicateAcknowledgement,
+            Ok(RailResponseFrame::Rejected(rejection)) => RailExchangeOutcome::Rejected(rejection),
             Err(RailTransportFailure::Disconnected) => RailExchangeOutcome::Acknowledged,
             Err(RailTransportFailure::TimedOut) => RailExchangeOutcome::TimedOut,
             Ok(
                 RailResponseFrame::Ack
-                | RailResponseFrame::Rejected(_)
                 | RailResponseFrame::StatusReport(_)
                 | RailResponseFrame::NoticeReport(_)
                 | RailResponseFrame::AdmissionCount(_)
                 | RailResponseFrame::DispatchContactCount(_)
                 | RailResponseFrame::CompletedEffectCount(_)
-                | RailResponseFrame::CompletedNoticeReport(_),
-            ) => unreachable!(
-                "the rail never sends a second Ack, a rejection, or a report after Dispatch's Ack"
-            ),
+                | RailResponseFrame::CompletedNoticeReport(_)
+                | RailResponseFrame::CompletionDeliveryPosture(_),
+            ) => unreachable!("the rail never sends a second Ack or a report after Dispatch's Ack"),
         },
         Ok(
             RailResponseFrame::Completed
@@ -74,7 +73,8 @@ pub async fn dispatch(
             | RailResponseFrame::AdmissionCount(_)
             | RailResponseFrame::DispatchContactCount(_)
             | RailResponseFrame::CompletedEffectCount(_)
-            | RailResponseFrame::CompletedNoticeReport(_),
+            | RailResponseFrame::CompletedNoticeReport(_)
+            | RailResponseFrame::CompletionDeliveryPosture(_),
         ) => unreachable!(
             "the rail's first Dispatch frame is always Ack or Rejected when it writes anything"
         ),
@@ -107,7 +107,8 @@ pub async fn inquire_notice(
         | RailResponseFrame::AdmissionCount(_)
         | RailResponseFrame::DispatchContactCount(_)
         | RailResponseFrame::CompletedEffectCount(_)
-        | RailResponseFrame::CompletedNoticeReport(_) => {
+        | RailResponseFrame::CompletedNoticeReport(_)
+        | RailResponseFrame::CompletionDeliveryPosture(_) => {
             unreachable!("the rail only ever answers InquireNotice with a NoticeReport frame")
         }
     }
@@ -136,7 +137,8 @@ pub async fn inquire_status(
         | RailResponseFrame::AdmissionCount(_)
         | RailResponseFrame::DispatchContactCount(_)
         | RailResponseFrame::CompletedEffectCount(_)
-        | RailResponseFrame::CompletedNoticeReport(_) => {
+        | RailResponseFrame::CompletedNoticeReport(_)
+        | RailResponseFrame::CompletionDeliveryPosture(_) => {
             unreachable!("the rail only ever answers InquireStatus with a StatusReport frame")
         }
     }
@@ -164,7 +166,8 @@ pub async fn inquire_admission_count(
         | RailResponseFrame::NoticeReport(_)
         | RailResponseFrame::DispatchContactCount(_)
         | RailResponseFrame::CompletedEffectCount(_)
-        | RailResponseFrame::CompletedNoticeReport(_) => {
+        | RailResponseFrame::CompletedNoticeReport(_)
+        | RailResponseFrame::CompletionDeliveryPosture(_) => {
             unreachable!("the rail only ever answers InquireAdmissionCount with AdmissionCount")
         }
     }
@@ -186,7 +189,8 @@ pub async fn inquire_dispatch_contact_count(
         | RailResponseFrame::NoticeReport(_)
         | RailResponseFrame::AdmissionCount(_)
         | RailResponseFrame::CompletedEffectCount(_)
-        | RailResponseFrame::CompletedNoticeReport(_) => {
+        | RailResponseFrame::CompletedNoticeReport(_)
+        | RailResponseFrame::CompletionDeliveryPosture(_) => {
             unreachable!("the rail only answers InquireDispatchContactCount with its exact count")
         }
     }
@@ -208,7 +212,8 @@ pub async fn inquire_completed_effect_count(
         | RailResponseFrame::NoticeReport(_)
         | RailResponseFrame::AdmissionCount(_)
         | RailResponseFrame::DispatchContactCount(_)
-        | RailResponseFrame::CompletedNoticeReport(_) => unreachable!(
+        | RailResponseFrame::CompletedNoticeReport(_)
+        | RailResponseFrame::CompletionDeliveryPosture(_) => unreachable!(
             "the rail only ever answers InquireCompletedEffectCount with its exact count"
         ),
     }
@@ -232,9 +237,22 @@ pub async fn inquire_completed_notice(
         | RailResponseFrame::NoticeReport(_)
         | RailResponseFrame::AdmissionCount(_)
         | RailResponseFrame::DispatchContactCount(_)
-        | RailResponseFrame::CompletedEffectCount(_) => {
+        | RailResponseFrame::CompletedEffectCount(_)
+        | RailResponseFrame::CompletionDeliveryPosture(_) => {
             unreachable!("the rail only ever answers InquireCompletedNotice with its consequence")
         }
+    }
+}
+
+/// Reads the rail's unresolved callback obligations, including exhaustion.
+pub async fn inquire_completion_delivery_posture(
+    addr: SocketAddr,
+    frame_timeout: Duration,
+) -> Result<crate::RailCompletionDeliveryPosture, RailTransportFailure> {
+    let mut stream = connect_and_write(addr, RailRequest::InquireCompletionDeliveryPosture).await?;
+    match read_response_frame(&mut stream, frame_timeout).await? {
+        RailResponseFrame::CompletionDeliveryPosture(posture) => Ok(posture),
+        _ => unreachable!("the rail only answers delivery posture with its exact counts"),
     }
 }
 

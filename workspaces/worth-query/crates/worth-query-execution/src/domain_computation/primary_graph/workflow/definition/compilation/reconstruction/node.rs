@@ -1,6 +1,8 @@
 use worth_relational::facade::identity::EntityId;
 
+mod decode;
 mod shape;
+use decode::decode_kind;
 use shape::{empty_node_fields, empty_optional_node_fields, invalid_node};
 
 use super::{observed_bool, observed_optional_text, observed_text, observed_u64};
@@ -127,6 +129,30 @@ pub(super) fn compile_node(
         &node.operation_binding,
         facts,
     )?;
+    let inbound_origin = observed_optional_text(
+        runtime,
+        snapshot,
+        entity,
+        node.entity_kind,
+        &node.inbound_origin,
+        facts,
+    )?;
+    let inbound_contract = observed_optional_text(
+        runtime,
+        snapshot,
+        entity,
+        node.entity_kind,
+        &node.inbound_contract,
+        facts,
+    )?;
+    let inbound_wait = super::observed_optional_u64(
+        runtime,
+        snapshot,
+        entity,
+        node.entity_kind,
+        &node.inbound_wait,
+        facts,
+    )?;
     let condition_binding = observed_optional_text(
         runtime,
         snapshot,
@@ -180,6 +206,11 @@ pub(super) fn compile_node(
         member,
         input_type,
         operation_binding,
+        decode::InboundFields {
+            origin: inbound_origin,
+            contract: inbound_contract,
+            wait: inbound_wait,
+        },
         parameter_type,
         result_type,
         assessment_binding,
@@ -198,184 +229,6 @@ pub(super) fn compile_node(
         entity,
         meaning: std::sync::Arc::new(CompiledWorkflowNodeMeaning { path, kind }),
     })
-}
-
-#[allow(clippy::too_many_arguments)]
-fn decode_kind(
-    tag: u64,
-    member: String,
-    input_type: Option<String>,
-    operation_binding: Option<String>,
-    parameter_type: Option<String>,
-    result_type: Option<String>,
-    assessment_binding: Option<String>,
-    assessment_subject: Option<String>,
-    assessment_applicability_relation: Option<String>,
-    assessment_applicability_from: Option<String>,
-    assessment_applicability_to: Option<String>,
-    condition_binding: Option<String>,
-    condition_operands: Option<String>,
-    capability_type: Option<String>,
-    approval_operation: Option<String>,
-    approval_capability_identity: Option<String>,
-    requires_workflow_authority: bool,
-) -> Result<CompiledWorkflowNodeKind, WorthQueryApplicationAttemptDenial> {
-    if (!matches!(
-        WorkflowNodeTag::from_persisted(tag),
-        Some(WorkflowNodeTag::Operation)
-    ) && operation_binding.is_some())
-        || (requires_workflow_authority && operation_binding.as_deref().is_none_or(str::is_empty))
-    {
-        return Err(invalid_node());
-    }
-    let applicability = match (
-        assessment_applicability_relation,
-        assessment_applicability_from,
-        assessment_applicability_to,
-    ) {
-        (None, None, None) => CompiledWorkflowAssessmentApplicability::Always,
-        (Some(relation), Some(from), Some(to))
-            if !relation.is_empty() && !from.is_empty() && !to.is_empty() =>
-        {
-            CompiledWorkflowAssessmentApplicability::WhenRelatedRelationPresent {
-                relation,
-                from,
-                to,
-            }
-        }
-        _ => return Err(invalid_node()),
-    };
-    if !matches!(
-        WorkflowNodeTag::from_persisted(tag),
-        Some(WorkflowNodeTag::Assessment)
-    ) && !matches!(
-        applicability,
-        CompiledWorkflowAssessmentApplicability::Always
-    ) {
-        return Err(invalid_node());
-    }
-    match WorkflowNodeTag::from_persisted(tag) {
-        Some(WorkflowNodeTag::Operation)
-            if parameter_type.is_none()
-                && result_type.is_none()
-                && assessment_binding.is_none()
-                && assessment_subject.is_none()
-                && condition_binding.is_none()
-                && condition_operands.is_none()
-                && capability_type.is_none()
-                && approval_operation.is_none()
-                && approval_capability_identity.is_none() =>
-        {
-            Ok(CompiledWorkflowNodeKind::Operation {
-                operation: member,
-                input_type: input_type.ok_or_else(invalid_node)?,
-                binding: operation_binding.filter(|identity| !identity.is_empty()),
-                requires_workflow_authority,
-            })
-        }
-        Some(WorkflowNodeTag::Assessment)
-            if input_type.is_none()
-                && capability_type.is_none()
-                && approval_operation.is_none()
-                && approval_capability_identity.is_none()
-                && condition_binding.is_none()
-                && condition_operands.is_none()
-                && !requires_workflow_authority =>
-        {
-            let subject = worth_query_declaration::facade::application_program::ApplicationWorkflowSubjectSelector::from_persistence_identity(
-                &assessment_subject.ok_or_else(invalid_node)?,
-            )
-            .ok_or_else(invalid_node)?;
-            if !matches!(applicability, CompiledWorkflowAssessmentApplicability::Always)
-                && !matches!(subject, worth_query_declaration::facade::application_program::ApplicationWorkflowSubjectSelector::Related)
-            {
-                return Err(invalid_node());
-            }
-            Ok(CompiledWorkflowNodeKind::Assessment {
-                query: member,
-                parameter_type: parameter_type.ok_or_else(invalid_node)?,
-                result_type: result_type.ok_or_else(invalid_node)?,
-                binding: assessment_binding.ok_or_else(invalid_node)?,
-                subject,
-                applicability,
-            })
-        }
-        Some(WorkflowNodeTag::Condition)
-            if input_type.is_none()
-                && assessment_binding.is_none()
-                && assessment_subject.is_none()
-                && capability_type.is_none()
-                && approval_operation.is_none()
-                && approval_capability_identity.is_none()
-                && !requires_workflow_authority =>
-        {
-            CompiledWorkflowCondition::from_record(
-                member,
-                parameter_type,
-                result_type,
-                condition_binding,
-                condition_operands,
-            )
-            .map(CompiledWorkflowNodeKind::Condition)
-            .ok_or_else(invalid_node)
-        }
-        Some(WorkflowNodeTag::Approval)
-            if input_type.is_none()
-                && parameter_type.is_none()
-                && result_type.is_none()
-                && assessment_binding.is_none()
-                && assessment_subject.is_none()
-                && condition_binding.is_none()
-                && condition_operands.is_none()
-                && !requires_workflow_authority =>
-        {
-            Ok(CompiledWorkflowNodeKind::Approval {
-                capability: member,
-                capability_type: capability_type.ok_or_else(invalid_node)?,
-                operation: approval_operation.ok_or_else(invalid_node)?,
-                installed_capability_identity: approval_capability_identity
-                    .ok_or_else(invalid_node)?,
-            })
-        }
-        Some(WorkflowNodeTag::EvidenceJoin)
-            if empty_optional_node_fields(
-                &input_type,
-                &parameter_type,
-                &result_type,
-                &assessment_binding,
-                &assessment_subject,
-                &condition_binding,
-                &condition_operands,
-                &capability_type,
-                &approval_operation,
-                &approval_capability_identity,
-                requires_workflow_authority,
-            ) =>
-        {
-            let policy = worth_query_declaration::facade::application_program::ApplicationWorkflowEvidenceJoinPolicy::from_identity(&member)
-                .ok_or_else(invalid_node)?;
-            Ok(CompiledWorkflowNodeKind::EvidenceJoin { policy })
-        }
-        Some(WorkflowNodeTag::Terminal)
-            if empty_node_fields(
-                &member,
-                &input_type,
-                &parameter_type,
-                &result_type,
-                &assessment_binding,
-                &assessment_subject,
-                &condition_binding,
-                &condition_operands,
-                &capability_type,
-                &approval_operation,
-                &approval_capability_identity,
-                requires_workflow_authority,
-            ) =>
-        {
-            Ok(CompiledWorkflowNodeKind::Terminal)
-        }
-        _ => Err(invalid_node()),
-    }
 }
 
 #[cfg(test)]

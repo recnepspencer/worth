@@ -112,7 +112,8 @@ where
     {
         let (prepared, custody) = resolve_owner(&self, required, &mut operation)?;
         match custody {
-            WorthQueryGuardedWorkflowOperationCustody::Committed(receipt) => self
+            WorthQueryGuardedWorkflowOperationCustody::Committed(receipt)
+            | WorthQueryGuardedWorkflowOperationCustody::ExternallySettled(receipt) => self
                 .accept_custody::<Intent::Binding, _, _, _>(
                     required,
                     &receipt,
@@ -158,7 +159,8 @@ where
     {
         let (prepared, custody) = resolve_owner(&self, required, &mut operation)?;
         match custody {
-            WorthQueryGuardedWorkflowOperationCustody::DispatchPending(receipt) => self
+            WorthQueryGuardedWorkflowOperationCustody::DispatchPending(receipt)
+            | WorthQueryGuardedWorkflowOperationCustody::ExternallySettled(receipt) => self
                 .accept_custody::<Intent::Binding, _, _, _>(
                     required,
                     &receipt,
@@ -246,7 +248,7 @@ pub(super) fn other_custody(
         Custody::PublicationPending => Posture::PublicationPending,
         Custody::ProductUnpublished(handle) => Posture::ProductUnpublished(handle),
         Custody::Indeterminate(denial) => Posture::Indeterminate(denial),
-        Custody::Committed(_) | Custody::DispatchPending(_) => {
+        Custody::Committed(_) | Custody::ExternallySettled(_) | Custody::DispatchPending(_) => {
             unreachable!("committed custody is handled by the accepting method")
         }
     }

@@ -13,12 +13,28 @@ pub(in crate::domain_computation::primary_graph) mod dispatch_outbox;
 pub(in crate::domain_computation::primary_graph) mod fault_port;
 mod graph_participation;
 mod idempotency;
+mod inbound_completion;
+mod inbound_cost;
+pub(in crate::domain_computation) use inbound_completion::WorthQueryInboundCompletionPreparationDenial;
+pub(in crate::domain_computation::primary_graph) use inbound_completion::{
+    WorthQueryCanonicalCompletionRow, WorthQueryInboundCompletionReadDenial,
+};
+mod inbound_terminal_index;
+pub(in crate::domain_computation) use inbound_terminal_index::{
+    WorthQueryCanonicalInboundCompletion, WorthQueryInboundTerminalIndexDenial,
+};
 mod installation;
 mod invariant_execution;
 mod invariant_execution_failure;
 mod mutation_work;
 mod output_readiness_fault;
+mod outstanding_dispatch;
+pub(in crate::domain_computation) use outstanding_dispatch::WorthQueryTerminalDispatchReleaseDenial;
+pub(in crate::domain_computation::primary_graph) use outstanding_dispatch::{
+    OutstandingDispatchInFlightLease, WorthQueryOutstandingInFlightDenial,
+};
 mod pending_application_publication;
+pub(in crate::domain_computation::primary_graph) use outstanding_dispatch::OutstandingDispatchReservation;
 pub(in crate::domain_computation::primary_graph) use pending_application_publication::WorthQueryApplicationPublicationRecoveryReservation;
 mod product_retirement;
 mod provisional_state;
@@ -26,6 +42,7 @@ mod publication_recovery;
 mod resource_support;
 mod session_commit;
 mod session_lifecycle;
+mod terminal_dispatch_release;
 mod unpublished_idempotency;
 #[cfg(all(test, feature = "test-world-operation-control"))]
 pub(in crate::domain_computation::primary_graph) use unpublished_idempotency::unwind_recovery_inspection_count;
@@ -73,7 +90,9 @@ pub(crate) struct WorthQueryPrimaryGraphProvider {
     completed_commit_evidence: Mutex<session_commit::WorthQueryCompletedCommitEvidenceStore>,
     unpublished_idempotency:
         Arc<Mutex<unpublished_idempotency::WorthQueryUnpublishedIdempotencyStore>>,
-    receipt_basis_retention: Mutex<session_commit::WorthQueryReceiptBasisRetentionStore>,
+    receipt_basis_retention: Arc<Mutex<session_commit::WorthQueryReceiptBasisRetentionStore>>,
+    outstanding_dispatch: outstanding_dispatch::OutstandingDispatchOwner,
+    inbound_terminal_index: inbound_terminal_index::WorthQueryInboundTerminalIndex,
     pending_application_publications:
         pending_application_publication::registry::WorthQueryPendingApplicationPublicationRegistryOwner,
     conditional_commit_journal:
@@ -86,6 +105,23 @@ pub(crate) use branch_commit_coordination::{
 };
 
 impl WorthQueryPrimaryGraphProvider {
+    pub(in crate::domain_computation::primary_graph) fn reserve_outstanding_dispatch(
+        &self,
+        record: Option<
+            &crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxRecord,
+        >,
+        observation: &worth_runtime_world::facade::ProductBranchObservation,
+    ) -> Result<Option<OutstandingDispatchReservation>, &'static str> {
+        let Some(record) = record else {
+            return Ok(None);
+        };
+        self.outstanding_dispatch
+            .reserve(record, observation)
+            .map_err(|_| {
+                "inbound dispatch provenance capacity or identity denied before owner effects"
+            })
+    }
+
     #[cfg(feature = "test-world-operation-control")]
     pub(super) fn after_application_attempt_registration_for_test(&self) {
         self.application_attempt_operation_control

@@ -192,6 +192,23 @@ impl<'a> ClosureIndex<'a> {
             {
                 Err(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency)
             }
+            ApplicationSchemaMember::OperationInboundOccurrence {
+                operation,
+                effect,
+                limits,
+                ..
+            } if !limits.accommodates_payload()
+                || !self.members.iter().any(|member| matches!(
+                    member,
+                    ApplicationSchemaMember::OperationExternalEffect {
+                        operation: outbound_operation,
+                        effect: outbound_effect,
+                        ..
+                    } if outbound_operation == operation && outbound_effect == effect
+                )) =>
+            {
+                Err(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency)
+            }
             ApplicationSchemaMember::OperationAftermath { operation, .. }
                 if !self.operations.contains(operation.as_str()) =>
             {

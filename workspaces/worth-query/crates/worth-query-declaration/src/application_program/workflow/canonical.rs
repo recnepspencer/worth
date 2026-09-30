@@ -133,6 +133,41 @@ fn node_record(node: &ApplicationWorkflowNode) -> String {
                 &assessment_applicability_record(assessment.applicability()),
             ],
         ),
+        ApplicationWorkflowNodeKind::AwaitInbound(awaited) => {
+            let inbound = awaited.inbound();
+            let limits = inbound.limits();
+            let fields = vec![
+                node.identity().as_str().to_owned(),
+                awaited.origin().as_str().to_owned(),
+                inbound.effect().to_owned(),
+                inbound.protocol().identity().as_str().to_owned(),
+                inbound.protocol().version().get().to_string(),
+                inbound.source_identity().to_owned(),
+                limits.maximum_envelope_bytes.get().to_string(),
+                limits.maximum_verifier_work.get().to_string(),
+                limits.maximum_payload_bytes.get().to_string(),
+                limits
+                    .maximum_outstanding_dispatch_provenance
+                    .get()
+                    .to_string(),
+                limits.maximum_accepted_occurrences.get().to_string(),
+                limits.maximum_accepted_bytes.get().to_string(),
+                limits.maximum_concurrent_publications.get().to_string(),
+                limits.maximum_discovery_work.get().to_string(),
+                limits.replay_window_milliseconds.get().to_string(),
+                limits.maximum_cleanup_work.get().to_string(),
+                match awaited.wait() {
+                    super::ApplicationWorkflowInboundWait::UntilInstanceDeadline => {
+                        "instance-deadline"
+                    }
+                }
+                .to_owned(),
+            ];
+            framed_record(
+                "await-inbound",
+                &fields.iter().map(String::as_str).collect::<Vec<_>>(),
+            )
+        }
         ApplicationWorkflowNodeKind::Condition(condition) => condition_record(node, condition),
         ApplicationWorkflowNodeKind::Approval(approval) => framed_record(
             "approval",

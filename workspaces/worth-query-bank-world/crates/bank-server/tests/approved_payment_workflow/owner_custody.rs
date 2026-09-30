@@ -7,7 +7,7 @@ use bank_server::{BankApplicationP1, BankApprovedPaymentWorkflowError};
 use worth_query_host::facade::application_entry::{
     WorkflowDefinitionExpectedPredecessor, WorkflowDefinitionPublicationOutcome,
     WorkflowInstanceCancellationOutcome, WorkflowInstancePreparationDenial,
-    WorkflowProgressOutcome, WorthQueryWorkflowInstancePreparationDenial,
+    WorthQueryWorkflowInstancePreparationDenial,
 };
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationCommitDenialKind,
@@ -51,51 +51,44 @@ fn assert_in_owner_custody(
     }
 }
 
-/// The rail owner settles the payment it holds; the workflow completes.
-fn owner_accepts(ready: &ReadyPaymentWorld, command_key: &str) {
+/// A completed rail response alone cannot settle the workflow without the
+/// authenticated inbound terminal.
+fn owner_remains_pending(ready: &ReadyPaymentWorld, command_key: &str) {
     let workflow = ready
         .fixture
         .world
         .runtime
         .approved_business_payment(&ready.principal, &ready.scope);
-    let recovery = workflow
-        .prepare_apply_recovery(
-            &ready.operation,
-            ready.authority.clone(),
-            &key("approved-payment:operation:perform"),
-        )
-        .expect("the refused lifecycle request left the owner's custody intact")
-        .safe_retry()
-        .expect("the completed rail request replays its proof");
-    let accepted = workflow
-        .accept_recovered_applied(
+    let denied = workflow
+        .accept_applied(
             ready.instance.clone(),
             &ready.operation,
             ready.authority.clone(),
             ready.authority.clone(),
             &key("approved-payment:operation:perform"),
-            &recovery,
             &key(command_key),
         )
-        .expect("the owner settles the payment");
-    assert!(matches!(accepted, WorkflowProgressOutcome::Completed(_)));
+        .expect_err("the rail response is not an authenticated inbound terminal");
+    assert!(matches!(
+        denied,
+        BankApprovedPaymentWorkflowError::OperationOwnerAcceptance(
+            worth_query_host::facade::application_entry::WorthQueryWorkflowOperationOwnerAcceptanceDenial::Owner(
+                worth_query_host::facade::application_entry::WorthQueryWorkflowOperationOwnerPosture::DispatchPending
+            )
+        )
+    ));
 }
 
 #[test]
-fn a_cancellation_waits_for_the_rail_owner_then_reports_the_payment() {
+fn a_cancellation_stays_blocked_after_rail_completion_without_inbound() {
     let ready = ReadyPaymentWorld::new("cancel-in-owner-custody", FaultScript::Succeed);
     ready
         .perform()
         .into_performed()
         .expect("the payment commits into rail custody");
     assert_in_owner_custody(cancel(&ready, "approved-payment:cancel:in-custody"));
-    owner_accepts(&ready, "approved-payment:operation:accept:before-cancel");
-    match cancel(&ready, "approved-payment:cancel:after-acceptance") {
-        Ok(WorkflowInstanceCancellationOutcome::Cancelled(done)) => {
-            assert_eq!(done.performed_node_paths(), ["apply".to_owned()]);
-        }
-        other => panic!("an accepted payment is cancelled and reported: {other:?}"),
-    }
+    owner_remains_pending(&ready, "approved-payment:operation:accept:before-cancel");
+    assert_in_owner_custody(cancel(&ready, "approved-payment:cancel:without-inbound"));
     assert_eq!(ready.rail.completed_effect_count(), 1);
 }
 
@@ -132,7 +125,7 @@ fn a_cancellation_prepared_before_the_rail_takes_the_payment_goes_stale() {
 }
 
 #[test]
-fn a_migration_waits_for_the_rail_owner_to_settle_under_the_source() {
+fn a_migration_stays_blocked_after_rail_completion_without_inbound() {
     let ready = ReadyPaymentWorld::new("migrate-in-owner-custody", FaultScript::Succeed);
     ready
         .perform()
@@ -182,7 +175,19 @@ fn a_migration_waits_for_the_rail_owner_to_settle_under_the_source() {
         ),
         other => panic!("a payment in owner custody must refuse migration: {other:?}"),
     }
-    owner_accepts(&ready, "approved-payment:operation:accept:before-migrate");
+    owner_remains_pending(&ready, "approved-payment:operation:accept:before-migrate");
+    match migrate("approved-payment:migrate:without-inbound") {
+        Err(BankApprovedPaymentWorkflowError::InstanceMigration(
+            WorthQueryWorkflowInstancePreparationDenial::InstancePreparation(
+                WorkflowInstancePreparationDenial::Attempt(attempt),
+            ),
+        )) => assert_eq!(
+            attempt.kind(),
+            WorthQueryApplicationAttemptDenialKind::WorkflowOperationInOwnerCustody,
+            "rail completion without inbound acceptance still owns the operation",
+        ),
+        other => panic!("migration must name retained owner custody: {other:?}"),
+    }
     assert_eq!(ready.rail.completed_effect_count(), 1);
 }
 

@@ -1,14 +1,16 @@
 use bank_domain::queries::{PaymentAmountQuery, PaymentDetailQuery};
 use bank_domain::schema::{
-    ApprovePaymentMutationBinding, ApprovedBusinessPaymentApproval,
-    ApprovedBusinessPaymentAuthoringOperation, ApprovedBusinessPaymentWorkflow,
+    approved_payment_inbound_binding, ApprovePaymentMutationBinding,
+    ApprovedBusinessPaymentApproval, ApprovedBusinessPaymentAuthoringOperation,
+    ApprovedBusinessPaymentWorkflow, ApprovedPaymentSettlementEffect,
 };
+use std::time::Duration;
 use worth_query_host::facade::declaration::application_program::{
     ApplicationWorkflowAuthoringDenial, ApplicationWorkflowComponentLimits,
     ApplicationWorkflowConditionOperands, ApplicationWorkflowControlOutcome,
     ApplicationWorkflowDefinitionBuilder, ApplicationWorkflowDefinitionLimits,
-    ApplicationWorkflowEvidenceJoinPolicy, ApplicationWorkflowValidationDenial,
-    ValidatedWorkflowDefinition,
+    ApplicationWorkflowEvidenceJoinPolicy, ApplicationWorkflowInboundWait,
+    ApplicationWorkflowValidationDenial, ValidatedWorkflowDefinition,
 };
 
 /// The operand the approval limit reads: the payment's amount in cents.
@@ -25,13 +27,14 @@ pub fn approved_business_payment_definition() -> Result<
     let mut builder = ApplicationWorkflowDefinitionBuilder::<ApprovedBusinessPaymentWorkflow>::new(
         "approved-business-payment",
         ApplicationWorkflowDefinitionLimits::new(
-            9,
-            20,
+            10,
+            21,
             2,
             ApplicationWorkflowComponentLimits::new(8, 2, 16, 32, 32).unwrap(),
-            8 * 1_024,
+            16 * 1_024,
         )
-        .expect("approved-payment limits are nonzero"),
+        .and_then(|limits| limits.with_total_deadline(Duration::from_secs(7 * 24 * 60 * 60)))
+        .expect("approved-payment limits and deadline are valid"),
     )
     .expect("approved-payment identity is valid");
     let propose =
@@ -50,6 +53,12 @@ pub fn approved_business_payment_definition() -> Result<
     )?;
     let approval = builder.approval::<ApprovedBusinessPaymentApproval>("approval")?;
     let apply = builder.operation_binding::<ApprovePaymentMutationBinding>("apply")?;
+    let await_completion = builder.await_inbound::<ApprovedPaymentSettlementEffect>(
+        "await-inbound",
+        &apply,
+        approved_payment_inbound_binding(),
+        ApplicationWorkflowInboundWait::UntilInstanceDeadline,
+    )?;
     let completed = builder.terminal("completed")?;
     let rejected = builder.terminal("rejected")?;
 
@@ -102,6 +111,11 @@ pub fn approved_business_payment_definition() -> Result<
         )
         .control(
             &apply,
+            ApplicationWorkflowControlOutcome::Completed,
+            &await_completion,
+        )
+        .control(
+            &await_completion,
             ApplicationWorkflowControlOutcome::Completed,
             &completed,
         )
@@ -169,8 +183,8 @@ mod tests {
     fn approved_business_payment_uses_the_real_payment_operation() {
         let definition = super::approved_business_payment_definition()
             .expect("the approved-payment definition validates");
-        assert_eq!(definition.nodes().len(), 9);
-        assert_eq!(definition.connections().len(), 19);
+        assert_eq!(definition.nodes().len(), 10);
+        assert_eq!(definition.connections().len(), 20);
         assert!(definition.nodes().iter().any(|node| {
             node.identity().as_str() == "apply"
                 && matches!(
@@ -179,6 +193,16 @@ mod tests {
                         operation,
                         requires_workflow_authority: true,
                     } if operation.identifier() == "ApprovePaymentOperation"
+                )
+        }));
+        assert!(definition.nodes().iter().any(|node| {
+            node.identity().as_str() == "await-inbound"
+                && matches!(
+                    node.kind(),
+                    ApplicationWorkflowNodeKind::AwaitInbound(awaited)
+                        if awaited.origin().as_str() == "apply"
+                            && awaited.inbound().effect() == "ApprovedPaymentSettlementEffect"
+                            && awaited.inbound().source_identity() == "rail-primary"
                 )
         }));
         assert!(definition.connections().iter().any(|connection| matches!(

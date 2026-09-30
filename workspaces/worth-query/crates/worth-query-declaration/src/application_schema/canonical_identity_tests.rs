@@ -1,15 +1,10 @@
-use worth_foundational::facade::{
-    BoundaryProtocolIdentity, BoundaryProtocolVersion, ScalarAspectType,
-};
+use worth_foundational::facade::ScalarAspectType;
 
 use super::{
     canonical_identity, ApplicationSchemaCanonicalHeader, ApplicationSchemaIdentity,
     ApplicationSchemaMember,
 };
-use crate::application_schema::{
-    ApplicationExternalEffectProtocol, ApplicationOperationProgramTarget,
-    WorthQueryExternalEffectCorrelationFamily,
-};
+use crate::application_schema::ApplicationOperationProgramTarget;
 use crate::application_schema::{
     ApplicationMutationPreconditionFamily, ApplicationMutationPreconditionTarget,
 };
@@ -20,6 +15,10 @@ use query_fixture::{application_query, QueryEntity, QueryMarker, QueryResult, Qu
 
 #[path = "canonical_identity_application_query_tests.rs"]
 mod application_query;
+#[path = "canonical_identity_external_effect_tests.rs"]
+mod external_effect;
+#[path = "canonical_identity_inbound_occurrence_tests.rs"]
+mod inbound_occurrence;
 
 #[test]
 fn every_application_schema_member_family_changes_identity() {
@@ -246,58 +245,6 @@ fn operation_input_effect_payload_and_schema_version_change_identity() {
     let initial = canonical_identity(header(0), &[], &[]);
     let successor = canonical_identity(header(1), &[], &[]);
     assert_ne!(initial, successor);
-}
-
-#[test]
-fn every_external_effect_contract_dimension_changes_identity() {
-    let base = ApplicationSchemaMember::OperationExternalEffect {
-        operation: "Operation".to_string(),
-        effect: "ExternalEffect".to_string(),
-        rust_payload_type: crate::portable_identity::WorthQueryPortableTypeIdentity::declared(
-            "Payload",
-        ),
-        protocol: external_protocol(1),
-        maximum_payload_bytes: 64,
-        correlation_family: WorthQueryExternalEffectCorrelationFamily::new("external-family")
-            .unwrap(),
-    };
-    let base_identity = identity(std::slice::from_ref(&base));
-
-    macro_rules! changed {
-        ($field:ident, $value:expr) => {{
-            let mut member = base.clone();
-            let ApplicationSchemaMember::OperationExternalEffect { $field, .. } = &mut member
-            else {
-                unreachable!("external-effect fixture changed member family")
-            };
-            *$field = $value;
-            member
-        }};
-    }
-
-    for member in [
-        changed!(operation, "OtherOperation".to_string()),
-        changed!(effect, "OtherEffect".to_string()),
-        changed!(
-            rust_payload_type,
-            crate::portable_identity::WorthQueryPortableTypeIdentity::declared("OtherPayload")
-        ),
-        changed!(protocol, external_protocol(2)),
-        changed!(maximum_payload_bytes, 65),
-        changed!(
-            correlation_family,
-            WorthQueryExternalEffectCorrelationFamily::new("other-family").unwrap()
-        ),
-    ] {
-        assert_ne!(identity(&[member]), base_identity);
-    }
-}
-
-fn external_protocol(version: u32) -> ApplicationExternalEffectProtocol {
-    ApplicationExternalEffectProtocol::new(
-        BoundaryProtocolIdentity::new("test.external-payload"),
-        BoundaryProtocolVersion::new(version),
-    )
 }
 
 #[test]

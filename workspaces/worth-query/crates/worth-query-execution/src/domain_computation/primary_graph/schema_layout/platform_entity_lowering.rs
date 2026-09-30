@@ -18,6 +18,9 @@ use super::provider_dispatch_outbox::lower_provider_dispatch_outbox;
 use super::provider_idempotency::{
     lower_provider_idempotency, WorthQueryProviderIdempotencyLayout,
 };
+use super::provider_inbound_completion::{
+    lower_provider_inbound_completion, WorthQueryInboundCompletionLayout,
+};
 use super::{kind_space_exhausted, WorthQueryPrimaryGraphInstallationDenial};
 use crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxLayout;
 use crate::domain_computation::primary_graph::workflow::schema::{
@@ -28,6 +31,7 @@ use crate::domain_computation::primary_graph::workflow::schema::{
 pub(super) struct WorthQueryPlatformEntityLayouts {
     pub(super) provider_idempotency: WorthQueryProviderIdempotencyLayout,
     pub(super) provider_dispatch_outbox: WorthQueryDispatchOutboxLayout,
+    pub(super) provider_inbound_completion: WorthQueryInboundCompletionLayout,
     pub(super) provider_aftermath_causality: WorthQueryAftermathCausalityLayout,
     pub(super) program_activation: WorthQueryProgramActivationLayout,
     pub(super) workflow: WorthQueryWorkflowLayout,
@@ -95,11 +99,27 @@ pub(super) fn lower_platform_entities(
             identities[14],
         ],
     )?;
+    // Workflow owns 32 contiguous kinds; append the inbound kind so all
+    // existing platform kind identities remain stable.
+    let inbound_kind = KindId(
+        workflow_kind
+            .0
+            .checked_add(32)
+            .ok_or_else(kind_space_exhausted)?,
+    );
+    let (registry, provider_inbound_completion) = lower_provider_inbound_completion(
+        registry,
+        schema_id,
+        schema_version_id,
+        inbound_kind,
+        identities[15],
+    )?;
     Ok((
         registry,
         WorthQueryPlatformEntityLayouts {
             provider_idempotency,
             provider_dispatch_outbox,
+            provider_inbound_completion,
             provider_aftermath_causality,
             program_activation,
             workflow,

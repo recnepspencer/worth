@@ -13,6 +13,25 @@ pub(crate) trait RuntimeWorldInspectionService:
         maximum: NonZeroUsize,
     ) -> Result<CompositeHistoryTraversal, CompositeHistoryCatalogDenial>;
 
+    fn performed_publication_page(
+        &self,
+        after: Option<&crate::history::RuntimeWorldPublicationCursor>,
+        maximum: NonZeroUsize,
+    ) -> Result<crate::history::RuntimeWorldPublicationPage, CompositeHistoryCatalogDenial>;
+
+    fn protect_performed_publication(
+        &self,
+        identity: &CompositeCommitIdentity,
+    ) -> Result<
+        crate::history::RuntimeWorldPerformedPublicationProtection,
+        CompositeHistoryCatalogDenial,
+    >;
+
+    fn publication_frontier_is_current(
+        &self,
+        frontier: &crate::history::RuntimeWorldPublicationFrontier,
+    ) -> Result<bool, CompositeHistoryCatalogDenial>;
+
     fn inspect_retention(
         &self,
         key: &crate::inspection::RuntimeWorldRetentionKey,

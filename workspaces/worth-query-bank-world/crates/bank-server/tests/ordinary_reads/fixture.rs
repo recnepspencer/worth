@@ -59,6 +59,11 @@ impl OrdinaryReadFixture {
         ))
         .expect("fixture principal should authenticate")
     }
+
+    #[allow(dead_code, reason = "shared by the process court")]
+    pub(super) fn into_shared_runtime(self) -> std::sync::Arc<bank_server::BankIdentityRuntime> {
+        std::sync::Arc::new(self.world.runtime)
+    }
 }
 
 pub(super) fn ordinary_read_world(

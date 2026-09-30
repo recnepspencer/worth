@@ -12,13 +12,15 @@
 #![forbid(unsafe_code)]
 
 mod client;
+pub mod completion_wire;
 mod protocol;
 mod server;
 pub mod test_control;
 
 pub use client::connection::{
     dispatch, inquire_admission_count, inquire_completed_effect_count, inquire_completed_notice,
-    inquire_dispatch_contact_count, inquire_notice, inquire_status, RailTransportFailure,
+    inquire_completion_delivery_posture, inquire_dispatch_contact_count, inquire_notice,
+    inquire_status, RailTransportFailure,
 };
 pub use client::outcome::RailExchangeOutcome;
 pub use client::process_handle::{RailProcessHandle, RailSpawnError};
@@ -28,4 +30,7 @@ pub use protocol::payload::RailEffectPayload;
 pub use protocol::request::RailDispatch;
 pub use protocol::response::LedgerStatus;
 pub use protocol::support_profile::RailProtocolSupportProfile;
-pub use server::RailServer;
+pub use server::{
+    RailCompletionDeliveryConfiguration, RailCompletionDeliveryConfigurationDenial,
+    RailCompletionDeliveryPosture, RailServer,
+};

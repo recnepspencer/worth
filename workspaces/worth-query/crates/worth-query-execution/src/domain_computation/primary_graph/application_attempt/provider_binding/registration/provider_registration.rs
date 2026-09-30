@@ -33,6 +33,9 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphAp
     publication_recovery_reservation: Option<
         crate::domain_computation::primary_graph::provider::WorthQueryApplicationPublicationRecoveryReservation,
     >,
+    outstanding_dispatch_reservation: Option<
+        crate::domain_computation::primary_graph::provider::OutstandingDispatchReservation,
+    >,
     retain_output_demand_observation: bool,
     retain_client_observation: bool,
     producer_required_invariants:
@@ -177,6 +180,13 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
     ) -> Result<(bool, bool, bool), &'static str> {
         assert!(self.live_delivery_reservation.is_none());
         assert!(self.publication_recovery_reservation.is_none());
+        assert!(self.outstanding_dispatch_reservation.is_none());
+        let outstanding = provider.reserve_outstanding_dispatch(
+            self.dispatch_outbox
+                .as_ref()
+                .map(|pending| pending.record()),
+            self.affinity.product_publication().observation(),
+        )?;
         let publication_recovery = provider.reserve_application_publication_recovery(
             self.affinity.product_publication().observation(),
         )?;
@@ -189,6 +199,7 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
         let client = self.retain_client_observation;
         self.live_delivery_reservation = Some(reservation);
         self.publication_recovery_reservation = Some(publication_recovery);
+        self.outstanding_dispatch_reservation = outstanding;
         Ok((live, demand, client))
     }
 
@@ -216,6 +227,13 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
             outcome_identity: self.outcome_identity,
             emitted_effect_count,
         }
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn take_outstanding_dispatch_reservation(
+        &mut self,
+    ) -> Option<crate::domain_computation::primary_graph::provider::OutstandingDispatchReservation>
+    {
+        self.outstanding_dispatch_reservation.take()
     }
 }
 
@@ -329,6 +347,7 @@ impl WorthQueryPrimaryGraphProvider {
                 validator_work_admission,
                 live_delivery_reservation: None,
                 publication_recovery_reservation: None,
+                outstanding_dispatch_reservation: None,
                 retain_output_demand_observation,
                 retain_client_observation,
                 producer_required_invariants,

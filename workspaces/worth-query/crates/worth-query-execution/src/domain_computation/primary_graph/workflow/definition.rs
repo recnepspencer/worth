@@ -3,6 +3,7 @@ mod compilation;
 mod condition;
 mod dependencies;
 mod facts;
+mod inbound_codec;
 mod preparation;
 mod publication;
 mod retirement;

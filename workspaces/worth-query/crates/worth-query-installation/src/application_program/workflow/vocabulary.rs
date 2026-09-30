@@ -82,6 +82,8 @@ pub(super) struct InstalledWorkflowOperation {
     pub(super) binding_identity: &'static str,
     pub(super) requires_workflow_authority: bool,
     pub(super) reference: ApplicationWorkflowOperationRef,
+    pub(super) inbound_ref:
+        Option<worth_query_declaration::facade::application_program::ApplicationWorkflowInboundRef>,
 }
 
 #[derive(Clone)]
