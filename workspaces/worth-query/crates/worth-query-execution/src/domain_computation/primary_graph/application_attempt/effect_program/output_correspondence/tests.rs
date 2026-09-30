@@ -1,3 +1,4 @@
+use std::marker::PhantomData;
 use std::sync::Arc;
 
 use worth_relational::facade::identity::{EntityId, KindId, PartitionId};
@@ -279,7 +280,12 @@ fn owner_resolved_creation_projects_the_exact_typed_identity() {
     let committed = candidate.seal_with(|_| Some(assigned));
 
     assert_eq!(
-        committed.entity::<OnlyCreated>().unwrap().entity_id(),
+        committed
+            .outputs_of::<CreateOutputs>()
+            .unwrap()
+            .entity::<OnlyCreated>()
+            .unwrap()
+            .entity_id(),
         assigned
     );
     // Reading the created role as another entity cannot be written with a

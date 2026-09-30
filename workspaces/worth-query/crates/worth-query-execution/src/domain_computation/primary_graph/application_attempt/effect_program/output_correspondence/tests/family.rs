@@ -67,7 +67,8 @@ fn role_family_accepts_variable_semantic_members_and_enforces_its_contract() {
             key => panic!("unexpected created output: {key:?}"),
         })
     });
-    let family = committed.family_entries::<Face>().unwrap();
+    let outputs = committed.outputs_of::<FaceOutputs>().unwrap();
+    let family = outputs.family_entries::<Face>().unwrap();
     assert_eq!(
         family
             .iter()
@@ -85,20 +86,22 @@ fn role_family_accepts_variable_semantic_members_and_enforces_its_contract() {
         ]
     );
     assert_eq!(
-        committed
+        outputs
             .member::<Face, WorthQueryCreateOutput>("positive.cap")
             .unwrap()
             .entity_id(),
         EntityId::new(PartitionId::main(), 31, 1)
     );
     assert!(matches!(
-        committed.member::<Face, WorthQueryCreateOutput>(""),
+        outputs.member::<Face, WorthQueryCreateOutput>(""),
         Err(WorthQueryApplicationOutputProjectionDenial::InvalidMemberSuffix(_))
     ));
-    assert_eq!(
-        committed.family_entries::<Mixed>().unwrap_err(),
-        WorthQueryApplicationOutputProjectionDenial::ForeignContract
-    );
+    // Another contract's family cannot be named on this view; its erased
+    // read is still refused.
+    assert!(matches!(
+        committed.family_members::<Mixed>(),
+        Err(WorthQueryApplicationOutputProjectionDenial::ForeignContract)
+    ));
 }
 
 #[test]
@@ -138,7 +141,8 @@ fn family_range_is_deterministic_and_exposes_mixed_postures_only_within_prefix()
         .unwrap();
     let committed = candidate.seal_with(|_| Some(EntityId::new(PartitionId::main(), 41, 1)));
 
-    let entries = committed.family_entries::<Mixed>().unwrap();
+    let outputs = committed.outputs_of::<MixedOutputs>().unwrap();
+    let entries = outputs.family_entries::<Mixed>().unwrap();
     assert_eq!(
         entries
             .iter()

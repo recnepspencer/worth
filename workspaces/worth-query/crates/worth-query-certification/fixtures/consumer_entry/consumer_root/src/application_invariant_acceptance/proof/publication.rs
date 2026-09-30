@@ -7,7 +7,7 @@ use worth_query_host::facade::{
     primary_graph::WorthQueryEntityResolutionDenialKind,
 };
 use worth_query_topology_entry::{
-    PlanarAnchorOutput, PlanarCreatedOutputs, PlanarMutation, PlanarRead,
+    PlanarAnchorOutput, PlanarCreatedOutputs, PlanarMutation, PlanarOutputs, PlanarRead,
 };
 
 use super::{
@@ -51,15 +51,16 @@ pub(super) fn create_and_reject_cycles(request: &Request<'_>, application: &Prog
             panic!("the complete positive-turn ring must publish: {outcome:?}")
         };
         assert_eq!(result.changed_vertices, vertices.len());
-        receipt
-            .output_correspondence()
+        let outputs = receipt
+            .outputs_of::<PlanarOutputs>()
+            .expect("the cycle commits under the planar contract");
+        outputs
             .entity::<PlanarAnchorOutput<crate::ConsumerSchema>>()
             .expect("the committed group preserves its declared anchor through owner identity correspondence");
         let created = vertices
             .iter()
             .map(|vertex| {
-                receipt
-                    .output_correspondence()
+                outputs
                     .member::<PlanarCreatedOutputs<crate::ConsumerSchema>, WorthQueryCreateOutput>(
                         &vertex.body_key,
                     )

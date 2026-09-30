@@ -450,7 +450,7 @@ Application usage:
   `<Role as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR` in `ROLES`,
   and one marker serves every binding sharing that contract. Handlers and
   readers name the marker: `create_output::<Role>(&entity)`,
-  `output_correspondence().entity::<Role>()`, `prior_output::<Binding, Role>()`.
+  `outputs_of::<Contract>()?.entity::<Role>()`, `prior_output::<Binding, Role>()`.
   The role name supplies no persistent identity; Relational resolves created
   identities and co-commits their structural changes and lineage. The projected
   identity still needs fresh admission for later use.
@@ -459,6 +459,11 @@ Application usage:
   `DECLARED`, which requires the contract to list the role with the same name,
   entity, posture and cardinality. `DECLARED` is a post-monomorphization
   constant: `cargo build` and `cargo test` report it, `cargo check` does not.
+- Commit receipts and output-demand settlements store outputs erased. `outputs_of::<Contract>()` checks the commit's contract once at run
+  time (`ForeignContract` otherwise) and returns
+  `WorthQueryApplicationTypedOutputCorrespondence<'_, Contract>`; its `entity`,
+  `member` and `family_entries` bound every marker's contract to `Contract`, so
+  a read of another contract's role fails `cargo check`.
 - The cardinality is `WorthQueryExactlyOneOutput` or `WorthQueryAtMostOneOutput`.
   Leaving an exactly-one role unbound fails the candidate with
   `MissingOutputRole`, and its reads are total. An at-most-one role may be
@@ -476,10 +481,11 @@ Application usage:
   `family_entries::<Family>()`. An undeclared family or an action outside its
   postures fails to compile; the suffix is validated at run time. It creates no
   second lineage store.
-- Run-time checks remain where the types cannot carry the contract:
-  `output_correspondence()` has no binding type (`ForeignContract`), a family
-  member's committed action is data (`ActionMismatch`), and portable and
-  readmitted forms are validated on admission.
+- Run-time checks remain where the types cannot carry the contract: a stored
+  receipt has no contract type (`outputs_of` refuses another contract with
+  `ForeignContract`), a family member's committed action is data
+  (`ActionMismatch`), and portable and readmitted forms are validated on
+  admission.
 - `committed_changes()` returns `WorthQueryApplicationCommittedChanges`, an
   immutable view with no field payloads or mutation authority. Its constructor
   and canonical artifact stay private. Event order and numeric identity do not

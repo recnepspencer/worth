@@ -38,6 +38,7 @@ fn an_unbound_at_most_one_role_reads_as_none_and_a_bound_one_as_some() {
         )
         .unwrap();
     let absent = absent.seal_with(|_| None);
+    let absent = absent.outputs_of::<OptionalOutputs>().unwrap();
     assert!(absent.entity::<Companion>().unwrap().is_none());
     assert_eq!(absent.entity::<Subject>().unwrap().entity_id(), subject);
 
@@ -57,6 +58,7 @@ fn an_unbound_at_most_one_role_reads_as_none_and_a_bound_one_as_some() {
         )
         .unwrap();
     let present = present.seal_with(|_| None);
+    let present = present.outputs_of::<OptionalOutputs>().unwrap();
     assert_eq!(
         present
             .entity::<Companion>()
@@ -137,14 +139,17 @@ fn checkpoint_readmission_keeps_absence_a_value() {
     )
     .unwrap();
 
-    assert!(readmitted.entity::<Companion>().unwrap().is_none());
-    assert_eq!(readmitted.entity::<Subject>().unwrap().entity_id(), entity);
+    let outputs = readmitted.outputs_of::<OptionalOutputs>().unwrap();
+    assert!(outputs.entity::<Companion>().unwrap().is_none());
+    assert_eq!(outputs.entity::<Subject>().unwrap().entity_id(), entity);
     assert_eq!(
         readmitted.bound_entity(&companion_as_required()).err(),
         Some(WorthQueryApplicationOutputProjectionDenial::CardinalityMismatch)
     );
+    // Reading it as another contract is refused once, at the typed view;
+    // no read of that contract's roles is reached.
     assert_eq!(
-        readmitted.entity::<Preserved>().err(),
+        readmitted.outputs_of::<Outputs>().err(),
         Some(WorthQueryApplicationOutputProjectionDenial::ForeignContract)
     );
 }

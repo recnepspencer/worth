@@ -1,6 +1,5 @@
 use worth_query_execution::facade::primary_graph::{
-    WorthQueryApplicationCommitReceipt, WorthQueryApplicationOutputCorrespondence,
-    WorthQueryApplicationUncommitted,
+    WorthQueryApplicationCommitReceipt, WorthQueryApplicationUncommitted,
 };
 
 /// What executing an application mutation produced. `Committed` and `AlreadyCommitted` are
@@ -34,11 +33,6 @@ impl<Denial, Result> WorthQueryApplicationMutationOutcome<Denial, Result> {
             Self::Committed { receipt, .. } | Self::AlreadyCommitted(receipt) => Some(receipt),
             _ => None,
         }
-    }
-
-    pub fn output_correspondence(&self) -> Option<&WorthQueryApplicationOutputCorrespondence> {
-        self.receipt()
-            .map(WorthQueryApplicationCommitReceipt::output_correspondence)
     }
 
     pub const fn result(&self) -> Option<&Result> {

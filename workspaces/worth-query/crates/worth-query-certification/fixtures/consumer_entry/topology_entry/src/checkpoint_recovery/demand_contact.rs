@@ -145,23 +145,25 @@ fn restored_final_output_keeps_original_create_producer_and_zero_contact() {
     }
     let settled = settled.expect("the original final output settles within its bounded graph");
     assert_eq!(settled.producer_contacts_in_this_demand(), 0);
-    assert!(settled
-        .output_correspondence()
+    // The readmitted correspondence is erased: reading it as another
+    // contract is refused once, at the typed view.
+    assert_eq!(
+        settled.outputs_of::<FinalPlanarPreserveOutputs>().err(),
+        Some(primary_graph::WorthQueryApplicationOutputProjectionDenial::ForeignContract)
+    );
+    let outputs = settled
+        .outputs_of::<FinalPlanarOutputs>()
+        .expect("the readmitted outputs were committed under the final contract");
+    assert!(outputs
         .entity::<FinalAnchorOutput<CheckpointSchema>>()
         .is_ok());
-    assert!(settled
-        .output_correspondence()
-        .entity::<FinalPreservedAnchorOutput<CheckpointSchema>>()
-        .is_err());
     // Readmitted optional roles stay values: the bound closing vertex is
     // present and the never-bound auxiliary role is absent, not missing.
-    assert!(settled
-        .output_correspondence()
+    assert!(outputs
         .entity::<FinalClosingOutput<CheckpointSchema>>()
         .expect("the readmitted closing role reads as a value")
         .is_some());
-    assert!(settled
-        .output_correspondence()
+    assert!(outputs
         .entity::<FinalAuxiliaryOutput<CheckpointSchema>>()
         .expect("the readmitted auxiliary role reads as a value")
         .is_none());

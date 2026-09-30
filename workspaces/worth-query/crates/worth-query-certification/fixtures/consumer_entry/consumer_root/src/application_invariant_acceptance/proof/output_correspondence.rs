@@ -12,8 +12,9 @@ use worth_query_host::facade::{
     },
 };
 use worth_query_topology_entry::{
-    PlanarAnchorOutput, PlanarQuery, PlanarRead, VertexReplacement, VertexReplacementAnchorOutput,
-    VertexReplacementCreatedOutput, VertexReplacementRetiredOutput,
+    PlanarAnchorOutput, PlanarOutputs, PlanarQuery, PlanarRead, VertexReplacement,
+    VertexReplacementAnchorOutput, VertexReplacementCreatedOutput, VertexReplacementOutputs,
+    VertexReplacementRetiredOutput,
 };
 
 use super::{
@@ -54,7 +55,9 @@ pub(super) fn run(request: &Request<'_>, application: &ProgramApplication) {
         panic!("a valid vertex replacement must publish its complete ring: {outcome:?}")
     };
     assert_eq!(result.replacement_key, "replacement-b");
-    let correspondence = receipt.output_correspondence();
+    let correspondence = receipt
+        .outputs_of::<VertexReplacementOutputs>()
+        .expect("the replacement commits under the vertex replacement contract");
     let preserved = correspondence
         .entity::<VertexReplacementAnchorOutput<ConsumerSchema>>()
         .unwrap()
@@ -233,7 +236,8 @@ fn preserved_identity(
         panic!("the identity observation must come from a real selected command: {outcome:?}")
     };
     receipt
-        .output_correspondence()
+        .outputs_of::<PlanarOutputs>()
+        .expect("the adjustment commits under the planar contract")
         .entity::<PlanarAnchorOutput<ConsumerSchema>>()
         .unwrap()
         .entity_id()

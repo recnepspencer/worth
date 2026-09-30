@@ -79,14 +79,14 @@ pub use denial::{WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemp
 pub(in crate::domain_computation::primary_graph) use effect_program::{
     OutputRoleUse, WorthQueryAdmittedApplicationEmissionBatch,
     WorthQueryApplicationCreationPartition, WorthQueryApplicationEmission,
-    WorthQueryApplicationRealizedEffect, WorthQueryCandidateValidatorWorkAdmission,
-    WorthQueryCheckpointOutputRole,
+    WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationRealizedEffect,
+    WorthQueryCandidateValidatorWorkAdmission, WorthQueryCheckpointOutputRole,
 };
 pub use effect_program::{
     WorthQueryApplicationEffectEntity, WorthQueryApplicationEffectProgram,
-    WorthQueryApplicationEffectProgramBuilder, WorthQueryApplicationOutputCorrespondence,
-    WorthQueryApplicationOutputEntity, WorthQueryApplicationOutputFamilyEntry,
-    WorthQueryApplicationOutputPosture, WorthQueryApplicationOutputProjectionDenial,
+    WorthQueryApplicationEffectProgramBuilder, WorthQueryApplicationOutputEntity,
+    WorthQueryApplicationOutputFamilyEntry, WorthQueryApplicationOutputPosture,
+    WorthQueryApplicationOutputProjectionDenial, WorthQueryApplicationTypedOutputCorrespondence,
 };
 pub(super) use elevation_approval_outcome::approved_outcome;
 pub use elevation_approval_outcome::{

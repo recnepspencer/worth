@@ -58,12 +58,12 @@ pub(in crate::domain_computation::primary_graph) use candidate_reservation::Wort
 use candidate_reservation::{CandidateItemKind, WorthQueryCandidateReservation};
 use candidate_retained_representation as retained_representation;
 pub(in crate::domain_computation::primary_graph) use output_correspondence::{
-    OutputRoleUse, WorthQueryCheckpointOutputRole,
+    OutputRoleUse, WorthQueryApplicationOutputCorrespondence, WorthQueryCheckpointOutputRole,
 };
 pub use output_correspondence::{
-    WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationOutputEntity,
-    WorthQueryApplicationOutputFamilyEntry, WorthQueryApplicationOutputPosture,
-    WorthQueryApplicationOutputProjectionDenial,
+    WorthQueryApplicationOutputEntity, WorthQueryApplicationOutputFamilyEntry,
+    WorthQueryApplicationOutputPosture, WorthQueryApplicationOutputProjectionDenial,
+    WorthQueryApplicationTypedOutputCorrespondence,
 };
 pub(in crate::domain_computation::primary_graph) use platform_reservation::{
     admit_platform_effects, admit_workflow_settlement_effects, PlatformEffectDemand,

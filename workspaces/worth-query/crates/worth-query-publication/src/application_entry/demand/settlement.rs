@@ -1,7 +1,9 @@
 use std::sync::Arc;
 
 use worth_query_execution::facade::primary_graph::{
-    WorthQueryApplicationCommitReceipt, WorthQueryObservedSource, WorthQueryOutputDemandSettlement,
+    WorthQueryApplicationCommitReceipt, WorthQueryApplicationOutputProjectionDenial,
+    WorthQueryApplicationTypedOutputCorrespondence, WorthQueryObservedSource,
+    WorthQueryOutputDemandSettlement,
 };
 
 /// Whether an output demand has settled yet.
@@ -10,7 +12,7 @@ pub enum WorthQueryApplicationOutputDemandProgress<Query> {
     Settled(WorthQueryApplicationOutputDemandSettlement<Query>),
 }
 
-/// A settled output demand: the commit it settled at, the output correspondence, the
+/// A settled output demand: the commit it settled at, its committed output roles, the
 /// readiness delivery, and how many producers this demand contacted.
 pub struct WorthQueryApplicationOutputDemandSettlement<Query> {
     retained: Arc<WorthQueryOutputDemandSettlement>,
@@ -36,11 +38,14 @@ impl<Query> WorthQueryApplicationOutputDemandSettlement<Query> {
         self.retained.application_commit_receipt()
     }
 
-    pub fn output_correspondence(
+    /// The settled output roles, read as the output contract `Contract`.
+    pub fn outputs_of<Contract: 'static>(
         &self,
-    ) -> &worth_query_execution::facade::primary_graph::WorthQueryApplicationOutputCorrespondence
-    {
-        self.retained.output_correspondence()
+    ) -> Result<
+        WorthQueryApplicationTypedOutputCorrespondence<'_, Contract>,
+        WorthQueryApplicationOutputProjectionDenial,
+    > {
+        self.retained.outputs_of()
     }
 
     pub(in crate::application_entry) fn retained(&self) -> &WorthQueryOutputDemandSettlement {

@@ -3,14 +3,17 @@ disagrees with the output contract fails to compile. The passing twins below
 use each declared role and family as the contract declares it; each failing
 example changes one thing.
 
-Fixed roles, bound by a handler and read from a commit receipt:
+Fixed roles, bound by a handler and read from a commit receipt. A receipt
+stores its outputs erased; `outputs_of::<Contract>()` checks the commit's
+contract once and returns a view on which every read is checked against that
+contract at compile time:
 
 ```
 # use worth_query_host::facade::declaration::application_schema::{
 #     ApplicationSchema, ApplicationSchemaDeclaration, ApplicationSchemaDeclarationDenial,
 # };
 # use worth_query_host::facade::primary_graph::{
-#     CandidateWriter, WorthQueryApplicationEffectEntity, WorthQueryApplicationOutputCorrespondence,
+#     CandidateWriter, WorthQueryApplicationCommitReceipt, WorthQueryApplicationEffectEntity,
 # };
 # use worth_query_topology_entry::*;
 # struct S;
@@ -39,9 +42,13 @@ fn bind_final(
     let _ = writer.create_output::<FinalClosingOutput<S>>(body);
 }
 
-fn read(outputs: &WorthQueryApplicationOutputCorrespondence) {
-    let _ = outputs.entity::<PlanarAnchorOutput<S>>();
-    let _ = outputs.entity::<FinalClosingOutput<S>>();
+fn read(receipt: &WorthQueryApplicationCommitReceipt) {
+    if let Ok(outputs) = receipt.outputs_of::<PlanarOutputs>() {
+        let _ = outputs.entity::<PlanarAnchorOutput<S>>();
+    }
+    if let Ok(outputs) = receipt.outputs_of::<FinalPlanarOutputs>() {
+        let _ = outputs.entity::<FinalClosingOutput<S>>();
+    }
 }
 # let _ = bind as fn(_, _);
 # let _ = bind_final as fn(_, _);
@@ -98,7 +105,7 @@ A declared role read as another entity:
 # use worth_query_host::facade::declaration::application_schema::{
 #     ApplicationSchema, ApplicationSchemaDeclaration, ApplicationSchemaDeclarationDenial,
 # };
-# use worth_query_host::facade::primary_graph::WorthQueryApplicationOutputCorrespondence;
+# use worth_query_host::facade::primary_graph::WorthQueryApplicationTypedOutputCorrespondence;
 # use worth_query_topology_entry::*;
 # struct S;
 # impl ApplicationSchema for S {
@@ -121,7 +128,7 @@ impl WorthQueryApplicationOutputRole for AnchorAsPrincipal {
     const NAME: &'static str = "anchor";
 }
 
-fn read(outputs: &WorthQueryApplicationOutputCorrespondence) {
+fn read(outputs: WorthQueryApplicationTypedOutputCorrespondence<'_, PlanarOutputs>) {
     let _ = outputs.entity::<AnchorAsPrincipal>();
 }
 # let _ = read as fn(_);
@@ -265,6 +272,31 @@ fn bind(
 # let _ = bind as fn(_, _);
 ```
 
+A role of another operation's contract, read on this contract's view:
+
+```compile_fail,E0271
+# use worth_query_host::facade::declaration::application_schema::{
+#     ApplicationSchema, ApplicationSchemaDeclaration, ApplicationSchemaDeclarationDenial,
+# };
+# use worth_query_host::facade::primary_graph::WorthQueryApplicationTypedOutputCorrespondence;
+# use worth_query_topology_entry::*;
+# struct S;
+# impl ApplicationSchema for S {
+#     const OWNER: &'static str = "doc";
+#     const NAME: &'static str = "S";
+#     const MAJOR: u32 = 1;
+#     const MINOR: u32 = 0;
+#     fn declaration() -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+#         unimplemented!()
+#     }
+# }
+# impl TopologySchemaBinding for S {}
+fn read(outputs: WorthQueryApplicationTypedOutputCorrespondence<'_, PlanarOutputs>) {
+    let _ = outputs.entity::<FinalAnchorOutput<S>>();
+}
+# let _ = read as fn(_);
+```
+
 Families, bound by suffix and read back:
 
 ```
@@ -273,7 +305,8 @@ Families, bound by suffix and read back:
 #     ApplicationSchema, ApplicationSchemaDeclaration, ApplicationSchemaDeclarationDenial,
 # };
 # use worth_query_host::facade::primary_graph::{
-#     CandidateWriter, WorthQueryApplicationEffectEntity, WorthQueryApplicationOutputCorrespondence,
+#     CandidateWriter, WorthQueryApplicationEffectEntity,
+#     WorthQueryApplicationTypedOutputCorrespondence,
 # };
 # use worth_query_topology_entry::*;
 # struct S;
@@ -294,7 +327,7 @@ fn bind(
     let _ = writer.create_member::<PlanarCreatedOutputs<S>>("vertex", body);
 }
 
-fn read(outputs: &WorthQueryApplicationOutputCorrespondence) {
+fn read(outputs: WorthQueryApplicationTypedOutputCorrespondence<'_, PlanarOutputs>) {
     let _ = outputs.member::<PlanarCreatedOutputs<S>, WorthQueryCreateOutput>("vertex");
     let _ = outputs.family_entries::<PlanarCreatedOutputs<S>>();
 }
@@ -353,7 +386,7 @@ A declared family read as another entity:
 # use worth_query_host::facade::declaration::application_schema::{
 #     ApplicationSchema, ApplicationSchemaDeclaration, ApplicationSchemaDeclarationDenial,
 # };
-# use worth_query_host::facade::primary_graph::WorthQueryApplicationOutputCorrespondence;
+# use worth_query_host::facade::primary_graph::WorthQueryApplicationTypedOutputCorrespondence;
 # use worth_query_topology_entry::*;
 # struct S;
 # impl ApplicationSchema for S {
@@ -376,7 +409,7 @@ impl WorthQueryApplicationOutputRoleFamily for CreatedPrincipals {
     const MINIMUM: usize = 0;
 }
 
-fn read(outputs: &WorthQueryApplicationOutputCorrespondence) {
+fn read(outputs: WorthQueryApplicationTypedOutputCorrespondence<'_, PlanarOutputs>) {
     let _ = outputs.member::<CreatedPrincipals, WorthQueryCreateOutput>("vertex");
 }
 # let _ = read as fn(_);
@@ -518,6 +551,57 @@ fn bind(
     let _ = writer.create_member::<FinalCreatedOutputs<S>>("vertex", body);
 }
 # let _ = bind as fn(_, _);
+```
+
+A member of another operation's family, read on this contract's view:
+
+```compile_fail,E0271
+# use worth_query_host::facade::declaration::application_operation::WorthQueryCreateOutput;
+# use worth_query_host::facade::declaration::application_schema::{
+#     ApplicationSchema, ApplicationSchemaDeclaration, ApplicationSchemaDeclarationDenial,
+# };
+# use worth_query_host::facade::primary_graph::WorthQueryApplicationTypedOutputCorrespondence;
+# use worth_query_topology_entry::*;
+# struct S;
+# impl ApplicationSchema for S {
+#     const OWNER: &'static str = "doc";
+#     const NAME: &'static str = "S";
+#     const MAJOR: u32 = 1;
+#     const MINOR: u32 = 0;
+#     fn declaration() -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+#         unimplemented!()
+#     }
+# }
+# impl TopologySchemaBinding for S {}
+fn read(outputs: WorthQueryApplicationTypedOutputCorrespondence<'_, PlanarOutputs>) {
+    let _ = outputs.member::<FinalCreatedOutputs<S>, WorthQueryCreateOutput>("vertex");
+}
+# let _ = read as fn(_);
+```
+
+The entries of another operation's family, read on this contract's view:
+
+```compile_fail,E0271
+# use worth_query_host::facade::declaration::application_schema::{
+#     ApplicationSchema, ApplicationSchemaDeclaration, ApplicationSchemaDeclarationDenial,
+# };
+# use worth_query_host::facade::primary_graph::WorthQueryApplicationTypedOutputCorrespondence;
+# use worth_query_topology_entry::*;
+# struct S;
+# impl ApplicationSchema for S {
+#     const OWNER: &'static str = "doc";
+#     const NAME: &'static str = "S";
+#     const MAJOR: u32 = 1;
+#     const MINOR: u32 = 0;
+#     fn declaration() -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+#         unimplemented!()
+#     }
+# }
+# impl TopologySchemaBinding for S {}
+fn read(outputs: WorthQueryApplicationTypedOutputCorrespondence<'_, PlanarOutputs>) {
+    let _ = outputs.family_entries::<FinalCreatedOutputs<S>>();
+}
+# let _ = read as fn(_);
 ```
 
 A producer names the exactly-one role of its operation's contract that

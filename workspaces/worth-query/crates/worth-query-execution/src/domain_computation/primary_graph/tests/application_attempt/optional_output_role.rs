@@ -30,7 +30,8 @@ use worth_query_declaration::facade::application_schema::TypedMutationPreconditi
 
 #[test]
 fn an_unbound_at_most_one_role_commits_without_that_output() {
-    let outputs = committed_outputs(OptionalOutputPlan::RequiredOnly);
+    let committed = committed_outputs(OptionalOutputPlan::RequiredOnly);
+    let outputs = committed.outputs_of::<OptionalOutputs>().unwrap();
 
     assert!(outputs.entity::<OptionalSubject>().is_ok());
     assert!(
@@ -41,7 +42,7 @@ fn an_unbound_at_most_one_role_commits_without_that_output() {
         "the unbound optional role reads as None"
     );
     assert_eq!(
-        outputs.workflow_content_identity(),
+        committed.workflow_content_identity(),
         committed_outputs(OptionalOutputPlan::RequiredOnly).workflow_content_identity(),
         "an absent optional output has one stable canonical form"
     );
@@ -49,7 +50,8 @@ fn an_unbound_at_most_one_role_commits_without_that_output() {
 
 #[test]
 fn a_bound_at_most_one_role_commits_with_that_output() {
-    let outputs = committed_outputs(OptionalOutputPlan::RequiredAndOptional);
+    let committed = committed_outputs(OptionalOutputPlan::RequiredAndOptional);
+    let outputs = committed.outputs_of::<OptionalOutputs>().unwrap();
 
     assert_eq!(
         outputs
@@ -59,7 +61,7 @@ fn a_bound_at_most_one_role_commits_with_that_output() {
         Some(outputs.entity::<OptionalSubject>().unwrap().entity_id())
     );
     assert_ne!(
-        outputs.workflow_content_identity(),
+        committed.workflow_content_identity(),
         committed_outputs(OptionalOutputPlan::RequiredOnly).workflow_content_identity(),
         "a present optional output is distinct from an absent one"
     );

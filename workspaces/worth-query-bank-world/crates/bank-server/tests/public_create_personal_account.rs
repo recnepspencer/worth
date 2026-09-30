@@ -6,7 +6,9 @@ use bank_domain::model::{
 };
 use bank_domain::proposals::{BankIdempotencyKey, BankSnapshotBuilder};
 use bank_domain::queries;
-use bank_domain::schema::{CreatePersonalAccount, CreatedPersonalAccountOutput};
+use bank_domain::schema::{
+    CreatePersonalAccount, CreatePersonalAccountOutputs, CreatedPersonalAccountOutput,
+};
 use bank_server::{
     mutations, BankEmployeeAssignmentSeed, BankMutationControls, BankPrincipalSeed, BankWorldSeed,
 };
@@ -90,7 +92,8 @@ fn assert_public_creation(display_name: &str) {
     assert!(account.canonical_text().starts_with("operation:"));
     assert_eq!(account.canonical_text().len(), 76);
     let created_entity = first_receipt
-        .output_correspondence()
+        .outputs_of::<CreatePersonalAccountOutputs>()
+        .expect("the creation commits under the personal account contract")
         .entity::<CreatedPersonalAccountOutput>()
         .expect("the declared created-account output must resolve")
         .entity_id();
@@ -115,7 +118,8 @@ fn assert_public_creation(display_name: &str) {
         panic!("the identical retry must recover the prior commit");
     };
     let recovered_entity = retry_receipt
-        .output_correspondence()
+        .outputs_of::<CreatePersonalAccountOutputs>()
+        .expect("the recovered commit keeps the personal account contract")
         .entity::<CreatedPersonalAccountOutput>()
         .expect("the recovered output correspondence must remain complete")
         .entity_id();

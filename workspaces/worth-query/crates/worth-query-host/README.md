@@ -94,7 +94,7 @@ denial identities, scope/effects, units/frames, and installed request-binding
 availability. Availability describes installation; every execution still performs
 fresh authorization and currentness checks.
 
-Committed mutation receipts expose `output_correspondence()` and
+Committed mutation receipts expose `outputs_of::<Contract>()` and
 `committed_changes()`.
 
 An output role is a marker type, and its `WorthQueryApplicationOutputRole` impl
@@ -124,7 +124,9 @@ impl ApplicationMutationOutputContract<BankSchema> for CreateAccountOutputs {
 }
 
 candidate.create_output::<CreatedAccountOutput>(&created)?;
-let account = receipt.output_correspondence().entity::<CreatedAccountOutput>()?;
+let account = receipt
+    .outputs_of::<CreateAccountOutputs>()?
+    .entity::<CreatedAccountOutput>()?;
 ```
 
 A generic schema declares a generic marker,
@@ -143,10 +145,19 @@ evaluates the derived `DECLARED` constant, which fails unless the contract's
 in `cargo build` and `cargo test` but not in `cargo check`, and not in a generic
 function nothing instantiates.
 
+A commit receipt and an output-demand settlement store their outputs erased, so
+they can be cloned, archived, recovered and readmitted without a type
+parameter. `outputs_of::<Contract>()` is the one typed read: it checks once, at
+run time, that the commit was made under `Contract`, and refuses any other
+contract with `ForeignContract`. It returns
+`WorthQueryApplicationTypedOutputCorrespondence<'_, Contract>`, whose `entity`,
+`member` and `family_entries` bound each marker's contract to `Contract`, so a
+read of another contract's role or family fails `cargo check`.
+
 The cardinality decides the shape of every read. An exactly-one role must be
 bound: a completed candidate that leaves it unbound is refused with
 `MissingOutputRole`, and its reads return the output itself. The reads are
-`output_correspondence().entity::<Role>()`, `DecisionReader::prior_output` and
+`outputs_of::<Contract>()?.entity::<Role>()`, `DecisionReader::prior_output` and
 generated-output reconstruction's `entity::<Role>()`. An at-most-one role may be
 left unbound, and the same reads return an `Option`, `None` when the commit left
 the role unbound. Absence is a value, never a denial. Binding any fixed role a
@@ -164,16 +175,18 @@ entity marker, the member-name `PREFIX`, the allowed `POSTURES` and the
 `ROLE_FAMILIES`. A handler binds each source-derived member by its suffix, as in
 `candidate.create_member::<CreatedVertices>(&key, &created)?`; `preserve_member`
 and `retire_member` work the same way. Readers name the family and the action,
-as in `output_correspondence().member::<CreatedVertices, WorthQueryCreateOutput>(&key)`,
-or read the whole family with `family_entries::<CreatedVertices>()`. Members are
+as in `outputs.member::<CreatedVertices, WorthQueryCreateOutput>(&key)` on the
+view `outputs_of` returns, or read the whole family with
+`outputs.family_entries::<CreatedVertices>()`. Members are
 exactly-one. A family the contract does not declare exactly as used, or an
 action outside the family's postures, fails to compile. The suffix is run-time
 data, so an empty, ambiguous or oversized member name is refused when it is
 named.
 
 Query keeps run-time checks only where the types cannot carry the contract.
-`output_correspondence()` has no binding type, so reading a role of another
-contract is refused with `ForeignContract`. A family member's committed action
+A stored receipt carries no contract type, so `outputs_of::<Contract>()` refuses
+a commit made under another contract with `ForeignContract`; reads on the view
+it returns are checked at compile time. A family member's committed action
 is data, so reading it with another allowed action is `ActionMismatch`. Portable
 and readmitted forms are validated when admitted. Typed uses are checked again at
 run time as defense in depth. Role names describe correspondence; the platform

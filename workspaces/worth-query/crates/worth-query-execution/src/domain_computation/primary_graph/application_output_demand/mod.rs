@@ -1,8 +1,10 @@
 mod currentness;
+mod readiness_delivery;
 mod recovered_outputs;
 mod registry;
 mod settlement;
 
+pub use readiness_delivery::WorthQueryOutputReadinessDeliveryEvidence;
 pub(super) use recovered_outputs::WorthQueryRecoveredOutputs;
 pub use registry::WorthQueryOutputDemandNotifications;
 pub(super) use registry::{
@@ -15,4 +17,4 @@ pub(super) use registry::{
     WorthQueryReadmittedAcceptedOutput, WorthQueryRequiredOutputSourcePreparation,
     WorthQueryRestoredAcceptedOutput,
 };
-pub use settlement::{WorthQueryOutputDemandSettlement, WorthQueryOutputReadinessDeliveryEvidence};
+pub use settlement::WorthQueryOutputDemandSettlement;

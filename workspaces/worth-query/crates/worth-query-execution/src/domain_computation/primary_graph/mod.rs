@@ -73,6 +73,7 @@ pub(in crate::domain_computation) use application_attempt::{
     WorthQueryProviderProgressionOutcome, WorthQueryRegisteredProviderAttempt,
 };
 pub(crate) use application_attempt::WorthQueryRetainedGovernedInput;
+pub(in crate::domain_computation::primary_graph) use application_attempt::WorthQueryApplicationOutputCorrespondence;
 pub(crate) use application_attempt::WorthQueryPerformedExternalRedispatchSeal;
 pub(crate) use provider::WorthQueryRetainedPreImageSeal;
 pub(crate) use provider::WorthQueryApplicationBranchCommitLane;

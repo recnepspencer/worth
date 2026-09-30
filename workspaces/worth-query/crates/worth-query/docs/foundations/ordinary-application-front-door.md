@@ -163,12 +163,14 @@ exact prior binding has no correspondence at the selected occurrence and
 generation. Declaration, identity, visibility, consistency, and work failures
 remain denials.
 
-Committed receipts expose `output_correspondence()` for preserve/create/retire
+Committed receipts expose `outputs_of::<Contract>()` for preserve/create/retire
 roles and `committed_changes()` for immutable structural and lineage
-observations from the same commit. Projecting `entity::<Role>()` names the
-role's marker, so its contract, name, action and entity marker come from the
-declaration; a role of another contract is refused with
-`WorthQueryApplicationOutputProjectionDenial::ForeignContract`. These
+observations from the same commit. `outputs_of` checks once that the commit was
+made under `Contract`, refusing another contract with
+`WorthQueryApplicationOutputProjectionDenial::ForeignContract`. Projecting
+`entity::<Role>()` on the returned view names the role's marker, so its name,
+action and entity marker come from the declaration, and a role of another
+contract fails to compile. These
 observations carry no new execution authority.
 The [public replacement proof](../../../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/output_correspondence.rs)
 checks projection, readback, rejected-candidate isolation, and idempotent recovery.
