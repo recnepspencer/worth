@@ -100,8 +100,15 @@ signed ACK; the sender retains the same signed bytes for its bounded retry.
 `AcceptedPending` and `AlreadyAccepted` acknowledge retained Query custody,
 not external completion. `Performed` and `AlreadyCompleted` require the exact
 World terminal. A route may diagnose a terminal only through its installed
-host handle; a public raw-correlation status endpoint would bypass this
-boundary.
+ host handle; a public raw-correlation status endpoint would bypass this
+ boundary.
+
+The advanced Query path exposes sealed authenticated, correlated and admitted
+phases through `authenticate_inbound_occurrence`, `.correlate()`, `.accept()`
+and `.execute(&scope)`. A dropped admitted phase returns its publication slot to
+bounded pending custody. Query keeps the prepared Relational candidate and World
+publication lease private while holding the exact incarnation guard through
+execution; no caller can manufacture or carry a prepared completion.
 
 The compiled Bank [payment declaration](../../../../../worth-query-bank-world/crates/bank-domain/src/schema/contributions/payments.rs)
 and [workflow definition](../../../../../worth-query-bank-world/crates/bank-server/src/application_definition/workflows.rs)
@@ -117,6 +124,14 @@ Query first verifies the signed envelope against the installed source and clock,
 then matches its correlation to one committed dispatch on the original product
 incarnation. It retains accepted evidence before attempting the completion
 publication. Only a World `Performed` publication establishes terminal truth.
+The installed verifier must calculate `signed_meaning_digest` from every signed
+semantic field, including audience, source, key epoch, message identity,
+validity times, protocol, correlation and payload; only detached signature
+material is excluded. Query uses zero clock-skew allowance. An overlong signed
+validity span returns `ValidityWindowExceeded`; a past cutoff returns `Expired`.
+The first Bank protocol confirms the exact dispatched payload. It does not
+record a separate remote result body, such as a settlement reference; adding
+that meaning requires a separately declared effect and protocol.
 An installed transport's immediate `Completed` observation enters this same
 World path with its original committed operation and physical attempt proof.
 It is recorded as transport provenance, never as a fabricated signed message.
@@ -125,7 +140,9 @@ terminal publication; the later matching source message returns
 `AlreadyCompleted`.
 `ProductUnpublished` keeps exact recovery custody; a retry must settle or clean
 that attempt before another publication. `NoEffect` and denied publications do
-not earn a custody acknowledgement.
+not establish completion. Once Query has accepted the message, a blocked attempt
+still returns an acknowledged `AcceptedPending` receipt with a typed pending
+reason; unpublished World work reports `RetainedUnpublished`.
 
 The receipt distinguishes `AcceptedPending`, `AlreadyAccepted`, `Performed`,
 and `AlreadyCompleted`. A duplicate with the same authenticated message meaning
@@ -146,7 +163,9 @@ history. An installed host may call `repair_completed_inbound_index` with its
 verifier handle and finite World-page, changed-record and ancestry budgets.
 Ordinary exact lookup remains unavailable while that separate repair is
 incomplete. This custody guarantee is process-local; forced
-process death has no recovery promise.
+process death has no recovery promise. In particular, an authentic callback can
+receive unknown correlation if the original outstanding-dispatch provenance was
+lost; that response is not a signed permanent denial to the rail.
 
 The installed host wakes bounded custodian maintenance for retained work,
 explicit owner continuation, and the next terminal expiry after callbacks stop. It

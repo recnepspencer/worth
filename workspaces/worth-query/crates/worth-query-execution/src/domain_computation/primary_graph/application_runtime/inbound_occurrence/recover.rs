@@ -90,6 +90,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             }
             WorthQueryInboundPublicationClaim::AtCapacity => Err(Denial::CapacityExhausted),
             WorthQueryInboundPublicationClaim::Publishing => Err(Denial::PublicationInProgress),
+            WorthQueryInboundPublicationClaim::Gone => Err(Denial::RecoveryUnavailable),
             WorthQueryInboundPublicationClaim::Terminal => {
                 self.release_retained_inbound_terminal(&accepted)?;
                 Ok(Posture::Performed)

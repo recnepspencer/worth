@@ -17,6 +17,7 @@ const BODY_PREFIX: usize = 1 + 8 + 8 + 32 + 32 + 2;
 const MAC_BYTES: usize = 32;
 const RIGHT_DOMAIN: u8 = 1;
 const WRONG_DOMAIN: u8 = 2;
+const RIGHT_DOMAIN_EPOCH_TWO: u8 = 3;
 
 pub(super) struct TestVerifier;
 
@@ -57,6 +58,7 @@ impl WorthQueryInboundOccurrenceVerifier for TestVerifier {
         }
         let domain = match body[0] {
             RIGHT_DOMAIN => PROTOCOL,
+            RIGHT_DOMAIN_EPOCH_TWO => PROTOCOL,
             WRONG_DOMAIN => "inbound.test.wrong-domain",
             _ => return Err(Denial::UnsupportedVersion),
         };
@@ -74,7 +76,11 @@ impl WorthQueryInboundOccurrenceVerifier for TestVerifier {
         Ok(WorthQueryInboundOccurrenceClaims {
             audience: AUDIENCE.to_owned(),
             source_identity: SOURCE.to_owned(),
-            key_epoch: 1,
+            key_epoch: if body[0] == RIGHT_DOMAIN_EPOCH_TWO {
+                2
+            } else {
+                1
+            },
             message_identity,
             signed_meaning_digest: Sha256::digest(body).into(),
             issued_at_unix_seconds: issued_at,
@@ -95,6 +101,18 @@ pub(super) fn signed_envelope(
     wrong_domain: bool,
 ) -> Vec<u8> {
     signed_envelope_for_seconds(record, message_identity, payload, wrong_domain, 30)
+}
+
+pub(super) fn signed_envelope_for_second_key_epoch(
+    record: &WorthQueryDispatchOutboxRecord,
+    message_identity: [u8; 32],
+) -> Vec<u8> {
+    let mut envelope = signed_envelope(record, message_identity, record.payload(), false);
+    envelope[0] = RIGHT_DOMAIN_EPOCH_TWO;
+    let signature = mac(&envelope[..envelope.len() - MAC_BYTES]);
+    let start = envelope.len() - MAC_BYTES;
+    envelope[start..].copy_from_slice(&signature);
+    envelope
 }
 
 pub(super) fn signed_envelope_for_seconds(

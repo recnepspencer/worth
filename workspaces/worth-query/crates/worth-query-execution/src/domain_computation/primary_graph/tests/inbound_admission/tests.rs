@@ -1,67 +1,42 @@
 use sha2::{Digest, Sha256};
 
-use super::fixture::{installed_world, InboundWorld};
-use super::verifier::signed_envelope;
+use super::fixture::installed_world;
+use super::verifier::{signed_envelope, signed_envelope_for_second_key_epoch};
 use crate::domain_computation::application_aftermath::WorthQueryInboundVerificationDenial;
 use crate::domain_computation::primary_graph::application_runtime::WorthQueryExternalDispatchAdmissionDenial;
 use crate::domain_computation::primary_graph::{
     WorthQueryInboundAdmissionDenial as Denial, WorthQueryInboundReceiptPosture as Posture,
 };
 
-pub(super) fn owner_commits(world: &InboundWorld) -> usize {
-    world
-        .application
-        .primary_provider
-        .graph
-        .with_runtime(|runtime| runtime.history().immutable_commit_count())
-}
+mod helpers;
+pub(super) use helpers::{completion_records, owner_commits, product_commit};
 
-pub(super) fn product_commit(
-    world: &InboundWorld,
-) -> worth_runtime_world::facade::CompositeCommitIdentity {
-    world
-        .application
-        .product_runtime()
-        .admit_product_branch(world.application.product_runtime().default_branch())
-        .unwrap()
-        .selected_commit()
-        .clone()
-}
-
-pub(super) fn completion_records(world: &InboundWorld) -> usize {
-    let product = world
-        .application
-        .product_runtime()
-        .admit_product_branch(world.application.product_runtime().default_branch())
-        .unwrap();
-    let kind = world
-        .application
-        .primary_provider
-        .graph
-        .layout
-        .provider_inbound_completion()
-        .kind;
-    world
-        .application
-        .primary_provider
-        .graph
-        .with_runtime_mut(|runtime| {
-            let snapshot = super::super::super::exact_basis_access::open_exact_basis_snapshot(
-                runtime,
-                product.relational_basis(),
-            )
-            .unwrap();
-            let count = runtime
-                .read_truth()
-                .project_snapshot(&snapshot)
-                .unwrap()
-                .bounded_entities_of_kind(kind, 100)
-                .unwrap()
-                .records()
-                .len();
-            crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
-            count
-        })
+#[test]
+fn same_message_identity_under_a_new_authenticated_key_epoch_is_already_completed() {
+    let world = installed_world();
+    let dispatch = world.commit_dispatch(12, "epoch-rotated-completion");
+    let record = dispatch.dispatch_outbox().unwrap();
+    let first = signed_envelope(record, [0x92; 32], record.payload(), false);
+    let request = super::super::fixture::live_scope();
+    assert_eq!(
+        world
+            .application
+            .receive_inbound_occurrence(&world.verifier, &first, &request)
+            .unwrap()
+            .posture(),
+        Posture::Performed
+    );
+    let before = owner_commits(&world);
+    let rotated = signed_envelope_for_second_key_epoch(record, [0x92; 32]);
+    assert_eq!(
+        world
+            .application
+            .receive_inbound_occurrence(&world.verifier, &rotated, &request)
+            .unwrap()
+            .posture(),
+        Posture::AlreadyCompleted
+    );
+    assert_eq!(owner_commits(&world), before);
 }
 
 #[test]

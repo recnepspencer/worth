@@ -4,8 +4,6 @@ mod custody;
 mod installed_transport;
 mod outcome;
 mod progression;
-#[cfg(test)]
-mod tests;
 mod transport_progression;
 
 pub(super) use custody::InstalledTransportCompletionCustody;

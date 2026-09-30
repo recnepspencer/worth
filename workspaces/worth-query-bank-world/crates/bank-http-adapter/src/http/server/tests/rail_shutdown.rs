@@ -19,7 +19,10 @@ impl BankRailCompletionRoute for PendingRoute {
         &self,
         _: &[u8],
         _: &WorthQueryRequestScope,
-    ) -> Result<(Vec<u8>, bool), WorthQueryInboundAdmissionDenial> {
+    ) -> Result<
+        super::super::inbound_completion::BankSignedCustodyOutcome,
+        WorthQueryInboundAdmissionDenial,
+    > {
         unreachable!()
     }
 

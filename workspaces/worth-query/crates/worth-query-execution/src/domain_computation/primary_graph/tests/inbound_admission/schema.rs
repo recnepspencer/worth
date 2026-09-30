@@ -92,8 +92,6 @@ worth_query_operation!(pub NotifyOperation for InboundTestSchema, input NotifyIn
 worth_query_operation_emits!(NotifyOperation => [NoticeEffect]);
 worth_query_operation!(pub OtherNotifyOperation for InboundTestSchema, input NotifyInputBinding);
 worth_query_operation_emits!(OtherNotifyOperation => [NoticeEffect]);
-worth_query_operation!(pub UnrelatedNotifyOperation for InboundTestSchema, input NotifyInputBinding);
-worth_query_operation_emits!(UnrelatedNotifyOperation => [NoticeEffect]);
 worth_query_operation!(pub WideNotifyOperation for InboundTestSchema, input NotifyInputBinding);
 worth_query_operation_emits!(WideNotifyOperation => [NoticeEffect]);
 
@@ -115,7 +113,9 @@ pub(super) fn limits() -> ApplicationInboundOccurrenceLimits {
 
 fn wide_limits() -> ApplicationInboundOccurrenceLimits {
     let mut limits = limits();
-    limits.maximum_outstanding_dispatch_provenance = NonZeroU64::new(4).unwrap();
+    // The cost court keeps a thousand unrelated, genuinely inbound-bound
+    // dispatches live while selecting one different effect.
+    limits.maximum_outstanding_dispatch_provenance = NonZeroU64::new(1_002).unwrap();
     limits.maximum_accepted_occurrences = NonZeroU64::new(3).unwrap();
     limits.maximum_accepted_bytes = NonZeroU64::new(1_536).unwrap();
     limits
@@ -181,20 +181,7 @@ worth_query_application_schema! {
                 )
                 .operation_decision_fact_budget(OtherNotifyOperation::reference(), 1)
                 .operation_projection_work_budget(OtherNotifyOperation::reference(), 8)
-                .operation_emit(OtherNotifyOperation::reference(), NoticeEffect::reference())
-                .operation(
-                    UnrelatedNotifyOperation::reference()
-                        .definition()
-                        .external_effect(
-                            NoticeEffect::reference(),
-                            WorthQueryExternalEffectCorrelationFamily::new("unrelated-test-family").unwrap(),
-                        )
-                        .no_aftermath()
-                        .finish(),
-                )
-                .operation_decision_fact_budget(UnrelatedNotifyOperation::reference(), 1)
-                .operation_projection_work_budget(UnrelatedNotifyOperation::reference(), 8)
-                .operation_emit(UnrelatedNotifyOperation::reference(), NoticeEffect::reference());
+                .operation_emit(OtherNotifyOperation::reference(), NoticeEffect::reference());
             schema.operation(
                     WideNotifyOperation::reference()
                         .definition()

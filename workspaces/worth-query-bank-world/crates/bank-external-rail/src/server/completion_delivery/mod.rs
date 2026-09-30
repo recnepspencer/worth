@@ -26,6 +26,8 @@ pub struct RailCompletionDeliveryPosture {
     pub reserved: usize,
     pub pending: usize,
     pub exhausted: usize,
+    /// Signed authoritative denials observed during this process lifetime.
+    pub permanently_denied: u64,
 }
 
 struct Obligation {
@@ -47,6 +49,7 @@ enum SenderTurn {
 struct Custody {
     reserved: usize,
     obligations: HashMap<RailCorrelation, Obligation>,
+    permanently_denied: u64,
 }
 
 pub(super) struct CompletionDelivery {
@@ -141,6 +144,7 @@ impl CompletionDelivery {
                 .values()
                 .filter(|obligation| obligation.exhausted)
                 .count(),
+            permanently_denied: custody.permanently_denied,
         }
     }
 
@@ -256,8 +260,11 @@ impl CompletionDelivery {
         let Some(obligation) = custody.obligations.get_mut(correlation) else {
             return;
         };
-        if result.is_some() {
+        if let Some(posture) = result {
             custody.obligations.remove(correlation);
+            if posture == RailCustodyAckPosture::PermanentDenied {
+                custody.permanently_denied = custody.permanently_denied.saturating_add(1);
+            }
             return;
         }
         obligation.in_flight = false;

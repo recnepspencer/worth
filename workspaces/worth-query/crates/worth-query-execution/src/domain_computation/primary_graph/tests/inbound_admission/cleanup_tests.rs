@@ -1,3 +1,4 @@
+use sha2::{Digest, Sha256};
 use std::num::NonZeroUsize;
 use std::sync::Arc;
 use std::time::Duration;
@@ -6,6 +7,7 @@ use super::fixture::installed_world;
 use super::schema::WideNotifyOperation;
 use super::verifier::TestVerifier;
 use super::verifier::{signed_envelope, signed_envelope_for_seconds};
+use crate::domain_computation::application_aftermath::WorthQueryInboundPublicationClaim;
 use crate::domain_computation::primary_graph::{
     WorthQueryInboundAdmissionDenial, WorthQueryInboundReceiptPosture,
 };
@@ -115,6 +117,10 @@ fn expired_settled_terminal_reclaims_one_finite_accepted_slot() {
             .posture(),
         WorthQueryInboundReceiptPosture::Performed,
     );
+    let accepted_before_cleanup = world
+        .application
+        .retained_accepted_for_cleanup_test(first_record.correlation())
+        .expect("performed owner retains accepted custody before expiry");
     let one = NonZeroUsize::new(1).unwrap();
     assert_eq!(
         world
@@ -135,6 +141,15 @@ fn expired_settled_terminal_reclaims_one_finite_accepted_slot() {
             .reclaimed(),
         1,
     );
+    let (claim, retryable) = world
+        .application
+        .stale_publication_claim_for_cleanup_test(&accepted_before_cleanup);
+    assert_eq!(
+        claim,
+        WorthQueryInboundPublicationClaim::Gone,
+        "a duplicate holding an Arc across cleanup gets a typed gone result",
+    );
+    assert!(!retryable);
     let second = world.commit_dispatch(42, "notice-after-turnover");
     let second_record = second.dispatch_outbox().unwrap();
     let second_envelope =
@@ -174,7 +189,10 @@ fn expired_settled_terminal_reclaims_one_finite_accepted_slot() {
             &reused_message_identity,
             &request,
         ),
-        Err(WorthQueryInboundAdmissionDenial::MessageIdentityConflict),
+        Err(WorthQueryInboundAdmissionDenial::AuthenticatedPermanent(proof))
+            if proof.kind() == crate::domain_computation::primary_graph::WorthQueryInboundPermanentDenialKind::MessageIdentityConflict
+                && proof.message_identity() == &[0xa1; 32]
+                && proof.envelope_digest() == &<[u8; 32]>::from(Sha256::digest(&reused_message_identity)),
     ));
 
     let altered_effect = signed_envelope(first_record, [0xa4; 32], b"altered", false);
@@ -182,7 +200,8 @@ fn expired_settled_terminal_reclaims_one_finite_accepted_slot() {
         world
             .application
             .receive_inbound_occurrence(&world.verifier, &altered_effect, &request,),
-        Err(WorthQueryInboundAdmissionDenial::CorrelationAlreadyOwned),
+        Err(WorthQueryInboundAdmissionDenial::AuthenticatedPermanent(proof))
+            if proof.kind() == crate::domain_computation::primary_graph::WorthQueryInboundPermanentDenialKind::CorrelationAlreadyOwned,
     ));
     assert_eq!(super::tests::owner_commits(&world), commits_after_turnover);
 }

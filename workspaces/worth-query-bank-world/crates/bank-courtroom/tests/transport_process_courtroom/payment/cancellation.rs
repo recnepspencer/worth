@@ -5,7 +5,12 @@ use std::time::Duration;
 use bank_domain::schema::ApprovePayment;
 use bank_external_rail::completion_wire::{CUSTODY_ACK_V1_BYTES, CUSTODY_ACK_V1_MAGIC};
 use bank_external_rail::{inquire_completed_effect_count, inquire_completion_delivery_posture};
-use worth_query_host::facade::application_entry::WorkflowInstanceCancellationOutcome;
+use bank_server::BankApprovedPaymentWorkflowError;
+use worth_query_host::facade::application_entry::{
+    WorkflowInstanceCancellationOutcome, WorkflowTransitionPreparationDenial,
+    WorthQueryWorkflowAdvancePreparationDenial,
+};
+use worth_query_host::facade::primary_graph::WorthQueryApplicationAttemptDenialKind;
 
 use super::assertions::{key, require_completed};
 use super::fixture::{principal_id, APPROVER};
@@ -158,10 +163,18 @@ async fn callback_settled_cancellation_survives_late_exact_duplicate() {
             &key("approved-payment:cancel-court:late-advance"),
         )
     });
-    assert!(
-        denied.is_err(),
-        "duplicate callback cannot reopen a cancelled instance"
-    );
+    match denied {
+        Err(BankApprovedPaymentWorkflowError::Advance(
+            WorthQueryWorkflowAdvancePreparationDenial::TransitionPreparation(
+                WorkflowTransitionPreparationDenial::Attempt(attempt),
+            ),
+        )) => assert_eq!(
+            attempt.kind(),
+            WorthQueryApplicationAttemptDenialKind::WorkflowInstanceCancelled,
+            "duplicate callback cannot reopen a cancelled instance"
+        ),
+        other => panic!("cancelled instance must name its terminal denial: {other:?}"),
+    }
     let after_duplicate = tokio::task::block_in_place(|| {
         oracle::snapshot(
             &court.runtime,

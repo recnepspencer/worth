@@ -94,6 +94,9 @@ impl WorthQueryInboundOccurrenceVerifier for BankRailCompletionVerifier {
             },
         )
         .map_err(map_wire_denial)?;
+        if u32::from(verified.protocol_version) != self.protocol_version.get() {
+            return Err(WorthQueryInboundVerificationDenial::UnsupportedVersion);
+        }
         Ok(WorthQueryInboundOccurrenceClaims {
             audience: verified.audience,
             source_identity: verified.source,

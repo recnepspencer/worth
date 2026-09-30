@@ -16,7 +16,8 @@ impl BankRailCompletionRoute for RetainedRoute {
         &self,
         _: &[u8],
         _: &WorthQueryRequestScope,
-    ) -> Result<(Vec<u8>, bool), WorthQueryInboundAdmissionDenial> {
+    ) -> Result<super::super::route::BankSignedCustodyOutcome, WorthQueryInboundAdmissionDenial>
+    {
         unreachable!("the close court never receives a callback")
     }
 

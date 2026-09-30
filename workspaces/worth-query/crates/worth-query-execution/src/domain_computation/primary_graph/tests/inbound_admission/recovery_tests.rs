@@ -2,7 +2,8 @@ use super::fixture::installed_world;
 use super::tests::{completion_records, owner_commits, product_commit};
 use super::verifier::{signed_envelope, signed_envelope_for_seconds};
 use crate::domain_computation::primary_graph::{
-    WorthQueryInboundAdmissionDenial as Denial, WorthQueryInboundReceiptPosture as Posture,
+    WorthQueryInboundAdmissionDenial as Denial, WorthQueryInboundPendingReason as Reason,
+    WorthQueryInboundReceiptPosture as Posture,
 };
 
 #[test]
@@ -15,14 +16,12 @@ fn retained_world_unpublished_completion_settles_and_publishes_without_recreatin
     let before_product = product_commit(&world);
     let request = super::super::fixture::live_scope();
     world.application.fail_next_durable_append_for_test();
-    assert_eq!(
-        world
-            .application
-            .receive_inbound_occurrence(&world.verifier, &envelope, &request)
-            .unwrap()
-            .posture(),
-        Posture::AcceptedPending,
-    );
+    let receipt = world
+        .application
+        .receive_inbound_occurrence(&world.verifier, &envelope, &request)
+        .unwrap();
+    assert_eq!(receipt.posture(), Posture::AcceptedPending);
+    assert_eq!(receipt.pending_reason(), Some(Reason::RetainedUnpublished));
     assert_eq!(owner_commits(&world), before_relational + 1);
     assert_eq!(product_commit(&world), before_product);
     assert_eq!(completion_records(&world), 0);
@@ -69,6 +68,13 @@ fn revoked_source_preserves_accepted_world_recovery_without_new_consumption() {
         .application
         .revoke_inbound_occurrence_source(&world.verifier)
         .unwrap();
+    let retained = world
+        .application
+        .receive_inbound_occurrence(&world.verifier, &envelope, &request)
+        .expect("authenticated accepted custody remains acknowledgeable after revocation");
+    assert_eq!(retained.posture(), Posture::AcceptedPending);
+    assert_eq!(retained.pending_reason(), Some(Reason::SourceRevoked));
+    assert!(retained.requires_maintenance_cue());
     assert!(matches!(
         world
             .application

@@ -12,6 +12,38 @@ use crate::domain_computation::application_aftermath::WorthQueryInboundCleanupRe
 impl<Schema: worth_query_installation::facade::ApplicationSchema>
     WorthQueryPrimaryGraphApplicationRuntime<Schema>
 {
+    #[cfg(test)]
+    pub(in crate::domain_computation::primary_graph) fn retained_accepted_for_cleanup_test(
+        &self,
+        correlation: &crate::domain_computation::application_aftermath::ExternalEffectCorrelationIdentity,
+    ) -> Option<
+        std::sync::Arc<
+            crate::domain_computation::application_aftermath::WorthQueryAcceptedInboundOccurrence,
+        >,
+    > {
+        self.inbound_custody
+            .lock()
+            .unwrap()
+            .accepted_by_correlation(correlation)
+    }
+
+    #[cfg(test)]
+    pub(in crate::domain_computation::primary_graph) fn stale_publication_claim_for_cleanup_test(
+        &self,
+        accepted: &std::sync::Arc<
+            crate::domain_computation::application_aftermath::WorthQueryAcceptedInboundOccurrence,
+        >,
+    ) -> (
+        crate::domain_computation::application_aftermath::WorthQueryInboundPublicationClaim,
+        bool,
+    ) {
+        let mut custody = self.inbound_custody.lock().unwrap();
+        (
+            custody.claim_retryable_publication(accepted),
+            custody.mark_publication_retryable(accepted),
+        )
+    }
+
     /// Reclaim expired signed custody after rechecking its canonical World
     /// terminal pair. Transport terminals retain their own canonical truth;
     /// only their compact accepted-message meaning expires here.

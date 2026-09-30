@@ -9,6 +9,10 @@ use worth_foundational::facade::{BoundaryProtocolIdentity, BoundaryProtocolVersi
 /// parsing and authentication work against `maximum_work` and return
 /// `WorkExhausted` before exceeding it. Work units are mechanism-defined; the
 /// numeric limit does not preempt arbitrary product code.
+/// `signed_meaning_digest` must cover every authenticated semantic field of
+/// the signed body, including audience, source, key epoch, message identity,
+/// validity times, protocol, correlation and payload. It must exclude only
+/// detached signature material; changing any signed field changes the digest.
 pub trait WorthQueryInboundOccurrenceVerifier: Send + Sync {
     fn audience(&self) -> &str;
     fn source_identity(&self) -> &str;

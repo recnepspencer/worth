@@ -37,8 +37,7 @@ pub(super) fn decode(
     ApplicationInboundOccurrenceLimits,
 )> {
     let values: Vec<serde_json::Value> = serde_json::from_str(encoded).ok()?;
-    let legacy = values.len() == 13 && values[0].as_u64()? == 1;
-    if !legacy && (values.len() != 14 || values[0].as_u64()? != 2) {
+    if values.len() != 14 || values[0].as_u64()? != 2 {
         return None;
     }
     let identity = BoundaryProtocolIdentity::parse(values[1].as_str()?.to_owned()).ok()?;
@@ -49,18 +48,17 @@ pub(super) fn decode(
         return None;
     }
     let number = |index: usize| NonZeroU64::new(values[index].as_u64()?);
-    let shift = usize::from(!legacy);
     let limits = ApplicationInboundOccurrenceLimits {
         maximum_envelope_bytes: number(4)?,
-        maximum_verifier_work: if legacy { number(4)? } else { number(5)? },
-        maximum_payload_bytes: number(5 + shift)?,
-        maximum_outstanding_dispatch_provenance: number(6 + shift)?,
-        maximum_accepted_occurrences: number(7 + shift)?,
-        maximum_accepted_bytes: number(8 + shift)?,
-        maximum_concurrent_publications: number(9 + shift)?,
-        maximum_discovery_work: number(10 + shift)?,
-        replay_window_milliseconds: number(11 + shift)?,
-        maximum_cleanup_work: number(12 + shift)?,
+        maximum_verifier_work: number(5)?,
+        maximum_payload_bytes: number(6)?,
+        maximum_outstanding_dispatch_provenance: number(7)?,
+        maximum_accepted_occurrences: number(8)?,
+        maximum_accepted_bytes: number(9)?,
+        maximum_concurrent_publications: number(10)?,
+        maximum_discovery_work: number(11)?,
+        replay_window_milliseconds: number(12)?,
+        maximum_cleanup_work: number(13)?,
     };
     if !limits.accommodates_payload() {
         return None;
@@ -79,10 +77,11 @@ mod tests {
     #[test]
     fn retained_contract_rejects_corrupt_versions_limits_and_extra_fields() {
         let valid = serde_json::json!([
-            1,
+            2,
             "worth.query.workflow.remote",
             1,
             "rail",
+            1024,
             1024,
             256,
             8,
@@ -95,11 +94,11 @@ mod tests {
         ]);
         assert!(decode(&valid.to_string()).is_some());
         for (index, replacement) in [
-            (0, serde_json::json!(2)),
+            (0, serde_json::json!(1)),
             (2, serde_json::json!(0)),
             (3, serde_json::json!("")),
-            (5, serde_json::json!(4096)),
-            (6, serde_json::json!(0)),
+            (6, serde_json::json!(4096)),
+            (7, serde_json::json!(0)),
         ] {
             let mut changed = valid.clone();
             changed[index] = replacement;
@@ -111,5 +110,9 @@ mod tests {
         let mut extra = valid.as_array().unwrap().clone();
         extra.push(serde_json::json!(7));
         assert!(decode(&serde_json::Value::Array(extra).to_string()).is_none());
+        let mut old = valid.as_array().unwrap().clone();
+        old[0] = serde_json::json!(1);
+        old.remove(5);
+        assert!(decode(&serde_json::Value::Array(old).to_string()).is_none());
     }
 }

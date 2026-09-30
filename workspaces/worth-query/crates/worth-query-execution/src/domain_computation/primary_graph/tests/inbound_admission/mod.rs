@@ -1,10 +1,13 @@
+mod accepted_receipt_tests;
 mod capacity_race_tests;
 mod cleanup_tests;
 mod compact_transport_message_tests;
 mod cost_tests;
 mod delivery_tests;
 mod fixture;
+mod head_tests;
 mod operation_binding_tests;
+mod owner_index_fault_tests;
 mod receipt_maintenance_tests;
 mod recovery_tests;
 mod retired_rebuild_tests;

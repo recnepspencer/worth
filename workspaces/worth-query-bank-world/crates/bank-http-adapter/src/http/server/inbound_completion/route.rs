@@ -10,8 +10,9 @@ use ed25519_dalek::SigningKey;
 use worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope;
 use worth_query_host::facade::primary_graph::{
     WorthQueryInboundAdmissionDenial, WorthQueryInboundCostObservation,
-    WorthQueryInboundMaintenanceReport, WorthQueryInboundReceiptPosture,
-    WorthQueryInboundTerminalObservation, WorthQueryInboundVerificationDenial,
+    WorthQueryInboundMaintenanceReport, WorthQueryInboundPermanentDenialKind,
+    WorthQueryInboundReceiptPosture, WorthQueryInboundTerminalObservation,
+    WorthQueryInboundVerificationDenial,
 };
 
 use super::configuration::BankRailCompletionServerInstallation;
@@ -96,7 +97,7 @@ pub(in crate::http::server) trait BankRailCompletionRoute:
         &self,
         envelope: &[u8],
         request: &WorthQueryRequestScope,
-    ) -> Result<(Vec<u8>, bool), WorthQueryInboundAdmissionDenial>;
+    ) -> Result<BankSignedCustodyOutcome, WorthQueryInboundAdmissionDenial>;
     fn observe_terminal(
         &self,
         correlation_token: [u8; 32],
@@ -108,6 +109,26 @@ pub(in crate::http::server) trait BankRailCompletionRoute:
         &self,
         request: &WorthQueryRequestScope,
     ) -> Result<BankRailMaintenanceBatch, WorthQueryInboundAdmissionDenial>;
+}
+
+pub(in crate::http::server) enum BankSignedCustodyOutcome {
+    AcceptedNoMaintenance(Vec<u8>),
+    AcceptedNeedsMaintenance(Vec<u8>),
+    PermanentlyDenied(Vec<u8>),
+}
+
+impl BankSignedCustodyOutcome {
+    pub(in crate::http::server) fn requires_maintenance(&self) -> bool {
+        matches!(self, Self::AcceptedNeedsMaintenance(_))
+    }
+
+    pub(in crate::http::server) fn into_ack(self) -> Vec<u8> {
+        match self {
+            Self::AcceptedNoMaintenance(ack)
+            | Self::AcceptedNeedsMaintenance(ack)
+            | Self::PermanentlyDenied(ack) => ack,
+        }
+    }
 }
 
 struct InstalledRoute<A> {
@@ -208,8 +229,8 @@ impl<A: BankRailCompletionRuntime> BankRailCompletionRoute for InstalledRoute<A>
         &self,
         envelope: &[u8],
         request: &WorthQueryRequestScope,
-    ) -> Result<(Vec<u8>, bool), WorthQueryInboundAdmissionDenial> {
-        let receipt =
+    ) -> Result<BankSignedCustodyOutcome, WorthQueryInboundAdmissionDenial> {
+        let result =
             match completion_protocol_for_selection(envelope).map_err(|denial| match denial {
                 CompletionWireDenial::Oversized => WorthQueryInboundAdmissionDenial::Oversized,
                 _ => WorthQueryInboundAdmissionDenial::Verification(
@@ -219,12 +240,32 @@ impl<A: BankRailCompletionRuntime> BankRailCompletionRoute for InstalledRoute<A>
                 RailCompletionProtocol::EstateDeathNotice => self
                     .application
                     .runtime()
-                    .receive_estate_rail_completion(&self.estate, envelope, request)?,
+                    .receive_estate_rail_completion(&self.estate, envelope, request),
                 RailCompletionProtocol::ApprovedPaymentSettlement => self
                     .application
                     .runtime()
-                    .receive_payment_rail_completion(&self.payment, envelope, request)?,
+                    .receive_payment_rail_completion(&self.payment, envelope, request),
             };
+        let receipt = match result {
+            Ok(receipt) => receipt,
+            Err(WorthQueryInboundAdmissionDenial::AuthenticatedPermanent(proof)) => {
+                let posture = match proof.kind() {
+                    WorthQueryInboundPermanentDenialKind::MessageIdentityConflict
+                    | WorthQueryInboundPermanentDenialKind::CorrelationAlreadyOwned => {
+                        BankCustodyAckPosture::PermanentDenied
+                    }
+                };
+                return Ok(BankSignedCustodyOutcome::PermanentlyDenied(
+                    sign_custody_ack(
+                        proof.envelope_digest(),
+                        *proof.message_identity(),
+                        posture,
+                        &self.ack_signer,
+                    ),
+                ));
+            }
+            Err(denial) => return Err(denial),
+        };
         let posture = match receipt.posture() {
             WorthQueryInboundReceiptPosture::AcceptedPending => {
                 BankCustodyAckPosture::AcceptedPending
@@ -238,15 +279,17 @@ impl<A: BankRailCompletionRuntime> BankRailCompletionRoute for InstalledRoute<A>
             }
         };
         let retained_work = receipt.requires_maintenance_cue();
-        Ok((
-            sign_custody_ack(
-                receipt.envelope_digest(),
-                *receipt.message_identity(),
-                posture,
-                &self.ack_signer,
-            ),
-            retained_work,
-        ))
+        let ack = sign_custody_ack(
+            receipt.envelope_digest(),
+            *receipt.message_identity(),
+            posture,
+            &self.ack_signer,
+        );
+        Ok(if retained_work {
+            BankSignedCustodyOutcome::AcceptedNeedsMaintenance(ack)
+        } else {
+            BankSignedCustodyOutcome::AcceptedNoMaintenance(ack)
+        })
     }
 }
 

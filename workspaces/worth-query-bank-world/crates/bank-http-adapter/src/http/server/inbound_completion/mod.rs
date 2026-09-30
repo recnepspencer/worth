@@ -19,6 +19,8 @@ pub use host::{BankRailCallbackServer, BankRailCallbackServerBinding};
 pub(in crate::http::server) use maintenance::start_maintenance;
 #[cfg(test)]
 pub(in crate::http::server) use route::BankRailMaintenanceBatch;
+#[cfg(test)]
+pub(in crate::http::server) use route::BankSignedCustodyOutcome;
 pub(in crate::http::server) use route::{
     install, BankRailCompletionRoute, BankRailCompletionRuntime,
 };

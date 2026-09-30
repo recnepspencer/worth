@@ -70,21 +70,24 @@ pub(in crate::http::server) async fn receive(
         let _slot = slot;
         let request = WorthQueryRequestScope::new(deadline, cancellation.token());
         let result = route.receive_and_sign(&envelope, &request);
-        if matches!(
-            &result,
-            Ok((_, true))
-                | Err(WorthQueryInboundAdmissionDenial::RetryBeforeAcceptance
+        if result
+            .as_ref()
+            .is_ok_and(|outcome| outcome.requires_maintenance())
+            || matches!(
+                &result,
+                Err(WorthQueryInboundAdmissionDenial::RetryBeforeAcceptance
                     | WorthQueryInboundAdmissionDenial::PublicationRetryRequired
                     | WorthQueryInboundAdmissionDenial::RecoveryUnavailable
                     | WorthQueryInboundAdmissionDenial::RecoveryStaleProduct
                     | WorthQueryInboundAdmissionDenial::TerminalCleanupUnavailable)
-        ) {
+            )
+        {
             wake.notify_one();
         }
         result
     });
     match tokio::time::timeout(state.maximum_deadline, task).await {
-        Ok(Ok(Ok((ack, _)))) => (StatusCode::OK, ack),
+        Ok(Ok(Ok(outcome))) => (StatusCode::OK, outcome.into_ack()),
         Ok(Ok(Err(denial))) => (status(denial), Vec::new()),
         Ok(Err(_)) | Err(_) => (StatusCode::SERVICE_UNAVAILABLE, Vec::new()),
     }
@@ -94,7 +97,9 @@ fn status(denial: WorthQueryInboundAdmissionDenial) -> StatusCode {
     use WorthQueryInboundAdmissionDenial as Denial;
     match denial {
         Denial::Oversized => StatusCode::PAYLOAD_TOO_LARGE,
-        Denial::Verification(_) | Denial::Expired => StatusCode::UNAUTHORIZED,
+        Denial::Verification(_) | Denial::Expired | Denial::ValidityWindowExceeded => {
+            StatusCode::UNAUTHORIZED
+        }
         Denial::CapacityExhausted => StatusCode::TOO_MANY_REQUESTS,
         Denial::RetryBeforeAcceptance
         | Denial::TimeUnavailable
@@ -107,6 +112,8 @@ fn status(denial: WorthQueryInboundAdmissionDenial) -> StatusCode {
         | Denial::OwnerReadDenied(_) => StatusCode::SERVICE_UNAVAILABLE,
         Denial::ForeignVerifier
         | Denial::ForeignOwner
+        | Denial::AuthenticatedPermanent(_)
+        | Denial::OriginalDispatchHasNoInboundSupport
         | Denial::UnsupportedOutbox
         | Denial::UnknownCorrelation
         | Denial::IncompatibleMeaning

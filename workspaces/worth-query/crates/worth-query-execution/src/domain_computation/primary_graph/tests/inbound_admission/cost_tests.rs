@@ -1,16 +1,25 @@
+use std::sync::Arc;
+#[cfg(feature = "test-world-operation-control")]
+use std::time::{Duration, Instant};
+
 use super::fixture::installed_world;
-use super::verifier::signed_envelope;
+use super::schema::WideNotifyOperation;
+use super::verifier::{signed_envelope, TestVerifier};
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome;
 use crate::domain_computation::primary_graph::WorthQueryInboundReceiptPosture;
+#[cfg(feature = "test-world-operation-control")]
+use worth_query_admission::facade::authenticated_principal::{
+    WorthQueryCancellationSource, WorthQueryRequestScope,
+};
 
 #[test]
-fn empty_operation_program_is_rejected_without_inbound_reservation_or_lookup_work() {
+fn empty_operation_program_denial_has_no_inbound_reservation_or_lookup_work() {
     let world = installed_world();
     let before = world
         .application
         .observe_inbound_cost(&world.verifier)
         .unwrap();
-    let outcome = world.attempt_no_effect(70);
+    let outcome = world.attempt_empty_program(70);
     assert!(
         matches!(outcome, WorthQueryApplicationCommitOutcome::Denied(_)),
         "{outcome:?}"
@@ -20,6 +29,52 @@ fn empty_operation_program_is_rejected_without_inbound_reservation_or_lookup_wor
         .observe_inbound_cost(&world.verifier)
         .unwrap();
     assert_eq!(after, before);
+}
+
+#[cfg(feature = "test-world-operation-control")]
+#[test]
+fn post_preparation_cancellation_releases_inbound_dispatch_reservation() {
+    let world = installed_world();
+    let cancellation = WorthQueryCancellationSource::new();
+    let request = WorthQueryRequestScope::new(
+        Instant::now() + Duration::from_secs(60),
+        cancellation.token(),
+    );
+    let pause = world
+        .application
+        .pause_after_application_candidate_preparation_for_test(
+            std::num::NonZeroUsize::new(1).unwrap(),
+        );
+    let before = world
+        .application
+        .observe_inbound_cost(&world.verifier)
+        .unwrap();
+    let commits = super::tests::owner_commits(&world);
+    let outcome = std::thread::scope(|threads| {
+        let attempt =
+            threads.spawn(|| world.attempt_dispatch_with_scope(73, "no-effect", &request));
+        assert!(
+            pause.wait_until_reached(Duration::from_secs(20)),
+            "the real candidate must reach the post-preparation boundary",
+        );
+        cancellation.cancel();
+        pause.release();
+        attempt.join().unwrap()
+    });
+    assert!(
+        matches!(outcome, WorthQueryApplicationCommitOutcome::Cancelled),
+        "application maps World cancellation before effects to Cancelled: {outcome:?}",
+    );
+    let after = world
+        .application
+        .observe_inbound_cost(&world.verifier)
+        .unwrap();
+    assert_eq!(
+        after.outstanding_dispatches(),
+        before.outstanding_dispatches()
+    );
+    assert_eq!(after.accepted_occurrences(), before.accepted_occurrences());
+    assert_eq!(super::tests::owner_commits(&world), commits);
 }
 
 #[test]
@@ -91,12 +146,30 @@ fn one_and_one_hundred_exact_duplicates_add_only_bounded_verifier_work() {
 }
 
 #[test]
-fn signed_receive_selects_one_effect_at_ten_and_one_thousand_unrelated_dispatches() {
+fn signed_receive_selects_one_effect_among_inbound_bound_dispatches() {
     for population in [10_u64, 1_000] {
         let world = installed_world();
+        let wide_operation = world
+            .application
+            .installed_schema()
+            .installed_operation(WideNotifyOperation::reference())
+            .unwrap();
+        let wide_handle = world
+            .application
+            .install_inbound_occurrence_verifier(&wide_operation, Arc::new(TestVerifier))
+            .unwrap();
         for seed in 0..population {
-            world.commit_unrelated_dispatch(seed + 1, &format!("unrelated-{seed}"));
+            world.commit_wide_dispatch(seed + 1, &format!("unrelated-inbound-{seed}"));
         }
+        assert_eq!(
+            world
+                .application
+                .observe_inbound_cost(&wide_handle)
+                .unwrap()
+                .outstanding_dispatches(),
+            population,
+            "the unrelated dispatches must occupy the inbound owner index",
+        );
         let dispatch = world.commit_dispatch(72, "cost-selected");
         let record = dispatch.dispatch_outbox().unwrap();
         let envelope = signed_envelope(record, [0x78; 32], record.payload(), false);

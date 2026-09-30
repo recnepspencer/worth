@@ -8,8 +8,7 @@ use crate::domain_computation::application_aftermath::{
     WorthQueryExternalTransportOutcome,
 };
 use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationCommitOutcome, WorthQueryInboundAdmissionDenial,
-    WorthQueryInboundReceiptPosture,
+    WorthQueryApplicationCommitOutcome, WorthQueryInboundReceiptPosture,
 };
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
@@ -177,12 +176,15 @@ fn transport_and_authenticated_publications_share_one_installed_operation_limit(
     let record = receipt.dispatch_outbox().unwrap();
     let envelope = signed_envelope(record, [0xA2; 32], record.payload(), false);
     let request = super::super::fixture::live_scope();
-    assert!(matches!(
-        world
-            .application
-            .receive_inbound_occurrence(&world.verifier, &envelope, &request),
-        Err(WorthQueryInboundAdmissionDenial::CapacityExhausted)
-    ));
+    let accepted = world
+        .application
+        .receive_inbound_occurrence(&world.verifier, &envelope, &request)
+        .unwrap();
+    assert_eq!(
+        accepted.posture(),
+        WorthQueryInboundReceiptPosture::AcceptedPending
+    );
+    assert_eq!(accepted.pending_reason(), Some(crate::domain_computation::primary_graph::WorthQueryInboundPendingReason::PublicationAtCapacity));
     drop(permit);
     assert_eq!(
         world

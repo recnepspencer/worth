@@ -34,7 +34,8 @@ impl BankRailCompletionRoute for ScriptedRoute {
         &self,
         _: &[u8],
         _: &WorthQueryRequestScope,
-    ) -> Result<(Vec<u8>, bool), WorthQueryInboundAdmissionDenial> {
+    ) -> Result<super::super::route::BankSignedCustodyOutcome, WorthQueryInboundAdmissionDenial>
+    {
         unreachable!("scripted maintenance never receives callbacks")
     }
 
@@ -282,7 +283,8 @@ impl BankRailCompletionRoute for CountingRoute {
         &self,
         _: &[u8],
         _: &WorthQueryRequestScope,
-    ) -> Result<(Vec<u8>, bool), WorthQueryInboundAdmissionDenial> {
+    ) -> Result<super::super::route::BankSignedCustodyOutcome, WorthQueryInboundAdmissionDenial>
+    {
         unreachable!("maintenance never receives callback bytes")
     }
 

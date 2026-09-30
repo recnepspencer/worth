@@ -113,7 +113,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .terminal_for(accepted)
-            .expect("terminal publication retains owner result")
+            .ok_or(WorthQueryInboundAdmissionDenial::TerminalCleanupUnavailable)?
             .0;
         if !self.settle_inbound_conditional_delivery(&terminal) {
             return Err(WorthQueryInboundAdmissionDenial::TerminalCleanupUnavailable);
@@ -124,7 +124,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .unwrap_or_else(|poisoned| poisoned.into_inner());
         let (terminal, pending) = custody
             .terminal_for(accepted)
-            .expect("terminal publication retains owner result");
+            .ok_or(WorthQueryInboundAdmissionDenial::TerminalCleanupUnavailable)?;
         if pending {
             let world_protection = self
                 .product_runtime

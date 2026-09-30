@@ -16,7 +16,9 @@ use worth_query_host::facade::admission::authenticated_principal::{
 use worth_query_host::facade::application_entry::{
     WorkflowProgressOutcome, WorthQueryWorkflowAdvancePreparationDenial,
 };
-use worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationDenialKind;
+use worth_query_host::facade::primary_graph::{
+    WorthQueryApplicationUncommitted, WorthQueryOperationAuthorizationDenialKind,
+};
 
 use crate::support;
 
@@ -242,27 +244,59 @@ async fn completed_payment_callback_waits_for_fresh_workflow_advance() {
         .expect("fresh authorized owner acceptance settles the exact operation"),
         "apply",
     );
-    require_completed(
-        tokio::task::block_in_place(|| {
-            workflow.advance(
-                instance.clone(),
-                authority.clone(),
-                &key("approved-payment:advance:await-inbound"),
-            )
-        })
-        .expect("fresh advance consumes the typed inbound wait"),
-        "await-inbound",
-    );
-    require_completed(
-        tokio::task::block_in_place(|| {
-            workflow.advance(
-                instance.clone(),
-                authority.clone(),
-                &key("approved-payment:advance:terminal"),
-            )
-        })
-        .expect("one successor becomes reachable"),
-        "completed",
+    let await_commit = match tokio::task::block_in_place(|| {
+        workflow.advance(
+            instance.clone(),
+            authority.clone(),
+            &key("approved-payment:advance:await-inbound"),
+        )
+    })
+    .expect("fresh advance consumes the typed inbound wait")
+    {
+        WorkflowProgressOutcome::Completed(performed) => {
+            assert_eq!(performed.node_path(), "await-inbound");
+            assert!(!performed.terminal());
+            performed.receipt().commit_reference().commit_id
+        }
+        other => panic!("expected committed inbound wait transition: {other:?}"),
+    };
+    let completed = tokio::task::block_in_place(|| {
+        workflow.advance(
+            instance.clone(),
+            authority.clone(),
+            &key("approved-payment:advance:terminal"),
+        )
+    })
+    .expect("one successor becomes reachable");
+    let completed_commit = match completed {
+        WorkflowProgressOutcome::Completed(performed) => {
+            assert_eq!(performed.node_path(), "completed");
+            assert!(performed.terminal());
+            assert!(!performed.replayed());
+            performed.receipt().commit_reference().commit_id
+        }
+        other => panic!("expected one terminal successor transition: {other:?}"),
+    };
+    let extra = tokio::task::block_in_place(|| {
+        workflow.advance(
+            instance.clone(),
+            authority.clone(),
+            &key("approved-payment:advance:extra-after-terminal"),
+        )
+    });
+    match extra {
+        Ok(WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::Stale(
+            stale,
+        ))) => assert_eq!(
+            stale.stale_fact_count(),
+            1,
+            "the terminal instance fact prevents a second successor commit",
+        ),
+        other => panic!("terminal workflow cannot add another transition: {other:?}"),
+    }
+    assert_ne!(
+        completed_commit, await_commit,
+        "the terminal successor has its own authoritative commit receipt"
     );
 
     tokio::task::block_in_place(|| {

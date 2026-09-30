@@ -27,6 +27,7 @@ use super::queue::BankHttpExecutionQueue;
 use super::recovery_executor::BankHttpRecoveryExecutor;
 use super::recovery_routes::{inspect as inspect_recovery, notify_death, safe_retry};
 use super::request_admission::UnadmittedBankHttpRequestBasis;
+use crate::http::protocol::inbound_completion::MAXIMUM_COMPLETION_BYTES;
 
 #[derive(Clone)]
 pub(super) struct BankHttpRouteState {
@@ -87,7 +88,10 @@ pub(super) fn router(state: BankHttpRouteState, maximum_body_bytes: usize) -> Ro
         .route("/v1/estate/elevation/revoke", post(revoke_elevation))
         .route("/v1/estate/elevation/review", post(complete_review))
         .route("/v1/estate/notify-death", post(notify_death))
-        .route("/v1/inbound/rail-completions", post(rail_completion))
+        .route(
+            "/v1/inbound/rail-completions",
+            post(rail_completion).layer(DefaultBodyLimit::max(MAXIMUM_COMPLETION_BYTES)),
+        )
         .route("/v1/recovery/inspect", post(inspect_recovery))
         .route("/v1/recovery/safe-retry", post(safe_retry))
         .layer(DefaultBodyLimit::max(maximum_body_bytes))

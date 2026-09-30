@@ -51,10 +51,11 @@ fn assessment_subject_is_rejected_for_every_non_assessment_shape_that_uses_empty
 #[test]
 fn inbound_node_requires_its_own_fields_and_rejects_mixed_operation_shape() {
     let contract = serde_json::json!([
-        1,
+        2,
         "worth.query.workflow.remote",
         1,
         "rail",
+        1024,
         1024,
         256,
         8,

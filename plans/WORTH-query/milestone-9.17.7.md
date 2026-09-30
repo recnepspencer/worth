@@ -1,7 +1,10 @@
 # Milestone 9.17.7: Inbound Occurrences And External Effect Completion
 
-> **Status:** Phases 1–3 are implemented and independently certified on
-> 2026-09-29. Design grounded in Query, World, Bank and Proprietary boundaries.
+> **Status:** Phases 1–3 are implemented and independently certified. Whole-
+> milestone QA found follow-up defects and evidence gaps; the corrections and
+> focused regressions are complete. Process-restart durability remains outside
+> this milestone's process-local custody guarantee.
+> Design grounded in Query, World, Bank and Proprietary boundaries.
 > [9.17.4](./milestone-9.17.4.md) and
 > [9.17.6](./milestone-9.17.6.md) supply publication delivery and workflow custody;
 > they did not supply inbound completion at this milestone's start. New names
@@ -19,7 +22,8 @@ command grants no completion authority.
 
 Query owns installed inbound meaning, admission, exact correlation and custody.
 The remote service owns whether its effect happened. World alone publishes product
-currentness. Product adapters own transport; Signal wakes existing consumers.
+currentness. Product adapters own transport; fresh workflow advance observes
+owner completion. Signal retains its existing conditional-consumer role.
 `inbound_occurrence` is the installed family; `external_input` remains pull-style
 provider input. This slice serves completion of declared outbound effects, not
 general webhooks or remote workflow RPC. [9.18](./milestone-9.18.md) consumes its
@@ -140,7 +144,7 @@ Use Bank's real approved-payment workflow and `ApprovedPaymentSettlementEffect`,
 actual accounts, initiator/approver admission and rail. Lose the operation response,
 then close the advancing request before callback delivery.
 
-The callback publishes external completion and wakes readiness but executes **zero
+The callback publishes external completion and records owner readiness, but executes **zero
 workflow transitions** without fresh authenticated advance. Revoke advance authority
 and verify another callback cannot advance. Restore lawful authority, destroy the
 progress projection and reopen: `advance_workflow` consumes exact owner settlement,
@@ -174,6 +178,10 @@ Extend outbox provenance/indexes where necessary. Old outboxes lacking this bind
 return `InboundNotSupported` and keep existing recovery; no migration infers trust
 from a URL or reinterprets old correlation bytes.
 
+The first Bank completion confirms the exact dispatched payload. It carries no
+independent remote result body such as a settlement reference; that meaning needs
+its own declared protocol and effect contract before a later product adopts it.
+
 Completion targets the current head of the original branch incarnation after
 checking the dispatch belongs to its retained lineage. Unrelated intervening edits
 are permitted. A reused branch name, fork, retired incarnation or missing provenance
@@ -192,8 +200,8 @@ recovery and retained evidence; it cannot silently discard accepted truth.
 ### Compiler-visible progression
 
 ~~~text
-bounded bytes -> authenticated source evidence -> exact dispatch correlation
-  -> admitted occurrence in owner custody -> prepared completion
+bounded bytes -> public authenticated source evidence -> public exact dispatch correlation
+  -> public admitted occurrence in owner custody -> private prepared completion
   -> World Performed | NoEffect | ProductUnpublished
   -> performed owner completion through existing publication delivery
 ~~~
@@ -204,12 +212,16 @@ bounded bytes -> authenticated source evidence -> exact dispatch correlation
 | Authenticated evidence | Installed verifier checks exact bytes, audience, source/key epoch and validity. Correlation consumes it; it cannot execute an effect. |
 | Correlated occurrence | Query proves one actual performed dispatch with full matching provenance. Admission consumes it; IDs cannot construct it. |
 | Admitted occurrence | Aftermath owner retains immutable evidence and reserved lifecycle capacity. A caller reference only locates it; custody remains with the owner. |
-| Prepared completion | Owner reserves one terminal transition and prepares the exact current-basis candidate under a concrete grant; move-only, not reboundable or a redispatch permit. |
+| Prepared completion | Query privately holds the exact incarnation commit guard while it prepares the current-basis Relational candidate and World publication lease. The prepared carrier cannot escape that guard or become a redispatch permit. |
 | Performed completion | Constructed from World's performed carrier; consumption and terminal posture share one publication. Recovery/workflow consume its owner result. |
 
-Legality vocabulary belongs in `worth-proof`; reuse its concrete owner-bound proof
-substrate and existing platform authorities. A missing completion-specific grant
-belongs there, not a generic public `AuthorityMarker` bound. Runtime issuance,
+Public sealed phases stop at admitted custody. `Admitted::execute` privately
+prepares and executes the World attempt under the same exact incarnation guard;
+the common receive entry composes those phases. The existing prepared Relational
+candidate and World publication lease carry the private completion authority.
+Do not add a public prepared marker or a callback that could reenter the guarded
+runtime. Reuse `worth-proof` legality vocabulary only if a concrete missing grant
+is demonstrated; no completion-specific proof type is required here. Runtime issuance,
 source binding, clocks, indexes, reservations and `Drop` stay with Query.
 An independently created owner cannot satisfy the installed runtime's proof binding.
 Portable protocols/versions/bounds reuse `worth-foundational`, already present in
@@ -312,7 +324,7 @@ cannot authorize FIFO eviction of an unconfirmed dispatch.
   Optional deletion leaves typed omission. If policy cannot retain required
   evidence, deny acceptance or expose blocked retirement; never weaken it silently.
 - Retain dedup evidence while its signed message remains acceptable. The installed
-  clock and declared skew allowance enforce its cutoff; unavailable time denies
+  clock enforces its cutoff with zero skew allowance; unavailable time denies
   new acceptance. After cutoff, replay is expired, so reclamation cannot reopen
   consumption. Previously accepted evidence remains recoverable beyond cutoff.
   Terminal truth remains in owner history.
@@ -324,15 +336,22 @@ cannot authorize FIFO eviction of an unconfirmed dispatch.
   No outbox/history/branch/workflow population scan or hidden index reconstruction.
   After terminal settlement, each duplicate has zero prepares, World publications,
   redispatches and workflow transitions, and adds no retained occurrence.
-- Expose bytes verified, index probes, selected-record visits, custody bytes/
-  reservations, owner prepares, World comparisons/publications, delivery contacts,
-  rail contacts and workflow transitions. At 10 versus 1,000 unrelated records,
-  selected visits stay constant and probes obey the declared index bound.
-  Duplicate volume cannot grow retained state or completion publications.
-  Cleanup obeys its supplied page/work budget; reconstruction is a separate lane.
-- Reuse notification coalescing and resource accounting. Wake fan-out is separately
-  counted under admitted observer limits. No-effect ordinary operations acquire no
-  inbound reservations or scans. No background polling or generic inbox scheduler.
+- Query exposes bytes verified, exact index probes, selected-record visits,
+  custody bytes/reservations and completion prepares/publications. World retains
+  its own publication contact/comparison counters; Bank's process court observes
+  independent rail contacts and workflow transition receipts. These are evidence
+  at their respective owners, not one synthetic transport-wide counter. At 10
+  versus 1,000 unrelated **inbound-bound** dispatches, selected visits stay
+  constant and exact probes obey the declared index bound. The indexed owner
+  implementation supplies the O(log D) bound; a probe counter alone does not
+  measure tree comparisons. Duplicate volume cannot grow retained state or
+  completion publications. Cleanup obeys its supplied page/work budget;
+  reconstruction is a separate lane.
+- Reuse existing notification coalescing and resource accounting where a
+  conditional observer is installed. The callback does not fan out to workflow
+  transitions. No-effect ordinary operations acquire no retained inbound
+  provenance; a denied empty program is a separate precommit case. No background
+  polling or generic inbox scheduler.
 
 ## Public Experience And Workflow Integration
 
@@ -347,12 +366,15 @@ trusted source or completion target. Compile this new call shape in Phase 1:
 let outcome = application.inbound_occurrences()
     .receive(rail_completion_contract, bounded_envelope, &scope)
     .execute();
+// Advanced path: application.authenticate_inbound_occurrence(handle, bytes)?
+//     .correlate()?.accept()?.execute(&scope).
 // Match denied/retry-before-acceptance, accepted-pending, performed,
 // already-completed or retained unpublished/recovery posture.
 ~~~
 
 The common call composes authentication, correlation, custody and one bounded
-completion attempt. Advanced APIs expose the same sealed phases and existing
+completion attempt. Advanced APIs expose sealed authenticated, correlated and
+admitted phases plus existing
 discovery/recovery controls. No caller-chosen idempotency key: identity is authenticated
 protocol meaning. Wire responses are disclosed selectors/outcomes only; operator
 inspection/recovery requires fresh authenticated entry and exact lookup.
@@ -366,62 +388,63 @@ effect or another instance. Definition validation rejects absent/ambiguous origi
 on all reachable branches. This is a wait on existing owner completion, not an
 occurrence consumer or second scheduler.
 
-The 9.17.4 performed return path updates owner observation/readiness; fresh
+The 9.17.4 performed return path updates owner observation/readiness. Fresh
 `advance_workflow` accepts exact settlement through existing operation acceptance.
-A wake runs no node. Completion also releases the predecessor's dispatch-pending
+The callback runs no node. Completion also releases the predecessor's dispatch-pending
 custody through ordinary fresh advance, so the wait does not become unreachable
 behind an unresolved predecessor. No separate workflow terminal table, receipt
 forwarding requirement or resume-by-message API.
 
 ## Destination Topology
 
-Q = `workspaces/worth-query/crates`, B = `workspaces/worth-query-bank-world/crates`,
-W = repository `crates`. E extend existing; N create; S committed successor with
-no empty placeholder. New directories use exports-only private module facades.
+The implementation follows these existing semantic owners. Q =
+`workspaces/worth-query/crates`, B = `workspaces/worth-query-bank-world/crates`,
+W = repository `crates`. New directories use exports-only private module facades.
 
 ~~~text
 Q/worth-query-declaration/src/application_schema/inbound_occurrence/
-  {binding,protocol,limits}.rs                             N stable meaning
+  {binding,protocol,limits}.rs                             stable meaning
 Q/worth-query-installation/src/application_schema/inbound_occurrence/
-  {contract,validation}.rs                                 N supported installation
+  {contract,validation}.rs                                 supported installation
 Q/worth-query-execution/src/domain_computation/application_aftermath/
   external_effect/
-    inbound/{authentication,correlation,admission}.rs       N source-to-owner progression
-    inbound/{custody,consumption,outcome}.rs                N pending truth/terminal effects
-    {outbox,dispatch,observation,causal_event}.rs            E sole effect owner
-  {recovery_handle,recovery_progression}/                  E existing lifecycle
-  correction/                                             S 9.18 consumes posture
+    inbound/{verifier,claims,custody,terminal}.rs           authenticated meaning/custody
+    {outbox,dispatch,observation,causal_event}.rs            sole effect owner
+  {recovery_handle,recovery_progression}/                  existing lifecycle
+  correction/                                             9.18 consumes posture
 Q/worth-query-execution/src/domain_computation/primary_graph/
-  provider/{dispatch_outbox,committed_dispatch_outbox}.rs   E owner facts/indexed access
-  application_runtime/external_dispatch_attempt.rs         E dispatch/completion arbitration
-  application_attempt/provider_execution/external_dispatch.rs E terminal handoff
-  workflow/{definition,instance}/                          E wait meaning/owner settlement
+  provider/{dispatch_outbox,committed_dispatch_outbox}.rs   owner facts/indexed access
+  application_runtime/inbound_occurrence/                   auth, correlation, progress
+  application_runtime/inbound_publication/                  prepared World handoff
+  application_runtime/external_dispatch_attempt.rs         dispatch/completion arbitration
+  application_attempt/provider_execution/external_dispatch.rs terminal handoff
+  workflow/{definition,instance}/                          wait meaning/owner settlement
 Q/worth-query-publication/src/application_entry/
-  inbound_occurrence/{entry,progression,outcome}.rs         N host progression
-  workflow/operation/{owner,recovery}.rs                   E existing acceptance
-Q/worth-query-{decl,host}/src/facade.rs                    E audience exports
-W/worth-proof/src/inbound_completion/                     N only missing concrete grant vocabulary
-W/worth-runtime-world/src/{publication,history,recovery}/   E existing owners
-Q/worth-query-certification/tests/application_graph/
-  inbound_occurrence/{publication,custody,cost}.rs          N grouped owner court
-Q/worth-query-certification/examples/inbound_completion.rs N compiled DX
-B/bank-domain/src/schema/                                 E notice/payment declarations
-B/bank-server/src/inbound_rail/{completion,outcome}.rs      N product composition
+  inbound_occurrence.rs                                    public host progression
+  workflow/operation/{owner,recovery}.rs                   existing acceptance
+Q/worth-query-{decl,host}/src/facade.rs                    audience exports
+Q/worth-query-execution/src/domain_computation/primary_graph/tests/
+  inbound_admission/                                       focused owner/cost court
+W/worth-runtime-world/src/{publication,history,recovery}/   existing owners
+B/bank-domain/src/schema/                                 notice/payment declarations
+B/bank-server/src/inbound_completion.rs                    product composition
 B/bank-http-adapter/src/http/
-  protocol/inbound_completion.rs                           N wire contract
-  server/inbound_completion/{authentication,route}.rs       N verifier/HTTP boundary
+  protocol/inbound_completion.rs                           wire contract
+  server/inbound_completion/{authentication,route}.rs       verifier/HTTP boundary
 B/bank-external-rail/src/
-  protocol/completion/                                     N independent wire encoding
-  server/completion_delivery/{sender,custody}.rs            N real consequence-to-callback
+  completion_wire.rs                                       independent wire encoding
+  server/completion_delivery/                              real consequence-to-callback
 B/bank-courtroom/tests/transport_process_courtroom/
-  inbound_completion/{static_notice,payment}.rs            N grouped journeys
+  {inbound_completion,payment}/                            grouped process journeys
+B/bank-courtroom/examples/                                 compiled external consumer
 ~~~
 
 Axes are stable meaning, installed support, live aftermath authority, publication
 coordination and product transport. Installation owns immutable support; Query owns
 clock/issuance/custody. Product verifiers are installed mechanisms, not grant issuers.
-Reuse existing proof types first; add only missing concrete grant vocabulary in
-the named proof boundary, keeping runtime lifecycle out of that substrate.
+The prepared Relational candidate and World publication lease stay private
+inside the exact owner transition. Public sealed phases stop at admission and
+`execute` completes that transition; no inbound marker is added to `worth-proof`.
 
 Inbound never imports workflow execution. Workflow consumes owner results through
 the existing publication boundary. Provider storage implements records/access,
@@ -511,3 +534,7 @@ admitted compensation/reconciliation. The
 reconciles provenance without duplicating effects. Durable sender/receiver recovery
 and future real CAD remote-effect adoption have separate product gates; neither
 is claimed by this process-local Bank milestone.
+After forced process death, the local outstanding-dispatch provenance is not
+reconstituted here. An authentic callback can therefore receive unknown
+correlation rather than completion until a future durable owner rebinds that
+provenance; it is not an authenticated permanent denial to the rail.

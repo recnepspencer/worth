@@ -11,6 +11,7 @@ use super::WorthQueryInboundOccurrenceClaims;
 use super::WorthQueryInboundTerminalOwnerResult;
 use crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxObservation;
 
+mod acceptance;
 mod publication_permit;
 mod recovery;
 mod terminal_state;
@@ -50,19 +51,6 @@ pub(in crate::domain_computation) struct WorthQueryAcceptedInboundOccurrence {
 }
 
 impl WorthQueryAcceptedInboundOccurrence {
-    #[cfg(test)]
-    pub(in crate::domain_computation) fn seal_for_world_test(
-        claims: WorthQueryInboundOccurrenceClaims,
-        owner: WorthQueryCommittedDispatchOutboxObservation,
-    ) -> Arc<Self> {
-        Arc::new(Self {
-            operation: "world-substrate-test".to_owned(),
-            claims,
-            owner,
-            signed_meaning_digest: [0; 32],
-        })
-    }
-
     pub(in crate::domain_computation) fn claims(&self) -> &WorthQueryInboundOccurrenceClaims {
         &self.claims
     }
@@ -83,7 +71,7 @@ impl WorthQueryAcceptedInboundOccurrence {
 }
 
 pub(in crate::domain_computation) enum WorthQueryInboundCustodyAdmission {
-    New(Arc<WorthQueryAcceptedInboundOccurrence>),
+    New(Arc<WorthQueryAcceptedInboundOccurrence>, bool),
     Duplicate(Arc<WorthQueryAcceptedInboundOccurrence>),
     CompactTerminalReplay(WorthQueryInboundOccurrenceClaims),
     MessageIdentityConflict,
@@ -149,6 +137,7 @@ pub(in crate::domain_computation) enum WorthQueryInboundPublicationClaim {
     Publishing,
     Unpublished,
     Terminal,
+    Gone,
 }
 
 impl WorthQueryInboundCustody {
@@ -205,72 +194,6 @@ impl WorthQueryInboundCustody {
         )
     }
 
-    pub(in crate::domain_computation) fn accept(
-        &mut self,
-        operation: &str,
-        contract: &InstalledInboundOccurrenceContract,
-        claims: WorthQueryInboundOccurrenceClaims,
-        envelope: &[u8],
-        owner: WorthQueryCommittedDispatchOutboxObservation,
-    ) -> WorthQueryInboundCustodyAdmission {
-        if let Some(duplicate) = self.duplicate(operation, &claims, envelope) {
-            return duplicate;
-        }
-        let correlation = *owner.record().correlation();
-        if self.by_correlation.contains_key(&correlation) {
-            return WorthQueryInboundCustodyAdmission::CorrelationAlreadyOwned;
-        }
-        let Some(bytes) = envelope
-            .len()
-            .checked_add(owner.record().payload().len())
-            .and_then(|bytes| bytes.checked_add(256))
-            .and_then(|bytes| u64::try_from(bytes).ok())
-        else {
-            return WorthQueryInboundCustodyAdmission::CapacityExhausted;
-        };
-        let usage = self
-            .usage_by_operation
-            .entry(operation.to_owned())
-            .or_default();
-        let limits = contract.limits();
-        let Some(next_count) = usage.count.checked_add(1) else {
-            return WorthQueryInboundCustodyAdmission::CapacityExhausted;
-        };
-        let Some(next_bytes) = usage.bytes.checked_add(bytes) else {
-            return WorthQueryInboundCustodyAdmission::CapacityExhausted;
-        };
-        if next_count > limits.maximum_accepted_occurrences.get()
-            || next_bytes > limits.maximum_accepted_bytes.get()
-            || usage.publishing >= limits.maximum_concurrent_publications.get()
-        {
-            return WorthQueryInboundCustodyAdmission::CapacityExhausted;
-        }
-        let message = MessageKey::from_claims(&claims);
-        let signed_meaning_digest = claims.signed_meaning_digest;
-        let accepted = Arc::new(WorthQueryAcceptedInboundOccurrence {
-            operation: operation.to_owned(),
-            claims,
-            owner,
-            signed_meaning_digest,
-        });
-        usage.count = next_count;
-        usage.bytes = next_bytes;
-        usage.publishing += 1;
-        self.by_correlation.insert(correlation, message.clone());
-        self.by_message.insert(
-            message,
-            CustodyEntry {
-                accepted: Arc::clone(&accepted),
-                charged_bytes: bytes,
-                terminal: None,
-                terminal_release_pending: false,
-                unpublished: None,
-                publication: PublicationState::Publishing,
-            },
-        );
-        WorthQueryInboundCustodyAdmission::New(accepted)
-    }
-
     pub(in crate::domain_computation) fn terminal_for(
         &self,
         accepted: &Arc<WorthQueryAcceptedInboundOccurrence>,
@@ -286,6 +209,17 @@ impl WorthQueryInboundCustody {
                     .map(|terminal| (Arc::clone(terminal), entry.terminal_release_pending))
             })
             .flatten()
+    }
+
+    pub(in crate::domain_computation) fn retains_unpublished(
+        &self,
+        accepted: &Arc<WorthQueryAcceptedInboundOccurrence>,
+    ) -> bool {
+        self.by_message
+            .get(&MessageKey::from_claims(accepted.claims()))
+            .is_some_and(|entry| {
+                Arc::ptr_eq(&entry.accepted, accepted) && entry.unpublished.is_some()
+            })
     }
 
     pub(in crate::domain_computation) fn terminal_by_correlation(
@@ -342,21 +276,30 @@ impl WorthQueryInboundCustody {
         &mut self,
         accepted: &Arc<WorthQueryAcceptedInboundOccurrence>,
     ) -> WorthQueryInboundPublicationClaim {
+        let Some(entry) = self
+            .by_message
+            .get(&MessageKey::from_claims(accepted.claims()))
+        else {
+            return WorthQueryInboundPublicationClaim::Gone;
+        };
+        if !Arc::ptr_eq(&entry.accepted, accepted) {
+            return WorthQueryInboundPublicationClaim::Gone;
+        }
         let limits = accepted
             .owner()
             .record()
             .inbound()
-            .expect("accepted occurrence retains installed inbound binding")
-            .limits();
-        let usage = self
-            .usage_by_operation
-            .get_mut(accepted.operation())
-            .expect("accepted operation counted");
+            .map(InstalledInboundOccurrenceContract::limits);
+        let Some(limits) = limits else {
+            return WorthQueryInboundPublicationClaim::Gone;
+        };
+        let Some(usage) = self.usage_by_operation.get_mut(accepted.operation()) else {
+            return WorthQueryInboundPublicationClaim::Gone;
+        };
         let entry = self
             .by_message
             .get_mut(&MessageKey::from_claims(accepted.claims()))
-            .expect("accepted occurrence remains in owner custody");
-        assert!(Arc::ptr_eq(&entry.accepted, accepted));
+            .expect("entry checked under this custody lock");
         match entry.publication {
             PublicationState::Retryable => {
                 if usage.publishing >= limits.maximum_concurrent_publications.get() {
@@ -377,21 +320,30 @@ impl WorthQueryInboundCustody {
     pub(in crate::domain_computation) fn mark_publication_retryable(
         &mut self,
         accepted: &Arc<WorthQueryAcceptedInboundOccurrence>,
-    ) {
-        let entry = self
+    ) -> bool {
+        let Some(entry) = self
             .by_message
             .get_mut(&MessageKey::from_claims(accepted.claims()))
-            .expect("accepted occurrence remains in owner custody");
-        assert!(Arc::ptr_eq(&entry.accepted, accepted));
-        assert_eq!(entry.publication, PublicationState::Publishing);
+        else {
+            return false;
+        };
+        if !Arc::ptr_eq(&entry.accepted, accepted)
+            || entry.publication != PublicationState::Publishing
+        {
+            return false;
+        }
+        let Some(usage) = self.usage_by_operation.get_mut(accepted.operation()) else {
+            return false;
+        };
+        if usage.publishing == 0 {
+            return false;
+        }
         entry.publication = PublicationState::Retryable;
         self.pending_by_operation
             .entry(accepted.operation().to_owned())
             .or_default()
             .insert(*accepted.owner().record().correlation());
-        self.usage_by_operation
-            .get_mut(accepted.operation())
-            .expect("accepted operation counted")
-            .publishing -= 1;
+        usage.publishing -= 1;
+        true
     }
 }

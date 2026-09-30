@@ -1,11 +1,18 @@
 //! Bank P2 adoption after the original payment workflow has settled.
 
-use bank_domain::schema::ApprovePayment;
-use bank_server::{BankApplicationP2, BankAuthenticatedPrincipal, BankIdentityRuntime};
+use std::any::TypeId;
+
+use bank_domain::schema::{ApprovePayment, ApprovePaymentMutationBinding};
+use bank_server::{
+    BankApplication, BankApplicationP2, BankAuthenticatedPrincipal, BankIdentityRuntime,
+};
 use worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope;
 use worth_query_host::facade::application_entry::{
     WorkflowDefinitionExpectedPredecessor, WorkflowDefinitionPublicationOutcome,
     WorthQueryApplicationRequestMutationDenial, WorthQueryBranchAdoptionPublicationOutcome,
+};
+use worth_query_host::facade::declaration::application_program::{
+    ApplicationFeatureSpec, ApplicationProgramDefinition,
 };
 use worth_query_host::facade::product::WorthQueryProductBranch;
 
@@ -55,6 +62,21 @@ pub(super) fn adopt_p2_after_completed_payment(
             .expect("the selected program remains inspectable")
             .revision(),
         &target
+    );
+    let ordinary_payment_binding = TypeId::of::<ApprovePaymentMutationBinding>();
+    let has_ordinary_payment = |features: Vec<ApplicationFeatureSpec>| {
+        features
+            .iter()
+            .flat_map(|feature| feature.actions())
+            .any(|action| action.mutation_binding_type() == Some(ordinary_payment_binding))
+    };
+    assert!(
+        has_ordinary_payment(BankApplication::feature_specs()),
+        "the original program includes ordinary payment approval"
+    );
+    assert!(
+        !has_ordinary_payment(BankApplicationP2::feature_specs()),
+        "the adopted P2 program removes ordinary payment approval"
     );
     let ordinary = runtime
         .request(approver, scope)

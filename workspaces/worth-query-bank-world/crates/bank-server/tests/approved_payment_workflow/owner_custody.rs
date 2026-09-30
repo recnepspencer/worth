@@ -176,7 +176,18 @@ fn a_migration_stays_blocked_after_rail_completion_without_inbound() {
         other => panic!("a payment in owner custody must refuse migration: {other:?}"),
     }
     owner_remains_pending(&ready, "approved-payment:operation:accept:before-migrate");
-    assert!(migrate("approved-payment:migrate:without-inbound").is_err());
+    match migrate("approved-payment:migrate:without-inbound") {
+        Err(BankApprovedPaymentWorkflowError::InstanceMigration(
+            WorthQueryWorkflowInstancePreparationDenial::InstancePreparation(
+                WorkflowInstancePreparationDenial::Attempt(attempt),
+            ),
+        )) => assert_eq!(
+            attempt.kind(),
+            WorthQueryApplicationAttemptDenialKind::WorkflowOperationInOwnerCustody,
+            "rail completion without inbound acceptance still owns the operation",
+        ),
+        other => panic!("migration must name retained owner custody: {other:?}"),
+    }
     assert_eq!(ready.rail.completed_effect_count(), 1);
 }
 

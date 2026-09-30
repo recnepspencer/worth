@@ -195,6 +195,10 @@ impl WorthQueryCanonicalInboundCompletion {
         self.message_identity.as_ref()
     }
 
+    pub(in crate::domain_computation) const fn authenticated_key_epoch(&self) -> Option<u64> {
+        self.key_epoch
+    }
+
     pub(in crate::domain_computation) const fn original_world_commit(
         &self,
     ) -> &CompositeCommitIdentity {

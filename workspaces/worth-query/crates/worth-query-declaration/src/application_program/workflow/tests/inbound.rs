@@ -202,3 +202,69 @@ fn foreign_operation_reference_cannot_become_an_inbound_origin() {
         ApplicationWorkflowValidationDenialKind::MissingInboundOrigin,
     );
 }
+
+#[test]
+fn inbound_origin_must_dominate_both_arms_of_a_diamond() {
+    let build = |origin_on_one_arm| {
+        let mut builder = ApplicationWorkflowDefinitionBuilder::<ReviewedChange>::new(
+            "inbound-diamond",
+            deadline_limits(),
+        )
+        .unwrap();
+        let start = builder.operation::<ProposeChange>("start", false).unwrap();
+        let condition = builder
+            .condition(
+                "branch",
+                "consistent",
+                ApplicationWorkflowConditionOperands::<ReviewedChange>::new()
+                    .query::<ConsistencyCondition>("consistent"),
+            )
+            .unwrap();
+        let left = builder.operation::<ProposeChange>("left", false).unwrap();
+        let right = builder.operation::<ProposeChange>("right", false).unwrap();
+        let origin = if origin_on_one_arm { &left } else { &start };
+        let wait = builder
+            .await_inbound::<RemoteEffect>(
+                "join-wait",
+                origin,
+                inbound("rail"),
+                ApplicationWorkflowInboundWait::UntilInstanceDeadline,
+            )
+            .unwrap();
+        let terminal = builder.terminal("terminal").unwrap();
+        builder
+            .start(&start)
+            .control(
+                &start,
+                ApplicationWorkflowControlOutcome::Completed,
+                &condition,
+            )
+            .control(
+                &condition,
+                ApplicationWorkflowControlOutcome::ConditionSatisfied,
+                &left,
+            )
+            .control(
+                &condition,
+                ApplicationWorkflowControlOutcome::ConditionUnsatisfied,
+                &right,
+            )
+            .control(&left, ApplicationWorkflowControlOutcome::Completed, &wait)
+            .control(&right, ApplicationWorkflowControlOutcome::Completed, &wait)
+            .control(
+                &wait,
+                ApplicationWorkflowControlOutcome::Completed,
+                &terminal,
+            )
+            .condition_subject(&start, &condition);
+        builder.finish().unwrap().validate()
+    };
+    assert_eq!(
+        build(true).err().unwrap().kind(),
+        ApplicationWorkflowValidationDenialKind::UnavailableInboundOrigin,
+    );
+    assert!(
+        build(false).is_ok(),
+        "origin before both arms dominates the wait"
+    );
+}

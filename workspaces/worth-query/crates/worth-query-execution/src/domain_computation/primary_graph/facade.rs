@@ -133,16 +133,19 @@ pub use super::application_query::{
     WorthQuerySourceExpectationDenialKind,
 };
 pub use super::application_runtime::{
-    WorthQueryApplicationLiveDeliveryCloseReceipt, WorthQueryCertificationApplicationWork,
+    WorthQueryAdmittedInboundOccurrence, WorthQueryApplicationLiveDeliveryCloseReceipt,
+    WorthQueryAuthenticatedInboundOccurrence, WorthQueryCertificationApplicationWork,
     WorthQueryCertificationCostObservation, WorthQueryCertificationCostRuntimeExt,
     WorthQueryCertificationCostScope, WorthQueryCertificationWorldHistory,
-    WorthQueryCertificationWorldRetention, WorthQueryInboundAdmissionDenial,
+    WorthQueryCertificationWorldRetention, WorthQueryCorrelatedInboundOccurrence,
+    WorthQueryInboundAdmissionDenial, WorthQueryInboundAuthenticatedPermanentDenial,
     WorthQueryInboundCleanupReport, WorthQueryInboundCostObservation,
     WorthQueryInboundIndexRepairDenial, WorthQueryInboundMaintenanceReport,
-    WorthQueryInboundReceipt, WorthQueryInboundReceiptPosture,
-    WorthQueryInboundSourceControlDenial, WorthQueryInboundSourcePosture,
-    WorthQueryInboundTerminalObservation, WorthQueryInboundVerifierHandle,
-    WorthQueryInboundVerifierInstallationDenial, WorthQueryPrimaryGraphApplicationRuntime,
+    WorthQueryInboundPendingReason, WorthQueryInboundPermanentDenialKind, WorthQueryInboundReceipt,
+    WorthQueryInboundReceiptPosture, WorthQueryInboundSourceControlDenial,
+    WorthQueryInboundSourcePosture, WorthQueryInboundTerminalObservation,
+    WorthQueryInboundVerifierHandle, WorthQueryInboundVerifierInstallationDenial,
+    WorthQueryPrimaryGraphApplicationRuntime,
 };
 pub use super::authenticated_principal::{
     WorthQueryApplicationPrincipalIdentity, WorthQueryAuthenticatedPrincipal,

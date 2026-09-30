@@ -2,11 +2,12 @@
 
 > **Status:** Not started. Design reconciled with the current application entry,
 > program adoption, workflow and owner-publication code on 2026-09-29.
-> **Dependencies:** 9.17.4, 9.17.5 and 9.17.6 are completed. [9.17.7](./milestone-9.17.7.md)
-> is not started. Phase 1 may begin independently; inbound completion and custody
+> **Dependencies:** 9.17.4, 9.17.5, 9.17.6 and [9.17.7](./milestone-9.17.7.md)
+> are completed. Phase 1 may begin
+> independently; inbound completion and custody
 > courts gate external-effect integration and final acceptance, not Phase 1 entry.
 > This document specifies destination
-> APIs; it does not claim that tree correction or inbound completion ships today.
+> APIs; it does not claim that tree correction ships today.
 
 ## Goal And Roadmap Placement
 

@@ -27,6 +27,8 @@ mod conditional_cleanup;
 mod external_dispatch_attempt;
 mod inbound_delivery;
 mod inbound_occurrence;
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) use inbound_occurrence::WorthQueryInboundAdmission;
 mod inbound_publication;
 pub use certification_cost::{
     WorthQueryCertificationApplicationWork, WorthQueryCertificationCostObservation,
@@ -35,12 +37,14 @@ pub use certification_cost::{
 };
 pub(in crate::domain_computation) use inbound_occurrence::WorthQueryInstalledTransportCompletionBinding;
 pub use inbound_occurrence::{
-    WorthQueryInboundAdmissionDenial, WorthQueryInboundCostObservation,
+    WorthQueryAdmittedInboundOccurrence, WorthQueryAuthenticatedInboundOccurrence,
+    WorthQueryCorrelatedInboundOccurrence, WorthQueryInboundAdmissionDenial,
+    WorthQueryInboundAuthenticatedPermanentDenial, WorthQueryInboundCostObservation,
     WorthQueryInboundIndexRepairDenial, WorthQueryInboundMaintenanceReport,
-    WorthQueryInboundReceipt, WorthQueryInboundReceiptPosture,
-    WorthQueryInboundSourceControlDenial, WorthQueryInboundSourcePosture,
-    WorthQueryInboundTerminalObservation, WorthQueryInboundVerifierHandle,
-    WorthQueryInboundVerifierInstallationDenial,
+    WorthQueryInboundPendingReason, WorthQueryInboundPermanentDenialKind, WorthQueryInboundReceipt,
+    WorthQueryInboundReceiptPosture, WorthQueryInboundSourceControlDenial,
+    WorthQueryInboundSourcePosture, WorthQueryInboundTerminalObservation,
+    WorthQueryInboundVerifierHandle, WorthQueryInboundVerifierInstallationDenial,
 };
 pub(in crate::domain_computation::primary_graph) use inbound_publication::{
     InstalledTransportCompletion, InstalledTransportPendingReason, InstalledTransportResumeOutcome,

@@ -31,7 +31,11 @@ pub use rebuild::WorthQueryInboundIndexRepairDenial;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use receive::WorthQueryInboundAdmission;
 pub use receive::{
-    WorthQueryInboundAdmissionDenial, WorthQueryInboundReceipt, WorthQueryInboundReceiptPosture,
+    WorthQueryAdmittedInboundOccurrence, WorthQueryAuthenticatedInboundOccurrence,
+    WorthQueryCorrelatedInboundOccurrence, WorthQueryInboundAdmissionDenial,
+    WorthQueryInboundAuthenticatedPermanentDenial, WorthQueryInboundPendingReason,
+    WorthQueryInboundPermanentDenialKind, WorthQueryInboundReceipt,
+    WorthQueryInboundReceiptPosture,
 };
 
 pub(in crate::domain_computation) struct WorthQueryInstalledInboundVerifier {

@@ -70,12 +70,15 @@ fn transport_winner_retains_compact_signed_meaning_until_cutoff() {
         Instant::now() + Duration::from_secs(60),
         cancellation.token(),
     );
-    assert!(matches!(
-        world
-            .application
-            .receive_inbound_occurrence(&world.verifier, &original, &cancelled),
-        Err(WorthQueryInboundAdmissionDenial::PublicationRetryRequired)
-    ));
+    let accepted = world
+        .application
+        .receive_inbound_occurrence(&world.verifier, &original, &cancelled)
+        .unwrap();
+    assert_eq!(
+        accepted.posture(),
+        WorthQueryInboundReceiptPosture::AcceptedPending
+    );
+    assert_eq!(accepted.pending_reason(), Some(crate::domain_computation::primary_graph::WorthQueryInboundPendingReason::OwnerRetryRequired));
 
     let request = super::super::fixture::live_scope();
     assert_eq!(
@@ -106,7 +109,8 @@ fn transport_winner_retains_compact_signed_meaning_until_cutoff() {
         world
             .application
             .receive_inbound_occurrence(&world.verifier, &altered_cutoff, &request),
-        Err(WorthQueryInboundAdmissionDenial::MessageIdentityConflict)
+        Err(WorthQueryInboundAdmissionDenial::AuthenticatedPermanent(proof))
+            if proof.kind() == crate::domain_computation::primary_graph::WorthQueryInboundPermanentDenialKind::MessageIdentityConflict
     ));
     let one = NonZeroUsize::new(1).unwrap();
     assert_eq!(

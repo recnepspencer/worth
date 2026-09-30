@@ -186,6 +186,78 @@ async fn completed_owner_retries_identical_signed_bytes_until_exact_bank_ack() {
     panic!("authenticated custody ACK did not release the rail obligation");
 }
 
+#[tokio::test]
+async fn unsigned_http_denial_retries_but_exact_signed_permanent_denial_settles_distinctly() {
+    let bank = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let bank_address = bank.local_addr().unwrap();
+    let bank_signing = SigningKey::from_bytes(&[9; 32]);
+    let bank_verifying_key = bank_signing.verifying_key().to_bytes();
+    let bank_task = tokio::spawn(async move {
+        let (mut first, _) = bank.accept().await.unwrap();
+        let original = read_http_body(&mut first).await;
+        first
+            .write_all(b"HTTP/1.1 409 Conflict\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
+            .await
+            .unwrap();
+        let (mut second, _) = bank.accept().await.unwrap();
+        let retry = read_http_body(&mut second).await;
+        assert_eq!(original, retry, "HTTP status cannot settle rail custody");
+        let denial = signed_ack_with_posture(&retry, &bank_signing, 4);
+        reply(&mut second, &denial).await;
+    });
+
+    let mut rail = RailServer::bind("127.0.0.1:0".parse().unwrap())
+        .await
+        .unwrap();
+    let rail_address = rail.local_addr().unwrap();
+    rail.install_completion_delivery(
+        RailCompletionDeliveryConfiguration::new(
+            format!("http://{bank_address}/v1/inbound/rail-completions"),
+            "bank-process-court".into(),
+            "rail-primary".into(),
+            1,
+            [7; 32],
+            bank_verifying_key,
+            60,
+            2,
+            2,
+            Duration::from_millis(20),
+            Duration::from_secs(1),
+            None,
+        )
+        .unwrap(),
+    )
+    .unwrap();
+    let rail_task = tokio::spawn(rail.serve());
+    assert_eq!(
+        dispatch(rail_address, notice_attempt(), TIMEOUT).await,
+        RailExchangeOutcome::Completed
+    );
+    tokio::time::timeout(TIMEOUT, bank_task)
+        .await
+        .unwrap()
+        .unwrap();
+    for _ in 0..30 {
+        let posture = inquire_completion_delivery_posture(rail_address, TIMEOUT)
+            .await
+            .unwrap();
+        if posture.permanently_denied == 1 {
+            assert_eq!(posture.pending, 0);
+            assert_eq!(posture.exhausted, 0);
+            assert_eq!(
+                inquire_completed_effect_count(rail_address, TIMEOUT)
+                    .await
+                    .unwrap(),
+                1
+            );
+            rail_task.abort();
+            return;
+        }
+        tokio::time::sleep(Duration::from_millis(10)).await;
+    }
+    panic!("signed permanent denial was not classified separately");
+}
+
 fn notice_attempt() -> RailDispatch {
     let payload = [3u64, 12, 1]
         .into_iter()
@@ -293,6 +365,10 @@ fn assert_signed_meaning(body: &[u8], rail_key: &VerifyingKey) {
 }
 
 fn signed_ack(body: &[u8], bank_key: &SigningKey) -> Vec<u8> {
+    signed_ack_with_posture(body, bank_key, 1)
+}
+
+fn signed_ack_with_posture(body: &[u8], bank_key: &SigningKey, posture: u8) -> Vec<u8> {
     let mut cursor = 16;
     take_short(body, &mut cursor);
     take_short(body, &mut cursor);
@@ -300,7 +376,7 @@ fn signed_ack(body: &[u8], bank_key: &SigningKey) -> Vec<u8> {
     let message_id = take(body, &mut cursor, 32);
     let mut acknowledgement = Vec::new();
     acknowledgement.extend_from_slice(CUSTODY_ACK_V1_MAGIC);
-    acknowledgement.push(1);
+    acknowledgement.push(posture);
     acknowledgement.extend_from_slice(message_id);
     acknowledgement.extend_from_slice(&Sha256::digest(body));
     acknowledgement.extend_from_slice(&bank_key.sign(&acknowledgement).to_bytes());

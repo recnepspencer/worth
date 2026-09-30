@@ -78,7 +78,9 @@ impl BankRailCallbackServerBinding {
         let router = Router::new()
             .route("/v1/inbound/rail-completions", post(callback))
             .layer(DefaultBodyLimit::max(
-                self.configuration.maximum_body_bytes(),
+                self.configuration
+                    .maximum_body_bytes()
+                    .min(crate::http::protocol::inbound_completion::MAXIMUM_COMPLETION_BYTES),
             ))
             .with_state(state);
         let (shutdown, receiver) = oneshot::channel();

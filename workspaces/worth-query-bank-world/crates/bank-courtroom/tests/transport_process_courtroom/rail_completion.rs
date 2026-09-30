@@ -1,6 +1,5 @@
 //! A completed consequence returns from a separate rail process through Bank HTTP into World.
 
-use std::net::SocketAddr;
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
@@ -14,9 +13,8 @@ use bank_http_adapter::{
     BankHttpCommitDisposition, BankHttpEstateNotificationOutcome, BankHttpProcessConfiguration,
     BankHttpServerBinding, BankHttpServerConfiguration, BankRailCompletionServerInstallation,
 };
-use bank_user_node::BankUserNodeEstateNotificationOutcome;
-use tokio::io::AsyncWriteExt;
-use tokio::net::TcpStream;
+use bank_user_node::{BankUserNodeEstateNotificationOutcome, BankUserNodeRecoverySafeRetryOutcome};
+use ed25519_dalek::{Signer, SigningKey};
 use tokio::sync::oneshot;
 
 use super::identity_world::docker_world::DockerIdentityWorld;
@@ -27,6 +25,12 @@ use super::world::{
     authenticate_node, external_redirect, node_configuration, server_configuration,
 };
 
+#[path = "rail_completion/contact_barrier.rs"]
+mod contact_barrier;
+#[path = "rail_completion/duplicate.rs"]
+mod duplicate;
+#[path = "rail_completion/initiating_client.rs"]
+mod initiating_client;
 #[path = "rail_completion/proxy.rs"]
 pub(crate) mod proxy;
 use proxy::{correlation_token, CallbackProxy};
@@ -155,8 +159,12 @@ async fn completed_rail_callback_survives_lost_ack_and_publishes_world_once() {
         "notice": "fixture:12",
         "subject": "fixture:1"
     });
-    let initiating_client =
-        post_node_holding_response(node_address, "/v1/estate/notify-death", &request).await;
+    let initiating_client = initiating_client::post_node_holding_response(
+        node_address,
+        "/v1/estate/notify-death",
+        &request,
+    )
+    .await;
     let first_envelope = tokio::time::timeout(Duration::from_secs(20), proxy.await_first_capture())
         .await
         .expect("rail callback must arrive after the committed dispatch");
@@ -174,10 +182,51 @@ async fn completed_rail_callback_survives_lost_ack_and_publishes_world_once() {
         1,
         "held callback has no custody ACK"
     );
-    // Callback arrival proves the initiating request reached the committed
-    // outbox. Lose its response only after that barrier, then release delivery.
+    // Callback arrival proves the outbox committed before client disconnect.
     drop(initiating_client);
+    let replay_before_callback = post_node::<BankUserNodeEstateNotificationOutcome>(
+        &client,
+        node_address,
+        "/v1/estate/notify-death",
+        &request,
+    )
+    .await;
+    let recovery = match replay_before_callback {
+        BankUserNodeEstateNotificationOutcome::Forwarded {
+            response:
+                BankHttpEstateNotificationOutcome::Applied {
+                    disposition: BankHttpCommitDisposition::AlreadyCommitted,
+                    recovery: Some(recovery),
+                    ..
+                },
+        } => recovery,
+        other => panic!("held callback must leave exact recovery ownership: {other:?}"),
+    };
+    assert!(bank.observe_rail_completion(token).is_none());
+    let contacts_before_retry = contact_barrier::count(rail.local_addr()).await;
+    assert_eq!(contacts_before_retry, 1, "one initiating rail dispatch");
+    let retry_client = client.clone();
+    let racing_recovery = recovery.clone();
+    let retry = tokio::spawn(async move {
+        post_node::<BankUserNodeRecoverySafeRetryOutcome>(
+            &retry_client,
+            node_address,
+            "/v1/recovery/safe-retry",
+            &serde_json::json!({
+                "request_id": "process-rail-callback-racing-retry",
+                "controls": { "deadline_milliseconds": 5_000 },
+                "recovery": racing_recovery
+            }),
+        )
+        .await
+    });
+    contact_barrier::await_next(rail.local_addr(), contacts_before_retry).await;
     proxy.release_first();
+
+    let retry_result = retry
+        .await
+        .expect("safe retry should return its owner result");
+    contact_barrier::assert_racing_retry_result(&retry_result);
 
     let terminal_wait = tokio::time::timeout(Duration::from_secs(20), async {
         loop {
@@ -210,6 +259,11 @@ async fn completed_rail_callback_survives_lost_ack_and_publishes_world_once() {
     let captured = proxy.captured();
     assert_eq!(captured.len(), 2, "one dropped ACK must cause one retry");
     assert_eq!(captured[0], captured[1], "retry must preserve signed bytes");
+    assert_eq!(
+        contact_barrier::count(rail.local_addr()).await,
+        contacts_before_retry + 1,
+        "one owner safe retry crossed the rail before callback release"
+    );
     assert_ne!(
         terminal.original_world_commit(),
         terminal.completion_world_commit()
@@ -220,6 +274,14 @@ async fn completed_rail_callback_survives_lost_ack_and_publishes_world_once() {
             .expect("independent rail should report completed consequence"),
         1
     );
+    contact_barrier::assert_post_terminal_retry(
+        &client,
+        node_address,
+        &recovery,
+        rail.local_addr(),
+        contacts_before_retry + 1,
+    )
+    .await;
 
     let replay = post_node::<BankUserNodeEstateNotificationOutcome>(
         &client,
@@ -238,6 +300,21 @@ async fn completed_rail_callback_survives_lost_ack_and_publishes_world_once() {
         }
     ));
     assert_eq!(proxy.captured().len(), 2, "replay cannot dispatch again");
+
+    duplicate::assert_exact_callbacks(&client, bank_address, &captured[0]).await;
+    let after_duplicates = bank
+        .observe_rail_completion(token)
+        .expect("duplicates retain the same World terminal");
+    assert_eq!(
+        after_duplicates.completion_world_commit(),
+        terminal.completion_world_commit()
+    );
+    assert_eq!(
+        inquire_completed_effect_count(rail.local_addr(), TIMEOUT)
+            .await
+            .unwrap(),
+        1
+    );
 
     let mut corrupted = envelope;
     *corrupted
@@ -258,6 +335,25 @@ async fn completed_rail_callback_survives_lost_ack_and_publishes_world_once() {
         terminal.completion_world_commit()
     );
     assert_eq!(after.completion_attempt(), terminal.completion_attempt());
+    let mut altered_meaning = captured[0].clone();
+    let signature_start = altered_meaning.len() - 64;
+    altered_meaning[signature_start - 1] ^= 1;
+    let signature = SigningKey::from_bytes(&[7; 32]).sign(&altered_meaning[..signature_start]);
+    altered_meaning[signature_start..].copy_from_slice(&signature.to_bytes());
+    let conflict = client
+        .post(format!("http://{bank_address}/v1/inbound/rail-completions"))
+        .body(altered_meaning.clone())
+        .send()
+        .await
+        .expect("signed conflicting callback should reach actual endpoint");
+    assert_eq!(conflict.status(), reqwest::StatusCode::OK);
+    let permanent_ack = conflict.bytes().await.unwrap();
+    duplicate::assert_permanent_denial(
+        &permanent_ack,
+        &captured[0],
+        &altered_meaning,
+        BANK_PUBLIC_KEY,
+    );
     assert_eq!(
         inquire_completed_effect_count(rail.local_addr(), TIMEOUT)
             .await
@@ -272,30 +368,6 @@ async fn completed_rail_callback_survives_lost_ack_and_publishes_world_once() {
     drop(docker);
     DockerIdentityWorld::require_project_absent(&project)
         .expect("courtroom teardown should remove Docker resources");
-}
-
-async fn post_node_holding_response(
-    address: SocketAddr,
-    path: &str,
-    body: &serde_json::Value,
-) -> TcpStream {
-    let body = serde_json::to_vec(body).expect("notice body should encode");
-    let mut stream = TcpStream::connect(address)
-        .await
-        .expect("initiating client should connect to the user node");
-    let headers = format!(
-        "POST {path} HTTP/1.1\r\nHost: {address}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
-        body.len()
-    );
-    stream
-        .write_all(headers.as_bytes())
-        .await
-        .expect("initiating client should send headers");
-    stream
-        .write_all(&body)
-        .await
-        .expect("initiating client should send the complete notice");
-    stream
 }
 
 async fn install_identity(

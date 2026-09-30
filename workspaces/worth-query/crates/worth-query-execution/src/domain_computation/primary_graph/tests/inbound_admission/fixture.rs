@@ -19,7 +19,7 @@ use worth_query_installation::facade::{
 
 use super::schema::{
     IdentityBinding, InboundTestSchema, Notice, NoticeEffect, NotifyOperation,
-    OtherNotifyOperation, Target, TargetKey, UnrelatedNotifyOperation,
+    OtherNotifyOperation, Target, TargetKey,
 };
 use super::verifier::TestVerifier;
 use crate::domain_computation::execution_runtime::{
@@ -39,6 +39,8 @@ pub(super) struct InboundWorld {
     invariant: WorthQueryApplicationInvariantProjectionAuthority<InboundTestSchema>,
     pub verifier: WorthQueryInboundVerifierHandle,
 }
+#[cfg(feature = "test-world-operation-control")]
+mod cost;
 mod wide;
 pub(super) fn installed_world() -> InboundWorld {
     let declaration = InboundTestSchema::declaration().unwrap();
@@ -118,19 +120,6 @@ impl InboundWorld {
             .application
             .installed_schema()
             .installed_operation(OtherNotifyOperation::reference())
-            .unwrap();
-        self.commit_nonselected_dispatch(operation, seed, text)
-    }
-
-    pub fn commit_unrelated_dispatch(
-        &self,
-        seed: u64,
-        text: &str,
-    ) -> WorthQueryApplicationCommitReceipt {
-        let operation = self
-            .application
-            .installed_schema()
-            .installed_operation(UnrelatedNotifyOperation::reference())
             .unwrap();
         self.commit_nonselected_dispatch(operation, seed, text)
     }
@@ -246,10 +235,16 @@ impl InboundWorld {
         seed: u8,
         text: &str,
     ) -> WorthQueryApplicationCommitOutcome {
-        self.attempt_operation_on(branch, seed, text, true)
+        self.attempt_operation_on(branch, seed, text, true, None)
     }
-    pub fn attempt_no_effect(&self, seed: u8) -> WorthQueryApplicationCommitOutcome {
-        self.attempt_operation_on(self.application.current_world(), seed, "unused", false)
+    pub fn attempt_empty_program(&self, seed: u8) -> WorthQueryApplicationCommitOutcome {
+        self.attempt_operation_on(
+            self.application.current_world(),
+            seed,
+            "unused",
+            false,
+            None,
+        )
     }
     fn attempt_operation_on(
         &self,
@@ -257,6 +252,7 @@ impl InboundWorld {
         seed: u8,
         text: &str,
         emit_external: bool,
+        request: Option<&WorthQueryRequestScope>,
     ) -> WorthQueryApplicationCommitOutcome {
         let identity = self
             .application
@@ -265,7 +261,8 @@ impl InboundWorld {
             .unwrap()
             .branch_identity()
             .clone();
-        let request = super::super::fixture::live_scope();
+        let default_request = super::super::fixture::live_scope();
+        let request = request.unwrap_or(&default_request);
         let external = authenticate(self.application.installed_schema(), &request);
         let selected = self.application.select_product_branch(&identity).unwrap();
         let binding = self
