@@ -1,13 +1,19 @@
-use super::{CHANGED, RENAMED_ACCOUNT, RETIRED_MAPPING};
+use super::{Changed, RenamedAccount, RetiredMapping};
 use crate::application_operation::{
     ApplicationMutationOutputPosture, ApplicationMutationOutputPostureSet,
-    ApplicationMutationOutputRoleCardinality, WorthQueryApplicationOutputRoleNameDenial,
-    WorthQueryCreateOutput,
+    ApplicationMutationOutputRoleCardinality, WorthQueryApplicationDeclaredOutputRole,
+    WorthQueryApplicationDeclaredOutputRoleFamily, WorthQueryApplicationOutputCardinality,
+    WorthQueryApplicationOutputRoleNameDenial, WorthQueryAtMostOneOutput,
+    WorthQueryExactlyOneOutput,
 };
 
+const _: () = RenamedAccount::DECLARED;
+const _: () = RetiredMapping::DECLARED;
+const _: () = Changed::DECLARED;
+
 #[test]
-fn a_token_declares_its_descriptor() {
-    let exact = RENAMED_ACCOUNT.descriptor();
+fn a_role_marker_derives_its_descriptor() {
+    let exact = RenamedAccount::DESCRIPTOR;
     assert_eq!(exact.name(), "renamed-account");
     assert_eq!(exact.entity(), "Account");
     assert_eq!(exact.posture(), ApplicationMutationOutputPosture::Preserve);
@@ -15,9 +21,8 @@ fn a_token_declares_its_descriptor() {
         exact.cardinality(),
         ApplicationMutationOutputRoleCardinality::ExactlyOne
     );
-    assert_eq!(RENAMED_ACCOUNT.name(), "renamed-account");
 
-    let optional = RETIRED_MAPPING.descriptor();
+    let optional = RetiredMapping::DESCRIPTOR;
     assert_eq!(optional.entity(), "ExternalMapping");
     assert_eq!(optional.posture(), ApplicationMutationOutputPosture::Retire);
     assert_eq!(
@@ -27,40 +32,39 @@ fn a_token_declares_its_descriptor() {
 }
 
 #[test]
-fn a_family_declares_its_descriptor_and_names_its_members() {
-    let family = CHANGED.descriptor();
+fn a_cardinality_shapes_its_read() {
+    assert_eq!(WorthQueryExactlyOneOutput::read(Some(7)), Some(7));
+    assert_eq!(WorthQueryExactlyOneOutput::read::<u8>(None), None);
+    assert_eq!(WorthQueryAtMostOneOutput::read(Some(7)), Some(Some(7)));
+    assert_eq!(WorthQueryAtMostOneOutput::read::<u8>(None), Some(None));
+}
+
+#[test]
+fn a_family_marker_derives_its_descriptor_and_names_its_members() {
+    let family = Changed::DESCRIPTOR;
     assert_eq!(family.prefix(), "changed.");
     assert_eq!(family.entity(), "Account");
     assert_eq!(family.postures(), ApplicationMutationOutputPostureSet::ALL);
     assert_eq!(family.minimum(), 1);
-
-    let member = CHANGED
-        .member::<WorthQueryCreateOutput>("a")
-        .expect("a non-empty suffix names a member");
-    assert_eq!(member.name(), "changed.a");
+    assert_eq!(Changed::member_name("a").as_deref(), Ok("changed.a"));
 }
 
 #[test]
 fn a_family_member_needs_a_valid_suffix() {
-    let member = |suffix: &str| {
-        CHANGED
-            .member::<WorthQueryCreateOutput>(suffix)
-            .map(|role| role.name().to_owned())
-    };
     assert_eq!(
-        member(""),
+        Changed::member_name(""),
         Err(WorthQueryApplicationOutputRoleNameDenial::Empty)
     );
     assert_eq!(
-        member("a "),
+        Changed::member_name("a "),
         Err(WorthQueryApplicationOutputRoleNameDenial::SurroundingWhitespace)
     );
     assert_eq!(
-        member("a\u{7}b"),
+        Changed::member_name("a\u{7}b"),
         Err(WorthQueryApplicationOutputRoleNameDenial::ControlCharacter)
     );
     assert!(matches!(
-        member(&"x".repeat(300)),
+        Changed::member_name(&"x".repeat(300)),
         Err(WorthQueryApplicationOutputRoleNameDenial::RepresentationTooLarge { .. })
     ));
 }

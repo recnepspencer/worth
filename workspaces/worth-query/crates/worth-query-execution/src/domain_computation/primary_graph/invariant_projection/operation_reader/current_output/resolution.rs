@@ -17,7 +17,7 @@ use worth_relational::facade::storage::RecordLifecycleState;
 mod tests;
 
 use super::{
-    WorthQueryCurrentOutputDenial, WorthQueryCurrentOutputDenialKind, WorthQueryCurrentOutputRole,
+    WorthQueryCurrentOutputDenial, WorthQueryCurrentOutputDenialKind,
     WorthQueryCurrentOutputSelection,
 };
 use crate::domain_computation::primary_graph::{
@@ -33,31 +33,40 @@ impl<'reader, 'runtime, Schema, Operation>
 where
     Schema: ApplicationSchema,
 {
-    pub fn current_output<Family, Producer, Entity>(
+    /// Select the entity `Family` currently outputs for `producer`. Each
+    /// recorded correspondence is read under the output role its producer
+    /// binding declares, so the read cannot name a role no producer of the
+    /// family outputs.
+    #[allow(clippy::type_complexity)]
+    pub fn current_output<Family, Producer>(
         &mut self,
         producer: &WorthQueryInvariantEntityIdentity<Schema, Producer>,
-        role: WorthQueryCurrentOutputRole<Family, Entity>,
-    ) -> Result<WorthQueryCurrentOutputSelection<Schema, Entity>, WorthQueryCurrentOutputDenial>
+    ) -> Result<
+        WorthQueryCurrentOutputSelection<Schema, Family::Entity>,
+        WorthQueryCurrentOutputDenial,
+    >
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
         Family::Source: ApplicationQueryBinding<Schema>,
         <Family::Source as ApplicationQueryBinding<Schema>>::ScopeBinding:
             ApplicationQueryScopeBinding<Schema, Scope = Producer>,
         Producer: ApplicationEntityMarkerIdentity<Schema> + OperationReads<Operation> + 'static,
-        Entity: ApplicationEntityMarkerIdentity<Schema> + OperationReads<Operation> + 'static,
+        Family::Entity: OperationReads<Operation>,
     {
+        let subject = Family::IDENTITY;
         self.require_decision_entity(
             producer,
             ApplicationEntityRef::from_schema_identifier(Producer::IDENTIFIER),
         )
         .map_err(|denial| decision_plan_denial(denial.kind(), Family::IDENTITY))?;
         self.admit_decision_target(&ApplicationOperationDecisionReadTarget::Entity {
-            entity: Entity::IDENTIFIER.to_owned(),
+            entity: <Family::Entity as ApplicationEntityMarkerIdentity<Schema>>::IDENTIFIER
+                .to_owned(),
         })
         .map_err(|_| {
             WorthQueryCurrentOutputDenial::new(
                 WorthQueryCurrentOutputDenialKind::UndeclaredDecisionTarget,
-                role.name(),
+                subject,
             )
         })?;
         if !self.current_source_is_live(producer)? {
@@ -65,16 +74,16 @@ where
         }
         let correspondences = self.current_correspondences::<Family, Producer>(producer)?;
         let mut entities = Vec::new();
-        for correspondence in correspondences {
-            self.require_current_output_budget(1, role.name())?;
+        for (correspondence, output_role) in correspondences {
+            self.require_current_output_budget(1, &output_role)?;
             self.reader.work_budget.consume(1);
             self.reader.work.record_output_lineage_role_lookup();
             let entity = correspondence
-                .current_entity_for_role::<Entity>(role.name())
+                .current_entity_for_role::<Family::Entity>(&output_role)
                 .map_err(|_| {
                     WorthQueryCurrentOutputDenial::new(
                         WorthQueryCurrentOutputDenialKind::EntityMismatch,
-                        role.name(),
+                        output_role.as_str(),
                     )
                 })?;
             if let Some(entity) = entity {
@@ -84,13 +93,13 @@ where
         Ok(match classify_current_entities(entities) {
             CurrentOutputCardinality::Missing => WorthQueryCurrentOutputSelection::Missing,
             CurrentOutputCardinality::Unique(entity) => WorthQueryCurrentOutputSelection::Unique(
-                self.live_current_identity::<Entity>(role.name(), entity)?,
+                self.live_current_identity::<Family::Entity>(subject, entity)?,
             ),
             CurrentOutputCardinality::Ambiguous(entities) => {
                 WorthQueryCurrentOutputSelection::Ambiguous(
                     entities
                         .into_iter()
-                        .map(|entity| self.live_current_identity::<Entity>(role.name(), entity))
+                        .map(|entity| self.live_current_identity::<Family::Entity>(subject, entity))
                         .collect::<Result<Vec<_>, _>>()?,
                 )
             }
@@ -101,7 +110,10 @@ where
         &mut self,
         producer: &WorthQueryInvariantEntityIdentity<Schema, Producer>,
     ) -> Result<
-        Vec<std::sync::Arc<WorthQueryApplicationOutputCorrespondence>>,
+        Vec<(
+            std::sync::Arc<WorthQueryApplicationOutputCorrespondence>,
+            String,
+        )>,
         WorthQueryCurrentOutputDenial,
     >
     where
@@ -207,7 +219,7 @@ where
                         .dependent_source_facts
                         .insert(fact.locator_identity(), fact);
                 }
-                current.push(candidate.correspondence);
+                current.push((candidate.correspondence, candidate.output_role));
             }
         }
         if current.is_empty() && obsolete {

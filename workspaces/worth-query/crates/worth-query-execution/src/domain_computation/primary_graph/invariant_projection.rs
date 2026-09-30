@@ -43,14 +43,14 @@ pub use locked_reader::{
 pub use operation_projection_denial::{
     WorthQueryOperationProjectionDenial, WorthQueryOperationProjectionDenialKind,
 };
+pub(in crate::domain_computation::primary_graph) use operation_reader::WorthQueryPriorOutputRead;
 pub use operation_reader::{
     WorthQueryApplicationOperationInvariantProjectionReader,
     WorthQueryApplicationOperationInvariantProjectionSnapshot,
     WorthQueryCompletedOperationInvariantProjection, WorthQueryCurrentOutputDenial,
-    WorthQueryCurrentOutputDenialKind, WorthQueryCurrentOutputRole,
-    WorthQueryCurrentOutputSelection, WorthQueryInspectedOperationInvariantProjection,
-    WorthQueryInvariantDecisionPlanDenial, WorthQueryInvariantDecisionPlanDenialKind,
-    WorthQueryPriorOutputFamilyMember,
+    WorthQueryCurrentOutputDenialKind, WorthQueryCurrentOutputSelection,
+    WorthQueryInspectedOperationInvariantProjection, WorthQueryInvariantDecisionPlanDenial,
+    WorthQueryInvariantDecisionPlanDenialKind, WorthQueryPriorOutputFamilyMember,
 };
 pub(in crate::domain_computation::primary_graph) use realized_scope::WorthQueryRealizedProjectionScope;
 pub use work::WorthQueryInvariantProjectionWork;

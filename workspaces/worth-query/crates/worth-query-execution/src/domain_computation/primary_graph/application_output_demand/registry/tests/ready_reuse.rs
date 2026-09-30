@@ -17,6 +17,7 @@ fn ready_ordinary_output_survives_close_and_reopens_without_scheduling() {
     let observation = world.selected_product().product().observation().clone();
     let correspondence = WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
         std::any::TypeId::of::<()>(),
+        std::any::TypeId::of::<()>(),
         std::collections::BTreeSet::new(),
         Vec::new(),
         |_| None,

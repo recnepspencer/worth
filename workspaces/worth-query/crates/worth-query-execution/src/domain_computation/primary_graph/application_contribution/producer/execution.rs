@@ -5,6 +5,7 @@ use worth_query_admission::facade::authenticated_principal::{
 };
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationIdentities, ApplicationMutationIntent, ApplicationMutationScopeResolution,
+    WorthQueryApplicationOutputRole,
 };
 use worth_query_declaration::facade::application_query::ApplicationQueryBinding;
 use worth_query_declaration::facade::application_schema::{
@@ -110,7 +111,9 @@ where
     fn preserved_readiness_output(&self, receipt: &WorthQueryApplicationCommitReceipt) -> bool {
         receipt
             .output_correspondence()
-            .posture_for_binding_role::<Binding::Operation>(Binding::OUTPUT_ROLE)
+            .posture_for_binding_role::<Binding::Operation>(
+                <Binding::OutputRole as WorthQueryApplicationOutputRole>::NAME,
+            )
             == Ok(
                 worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture::Preserve,
             )
@@ -125,7 +128,9 @@ where
     > {
         let entity = receipt
             .output_correspondence()
-            .entity_for_binding_role::<Binding::Operation>(Binding::OUTPUT_ROLE)
+            .entity_for_binding_role::<Binding::Operation>(
+                <Binding::OutputRole as WorthQueryApplicationOutputRole>::NAME,
+            )
             .map_err(|error| failed(Binding::IDENTITY, error))?;
         Ok(
             worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts::entity(

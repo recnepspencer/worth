@@ -15,8 +15,8 @@ pub enum WorthQueryGeneratedOutputReconstructionDenial {
     StaleOutputLineage,
     /// The suspended output bound no entity to the exactly-one output role.
     MissingOutputRole,
-    /// The role token's cardinality differs from the one the producer's
-    /// binding declares for that role.
+    /// The role's cardinality differs from the one the producer's installed
+    /// contract records for it.
     OutputRoleCardinalityMismatch,
     /// The entity is not in the suspension manifest.
     MissingEntity,

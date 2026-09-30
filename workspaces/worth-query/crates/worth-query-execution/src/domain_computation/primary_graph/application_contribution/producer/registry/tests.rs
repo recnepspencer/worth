@@ -1,5 +1,18 @@
 use std::any::TypeId;
 
+use worth_query_declaration::facade::application_operation::{
+    ApplicationMutationOutputPostureSet, NoApplicationMutationOutputs,
+    WorthQueryApplicationDeclaredOutputRole as DeclaredRole,
+    WorthQueryApplicationDeclaredOutputRoleFamily as DeclaredFamily,
+    WorthQueryApplicationOutputRole, WorthQueryApplicationOutputRoleFamily,
+    WorthQueryAtMostOneOutput, WorthQueryExactlyOneOutput, WorthQueryPreserveOutput,
+};
+use worth_query_declaration::facade::application_schema::ApplicationEntityMarkerIdentity;
+
+use crate::domain_computation::primary_graph::tests::fixture::{
+    Account, IdentityExecutionSchema as Schema,
+};
+
 use super::{
     checkpoint::{installed_checkpoint_producer, validate_checkpoint_output_meaning},
     operation_binding_uniqueness::duplicate_operation_binding,
@@ -62,19 +75,8 @@ fn checkpoint_producer_must_be_installed() {
 
 #[test]
 fn checkpoint_cannot_omit_an_exact_installed_role() {
-    use worth_query_declaration::facade::application_operation::{
-        WorthQueryApplicationOutputRole, WorthQueryPreserveOutput,
-    };
-    type Schema = crate::domain_computation::primary_graph::tests::fixture::IdentityExecutionSchema;
-    type Account = crate::domain_computation::primary_graph::tests::fixture::Account;
-
     let mut installed = declared(TypeId::of::<InstalledProducer>());
-    installed.output_role_descriptors = vec![WorthQueryApplicationOutputRole::<
-        (),
-        Account,
-        WorthQueryPreserveOutput,
-    >::for_entity::<Schema>("required")
-    .descriptor()];
+    installed.output_role_descriptors = vec![<Required as DeclaredRole>::DESCRIPTOR];
 
     assert!(
         validate_checkpoint_output_meaning(&installed, &checkpoint(Vec::new()))
@@ -85,24 +87,10 @@ fn checkpoint_cannot_omit_an_exact_installed_role() {
 
 #[test]
 fn checkpoint_may_omit_only_an_at_most_one_installed_role() {
-    use worth_query_declaration::facade::application_operation::{
-        WorthQueryApplicationOptionalOutputRole, WorthQueryApplicationOutputRole,
-        WorthQueryPreserveOutput,
-    };
-    use worth_query_declaration::facade::application_schema::ApplicationEntityMarkerIdentity;
-    type Schema = crate::domain_computation::primary_graph::tests::fixture::IdentityExecutionSchema;
-    type Account = crate::domain_computation::primary_graph::tests::fixture::Account;
-
     let mut installed = declared(TypeId::of::<InstalledProducer>());
     installed.output_role_descriptors = vec![
-        WorthQueryApplicationOutputRole::<(), Account, WorthQueryPreserveOutput>::for_entity::<
-            Schema,
-        >("required")
-        .descriptor(),
-        WorthQueryApplicationOptionalOutputRole::<(), Account, WorthQueryPreserveOutput>::for_entity::<
-            Schema,
-        >("optional")
-        .descriptor(),
+        <Required as DeclaredRole>::DESCRIPTOR,
+        <Optional as DeclaredRole>::DESCRIPTOR,
     ];
     let checkpoint_of = |names: &[&str]| {
         let mut checkpoint = checkpoint(names.iter().map(|name| role(name)).collect());
@@ -129,22 +117,8 @@ fn checkpoint_may_omit_only_an_at_most_one_installed_role() {
 
 #[test]
 fn checkpoint_cannot_underfill_an_installed_role_family() {
-    use worth_query_declaration::facade::application_operation::{
-        ApplicationMutationOutputPostureSet, WorthQueryApplicationOutputRoleFamily,
-    };
-    use worth_query_declaration::facade::application_schema::ApplicationEntityMarkerIdentity;
-    type Schema = crate::domain_computation::primary_graph::tests::fixture::IdentityExecutionSchema;
-    type Account = crate::domain_computation::primary_graph::tests::fixture::Account;
-
     let mut installed = declared(TypeId::of::<InstalledProducer>());
-    installed.output_role_families = vec![
-        WorthQueryApplicationOutputRoleFamily::<(), Account>::for_entity::<Schema>(
-            "member.",
-            ApplicationMutationOutputPostureSet::ALL,
-            2,
-        )
-        .descriptor(),
-    ];
+    installed.output_role_families = vec![<Member as DeclaredFamily>::DESCRIPTOR];
     let mut checkpoint = checkpoint(vec![role("member.one")]);
     checkpoint.roles[0].entity_name = Account::IDENTIFIER.into();
 
@@ -212,8 +186,39 @@ fn declared(binding_type: TypeId) -> DeclaredProducerBinding {
         source_type: TypeId::of::<()>(),
         operation_binding_type: TypeId::of::<()>(),
         provider_type: TypeId::of::<()>(),
+        output_contract_type: TypeId::of::<()>(),
     }
 }
 
 struct InstalledProducer;
 struct SubstitutedProducer;
+
+struct Required;
+impl WorthQueryApplicationOutputRole for Required {
+    type Schema = Schema;
+    type Contract = NoApplicationMutationOutputs;
+    type Entity = Account;
+    type Action = WorthQueryPreserveOutput;
+    type Cardinality = WorthQueryExactlyOneOutput;
+    const NAME: &'static str = "required";
+}
+
+struct Optional;
+impl WorthQueryApplicationOutputRole for Optional {
+    type Schema = Schema;
+    type Contract = NoApplicationMutationOutputs;
+    type Entity = Account;
+    type Action = WorthQueryPreserveOutput;
+    type Cardinality = WorthQueryAtMostOneOutput;
+    const NAME: &'static str = "optional";
+}
+
+struct Member;
+impl WorthQueryApplicationOutputRoleFamily for Member {
+    type Schema = Schema;
+    type Contract = NoApplicationMutationOutputs;
+    type Entity = Account;
+    const PREFIX: &'static str = "member.";
+    const POSTURES: ApplicationMutationOutputPostureSet = ApplicationMutationOutputPostureSet::ALL;
+    const MINIMUM: usize = 2;
+}

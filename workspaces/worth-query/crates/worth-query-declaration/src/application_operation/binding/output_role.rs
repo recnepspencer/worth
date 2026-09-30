@@ -1,211 +1,175 @@
-//! Output-role tokens. A token is the declaration of one output role: the
-//! binding's output contract lists its `descriptor()`, and the handler writes
-//! and reads through the same token, so the cardinality, posture and entity a
-//! commit binds are the ones the binding declares.
-
-use std::fmt;
-use std::marker::PhantomData;
+//! Output-role declarations. A role is a marker type: implementing
+//! [`WorthQueryApplicationOutputRole`] declares its contract, entity, action,
+//! cardinality and name, and [`WorthQueryApplicationDeclaredOutputRole`]
+//! derives the descriptor the contract lists. Every Query use site names the
+//! marker and evaluates [`WorthQueryApplicationDeclaredOutputRole::DECLARED`],
+//! so a role its contract does not declare exactly as used fails to compile.
 
 use super::output::{
-    ApplicationMutationOutputPosture, ApplicationMutationOutputRoleCardinality,
+    ApplicationMutationOutputContract, ApplicationMutationOutputPostureSet,
     ApplicationMutationOutputRoleDescriptor,
 };
 use crate::application_schema::{ApplicationEntityMarkerIdentity, ApplicationSchema};
 
+mod action;
+mod cardinality;
 mod family;
 mod name;
 
-pub use family::{WorthQueryApplicationOutputMemberRole, WorthQueryApplicationOutputRoleFamily};
+pub use action::{
+    WorthQueryApplicationOutputAction, WorthQueryCreateOutput, WorthQueryPreserveOutput,
+    WorthQueryRetireOutput,
+};
+pub use cardinality::{
+    WorthQueryApplicationOutputCardinality, WorthQueryAtMostOneOutput, WorthQueryExactlyOneOutput,
+};
+pub use family::{
+    WorthQueryApplicationDeclaredOutputRoleFamily, WorthQueryApplicationOutputRoleFamily,
+};
 pub use name::WorthQueryApplicationOutputRoleNameDenial;
 
-mod action {
-    pub trait Sealed {}
+/// The declaration of one fixed output role of an output contract.
+///
+/// The role belongs to the contract, so one marker serves every binding whose
+/// `Output` is that contract. The contract lists the derived
+/// [`WorthQueryApplicationDeclaredOutputRole::DESCRIPTOR`] in its `ROLES`.
+///
+/// ```
+/// use worth_query_declaration::facade::application_operation::{
+///     ApplicationMutationOutputContract, ApplicationMutationOutputRoleCardinality,
+///     ApplicationMutationOutputRoleDescriptor, WorthQueryApplicationDeclaredOutputRole,
+///     WorthQueryApplicationOutputRole, WorthQueryAtMostOneOutput, WorthQueryCreateOutput,
+/// };
+/// use worth_query_declaration::facade::application_schema::{
+///     ApplicationEntityMarkerIdentity, ApplicationSchema, ApplicationSchemaDeclaration,
+///     ApplicationSchemaDeclarationDenial,
+/// };
+///
+/// struct Ledger;
+/// impl ApplicationSchema for Ledger {
+///     const OWNER: &'static str = "doc";
+///     const NAME: &'static str = "ledger";
+///     const MAJOR: u32 = 1;
+///     const MINOR: u32 = 0;
+///     fn declaration() -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+///         unimplemented!()
+///     }
+/// }
+/// struct Account;
+/// impl ApplicationEntityMarkerIdentity<Ledger> for Account {
+///     const IDENTIFIER: &'static str = "Account";
+/// }
+///
+/// struct OpenOutputs;
+/// impl ApplicationMutationOutputContract<Ledger> for OpenOutputs {
+///     const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] = &[OpenedAccount::DESCRIPTOR];
+/// }
+///
+/// struct OpenedAccount;
+/// impl WorthQueryApplicationOutputRole for OpenedAccount {
+///     type Schema = Ledger;
+///     type Contract = OpenOutputs;
+///     type Entity = Account;
+///     type Action = WorthQueryCreateOutput;
+///     type Cardinality = WorthQueryAtMostOneOutput;
+///     const NAME: &'static str = "opened-account";
+/// }
+///
+/// const _: () = OpenedAccount::DECLARED;
+/// assert_eq!(
+///     OpenedAccount::DESCRIPTOR.cardinality(),
+///     ApplicationMutationOutputRoleCardinality::AtMostOne,
+/// );
+/// ```
+pub trait WorthQueryApplicationOutputRole: 'static {
+    type Schema: ApplicationSchema;
+    type Contract: ApplicationMutationOutputContract<Self::Schema>;
+    type Entity: ApplicationEntityMarkerIdentity<Self::Schema> + 'static;
+    type Action: WorthQueryApplicationOutputAction;
+    type Cardinality: WorthQueryApplicationOutputCardinality;
+    /// The role name. It describes correspondence; it never supplies or
+    /// reconstructs an entity identity.
+    const NAME: &'static str;
 }
 
-/// Output action: the role names a record the mutation keeps, neither
-/// creating nor retiring it.
-pub struct WorthQueryPreserveOutput;
-/// Output action: the role names a record the mutation creates.
-pub struct WorthQueryCreateOutput;
-/// Output action: the role names a record the mutation retires.
-pub struct WorthQueryRetireOutput;
-
-/// The action an output role performs on its record: implemented only by
-/// [`WorthQueryPreserveOutput`], [`WorthQueryCreateOutput`] and
-/// [`WorthQueryRetireOutput`], and sealed against other implementations.
-pub trait WorthQueryApplicationOutputAction: action::Sealed {
-    const POSTURE: ApplicationMutationOutputPosture;
+/// What an output role is as its contract declares it. Implemented for every
+/// [`WorthQueryApplicationOutputRole`] and for nothing else, so the descriptor
+/// is always derived from the declaration.
+///
+/// ```compile_fail,E0277
+/// use worth_query_declaration::facade::application_operation::{
+///     ApplicationMutationOutputRoleDescriptor, WorthQueryApplicationDeclaredOutputRole,
+/// };
+///
+/// struct Forged;
+/// impl WorthQueryApplicationDeclaredOutputRole for Forged {
+///     const DESCRIPTOR: ApplicationMutationOutputRoleDescriptor = unimplemented!();
+///     const DECLARED: () = ();
+/// }
+/// ```
+pub trait WorthQueryApplicationDeclaredOutputRole: WorthQueryApplicationOutputRole {
+    /// The installed form of the role, for the contract's `ROLES`.
+    const DESCRIPTOR: ApplicationMutationOutputRoleDescriptor;
+    /// Evaluates only when the contract's `ROLES` lists this role with the
+    /// same name, entity, posture and cardinality. Query use sites evaluate
+    /// it in an inline `const` block, so a disagreeing use fails to compile.
+    const DECLARED: ();
 }
 
-impl action::Sealed for WorthQueryPreserveOutput {}
-impl WorthQueryApplicationOutputAction for WorthQueryPreserveOutput {
-    const POSTURE: ApplicationMutationOutputPosture = ApplicationMutationOutputPosture::Preserve;
-}
+impl<Role> WorthQueryApplicationDeclaredOutputRole for Role
+where
+    Role: WorthQueryApplicationOutputRole,
+{
+    const DESCRIPTOR: ApplicationMutationOutputRoleDescriptor =
+        ApplicationMutationOutputRoleDescriptor::declared(
+            Role::NAME,
+            <Role::Entity as ApplicationEntityMarkerIdentity<Role::Schema>>::IDENTIFIER,
+            <Role::Action as WorthQueryApplicationOutputAction>::POSTURE,
+            <Role::Cardinality as WorthQueryApplicationOutputCardinality>::CARDINALITY,
+        );
 
-impl action::Sealed for WorthQueryCreateOutput {}
-impl WorthQueryApplicationOutputAction for WorthQueryCreateOutput {
-    const POSTURE: ApplicationMutationOutputPosture = ApplicationMutationOutputPosture::Create;
-}
-
-impl action::Sealed for WorthQueryRetireOutput {}
-impl WorthQueryApplicationOutputAction for WorthQueryRetireOutput {
-    const POSTURE: ApplicationMutationOutputPosture = ApplicationMutationOutputPosture::Retire;
-}
-
-macro_rules! fixed_output_role_token {
-    ($(#[$doc:meta])* $token:ident, $cardinality:ident) => {
-        $(#[$doc])*
-        pub struct $token<Binding, Entity, Action> {
-            name: &'static str,
-            entity: &'static str,
-            _marker: PhantomData<fn() -> (Binding, Entity, Action)>,
-        }
-
-        impl<Binding, Entity, Action> $token<Binding, Entity, Action>
-        where
-            Action: WorthQueryApplicationOutputAction,
-        {
-            /// Declare the role `name` for `Entity` in `Schema`. List the
-            /// token's [`Self::descriptor`] in the binding's output contract.
-            pub const fn for_entity<Schema>(name: &'static str) -> Self
-            where
-                Schema: ApplicationSchema,
-                Entity: ApplicationEntityMarkerIdentity<Schema>,
-            {
-                Self {
-                    name,
-                    entity: Entity::IDENTIFIER,
-                    _marker: PhantomData,
+    const DECLARED: () = {
+        let used = <Role as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR;
+        let roles = <Role::Contract as ApplicationMutationOutputContract<Role::Schema>>::ROLES;
+        let mut index = 0;
+        let mut declared = false;
+        while index < roles.len() {
+            let role = roles[index];
+            if same_text(role.name(), used.name()) {
+                if !same_text(role.entity(), used.entity()) {
+                    panic!("the output role is declared for a different entity");
                 }
+                if ApplicationMutationOutputPostureSet::one(role.posture()).bits()
+                    != ApplicationMutationOutputPostureSet::one(used.posture()).bits()
+                {
+                    panic!("the output role is declared with a different posture");
+                }
+                if role.cardinality().admits_absence() != used.cardinality().admits_absence() {
+                    panic!("the output role is declared with a different cardinality");
+                }
+                declared = true;
             }
-
-            /// The installed form of this declaration, for the output
-            /// contract's `ROLES`.
-            pub const fn descriptor(&self) -> ApplicationMutationOutputRoleDescriptor {
-                ApplicationMutationOutputRoleDescriptor::declared(
-                    self.name,
-                    self.entity,
-                    Action::POSTURE,
-                    ApplicationMutationOutputRoleCardinality::$cardinality,
-                )
-            }
+            index += 1;
         }
-
-        impl<Binding, Entity, Action> $token<Binding, Entity, Action> {
-            pub const fn name(&self) -> &'static str {
-                self.name
-            }
-        }
-
-        impl<Binding, Entity, Action> Clone for $token<Binding, Entity, Action> {
-            fn clone(&self) -> Self {
-                *self
-            }
-        }
-
-        impl<Binding, Entity, Action> Copy for $token<Binding, Entity, Action> {}
-
-        impl<Binding, Entity, Action> PartialEq for $token<Binding, Entity, Action> {
-            fn eq(&self, other: &Self) -> bool {
-                self.name == other.name && self.entity == other.entity
-            }
-        }
-
-        impl<Binding, Entity, Action> Eq for $token<Binding, Entity, Action> {}
-
-        impl<Binding, Entity, Action> fmt::Debug for $token<Binding, Entity, Action> {
-            fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-                formatter
-                    .debug_struct(stringify!($token))
-                    .field("name", &self.name)
-                    .field("entity", &self.entity)
-                    .finish()
-            }
+        if !declared {
+            panic!("the output role is not declared in its contract's ROLES");
         }
     };
 }
 
-fixed_output_role_token!(
-    /// The declaration of a fixed output role every commit binds exactly
-    /// once. The name describes correspondence; it never supplies or
-    /// reconstructs an entity identity. Reading through it yields the entity
-    /// itself.
-    ///
-    /// A token comes only from its declaration, never from a bare name:
-    ///
-    /// ```compile_fail,E0599
-    /// use worth_query_declaration::facade::application_operation::{
-    ///     WorthQueryApplicationOutputRole, WorthQueryCreateOutput,
-    /// };
-    ///
-    /// let _ = WorthQueryApplicationOutputRole::<(), (), WorthQueryCreateOutput>::from_static("created");
-    /// ```
-    ///
-    /// ```compile_fail,E0599
-    /// use worth_query_declaration::facade::application_operation::{
-    ///     WorthQueryApplicationOutputRole, WorthQueryCreateOutput,
-    /// };
-    ///
-    /// let _ = WorthQueryApplicationOutputRole::<(), (), WorthQueryCreateOutput>::try_new("created");
-    /// ```
-    ///
-    /// An at-most-one declaration is not an exactly-one token:
-    ///
-    /// ```compile_fail,E0308
-    /// use worth_query_declaration::facade::application_operation::{
-    ///     WorthQueryApplicationOptionalOutputRole, WorthQueryApplicationOutputRole,
-    ///     WorthQueryCreateOutput,
-    /// };
-    /// use worth_query_declaration::facade::application_schema::{
-    ///     ApplicationEntityMarkerIdentity, ApplicationSchema,
-    /// };
-    ///
-    /// const fn closing<Schema, Entity>() -> WorthQueryApplicationOutputRole<(), Entity, WorthQueryCreateOutput>
-    /// where
-    ///     Schema: ApplicationSchema,
-    ///     Entity: ApplicationEntityMarkerIdentity<Schema>,
-    /// {
-    ///     WorthQueryApplicationOptionalOutputRole::for_entity::<Schema>("closing")
-    /// }
-    /// ```
-    ///
-    /// Declaring a role and listing it is ordinary:
-    ///
-    /// ```
-    /// use worth_query_declaration::facade::application_operation::{
-    ///     ApplicationMutationOutputRoleCardinality, ApplicationMutationOutputRoleDescriptor,
-    ///     WorthQueryApplicationOutputRole, WorthQueryCreateOutput,
-    /// };
-    /// use worth_query_declaration::facade::application_schema::{
-    ///     ApplicationEntityMarkerIdentity, ApplicationSchema,
-    /// };
-    ///
-    /// const fn anchor<Schema, Entity>() -> WorthQueryApplicationOutputRole<(), Entity, WorthQueryCreateOutput>
-    /// where
-    ///     Schema: ApplicationSchema,
-    ///     Entity: ApplicationEntityMarkerIdentity<Schema>,
-    /// {
-    ///     WorthQueryApplicationOutputRole::for_entity::<Schema>("anchor")
-    /// }
-    ///
-    /// fn listed<Schema, Entity>() -> ApplicationMutationOutputRoleDescriptor
-    /// where
-    ///     Schema: ApplicationSchema,
-    ///     Entity: ApplicationEntityMarkerIdentity<Schema>,
-    /// {
-    ///     let descriptor = anchor::<Schema, Entity>().descriptor();
-    ///     assert_eq!(descriptor.cardinality(), ApplicationMutationOutputRoleCardinality::ExactlyOne);
-    ///     descriptor
-    /// }
-    /// ```
-    WorthQueryApplicationOutputRole,
-    ExactlyOne
-);
-
-fixed_output_role_token!(
-    /// The declaration of a fixed output role a commit binds at most once.
-    /// Reading through it yields `Option`, so an absent role is a value,
-    /// never a denial.
-    WorthQueryApplicationOptionalOutputRole,
-    AtMostOne
-);
+/// Byte equality usable in a const context.
+const fn same_text(left: &str, right: &str) -> bool {
+    let left = left.as_bytes();
+    let right = right.as_bytes();
+    if left.len() != right.len() {
+        return false;
+    }
+    let mut index = 0;
+    while index < left.len() {
+        if left[index] != right[index] {
+            return false;
+        }
+        index += 1;
+    }
+    true
+}

@@ -56,7 +56,10 @@ pub struct WorthQueryApplicationInvariantProjectionReader<'runtime, Schema> {
             std::any::TypeId,
             worth_relational::facade::identity::EntityId,
         ),
-        Vec<Arc<super::super::WorthQueryApplicationOutputCorrespondence>>,
+        Vec<(
+            Arc<super::super::WorthQueryApplicationOutputCorrespondence>,
+            String,
+        )>,
     >,
     pub(super) dependent_source_facts:
         BTreeMap<String, super::super::application_attempt::WorthQueryApplicationObservedFact>,

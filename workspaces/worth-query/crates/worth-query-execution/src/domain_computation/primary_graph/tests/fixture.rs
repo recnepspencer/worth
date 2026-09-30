@@ -138,8 +138,8 @@ mod operation_contracts;
 #[path = "fixture/optional_output_binding.rs"]
 mod optional_output_binding;
 pub(super) use optional_output_binding::{
-    OptionalOutputInput, OptionalOutputMutationBinding, OptionalOutputOperation,
-    OptionalOutputPlan, COMPANION_AS_REQUIRED_OUTPUT, COMPANION_OUTPUT, SUBJECT_OUTPUT,
+    OptionalCompanion, OptionalOutputInput, OptionalOutputMutationBinding, OptionalOutputOperation,
+    OptionalOutputPlan, OptionalOutputs, OptionalSubject,
 };
 #[path = "fixture/program_required_binding.rs"]
 mod program_required_binding;

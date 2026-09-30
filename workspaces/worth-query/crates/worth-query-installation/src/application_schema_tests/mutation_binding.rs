@@ -6,7 +6,7 @@ use worth_query_declaration::facade::{
         ApplicationMutationFieldScope, ApplicationMutationOutputContract,
         ApplicationMutationOutputPostureSet, ApplicationMutationOutputRoleDescriptor,
         ApplicationMutationOutputRoleFamilyDescriptor, NoApplicationMutationSource,
-        WorthQueryApplicationOutputRoleFamily,
+        WorthQueryApplicationDeclaredOutputRoleFamily, WorthQueryApplicationOutputRoleFamily,
     },
     application_schema::{
         ApplicationFieldMarkerIdentity, ApplicationFieldPresence,
@@ -28,33 +28,37 @@ struct ChangedScopeField;
 struct MutationOutputFamilies;
 struct ChangedMutationOutputFamilies;
 
-const OUTPUT: WorthQueryApplicationOutputRoleFamily<
-    MutationOutputFamilies,
-    FixtureEntity<MutationSchema>,
-> = WorthQueryApplicationOutputRoleFamily::for_entity::<MutationSchema>(
-    "output.",
-    ApplicationMutationOutputPostureSet::ALL,
-    1,
-);
-const CHANGED_OUTPUT: WorthQueryApplicationOutputRoleFamily<
-    ChangedMutationOutputFamilies,
-    FixtureEntity<MutationSchema>,
-> = WorthQueryApplicationOutputRoleFamily::for_entity::<MutationSchema>(
-    "changed-output.",
-    ApplicationMutationOutputPostureSet::ALL,
-    1,
-);
+struct OutputFamily;
+struct ChangedOutputFamily;
+
+impl WorthQueryApplicationOutputRoleFamily for OutputFamily {
+    type Schema = MutationSchema;
+    type Contract = MutationOutputFamilies;
+    type Entity = FixtureEntity<MutationSchema>;
+    const PREFIX: &'static str = "output.";
+    const POSTURES: ApplicationMutationOutputPostureSet = ApplicationMutationOutputPostureSet::ALL;
+    const MINIMUM: usize = 1;
+}
+
+impl WorthQueryApplicationOutputRoleFamily for ChangedOutputFamily {
+    type Schema = MutationSchema;
+    type Contract = ChangedMutationOutputFamilies;
+    type Entity = FixtureEntity<MutationSchema>;
+    const PREFIX: &'static str = "changed-output.";
+    const POSTURES: ApplicationMutationOutputPostureSet = ApplicationMutationOutputPostureSet::ALL;
+    const MINIMUM: usize = 1;
+}
 
 impl ApplicationMutationOutputContract<MutationSchema> for MutationOutputFamilies {
     const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] = &[];
     const ROLE_FAMILIES: &'static [ApplicationMutationOutputRoleFamilyDescriptor] =
-        &[OUTPUT.descriptor()];
+        &[<OutputFamily as WorthQueryApplicationDeclaredOutputRoleFamily>::DESCRIPTOR];
 }
 
 impl ApplicationMutationOutputContract<MutationSchema> for ChangedMutationOutputFamilies {
     const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] = &[];
     const ROLE_FAMILIES: &'static [ApplicationMutationOutputRoleFamilyDescriptor] =
-        &[CHANGED_OUTPUT.descriptor()];
+        &[<ChangedOutputFamily as WorthQueryApplicationDeclaredOutputRoleFamily>::DESCRIPTOR];
 }
 
 impl ApplicationSchema for MutationSchema {

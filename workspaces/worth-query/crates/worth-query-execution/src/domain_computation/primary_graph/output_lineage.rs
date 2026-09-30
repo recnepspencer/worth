@@ -44,7 +44,7 @@ pub(crate) struct WorthQueryApplicationOutputLineage {
     partition_index: partition_index::OutputPartitionIndex,
     origins: HashMap<worth_runtime_world::facade::ProductBranchIncarnation, ProductCoordinate>,
     live_occurrences: HashSet<worth_runtime_world::facade::ProductBranchIncarnation>,
-    output_families: HashMap<String, Vec<TypeId>>,
+    output_families: HashMap<String, Vec<(TypeId, String)>>,
 }
 
 struct RecordedOutput {
@@ -94,6 +94,8 @@ pub(super) struct WorthQueryPriorOutputBindingResolution {
 
 pub(super) struct WorthQueryCurrentOutputCandidate {
     pub(super) correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
+    /// The role the producer of this correspondence outputs to its family.
+    pub(super) output_role: String,
     pub(super) observed_source_facts:
         Arc<[super::application_attempt::WorthQueryApplicationObservedFact]>,
 }
@@ -116,7 +118,10 @@ pub(super) struct WorthQueryCurrentOutputFamilyResolution {
 }
 
 impl WorthQueryApplicationOutputLineage {
-    pub(super) fn install_output_families(&mut self, families: BTreeMap<String, Vec<TypeId>>) {
+    pub(super) fn install_output_families(
+        &mut self,
+        families: BTreeMap<String, Vec<(TypeId, String)>>,
+    ) {
         assert!(self.output_families.is_empty());
         self.output_families.extend(families);
     }
@@ -232,7 +237,7 @@ impl WorthQueryApplicationOutputLineage {
         };
         let mut candidates = Vec::new();
         let mut source_lookups = 0_usize;
-        for output_binding in bindings {
+        for (output_binding, output_role) in bindings {
             let source = SemanticSource {
                 runtime_authority,
                 schema: schema.clone(),
@@ -267,6 +272,7 @@ impl WorthQueryApplicationOutputLineage {
                 {
                     candidates.push(WorthQueryCurrentOutputCandidate {
                         correspondence: Arc::clone(&recorded.correspondence),
+                        output_role: output_role.clone(),
                         observed_source_facts: Arc::clone(
                             recorded
                                 .observed_source_facts

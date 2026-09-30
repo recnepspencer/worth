@@ -176,6 +176,7 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
     let correspondence = Arc::new(
         WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
             std::any::TypeId::of::<RestoredOutputBinding>(),
+            std::any::TypeId::of::<()>(),
             std::collections::BTreeSet::new(),
             Vec::new(),
             |_| None,

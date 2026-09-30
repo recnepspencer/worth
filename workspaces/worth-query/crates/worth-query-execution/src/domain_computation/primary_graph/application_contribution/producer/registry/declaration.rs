@@ -2,6 +2,7 @@ use std::any::TypeId;
 
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationOutputContract,
+    WorthQueryApplicationDeclaredOutputRole, WorthQueryApplicationOutputRole,
 };
 use worth_query_declaration::facade::application_query::ApplicationQueryBinding;
 use worth_query_installation::facade::ApplicationSchema;
@@ -23,6 +24,9 @@ impl DeclaredProducerBinding {
         Schema: ApplicationSchema,
         Binding: WorthQueryApplicationProducerBinding<Schema>,
     {
+        // A producer whose output role its operation's contract does not
+        // declare fails to compile here, where the binding is registered.
+        const { <Binding::OutputRole as WorthQueryApplicationDeclaredOutputRole>::DECLARED };
         Self {
             owner: owner.to_owned(),
             identity: Binding::IDENTITY.to_owned(),
@@ -36,7 +40,7 @@ impl DeclaredProducerBinding {
             output_role_families:
                 <Binding::Operation as ApplicationMutationBinding<Schema>>::Output::ROLE_FAMILIES
                     .to_vec(),
-            output_role: Binding::OUTPUT_ROLE.to_owned(),
+            output_role: <Binding::OutputRole as WorthQueryApplicationOutputRole>::NAME.to_owned(),
             operation: Binding::Operation::IDENTITY.to_owned(),
             provider_identity: Binding::Provider::SEMANTIC_IDENTITY.to_owned(),
             applicability: Binding::APPLICABILITY.to_vec(),
@@ -49,6 +53,9 @@ impl DeclaredProducerBinding {
                 <Binding::OutputFamily as WorthQueryProducerOutputFamily<Schema>>::Source,
             >(),
             operation_binding_type: TypeId::of::<Binding::Operation>(),
+            output_contract_type: TypeId::of::<
+                <Binding::Operation as ApplicationMutationBinding<Schema>>::Output,
+            >(),
             provider_type: TypeId::of::<Binding::Provider>(),
         }
     }
@@ -85,6 +92,7 @@ impl DeclaredProducerBinding {
             && self.binding_type == expected.binding_type
             && self.source_type == expected.source_type
             && self.operation_binding_type == expected.operation_binding_type
+            && self.output_contract_type == expected.output_contract_type
             && self.provider_type == expected.provider_type
     }
 }

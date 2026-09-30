@@ -1,20 +1,17 @@
 //! A mutation whose output contract declares one exactly-one role and one
 //! at-most-one role. The input names which roles the handler binds, so the
-//! same installed binding shows an optional output left unbound, bound once,
-//! bound twice, and bound through the wrong token, and a required output left
-//! unbound.
+//! same installed binding shows an optional output left unbound, bound once
+//! and bound twice, and a required output left unbound.
 
 use super::*;
 use crate::domain_computation::primary_graph::application_entry::mutation::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
 };
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationOptionalOutputRole, WorthQueryApplicationOutputRole,
-    WorthQueryPreserveOutput,
-};
 use worth_query_declaration::facade::application_operation::{
     ApplicationCandidateRequirements, ApplicationMutationBinding,
     ApplicationMutationOutputContract, ApplicationMutationOutputRoleDescriptor,
+    WorthQueryApplicationDeclaredOutputRole, WorthQueryApplicationOutputRole,
+    WorthQueryAtMostOneOutput, WorthQueryExactlyOneOutput, WorthQueryPreserveOutput,
 };
 use worth_query_declaration::facade::application_schema::{
     ApplicationSchemaDeclarationBuilder, NoApplicationUnit, ReadWrite, U64ApplicationValueBinding,
@@ -26,8 +23,6 @@ pub(in crate::domain_computation::primary_graph) enum OptionalOutputPlan {
     RequiredOnly,
     RequiredAndOptional,
     RequiredAndOptionalTwice,
-    /// Binds the at-most-one role through an exactly-one token.
-    RequiredAndOptionalAsRequired,
     OptionalOnly,
 }
 
@@ -54,33 +49,36 @@ worth_query_declaration::worth_query_operation_reads!(OptionalOutputOperation =>
 worth_query_declaration::worth_query_operation_writes!(OptionalOutputOperation => [AccountStatus]);
 
 /// The role every completed mutation binds exactly once.
-pub(in crate::domain_computation::primary_graph) const SUBJECT_OUTPUT:
-    WorthQueryApplicationOutputRole<
-        OptionalOutputMutationBinding,
-        Account,
-        WorthQueryPreserveOutput,
-    > = WorthQueryApplicationOutputRole::for_entity::<IdentityExecutionSchema>("subject");
+pub(in crate::domain_computation::primary_graph) struct OptionalSubject;
+
+impl WorthQueryApplicationOutputRole for OptionalSubject {
+    type Schema = IdentityExecutionSchema;
+    type Contract = OptionalOutputs;
+    type Entity = Account;
+    type Action = WorthQueryPreserveOutput;
+    type Cardinality = WorthQueryExactlyOneOutput;
+    const NAME: &'static str = "subject";
+}
+
 /// The role a completed mutation binds at most once.
-pub(in crate::domain_computation::primary_graph) const COMPANION_OUTPUT:
-    WorthQueryApplicationOptionalOutputRole<
-        OptionalOutputMutationBinding,
-        Account,
-        WorthQueryPreserveOutput,
-    > = WorthQueryApplicationOptionalOutputRole::for_entity::<IdentityExecutionSchema>("companion");
-/// A stray exactly-one declaration of the at-most-one role's name. The output
-/// contract never lists it, so Query must refuse it by cardinality.
-pub(in crate::domain_computation::primary_graph) const COMPANION_AS_REQUIRED_OUTPUT:
-    WorthQueryApplicationOutputRole<
-        OptionalOutputMutationBinding,
-        Account,
-        WorthQueryPreserveOutput,
-    > = WorthQueryApplicationOutputRole::for_entity::<IdentityExecutionSchema>("companion");
+pub(in crate::domain_computation::primary_graph) struct OptionalCompanion;
+
+impl WorthQueryApplicationOutputRole for OptionalCompanion {
+    type Schema = IdentityExecutionSchema;
+    type Contract = OptionalOutputs;
+    type Entity = Account;
+    type Action = WorthQueryPreserveOutput;
+    type Cardinality = WorthQueryAtMostOneOutput;
+    const NAME: &'static str = "companion";
+}
 
 pub(in crate::domain_computation::primary_graph) struct OptionalOutputs;
 
 impl ApplicationMutationOutputContract<IdentityExecutionSchema> for OptionalOutputs {
-    const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] =
-        &[SUBJECT_OUTPUT.descriptor(), COMPANION_OUTPUT.descriptor()];
+    const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] = &[
+        <OptionalSubject as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR,
+        <OptionalCompanion as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR,
+    ];
 }
 
 worth_query_declaration::worth_query_mutation_binding!(
@@ -173,22 +171,17 @@ impl OperationHandler<IdentityExecutionSchema, OptionalOutputMutationBinding>
             OptionalOutputPlan::RequiredOnly => (true, 0),
             OptionalOutputPlan::RequiredAndOptional => (true, 1),
             OptionalOutputPlan::RequiredAndOptionalTwice => (true, 2),
-            OptionalOutputPlan::RequiredAndOptionalAsRequired => (true, 0),
             OptionalOutputPlan::OptionalOnly => (false, 1),
         };
-        let misnamed = decision.plan == OptionalOutputPlan::RequiredAndOptionalAsRequired;
         let bound = writer
             .resolve_entity(AccountStatus::reference(), decision.status.clone())
             .and_then(|account| {
                 writer.write_field(&account, AccountStatus::reference(), "reviewed".to_owned())?;
                 if required {
-                    writer.preserve_output(SUBJECT_OUTPUT, &account)?;
+                    writer.preserve_output::<OptionalSubject>(&account)?;
                 }
                 for _ in 0..optional {
-                    writer.preserve_output(COMPANION_OUTPUT, &account)?;
-                }
-                if misnamed {
-                    writer.preserve_output(COMPANION_AS_REQUIRED_OUTPUT, &account)?;
+                    writer.preserve_output::<OptionalCompanion>(&account)?;
                 }
                 Ok(())
             });

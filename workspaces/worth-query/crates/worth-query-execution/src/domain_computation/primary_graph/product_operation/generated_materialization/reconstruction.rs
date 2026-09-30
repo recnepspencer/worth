@@ -17,14 +17,13 @@ use worth_relational::facade::{
 };
 
 use super::WorthQuerySuspendedGeneratedOutput;
-use crate::domain_computation::primary_graph::application_attempt::fixed_output_role;
 use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationFixedOutputRole, WorthQueryApplicationOutputProjectionDenial,
-    WorthQueryApplicationProducerBinding, WorthQueryCreateOutput,
-    WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrimaryGraphLayout,
+    WorthQueryApplicationProducerBinding, WorthQueryPrimaryGraphApplicationRuntime,
+    WorthQueryPrimaryGraphLayout,
 };
 
 mod denial;
+mod output_roles;
 mod relations;
 
 use denial::reconstruction_failure;
@@ -207,41 +206,6 @@ where
             relations,
             _marker: PhantomData,
         }
-    }
-
-    /// Claim the generated entity behind one created role. An exactly-one
-    /// token yields the entity; an at-most-one token yields `Option`, `None`
-    /// when the suspended output left the role unbound, claiming nothing.
-    #[allow(clippy::type_complexity)]
-    pub fn entity<Role>(
-        &mut self,
-        role: Role,
-        entity: ApplicationEntityRef<Schema, Role::Entity>,
-    ) -> Result<
-        Role::Read<WorthQueryGeneratedEntity<Schema, Role::Entity>>,
-        WorthQueryGeneratedOutputReconstructionDenial,
-    >
-    where
-        Role: WorthQueryApplicationFixedOutputRole<
-            Binding = Producer::Operation,
-            Action = WorthQueryCreateOutput,
-        >,
-    {
-        let bound = self
-            .suspended
-            .correspondence()
-            .bound_entity(&role)
-            .map_err(|denial| match denial {
-                WorthQueryApplicationOutputProjectionDenial::CardinalityMismatch => {
-                    WorthQueryGeneratedOutputReconstructionDenial::OutputRoleCardinalityMismatch
-                }
-                _ => WorthQueryGeneratedOutputReconstructionDenial::MissingOutputRole,
-            })?;
-        let claimed = bound
-            .map(|output| self.claim_entity(output.entity_id(), entity))
-            .transpose()?;
-        Role::read(claimed, fixed_output_role::INTERNAL)
-            .ok_or(WorthQueryGeneratedOutputReconstructionDenial::MissingOutputRole)
     }
 
     fn claim_entity<Entity>(

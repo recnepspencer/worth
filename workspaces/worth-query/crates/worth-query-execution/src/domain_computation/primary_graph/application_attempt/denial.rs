@@ -37,9 +37,9 @@ pub enum WorthQueryApplicationAttemptDenialKind {
     DuplicateOutputRole,
     OutputRoleEntityMismatch,
     OutputRoleActionMismatch,
-    /// The role token's cardinality differs from the one the binding declares
-    /// for that role: an exactly-one token for an at-most-one role, or the
-    /// reverse.
+    /// The role's cardinality differs from the one the installed contract
+    /// records for it. A typed use cannot disagree with its contract, so this
+    /// guards the installed form as defense in depth.
     OutputRoleCardinalityMismatch,
     DuplicateEffectKey,
     ConflictingEffectStep,

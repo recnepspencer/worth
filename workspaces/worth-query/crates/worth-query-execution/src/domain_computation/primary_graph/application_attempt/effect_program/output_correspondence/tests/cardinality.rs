@@ -1,33 +1,26 @@
-//! A role token's cardinality decides the shape of every read, and a token
-//! whose cardinality differs from the declaration is refused on both sides.
+//! A role's cardinality decides the shape of every read. A use whose
+//! cardinality differs from the declaration cannot be written with a marker;
+//! its erased form, as a readmitted or portable role, is refused on both
+//! sides.
 
 use super::*;
-use worth_query_declaration::facade::application_operation::ApplicationMutationOutputPostureSet;
 
-const COMPANION: WorthQueryApplicationOptionalOutputRole<
-    Binding,
-    Entity,
-    WorthQueryPreserveOutput,
-> = WorthQueryApplicationOptionalOutputRole::for_entity::<Schema>("companion");
+/// The companion role read as exactly-one.
+fn companion_as_required() -> OutputRoleUse {
+    stray::<OptionalOutputs, Entity>(
+        "companion",
+        WorthQueryApplicationOutputPosture::Preserve,
+        Cardinality::ExactlyOne,
+    )
+}
 
-// Stray declarations: the binding declares neither, so each reaches Query only
-// as a token whose cardinality differs from the declared role of its name.
-const COMPANION_AS_REQUIRED: WorthQueryApplicationOutputRole<
-    Binding,
-    Entity,
-    WorthQueryPreserveOutput,
-> = WorthQueryApplicationOutputRole::for_entity::<Schema>("companion");
-const PRESERVED_AS_OPTIONAL: WorthQueryApplicationOptionalOutputRole<
-    Binding,
-    Entity,
-    WorthQueryPreserveOutput,
-> = WorthQueryApplicationOptionalOutputRole::for_entity::<Schema>("preserved");
-
-fn optional_candidate() -> WorthQueryApplicationOutputCorrespondenceCandidate {
-    let mut candidate = WorthQueryApplicationOutputCorrespondenceCandidate::default();
-    candidate.prepare_test_role(&PRESERVED, "entity");
-    candidate.prepare_test_role(&COMPANION, "entity");
-    candidate
+/// The exactly-one subject role read as at-most-one.
+fn subject_as_optional() -> OutputRoleUse {
+    stray::<OptionalOutputs, Entity>(
+        "preserved",
+        WorthQueryApplicationOutputPosture::Preserve,
+        Cardinality::AtMostOne,
+    )
 }
 
 #[test]
@@ -36,25 +29,37 @@ fn an_unbound_at_most_one_role_reads_as_none_and_a_bound_one_as_some() {
     let subject = EntityId::new(PartitionId::main(), 50, 1);
     let companion = EntityId::new(PartitionId::main(), 51, 1);
 
-    let mut absent = optional_candidate();
+    let mut absent = prepared::<OptionalOutputs>();
     absent
-        .bind(PRESERVED, &existing_handle(subject, &program), &program)
+        .bind(
+            OutputRoleUse::fixed::<Subject>(),
+            &existing_handle(subject, &program),
+            &program,
+        )
         .unwrap();
     let absent = absent.seal_with(|_| None);
-    assert!(absent.entity(COMPANION).unwrap().is_none());
-    assert_eq!(absent.entity(PRESERVED).unwrap().entity_id(), subject);
+    assert!(absent.entity::<Companion>().unwrap().is_none());
+    assert_eq!(absent.entity::<Subject>().unwrap().entity_id(), subject);
 
-    let mut present = optional_candidate();
+    let mut present = prepared::<OptionalOutputs>();
     present
-        .bind(PRESERVED, &existing_handle(subject, &program), &program)
+        .bind(
+            OutputRoleUse::fixed::<Subject>(),
+            &existing_handle(subject, &program),
+            &program,
+        )
         .unwrap();
     present
-        .bind(COMPANION, &existing_handle(companion, &program), &program)
+        .bind(
+            OutputRoleUse::fixed::<Companion>(),
+            &existing_handle(companion, &program),
+            &program,
+        )
         .unwrap();
     let present = present.seal_with(|_| None);
     assert_eq!(
         present
-            .entity(COMPANION)
+            .entity::<Companion>()
             .unwrap()
             .map(|output| output.entity_id()),
         Some(companion)
@@ -62,59 +67,54 @@ fn an_unbound_at_most_one_role_reads_as_none_and_a_bound_one_as_some() {
 }
 
 #[test]
-fn a_read_token_whose_cardinality_differs_from_the_declaration_is_refused() {
+fn a_read_whose_cardinality_differs_from_the_declaration_is_refused() {
     let program = Arc::new(());
-    let mut candidate = optional_candidate();
+    let mut candidate = prepared::<OptionalOutputs>();
     candidate
         .bind(
-            PRESERVED,
+            OutputRoleUse::fixed::<Subject>(),
             &existing_handle(EntityId::new(PartitionId::main(), 52, 1), &program),
             &program,
         )
         .unwrap();
     candidate
         .bind(
-            COMPANION,
+            OutputRoleUse::fixed::<Companion>(),
             &existing_handle(EntityId::new(PartitionId::main(), 53, 1), &program),
             &program,
         )
         .unwrap();
     let committed = candidate.seal_with(|_| None);
 
-    assert_eq!(
-        committed.entity(COMPANION_AS_REQUIRED).err(),
-        Some(WorthQueryApplicationOutputProjectionDenial::CardinalityMismatch)
-    );
-    assert_eq!(
-        committed.entity(PRESERVED_AS_OPTIONAL).err(),
-        Some(WorthQueryApplicationOutputProjectionDenial::CardinalityMismatch)
-    );
+    for role in [companion_as_required(), subject_as_optional()] {
+        assert_eq!(
+            committed.bound_entity(&role).err(),
+            Some(WorthQueryApplicationOutputProjectionDenial::CardinalityMismatch)
+        );
+    }
 }
 
 #[test]
-fn a_write_token_whose_cardinality_differs_from_the_declaration_is_refused() {
+fn a_write_whose_cardinality_differs_from_the_declaration_is_refused() {
     let program = Arc::new(());
     let existing = existing_handle(EntityId::new(PartitionId::main(), 54, 1), &program);
-    let mut candidate = optional_candidate();
-    candidate.prepare_test_family::<Binding>(
-        "member.",
-        ApplicationMutationOutputPostureSet::PRESERVE,
-        "entity",
-        0,
+    let mut candidate = prepared::<OptionalOutputs>();
+    let optional_member = stray::<OptionalOutputs, Entity>(
+        "member.one",
+        WorthQueryApplicationOutputPosture::Preserve,
+        Cardinality::AtMostOne,
     );
-    let optional_member = WorthQueryApplicationOptionalOutputRole::<
-        Binding,
-        Entity,
-        WorthQueryPreserveOutput,
-    >::for_entity::<Schema>("member.one");
 
-    for denial in [
-        candidate.bind(COMPANION_AS_REQUIRED, &existing, &program),
-        candidate.bind(PRESERVED_AS_OPTIONAL, &existing, &program),
-        candidate.bind(optional_member, &existing, &program),
+    for role in [
+        companion_as_required(),
+        subject_as_optional(),
+        optional_member,
     ] {
         assert_eq!(
-            denial.unwrap_err().kind(),
+            candidate
+                .bind(role, &existing, &program)
+                .unwrap_err()
+                .kind(),
             WorthQueryApplicationAttemptDenialKind::OutputRoleCardinalityMismatch
         );
     }
@@ -125,6 +125,7 @@ fn checkpoint_readmission_keeps_absence_a_value() {
     let entity = EntityId::new(PartitionId::main(), 55, 1);
     let readmitted = WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
         TypeId::of::<Binding>(),
+        TypeId::of::<OptionalOutputs>(),
         BTreeSet::from(["companion".to_owned()]),
         vec![WorthQueryCheckpointOutputRole {
             role: "preserved".into(),
@@ -136,10 +137,14 @@ fn checkpoint_readmission_keeps_absence_a_value() {
     )
     .unwrap();
 
-    assert!(readmitted.entity(COMPANION).unwrap().is_none());
-    assert_eq!(readmitted.entity(PRESERVED).unwrap().entity_id(), entity);
+    assert!(readmitted.entity::<Companion>().unwrap().is_none());
+    assert_eq!(readmitted.entity::<Subject>().unwrap().entity_id(), entity);
     assert_eq!(
-        readmitted.entity(COMPANION_AS_REQUIRED).err(),
+        readmitted.bound_entity(&companion_as_required()).err(),
         Some(WorthQueryApplicationOutputProjectionDenial::CardinalityMismatch)
+    );
+    assert_eq!(
+        readmitted.entity::<Preserved>().err(),
+        Some(WorthQueryApplicationOutputProjectionDenial::ForeignContract)
     );
 }

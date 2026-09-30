@@ -3,10 +3,12 @@ use super::super::WorthQueryApplicationOutputProjectionDenial;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryPriorOutputDenialKind {
     Unavailable,
-    UndeclaredFamily,
+    /// The selected correspondence was committed under a different output
+    /// contract than the role's.
+    ForeignContract,
     MissingRole,
-    /// The role token's cardinality differs from the one the prior binding
-    /// declares for that role.
+    /// The role's cardinality differs from the one the prior binding's
+    /// installed contract records for it.
     CardinalityMismatch,
     ActionMismatch,
     EntityMismatch,
@@ -45,7 +47,9 @@ impl WorthQueryPriorOutputDenial {
         denial: WorthQueryApplicationOutputProjectionDenial,
     ) -> Self {
         let kind = match denial {
-            WorthQueryApplicationOutputProjectionDenial::MissingRole => {
+            // A member name that fails validation cannot have been bound.
+            WorthQueryApplicationOutputProjectionDenial::MissingRole
+            | WorthQueryApplicationOutputProjectionDenial::InvalidMemberSuffix(_) => {
                 WorthQueryPriorOutputDenialKind::MissingRole
             }
             WorthQueryApplicationOutputProjectionDenial::CardinalityMismatch => {
@@ -53,6 +57,9 @@ impl WorthQueryPriorOutputDenial {
             }
             WorthQueryApplicationOutputProjectionDenial::ForeignBinding => {
                 WorthQueryPriorOutputDenialKind::Unavailable
+            }
+            WorthQueryApplicationOutputProjectionDenial::ForeignContract => {
+                WorthQueryPriorOutputDenialKind::ForeignContract
             }
             WorthQueryApplicationOutputProjectionDenial::ActionMismatch => {
                 WorthQueryPriorOutputDenialKind::ActionMismatch

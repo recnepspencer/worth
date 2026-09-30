@@ -1,10 +1,12 @@
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationIntent, ApplicationMutationScopeResolution,
-    ApplicationQueryMutationSource,
+    ApplicationQueryMutationSource, WorthQueryApplicationOutputRole, WorthQueryExactlyOneOutput,
 };
 use worth_query_declaration::facade::application_query::ApplicationQueryBinding;
-use worth_query_declaration::facade::application_schema::ApplicationInvariantExecutionPoint;
 use worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding;
+use worth_query_declaration::facade::application_schema::{
+    ApplicationEntityMarkerIdentity, ApplicationInvariantExecutionPoint,
+};
 use worth_query_installation::facade::ApplicationSchema;
 
 mod demand;
@@ -72,6 +74,9 @@ where
     Schema: ApplicationSchema,
 {
     type Source: ApplicationQueryBinding<Schema>;
+    /// The entity every producer of this family outputs. A producer whose
+    /// output role names another entity fails to compile.
+    type Entity: ApplicationEntityMarkerIdentity<Schema> + 'static;
 
     const IDENTITY: &'static str;
     const SUPPORTED: &'static [WorthQueryProducerApplicability];
@@ -219,9 +224,17 @@ where
     type Operation: ApplicationMutationBinding<Schema>;
     type OutputFamily: WorthQueryProducerOutputFamily<Schema>;
     type Provider: WorthQueryApplicationProducerProvider<Schema, Self>;
+    /// The fixed role of the operation's output contract that every commit
+    /// binds to the family's entity. A role the contract does not declare,
+    /// an at-most-one role, or a role of another entity fails to compile.
+    type OutputRole: WorthQueryApplicationOutputRole<
+        Schema = Schema,
+        Contract = <Self::Operation as ApplicationMutationBinding<Schema>>::Output,
+        Entity = <Self::OutputFamily as WorthQueryProducerOutputFamily<Schema>>::Entity,
+        Cardinality = WorthQueryExactlyOneOutput,
+    >;
 
     const IDENTITY: &'static str;
-    const OUTPUT_ROLE: &'static str;
     const APPLICABILITY: &'static [WorthQueryProducerApplicability];
     const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement];
     const RESOURCE_POLICY: &'static str;

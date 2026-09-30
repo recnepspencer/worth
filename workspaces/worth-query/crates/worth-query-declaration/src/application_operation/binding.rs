@@ -29,10 +29,11 @@ pub use output::{
     NoApplicationMutationOutputs,
 };
 pub use output_role::{
-    WorthQueryApplicationOptionalOutputRole, WorthQueryApplicationOutputAction,
-    WorthQueryApplicationOutputMemberRole, WorthQueryApplicationOutputRole,
-    WorthQueryApplicationOutputRoleFamily, WorthQueryApplicationOutputRoleNameDenial,
-    WorthQueryCreateOutput, WorthQueryPreserveOutput, WorthQueryRetireOutput,
+    WorthQueryApplicationDeclaredOutputRole, WorthQueryApplicationDeclaredOutputRoleFamily,
+    WorthQueryApplicationOutputAction, WorthQueryApplicationOutputCardinality,
+    WorthQueryApplicationOutputRole, WorthQueryApplicationOutputRoleFamily,
+    WorthQueryApplicationOutputRoleNameDenial, WorthQueryAtMostOneOutput, WorthQueryCreateOutput,
+    WorthQueryExactlyOneOutput, WorthQueryPreserveOutput, WorthQueryRetireOutput,
 };
 pub use portable_description::{
     ApplicationMutationDescription, ApplicationMutationDescriptionParts,

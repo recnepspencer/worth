@@ -263,19 +263,14 @@ where
     }
 }
 
-/// A producer's readiness output is a declared family member or a fixed role
-/// every commit binds; an at-most-one role may be absent, so it cannot be one.
+/// A producer's readiness output is a fixed role every commit binds. The
+/// output-role type makes any other producer fail to compile; this check
+/// guards the erased declaration.
 fn producer_output_role_is_declared(binding: &DeclaredProducerBinding) -> bool {
     binding
         .output_role_descriptors
         .iter()
         .any(|role| role.name() == binding.output_role && !role.cardinality().admits_absence())
-        || binding.output_role_families.iter().any(|family| {
-            binding
-                .output_role
-                .strip_prefix(family.prefix())
-                .is_some_and(|member| !member.is_empty())
-        })
 }
 
 fn validate_identity(identity: &str) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {

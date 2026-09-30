@@ -76,9 +76,9 @@ impl ApplicationMutationOutputRoleCardinality {
     }
 }
 
-/// The installed form of one fixed output role. Only an output-role token
-/// builds one, through its `descriptor`, so the roles a binding lists are
-/// exactly the tokens it declares.
+/// The installed form of one fixed output role. Only a role marker builds one,
+/// through the derived `WorthQueryApplicationDeclaredOutputRole::DESCRIPTOR`,
+/// so the roles a contract lists are exactly the markers that declare them.
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct ApplicationMutationOutputRoleDescriptor {
     name: &'static str,
@@ -119,8 +119,9 @@ impl ApplicationMutationOutputRoleDescriptor {
     }
 }
 
-/// The installed form of one output-role family. Only a family token builds
-/// one, through its `descriptor`.
+/// The installed form of one output-role family. Only a family marker builds
+/// one, through the derived
+/// `WorthQueryApplicationDeclaredOutputRoleFamily::DESCRIPTOR`.
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct ApplicationMutationOutputRoleFamilyDescriptor {
     prefix: &'static str,
@@ -161,12 +162,14 @@ impl ApplicationMutationOutputRoleFamilyDescriptor {
     }
 }
 
-/// Finite semantic output inventory for one mutation binding.
+/// Finite semantic output inventory of the mutation bindings whose `Output`
+/// is this contract.
 ///
-/// `ROLES` lists the `descriptor()` of each fixed output-role token the
-/// binding declares, and `ROLE_FAMILIES` the `descriptor()` of each family
-/// token. The tokens are the declarations, so a listed role's cardinality,
-/// posture and entity are the ones its token reads and writes with.
+/// `ROLES` lists the `DESCRIPTOR` of each fixed output-role marker declared
+/// for the contract, and `ROLE_FAMILIES` the `DESCRIPTOR` of each family
+/// marker. Every Query use site of a marker checks at compile time that the
+/// contract lists it with the same name, entity, posture and cardinality, so
+/// a listed role reads and writes exactly as declared.
 pub trait ApplicationMutationOutputContract<Schema>: 'static
 where
     Schema: ApplicationSchema,

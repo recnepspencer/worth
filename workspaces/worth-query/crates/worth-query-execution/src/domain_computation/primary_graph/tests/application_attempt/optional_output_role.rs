@@ -1,16 +1,19 @@
 //! An at-most-one output role through the installed mutation handler lane:
 //! the handler may leave it unbound or bind it once, both commit and read back
-//! as `None` and `Some`, a second binding or a binding through an exactly-one
-//! token is refused, and an exactly-one role left unbound is still missing.
+//! as `None` and `Some`, a second binding is refused, and an exactly-one role
+//! left unbound is still missing. Naming the role with another cardinality
+//! fails to compile; only its erased form, as a readmitted role takes, reaches
+//! Query, and the committed correspondence refuses it.
 
 use super::{authenticated_principal, installed_authorization_world, live_scope, resolved_account};
+use crate::domain_computation::primary_graph::application_attempt::OutputRoleUse;
 use crate::domain_computation::primary_graph::application_entry::mutation::{
     HandlerResult, WorthQueryCompletedMutationCandidate,
 };
 use crate::domain_computation::primary_graph::tests::fixture::{
-    AuthorizationWorld, IdentityExecutionSchema, OptionalOutputInput,
-    OptionalOutputMutationBinding, OptionalOutputOperation, OptionalOutputPlan,
-    COMPANION_AS_REQUIRED_OUTPUT, COMPANION_OUTPUT, SUBJECT_OUTPUT,
+    Account, AuthorizationWorld, IdentityExecutionSchema, OptionalCompanion, OptionalOutputInput,
+    OptionalOutputMutationBinding, OptionalOutputOperation, OptionalOutputPlan, OptionalOutputs,
+    OptionalSubject,
 };
 use crate::domain_computation::primary_graph::{
     MutationHandlerExecutionDenial, WorthQueryApplicationAttemptDenial,
@@ -18,17 +21,21 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationOutputCorrespondence,
     WorthQueryApplicationOutputProjectionDenial,
 };
-use worth_query_declaration::facade::application_operation::ApplicationMutationIdentities;
+use worth_query_declaration::facade::application_operation::{
+    ApplicationMutationIdentities, ApplicationMutationOutputPosture,
+    ApplicationMutationOutputRoleCardinality,
+};
+use worth_query_declaration::facade::application_schema::ApplicationEntityMarkerIdentity;
 use worth_query_declaration::facade::application_schema::TypedMutationPreconditions;
 
 #[test]
 fn an_unbound_at_most_one_role_commits_without_that_output() {
     let outputs = committed_outputs(OptionalOutputPlan::RequiredOnly);
 
-    assert!(outputs.entity(SUBJECT_OUTPUT).is_ok());
+    assert!(outputs.entity::<OptionalSubject>().is_ok());
     assert!(
         outputs
-            .entity(COMPANION_OUTPUT)
+            .entity::<OptionalCompanion>()
             .expect("an absent optional output is a value, not a denial")
             .is_none(),
         "the unbound optional role reads as None"
@@ -46,10 +53,10 @@ fn a_bound_at_most_one_role_commits_with_that_output() {
 
     assert_eq!(
         outputs
-            .entity(COMPANION_OUTPUT)
+            .entity::<OptionalCompanion>()
             .unwrap()
             .map(|companion| companion.entity_id()),
-        Some(outputs.entity(SUBJECT_OUTPUT).unwrap().entity_id())
+        Some(outputs.entity::<OptionalSubject>().unwrap().entity_id())
     );
     assert_ne!(
         outputs.workflow_content_identity(),
@@ -77,37 +84,28 @@ fn a_second_binding_of_an_at_most_one_role_is_refused() {
 }
 
 #[test]
-fn an_optional_role_read_through_an_exactly_one_token_is_refused() {
+fn an_optional_role_read_as_exactly_one_is_refused() {
+    let companion_as_required = OutputRoleUse {
+        name: "companion".to_owned(),
+        posture: ApplicationMutationOutputPosture::Preserve,
+        cardinality: ApplicationMutationOutputRoleCardinality::ExactlyOne,
+        entity_name:
+            <Account as ApplicationEntityMarkerIdentity<IdentityExecutionSchema>>::IDENTIFIER,
+        entity_type: std::any::TypeId::of::<Account>(),
+        contract_type: std::any::TypeId::of::<OptionalOutputs>(),
+    };
     for plan in [
         OptionalOutputPlan::RequiredOnly,
         OptionalOutputPlan::RequiredAndOptional,
     ] {
         assert_eq!(
             committed_outputs(plan)
-                .entity(COMPANION_AS_REQUIRED_OUTPUT)
+                .bound_entity(&companion_as_required)
                 .err(),
             Some(WorthQueryApplicationOutputProjectionDenial::CardinalityMismatch),
             "{plan:?}"
         );
     }
-}
-
-#[test]
-fn an_optional_role_bound_through_an_exactly_one_token_is_refused() {
-    let Err(MutationHandlerExecutionDenial::Handler(denial)) =
-        executed(OptionalOutputPlan::RequiredAndOptionalAsRequired)
-    else {
-        panic!("an at-most-one role bound through an exactly-one token must be refused");
-    };
-    let denial = denial
-        .downcast::<WorthQueryApplicationAttemptDenial>()
-        .expect("the refusal is the attempt's typed denial");
-
-    assert_eq!(
-        denial.kind(),
-        WorthQueryApplicationAttemptDenialKind::OutputRoleCardinalityMismatch
-    );
-    assert_eq!(denial.subject(), "companion");
 }
 
 #[test]

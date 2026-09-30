@@ -15,13 +15,14 @@ mod decision_plan;
 mod prior_output;
 
 pub use current_output::{
-    WorthQueryCurrentOutputDenial, WorthQueryCurrentOutputDenialKind, WorthQueryCurrentOutputRole,
+    WorthQueryCurrentOutputDenial, WorthQueryCurrentOutputDenialKind,
     WorthQueryCurrentOutputSelection,
 };
 pub use decision_plan::{
     WorthQueryInvariantDecisionPlanDenial, WorthQueryInvariantDecisionPlanDenialKind,
 };
 pub use prior_output::WorthQueryPriorOutputFamilyMember;
+pub(in crate::domain_computation::primary_graph) use prior_output::WorthQueryPriorOutputRead;
 
 use super::{
     WorthQueryApplicationInvariantProjectionAuthority,

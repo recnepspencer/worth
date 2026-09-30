@@ -1,8 +1,14 @@
 //! Exact reusable commit evidence and demanded-work breadth proofs.
 
+use worth_query_declaration::facade::application_operation::{
+    ApplicationMutationOutputContract, ApplicationMutationOutputRoleDescriptor,
+    WorthQueryApplicationDeclaredOutputRole, WorthQueryApplicationOutputRole,
+    WorthQueryExactlyOneOutput, WorthQueryPreserveOutput,
+};
 use worth_query_declaration::facade::application_schema::TypedMutationPreconditions;
 
 use super::{authenticated_principal, idempotency, live_scope, resolved_account};
+use crate::domain_computation::primary_graph::application_attempt::OutputRoleUse;
 use crate::domain_computation::primary_graph::tests::fixture::{
     installed_authorization_world, Account, AccountLabel, AccountStatus, AuthorizationWorld,
     ExactStatusRetentionInput, ExactStatusRetentionOperation, IdentityExecutionSchema, Principal,
@@ -10,15 +16,29 @@ use crate::domain_computation::primary_graph::tests::fixture::{
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitOutcome, WorthQueryApplicationEffectProgram,
-    WorthQueryApplicationEntityIdentity, WorthQueryApplicationOutputRole,
-    WorthQueryAuthenticatedPrincipal, WorthQueryPreserveOutput,
+    WorthQueryApplicationEntityIdentity, WorthQueryAuthenticatedPrincipal,
 };
 
-pub(in crate::domain_computation::primary_graph) struct RetentionOutputBinding;
+/// The output contract the retention program is given in place of its
+/// operation's own, so its receipt carries one retained output.
+pub(in crate::domain_computation::primary_graph) struct RetentionOutputs;
 
-pub(in crate::domain_computation::primary_graph) const RETAINED_ACCOUNT_OUTPUT:
-    WorthQueryApplicationOutputRole<RetentionOutputBinding, Account, WorthQueryPreserveOutput> =
-    WorthQueryApplicationOutputRole::for_entity::<IdentityExecutionSchema>("retained-account");
+impl ApplicationMutationOutputContract<IdentityExecutionSchema> for RetentionOutputs {
+    const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] =
+        &[<RetainedAccount as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR];
+}
+
+/// The retained account, preserved by the retention program.
+pub(in crate::domain_computation::primary_graph) struct RetainedAccount;
+
+impl WorthQueryApplicationOutputRole for RetainedAccount {
+    type Schema = IdentityExecutionSchema;
+    type Contract = RetentionOutputs;
+    type Entity = Account;
+    type Action = WorthQueryPreserveOutput;
+    type Cardinality = WorthQueryExactlyOneOutput;
+    const NAME: &'static str = "retained-account";
+}
 
 #[test]
 fn response_loss_and_interleaving_preserve_one_preimage_and_outbox_bundle() {
@@ -325,10 +345,10 @@ pub(in crate::domain_computation::primary_graph) fn retained_status_program(
         .complete_projected_dependencies()
         .unwrap()
         .begin_effect_program();
-    effects.prepare_output_role_for_test(&RETAINED_ACCOUNT_OUTPUT, "Account");
+    effects.prepare_output_contract_for_test::<RetentionOutputs>();
     let account = effects.existing_entity(account).unwrap();
     effects
-        .bind_output(RETAINED_ACCOUNT_OUTPUT, &account)
+        .bind_output(OutputRoleUse::fixed::<RetainedAccount>(), &account)
         .expect("retained account output belongs to this effect program");
     effects
         .write_field(&account, AccountStatus::reference(), replacement.to_owned())
