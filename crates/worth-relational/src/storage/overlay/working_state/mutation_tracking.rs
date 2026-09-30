@@ -70,6 +70,10 @@ impl PartitionAccess for WorkingState {
         self.partitions.keys().copied().collect()
     }
 
+    fn partition_ids_iter(&self) -> Box<dyn Iterator<Item = PartitionId> + '_> {
+        Box::new(self.partitions.keys().copied())
+    }
+
     fn touched_partition_ids(&self) -> Option<Vec<PartitionId>> {
         (!self.mutation_journal.is_empty()).then(|| self.mutation_journal.keys().copied().collect())
     }

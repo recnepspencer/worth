@@ -121,6 +121,7 @@ guidance = "The Bridge owns the Relational adapter and depends on Relational; Re
 workspace_manifest = "Cargo.toml"
 sources = ["worth-runtime-world"]
 allowed_targets = [
+  "worth-execution",
   "worth-foundational",
   "worth-proof",
   "worth-relational",
@@ -128,7 +129,7 @@ allowed_targets = [
   "worth-signal",
   "trybuild",
 ]
-guidance = "Runtime World may depend only on the approved foundational, proof, component-owner, and bridge facades; trybuild is test-only contract evidence"
+guidance = "Runtime World composes the one execution authority above the component runtimes and may depend only on that authority, foundational and proof contracts, component-owner and bridge facades; trybuild is test-only contract evidence"
 
 [[dependency_denials]]
 workspace_manifest = "workspaces/worth-store/Cargo.toml"
@@ -1274,159 +1275,6 @@ forbidden_paths = [["primary_graph", "workflow"]]
 guidance = "9.17.6 Phase 5: provider-read managed runs and conditional operations stay independent of the authored workflow kernel; the kernel composes them, never the reverse"
 
 # Milestone 9.17.6.3: exact production threading inventory. Legacy entries only shrink.
-[[threading_sites]]
-source = "crates/worth-relational/Cargo.toml"
-item = "dependencies"
-kind = "rayon-dependency"
-count = 1
-category = "legacy-parallel"
-reason = "Relational parallel preparation migrates to the caller lease in Phase 3."
-retire_phase = 3
-
-[[threading_sites]]
-source = "crates/worth-relational/src/authority/commit/publication.rs"
-item = ""
-kind = "rayon-import"
-count = 1
-category = "legacy-parallel"
-reason = "Relational parallel preparation migrates to the caller lease in Phase 3."
-retire_phase = 3
-
-[[threading_sites]]
-source = "crates/worth-relational/src/authority/commit/publication.rs"
-item = "prepare_patch_fragments"
-kind = "rayon-call"
-count = 1
-category = "legacy-parallel"
-reason = "Relational parallel preparation migrates to the caller lease in Phase 3."
-retire_phase = 3
-
-[[threading_sites]]
-source = "crates/worth-relational/src/authority/mutation/intents/bulk_create_entities.rs"
-item = ""
-kind = "rayon-import"
-count = 1
-category = "legacy-parallel"
-reason = "Relational parallel preparation migrates to the caller lease in Phase 3."
-retire_phase = 3
-
-[[threading_sites]]
-source = "crates/worth-relational/src/authority/mutation/intents/bulk_create_entities.rs"
-item = "stage_import_packets"
-kind = "rayon-call"
-count = 1
-category = "legacy-parallel"
-reason = "Relational parallel preparation migrates to the caller lease in Phase 3."
-retire_phase = 3
-
-[[threading_sites]]
-source = "crates/worth-relational/src/authority/mutation/intents/bulk_create_relations.rs"
-item = ""
-kind = "rayon-import"
-count = 1
-category = "legacy-parallel"
-reason = "Relational parallel preparation migrates to the caller lease in Phase 3."
-retire_phase = 3
-
-[[threading_sites]]
-source = "crates/worth-relational/src/authority/mutation/intents/bulk_create_relations.rs"
-item = "stage_import_packets"
-kind = "rayon-call"
-count = 1
-category = "legacy-parallel"
-reason = "Relational parallel preparation migrates to the caller lease in Phase 3."
-retire_phase = 3
-
-[[threading_sites]]
-source = "crates/worth-relational/src/indexes/authority/build_execution.rs"
-item = ""
-kind = "rayon-import"
-count = 1
-category = "legacy-parallel"
-reason = "Relational parallel preparation migrates to the caller lease in Phase 3."
-retire_phase = 3
-
-[[threading_sites]]
-source = "crates/worth-relational/src/indexes/authority/build_execution.rs"
-item = "execute_index_packets"
-kind = "rayon-call"
-count = 4
-category = "legacy-parallel"
-reason = "Relational parallel preparation migrates to the caller lease in Phase 3."
-retire_phase = 3
-
-[[threading_sites]]
-source = "crates/worth-relational/src/validation/engine/engine.rs"
-item = ""
-kind = "rayon-import"
-count = 1
-category = "legacy-parallel"
-reason = "Relational parallel preparation migrates to the caller lease in Phase 3."
-retire_phase = 3
-
-[[threading_sites]]
-source = "crates/worth-relational/src/validation/engine/engine.rs"
-item = "InvariantEngine::execute"
-kind = "rayon-call"
-count = 1
-category = "legacy-parallel"
-reason = "Relational parallel preparation migrates to the caller lease in Phase 3."
-retire_phase = 3
-
-[[threading_sites]]
-source = "crates/worth-relational/src/visibility/materialization/read_records/reader/mod.rs"
-item = ""
-kind = "rayon-import"
-count = 1
-category = "legacy-parallel"
-reason = "Relational parallel preparation migrates to the caller lease in Phase 3."
-retire_phase = 3
-
-[[threading_sites]]
-source = "crates/worth-relational/src/visibility/materialization/read_records/reader/query_execution/fragment_execution.rs"
-item = ""
-kind = "rayon-import"
-count = 1
-category = "legacy-parallel"
-reason = "Relational parallel preparation migrates to the caller lease in Phase 3."
-retire_phase = 3
-
-[[threading_sites]]
-source = "crates/worth-relational/src/visibility/materialization/read_records/reader/query_execution/fragment_execution.rs"
-item = "execute_explicit_query_fragments_from_exact_basis"
-kind = "rayon-call"
-count = 1
-category = "legacy-parallel"
-reason = "Relational parallel preparation migrates to the caller lease in Phase 3."
-retire_phase = 3
-
-[[threading_sites]]
-source = "crates/worth-relational/src/visibility/materialization/read_records/reader/query_plan_execution.rs"
-item = "VisibilityReadContext::execute_query_plan"
-kind = "rayon-call"
-count = 1
-category = "legacy-parallel"
-reason = "Relational parallel preparation migrates to the caller lease in Phase 3."
-retire_phase = 3
-
-[[threading_sites]]
-source = "crates/worth-relational/src/visibility/materialization/read_records/reader/query_plan_execution.rs"
-item = "VisibilityReadContext::execute_traversal_query_plan"
-kind = "rayon-call"
-count = 1
-category = "legacy-parallel"
-reason = "Relational parallel preparation migrates to the caller lease in Phase 3."
-retire_phase = 3
-
-[[threading_sites]]
-source = "crates/worth-server/src/product_adapter/execution_pipeline/read_batch_execution.rs"
-item = "execute_shared_read_batch_from_worth_native"
-kind = "thread-scope"
-count = 1
-category = "legacy-parallel"
-reason = "Server shared-read slots migrate to the request lease in Phase 3."
-retire_phase = 3
-
 [[threading_sites]]
 source = "crates/worth-server/src/transport/route_assembly/axum_projection.rs"
 item = "semantic_route_handler"

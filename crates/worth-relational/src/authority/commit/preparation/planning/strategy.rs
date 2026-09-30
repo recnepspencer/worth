@@ -1,5 +1,6 @@
-use crate::config::data::RelationalExecutionModel;
 use serde::{Deserialize, Serialize};
+use worth_execution::ExecutionResourceLease;
+use worth_foundational::ExecutionPosture;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ParallelLegality {
@@ -21,7 +22,8 @@ pub enum PreparationStrategySelection {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SerialPreparationReason {
-    ExecutionModelSerial,
+    NoLease,
+    SerialPosture,
     ProofRequiresSerial,
     InsufficientPacketBreadth,
     ProfitabilityThreshold,
@@ -30,7 +32,8 @@ pub enum SerialPreparationReason {
 impl SerialPreparationReason {
     pub const fn diagnostic_label(self) -> &'static str {
         match self {
-            Self::ExecutionModelSerial => "execution_model_serial",
+            Self::NoLease => "no_lease",
+            Self::SerialPosture => "serial_posture",
             Self::ProofRequiresSerial => "proof_requires_serial",
             Self::InsufficientPacketBreadth => "insufficient_packet_breadth",
             Self::ProfitabilityThreshold => "profitability_threshold",
@@ -79,14 +82,14 @@ pub(crate) const fn coarse_preparation_packet_count(
 }
 
 pub(crate) fn strategy_for_parallel_packets(
-    execution_model: RelationalExecutionModel,
+    lease: Option<&ExecutionResourceLease>,
     packet_count: usize,
 ) -> PreparationStrategy {
-    if !matches!(
-        execution_model,
-        RelationalExecutionModel::ParallelPreparation
-    ) {
-        return PreparationStrategy::serial(SerialPreparationReason::ExecutionModelSerial);
+    if lease.is_none() {
+        return PreparationStrategy::serial(SerialPreparationReason::NoLease);
+    }
+    if lease.is_some_and(|lease| lease.resolved_posture() == ExecutionPosture::Serial) {
+        return PreparationStrategy::serial(SerialPreparationReason::SerialPosture);
     }
 
     if !packet_width_is_profitable(packet_count, MIN_PARALLEL_PACKET_WIDTH) {

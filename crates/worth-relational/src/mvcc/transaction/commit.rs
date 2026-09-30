@@ -10,12 +10,30 @@ impl RelationalRuntime {
         self.publish_prepared_candidate(candidate)
     }
 
+    pub fn commit_branch_transaction_with_lease(
+        &self,
+        transaction: crate::mvcc::BranchBoundRelationalTransaction,
+        lease: &worth_execution::ExecutionResourceLease<'_>,
+    ) -> Result<CommitResult, TransactionCommitError> {
+        let candidate = self.prepare_branch_transaction_with_lease(transaction, lease)?;
+        self.publish_prepared_candidate(candidate)
+    }
+
     pub fn prepare_branch_transaction(
         &self,
         transaction: crate::mvcc::BranchBoundRelationalTransaction,
     ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
         self.preparation_port()
             .prepare_branch_transaction(transaction)
+    }
+
+    pub fn prepare_branch_transaction_with_lease(
+        &self,
+        transaction: crate::mvcc::BranchBoundRelationalTransaction,
+        lease: &worth_execution::ExecutionResourceLease<'_>,
+    ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
+        self.preparation_port()
+            .prepare_branch_transaction_with_lease(transaction, lease)
     }
 
     /// The independently borrowable preparation service for this runtime.

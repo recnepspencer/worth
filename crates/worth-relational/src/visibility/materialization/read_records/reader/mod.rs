@@ -11,6 +11,8 @@ mod query_packet_scope;
 mod query_packetization;
 mod query_plan_execution;
 mod query_planning;
+mod query_preparation;
+mod query_preparation_packetization;
 mod query_traversal;
 mod snapshot_reads;
 mod truth_access;
@@ -22,8 +24,7 @@ mod truth_record_access;
 mod truth_relation_kind_scan;
 
 use crate::authority::commit::preparation::planning::strategy::{
-    coarse_preparation_packet_count, PreparationStrategySelection,
-    TARGET_PREPARATION_ITEMS_PER_PACKET,
+    coarse_preparation_packet_count, TARGET_PREPARATION_ITEMS_PER_PACKET,
 };
 use crate::capabilities::{SnapshotSource, VersionSource, VisibilityPolicySource};
 use crate::diagnostics::data::{
@@ -48,7 +49,6 @@ use crate::visibility::snapshot_states::{
     read_view_from_snapshot_state, resolve_snapshot_basis, resolve_snapshot_handle,
     resolve_snapshot_inspection, resolve_snapshot_state,
 };
-use rayon::prelude::*;
 use std::collections::{BTreeMap, BTreeSet};
 use worth_foundational::facade::AspectKey;
 
@@ -68,6 +68,7 @@ use super::ProjectionAspectFilter;
 const TARGET_TRAVERSAL_SEEDS_PER_PACKET: usize = 4;
 pub use context::VisibilityReadContext;
 pub(crate) use kind_scan_visibility::KindScanVisibility;
+pub use query_execution::{QueryLeasedReadOutcome, QueryReadExecutionStop, QueryReadPacketDenial};
 use query_fragment_scratch::QueryFragmentScratch;
 pub use truth_adjacency::{AdjacencyTruthReadLimitExceeded, BoundedAdjacencyTruthRead};
 pub use truth_frontier_adjacency::{

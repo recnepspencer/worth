@@ -273,6 +273,22 @@ struct SessionBackedEditorAdapter {
 }
 
 impl WorthServerProductApplicationAdapter for SessionBackedEditorAdapter {
+    fn execute_with_lease(
+        &self,
+        operation: &worth_server::WorthServerScheduledProductOperation,
+        _lease: &worth_execution::ExecutionResourceLease<'_>,
+        context: &mut worth_execution::MapKernelContext<'_, '_>,
+    ) -> Result<
+        Result<
+            WorthServerProductOperationSuccess,
+            worth_server::WorthServerProductAdapterExecutionError,
+        >,
+        worth_execution::MapKernelStop,
+    > {
+        context.checkpoint(0)?;
+        Ok(self.execute(operation))
+    }
+
     fn execute(
         &self,
         operation: &worth_server::WorthServerScheduledProductOperation,

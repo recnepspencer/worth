@@ -1,6 +1,9 @@
 use std::cmp::{Ordering, Reverse};
 use std::collections::BinaryHeap;
 
+mod checked;
+pub(crate) use checked::{canonical_merge_streams_checked, canonical_merge_values_checked};
+
 #[derive(Debug)]
 pub(crate) struct OrderedReductionStream<K, T> {
     items: Vec<(K, T)>,
@@ -22,6 +25,17 @@ where
         Self {
             items: vec![(key, item)],
         }
+    }
+
+    pub(crate) fn owned_allocation_capacity_bytes(
+        &self,
+        item_bytes: impl Fn(&K, &T) -> u64,
+    ) -> u64 {
+        (self.items.capacity() as u64)
+            .saturating_mul(std::mem::size_of::<(K, T)>() as u64)
+            .saturating_add(self.items.iter().fold(0_u64, |bytes, (key, item)| {
+                bytes.saturating_add(item_bytes(key, item))
+            }))
     }
 
     fn into_items(self) -> Vec<(K, T)> {

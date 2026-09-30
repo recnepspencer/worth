@@ -22,6 +22,15 @@ pub struct ProjectionAspectRequirement {
 }
 
 impl ProjectionAspectScope {
+    pub fn owned_allocation_capacity_bytes(&self) -> usize {
+        self.aspects
+            .capacity()
+            .saturating_mul(std::mem::size_of::<ProjectionAspectRequirement>())
+            .saturating_add(self.aspects.iter().fold(0usize, |total, requirement| {
+                total.saturating_add(requirement.owned_allocation_capacity_bytes())
+            }))
+    }
+
     pub fn empty() -> Self {
         Self::default()
     }
@@ -77,6 +86,26 @@ impl ProjectionAspectScope {
 }
 
 impl ProjectionAspectRequirement {
+    fn owned_allocation_capacity_bytes(&self) -> usize {
+        let basis_bytes = self.mask_basis.as_ref().map_or(0, |basis| {
+            basis
+                .payload()
+                .owned_allocation_capacity_bytes()
+                .saturating_add(
+                    basis
+                        .basis()
+                        .basis()
+                        .value()
+                        .owned_allocation_capacity_bytes(),
+                )
+        });
+        self.aspect_key
+            .owned_allocation_capacity_bytes()
+            .saturating_add(self.mask.owned_allocation_capacity_bytes())
+            .saturating_add(self.locator.owned_allocation_capacity_bytes())
+            .saturating_add(basis_bytes)
+    }
+
     pub fn whole_aspect(aspect_key: AspectKey) -> Self {
         Self::new(aspect_key, AspectMask::<ProjectionMask>::whole_aspect())
     }

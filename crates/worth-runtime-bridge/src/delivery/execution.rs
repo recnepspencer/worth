@@ -9,7 +9,7 @@ use crate::routing::{
     BridgeBulkWorkloadPlan, BridgeExecutionCounts, BridgeParallelAdmissionClass,
     BridgePlannedRoute, BridgeRouteSourceSummary,
 };
-use crate::snapshot::validate_snapshot_read_result_contract;
+use crate::snapshot::{validate_snapshot_read_result_contract, BridgeSnapshotReadErrorKind};
 
 use super::context::{delivery_context, reject_delivery};
 use super::requests::{BridgePreparedDeliveryRequest, BridgeSignalEvaluationRequest};
@@ -21,6 +21,18 @@ pub(crate) fn deliver_planned_route(
 ) -> Result<BridgeRouteResult, BridgeDeliveryError> {
     let prepared = prepare_planned_route_for_delivery(route);
     deliver_prepared_route(runtime, prepared)
+}
+
+pub(crate) fn deliver_planned_route_with_lease(
+    runtime: &RuntimeBridge,
+    route: BridgePlannedRoute,
+    lease: &worth_execution::ExecutionResourceLease<'_>,
+) -> Result<BridgeRouteResult, BridgeDeliveryError> {
+    deliver_prepared_route_with_lease(
+        runtime,
+        prepare_planned_route_for_delivery(route),
+        Some(lease),
+    )
 }
 
 pub(crate) fn deliver_bulk_workload_plan(
@@ -88,6 +100,14 @@ pub(crate) fn deliver_prepared_route(
     runtime: &RuntimeBridge,
     prepared: BridgePreparedDeliveryRequest,
 ) -> Result<BridgeRouteResult, BridgeDeliveryError> {
+    deliver_prepared_route_with_lease(runtime, prepared, None)
+}
+
+pub(crate) fn deliver_prepared_route_with_lease(
+    runtime: &RuntimeBridge,
+    prepared: BridgePreparedDeliveryRequest,
+    lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+) -> Result<BridgeRouteResult, BridgeDeliveryError> {
     let failure_base = prepared.failure_source();
     let route_identity = prepared.routing_summary().route_identity().clone();
     let lowering_plan = prepared.validated_lowering_plan().plan();
@@ -137,9 +157,22 @@ pub(crate) fn deliver_prepared_route(
             ));
         }
     };
-    let read_result = snapshot.read_packet(read_packet).map_err(|error| {
+    let read_result = match lease {
+        Some(lease) => snapshot.read_packet_with_lease(read_packet, lease),
+        None => snapshot.read_packet(read_packet),
+    }
+    .map_err(|error| {
+        let kind = match error.kind() {
+            BridgeSnapshotReadErrorKind::ExecutionCancelled => {
+                BridgeDeliveryErrorKind::ExecutionCancelled
+            }
+            BridgeSnapshotReadErrorKind::ExecutionDeadlineElapsed => {
+                BridgeDeliveryErrorKind::ExecutionDeadlineElapsed
+            }
+            _ => BridgeDeliveryErrorKind::SnapshotReadFailure,
+        };
         BridgeDeliveryError::new(
-            BridgeDeliveryErrorKind::SnapshotReadFailure,
+            kind,
             format!(
                 "Bridge failed to execute packetized snapshot reads for `{}`: {error}",
                 lowering_plan.source_snapshot().as_str()

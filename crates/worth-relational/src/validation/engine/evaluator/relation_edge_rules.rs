@@ -10,7 +10,7 @@ use super::super::context::InvariantExecutionContext;
 use super::common::{canonicalize_violations, relation_violation};
 
 pub(super) fn evaluate_uniqueness_contract(
-    context: &InvariantExecutionContext<'_>,
+    context: &InvariantExecutionContext<'_, '_>,
     class: InvariantClass,
     contract: &LoweredUniquenessContract,
 ) -> Vec<InvariantViolation> {
@@ -26,8 +26,14 @@ pub(super) fn evaluate_uniqueness_contract(
     match contract.scope {
         UniquenessScope::DirectedSemanticEdge => {
             for (key, count) in &scope.directed_pair_counts {
+                if !context.checkpoint(1) {
+                    return Vec::new();
+                }
                 context.metrics().count_relation_uniqueness_checks(1);
                 if *count > 1 {
+                    if !context.claim_result(4096) {
+                        return Vec::new();
+                    }
                     violations.push(relation_violation(
                         class,
                         DiagnosticCode::RelationUniquenessViolation,
@@ -49,8 +55,14 @@ pub(super) fn evaluate_uniqueness_contract(
         }
         UniquenessScope::NormalizedSymmetricEdge => {
             for (key, count) in &scope.normalized_pair_counts {
+                if !context.checkpoint(1) {
+                    return Vec::new();
+                }
                 context.metrics().count_relation_uniqueness_checks(1);
                 if *count > 1 {
+                    if !context.claim_result(4096) {
+                        return Vec::new();
+                    }
                     violations.push(relation_violation(
                         class,
                         DiagnosticCode::RelationUniquenessViolation,
@@ -75,7 +87,7 @@ pub(super) fn evaluate_uniqueness_contract(
 }
 
 pub(super) fn evaluate_symmetry_contract(
-    context: &InvariantExecutionContext<'_>,
+    context: &InvariantExecutionContext<'_, '_>,
     class: InvariantClass,
     contract: &LoweredSymmetryContract,
 ) -> Vec<InvariantViolation> {
@@ -89,10 +101,16 @@ pub(super) fn evaluate_symmetry_contract(
     context.metrics().count_relation_contracts_evaluated(1);
     let mut violations = Vec::new();
     for edge in &scope.planned_edges {
+        if !context.checkpoint(1) {
+            return Vec::new();
+        }
         context.metrics().count_relation_symmetry_checks(1);
         match contract.mode {
             SymmetryMode::CanonicalUndirected => {
                 if edge.target < edge.source {
+                    if !context.claim_result(4096) {
+                        return Vec::new();
+                    }
                     violations.push(relation_violation(
                         class,
                         DiagnosticCode::RelationSymmetryViolation,
@@ -122,6 +140,9 @@ pub(super) fn evaluate_symmetry_contract(
                     .unwrap_or_default()
                     == 0
                 {
+                    if !context.claim_result(4096) {
+                        return Vec::new();
+                    }
                     violations.push(relation_violation(
                         class,
                         DiagnosticCode::RelationSymmetryViolation,
@@ -151,6 +172,9 @@ pub(super) fn evaluate_symmetry_contract(
                     .unwrap_or_default()
                     > 0
                 {
+                    if !context.claim_result(4096) {
+                        return Vec::new();
+                    }
                     violations.push(relation_violation(
                         class,
                         DiagnosticCode::RelationSymmetryViolation,
@@ -174,7 +198,7 @@ pub(super) fn evaluate_symmetry_contract(
 }
 
 pub(super) fn evaluate_endpoint_deletion_integrity_contract(
-    context: &InvariantExecutionContext<'_>,
+    context: &InvariantExecutionContext<'_, '_>,
     class: InvariantClass,
     contract: &LoweredEndpointDeletionIntegrityContract,
 ) -> Vec<InvariantViolation> {
@@ -188,6 +212,9 @@ pub(super) fn evaluate_endpoint_deletion_integrity_contract(
     context.metrics().count_relation_contracts_evaluated(1);
     let mut violations = Vec::new();
     for entity_id in &scope.deleted_entities {
+        if !context.checkpoint(1) {
+            return Vec::new();
+        }
         let endpoint_key = super::super::request::PreparedRelationEndpointKey {
             entity_id: EntityReference::Existing(*entity_id),
         };
@@ -205,6 +232,9 @@ pub(super) fn evaluate_endpoint_deletion_integrity_contract(
         if live_relations > 0 {
             match contract.mode {
                 EndpointDeletionIntegrityMode::RejectDeleteWithLiveRelations => {
+                    if !context.claim_result(4096) {
+                        return Vec::new();
+                    }
                     violations.push(relation_violation(
                         class,
                         DiagnosticCode::RelationEndpointDeletionIntegrityViolation,
@@ -226,6 +256,9 @@ pub(super) fn evaluate_endpoint_deletion_integrity_contract(
                     if contract.cascade_delete_policy
                         != crate::config::data::CascadeDeletePolicy::CascadeDeleteRelations
                     {
+                        if !context.claim_result(4096) {
+                            return Vec::new();
+                        }
                         violations.push(relation_violation(
                             class,
                             DiagnosticCode::RelationEndpointDeletionIntegrityViolation,
@@ -248,6 +281,9 @@ pub(super) fn evaluate_endpoint_deletion_integrity_contract(
                     if contract.cascade_delete_policy
                         != crate::config::data::CascadeDeletePolicy::RetainDanglingForAudit
                     {
+                        if !context.claim_result(4096) {
+                            return Vec::new();
+                        }
                         violations.push(relation_violation(
                             class,
                             DiagnosticCode::RelationEndpointDeletionIntegrityViolation,

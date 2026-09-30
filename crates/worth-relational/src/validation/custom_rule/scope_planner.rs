@@ -10,6 +10,8 @@ use super::traversal::BoundedStructuralTraversal;
 use crate::validation::data::{StructuralCountView, TouchedStructuralSet};
 use std::sync::Arc;
 
+mod claim_nested;
+
 #[derive(Clone)]
 pub(crate) struct PreparedCustomInvariantScope {
     touched: Arc<TouchedStructuralSet>,
@@ -96,17 +98,10 @@ impl PreparedCustomInvariantScope {
         .into_iter()
         .fold(0usize, usize::saturating_add);
         if !work.try_charge(count) {
-            return Arc::new(TouchedStructuralSet::new(
-                Arc::from([]),
-                Arc::from([]),
-                Arc::from([]),
-                Arc::from([]),
-                Arc::from([]),
-                Arc::from([]),
-                Arc::from([]),
-                Arc::from([]),
-                Arc::from([]),
-            ));
+            return Self::empty().touched;
+        }
+        if !claim_nested::claim_restricted_clones(&self.touched, work) {
+            return Self::empty().touched;
         }
         Arc::new(TouchedStructuralSet::new(
             self.touched

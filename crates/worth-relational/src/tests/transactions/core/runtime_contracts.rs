@@ -4,20 +4,9 @@ use crate::facade::history::BranchCreateError;
 use crate::facade::identity::{EntityId, EntityStorageId, RelationId, RelationStorageId};
 use crate::facade::publication::{PublicationError, PublicationStage};
 use crate::facade::replay::{ReplayError, ReplayFailureClass};
-use crate::facade::runtime::RelationalExecutionModel;
 use crate::facade::schema::SchemaRegistryError;
 use crate::facade::transactions::{EntitySpec, MutationIntent};
 use crate::tests::support::*;
-
-#[test]
-fn runtime_defaults_to_serial_validation_execution() {
-    let runtime = runtime_with_test_schema();
-
-    assert_eq!(
-        runtime.config().execution.execution_model,
-        RelationalExecutionModel::SingleLaneExecution
-    );
-}
 
 #[test]
 fn harness_defaults_require_determinism_and_parity() {

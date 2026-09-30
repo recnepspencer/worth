@@ -41,4 +41,6 @@ pub use plan_artifacts::{
     PublishedMergeExecutionAuthority, UndoRecord,
 };
 pub use rollback::{RollbackEffect, RollbackOutcome, RollbackSummary};
-pub use transaction_commit_error::TransactionCommitError;
+pub use transaction_commit_error::{
+    CommitExecutionDenial, CommitExecutionDenialKind, TransactionCommitError,
+};

@@ -3,19 +3,17 @@ use crate::branch::reference_test_fixture::{real_fixture, RealReferenceFixture};
 use crate::facade::{RuntimeWorldCancellationSource, RuntimeWorldOwner};
 fn empty_world() -> (RealReferenceFixture, RuntimeWorldOwner<(), (), (), (), ()>) {
     let mut fixture = real_fixture(8, 8);
-    let (relational, signal, signal_publication, bridge, budgets, clock) = fixture
-        .owner_inputs(
-            bootstrap_budgets(),
-            RuntimeWorldClock::from_source(FixedClock),
-        )
-        .into_parts();
+    let inputs = fixture.owner_inputs(
+        bootstrap_budgets(),
+        RuntimeWorldClock::from_source(FixedClock),
+    );
     let owner = RuntimeWorldOwner::builder()
-        .with_relational_services(relational)
-        .with_signal_services(signal)
-        .with_signal_definition_publication(signal_publication)
-        .with_bridge_correspondence(bridge)
-        .with_budgets(budgets)
-        .with_clock(clock)
+        .with_relational_services(inputs.relational)
+        .with_signal_services(inputs.signal)
+        .with_signal_definition_publication(inputs.signal_definition_publication)
+        .with_bridge_correspondence(inputs.bridge)
+        .with_budgets(inputs.budgets)
+        .with_clock(inputs.clock)
         .build()
         .unwrap();
     (fixture, owner)

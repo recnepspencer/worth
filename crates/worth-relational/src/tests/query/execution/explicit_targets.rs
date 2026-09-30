@@ -60,10 +60,8 @@ fn planned_query_execution_is_deterministic_for_identical_inputs() {
 }
 
 #[test]
-fn planned_query_execution_uses_staged_parallel_packets_for_profitable_cross_partition_reads() {
-    let runtime = runtime_with_test_schema_execution_model(
-        crate::facade::runtime::RelationalExecutionModel::ParallelPreparation,
-    );
+fn unleased_query_execution_keeps_multi_packet_reads_serial() {
+    let runtime = runtime_with_test_schema();
     let targets = vec![
         RecordRef::Entity(create_entity_in_partition(&runtime, "a-1", PartitionId(7))),
         RecordRef::Entity(create_entity_in_partition(&runtime, "b-1", PartitionId(11))),
@@ -84,17 +82,15 @@ fn planned_query_execution_uses_staged_parallel_packets_for_profitable_cross_par
     assert_eq!(counters.query_packet_item_count, 6);
     assert_eq!(counters.query_parallel_legal_count, 1);
     assert_eq!(counters.query_parallel_profitable_count, 1);
-    assert_eq!(counters.query_staged_parallel_strategy_count, 1);
-    assert_eq!(counters.query_serial_strategy_count, 0);
+    assert_eq!(counters.query_staged_parallel_strategy_count, 0);
+    assert_eq!(counters.query_serial_strategy_count, 1);
     assert_eq!(counters.query_authoritative_entity_records_emitted, 6);
     assert_eq!(counters.query_authoritative_relation_records_emitted, 0);
 }
 
 #[test]
 fn planned_query_execution_explicit_targets_do_not_claim_fragment_scratch_reuse() {
-    let runtime = runtime_with_test_schema_execution_model(
-        crate::facade::runtime::RelationalExecutionModel::SingleLaneExecution,
-    );
+    let runtime = runtime_with_test_schema();
     let left = create_entity_in_partition(&runtime, "left", PartitionId(7));
     let right = create_entity_in_partition(&runtime, "right", PartitionId(11));
     let snapshot = runtime.visibility_authority().snapshot();

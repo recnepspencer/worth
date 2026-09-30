@@ -28,8 +28,9 @@ pub use crate::validation::engine::HarnessAuditMode;
 pub use crate::validation::InvariantAccess;
 pub use crate::visibility::materialization::read_records::{
     AdjacencyStructuralRevision, AdjacencyStructuralRevisionDenial, EntityProjectionRecord,
-    EntityRecordProjection, RelationProjectionRecord, RelationRecordProjection,
-    RelationalAdjacencyDirection, VisibilityProjectionView, VisibilityReadContext,
+    EntityRecordProjection, QueryLeasedReadOutcome, QueryReadExecutionStop, QueryReadPacketDenial,
+    RelationProjectionRecord, RelationRecordProjection, RelationalAdjacencyDirection,
+    VisibilityProjectionView, VisibilityReadContext,
 };
 pub use crate::visibility::retention::VisibilityRetentionAuthority;
 pub use initial_schema_installation::{

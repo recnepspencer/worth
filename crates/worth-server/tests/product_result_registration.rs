@@ -114,6 +114,19 @@ struct WrongResultContractAdapter {
 }
 
 impl WorthServerProductApplicationAdapter for WrongResultContractAdapter {
+    fn execute_with_lease(
+        &self,
+        operation: &WorthServerScheduledProductOperation,
+        _lease: &worth_execution::ExecutionResourceLease<'_>,
+        context: &mut worth_execution::MapKernelContext<'_, '_>,
+    ) -> Result<
+        Result<WorthServerProductOperationSuccess, WorthServerProductAdapterExecutionError>,
+        worth_execution::MapKernelStop,
+    > {
+        context.checkpoint(0)?;
+        Ok(self.execute(operation))
+    }
+
     fn execute(
         &self,
         _operation: &WorthServerScheduledProductOperation,

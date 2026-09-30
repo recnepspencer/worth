@@ -191,9 +191,7 @@ pub mod merge {
 
 pub mod runtime {
     pub use super::runtime_validation_exports::*;
-    pub use crate::config::data::{
-        PlanningContract, RelationIntegrityScopeBudget, RelationalExecutionModel,
-    };
+    pub use crate::config::data::RelationIntegrityScopeBudget;
     pub use crate::presentation::facade::runtime::{
         ImmutableReadContract, RelationalBoundaryContract, RelationalRuntimeApi,
     };
@@ -207,8 +205,9 @@ pub mod runtime {
         custom_invariant_inventory_digest, AdjacencyStructuralRevision,
         AdjacencyStructuralRevisionDenial, CompiledArtifactAuthorityStatus, CompiledArtifactError,
         CompiledExecutionArtifact, ComplexityContract, ComplexityStatus, EntityProjectionRecord,
-        EntityRecordProjection, InvariantAccess, RelationProjectionRecord,
-        RelationRecordProjection, RelationalAdjacencyDirection, RelationalCandidateInputCounters,
+        EntityRecordProjection, InvariantAccess, QueryLeasedReadOutcome, QueryReadExecutionStop,
+        QueryReadPacketDenial, RelationProjectionRecord, RelationRecordProjection,
+        RelationalAdjacencyDirection, RelationalCandidateInputCounters,
         RelationalInitialSchemaInstallation, RelationalInitialSchemaInstallationDenial,
         RelationalInitialSchemaInstallationDenialKind, RelationalInitialSchemaInstallationReceipt,
         RelationalPatchPositionReservationCounters, RelationalPhase4ReferenceCostCounters,

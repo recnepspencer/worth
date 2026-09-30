@@ -39,12 +39,13 @@ pub(super) fn assemble_authoritative_publication_phase(
     commit_log: &mut CommitLog,
     phase_timing: &mut CommitPhaseTiming,
     input: ArtifactAssemblyInput<'_>,
+    lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
 ) -> Result<PublicationPreparation, TransactionCommitError> {
     commit_log.begin_phase(CommitPhase::ArtifactAssembly);
     let phase_started = std::time::Instant::now();
     let mut effect = input.effect;
     let patch_fragments = std::mem::take(&mut effect.publication.patch_fragments);
-    let patch = assemble_patch(runtime, patch_fragments);
+    let patch = assemble_patch(runtime, patch_fragments, lease)?;
     let patch_budget_summary = CommitPatchBudgetSummary {
         patch_record_count: patch.authoritative_record_patches.len(),
         max_patch_records_per_commit: runtime

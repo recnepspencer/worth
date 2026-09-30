@@ -21,6 +21,10 @@ pub struct ProjectionAspectFilter {
 }
 
 impl ProjectionAspectFilter {
+    pub fn owned_allocation_capacity_bytes(&self) -> usize {
+        self.projection_scope.owned_allocation_capacity_bytes()
+    }
+
     pub fn new(mode: ProjectionAspectFilterMode, projection_scope: ProjectionAspectScope) -> Self {
         Self {
             mode,

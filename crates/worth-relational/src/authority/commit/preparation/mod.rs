@@ -5,5 +5,4 @@ pub(crate) mod planning;
 pub(crate) mod proofs;
 pub(crate) mod reduction;
 
-pub(crate) use facade::PreparationWorkPlan;
 pub(crate) use packets::invariant::InvariantWorkPacket;

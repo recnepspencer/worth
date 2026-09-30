@@ -42,7 +42,7 @@ impl MutationPhaseOutput {
     }
 }
 
-pub(super) struct MutationPhaseInput<'a> {
+pub(super) struct MutationPhaseInput<'a, 'lease> {
     pub(super) commit_log: &'a mut CommitLog,
     pub(super) phase_timing: &'a mut CommitPhaseTiming,
     pub(super) transaction_id: TransactionId,
@@ -54,11 +54,12 @@ pub(super) struct MutationPhaseInput<'a> {
     pub(super) proposal_identity: &'a crate::mvcc::RelationalMutationProposalIdentity,
     pub(super) prevalidated_mutation_sensitive:
         Option<crate::validation::engine::InvariantExecutionResult>,
+    pub(super) lease: Option<&'a worth_execution::ExecutionResourceLease<'lease>>,
 }
 
 pub(super) fn run_authoritative_mutation_phase(
     runtime: &RelationalPreparationRuntime,
-    input: MutationPhaseInput<'_>,
+    input: MutationPhaseInput<'_, '_>,
 ) -> Result<MutationPhaseOutput, TransactionCommitError> {
     let MutationPhaseInput {
         commit_log,
@@ -71,6 +72,7 @@ pub(super) fn run_authoritative_mutation_phase(
         proposed_version_id,
         proposal_identity,
         prevalidated_mutation_sensitive,
+        lease,
     } = input;
     commit_log.begin_phase(CommitPhase::AuthoritativeMutation);
     let phase_started = std::time::Instant::now();
@@ -84,6 +86,7 @@ pub(super) fn run_authoritative_mutation_phase(
         proposed_version_id,
         proposal_identity,
         prevalidated_mutation_sensitive,
+        lease,
     )
     .map_err(|error| attach_rejection(commit_log, CommitPhase::AuthoritativeMutation, error))?;
     commit_log.record_invariant_outcomes(mutation.invariant_results());
@@ -102,6 +105,7 @@ fn run_authoritative_mutation_for_runtime(
     proposed_version_id: crate::identity::data::VersionId,
     proposal_identity: &crate::mvcc::RelationalMutationProposalIdentity,
     prevalidated_mutation_sensitive: Option<crate::validation::engine::InvariantExecutionResult>,
+    lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
 ) -> Result<MutationPhaseOutput, TransactionCommitError> {
     let version_id = proposed_version_id;
     let apply_plan = AuthoritativeApplyPlan {
@@ -113,7 +117,6 @@ fn run_authoritative_mutation_for_runtime(
         cascade_delete_policy: runtime.config.storage.cascade_delete_policy,
         adjacency_policy: runtime.config.storage.adjacency_policy.clone(),
         cross_context_policy: runtime.config.storage.cross_context_policy,
-        execution_model: runtime.config.execution.execution_model,
     };
     let branch_local_delete_allowance =
         branch_local_delete_allowance_for_plan(selected_branch_state, working_state, merged_plan);
@@ -125,22 +128,20 @@ fn run_authoritative_mutation_for_runtime(
         preparation_telemetry,
         created_entities,
         created_relations,
-    } = runtime
-        .services
-        .symbols
-        .with_write(|symbols| {
-            apply_plan_to_working_state(
-                working_state,
-                &apply_plan,
-                &mutation_config,
-                schema_registry,
-                aspect_plans,
-                symbols,
-                branch_local_delete_allowance,
-                &mut record_allocations,
-            )
-        })
-        .map_err(TransactionCommitError::conflict)?;
+    } = runtime.services.symbols.with_write(|symbols| {
+        apply_plan_to_working_state(
+            working_state,
+            &apply_plan,
+            &mutation_config,
+            schema_registry,
+            aspect_plans,
+            symbols,
+            branch_local_delete_allowance,
+            &mut record_allocations,
+            lease,
+            runtime.commit_work_budget.clone(),
+        )
+    })?;
     record_preparation_telemetry(runtime, preparation_telemetry);
     crate::authority::commit::phases::prepare::record_mutation_counters(runtime, working_state);
 
@@ -154,8 +155,8 @@ fn run_authoritative_mutation_for_runtime(
                 version_id,
                 merged_plan,
                 Some(proposal_identity),
-            )
-            .map_err(TransactionCommitError::conflict)?,
+                lease,
+            )?,
     };
 
     Ok(MutationPhaseOutput {

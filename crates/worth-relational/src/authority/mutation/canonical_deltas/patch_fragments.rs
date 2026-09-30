@@ -136,6 +136,27 @@ fn non_authoritative_delta_patch(
 }
 
 impl FoundationalPatchFragment {
+    pub(crate) fn into_published_record(self) -> PublishedAuthoritativeRecordPatch {
+        PublishedAuthoritativeRecordPatch {
+            target: self.target,
+            structural_change: self.structural_change,
+            authoritative_patch: self.published_patch,
+            semantic_changes: self.semantic_changes,
+            contains_opaque_aspect: self.contains_opaque_aspect,
+            detail: self.detail,
+        }
+    }
+
+    pub(crate) fn published_record_owned_allocation_capacity_bytes(&self) -> u64 {
+        (self.semantic_changes.capacity() as u64)
+            .saturating_mul(std::mem::size_of::<PublishedAuthoritativeAspectChange>() as u64)
+            .saturating_add(self.semantic_changes.iter().fold(0_u64, |bytes, change| {
+                bytes.saturating_add(change.owned_allocation_capacity_bytes())
+            }))
+            .saturating_add(self.published_patch.owned_allocation_capacity_bytes())
+            .saturating_add(self.detail.owned_allocation_capacity_bytes())
+    }
+
     pub(crate) fn published_record(&self) -> PublishedAuthoritativeRecordPatch {
         PublishedAuthoritativeRecordPatch {
             target: self.target.clone(),

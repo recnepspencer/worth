@@ -14,6 +14,11 @@ pub struct WorthServerProductSchedulerAdmission {
 }
 
 impl WorthServerProductSchedulerAdmission {
+    pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
+        use super::execution_pipeline::read_batch_accounting::string;
+        string(&self.scheduler_lane).saturating_add(string(&self.canonical_digest))
+    }
+
     fn new(
         scheduler_lane: String,
         concurrency_class: WorthServerOperationConcurrencyClass,
@@ -48,6 +53,19 @@ pub struct WorthServerScheduledProductOperation {
 }
 
 impl WorthServerScheduledProductOperation {
+    pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
+        use super::execution_pipeline::read_batch_accounting::string;
+        self.plan
+            .owned_allocation_capacity_bytes()
+            .saturating_add(self.scheduler_admission.owned_allocation_capacity_bytes())
+            .saturating_add(string(&self.canonical_digest))
+            .saturating_add(if self.admitted_product_session.is_some() {
+                u64::MAX
+            } else {
+                0
+            })
+    }
+
     pub(crate) fn admit(
         plan: WorthServerLoweredProductOperationPlan,
         admitted_product_session: Option<WorthServerProductSession>,

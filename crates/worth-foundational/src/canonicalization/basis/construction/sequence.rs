@@ -15,6 +15,22 @@ pub struct CanonicalBasisSequence {
 }
 
 impl CanonicalBasisSequence {
+    pub fn owned_allocation_capacity_bytes(&self) -> usize {
+        self.version
+            .owned_allocation_capacity_bytes()
+            .saturating_add(
+                self.entries
+                    .capacity()
+                    .saturating_mul(std::mem::size_of::<CanonicalBasisEntry>()),
+            )
+            .saturating_add(
+                self.entries
+                    .iter()
+                    .map(CanonicalBasisEntry::owned_allocation_capacity_bytes)
+                    .sum::<usize>(),
+            )
+    }
+
     pub(crate) fn new(
         version: CanonicalizationRuleVersion,
         domain: CanonicalBasisDomain,

@@ -15,7 +15,7 @@ pub(crate) type PartitionMap = BTreeMap<PartitionId, Arc<PartitionState>>;
 ///
 /// Acquiring an edition is a single atomic increment. It copies nothing, it
 /// retains no lock, and it can therefore be held across record materialization,
-/// re-entrant substrate lookups, derived projection work, and rayon fan-out
+/// re-entrant substrate lookups, derived projection work, and leased packet work
 /// without any possibility of deadlocking a settling executor.
 ///
 /// An edition is frozen at the instant it is taken. A writer that runs while an
@@ -107,5 +107,9 @@ impl PartitionAccess for PartitionEdition {
 
     fn partition_ids(&self) -> Vec<PartitionId> {
         self.partitions.keys().copied().collect()
+    }
+
+    fn partition_ids_iter(&self) -> Box<dyn Iterator<Item = PartitionId> + '_> {
+        Box::new(self.partitions.keys().copied())
     }
 }

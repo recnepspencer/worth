@@ -59,6 +59,8 @@ pub enum BridgeDeliveryErrorKind {
     HistoricalSelectorMissingCommit,
     SnapshotAcquisitionFailure,
     SnapshotReadFailure,
+    ExecutionCancelled,
+    ExecutionDeadlineElapsed,
     SnapshotReadContractViolation,
     SnapshotIdentityMismatch,
     StructuralContractMismatch,

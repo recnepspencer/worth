@@ -11,6 +11,11 @@ pub struct WorthServerProductOperationSuccess {
 }
 
 impl WorthServerProductOperationSuccess {
+    pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
+        super::execution_pipeline::read_batch_accounting::string(&self.result_key)
+            .saturating_add(self.result_artifact.owned_allocation_capacity_bytes())
+    }
+
     pub fn publish_json<T>(
         result_key: impl Into<String>,
         contract: &crate::WorthServerProductResultContract,

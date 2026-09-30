@@ -1,7 +1,7 @@
 use super::fixtures::*;
 
 #[test]
-fn aspect_traces_and_diagnostics_are_stable_across_supported_execution_models() {
+fn aspect_traces_and_diagnostics_are_stable_across_serial_and_leased_preparation() {
     let serial_diagnostics = RelationalDiagnosticsProfile {
         detailed_traces_enabled: true,
         ..RelationalDiagnosticsProfile::default()
@@ -12,7 +12,6 @@ fn aspect_traces_and_diagnostics_are_stable_across_supported_execution_models() 
             CascadeDeletePolicy::CascadeDeleteRelations,
         ))
         .diagnostics(serial_diagnostics.clone())
-        .execution_model(crate::facade::runtime::RelationalExecutionModel::SingleLaneExecution)
         .build();
     let staged = RelationalRuntimeApi::builder()
         .profile(RelationalRuntimeProfile::CertificationCore)
@@ -20,52 +19,27 @@ fn aspect_traces_and_diagnostics_are_stable_across_supported_execution_models() 
             CascadeDeletePolicy::CascadeDeleteRelations,
         ))
         .diagnostics(serial_diagnostics.clone())
-        .execution_model(crate::facade::runtime::RelationalExecutionModel::ParallelPreparation)
-        .build();
-    let post_commit = RelationalRuntimeApi::builder()
-        .profile(RelationalRuntimeProfile::CertificationCore)
-        .schema_registry(declared_aspect_schema_registry(
-            CascadeDeletePolicy::CascadeDeleteRelations,
-        ))
-        .diagnostics(serial_diagnostics)
-        .execution_model(
-            crate::facade::runtime::RelationalExecutionModel::ParallelPostCommitConsumption,
-        )
         .build();
 
     let serial_outcome = create_entity_outcome(&serial, "trace-stable");
-    let staged_outcome = create_entity_outcome(&staged, "trace-stable");
-    let post_commit_outcome = create_entity_outcome(&post_commit, "trace-stable");
+    let staged_outcome =
+        create_entity_outcome_with_lease(&staged, "trace-stable", &test_execution_lease());
 
     assert_eq!(
         serial_outcome.aspect_evaluation_traces(),
         staged_outcome.aspect_evaluation_traces()
     );
     assert_eq!(
-        serial_outcome.aspect_evaluation_traces(),
-        post_commit_outcome.aspect_evaluation_traces()
-    );
-    assert_eq!(
         serial_outcome.aspect_emission_traces(),
         staged_outcome.aspect_emission_traces()
     );
-    assert_eq!(
-        serial_outcome.aspect_emission_traces(),
-        post_commit_outcome.aspect_emission_traces()
-    );
     assert_eq!(serial_outcome.patch(), staged_outcome.patch());
-    assert_eq!(serial_outcome.patch(), post_commit_outcome.patch());
     assert_eq!(
         aspect_relevant_diagnostics(serial_outcome.diagnostics()),
         aspect_relevant_diagnostics(staged_outcome.diagnostics())
     );
-    assert_eq!(
-        aspect_relevant_diagnostics(serial_outcome.diagnostics()),
-        aspect_relevant_diagnostics(post_commit_outcome.diagnostics())
-    );
     let _ = assert_patch_truth_invariants(&serial_outcome);
     let _ = assert_patch_truth_invariants(&staged_outcome);
-    let _ = assert_patch_truth_invariants(&post_commit_outcome);
 }
 
 fn aspect_relevant_diagnostics(

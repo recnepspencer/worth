@@ -26,6 +26,11 @@ impl PublishedAuthoritativePatch {
         Self { operations }
     }
 
+    pub(crate) fn into_canonicalized(mut self) -> Self {
+        self.operations.sort_by(published_operation_order);
+        self
+    }
+
     pub fn changed_aspects(&self) -> Vec<AspectKey> {
         ordered_aspect_keys(self.changed_aspect_keys().cloned())
     }

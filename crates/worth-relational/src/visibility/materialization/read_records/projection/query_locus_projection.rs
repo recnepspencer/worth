@@ -38,7 +38,7 @@ pub(crate) fn entity_query_locus_value<'record>(
     }
 }
 
-fn relation_query_locus_value<'record>(
+pub(crate) fn relation_query_locus_value<'record>(
     record: &'record RelationReadRecord,
     field_locator: &AspectFieldLocator,
 ) -> Option<&'record AspectValue> {

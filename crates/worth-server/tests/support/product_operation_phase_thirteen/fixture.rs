@@ -105,6 +105,19 @@ impl StatefulEditorLikeBackend {
 }
 
 impl WorthServerProductApplicationAdapter for StatefulEditorLikeBackend {
+    fn execute_with_lease(
+        &self,
+        operation: &worth_server::WorthServerScheduledProductOperation,
+        _lease: &worth_execution::ExecutionResourceLease<'_>,
+        context: &mut worth_execution::MapKernelContext<'_, '_>,
+    ) -> Result<
+        Result<WorthServerProductOperationSuccess, WorthServerProductAdapterExecutionError>,
+        worth_execution::MapKernelStop,
+    > {
+        context.checkpoint(0)?;
+        Ok(self.execute(operation))
+    }
+
     fn execute(
         &self,
         operation: &worth_server::WorthServerScheduledProductOperation,
@@ -194,6 +207,21 @@ impl WorthServerProductApplicationAdapter for StatefulEditorLikeBackend {
 
 pub fn build_server(backend: &StatefulEditorLikeBackend) -> WorthServer {
     product_adapter_phase_nine_fixture::build_server(vec![backend.registration()])
+}
+
+pub fn build_server_with_execution_authority(
+    backend: &StatefulEditorLikeBackend,
+    authority: Arc<worth_execution::ExecutionAuthority>,
+) -> WorthServer {
+    WorthServer::builder()
+        .with_config(product_adapter_phase_nine_fixture::base_config())
+        .register_operations(worth_server::WorthServerOperationRegistration::phase_two_defaults())
+        .register_surface(worth_server::surfaces::WorthNativeSurface::enabled())
+        .register_surface(worth_server::surfaces::CompatHttpSurface::phase_one_enabled())
+        .register_product_adapters(vec![backend.registration()])
+        .with_execution_authority(authority)
+        .build()
+        .expect("phase thirteen server with execution authority")
 }
 
 pub fn build_server_with_operation_authority(

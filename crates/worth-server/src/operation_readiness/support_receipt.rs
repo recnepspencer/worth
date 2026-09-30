@@ -8,6 +8,14 @@ pub struct WorthServerOperationSupportCompositionReceipt {
 }
 
 impl WorthServerOperationSupportCompositionReceipt {
+    pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
+        use crate::product_adapter::execution_pipeline::read_batch_accounting::{string, strings};
+        strings(&self.query_rows_consulted)
+            .saturating_add(strings(&self.product_rows_consulted))
+            .saturating_add(string(&self.dependency_relation))
+            .saturating_add(string(&self.planner_posture))
+            .saturating_add(string(&self.canonical_digest))
+    }
     pub(crate) fn new(
         query_rows_consulted: Vec<String>,
         product_rows_consulted: Vec<String>,

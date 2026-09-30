@@ -10,8 +10,6 @@ use std::{
     time::Instant,
 };
 
-use worth_foundational::ExecutionReport;
-
 use crate::{
     authority::{CancellationToken, ExecutionResourceLease},
     report::ChargedBytes,
@@ -22,7 +20,9 @@ thread_local! {
 }
 
 mod activity;
+mod nested;
 pub(crate) use activity::{enter_certification_activity, enter_retained_memory, has_active_kernel};
+pub(crate) use nested::record_nested;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum KernelStop {
@@ -353,6 +353,32 @@ impl<'a, 'lease> KernelContext<'a, 'lease> {
         }
         result
     }
+
+    /// Account work completed by a domain-local checked meter after it stops.
+    /// This does not authorize new work or clear the original stop; it keeps
+    /// cancellation/deadline reports faithful to work already performed.
+    pub fn account_completed_work(&mut self, units: u64) -> Result<(), KernelStop> {
+        let mut meter = self.meter.borrow_mut();
+        let next = meter
+            .work
+            .checked_add(units)
+            .ok_or(KernelStop::WorkCounterOverflow)?;
+        let span = meter
+            .span
+            .checked_add(units)
+            .ok_or(KernelStop::WorkCounterOverflow)?;
+        if next > meter.limits.ceiling {
+            return Err(KernelStop::WorkCeiling);
+        }
+        meter.work = next;
+        meter.span = span;
+        Ok(())
+    }
+
+    pub fn remaining_work(&self) -> u64 {
+        let meter = self.meter.borrow();
+        meter.limits.ceiling.saturating_sub(meter.work)
+    }
 }
 
 pub(crate) struct KernelMeterGuard;
@@ -363,33 +389,4 @@ impl Drop for KernelMeterGuard {
             active.borrow_mut().pop().expect("balanced kernel meter");
         });
     }
-}
-
-/// Add a joined nested computation to the invoking partition, never to a
-/// global completion-order counter. The enclosing partition's canonical
-/// identity determines whether this cost is ultimately charged.
-pub(crate) fn record_nested(report: ExecutionReport, stopped: bool) {
-    ACTIVE_METER.with(|active| {
-        if let Some(parent) = active.borrow().last() {
-            let mut parent = parent.borrow_mut();
-            parent.work = match parent.work.checked_add(report.charged_work()) {
-                Some(work) => work,
-                None => {
-                    parent.nested_stopped = true;
-                    u64::MAX
-                }
-            };
-            parent.span = match parent.span.checked_add(report.charged_span()) {
-                Some(span) => span,
-                None => {
-                    parent.nested_stopped = true;
-                    u64::MAX
-                }
-            };
-            parent.nested_stopped |= stopped;
-            if parent.work > parent.limits.ceiling {
-                parent.nested_stopped = true;
-            }
-        }
-    });
 }

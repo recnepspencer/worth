@@ -1,37 +1,23 @@
-use super::*;
-
 pub(super) fn entity_scan_partitions(
     partition_scope: &Option<std::sync::Arc<[crate::identity::data::PartitionId]>>,
-    read_view: &RelationalReadView,
+    present_partitions: &[crate::identity::data::PartitionId],
 ) -> Vec<crate::identity::data::PartitionId> {
     if let Some(partitions) = partition_scope {
         return partitions.iter().copied().collect();
     }
 
-    read_view
-        .entities()
-        .iter()
-        .map(|record| record.entity_id.partition_id)
-        .collect::<std::collections::BTreeSet<_>>()
-        .into_iter()
-        .collect()
+    present_partitions.to_vec()
 }
 
 pub(super) fn relation_scan_partitions(
     partition_scope: &Option<std::sync::Arc<[crate::identity::data::PartitionId]>>,
-    read_view: &RelationalReadView,
+    present_partitions: &[crate::identity::data::PartitionId],
 ) -> Vec<crate::identity::data::PartitionId> {
     if let Some(partitions) = partition_scope {
         return partitions.iter().copied().collect();
     }
 
-    read_view
-        .relations()
-        .iter()
-        .map(|record| record.relation_id.partition_id)
-        .collect::<std::collections::BTreeSet<_>>()
-        .into_iter()
-        .collect()
+    present_partitions.to_vec()
 }
 
 pub(super) fn canonical_seed_ids(

@@ -13,7 +13,7 @@ use super::traversal_budget::{traversal_budget_exceeded_violation, RelationTrave
 use super::visible_entities::visible_entities_of_kinds;
 
 pub(in crate::validation::engine::evaluator) fn evaluate_connectivity_minimum_contract(
-    context: &InvariantExecutionContext<'_>,
+    context: &InvariantExecutionContext<'_, '_>,
     class: InvariantClass,
     contract: &LoweredConnectivityMinimumContract,
 ) -> Option<InvariantViolation> {
@@ -23,11 +23,17 @@ pub(in crate::validation::engine::evaluator) fn evaluate_connectivity_minimum_co
     };
     context.metrics().count_relation_contracts_evaluated(1);
     let source_entities = visible_entities_of_kinds(context, &contract.source_kind_ids);
+    if !context.checkpoint(0) {
+        return None;
+    }
     if source_entities.is_empty() {
         return None;
     }
 
-    let planned_successors = planned_successor_map(&scope.planned_edges);
+    let planned_successors = planned_successor_map(&scope.planned_edges, context);
+    if !context.checkpoint(0) {
+        return None;
+    }
     let traversal = PreparedSuccessorTraversal {
         scope,
         class,
@@ -36,6 +42,9 @@ pub(in crate::validation::engine::evaluator) fn evaluate_connectivity_minimum_co
         planned_successors: &planned_successors,
     };
     for source in source_entities {
+        if !context.checkpoint(1) {
+            return None;
+        }
         let reachable_target_count = match reachable_target_count_for_connectivity(
             context,
             &traversal,
@@ -69,7 +78,7 @@ pub(in crate::validation::engine::evaluator) fn evaluate_connectivity_minimum_co
 }
 
 fn reachable_target_count_for_connectivity(
-    context: &InvariantExecutionContext<'_>,
+    context: &InvariantExecutionContext<'_, '_>,
     traversal: &PreparedSuccessorTraversal<'_>,
     source: EntityReference,
     target_kind_ids: &[crate::identity::data::KindId],
@@ -94,7 +103,13 @@ fn reachable_target_count_for_connectivity(
     })?;
 
     while let Some(entity_id) = frontier.pop() {
-        for next in traversal.successors(&entity_id, &mut traversal_budget)? {
+        if !context.checkpoint(1) {
+            return Ok(0);
+        }
+        for next in traversal.successors(&entity_id, &mut traversal_budget, context)? {
+            if !context.checkpoint(1) {
+                return Ok(0);
+            }
             if !visited.insert(next.clone()) {
                 continue;
             }

@@ -10,6 +10,10 @@ pub struct WorthServerResolvedRequestContext {
 }
 
 impl WorthServerResolvedRequestContext {
+    pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
+        self.request_context.owned_allocation_capacity_bytes()
+    }
+
     pub(crate) fn new(
         request_context: WorthServerRequestContext,
         surface_family: WorthServerSurfaceFamily,

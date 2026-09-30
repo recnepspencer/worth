@@ -2,8 +2,7 @@ use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::commit_strategies::data::canonical_digest::{
     commit_validation_summary_digest, lowering_summary_digest, preview_validation_cost_digest,
-    runtime_execution_model_digest, runtime_invariant_catalog_digest,
-    runtime_planning_contract_digest,
+    runtime_invariant_catalog_digest,
 };
 use crate::commit_strategies::data::{
     CanonicalStrategyInputDigest, CanonicalStrategyOutputDigest, CommitStrategyDescriptorDigest,
@@ -137,28 +136,38 @@ impl StrategyReplayDescriptor {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct StrategyRuntimeDeterminismBasis {
+    #[serde(deserialize_with = "deserialize_basis_version")]
+    basis_version: u8,
     schema_registry_digest: [u8; 32],
     invariant_catalog_digest: [u8; 32],
-    planning_contract_digest: [u8; 32],
-    execution_model_digest: [u8; 32],
     descriptor_semantics_version: DescriptorSemanticsVersion,
     descriptor_canonical_basis_version: DescriptorCanonicalBasisVersion,
+}
+
+fn deserialize_basis_version<'de, D>(deserializer: D) -> Result<u8, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let version = u8::deserialize(deserializer)?;
+    if version == 2 {
+        Ok(version)
+    } else {
+        Err(serde::de::Error::custom(
+            "unsupported runtime determinism basis version",
+        ))
+    }
 }
 
 impl StrategyRuntimeDeterminismBasis {
     pub fn from_runtime_config(runtime_config: &RelationalRuntimeConfig) -> Self {
         let schema_authority = runtime_config.schema.registry.authority_snapshot();
         Self {
+            basis_version: 2,
             schema_registry_digest: schema_authority_snapshot_digest_bytes(&schema_authority),
             invariant_catalog_digest: runtime_invariant_catalog_digest(
                 &runtime_config.schema.invariant_catalog,
-            ),
-            planning_contract_digest: runtime_planning_contract_digest(
-                &runtime_config.execution.planning,
-            ),
-            execution_model_digest: runtime_execution_model_digest(
-                runtime_config.execution.execution_model,
             ),
             descriptor_semantics_version: runtime_config
                 .schema
@@ -177,14 +186,6 @@ impl StrategyRuntimeDeterminismBasis {
 
     pub fn invariant_catalog_digest(&self) -> &[u8; 32] {
         &self.invariant_catalog_digest
-    }
-
-    pub fn planning_contract_digest(&self) -> &[u8; 32] {
-        &self.planning_contract_digest
-    }
-
-    pub fn execution_model_digest(&self) -> &[u8; 32] {
-        &self.execution_model_digest
     }
 
     pub fn descriptor_semantics_version(&self) -> DescriptorSemanticsVersion {
@@ -236,5 +237,40 @@ impl<'de> Deserialize<'de> for StrategyReplayDescriptor {
             validated_against_version_id: raw.validated_against_version_id,
             runtime_determinism_basis: raw.runtime_determinism_basis,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::StrategyRuntimeDeterminismBasis;
+    use crate::config::data::RelationalRuntimeConfig;
+
+    #[test]
+    fn replay_basis_rejects_pre_lease_and_unknown_versions() {
+        let basis = StrategyRuntimeDeterminismBasis::from_runtime_config(
+            &RelationalRuntimeConfig::default(),
+        );
+        let mut value = serde_json::to_value(&basis).expect("serialize basis");
+        assert_eq!(value["basis_version"], 2);
+        assert_eq!(
+            serde_json::from_value::<StrategyRuntimeDeterminismBasis>(value.clone())
+                .expect("current basis"),
+            basis
+        );
+
+        value
+            .as_object_mut()
+            .expect("basis object")
+            .remove("basis_version");
+        assert!(serde_json::from_value::<StrategyRuntimeDeterminismBasis>(value.clone()).is_err());
+        value["execution_model_digest"] = serde_json::json!("retired");
+        assert!(serde_json::from_value::<StrategyRuntimeDeterminismBasis>(value.clone()).is_err());
+
+        value["basis_version"] = serde_json::json!(3);
+        value
+            .as_object_mut()
+            .expect("basis object")
+            .remove("execution_model_digest");
+        assert!(serde_json::from_value::<StrategyRuntimeDeterminismBasis>(value).is_err());
     }
 }

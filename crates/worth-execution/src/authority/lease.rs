@@ -97,6 +97,13 @@ pub struct ExecutionResourceLease<'a> {
     policy: ExecutionRequestPolicy,
 }
 
+/// Cloneable read-only cancellation/deadline lineage for long domain scans.
+/// It grants no workers, memory, or independent work allowance.
+#[derive(Debug, Clone)]
+pub struct ExecutionLeaseStatus {
+    node: Arc<LeaseNode>,
+}
+
 /// One physical authority is permitted for a process lifetime, including after drop.
 impl ExecutionAuthority {
     pub fn try_construct(config: ExecutionAuthorityConfig) -> Result<Self, ConstructionDenial> {

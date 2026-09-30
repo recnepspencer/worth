@@ -28,7 +28,6 @@ pub(super) fn mutation_config() -> crate::config::data::MutationConfig {
             small_degree_inline_capacity: 4,
         },
         cross_context_policy: CrossContextPolicy::AllowExplicit,
-        execution_model: crate::config::data::RelationalExecutionModel::SingleLaneExecution,
     }
 }
 
@@ -47,6 +46,7 @@ pub(super) fn empty_workspace<'a>(
         aspect_plans,
         VersionId(1),
         crate::authority::mutation::BranchLocalDeleteAllowance::default(),
+        None,
         None,
     )
 }

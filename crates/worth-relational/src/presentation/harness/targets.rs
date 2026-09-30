@@ -82,6 +82,9 @@ pub(super) fn commit_error_to_harness_error(
         crate::facade::transactions::TransactionCommitError::Preparation { error, .. } => {
             RelationalHarnessError(error.detail())
         }
+        crate::facade::transactions::TransactionCommitError::Execution { denial, .. } => {
+            RelationalHarnessError(format!("commit execution stopped: {denial:?}"))
+        }
         crate::facade::transactions::TransactionCommitError::Interrupted {
             interruption, ..
         } => RelationalHarnessError(format!("transaction interrupted: {interruption:?}")),

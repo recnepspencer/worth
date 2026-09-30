@@ -14,6 +14,8 @@ pub enum BridgeSnapshotReadErrorKind {
     ExtraRecord,
     ProjectionMaskRejected,
     AspectContractValidationDenied,
+    ExecutionCancelled,
+    ExecutionDeadlineElapsed,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -27,6 +29,32 @@ pub struct BridgeSnapshotReadError {
 }
 
 impl BridgeSnapshotReadError {
+    pub(crate) fn execution_stopped(
+        lease: &worth_execution::ExecutionResourceLease<'_>,
+    ) -> Option<Self> {
+        let (kind, message) = if lease.is_cancelled() {
+            (
+                BridgeSnapshotReadErrorKind::ExecutionCancelled,
+                "snapshot read execution was cancelled",
+            )
+        } else if lease.deadline_elapsed() {
+            (
+                BridgeSnapshotReadErrorKind::ExecutionDeadlineElapsed,
+                "snapshot read execution deadline elapsed",
+            )
+        } else {
+            return None;
+        };
+        Some(Self {
+            kind,
+            message: Arc::from(message),
+            correlation_id: None,
+            aspect_key: None,
+            mask_denial: None,
+            validation_denial: None,
+        })
+    }
+
     pub fn new(message: impl Into<Arc<str>>) -> Self {
         Self {
             kind: BridgeSnapshotReadErrorKind::ExternalSnapshotReadFailure,

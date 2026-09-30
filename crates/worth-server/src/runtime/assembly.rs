@@ -2,6 +2,7 @@ use std::{
     collections::HashMap,
     sync::{Arc, Mutex},
 };
+use worth_execution::ExecutionAuthority;
 
 use crate::{
     config::WorthServerConfig,
@@ -47,6 +48,7 @@ pub(crate) struct WorthServerRuntimeAssembly {
         Arc<Mutex<HashMap<String, WorthServerStoredCompatibilityMutation>>>,
     product_operation_retry_store: Arc<Mutex<HashMap<String, WorthServerStoredProductOperation>>>,
     compat_http_binary_ingress_store: Arc<Mutex<HashMap<String, WorthServerStoredBinaryIngress>>>,
+    execution_authority: Option<Arc<ExecutionAuthority>>,
 }
 
 pub(crate) struct WorthServerRuntimeAssemblyParts {
@@ -59,6 +61,7 @@ pub(crate) struct WorthServerRuntimeAssemblyParts {
     pub(crate) product_session_clock: Option<Arc<dyn WorthServerProductSessionClock>>,
     pub(crate) product_session_termination_observers: Vec<SharedProductSessionTerminationObserver>,
     pub(crate) transport_caller_verifier: Option<Arc<dyn WorthServerTransportCallerVerifier>>,
+    pub(crate) execution_authority: Option<Arc<ExecutionAuthority>>,
 }
 
 impl WorthServerRuntimeAssembly {
@@ -73,6 +76,7 @@ impl WorthServerRuntimeAssembly {
             product_session_clock,
             product_session_termination_observers,
             transport_caller_verifier,
+            execution_authority,
         } = parts;
         let surfaces_facade = WorthServerSurfacesFacade::new(&surface_registry);
         let middleware_facade = WorthServerMiddlewareFacade::new(config.middleware().clone());
@@ -108,11 +112,16 @@ impl WorthServerRuntimeAssembly {
             compat_http_mutation_retry_store: Arc::new(Mutex::new(HashMap::new())),
             product_operation_retry_store: Arc::new(Mutex::new(HashMap::new())),
             compat_http_binary_ingress_store: Arc::new(Mutex::new(HashMap::new())),
+            execution_authority,
         }
     }
 
     pub(crate) fn config(&self) -> &WorthServerConfig {
         &self.config
+    }
+
+    pub(crate) fn execution_authority(&self) -> Option<&ExecutionAuthority> {
+        self.execution_authority.as_deref()
     }
 
     pub(crate) fn surface_registry(&self) -> &WorthServerSurfaceRegistry {

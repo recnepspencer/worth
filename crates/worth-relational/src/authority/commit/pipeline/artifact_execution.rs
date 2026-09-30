@@ -68,6 +68,7 @@ impl AssembledCommitExecution {
 pub(super) fn assemble_commit_artifacts(
     runtime: &crate::runtime::RelationalPreparationRuntime,
     validated: SnapshotValidatedCommitExecution,
+    lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
 ) -> Result<AssembledCommitExecution, crate::transactions::data::TransactionCommitError> {
     let (
         mut admitted,
@@ -109,6 +110,7 @@ pub(super) fn assemble_commit_artifacts(
             additional_diagnostics_entries,
             deferred_diagnostic_artifacts,
         },
+        lease,
     )?;
     let aspect_evaluation_traces = publication.aspect_evaluation_traces().to_vec();
     let aspect_emission_traces = publication.aspect_emission_traces().to_vec();

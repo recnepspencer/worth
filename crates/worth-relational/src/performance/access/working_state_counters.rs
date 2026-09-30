@@ -76,11 +76,4 @@ impl PerformanceAccess<'_> {
             .instrumentation
             .count(|counters| counters.post_commit_serial_strategy_count += 1);
     }
-
-    pub(crate) fn count_post_commit_parallel_strategy(&self) {
-        self.runtime
-            .services
-            .instrumentation
-            .count(|counters| counters.post_commit_parallel_strategy_count += 1);
-    }
 }

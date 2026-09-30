@@ -2,9 +2,17 @@ use std::{sync::Arc, time::Instant};
 
 use worth_foundational::{ExecutionPosture, ExecutionRequestPolicy};
 
-use super::{CancellationToken, ExecutionResourceLease, LeaseDenial, LeaseNode, LeaseRequest};
+use super::{
+    CancellationToken, ExecutionLeaseStatus, ExecutionResourceLease, LeaseDenial, LeaseNode,
+    LeaseRequest,
+};
 
 impl<'a> ExecutionResourceLease<'a> {
+    pub fn status(&self) -> ExecutionLeaseStatus {
+        ExecutionLeaseStatus {
+            node: Arc::clone(&self.node),
+        }
+    }
     pub fn child(&self, request: LeaseRequest) -> Result<Self, LeaseDenial> {
         if request.policy.determinism() != self.policy.determinism() {
             return Err(LeaseDenial::EquivalenceContractUnavailable);
@@ -82,5 +90,24 @@ impl<'a> ExecutionResourceLease<'a> {
             .into_iter()
             .map(|node| node.cancellation.clone())
             .collect()
+    }
+}
+
+impl ExecutionLeaseStatus {
+    pub fn is_cancelled(&self) -> bool {
+        let mut node = Some(self.node.as_ref());
+        while let Some(current) = node {
+            if current.cancellation.is_cancelled() {
+                return true;
+            }
+            node = current.parent.as_deref();
+        }
+        false
+    }
+
+    pub fn deadline_elapsed(&self) -> bool {
+        self.node
+            .deadline
+            .is_some_and(|deadline| Instant::now() >= deadline)
     }
 }

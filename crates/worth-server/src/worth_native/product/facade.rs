@@ -2,14 +2,15 @@ use std::{
     collections::HashMap,
     sync::{Arc, Mutex},
 };
+use worth_execution::ExecutionResourceLease;
 
 use crate::{
     product_operation_contract::WorthServerStoredProductOperation, WorthServerAdmission,
     WorthServerCompletedProductOperation, WorthServerExecutedProductReadBatch,
     WorthServerOperationRegistry, WorthServerProductAdapterRegistry,
     WorthServerProductOperationInput, WorthServerProductOperationRuntime,
-    WorthServerProductOperationSurfaceDenial, WorthServerProductSessionRegistry,
-    WorthServerQueryHandoffConfig,
+    WorthServerProductOperationSurfaceDenial, WorthServerProductReadBatchStop,
+    WorthServerProductSessionRegistry, WorthServerQueryHandoffConfig,
 };
 
 #[derive(Clone, Debug)]
@@ -64,6 +65,15 @@ impl WorthServerWorthNativeProductOperationFacade {
     ) -> Result<WorthServerExecutedProductReadBatch, WorthServerProductOperationSurfaceDenial> {
         self.runtime
             .execute_shared_read_batch_from_worth_native(&self.admission, inputs)
+    }
+
+    pub fn execute_shared_read_batch_with_lease(
+        &self,
+        inputs: Vec<WorthServerProductOperationInput>,
+        lease: &ExecutionResourceLease<'_>,
+    ) -> Result<WorthServerExecutedProductReadBatch, WorthServerProductReadBatchStop> {
+        self.runtime
+            .execute_shared_read_batch_from_worth_native_with_lease(&self.admission, inputs, lease)
     }
 
     pub fn resolve_durable_mutation(

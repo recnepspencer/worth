@@ -86,19 +86,6 @@ impl RelationalRuntimeBuilder {
         self
     }
 
-    pub fn execution_model(
-        mut self,
-        execution_model: crate::config::data::RelationalExecutionModel,
-    ) -> Self {
-        self.overrides.execution.execution_model = Some(execution_model);
-        self
-    }
-
-    pub fn planning(mut self, planning: crate::config::data::PlanningContract) -> Self {
-        self.overrides.execution.planning = Some(planning);
-        self
-    }
-
     pub fn durability_mode(mut self, durability_mode: DurabilityMode) -> Self {
         self.overrides.durability.mode = Some(durability_mode);
         self

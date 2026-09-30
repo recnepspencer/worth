@@ -12,6 +12,7 @@ mod kind_scans;
 mod projection_records;
 mod query_locus_projection;
 mod read_record_identity_ordering;
+mod streamed_basis_reads;
 mod view;
 
 pub use adjacency_revision::{
@@ -27,6 +28,6 @@ pub use projection_records::{
 };
 pub(crate) use query_locus_projection::{
     entity_query_locus_comparison_key, entity_query_locus_value,
-    relation_query_locus_comparison_key,
+    relation_query_locus_comparison_key, relation_query_locus_value,
 };
 pub use view::VisibilityProjectionView;

@@ -5,7 +5,7 @@ mod visibility;
 
 pub(crate) use projection::{
     entity_query_locus_comparison_key, entity_query_locus_value,
-    relation_query_locus_comparison_key,
+    relation_query_locus_comparison_key, relation_query_locus_value,
 };
 pub use projection::{
     AdjacencyStructuralRevision, AdjacencyStructuralRevisionDenial, EntityProjectionRecord,
@@ -18,6 +18,7 @@ pub use reader::{
     BoundedFrontierAdjacencyTruthRead, BoundedFrontierFieldEqualityTruthRead,
     BoundedRelationKindTruthRead, EntityKindTruthReadLimitExceeded,
     FrontierAdjacencyTruthReadLimitExceeded, FrontierFieldEqualityTruthReadLimitExceeded,
+    QueryLeasedReadOutcome, QueryReadExecutionStop, QueryReadPacketDenial,
     RelationKindTruthReadDenial, RelationKindTruthReadLimitExceeded, VisibilityReadContext,
 };
 

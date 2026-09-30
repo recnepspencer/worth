@@ -78,6 +78,26 @@ impl<'view, 'runtime> IndexProjectionSource<'view, 'runtime> {
         }
     }
 
+    pub(in crate::indexes) fn try_for_each_entity<E>(
+        &self,
+        kind_id: KindId,
+        before_candidate: impl FnMut(u64) -> Result<(), E>,
+        visit: impl FnMut(&EntityReadRecord) -> Result<(), E>,
+    ) -> Result<(), E> {
+        self.projection
+            .try_for_each_entity_record(Some(kind_id), before_candidate, visit)
+    }
+
+    pub(in crate::indexes) fn try_for_each_relation<E>(
+        &self,
+        kind_id: KindId,
+        before_candidate: impl FnMut(u64) -> Result<(), E>,
+        visit: impl FnMut(&RelationReadRecord) -> Result<(), E>,
+    ) -> Result<(), E> {
+        self.projection
+            .try_for_each_relation_record(Some(kind_id), before_candidate, visit)
+    }
+
     pub(in crate::indexes) fn with_entity<T>(
         &self,
         entity_id: EntityId,
@@ -87,6 +107,10 @@ impl<'view, 'runtime> IndexProjectionSource<'view, 'runtime> {
             .authoritative_entity_record(entity_id)
             .as_ref()
             .map(inspect)
+    }
+
+    pub(in crate::indexes) fn candidate_entity_bytes(&self, entity_id: EntityId) -> u64 {
+        self.projection.candidate_entity_bytes_for_id(entity_id)
     }
 
     pub(in crate::indexes) fn with_relation<T>(

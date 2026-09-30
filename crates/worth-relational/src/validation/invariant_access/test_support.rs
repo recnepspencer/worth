@@ -1,7 +1,7 @@
 use crate::capabilities::SchemaSource;
 use crate::config::data::{CascadeDeletePolicy, CrossContextPolicy, RelationIntegrityScopeBudget};
 use crate::facade::identity::PartitionId;
-use crate::facade::runtime::{InvariantCatalog, RelationalExecutionModel};
+use crate::facade::runtime::InvariantCatalog;
 use crate::facade::runtime::{RelationalRuntime, RelationalRuntimeApi};
 use crate::facade::schema::{
     EntityKindRegistration, KindAspectContractDeclarations, RelationKindRegistration,
@@ -46,14 +46,10 @@ fn selected_main_branch_state(
         .expect("owner-admitted main basis selects its exact branch state")
 }
 
-pub(super) fn runtime_with_invariants(
-    invariant_catalog: InvariantCatalog,
-    execution_model: RelationalExecutionModel,
-) -> RelationalRuntime {
+pub(super) fn runtime_with_invariants(invariant_catalog: InvariantCatalog) -> RelationalRuntime {
     RelationalRuntimeApi::builder()
         .schema_registry(RelationalSchemaRegistry::new())
         .invariant_catalog(invariant_catalog)
-        .execution_model(execution_model)
         .build()
 }
 

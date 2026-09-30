@@ -29,7 +29,7 @@ enum AdmittedEntityAspectFieldProjection {
 }
 
 pub(super) fn projected_entity_aspect_field_value_for_metadata(
-    context: &InvariantExecutionContext<'_>,
+    context: &InvariantExecutionContext<'_, '_>,
     metadata: &VisibleEntityMetadata,
     field_locator: &AspectFieldLocator,
 ) -> Option<ProjectedEntityAspectFieldValue> {
@@ -49,7 +49,7 @@ pub(super) fn projected_entity_aspect_field_value_for_metadata(
 
 impl AdmittedEntityAspectFieldProjection {
     fn for_entity_kind(
-        context: &InvariantExecutionContext<'_>,
+        context: &InvariantExecutionContext<'_, '_>,
         kind_id: KindId,
         field_locator: &AspectFieldLocator,
     ) -> Option<Self> {

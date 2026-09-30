@@ -28,7 +28,6 @@ use crate::facade::indexes::{
 use crate::facade::query::{
     IndexParityMode, IndexQueryRejectionClass, QueryAccessContract, QueryAccessPath,
 };
-use crate::facade::runtime::RelationalExecutionModel;
 use crate::facade::transactions::RecordRef;
 use crate::tests::support::*;
 use std::sync::Arc;

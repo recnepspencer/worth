@@ -201,7 +201,7 @@ fn published_handle_and_admitted_observation_remain_exact_until_release() {
 }
 
 #[test]
-fn parallel_post_commit_consumption_preserves_publication_surfaces() {
+fn leased_commit_preparation_preserves_publication_surfaces() {
     let serial = RelationalRuntimeApi::builder()
         .schema_registry(test_schema_registry())
         .publication(PublicationConfig {
@@ -216,7 +216,6 @@ fn parallel_post_commit_consumption_preserves_publication_surfaces() {
             candidate_max_lifetime_millis: 30_000,
             max_prepared_root_bytes: 268_435_456,
         })
-        .execution_model(crate::facade::runtime::RelationalExecutionModel::SingleLaneExecution)
         .build();
     let parallel = RelationalRuntimeApi::builder()
         .schema_registry(test_schema_registry())
@@ -232,9 +231,6 @@ fn parallel_post_commit_consumption_preserves_publication_surfaces() {
             candidate_max_lifetime_millis: 30_000,
             max_prepared_root_bytes: 268_435_456,
         })
-        .execution_model(
-            crate::facade::runtime::RelationalExecutionModel::ParallelPostCommitConsumption,
-        )
         .build();
 
     let _ = create_entity_outcome(&serial, "first");
@@ -242,9 +238,10 @@ fn parallel_post_commit_consumption_preserves_publication_surfaces() {
     let _serial_third = create_entity_outcome(&serial, "third");
 
     parallel.performance_access().reset_counters();
-    let _ = create_entity_outcome(&parallel, "first");
-    let parallel_second = create_entity_outcome(&parallel, "second");
-    let parallel_third = create_entity_outcome(&parallel, "third");
+    let lease = test_execution_lease();
+    let _ = create_entity_outcome_with_lease(&parallel, "first", &lease);
+    let parallel_second = create_entity_outcome_with_lease(&parallel, "second", &lease);
+    let parallel_third = create_entity_outcome_with_lease(&parallel, "third", &lease);
 
     let serial_bundle = serial.publication().latest_bundle().unwrap().clone();
     let parallel_bundle = parallel.publication().latest_bundle().unwrap().clone();

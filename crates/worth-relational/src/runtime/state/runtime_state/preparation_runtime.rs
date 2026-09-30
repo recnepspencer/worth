@@ -28,6 +28,7 @@ pub(crate) struct RelationalPreparationOwnerBinding {
 /// Narrow cloneable state used only for validation and candidate preparation.
 #[derive(Debug, Clone)]
 pub(crate) struct RelationalPreparationRuntime {
+    pub(crate) commit_work_budget: Option<crate::execution::RequestWorkBudget>,
     pub(crate) config: Arc<RelationalRuntimeConfig>,
     pub(crate) schema_contract_runtime: Arc<SchemaContractRuntimeSubsystem>,
     pub(crate) diagnostics: crate::runtime::RelationalDiagnosticArtifactStore,
@@ -70,6 +71,7 @@ impl RelationalPreparationOwnerBinding {
         configuration: &crate::runtime::RelationalRuntimeConfigurationSnapshot,
     ) -> RelationalPreparationRuntime {
         RelationalPreparationRuntime {
+            commit_work_budget: None,
             config: Arc::clone(&configuration.config),
             schema_contract_runtime: Arc::clone(&configuration.schema_contract_runtime),
             diagnostics: self.diagnostics.clone(),
@@ -86,6 +88,14 @@ impl RelationalPreparationOwnerBinding {
 }
 
 impl RelationalPreparationRuntime {
+    pub(crate) fn with_commit_work_budget(&self) -> Self {
+        let mut runtime = self.clone();
+        if runtime.commit_work_budget.is_none() {
+            runtime.commit_work_budget = Some(crate::execution::RequestWorkBudget::new());
+        }
+        runtime
+    }
+
     pub(crate) fn admit_operation(
         &self,
     ) -> Option<super::owner_lifecycle::AdmittedRelationalRuntimeOperation> {

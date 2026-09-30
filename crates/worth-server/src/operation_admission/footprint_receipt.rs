@@ -6,6 +6,13 @@ pub struct WorthServerOperationFootprintReceipt {
 }
 
 impl WorthServerOperationFootprintReceipt {
+    pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
+        use crate::product_adapter::execution_pipeline::read_batch_accounting::string;
+        string(&self.metadata_digest)
+            .saturating_add(string(&self.footprint_digest))
+            .saturating_add(string(&self.canonical_digest))
+    }
+
     pub(crate) fn new(
         metadata_digest: impl Into<String>,
         footprint_digest: impl Into<String>,

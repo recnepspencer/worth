@@ -2,8 +2,9 @@ use crate::branch::AdmittedRelationalBranchBasis;
 use crate::indexes::data::{DerivedIndexBuildOutcome, DerivedIndexBuildRequest};
 
 use super::{
-    choose_index_preparation_strategy, execute_index_packets, failed_build_outcome,
-    plan_index_packets, planned_index_definitions, publish_index_generations,
+    choose_index_preparation_strategy, execute_index_inputs, execute_index_packets,
+    failed_build_outcome, index_execution_denial, plan_index_packets, plan_index_packets_checked,
+    planned_index_definitions, publish_index_generations,
     record_index_preparation_strategy_counters, IndexAuthority, IndexGenerationPublicationBasis,
     IndexProjectionSource,
 };
@@ -15,6 +16,24 @@ impl IndexAuthority<'_> {
         &self,
         request: DerivedIndexBuildRequest,
         basis: &AdmittedRelationalBranchBasis,
+    ) -> DerivedIndexBuildOutcome {
+        self.build_for_basis_inner(request, basis, None)
+    }
+
+    pub fn build_for_basis_with_lease(
+        &self,
+        request: DerivedIndexBuildRequest,
+        basis: &AdmittedRelationalBranchBasis,
+        lease: &worth_execution::ExecutionResourceLease<'_>,
+    ) -> DerivedIndexBuildOutcome {
+        self.build_for_basis_inner(request, basis, Some(lease))
+    }
+
+    fn build_for_basis_inner(
+        &self,
+        request: DerivedIndexBuildRequest,
+        basis: &AdmittedRelationalBranchBasis,
+        lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
     ) -> DerivedIndexBuildOutcome {
         let mut generations = Vec::new();
         let mut failed_indexes = Vec::new();
@@ -62,13 +81,46 @@ impl IndexAuthority<'_> {
         };
         let projection = IndexProjectionSource::exact(&projection)
             .expect("owner-admitted observation projects one exact root");
-        let (definitions, missing_indexes) =
-            planned_index_definitions(self.runtime, &request.index_ids);
+        let work_budget = lease.map(|_| crate::execution::RequestWorkBudget::new());
+        let (definitions, checked_inputs, present_indexes, missing_indexes) =
+            if let Some(lease) = lease {
+                match plan_index_packets_checked(
+                    self.runtime,
+                    &request.index_ids,
+                    lease,
+                    work_budget.as_ref().expect("leased index work account"),
+                ) {
+                    Ok(planned) => (
+                        Vec::new(),
+                        Some(planned.inputs),
+                        planned.present,
+                        planned.missing,
+                    ),
+                    Err(stop) => {
+                        return DerivedIndexBuildOutcome {
+                            source_commit_id: request.source_commit_id,
+                            generations,
+                            failed_indexes: request.index_ids,
+                            basis_denial: None,
+                            execution_denial: Some(index_execution_denial(stop)),
+                        };
+                    }
+                }
+            } else {
+                let (definitions, missing) =
+                    planned_index_definitions(self.runtime, &request.index_ids);
+                let present: Vec<_> = definitions
+                    .iter()
+                    .map(|definition| definition.index_id)
+                    .collect();
+                (definitions, None, present, missing)
+            };
         failed_indexes.extend(missing_indexes);
-        let strategy = choose_index_preparation_strategy(self.runtime, definitions.len());
-        record_index_preparation_strategy_counters(self.runtime, definitions.len(), &strategy);
+        let strategy =
+            choose_index_preparation_strategy(self.runtime, lease, present_indexes.len());
+        record_index_preparation_strategy_counters(self.runtime, present_indexes.len(), &strategy);
         let Some(schema_version) = projection.schema_version() else {
-            failed_indexes.extend(definitions.iter().map(|definition| definition.index_id));
+            failed_indexes.extend(present_indexes.iter().copied());
             return failed_build_outcome(
                 request.source_commit_id,
                 generations,
@@ -76,9 +128,23 @@ impl IndexAuthority<'_> {
                 None,
             );
         };
-        let packets = plan_index_packets(&definitions);
-        let results =
-            execute_index_packets(self.runtime, &projection, &packets, strategy.selected_mode);
+        let results = match checked_inputs {
+            Some(inputs) => execute_index_inputs(&projection, inputs, lease, work_budget.as_ref()),
+            None => execute_index_packets(&projection, plan_index_packets(definitions), None, None),
+        };
+        let results = match results {
+            Ok(results) => results,
+            Err(execution_denial) => {
+                failed_indexes.extend(present_indexes.iter().copied());
+                return DerivedIndexBuildOutcome {
+                    source_commit_id: request.source_commit_id,
+                    generations,
+                    failed_indexes,
+                    basis_denial: None,
+                    execution_denial: Some(execution_denial),
+                };
+            }
+        };
         let publication_basis = IndexGenerationPublicationBasis::new(
             &request,
             source_branch_id,
@@ -102,6 +168,7 @@ impl IndexAuthority<'_> {
             generations,
             failed_indexes,
             basis_denial: None,
+            execution_denial: None,
         }
     }
 }

@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use worth_harness::facade::{
-    run_id, ExecutionMode, ExecutionProfile, ExecutionRequest, RunOutcome, RunRecord, RunStatus,
+    run_id, ExecutionProfile, ExecutionRequest, RunOutcome, RunRecord, RunStatus,
     TargetStatusRecord,
 };
 
@@ -14,12 +14,9 @@ use super::super::targets::{parse_target, resolve_targets};
 use super::run_summary_fields::{publication_artifacts_extension, run_summary};
 
 pub(super) fn prepare_runtime(
-    runtime: &mut RelationalRuntime,
-    profile: &ExecutionProfile,
+    _runtime: &mut RelationalRuntime,
+    _profile: &ExecutionProfile,
 ) -> Result<(), RelationalHarnessError> {
-    if let Some(execution_model) = relational_execution_model(profile.execution_mode) {
-        runtime.set_execution_model(execution_model);
-    }
     Ok(())
 }
 
@@ -88,21 +85,4 @@ pub(super) fn execute_request(
             publication_artifacts_extension(publication_artifacts).into_record_summary_value(),
         )]),
     })
-}
-
-fn relational_execution_model(
-    execution_mode: ExecutionMode,
-) -> Option<crate::config::data::RelationalExecutionModel> {
-    match execution_mode {
-        ExecutionMode::RuntimeDefault => None,
-        ExecutionMode::Serial => {
-            Some(crate::config::data::RelationalExecutionModel::SingleLaneExecution)
-        }
-        ExecutionMode::StagedParallel => {
-            Some(crate::config::data::RelationalExecutionModel::ParallelPreparation)
-        }
-        ExecutionMode::FullParallel => {
-            Some(crate::config::data::RelationalExecutionModel::ParallelPostCommitConsumption)
-        }
-    }
 }

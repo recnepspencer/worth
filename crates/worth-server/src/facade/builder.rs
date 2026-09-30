@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use worth_execution::ExecutionAuthority;
 
 use crate::{
     config::WorthServerConfig,
@@ -34,6 +35,7 @@ pub struct WorthServerBuilder {
     product_session_termination_observers: Vec<SharedProductSessionTerminationObserver>,
     transport_caller_verifier: Option<Arc<dyn crate::WorthServerTransportCallerVerifier>>,
     product_operation_authorizer: Option<Arc<dyn crate::WorthServerProductOperationAuthorizer>>,
+    execution_authority: Option<Arc<ExecutionAuthority>>,
 }
 
 impl WorthServerBuilder {
@@ -108,6 +110,12 @@ impl WorthServerBuilder {
         self
     }
 
+    /// Share the host's process execution authority with Server requests.
+    pub fn with_execution_authority(mut self, authority: Arc<ExecutionAuthority>) -> Self {
+        self.execution_authority = Some(authority);
+        self
+    }
+
     pub fn build(self) -> Result<WorthServer, WorthServerBuildError> {
         let config = self.config.ok_or(WorthServerBuildError::MissingConfig)?;
         let counters = Arc::new(WorthServerCounters::default());
@@ -137,6 +145,7 @@ impl WorthServerBuilder {
             product_session_clock: self.product_session_clock,
             product_session_termination_observers: self.product_session_termination_observers,
             transport_caller_verifier: self.transport_caller_verifier,
+            execution_authority: self.execution_authority,
         });
         let runtime = WorthServerRuntime::from_assembly(assembly);
         Ok(WorthServer::new(runtime))

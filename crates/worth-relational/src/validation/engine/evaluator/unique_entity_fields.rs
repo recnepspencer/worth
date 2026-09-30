@@ -20,15 +20,21 @@ use projected_entity_field_values::projected_entity_aspect_field_value_for_metad
 /// detached candidate materialized by the canonical mutation engine; other
 /// observations use their ordinary committed or speculative state directly.
 pub(super) fn evaluate_unique_entity_aspect_field(
-    context: &InvariantExecutionContext<'_>,
+    context: &InvariantExecutionContext<'_, '_>,
     class: InvariantClass,
     field_locator: &AspectFieldLocator,
 ) -> Option<InvariantViolation> {
     let field = single_field(field_locator)?;
-    let mut values = Vec::new();
+    let mut seen = BTreeMap::new();
     let state_view = context.enforcement_state_view();
-    for partition_id in state_view.state().partition_ids() {
+    for partition_id in state_view.state().partition_ids_iter() {
+        if !context.checkpoint(1) {
+            return None;
+        }
         if state_view.state().get_partition(partition_id).is_none() {
+            if !context.check_result_peak(4096) {
+                return None;
+            }
             return Some(storage_inconsistency_violation(
                 class,
                 format!(
@@ -45,38 +51,49 @@ pub(super) fn evaluate_unique_entity_aspect_field(
             continue;
         };
         for slot in 0..slot_count {
+            if !context.checkpoint(1) {
+                return None;
+            }
             context.metrics().count_entity_slot_scans(1);
             let Some(metadata) = state_view.entity_metadata_for_slot(partition_id, slot) else {
                 continue;
             };
+            let state_bytes = state_view
+                .entity_aspect_state(metadata.entity_id)
+                .map_or(0, |state| state.owned_allocation_capacity_bytes() as u64);
+            if !context.check_scratch_peak(state_bytes.saturating_mul(4).saturating_add(128)) {
+                return None;
+            }
             let Some(projected) =
                 projected_entity_aspect_field_value_for_metadata(context, &metadata, field_locator)
             else {
                 continue;
             };
-            values.push(projected.value);
+            let value = projected.value;
+            let value_bytes = value.owned_allocation_capacity_bytes() as u64;
+            if !context.claim_scratch(value_bytes.saturating_mul(4).saturating_add(128)) {
+                return None;
+            }
+            let comparison_key = authoritative_aspect_value_field_comparison_key(&value);
+            if let Some((count, _)) = seen.get_mut(&comparison_key) {
+                *count += 1;
+            } else {
+                seen.insert(comparison_key, (1usize, value));
+            }
         }
     }
-    first_duplicate(class, field_locator, values)
-}
-
-fn first_duplicate(
-    class: InvariantClass,
-    field_locator: &AspectFieldLocator,
-    values: Vec<AspectValue>,
-) -> Option<InvariantViolation> {
-    let mut seen = BTreeMap::new();
-    for value in values {
-        let comparison_key = authoritative_aspect_value_field_comparison_key(&value);
-        if let Some((count, _)) = seen.get_mut(&comparison_key) {
-            *count += 1;
-        } else {
-            seen.insert(comparison_key, (1usize, value));
+    for (count, value) in seen.into_values() {
+        if count > 1 {
+            let bytes = 4096_u64
+                .saturating_add(field_locator.owned_allocation_capacity_bytes() as u64)
+                .saturating_add(value.owned_allocation_capacity_bytes() as u64);
+            if !context.claim_result(bytes) {
+                return None;
+            }
+            return Some(duplicate_field_violation(class, field_locator, value));
         }
     }
-    seen.into_values().find_map(|(count, value)| {
-        (count > 1).then(|| duplicate_field_violation(class, field_locator, value))
-    })
+    None
 }
 
 fn single_field(field_locator: &AspectFieldLocator) -> Option<&FieldKey> {

@@ -6,6 +6,6 @@ pub use cancellation::CancellationToken;
 pub use equivalence::EquivalencePredicate;
 pub(crate) use lease::ResourceReservation;
 pub use lease::{
-    ConstructionDenial, ExecutionAuthority, ExecutionAuthorityConfig, ExecutionResourceLease,
-    LeaseDenial, LeaseRequest,
+    ConstructionDenial, ExecutionAuthority, ExecutionAuthorityConfig, ExecutionLeaseStatus,
+    ExecutionResourceLease, LeaseDenial, LeaseRequest,
 };

@@ -59,6 +59,12 @@ impl PartitionAccess for SelectedRelationalBranchState {
     fn partition_ids(&self) -> Vec<crate::identity::data::PartitionId> {
         self.state().partition_ids()
     }
+
+    fn partition_ids_iter(
+        &self,
+    ) -> Box<dyn Iterator<Item = crate::identity::data::PartitionId> + '_> {
+        self.state().partition_ids_iter()
+    }
 }
 
 impl crate::runtime::RelationalRuntime {

@@ -23,19 +23,6 @@ impl<'a> RuntimeSetup<'a> {
         self
     }
 
-    pub fn execution_model(
-        &mut self,
-        execution_model: crate::config::data::RelationalExecutionModel,
-    ) -> &mut Self {
-        self.builder.overrides.execution.execution_model = Some(execution_model);
-        self
-    }
-
-    pub fn planning(&mut self, planning: crate::config::data::PlanningContract) -> &mut Self {
-        self.builder.overrides.execution.planning = Some(planning);
-        self
-    }
-
     pub fn diagnostics(&mut self, diagnostics: RelationalDiagnosticsProfile) -> &mut Self {
         self.builder.overrides.diagnostics.profile = Some(diagnostics);
         self

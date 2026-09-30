@@ -10,6 +10,10 @@ impl PartitionAccess for RelationalBranchRootState {
     fn partition_ids(&self) -> Vec<PartitionId> {
         self.root.partition_ids()
     }
+
+    fn partition_ids_iter(&self) -> Box<dyn Iterator<Item = PartitionId> + '_> {
+        Box::new(self.root.partition_ids_iter())
+    }
 }
 
 impl PartitionAccess for RelationalBranchRoot {
@@ -19,5 +23,9 @@ impl PartitionAccess for RelationalBranchRoot {
 
     fn partition_ids(&self) -> Vec<PartitionId> {
         self.partition_ids()
+    }
+
+    fn partition_ids_iter(&self) -> Box<dyn Iterator<Item = PartitionId> + '_> {
+        Box::new(RelationalBranchRoot::partition_ids_iter(self))
     }
 }

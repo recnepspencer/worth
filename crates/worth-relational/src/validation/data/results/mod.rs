@@ -157,6 +157,54 @@ pub enum InvariantViolationFields {
     },
 }
 
+impl InvariantViolationFields {
+    pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
+        use InvariantViolationFields as Fields;
+        match self {
+            Fields::UniqueEntityField {
+                field_locator,
+                value,
+            } => (field_locator.owned_allocation_capacity_bytes() as u64)
+                .saturating_add(value.owned_allocation_capacity_bytes() as u64),
+            Fields::SidecarConsistency { missing_label, .. } => missing_label.capacity() as u64,
+            Fields::StorageInconsistency {
+                field,
+                missing_label,
+                ..
+            } => field
+                .as_ref()
+                .map_or(0, |key| key.owned_allocation_capacity_bytes() as u64)
+                .saturating_add(
+                    missing_label
+                        .as_ref()
+                        .map_or(0, |label| label.capacity() as u64),
+                ),
+            Fields::RelationIntegrityScopeBudgetExceeded { limit_name, .. } => {
+                limit_name.capacity() as u64
+            }
+            Fields::CustomInvariantFailure {
+                identity, detail, ..
+            } => (identity.semantic_identity().rule_id.as_str().len() as u64)
+                .saturating_add(detail.capacity() as u64),
+            Fields::CustomInvariantViolation { identity } => identity.rule_id.as_str().len() as u64,
+            Fields::RelationEndpointKindMismatch { contract_id, .. }
+            | Fields::RelationEndpointKindSelfEdge { contract_id, .. }
+            | Fields::RelationEndpointKindCrossContext { contract_id, .. }
+            | Fields::RelationCardinalityEndpoint { contract_id, .. }
+            | Fields::RelationCardinalityPair { contract_id, .. }
+            | Fields::RelationUniqueness { contract_id, .. }
+            | Fields::RelationSymmetry { contract_id, .. }
+            | Fields::RelationEndpointDeletionIntegrity { contract_id, .. }
+            | Fields::PartitionIsolation { contract_id, .. }
+            | Fields::Acyclicity { contract_id, .. }
+            | Fields::ConnectivityMinimum { contract_id, .. } => contract_id.as_str().len() as u64,
+            Fields::None
+            | Fields::MergedIntentLimit { .. }
+            | Fields::SnapshotEntityLimit { .. } => 0,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum RelationEndpointBoundary {
     Source,

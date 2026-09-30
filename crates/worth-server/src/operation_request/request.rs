@@ -15,6 +15,20 @@ pub struct WorthServerOperationRequest {
 }
 
 impl WorthServerOperationRequest {
+    pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
+        use crate::product_adapter::execution_pipeline::read_batch_accounting::string;
+        self.resolved_request_context
+            .owned_allocation_capacity_bytes()
+            .saturating_add(self.identity.owned_allocation_capacity_bytes())
+            .saturating_add(
+                self.payload_envelope
+                    .as_ref()
+                    .map_or(0, |envelope| envelope.owned_allocation_capacity_bytes()),
+            )
+            .saturating_add(self.receipt.owned_allocation_capacity_bytes())
+            .saturating_add(string(&self.canonical_digest))
+    }
+
     pub(crate) fn new(
         resolved_request_context: WorthServerResolvedRequestContext,
         identity: WorthServerOperationIdentity,
