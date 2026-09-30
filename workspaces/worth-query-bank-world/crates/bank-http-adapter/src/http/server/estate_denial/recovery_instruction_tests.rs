@@ -2,6 +2,7 @@
 
 use super::*;
 use BankCommittedDispatchOutboxReadDenial as Read;
+use BankExternalDispatchAttemptDenial as Attempt;
 use BankHttpDenialKind as Denial;
 use BankHttpNextAction as Next;
 use BankRecoveryDenialKind as Kind;
@@ -68,6 +69,54 @@ const OWNER_READS: [(Read, Denial, Next); 13] = [
     ),
 ];
 
+const ATTEMPTS: [(Attempt, Denial, Next); 9] = [
+    (
+        Attempt::OriginalPublicationPending,
+        Denial::Unavailable,
+        Next::Retry,
+    ),
+    (
+        Attempt::InFlightCapacityExhausted,
+        Denial::Unavailable,
+        Next::Retry,
+    ),
+    (
+        Attempt::AttemptIdentityExhausted,
+        Denial::Unavailable,
+        Next::ContactOperator,
+    ),
+    (
+        Attempt::InboundOperationSlotMissing,
+        Denial::Stale,
+        Next::ContactOperator,
+    ),
+    (
+        Attempt::ForeignRelationalRuntime,
+        Denial::InternalDenied,
+        Next::ContactOperator,
+    ),
+    (
+        Attempt::ForeignProductWorld,
+        Denial::InternalDenied,
+        Next::ContactOperator,
+    ),
+    (
+        Attempt::PublicationCommitMismatch,
+        Denial::InternalDenied,
+        Next::ContactOperator,
+    ),
+    (
+        Attempt::OutstandingDispatchMissing,
+        Denial::InternalDenied,
+        Next::ContactOperator,
+    ),
+    (
+        Attempt::OutstandingDispatchMismatch,
+        Denial::InternalDenied,
+        Next::ContactOperator,
+    ),
+];
+
 /// Every recovery kind with the instruction it must carry. The exhaustive
 /// match stops compiling when a kind is added, so a new kind cannot skip this
 /// table.
@@ -75,17 +124,12 @@ fn every_kind() -> Vec<(Kind, Denial, Next)> {
     let listed = |kind: Kind| match kind {
         Kind::RecoveryNotAdmitted
         | Kind::RecoveryAlreadyMinted
-        | Kind::RuntimeMismatch
         | Kind::SchemaMismatch
         | Kind::BranchMismatch
         | Kind::ApplicationBindingGenerationMismatch
         | Kind::OperationMismatch
         | Kind::GovernedInputMismatch
-        | Kind::AttemptMismatch
-        | Kind::PrincipalScopeMismatch
-        | Kind::IdempotencyMismatch
         | Kind::ForeignIdempotencyRead
-        | Kind::ProviderPostureMismatch
         | Kind::CorrelationMismatch
         | Kind::CompatibilityGenerationMismatch
         | Kind::Expired
@@ -99,7 +143,7 @@ fn every_kind() -> Vec<(Kind, Denial, Next)> {
         | Kind::DispatchOutboxMissing
         | Kind::TransportNotInstalled
         | Kind::DispatchOwnerReadDenied(_)
-        | Kind::AttemptAdmissionDenied
+        | Kind::AttemptAdmissionDenied(_)
         | Kind::CanonicalDerivationDenied
         | Kind::TimeObservationDenied
         | Kind::CompensationNotAdmitted
@@ -109,7 +153,6 @@ fn every_kind() -> Vec<(Kind, Denial, Next)> {
         | Kind::AdmissionDeadlineExceeded
         | Kind::AdmissionAuthenticationExpired
         | Kind::DisclosureAdmissionRequired
-        | Kind::CurrentPolicyDenied
         | Kind::UnresolvedExternalPosture => kind,
     };
     let refused = (Denial::PermissionDenied, Next::None);
@@ -121,7 +164,6 @@ fn every_kind() -> Vec<(Kind, Denial, Next)> {
         (Kind::RecoveryNotAdmitted, refused),
         (Kind::CompensationNotAdmitted, refused),
         (Kind::ReconciliationNotAdmitted, refused),
-        (Kind::CurrentPolicyDenied, refused),
         (Kind::ForeignPrincipal, refused),
         (Kind::RecoveryAlreadyMinted, moved_on),
         (Kind::AlreadyTerminal, moved_on),
@@ -145,20 +187,14 @@ fn every_kind() -> Vec<(Kind, Denial, Next)> {
         (Kind::UnresolvedExternalPosture, settling),
         (Kind::CompletionPublicationPending, settling),
         (Kind::TerminalIndexUnavailable, settling),
-        (Kind::AttemptAdmissionDenied, settling),
         (Kind::TimeObservationDenied, settling),
         (
             Kind::TransportNotInstalled,
             (Denial::Unavailable, Next::ContactOperator),
         ),
         (Kind::DispatchOutboxMissing, (Denial::NotFound, Next::None)),
-        (Kind::RuntimeMismatch, server_fault),
         (Kind::ForeignRuntime, server_fault),
-        (Kind::AttemptMismatch, server_fault),
-        (Kind::PrincipalScopeMismatch, server_fault),
-        (Kind::IdempotencyMismatch, server_fault),
         (Kind::ForeignIdempotencyRead, server_fault),
-        (Kind::ProviderPostureMismatch, server_fault),
         (Kind::CorrelationMismatch, server_fault),
         (Kind::FreshAuthorityDenied, server_fault),
         (Kind::DisclosureAdmissionRequired, server_fault),
@@ -172,6 +208,9 @@ fn every_kind() -> Vec<(Kind, Denial, Next)> {
             (listed(Kind::DispatchOwnerReadDenied(read)), denial, next)
         }),
     )
+    .chain(ATTEMPTS.into_iter().map(|(attempt, denial, next)| {
+        (listed(Kind::AttemptAdmissionDenied(attempt)), denial, next)
+    }))
     .collect()
 }
 
@@ -234,6 +273,20 @@ fn a_settling_publication_is_retried_but_a_lost_exact_commit_is_not() {
 }
 
 #[test]
+fn a_full_send_window_is_retried_but_a_foreign_original_is_not() {
+    let attempt = |attempt| recovery_denial(Kind::AttemptAdmissionDenied(attempt));
+    assert_eq!(
+        attempt(Attempt::InFlightCapacityExhausted).next_action,
+        Next::Retry
+    );
+    assert_eq!(
+        attempt(Attempt::ForeignProductWorld).next_action,
+        Next::ContactOperator,
+        "no retry changes whose world the original belongs to"
+    );
+}
+
+#[test]
 fn no_redispatch_refusal_prompts_a_refresh() {
     for kind in [
         Kind::AlreadyCompleted,
@@ -241,7 +294,6 @@ fn no_redispatch_refusal_prompts_a_refresh() {
         Kind::TerminalIndexUnavailable,
         Kind::DispatchOutboxMissing,
         Kind::TransportNotInstalled,
-        Kind::AttemptAdmissionDenied,
         Kind::CanonicalDerivationDenied,
         Kind::TimeObservationDenied,
         Kind::AdmissionCancelled,
@@ -250,6 +302,7 @@ fn no_redispatch_refusal_prompts_a_refresh() {
     ]
     .into_iter()
     .chain(OWNER_READS.map(|(read, _, _)| Kind::DispatchOwnerReadDenied(read)))
+    .chain(ATTEMPTS.map(|(attempt, _, _)| Kind::AttemptAdmissionDenied(attempt)))
     {
         assert_ne!(
             recovery_denial(kind).next_action,
@@ -274,4 +327,49 @@ fn a_committed_key_asks_for_a_refresh_and_an_unverifiable_one_for_the_operator()
         )),
         BankHttpDenial::new(Denial::InternalDenied, Next::ContactOperator)
     );
+}
+
+#[test]
+fn idempotency_capacity_is_retried_and_spent_identity_asks_for_the_operator() {
+    use bank_server::BankEstateIdempotencyResolutionDenial as Idempotency;
+    for (cause, denial, next) in [
+        (
+            Idempotency::ActiveSnapshotCapacityExhausted {
+                maximum_active_snapshots: 2,
+            },
+            Denial::Unavailable,
+            Next::Retry,
+        ),
+        (
+            Idempotency::RetentionCapacityExhausted,
+            Denial::Unavailable,
+            Next::Retry,
+        ),
+        (
+            Idempotency::ProviderUnavailable,
+            Denial::Unavailable,
+            Next::Retry,
+        ),
+        (
+            Idempotency::RetentionIdentityExhausted,
+            Denial::Unavailable,
+            Next::ContactOperator,
+        ),
+        (
+            Idempotency::SnapshotIdentityExhausted,
+            Denial::Unavailable,
+            Next::ContactOperator,
+        ),
+        (
+            Idempotency::ForeignAdmission,
+            Denial::InternalDenied,
+            Next::ContactOperator,
+        ),
+    ] {
+        assert_eq!(
+            estate_denial(BankEstateProgressionDenial::Idempotency(cause)),
+            BankHttpDenial::new(denial, next),
+            "{cause:?}"
+        );
+    }
 }

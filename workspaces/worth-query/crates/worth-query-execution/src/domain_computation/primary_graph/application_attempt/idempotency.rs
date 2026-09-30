@@ -25,12 +25,13 @@ struct WorthQueryIdempotencyEntityIdentity {
     generation: u32,
 }
 
-/// The admitted principal and scope under one installed binding. It names no
-/// runtime, so the same request matches its durable intent in every runtime
-/// that installs the same package, before and after a restore or reopen.
+/// The admitted principal and scope under one installed package and schema.
+/// It names no runtime and no installation generation, since both are counted
+/// per process and neither survives a restore, so the same request matches its
+/// durable intent in every runtime that installs the same package, at any
+/// generation, before and after a restore or reopen.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 struct WorthQueryIdempotencyScopeIdentity {
-    binding_generation: u64,
     package_identity: [u8; 32],
     schema_identity: [u8; 32],
     principal: WorthQueryIdempotencyEntityIdentity,
@@ -239,7 +240,6 @@ impl WorthQueryApplicationIdempotencyBinding {
             producer_dependency_identity: self.producer_dependency_identity,
             operation_identity: self.operation_identity,
             operation_scope_identity: Some(WorthQueryIdempotencyScopeIdentity {
-                binding_generation: binding.binding_identity().generation(),
                 package_identity: *binding.binding_identity().package_identity().bytes(),
                 schema_identity: *binding.binding_identity().schema_identity().bytes(),
                 principal: WorthQueryIdempotencyEntityIdentity {

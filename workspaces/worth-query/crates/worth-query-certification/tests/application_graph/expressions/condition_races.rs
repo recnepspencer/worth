@@ -28,7 +28,9 @@ fn revocation_after_preparation_refuses_the_acceptance() {
         Ok(WorkflowProgressOutcome::IdempotencyDenied(denial)) => {
             assert_eq!(
                 denial.kind(),
-                WorthQueryApplicationIdempotencyResolutionDenialKind::Authorization
+                WorthQueryApplicationIdempotencyResolutionDenialKind::Authorization(
+                    WorthQueryOperationAuthorizationDenialKind::StaleAuthorization
+                )
             );
             assert_eq!(
                 denial

@@ -4,9 +4,9 @@
 //! The current encoding opens with `v2:` and names only identities that survive
 //! a restore or reopen. The first encoding opened directly with the intent
 //! identity and also named the runtime that admitted the request: its scope
-//! slot led with the runtime-authority and installation-runtime ordinals, and
-//! its operation slot held the operation's authority seal, keyed per
-//! installation. A first-encoding record resolves by its durable parts. Every
+//! slot led with the runtime-authority and installation-runtime ordinals and
+//! the installation generation, and its operation slot held the operation's
+//! authority seal, keyed per installation. A first-encoding record resolves by its durable parts. Every
 //! slot other than the operation must equal the request's, and the operation
 //! must follow from the mutation binding the record names within the package
 //! and schema its scope names. A record that names an operation but no mutation
@@ -18,8 +18,9 @@ const DURABLE_ENCODING: &str = "v2:";
 const OPERATION_SLOT: &str = ":operation=";
 const SCOPE_SLOT: &str = ":scope=";
 const IDENTITY_DIGITS: usize = 64;
-/// The digits of the two runtime ordinals that lead a first-encoding scope.
-const FIRST_ENCODING_RUNTIME_DIGITS: usize = 32;
+/// The digits of the two runtime ordinals and the installation generation
+/// that lead a first-encoding scope.
+const FIRST_ENCODING_RUNTIME_DIGITS: usize = 48;
 const MALFORMED: &str = "provider idempotency intent is malformed";
 
 /// How a request's intent compares with the intent recorded under its key.
@@ -68,7 +69,8 @@ impl WorthQueryApplicationIdempotencyBinding {
     }
 }
 
-/// A first-encoding intent with the runtime ordinals removed from its scope.
+/// A first-encoding intent with the runtime ordinals and installation
+/// generation removed from its scope.
 fn without_runtime_ordinals(recorded: &str) -> Result<String, &'static str> {
     let identity = recorded.get(..IDENTITY_DIGITS).ok_or(MALFORMED)?;
     if !is_hex(identity) || !recorded[IDENTITY_DIGITS..].starts_with(':') {

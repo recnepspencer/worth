@@ -76,17 +76,12 @@ pub enum BankEstateProgressionDenial {
 pub enum BankRecoveryDenialKind {
     RecoveryNotAdmitted,
     RecoveryAlreadyMinted,
-    RuntimeMismatch,
     SchemaMismatch,
     BranchMismatch,
     ApplicationBindingGenerationMismatch,
     OperationMismatch,
     GovernedInputMismatch,
-    AttemptMismatch,
-    PrincipalScopeMismatch,
-    IdempotencyMismatch,
     ForeignIdempotencyRead,
-    ProviderPostureMismatch,
     CorrelationMismatch,
     CompatibilityGenerationMismatch,
     Expired,
@@ -100,7 +95,7 @@ pub enum BankRecoveryDenialKind {
     DispatchOutboxMissing,
     TransportNotInstalled,
     DispatchOwnerReadDenied(crate::BankCommittedDispatchOutboxReadDenial),
-    AttemptAdmissionDenied,
+    AttemptAdmissionDenied(crate::BankExternalDispatchAttemptDenial),
     CanonicalDerivationDenied,
     TimeObservationDenied,
     CompensationNotAdmitted,
@@ -110,7 +105,6 @@ pub enum BankRecoveryDenialKind {
     AdmissionDeadlineExceeded,
     AdmissionAuthenticationExpired,
     DisclosureAdmissionRequired,
-    CurrentPolicyDenied,
     UnresolvedExternalPosture,
 }
 
@@ -130,7 +124,6 @@ impl BankRecoveryDenial {
         let kind = match denial.kind() {
             Query::RecoveryNotAdmitted => Bank::RecoveryNotAdmitted,
             Query::RecoveryAlreadyMinted => Bank::RecoveryAlreadyMinted,
-            Query::RuntimeMismatch => Bank::RuntimeMismatch,
             Query::SchemaMismatch => Bank::SchemaMismatch,
             Query::BranchMismatch => Bank::BranchMismatch,
             Query::ApplicationBindingGenerationMismatch => {
@@ -138,11 +131,7 @@ impl BankRecoveryDenial {
             }
             Query::OperationMismatch => Bank::OperationMismatch,
             Query::GovernedInputMismatch => Bank::GovernedInputMismatch,
-            Query::AttemptMismatch => Bank::AttemptMismatch,
-            Query::PrincipalScopeMismatch => Bank::PrincipalScopeMismatch,
-            Query::IdempotencyMismatch => Bank::IdempotencyMismatch,
             Query::ForeignIdempotencyRead => Bank::ForeignIdempotencyRead,
-            Query::ProviderPostureMismatch => Bank::ProviderPostureMismatch,
             Query::CorrelationMismatch => Bank::CorrelationMismatch,
             Query::CompatibilityGenerationMismatch => Bank::CompatibilityGenerationMismatch,
             Query::Expired => Bank::Expired,
@@ -156,7 +145,7 @@ impl BankRecoveryDenial {
             Query::DispatchOutboxMissing => Bank::DispatchOutboxMissing,
             Query::TransportNotInstalled => Bank::TransportNotInstalled,
             Query::DispatchOwnerReadDenied(read) => Bank::DispatchOwnerReadDenied(read.into()),
-            Query::AttemptAdmissionDenied => Bank::AttemptAdmissionDenied,
+            Query::AttemptAdmissionDenied(attempt) => Bank::AttemptAdmissionDenied(attempt.into()),
             Query::CanonicalDerivationDenied => Bank::CanonicalDerivationDenied,
             Query::TimeObservationDenied => Bank::TimeObservationDenied,
             Query::CompensationNotAdmitted => Bank::CompensationNotAdmitted,
@@ -166,7 +155,6 @@ impl BankRecoveryDenial {
             Query::AdmissionDeadlineExceeded => Bank::AdmissionDeadlineExceeded,
             Query::AdmissionAuthenticationExpired => Bank::AdmissionAuthenticationExpired,
             Query::DisclosureAdmissionRequired => Bank::DisclosureAdmissionRequired,
-            Query::CurrentPolicyDenied => Bank::CurrentPolicyDenied,
             Query::UnresolvedExternalPosture => Bank::UnresolvedExternalPosture,
         };
         Self { kind }

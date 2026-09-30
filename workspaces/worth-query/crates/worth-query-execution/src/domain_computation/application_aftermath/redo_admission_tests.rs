@@ -283,7 +283,7 @@ fn recovery_denials_keep_typed_mapping() {
         WorthQueryRedoDenialKind::Stale
     );
     assert_eq!(
-        map_recovery_denial(K::CurrentPolicyDenied).kind(),
+        map_recovery_denial(K::FreshAuthorityDenied).kind(),
         WorthQueryRedoDenialKind::NewlyUnauthorized
     );
 }

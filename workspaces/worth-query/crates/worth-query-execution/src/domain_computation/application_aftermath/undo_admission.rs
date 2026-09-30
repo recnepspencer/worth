@@ -322,9 +322,7 @@ pub(crate) fn map_recovery_denial(
     WorthQueryUndoDenial::new(match kind {
         K::AlreadyTerminal => WorthQueryUndoDenialKind::AlreadyConsumed,
         K::Expired => WorthQueryUndoDenialKind::Stale,
-        K::CurrentPolicyDenied | K::FreshAuthorityDenied => {
-            WorthQueryUndoDenialKind::CurrentPolicyDenied
-        }
+        K::FreshAuthorityDenied => WorthQueryUndoDenialKind::CurrentPolicyDenied,
         K::ForeignRuntime | K::ForeignPrincipal => WorthQueryUndoDenialKind::ForeignHandle,
         _ => WorthQueryUndoDenialKind::CorrectionNotAdmitted,
     })

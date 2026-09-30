@@ -3,6 +3,7 @@
 use worth_query_host::facade::primary_graph::{
     WorthQueryCommittedDispatchOutboxObservation,
     WorthQueryCommittedDispatchOutboxReadDenial as QueryDenial,
+    WorthQueryExternalDispatchAttemptDenial as QueryAttemptDenial,
 };
 
 use crate::{BankCommitReceipt, BankIdentityRuntime};
@@ -123,6 +124,43 @@ impl From<QueryDenial> for BankCommittedDispatchOutboxReadDenial {
             QueryDenial::Malformed => Self::Malformed,
             QueryDenial::CommitMismatch => Self::CommitMismatch,
             QueryDenial::RecordMismatch => Self::RecordMismatch,
+        }
+    }
+}
+
+/// Why Query could not admit one physical dispatch attempt. Each cause keeps
+/// its own variant, because a full in-flight window clears on its own while a
+/// foreign or mismatched original never does.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum BankExternalDispatchAttemptDenial {
+    ForeignRelationalRuntime,
+    ForeignProductWorld,
+    PublicationCommitMismatch,
+    /// An inbound-completing effect carries no co-committed operation slot.
+    InboundOperationSlotMissing,
+    /// The runtime has no physical attempt identities left.
+    AttemptIdentityExhausted,
+    OutstandingDispatchMissing,
+    /// The original dispatch's publication has not settled yet.
+    OriginalPublicationPending,
+    OutstandingDispatchMismatch,
+    /// The concurrent physical sends for this effect are at their installed
+    /// limit; one frees when an in-flight send settles.
+    InFlightCapacityExhausted,
+}
+
+impl From<QueryAttemptDenial> for BankExternalDispatchAttemptDenial {
+    fn from(denial: QueryAttemptDenial) -> Self {
+        match denial {
+            QueryAttemptDenial::ForeignRelationalRuntime => Self::ForeignRelationalRuntime,
+            QueryAttemptDenial::ForeignProductWorld => Self::ForeignProductWorld,
+            QueryAttemptDenial::PublicationCommitMismatch => Self::PublicationCommitMismatch,
+            QueryAttemptDenial::InboundOperationSlotMissing => Self::InboundOperationSlotMissing,
+            QueryAttemptDenial::AttemptIdentityExhausted => Self::AttemptIdentityExhausted,
+            QueryAttemptDenial::OutstandingDispatchMissing => Self::OutstandingDispatchMissing,
+            QueryAttemptDenial::OriginalPublicationPending => Self::OriginalPublicationPending,
+            QueryAttemptDenial::OutstandingDispatchMismatch => Self::OutstandingDispatchMismatch,
+            QueryAttemptDenial::InFlightCapacityExhausted => Self::InFlightCapacityExhausted,
         }
     }
 }

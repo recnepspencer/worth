@@ -11,6 +11,8 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryOutstandingInFli
     Missing,
     PendingPublication,
     OriginalMismatch,
+    /// World already performed this effect's terminal completion.
+    TerminalReached,
     CapacityExhausted,
 }
 
@@ -43,8 +45,7 @@ impl OutstandingDispatchOwner {
             .get_mut(record.correlation())
             .ok_or(Denial::Missing)?;
         let commit = entry.commit.ok_or(Denial::PendingPublication)?;
-        if entry.terminal_world.is_some()
-            || entry.contract != *contract
+        if entry.contract != *contract
             || commit != original.commit_reference().commit_id
             || publication.relational_commit() != original.commit_reference()
             || entry.branch != *publication.product_branch()
@@ -58,6 +59,9 @@ impl OutstandingDispatchOwner {
                 })
         {
             return Err(Denial::OriginalMismatch);
+        }
+        if entry.terminal_world.is_some() {
+            return Err(Denial::TerminalReached);
         }
         let next = entry
             .in_flight

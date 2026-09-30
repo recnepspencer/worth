@@ -207,8 +207,10 @@ fn beneficiary_and_executor_callers_deny_at_capability_composition() {
         assert!(matches!(
             denial,
             BankEstateProgressionDenial::ApplicationEntry(ref denial)
-                if denial.kind()
-                    == worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenialKind::Authorization
+                if matches!(
+                denial.kind(),
+                worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenialKind::Authorization(_)
+            )
         ));
         assert_release_posture(&fixture, EstateCaseStatus::Open);
     }

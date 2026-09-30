@@ -30,8 +30,8 @@ fn the_recorded_intent_names_its_encoding_and_no_runtime() {
 fn a_first_encoding_record_resolves_by_its_durable_parts() {
     let request = mutation_request(3);
     for ordinals in [
-        "00000000000000010000000000000001",
-        "0000000000000007000000000000002a",
+        "000000000000000100000000000000010000000000000001",
+        "0000000000000007000000000000002a0000000000000005",
     ] {
         assert_eq!(
             request.match_recorded_intent(&first_encoding(mutation_request(3), ordinals)),
@@ -44,7 +44,7 @@ fn a_first_encoding_record_resolves_by_its_durable_parts() {
 #[test]
 fn a_first_encoding_record_with_another_durable_part_is_drift() {
     let request = mutation_request(3);
-    let ordinals = "00000000000000010000000000000001";
+    let ordinals = "000000000000000100000000000000010000000000000001";
     assert_eq!(
         request.match_recorded_intent(&first_encoding(mutation_request(4), ordinals)),
         Ok(Match::Drift),
@@ -70,7 +70,7 @@ fn a_first_encoding_record_with_another_durable_part_is_drift() {
 fn a_first_encoding_operation_without_a_mutation_binding_is_unverifiable() {
     let mut request = mutation_request(3);
     request.mutation_binding_identity = None;
-    let ordinals = "00000000000000010000000000000001";
+    let ordinals = "000000000000000100000000000000010000000000000001";
 
     assert_eq!(
         request.match_recorded_intent(&first_encoding(request, ordinals)),
@@ -116,7 +116,7 @@ fn mutation_request(input: u8) -> WorthQueryApplicationIdempotencyBinding {
 
 /// The intent the first encoding recorded for `request`: its operation slot
 /// held the installation-keyed seal, and its scope led with the two runtime
-/// ordinals.
+/// ordinals and the installation generation.
 fn first_encoding(request: WorthQueryApplicationIdempotencyBinding, ordinals: &str) -> String {
     let slots = request.bind_operation(&SEAL).intent_slots();
     let scope = slots.find(":scope=").unwrap() + ":scope=".len();
@@ -125,7 +125,6 @@ fn first_encoding(request: WorthQueryApplicationIdempotencyBinding, ordinals: &s
 
 fn scope(principal_slot: u64) -> WorthQueryIdempotencyScopeIdentity {
     WorthQueryIdempotencyScopeIdentity {
-        binding_generation: 5,
         package_identity: [6; 32],
         schema_identity: [7; 32],
         principal: WorthQueryIdempotencyEntityIdentity {

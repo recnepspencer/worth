@@ -228,6 +228,9 @@ fn authenticated_owner_conflict(
     )
 }
 
+/// A retry before acceptance is asked for only while a later read can
+/// succeed. A committed basis that is gone, or snapshot identities that never
+/// free, keep their exact cause so the sender is not told to retry forever.
 fn map_owner_read(
     denial: WorthQueryCommittedDispatchOutboxReadDenial,
 ) -> WorthQueryInboundAdmissionDenial {
@@ -235,14 +238,26 @@ fn map_owner_read(
     use WorthQueryInboundAdmissionDenial as Denial;
     match denial {
         Read::Missing => Denial::UnknownCorrelation,
+        // Publication settles, the index is repaired and snapshots in use
+        // are released, so the same callback later succeeds.
         Read::PendingPublication
         | Read::CommittedIndexUnavailable
-        | Read::ExactCommitUnavailable
-        | Read::ActiveSnapshotCapacityExhausted { .. }
-        | Read::SnapshotIdentityExhausted => Denial::RetryBeforeAcceptance,
-        other => Denial::OwnerReadDenied(other),
+        | Read::ActiveSnapshotCapacityExhausted { .. } => Denial::RetryBeforeAcceptance,
+        Read::ExactCommitUnavailable
+        | Read::SnapshotIdentityExhausted
+        | Read::ForeignRuntime
+        | Read::AmbiguousCorrelation
+        | Read::WrongRecordKind
+        | Read::NotAuthoritative
+        | Read::Malformed
+        | Read::CommitMismatch
+        | Read::RecordMismatch => Denial::OwnerReadDenied(denial),
     }
 }
+
+#[cfg(test)]
+#[path = "admit/owner_read_tests.rs"]
+mod owner_read_tests;
 
 fn map_custody(
     custody: &mut crate::domain_computation::application_aftermath::WorthQueryInboundCustody,

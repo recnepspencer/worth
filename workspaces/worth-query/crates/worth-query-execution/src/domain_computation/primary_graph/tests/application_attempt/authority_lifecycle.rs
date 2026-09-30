@@ -135,7 +135,9 @@ fn cancelled_admission_cannot_inspect_provider_idempotency() {
         .expect_err("cancelled authority cannot inspect provider idempotency");
     assert_eq!(
         denial.kind(),
-        WorthQueryApplicationIdempotencyResolutionDenialKind::Authorization
+        WorthQueryApplicationIdempotencyResolutionDenialKind::Authorization(
+            WorthQueryOperationAuthorizationDenialKind::Cancelled
+        )
     );
     assert_eq!(
         denial

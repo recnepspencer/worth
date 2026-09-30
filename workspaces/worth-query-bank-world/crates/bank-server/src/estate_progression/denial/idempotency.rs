@@ -6,7 +6,6 @@ use worth_query_host::facade::primary_graph::{
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankEstateIdempotencyResolutionDenial {
     Authorization(crate::BankAuthorizationDenial),
-    AuthorizationLineageUnavailable,
     ForeignAdmission,
     ActiveSnapshotCapacityExhausted {
         maximum_active_snapshots: usize,
@@ -26,13 +25,26 @@ pub enum BankEstateIdempotencyResolutionDenial {
 pub(super) fn from_query(
     denial: WorthQueryApplicationIdempotencyResolutionDenial,
 ) -> BankEstateIdempotencyResolutionDenial {
-    match denial.kind() {
-        WorthQueryApplicationIdempotencyResolutionDenialKind::Authorization => denial
+    from_kind(
+        denial.kind(),
+        denial
             .authorization()
-            .cloned()
-            .map(crate::BankAuthorizationDenial::from_query)
-            .map(BankEstateIdempotencyResolutionDenial::Authorization)
-            .unwrap_or(BankEstateIdempotencyResolutionDenial::AuthorizationLineageUnavailable),
+            .map_or(0, |authorization| authorization.causes().len()),
+    )
+}
+
+/// Each resolution cause keeps its own Bank cause; an authorization refusal
+/// keeps its exact kind and how many causes contributed to it.
+fn from_kind(
+    kind: WorthQueryApplicationIdempotencyResolutionDenialKind,
+    contributing_cause_count: usize,
+) -> BankEstateIdempotencyResolutionDenial {
+    match kind {
+        WorthQueryApplicationIdempotencyResolutionDenialKind::Authorization(kind) => {
+            BankEstateIdempotencyResolutionDenial::Authorization(
+                crate::BankAuthorizationDenial::from_kind(kind, contributing_cause_count),
+            )
+        }
         WorthQueryApplicationIdempotencyResolutionDenialKind::ForeignAdmission => {
             BankEstateIdempotencyResolutionDenial::ForeignAdmission
         }
@@ -61,3 +73,7 @@ pub(super) fn from_query(
         }
     }
 }
+
+#[cfg(test)]
+#[path = "idempotency/kind_tests.rs"]
+mod kind_tests;

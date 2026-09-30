@@ -296,9 +296,7 @@ pub(crate) fn map_recovery_denial(
     WorthQueryRedoDenial::new(match kind {
         K::AlreadyTerminal => WorthQueryRedoDenialKind::DuplicateRedo,
         K::Expired => WorthQueryRedoDenialKind::Stale,
-        K::CurrentPolicyDenied | K::FreshAuthorityDenied => {
-            WorthQueryRedoDenialKind::NewlyUnauthorized
-        }
+        K::FreshAuthorityDenied => WorthQueryRedoDenialKind::NewlyUnauthorized,
         K::ForeignRuntime | K::ForeignPrincipal => WorthQueryRedoDenialKind::ForeignPrincipal,
         K::CompatibilityGenerationMismatch => WorthQueryRedoDenialKind::ChangedOperationMeaning,
         _ => WorthQueryRedoDenialKind::NewlyUnauthorized,

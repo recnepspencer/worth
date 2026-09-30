@@ -434,7 +434,13 @@ returns the live handle, naming why the owner cannot answer yet:
 Retry later; once the completion settles, retry answers `AlreadyCompleted`.
 Every other re-dispatch refusal also keeps its own kind: `DispatchOutboxMissing`,
 `TransportNotInstalled`, `DispatchOwnerReadDenied`, `AttemptAdmissionDenied`,
-`CanonicalDerivationDenied` and `TimeObservationDenied`.
+`CanonicalDerivationDenied` and `TimeObservationDenied`. `DispatchOwnerReadDenied`
+carries the exact owner-read cause, and `AttemptAdmissionDenied` carries the exact
+`WorthQueryExternalDispatchAttemptDenial`: a foreign runtime or world, a
+publication commit mismatch, a missing inbound operation slot, spent attempt
+identities, a missing or mismatched outstanding dispatch, an original still
+publishing, or a full in-flight window. A World terminal reached between
+admission and the send answers `AlreadyCompleted`.
 
 ## Publication Settlement Recovery
 

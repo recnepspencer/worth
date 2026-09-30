@@ -9,19 +9,14 @@ pub enum WorthQueryRecoveryHandleDenialKind {
     RecoveryNotAdmitted,
     /// This authoritative commit already opened its sole recovery handle.
     RecoveryAlreadyMinted,
-    RuntimeMismatch,
     SchemaMismatch,
     BranchMismatch,
     ApplicationBindingGenerationMismatch,
     OperationMismatch,
     GovernedInputMismatch,
-    AttemptMismatch,
-    PrincipalScopeMismatch,
-    IdempotencyMismatch,
     /// Handle is right; the admitted idempotency read was minted for a foreign
-    /// binding. Distinct from [`Self::IdempotencyMismatch`] on the handle axis.
+    /// binding.
     ForeignIdempotencyRead,
-    ProviderPostureMismatch,
     CorrelationMismatch,
     CompatibilityGenerationMismatch,
     Expired,
@@ -50,7 +45,9 @@ pub enum WorthQueryRecoveryHandleDenialKind {
         crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxReadDenial,
     ),
     /// This runtime could not mint a runtime-affine physical attempt.
-    AttemptAdmissionDenied,
+    AttemptAdmissionDenied(
+        crate::domain_computation::primary_graph::WorthQueryExternalDispatchAttemptDenial,
+    ),
     /// Canonical derivation of the dispatch event identity failed.
     CanonicalDerivationDenied,
     /// The installed runtime clock could not classify the physical attempt.
@@ -72,7 +69,6 @@ pub enum WorthQueryRecoveryHandleDenialKind {
     /// took effect.
     AdmissionAuthenticationExpired,
     DisclosureAdmissionRequired,
-    CurrentPolicyDenied,
     UnresolvedExternalPosture,
 }
 

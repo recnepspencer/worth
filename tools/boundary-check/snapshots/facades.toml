@@ -543,6 +543,7 @@ exports = [
     "WorthQueryElevationRequestProgram",
     "WorthQueryEntityResolutionDenial",
     "WorthQueryEntityResolutionDenialKind",
+    "WorthQueryExternalDispatchAttemptDenial",
     "WorthQueryExternalDispatchCausalRelation",
     "WorthQueryExternalDispatchPosture",
     "WorthQueryExternalDispatchPostureKind",

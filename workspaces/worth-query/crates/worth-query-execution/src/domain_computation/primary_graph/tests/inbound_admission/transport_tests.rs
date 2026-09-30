@@ -238,6 +238,15 @@ fn two_real_completed_attempts_share_the_first_world_terminal() {
         .unwrap()
         .unwrap();
 
+    assert_eq!(
+        world
+            .application
+            .primary_provider
+            .begin_external_dispatch_in_flight(&owner)
+            .err(),
+        Some(crate::domain_computation::primary_graph::provider::WorthQueryOutstandingInFlightDenial::TerminalReached),
+        "a physical attempt after the World terminal names completion, not a mismatch"
+    );
     let late_evidence =
         InstalledTransportCompletion::from_observed_dispatch(owner.clone(), &later).unwrap();
     world

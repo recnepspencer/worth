@@ -1,10 +1,11 @@
 use bank_server::{
     BankCommittedDispatchOutboxReadDenial, BankEstateIdempotencyResolutionDenial,
-    BankEstateProgressionDenial, BankRecoveryDenialKind,
+    BankEstateProgressionDenial, BankExternalDispatchAttemptDenial, BankRecoveryDenialKind,
 };
 use worth_query_host::facade::primary_graph::WorthQueryPrincipalResolutionDenialKind;
 
 use super::super::protocol::{BankHttpDenial, BankHttpDenialKind, BankHttpNextAction};
+use super::authorization_denial::authorization_denial;
 
 pub(super) fn estate_denial(denial: BankEstateProgressionDenial) -> BankHttpDenial {
     use BankEstateProgressionDenial as D;
@@ -24,13 +25,10 @@ pub(super) fn estate_denial(denial: BankEstateProgressionDenial) -> BankHttpDeni
         D::ProductSelection(_) => {
             BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh)
         }
-        D::Authorization(_)
-        | D::ApprovalAuthorization(_)
-        | D::CloseAuthorization(_)
-        | D::ReviewAuthorization(_) => BankHttpDenial::new(
-            BankHttpDenialKind::PermissionDenied,
-            BankHttpNextAction::None,
-        ),
+        D::Authorization(denial)
+        | D::ApprovalAuthorization(denial)
+        | D::CloseAuthorization(denial)
+        | D::ReviewAuthorization(denial) => authorization_denial(denial.kind()),
         D::CommandInput(_)
         | D::Projection(_)
         | D::DecisionProjection(_)
@@ -51,13 +49,8 @@ pub(super) fn estate_denial(denial: BankEstateProgressionDenial) -> BankHttpDeni
             BankHttpNextAction::CorrectRequest,
         ),
         D::Recovery(denial) => recovery_denial(denial.kind()),
-        D::Idempotency(BankEstateIdempotencyResolutionDenial::RecordedIntentUnverifiable) => {
-            BankHttpDenial::new(
-                BankHttpDenialKind::InternalDenied,
-                BankHttpNextAction::ContactOperator,
-            )
-        }
-        D::Idempotency(_) | D::LifecycleProjection(_) => {
+        D::Idempotency(denial) => idempotency_denial(denial),
+        D::LifecycleProjection(_) => {
             BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh)
         }
         D::CapabilityInstallation(_)
@@ -67,6 +60,32 @@ pub(super) fn estate_denial(denial: BankEstateProgressionDenial) -> BankHttpDeni
             BankHttpDenial::new(BankHttpDenialKind::Unavailable, BankHttpNextAction::Retry)
         }
     }
+}
+
+/// Every idempotency cause chooses the one action that can succeed for it.
+fn idempotency_denial(denial: BankEstateIdempotencyResolutionDenial) -> BankHttpDenial {
+    use BankEstateIdempotencyResolutionDenial as Idempotency;
+    use BankHttpDenialKind as Denial;
+    use BankHttpNextAction as Next;
+    let (denial, next) = match denial {
+        Idempotency::Authorization(denial) => return authorization_denial(denial.kind()),
+        // The key's earlier commit took effect; reading current state shows it.
+        Idempotency::CommittedReceiptNotRetained => (Denial::Stale, Next::Refresh),
+        // Capacity in use frees as other reads settle.
+        Idempotency::ActiveSnapshotCapacityExhausted { .. }
+        | Idempotency::RetentionCapacityExhausted
+        | Idempotency::ProviderUnavailable => (Denial::Unavailable, Next::Retry),
+        // Identity space never frees without reconfiguration.
+        Idempotency::RetentionIdentityExhausted | Idempotency::SnapshotIdentityExhausted => {
+            (Denial::Unavailable, Next::ContactOperator)
+        }
+        // The server admitted the request itself, so a foreign admission is a
+        // server fault, and an unverifiable record never becomes checkable.
+        Idempotency::ForeignAdmission | Idempotency::RecordedIntentUnverifiable => {
+            (Denial::InternalDenied, Next::ContactOperator)
+        }
+    };
+    BankHttpDenial::new(denial, next)
 }
 
 /// Every recovery kind chooses its own next action; none falls through a
@@ -83,7 +102,6 @@ fn recovery_denial(kind: BankRecoveryDenialKind) -> BankHttpDenial {
         Kind::RecoveryNotAdmitted
         | Kind::CompensationNotAdmitted
         | Kind::ReconciliationNotAdmitted
-        | Kind::CurrentPolicyDenied
         | Kind::ForeignPrincipal => (Denial::PermissionDenied, Next::None),
         // The recovery already moved on: it was opened, or it ended. Reading
         // the commit again reports its current recovery status.
@@ -109,10 +127,10 @@ fn recovery_denial(kind: BankRecoveryDenialKind) -> BankHttpDenial {
         Kind::UnresolvedExternalPosture
         | Kind::CompletionPublicationPending
         | Kind::TerminalIndexUnavailable
-        | Kind::AttemptAdmissionDenied
         | Kind::TimeObservationDenied => (Denial::Unavailable, Next::Retry),
         Kind::TransportNotInstalled => (Denial::Unavailable, Next::ContactOperator),
         Kind::DispatchOwnerReadDenied(read) => return dispatch_owner_read_denial(read),
+        Kind::AttemptAdmissionDenied(attempt) => return dispatch_attempt_denial(attempt),
         // The recovered commit declared no external effect to retry.
         Kind::DispatchOutboxMissing => (Denial::NotFound, Next::None),
         // The server holds the handle and mints both the admission and the
@@ -120,13 +138,8 @@ fn recovery_denial(kind: BankRecoveryDenialKind) -> BankHttpDenial {
         // server fault. Safe retry answers an already-completed effect with
         // its own outcome before any denial mapping, so no route reaches that
         // kind as a denial either.
-        Kind::RuntimeMismatch
-        | Kind::ForeignRuntime
-        | Kind::AttemptMismatch
-        | Kind::PrincipalScopeMismatch
-        | Kind::IdempotencyMismatch
+        Kind::ForeignRuntime
         | Kind::ForeignIdempotencyRead
-        | Kind::ProviderPostureMismatch
         | Kind::CorrelationMismatch
         | Kind::FreshAuthorityDenied
         | Kind::DisclosureAdmissionRequired
@@ -159,6 +172,33 @@ fn dispatch_owner_read_denial(read: BankCommittedDispatchOutboxReadDenial) -> Ba
         | Read::Malformed
         | Read::CommitMismatch
         | Read::RecordMismatch => (Denial::InternalDenied, Next::ContactOperator),
+    };
+    BankHttpDenial::new(denial, next)
+}
+
+fn dispatch_attempt_denial(attempt: BankExternalDispatchAttemptDenial) -> BankHttpDenial {
+    use BankExternalDispatchAttemptDenial as Attempt;
+    use BankHttpDenialKind as Denial;
+    use BankHttpNextAction as Next;
+    let (denial, next) = match attempt {
+        // The original is still publishing, or every permitted send for this
+        // effect is on the wire. Both clear on their own; the same request
+        // then sends or answers already-completed.
+        Attempt::OriginalPublicationPending | Attempt::InFlightCapacityExhausted => {
+            (Denial::Unavailable, Next::Retry)
+        }
+        // No physical attempt identity remains on this runtime.
+        Attempt::AttemptIdentityExhausted => (Denial::Unavailable, Next::ContactOperator),
+        // A restored legacy row lacks the slot its completion needs, so no
+        // physical send may start; an operator settles the effect.
+        Attempt::InboundOperationSlotMissing => (Denial::Stale, Next::ContactOperator),
+        // The server read the committed original itself, so a foreign or
+        // disagreeing original is a server fault.
+        Attempt::ForeignRelationalRuntime
+        | Attempt::ForeignProductWorld
+        | Attempt::PublicationCommitMismatch
+        | Attempt::OutstandingDispatchMissing
+        | Attempt::OutstandingDispatchMismatch => (Denial::InternalDenied, Next::ContactOperator),
     };
     BankHttpDenial::new(denial, next)
 }

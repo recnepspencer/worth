@@ -51,7 +51,11 @@ fn sibling_publication_substitution_denies_before_transport() {
             substituted,
             &crate::domain_computation::primary_graph::tests::fixture::live_scope()
         ),
-        Err(WorthQueryExternalDispatchPreparationDenial::AttemptAdmissionDenied)
+        Err(
+            WorthQueryExternalDispatchPreparationDenial::AttemptAdmissionDenied(
+                super::WorthQueryExternalDispatchAttemptDenial::PublicationCommitMismatch
+            )
+        )
     );
     assert_eq!(transport.0.load(Ordering::Acquire), 0);
 }

@@ -2,6 +2,7 @@
 
 use std::collections::BTreeSet;
 
+use super::WorthQueryExternalDispatchAttemptDenial as Attempt;
 use super::WorthQueryExternalRedispatchDenial as Redispatch;
 use crate::domain_computation::application_aftermath::{
     WorthQueryRecoveryHandleDenial, WorthQueryRecoveryHandleDenialKind as Kind,
@@ -26,6 +27,18 @@ const OWNER_READS: [Read; 13] = [
     Read::RecordMismatch,
 ];
 
+pub(super) const ATTEMPTS: [Attempt; 9] = [
+    Attempt::ForeignRelationalRuntime,
+    Attempt::ForeignProductWorld,
+    Attempt::PublicationCommitMismatch,
+    Attempt::InboundOperationSlotMissing,
+    Attempt::AttemptIdentityExhausted,
+    Attempt::OutstandingDispatchMissing,
+    Attempt::OriginalPublicationPending,
+    Attempt::OutstandingDispatchMismatch,
+    Attempt::InFlightCapacityExhausted,
+];
+
 /// Every cause fresh effect authority reports for a live handle.
 const FRESH_AUTHORITY: [Kind; 3] = [
     Kind::AlreadyTerminal,
@@ -46,7 +59,7 @@ fn every_refusal() -> Vec<Redispatch> {
         | Redispatch::BindingOutboxMissing
         | Redispatch::TransportNotInstalled
         | Redispatch::OwnerReadDenied(_)
-        | Redispatch::AttemptAdmissionDenied
+        | Redispatch::AttemptAdmissionDenied(_)
         | Redispatch::AlreadyCompleted
         | Redispatch::CompletionPublicationPending
         | Redispatch::TerminalIndexUnavailable
@@ -61,7 +74,6 @@ fn every_refusal() -> Vec<Redispatch> {
         Redispatch::RecoveryNotAdmitted,
         Redispatch::BindingOutboxMissing,
         Redispatch::TransportNotInstalled,
-        Redispatch::AttemptAdmissionDenied,
         Redispatch::AlreadyCompleted,
         Redispatch::CompletionPublicationPending,
         Redispatch::TerminalIndexUnavailable,
@@ -71,6 +83,7 @@ fn every_refusal() -> Vec<Redispatch> {
     .into_iter()
     .chain(FRESH_AUTHORITY.map(Redispatch::FreshAuthority))
     .chain(OWNER_READS.map(Redispatch::OwnerReadDenied))
+    .chain(ATTEMPTS.map(Redispatch::AttemptAdmissionDenied))
     .map(listed)
     .collect()
 }
@@ -122,10 +135,13 @@ fn settling_completion_refusals_keep_their_cause() {
         kind(Redispatch::TransportNotInstalled),
         Kind::TransportNotInstalled
     );
-    assert_eq!(
-        kind(Redispatch::AttemptAdmissionDenied),
-        Kind::AttemptAdmissionDenied
-    );
+    for attempt in ATTEMPTS {
+        assert_eq!(
+            kind(Redispatch::AttemptAdmissionDenied(attempt)),
+            Kind::AttemptAdmissionDenied(attempt),
+            "the attempt cause {attempt:?} survives into the recovery kind"
+        );
+    }
     assert_eq!(
         kind(Redispatch::CanonicalDerivationDenied),
         Kind::CanonicalDerivationDenied

@@ -5,7 +5,7 @@
 //! specialist principal on recovery re-admission.
 
 use bank_external_rail::test_control::FaultScript;
-use bank_server::{BankEstateProgressionDenial, BankRecoveryDenialKind};
+use bank_server::{BankAuthorizationDenialKind, BankEstateProgressionDenial};
 
 use super::phase8_cross_gate::world::{cross_gate_world_with_clock_and_grant_validity, PATIENT};
 use crate::authorization_time::AuthorizationTimeController;
@@ -34,12 +34,15 @@ fn expired_grant_after_mint_denies_fresh_admission_not_foreign_principal() {
         .runtime
         .reconcile_commit_recovery(handle, &specialist, action, &scope)
         .expect_err("expired grant must fail fresh admission");
-    match denied {
-        BankEstateProgressionDenial::Recovery(d) => {
-            assert_ne!(d.kind(), BankRecoveryDenialKind::ForeignPrincipal);
-            assert_eq!(d.kind(), BankRecoveryDenialKind::CurrentPolicyDenied);
-        }
-        BankEstateProgressionDenial::Authorization(_) => {}
-        other => panic!("expected current-policy or authorization denial, got {other:?}"),
-    }
+    // The recovery is still the principal's own, so the lapse is the fresh
+    // authorization's, never a recovery-handle drift. A grant past its
+    // validity window is no longer selected, so no capability authorization
+    // covers the action.
+    let BankEstateProgressionDenial::Authorization(denial) = denied else {
+        panic!("expected a fresh authorization denial, got {denied:?}");
+    };
+    assert_eq!(
+        denial.kind(),
+        BankAuthorizationDenialKind::CapabilityAuthorizationMissing
+    );
 }

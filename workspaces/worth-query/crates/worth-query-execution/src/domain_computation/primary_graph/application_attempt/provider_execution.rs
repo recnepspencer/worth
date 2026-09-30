@@ -16,8 +16,8 @@ pub(in crate::domain_computation) use application_attempt_affinity::WorthQueryAp
 pub(in crate::domain_computation) use application_attempt_affinity::WorthQueryApplicationAttemptBasis;
 pub(crate) use external_dispatch::WorthQueryPerformedExternalRedispatchSeal;
 pub use external_dispatch::{
-    WorthQueryExternalDispatchPreparationDenial, WorthQueryExternalRedispatchDenial,
-    WorthQueryExternalTransportInstallationDenial,
+    WorthQueryExternalDispatchAttemptDenial, WorthQueryExternalDispatchPreparationDenial,
+    WorthQueryExternalRedispatchDenial, WorthQueryExternalTransportInstallationDenial,
 };
 pub(in crate::domain_computation) use outcome::{
     progression_denied, WorthQueryProviderProgressionOutcome,

@@ -1,15 +1,18 @@
 //! Why an idempotency key could not be resolved.
 
 use crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial as Provider;
-use crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial;
+use crate::domain_computation::primary_graph::{
+    WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
+};
 
 /// Why an idempotency key could not be resolved. The resolution is a read, so
 /// nothing took effect.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationIdempotencyResolutionDenialKind {
     /// The admission's current authority no longer holds, or inspecting the key was
-    /// not authorized. The authorization denial has the detail.
-    Authorization,
+    /// not authorized, for the named reason. The authorization denial has the
+    /// contributing causes.
+    Authorization(WorthQueryOperationAuthorizationDenialKind),
     /// The admission belongs to another runtime or schema binding, or has no product
     /// to resolve against.
     ForeignAdmission,
@@ -58,7 +61,9 @@ impl WorthQueryApplicationIdempotencyResolutionDenial {
 
     pub(super) fn from_authorization(denial: WorthQueryOperationAuthorizationDenial) -> Self {
         Self {
-            kind: WorthQueryApplicationIdempotencyResolutionDenialKind::Authorization,
+            kind: WorthQueryApplicationIdempotencyResolutionDenialKind::Authorization(
+                denial.kind(),
+            ),
             authorization: Some(denial),
         }
     }

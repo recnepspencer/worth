@@ -2,6 +2,7 @@ use worth_query_declaration::facade::application_operation::ApplicationMutationI
 use worth_query_execution::facade::primary_graph::{
     MutationHandlerExecutionDenial, WorthQueryApplicationIdempotencyResolutionDenial,
     WorthQueryApplicationIdempotencyResolutionDenialKind, WorthQueryOperationAuthorizationDenial,
+    WorthQueryOperationAuthorizationDenialKind,
 };
 use worth_query_execution::facade::primary_graph::{
     WorthQueryApplicationOneShotDenial, WorthQueryApplicationQueryAdmissionDenial,
@@ -105,8 +106,18 @@ pub enum WorthQueryApplicationRequestMutationDenialKind {
     ProductSelection,
     PrincipalResolution,
     ScopeResolution,
-    Authorization,
-    Idempotency,
+    /// Authorization refused the request, or the admission's current authority
+    /// lapsed before its key was resolved, for the named reason.
+    Authorization(WorthQueryOperationAuthorizationDenialKind),
+    /// The provider could not resolve the key yet: its snapshot or retention
+    /// capacity is in use, or it could not answer. Nothing took effect.
+    IdempotencyUnavailable,
+    /// The provider has run out of snapshot or retention identities, so no
+    /// key resolves until the runtime is reconfigured.
+    IdempotencyIdentityExhausted,
+    /// The admission that resolved the key belongs to another runtime or
+    /// schema binding, or has no product to resolve against.
+    IdempotencyForeignAdmission,
     /// The key is recorded with the same intent, and that commit took effect,
     /// but this runtime no longer holds its receipt. Retrying the same request
     /// cannot commit it again.
@@ -186,16 +197,10 @@ impl WorthQueryApplicationRequestMutationDenial {
             Self::ScopeResolution(_) => {
                 WorthQueryApplicationRequestMutationDenialKind::ScopeResolution
             }
-            Self::Authorization(_) => WorthQueryApplicationRequestMutationDenialKind::Authorization,
-            Self::Idempotency(denial) => match denial.kind() {
-                WorthQueryApplicationIdempotencyResolutionDenialKind::CommittedReceiptNotRetained {
-                    ..
-                } => WorthQueryApplicationRequestMutationDenialKind::IdempotencyReceiptNotRetained,
-                WorthQueryApplicationIdempotencyResolutionDenialKind::RecordedIntentUnverifiable => {
-                    WorthQueryApplicationRequestMutationDenialKind::IdempotencyIntentUnverifiable
-                }
-                _ => WorthQueryApplicationRequestMutationDenialKind::Idempotency,
-            },
+            Self::Authorization(denial) => {
+                WorthQueryApplicationRequestMutationDenialKind::Authorization(denial.kind())
+            }
+            Self::Idempotency(denial) => idempotency_kind(denial.kind()),
             Self::Identity(_) => WorthQueryApplicationRequestMutationDenialKind::Identity,
             Self::Handler(MutationHandlerExecutionDenial::WorkflowControl) => {
                 WorthQueryApplicationRequestMutationDenialKind::WorkflowControl
@@ -232,6 +237,26 @@ impl WorthQueryApplicationRequestMutationDenial {
     }
 }
 
+/// Every idempotency cause keeps the kind whose instruction can succeed.
+const fn idempotency_kind(
+    kind: WorthQueryApplicationIdempotencyResolutionDenialKind,
+) -> WorthQueryApplicationRequestMutationDenialKind {
+    use WorthQueryApplicationIdempotencyResolutionDenialKind as Resolution;
+    use WorthQueryApplicationRequestMutationDenialKind as Request;
+    match kind {
+        Resolution::Authorization(kind) => Request::Authorization(kind),
+        Resolution::ForeignAdmission => Request::IdempotencyForeignAdmission,
+        Resolution::ActiveSnapshotCapacityExhausted { .. }
+        | Resolution::RetentionCapacityExhausted
+        | Resolution::ProviderUnavailable => Request::IdempotencyUnavailable,
+        Resolution::RetentionIdentityExhausted | Resolution::SnapshotIdentityExhausted => {
+            Request::IdempotencyIdentityExhausted
+        }
+        Resolution::CommittedReceiptNotRetained { .. } => Request::IdempotencyReceiptNotRetained,
+        Resolution::RecordedIntentUnverifiable => Request::IdempotencyIntentUnverifiable,
+    }
+}
+
 impl std::fmt::Display for WorthQueryApplicationRequestMutationDenial {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
@@ -243,3 +268,7 @@ impl std::fmt::Display for WorthQueryApplicationRequestMutationDenial {
 }
 
 impl std::error::Error for WorthQueryApplicationRequestMutationDenial {}
+
+#[cfg(test)]
+#[path = "denial/idempotency_kind_tests.rs"]
+mod idempotency_kind_tests;
