@@ -155,6 +155,11 @@ where
             .correspondence
             .created_entity_ids()
             .collect::<Vec<_>>();
+        if generated_entities.is_empty() {
+            return Err(WorthQueryGeneratedOutputSuspensionFailure::Qualification(
+                WorthQueryGeneratedOutputSuspensionDenial::NoGeneratedPayload,
+            ));
+        }
         let prepared = application.primary_provider.graph.with_runtime(|runtime| {
             runtime
                 .owner_component_services()

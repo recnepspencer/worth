@@ -254,10 +254,10 @@ pub use super::product_operation::{
     WorthQueryProgramAdoptionCoverageDenial, WorthQueryProgramCustodyDisposition,
     WorthQueryProgramCustodyDispositionInventory, WorthQueryProgramCustodyDispositionKind,
     WorthQueryProgramMigrationDescription, WorthQueryProgramMigrationPreparationDenial,
-    WorthQueryRestoredGeneratedOutput, WorthQueryRetainedGeneratedOutputEntity,
-    WorthQuerySelectedProductOperation, WorthQueryStoppedBranchSetAdoption,
-    WorthQuerySuspendedGeneratedOutput, WorthQueryUnpublishedBranchAdoption,
-    WorthQueryUnpublishedGeneratedOutputRestoration,
+    WorthQueryReconstructedOutputEntity, WorthQueryRestoredGeneratedOutput,
+    WorthQueryRetainedGeneratedOutputEntity, WorthQuerySelectedProductOperation,
+    WorthQueryStoppedBranchSetAdoption, WorthQuerySuspendedGeneratedOutput,
+    WorthQueryUnpublishedBranchAdoption, WorthQueryUnpublishedGeneratedOutputRestoration,
 };
 pub use super::provider::{
     WorthQueryCommittedDispatchOutboxObservation, WorthQueryCommittedDispatchOutboxReadDenial,

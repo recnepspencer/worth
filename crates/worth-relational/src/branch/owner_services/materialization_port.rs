@@ -17,6 +17,8 @@ use crate::transactions::data::{
 
 use super::owner_binding::RelationalOwnerServiceBinding;
 
+mod retained;
+
 #[derive(Debug, Clone)]
 pub struct RelationalMaterializationPort {
     owner: RelationalOwnerServiceBinding,

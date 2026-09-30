@@ -22,6 +22,7 @@ use crate::ConsumerSchema;
 
 mod expected;
 mod manifest;
+mod retained;
 mod successor;
 
 use expected::{read, vertices};
@@ -72,6 +73,7 @@ pub(super) fn typed_reconstruction_preserves_query_authority(
         "the program must publish its generated final output"
     );
     drop(performed);
+    let retained_source = retained::initial_source_identity(request, application);
     let vertices = vertices();
     for vertex in &vertices {
         assert_eq!(read(request, &vertex.body_key).y, vertex.y);
@@ -227,8 +229,9 @@ pub(super) fn typed_reconstruction_preserves_query_authority(
         });
     assert_eq!(
         selected.identity(),
-        "worth.query.certification.planar-final-output-producer.v1"
+        "worth.query.certification.planar-final-output-producer.v2"
     );
+    retained::preserved_outputs_remain_read_only(application, request, scope, retained_source);
 }
 
 fn foreign_runtime_rejection(

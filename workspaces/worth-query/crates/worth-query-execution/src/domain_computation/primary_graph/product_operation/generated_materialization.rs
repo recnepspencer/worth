@@ -10,7 +10,8 @@ mod reconstruction;
 pub use reconstruction::{
     WorthQueryCompletedGeneratedOutputReconstruction, WorthQueryGeneratedEntity,
     WorthQueryGeneratedOutputReconstruction, WorthQueryGeneratedOutputReconstructionDenial,
-    WorthQueryGeneratedOutputReconstructionFailure, WorthQueryRetainedGeneratedOutputEntity,
+    WorthQueryGeneratedOutputReconstructionFailure, WorthQueryReconstructedOutputEntity,
+    WorthQueryRetainedGeneratedOutputEntity,
 };
 mod suspension;
 pub use suspension::{
@@ -158,6 +159,9 @@ impl WorthQuerySuspendedGeneratedOutput {
 /// Why a generated output did not qualify for suspension. Nothing changed.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryGeneratedOutputSuspensionDenial {
+    /// The current output retains every entity, so there is no generated payload
+    /// to suspend. The current output remains readable and no effect occurred.
+    NoGeneratedPayload,
     /// The producer is not installed.
     ProducerUnavailable,
     /// No output from this producer is recorded at the current branch position.

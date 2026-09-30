@@ -3,6 +3,68 @@ disagrees with the output contract fails to compile. The passing twins below
 use each declared role and family as the contract declares it; each failing
 example changes one thing.
 
+Reconstruction selection stays within the installed producer's output contract.
+Its declared preserved source role is accepted:
+
+```
+use worth_query_host::facade::primary_graph::WorthQueryGeneratedOutputReconstruction;
+use worth_query_topology_entry::{FinalRetainedSourceOutput, PlanarFinalOutputProducer, TopologySchemaBinding};
+
+fn select<S: TopologySchemaBinding>(
+    reconstruction: &mut WorthQueryGeneratedOutputReconstruction<'_, S, PlanarFinalOutputProducer<S>>,
+) {
+    let _ = reconstruction.output::<FinalRetainedSourceOutput<S>>();
+}
+```
+
+A preserved body role from another contract is refused:
+
+```compile_fail,E0271
+use worth_query_host::facade::primary_graph::WorthQueryGeneratedOutputReconstruction;
+use worth_query_topology_entry::{PlanarAnchorOutput, PlanarFinalOutputProducer, TopologySchemaBinding};
+
+fn select<S: TopologySchemaBinding>(
+    reconstruction: &mut WorthQueryGeneratedOutputReconstruction<'_, S, PlanarFinalOutputProducer<S>>,
+) {
+    let _ = reconstruction.output::<PlanarAnchorOutput<S>>();
+}
+```
+
+Reconstruction fields belong only to generated payload in suspension custody.
+The generated handle permits a field write:
+
+```
+use worth_query_host::facade::primary_graph::{
+    WorthQueryGeneratedEntity, WorthQueryGeneratedOutputReconstruction,
+};
+use worth_query_topology_entry::{Body, PlanarFinalOutputProducer, PositionY, TopologySchemaBinding};
+
+fn set_field<S: TopologySchemaBinding>(
+    reconstruction: &mut WorthQueryGeneratedOutputReconstruction<'_, S, PlanarFinalOutputProducer<S>>,
+    entity: &WorthQueryGeneratedEntity<S, Body>,
+) {
+    let value = worth_query_consumer_values::PositiveLength::new(7).unwrap();
+    let _ = reconstruction.field(entity, PositionY::reference(), value);
+}
+```
+
+Changing only the handle to a retained endpoint refuses the same field write:
+
+```compile_fail,E0308
+use worth_query_host::facade::primary_graph::{
+    WorthQueryRetainedGeneratedOutputEntity, WorthQueryGeneratedOutputReconstruction,
+};
+use worth_query_topology_entry::{Body, PlanarFinalOutputProducer, PositionY, TopologySchemaBinding};
+
+fn set_field<S: TopologySchemaBinding>(
+    reconstruction: &mut WorthQueryGeneratedOutputReconstruction<'_, S, PlanarFinalOutputProducer<S>>,
+    entity: &WorthQueryRetainedGeneratedOutputEntity<S, Body>,
+) {
+    let value = worth_query_consumer_values::PositiveLength::new(7).unwrap();
+    let _ = reconstruction.field(entity, PositionY::reference(), value);
+}
+```
+
 Fixed roles, bound by a handler and read from a commit receipt. A receipt
 stores its outputs erased; `outputs_of::<Contract>()` checks the commit's
 contract once and returns a view on which every read is checked against that

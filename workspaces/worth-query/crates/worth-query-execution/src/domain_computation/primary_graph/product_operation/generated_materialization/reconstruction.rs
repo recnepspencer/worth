@@ -23,7 +23,9 @@ use crate::domain_computation::primary_graph::{
 };
 
 mod denial;
+mod output_entities;
 mod output_roles;
+pub use output_entities::WorthQueryReconstructedOutputEntity;
 mod relations;
 
 use denial::reconstruction_failure;
@@ -42,11 +44,12 @@ pub struct WorthQueryGeneratedEntity<Schema, Entity> {
     _marker: PhantomData<fn() -> (Schema, Entity)>,
 }
 
-/// A handle to an entity outside the generated output that a suspended relation
-/// connects to, usable only in the reconstruction that found it.
+/// A read-only handle to an entity retained outside the suspended payload,
+/// usable only as a relation endpoint in the reconstruction that found it.
 ///
 /// Get it from the reconstruction's `retained_relation_source`,
-/// `retained_relation_target`, or their plural forms.
+/// `retained_relation_target`, their plural forms, or the retained variant
+/// returned by `output` and `output_member`.
 pub struct WorthQueryRetainedGeneratedOutputEntity<Schema, Entity> {
     identity: EntityId,
     session: Arc<()>,
@@ -76,6 +79,7 @@ pub struct WorthQueryGeneratedOutputReconstruction<'runtime, Schema, Producer> {
     session: Arc<()>,
     entities: BTreeMap<EntityId, ReconstructionEntity>,
     relations: Vec<ReconstructionRelation>,
+    retained_entities: BTreeMap<EntityId, KindId>,
     _marker: PhantomData<fn() -> (Schema, Producer)>,
 }
 
@@ -145,9 +149,31 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 WorthQueryGeneratedOutputReconstructionDenial::StaleOutputLineage,
             ));
         }
+        let retained_entities = match self.primary_provider.graph.with_runtime(|runtime| {
+            let port = runtime.owner_component_services().materialization_port();
+            suspended.correspondence().checkpoint_roles().into_iter()
+                .filter(|role| role.posture ==
+                    crate::domain_computation::primary_graph::WorthQueryApplicationOutputPosture::Preserve)
+                .map(|role| {
+                    let expected = self.primary_provider.graph.layout.entity_kind(&role.entity_name)
+                        .ok_or(WorthQueryGeneratedOutputReconstructionDenial::RetainedEntityKindMismatch)?;
+                    let actual = port.retained_entity_kind(
+                        suspended.publication.observation().basis().relational_basis(),
+                        &suspended.custody, role.entity)
+                        .map_err(|_| WorthQueryGeneratedOutputReconstructionDenial::MissingRetainedEntity)?;
+                    if actual != expected {
+                        return Err(WorthQueryGeneratedOutputReconstructionDenial::RetainedEntityKindMismatch);
+                    }
+                    Ok((role.entity, actual))
+                }).collect::<Result<BTreeMap<_, _>, _>>()
+        }) {
+            Ok(retained) => retained,
+            Err(denial) => return Err(reconstruction_failure(suspended, denial)),
+        };
         Ok(WorthQueryGeneratedOutputReconstruction::new(
             &self.primary_provider.graph.layout,
             suspended,
+            retained_entities,
         ))
     }
 }
@@ -164,6 +190,7 @@ where
     fn new(
         layout: &'runtime WorthQueryPrimaryGraphLayout,
         suspended: WorthQuerySuspendedGeneratedOutput,
+        retained_entities: BTreeMap<EntityId, KindId>,
     ) -> Self {
         let mut entities = BTreeMap::new();
         let mut relations = Vec::new();
@@ -204,6 +231,7 @@ where
             session: Arc::new(()),
             entities,
             relations,
+            retained_entities,
             _marker: PhantomData,
         }
     }

@@ -20,6 +20,10 @@ pub enum WorthQueryGeneratedOutputReconstructionDenial {
     OutputRoleCardinalityMismatch,
     /// The entity is not in the suspension manifest.
     MissingEntity,
+    /// The role is retired or its recorded action is not admitted by the declaration.
+    OutputRoleActionMismatch,
+    /// A preserved output identity is not live outside this suspension.
+    MissingRetainedEntity,
     /// The entity type is undeclared or differs from the manifest.
     EntityKindMismatch,
     /// The entity was already claimed.

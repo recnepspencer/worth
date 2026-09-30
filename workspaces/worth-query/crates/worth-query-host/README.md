@@ -167,6 +167,19 @@ so changing it changes the installed schema. An optional single output is always
 an at-most-one role, never a family with a minimum of zero. A producer names an
 exactly-one role because a commit may omit an at-most-one role.
 
+Generated-output reconstruction can contain newly generated children and preserved
+roots. `output::<Role>()` and `output_member::<Family>(suffix)` return
+`WorthQueryReconstructedOutputEntity::Generated` or `Retained` from the installed
+correspondence. Generated handles claim the exact suspension manifest and admit
+field reconstruction. Retained handles carry only the exact live identity and
+kind outside that custody and admit relation endpoints. Reconstruction entry
+validates preserved identities against the owner-admitted suspension basis;
+restoration still requires the complete generated manifest and fresh publication
+admission. Retired roles are refused. The narrower `entity` and `member` methods
+remain available when a consumer requires created payload. An all-retained current
+output has nothing to suspend: `NoGeneratedPayload` is a typed no-effect
+qualification, and its current read surface remains available.
+
 Bindings whose result cardinality follows the authored topology declare
 families. A family is a marker type whose
 `WorthQueryApplicationOutputRoleFamily` impl names the schema, the contract, the
