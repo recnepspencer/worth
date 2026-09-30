@@ -60,8 +60,6 @@ fn admitted_principal_and_scope_are_distinct_idempotency_components() {
 
 fn scope_identity(principal_slot: u64, scope_slot: u64) -> WorthQueryIdempotencyScopeIdentity {
     WorthQueryIdempotencyScopeIdentity {
-        runtime_authority: 3,
-        binding_runtime: 4,
         binding_generation: 5,
         package_identity: [6; 32],
         schema_identity: [7; 32],

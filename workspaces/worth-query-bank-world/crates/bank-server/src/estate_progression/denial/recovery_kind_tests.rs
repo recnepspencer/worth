@@ -40,6 +40,27 @@ fn redispatch_refusals_keep_distinct_bank_kinds() {
         (Query::TimeObservationDenied, Bank::TimeObservationDenied),
         (Query::RecoveryNotAdmitted, Bank::RecoveryNotAdmitted),
         (Query::FreshAuthorityDenied, Bank::FreshAuthorityDenied),
+        (Query::AdmissionCancelled, Bank::AdmissionCancelled),
+        (
+            Query::AdmissionDeadlineExceeded,
+            Bank::AdmissionDeadlineExceeded,
+        ),
+        (
+            Query::AdmissionAuthenticationExpired,
+            Bank::AdmissionAuthenticationExpired,
+        ),
+        (
+            Query::DispatchOwnerReadDenied(Read::PendingPublication),
+            Bank::DispatchOwnerReadDenied(BankRead::PendingPublication),
+        ),
+        (
+            Query::DispatchOwnerReadDenied(Read::CommittedIndexUnavailable),
+            Bank::DispatchOwnerReadDenied(BankRead::CommittedIndexUnavailable),
+        ),
+        (
+            Query::DispatchOwnerReadDenied(Read::AmbiguousCorrelation),
+            Bank::DispatchOwnerReadDenied(BankRead::AmbiguousCorrelation),
+        ),
     ];
     for (query, expected) in refusals {
         assert_eq!(bank(query), expected, "{query:?} lost its cause in Bank");

@@ -21,7 +21,9 @@ use crate::domain_computation::application_aftermath::{
     WorthQueryRecoveryEffectAuthority, WorthQueryRecoveryHandle, WorthQueryRecoveryHandleDenial,
     WorthQueryRecoveryHandleDenialKind,
 };
-use crate::domain_computation::authorization::WorthQueryAdmittedApplicationOperation;
+use crate::domain_computation::authorization::{
+    WorthQueryAdmissionLapse, WorthQueryAdmittedApplicationOperation,
+};
 use crate::domain_computation::primary_graph::application_runtime::{
     WorthQueryExternalDispatchAdmissionDenial, WorthQueryTerminalEffectRefusal,
 };
@@ -54,8 +56,17 @@ pub enum WorthQueryExternalDispatchPreparationDenial {
 /// Why an admitted re-dispatch could not run.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryExternalRedispatchDenial {
-    /// Fresh effect authority or current admission failed before transport.
-    AdmissionDenied,
+    /// Fresh effect authority for the handle failed before transport: the
+    /// handle already ended, it expired, or the authority is not its own.
+    FreshAuthority(WorthQueryRecoveryHandleDenialKind),
+    /// The admitted request was cancelled before transport.
+    AdmissionCancelled,
+    /// The admitted request reached its deadline before transport.
+    AdmissionDeadlineExceeded,
+    /// The admitted principal's authentication expired before transport.
+    AdmissionAuthenticationExpired,
+    /// The admission was minted by another runtime or installed binding.
+    ForeignAdmission,
     RecoveryNotAdmitted,
     /// The live handle binding carries no co-committed outbox record.
     BindingOutboxMissing,
@@ -121,7 +132,11 @@ impl From<WorthQueryExternalRedispatchDenial> for WorthQueryRecoveryHandleDenial
         use WorthQueryExternalRedispatchDenial as Redispatch;
         use WorthQueryRecoveryHandleDenialKind as Kind;
         WorthQueryRecoveryHandleDenial::new(match denial {
-            Redispatch::AdmissionDenied => Kind::FreshAuthorityDenied,
+            Redispatch::FreshAuthority(kind) => kind,
+            Redispatch::AdmissionCancelled => Kind::AdmissionCancelled,
+            Redispatch::AdmissionDeadlineExceeded => Kind::AdmissionDeadlineExceeded,
+            Redispatch::AdmissionAuthenticationExpired => Kind::AdmissionAuthenticationExpired,
+            Redispatch::ForeignAdmission => Kind::ForeignRuntime,
             Redispatch::RecoveryNotAdmitted => Kind::RecoveryNotAdmitted,
             Redispatch::BindingOutboxMissing => Kind::DispatchOutboxMissing,
             Redispatch::TransportNotInstalled => Kind::TransportNotInstalled,
@@ -168,21 +183,31 @@ where
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     ) -> Result<WorthQueryPerformedExternalRedispatch, WorthQueryExternalRedispatchDenial> {
         require_fresh_effect_authority(handle, authority)
-            .map_err(|_| WorthQueryExternalRedispatchDenial::AdmissionDenied)?;
+            .map_err(|denial| WorthQueryExternalRedispatchDenial::FreshAuthority(denial.kind()))?;
         if matches!(
             handle.binding().installed_aftermath().recovery(),
             InstalledAftermathRecoveryContract::NotAdmitted
         ) {
             return Err(WorthQueryExternalRedispatchDenial::RecoveryNotAdmitted);
         }
-        admission
-            .validate_current_authority()
-            .map_err(|_| WorthQueryExternalRedispatchDenial::AdmissionDenied)?;
+        if let Some(lapse) = admission.current_authority_lapse() {
+            return Err(match lapse {
+                WorthQueryAdmissionLapse::Cancelled => {
+                    WorthQueryExternalRedispatchDenial::AdmissionCancelled
+                }
+                WorthQueryAdmissionLapse::DeadlineExceeded => {
+                    WorthQueryExternalRedispatchDenial::AdmissionDeadlineExceeded
+                }
+                WorthQueryAdmissionLapse::AuthenticationExpired => {
+                    WorthQueryExternalRedispatchDenial::AdmissionAuthenticationExpired
+                }
+            });
+        }
         if !admission.belongs_to(
             self.runtime.authority_identity(),
             &self.installed_schema.binding_identity(),
         ) {
-            return Err(WorthQueryExternalRedispatchDenial::AdmissionDenied);
+            return Err(WorthQueryExternalRedispatchDenial::ForeignAdmission);
         }
         let Some(record) = handle.binding().dispatch_outbox() else {
             return Err(WorthQueryExternalRedispatchDenial::BindingOutboxMissing);

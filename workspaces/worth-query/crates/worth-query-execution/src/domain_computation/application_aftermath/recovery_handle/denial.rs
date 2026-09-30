@@ -59,7 +59,18 @@ pub enum WorthQueryRecoveryHandleDenialKind {
     CompensationNotAdmitted,
     /// Installed authority axis does not admit reconcile (distinct from compensate).
     ReconciliationNotAdmitted,
+    /// The presented effect authority is this runtime's, but it is not the
+    /// authority for this handle. Distinct from a lapse of the admitted
+    /// request below, which a fresh request can clear.
     FreshAuthorityDenied,
+    /// The admitted request was cancelled before the recovery took effect.
+    AdmissionCancelled,
+    /// The admitted request reached its deadline before the recovery took
+    /// effect.
+    AdmissionDeadlineExceeded,
+    /// The admitted principal's authentication expired before the recovery
+    /// took effect.
+    AdmissionAuthenticationExpired,
     DisclosureAdmissionRequired,
     CurrentPolicyDenied,
     UnresolvedExternalPosture,

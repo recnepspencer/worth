@@ -1,7 +1,7 @@
 use worth_query_declaration::facade::application_operation::ApplicationMutationIdentityDenial;
 use worth_query_execution::facade::primary_graph::{
     MutationHandlerExecutionDenial, WorthQueryApplicationIdempotencyResolutionDenial,
-    WorthQueryOperationAuthorizationDenial,
+    WorthQueryApplicationIdempotencyResolutionDenialKind, WorthQueryOperationAuthorizationDenial,
 };
 use worth_query_execution::facade::primary_graph::{
     WorthQueryApplicationOneShotDenial, WorthQueryApplicationQueryAdmissionDenial,
@@ -107,6 +107,13 @@ pub enum WorthQueryApplicationRequestMutationDenialKind {
     ScopeResolution,
     Authorization,
     Idempotency,
+    /// The key is recorded with the same intent, and that commit took effect,
+    /// but this runtime no longer holds its receipt. Retrying the same request
+    /// cannot commit it again.
+    IdempotencyReceiptNotRetained,
+    /// The key's recorded intent was written by an earlier encoding that
+    /// cannot be checked against this request.
+    IdempotencyIntentUnverifiable,
     Identity,
     /// The handler ran and refused, or its projection, read attempt or
     /// candidate program failed.
@@ -180,7 +187,15 @@ impl WorthQueryApplicationRequestMutationDenial {
                 WorthQueryApplicationRequestMutationDenialKind::ScopeResolution
             }
             Self::Authorization(_) => WorthQueryApplicationRequestMutationDenialKind::Authorization,
-            Self::Idempotency(_) => WorthQueryApplicationRequestMutationDenialKind::Idempotency,
+            Self::Idempotency(denial) => match denial.kind() {
+                WorthQueryApplicationIdempotencyResolutionDenialKind::CommittedReceiptNotRetained {
+                    ..
+                } => WorthQueryApplicationRequestMutationDenialKind::IdempotencyReceiptNotRetained,
+                WorthQueryApplicationIdempotencyResolutionDenialKind::RecordedIntentUnverifiable => {
+                    WorthQueryApplicationRequestMutationDenialKind::IdempotencyIntentUnverifiable
+                }
+                _ => WorthQueryApplicationRequestMutationDenialKind::Idempotency,
+            },
             Self::Identity(_) => WorthQueryApplicationRequestMutationDenialKind::Identity,
             Self::Handler(MutationHandlerExecutionDenial::WorkflowControl) => {
                 WorthQueryApplicationRequestMutationDenialKind::WorkflowControl

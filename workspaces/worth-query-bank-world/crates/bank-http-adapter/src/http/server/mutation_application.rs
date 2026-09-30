@@ -321,6 +321,18 @@ pub(super) fn commit_denial(
                 BankHttpNextAction::CorrectRequest,
             ),
         ),
+        // The key's earlier commit took effect; reading current state shows it.
+        Denial::IdempotencyReceiptNotRetained { .. } => (
+            BankHttpMutationFailureKind::Stale,
+            BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh),
+        ),
+        Denial::IdempotencyIntentUnverifiable => (
+            BankHttpMutationFailureKind::Aborted,
+            BankHttpDenial::new(
+                BankHttpDenialKind::InternalDenied,
+                BankHttpNextAction::ContactOperator,
+            ),
+        ),
         Denial::CandidateValidatorWorkExceeded { .. }
         | Denial::WorkflowSettlementDenied { .. }
         | Denial::PreparedRootBudgetExhausted { .. }

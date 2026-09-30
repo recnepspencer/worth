@@ -1,5 +1,6 @@
 use bank_server::{
-    BankCommittedDispatchOutboxReadDenial, BankEstateProgressionDenial, BankRecoveryDenialKind,
+    BankCommittedDispatchOutboxReadDenial, BankEstateIdempotencyResolutionDenial,
+    BankEstateProgressionDenial, BankRecoveryDenialKind,
 };
 use worth_query_host::facade::primary_graph::WorthQueryPrincipalResolutionDenialKind;
 
@@ -50,6 +51,12 @@ pub(super) fn estate_denial(denial: BankEstateProgressionDenial) -> BankHttpDeni
             BankHttpNextAction::CorrectRequest,
         ),
         D::Recovery(denial) => recovery_denial(denial.kind()),
+        D::Idempotency(BankEstateIdempotencyResolutionDenial::RecordedIntentUnverifiable) => {
+            BankHttpDenial::new(
+                BankHttpDenialKind::InternalDenied,
+                BankHttpNextAction::ContactOperator,
+            )
+        }
         D::Idempotency(_) | D::LifecycleProjection(_) => {
             BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh)
         }
@@ -63,87 +70,97 @@ pub(super) fn estate_denial(denial: BankEstateProgressionDenial) -> BankHttpDeni
 }
 
 /// Every recovery kind chooses its own next action; none falls through a
-/// wildcard, so a new kind cannot silently inherit a misleading prompt.
+/// wildcard, so a new kind cannot silently inherit a misleading prompt. Each
+/// instruction is the one action that can succeed for that cause.
 fn recovery_denial(kind: BankRecoveryDenialKind) -> BankHttpDenial {
+    use BankHttpDenialKind as Denial;
+    use BankHttpNextAction as Next;
     use BankRecoveryDenialKind as Kind;
-    match kind {
+    let (denial, next) = match kind {
+        // The installed contract refuses this recovery, or the principal is not
+        // the one it belongs to. No retry, refresh, or new credential changes
+        // that.
         Kind::RecoveryNotAdmitted
-        | Kind::RecoveryAlreadyMinted
-        | Kind::RuntimeMismatch
+        | Kind::CompensationNotAdmitted
+        | Kind::ReconciliationNotAdmitted
+        | Kind::CurrentPolicyDenied
+        | Kind::ForeignPrincipal => (Denial::PermissionDenied, Next::None),
+        // The recovery already moved on: it was opened, or it ended. Reading
+        // the commit again reports its current recovery status.
+        Kind::RecoveryAlreadyMinted | Kind::AlreadyTerminal => (Denial::Stale, Next::Refresh),
+        // The live recovery can never be admitted again: its window closed, or
+        // installed truth moved past the commit it was bound to. The effect
+        // stays unsettled, so an operator settles it.
+        Kind::Expired
         | Kind::SchemaMismatch
         | Kind::BranchMismatch
+        | Kind::ForeignBranchEqualOrdinal
         | Kind::ApplicationBindingGenerationMismatch
         | Kind::OperationMismatch
         | Kind::GovernedInputMismatch
-        | Kind::AttemptMismatch
-        | Kind::PrincipalScopeMismatch
-        | Kind::IdempotencyMismatch
-        | Kind::ForeignIdempotencyRead
-        | Kind::ProviderPostureMismatch
-        | Kind::CorrelationMismatch
-        | Kind::CompatibilityGenerationMismatch
-        | Kind::Expired
-        | Kind::AlreadyTerminal
-        | Kind::ForeignPrincipal
-        | Kind::ForeignRuntime
-        | Kind::ForeignBranchEqualOrdinal
-        | Kind::CompensationNotAdmitted
-        | Kind::ReconciliationNotAdmitted
-        | Kind::FreshAuthorityDenied
-        | Kind::DisclosureAdmissionRequired
-        | Kind::CurrentPolicyDenied => {
-            BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh)
-        }
+        | Kind::CompatibilityGenerationMismatch => (Denial::Stale, Next::ContactOperator),
+        // The admitted request lapsed before the recovery took effect. The
+        // same request with fresh request authority can succeed.
+        Kind::AdmissionCancelled => (Denial::Cancelled, Next::Retry),
+        Kind::AdmissionDeadlineExceeded => (Denial::DeadlineExceeded, Next::Retry),
+        Kind::AdmissionAuthenticationExpired => (Denial::Unauthenticated, Next::Authenticate),
         // The effect's completion or its evidence is still settling; the same
         // request succeeds or answers already-completed once it has.
         Kind::UnresolvedExternalPosture
         | Kind::CompletionPublicationPending
         | Kind::TerminalIndexUnavailable
         | Kind::AttemptAdmissionDenied
-        | Kind::TimeObservationDenied => {
-            BankHttpDenial::new(BankHttpDenialKind::Unavailable, BankHttpNextAction::Retry)
-        }
-        Kind::TransportNotInstalled => BankHttpDenial::new(
-            BankHttpDenialKind::Unavailable,
-            BankHttpNextAction::ContactOperator,
-        ),
-        Kind::DispatchOwnerReadDenied(read) => dispatch_owner_read_denial(read),
+        | Kind::TimeObservationDenied => (Denial::Unavailable, Next::Retry),
+        Kind::TransportNotInstalled => (Denial::Unavailable, Next::ContactOperator),
+        Kind::DispatchOwnerReadDenied(read) => return dispatch_owner_read_denial(read),
         // The recovered commit declared no external effect to retry.
-        Kind::DispatchOutboxMissing => {
-            BankHttpDenial::new(BankHttpDenialKind::NotFound, BankHttpNextAction::None)
-        }
-        // Safe retry answers an already-completed effect with its own outcome
-        // before any denial mapping, so no route reaches this as a denial.
-        Kind::AlreadyCompleted | Kind::CanonicalDerivationDenied => BankHttpDenial::new(
-            BankHttpDenialKind::InternalDenied,
-            BankHttpNextAction::ContactOperator,
-        ),
-    }
+        Kind::DispatchOutboxMissing => (Denial::NotFound, Next::None),
+        // The server holds the handle and mints both the admission and the
+        // authority it checks against, so a disagreement between them is a
+        // server fault. Safe retry answers an already-completed effect with
+        // its own outcome before any denial mapping, so no route reaches that
+        // kind as a denial either.
+        Kind::RuntimeMismatch
+        | Kind::ForeignRuntime
+        | Kind::AttemptMismatch
+        | Kind::PrincipalScopeMismatch
+        | Kind::IdempotencyMismatch
+        | Kind::ForeignIdempotencyRead
+        | Kind::ProviderPostureMismatch
+        | Kind::CorrelationMismatch
+        | Kind::FreshAuthorityDenied
+        | Kind::DisclosureAdmissionRequired
+        | Kind::AlreadyCompleted
+        | Kind::CanonicalDerivationDenied => (Denial::InternalDenied, Next::ContactOperator),
+    };
+    BankHttpDenial::new(denial, next)
 }
 
 fn dispatch_owner_read_denial(read: BankCommittedDispatchOutboxReadDenial) -> BankHttpDenial {
     use BankCommittedDispatchOutboxReadDenial as Read;
-    match read {
-        Read::ExactCommitUnavailable => {
-            BankHttpDenial::new(BankHttpDenialKind::Unavailable, BankHttpNextAction::Retry)
+    use BankHttpDenialKind as Denial;
+    use BankHttpNextAction as Next;
+    let (denial, next) = match read {
+        // The commit is still publishing or its evidence is being indexed.
+        Read::PendingPublication | Read::CommittedIndexUnavailable => {
+            (Denial::Unavailable, Next::Retry)
         }
-        Read::ActiveSnapshotCapacityExhausted { .. } | Read::SnapshotIdentityExhausted => {
-            BankHttpDenial::new(
-                BankHttpDenialKind::Unavailable,
-                BankHttpNextAction::ContactOperator,
-            )
-        }
+        // The exact committed version or its retained basis is gone, so no
+        // later read recovers it. The snapshot bounds are the operator's, as
+        // they are for principal resolution.
+        Read::ExactCommitUnavailable
+        | Read::ActiveSnapshotCapacityExhausted { .. }
+        | Read::SnapshotIdentityExhausted => (Denial::Unavailable, Next::ContactOperator),
         Read::ForeignRuntime
         | Read::Missing
+        | Read::AmbiguousCorrelation
         | Read::WrongRecordKind
         | Read::NotAuthoritative
         | Read::Malformed
         | Read::CommitMismatch
-        | Read::RecordMismatch => BankHttpDenial::new(
-            BankHttpDenialKind::InternalDenied,
-            BankHttpNextAction::ContactOperator,
-        ),
-    }
+        | Read::RecordMismatch => (Denial::InternalDenied, Next::ContactOperator),
+    };
+    BankHttpDenial::new(denial, next)
 }
 
 fn principal_resolution_denial(kind: WorthQueryPrincipalResolutionDenialKind) -> BankHttpDenial {
@@ -194,44 +211,5 @@ fn principal_resolution_denial(kind: WorthQueryPrincipalResolutionDenialKind) ->
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn settling_completion_kinds_ask_to_try_again_later() {
-        for kind in [
-            BankRecoveryDenialKind::CompletionPublicationPending,
-            BankRecoveryDenialKind::TerminalIndexUnavailable,
-            BankRecoveryDenialKind::UnresolvedExternalPosture,
-        ] {
-            assert_eq!(
-                recovery_denial(kind),
-                BankHttpDenial::new(BankHttpDenialKind::Unavailable, BankHttpNextAction::Retry),
-                "{kind:?}"
-            );
-        }
-    }
-
-    #[test]
-    fn no_redispatch_refusal_prompts_a_refresh() {
-        for kind in [
-            BankRecoveryDenialKind::AlreadyCompleted,
-            BankRecoveryDenialKind::CompletionPublicationPending,
-            BankRecoveryDenialKind::TerminalIndexUnavailable,
-            BankRecoveryDenialKind::DispatchOutboxMissing,
-            BankRecoveryDenialKind::TransportNotInstalled,
-            BankRecoveryDenialKind::DispatchOwnerReadDenied(
-                BankCommittedDispatchOutboxReadDenial::ExactCommitUnavailable,
-            ),
-            BankRecoveryDenialKind::AttemptAdmissionDenied,
-            BankRecoveryDenialKind::CanonicalDerivationDenied,
-            BankRecoveryDenialKind::TimeObservationDenied,
-        ] {
-            assert_ne!(
-                recovery_denial(kind).next_action,
-                BankHttpNextAction::Refresh,
-                "{kind:?} has nothing to refresh"
-            );
-        }
-    }
-}
+#[path = "estate_denial/recovery_instruction_tests.rs"]
+mod recovery_instruction_tests;

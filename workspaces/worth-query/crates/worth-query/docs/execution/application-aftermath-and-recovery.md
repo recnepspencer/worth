@@ -522,6 +522,12 @@ Resolution consumes the handle after a fresh owner-issued effect authority and
 an admitted idempotency read agree with its exact binding. A domain host should
 normally wrap this generic sequence in domain-named methods, as Bank does.
 
+When the admitted request lapses before resolution takes effect, resolution
+names the lapse: `AdmissionCancelled`, `AdmissionDeadlineExceeded` or
+`AdmissionAuthenticationExpired`. A fresh request clears it.
+`FreshAuthorityDenied` means the presented effect authority is not this
+handle's, which a fresh request does not clear.
+
 ## Program Adoption Recovery And Support Retirement
 
 Program adoption has its own recovery carrier. When lower-owner effects occur

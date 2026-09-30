@@ -193,6 +193,18 @@ where
             candidate.discard();
             progression_denied(DenialStage::Idempotency)
         }
+        Err(crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::CommittedReceiptNotRetained { commit }) => {
+            candidate.discard();
+            WorthQueryProviderProgressionOutcome::Denied(
+                WorthQueryApplicationCommitDenial::idempotency_receipt_not_retained(commit),
+            )
+        }
+        Err(crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::RecordedIntentUnverifiable) => {
+            candidate.discard();
+            WorthQueryProviderProgressionOutcome::Denied(
+                WorthQueryApplicationCommitDenial::idempotency_intent_unverifiable(),
+            )
+        }
         Err(crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::RetentionCapacityExhausted) => {
             candidate.discard();
             WorthQueryProviderProgressionOutcome::Denied(

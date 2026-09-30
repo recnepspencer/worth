@@ -13,6 +13,10 @@ mod expression_conditions;
 mod fork_decision_reads;
 #[path = "application_graph/mutation_binding_guard.rs"]
 mod mutation_binding_guard;
+#[path = "application_graph/restored_primary_backend.rs"]
+mod restored_primary_backend;
+#[path = "application_graph/restored_replay.rs"]
+mod restored_replay;
 #[path = "application_graph/workflow.rs"]
 mod workflow;
 #[path = "application_graph/workflow_actor_wait.rs"]

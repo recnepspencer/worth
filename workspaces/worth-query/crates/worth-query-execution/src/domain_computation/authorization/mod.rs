@@ -61,6 +61,7 @@ pub(in crate::domain_computation) use decision_facts::{
 pub(in crate::domain_computation) use delegation_progression::{
     WorthQueryDelegationActivationBinding, WorthQueryDelegationActivationEffect,
 };
+pub(in crate::domain_computation) use denial::WorthQueryAdmissionLapse;
 pub use denial::{
     WorthQueryApplicationAuthorizationExplanationCause, WorthQueryOperationAuthorizationDenial,
     WorthQueryOperationAuthorizationDenialIdentity, WorthQueryOperationAuthorizationDenialKind,

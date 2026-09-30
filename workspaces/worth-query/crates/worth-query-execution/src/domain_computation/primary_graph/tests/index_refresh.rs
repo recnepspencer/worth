@@ -137,7 +137,10 @@ fn captured_before_root_with_missing_generation_uses_explicit_cold_fallback() {
     });
 }
 
-fn commit_empty(runtime: &mut RelationalRuntime, branch: &str) -> RelationalCommitReceipt {
+pub(super) fn commit_empty(
+    runtime: &mut RelationalRuntime,
+    branch: &str,
+) -> RelationalCommitReceipt {
     let branch_id = BranchId(branch.to_owned());
     let identity = runtime
         .branch_identity(&branch_id)

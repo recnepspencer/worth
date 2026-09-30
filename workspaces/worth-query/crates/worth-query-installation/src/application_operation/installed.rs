@@ -19,7 +19,8 @@ use worth_query_declaration::facade::application_schema::{
 
 use super::contract_resolution::ability_requirements;
 use super::installed_contract_support::{
-    authority_identity, graph_obligation_denial, operation_capability_requirements,
+    authority_identity, definition_identity, graph_obligation_denial,
+    operation_capability_requirements,
 };
 use super::operation_declaration_resolution::{
     resolve_operation_declaration, ResolvedApplicationOperationDeclaration,
@@ -88,6 +89,7 @@ pub struct WorthQueryInstalledApplicationOperation<Schema, Operation, Input> {
     mutation_bindings: Arc<Vec<worth_query_declaration::facade::application_operation::ApplicationMutationBindingDescriptor>>,
     obligations: WorthQueryInstalledGraphObligationSet,
     authority_identity: AuthoritySeal,
+    definition_identity: [u8; 32],
     _marker: PhantomData<fn(Input) -> (Schema, Operation)>,
 }
 
@@ -258,6 +260,7 @@ impl<Schema, Operation, Input> WorthQueryInstalledApplicationOperation<Schema, O
             input_type,
             obligations.identity(),
         );
+        let definition_identity = definition_identity(&binding_identity, operation, input_type)?;
         Ok(Self {
             binding_identity,
             owner: schema.owner().to_string(),
@@ -271,6 +274,7 @@ impl<Schema, Operation, Input> WorthQueryInstalledApplicationOperation<Schema, O
             mutation_bindings: Arc::new(schema.member_provenance.mutation_bindings().to_vec()),
             obligations,
             authority_identity,
+            definition_identity,
             _marker: PhantomData,
         })
     }
@@ -312,6 +316,15 @@ impl<Schema, Operation, Input> WorthQueryInstalledApplicationOperation<Schema, O
     #[doc(hidden)]
     pub fn authority_identity_bytes(&self) -> [u8; 32] {
         *self.authority_identity.bytes()
+    }
+
+    /// The identity of this operation's definition, the same in every runtime
+    /// that installs the same package. Idempotency intents bind it, so a key
+    /// committed before a restore or reopen still matches the same request
+    /// after it.
+    #[doc(hidden)]
+    pub const fn definition_identity_bytes(&self) -> [u8; 32] {
+        self.definition_identity
     }
 
     pub const fn graph_obligations(&self) -> WorthQueryInstalledGraphObligationInspection<'_> {

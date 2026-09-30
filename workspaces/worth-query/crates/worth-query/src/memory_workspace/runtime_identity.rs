@@ -7,14 +7,11 @@ pub(super) fn snapshot_identity_from_runtime(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
 ) -> WorthQuerySnapshotIdentity {
     runtime
-        .publication()
-        .latest_bundle()
-        .map(|bundle| {
+        .history()
+        .historical_latest_commit()
+        .map(|commit| {
             WorthQuerySnapshotIdentity::from_runtime_snapshot(
-                RelationalBridgeSnapshotIdentityParts::new(
-                    bundle.commit.commit_id.0,
-                    bundle.commit.version_id.0,
-                ),
+                RelationalBridgeSnapshotIdentityParts::new(commit.commit_id.0, commit.version_id.0),
             )
         })
         .unwrap_or_else(WorthQuerySnapshotIdentity::empty_runtime_state)

@@ -111,6 +111,7 @@ pub struct WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scop
     operation: String,
     operation_authority_identity: Arc<str>,
     operation_authority_identity_bytes: [u8; 32],
+    operation_definition_identity: [u8; 32],
     admission_identity: WorthQueryOperationAdmissionIdentity,
     resource_binding_identity: Arc<str>,
     operation_scope_binding: WorthQueryOperationScopeBinding,

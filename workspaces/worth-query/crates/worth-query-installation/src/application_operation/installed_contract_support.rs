@@ -6,6 +6,7 @@ use crate::application_schema::WorthQueryInstalledApplicationSchema;
 use crate::authority_cryptography::{
     AuthoritySeal, AuthoritySealDomain, AuthorityTranscript, PackageAuthorityKey,
 };
+use crate::canonical_digest_derivation::InstallationCanonicalIdentityBasis;
 use crate::graph_obligation::{
     WorthQueryGraphObligationInstallationDenial, WorthQueryInstalledGraphCapabilityRequirement,
     WorthQueryInstalledGraphObligationSetIdentity,
@@ -44,6 +45,50 @@ pub(super) fn authority_identity(
     obligations: &WorthQueryInstalledGraphObligationSetIdentity,
 ) -> AuthoritySeal {
     authority_transcript(key, identity, operation, input_type, obligations).finish()
+}
+
+const DEFINITION_IDENTITY_BUDGET: worth_foundational::facade::CanonicalDigestWorkBudget =
+    match worth_foundational::facade::CanonicalDigestWorkBudget::new(8, 64 * 1024) {
+        Some(budget) => budget,
+        None => panic!("fixed operation-definition identity budget is valid"),
+    };
+
+/// The identity of an installed operation's definition: its package, schema,
+/// operation and input type.
+///
+/// Unlike the authority seal it names no installation key and no runtime, so
+/// every runtime that installs the same package derives the same value, before
+/// and after a restore or reopen. Durable records that must match the same
+/// request in a later runtime bind this identity, never the seal.
+pub(super) fn definition_identity(
+    identity: &ApplicationSchemaBindingIdentity,
+    operation: &str,
+    input_type: &str,
+) -> Result<[u8; 32], WorthQueryApplicationOperationInstallationDenial> {
+    derive_definition_identity(identity, operation, input_type).map_err(|denial| {
+        graph_obligation_denial(
+            operation,
+            WorthQueryGraphObligationInstallationDenial::Canonical(denial),
+        )
+    })
+}
+
+fn derive_definition_identity(
+    identity: &ApplicationSchemaBindingIdentity,
+    operation: &str,
+    input_type: &str,
+) -> Result<[u8; 32], worth_foundational::facade::CanonicalDigestDerivationDenial> {
+    let mut basis = InstallationCanonicalIdentityBasis::new(
+        "worth-query.installed-operation-definition",
+        "worth-query-installed-operation-definition-v1",
+        DEFINITION_IDENTITY_BUDGET,
+    );
+    basis.digest("package", *identity.package_identity())?;
+    basis.digest("schema", *identity.schema_identity())?;
+    basis.text("operation", operation)?;
+    basis.text("input-type", input_type)?;
+    let (digest, _work) = basis.derive()?;
+    Ok(*digest.bytes())
 }
 
 pub(super) fn authority_transcript(

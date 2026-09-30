@@ -271,6 +271,14 @@ any commit, even after the branch adopts another program. If the branch's
 program removed the action, the lane returns the inactive-program denial and
 cannot commit the removed action.
 
+A key records its intent durably, and that intent names no runtime, so the same
+request matches it before and after a restore or reopen, and a changed request
+under the key is still `IdempotencyIntentDrift`. The recorded receipt is not
+durable. A runtime that no longer holds it answers the unchanged retry with
+`CommittedReceiptNotRetained`, naming the original commit, and commits nothing.
+A record from an earlier intent encoding that cannot be checked against the
+request answers `RecordedIntentUnverifiable`, never drift.
+
 A host integration that already owns an admitted change can use the advanced
 product-transaction lane instead of a request lane. It is not the ordinary path:
 

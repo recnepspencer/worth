@@ -232,6 +232,7 @@ fn construct_admitted_operation<Schema, Principal, PrincipalIdentity, Operation,
         operation: preparation.operation.operation().to_string(),
         operation_authority_identity: preparation.operation.authority_identity().into(),
         operation_authority_identity_bytes: preparation.operation.authority_identity_bytes(),
+        operation_definition_identity: preparation.operation.definition_identity_bytes(),
         admission_identity: preparation.admission_identity,
         resource_binding_identity: preparation.resource_binding_identity,
         operation_scope_binding:

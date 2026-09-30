@@ -26,11 +26,22 @@ const OWNER_READS: [Read; 13] = [
     Read::RecordMismatch,
 ];
 
+/// Every cause fresh effect authority reports for a live handle.
+const FRESH_AUTHORITY: [Kind; 3] = [
+    Kind::AlreadyTerminal,
+    Kind::Expired,
+    Kind::FreshAuthorityDenied,
+];
+
 /// The exhaustive match stops compiling when a refusal is added, so a new
 /// refusal cannot skip this court.
 fn every_refusal() -> Vec<Redispatch> {
     let listed = |denial: Redispatch| match denial {
-        Redispatch::AdmissionDenied
+        Redispatch::FreshAuthority(_)
+        | Redispatch::AdmissionCancelled
+        | Redispatch::AdmissionDeadlineExceeded
+        | Redispatch::AdmissionAuthenticationExpired
+        | Redispatch::ForeignAdmission
         | Redispatch::RecoveryNotAdmitted
         | Redispatch::BindingOutboxMissing
         | Redispatch::TransportNotInstalled
@@ -43,7 +54,10 @@ fn every_refusal() -> Vec<Redispatch> {
         | Redispatch::TimeObservationDenied => denial,
     };
     [
-        Redispatch::AdmissionDenied,
+        Redispatch::AdmissionCancelled,
+        Redispatch::AdmissionDeadlineExceeded,
+        Redispatch::AdmissionAuthenticationExpired,
+        Redispatch::ForeignAdmission,
         Redispatch::RecoveryNotAdmitted,
         Redispatch::BindingOutboxMissing,
         Redispatch::TransportNotInstalled,
@@ -55,6 +69,7 @@ fn every_refusal() -> Vec<Redispatch> {
         Redispatch::TimeObservationDenied,
     ]
     .into_iter()
+    .chain(FRESH_AUTHORITY.map(Redispatch::FreshAuthority))
     .chain(OWNER_READS.map(Redispatch::OwnerReadDenied))
     .map(listed)
     .collect()
@@ -126,4 +141,27 @@ fn settling_completion_refusals_keep_their_cause() {
             "the owner read cause {read:?} survives into the recovery kind"
         );
     }
+}
+#[test]
+fn fresh_authority_and_current_admission_refusals_stay_distinct() {
+    for fresh in FRESH_AUTHORITY {
+        assert_eq!(
+            kind(Redispatch::FreshAuthority(fresh)),
+            fresh,
+            "the fresh-authority cause {fresh:?} survives into the recovery kind"
+        );
+    }
+    assert_eq!(
+        kind(Redispatch::AdmissionCancelled),
+        Kind::AdmissionCancelled
+    );
+    assert_eq!(
+        kind(Redispatch::AdmissionDeadlineExceeded),
+        Kind::AdmissionDeadlineExceeded
+    );
+    assert_eq!(
+        kind(Redispatch::AdmissionAuthenticationExpired),
+        Kind::AdmissionAuthenticationExpired
+    );
+    assert_eq!(kind(Redispatch::ForeignAdmission), Kind::ForeignRuntime);
 }

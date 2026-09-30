@@ -8,11 +8,19 @@ pub enum BankEstateIdempotencyResolutionDenial {
     Authorization(crate::BankAuthorizationDenial),
     AuthorizationLineageUnavailable,
     ForeignAdmission,
-    ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
+    ActiveSnapshotCapacityExhausted {
+        maximum_active_snapshots: usize,
+    },
     RetentionCapacityExhausted,
     RetentionIdentityExhausted,
     SnapshotIdentityExhausted,
     ProviderUnavailable,
+    /// The key is recorded with the same intent and that commit took effect,
+    /// but the runtime no longer holds its receipt, as after a restore.
+    CommittedReceiptNotRetained,
+    /// The key's recorded intent was written by an earlier encoding that
+    /// cannot be checked against this request.
+    RecordedIntentUnverifiable,
 }
 
 pub(super) fn from_query(
@@ -44,6 +52,12 @@ pub(super) fn from_query(
         }
         WorthQueryApplicationIdempotencyResolutionDenialKind::ProviderUnavailable => {
             BankEstateIdempotencyResolutionDenial::ProviderUnavailable
+        }
+        WorthQueryApplicationIdempotencyResolutionDenialKind::CommittedReceiptNotRetained {
+            ..
+        } => BankEstateIdempotencyResolutionDenial::CommittedReceiptNotRetained,
+        WorthQueryApplicationIdempotencyResolutionDenialKind::RecordedIntentUnverifiable => {
+            BankEstateIdempotencyResolutionDenial::RecordedIntentUnverifiable
         }
     }
 }

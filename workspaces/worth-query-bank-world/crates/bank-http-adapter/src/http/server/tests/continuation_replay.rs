@@ -70,7 +70,7 @@ async fn revoked_viewer_cannot_replay_cached_activity_pages() {
     let origin_page = post_page(&client, &page_endpoint, &resume_origin).await;
     let token = continuation(&origin_page).to_owned();
     let resume_request = serde_json::json!({
-        "protocol": "v1",
+        "protocol": "v2",
         "request_id": "revoked-replay-resume",
         "credential": first_request["credential"],
         "controls": controls_json(1),
@@ -190,7 +190,7 @@ async fn abandoned_resume_finishes_and_replays_its_exact_response() {
     gate.release(1);
     let first = first.await.expect("first page task should finish");
     let resume_request = serde_json::json!({
-        "protocol": "v1", "request_id": "abandoned-resume",
+        "protocol": "v2", "request_id": "abandoned-resume",
         "credential": super::credential_json(), "controls": controls_json(1),
         "account": account.canonical_text(), "continuation": continuation(&first)
     });

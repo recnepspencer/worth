@@ -42,7 +42,7 @@ mod tests {
         assert_eq!(
             ordinary.intent_text(),
             concat!(
-                "0202020202020202020202020202020202020202020202020202020202020202",
+                "v2:0202020202020202020202020202020202020202020202020202020202020202",
                 ":source=-:operation=-:scope=-:precondition=-:input=-:proposal=-",
                 ":conditional-definition=-"
             )

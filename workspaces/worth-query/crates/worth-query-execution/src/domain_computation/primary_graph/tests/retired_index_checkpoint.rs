@@ -76,7 +76,7 @@ fn a_store_holding_the_retired_correlation_index_opens_and_runs() {
 
 /// Registers the retired definition and builds its generation at the
 /// committed head, the state every store written by the retired code holds.
-fn persist_as_the_retired_code_did(world: &IdentityWorld) -> DerivedIndexId {
+pub(super) fn persist_as_the_retired_code_did(world: &IdentityWorld) -> DerivedIndexId {
     let graph = world.application.runtime.primary_graph().unwrap();
     let correlation = graph
         .layout
@@ -105,7 +105,7 @@ fn persist_as_the_retired_code_did(world: &IdentityWorld) -> DerivedIndexId {
     })
 }
 
-fn assert_retired_index_is_inert(world: &IdentityWorld, retired: DerivedIndexId) {
+pub(super) fn assert_retired_index_is_inert(world: &IdentityWorld, retired: DerivedIndexId) {
     let graph = world.application.runtime.primary_graph().unwrap();
     let handle = graph.integration_handle();
     assert!(!handle.primary_index_ids.contains(&retired));
@@ -119,7 +119,7 @@ fn assert_retired_index_is_inert(world: &IdentityWorld, retired: DerivedIndexId)
     });
 }
 
-fn resolve_alice(world: &IdentityWorld, identity: u64) -> EntityId {
+pub(super) fn resolve_alice(world: &IdentityWorld, identity: u64) -> EntityId {
     let scope = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &scope);
     let principal = world
@@ -135,7 +135,7 @@ fn resolve_alice(world: &IdentityWorld, identity: u64) -> EntityId {
     principal.principal_entity_id()
 }
 
-fn set_principal_identity(world: &IdentityWorld, principal: EntityId, identity: u64) {
+pub(super) fn set_principal_identity(world: &IdentityWorld, principal: EntityId, identity: u64) {
     let graph = world.application.runtime.primary_graph().unwrap();
     let locator = graph
         .layout
@@ -157,12 +157,15 @@ fn set_principal_identity(world: &IdentityWorld, principal: EntityId, identity: 
     );
 }
 
-fn with_runtime<T>(world: &IdentityWorld, read: impl FnOnce(&RelationalRuntime) -> T) -> T {
+pub(super) fn with_runtime<T>(
+    world: &IdentityWorld,
+    read: impl FnOnce(&RelationalRuntime) -> T,
+) -> T {
     let graph = world.application.runtime.primary_graph().unwrap();
     graph.integration_handle().with_runtime(read)
 }
 
-fn main_head(runtime: &RelationalRuntime) -> RelationalCommitReceipt {
+pub(super) fn main_head(runtime: &RelationalRuntime) -> RelationalCommitReceipt {
     let (_, basis) = runtime
         .observe_branch(&runtime.main_branch_identity())
         .expect("the main branch is observable");

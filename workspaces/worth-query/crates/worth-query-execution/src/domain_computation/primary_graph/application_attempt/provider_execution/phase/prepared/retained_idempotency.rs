@@ -115,6 +115,16 @@ where
         Ok(Err(crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::Unavailable)) => {
             Some(denied(DenialStage::Idempotency))
         }
+        Ok(Err(crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::CommittedReceiptNotRetained { commit })) => {
+            Some(WorthQueryApplicationCommitOutcome::Denied(
+                WorthQueryApplicationCommitDenial::idempotency_receipt_not_retained(commit),
+            ))
+        }
+        Ok(Err(crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::RecordedIntentUnverifiable)) => {
+            Some(WorthQueryApplicationCommitOutcome::Denied(
+                WorthQueryApplicationCommitDenial::idempotency_intent_unverifiable(),
+            ))
+        }
         Ok(Err(crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::RetentionCapacityExhausted)) => {
             Some(WorthQueryApplicationCommitOutcome::Denied(
                 WorthQueryApplicationCommitDenial::retention_capacity_exhausted(

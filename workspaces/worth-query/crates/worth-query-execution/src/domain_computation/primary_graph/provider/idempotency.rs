@@ -37,10 +37,20 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryProviderGuardedW
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum WorthQueryProviderIdempotencyResolutionDenial
 {
-    ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
+    ActiveSnapshotCapacityExhausted {
+        maximum_active_snapshots: usize,
+    },
     RetentionCapacityExhausted,
     RetentionIdentityExhausted,
     SnapshotIdentityExhausted,
+    /// The key records `commit` for this intent, but this provider does not
+    /// retain its receipt.
+    CommittedReceiptNotRetained {
+        commit: worth_relational::facade::history::CommitId,
+    },
+    /// The key's first-encoding record matches every durable part of this
+    /// intent but names its operation by a seal no later runtime can confirm.
+    RecordedIntentUnverifiable,
     Unavailable,
 }
 
@@ -181,7 +191,7 @@ impl WorthQueryPrimaryGraphProvider {
                 binding,
             );
             crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
-            let resolution = resolution.map_err(WorthQueryProviderIdempotencyResolutionDenial::from)?;
+            let resolution = resolution?;
             if let WorthQueryProviderIdempotencyResolution::Equivalent(committed) = &resolution {
                 self.repair_equivalent_publication_settlement(runtime, committed)?;
             }

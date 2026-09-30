@@ -24,16 +24,22 @@ pub(in crate::http::server) fn request_mutation_denial(
             BankHttpDenialKind::MalformedRequest,
             BankHttpNextAction::CorrectRequest,
         ),
-        Denial::WorkflowAuthoritySpent | Denial::WorkflowTransitionCurrentness => {
+        // State already moved on, by a later workflow step or by the key's
+        // earlier commit; reading current state shows it.
+        Denial::WorkflowAuthoritySpent
+        | Denial::WorkflowTransitionCurrentness
+        | Denial::IdempotencyReceiptNotRetained => {
             BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh)
         }
         // The same request can never pass these, so a retry would loop forever:
         // the binding needs a workflow transition, the admission governed
-        // another input, or the runtime serves no handler for it.
+        // another input, the runtime serves no handler for it, or the key's
+        // record cannot be checked against the request.
         Denial::Identity
         | Denial::WorkflowControl
         | Denial::InputNotAdmitted
-        | Denial::HandlerNotInstalled => BankHttpDenial::new(
+        | Denial::HandlerNotInstalled
+        | Denial::IdempotencyIntentUnverifiable => BankHttpDenial::new(
             BankHttpDenialKind::InternalDenied,
             BankHttpNextAction::ContactOperator,
         ),
@@ -66,12 +72,21 @@ mod tests {
             Denial::InputNotAdmitted,
             Denial::HandlerNotInstalled,
             Denial::Identity,
+            Denial::IdempotencyIntentUnverifiable,
         ] {
             assert_eq!(request_mutation_denial(kind), operator, "{kind:?}");
         }
         assert_eq!(
             request_mutation_denial(Denial::Handler),
             BankHttpDenial::new(BankHttpDenialKind::Unavailable, BankHttpNextAction::Retry),
+        );
+    }
+
+    #[test]
+    fn a_key_committed_before_a_restore_asks_for_a_refresh_not_a_retry() {
+        assert_eq!(
+            request_mutation_denial(Denial::IdempotencyReceiptNotRetained),
+            BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh),
         );
     }
 }

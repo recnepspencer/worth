@@ -47,7 +47,7 @@ async fn account_activity_sse_preserves_open_and_deadline_postures() {
     let mut response = client
         .post(endpoint)
         .json(&serde_json::json!({
-            "protocol": "v1",
+            "protocol": "v2",
             "request_id": "activity-stream-1",
             "credential": {
                 "id_token": "test-only",
@@ -94,7 +94,7 @@ async fn account_activity_sse_preserves_open_and_deadline_postures() {
     let mutation = client
         .post(format!("http://{}/v1/mutations", server.local_address()))
         .json(&serde_json::json!({
-            "protocol": "v1",
+            "protocol": "v2",
             "request_id": "live-publication-deposit",
             "credential": credential_json(),
             "controls": { "deadline_milliseconds": 5_000 },
@@ -227,7 +227,7 @@ async fn opaque_continuation_replays_lost_responses_without_reusing_query_author
     assert_eq!(replayed, first, "initial response loss must not advance");
 
     let resume_request = serde_json::json!({
-        "protocol": "v1",
+        "protocol": "v2",
         "request_id": "activity-resume-1",
         "credential": credential_json(),
         "controls": controls_json(1),
@@ -254,7 +254,7 @@ async fn opaque_continuation_replays_lost_responses_without_reusing_query_author
     );
 
     let crossed_request = serde_json::json!({
-        "protocol": "v1",
+        "protocol": "v2",
         "request_id": "activity-resume-crossed",
         "credential": credential_json(),
         "controls": controls_json(1),
@@ -299,7 +299,7 @@ async fn assert_live_fixture_admits(application: &CausalHttpApplication, account
 
 fn page_request(account: AccountId, request_id: &str) -> serde_json::Value {
     serde_json::json!({
-        "protocol": "v1",
+        "protocol": "v2",
         "request_id": request_id,
         "credential": credential_json(),
         "controls": controls_json(1),
@@ -329,7 +329,7 @@ fn live_request(
     deadline_milliseconds: u64,
 ) -> serde_json::Value {
     serde_json::json!({
-        "protocol": "v1",
+        "protocol": "v2",
         "request_id": request_id,
         "credential": credential_json(),
         "controls": {

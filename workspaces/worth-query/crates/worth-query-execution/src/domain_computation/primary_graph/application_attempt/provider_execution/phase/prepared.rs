@@ -373,7 +373,7 @@ fn bind_commit_idempotency<Schema, Operation, Input, Scope>(
     idempotency: WorthQueryApplicationIdempotencyBinding,
 ) -> WorthQueryApplicationIdempotencyBinding {
     idempotency
-        .bind_operation(admission.operation_authority_identity_bytes())
+        .bind_operation(admission.operation_definition_identity())
         .bind_operation_scope(admission.operation_scope_binding())
         .bind_preconditions(admission.mutation_preconditions().identity())
         .bind_governed_input(admission.governed_input_identity())

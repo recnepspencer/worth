@@ -26,7 +26,7 @@ async fn authenticated_account_summary_crosses_the_bounded_tcp_boundary() {
             server.local_address()
         ))
         .json(&serde_json::json!({
-            "protocol": "v1", "request_id": "account-summary-1",
+            "protocol": "v2", "request_id": "account-summary-1",
             "credential": credential_json(),
             "controls": { "deadline_milliseconds": 5_000,
                 "maximum_results": 1, "maximum_work": 20_000 },
@@ -189,7 +189,7 @@ async fn authority_shaped_unknown_fields_fail_closed_across_wire_families() {
         &client,
         &format!("{origin}/v1/queries/account-summary"),
         serde_json::json!({
-            "protocol": "v1", "request_id": "unknown-summary",
+            "protocol": "v2", "request_id": "unknown-summary",
             "credential": credential_json(), "controls": controls_json(1),
             "account": account.canonical_text(), "branch": "forged"
         }),
@@ -204,7 +204,7 @@ async fn authority_shaped_unknown_fields_fail_closed_across_wire_families() {
         &client,
         &format!("{origin}/v1/queries/account-activity/page"),
         serde_json::json!({
-            "protocol": "v1", "request_id": "unknown-page",
+            "protocol": "v2", "request_id": "unknown-page",
             "credential": credential_json(), "controls": controls_json(1),
             "account": account.canonical_text(), "provider": "forged"
         }),
@@ -219,7 +219,7 @@ async fn authority_shaped_unknown_fields_fail_closed_across_wire_families() {
         &client,
         &format!("{origin}/v1/estate/notify-death"),
         serde_json::json!({
-            "protocol": "v1", "request_id": "unknown-notification",
+            "protocol": "v2", "request_id": "unknown-notification",
             "credential": credential_json(),
             "controls": { "deadline_milliseconds": 5_000 },
             "idempotency_key": "unknown-notification-key",
@@ -237,7 +237,7 @@ async fn authority_shaped_unknown_fields_fail_closed_across_wire_families() {
         &client,
         &format!("{origin}/v1/mutations"),
         serde_json::json!({
-            "protocol": "v1", "request_id": "unknown-mutation",
+            "protocol": "v2", "request_id": "unknown-mutation",
             "credential": credential_json(),
             "controls": { "deadline_milliseconds": 5_000 },
             "idempotency_key": "unknown-mutation-key", "operation": "deposit",
@@ -263,7 +263,7 @@ async fn post_summary(
     client
         .post(endpoint)
         .json(&serde_json::json!({
-            "protocol": "v1", "request_id": request_id,
+            "protocol": "v2", "request_id": request_id,
             "credential": credential_json(), "controls": controls_json(1),
             "account": account.canonical_text()
         }))

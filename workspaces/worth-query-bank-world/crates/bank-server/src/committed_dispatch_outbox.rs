@@ -58,14 +58,28 @@ impl BankCommittedDispatchOutboxObservation {
     }
 }
 
+/// Why Bank could not read a committed effect's outbox row. Each Query cause
+/// keeps its own variant, because a settling publication and a commit whose
+/// exact version is gone ask the caller for different next steps.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankCommittedDispatchOutboxReadDenial {
     ForeignRuntime,
     Missing,
+    /// More than one committed effect claims the correlation.
+    AmbiguousCorrelation,
+    /// The effect's commit is still publishing.
+    PendingPublication,
+    /// The effect committed, but its completed-commit evidence is not yet
+    /// indexed.
+    CommittedIndexUnavailable,
     WrongRecordKind,
     NotAuthoritative,
+    /// The exact committed version or its retained basis is no longer
+    /// available; no later read can recover it.
     ExactCommitUnavailable,
-    ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
+    ActiveSnapshotCapacityExhausted {
+        maximum_active_snapshots: usize,
+    },
     SnapshotIdentityExhausted,
     Malformed,
     CommitMismatch,
@@ -94,10 +108,9 @@ impl From<QueryDenial> for BankCommittedDispatchOutboxReadDenial {
         match denial {
             QueryDenial::ForeignRuntime => Self::ForeignRuntime,
             QueryDenial::Missing => Self::Missing,
-            QueryDenial::AmbiguousCorrelation => Self::NotAuthoritative,
-            QueryDenial::PendingPublication | QueryDenial::CommittedIndexUnavailable => {
-                Self::ExactCommitUnavailable
-            }
+            QueryDenial::AmbiguousCorrelation => Self::AmbiguousCorrelation,
+            QueryDenial::PendingPublication => Self::PendingPublication,
+            QueryDenial::CommittedIndexUnavailable => Self::CommittedIndexUnavailable,
             QueryDenial::WrongRecordKind => Self::WrongRecordKind,
             QueryDenial::NotAuthoritative => Self::NotAuthoritative,
             QueryDenial::ExactCommitUnavailable => Self::ExactCommitUnavailable,

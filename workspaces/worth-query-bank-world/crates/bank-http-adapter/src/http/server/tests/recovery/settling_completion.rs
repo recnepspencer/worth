@@ -3,6 +3,8 @@
 //! A rail completion that is still publishing, or whose terminal index cannot
 //! answer yet, asks the caller to try again later. Once the completion holds,
 //! retry answers already-completed with the original commit and no refresh.
+//! Protocol v2 introduced that outcome; a v1 decoder cannot read it, so a v1
+//! request is refused before any answer.
 
 use super::super::super::super::protocol::{
     BankHttpCommitDescription, BankHttpDenial, BankHttpNextAction,
@@ -99,6 +101,19 @@ fn assert_try_again_later(outcome: &BankHttpRecoverySafeRetryOutcome, state: &st
     );
 }
 
+/// The safe-retry outcomes protocol v1 declared, keyed by the same tag.
+#[derive(serde::Deserialize)]
+#[serde(tag = "outcome", rename_all = "snake_case")]
+enum ProtocolV1SafeRetryOutcome {
+    Applied {},
+    Denied {},
+}
+
+fn decodes_as_protocol_v1(outcome: &BankHttpRecoverySafeRetryOutcome) -> bool {
+    let body = serde_json::to_value(outcome).expect("the outcome encodes");
+    serde_json::from_value::<ProtocolV1SafeRetryOutcome>(body).is_ok()
+}
+
 fn assert_already_completed(
     outcome: BankHttpRecoverySafeRetryOutcome,
     original: BankHttpCommitDescription,
@@ -160,7 +175,37 @@ async fn settling_completion_asks_to_retry_later_then_answers_already_completed(
         .maintain_estate_rail_completion(&route, &scope)
         .expect("maintenance resumes the unpublished completion");
     let completed = safe_retry(&client, address, &action, "completed", &token).await;
+    assert!(
+        decodes_as_protocol_v1(&pending),
+        "the v1 decoder reads the outcomes v1 declared"
+    );
+    assert!(
+        !decodes_as_protocol_v1(&completed),
+        "a v1 decoder rejects already-completed, so the shape needs a fresh version"
+    );
     assert_already_completed(completed, original);
+    let mut protocol_v1 = recovery_request(&action, "completed-v1", &token);
+    protocol_v1["protocol"] = "v1".into();
+    let refused = post_typed::<BankHttpRecoverySafeRetryOutcome>(
+        &client,
+        address,
+        "/v1/recovery/safe-retry",
+        &protocol_v1,
+    )
+    .await;
+    assert!(
+        matches!(
+            refused,
+            BankHttpRecoverySafeRetryOutcome::Denied {
+                denial: BankHttpDenial {
+                    kind: BankHttpDenialKind::UnsupportedProtocol,
+                    next_action: BankHttpNextAction::CorrectRequest,
+                },
+                ..
+            }
+        ),
+        "a v1 client is refused rather than sent a shape it cannot decode: {refused:?}"
+    );
     let replay = safe_retry(&client, address, &action, "completed-replay", &token).await;
     assert_already_completed(replay, original);
     assert_eq!(
