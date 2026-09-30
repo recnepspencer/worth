@@ -60,7 +60,7 @@ pub(super) fn failure_name(
     match failure {
         Qualification(_) => "qualification",
         ProductActivationUnavailable => "product-activation-unavailable",
-        Preparation => "preparation",
+        Preparation(_) => "preparation",
         PublicationNoEffect => "publication-no-effect",
         ProductUnpublished(_) => "product-unpublished",
     }

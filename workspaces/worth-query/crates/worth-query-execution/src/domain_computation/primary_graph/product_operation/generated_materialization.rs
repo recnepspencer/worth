@@ -182,11 +182,29 @@ pub enum WorthQueryGeneratedOutputSuspensionFailure {
     /// The product's program activation could not admit a publication. Nothing
     /// changed.
     ProductActivationUnavailable,
-    /// The suspension could not be prepared. Nothing was published.
-    Preparation,
+    /// The suspension could not be prepared. Carries the owning Relational
+    /// denial; nothing was published and no materialization custody was issued.
+    Preparation(worth_relational::facade::branch::RelationalMaterializationError),
     /// The publication was refused or had no effect. Nothing was published.
     PublicationNoEffect,
     /// Some owners moved, but the product head did not. Continue the recovery
     /// this carries.
     ProductUnpublished(WorthQueryGeneratedOutputSuspensionRecovery),
+}
+
+impl std::fmt::Debug for WorthQueryGeneratedOutputSuspensionFailure {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Qualification(denial) => formatter
+                .debug_tuple("Qualification")
+                .field(denial)
+                .finish(),
+            Self::ProductActivationUnavailable => {
+                formatter.write_str("ProductActivationUnavailable")
+            }
+            Self::Preparation(cause) => formatter.debug_tuple("Preparation").field(cause).finish(),
+            Self::PublicationNoEffect => formatter.write_str("PublicationNoEffect"),
+            Self::ProductUnpublished(_) => formatter.write_str("ProductUnpublished"),
+        }
+    }
 }
