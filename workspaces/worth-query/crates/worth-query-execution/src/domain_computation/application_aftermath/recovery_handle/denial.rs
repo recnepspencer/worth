@@ -30,6 +30,9 @@ pub enum WorthQueryRecoveryHandleDenialKind {
     ForeignRuntime,
     ForeignBranchEqualOrdinal,
     TransitionNotAdmitted,
+    /// The effect already reached its one terminal completion. Safe retry
+    /// admits no new physical attempt and the live handle is returned.
+    AlreadyCompleted,
     /// Installed mechanism axis does not admit compensate (distinct from reconcile).
     CompensationNotAdmitted,
     /// Installed authority axis does not admit reconcile (distinct from compensate).

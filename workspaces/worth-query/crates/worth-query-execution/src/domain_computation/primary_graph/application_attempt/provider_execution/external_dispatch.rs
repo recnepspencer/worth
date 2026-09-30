@@ -22,7 +22,9 @@ use crate::domain_computation::application_aftermath::{
     WorthQueryRecoveryHandleDenialKind,
 };
 use crate::domain_computation::authorization::WorthQueryAdmittedApplicationOperation;
-use crate::domain_computation::primary_graph::application_runtime::WorthQueryExternalDispatchAdmissionDenial;
+use crate::domain_computation::primary_graph::application_runtime::{
+    WorthQueryExternalDispatchAdmissionDenial, WorthQueryTerminalEffectRefusal,
+};
 use crate::domain_computation::primary_graph::{
     InstalledTransportCompletion, InstalledTransportResumeOutcome,
     WorthQueryPrimaryGraphApplicationRuntime,
@@ -130,10 +132,14 @@ impl From<WorthQueryExternalRedispatchDenial> for WorthQueryRecoveryHandleDenial
                     WorthQueryRecoveryHandleDenialKind::TransitionNotAdmitted,
                 )
             }
+            WorthQueryExternalRedispatchDenial::AlreadyCompleted => {
+                WorthQueryRecoveryHandleDenial::new(
+                    WorthQueryRecoveryHandleDenialKind::AlreadyCompleted,
+                )
+            }
             WorthQueryExternalRedispatchDenial::TransportNotInstalled
             | WorthQueryExternalRedispatchDenial::OwnerReadDenied(_)
             | WorthQueryExternalRedispatchDenial::AttemptAdmissionDenied
-            | WorthQueryExternalRedispatchDenial::AlreadyCompleted
             | WorthQueryExternalRedispatchDenial::CompletionPublicationPending
             | WorthQueryExternalRedispatchDenial::TerminalIndexUnavailable
             | WorthQueryExternalRedispatchDenial::CanonicalDerivationDenied
@@ -194,9 +200,20 @@ where
         ) {
             return Err(WorthQueryExternalRedispatchDenial::AdmissionDenied);
         }
-        if handle.binding().dispatch_outbox().is_none() {
+        let Some(record) = handle.binding().dispatch_outbox() else {
             return Err(WorthQueryExternalRedispatchDenial::BindingOutboxMissing);
-        }
+        };
+        // A completed effect may already have released its committed owner
+        // row, so the terminal owner answers before that row is read.
+        self.refuse_completed_external_effect(record)
+            .map_err(|refusal| match refusal {
+                WorthQueryTerminalEffectRefusal::AlreadyCompleted => {
+                    WorthQueryExternalRedispatchDenial::AlreadyCompleted
+                }
+                WorthQueryTerminalEffectRefusal::TerminalIndexUnavailable => {
+                    WorthQueryExternalRedispatchDenial::TerminalIndexUnavailable
+                }
+            })?;
         let committed = self
             .primary_provider
             .committed_dispatch_outbox_for_binding(handle.binding())
