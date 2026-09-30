@@ -3,6 +3,8 @@
 mod idempotency;
 mod lifecycle_projection;
 mod operation_projection;
+#[cfg(test)]
+mod recovery_kind_tests;
 
 pub use idempotency::BankEstateIdempotencyResolutionDenial;
 pub use lifecycle_projection::BankEstateLifecycleProjectionDenial;
@@ -92,8 +94,15 @@ pub enum BankRecoveryDenialKind {
     ForeignPrincipal,
     ForeignRuntime,
     ForeignBranchEqualOrdinal,
-    TransitionNotAdmitted,
     AlreadyCompleted,
+    CompletionPublicationPending,
+    TerminalIndexUnavailable,
+    DispatchOutboxMissing,
+    TransportNotInstalled,
+    DispatchOwnerReadDenied(crate::BankCommittedDispatchOutboxReadDenial),
+    AttemptAdmissionDenied,
+    CanonicalDerivationDenied,
+    TimeObservationDenied,
     CompensationNotAdmitted,
     ReconciliationNotAdmitted,
     FreshAuthorityDenied,
@@ -138,8 +147,15 @@ impl BankRecoveryDenial {
             Query::ForeignPrincipal => Bank::ForeignPrincipal,
             Query::ForeignRuntime => Bank::ForeignRuntime,
             Query::ForeignBranchEqualOrdinal => Bank::ForeignBranchEqualOrdinal,
-            Query::TransitionNotAdmitted => Bank::TransitionNotAdmitted,
             Query::AlreadyCompleted => Bank::AlreadyCompleted,
+            Query::CompletionPublicationPending => Bank::CompletionPublicationPending,
+            Query::TerminalIndexUnavailable => Bank::TerminalIndexUnavailable,
+            Query::DispatchOutboxMissing => Bank::DispatchOutboxMissing,
+            Query::TransportNotInstalled => Bank::TransportNotInstalled,
+            Query::DispatchOwnerReadDenied(read) => Bank::DispatchOwnerReadDenied(read.into()),
+            Query::AttemptAdmissionDenied => Bank::AttemptAdmissionDenied,
+            Query::CanonicalDerivationDenied => Bank::CanonicalDerivationDenied,
+            Query::TimeObservationDenied => Bank::TimeObservationDenied,
             Query::CompensationNotAdmitted => Bank::CompensationNotAdmitted,
             Query::ReconciliationNotAdmitted => Bank::ReconciliationNotAdmitted,
             Query::FreshAuthorityDenied => Bank::FreshAuthorityDenied,

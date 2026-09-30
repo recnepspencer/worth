@@ -11,7 +11,7 @@ use crate::domain_computation::application_aftermath::external_effect::{
 };
 use crate::domain_computation::application_aftermath::recovery_handle::{
     WorthQueryRecoveryHandle, WorthQueryRecoveryHandleBindingAxisProbe,
-    WorthQueryRecoveryHandleDenialKind,
+    WorthQueryRecoveryHandleDenial, WorthQueryRecoveryHandleDenialKind,
 };
 use crate::domain_computation::application_aftermath::recovery_progression::{
     safe_retry_recovery_handle, WorthQueryPerformedExternalRedispatch,
@@ -27,6 +27,7 @@ use crate::domain_computation::primary_graph::{
         },
     },
     WorthQueryAdmittedApplicationOperation, WorthQueryApplicationCommitReceipt,
+    WorthQueryExternalRedispatchDenial,
 };
 
 type RecoveryAdmission = WorthQueryAdmittedApplicationOperation<
@@ -148,6 +149,24 @@ fn redispatch_performed_for_handle_a_cannot_safe_retry_handle_b() {
     let redispatch_a = performed_redispatch(&world_a, &handle_a, &authority_a, &admission_a);
     safe_retry_recovery_handle(handle_a, &authority_a, redispatch_a)
         .expect("the exact handle admits its own performed re-dispatch");
+}
+
+#[test]
+fn redispatch_without_an_installed_transport_names_the_missing_transport() {
+    let (world, _receipt, handle, admission) = real_handle(214, "notify-death-no-transport");
+    let authority = authority(&world, &handle, &admission);
+    let denied = world
+        .application
+        .redispatch_admitted_external_effect(&handle, &authority, &admission)
+        .expect_err("no installed transport means no physical attempt");
+    assert_eq!(
+        denied,
+        WorthQueryExternalRedispatchDenial::TransportNotInstalled
+    );
+    assert_eq!(
+        WorthQueryRecoveryHandleDenial::from(denied).kind(),
+        WorthQueryRecoveryHandleDenialKind::TransportNotInstalled
+    );
 }
 
 #[test]

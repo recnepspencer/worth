@@ -11,6 +11,7 @@ use super::super::super::protocol::{
 };
 use super::fixture::application;
 use super::{bind_application, credential_json, BankHttpServerConfiguration};
+mod settling_completion;
 mod terminal_retry;
 mod transport;
 

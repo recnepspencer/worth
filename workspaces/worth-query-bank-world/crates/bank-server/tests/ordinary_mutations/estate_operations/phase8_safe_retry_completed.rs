@@ -22,7 +22,7 @@ use crate::support::request_scope;
 
 /// The Bank process installs its estate rail source before serving. This
 /// journey completes through the transport, so no callback is authenticated.
-struct EstateRailSource;
+pub(super) struct EstateRailSource;
 
 impl WorthQueryInboundOccurrenceVerifier for EstateRailSource {
     fn audience(&self) -> &str {

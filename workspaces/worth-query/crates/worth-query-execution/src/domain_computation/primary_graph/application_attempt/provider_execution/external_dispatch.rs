@@ -114,41 +114,25 @@ impl WorthQueryPerformedExternalRedispatchSeal {
     }
 }
 
+/// Each re-dispatch refusal keeps its own recovery denial kind, so a caller
+/// never has to guess the cause behind one shared kind.
 impl From<WorthQueryExternalRedispatchDenial> for WorthQueryRecoveryHandleDenial {
     fn from(denial: WorthQueryExternalRedispatchDenial) -> Self {
-        match denial {
-            WorthQueryExternalRedispatchDenial::AdmissionDenied => {
-                WorthQueryRecoveryHandleDenial::new(
-                    WorthQueryRecoveryHandleDenialKind::FreshAuthorityDenied,
-                )
-            }
-            WorthQueryExternalRedispatchDenial::BindingOutboxMissing => {
-                WorthQueryRecoveryHandleDenial::new(
-                    WorthQueryRecoveryHandleDenialKind::CorrelationMismatch,
-                )
-            }
-            WorthQueryExternalRedispatchDenial::RecoveryNotAdmitted => {
-                WorthQueryRecoveryHandleDenial::new(
-                    WorthQueryRecoveryHandleDenialKind::TransitionNotAdmitted,
-                )
-            }
-            WorthQueryExternalRedispatchDenial::AlreadyCompleted => {
-                WorthQueryRecoveryHandleDenial::new(
-                    WorthQueryRecoveryHandleDenialKind::AlreadyCompleted,
-                )
-            }
-            WorthQueryExternalRedispatchDenial::TransportNotInstalled
-            | WorthQueryExternalRedispatchDenial::OwnerReadDenied(_)
-            | WorthQueryExternalRedispatchDenial::AttemptAdmissionDenied
-            | WorthQueryExternalRedispatchDenial::CompletionPublicationPending
-            | WorthQueryExternalRedispatchDenial::TerminalIndexUnavailable
-            | WorthQueryExternalRedispatchDenial::CanonicalDerivationDenied
-            | WorthQueryExternalRedispatchDenial::TimeObservationDenied => {
-                WorthQueryRecoveryHandleDenial::new(
-                    WorthQueryRecoveryHandleDenialKind::TransitionNotAdmitted,
-                )
-            }
-        }
+        use WorthQueryExternalRedispatchDenial as Redispatch;
+        use WorthQueryRecoveryHandleDenialKind as Kind;
+        WorthQueryRecoveryHandleDenial::new(match denial {
+            Redispatch::AdmissionDenied => Kind::FreshAuthorityDenied,
+            Redispatch::RecoveryNotAdmitted => Kind::RecoveryNotAdmitted,
+            Redispatch::BindingOutboxMissing => Kind::DispatchOutboxMissing,
+            Redispatch::TransportNotInstalled => Kind::TransportNotInstalled,
+            Redispatch::OwnerReadDenied(read) => Kind::DispatchOwnerReadDenied(read),
+            Redispatch::AttemptAdmissionDenied => Kind::AttemptAdmissionDenied,
+            Redispatch::AlreadyCompleted => Kind::AlreadyCompleted,
+            Redispatch::CompletionPublicationPending => Kind::CompletionPublicationPending,
+            Redispatch::TerminalIndexUnavailable => Kind::TerminalIndexUnavailable,
+            Redispatch::CanonicalDerivationDenied => Kind::CanonicalDerivationDenied,
+            Redispatch::TimeObservationDenied => Kind::TimeObservationDenied,
+        })
     }
 }
 
@@ -372,6 +356,8 @@ where
 
 #[cfg(test)]
 mod composite_dispatch_tests;
+#[cfg(test)]
+mod redispatch_denial_tests;
 #[cfg(test)]
 mod safe_retry_affinity_tests;
 

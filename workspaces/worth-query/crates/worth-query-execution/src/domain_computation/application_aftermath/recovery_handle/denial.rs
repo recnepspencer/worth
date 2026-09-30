@@ -29,10 +29,32 @@ pub enum WorthQueryRecoveryHandleDenialKind {
     ForeignPrincipal,
     ForeignRuntime,
     ForeignBranchEqualOrdinal,
-    TransitionNotAdmitted,
     /// The effect already reached its one terminal completion. Safe retry
     /// admits no new physical attempt and the live handle is returned.
     AlreadyCompleted,
+    /// The effect completed, but publishing that completion is still in flight
+    /// or awaits its retry. No attempt is admitted and the live handle is
+    /// returned; once the publication resolves, retry answers
+    /// [`Self::AlreadyCompleted`].
+    CompletionPublicationPending,
+    /// The terminal completion index cannot answer for this effect, so no
+    /// attempt is admitted and the live handle is returned. It answers again
+    /// once a pending completion publication resolves or the index is repaired.
+    TerminalIndexUnavailable,
+    /// The live handle binding carries no co-committed dispatch outbox.
+    DispatchOutboxMissing,
+    /// No external-effect transport is installed on this runtime.
+    TransportNotInstalled,
+    /// Relational could not establish the exact committed dispatch owner row.
+    DispatchOwnerReadDenied(
+        crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxReadDenial,
+    ),
+    /// This runtime could not mint a runtime-affine physical attempt.
+    AttemptAdmissionDenied,
+    /// Canonical derivation of the dispatch event identity failed.
+    CanonicalDerivationDenied,
+    /// The installed runtime clock could not classify the physical attempt.
+    TimeObservationDenied,
     /// Installed mechanism axis does not admit compensate (distinct from reconcile).
     CompensationNotAdmitted,
     /// Installed authority axis does not admit reconcile (distinct from compensate).

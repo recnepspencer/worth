@@ -34,6 +34,8 @@ mod phase8_residue;
 mod phase8_safe_retry;
 #[path = "estate_operations/phase8_safe_retry_completed.rs"]
 mod phase8_safe_retry_completed;
+#[path = "estate_operations/phase8_safe_retry_pending.rs"]
+mod phase8_safe_retry_pending;
 #[path = "estate_operations/program_adoption_recovery.rs"]
 mod program_adoption_recovery;
 #[path = "estate_operations/recognize_executor.rs"]

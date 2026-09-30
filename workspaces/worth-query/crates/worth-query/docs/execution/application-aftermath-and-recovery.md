@@ -423,6 +423,18 @@ not on Query guessing what happened.
 Once Query's terminal effect owner holds the completion, safe retry makes no new
 physical attempt. It is refused with `WorthQueryRecoveryHandleDenialKind::AlreadyCompleted`
 and the live handle is returned.
+While a completion is still settling, safe retry also makes no attempt and
+returns the live handle, naming why the owner cannot answer yet:
+
+- `CompletionPublicationPending`: the completion is held but its publication is
+  in flight or awaits retry.
+- `TerminalIndexUnavailable`: the terminal index cannot answer until a pending
+  publication resolves or the index is repaired.
+
+Retry later; once the completion settles, retry answers `AlreadyCompleted`.
+Every other re-dispatch refusal also keeps its own kind: `DispatchOutboxMissing`,
+`TransportNotInstalled`, `DispatchOwnerReadDenied`, `AttemptAdmissionDenied`,
+`CanonicalDerivationDenied` and `TimeObservationDenied`.
 
 ## Publication Settlement Recovery
 

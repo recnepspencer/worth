@@ -26,7 +26,7 @@ pub(super) struct RecoveryRecord {
     pub(super) commit: BankHttpCommitDescription,
     pub(super) expires_at: Instant,
     pub(super) handle: Option<BankCommitRecoveryHandle>,
-    pub(super) retried: Option<RecoveryRetryResult>,
+    pub(super) settled: Option<RecoverySettlement>,
 }
 
 impl RecoveryRecord {
@@ -42,9 +42,19 @@ impl RecoveryRecord {
             commit: registration.commit,
             expires_at: Instant::now() + lifetime,
             handle: Some(registration.handle),
-            retried: None,
+            settled: None,
         }
     }
+}
+
+/// How a safe retry settled this recovery token. Both answers are final, so a
+/// repeated retry replays them without asking the runtime again.
+#[derive(Clone, Copy)]
+pub(super) enum RecoverySettlement {
+    Retried(RecoveryRetryResult),
+    /// The effect already held its one terminal completion; the live handle
+    /// stays registered so expiry can still dispose of it.
+    AlreadyCompleted,
 }
 
 #[derive(Clone, Copy)]
@@ -58,6 +68,9 @@ pub(in crate::http::server) enum BankHttpRecoveryRetry {
     Applied {
         result: RecoveryRetryResult,
         replay: bool,
+    },
+    AlreadyCompleted {
+        commit: BankHttpCommitDescription,
     },
     Denied(BankEstateProgressionDenial),
 }
